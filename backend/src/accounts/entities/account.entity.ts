@@ -1,0 +1,113 @@
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
+  OneToMany,
+} from 'typeorm';
+import { User } from '../../users/entities/user.entity';
+import { Transaction } from '../../transactions/entities/transaction.entity';
+
+export enum AccountType {
+  CHEQUING = 'CHEQUING',
+  SAVINGS = 'SAVINGS',
+  CREDIT_CARD = 'CREDIT_CARD',
+  LOAN = 'LOAN',
+  MORTGAGE = 'MORTGAGE',
+  RRSP = 'RRSP',
+  TFSA = 'TFSA',
+  RESP = 'RESP',
+  INVESTMENT = 'INVESTMENT',
+  CASH = 'CASH',
+  LINE_OF_CREDIT = 'LINE_OF_CREDIT',
+  OTHER = 'OTHER',
+}
+
+@Entity('accounts')
+export class Account {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column('uuid', { name: 'user_id' })
+  userId: string;
+
+  @Column({
+    type: 'enum',
+    enum: AccountType,
+    name: 'account_type',
+  })
+  accountType: AccountType;
+
+  @Column()
+  name: string;
+
+  @Column({ type: 'text', nullable: true })
+  description: string;
+
+  @Column({ name: 'currency_code', length: 3 })
+  currencyCode: string;
+
+  @Column({ name: 'account_number', nullable: true })
+  accountNumber: string;
+
+  @Column({ nullable: true })
+  institution: string;
+
+  @Column({
+    type: 'decimal',
+    precision: 20,
+    scale: 4,
+    name: 'opening_balance',
+    default: 0,
+  })
+  openingBalance: number;
+
+  @Column({
+    type: 'decimal',
+    precision: 20,
+    scale: 4,
+    name: 'current_balance',
+    default: 0,
+  })
+  currentBalance: number;
+
+  @Column({
+    type: 'decimal',
+    precision: 20,
+    scale: 4,
+    name: 'credit_limit',
+    nullable: true,
+  })
+  creditLimit: number;
+
+  @Column({
+    type: 'decimal',
+    precision: 8,
+    scale: 4,
+    name: 'interest_rate',
+    nullable: true,
+  })
+  interestRate: number;
+
+  @Column({ name: 'is_closed', default: false })
+  isClosed: boolean;
+
+  @Column({ type: 'date', name: 'closed_date', nullable: true })
+  closedDate: Date;
+
+  @CreateDateColumn({ name: 'created_at' })
+  createdAt: Date;
+
+  @UpdateDateColumn({ name: 'updated_at' })
+  updatedAt: Date;
+
+  @ManyToOne(() => User, (user) => user.accounts)
+  @JoinColumn({ name: 'user_id' })
+  user: User;
+
+  @OneToMany(() => Transaction, (transaction) => transaction.account)
+  transactions: Transaction[];
+}
