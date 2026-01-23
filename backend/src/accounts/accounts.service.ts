@@ -122,7 +122,7 @@ export class AccountsService {
     }
 
     account.isClosed = false;
-    account.closedDate = null;
+    account.closedDate = undefined;
 
     return this.accountsRepository.save(account);
   }

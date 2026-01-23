@@ -10,24 +10,21 @@ export class OidcStrategy extends PassportStrategy(Strategy, 'oidc') {
     private configService: ConfigService,
     private authService: AuthService,
   ) {
-    const issuerUrl = configService.get('OIDC_ISSUER_URL');
-    const clientID = configService.get('OIDC_CLIENT_ID');
-    const clientSecret = configService.get('OIDC_CLIENT_SECRET');
-    const callbackURL = configService.get('OIDC_CALLBACK_URL');
+    const issuerUrl = configService.get('OIDC_ISSUER_URL') || 'http://localhost';
+    const clientID = configService.get('OIDC_CLIENT_ID') || 'dummy';
+    const clientSecret = configService.get('OIDC_CLIENT_SECRET') || 'dummy';
+    const callbackURL = configService.get('OIDC_CALLBACK_URL') || 'http://localhost:3000/auth/callback';
 
-    // Only initialize if OIDC is configured
-    if (issuerUrl && clientID) {
-      super({
-        issuer: issuerUrl,
-        authorizationURL: `${issuerUrl}/authorize`,
-        tokenURL: `${issuerUrl}/token`,
-        userInfoURL: `${issuerUrl}/userinfo`,
-        clientID,
-        clientSecret,
-        callbackURL,
-        scope: ['openid', 'profile', 'email'],
-      });
-    }
+    super({
+      issuer: issuerUrl,
+      authorizationURL: `${issuerUrl}/authorize`,
+      tokenURL: `${issuerUrl}/token`,
+      userInfoURL: `${issuerUrl}/userinfo`,
+      clientID,
+      clientSecret,
+      callbackURL,
+      scope: ['openid', 'profile', 'email'],
+    });
   }
 
   async validate(

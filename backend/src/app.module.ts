@@ -49,8 +49,8 @@ import { NotificationsModule } from './notifications/notifications.module';
       isGlobal: true,
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        store: redisStore,
+      useFactory: async (configService: ConfigService) => ({
+        store: redisStore as any,
         host: configService.get('REDIS_HOST'),
         port: configService.get('REDIS_PORT'),
         ttl: 300, // 5 minutes default

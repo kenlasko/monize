@@ -151,7 +151,7 @@ export class AuthService {
     return this.jwtService.sign(payload);
   }
 
-  async getUserById(id: string): Promise<User> {
+  async getUserById(id: string): Promise<User | null> {
     return this.usersRepository.findOne({ where: { id } });
   }
 
