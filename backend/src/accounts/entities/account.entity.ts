@@ -45,16 +45,16 @@ export class Account {
   name: string;
 
   @Column({ type: 'text', nullable: true })
-  description: string;
+  description: string | null;
 
   @Column({ name: 'currency_code', length: 3 })
   currencyCode: string;
 
   @Column({ name: 'account_number', nullable: true })
-  accountNumber: string;
+  accountNumber: string | null;
 
   @Column({ nullable: true })
-  institution: string;
+  institution: string | null;
 
   @Column({
     type: 'decimal',
@@ -81,7 +81,7 @@ export class Account {
     name: 'credit_limit',
     nullable: true,
   })
-  creditLimit: number;
+  creditLimit: number | null;
 
   @Column({
     type: 'decimal',
@@ -90,13 +90,13 @@ export class Account {
     name: 'interest_rate',
     nullable: true,
   })
-  interestRate: number;
+  interestRate: number | null;
 
   @Column({ name: 'is_closed', default: false })
   isClosed: boolean;
 
   @Column({ type: 'date', name: 'closed_date', nullable: true })
-  closedDate: Date;
+  closedDate: Date | null;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
