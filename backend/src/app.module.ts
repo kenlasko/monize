@@ -17,6 +17,7 @@ import { ScheduledTransactionsModule } from './scheduled-transactions/scheduled-
 import { BudgetsModule } from './budgets/budgets.module';
 import { ReportsModule } from './reports/reports.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { DatabaseModule } from './database/database.module';
 
 @Module({
   imports: [
@@ -78,6 +79,7 @@ import { NotificationsModule } from './notifications/notifications.module';
     BudgetsModule,
     ReportsModule,
     NotificationsModule,
+    DatabaseModule,
   ],
 })
 export class AppModule {}
