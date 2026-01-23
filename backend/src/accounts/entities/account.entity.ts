@@ -4,11 +4,8 @@ import {
   PrimaryGeneratedColumn,
   CreateDateColumn,
   UpdateDateColumn,
-  ManyToOne,
-  JoinColumn,
   OneToMany,
 } from 'typeorm';
-import { User } from '../../users/entities/user.entity';
 import { Transaction } from '../../transactions/entities/transaction.entity';
 
 export enum AccountType {
@@ -31,9 +28,6 @@ export class Account {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column('uuid', { name: 'user_id' })
-  userId: string;
-
   @Column({
     type: 'enum',
     enum: AccountType,
@@ -50,10 +44,10 @@ export class Account {
   @Column({ name: 'currency_code', length: 3 })
   currencyCode: string;
 
-  @Column({ name: 'account_number', nullable: true })
+  @Column({ type: 'varchar', name: 'account_number', length: 100, nullable: true })
   accountNumber: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', length: 255, nullable: true })
   institution: string | null;
 
   @Column({
@@ -104,9 +98,8 @@ export class Account {
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
 
-  @ManyToOne(() => User, (user) => user.accounts)
-  @JoinColumn({ name: 'user_id' })
-  user: User;
+  @Column({ type: 'uuid', name: 'user_id' })
+  userId: string;
 
   @OneToMany(() => Transaction, (transaction) => transaction.account)
   transactions: Transaction[];

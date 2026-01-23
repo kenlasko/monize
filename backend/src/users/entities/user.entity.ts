@@ -4,11 +4,9 @@ import {
   PrimaryGeneratedColumn,
   CreateDateColumn,
   UpdateDateColumn,
-  OneToMany,
   OneToOne,
 } from 'typeorm';
 import { Exclude } from 'class-transformer';
-import { Account } from '../../accounts/entities/account.entity';
 import { UserPreference } from './user-preference.entity';
 
 @Entity('users')
@@ -46,9 +44,6 @@ export class User {
 
   @Column({ name: 'last_login', type: 'timestamp', nullable: true })
   lastLogin: Date;
-
-  @OneToMany(() => Account, (account) => account.user)
-  accounts: Account[];
 
   @OneToOne(() => UserPreference, (preference) => preference.user)
   preferences: UserPreference;

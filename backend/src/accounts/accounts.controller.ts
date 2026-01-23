@@ -40,7 +40,7 @@ export class AccountsController {
   @ApiResponse({ status: 400, description: 'Bad request' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   create(@Request() req, @Body() createAccountDto: CreateAccountDto) {
-    return this.accountsService.create(req.user.sub, createAccountDto);
+    return this.accountsService.create(req.user.id, createAccountDto);
   }
 
   @Get()
@@ -61,7 +61,7 @@ export class AccountsController {
     @Query('includeInactive', new ParseBoolPipe({ optional: true }))
     includeInactive?: boolean,
   ) {
-    return this.accountsService.findAll(req.user.sub, includeInactive || false);
+    return this.accountsService.findAll(req.user.id, includeInactive || false);
   }
 
   @Get('summary')
@@ -72,7 +72,7 @@ export class AccountsController {
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   getSummary(@Request() req) {
-    return this.accountsService.getSummary(req.user.sub);
+    return this.accountsService.getSummary(req.user.id);
   }
 
   @Get(':id')
@@ -89,7 +89,7 @@ export class AccountsController {
   @ApiResponse({ status: 403, description: 'Forbidden - account does not belong to user' })
   @ApiResponse({ status: 404, description: 'Account not found' })
   findOne(@Request() req, @Param('id') id: string) {
-    return this.accountsService.findOne(req.user.sub, id);
+    return this.accountsService.findOne(req.user.id, id);
   }
 
   @Get(':id/balance')
@@ -106,7 +106,7 @@ export class AccountsController {
   @ApiResponse({ status: 403, description: 'Forbidden - account does not belong to user' })
   @ApiResponse({ status: 404, description: 'Account not found' })
   getBalance(@Request() req, @Param('id') id: string) {
-    return this.accountsService.getBalance(req.user.sub, id);
+    return this.accountsService.getBalance(req.user.id, id);
   }
 
   @Patch(':id')
@@ -128,7 +128,7 @@ export class AccountsController {
     @Param('id') id: string,
     @Body() updateAccountDto: UpdateAccountDto,
   ) {
-    return this.accountsService.update(req.user.sub, id, updateAccountDto);
+    return this.accountsService.update(req.user.id, id, updateAccountDto);
   }
 
   @Post(':id/close')
@@ -146,7 +146,7 @@ export class AccountsController {
   @ApiResponse({ status: 403, description: 'Forbidden - account does not belong to user' })
   @ApiResponse({ status: 404, description: 'Account not found' })
   close(@Request() req, @Param('id') id: string) {
-    return this.accountsService.close(req.user.sub, id);
+    return this.accountsService.close(req.user.id, id);
   }
 
   @Post(':id/reopen')
@@ -164,6 +164,6 @@ export class AccountsController {
   @ApiResponse({ status: 403, description: 'Forbidden - account does not belong to user' })
   @ApiResponse({ status: 404, description: 'Account not found' })
   reopen(@Request() req, @Param('id') id: string) {
-    return this.accountsService.reopen(req.user.sub, id);
+    return this.accountsService.reopen(req.user.id, id);
   }
 }

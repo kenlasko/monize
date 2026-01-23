@@ -98,7 +98,7 @@ export class AccountsService {
     }
 
     // Check if balance is not zero
-    if (account.currentBalance !== 0) {
+    if (Number(account.currentBalance) !== 0) {
       throw new BadRequestException(
         'Cannot close account with non-zero balance. Current balance: ' +
           account.currentBalance,
