@@ -30,4 +30,22 @@ export const categoriesApi = {
   delete: async (id: string): Promise<void> => {
     await apiClient.delete(`/categories/${id}`);
   },
+
+  // Get transaction count for a category
+  getTransactionCount: async (id: string): Promise<number> => {
+    const response = await apiClient.get<number>(`/categories/${id}/transaction-count`);
+    return response.data;
+  },
+
+  // Reassign transactions from one category to another
+  reassignTransactions: async (
+    fromCategoryId: string,
+    toCategoryId: string | null,
+  ): Promise<{ transactionsUpdated: number; splitsUpdated: number }> => {
+    const response = await apiClient.post<{ transactionsUpdated: number; splitsUpdated: number }>(
+      `/categories/${fromCategoryId}/reassign`,
+      { toCategoryId },
+    );
+    return response.data;
+  },
 };

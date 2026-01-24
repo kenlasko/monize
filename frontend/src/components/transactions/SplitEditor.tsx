@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { Category } from '@/types/category';
 import { CreateSplitData } from '@/types/transaction';
+import { getCategorySelectOptions } from '@/lib/categoryUtils';
 
 interface SplitRow extends CreateSplitData {
   id: string; // Temporary ID for React keys
@@ -18,7 +19,23 @@ interface SplitEditorProps {
   transactionAmount: number;
   disabled?: boolean;
   onTransactionAmountChange?: (amount: number) => void;
+  currencyCode?: string;
 }
+
+// Get currency symbol from code
+const getCurrencySymbol = (code: string): string => {
+  const symbols: Record<string, string> = {
+    USD: '$',
+    CAD: '$',
+    EUR: '€',
+    GBP: '£',
+    JPY: '¥',
+    CNY: '¥',
+    AUD: '$',
+    NZD: '$',
+  };
+  return symbols[code.toUpperCase()] || '$';
+};
 
 export function SplitEditor({
   splits,
@@ -27,7 +44,9 @@ export function SplitEditor({
   transactionAmount,
   disabled = false,
   onTransactionAmountChange,
+  currencyCode = 'CAD',
 }: SplitEditorProps) {
+  const currencySymbol = getCurrencySymbol(currencyCode);
   const [localSplits, setLocalSplits] = useState<SplitRow[]>(splits);
 
   // Sync with parent when splits prop changes
@@ -41,6 +60,22 @@ export function SplitEditor({
 
   const handleSplitChange = (index: number, field: keyof CreateSplitData, value: any) => {
     const newSplits = [...localSplits];
+
+    // If changing category, adjust the amount sign based on income/expense
+    if (field === 'categoryId' && value) {
+      const category = categories.find(c => c.id === value);
+      if (category) {
+        const currentAmount = Number(newSplits[index].amount) || 0;
+        if (currentAmount !== 0) {
+          const absAmount = Math.abs(currentAmount);
+          const newAmount = category.isIncome ? absAmount : -absAmount;
+          if (newAmount !== currentAmount) {
+            newSplits[index] = { ...newSplits[index], amount: newAmount };
+          }
+        }
+      }
+    }
+
     newSplits[index] = { ...newSplits[index], [field]: value };
     setLocalSplits(newSplits);
     onChange(newSplits);
@@ -110,7 +145,7 @@ export function SplitEditor({
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h4 className="text-sm font-medium text-gray-700">Split Details</h4>
+        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Split Details</h4>
         <div className="flex space-x-2">
           <Button
             type="button"
@@ -134,34 +169,31 @@ export function SplitEditor({
       </div>
 
       {/* Splits Table */}
-      <div className="border rounded-lg overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+      <div className="border dark:border-gray-700 rounded-lg overflow-hidden">
+        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+          <thead className="bg-gray-50 dark:bg-gray-800">
             <tr>
-              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                 Category
               </th>
-              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                 Amount
               </th>
-              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                 Memo
               </th>
               <th className="px-4 py-2 w-24"></th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
             {localSplits.map((split, index) => (
               <tr key={split.id}>
                 <td className="px-4 py-2">
                   <Select
-                    options={[
-                      { value: '', label: 'Uncategorized' },
-                      ...categories.map((cat) => ({
-                        value: cat.id,
-                        label: cat.name,
-                      })),
-                    ]}
+                    options={getCategorySelectOptions(categories, {
+                      includeEmpty: true,
+                      emptyLabel: 'Uncategorized',
+                    })}
                     value={split.categoryId || ''}
                     onChange={(e) =>
                       handleSplitChange(index, 'categoryId', e.target.value || undefined)
@@ -170,16 +202,28 @@ export function SplitEditor({
                   />
                 </td>
                 <td className="px-4 py-2">
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={split.amount}
-                    onChange={(e) =>
-                      handleSplitChange(index, 'amount', parseFloat(e.target.value) || 0)
-                    }
-                    disabled={disabled}
-                    className="w-32"
-                  />
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 text-sm">
+                      {currencySymbol}
+                    </span>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={split.amount}
+                      onChange={(e) =>
+                        handleSplitChange(index, 'amount', parseFloat(e.target.value) || 0)
+                      }
+                      onBlur={(e) => {
+                        // Round to 2 decimal places on blur
+                        const rounded = Math.round(parseFloat(e.target.value) * 100) / 100;
+                        if (!isNaN(rounded)) {
+                          handleSplitChange(index, 'amount', rounded);
+                        }
+                      }}
+                      disabled={disabled}
+                      className="w-32 pl-7"
+                    />
+                  </div>
                 </td>
                 <td className="px-4 py-2">
                   <Input
@@ -196,8 +240,8 @@ export function SplitEditor({
                       type="button"
                       onClick={() => addRemainingToSplit(index)}
                       disabled={disabled || Math.abs(remaining) < 0.01}
-                      className="text-blue-600 hover:text-blue-800 disabled:opacity-50 disabled:cursor-not-allowed"
-                      title={Math.abs(remaining) < 0.01 ? 'No unassigned amount' : `Add ${remaining >= 0 ? '+' : ''}${remaining.toFixed(2)} to this split`}
+                      className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                      title={Math.abs(remaining) < 0.01 ? 'No unassigned amount' : `Add ${remaining >= 0 ? '+' : ''}${currencySymbol}${Math.abs(remaining).toFixed(2)} to this split`}
                     >
                       <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path
@@ -212,7 +256,7 @@ export function SplitEditor({
                       type="button"
                       onClick={() => removeSplit(index)}
                       disabled={disabled || localSplits.length <= 2}
-                      className="text-red-600 hover:text-red-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed"
                       title={localSplits.length <= 2 ? 'Minimum 2 splits required' : 'Remove split'}
                     >
                       <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -229,39 +273,39 @@ export function SplitEditor({
               </tr>
             ))}
           </tbody>
-          <tfoot className="bg-gray-50">
+          <tfoot className="bg-gray-50 dark:bg-gray-800">
             <tr>
-              <td className="px-4 py-2 text-sm font-medium text-gray-700">Total</td>
+              <td className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300">Total</td>
               <td className="px-4 py-2">
                 <span
                   className={`font-medium ${
-                    isBalanced ? 'text-green-600' : 'text-red-600'
+                    isBalanced ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
                   }`}
                 >
-                  ${splitsTotal.toFixed(2)}
+                  {currencySymbol}{splitsTotal.toFixed(2)}
                 </span>
                 {!isBalanced && (
-                  <span className="text-xs text-gray-500 ml-2">
-                    (Remaining: ${remaining.toFixed(2)})
+                  <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
+                    (Remaining: {currencySymbol}{remaining.toFixed(2)})
                   </span>
                 )}
               </td>
               <td colSpan={2} className="px-4 py-2">
                 {isBalanced ? (
-                  <span className="text-xs text-green-600">Balanced</span>
+                  <span className="text-xs text-green-600 dark:text-green-400">Balanced</span>
                 ) : (
                   <div className="flex items-center space-x-2">
-                    <span className="text-xs text-red-600">
-                      Splits must equal transaction amount (${transactionAmount})
+                    <span className="text-xs text-red-600 dark:text-red-400">
+                      Splits must equal transaction amount ({currencySymbol}{Number(transactionAmount).toFixed(2)})
                     </span>
                     {onTransactionAmountChange && splitsTotal !== 0 && (
                       <button
                         type="button"
                         onClick={setTotalToSplitsSum}
                         disabled={disabled}
-                        className="text-xs text-blue-600 hover:text-blue-800 underline disabled:opacity-50"
+                        className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline disabled:opacity-50"
                       >
-                        Set total to ${splitsTotal.toFixed(2)}
+                        Set total to {currencySymbol}{splitsTotal.toFixed(2)}
                       </button>
                     )}
                   </div>

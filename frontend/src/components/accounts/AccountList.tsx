@@ -52,78 +52,96 @@ export function AccountList({ accounts, onEdit, onRefresh }: AccountListProps) {
     }).format(amount);
   };
 
+  const formatAccountType = (type: AccountType) => {
+    const labels: Record<AccountType, string> = {
+      CHEQUING: 'Chequing',
+      SAVINGS: 'Savings',
+      CREDIT_CARD: 'Credit Card',
+      INVESTMENT: 'Investment',
+      LOAN: 'Loan',
+      MORTGAGE: 'Mortgage',
+      RRSP: 'RRSP',
+      TFSA: 'TFSA',
+      RESP: 'RESP',
+      CASH: 'Cash',
+      LINE_OF_CREDIT: 'Line of Credit',
+      OTHER: 'Other',
+    };
+    return labels[type] || type;
+  };
+
   const getAccountTypeColor = (type: AccountType) => {
     switch (type) {
       case 'CHEQUING':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
       case 'SAVINGS':
-        return 'bg-green-100 text-green-800';
+        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
       case 'CREDIT_CARD':
-        return 'bg-purple-100 text-purple-800';
+        return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
       case 'INVESTMENT':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
       case 'LOAN':
-        return 'bg-red-100 text-red-800';
+        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
       case 'MORTGAGE':
-        return 'bg-orange-100 text-orange-800';
+        return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200';
       case 'RRSP':
-        return 'bg-indigo-100 text-indigo-800';
+        return 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200';
       case 'TFSA':
-        return 'bg-teal-100 text-teal-800';
+        return 'bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200';
       case 'RESP':
-        return 'bg-pink-100 text-pink-800';
+        return 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200';
       case 'CASH':
-        return 'bg-emerald-100 text-emerald-800';
+        return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200';
       case 'LINE_OF_CREDIT':
-        return 'bg-rose-100 text-rose-800';
+        return 'bg-rose-100 text-rose-800 dark:bg-rose-900 dark:text-rose-200';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
     }
   };
 
   if (accounts.length === 0) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-500">No accounts found. Create your first account to get started!</p>
+        <p className="text-gray-500 dark:text-gray-400">No accounts found. Create your first account to get started!</p>
       </div>
     );
   }
 
   return (
     <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
+      <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+        <thead className="bg-gray-50 dark:bg-gray-800">
           <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
               Account Name
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
               Type
             </th>
-            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
               Balance
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
               Status
             </th>
-            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
               Actions
             </th>
           </tr>
         </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
+        <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
           {accounts.map((account) => (
-            <tr key={account.id} className={!account.isClosed ? '' : 'opacity-50'}>
+            <tr key={account.id} className={`hover:bg-gray-50 dark:hover:bg-gray-800 ${!account.isClosed ? '' : 'opacity-50'}`}>
               <td className="px-6 py-4 whitespace-nowrap">
                 <button
                   onClick={() => handleViewTransactions(account)}
                   className="text-left hover:underline"
                 >
-                  <div className="text-sm font-medium text-blue-600 hover:text-blue-800">
+                  <div className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300">
                     {account.name}
                   </div>
                   {account.description && (
-                    <div className="text-sm text-gray-500">{account.description}</div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">{account.description}</div>
                   )}
                 </button>
               </td>
@@ -133,19 +151,19 @@ export function AccountList({ accounts, onEdit, onRefresh }: AccountListProps) {
                     account.accountType
                   )}`}
                 >
-                  {account.accountType}
+                  {formatAccountType(account.accountType)}
                 </span>
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-right">
                 <div
                   className={`text-sm font-medium ${
-                    account.currentBalance >= 0 ? 'text-green-600' : 'text-red-600'
+                    account.currentBalance >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
                   }`}
                 >
                   {formatCurrency(account.currentBalance, account.currencyCode)}
                 </div>
                 {account.creditLimit && (
-                  <div className="text-xs text-gray-500">
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
                     Limit: {formatCurrency(account.creditLimit, account.currencyCode)}
                   </div>
                 )}
@@ -154,8 +172,8 @@ export function AccountList({ accounts, onEdit, onRefresh }: AccountListProps) {
                 <span
                   className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                     !account.isClosed
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-gray-100 text-gray-800'
+                      ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                      : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
                   }`}
                 >
                   {!account.isClosed ? 'Active' : 'Closed'}

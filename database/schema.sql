@@ -123,6 +123,7 @@ CREATE TABLE transactions (
     transaction_date DATE NOT NULL,
     payee_id UUID REFERENCES payees(id),
     payee_name VARCHAR(255), -- can be different from payee.name
+    category_id UUID REFERENCES categories(id), -- category for non-split transactions
     amount NUMERIC(20, 4) NOT NULL, -- positive for income/deposits, negative for expenses
     currency_code VARCHAR(3) NOT NULL REFERENCES currencies(code),
     exchange_rate NUMERIC(20, 10) DEFAULT 1, -- rate at transaction time
@@ -141,6 +142,7 @@ CREATE INDEX idx_transactions_user ON transactions(user_id);
 CREATE INDEX idx_transactions_account ON transactions(account_id);
 CREATE INDEX idx_transactions_date ON transactions(transaction_date DESC);
 CREATE INDEX idx_transactions_payee ON transactions(payee_id);
+CREATE INDEX idx_transactions_category ON transactions(category_id);
 CREATE INDEX idx_transactions_parent ON transactions(parent_transaction_id);
 
 -- Transaction Splits (details for split transactions)
@@ -156,24 +158,29 @@ CREATE TABLE transaction_splits (
 CREATE INDEX idx_transaction_splits_transaction ON transaction_splits(transaction_id);
 CREATE INDEX idx_transaction_splits_category ON transaction_splits(category_id);
 
--- Scheduled Transactions (recurring payments)
+-- Scheduled Transactions (recurring payments / bills & deposits)
 CREATE TABLE scheduled_transactions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     account_id UUID NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL, -- display name for the scheduled transaction
     payee_id UUID REFERENCES payees(id),
     payee_name VARCHAR(255),
-    amount NUMERIC(20, 4) NOT NULL,
     category_id UUID REFERENCES categories(id),
+    amount NUMERIC(20, 4) NOT NULL,
+    currency_code VARCHAR(3) NOT NULL REFERENCES currencies(code),
     description TEXT,
-    frequency VARCHAR(20) NOT NULL, -- 'DAILY', 'WEEKLY', 'BIWEEKLY', 'MONTHLY', 'QUARTERLY', 'YEARLY'
+    frequency VARCHAR(20) NOT NULL, -- 'ONCE', 'DAILY', 'WEEKLY', 'BIWEEKLY', 'MONTHLY', 'QUARTERLY', 'YEARLY'
+    next_due_date DATE NOT NULL,
     start_date DATE NOT NULL,
     end_date DATE,
-    next_due_date DATE NOT NULL,
-    auto_enter BOOLEAN DEFAULT false, -- automatically create transaction
-    notify_days_before INTEGER DEFAULT 3,
-    last_processed_date DATE,
+    occurrences_remaining INTEGER, -- if set, countdown of remaining occurrences
+    total_occurrences INTEGER, -- original total if using occurrence limit
     is_active BOOLEAN DEFAULT true,
+    auto_post BOOLEAN DEFAULT false, -- automatically create transaction when due
+    reminder_days_before INTEGER DEFAULT 3,
+    last_posted_date DATE, -- when the transaction was last posted
+    is_split BOOLEAN DEFAULT false, -- indicates amounts are split across categories
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -191,6 +198,9 @@ CREATE TABLE scheduled_transaction_splits (
     memo TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE INDEX idx_scheduled_transaction_splits_scheduled ON scheduled_transaction_splits(scheduled_transaction_id);
+CREATE INDEX idx_scheduled_transaction_splits_category ON scheduled_transaction_splits(category_id);
 
 -- Securities (stocks, bonds, mutual funds, ETFs)
 CREATE TABLE securities (

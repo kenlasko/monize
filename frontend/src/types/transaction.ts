@@ -1,5 +1,6 @@
 import { Payee } from './payee';
 import { Category } from './category';
+import { Account } from './account';
 
 export interface TransactionSplit {
   id: string;
@@ -15,6 +16,7 @@ export interface Transaction {
   id: string;
   userId: string;
   accountId: string;
+  account: Account | null;
   transactionDate: string;
   payeeId: string | null;
   payeeName: string | null;
@@ -78,4 +80,17 @@ export interface TransactionFilters {
   categoryId?: string;
   isCleared?: boolean;
   isReconciled?: boolean;
+}
+
+export interface PaginationInfo {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasMore: boolean;
+}
+
+export interface PaginatedTransactions {
+  data: Transaction[];
+  pagination: PaginationInfo;
 }

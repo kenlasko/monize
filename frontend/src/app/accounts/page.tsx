@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
 import { AccountForm } from '@/components/accounts/AccountForm';
 import { AccountList } from '@/components/accounts/AccountList';
+import { AppHeader } from '@/components/layout/AppHeader';
 import { accountsApi } from '@/lib/accounts';
 import { Account } from '@/types/account';
 
@@ -99,14 +100,16 @@ export default function AccountsPage() {
   const summary = calculateSummary();
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <AppHeader />
+
+      {/* Page Header */}
+      <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Accounts</h1>
-              <p className="mt-1 text-sm text-gray-500">
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Accounts</h1>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                 Manage your bank accounts, credit cards, and investments
               </p>
             </div>
@@ -118,12 +121,12 @@ export default function AccountsPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-          <div className="bg-white overflow-hidden shadow rounded-lg">
+          <div className="bg-white dark:bg-gray-800 overflow-hidden shadow dark:shadow-gray-700/50 rounded-lg">
             <div className="p-5">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
                   <svg
-                    className="h-6 w-6 text-gray-400"
+                    className="h-6 w-6 text-gray-400 dark:text-gray-500"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -138,15 +141,15 @@ export default function AccountsPage() {
                 </div>
                 <div className="ml-5 w-0 flex-1">
                   <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">Total Accounts</dt>
-                    <dd className="text-lg font-semibold text-gray-900">{summary.accountCount}</dd>
+                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">Total Accounts</dt>
+                    <dd className="text-lg font-semibold text-gray-900 dark:text-gray-100">{summary.accountCount}</dd>
                   </dl>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="bg-white overflow-hidden shadow rounded-lg">
+          <div className="bg-white dark:bg-gray-800 overflow-hidden shadow dark:shadow-gray-700/50 rounded-lg">
             <div className="p-5">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
@@ -166,10 +169,10 @@ export default function AccountsPage() {
                 </div>
                 <div className="ml-5 w-0 flex-1">
                   <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">Net Worth</dt>
+                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">Net Worth</dt>
                     <dd
                       className={`text-lg font-semibold ${
-                        summary.totalBalance >= 0 ? 'text-blue-600' : 'text-red-600'
+                        summary.totalBalance >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-red-600 dark:text-red-400'
                       }`}
                     >
                       ${summary.totalBalance.toFixed(2)}
@@ -180,7 +183,7 @@ export default function AccountsPage() {
             </div>
           </div>
 
-          <div className="bg-white overflow-hidden shadow rounded-lg">
+          <div className="bg-white dark:bg-gray-800 overflow-hidden shadow dark:shadow-gray-700/50 rounded-lg">
             <div className="p-5">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
@@ -200,8 +203,8 @@ export default function AccountsPage() {
                 </div>
                 <div className="ml-5 w-0 flex-1">
                   <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">Total Assets</dt>
-                    <dd className="text-lg font-semibold text-green-600">
+                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">Total Assets</dt>
+                    <dd className="text-lg font-semibold text-green-600 dark:text-green-400">
                       ${summary.totalAssets.toFixed(2)}
                     </dd>
                   </dl>
@@ -210,7 +213,7 @@ export default function AccountsPage() {
             </div>
           </div>
 
-          <div className="bg-white overflow-hidden shadow rounded-lg">
+          <div className="bg-white dark:bg-gray-800 overflow-hidden shadow dark:shadow-gray-700/50 rounded-lg">
             <div className="p-5">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
@@ -230,8 +233,8 @@ export default function AccountsPage() {
                 </div>
                 <div className="ml-5 w-0 flex-1">
                   <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">Total Liabilities</dt>
-                    <dd className="text-lg font-semibold text-red-600">
+                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">Total Liabilities</dt>
+                    <dd className="text-lg font-semibold text-red-600 dark:text-red-400">
                       ${summary.totalLiabilities.toFixed(2)}
                     </dd>
                   </dl>
@@ -243,9 +246,9 @@ export default function AccountsPage() {
 
         {/* Form Modal */}
         {showForm && (
-          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">
+          <div className="fixed inset-0 bg-gray-500 dark:bg-gray-900 bg-opacity-75 dark:bg-opacity-80 flex items-center justify-center p-4 z-50">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl dark:shadow-gray-700/50 max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
                 {editingAccount ? 'Edit Account' : 'New Account'}
               </h2>
               <AccountForm
@@ -258,11 +261,11 @@ export default function AccountsPage() {
         )}
 
         {/* Accounts List */}
-        <div className="bg-white shadow rounded-lg overflow-hidden">
+        <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg overflow-hidden">
           {isLoading ? (
             <div className="p-12 text-center">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-              <p className="mt-2 text-gray-500">Loading accounts...</p>
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-blue-400"></div>
+              <p className="mt-2 text-gray-500 dark:text-gray-400">Loading accounts...</p>
             </div>
           ) : (
             <AccountList accounts={accounts} onEdit={handleEdit} onRefresh={loadAccounts} />

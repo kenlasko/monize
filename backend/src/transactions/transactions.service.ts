@@ -14,6 +14,17 @@ import { CreateTransactionSplitDto } from './dto/create-transaction-split.dto';
 import { AccountsService } from '../accounts/accounts.service';
 import { PayeesService } from '../payees/payees.service';
 
+export interface PaginatedTransactions {
+  data: Transaction[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    hasMore: boolean;
+  };
+}
+
 @Injectable()
 export class TransactionsService {
   constructor(
@@ -127,16 +138,26 @@ export class TransactionsService {
   }
 
   /**
-   * Find all transactions for a user with optional filters
+   * Find all transactions for a user with optional filters and pagination
    */
   async findAll(
     userId: string,
     accountId?: string,
     startDate?: string,
     endDate?: string,
-  ): Promise<Transaction[]> {
+    categoryId?: string,
+    payeeId?: string,
+    page: number = 1,
+    limit: number = 50,
+  ): Promise<PaginatedTransactions> {
+    // Enforce limits
+    const safePage = Math.max(1, page);
+    const safeLimit = Math.min(200, Math.max(1, limit));
+    const skip = (safePage - 1) * safeLimit;
+
     const queryBuilder = this.transactionsRepository
       .createQueryBuilder('transaction')
+      .leftJoinAndSelect('transaction.account', 'account')
       .leftJoinAndSelect('transaction.payee', 'payee')
       .leftJoinAndSelect('transaction.category', 'category')
       .leftJoinAndSelect('transaction.splits', 'splits')
@@ -157,7 +178,38 @@ export class TransactionsService {
       queryBuilder.andWhere('transaction.transactionDate <= :endDate', { endDate });
     }
 
-    return queryBuilder.getMany();
+    if (categoryId) {
+      // Match transactions where:
+      // 1. The transaction has this category directly, OR
+      // 2. Any of the transaction's splits have this category
+      queryBuilder.andWhere(
+        '(transaction.categoryId = :categoryId OR splits.categoryId = :categoryId)',
+        { categoryId },
+      );
+    }
+
+    if (payeeId) {
+      queryBuilder.andWhere('transaction.payeeId = :payeeId', { payeeId });
+    }
+
+    // Get total count and paginated results
+    const [data, total] = await queryBuilder
+      .skip(skip)
+      .take(safeLimit)
+      .getManyAndCount();
+
+    const totalPages = Math.ceil(total / safeLimit);
+
+    return {
+      data,
+      pagination: {
+        page: safePage,
+        limit: safeLimit,
+        total,
+        totalPages,
+        hasMore: safePage < totalPages,
+      },
+    };
   }
 
   /**
@@ -166,7 +218,7 @@ export class TransactionsService {
   async findOne(userId: string, id: string): Promise<Transaction> {
     const transaction = await this.transactionsRepository.findOne({
       where: { id },
-      relations: ['payee', 'category', 'splits', 'splits.category'],
+      relations: ['account', 'payee', 'category', 'splits', 'splits.category'],
     });
 
     if (!transaction) {
@@ -322,37 +374,64 @@ export class TransactionsService {
   }
 
   /**
-   * Get transaction summary statistics
+   * Get transaction summary statistics using efficient aggregation
    */
   async getSummary(
     userId: string,
+    accountId?: string,
     startDate?: string,
     endDate?: string,
+    categoryId?: string,
+    payeeId?: string,
   ): Promise<{
     totalIncome: number;
     totalExpenses: number;
     netCashFlow: number;
     transactionCount: number;
   }> {
-    const transactions = await this.findAll(userId, undefined, startDate, endDate);
+    const queryBuilder = this.transactionsRepository
+      .createQueryBuilder('transaction')
+      .select('SUM(CASE WHEN transaction.amount > 0 THEN transaction.amount ELSE 0 END)', 'totalIncome')
+      .addSelect('SUM(CASE WHEN transaction.amount < 0 THEN ABS(transaction.amount) ELSE 0 END)', 'totalExpenses')
+      .addSelect('COUNT(*)', 'transactionCount')
+      .where('transaction.userId = :userId', { userId });
 
-    let totalIncome = 0;
-    let totalExpenses = 0;
+    if (accountId) {
+      queryBuilder.andWhere('transaction.accountId = :accountId', { accountId });
+    }
 
-    transactions.forEach((transaction) => {
-      const amount = Number(transaction.amount);
-      if (amount > 0) {
-        totalIncome += amount;
-      } else {
-        totalExpenses += Math.abs(amount);
-      }
-    });
+    if (startDate) {
+      queryBuilder.andWhere('transaction.transactionDate >= :startDate', { startDate });
+    }
+
+    if (endDate) {
+      queryBuilder.andWhere('transaction.transactionDate <= :endDate', { endDate });
+    }
+
+    if (categoryId) {
+      // Need to join splits to match split transactions with this category
+      queryBuilder
+        .leftJoin('transaction.splits', 'splits')
+        .andWhere(
+          '(transaction.categoryId = :categoryId OR splits.categoryId = :categoryId)',
+          { categoryId },
+        );
+    }
+
+    if (payeeId) {
+      queryBuilder.andWhere('transaction.payeeId = :payeeId', { payeeId });
+    }
+
+    const result = await queryBuilder.getRawOne();
+
+    const totalIncome = Number(result.totalIncome) || 0;
+    const totalExpenses = Number(result.totalExpenses) || 0;
 
     return {
       totalIncome,
       totalExpenses,
       netCashFlow: totalIncome - totalExpenses,
-      transactionCount: transactions.length,
+      transactionCount: Number(result.transactionCount) || 0,
     };
   }
 

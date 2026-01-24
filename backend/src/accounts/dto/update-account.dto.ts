@@ -3,11 +3,13 @@ import {
   IsOptional,
   IsNumber,
   IsPositive,
+  IsEnum,
   MaxLength,
   Min,
   Max,
 } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { AccountType } from '../entities/account.entity';
 
 export class UpdateAccountDto {
   @ApiPropertyOptional({
@@ -18,6 +20,33 @@ export class UpdateAccountDto {
   @IsString()
   @MaxLength(255)
   name?: string;
+
+  @ApiPropertyOptional({
+    enum: AccountType,
+    example: AccountType.CHEQUING,
+    description: 'Type of account',
+  })
+  @IsOptional()
+  @IsEnum(AccountType)
+  accountType?: AccountType;
+
+  @ApiPropertyOptional({
+    example: 'CAD',
+    description: 'ISO 4217 currency code (USD, CAD, EUR, etc.)',
+    maxLength: 3,
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(3)
+  currencyCode?: string;
+
+  @ApiPropertyOptional({
+    example: 1000.0,
+    description: 'Opening balance for the account',
+  })
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 4 })
+  openingBalance?: number;
 
   @ApiPropertyOptional({
     example: 'Updated account description',

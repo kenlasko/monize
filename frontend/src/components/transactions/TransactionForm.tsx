@@ -18,6 +18,7 @@ import { Transaction, CreateSplitData } from '@/types/transaction';
 import { Payee } from '@/types/payee';
 import { Category } from '@/types/category';
 import { Account } from '@/types/account';
+import { buildCategoryTree } from '@/lib/categoryUtils';
 
 // Helper to convert empty strings to undefined for optional UUID fields
 const optionalUuid = z.preprocess(
@@ -106,6 +107,7 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
 
   const watchedAccountId = watch('accountId');
   const watchedAmount = watch('amount');
+  const watchedCurrencyCode = watch('currencyCode');
 
   // Handle toggling split mode
   const handleSplitModeToggle = (enabled: boolean) => {
@@ -176,6 +178,16 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
       if (payee?.defaultCategoryId && !selectedCategoryId) {
         setSelectedCategoryId(payee.defaultCategoryId);
         setValue('categoryId', payee.defaultCategoryId, { shouldDirty: true, shouldValidate: true });
+
+        // Adjust amount sign based on default category type
+        const category = categories.find(c => c.id === payee.defaultCategoryId);
+        if (category && watchedAmount !== undefined && watchedAmount !== 0) {
+          const absAmount = Math.abs(watchedAmount);
+          const newAmount = category.isIncome ? absAmount : -absAmount;
+          if (newAmount !== watchedAmount) {
+            setValue('amount', newAmount, { shouldDirty: true, shouldValidate: true });
+          }
+        }
       }
     } else {
       // Custom payee name (not in database)
@@ -211,6 +223,16 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
       // Existing category selected
       setSelectedCategoryId(categoryId);
       setValue('categoryId', categoryId, { shouldDirty: true, shouldValidate: true });
+
+      // Adjust amount sign based on category type (income = positive, expense = negative)
+      const category = categories.find(c => c.id === categoryId);
+      if (category && watchedAmount !== undefined && watchedAmount !== 0) {
+        const absAmount = Math.abs(watchedAmount);
+        const newAmount = category.isIncome ? absAmount : -absAmount;
+        if (newAmount !== watchedAmount) {
+          setValue('amount', newAmount, { shouldDirty: true, shouldValidate: true });
+        }
+      }
     } else {
       // Custom value being typed - don't create yet, just track the name
       // Category will be created when user clicks "Create" option
@@ -322,23 +344,48 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
         />
 
         {/* Amount - labeled as Total when in split mode */}
-        <Input
-          label={isSplitMode ? "Total Amount" : "Amount"}
-          type="number"
-          step="0.01"
-          placeholder="0.00"
-          error={errors.amount?.message}
-          {...register('amount', { valueAsNumber: true })}
-        />
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            {isSplitMode ? 'Total Amount' : 'Amount'}
+          </label>
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400">
+              {(() => {
+                const symbols: Record<string, string> = { USD: '$', CAD: '$', EUR: '€', GBP: '£', JPY: '¥', CNY: '¥', AUD: '$', NZD: '$' };
+                return symbols[(watchedCurrencyCode || 'CAD').toUpperCase()] || '$';
+              })()}
+            </span>
+            <input
+              type="number"
+              step="0.01"
+              placeholder="0.00"
+              className={`block w-full pl-7 pr-3 py-2 rounded-md border ${
+                errors.amount ? 'border-red-500 dark:border-red-400' : 'border-gray-300 dark:border-gray-600'
+              } shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-100 dark:focus:border-blue-400 dark:focus:ring-blue-400`}
+              {...register('amount', { valueAsNumber: true })}
+              onBlur={(e) => {
+                // Round to 2 decimal places on blur
+                const value = parseFloat(e.target.value);
+                if (!isNaN(value)) {
+                  const rounded = Math.round(value * 100) / 100;
+                  setValue('amount', rounded, { shouldValidate: true });
+                }
+              }}
+            />
+          </div>
+          {errors.amount && (
+            <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.amount.message}</p>
+          )}
+        </div>
 
         {/* Category - only show if not in split mode */}
         {!isSplitMode && (
           <Combobox
             label="Category"
             placeholder="Select or create category..."
-            options={categories.map(category => ({
+            options={buildCategoryTree(categories).map(({ category, level }) => ({
               value: category.id,
-              label: category.name,
+              label: `${'  '.repeat(level)}${level > 0 ? '└ ' : ''}${category.name}`,
             }))}
             value={selectedCategoryId}
             initialDisplayValue={transaction?.category?.name || ''}
@@ -355,7 +402,7 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
             <button
               type="button"
               onClick={() => handleSplitModeToggle(true)}
-              className="px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
             >
               Split Transaction
             </button>
@@ -384,13 +431,13 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
 
       {/* Split Editor - shown when in split mode */}
       {isSplitMode && (
-        <div className="border-t pt-4">
+        <div className="border-t dark:border-gray-700 pt-4">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-medium text-gray-900">Split Transaction</h3>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Split Transaction</h3>
             <button
               type="button"
               onClick={() => handleSplitModeToggle(false)}
-              className="text-sm text-red-600 hover:text-red-800"
+              className="text-sm text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
             >
               Cancel Split
             </button>
@@ -402,22 +449,23 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
             transactionAmount={watchedAmount || 0}
             disabled={isLoading}
             onTransactionAmountChange={(amount) => setValue('amount', amount, { shouldDirty: true, shouldValidate: true })}
+            currencyCode={watchedCurrencyCode || 'CAD'}
           />
         </div>
       )}
 
       {/* Description */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
           Description
         </label>
         <textarea
           rows={3}
-          className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+          className="block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-100 dark:focus:border-blue-400 dark:focus:ring-blue-400"
           {...register('description')}
         />
         {errors.description && (
-          <p className="mt-1 text-sm text-red-600">{errors.description.message}</p>
+          <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.description.message}</p>
         )}
       </div>
 
@@ -426,10 +474,10 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
         <input
           id="isCleared"
           type="checkbox"
-          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded dark:bg-gray-800"
           {...register('isCleared')}
         />
-        <label htmlFor="isCleared" className="ml-2 block text-sm text-gray-900">
+        <label htmlFor="isCleared" className="ml-2 block text-sm text-gray-900 dark:text-gray-100">
           Mark as cleared
         </label>
       </div>

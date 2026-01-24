@@ -68,10 +68,19 @@ const accountTypeOptions = [
   { value: 'OTHER', label: 'Other' },
 ];
 
+const currencySymbols: Record<string, string> = {
+  CAD: '$',
+  USD: '$',
+  EUR: '€',
+  GBP: '£',
+  JPY: '¥',
+};
+
 export function AccountForm({ account, onSubmit, onCancel }: AccountFormProps) {
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<AccountFormData>({
     resolver: zodResolver(accountSchema),
@@ -80,8 +89,12 @@ export function AccountForm({ account, onSubmit, onCancel }: AccountFormProps) {
           name: account.name,
           accountType: account.accountType,
           currencyCode: account.currencyCode,
-          openingBalance: account.openingBalance,
-          creditLimit: account.creditLimit || undefined,
+          openingBalance: account.openingBalance !== undefined
+            ? Math.round(Number(account.openingBalance) * 100) / 100
+            : undefined,
+          creditLimit: account.creditLimit
+            ? Math.round(Number(account.creditLimit) * 100) / 100
+            : undefined,
           interestRate: account.interestRate || undefined,
           description: account.description || undefined,
           accountNumber: account.accountNumber || undefined,
@@ -92,6 +105,9 @@ export function AccountForm({ account, onSubmit, onCancel }: AccountFormProps) {
           openingBalance: 0,
         },
   });
+
+  const watchedCurrency = watch('currencyCode');
+  const currencySymbol = currencySymbols[watchedCurrency] || '$';
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -120,6 +136,7 @@ export function AccountForm({ account, onSubmit, onCancel }: AccountFormProps) {
           label="Opening Balance"
           type="number"
           step="0.01"
+          prefix={currencySymbol}
           error={errors.openingBalance?.message}
           {...register('openingBalance', { valueAsNumber: true })}
         />
@@ -144,6 +161,7 @@ export function AccountForm({ account, onSubmit, onCancel }: AccountFormProps) {
           label="Credit Limit (optional)"
           type="number"
           step="0.01"
+          prefix={currencySymbol}
           error={errors.creditLimit?.message}
           {...register('creditLimit', { valueAsNumber: true })}
         />

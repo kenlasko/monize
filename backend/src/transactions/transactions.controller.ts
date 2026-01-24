@@ -58,6 +58,26 @@ export class TransactionsController {
     required: false,
     description: 'Filter by end date (YYYY-MM-DD)',
   })
+  @ApiQuery({
+    name: 'categoryId',
+    required: false,
+    description: 'Filter by category ID (also matches split transactions with this category)',
+  })
+  @ApiQuery({
+    name: 'payeeId',
+    required: false,
+    description: 'Filter by payee ID',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    description: 'Page number (1-indexed, default: 1)',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Number of transactions per page (default: 50, max: 200)',
+  })
   @ApiResponse({
     status: 200,
     description: 'List of transactions retrieved successfully',
@@ -68,17 +88,30 @@ export class TransactionsController {
     @Query('accountId') accountId?: string,
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
+    @Query('categoryId') categoryId?: string,
+    @Query('payeeId') payeeId?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
   ) {
     return this.transactionsService.findAll(
       req.user.id,
       accountId,
       startDate,
       endDate,
+      categoryId,
+      payeeId,
+      page ? parseInt(page, 10) : undefined,
+      limit ? parseInt(limit, 10) : undefined,
     );
   }
 
   @Get('summary')
   @ApiOperation({ summary: 'Get transaction summary statistics' })
+  @ApiQuery({
+    name: 'accountId',
+    required: false,
+    description: 'Filter by account ID',
+  })
   @ApiQuery({
     name: 'startDate',
     required: false,
@@ -89,6 +122,16 @@ export class TransactionsController {
     required: false,
     description: 'Filter by end date (YYYY-MM-DD)',
   })
+  @ApiQuery({
+    name: 'categoryId',
+    required: false,
+    description: 'Filter by category ID',
+  })
+  @ApiQuery({
+    name: 'payeeId',
+    required: false,
+    description: 'Filter by payee ID',
+  })
   @ApiResponse({
     status: 200,
     description: 'Transaction summary retrieved successfully',
@@ -96,10 +139,20 @@ export class TransactionsController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   getSummary(
     @Request() req,
+    @Query('accountId') accountId?: string,
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
+    @Query('categoryId') categoryId?: string,
+    @Query('payeeId') payeeId?: string,
   ) {
-    return this.transactionsService.getSummary(req.user.id, startDate, endDate);
+    return this.transactionsService.getSummary(
+      req.user.id,
+      accountId,
+      startDate,
+      endDate,
+      categoryId,
+      payeeId,
+    );
   }
 
   @Get(':id')

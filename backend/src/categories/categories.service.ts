@@ -7,6 +7,8 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Category } from './entities/category.entity';
+import { Transaction } from '../transactions/entities/transaction.entity';
+import { TransactionSplit } from '../transactions/entities/transaction-split.entity';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 
@@ -15,6 +17,10 @@ export class CategoriesService {
   constructor(
     @InjectRepository(Category)
     private categoriesRepository: Repository<Category>,
+    @InjectRepository(Transaction)
+    private transactionsRepository: Repository<Transaction>,
+    @InjectRepository(TransactionSplit)
+    private splitsRepository: Repository<TransactionSplit>,
   ) {}
 
   /**
@@ -172,6 +178,73 @@ export class CategoriesService {
     }
 
     await this.categoriesRepository.remove(category);
+  }
+
+  /**
+   * Get the count of transactions using a category
+   */
+  async getTransactionCount(userId: string, categoryId: string): Promise<number> {
+    await this.findOne(userId, categoryId);
+
+    const transactionCount = await this.transactionsRepository.count({
+      where: { userId, categoryId },
+    });
+
+    const splitCount = await this.splitsRepository.count({
+      where: { categoryId },
+    });
+
+    return transactionCount + splitCount;
+  }
+
+  /**
+   * Reassign transactions from one category to another
+   */
+  async reassignTransactions(
+    userId: string,
+    fromCategoryId: string,
+    toCategoryId: string | null,
+  ): Promise<{ transactionsUpdated: number; splitsUpdated: number }> {
+    // Verify the source category exists and belongs to user
+    await this.findOne(userId, fromCategoryId);
+
+    // If target category is specified, verify it exists and belongs to user
+    if (toCategoryId) {
+      await this.findOne(userId, toCategoryId);
+    }
+
+    // Update transactions
+    const transactionResult = await this.transactionsRepository.update(
+      { userId, categoryId: fromCategoryId },
+      { categoryId: toCategoryId },
+    );
+
+    // Update splits - need to verify splits belong to user's transactions
+    const userTransactionIds = await this.transactionsRepository
+      .createQueryBuilder('t')
+      .select('t.id')
+      .where('t.userId = :userId', { userId })
+      .getMany();
+
+    const transactionIds = userTransactionIds.map((t) => t.id);
+
+    let splitsUpdated = 0;
+    if (transactionIds.length > 0) {
+      const splitResult = await this.splitsRepository
+        .createQueryBuilder()
+        .update(TransactionSplit)
+        .set({ categoryId: toCategoryId })
+        .where('categoryId = :fromCategoryId', { fromCategoryId })
+        .andWhere('transactionId IN (:...transactionIds)', { transactionIds })
+        .execute();
+
+      splitsUpdated = splitResult.affected || 0;
+    }
+
+    return {
+      transactionsUpdated: transactionResult.affected || 0,
+      splitsUpdated,
+    };
   }
 
   /**

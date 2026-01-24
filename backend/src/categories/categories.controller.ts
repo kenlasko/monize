@@ -158,4 +158,38 @@ export class CategoriesController {
   remove(@Request() req, @Param('id') id: string) {
     return this.categoriesService.remove(req.user.id, id);
   }
+
+  @Get(':id/transaction-count')
+  @ApiOperation({ summary: 'Get the count of transactions using a category' })
+  @ApiParam({ name: 'id', description: 'Category UUID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Transaction count retrieved successfully',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Category not found' })
+  getTransactionCount(@Request() req, @Param('id') id: string) {
+    return this.categoriesService.getTransactionCount(req.user.id, id);
+  }
+
+  @Post(':id/reassign')
+  @ApiOperation({ summary: 'Reassign transactions from this category to another' })
+  @ApiParam({ name: 'id', description: 'Source category UUID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Transactions reassigned successfully',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Category not found' })
+  reassignTransactions(
+    @Request() req,
+    @Param('id') id: string,
+    @Body() body: { toCategoryId: string | null },
+  ) {
+    return this.categoriesService.reassignTransactions(
+      req.user.id,
+      id,
+      body.toCategoryId,
+    );
+  }
 }

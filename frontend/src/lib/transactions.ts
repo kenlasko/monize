@@ -6,6 +6,7 @@ import {
   UpdateTransactionData,
   CreateSplitData,
   TransactionSummary,
+  PaginatedTransactions,
 } from '@/types/transaction';
 
 export const transactionsApi = {
@@ -15,13 +16,17 @@ export const transactionsApi = {
     return response.data;
   },
 
-  // Get all transactions with optional filters
+  // Get paginated transactions with optional filters
   getAll: async (params?: {
     accountId?: string;
     startDate?: string;
     endDate?: string;
-  }): Promise<Transaction[]> => {
-    const response = await apiClient.get<Transaction[]>('/transactions', { params });
+    categoryId?: string;
+    payeeId?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<PaginatedTransactions> => {
+    const response = await apiClient.get<PaginatedTransactions>('/transactions', { params });
     return response.data;
   },
 
@@ -64,8 +69,11 @@ export const transactionsApi = {
 
   // Get transaction summary
   getSummary: async (params?: {
+    accountId?: string;
     startDate?: string;
     endDate?: string;
+    categoryId?: string;
+    payeeId?: string;
   }): Promise<TransactionSummary> => {
     const response = await apiClient.get<TransactionSummary>('/transactions/summary', {
       params,
