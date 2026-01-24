@@ -57,6 +57,7 @@ export class TransactionsService {
   ): Promise<Transaction[]> {
     const queryBuilder = this.transactionsRepository
       .createQueryBuilder('transaction')
+      .leftJoinAndSelect('transaction.payee', 'payee')
       .where('transaction.userId = :userId', { userId })
       .orderBy('transaction.transactionDate', 'DESC')
       .addOrderBy('transaction.createdAt', 'DESC');
@@ -82,6 +83,7 @@ export class TransactionsService {
   async findOne(userId: string, id: string): Promise<Transaction> {
     const transaction = await this.transactionsRepository.findOne({
       where: { id },
+      relations: ['payee'],
     });
 
     if (!transaction) {

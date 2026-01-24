@@ -13,6 +13,7 @@ import { TransactionsModule } from './transactions/transactions.module';
 import { CategoriesModule } from './categories/categories.module';
 import { CurrenciesModule } from './currencies/currencies.module';
 import { SecuritiesModule } from './securities/securities.module';
+import { PayeesModule } from './payees/payees.module';
 import { ScheduledTransactionsModule } from './scheduled-transactions/scheduled-transactions.module';
 import { BudgetsModule } from './budgets/budgets.module';
 import { ReportsModule } from './reports/reports.module';
@@ -73,6 +74,7 @@ import { DatabaseModule } from './database/database.module';
     AccountsModule,
     TransactionsModule,
     CategoriesModule,
+    PayeesModule,
     CurrenciesModule,
     SecuritiesModule,
     ScheduledTransactionsModule,

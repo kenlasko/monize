@@ -8,6 +8,7 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { Account } from '../../accounts/entities/account.entity';
+import { Payee } from '../../payees/entities/payee.entity';
 
 @Entity('transactions')
 export class Transaction {
@@ -29,6 +30,10 @@ export class Transaction {
 
   @Column({ type: 'uuid', name: 'payee_id', nullable: true })
   payeeId: string | null;
+
+  @ManyToOne(() => Payee, { nullable: true })
+  @JoinColumn({ name: 'payee_id' })
+  payee: Payee | null;
 
   @Column({ type: 'varchar', name: 'payee_name', length: 255, nullable: true })
   payeeName: string | null;
