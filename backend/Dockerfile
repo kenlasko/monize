@@ -5,7 +5,7 @@ WORKDIR /app
 
 # Install dependencies
 COPY package*.json ./
-RUN npm ci
+RUN npm install
 
 # Copy source code
 COPY . .
@@ -13,7 +13,7 @@ COPY . .
 # Build application
 RUN npm run build
 
-EXPOSE 3001
+EXPOSE 3000
 
 CMD ["npm", "run", "start:dev"]
 
@@ -24,7 +24,7 @@ WORKDIR /app
 
 # Install only production dependencies
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm install --only=production
 
 # Copy built application from development stage
 COPY --from=development /app/dist ./dist
@@ -35,6 +35,6 @@ RUN addgroup -g 1001 -S nodejs && \
 
 USER nestjs
 
-EXPOSE 3001
+EXPOSE 3000
 
 CMD ["node", "dist/main"]

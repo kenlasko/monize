@@ -7,8 +7,12 @@ import {
   IsBoolean,
   MaxLength,
   Min,
+  IsArray,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { CreateTransactionSplitDto } from './create-transaction-split.dto';
 
 export class CreateTransactionDto {
   @ApiProperty({ description: 'Account ID where the transaction occurs' })
@@ -29,6 +33,11 @@ export class CreateTransactionDto {
   @IsString()
   @MaxLength(255)
   payeeName?: string;
+
+  @ApiPropertyOptional({ description: 'Category ID for simple transactions (not used for split transactions)' })
+  @IsOptional()
+  @IsUUID()
+  categoryId?: string;
 
   @ApiProperty({ description: 'Transaction amount (positive for income, negative for expense)' })
   @IsNumber({ maxDecimalPlaces: 4 })
@@ -80,4 +89,14 @@ export class CreateTransactionDto {
   @IsOptional()
   @IsUUID()
   parentTransactionId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Splits for split transactions. When provided, isSplit is automatically set to true.',
+    type: [CreateTransactionSplitDto],
+  })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateTransactionSplitDto)
+  splits?: CreateTransactionSplitDto[];
 }

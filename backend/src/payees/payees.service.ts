@@ -187,6 +187,17 @@ export class PayeesService {
       payeesWithoutCategory: totalPayees - payeesWithCategory,
     };
   }
+
+  async findByCategory(userId: string, categoryId: string): Promise<Payee[]> {
+    return this.payeesRepository.find({
+      where: {
+        userId,
+        defaultCategoryId: categoryId,
+      },
+      relations: ['defaultCategory'],
+      order: { name: 'ASC' },
+    });
+  }
 }
 
 // Import these at the top with other imports

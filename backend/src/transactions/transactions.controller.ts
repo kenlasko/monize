@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Put,
   Body,
   Patch,
   Param,
@@ -22,6 +23,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { TransactionsService } from './transactions.service';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
+import { CreateTransactionSplitDto } from './dto/create-transaction-split.dto';
 
 @ApiTags('Transactions')
 @Controller('transactions')
@@ -190,5 +192,62 @@ export class TransactionsController {
   @ApiResponse({ status: 404, description: 'Transaction not found' })
   unreconcile(@Request() req, @Param('id') id: string) {
     return this.transactionsService.unreconcile(req.user.id, id);
+  }
+
+  // ==================== Split Transaction Endpoints ====================
+
+  @Get(':id/splits')
+  @ApiOperation({ summary: 'Get all splits for a transaction' })
+  @ApiParam({ name: 'id', description: 'Transaction UUID' })
+  @ApiResponse({ status: 200, description: 'Splits retrieved successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Transaction not found' })
+  getSplits(@Request() req, @Param('id') id: string) {
+    return this.transactionsService.getSplits(req.user.id, id);
+  }
+
+  @Put(':id/splits')
+  @ApiOperation({ summary: 'Replace all splits for a transaction (atomic update)' })
+  @ApiParam({ name: 'id', description: 'Transaction UUID' })
+  @ApiResponse({ status: 200, description: 'Splits updated successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid splits data' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Transaction not found' })
+  updateSplits(
+    @Request() req,
+    @Param('id') id: string,
+    @Body() splits: CreateTransactionSplitDto[],
+  ) {
+    return this.transactionsService.updateSplits(req.user.id, id, splits);
+  }
+
+  @Post(':id/splits')
+  @ApiOperation({ summary: 'Add a single split to a transaction' })
+  @ApiParam({ name: 'id', description: 'Transaction UUID' })
+  @ApiResponse({ status: 201, description: 'Split added successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid split data' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Transaction not found' })
+  addSplit(
+    @Request() req,
+    @Param('id') id: string,
+    @Body() splitDto: CreateTransactionSplitDto,
+  ) {
+    return this.transactionsService.addSplit(req.user.id, id, splitDto);
+  }
+
+  @Delete(':id/splits/:splitId')
+  @ApiOperation({ summary: 'Remove a split from a transaction' })
+  @ApiParam({ name: 'id', description: 'Transaction UUID' })
+  @ApiParam({ name: 'splitId', description: 'Split UUID' })
+  @ApiResponse({ status: 200, description: 'Split removed successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Transaction or split not found' })
+  removeSplit(
+    @Request() req,
+    @Param('id') id: string,
+    @Param('splitId') splitId: string,
+  ) {
+    return this.transactionsService.removeSplit(req.user.id, id, splitId);
   }
 }

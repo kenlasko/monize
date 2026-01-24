@@ -1,0 +1,114 @@
+import apiClient from './api';
+import {
+  Transaction,
+  TransactionSplit,
+  CreateTransactionData,
+  UpdateTransactionData,
+  CreateSplitData,
+  TransactionSummary,
+} from '@/types/transaction';
+
+export const transactionsApi = {
+  // Create a new transaction
+  create: async (data: CreateTransactionData): Promise<Transaction> => {
+    const response = await apiClient.post<Transaction>('/transactions', data);
+    return response.data;
+  },
+
+  // Get all transactions with optional filters
+  getAll: async (params?: {
+    accountId?: string;
+    startDate?: string;
+    endDate?: string;
+  }): Promise<Transaction[]> => {
+    const response = await apiClient.get<Transaction[]>('/transactions', { params });
+    return response.data;
+  },
+
+  // Get single transaction by ID
+  getById: async (id: string): Promise<Transaction> => {
+    const response = await apiClient.get<Transaction>(`/transactions/${id}`);
+    return response.data;
+  },
+
+  // Update transaction
+  update: async (id: string, data: UpdateTransactionData): Promise<Transaction> => {
+    const response = await apiClient.patch<Transaction>(`/transactions/${id}`, data);
+    return response.data;
+  },
+
+  // Delete transaction
+  delete: async (id: string): Promise<void> => {
+    await apiClient.delete(`/transactions/${id}`);
+  },
+
+  // Mark transaction as cleared/uncleared
+  markCleared: async (id: string, isCleared: boolean): Promise<Transaction> => {
+    const response = await apiClient.post<Transaction>(`/transactions/${id}/clear`, {
+      isCleared,
+    });
+    return response.data;
+  },
+
+  // Reconcile transaction
+  reconcile: async (id: string): Promise<Transaction> => {
+    const response = await apiClient.post<Transaction>(`/transactions/${id}/reconcile`);
+    return response.data;
+  },
+
+  // Unreconcile transaction
+  unreconcile: async (id: string): Promise<Transaction> => {
+    const response = await apiClient.post<Transaction>(`/transactions/${id}/unreconcile`);
+    return response.data;
+  },
+
+  // Get transaction summary
+  getSummary: async (params?: {
+    startDate?: string;
+    endDate?: string;
+  }): Promise<TransactionSummary> => {
+    const response = await apiClient.get<TransactionSummary>('/transactions/summary', {
+      params,
+    });
+    return response.data;
+  },
+
+  // ==================== Split Transaction Methods ====================
+
+  // Get splits for a transaction
+  getSplits: async (transactionId: string): Promise<TransactionSplit[]> => {
+    const response = await apiClient.get<TransactionSplit[]>(
+      `/transactions/${transactionId}/splits`,
+    );
+    return response.data;
+  },
+
+  // Replace all splits for a transaction (atomic update)
+  updateSplits: async (
+    transactionId: string,
+    splits: CreateSplitData[],
+  ): Promise<TransactionSplit[]> => {
+    const response = await apiClient.put<TransactionSplit[]>(
+      `/transactions/${transactionId}/splits`,
+      splits,
+    );
+    return response.data;
+  },
+
+  // Add a single split to a transaction
+  addSplit: async (
+    transactionId: string,
+    split: CreateSplitData,
+  ): Promise<TransactionSplit> => {
+    const response = await apiClient.post<TransactionSplit>(
+      `/transactions/${transactionId}/splits`,
+      split,
+    );
+    return response.data;
+  },
+
+  // Remove a split from a transaction
+  deleteSplit: async (transactionId: string, splitId: string): Promise<void> => {
+    await apiClient.delete(`/transactions/${transactionId}/splits/${splitId}`);
+  },
+};

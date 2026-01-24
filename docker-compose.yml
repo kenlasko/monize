@@ -4,22 +4,22 @@ services:
   # PostgreSQL Database
   postgres:
     image: postgres:16-alpine
-    container_name: finance-postgres
+    container_name: moneymate-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-finance_db}
-      POSTGRES_USER: ${POSTGRES_USER:-finance_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      POSTGRES_DB: ${POSTGRES_DB:-moneymate}
+      POSTGRES_USER: ${POSTGRES_USER:-moneymate_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-moneymate_password}
       POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.UTF-8"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./database/migrations:/docker-entrypoint-initdb.d:ro
     ports:
       - "5432:5432"
     networks:
       - finance-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-finance_user} -d ${POSTGRES_DB:-finance_db}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-moneymate_user} -d ${POSTGRES_DB:-moneymate}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -47,37 +47,33 @@ services:
       context: ./backend
       dockerfile: Dockerfile
       target: development
-    container_name: finance-backend
+    container_name: moneymate-backend
     restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
-      redis:
-        condition: service_healthy
     environment:
       NODE_ENV: ${NODE_ENV:-development}
-      PORT: 3001
+      PORT: ${BACKEND_PORT:-3000}
       DATABASE_HOST: postgres
       DATABASE_PORT: 5432
-      DATABASE_NAME: ${POSTGRES_DB:-finance_db}
-      DATABASE_USER: ${POSTGRES_USER:-finance_user}
-      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      DATABASE_NAME: ${POSTGRES_DB:-moneymate}
+      DATABASE_USER: ${POSTGRES_USER:-moneymate_user}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-moneymate_password}
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      JWT_SECRET: ${JWT_SECRET:-change-this-in-production}
-      JWT_EXPIRATION: ${JWT_EXPIRATION:-7d}
-      OIDC_ISSUER_URL: ${OIDC_ISSUER_URL}
-      OIDC_CLIENT_ID: ${OIDC_CLIENT_ID}
-      OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET}
-      OIDC_CALLBACK_URL: ${OIDC_CALLBACK_URL:-http://localhost:3000/auth/callback}
-      EXCHANGE_RATE_API_KEY: ${EXCHANGE_RATE_API_KEY}
-      STOCK_API_KEY: ${STOCK_API_KEY}
-      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-this-in-production}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL:-http://localhost:3000/auth/google/callback}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3001}
     volumes:
       - ./backend:/app
       - /app/node_modules
+      - /app/dist
     ports:
-      - "3001:3001"
+      - "${BACKEND_PORT:-3000}:3000"
     networks:
       - finance-network
     command: npm run start:dev
@@ -88,54 +84,23 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       target: development
-    container_name: finance-frontend
+    container_name: moneymate-frontend
     restart: unless-stopped
     depends_on:
       - backend
     environment:
       NODE_ENV: ${NODE_ENV:-development}
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001}
-      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3000}
     volumes:
       - ./frontend:/app
       - /app/node_modules
       - /app/.next
     ports:
-      - "3000:3000"
+      - "${FRONTEND_PORT:-3001}:3000"
     networks:
       - finance-network
     command: npm run dev
 
-  # Scheduled Jobs Service (for currency rates, stock prices, notifications)
-  scheduler:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-      target: development
-    container_name: finance-scheduler
-    restart: unless-stopped
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    environment:
-      NODE_ENV: ${NODE_ENV:-development}
-      DATABASE_HOST: postgres
-      DATABASE_PORT: 5432
-      DATABASE_NAME: ${POSTGRES_DB:-finance_db}
-      DATABASE_USER: ${POSTGRES_USER:-finance_user}
-      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      EXCHANGE_RATE_API_KEY: ${EXCHANGE_RATE_API_KEY}
-      STOCK_API_KEY: ${STOCK_API_KEY}
-    volumes:
-      - ./backend:/app
-      - /app/node_modules
-    networks:
-      - finance-network
-    command: npm run start:scheduler
 
 networks:
   finance-network:

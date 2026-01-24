@@ -5,10 +5,13 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
+  OneToMany,
   JoinColumn,
 } from 'typeorm';
 import { Account } from '../../accounts/entities/account.entity';
 import { Payee } from '../../payees/entities/payee.entity';
+import { Category } from '../../categories/entities/category.entity';
+import { TransactionSplit } from './transaction-split.entity';
 
 @Entity('transactions')
 export class Transaction {
@@ -37,6 +40,13 @@ export class Transaction {
 
   @Column({ type: 'varchar', name: 'payee_name', length: 255, nullable: true })
   payeeName: string | null;
+
+  @Column({ type: 'uuid', name: 'category_id', nullable: true })
+  categoryId: string | null;
+
+  @ManyToOne(() => Category, { nullable: true })
+  @JoinColumn({ name: 'category_id' })
+  category: Category | null;
 
   @Column({ type: 'decimal', precision: 20, scale: 4 })
   amount: number;
@@ -73,6 +83,9 @@ export class Transaction {
 
   @Column({ type: 'uuid', name: 'parent_transaction_id', nullable: true })
   parentTransactionId: string | null;
+
+  @OneToMany(() => TransactionSplit, (split) => split.transaction)
+  splits: TransactionSplit[];
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

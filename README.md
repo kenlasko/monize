@@ -1,6 +1,6 @@
-# Personal Finance Management System
+# MoneyMate 💰
 
-A comprehensive web-based personal finance management application designed to replace Microsoft Money with modern technologies and enhanced features.
+A comprehensive personal finance management application built with NestJS and Next.js.
 
 ## Features
 
