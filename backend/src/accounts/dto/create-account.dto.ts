@@ -4,6 +4,7 @@ import {
   IsOptional,
   IsNumber,
   IsPositive,
+  IsBoolean,
   MaxLength,
   Min,
   Max,
@@ -90,4 +91,13 @@ export class CreateAccountDto {
   @Min(0)
   @Max(100)
   interestRate?: number;
+
+  @ApiPropertyOptional({
+    example: true,
+    description: 'Whether this account is a favourite (shown in dashboard)',
+    default: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  isFavourite?: boolean;
 }

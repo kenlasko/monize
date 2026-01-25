@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Combobox } from '@/components/ui/Combobox';
@@ -48,6 +48,17 @@ export function SplitEditor({
 }: SplitEditorProps) {
   const currencySymbol = getCurrencySymbol(currencyCode);
   const [localSplits, setLocalSplits] = useState<SplitRow[]>(splits);
+
+  // Memoize category options to avoid rebuilding on every render
+  const categoryOptions = useMemo(() => buildCategoryTree(categories).map(({ category }) => {
+    const parentCategory = category.parentId
+      ? categories.find(c => c.id === category.parentId)
+      : null;
+    return {
+      value: category.id,
+      label: parentCategory ? `${parentCategory.name}: ${category.name}` : category.name,
+    };
+  }), [categories]);
 
   // Sync with parent when splits prop changes
   useEffect(() => {
@@ -186,16 +197,7 @@ export function SplitEditor({
                 <td className="px-4 py-2">
                   <Combobox
                     placeholder="Select category..."
-                    options={buildCategoryTree(categories).map(({ category }) => {
-                      // Find parent category name for hierarchical display
-                      const parentCategory = category.parentId
-                        ? categories.find(c => c.id === category.parentId)
-                        : null;
-                      return {
-                        value: category.id,
-                        label: parentCategory ? `${parentCategory.name}: ${category.name}` : category.name,
-                      };
-                    })}
+                    options={categoryOptions}
                     value={split.categoryId || ''}
                     initialDisplayValue={currentCategory?.name || ''}
                     onChange={(categoryId) =>

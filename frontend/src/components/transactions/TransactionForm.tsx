@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -123,6 +123,20 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
   const watchedAccountId = watch('accountId');
   const watchedAmount = watch('amount');
   const watchedCurrencyCode = watch('currencyCode');
+
+  // Memoize category tree to avoid rebuilding on every render
+  const categoryTree = useMemo(() => buildCategoryTree(categories), [categories]);
+
+  // Memoize category options for combobox
+  const categoryOptions = useMemo(() => categoryTree.map(({ category }) => {
+    const parentCategory = category.parentId
+      ? categories.find(c => c.id === category.parentId)
+      : null;
+    return {
+      value: category.id,
+      label: parentCategory ? `${parentCategory.name}: ${category.name}` : category.name,
+    };
+  }), [categoryTree, categories]);
 
   // Handle mode changes
   const handleModeChange = (newMode: TransactionMode) => {
@@ -563,16 +577,7 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
               <Combobox
                 label="Category"
                 placeholder="Select or create category..."
-                options={buildCategoryTree(categories).map(({ category }) => {
-                  // Find parent category name for hierarchical display
-                  const parentCategory = category.parentId
-                    ? categories.find(c => c.id === category.parentId)
-                    : null;
-                  return {
-                    value: category.id,
-                    label: parentCategory ? `${parentCategory.name}: ${category.name}` : category.name,
-                  };
-                })}
+                options={categoryOptions}
                 value={selectedCategoryId}
                 initialDisplayValue={transaction?.category?.name || ''}
                 onChange={handleCategoryChange}
@@ -605,7 +610,7 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
         <Input
           label="Reference Number"
           type="text"
-          placeholder="Check #, confirmation #..."
+          placeholder="Cheque #, confirmation #..."
           error={errors.referenceNumber?.message}
           {...register('referenceNumber')}
         />

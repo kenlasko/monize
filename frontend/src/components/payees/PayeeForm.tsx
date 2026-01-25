@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -8,6 +9,7 @@ import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
 import { Payee } from '@/types/payee';
 import { Category } from '@/types/category';
+import { buildCategoryTree } from '@/lib/categoryUtils';
 
 const payeeSchema = z.object({
   name: z.string().min(1, 'Payee name is required').max(255),
@@ -42,10 +44,18 @@ export function PayeeForm({ payee, categories, onSubmit, onCancel }: PayeeFormPr
         },
   });
 
-  const categoryOptions = [
+  const categoryOptions = useMemo(() => [
     { value: '', label: 'No default category' },
-    ...categories.map((cat) => ({ value: cat.id, label: cat.name })),
-  ];
+    ...buildCategoryTree(categories).map(({ category }) => {
+      const parentCategory = category.parentId
+        ? categories.find(c => c.id === category.parentId)
+        : null;
+      return {
+        value: category.id,
+        label: parentCategory ? `${parentCategory.name}: ${category.name}` : category.name,
+      };
+    }),
+  ], [categories]);
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">

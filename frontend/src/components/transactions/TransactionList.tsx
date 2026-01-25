@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
 import { Transaction } from '@/types/transaction';
@@ -38,37 +38,37 @@ export function TransactionList({
   // Use prop density if provided, otherwise use local state
   const density = propDensity ?? localDensity;
 
-  // Get padding classes based on density
-  const getCellPadding = () => {
+  // Memoize padding classes based on density
+  const cellPadding = useMemo(() => {
     switch (density) {
       case 'dense': return 'px-3 py-1';
       case 'compact': return 'px-4 py-2';
       default: return 'px-6 py-4';
     }
-  };
+  }, [density]);
 
-  const getHeaderPadding = () => {
+  const headerPadding = useMemo(() => {
     switch (density) {
       case 'dense': return 'px-3 py-2';
       case 'compact': return 'px-4 py-2';
       default: return 'px-6 py-3';
     }
-  };
+  }, [density]);
 
-  const cycleDensity = () => {
+  const cycleDensity = useCallback(() => {
     const nextDensity = density === 'normal' ? 'compact' : density === 'compact' ? 'dense' : 'normal';
     if (onDensityChange) {
       onDensityChange(nextDensity);
     } else {
       setLocalDensity(nextDensity);
     }
-  };
+  }, [density, onDensityChange]);
 
-  const handleDeleteClick = (transaction: Transaction) => {
+  const handleDeleteClick = useCallback((transaction: Transaction) => {
     setDeleteConfirm({ isOpen: true, transaction });
-  };
+  }, []);
 
-  const handleDeleteConfirm = async () => {
+  const handleDeleteConfirm = useCallback(async () => {
     const transaction = deleteConfirm.transaction;
     if (!transaction) return;
 
@@ -91,13 +91,13 @@ export function TransactionList({
     } finally {
       setDeletingId(null);
     }
-  };
+  }, [deleteConfirm.transaction, onDelete, onRefresh]);
 
-  const handleDeleteCancel = () => {
+  const handleDeleteCancel = useCallback(() => {
     setDeleteConfirm({ isOpen: false, transaction: null });
-  };
+  }, []);
 
-  const handleToggleCleared = async (transaction: Transaction) => {
+  const handleToggleCleared = useCallback(async (transaction: Transaction) => {
     try {
       await transactionsApi.markCleared(transaction.id, !transaction.isCleared);
       toast.success(transaction.isCleared ? 'Marked as uncleared' : 'Marked as cleared');
@@ -106,22 +106,25 @@ export function TransactionList({
       const message = error.response?.data?.message || 'Failed to update transaction';
       toast.error(message);
     }
-  };
+  }, [onRefresh]);
 
-  const formatAmount = (amount: number) => {
+  // Memoize the number formatter
+  const currencyFormatter = useMemo(() => new Intl.NumberFormat('en-CA', {
+    style: 'currency',
+    currency: 'CAD',
+  }), []);
+
+  const formatAmount = useCallback((amount: number) => {
     const isNegative = amount < 0;
     const absAmount = Math.abs(amount);
-    const formatted = new Intl.NumberFormat('en-CA', {
-      style: 'currency',
-      currency: 'CAD',
-    }).format(absAmount);
+    const formatted = currencyFormatter.format(absAmount);
 
     return (
       <span className={isNegative ? 'text-red-600' : 'text-green-600'}>
         {isNegative ? '-' : '+'}{formatted}
       </span>
     );
-  };
+  }, [currencyFormatter]);
 
   if (transactions.length === 0) {
     return (
@@ -146,9 +149,6 @@ export function TransactionList({
       </div>
     );
   }
-
-  const cellPadding = getCellPadding();
-  const headerPadding = getHeaderPadding();
 
   return (
     <div>
@@ -260,9 +260,11 @@ export function TransactionList({
                       className={`inline-flex text-xs leading-5 font-semibold rounded-full ${density === 'dense' ? 'px-1.5 py-0.5' : 'px-2 py-1'}`}
                       style={{
                         backgroundColor: transaction.category.color
-                          ? `${transaction.category.color}20`
-                          : '#e5e7eb',
-                        color: transaction.category.color || '#6b7280',
+                          ? `color-mix(in srgb, ${transaction.category.color} 15%, var(--category-bg-base, #e5e7eb))`
+                          : 'var(--category-bg-base, #e5e7eb)',
+                        color: transaction.category.color
+                          ? `color-mix(in srgb, ${transaction.category.color} 85%, var(--category-text-mix, #000))`
+                          : 'var(--category-text-base, #6b7280)',
                       }}
                     >
                       {transaction.category.name}

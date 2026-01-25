@@ -6,4 +6,17 @@
   body {
     @apply bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100;
   }
+
+  /* Category badge colour variables for light/dark mode */
+  :root {
+    --category-bg-base: #e5e7eb;
+    --category-text-base: #6b7280;
+    --category-text-mix: #000;
+  }
+
+  .dark {
+    --category-bg-base: #374151;
+    --category-text-base: #9ca3af;
+    --category-text-mix: #fff;
+  }
 }

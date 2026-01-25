@@ -371,11 +371,11 @@ export function ScheduledTransactionForm({
 
         {/* Amount */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             {isSplit ? 'Total Amount' : 'Amount'}
           </label>
           <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400">
               {currencySymbol}
             </span>
             <input
@@ -383,8 +383,8 @@ export function ScheduledTransactionForm({
               step="0.01"
               placeholder="0.00"
               className={`block w-full pl-7 pr-3 py-2 rounded-md border ${
-                errors.amount ? 'border-red-500' : 'border-gray-300'
-              } shadow-sm focus:border-blue-500 focus:ring-blue-500`}
+                errors.amount ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+              } bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm focus:border-blue-500 focus:ring-blue-500`}
               {...register('amount', { valueAsNumber: true })}
               onBlur={(e) => {
                 // Round to 2 decimal places on blur
@@ -397,7 +397,7 @@ export function ScheduledTransactionForm({
             />
           </div>
           {errors.amount && (
-            <p className="mt-1 text-sm text-red-600">{errors.amount.message}</p>
+            <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.amount.message}</p>
           )}
         </div>
 
@@ -422,13 +422,13 @@ export function ScheduledTransactionForm({
         {/* Category / Split Toggle */}
         <div>
           <div className="flex items-center justify-between mb-1">
-            <label className="block text-sm font-medium text-gray-700">Category</label>
-            <label className="flex items-center text-sm text-gray-600 cursor-pointer">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Category</label>
+            <label className="flex items-center text-sm text-gray-600 dark:text-gray-400 cursor-pointer">
               <input
                 type="checkbox"
                 checked={isSplit}
                 onChange={(e) => handleSplitToggle(e.target.checked)}
-                className="h-3.5 w-3.5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mr-1.5"
+                className="h-3.5 w-3.5 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded mr-1.5"
               />
               Split
             </label>
@@ -436,10 +436,15 @@ export function ScheduledTransactionForm({
           {!isSplit ? (
             <Combobox
               placeholder="Select or create category..."
-              options={buildCategoryTree(categories).map(({ category, level }) => ({
-                value: category.id,
-                label: `${'  '.repeat(level)}${level > 0 ? '└ ' : ''}${category.name}`,
-              }))}
+              options={buildCategoryTree(categories).map(({ category }) => {
+                const parentCategory = category.parentId
+                  ? categories.find(c => c.id === category.parentId)
+                  : null;
+                return {
+                  value: category.id,
+                  label: parentCategory ? `${parentCategory.name}: ${category.name}` : category.name,
+                };
+              })}
               value={selectedCategoryId}
               initialDisplayValue={scheduledTransaction?.category?.name || ''}
               onChange={handleCategoryChange}
@@ -448,7 +453,7 @@ export function ScheduledTransactionForm({
               error={errors.categoryId?.message}
             />
           ) : (
-            <div className="text-sm text-purple-600 bg-purple-50 border border-purple-200 rounded-md px-3 py-2">
+            <div className="text-sm text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-700 rounded-md px-3 py-2">
               {splits.length} categories · Configure below
             </div>
           )}
@@ -505,8 +510,8 @@ export function ScheduledTransactionForm({
 
       {/* End conditions */}
       {watchedFrequency !== 'ONCE' && (
-        <div className="border-t pt-4 space-y-4">
-          <h3 className="text-sm font-medium text-gray-700">End Condition (optional)</h3>
+        <div className="border-t border-gray-200 dark:border-gray-700 pt-4 space-y-4">
+          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">End Condition (optional)</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* End Date Option */}
             <div>
@@ -519,9 +524,9 @@ export function ScheduledTransactionForm({
                     setUseEndDate(e.target.checked);
                     if (e.target.checked) setUseOccurrences(false);
                   }}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded"
                 />
-                <label htmlFor="useEndDate" className="ml-2 block text-sm text-gray-900">
+                <label htmlFor="useEndDate" className="ml-2 block text-sm text-gray-900 dark:text-gray-100">
                   End by date
                 </label>
               </div>
@@ -545,9 +550,9 @@ export function ScheduledTransactionForm({
                     setUseOccurrences(e.target.checked);
                     if (e.target.checked) setUseEndDate(false);
                   }}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded"
                 />
-                <label htmlFor="useOccurrences" className="ml-2 block text-sm text-gray-900">
+                <label htmlFor="useOccurrences" className="ml-2 block text-sm text-gray-900 dark:text-gray-100">
                   Number of occurrences
                 </label>
               </div>
@@ -567,14 +572,14 @@ export function ScheduledTransactionForm({
 
       {/* Description */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
         <textarea
           rows={2}
-          className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+          className="block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm focus:border-blue-500 focus:ring-blue-500"
           {...register('description')}
         />
         {errors.description && (
-          <p className="mt-1 text-sm text-red-600">{errors.description.message}</p>
+          <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.description.message}</p>
         )}
       </div>
 
@@ -584,10 +589,10 @@ export function ScheduledTransactionForm({
           <input
             id="isActive"
             type="checkbox"
-            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded"
             {...register('isActive')}
           />
-          <label htmlFor="isActive" className="ml-2 block text-sm text-gray-900">
+          <label htmlFor="isActive" className="ml-2 block text-sm text-gray-900 dark:text-gray-100">
             Active
           </label>
         </div>
@@ -595,10 +600,10 @@ export function ScheduledTransactionForm({
           <input
             id="autoPost"
             type="checkbox"
-            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded"
             {...register('autoPost')}
           />
-          <label htmlFor="autoPost" className="ml-2 block text-sm text-gray-900">
+          <label htmlFor="autoPost" className="ml-2 block text-sm text-gray-900 dark:text-gray-100">
             Auto-post on due date
           </label>
         </div>

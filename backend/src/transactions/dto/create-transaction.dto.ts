@@ -59,7 +59,7 @@ export class CreateTransactionDto {
   @IsString()
   description?: string;
 
-  @ApiPropertyOptional({ description: 'Reference number (e.g., check number)' })
+  @ApiPropertyOptional({ description: 'Reference number (e.g., cheque number)' })
   @IsOptional()
   @IsString()
   @MaxLength(100)

@@ -96,9 +96,11 @@ export function PayeeList({ payees, onEdit, onRefresh }: PayeeListProps) {
                     className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full"
                     style={{
                       backgroundColor: payee.defaultCategory.color
-                        ? `${payee.defaultCategory.color}20`
-                        : '#e5e7eb',
-                      color: payee.defaultCategory.color || '#374151',
+                        ? `color-mix(in srgb, ${payee.defaultCategory.color} 15%, var(--category-bg-base, #e5e7eb))`
+                        : 'var(--category-bg-base, #e5e7eb)',
+                      color: payee.defaultCategory.color
+                        ? `color-mix(in srgb, ${payee.defaultCategory.color} 85%, var(--category-text-mix, #000))`
+                        : 'var(--category-text-base, #6b7280)',
                     }}
                   >
                     {payee.defaultCategory.name}

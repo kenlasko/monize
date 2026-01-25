@@ -3,6 +3,7 @@ import {
   IsOptional,
   IsNumber,
   IsPositive,
+  IsBoolean,
   IsEnum,
   MaxLength,
   Min,
@@ -92,4 +93,12 @@ export class UpdateAccountDto {
   @Min(0)
   @Max(100)
   interestRate?: number;
+
+  @ApiPropertyOptional({
+    example: true,
+    description: 'Whether this account is a favourite (shown in dashboard)',
+  })
+  @IsOptional()
+  @IsBoolean()
+  isFavourite?: boolean;
 }

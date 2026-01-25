@@ -27,6 +27,7 @@ export interface Account {
   interestRate: number | null;
   isClosed: boolean;
   closedDate: string | null;
+  isFavourite: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -41,6 +42,7 @@ export interface CreateAccountData {
   openingBalance?: number;
   creditLimit?: number;
   interestRate?: number;
+  isFavourite?: boolean;
 }
 
 export interface UpdateAccountData extends Partial<CreateAccountData> {}

@@ -43,6 +43,7 @@ const accountSchema = z.object({
   description: z.string().optional(),
   accountNumber: z.string().optional(),
   institution: z.string().optional(),
+  isFavourite: z.boolean().optional(),
 });
 
 type AccountFormData = z.infer<typeof accountSchema>;
@@ -81,6 +82,7 @@ export function AccountForm({ account, onSubmit, onCancel }: AccountFormProps) {
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<AccountFormData>({
     resolver: zodResolver(accountSchema),
@@ -99,15 +101,22 @@ export function AccountForm({ account, onSubmit, onCancel }: AccountFormProps) {
           description: account.description || undefined,
           accountNumber: account.accountNumber || undefined,
           institution: account.institution || undefined,
+          isFavourite: account.isFavourite || false,
         }
       : {
           currencyCode: 'CAD',
           openingBalance: 0,
+          isFavourite: false,
         },
   });
 
   const watchedCurrency = watch('currencyCode');
+  const watchedIsFavourite = watch('isFavourite');
   const currencySymbol = currencySymbols[watchedCurrency] || '$';
+
+  const toggleFavourite = () => {
+    setValue('isFavourite', !watchedIsFavourite, { shouldDirty: true });
+  };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -180,6 +189,39 @@ export function AccountForm({ account, onSubmit, onCancel }: AccountFormProps) {
         error={errors.description?.message}
         {...register('description')}
       />
+
+      {/* Favourite star toggle */}
+      <div className="flex items-center">
+        <button
+          type="button"
+          onClick={toggleFavourite}
+          className="flex items-center gap-2 px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+          title={watchedIsFavourite ? 'Remove from favourites' : 'Add to favourites'}
+        >
+          <svg
+            className={`w-5 h-5 transition-colors ${
+              watchedIsFavourite
+                ? 'text-yellow-500 fill-current'
+                : 'text-gray-400 dark:text-gray-500'
+            }`}
+            fill={watchedIsFavourite ? 'currentColor' : 'none'}
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
+            />
+          </svg>
+          <span className="text-sm text-gray-700 dark:text-gray-300">
+            {watchedIsFavourite ? 'Favourite' : 'Add to favourites'}
+          </span>
+        </button>
+        {/* Hidden input for form registration */}
+        <input type="hidden" {...register('isFavourite')} />
+      </div>
 
       <div className="flex justify-end space-x-3 pt-4">
         <Button

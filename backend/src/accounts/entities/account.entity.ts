@@ -92,6 +92,9 @@ export class Account {
   @Column({ type: 'date', name: 'closed_date', nullable: true })
   closedDate: Date | null;
 
+  @Column({ name: 'is_favourite', default: false })
+  isFavourite: boolean;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

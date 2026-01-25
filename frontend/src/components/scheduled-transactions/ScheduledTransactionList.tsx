@@ -228,9 +228,11 @@ export function ScheduledTransactionList({
                       className="inline-flex text-xs font-medium rounded-full px-2 py-0.5"
                       style={{
                         backgroundColor: transaction.category.color
-                          ? `${transaction.category.color}20`
-                          : '#e5e7eb',
-                        color: transaction.category.color || '#6b7280',
+                          ? `color-mix(in srgb, ${transaction.category.color} 15%, var(--category-bg-base, #e5e7eb))`
+                          : 'var(--category-bg-base, #e5e7eb)',
+                        color: transaction.category.color
+                          ? `color-mix(in srgb, ${transaction.category.color} 85%, var(--category-text-mix, #000))`
+                          : 'var(--category-text-base, #6b7280)',
                       }}
                     >
                       {transaction.category.name}

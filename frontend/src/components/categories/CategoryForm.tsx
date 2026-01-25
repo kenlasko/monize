@@ -27,8 +27,8 @@ interface CategoryFormProps {
   onCancel: () => void;
 }
 
-const colorOptions = [
-  { value: '', label: 'No color' },
+const colourOptions = [
+  { value: '', label: 'No colour' },
   { value: '#ef4444', label: 'Red' },
   { value: '#f97316', label: 'Orange' },
   { value: '#eab308', label: 'Yellow' },
@@ -37,7 +37,7 @@ const colorOptions = [
   { value: '#3b82f6', label: 'Blue' },
   { value: '#8b5cf6', label: 'Purple' },
   { value: '#ec4899', label: 'Pink' },
-  { value: '#6b7280', label: 'Gray' },
+  { value: '#6b7280', label: 'Grey' },
 ];
 
 export function CategoryForm({ category, categories, onSubmit, onCancel }: CategoryFormProps) {
@@ -161,13 +161,13 @@ export function CategoryForm({ category, categories, onSubmit, onCancel }: Categ
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Color</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Colour</label>
           <div className="flex items-center gap-2">
             <select
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 font-sans"
+              className="block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:focus:border-blue-400 dark:focus:ring-blue-400 font-sans"
               {...register('color')}
             >
-              {colorOptions.map((opt) => (
+              {colourOptions.map((opt) => (
                 <option key={opt.value} value={opt.value}>
                   {opt.label}
                 </option>
@@ -175,7 +175,7 @@ export function CategoryForm({ category, categories, onSubmit, onCancel }: Categ
             </select>
             {watchedColor && (
               <div
-                className="w-8 h-8 rounded-full border border-gray-300 flex-shrink-0"
+                className="w-8 h-8 rounded-full border border-gray-300 dark:border-gray-600 flex-shrink-0"
                 style={{ backgroundColor: watchedColor }}
               />
             )}

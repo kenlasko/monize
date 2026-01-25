@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
@@ -50,17 +50,41 @@ export default function TransactionsPage() {
   const [filterAccountId, setFilterAccountId] = useState<string>(searchParams.get('accountId') || '');
   const [filterCategoryId, setFilterCategoryId] = useState<string>(searchParams.get('categoryId') || '');
   const [filterPayeeId, setFilterPayeeId] = useState<string>(searchParams.get('payeeId') || '');
-  const [filterStartDate, setFilterStartDate] = useState<string>('');
-  const [filterEndDate, setFilterEndDate] = useState<string>('');
+  const [filterStartDate, setFilterStartDate] = useState<string>(searchParams.get('startDate') || '');
+  const [filterEndDate, setFilterEndDate] = useState<string>(searchParams.get('endDate') || '');
 
   // Get names for display when filtered
   const filteredCategory = categories.find(c => c.id === filterCategoryId);
   const filteredPayee = payees.find(p => p.id === filterPayeeId);
 
-  const loadData = async (page: number = currentPage) => {
+  // Track if static data has been loaded
+  const staticDataLoaded = useRef(false);
+
+  // Load static data (accounts, categories, payees) - only runs once
+  const loadStaticData = useCallback(async () => {
+    if (staticDataLoaded.current) return;
+
+    try {
+      const [accountsData, categoriesData, payeesData] = await Promise.all([
+        accountsApi.getAll(),
+        categoriesApi.getAll(),
+        payeesApi.getAll(),
+      ]);
+      setAccounts(accountsData);
+      setCategories(categoriesData);
+      setPayees(payeesData);
+      staticDataLoaded.current = true;
+    } catch (error) {
+      toast.error('Failed to load form data');
+      console.error(error);
+    }
+  }, []);
+
+  // Load transaction data based on filters - runs when filters/page change
+  const loadTransactions = useCallback(async (page: number) => {
     setIsLoading(true);
     try {
-      const [transactionsResponse, summaryData, accountsData, categoriesData, payeesData] = await Promise.all([
+      const [transactionsResponse, summaryData] = await Promise.all([
         transactionsApi.getAll({
           accountId: filterAccountId || undefined,
           startDate: filterStartDate || undefined,
@@ -77,34 +101,41 @@ export default function TransactionsPage() {
           categoryId: filterCategoryId || undefined,
           payeeId: filterPayeeId || undefined,
         }),
-        accountsApi.getAll(),
-        categoriesApi.getAll(),
-        payeesApi.getAll(),
       ]);
 
       setTransactions(transactionsResponse.data);
       setPagination(transactionsResponse.pagination);
       setSummary(summaryData);
-      setAccounts(accountsData);
-      setCategories(categoriesData);
-      setPayees(payeesData);
     } catch (error) {
       toast.error('Failed to load transactions');
       console.error(error);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [filterAccountId, filterCategoryId, filterPayeeId, filterStartDate, filterEndDate]);
+
+  // Refresh all data (called after form submission)
+  const loadData = useCallback(async (page: number = currentPage) => {
+    // Refresh static data in case user created new payee/category in form
+    staticDataLoaded.current = false;
+    loadStaticData();
+    await loadTransactions(page);
+  }, [currentPage, loadStaticData, loadTransactions]);
+
+  // Load static data once on mount
+  useEffect(() => {
+    loadStaticData();
+  }, [loadStaticData]);
 
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
   }, [filterAccountId, filterCategoryId, filterPayeeId, filterStartDate, filterEndDate]);
 
-  // Load data when page or filters change
+  // Load transactions when page or filters change
   useEffect(() => {
-    loadData(currentPage);
-  }, [currentPage, filterAccountId, filterCategoryId, filterPayeeId, filterStartDate, filterEndDate]);
+    loadTransactions(currentPage);
+  }, [currentPage, loadTransactions]);
 
   const handleCreateNew = () => {
     setEditingTransaction(undefined);

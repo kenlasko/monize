@@ -40,7 +40,7 @@ export function getCategorySelectOptions(
     excludeIds?: Set<string>;
   }
 ): CategoryOption[] {
-  const { includeEmpty = false, emptyLabel = 'Uncategorized', excludeIds = new Set() } = options || {};
+  const { includeEmpty = false, emptyLabel = 'Uncategorized', excludeIds = new Set<string>() } = options || {};
 
   const tree = buildCategoryTree(categories, excludeIds);
 
