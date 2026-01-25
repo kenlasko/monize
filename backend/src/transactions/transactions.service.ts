@@ -11,6 +11,7 @@ import { TransactionSplit } from './entities/transaction-split.entity';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
 import { CreateTransactionSplitDto } from './dto/create-transaction-split.dto';
+import { CreateTransferDto } from './dto/create-transfer.dto';
 import { AccountsService } from '../accounts/accounts.service';
 import { PayeesService } from '../payees/payees.service';
 
@@ -23,6 +24,11 @@ export interface PaginatedTransactions {
     totalPages: number;
     hasMore: boolean;
   };
+}
+
+export interface TransferResult {
+  fromTransaction: Transaction;
+  toTransaction: Transaction;
 }
 
 @Injectable()
@@ -572,5 +578,226 @@ export class TransactionsService {
         });
       }
     }
+  }
+
+  // ==================== Transfer Methods ====================
+
+  /**
+   * Create a transfer between two accounts
+   * This creates two linked transactions: a withdrawal from the source account
+   * and a deposit to the destination account
+   */
+  async createTransfer(
+    userId: string,
+    createTransferDto: CreateTransferDto,
+  ): Promise<TransferResult> {
+    const {
+      fromAccountId,
+      toAccountId,
+      transactionDate,
+      amount,
+      fromCurrencyCode,
+      toCurrencyCode,
+      exchangeRate = 1,
+      description,
+      referenceNumber,
+      isCleared = false,
+    } = createTransferDto;
+
+    // Validate that accounts are different
+    if (fromAccountId === toAccountId) {
+      throw new BadRequestException('Source and destination accounts must be different');
+    }
+
+    // Validate amount is positive
+    if (amount <= 0) {
+      throw new BadRequestException('Transfer amount must be positive');
+    }
+
+    // Verify both accounts belong to user
+    const fromAccount = await this.accountsService.findOne(userId, fromAccountId);
+    const toAccount = await this.accountsService.findOne(userId, toAccountId);
+
+    // Calculate the destination amount using exchange rate
+    const toAmount = Math.round(amount * exchangeRate * 10000) / 10000;
+    const destinationCurrency = toCurrencyCode || fromCurrencyCode;
+
+    // Create the withdrawal transaction (from account - negative amount)
+    const fromTransaction = this.transactionsRepository.create({
+      userId,
+      accountId: fromAccountId,
+      transactionDate: transactionDate as any,
+      amount: -amount, // Negative for withdrawal
+      currencyCode: fromCurrencyCode,
+      exchangeRate: 1,
+      description: description || `Transfer to ${toAccount.name}`,
+      referenceNumber,
+      isCleared,
+      isTransfer: true,
+      payeeName: `Transfer to ${toAccount.name}`,
+    });
+
+    // Create the deposit transaction (to account - positive amount)
+    const toTransaction = this.transactionsRepository.create({
+      userId,
+      accountId: toAccountId,
+      transactionDate: transactionDate as any,
+      amount: toAmount, // Positive for deposit
+      currencyCode: destinationCurrency,
+      exchangeRate: exchangeRate,
+      description: description || `Transfer from ${fromAccount.name}`,
+      referenceNumber,
+      isCleared,
+      isTransfer: true,
+      payeeName: `Transfer from ${fromAccount.name}`,
+    });
+
+    // Save both transactions
+    const savedFromTransaction = await this.transactionsRepository.save(fromTransaction);
+    const savedToTransaction = await this.transactionsRepository.save(toTransaction);
+
+    // Link the transactions to each other
+    await this.transactionsRepository.update(savedFromTransaction.id, {
+      linkedTransactionId: savedToTransaction.id,
+    });
+    await this.transactionsRepository.update(savedToTransaction.id, {
+      linkedTransactionId: savedFromTransaction.id,
+    });
+
+    // Update account balances
+    await this.accountsService.updateBalance(fromAccountId, -amount);
+    await this.accountsService.updateBalance(toAccountId, toAmount);
+
+    // Return both transactions with full relations
+    return {
+      fromTransaction: await this.findOne(userId, savedFromTransaction.id),
+      toTransaction: await this.findOne(userId, savedToTransaction.id),
+    };
+  }
+
+  /**
+   * Get the linked transfer transaction
+   */
+  async getLinkedTransaction(userId: string, transactionId: string): Promise<Transaction | null> {
+    const transaction = await this.findOne(userId, transactionId);
+
+    if (!transaction.isTransfer || !transaction.linkedTransactionId) {
+      return null;
+    }
+
+    try {
+      return await this.findOne(userId, transaction.linkedTransactionId);
+    } catch (error) {
+      // Linked transaction not found or not accessible
+      return null;
+    }
+  }
+
+  /**
+   * Delete a transfer (deletes both linked transactions)
+   */
+  async removeTransfer(userId: string, transactionId: string): Promise<void> {
+    const transaction = await this.findOne(userId, transactionId);
+
+    if (!transaction.isTransfer) {
+      throw new BadRequestException('Transaction is not a transfer');
+    }
+
+    // Get the linked transaction
+    const linkedTransaction = transaction.linkedTransactionId
+      ? await this.transactionsRepository.findOne({
+          where: { id: transaction.linkedTransactionId },
+        })
+      : null;
+
+    // Revert the balance changes
+    await this.accountsService.updateBalance(
+      transaction.accountId,
+      -Number(transaction.amount),
+    );
+
+    if (linkedTransaction) {
+      await this.accountsService.updateBalance(
+        linkedTransaction.accountId,
+        -Number(linkedTransaction.amount),
+      );
+      // Remove linked transaction first (to avoid FK issues if any)
+      await this.transactionsRepository.remove(linkedTransaction);
+    }
+
+    // Remove the main transaction
+    await this.transactionsRepository.remove(transaction);
+  }
+
+  /**
+   * Update a transfer - updates both linked transactions
+   */
+  async updateTransfer(
+    userId: string,
+    transactionId: string,
+    updateDto: Partial<CreateTransferDto>,
+  ): Promise<TransferResult> {
+    const transaction = await this.findOne(userId, transactionId);
+
+    if (!transaction.isTransfer || !transaction.linkedTransactionId) {
+      throw new BadRequestException('Transaction is not a transfer');
+    }
+
+    const linkedTransaction = await this.findOne(userId, transaction.linkedTransactionId);
+
+    // Determine which is the "from" (negative amount) and "to" (positive amount) transaction
+    const isFromTransaction = Number(transaction.amount) < 0;
+    const fromTransaction = isFromTransaction ? transaction : linkedTransaction;
+    const toTransaction = isFromTransaction ? linkedTransaction : transaction;
+
+    const oldFromAmount = Math.abs(Number(fromTransaction.amount));
+    const oldToAmount = Number(toTransaction.amount);
+
+    // Update values
+    const newAmount = updateDto.amount ?? oldFromAmount;
+    const newExchangeRate = updateDto.exchangeRate ?? toTransaction.exchangeRate;
+    const newToAmount = Math.round(newAmount * newExchangeRate * 10000) / 10000;
+
+    // Update from transaction
+    const fromUpdateData: Partial<Transaction> = {};
+    if (updateDto.transactionDate) fromUpdateData.transactionDate = updateDto.transactionDate as any;
+    if (updateDto.amount) fromUpdateData.amount = -newAmount;
+    if (updateDto.description !== undefined) fromUpdateData.description = updateDto.description ?? null;
+    if (updateDto.referenceNumber !== undefined) fromUpdateData.referenceNumber = updateDto.referenceNumber ?? null;
+    if (updateDto.isCleared !== undefined) fromUpdateData.isCleared = updateDto.isCleared;
+    if (updateDto.fromCurrencyCode) fromUpdateData.currencyCode = updateDto.fromCurrencyCode;
+
+    if (Object.keys(fromUpdateData).length > 0) {
+      await this.transactionsRepository.update(fromTransaction.id, fromUpdateData);
+    }
+
+    // Update to transaction
+    const toUpdateData: Partial<Transaction> = {};
+    if (updateDto.transactionDate) toUpdateData.transactionDate = updateDto.transactionDate as any;
+    if (updateDto.amount || updateDto.exchangeRate) toUpdateData.amount = newToAmount;
+    if (updateDto.description !== undefined) toUpdateData.description = updateDto.description ?? null;
+    if (updateDto.referenceNumber !== undefined) toUpdateData.referenceNumber = updateDto.referenceNumber ?? null;
+    if (updateDto.isCleared !== undefined) toUpdateData.isCleared = updateDto.isCleared;
+    if (updateDto.toCurrencyCode) toUpdateData.currencyCode = updateDto.toCurrencyCode;
+    if (updateDto.exchangeRate) toUpdateData.exchangeRate = updateDto.exchangeRate;
+
+    if (Object.keys(toUpdateData).length > 0) {
+      await this.transactionsRepository.update(toTransaction.id, toUpdateData);
+    }
+
+    // Update balances if amount changed
+    if (updateDto.amount || updateDto.exchangeRate) {
+      // Revert old balances
+      await this.accountsService.updateBalance(fromTransaction.accountId, oldFromAmount);
+      await this.accountsService.updateBalance(toTransaction.accountId, -oldToAmount);
+      // Apply new balances
+      await this.accountsService.updateBalance(fromTransaction.accountId, -newAmount);
+      await this.accountsService.updateBalance(toTransaction.accountId, newToAmount);
+    }
+
+    return {
+      fromTransaction: await this.findOne(userId, fromTransaction.id),
+      toTransaction: await this.findOne(userId, toTransaction.id),
+    };
   }
 }

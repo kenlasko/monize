@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import { Transaction } from '@/types/transaction';
 import { transactionsApi } from '@/lib/transactions';
 import { Button } from '@/components/ui/Button';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 // Density levels: 'normal' | 'compact' | 'dense'
 export type DensityLevel = 'normal' | 'compact' | 'dense';
@@ -29,6 +30,10 @@ export function TransactionList({
 }: TransactionListProps) {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [localDensity, setLocalDensity] = useState<DensityLevel>('normal');
+  const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; transaction: Transaction | null }>({
+    isOpen: false,
+    transaction: null,
+  });
 
   // Use prop density if provided, otherwise use local state
   const density = propDensity ?? localDensity;
@@ -59,16 +64,26 @@ export function TransactionList({
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this transaction?')) {
-      return;
-    }
+  const handleDeleteClick = (transaction: Transaction) => {
+    setDeleteConfirm({ isOpen: true, transaction });
+  };
 
-    setDeletingId(id);
+  const handleDeleteConfirm = async () => {
+    const transaction = deleteConfirm.transaction;
+    if (!transaction) return;
+
+    setDeleteConfirm({ isOpen: false, transaction: null });
+    setDeletingId(transaction.id);
+
     try {
-      await transactionsApi.delete(id);
-      toast.success('Transaction deleted');
-      onDelete?.(id);
+      if (transaction.isTransfer) {
+        await transactionsApi.deleteTransfer(transaction.id);
+        toast.success('Transfer deleted');
+      } else {
+        await transactionsApi.delete(transaction.id);
+        toast.success('Transaction deleted');
+      }
+      onDelete?.(transaction.id);
       onRefresh?.();
     } catch (error: any) {
       const message = error.response?.data?.message || 'Failed to delete transaction';
@@ -76,6 +91,10 @@ export function TransactionList({
     } finally {
       setDeletingId(null);
     }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteConfirm({ isOpen: false, transaction: null });
   };
 
   const handleToggleCleared = async (transaction: Transaction) => {
@@ -204,7 +223,18 @@ export function TransactionList({
                   )}
                 </td>
                 <td className={`${cellPadding}`}>
-                  {transaction.isSplit ? (
+                  {transaction.isTransfer ? (
+                    <div>
+                      <span className={`inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 ${density === 'dense' ? 'px-1.5 py-0.5' : 'px-2 py-1'}`}>
+                        Transfer
+                      </span>
+                      {density === 'normal' && (
+                        <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                          {Number(transaction.amount) < 0 ? 'Outgoing' : 'Incoming'}
+                        </div>
+                      )}
+                    </div>
+                  ) : transaction.isSplit ? (
                     <div>
                       <span className={`inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 ${density === 'dense' ? 'px-1.5 py-0.5' : 'px-2 py-1'}`}>
                         Split{density !== 'dense' && transaction.splits ? ` (${transaction.splits.length})` : ''}
@@ -277,7 +307,7 @@ export function TransactionList({
                     </button>
                   )}
                   <button
-                    onClick={() => handleDelete(transaction.id)}
+                    onClick={() => handleDeleteClick(transaction)}
                     disabled={deletingId === transaction.id}
                     className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 disabled:opacity-50"
                   >
@@ -289,6 +319,22 @@ export function TransactionList({
           </tbody>
         </table>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={deleteConfirm.isOpen}
+        title={deleteConfirm.transaction?.isTransfer ? 'Delete Transfer' : 'Delete Transaction'}
+        message={
+          deleteConfirm.transaction?.isTransfer
+            ? 'Are you sure you want to delete this transfer? Both linked transactions will be deleted.'
+            : 'Are you sure you want to delete this transaction? This action cannot be undone.'
+        }
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="danger"
+        onConfirm={handleDeleteConfirm}
+        onCancel={handleDeleteCancel}
+      />
     </div>
   );
 }

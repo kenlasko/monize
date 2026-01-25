@@ -146,26 +146,15 @@ export function SplitEditor({
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Split Details</h4>
-        <div className="flex space-x-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={distributeEvenly}
-            disabled={disabled || localSplits.length === 0}
-          >
-            Distribute Evenly
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={addSplit}
-            disabled={disabled}
-          >
-            + Add Split
-          </Button>
-        </div>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={distributeEvenly}
+          disabled={disabled || localSplits.length === 0}
+        >
+          Distribute Evenly
+        </Button>
       </div>
 
       {/* Splits Table */}
@@ -289,7 +278,24 @@ export function SplitEditor({
             })}
           </tbody>
           <tfoot className="bg-gray-50 dark:bg-gray-800">
-            <tr>
+            {/* Add Split Button Row */}
+            <tr className="border-t border-gray-200 dark:border-gray-700">
+              <td colSpan={4} className="p-0">
+                <button
+                  type="button"
+                  onClick={addSplit}
+                  disabled={disabled}
+                  className="w-full px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-1"
+                >
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  <span>Add Split</span>
+                </button>
+              </td>
+            </tr>
+            {/* Total Row */}
+            <tr className="border-t border-gray-200 dark:border-gray-700">
               <td className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300">Total</td>
               <td className="px-4 py-2">
                 <span

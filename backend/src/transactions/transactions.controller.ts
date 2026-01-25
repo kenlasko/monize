@@ -24,6 +24,7 @@ import { TransactionsService } from './transactions.service';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
 import { CreateTransactionSplitDto } from './dto/create-transaction-split.dto';
+import { CreateTransferDto } from './dto/create-transfer.dto';
 
 @ApiTags('Transactions')
 @Controller('transactions')
@@ -302,5 +303,53 @@ export class TransactionsController {
     @Param('splitId') splitId: string,
   ) {
     return this.transactionsService.removeSplit(req.user.id, id, splitId);
+  }
+
+  // ==================== Transfer Endpoints ====================
+
+  @Post('transfer')
+  @ApiOperation({ summary: 'Create a transfer between two accounts' })
+  @ApiResponse({ status: 201, description: 'Transfer created successfully' })
+  @ApiResponse({ status: 400, description: 'Bad request - invalid transfer data' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Account not found' })
+  createTransfer(@Request() req, @Body() createTransferDto: CreateTransferDto) {
+    return this.transactionsService.createTransfer(req.user.id, createTransferDto);
+  }
+
+  @Get(':id/linked')
+  @ApiOperation({ summary: 'Get the linked transaction for a transfer' })
+  @ApiParam({ name: 'id', description: 'Transaction UUID' })
+  @ApiResponse({ status: 200, description: 'Linked transaction retrieved successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Transaction not found' })
+  getLinkedTransaction(@Request() req, @Param('id') id: string) {
+    return this.transactionsService.getLinkedTransaction(req.user.id, id);
+  }
+
+  @Delete(':id/transfer')
+  @ApiOperation({ summary: 'Delete a transfer (deletes both linked transactions)' })
+  @ApiParam({ name: 'id', description: 'Transaction UUID' })
+  @ApiResponse({ status: 200, description: 'Transfer deleted successfully' })
+  @ApiResponse({ status: 400, description: 'Transaction is not a transfer' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Transaction not found' })
+  removeTransfer(@Request() req, @Param('id') id: string) {
+    return this.transactionsService.removeTransfer(req.user.id, id);
+  }
+
+  @Patch(':id/transfer')
+  @ApiOperation({ summary: 'Update a transfer (updates both linked transactions)' })
+  @ApiParam({ name: 'id', description: 'Transaction UUID' })
+  @ApiResponse({ status: 200, description: 'Transfer updated successfully' })
+  @ApiResponse({ status: 400, description: 'Transaction is not a transfer or invalid data' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Transaction not found' })
+  updateTransfer(
+    @Request() req,
+    @Param('id') id: string,
+    @Body() updateTransferDto: Partial<CreateTransferDto>,
+  ) {
+    return this.transactionsService.updateTransfer(req.user.id, id, updateTransferDto);
   }
 }

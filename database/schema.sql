@@ -134,6 +134,8 @@ CREATE TABLE transactions (
     reconciled_date DATE,
     is_split BOOLEAN DEFAULT false, -- indicates this is a split transaction
     parent_transaction_id UUID REFERENCES transactions(id) ON DELETE CASCADE, -- for split children
+    is_transfer BOOLEAN DEFAULT false, -- indicates this is part of an account-to-account transfer
+    linked_transaction_id UUID REFERENCES transactions(id) ON DELETE SET NULL, -- links the paired transfer transaction
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -144,6 +146,7 @@ CREATE INDEX idx_transactions_date ON transactions(transaction_date DESC);
 CREATE INDEX idx_transactions_payee ON transactions(payee_id);
 CREATE INDEX idx_transactions_category ON transactions(category_id);
 CREATE INDEX idx_transactions_parent ON transactions(parent_transaction_id);
+CREATE INDEX idx_transactions_linked ON transactions(linked_transaction_id);
 
 -- Transaction Splits (details for split transactions)
 CREATE TABLE transaction_splits (

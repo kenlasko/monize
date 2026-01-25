@@ -33,6 +33,8 @@ export interface Transaction {
   reconciledDate: string | null;
   isSplit: boolean;
   parentTransactionId: string | null;
+  isTransfer: boolean;
+  linkedTransactionId: string | null;
   splits?: TransactionSplit[];
   createdAt: string;
   updatedAt: string;
@@ -93,4 +95,23 @@ export interface PaginationInfo {
 export interface PaginatedTransactions {
   data: Transaction[];
   pagination: PaginationInfo;
+}
+
+// Transfer types
+export interface CreateTransferData {
+  fromAccountId: string;
+  toAccountId: string;
+  transactionDate: string;
+  amount: number;
+  fromCurrencyCode: string;
+  toCurrencyCode?: string;
+  exchangeRate?: number;
+  description?: string;
+  referenceNumber?: string;
+  isCleared?: boolean;
+}
+
+export interface TransferResult {
+  fromTransaction: Transaction;
+  toTransaction: Transaction;
 }

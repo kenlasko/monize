@@ -84,6 +84,12 @@ export class Transaction {
   @Column({ type: 'uuid', name: 'parent_transaction_id', nullable: true })
   parentTransactionId: string | null;
 
+  @Column({ name: 'is_transfer', default: false })
+  isTransfer: boolean;
+
+  @Column({ type: 'uuid', name: 'linked_transaction_id', nullable: true })
+  linkedTransactionId: string | null;
+
   @OneToMany(() => TransactionSplit, (split) => split.transaction)
   splits: TransactionSplit[];
 

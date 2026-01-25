@@ -58,6 +58,9 @@ interface SplitRow extends CreateSplitData {
   id: string;
 }
 
+// Transaction mode type
+type TransactionMode = 'normal' | 'split' | 'transfer';
+
 export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCancel }: TransactionFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -67,6 +70,16 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>(transaction?.categoryId || '');
   const [categoryName, setCategoryName] = useState<string>('');
 
+  // Determine initial mode based on transaction
+  const getInitialMode = (): TransactionMode => {
+    if (transaction?.isTransfer) return 'transfer';
+    if (transaction?.isSplit) return 'split';
+    return 'normal';
+  };
+
+  // Transaction mode state (normal, split, or transfer)
+  const [mode, setMode] = useState<TransactionMode>(getInitialMode());
+
   // Split transaction state
   const [isSplitMode, setIsSplitMode] = useState<boolean>(transaction?.isSplit || false);
   const [splits, setSplits] = useState<SplitRow[]>(
@@ -74,6 +87,9 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
       ? toSplitRows(transaction.splits)
       : []
   );
+
+  // Transfer state
+  const [transferToAccountId, setTransferToAccountId] = useState<string>('');
 
   const {
     register,
@@ -108,18 +124,34 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
   const watchedAmount = watch('amount');
   const watchedCurrencyCode = watch('currencyCode');
 
-  // Handle toggling split mode
-  const handleSplitModeToggle = (enabled: boolean) => {
-    setIsSplitMode(enabled);
-    if (enabled && splits.length === 0) {
-      // Create initial splits when enabling split mode
-      const amount = watchedAmount || 0;
-      setSplits(createEmptySplits(amount));
-    }
-    if (!enabled) {
-      // Clear splits when disabling split mode
+  // Handle mode changes
+  const handleModeChange = (newMode: TransactionMode) => {
+    setMode(newMode);
+
+    if (newMode === 'split') {
+      setIsSplitMode(true);
+      if (splits.length === 0) {
+        const amount = watchedAmount || 0;
+        setSplits(createEmptySplits(amount));
+      }
+      setTransferToAccountId('');
+    } else if (newMode === 'transfer') {
+      setIsSplitMode(false);
       setSplits([]);
+      // Make amount positive for transfers
+      if (watchedAmount && watchedAmount < 0) {
+        setValue('amount', Math.abs(watchedAmount), { shouldDirty: true, shouldValidate: true });
+      }
+    } else {
+      setIsSplitMode(false);
+      setSplits([]);
+      setTransferToAccountId('');
     }
+  };
+
+  // Handle toggling split mode (legacy - redirects to handleModeChange)
+  const handleSplitModeToggle = (enabled: boolean) => {
+    handleModeChange(enabled ? 'split' : 'normal');
   };
 
   // Set defaultAccountId when it changes (and we're not editing an existing transaction)
@@ -288,6 +320,46 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
   const onSubmit = async (data: TransactionFormData) => {
     setIsLoading(true);
     try {
+      // Handle transfer mode
+      if (mode === 'transfer') {
+        if (!transferToAccountId) {
+          toast.error('Please select a destination account');
+          setIsLoading(false);
+          return;
+        }
+        if (transferToAccountId === data.accountId) {
+          toast.error('Source and destination accounts must be different');
+          setIsLoading(false);
+          return;
+        }
+        if (!data.amount || data.amount <= 0) {
+          toast.error('Transfer amount must be positive');
+          setIsLoading(false);
+          return;
+        }
+
+        const transferData = {
+          fromAccountId: data.accountId,
+          toAccountId: transferToAccountId,
+          transactionDate: data.transactionDate,
+          amount: Math.abs(data.amount),
+          fromCurrencyCode: data.currencyCode,
+          description: data.description,
+          referenceNumber: data.referenceNumber,
+          isCleared: data.isCleared,
+        };
+
+        if (transaction?.isTransfer) {
+          await transactionsApi.updateTransfer(transaction.id, transferData);
+          toast.success('Transfer updated');
+        } else {
+          await transactionsApi.createTransfer(transferData);
+          toast.success('Transfer created');
+        }
+        onSuccess?.();
+        return;
+      }
+
       // Prepare splits data if in split mode
       const splitsData = isSplitMode ? toCreateSplitData(splits) : undefined;
 
@@ -329,10 +401,61 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      {/* Mode selector - only show for new transactions or if not already a transfer being edited */}
+      {(!transaction || !transaction.isTransfer) && (
+        <div className="flex space-x-2 pb-2 border-b dark:border-gray-700">
+          <button
+            type="button"
+            onClick={() => handleModeChange('normal')}
+            className={`px-3 py-1.5 text-sm rounded-md font-medium transition-colors ${
+              mode === 'normal'
+                ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
+                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+            }`}
+          >
+            Transaction
+          </button>
+          <button
+            type="button"
+            onClick={() => handleModeChange('split')}
+            className={`px-3 py-1.5 text-sm rounded-md font-medium transition-colors ${
+              mode === 'split'
+                ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
+                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+            }`}
+          >
+            Split
+          </button>
+          <button
+            type="button"
+            onClick={() => handleModeChange('transfer')}
+            className={`px-3 py-1.5 text-sm rounded-md font-medium transition-colors ${
+              mode === 'transfer'
+                ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
+                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+            }`}
+          >
+            Transfer
+          </button>
+        </div>
+      )}
+
+      {/* Transfer mode indicator for editing existing transfers */}
+      {transaction?.isTransfer && (
+        <div className="flex items-center space-x-2 pb-2 border-b dark:border-gray-700">
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200">
+            Transfer
+          </span>
+          <span className="text-sm text-gray-500 dark:text-gray-400">
+            This is a linked transfer transaction
+          </span>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Account */}
+        {/* From Account (or just Account for non-transfers) */}
         <Select
-          label="Account"
+          label={mode === 'transfer' ? 'From Account' : 'Account'}
           error={errors.accountId?.message}
           value={watchedAccountId || ''}
           options={[
@@ -345,6 +468,24 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
           {...register('accountId')}
         />
 
+        {/* To Account - only for transfer mode */}
+        {mode === 'transfer' && (
+          <Select
+            label="To Account"
+            value={transferToAccountId}
+            onChange={(e) => setTransferToAccountId(e.target.value)}
+            options={[
+              { value: '', label: 'Select destination account...' },
+              ...accounts
+                .filter(account => account.id !== watchedAccountId)
+                .map(account => ({
+                  value: account.id,
+                  label: `${account.name} (${account.currencyCode})`,
+                })),
+            ]}
+          />
+        )}
+
         {/* Date */}
         <Input
           label="Date"
@@ -353,27 +494,29 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
           {...register('transactionDate')}
         />
 
-        {/* Payee with autocomplete */}
-        <Combobox
-          label="Payee"
-          placeholder="Select or type payee name..."
-          options={payees.map(payee => ({
-            value: payee.id,
-            label: payee.name,
-            subtitle: payee.defaultCategory?.name,
-          }))}
-          value={selectedPayeeId}
-          initialDisplayValue={transaction?.payeeName || ''}
-          onChange={handlePayeeChange}
-          onCreateNew={handlePayeeCreate}
-          allowCustomValue={true}
-          error={errors.payeeName?.message}
-        />
+        {/* Payee with autocomplete - only show for non-transfer mode */}
+        {mode !== 'transfer' && (
+          <Combobox
+            label="Payee"
+            placeholder="Select or type payee name..."
+            options={payees.map(payee => ({
+              value: payee.id,
+              label: payee.name,
+              subtitle: payee.defaultCategory?.name,
+            }))}
+            value={selectedPayeeId}
+            initialDisplayValue={transaction?.payeeName || ''}
+            onChange={handlePayeeChange}
+            onCreateNew={handlePayeeCreate}
+            allowCustomValue={true}
+            error={errors.payeeName?.message}
+          />
+        )}
 
-        {/* Amount - labeled as Total when in split mode */}
+        {/* Amount - labeled appropriately based on mode */}
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            {isSplitMode ? 'Total Amount' : 'Amount'}
+            {mode === 'split' ? 'Total Amount' : mode === 'transfer' ? 'Transfer Amount' : 'Amount'}
           </label>
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400">
@@ -385,6 +528,7 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
             <input
               type="number"
               step="0.01"
+              min={mode === 'transfer' ? '0.01' : undefined}
               placeholder="0.00"
               className={`block w-full pl-7 pr-3 py-2 rounded-md border ${
                 errors.amount ? 'border-red-500 dark:border-red-400' : 'border-gray-300 dark:border-gray-600'
@@ -395,47 +539,52 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
                 const value = parseFloat(e.target.value);
                 if (!isNaN(value)) {
                   const rounded = Math.round(value * 100) / 100;
-                  setValue('amount', rounded, { shouldValidate: true });
+                  // For transfers, ensure amount is positive
+                  const finalValue = mode === 'transfer' ? Math.abs(rounded) : rounded;
+                  setValue('amount', finalValue, { shouldValidate: true });
                 }
               }}
             />
           </div>
+          {mode === 'transfer' && (
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              Amount must be positive for transfers
+            </p>
+          )}
           {errors.amount && (
             <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.amount.message}</p>
           )}
         </div>
 
-        {/* Category - only show if not in split mode */}
-        {!isSplitMode && (
-          <Combobox
-            label="Category"
-            placeholder="Select or create category..."
-            options={buildCategoryTree(categories).map(({ category }) => {
-              // Find parent category name for hierarchical display
-              const parentCategory = category.parentId
-                ? categories.find(c => c.id === category.parentId)
-                : null;
-              return {
-                value: category.id,
-                label: parentCategory ? `${parentCategory.name}: ${category.name}` : category.name,
-              };
-            })}
-            value={selectedCategoryId}
-            initialDisplayValue={transaction?.category?.name || ''}
-            onChange={handleCategoryChange}
-            onCreateNew={handleCategoryCreate}
-            allowCustomValue={true}
-            error={errors.categoryId?.message}
-          />
-        )}
-
-        {/* Split toggle - shown when not in split mode, beside Amount */}
-        {!isSplitMode && (
-          <div className="flex items-end">
+        {/* Category - only show for normal mode */}
+        {mode === 'normal' && (
+          <div className="flex items-end space-x-2">
+            <div className="flex-1">
+              <Combobox
+                label="Category"
+                placeholder="Select or create category..."
+                options={buildCategoryTree(categories).map(({ category }) => {
+                  // Find parent category name for hierarchical display
+                  const parentCategory = category.parentId
+                    ? categories.find(c => c.id === category.parentId)
+                    : null;
+                  return {
+                    value: category.id,
+                    label: parentCategory ? `${parentCategory.name}: ${category.name}` : category.name,
+                  };
+                })}
+                value={selectedCategoryId}
+                initialDisplayValue={transaction?.category?.name || ''}
+                onChange={handleCategoryChange}
+                onCreateNew={handleCategoryCreate}
+                allowCustomValue={true}
+                error={errors.categoryId?.message}
+              />
+            </div>
             <button
               type="button"
-              onClick={() => handleSplitModeToggle(true)}
-              className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+              onClick={() => handleModeChange('split')}
+              className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 whitespace-nowrap"
             >
               Split Transaction
             </button>
@@ -523,7 +672,7 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
           </Button>
         )}
         <Button type="submit" isLoading={isLoading}>
-          {transaction ? 'Update' : 'Create'} Transaction
+          {transaction ? 'Update' : 'Create'} {mode === 'transfer' ? 'Transfer' : 'Transaction'}
         </Button>
       </div>
     </form>

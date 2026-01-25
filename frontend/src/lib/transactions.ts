@@ -7,6 +7,8 @@ import {
   CreateSplitData,
   TransactionSummary,
   PaginatedTransactions,
+  CreateTransferData,
+  TransferResult,
 } from '@/types/transaction';
 
 export const transactionsApi = {
@@ -118,5 +120,38 @@ export const transactionsApi = {
   // Remove a split from a transaction
   deleteSplit: async (transactionId: string, splitId: string): Promise<void> => {
     await apiClient.delete(`/transactions/${transactionId}/splits/${splitId}`);
+  },
+
+  // ==================== Transfer Methods ====================
+
+  // Create a transfer between two accounts
+  createTransfer: async (data: CreateTransferData): Promise<TransferResult> => {
+    const response = await apiClient.post<TransferResult>('/transactions/transfer', data);
+    return response.data;
+  },
+
+  // Get the linked transaction for a transfer
+  getLinkedTransaction: async (transactionId: string): Promise<Transaction | null> => {
+    const response = await apiClient.get<Transaction | null>(
+      `/transactions/${transactionId}/linked`,
+    );
+    return response.data;
+  },
+
+  // Delete a transfer (deletes both linked transactions)
+  deleteTransfer: async (transactionId: string): Promise<void> => {
+    await apiClient.delete(`/transactions/${transactionId}/transfer`);
+  },
+
+  // Update a transfer (updates both linked transactions)
+  updateTransfer: async (
+    transactionId: string,
+    data: Partial<CreateTransferData>,
+  ): Promise<TransferResult> => {
+    const response = await apiClient.patch<TransferResult>(
+      `/transactions/${transactionId}/transfer`,
+      data,
+    );
+    return response.data;
   },
 };
