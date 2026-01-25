@@ -9,6 +9,7 @@ import { Repository } from 'typeorm';
 import { Category } from './entities/category.entity';
 import { Transaction } from '../transactions/entities/transaction.entity';
 import { TransactionSplit } from '../transactions/entities/transaction-split.entity';
+import { Payee } from '../payees/entities/payee.entity';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 
@@ -21,6 +22,8 @@ export class CategoriesService {
     private transactionsRepository: Repository<Transaction>,
     @InjectRepository(TransactionSplit)
     private splitsRepository: Repository<TransactionSplit>,
+    @InjectRepository(Payee)
+    private payeesRepository: Repository<Payee>,
   ) {}
 
   /**
@@ -176,6 +179,12 @@ export class CategoriesService {
         'Cannot delete category with subcategories. Delete or reassign subcategories first.',
       );
     }
+
+    // Clear default category from any payees using this category
+    await this.payeesRepository.update(
+      { userId, defaultCategoryId: id },
+      { defaultCategoryId: null },
+    );
 
     await this.categoriesRepository.remove(category);
   }

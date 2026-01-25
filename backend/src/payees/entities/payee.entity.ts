@@ -27,7 +27,7 @@ export class Payee {
 
   @ApiProperty({ example: 'category-uuid', required: false, description: 'Default category for transactions with this payee' })
   @Column({ type: 'uuid', name: 'default_category_id', nullable: true })
-  defaultCategoryId: string;
+  defaultCategoryId: string | null;
 
   @ApiProperty({ example: 'Local coffee shop on Main Street', required: false })
   @Column({ type: 'text', nullable: true })
