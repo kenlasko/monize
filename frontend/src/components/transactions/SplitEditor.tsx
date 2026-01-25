@@ -3,10 +3,10 @@
 import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
-import { Select } from '@/components/ui/Select';
+import { Combobox } from '@/components/ui/Combobox';
 import { Category } from '@/types/category';
 import { CreateSplitData } from '@/types/transaction';
-import { getCategorySelectOptions } from '@/lib/categoryUtils';
+import { buildCategoryTree } from '@/lib/categoryUtils';
 
 interface SplitRow extends CreateSplitData {
   id: string; // Temporary ID for React keys
@@ -169,9 +169,9 @@ export function SplitEditor({
       </div>
 
       {/* Splits Table */}
-      <div className="border dark:border-gray-700 rounded-lg overflow-hidden">
+      <div className="border dark:border-gray-700 rounded-lg overflow-visible">
         <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-          <thead className="bg-gray-50 dark:bg-gray-800">
+          <thead className="bg-gray-50 dark:bg-gray-800 rounded-t-lg">
             <tr>
               <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                 Category
@@ -186,17 +186,31 @@ export function SplitEditor({
             </tr>
           </thead>
           <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-            {localSplits.map((split, index) => (
+            {localSplits.map((split, index) => {
+              // Find current category name for initial display
+              const currentCategory = split.categoryId
+                ? categories.find(c => c.id === split.categoryId)
+                : null;
+
+              return (
               <tr key={split.id}>
                 <td className="px-4 py-2">
-                  <Select
-                    options={getCategorySelectOptions(categories, {
-                      includeEmpty: true,
-                      emptyLabel: 'Uncategorized',
+                  <Combobox
+                    placeholder="Select category..."
+                    options={buildCategoryTree(categories).map(({ category }) => {
+                      // Find parent category name for hierarchical display
+                      const parentCategory = category.parentId
+                        ? categories.find(c => c.id === category.parentId)
+                        : null;
+                      return {
+                        value: category.id,
+                        label: parentCategory ? `${parentCategory.name}: ${category.name}` : category.name,
+                      };
                     })}
                     value={split.categoryId || ''}
-                    onChange={(e) =>
-                      handleSplitChange(index, 'categoryId', e.target.value || undefined)
+                    initialDisplayValue={currentCategory?.name || ''}
+                    onChange={(categoryId) =>
+                      handleSplitChange(index, 'categoryId', categoryId || undefined)
                     }
                     disabled={disabled}
                   />
@@ -271,7 +285,8 @@ export function SplitEditor({
                   </div>
                 </td>
               </tr>
-            ))}
+            );
+            })}
           </tbody>
           <tfoot className="bg-gray-50 dark:bg-gray-800">
             <tr>

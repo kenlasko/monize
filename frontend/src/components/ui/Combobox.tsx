@@ -40,10 +40,12 @@ export function Combobox({
   const [inputValue, setInputValue] = useState(initialDisplayValue || '');
   const [selectedLabel, setSelectedLabel] = useState(initialDisplayValue || '');
   const [isTyping, setIsTyping] = useState(false);
+  const [filterText, setFilterText] = useState(''); // Separate filter text for searching
   const [hasInitialized, setHasInitialized] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Find selected option label when value changes (only if not currently typing)
   useEffect(() => {
@@ -118,8 +120,14 @@ export function Combobox({
   }, [selectedLabel, allowCustomValue, inputValue, options, onChange, isTyping]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Ignore input changes right after opening (caused by select())
+    if (justOpenedRef.current) {
+      return;
+    }
+
     const newValue = e.target.value;
     setInputValue(newValue);
+    setFilterText(newValue); // Track what user typed for filtering
     setIsOpen(true);
     setIsTyping(true);
 
@@ -139,30 +147,88 @@ export function Combobox({
     setIsOpen(false);
   };
 
-  const filteredOptions = options.filter(option =>
-    option.label.toLowerCase().includes(inputValue.toLowerCase()) ||
-    (option.subtitle && option.subtitle.toLowerCase().includes(inputValue.toLowerCase()))
-  );
+  // Track if we just opened the dropdown to ignore immediate input changes
+  const justOpenedRef = useRef(false);
+
+  const openDropdown = () => {
+    // Always reset to show all options when dropdown opens
+    setFilterText('');
+    setIsTyping(false);
+    setIsOpen(true);
+    // Mark that we just opened - this prevents select() from triggering filter
+    justOpenedRef.current = true;
+    setTimeout(() => {
+      justOpenedRef.current = false;
+    }, 100);
+  };
+
+  const handleFocus = () => {
+    openDropdown();
+    // Select all text when focusing so user can easily type to filter
+    if (inputRef.current && inputValue) {
+      setTimeout(() => {
+        inputRef.current?.select();
+      }, 0);
+    }
+  };
+
+  const handleClick = () => {
+    // Handle click on already-focused input (onFocus won't fire again)
+    // Always reset and open to show full list
+    openDropdown();
+  };
+
+  // When dropdown is open and user is typing, filter by what they typed
+  // Otherwise show all options
+  const filteredOptions = (isTyping && filterText)
+    ? options.filter(option =>
+        option.label.toLowerCase().includes(filterText.toLowerCase()) ||
+        (option.subtitle && option.subtitle.toLowerCase().includes(filterText.toLowerCase()))
+      )
+    : options;
 
   // Check if input matches an existing option exactly
   const exactMatch = options.some(
     option => option.label.toLowerCase() === inputValue.toLowerCase()
   );
 
-  // Show "Create new" option if custom values allowed and input doesn't match exactly
-  const showCreateOption = allowCustomValue && inputValue.trim() && !exactMatch;
+  // Show "Create new" option if custom values allowed and input doesn't match exactly (only when typing)
+  const showCreateOption = allowCustomValue && isTyping && inputValue.trim() && !exactMatch;
 
   // Total number of items in the dropdown (create option counts as index 0 if shown)
   const totalItems = filteredOptions.length + (showCreateOption ? 1 : 0);
 
+  // Find index of currently selected option to highlight it
+  const selectedOptionIndex = filteredOptions.findIndex(opt => opt.value === value);
+
   // Reset highlighted index when dropdown opens or options change
   useEffect(() => {
     if (isOpen) {
-      setHighlightedIndex(-1);
+      // If there's a selected value and we're not typing, highlight it
+      if (!isTyping && selectedOptionIndex >= 0) {
+        setHighlightedIndex(showCreateOption ? selectedOptionIndex + 1 : selectedOptionIndex);
+      } else {
+        setHighlightedIndex(-1);
+      }
     }
-  }, [isOpen, inputValue]);
+  }, [isOpen, isTyping, selectedOptionIndex, showCreateOption]);
 
-  // Scroll highlighted item into view
+  // Scroll highlighted/selected item into view when dropdown opens
+  useEffect(() => {
+    if (isOpen && listRef.current && selectedOptionIndex >= 0 && !isTyping) {
+      // Small delay to ensure DOM is ready
+      setTimeout(() => {
+        const items = listRef.current?.querySelectorAll('[data-option-index]');
+        const targetIndex = showCreateOption ? selectedOptionIndex + 1 : selectedOptionIndex;
+        const selectedItem = items?.[targetIndex] as HTMLElement;
+        if (selectedItem) {
+          selectedItem.scrollIntoView({ block: 'nearest' });
+        }
+      }, 0);
+    }
+  }, [isOpen, selectedOptionIndex, showCreateOption, isTyping]);
+
+  // Scroll highlighted item into view during keyboard navigation
   useEffect(() => {
     if (highlightedIndex >= 0 && listRef.current) {
       const items = listRef.current.querySelectorAll('[data-option-index]');
@@ -213,6 +279,11 @@ export function Combobox({
         e.preventDefault();
         setIsOpen(false);
         setHighlightedIndex(-1);
+        // Reset input to selected value
+        if (selectedLabel) {
+          setInputValue(selectedLabel);
+        }
+        setIsTyping(false);
         break;
     }
   };
@@ -240,10 +311,12 @@ export function Combobox({
       )}
       <div className="relative">
         <input
+          ref={inputRef}
           type="text"
           value={inputValue}
           onChange={handleInputChange}
-          onFocus={() => setIsOpen(true)}
+          onFocus={handleFocus}
+          onClick={handleClick}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
           disabled={disabled}
@@ -281,6 +354,8 @@ export function Combobox({
             )}
             {filteredOptions.map((option, index) => {
               const optionIndex = showCreateOption ? index + 1 : index;
+              const isSelected = option.value === value;
+              const isHighlighted = highlightedIndex === optionIndex;
               return (
                 <div
                   key={option.value}
@@ -288,19 +363,31 @@ export function Combobox({
                   onClick={() => handleSelectOption(option)}
                   className={cn(
                     'cursor-pointer select-none relative py-2 pl-3 pr-9',
-                    highlightedIndex === optionIndex ? 'bg-blue-100 dark:bg-blue-900' : 'hover:bg-blue-50 dark:hover:bg-blue-900/50'
+                    isHighlighted ? 'bg-blue-100 dark:bg-blue-900' : 'hover:bg-blue-50 dark:hover:bg-blue-900/50',
+                    isSelected && !isHighlighted && 'bg-blue-50 dark:bg-blue-900/30'
                   )}
                 >
                   <div className="flex flex-col">
-                    <span className="font-medium block truncate dark:text-gray-100">
+                    <span className={cn(
+                      'block truncate dark:text-gray-100',
+                      isSelected ? 'font-semibold' : 'font-medium'
+                    )}>
                       {option.label}
                     </span>
-                    {option.subtitle && (
+                    {/* Only show subtitle when filtering to provide context */}
+                    {option.subtitle && isTyping && filterText && (
                       <span className="text-gray-500 dark:text-gray-400 text-xs truncate">
                         {option.subtitle}
                       </span>
                     )}
                   </div>
+                  {isSelected && (
+                    <span className="absolute inset-y-0 right-0 flex items-center pr-4 text-blue-600 dark:text-blue-400">
+                      <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    </span>
+                  )}
                 </div>
               );
             })}

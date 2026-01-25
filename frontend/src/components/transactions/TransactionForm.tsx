@@ -62,8 +62,7 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
   const [isLoading, setIsLoading] = useState(false);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [payees, setPayees] = useState<Payee[]>([]);
-  const [allPayees, setAllPayees] = useState<Payee[]>([]);
+  const [payees, setPayees] = useState<Payee[]>([]); // Full list of payees
   const [selectedPayeeId, setSelectedPayeeId] = useState<string>(transaction?.payeeId || '');
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>(transaction?.categoryId || '');
   const [categoryName, setCategoryName] = useState<string>('');
@@ -141,29 +140,12 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
         setAccounts(accountsData);
         setCategories(categoriesData);
         setPayees(payeesData);
-        setAllPayees(payeesData);
       })
       .catch((error) => {
         toast.error('Failed to load form data');
         console.error(error);
       });
   }, []);
-
-  // Filter payees based on search (client-side filtering for reliability)
-  const handlePayeeSearch = (query: string) => {
-    if (!query || query.length < 2) {
-      // Show all payees when query is too short
-      setPayees(allPayees);
-      return;
-    }
-
-    // Filter payees client-side
-    const lowerQuery = query.toLowerCase();
-    const filtered = allPayees.filter(payee =>
-      payee.name.toLowerCase().includes(lowerQuery)
-    );
-    setPayees(filtered);
-  };
 
   // Handle payee selection
   const handlePayeeChange = (payeeId: string, payeeName: string) => {
@@ -201,9 +183,8 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
 
     try {
       const newPayee = await payeesApi.create({ name: name.trim() });
-      // Add to both lists
+      // Add to payees list
       setPayees(prev => [...prev, newPayee]);
-      setAllPayees(prev => [...prev, newPayee]);
       // Select the new payee
       setSelectedPayeeId(newPayee.id);
       setValue('payeeId', newPayee.id, { shouldDirty: true, shouldValidate: true });
@@ -241,16 +222,63 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
     }
   };
 
+  // Convert string to title case (capitalize first letter of each word)
+  const toTitleCase = (str: string): string => {
+    return str
+      .toLowerCase()
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
+
   // Handle creating a new category - called when user clicks "Create" in dropdown
+  // Supports "Parent: Child" format to create subcategories
   const handleCategoryCreate = async (name: string) => {
     if (!name.trim()) return;
 
     try {
-      const newCategory = await categoriesApi.create({ name: name.trim() });
+      let categoryName = toTitleCase(name.trim());
+      let parentId: string | undefined;
+      let parentName: string | undefined;
+
+      // Check for "Parent: Child" format
+      if (categoryName.includes(':')) {
+        const parts = categoryName.split(':').map(p => p.trim());
+        if (parts.length === 2 && parts[0] && parts[1]) {
+          parentName = toTitleCase(parts[0]);
+          const childName = toTitleCase(parts[1]);
+
+          // Find existing parent category (case-insensitive, top-level only)
+          let parentCategory = categories.find(
+            c => c.name.toLowerCase() === parentName!.toLowerCase() && !c.parentId
+          );
+
+          // If parent doesn't exist, create it first
+          if (!parentCategory) {
+            const newParent = await categoriesApi.create({ name: parentName });
+            setCategories(prev => [...prev, newParent]);
+            parentCategory = newParent;
+          }
+
+          parentId = parentCategory.id;
+          parentName = parentCategory.name; // Use actual name from existing category
+          categoryName = childName;
+        }
+      }
+
+      const newCategory = await categoriesApi.create({
+        name: categoryName,
+        parentId,
+      });
       setCategories(prev => [...prev, newCategory]);
       setSelectedCategoryId(newCategory.id);
       setValue('categoryId', newCategory.id, { shouldDirty: true, shouldValidate: true });
-      toast.success(`Category "${name}" created`);
+
+      if (parentId && parentName) {
+        toast.success(`Category "${parentName}: ${categoryName}" created`);
+      } else {
+        toast.success(`Category "${categoryName}" created`);
+      }
     } catch (error) {
       console.error('Failed to create category:', error);
       toast.error('Failed to create category');
@@ -337,7 +365,6 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
           value={selectedPayeeId}
           initialDisplayValue={transaction?.payeeName || ''}
           onChange={handlePayeeChange}
-          onInputChange={handlePayeeSearch}
           onCreateNew={handlePayeeCreate}
           allowCustomValue={true}
           error={errors.payeeName?.message}
@@ -383,10 +410,16 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
           <Combobox
             label="Category"
             placeholder="Select or create category..."
-            options={buildCategoryTree(categories).map(({ category, level }) => ({
-              value: category.id,
-              label: `${'  '.repeat(level)}${level > 0 ? '└ ' : ''}${category.name}`,
-            }))}
+            options={buildCategoryTree(categories).map(({ category }) => {
+              // Find parent category name for hierarchical display
+              const parentCategory = category.parentId
+                ? categories.find(c => c.id === category.parentId)
+                : null;
+              return {
+                value: category.id,
+                label: parentCategory ? `${parentCategory.name}: ${category.name}` : category.name,
+              };
+            })}
             value={selectedCategoryId}
             initialDisplayValue={transaction?.category?.name || ''}
             onChange={handleCategoryChange}

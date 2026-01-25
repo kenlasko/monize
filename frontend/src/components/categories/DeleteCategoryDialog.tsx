@@ -64,10 +64,10 @@ export function DeleteCategoryDialog({
   };
 
   return (
-    <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+    <div className="fixed inset-0 bg-gray-500 dark:bg-gray-900 bg-opacity-75 dark:bg-opacity-80 flex items-center justify-center p-4 z-50">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl dark:shadow-gray-700/50 max-w-md w-full p-6">
         <div className="flex items-start">
-          <div className="flex-shrink-0 flex items-center justify-center h-10 w-10 rounded-full bg-red-100 text-red-600">
+          <div className="flex-shrink-0 flex items-center justify-center h-10 w-10 rounded-full bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-400">
             <svg
               className="h-6 w-6"
               fill="none"
@@ -83,50 +83,58 @@ export function DeleteCategoryDialog({
             </svg>
           </div>
           <div className="ml-4 flex-1">
-            <h3 className="text-lg font-medium text-gray-900">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
               Delete "{category.name}"?
             </h3>
 
             {isLoading ? (
-              <div className="mt-2 flex items-center text-sm text-gray-500">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-400 mr-2"></div>
+              <div className="mt-2 flex items-center text-sm text-gray-500 dark:text-gray-400">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-400 dark:border-gray-500 mr-2"></div>
                 Checking transactions...
               </div>
             ) : transactionCount && transactionCount > 0 ? (
               <div className="mt-2">
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-gray-500 dark:text-gray-400">
                   This category is used by{' '}
-                  <span className="font-semibold text-gray-700">
+                  <span className="font-semibold text-gray-700 dark:text-gray-300">
                     {transactionCount} transaction{transactionCount !== 1 ? 's' : ''}
                   </span>
                   .
                 </p>
 
                 <div className="mt-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Reassign transactions to:
                   </label>
                   <select
                     value={reassignTo}
                     onChange={(e) => setReassignTo(e.target.value)}
-                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 font-sans text-sm"
+                    className="block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:focus:border-blue-400 dark:focus:ring-blue-400 font-sans text-sm dark:bg-gray-700 dark:text-gray-100"
                   >
                     <option value="">Leave uncategorized</option>
-                    {availableCategories.map(({ category: cat, level }) => (
-                      <option key={cat.id} value={cat.id}>
-                        {'  '.repeat(level)}{level > 0 ? '└ ' : ''}{cat.name}
-                      </option>
-                    ))}
+                    {availableCategories.map(({ category: cat }) => {
+                      const parentCategory = cat.parentId
+                        ? categories.find(c => c.id === cat.parentId)
+                        : null;
+                      const displayName = parentCategory
+                        ? `${parentCategory.name}: ${cat.name}`
+                        : cat.name;
+                      return (
+                        <option key={cat.id} value={cat.id}>
+                          {displayName}
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
               </div>
             ) : (
-              <p className="mt-2 text-sm text-gray-500">
+              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
                 This category has no transactions. It can be safely deleted.
               </p>
             )}
 
-            <p className="mt-3 text-sm text-gray-500">
+            <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">
               This action cannot be undone.
             </p>
           </div>
@@ -139,7 +147,7 @@ export function DeleteCategoryDialog({
           <button
             onClick={handleConfirm}
             disabled={isLoading}
-            className="inline-flex justify-center px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"
+            className="inline-flex justify-center px-4 py-2 text-sm font-medium text-white bg-red-600 dark:bg-red-700 border border-transparent rounded-md hover:bg-red-700 dark:hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-800 focus:ring-red-500 disabled:opacity-50"
           >
             Delete
           </button>
