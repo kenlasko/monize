@@ -37,6 +37,7 @@ export default function TransactionsPage() {
   // Pagination state
   const [pagination, setPagination] = useState<PaginationInfo | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [startingBalance, setStartingBalance] = useState<number | undefined>();
 
   // Summary from API (for all matching transactions, not just current page)
   const [summary, setSummary] = useState<TransactionSummary>({
@@ -105,6 +106,7 @@ export default function TransactionsPage() {
 
       setTransactions(transactionsResponse.data);
       setPagination(transactionsResponse.pagination);
+      setStartingBalance(transactionsResponse.startingBalance);
       setSummary(summaryData);
     } catch (error) {
       toast.error('Failed to load transactions');
@@ -397,11 +399,7 @@ export default function TransactionsPage() {
               density={listDensity}
               onDensityChange={setListDensity}
               isSingleAccountView={!!filterAccountId}
-              accountCurrentBalance={
-                filterAccountId
-                  ? accounts.find(a => a.id === filterAccountId)?.currentBalance
-                  : undefined
-              }
+              startingBalance={startingBalance}
             />
           )}
         </div>

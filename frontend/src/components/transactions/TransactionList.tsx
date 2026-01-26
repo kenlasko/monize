@@ -18,8 +18,8 @@ interface TransactionListProps {
   onRefresh?: () => void;
   density?: DensityLevel;
   onDensityChange?: (density: DensityLevel) => void;
-  /** When viewing a single account, pass the account's current balance to show running balance column */
-  accountCurrentBalance?: number;
+  /** Starting balance for running balance calculation (balance at the first transaction on this page) */
+  startingBalance?: number;
   /** Whether we're viewing a single account (enables running balance column) */
   isSingleAccountView?: boolean;
 }
@@ -31,7 +31,7 @@ export function TransactionList({
   onRefresh,
   density: propDensity,
   onDensityChange,
-  accountCurrentBalance,
+  startingBalance,
   isSingleAccountView = false,
 }: TransactionListProps) {
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -121,24 +121,26 @@ export function TransactionList({
   }), []);
 
   // Calculate running balances when viewing a single account
-  // Transactions are sorted newest first, so we start with current balance
-  // and subtract each transaction's amount to get the balance before that transaction
+  // Transactions are sorted newest first, so we start with the starting balance
+  // (which is the balance after the first transaction on this page) and work backwards
   const runningBalances = useMemo(() => {
-    if (!isSingleAccountView || accountCurrentBalance === undefined) {
+    if (!isSingleAccountView || startingBalance === undefined) {
       return new Map<string, number>();
     }
 
     const balances = new Map<string, number>();
-    let balance = accountCurrentBalance;
+    let balance = startingBalance;
 
-    // First transaction shows current balance, then we work backwards
+    // First transaction shows starting balance (the current balance for page 1,
+    // or the balance at the end of the previous page for other pages)
+    // Then we subtract each transaction's amount to get the balance before that transaction
     for (const tx of transactions) {
       balances.set(tx.id, balance);
       balance -= tx.amount; // Subtract to get what balance was before this transaction
     }
 
     return balances;
-  }, [transactions, accountCurrentBalance, isSingleAccountView]);
+  }, [transactions, startingBalance, isSingleAccountView]);
 
   const formatAmount = useCallback((amount: number) => {
     const isNegative = amount < 0;

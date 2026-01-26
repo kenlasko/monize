@@ -96,6 +96,8 @@ export interface PaginationInfo {
 export interface PaginatedTransactions {
   data: Transaction[];
   pagination: PaginationInfo;
+  /** Starting balance for running balance calculation (only set when filtering by single account) */
+  startingBalance?: number;
 }
 
 // Transfer types
