@@ -13,6 +13,13 @@ import { Payee } from '../../payees/entities/payee.entity';
 import { Category } from '../../categories/entities/category.entity';
 import { TransactionSplit } from './transaction-split.entity';
 
+export enum TransactionStatus {
+  UNRECONCILED = 'UNRECONCILED',
+  CLEARED = 'CLEARED',
+  RECONCILED = 'RECONCILED',
+  VOID = 'VOID',
+}
+
 @Entity('transactions')
 export class Transaction {
   @PrimaryGeneratedColumn('uuid')
@@ -88,11 +95,12 @@ export class Transaction {
   @Column({ type: 'varchar', name: 'reference_number', length: 100, nullable: true })
   referenceNumber: string | null;
 
-  @Column({ name: 'is_cleared', default: false })
-  isCleared: boolean;
-
-  @Column({ name: 'is_reconciled', default: false })
-  isReconciled: boolean;
+  @Column({
+    type: 'varchar',
+    length: 20,
+    default: TransactionStatus.UNRECONCILED,
+  })
+  status: TransactionStatus;
 
   @Column({
     type: 'date',
@@ -111,6 +119,20 @@ export class Transaction {
     },
   })
   reconciledDate: string | null;
+
+  // Computed properties for backwards compatibility
+  get isCleared(): boolean {
+    return this.status === TransactionStatus.CLEARED ||
+           this.status === TransactionStatus.RECONCILED;
+  }
+
+  get isReconciled(): boolean {
+    return this.status === TransactionStatus.RECONCILED;
+  }
+
+  get isVoid(): boolean {
+    return this.status === TransactionStatus.VOID;
+  }
 
   @Column({ name: 'is_split', default: false })
   isSplit: boolean;

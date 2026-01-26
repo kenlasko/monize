@@ -45,6 +45,7 @@ const accountSchema = z.object({
   accountNumber: z.string().optional(),
   institution: z.string().optional(),
   isFavourite: z.boolean().optional(),
+  createInvestmentPair: z.boolean().optional(),
 });
 
 type AccountFormData = z.infer<typeof accountSchema>;
@@ -114,7 +115,12 @@ export function AccountForm({ account, onSubmit, onCancel }: AccountFormProps) {
 
   const watchedCurrency = watch('currencyCode');
   const watchedIsFavourite = watch('isFavourite');
+  const watchedAccountType = watch('accountType');
+  const watchedCreateInvestmentPair = watch('createInvestmentPair');
   const currencySymbol = currencySymbols[watchedCurrency] || '$';
+
+  // Show investment pair checkbox only when creating a new INVESTMENT account
+  const showInvestmentPairOption = !account && watchedAccountType === 'INVESTMENT';
 
   const toggleFavourite = () => {
     setValue('isFavourite', !watchedIsFavourite, { shouldDirty: true });
@@ -140,6 +146,28 @@ export function AccountForm({ account, onSubmit, onCancel }: AccountFormProps) {
         error={errors.accountType?.message}
         {...register('accountType')}
       />
+
+      {/* Investment account pair option */}
+      {showInvestmentPairOption && (
+        <div className="flex items-start gap-3 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+          <input
+            type="checkbox"
+            id="createInvestmentPair"
+            className="mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            {...register('createInvestmentPair')}
+          />
+          <label htmlFor="createInvestmentPair" className="flex-1">
+            <span className="block text-sm font-medium text-gray-900 dark:text-gray-100">
+              Create as Cash + Brokerage pair (recommended)
+            </span>
+            <span className="block text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Creates two linked accounts: a Cash account for transfers in/out and a
+              Brokerage account for investment transactions. This is the recommended
+              structure for tracking investments.
+            </span>
+          </label>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-4">
         <Input

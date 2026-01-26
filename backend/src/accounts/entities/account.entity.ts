@@ -5,6 +5,8 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   OneToMany,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 import { Transaction } from '../../transactions/entities/transaction.entity';
 
@@ -21,6 +23,11 @@ export enum AccountType {
   CASH = 'CASH',
   LINE_OF_CREDIT = 'LINE_OF_CREDIT',
   OTHER = 'OTHER',
+}
+
+export enum AccountSubType {
+  INVESTMENT_CASH = 'INVESTMENT_CASH',
+  INVESTMENT_BROKERAGE = 'INVESTMENT_BROKERAGE',
 }
 
 @Entity('accounts')
@@ -94,6 +101,21 @@ export class Account {
 
   @Column({ name: 'is_favourite', default: false })
   isFavourite: boolean;
+
+  @Column({
+    type: 'varchar',
+    length: 50,
+    name: 'account_sub_type',
+    nullable: true,
+  })
+  accountSubType: AccountSubType | null;
+
+  @Column({ type: 'uuid', name: 'linked_account_id', nullable: true })
+  linkedAccountId: string | null;
+
+  @ManyToOne(() => Account, { nullable: true })
+  @JoinColumn({ name: 'linked_account_id' })
+  linkedAccount: Account | null;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

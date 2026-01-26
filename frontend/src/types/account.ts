@@ -12,10 +12,14 @@ export type AccountType =
   | 'LINE_OF_CREDIT'
   | 'OTHER';
 
+export type AccountSubType = 'INVESTMENT_CASH' | 'INVESTMENT_BROKERAGE' | null;
+
 export interface Account {
   id: string;
   userId: string;
   accountType: AccountType;
+  accountSubType: AccountSubType;
+  linkedAccountId: string | null;
   name: string;
   description: string | null;
   currencyCode: string;
@@ -43,6 +47,12 @@ export interface CreateAccountData {
   creditLimit?: number;
   interestRate?: number;
   isFavourite?: boolean;
+  createInvestmentPair?: boolean;
+}
+
+export interface InvestmentAccountPair {
+  cashAccount: Account;
+  brokerageAccount: Account;
 }
 
 export interface UpdateAccountData extends Partial<CreateAccountData> {}

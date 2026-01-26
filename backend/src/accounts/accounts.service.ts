@@ -6,7 +6,9 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Account } from './entities/account.entity';
+import { Account, AccountType, AccountSubType } from './entities/account.entity';
+import { Transaction } from '../transactions/entities/transaction.entity';
+import { InvestmentTransaction } from '../securities/entities/investment-transaction.entity';
 import { CreateAccountDto } from './dto/create-account.dto';
 import { UpdateAccountDto } from './dto/update-account.dto';
 
@@ -15,13 +17,28 @@ export class AccountsService {
   constructor(
     @InjectRepository(Account)
     private accountsRepository: Repository<Account>,
+    @InjectRepository(Transaction)
+    private transactionRepository: Repository<Transaction>,
+    @InjectRepository(InvestmentTransaction)
+    private investmentTransactionRepository: Repository<InvestmentTransaction>,
   ) {}
 
   /**
    * Create a new account for a user
    */
-  async create(userId: string, createAccountDto: CreateAccountDto): Promise<Account> {
-    const { openingBalance = 0, ...accountData } = createAccountDto;
+  async create(
+    userId: string,
+    createAccountDto: CreateAccountDto,
+  ): Promise<Account | { cashAccount: Account; brokerageAccount: Account }> {
+    const { openingBalance = 0, createInvestmentPair, ...accountData } = createAccountDto;
+
+    // If creating an investment account pair, delegate to the pair creation method
+    if (
+      createInvestmentPair &&
+      accountData.accountType === AccountType.INVESTMENT
+    ) {
+      return this.createInvestmentAccountPair(userId, createAccountDto);
+    }
 
     const account = this.accountsRepository.create({
       ...accountData,
@@ -31,6 +48,47 @@ export class AccountsService {
     });
 
     return this.accountsRepository.save(account);
+  }
+
+  /**
+   * Create a linked investment account pair (cash + brokerage)
+   */
+  async createInvestmentAccountPair(
+    userId: string,
+    createAccountDto: CreateAccountDto,
+  ): Promise<{ cashAccount: Account; brokerageAccount: Account }> {
+    const { openingBalance = 0, name, ...accountData } = createAccountDto;
+
+    // Create the cash account first
+    const cashAccount = this.accountsRepository.create({
+      ...accountData,
+      name: `${name} - Cash`,
+      userId,
+      openingBalance,
+      currentBalance: openingBalance,
+      accountType: AccountType.INVESTMENT,
+      accountSubType: AccountSubType.INVESTMENT_CASH,
+    });
+    await this.accountsRepository.save(cashAccount);
+
+    // Create the brokerage account linked to the cash account
+    const brokerageAccount = this.accountsRepository.create({
+      ...accountData,
+      name: `${name} - Brokerage`,
+      userId,
+      openingBalance: 0,
+      currentBalance: 0,
+      accountType: AccountType.INVESTMENT,
+      accountSubType: AccountSubType.INVESTMENT_BROKERAGE,
+      linkedAccountId: cashAccount.id,
+    });
+    await this.accountsRepository.save(brokerageAccount);
+
+    // Update cash account to link back to brokerage
+    cashAccount.linkedAccountId = brokerageAccount.id;
+    await this.accountsRepository.save(cashAccount);
+
+    return { cashAccount, brokerageAccount };
   }
 
   /**
@@ -67,6 +125,42 @@ export class AccountsService {
     }
 
     return account;
+  }
+
+  /**
+   * Get the linked investment account pair for a given account ID
+   */
+  async getInvestmentAccountPair(
+    userId: string,
+    accountId: string,
+  ): Promise<{ cashAccount: Account; brokerageAccount: Account }> {
+    const account = await this.findOne(userId, accountId);
+
+    // Check if this is an investment account with a sub-type
+    if (
+      account.accountType !== AccountType.INVESTMENT ||
+      !account.accountSubType
+    ) {
+      throw new BadRequestException(
+        'This account is not part of an investment account pair',
+      );
+    }
+
+    // Get the linked account
+    if (!account.linkedAccountId) {
+      throw new BadRequestException(
+        'This investment account does not have a linked account',
+      );
+    }
+
+    const linkedAccount = await this.findOne(userId, account.linkedAccountId);
+
+    // Return in correct order based on sub-type
+    if (account.accountSubType === AccountSubType.INVESTMENT_CASH) {
+      return { cashAccount: account, brokerageAccount: linkedAccount };
+    } else {
+      return { cashAccount: linkedAccount, brokerageAccount: account };
+    }
   }
 
   /**
@@ -196,5 +290,72 @@ export class AccountsService {
       totalLiabilities,
       netWorth: totalAssets - totalLiabilities,
     };
+  }
+
+  /**
+   * Get transaction count for an account (regular and investment transactions)
+   */
+  async getTransactionCount(
+    userId: string,
+    accountId: string,
+  ): Promise<{ transactionCount: number; investmentTransactionCount: number; canDelete: boolean }> {
+    // Verify account belongs to user
+    await this.findOne(userId, accountId);
+
+    const transactionCount = await this.transactionRepository.count({
+      where: { accountId },
+    });
+
+    const investmentTransactionCount = await this.investmentTransactionRepository.count({
+      where: { accountId },
+    });
+
+    return {
+      transactionCount,
+      investmentTransactionCount,
+      canDelete: transactionCount === 0 && investmentTransactionCount === 0,
+    };
+  }
+
+  /**
+   * Permanently delete an account (only if it has no transactions)
+   */
+  async delete(userId: string, id: string): Promise<void> {
+    const account = await this.findOne(userId, id);
+
+    // Check for regular transactions
+    const transactionCount = await this.transactionRepository.count({
+      where: { accountId: id },
+    });
+
+    if (transactionCount > 0) {
+      throw new BadRequestException(
+        `Cannot delete account with ${transactionCount} transaction(s). Close the account instead.`,
+      );
+    }
+
+    // Check for investment transactions
+    const investmentTransactionCount = await this.investmentTransactionRepository.count({
+      where: { accountId: id },
+    });
+
+    if (investmentTransactionCount > 0) {
+      throw new BadRequestException(
+        `Cannot delete account with ${investmentTransactionCount} investment transaction(s). Close the account instead.`,
+      );
+    }
+
+    // If this is part of an investment account pair, remove the link from the paired account
+    if (account.linkedAccountId) {
+      const linkedAccount = await this.accountsRepository.findOne({
+        where: { id: account.linkedAccountId },
+      });
+      if (linkedAccount) {
+        linkedAccount.linkedAccountId = null;
+        await this.accountsRepository.save(linkedAccount);
+      }
+    }
+
+    await this.accountsRepository.remove(account);
   }
 }

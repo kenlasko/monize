@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Account, AccountType } from '@/types/account';
 import { Button } from '@/components/ui/Button';
@@ -17,16 +17,74 @@ interface AccountListProps {
 export function AccountList({ accounts, onEdit, onRefresh }: AccountListProps) {
   const router = useRouter();
   const [closeDialogOpen, setCloseDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [accountToClose, setAccountToClose] = useState<Account | null>(null);
+  const [accountToDelete, setAccountToDelete] = useState<Account | null>(null);
   const [isClosing, setIsClosing] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deletableAccounts, setDeletableAccounts] = useState<Set<string>>(new Set());
+
+  // Check which accounts can be deleted (have no transactions)
+  useEffect(() => {
+    const checkDeletableAccounts = async () => {
+      const deletable = new Set<string>();
+      for (const account of accounts) {
+        try {
+          const result = await accountsApi.canDelete(account.id);
+          if (result.canDelete) {
+            deletable.add(account.id);
+          }
+        } catch {
+          // Ignore errors, account just won't show delete button
+        }
+      }
+      setDeletableAccounts(deletable);
+    };
+
+    if (accounts.length > 0) {
+      checkDeletableAccounts();
+    }
+  }, [accounts]);
 
   const handleViewTransactions = (account: Account) => {
     router.push(`/transactions?accountId=${account.id}`);
   };
 
+  const handleReconcile = (account: Account) => {
+    router.push(`/reconcile?accountId=${account.id}`);
+  };
+
   const handleCloseClick = (account: Account) => {
     setAccountToClose(account);
     setCloseDialogOpen(true);
+  };
+
+  const handleDeleteClick = (account: Account) => {
+    setAccountToDelete(account);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!accountToDelete) return;
+
+    setIsDeleting(true);
+    try {
+      await accountsApi.delete(accountToDelete.id);
+      toast.success('Account deleted successfully');
+      setDeleteDialogOpen(false);
+      setAccountToDelete(null);
+      onRefresh();
+    } catch (error: any) {
+      const message = error.response?.data?.message || 'Failed to delete account';
+      toast.error(message);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false);
+    setAccountToDelete(null);
   };
 
   const handleCloseConfirm = async () => {
@@ -217,6 +275,16 @@ export function AccountList({ accounts, onEdit, onRefresh }: AccountListProps) {
                     >
                       Edit
                     </Button>
+                    {account.accountSubType !== 'INVESTMENT_BROKERAGE' && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleReconcile(account)}
+                        title="Reconcile account against a statement"
+                      >
+                        Reconcile
+                      </Button>
+                    )}
                     <Button
                       variant="outline"
                       size="sm"
@@ -226,15 +294,37 @@ export function AccountList({ accounts, onEdit, onRefresh }: AccountListProps) {
                     >
                       Close
                     </Button>
+                    {deletableAccounts.has(account.id) && (
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        onClick={() => handleDeleteClick(account)}
+                        title="Permanently delete account (no transactions)"
+                      >
+                        Delete
+                      </Button>
+                    )}
                   </>
                 ) : (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleReopen(account)}
-                  >
-                    Reopen
-                  </Button>
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleReopen(account)}
+                    >
+                      Reopen
+                    </Button>
+                    {deletableAccounts.has(account.id) && (
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        onClick={() => handleDeleteClick(account)}
+                        title="Permanently delete account (no transactions)"
+                      >
+                        Delete
+                      </Button>
+                    )}
+                  </>
                 )}
               </td>
             </tr>
@@ -255,6 +345,21 @@ export function AccountList({ accounts, onEdit, onRefresh }: AccountListProps) {
         variant="warning"
         onConfirm={handleCloseConfirm}
         onCancel={handleCloseCancel}
+      />
+
+      {/* Delete Account Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={deleteDialogOpen}
+        title="Delete Account"
+        message={accountToDelete
+          ? `Are you sure you want to permanently delete "${accountToDelete.name}"? This action cannot be undone.`
+          : ''
+        }
+        confirmLabel={isDeleting ? 'Deleting...' : 'Delete Account'}
+        cancelLabel="Cancel"
+        variant="danger"
+        onConfirm={handleDeleteConfirm}
+        onCancel={handleDeleteCancel}
       />
     </div>
   );

@@ -14,7 +14,7 @@ import { transactionsApi } from '@/lib/transactions';
 import { payeesApi } from '@/lib/payees';
 import { categoriesApi } from '@/lib/categories';
 import { accountsApi } from '@/lib/accounts';
-import { Transaction, CreateSplitData } from '@/types/transaction';
+import { Transaction, CreateSplitData, TransactionStatus } from '@/types/transaction';
 import { Payee } from '@/types/payee';
 import { Category } from '@/types/category';
 import { Account } from '@/types/account';
@@ -41,7 +41,7 @@ const transactionSchema = z.object({
   currencyCode: z.string().default('CAD'),
   description: optionalString,
   referenceNumber: optionalString,
-  isCleared: z.boolean().default(false),
+  status: z.nativeEnum(TransactionStatus).default(TransactionStatus.UNRECONCILED),
 });
 
 type TransactionFormData = z.infer<typeof transactionSchema>;
@@ -143,13 +143,13 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
           currencyCode: transaction.currencyCode,
           description: transaction.description || '',
           referenceNumber: transaction.referenceNumber || '',
-          isCleared: transaction.isCleared,
+          status: transaction.status || TransactionStatus.UNRECONCILED,
         }
       : {
           accountId: defaultAccountId || '',
           transactionDate: new Date().toISOString().split('T')[0],
           currencyCode: 'CAD',
-          isCleared: false,
+          status: TransactionStatus.UNRECONCILED,
         },
   });
 
@@ -393,7 +393,7 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
           fromCurrencyCode: data.currencyCode,
           description: data.description,
           referenceNumber: data.referenceNumber,
-          isCleared: data.isCleared,
+          status: data.status,
         };
 
         if (transaction?.isTransfer) {
@@ -507,10 +507,18 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
           value={watchedAccountId || ''}
           options={[
             { value: '', label: 'Select account...' },
-            ...accounts.map(account => ({
-              value: account.id,
-              label: `${account.name} (${account.currencyCode})`,
-            })),
+            ...(mode === 'transfer'
+              ? accounts
+                  .filter(account => account.accountSubType !== 'INVESTMENT_BROKERAGE')
+                  .map(account => ({
+                    value: account.id,
+                    label: `${account.name} (${account.currencyCode})`,
+                  }))
+              : accounts.map(account => ({
+                  value: account.id,
+                  label: `${account.name} (${account.currencyCode})`,
+                }))
+            ),
           ]}
           {...register('accountId')}
         />
@@ -524,7 +532,10 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
             options={[
               { value: '', label: 'Select destination account...' },
               ...accounts
-                .filter(account => account.id !== watchedAccountId)
+                .filter(account =>
+                  account.id !== watchedAccountId &&
+                  account.accountSubType !== 'INVESTMENT_BROKERAGE'
+                )
                 .map(account => ({
                   value: account.id,
                   label: `${account.name} (${account.currencyCode})`,
@@ -689,18 +700,17 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
         )}
       </div>
 
-      {/* Cleared checkbox */}
-      <div className="flex items-center">
-        <input
-          id="isCleared"
-          type="checkbox"
-          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded dark:bg-gray-800"
-          {...register('isCleared')}
-        />
-        <label htmlFor="isCleared" className="ml-2 block text-sm text-gray-900 dark:text-gray-100">
-          Mark as cleared
-        </label>
-      </div>
+      {/* Status selector */}
+      <Select
+        label="Status"
+        options={[
+          { value: TransactionStatus.UNRECONCILED, label: 'Unreconciled' },
+          { value: TransactionStatus.CLEARED, label: 'Cleared' },
+          { value: TransactionStatus.RECONCILED, label: 'Reconciled' },
+          { value: TransactionStatus.VOID, label: 'Void' },
+        ]}
+        {...register('status')}
+      />
 
       {/* Actions */}
       <div className="flex justify-end space-x-3 pt-4">

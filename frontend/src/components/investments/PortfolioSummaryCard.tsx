@@ -1,0 +1,135 @@
+'use client';
+
+import { PortfolioSummary } from '@/types/investment';
+
+interface PortfolioSummaryCardProps {
+  summary: PortfolioSummary | null;
+  isLoading: boolean;
+}
+
+export function PortfolioSummaryCard({
+  summary,
+  isLoading,
+}: PortfolioSummaryCardProps) {
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('en-CA', {
+      style: 'currency',
+      currency: 'CAD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(value);
+  };
+
+  const formatPercent = (value: number) => {
+    const sign = value >= 0 ? '+' : '';
+    return `${sign}${value.toFixed(2)}%`;
+  };
+
+  if (isLoading) {
+    return (
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+          Portfolio Summary
+        </h3>
+        <div className="space-y-3">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="animate-pulse">
+              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-1" />
+              <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/2" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (!summary) {
+    return (
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+          Portfolio Summary
+        </h3>
+        <p className="text-gray-500 dark:text-gray-400">
+          No investment data available.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+      <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+        Portfolio Summary
+      </h3>
+
+      <div className="space-y-4">
+        {/* Total Portfolio Value */}
+        <div>
+          <div className="text-sm text-gray-500 dark:text-gray-400">
+            Total Portfolio Value
+          </div>
+          <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+            {formatCurrency(summary.totalPortfolioValue)}
+          </div>
+        </div>
+
+        {/* Breakdown */}
+        <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <div>
+            <div className="text-sm text-gray-500 dark:text-gray-400">
+              Holdings Value
+            </div>
+            <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              {formatCurrency(summary.totalHoldingsValue)}
+            </div>
+          </div>
+          <div>
+            <div className="text-sm text-gray-500 dark:text-gray-400">
+              Cash Balance
+            </div>
+            <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              {formatCurrency(summary.totalCashValue)}
+            </div>
+          </div>
+        </div>
+
+        {/* Gain/Loss */}
+        <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="text-sm text-gray-500 dark:text-gray-400">
+            Total Gain/Loss
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span
+              className={`text-lg font-semibold ${
+                summary.totalGainLoss >= 0
+                  ? 'text-green-600 dark:text-green-400'
+                  : 'text-red-600 dark:text-red-400'
+              }`}
+            >
+              {formatCurrency(summary.totalGainLoss)}
+            </span>
+            <span
+              className={`text-sm ${
+                summary.totalGainLossPercent >= 0
+                  ? 'text-green-600 dark:text-green-400'
+                  : 'text-red-600 dark:text-red-400'
+              }`}
+            >
+              ({formatPercent(summary.totalGainLossPercent)})
+            </span>
+          </div>
+        </div>
+
+        {/* Cost Basis */}
+        <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="text-sm text-gray-500 dark:text-gray-400">
+            Total Cost Basis
+          </div>
+          <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+            {formatCurrency(summary.totalCostBasis)}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

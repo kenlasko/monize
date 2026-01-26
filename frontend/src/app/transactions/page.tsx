@@ -227,13 +227,20 @@ export default function TransactionsPage() {
     }
   };
 
+  // Handle in-place transaction update (e.g., clearing status) without full refresh
+  const handleTransactionUpdate = useCallback((updatedTransaction: Transaction) => {
+    setTransactions(prev =>
+      prev.map(tx => tx.id === updatedTransaction.id ? updatedTransaction : tx)
+    );
+  }, []);
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <AppHeader />
 
       {/* Page Header */}
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div className="px-4 sm:px-6 lg:px-12 py-4">
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Transactions</h1>
@@ -248,7 +255,7 @@ export default function TransactionsPage() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="px-4 sm:px-6 lg:px-12 py-8">
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           <div className="bg-white dark:bg-gray-800 overflow-hidden shadow dark:shadow-gray-700/50 rounded-lg">
@@ -459,6 +466,7 @@ export default function TransactionsPage() {
               transactions={transactions}
               onEdit={handleEdit}
               onRefresh={loadData}
+              onTransactionUpdate={handleTransactionUpdate}
               density={listDensity}
               onDensityChange={setListDensity}
               isSingleAccountView={!!filterAccountId}

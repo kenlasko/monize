@@ -5,6 +5,7 @@ import {
   IsDateString,
   IsUUID,
   IsBoolean,
+  IsEnum,
   MaxLength,
   Min,
   IsArray,
@@ -13,6 +14,7 @@ import {
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { CreateTransactionSplitDto } from './create-transaction-split.dto';
+import { TransactionStatus } from '../entities/transaction.entity';
 
 export class CreateTransactionDto {
   @ApiProperty({ description: 'Account ID where the transaction occurs' })
@@ -65,15 +67,14 @@ export class CreateTransactionDto {
   @MaxLength(100)
   referenceNumber?: string;
 
-  @ApiPropertyOptional({ description: 'Whether transaction is cleared', default: false })
+  @ApiPropertyOptional({
+    description: 'Transaction status',
+    enum: TransactionStatus,
+    default: TransactionStatus.UNRECONCILED,
+  })
   @IsOptional()
-  @IsBoolean()
-  isCleared?: boolean;
-
-  @ApiPropertyOptional({ description: 'Whether transaction is reconciled', default: false })
-  @IsOptional()
-  @IsBoolean()
-  isReconciled?: boolean;
+  @IsEnum(TransactionStatus)
+  status?: TransactionStatus;
 
   @ApiPropertyOptional({ description: 'Reconciliation date (YYYY-MM-DD format)' })
   @IsOptional()

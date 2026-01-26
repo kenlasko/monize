@@ -109,6 +109,32 @@ export class AccountsController {
     return this.accountsService.getBalance(req.user.id, id);
   }
 
+  @Get(':id/investment-pair')
+  @ApiOperation({
+    summary: 'Get the linked investment account pair for an investment account',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Account UUID (either cash or brokerage account)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Investment account pair retrieved successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - account is not part of an investment pair',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - account does not belong to user',
+  })
+  @ApiResponse({ status: 404, description: 'Account not found' })
+  getInvestmentPair(@Request() req, @Param('id') id: string) {
+    return this.accountsService.getInvestmentAccountPair(req.user.id, id);
+  }
+
   @Patch(':id')
   @ApiOperation({ summary: 'Update an account' })
   @ApiParam({
@@ -165,5 +191,40 @@ export class AccountsController {
   @ApiResponse({ status: 404, description: 'Account not found' })
   reopen(@Request() req, @Param('id') id: string) {
     return this.accountsService.reopen(req.user.id, id);
+  }
+
+  @Get(':id/can-delete')
+  @ApiOperation({ summary: 'Check if an account can be deleted (has no transactions)' })
+  @ApiParam({
+    name: 'id',
+    description: 'Account UUID',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns transaction counts and whether account can be deleted',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - account does not belong to user' })
+  @ApiResponse({ status: 404, description: 'Account not found' })
+  canDelete(@Request() req, @Param('id') id: string) {
+    return this.accountsService.getTransactionCount(req.user.id, id);
+  }
+
+  @Delete(':id')
+  @ApiOperation({ summary: 'Permanently delete an account (only if it has no transactions)' })
+  @ApiParam({
+    name: 'id',
+    description: 'Account UUID',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Account deleted successfully',
+  })
+  @ApiResponse({ status: 400, description: 'Bad request - account has transactions' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - account does not belong to user' })
+  @ApiResponse({ status: 404, description: 'Account not found' })
+  delete(@Request() req, @Param('id') id: string) {
+    return this.accountsService.delete(req.user.id, id);
   }
 }

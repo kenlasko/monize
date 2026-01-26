@@ -2,6 +2,7 @@ import apiClient from './api';
 import {
   Transaction,
   TransactionSplit,
+  TransactionStatus,
   CreateTransactionData,
   UpdateTransactionData,
   CreateSplitData,
@@ -9,6 +10,8 @@ import {
   PaginatedTransactions,
   CreateTransferData,
   TransferResult,
+  ReconciliationData,
+  BulkReconcileResult,
 } from '@/types/transaction';
 
 export const transactionsApi = {
@@ -66,6 +69,14 @@ export const transactionsApi = {
   // Unreconcile transaction
   unreconcile: async (id: string): Promise<Transaction> => {
     const response = await apiClient.post<Transaction>(`/transactions/${id}/unreconcile`);
+    return response.data;
+  },
+
+  // Update transaction status
+  updateStatus: async (id: string, status: TransactionStatus): Promise<Transaction> => {
+    const response = await apiClient.patch<Transaction>(`/transactions/${id}/status`, {
+      status,
+    });
     return response.data;
   },
 
@@ -151,6 +162,36 @@ export const transactionsApi = {
     const response = await apiClient.patch<TransferResult>(
       `/transactions/${transactionId}/transfer`,
       data,
+    );
+    return response.data;
+  },
+
+  // ==================== Reconciliation Methods ====================
+
+  // Get reconciliation data for an account
+  getReconciliationData: async (
+    accountId: string,
+    statementDate: string,
+    statementBalance: number,
+  ): Promise<ReconciliationData> => {
+    const response = await apiClient.get<ReconciliationData>(
+      `/transactions/reconcile/${accountId}`,
+      {
+        params: { statementDate, statementBalance },
+      },
+    );
+    return response.data;
+  },
+
+  // Bulk reconcile transactions for an account
+  bulkReconcile: async (
+    accountId: string,
+    transactionIds: string[],
+    reconciledDate: string,
+  ): Promise<BulkReconcileResult> => {
+    const response = await apiClient.post<BulkReconcileResult>(
+      `/transactions/reconcile/${accountId}`,
+      { transactionIds, reconciledDate },
     );
     return response.data;
   },

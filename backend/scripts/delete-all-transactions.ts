@@ -1,7 +1,7 @@
 /**
  * Script to delete all transactions from all accounts
  *
- * Usage: npx ts-node scripts/delete-all-transactions.ts
+ * Usage: docker exec -it moneymate-backend npx ts-node scripts/delete-all-transactions.ts
  *
  * WARNING: This will permanently delete ALL transactions and reset account balances!
  */

@@ -4,6 +4,7 @@ import {
   CreateAccountData,
   UpdateAccountData,
   AccountSummary,
+  InvestmentAccountPair,
 } from '@/types/account';
 
 export const accountsApi = {
@@ -55,5 +56,26 @@ export const accountsApi = {
   getSummary: async (): Promise<AccountSummary> => {
     const response = await apiClient.get<AccountSummary>('/accounts/summary');
     return response.data;
+  },
+
+  // Get investment account pair
+  getInvestmentPair: async (id: string): Promise<InvestmentAccountPair> => {
+    const response = await apiClient.get<InvestmentAccountPair>(
+      `/accounts/${id}/investment-pair`,
+    );
+    return response.data;
+  },
+
+  // Check if account can be deleted
+  canDelete: async (id: string): Promise<{ transactionCount: number; investmentTransactionCount: number; canDelete: boolean }> => {
+    const response = await apiClient.get<{ transactionCount: number; investmentTransactionCount: number; canDelete: boolean }>(
+      `/accounts/${id}/can-delete`,
+    );
+    return response.data;
+  },
+
+  // Delete account (only if no transactions)
+  delete: async (id: string): Promise<void> => {
+    await apiClient.delete(`/accounts/${id}`);
   },
 };

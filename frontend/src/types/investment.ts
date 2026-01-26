@@ -1,0 +1,106 @@
+export type InvestmentAction =
+  | 'BUY'
+  | 'SELL'
+  | 'DIVIDEND'
+  | 'INTEREST'
+  | 'CAPITAL_GAIN'
+  | 'SPLIT'
+  | 'TRANSFER_IN'
+  | 'TRANSFER_OUT'
+  | 'REINVEST';
+
+export interface Security {
+  id: string;
+  symbol: string;
+  name: string;
+  securityType: string | null;
+  exchange: string | null;
+  currencyCode: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Holding {
+  id: string;
+  accountId: string;
+  securityId: string;
+  quantity: number;
+  averageCost: number | null;
+  security: Security;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface HoldingWithMarketValue {
+  id: string;
+  symbol: string;
+  name: string;
+  securityType: string;
+  quantity: number;
+  averageCost: number;
+  costBasis: number;
+  currentPrice: number | null;
+  marketValue: number | null;
+  gainLoss: number | null;
+  gainLossPercent: number | null;
+}
+
+export interface PortfolioSummary {
+  totalCashValue: number;
+  totalHoldingsValue: number;
+  totalCostBasis: number;
+  totalPortfolioValue: number;
+  totalGainLoss: number;
+  totalGainLossPercent: number;
+  holdings: HoldingWithMarketValue[];
+}
+
+export interface AllocationItem {
+  name: string;
+  symbol: string | null;
+  type: 'cash' | 'security';
+  value: number;
+  percentage: number;
+  color?: string;
+}
+
+export interface AssetAllocation {
+  allocation: AllocationItem[];
+  totalValue: number;
+}
+
+export interface InvestmentTransaction {
+  id: string;
+  accountId: string;
+  securityId: string;
+  action: InvestmentAction;
+  transactionDate: string;
+  quantity: number;
+  price: number;
+  commission: number | null;
+  totalAmount: number;
+  description: string | null;
+  security: Security;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateInvestmentTransactionData {
+  accountId: string;
+  securityId: string;
+  action: InvestmentAction;
+  transactionDate: string;
+  quantity: number;
+  price: number;
+  commission?: number;
+  description?: string;
+}
+
+export interface CreateSecurityData {
+  symbol: string;
+  name: string;
+  securityType?: string;
+  exchange?: string;
+  currencyCode: string;
+}

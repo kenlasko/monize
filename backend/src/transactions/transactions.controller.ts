@@ -25,6 +25,7 @@ import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
 import { CreateTransactionSplitDto } from './dto/create-transaction-split.dto';
 import { CreateTransferDto } from './dto/create-transfer.dto';
+import { TransactionStatus } from './entities/transaction.entity';
 
 @ApiTags('Transactions')
 @Controller('transactions')
@@ -79,6 +80,12 @@ export class TransactionsController {
     required: false,
     description: 'Number of transactions per page (default: 50, max: 200)',
   })
+  @ApiQuery({
+    name: 'includeInvestmentBrokerage',
+    required: false,
+    description:
+      'Include transactions from investment brokerage accounts (default: false)',
+  })
   @ApiResponse({
     status: 200,
     description: 'List of transactions retrieved successfully',
@@ -93,6 +100,7 @@ export class TransactionsController {
     @Query('payeeId') payeeId?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
+    @Query('includeInvestmentBrokerage') includeInvestmentBrokerage?: string,
   ) {
     return this.transactionsService.findAll(
       req.user.id,
@@ -103,6 +111,7 @@ export class TransactionsController {
       payeeId,
       page ? parseInt(page, 10) : undefined,
       limit ? parseInt(limit, 10) : undefined,
+      includeInvestmentBrokerage === 'true',
     );
   }
 
@@ -246,6 +255,65 @@ export class TransactionsController {
   @ApiResponse({ status: 404, description: 'Transaction not found' })
   unreconcile(@Request() req, @Param('id') id: string) {
     return this.transactionsService.unreconcile(req.user.id, id);
+  }
+
+  @Patch(':id/status')
+  @ApiOperation({ summary: 'Update transaction status' })
+  @ApiParam({ name: 'id', description: 'Transaction UUID' })
+  @ApiResponse({ status: 200, description: 'Transaction status updated successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid status' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Transaction not found' })
+  updateStatus(
+    @Request() req,
+    @Param('id') id: string,
+    @Body('status') status: TransactionStatus,
+  ) {
+    return this.transactionsService.updateStatus(req.user.id, id, status);
+  }
+
+  // ==================== Reconciliation Endpoints ====================
+
+  @Get('reconcile/:accountId')
+  @ApiOperation({ summary: 'Get reconciliation data for an account' })
+  @ApiParam({ name: 'accountId', description: 'Account UUID' })
+  @ApiQuery({ name: 'statementDate', required: true, description: 'Statement date (YYYY-MM-DD)' })
+  @ApiQuery({ name: 'statementBalance', required: true, description: 'Statement ending balance' })
+  @ApiResponse({ status: 200, description: 'Reconciliation data retrieved successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Account not found' })
+  getReconciliationData(
+    @Request() req,
+    @Param('accountId') accountId: string,
+    @Query('statementDate') statementDate: string,
+    @Query('statementBalance') statementBalance: string,
+  ) {
+    return this.transactionsService.getReconciliationData(
+      req.user.id,
+      accountId,
+      statementDate,
+      parseFloat(statementBalance),
+    );
+  }
+
+  @Post('reconcile/:accountId')
+  @ApiOperation({ summary: 'Bulk reconcile transactions for an account' })
+  @ApiParam({ name: 'accountId', description: 'Account UUID' })
+  @ApiResponse({ status: 200, description: 'Transactions reconciled successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid transaction IDs' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Account not found' })
+  bulkReconcile(
+    @Request() req,
+    @Param('accountId') accountId: string,
+    @Body() body: { transactionIds: string[]; reconciledDate: string },
+  ) {
+    return this.transactionsService.bulkReconcile(
+      req.user.id,
+      accountId,
+      body.transactionIds,
+      body.reconciledDate,
+    );
   }
 
   // ==================== Split Transaction Endpoints ====================

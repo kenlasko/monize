@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Transaction } from './entities/transaction.entity';
+import { Transaction, TransactionStatus } from './entities/transaction.entity';
 import { TransactionSplit } from './entities/transaction-split.entity';
 import { Category } from '../categories/entities/category.entity';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
@@ -119,11 +119,13 @@ export class TransactionsService {
       await this.createSplits(savedTransaction.id, splits);
     }
 
-    // Update account balance
-    await this.accountsService.updateBalance(
-      createTransactionDto.accountId,
-      Number(createTransactionDto.amount),
-    );
+    // Update account balance only if not VOID
+    if (savedTransaction.status !== TransactionStatus.VOID) {
+      await this.accountsService.updateBalance(
+        createTransactionDto.accountId,
+        Number(createTransactionDto.amount),
+      );
+    }
 
     // Return transaction with splits
     return this.findOne(userId, savedTransaction.id);
@@ -186,6 +188,7 @@ export class TransactionsService {
     payeeId?: string,
     page: number = 1,
     limit: number = 50,
+    includeInvestmentBrokerage: boolean = false,
   ): Promise<PaginatedTransactions> {
     // Enforce limits
     const safePage = Math.max(1, page);
@@ -203,6 +206,13 @@ export class TransactionsService {
       .orderBy('transaction.transactionDate', 'DESC')
       .addOrderBy('transaction.createdAt', 'DESC')
       .addOrderBy('transaction.id', 'DESC');
+
+    // Exclude investment brokerage accounts unless explicitly requested
+    if (!includeInvestmentBrokerage) {
+      queryBuilder.andWhere(
+        "(account.accountSubType IS NULL OR account.accountSubType != 'INVESTMENT_BROKERAGE')",
+      );
+    }
 
     if (accountId) {
       queryBuilder.andWhere('transaction.accountId = :accountId', { accountId });
@@ -342,6 +352,8 @@ export class TransactionsService {
     const transaction = await this.findOne(userId, id);
     const oldAmount = Number(transaction.amount);
     const oldAccountId = transaction.accountId;
+    const oldStatus = transaction.status;
+    const wasVoid = oldStatus === TransactionStatus.VOID;
 
     const { splits, ...updateData } = updateTransactionDto;
 
@@ -381,8 +393,7 @@ export class TransactionsService {
     if ('exchangeRate' in updateData) transactionUpdateData.exchangeRate = updateData.exchangeRate;
     if ('description' in updateData) transactionUpdateData.description = updateData.description ?? null;
     if ('referenceNumber' in updateData) transactionUpdateData.referenceNumber = updateData.referenceNumber ?? null;
-    if ('isCleared' in updateData) transactionUpdateData.isCleared = updateData.isCleared;
-    if ('isReconciled' in updateData) transactionUpdateData.isReconciled = updateData.isReconciled;
+    if ('status' in updateData) transactionUpdateData.status = updateData.status;
     if ('reconciledDate' in updateData) transactionUpdateData.reconciledDate = updateData.reconciledDate as any;
 
     // If we have splits, ensure categoryId is null on parent
@@ -402,16 +413,29 @@ export class TransactionsService {
     // Handle balance updates
     const newAmount = Number(savedTransaction.amount);
     const newAccountId = savedTransaction.accountId;
+    const newStatus = savedTransaction.status;
+    const isVoid = newStatus === TransactionStatus.VOID;
 
-    if (newAccountId !== oldAccountId) {
-      // Transaction moved to different account
-      await this.accountsService.updateBalance(oldAccountId, -oldAmount);
+    // Balance update logic considering VOID status
+    if (wasVoid && !isVoid) {
+      // Was VOID, now not VOID - add the amount
       await this.accountsService.updateBalance(newAccountId, newAmount);
-    } else if (newAmount !== oldAmount) {
-      // Amount changed in same account
-      const balanceChange = newAmount - oldAmount;
-      await this.accountsService.updateBalance(newAccountId, balanceChange);
+    } else if (!wasVoid && isVoid) {
+      // Was not VOID, now VOID - remove the old amount
+      await this.accountsService.updateBalance(oldAccountId, -oldAmount);
+    } else if (!wasVoid && !isVoid) {
+      // Neither was VOID - handle normal balance changes
+      if (newAccountId !== oldAccountId) {
+        // Transaction moved to different account
+        await this.accountsService.updateBalance(oldAccountId, -oldAmount);
+        await this.accountsService.updateBalance(newAccountId, newAmount);
+      } else if (newAmount !== oldAmount) {
+        // Amount changed in same account
+        const balanceChange = newAmount - oldAmount;
+        await this.accountsService.updateBalance(newAccountId, balanceChange);
+      }
     }
+    // If both were VOID and still VOID, no balance changes needed
 
     return savedTransaction;
   }
@@ -422,22 +446,61 @@ export class TransactionsService {
   async remove(userId: string, id: string): Promise<void> {
     const transaction = await this.findOne(userId, id);
 
-    // Revert the balance change
-    await this.accountsService.updateBalance(
-      transaction.accountId,
-      -Number(transaction.amount),
-    );
+    // Revert the balance change only if not VOID
+    if (transaction.status !== TransactionStatus.VOID) {
+      await this.accountsService.updateBalance(
+        transaction.accountId,
+        -Number(transaction.amount),
+      );
+    }
 
     await this.transactionsRepository.remove(transaction);
   }
 
   /**
-   * Mark transaction as cleared
+   * Update transaction status
+   */
+  async updateStatus(userId: string, id: string, status: TransactionStatus): Promise<Transaction> {
+    const transaction = await this.findOne(userId, id);
+    const oldStatus = transaction.status;
+    const wasVoid = oldStatus === TransactionStatus.VOID;
+    const isVoid = status === TransactionStatus.VOID;
+
+    // Handle balance changes when transitioning to/from VOID
+    if (wasVoid && !isVoid) {
+      // Was VOID, now not VOID - add the amount
+      await this.accountsService.updateBalance(transaction.accountId, Number(transaction.amount));
+    } else if (!wasVoid && isVoid) {
+      // Was not VOID, now VOID - remove the amount
+      await this.accountsService.updateBalance(transaction.accountId, -Number(transaction.amount));
+    }
+
+    // Update the status
+    await this.transactionsRepository.update(id, { status });
+
+    // Set reconciled date when marking as reconciled
+    if (status === TransactionStatus.RECONCILED && oldStatus !== TransactionStatus.RECONCILED) {
+      const now = new Date();
+      const reconciledDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      await this.transactionsRepository.update(id, { reconciledDate });
+    }
+
+    return this.findOne(userId, id);
+  }
+
+  /**
+   * Mark transaction as cleared (legacy method - uses status)
    */
   async markCleared(userId: string, id: string, isCleared: boolean): Promise<Transaction> {
     const transaction = await this.findOne(userId, id);
-    transaction.isCleared = isCleared;
-    return this.transactionsRepository.save(transaction);
+
+    // Don't change if already reconciled or void
+    if (transaction.status === TransactionStatus.RECONCILED || transaction.status === TransactionStatus.VOID) {
+      throw new BadRequestException('Cannot change cleared status of reconciled or void transactions');
+    }
+
+    const newStatus = isCleared ? TransactionStatus.CLEARED : TransactionStatus.UNRECONCILED;
+    return this.updateStatus(userId, id, newStatus);
   }
 
   /**
@@ -446,15 +509,15 @@ export class TransactionsService {
   async reconcile(userId: string, id: string): Promise<Transaction> {
     const transaction = await this.findOne(userId, id);
 
-    if (transaction.isReconciled) {
+    if (transaction.status === TransactionStatus.RECONCILED) {
       throw new BadRequestException('Transaction is already reconciled');
     }
 
-    transaction.isReconciled = true;
-    const now = new Date();
-    transaction.reconciledDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    if (transaction.status === TransactionStatus.VOID) {
+      throw new BadRequestException('Cannot reconcile a void transaction');
+    }
 
-    return this.transactionsRepository.save(transaction);
+    return this.updateStatus(userId, id, TransactionStatus.RECONCILED);
   }
 
   /**
@@ -463,14 +526,131 @@ export class TransactionsService {
   async unreconcile(userId: string, id: string): Promise<Transaction> {
     const transaction = await this.findOne(userId, id);
 
-    if (!transaction.isReconciled) {
+    if (transaction.status !== TransactionStatus.RECONCILED) {
       throw new BadRequestException('Transaction is not reconciled');
     }
 
-    transaction.isReconciled = false;
-    transaction.reconciledDate = null;
+    await this.transactionsRepository.update(id, {
+      status: TransactionStatus.CLEARED,
+      reconciledDate: null,
+    });
 
-    return this.transactionsRepository.save(transaction);
+    return this.findOne(userId, id);
+  }
+
+  /**
+   * Get reconciliation data for an account
+   * Returns unreconciled transactions and balance summaries
+   */
+  async getReconciliationData(
+    userId: string,
+    accountId: string,
+    statementDate: string,
+    statementBalance: number,
+  ): Promise<{
+    transactions: Transaction[];
+    reconciledBalance: number;
+    clearedBalance: number;
+    difference: number;
+  }> {
+    // Verify account belongs to user
+    const account = await this.accountsService.findOne(userId, accountId);
+
+    // Get all unreconciled/cleared transactions up to statement date (exclude VOID and RECONCILED)
+    const transactions = await this.transactionsRepository
+      .createQueryBuilder('transaction')
+      .leftJoinAndSelect('transaction.payee', 'payee')
+      .leftJoinAndSelect('transaction.category', 'category')
+      .where('transaction.userId = :userId', { userId })
+      .andWhere('transaction.accountId = :accountId', { accountId })
+      .andWhere('transaction.status IN (:...statuses)', {
+        statuses: [TransactionStatus.UNRECONCILED, TransactionStatus.CLEARED],
+      })
+      .andWhere('transaction.transactionDate <= :statementDate', { statementDate })
+      .orderBy('transaction.transactionDate', 'ASC')
+      .addOrderBy('transaction.createdAt', 'ASC')
+      .getMany();
+
+    // Calculate reconciled balance (sum of all reconciled transactions + opening balance)
+    const reconciledResult = await this.transactionsRepository
+      .createQueryBuilder('transaction')
+      .select('SUM(transaction.amount)', 'sum')
+      .where('transaction.userId = :userId', { userId })
+      .andWhere('transaction.accountId = :accountId', { accountId })
+      .andWhere('transaction.status = :status', { status: TransactionStatus.RECONCILED })
+      .getRawOne();
+
+    const reconciledSum = Number(reconciledResult?.sum) || 0;
+    const reconciledBalance = Number(account.openingBalance) + reconciledSum;
+
+    // Calculate cleared balance (reconciled + cleared but not reconciled)
+    const clearedResult = await this.transactionsRepository
+      .createQueryBuilder('transaction')
+      .select('SUM(transaction.amount)', 'sum')
+      .where('transaction.userId = :userId', { userId })
+      .andWhere('transaction.accountId = :accountId', { accountId })
+      .andWhere('transaction.status = :status', { status: TransactionStatus.CLEARED })
+      .andWhere('transaction.transactionDate <= :statementDate', { statementDate })
+      .getRawOne();
+
+    const clearedSum = Number(clearedResult?.sum) || 0;
+    const clearedBalance = reconciledBalance + clearedSum;
+
+    // Difference between statement balance and cleared balance
+    const difference = statementBalance - clearedBalance;
+
+    return {
+      transactions,
+      reconciledBalance,
+      clearedBalance,
+      difference,
+    };
+  }
+
+  /**
+   * Bulk reconcile transactions
+   * Marks all specified transactions as reconciled
+   */
+  async bulkReconcile(
+    userId: string,
+    accountId: string,
+    transactionIds: string[],
+    reconciledDate: string,
+  ): Promise<{ reconciled: number }> {
+    // Verify account belongs to user
+    await this.accountsService.findOne(userId, accountId);
+
+    if (transactionIds.length === 0) {
+      return { reconciled: 0 };
+    }
+
+    // Verify all transactions belong to the user and account
+    const transactions = await this.transactionsRepository
+      .createQueryBuilder('transaction')
+      .where('transaction.id IN (:...ids)', { ids: transactionIds })
+      .andWhere('transaction.userId = :userId', { userId })
+      .andWhere('transaction.accountId = :accountId', { accountId })
+      .getMany();
+
+    if (transactions.length !== transactionIds.length) {
+      throw new BadRequestException(
+        'Some transactions were not found or do not belong to the specified account',
+      );
+    }
+
+    // Update all transactions to reconciled
+    await this.transactionsRepository
+      .createQueryBuilder()
+      .update(Transaction)
+      .set({
+        status: TransactionStatus.RECONCILED,
+        reconciledDate: reconciledDate,
+      })
+      .where('id IN (:...ids)', { ids: transactionIds })
+      .andWhere('userId = :userId', { userId })
+      .execute();
+
+    return { reconciled: transactions.length };
   }
 
   /**
@@ -710,7 +890,7 @@ export class TransactionsService {
       exchangeRate = 1,
       description,
       referenceNumber,
-      isCleared = false,
+      status = TransactionStatus.UNRECONCILED,
     } = createTransferDto;
 
     // Validate that accounts are different
@@ -741,7 +921,7 @@ export class TransactionsService {
       exchangeRate: 1,
       description: description || `Transfer to ${toAccount.name}`,
       referenceNumber,
-      isCleared,
+      status,
       isTransfer: true,
       payeeName: `Transfer to ${toAccount.name}`,
     });
@@ -756,7 +936,7 @@ export class TransactionsService {
       exchangeRate: exchangeRate,
       description: description || `Transfer from ${fromAccount.name}`,
       referenceNumber,
-      isCleared,
+      status,
       isTransfer: true,
       payeeName: `Transfer from ${fromAccount.name}`,
     });
@@ -859,22 +1039,69 @@ export class TransactionsService {
     const fromTransaction = isFromTransaction ? transaction : linkedTransaction;
     const toTransaction = isFromTransaction ? linkedTransaction : transaction;
 
+    const oldFromAccountId = fromTransaction.accountId;
+    const oldToAccountId = toTransaction.accountId;
     const oldFromAmount = Math.abs(Number(fromTransaction.amount));
     const oldToAmount = Number(toTransaction.amount);
+
+    // Validate new account IDs if provided
+    const newFromAccountId = updateDto.fromAccountId ?? oldFromAccountId;
+    const newToAccountId = updateDto.toAccountId ?? oldToAccountId;
+
+    if (newFromAccountId === newToAccountId) {
+      throw new BadRequestException('Source and destination accounts must be different');
+    }
+
+    // Verify new accounts belong to user if they changed
+    let newFromAccount = fromTransaction.account;
+    let newToAccount = toTransaction.account;
+
+    if (updateDto.fromAccountId && updateDto.fromAccountId !== oldFromAccountId) {
+      newFromAccount = await this.accountsService.findOne(userId, updateDto.fromAccountId);
+    }
+    if (updateDto.toAccountId && updateDto.toAccountId !== oldToAccountId) {
+      newToAccount = await this.accountsService.findOne(userId, updateDto.toAccountId);
+    }
 
     // Update values
     const newAmount = updateDto.amount ?? oldFromAmount;
     const newExchangeRate = updateDto.exchangeRate ?? toTransaction.exchangeRate;
     const newToAmount = Math.round(newAmount * newExchangeRate * 10000) / 10000;
 
+    // Check if accounts or amounts changed - need to update balances
+    const accountsOrAmountsChanged =
+      updateDto.fromAccountId ||
+      updateDto.toAccountId ||
+      updateDto.amount !== undefined ||
+      updateDto.exchangeRate !== undefined;
+
+    // Revert old account balances first if anything changed
+    if (accountsOrAmountsChanged) {
+      await this.accountsService.updateBalance(oldFromAccountId, oldFromAmount);
+      await this.accountsService.updateBalance(oldToAccountId, -oldToAmount);
+    }
+
     // Update from transaction
     const fromUpdateData: Partial<Transaction> = {};
     if (updateDto.transactionDate) fromUpdateData.transactionDate = updateDto.transactionDate as any;
-    if (updateDto.amount) fromUpdateData.amount = -newAmount;
+    if (updateDto.amount !== undefined) fromUpdateData.amount = -newAmount;
     if (updateDto.description !== undefined) fromUpdateData.description = updateDto.description ?? null;
     if (updateDto.referenceNumber !== undefined) fromUpdateData.referenceNumber = updateDto.referenceNumber ?? null;
-    if (updateDto.isCleared !== undefined) fromUpdateData.isCleared = updateDto.isCleared;
+    if (updateDto.status !== undefined) fromUpdateData.status = updateDto.status;
     if (updateDto.fromCurrencyCode) fromUpdateData.currencyCode = updateDto.fromCurrencyCode;
+
+    // Handle account change for from transaction
+    if (updateDto.fromAccountId && updateDto.fromAccountId !== oldFromAccountId) {
+      fromUpdateData.accountId = updateDto.fromAccountId;
+    }
+
+    // Update payeeName if toAccount changed
+    if (updateDto.toAccountId && updateDto.toAccountId !== oldToAccountId) {
+      fromUpdateData.payeeName = `Transfer to ${newToAccount.name}`;
+      if (updateDto.description === undefined) {
+        fromUpdateData.description = `Transfer to ${newToAccount.name}`;
+      }
+    }
 
     if (Object.keys(fromUpdateData).length > 0) {
       await this.transactionsRepository.update(fromTransaction.id, fromUpdateData);
@@ -883,25 +1110,34 @@ export class TransactionsService {
     // Update to transaction
     const toUpdateData: Partial<Transaction> = {};
     if (updateDto.transactionDate) toUpdateData.transactionDate = updateDto.transactionDate as any;
-    if (updateDto.amount || updateDto.exchangeRate) toUpdateData.amount = newToAmount;
+    if (updateDto.amount !== undefined || updateDto.exchangeRate !== undefined) toUpdateData.amount = newToAmount;
     if (updateDto.description !== undefined) toUpdateData.description = updateDto.description ?? null;
     if (updateDto.referenceNumber !== undefined) toUpdateData.referenceNumber = updateDto.referenceNumber ?? null;
-    if (updateDto.isCleared !== undefined) toUpdateData.isCleared = updateDto.isCleared;
+    if (updateDto.status !== undefined) toUpdateData.status = updateDto.status;
     if (updateDto.toCurrencyCode) toUpdateData.currencyCode = updateDto.toCurrencyCode;
     if (updateDto.exchangeRate) toUpdateData.exchangeRate = updateDto.exchangeRate;
+
+    // Handle account change for to transaction
+    if (updateDto.toAccountId && updateDto.toAccountId !== oldToAccountId) {
+      toUpdateData.accountId = updateDto.toAccountId;
+    }
+
+    // Update payeeName if fromAccount changed
+    if (updateDto.fromAccountId && updateDto.fromAccountId !== oldFromAccountId) {
+      toUpdateData.payeeName = `Transfer from ${newFromAccount.name}`;
+      if (updateDto.description === undefined) {
+        toUpdateData.description = `Transfer from ${newFromAccount.name}`;
+      }
+    }
 
     if (Object.keys(toUpdateData).length > 0) {
       await this.transactionsRepository.update(toTransaction.id, toUpdateData);
     }
 
-    // Update balances if amount changed
-    if (updateDto.amount || updateDto.exchangeRate) {
-      // Revert old balances
-      await this.accountsService.updateBalance(fromTransaction.accountId, oldFromAmount);
-      await this.accountsService.updateBalance(toTransaction.accountId, -oldToAmount);
-      // Apply new balances
-      await this.accountsService.updateBalance(fromTransaction.accountId, -newAmount);
-      await this.accountsService.updateBalance(toTransaction.accountId, newToAmount);
+    // Apply new balances to (potentially new) accounts
+    if (accountsOrAmountsChanged) {
+      await this.accountsService.updateBalance(newFromAccountId, -newAmount);
+      await this.accountsService.updateBalance(newToAccountId, newToAmount);
     }
 
     return {

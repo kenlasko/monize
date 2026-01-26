@@ -52,9 +52,6 @@ CREATE TYPE account_type AS ENUM (
     'CREDIT_CARD',
     'LOAN',
     'MORTGAGE',
-    'RRSP',
-    'TFSA',
-    'RESP',
     'INVESTMENT',
     'CASH',
     'LINE_OF_CREDIT',
@@ -66,6 +63,8 @@ CREATE TABLE accounts (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     account_type account_type NOT NULL,
+    account_sub_type VARCHAR(50), -- 'INVESTMENT_CASH', 'INVESTMENT_BROKERAGE' for linked investment pairs
+    linked_account_id UUID REFERENCES accounts(id) ON DELETE SET NULL, -- links cash <-> brokerage accounts
     name VARCHAR(255) NOT NULL,
     description TEXT,
     currency_code VARCHAR(3) NOT NULL REFERENCES currencies(code),
@@ -77,12 +76,15 @@ CREATE TABLE accounts (
     interest_rate NUMERIC(8, 4), -- for loans, mortgages, savings
     is_closed BOOLEAN DEFAULT false,
     closed_date DATE,
+    is_favourite BOOLEAN DEFAULT false,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX idx_accounts_user ON accounts(user_id);
 CREATE INDEX idx_accounts_type ON accounts(account_type);
+CREATE INDEX idx_accounts_account_sub_type ON accounts(account_sub_type);
+CREATE INDEX idx_accounts_linked_account_id ON accounts(linked_account_id);
 
 -- Categories for transactions
 CREATE TABLE categories (
@@ -129,8 +131,7 @@ CREATE TABLE transactions (
     exchange_rate NUMERIC(20, 10) DEFAULT 1, -- rate at transaction time
     description TEXT,
     reference_number VARCHAR(100), -- check number, confirmation number, etc
-    is_cleared BOOLEAN DEFAULT false,
-    is_reconciled BOOLEAN DEFAULT false,
+    status VARCHAR(20) DEFAULT 'UNRECONCILED', -- 'UNRECONCILED', 'CLEARED', 'RECONCILED', 'VOID'
     reconciled_date DATE,
     is_split BOOLEAN DEFAULT false, -- indicates this is a split transaction
     parent_transaction_id UUID REFERENCES transactions(id) ON DELETE CASCADE, -- for split children
@@ -390,21 +391,43 @@ CREATE TRIGGER update_user_preferences_updated_at BEFORE UPDATE ON user_preferen
 CREATE TRIGGER update_reports_updated_at BEFORE UPDATE ON reports FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Function to update account balance
+-- VOID transactions do not affect account balance
 CREATE OR REPLACE FUNCTION update_account_balance()
 RETURNS TRIGGER AS $$
 BEGIN
     IF TG_OP = 'INSERT' THEN
-        UPDATE accounts
-        SET current_balance = current_balance + NEW.amount
-        WHERE id = NEW.account_id;
+        -- Only add to balance if not VOID
+        IF NEW.status IS NULL OR NEW.status != 'VOID' THEN
+            UPDATE accounts
+            SET current_balance = current_balance + NEW.amount
+            WHERE id = NEW.account_id;
+        END IF;
     ELSIF TG_OP = 'UPDATE' THEN
-        UPDATE accounts
-        SET current_balance = current_balance - OLD.amount + NEW.amount
-        WHERE id = NEW.account_id;
+        -- Handle status changes to/from VOID
+        IF (OLD.status IS NULL OR OLD.status != 'VOID') AND (NEW.status = 'VOID') THEN
+            -- Changing TO VOID: remove amount from balance
+            UPDATE accounts
+            SET current_balance = current_balance - OLD.amount
+            WHERE id = OLD.account_id;
+        ELSIF (OLD.status = 'VOID') AND (NEW.status IS NULL OR NEW.status != 'VOID') THEN
+            -- Changing FROM VOID: add amount to balance
+            UPDATE accounts
+            SET current_balance = current_balance + NEW.amount
+            WHERE id = NEW.account_id;
+        ELSIF (OLD.status IS NULL OR OLD.status != 'VOID') AND (NEW.status IS NULL OR NEW.status != 'VOID') THEN
+            -- Normal update (not VOID): adjust balance for amount change
+            UPDATE accounts
+            SET current_balance = current_balance - OLD.amount + NEW.amount
+            WHERE id = NEW.account_id;
+        END IF;
+        -- If both old and new are VOID, no balance change needed
     ELSIF TG_OP = 'DELETE' THEN
-        UPDATE accounts
-        SET current_balance = current_balance - OLD.amount
-        WHERE id = OLD.account_id;
+        -- Only subtract from balance if not VOID
+        IF OLD.status IS NULL OR OLD.status != 'VOID' THEN
+            UPDATE accounts
+            SET current_balance = current_balance - OLD.amount
+            WHERE id = OLD.account_id;
+        END IF;
     END IF;
     RETURN NEW;
 END;
@@ -428,7 +451,6 @@ INSERT INTO currencies (code, name, symbol, decimal_places) VALUES
     ('CNY', 'Chinese Yuan', '¥', 2);
 
 -- Create indexes for performance
-CREATE INDEX idx_transactions_cleared ON transactions(is_cleared);
-CREATE INDEX idx_transactions_reconciled ON transactions(is_reconciled);
+CREATE INDEX idx_transactions_status ON transactions(status);
 CREATE INDEX idx_accounts_closed ON accounts(is_closed);
 CREATE INDEX idx_scheduled_transactions_account ON scheduled_transactions(account_id);

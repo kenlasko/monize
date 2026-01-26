@@ -1,7 +1,7 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
-import { Transaction } from '../transactions/entities/transaction.entity';
+import { Transaction, TransactionStatus } from '../transactions/entities/transaction.entity';
 import { TransactionSplit } from '../transactions/entities/transaction-split.entity';
 import { Account } from '../accounts/entities/account.entity';
 import { Category } from '../categories/entities/category.entity';
@@ -266,6 +266,14 @@ export class ImportService {
           const baseTime = new Date();
           baseTime.setMilliseconds(baseTime.getMilliseconds() + counter);
 
+          // Determine status from QIF cleared/reconciled flags
+          // QIF: C field with '*' = cleared, 'X' = reconciled
+          const status = qifTx.reconciled
+            ? TransactionStatus.RECONCILED
+            : qifTx.cleared
+              ? TransactionStatus.CLEARED
+              : TransactionStatus.UNRECONCILED;
+
           // Create transaction
           const transaction = queryRunner.manager.create(Transaction, {
             userId,
@@ -277,8 +285,7 @@ export class ImportService {
             description: qifTx.memo,
             referenceNumber: qifTx.number,
             categoryId: isSplit ? null : categoryId,
-            isCleared: qifTx.cleared,
-            isReconciled: qifTx.reconciled,
+            status,
             currencyCode: account.currencyCode,
             isSplit,
             isTransfer: qifTx.isTransfer,
@@ -331,8 +338,7 @@ export class ImportService {
               payeeName: qifTx.payee || `Transfer from ${account.name}`,
               description: qifTx.memo,
               referenceNumber: qifTx.number,
-              isCleared: qifTx.cleared,
-              isReconciled: qifTx.reconciled,
+              status, // Use same status as the main transaction
               currencyCode: account.currencyCode,
               isTransfer: true,
               linkedAccountId: dto.accountId,

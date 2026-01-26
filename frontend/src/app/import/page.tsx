@@ -313,7 +313,9 @@ function ImportContent() {
   const getAccountOptions = () => {
     return [
       { value: '', label: 'Skip (no transfer)' },
-      ...accounts.map((a) => ({ value: a.id, label: `${a.name} (${formatAccountType(a.accountType)})` })),
+      ...accounts
+        .filter((a) => a.accountSubType !== 'INVESTMENT_BROKERAGE')
+        .map((a) => ({ value: a.id, label: `${a.name} (${formatAccountType(a.accountType)})` })),
     ];
   };
 
@@ -415,10 +417,12 @@ function ImportContent() {
               )}
               <Select
                 label="Import into account"
-                options={accounts.map((a) => ({
-                  value: a.id,
-                  label: `${a.name} (${formatAccountType(a.accountType)})`,
-                }))}
+                options={accounts
+                  .filter((a) => a.accountSubType !== 'INVESTMENT_BROKERAGE')
+                  .map((a) => ({
+                    value: a.id,
+                    label: `${a.name} (${formatAccountType(a.accountType)})`,
+                  }))}
                 value={selectedAccountId}
                 onChange={(e) => setSelectedAccountId(e.target.value)}
               />
@@ -919,7 +923,7 @@ function ImportContent() {
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="px-4 sm:px-6 lg:px-12">
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Import Transactions</h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">

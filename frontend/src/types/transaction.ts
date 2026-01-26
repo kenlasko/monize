@@ -2,6 +2,13 @@ import { Payee } from './payee';
 import { Category } from './category';
 import { Account } from './account';
 
+export enum TransactionStatus {
+  UNRECONCILED = 'UNRECONCILED',
+  CLEARED = 'CLEARED',
+  RECONCILED = 'RECONCILED',
+  VOID = 'VOID',
+}
+
 export interface TransactionSplit {
   id: string;
   transactionId: string;
@@ -28,8 +35,11 @@ export interface Transaction {
   exchangeRate: number;
   description: string | null;
   referenceNumber: string | null;
+  status: TransactionStatus;
+  // Computed properties for backwards compatibility
   isCleared: boolean;
   isReconciled: boolean;
+  isVoid: boolean;
   reconciledDate: string | null;
   isSplit: boolean;
   parentTransactionId: string | null;
@@ -58,8 +68,7 @@ export interface CreateTransactionData {
   exchangeRate?: number;
   description?: string;
   referenceNumber?: string;
-  isCleared?: boolean;
-  isReconciled?: boolean;
+  status?: TransactionStatus;
   reconciledDate?: string;
   isSplit?: boolean;
   parentTransactionId?: string;
@@ -81,8 +90,7 @@ export interface TransactionFilters {
   endDate?: string;
   payeeId?: string;
   categoryId?: string;
-  isCleared?: boolean;
-  isReconciled?: boolean;
+  status?: TransactionStatus;
 }
 
 export interface PaginationInfo {
@@ -111,10 +119,22 @@ export interface CreateTransferData {
   exchangeRate?: number;
   description?: string;
   referenceNumber?: string;
-  isCleared?: boolean;
+  status?: TransactionStatus;
 }
 
 export interface TransferResult {
   fromTransaction: Transaction;
   toTransaction: Transaction;
+}
+
+// Reconciliation types
+export interface ReconciliationData {
+  transactions: Transaction[];
+  reconciledBalance: number;
+  clearedBalance: number;
+  difference: number;
+}
+
+export interface BulkReconcileResult {
+  reconciled: number;
 }

@@ -9,7 +9,7 @@
  * - P = Payee
  * - M = Memo
  * - N = Number (cheque number)
- * - C = Cleared status (X = cleared, * = reconciled)
+ * - C = Cleared status (* = cleared, X = reconciled)
  * - L = Category (transfers start with [])
  * - S = Split category
  * - E = Split memo
@@ -153,12 +153,11 @@ export function parseQif(content: string, dateFormat?: DateFormat): QifParseResu
         currentTransaction.number = value;
         break;
 
-      case 'C': // Cleared status
-        if (value === 'X' || value === 'x') {
+      case 'C': // Cleared status (* = cleared, X = reconciled)
+        if (value === '*') {
           currentTransaction.cleared = true;
-        } else if (value === '*') {
+        } else if (value === 'X' || value === 'x') {
           currentTransaction.reconciled = true;
-          currentTransaction.cleared = true;
         }
         break;
 

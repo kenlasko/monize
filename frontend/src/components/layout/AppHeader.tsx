@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useRef, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 import { authApi } from '@/lib/auth';
@@ -11,15 +12,35 @@ const navLinks = [
   { href: '/dashboard', label: 'Dashboard' },
   { href: '/transactions', label: 'Transactions' },
   { href: '/accounts', label: 'Accounts' },
+  { href: '/investments', label: 'Investments' },
   { href: '/bills', label: 'Bills & Deposits' },
+];
+
+const toolsLinks = [
   { href: '/categories', label: 'Categories' },
   { href: '/payees', label: 'Payees' },
+  { href: '/import', label: 'Import Transactions' },
 ];
 
 export function AppHeader() {
   const router = useRouter();
   const pathname = usePathname();
   const { user, logout } = useAuthStore();
+  const [toolsOpen, setToolsOpen] = useState(false);
+  const toolsRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (toolsRef.current && !toolsRef.current.contains(event.target as Node)) {
+        setToolsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const isToolsActive = toolsLinks.some((link) => pathname === link.href);
 
   const handleLogout = async () => {
     try {
@@ -35,7 +56,7 @@ export function AppHeader() {
 
   return (
     <header className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="px-4 sm:px-6 lg:px-12">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
             <button
@@ -58,6 +79,51 @@ export function AppHeader() {
                   {link.label}
                 </button>
               ))}
+
+              {/* Tools Dropdown */}
+              <div className="relative" ref={toolsRef}>
+                <button
+                  onClick={() => setToolsOpen(!toolsOpen)}
+                  className={`px-3 py-2 text-sm font-medium rounded-md transition-colors inline-flex items-center gap-1 ${
+                    isToolsActive
+                      ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200'
+                      : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  Tools
+                  <svg
+                    className={`w-4 h-4 transition-transform ${toolsOpen ? 'rotate-180' : ''}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                {toolsOpen && (
+                  <div className="absolute left-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg dark:shadow-gray-700/50 border border-gray-200 dark:border-gray-700 z-50">
+                    <div className="py-1">
+                      {toolsLinks.map((link) => (
+                        <button
+                          key={link.href}
+                          onClick={() => {
+                            router.push(link.href);
+                            setToolsOpen(false);
+                          }}
+                          className={`block w-full text-left px-4 py-2 text-sm transition-colors ${
+                            pathname === link.href
+                              ? 'bg-blue-50 dark:bg-blue-900/50 text-blue-700 dark:text-blue-200'
+                              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                          }`}
+                        >
+                          {link.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </nav>
           </div>
           <div className="flex items-center space-x-4">

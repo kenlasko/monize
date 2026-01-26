@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useCallback } from 'react';
 import toast from 'react-hot-toast';
-import { Transaction } from '@/types/transaction';
+import { Transaction, TransactionStatus } from '@/types/transaction';
 import { transactionsApi } from '@/lib/transactions';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -16,6 +16,8 @@ interface TransactionListProps {
   onEdit?: (transaction: Transaction) => void;
   onDelete?: (id: string) => void;
   onRefresh?: () => void;
+  /** Callback to update a single transaction in place without full refresh */
+  onTransactionUpdate?: (transaction: Transaction) => void;
   density?: DensityLevel;
   onDensityChange?: (density: DensityLevel) => void;
   /** Starting balance for running balance calculation (balance after first tx on page) */
@@ -29,6 +31,7 @@ export function TransactionList({
   onEdit,
   onDelete,
   onRefresh,
+  onTransactionUpdate,
   density: propDensity,
   onDensityChange,
   startingBalance,
@@ -104,16 +107,42 @@ export function TransactionList({
     setDeleteConfirm({ isOpen: false, transaction: null });
   }, []);
 
-  const handleToggleCleared = useCallback(async (transaction: Transaction) => {
+  const handleCycleStatus = useCallback(async (transaction: Transaction) => {
+    // Don't allow cycling VOID transactions - must edit to change
+    if (transaction.status === TransactionStatus.VOID) {
+      toast.error('Edit the transaction to change its status from Void');
+      return;
+    }
+
+    // Cycle through: UNRECONCILED -> CLEARED -> RECONCILED -> UNRECONCILED (skip VOID)
+    const statusOrder = [
+      TransactionStatus.UNRECONCILED,
+      TransactionStatus.CLEARED,
+      TransactionStatus.RECONCILED,
+    ];
+    const currentIndex = statusOrder.indexOf(transaction.status);
+    const nextStatus = statusOrder[(currentIndex + 1) % statusOrder.length];
+
     try {
-      await transactionsApi.markCleared(transaction.id, !transaction.isCleared);
-      toast.success(transaction.isCleared ? 'Marked as uncleared' : 'Marked as cleared');
-      onRefresh?.();
+      const updatedTransaction = await transactionsApi.updateStatus(transaction.id, nextStatus);
+      const statusLabels: Record<TransactionStatus, string> = {
+        [TransactionStatus.UNRECONCILED]: 'Unreconciled',
+        [TransactionStatus.CLEARED]: 'Cleared',
+        [TransactionStatus.RECONCILED]: 'Reconciled',
+        [TransactionStatus.VOID]: 'Void',
+      };
+      toast.success(`Status changed to ${statusLabels[nextStatus]}`);
+
+      if (onTransactionUpdate) {
+        onTransactionUpdate(updatedTransaction);
+      } else {
+        onRefresh?.();
+      }
     } catch (error: any) {
-      const message = error.response?.data?.message || 'Failed to update transaction';
+      const message = error.response?.data?.message || 'Failed to update status';
       toast.error(message);
     }
-  }, [onRefresh]);
+  }, [onRefresh, onTransactionUpdate]);
 
   // Memoize the number formatter
   const currencyFormatter = useMemo(() => new Intl.NumberFormat('en-CA', {
@@ -236,22 +265,22 @@ export function TransactionList({
             </tr>
           </thead>
           <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-            {transactions.map((transaction, index) => (
+            {transactions.map((transaction, index) => {
+              const isVoid = transaction.status === TransactionStatus.VOID;
+              return (
               <tr
                 key={transaction.id}
-                className={`hover:bg-gray-100 dark:hover:bg-gray-800 ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-gray-800/50' : ''}`}
+                className={`hover:bg-gray-100 dark:hover:bg-gray-800 ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-gray-800/50' : ''} ${isVoid ? 'opacity-50' : ''}`}
               >
-                <td className={`${cellPadding} whitespace-nowrap text-sm text-gray-900 dark:text-gray-100`}>
+                <td className={`${cellPadding} whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 ${isVoid ? 'line-through' : ''}`}>
                   {formatDate(transaction.transactionDate)}
                 </td>
-                <td className={`${cellPadding} whitespace-nowrap text-sm text-gray-900 dark:text-gray-100`}>
+                <td className={`${cellPadding} whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 ${isVoid ? 'line-through' : ''}`}>
                   {transaction.account?.name || '-'}
                 </td>
                 <td className={`${cellPadding}`}>
                   <div
-                    className={`text-sm font-medium text-gray-900 dark:text-gray-100 truncate ${
-                      density === 'normal' ? 'max-w-[120px]' : 'max-w-[200px]'
-                    }`}
+                    className={`text-sm font-medium text-gray-900 dark:text-gray-100 truncate max-w-[280px] ${isVoid ? 'line-through' : ''}`}
                     title={transaction.payeeName || undefined}
                   >
                     {transaction.payeeName || '-'}
@@ -262,22 +291,15 @@ export function TransactionList({
                     </div>
                   )}
                 </td>
-                <td className={`${cellPadding}`}>
+                <td className={`${cellPadding} ${density !== 'normal' ? 'whitespace-nowrap' : ''}`}>
                   {transaction.isTransfer ? (
-                    <div>
-                      <span className={`inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 ${density === 'dense' ? 'px-1.5 py-0.5' : 'px-2 py-1'}`}>
-                        Transfer
-                      </span>
-                      {density === 'normal' && (
-                        <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                          {Number(transaction.amount) < 0 ? 'Outgoing' : 'Incoming'}
-                        </div>
-                      )}
-                    </div>
+                    <span className={`inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 ${density === 'dense' ? 'px-1.5 py-0.5' : 'px-2 py-1'}`}>
+                      Transfer
+                    </span>
                   ) : transaction.isSplit ? (
                     <div>
                       <span className={`inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 ${density === 'dense' ? 'px-1.5 py-0.5' : 'px-2 py-1'}`}>
-                        Split{density !== 'dense' && transaction.splits ? ` (${transaction.splits.length})` : ''}
+                        Split{transaction.splits ? ` (${transaction.splits.length})` : ''}
                       </span>
                       {density === 'normal' && transaction.splits && transaction.splits.length > 0 && (
                         <div className="mt-1 text-xs text-gray-500 dark:text-gray-400 space-y-0.5">
@@ -297,7 +319,7 @@ export function TransactionList({
                     </div>
                   ) : transaction.category ? (
                     <span
-                      className={`inline-flex text-xs leading-5 font-semibold rounded-full ${density === 'dense' ? 'px-1.5 py-0.5' : 'px-2 py-1'}`}
+                      className={`inline-flex text-xs leading-5 font-semibold rounded-full truncate max-w-[120px] ${density === 'dense' ? 'px-1.5 py-0.5' : 'px-2 py-1'}`}
                       style={{
                         backgroundColor: transaction.category.color
                           ? `color-mix(in srgb, ${transaction.category.color} 15%, var(--category-bg-base, #e5e7eb))`
@@ -306,6 +328,7 @@ export function TransactionList({
                           ? `color-mix(in srgb, ${transaction.category.color} 85%, var(--category-text-mix, #000))`
                           : 'var(--category-text-base, #6b7280)',
                       }}
+                      title={transaction.category.name}
                     >
                       {transaction.category.name}
                     </span>
@@ -315,15 +338,13 @@ export function TransactionList({
                 </td>
                 <td className={`${cellPadding} text-sm text-gray-500 dark:text-gray-400`}>
                   <div
-                    className={`truncate ${
-                      density === 'normal' ? 'max-w-[120px]' : 'max-w-[200px]'
-                    }`}
+                    className={`truncate max-w-[320px] ${isVoid ? 'line-through' : ''}`}
                     title={transaction.description || undefined}
                   >
                     {transaction.description || '-'}
                   </div>
                 </td>
-                <td className={`${cellPadding} whitespace-nowrap text-sm font-medium text-right`}>
+                <td className={`${cellPadding} whitespace-nowrap text-sm font-medium text-right ${isVoid ? 'line-through' : ''}`}>
                   {formatAmount(transaction.amount)}
                 </td>
                 {isSingleAccountView && (
@@ -335,12 +356,16 @@ export function TransactionList({
                 )}
                 <td className={`${cellPadding} whitespace-nowrap text-center`}>
                   <button
-                    onClick={() => handleToggleCleared(transaction)}
+                    onClick={() => handleCycleStatus(transaction)}
                     className="text-sm"
-                    title={transaction.isCleared ? 'Click to mark as uncleared' : 'Click to mark as cleared'}
+                    title="Click to cycle status"
                   >
-                    {transaction.isCleared ? (
-                      <span className="text-green-600 dark:text-green-400">{density === 'dense' ? '✓' : '✓ Cleared'}</span>
+                    {transaction.status === TransactionStatus.RECONCILED ? (
+                      <span className="text-blue-600 dark:text-blue-400">{density === 'dense' ? 'R' : 'Reconciled'}</span>
+                    ) : transaction.status === TransactionStatus.CLEARED ? (
+                      <span className="text-green-600 dark:text-green-400">{density === 'dense' ? 'C' : 'Cleared'}</span>
+                    ) : transaction.status === TransactionStatus.VOID ? (
+                      <span className="text-red-600 dark:text-red-400">{density === 'dense' ? 'V' : 'VOID'}</span>
                     ) : (
                       <span className="text-gray-400 dark:text-gray-500">{density === 'dense' ? '○' : 'Pending'}</span>
                     )}
@@ -364,7 +389,8 @@ export function TransactionList({
                   </button>
                 </td>
               </tr>
-            ))}
+            );
+            })}
           </tbody>
         </table>
       </div>

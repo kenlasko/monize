@@ -4,10 +4,11 @@ import {
   IsOptional,
   IsDateString,
   IsUUID,
-  IsBoolean,
+  IsEnum,
   MaxLength,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { TransactionStatus } from '../entities/transaction.entity';
 
 export class CreateTransferDto {
   @ApiProperty({ description: 'Source account ID (where money is withdrawn from)' })
@@ -53,8 +54,12 @@ export class CreateTransferDto {
   @MaxLength(100)
   referenceNumber?: string;
 
-  @ApiPropertyOptional({ description: 'Whether both transactions are cleared', default: false })
+  @ApiPropertyOptional({
+    description: 'Transaction status',
+    enum: TransactionStatus,
+    default: TransactionStatus.UNRECONCILED,
+  })
   @IsOptional()
-  @IsBoolean()
-  isCleared?: boolean;
+  @IsEnum(TransactionStatus)
+  status?: TransactionStatus;
 }

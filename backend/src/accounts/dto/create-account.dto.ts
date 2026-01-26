@@ -100,4 +100,14 @@ export class CreateAccountDto {
   @IsOptional()
   @IsBoolean()
   isFavourite?: boolean;
+
+  @ApiPropertyOptional({
+    example: true,
+    description:
+      'When true and accountType is INVESTMENT, automatically creates a linked cash + brokerage account pair',
+    default: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  createInvestmentPair?: boolean;
 }
