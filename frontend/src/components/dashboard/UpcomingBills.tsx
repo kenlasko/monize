@@ -1,8 +1,10 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { format, parseISO, differenceInDays, isToday, isTomorrow } from 'date-fns';
+import { differenceInDays, isToday, isTomorrow } from 'date-fns';
 import { ScheduledTransaction } from '@/types/scheduled-transaction';
+import { parseLocalDate } from '@/lib/utils';
+import { useDateFormat } from '@/hooks/useDateFormat';
 
 interface UpcomingBillsProps {
   scheduledTransactions: ScheduledTransaction[];
@@ -11,17 +13,18 @@ interface UpcomingBillsProps {
 
 export function UpcomingBills({ scheduledTransactions, isLoading }: UpcomingBillsProps) {
   const router = useRouter();
+  const { formatDate } = useDateFormat();
 
   // Filter to only bills (negative amounts) in the next 7 days
   const today = new Date();
   const upcomingBills = scheduledTransactions
     .filter((st) => {
       if (!st.isActive || st.amount >= 0) return false;
-      const dueDate = parseISO(st.nextDueDate);
+      const dueDate = parseLocalDate(st.nextDueDate);
       const daysUntil = differenceInDays(dueDate, today);
       return daysUntil >= 0 && daysUntil <= 7;
     })
-    .sort((a, b) => parseISO(a.nextDueDate).getTime() - parseISO(b.nextDueDate).getTime());
+    .sort((a, b) => parseLocalDate(a.nextDueDate).getTime() - parseLocalDate(b.nextDueDate).getTime());
 
   const formatCurrency = (amount: number, currency: string) => {
     return new Intl.NumberFormat('en-CA', {
@@ -31,16 +34,16 @@ export function UpcomingBills({ scheduledTransactions, isLoading }: UpcomingBill
   };
 
   const getDueDateLabel = (dateStr: string) => {
-    const date = parseISO(dateStr);
+    const date = parseLocalDate(dateStr);
     if (isToday(date)) return 'Today';
     if (isTomorrow(date)) return 'Tomorrow';
     const days = differenceInDays(date, today);
     if (days <= 7) return `${days} days`;
-    return format(date, 'MMM d');
+    return formatDate(dateStr);
   };
 
   const getDueDateColour = (dateStr: string) => {
-    const date = parseISO(dateStr);
+    const date = parseLocalDate(dateStr);
     const days = differenceInDays(date, today);
     if (days <= 0) return 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30';
     if (days <= 2) return 'text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/30';
@@ -112,9 +115,9 @@ export function UpcomingBills({ scheduledTransactions, isLoading }: UpcomingBill
                 <div className="font-medium text-gray-900 dark:text-gray-100">
                   {bill.name}
                 </div>
-                {bill.account && (
+                {(bill.payeeName || bill.payee?.name) && (
                   <div className="text-xs text-gray-500 dark:text-gray-400">
-                    {bill.account.name}
+                    {bill.payeeName || bill.payee?.name}
                   </div>
                 )}
               </div>

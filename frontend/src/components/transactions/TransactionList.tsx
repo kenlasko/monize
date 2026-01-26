@@ -1,12 +1,12 @@
 'use client';
 
 import { useState, useMemo, useCallback } from 'react';
-import { format } from 'date-fns';
 import toast from 'react-hot-toast';
 import { Transaction } from '@/types/transaction';
 import { transactionsApi } from '@/lib/transactions';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { useDateFormat } from '@/hooks/useDateFormat';
 
 // Density levels: 'normal' | 'compact' | 'dense'
 export type DensityLevel = 'normal' | 'compact' | 'dense';
@@ -18,7 +18,7 @@ interface TransactionListProps {
   onRefresh?: () => void;
   density?: DensityLevel;
   onDensityChange?: (density: DensityLevel) => void;
-  /** Starting balance for running balance calculation (balance at the first transaction on this page) */
+  /** Starting balance for running balance calculation (balance after first tx on page) */
   startingBalance?: number;
   /** Whether we're viewing a single account (enables running balance column) */
   isSingleAccountView?: boolean;
@@ -34,6 +34,7 @@ export function TransactionList({
   startingBalance,
   isSingleAccountView = false,
 }: TransactionListProps) {
+  const { formatDate } = useDateFormat();
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [localDensity, setLocalDensity] = useState<DensityLevel>('normal');
   const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; transaction: Transaction | null }>({
@@ -121,22 +122,19 @@ export function TransactionList({
   }), []);
 
   // Calculate running balances when viewing a single account
-  // Transactions are sorted newest first, so we start with the starting balance
-  // (which is the balance after the first transaction on this page) and work backwards
+  // startingBalance = balance AFTER the first (newest) transaction on this page
+  // For each tx: balance = startingBalance - sum of all preceding transactions on this page
   const runningBalances = useMemo(() => {
-    if (!isSingleAccountView || startingBalance === undefined) {
+    if (!isSingleAccountView || startingBalance === undefined || transactions.length === 0) {
       return new Map<string, number>();
     }
 
     const balances = new Map<string, number>();
-    let balance = startingBalance;
+    let cumulativeSum = 0;
 
-    // First transaction shows starting balance (the current balance for page 1,
-    // or the balance at the end of the previous page for other pages)
-    // Then we subtract each transaction's amount to get the balance before that transaction
     for (const tx of transactions) {
-      balances.set(tx.id, balance);
-      balance -= tx.amount; // Subtract to get what balance was before this transaction
+      balances.set(tx.id, startingBalance - cumulativeSum);
+      cumulativeSum += Number(tx.amount);
     }
 
     return balances;
@@ -244,7 +242,7 @@ export function TransactionList({
                 className={`hover:bg-gray-100 dark:hover:bg-gray-800 ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-gray-800/50' : ''}`}
               >
                 <td className={`${cellPadding} whitespace-nowrap text-sm text-gray-900 dark:text-gray-100`}>
-                  {format(new Date(transaction.transactionDate), density === 'dense' ? 'MM/dd/yy' : 'MMM d, yyyy')}
+                  {formatDate(transaction.transactionDate)}
                 </td>
                 <td className={`${cellPadding} whitespace-nowrap text-sm text-gray-900 dark:text-gray-100`}>
                   {transaction.account?.name || '-'}

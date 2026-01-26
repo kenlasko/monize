@@ -2,7 +2,13 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';
+import * as pg from 'pg';
 import { AppModule } from './app.module';
+
+// Configure pg to return DATE types as strings instead of Date objects
+// This prevents timezone-related date shifting issues
+// OID 1082 = DATE type in PostgreSQL
+pg.types.setTypeParser(1082, (val: string) => val);
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);

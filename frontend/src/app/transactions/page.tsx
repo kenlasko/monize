@@ -18,6 +18,7 @@ import { Category } from '@/types/category';
 import { Payee } from '@/types/payee';
 import { getCategorySelectOptions } from '@/lib/categoryUtils';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { useDateFormat } from '@/hooks/useDateFormat';
 import { AppHeader } from '@/components/layout/AppHeader';
 
 const PAGE_SIZE = 50;
@@ -25,6 +26,7 @@ const PAGE_SIZE = 50;
 export default function TransactionsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { formatDate } = useDateFormat();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -34,9 +36,12 @@ export default function TransactionsPage() {
   const [editingTransaction, setEditingTransaction] = useState<Transaction | undefined>();
   const [listDensity, setListDensity] = useLocalStorage<DensityLevel>('moneymate-transactions-density', 'normal');
 
-  // Pagination state
+  // Pagination state - initialize from URL
   const [pagination, setPagination] = useState<PaginationInfo | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(() => {
+    const pageParam = searchParams.get('page');
+    return pageParam ? parseInt(pageParam, 10) : 1;
+  });
   const [startingBalance, setStartingBalance] = useState<number | undefined>();
 
   // Summary from API (for all matching transactions, not just current page)
@@ -54,8 +59,31 @@ export default function TransactionsPage() {
   const [filterStartDate, setFilterStartDate] = useState<string>(searchParams.get('startDate') || '');
   const [filterEndDate, setFilterEndDate] = useState<string>(searchParams.get('endDate') || '');
 
+  // Update URL when filters or page change
+  const updateUrl = useCallback((page: number, filters: {
+    accountId: string;
+    categoryId: string;
+    payeeId: string;
+    startDate: string;
+    endDate: string;
+  }) => {
+    const params = new URLSearchParams();
+    if (page > 1) params.set('page', page.toString());
+    if (filters.accountId) params.set('accountId', filters.accountId);
+    if (filters.categoryId) params.set('categoryId', filters.categoryId);
+    if (filters.payeeId) params.set('payeeId', filters.payeeId);
+    if (filters.startDate) params.set('startDate', filters.startDate);
+    if (filters.endDate) params.set('endDate', filters.endDate);
+
+    const queryString = params.toString();
+    const newUrl = queryString ? `/transactions?${queryString}` : '/transactions';
+    router.replace(newUrl, { scroll: false });
+  }, [router]);
+
   // Get names for display when filtered
-  const filteredCategory = categories.find(c => c.id === filterCategoryId);
+  const filteredCategory = filterCategoryId === 'uncategorized'
+    ? { id: 'uncategorized', name: 'Uncategorized', color: null } as Category
+    : categories.find(c => c.id === filterCategoryId);
   const filteredPayee = payees.find(p => p.id === filterPayeeId);
 
   // Track if static data has been loaded
@@ -129,15 +157,31 @@ export default function TransactionsPage() {
     loadStaticData();
   }, [loadStaticData]);
 
-  // Reset to page 1 when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [filterAccountId, filterCategoryId, filterPayeeId, filterStartDate, filterEndDate]);
+  // Track if this is a filter-triggered change (to reset page to 1)
+  const isFilterChange = useRef(false);
 
-  // Load transactions when page or filters change
+  // Update URL and load transactions when page or filters change
   useEffect(() => {
-    loadTransactions(currentPage);
-  }, [currentPage, loadTransactions]);
+    const page = isFilterChange.current ? 1 : currentPage;
+    if (isFilterChange.current) {
+      setCurrentPage(1);
+      isFilterChange.current = false;
+    }
+    updateUrl(page, {
+      accountId: filterAccountId,
+      categoryId: filterCategoryId,
+      payeeId: filterPayeeId,
+      startDate: filterStartDate,
+      endDate: filterEndDate,
+    });
+    loadTransactions(page);
+  }, [currentPage, filterAccountId, filterCategoryId, filterPayeeId, filterStartDate, filterEndDate, updateUrl, loadTransactions]);
+
+  // Helper to update filter and mark as filter change
+  const handleFilterChange = useCallback((setter: (value: string) => void, value: string) => {
+    isFilterChange.current = true;
+    setter(value);
+  }, []);
 
   const handleCreateNew = () => {
     setEditingTransaction(undefined);
@@ -318,7 +362,7 @@ export default function TransactionsPage() {
                 })),
               ]}
               value={filterAccountId}
-              onChange={(e) => setFilterAccountId(e.target.value)}
+              onChange={(e) => handleFilterChange(setFilterAccountId, e.target.value)}
             />
 
             <Select
@@ -326,9 +370,10 @@ export default function TransactionsPage() {
               options={getCategorySelectOptions(categories, {
                 includeEmpty: true,
                 emptyLabel: 'All categories',
+                includeUncategorized: true,
               })}
               value={filterCategoryId}
-              onChange={(e) => setFilterCategoryId(e.target.value)}
+              onChange={(e) => handleFilterChange(setFilterCategoryId, e.target.value)}
             />
 
             <Select
@@ -343,24 +388,38 @@ export default function TransactionsPage() {
                   })),
               ]}
               value={filterPayeeId}
-              onChange={(e) => setFilterPayeeId(e.target.value)}
+              onChange={(e) => handleFilterChange(setFilterPayeeId, e.target.value)}
             />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-            <Input
-              label="Start Date"
-              type="date"
-              value={filterStartDate}
-              onChange={(e) => setFilterStartDate(e.target.value)}
-            />
+            <div>
+              <Input
+                label="Start Date"
+                type="date"
+                value={filterStartDate}
+                onChange={(e) => handleFilterChange(setFilterStartDate, e.target.value)}
+              />
+              {filterStartDate && (
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  {formatDate(filterStartDate)}
+                </p>
+              )}
+            </div>
 
-            <Input
-              label="End Date"
-              type="date"
-              value={filterEndDate}
-              onChange={(e) => setFilterEndDate(e.target.value)}
-            />
+            <div>
+              <Input
+                label="End Date"
+                type="date"
+                value={filterEndDate}
+                onChange={(e) => handleFilterChange(setFilterEndDate, e.target.value)}
+              />
+              {filterEndDate && (
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  {formatDate(filterEndDate)}
+                </p>
+              )}
+            </div>
 
             <div className="flex items-end">
               {(filterAccountId || filterCategoryId || filterPayeeId || filterStartDate || filterEndDate) && (
@@ -368,13 +427,14 @@ export default function TransactionsPage() {
                   variant="outline"
                   size="sm"
                   onClick={() => {
+                    // Clear all filters at once - reset page to 1 and update URL
+                    setCurrentPage(1);
                     setFilterAccountId('');
                     setFilterCategoryId('');
                     setFilterPayeeId('');
                     setFilterStartDate('');
                     setFilterEndDate('');
-                    // Clear URL params
-                    router.push('/transactions');
+                    router.replace('/transactions', { scroll: false });
                   }}
                 >
                   Clear Filters

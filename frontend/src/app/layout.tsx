@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import { Toaster } from 'react-hot-toast';
 import { ThemeProvider } from '@/contexts/ThemeContext';
+import { PreferencesLoader } from '@/components/providers/PreferencesLoader';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -20,7 +21,9 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
         <ThemeProvider>
-          {children}
+          <PreferencesLoader>
+            {children}
+          </PreferencesLoader>
           <Toaster
             position="top-right"
             toastOptions={{

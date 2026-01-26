@@ -8,6 +8,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Transaction } from './entities/transaction.entity';
 import { TransactionSplit } from './entities/transaction-split.entity';
+import { Category } from '../categories/entities/category.entity';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
 import { CreateTransactionSplitDto } from './dto/create-transaction-split.dto';
@@ -40,9 +41,37 @@ export class TransactionsService {
     private transactionsRepository: Repository<Transaction>,
     @InjectRepository(TransactionSplit)
     private splitsRepository: Repository<TransactionSplit>,
+    @InjectRepository(Category)
+    private categoriesRepository: Repository<Category>,
     private accountsService: AccountsService,
     private payeesService: PayeesService,
   ) {}
+
+  /**
+   * Get all category IDs including subcategories for a given category
+   */
+  private async getCategoryIdsWithChildren(
+    userId: string,
+    categoryId: string,
+  ): Promise<string[]> {
+    const categories = await this.categoriesRepository.find({
+      where: { userId },
+      select: ['id', 'parentId'],
+    });
+
+    const result: string[] = [categoryId];
+    const addChildren = (parentId: string) => {
+      for (const cat of categories) {
+        if (cat.parentId === parentId) {
+          result.push(cat.id);
+          addChildren(cat.id);
+        }
+      }
+    };
+    addChildren(categoryId);
+
+    return result;
+  }
 
   /**
    * Create a new transaction
@@ -172,7 +201,8 @@ export class TransactionsService {
       .leftJoinAndSelect('splits.category', 'splitCategory')
       .where('transaction.userId = :userId', { userId })
       .orderBy('transaction.transactionDate', 'DESC')
-      .addOrderBy('transaction.createdAt', 'DESC');
+      .addOrderBy('transaction.createdAt', 'DESC')
+      .addOrderBy('transaction.id', 'DESC');
 
     if (accountId) {
       queryBuilder.andWhere('transaction.accountId = :accountId', { accountId });
@@ -187,13 +217,25 @@ export class TransactionsService {
     }
 
     if (categoryId) {
-      // Match transactions where:
-      // 1. The transaction has this category directly, OR
-      // 2. Any of the transaction's splits have this category
-      queryBuilder.andWhere(
-        '(transaction.categoryId = :categoryId OR splits.categoryId = :categoryId)',
-        { categoryId },
-      );
+      if (categoryId === 'uncategorized') {
+        // Match transactions without a category (and not split, or splits without category)
+        queryBuilder.andWhere(
+          '(transaction.categoryId IS NULL AND transaction.isSplit = false)',
+        );
+      } else {
+        // Get category IDs including all subcategories
+        const categoryIds = await this.getCategoryIdsWithChildren(
+          userId,
+          categoryId,
+        );
+        // Match transactions where:
+        // 1. The transaction has this category or any subcategory directly, OR
+        // 2. Any of the transaction's splits have this category or any subcategory
+        queryBuilder.andWhere(
+          '(transaction.categoryId IN (:...categoryIds) OR splits.categoryId IN (:...categoryIds))',
+          { categoryIds },
+        );
+      }
     }
 
     if (payeeId) {
@@ -209,96 +251,47 @@ export class TransactionsService {
     const totalPages = Math.ceil(total / safeLimit);
 
     // Calculate starting balance for running balance column when viewing a single account
+    // startingBalance = balance AFTER the first (newest) transaction on this page
     let startingBalance: number | undefined;
     if (accountId && data.length > 0) {
-      // Get the account to find its current balance
       const account = await this.accountsService.findOne(userId, accountId);
       const currentBalance = Number(account.currentBalance);
 
-      // If we're on page 1, the starting balance is just the current account balance
-      // For other pages, we need to subtract the sum of all transactions on earlier pages
-      // (i.e., transactions that are newer than those on this page)
       if (safePage === 1) {
+        // Page 1: startingBalance = currentBalance (balance after newest tx overall)
         startingBalance = currentBalance;
       } else {
-        // Sum all transactions that come before this page (newer transactions)
-        // These are the transactions we skip
-        const newerTransactionsQuery = this.transactionsRepository
+        // For other pages, sum all transactions newer than the first tx on this page
+        // startingBalance = currentBalance - sum(txs newer than first tx)
+        const firstTxOnPage = data[0];
+
+        // Sum all transactions that appear BEFORE the first transaction on this page.
+        // newerSum = sum(txs with date > firstDate) + sum(txs with date = firstDate but NOT on this page)
+        const pageIds = data.map(tx => tx.id);
+        const firstDate = firstTxOnPage.transactionDate;
+
+        // Sum of transactions with date strictly greater than first tx's date
+        const sumDateGreaterResult = await this.transactionsRepository
           .createQueryBuilder('transaction')
           .select('SUM(transaction.amount)', 'sum')
           .where('transaction.userId = :userId', { userId })
-          .andWhere('transaction.accountId = :accountId', { accountId });
+          .andWhere('transaction.accountId = :accountId', { accountId })
+          .andWhere('transaction.transactionDate > :firstDate', { firstDate })
+          .getRawOne();
 
-        if (startDate) {
-          newerTransactionsQuery.andWhere('transaction.transactionDate >= :startDate', { startDate });
-        }
-        if (endDate) {
-          newerTransactionsQuery.andWhere('transaction.transactionDate <= :endDate', { endDate });
-        }
-        if (categoryId) {
-          newerTransactionsQuery
-            .leftJoin('transaction.splits', 'splits')
-            .andWhere(
-              '(transaction.categoryId = :categoryId OR splits.categoryId = :categoryId)',
-              { categoryId },
-            );
-        }
-        if (payeeId) {
-          newerTransactionsQuery.andWhere('transaction.payeeId = :payeeId', { payeeId });
-        }
-
-        // Order the same way and get the sum of transactions we're skipping
-        newerTransactionsQuery
-          .orderBy('transaction.transactionDate', 'DESC')
-          .addOrderBy('transaction.createdAt', 'DESC')
-          .limit(skip);
-
-        // Get IDs of transactions to skip
-        const newerIdsQuery = this.transactionsRepository
+        // Sum of transactions with same date but NOT on this page (on earlier pages)
+        const sumSameDateNotOnPageResult = await this.transactionsRepository
           .createQueryBuilder('transaction')
-          .select('transaction.id')
+          .select('SUM(transaction.amount)', 'sum')
           .where('transaction.userId = :userId', { userId })
-          .andWhere('transaction.accountId = :accountId', { accountId });
+          .andWhere('transaction.accountId = :accountId', { accountId })
+          .andWhere('transaction.transactionDate = :firstDate', { firstDate })
+          .andWhere('transaction.id NOT IN (:...pageIds)', { pageIds })
+          .getRawOne();
 
-        if (startDate) {
-          newerIdsQuery.andWhere('transaction.transactionDate >= :startDate', { startDate });
-        }
-        if (endDate) {
-          newerIdsQuery.andWhere('transaction.transactionDate <= :endDate', { endDate });
-        }
-        if (categoryId) {
-          newerIdsQuery
-            .leftJoin('transaction.splits', 'splits')
-            .andWhere(
-              '(transaction.categoryId = :categoryId OR splits.categoryId = :categoryId)',
-              { categoryId },
-            );
-        }
-        if (payeeId) {
-          newerIdsQuery.andWhere('transaction.payeeId = :payeeId', { payeeId });
-        }
-
-        newerIdsQuery
-          .orderBy('transaction.transactionDate', 'DESC')
-          .addOrderBy('transaction.createdAt', 'DESC')
-          .limit(skip);
-
-        const newerIds = await newerIdsQuery.getRawMany();
-
-        if (newerIds.length > 0) {
-          const ids = newerIds.map((r: { transaction_id: string }) => r.transaction_id);
-          const sumResult = await this.transactionsRepository
-            .createQueryBuilder('transaction')
-            .select('SUM(transaction.amount)', 'sum')
-            .where('transaction.id IN (:...ids)', { ids })
-            .getRawOne();
-
-          const newerSum = Number(sumResult?.sum) || 0;
-          // Starting balance for this page = current balance - sum of newer transactions
-          startingBalance = currentBalance - newerSum;
-        } else {
-          startingBalance = currentBalance;
-        }
+        const sumDateGreater = Number(sumDateGreaterResult?.sum) || 0;
+        const sumSameDateNotOnPage = Number(sumSameDateNotOnPageResult?.sum) || 0;
+        startingBalance = currentBalance - sumDateGreater - sumSameDateNotOnPage;
       }
     }
 
@@ -455,7 +448,8 @@ export class TransactionsService {
     }
 
     transaction.isReconciled = true;
-    transaction.reconciledDate = new Date();
+    const now = new Date();
+    transaction.reconciledDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
     return this.transactionsRepository.save(transaction);
   }
@@ -512,13 +506,25 @@ export class TransactionsService {
     }
 
     if (categoryId) {
-      // Need to join splits to match split transactions with this category
-      queryBuilder
-        .leftJoin('transaction.splits', 'splits')
-        .andWhere(
-          '(transaction.categoryId = :categoryId OR splits.categoryId = :categoryId)',
-          { categoryId },
+      if (categoryId === 'uncategorized') {
+        // Match transactions without a category (and not split)
+        queryBuilder.andWhere(
+          '(transaction.categoryId IS NULL AND transaction.isSplit = false)',
         );
+      } else {
+        // Get category IDs including all subcategories
+        const categoryIds = await this.getCategoryIdsWithChildren(
+          userId,
+          categoryId,
+        );
+        // Need to join splits to match split transactions with this category
+        queryBuilder
+          .leftJoin('transaction.splits', 'splits')
+          .andWhere(
+            '(transaction.categoryId IN (:...categoryIds) OR splits.categoryId IN (:...categoryIds))',
+            { categoryIds },
+          );
+      }
     }
 
     if (payeeId) {

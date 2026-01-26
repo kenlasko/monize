@@ -8,6 +8,7 @@ import { ScheduledTransactionList } from '@/components/scheduled-transactions/Sc
 import { AppHeader } from '@/components/layout/AppHeader';
 import { scheduledTransactionsApi } from '@/lib/scheduled-transactions';
 import { ScheduledTransaction } from '@/types/scheduled-transaction';
+import { parseLocalDate } from '@/lib/utils';
 
 export default function BillsPage() {
   const [scheduledTransactions, setScheduledTransactions] = useState<ScheduledTransaction[]>([]);
@@ -110,7 +111,7 @@ export default function BillsPage() {
       }, 0),
     dueCount: scheduledTransactions.filter((t) => {
       if (!t.isActive) return false;
-      const dueDate = new Date(t.nextDueDate);
+      const dueDate = parseLocalDate(t.nextDueDate);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       return dueDate <= today;

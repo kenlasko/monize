@@ -67,6 +67,8 @@ export class ImportService {
       },
       detectedDateFormat: result.detectedDateFormat,
       sampleDates: result.sampleDates,
+      openingBalance: result.openingBalance,
+      openingBalanceDate: result.openingBalanceDate,
     };
   }
 
@@ -158,6 +160,18 @@ export class ImportService {
         importResult.accountsCreated++;
       }
 
+      // Apply opening balance if present
+      if (result.openingBalance !== null) {
+        await queryRunner.manager.update(Account, dto.accountId, {
+          openingBalance: result.openingBalance,
+          currentBalance: account.currentBalance + result.openingBalance - (account.openingBalance || 0),
+        });
+      }
+
+      // Track timestamps per date to avoid duplicate createdAt values
+      // This ensures deterministic ordering for transactions on the same date
+      const dateCounters = new Map<string, number>();
+
       // Import transactions
       for (const qifTx of result.transactions) {
         try {
@@ -167,7 +181,7 @@ export class ImportService {
               where: {
                 userId,
                 accountId: dto.accountId,
-                transactionDate: new Date(qifTx.date),
+                transactionDate: qifTx.date,
                 amount: qifTx.amount,
               },
             });
@@ -193,7 +207,7 @@ export class ImportService {
                   .where('t.user_id = :userId', { userId })
                   .andWhere('t.account_id = :accountId', { accountId: dto.accountId })
                   .andWhere('t.is_transfer = true')
-                  .andWhere('t.transaction_date = :date', { date: new Date(qifTx.date) })
+                  .andWhere('t.transaction_date = :date', { date: qifTx.date })
                   .andWhere('t.amount = :amount', { amount: qifTx.amount })
                   .andWhere('linked.account_id = :linkedAccountId', {
                     linkedAccountId: mappedTransferAccountId,
@@ -245,11 +259,18 @@ export class ImportService {
           // Check if this is a split transaction
           const isSplit = qifTx.splits && qifTx.splits.length > 0;
 
+          // Generate unique createdAt timestamp for deterministic ordering
+          // Increment by 1ms for each transaction on the same date
+          const counter = dateCounters.get(qifTx.date) || 0;
+          dateCounters.set(qifTx.date, counter + 1);
+          const baseTime = new Date();
+          baseTime.setMilliseconds(baseTime.getMilliseconds() + counter);
+
           // Create transaction
           const transaction = queryRunner.manager.create(Transaction, {
             userId,
             accountId: dto.accountId,
-            transactionDate: new Date(qifTx.date),
+            transactionDate: qifTx.date,
             amount: qifTx.amount,
             payeeName: qifTx.payee,
             payeeId,
@@ -262,6 +283,7 @@ export class ImportService {
             isSplit,
             isTransfer: qifTx.isTransfer,
             linkedAccountId: transferAccountId,
+            createdAt: baseTime,
           });
 
           const savedTx = await queryRunner.manager.save(transaction);
@@ -299,10 +321,12 @@ export class ImportService {
 
           // If it's a transfer and we have a linked account, create the opposite transaction
           if (qifTx.isTransfer && transferAccountId) {
+            // Use same timestamp as the main transaction (slightly offset to ensure uniqueness)
+            const linkedTime = new Date(baseTime.getTime() + 0.5);
             const linkedTx = queryRunner.manager.create(Transaction, {
               userId,
               accountId: transferAccountId,
-              transactionDate: new Date(qifTx.date),
+              transactionDate: qifTx.date,
               amount: -qifTx.amount,
               payeeName: qifTx.payee || `Transfer from ${account.name}`,
               description: qifTx.memo,
@@ -313,6 +337,7 @@ export class ImportService {
               isTransfer: true,
               linkedAccountId: dto.accountId,
               linkedTransactionId: savedTx.id,
+              createdAt: linkedTime,
             });
 
             const savedLinkedTx = await queryRunner.manager.save(linkedTx);

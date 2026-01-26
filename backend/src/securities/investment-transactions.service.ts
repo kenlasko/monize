@@ -55,7 +55,7 @@ export class InvestmentTransactionsService {
       accountId: createDto.accountId,
       securityId: createDto.securityId,
       action: createDto.action,
-      transactionDate: new Date(createDto.transactionDate),
+      transactionDate: createDto.transactionDate,
       quantity: createDto.quantity,
       price: createDto.price,
       commission: createDto.commission || 0,

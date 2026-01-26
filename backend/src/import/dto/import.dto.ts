@@ -113,6 +113,12 @@ export class ParsedQifResponseDto {
 
   @ApiProperty({ type: [String], description: 'Sample dates from the file' })
   sampleDates: string[];
+
+  @ApiPropertyOptional({ description: 'Opening balance from QIF file, if present' })
+  openingBalance: number | null;
+
+  @ApiPropertyOptional({ description: 'Date of the opening balance record' })
+  openingBalanceDate: string | null;
 }
 
 export class ImportResultDto {

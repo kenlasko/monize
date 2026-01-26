@@ -47,6 +47,10 @@ export interface QifParseResult {
   transferAccounts: string[];
   detectedDateFormat: string;
   sampleDates: string[];
+  /** Opening balance extracted from the first "Opening Balance" record, if present */
+  openingBalance: number | null;
+  /** Date of the opening balance record */
+  openingBalanceDate: string | null;
 }
 
 export type DateFormat = 'MM/DD/YYYY' | 'DD/MM/YYYY' | 'YYYY-MM-DD' | 'YYYY-DD-MM';
@@ -63,6 +67,8 @@ export function parseQif(content: string, dateFormat?: DateFormat): QifParseResu
   let currentTransaction: Partial<QifTransaction> | null = null;
   let currentSplits: QifSplit[] = [];
   let currentSplit: Partial<QifSplit> | null = null;
+  let openingBalance: number | null = null;
+  let openingBalanceDate: string | null = null;
 
   for (const line of lines) {
     if (!line.trim()) continue;
@@ -210,8 +216,20 @@ export function parseQif(content: string, dateFormat?: DateFormat): QifParseResu
         }
 
         if (currentTransaction.date) {
-          currentTransaction.splits = currentSplits;
-          transactions.push(currentTransaction as QifTransaction);
+          // Check if this is an Opening Balance record
+          // Opening Balance records have Payee="Opening Balance" and typically a transfer category [AccountName]
+          const isOpeningBalance =
+            currentTransaction.payee?.toLowerCase() === 'opening balance' ||
+            (currentTransaction.isTransfer && currentTransaction.payee?.toLowerCase().includes('opening balance'));
+
+          if (isOpeningBalance && openingBalance === null) {
+            // Extract opening balance - don't add as a transaction
+            openingBalance = currentTransaction.amount || 0;
+            openingBalanceDate = currentTransaction.date;
+          } else {
+            currentTransaction.splits = currentSplits;
+            transactions.push(currentTransaction as QifTransaction);
+          }
         }
 
         currentTransaction = null;
@@ -244,6 +262,8 @@ export function parseQif(content: string, dateFormat?: DateFormat): QifParseResu
     transferAccounts: Array.from(transferAccountsSet).sort(),
     detectedDateFormat,
     sampleDates,
+    openingBalance,
+    openingBalanceDate,
   };
 }
 

@@ -28,8 +28,27 @@ export class Transaction {
   @JoinColumn({ name: 'account_id' })
   account: Account;
 
-  @Column({ type: 'date', name: 'transaction_date' })
-  transactionDate: Date;
+  @Column({
+    type: 'date',
+    name: 'transaction_date',
+    transformer: {
+      // When reading from DB, keep as string to avoid timezone issues
+      from: (value: string | Date): string => {
+        if (!value) return value as string;
+        if (typeof value === 'string') return value;
+        // If it's a Date, format as YYYY-MM-DD using local date components
+        const year = value.getFullYear();
+        const month = String(value.getMonth() + 1).padStart(2, '0');
+        const day = String(value.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      },
+      // When writing to DB, accept string or Date
+      to: (value: string | Date): string | Date => {
+        return value;
+      },
+    },
+  })
+  transactionDate: string;
 
   @Column({ type: 'uuid', name: 'payee_id', nullable: true })
   payeeId: string | null;
@@ -75,8 +94,23 @@ export class Transaction {
   @Column({ name: 'is_reconciled', default: false })
   isReconciled: boolean;
 
-  @Column({ type: 'date', name: 'reconciled_date', nullable: true })
-  reconciledDate: Date | null;
+  @Column({
+    type: 'date',
+    name: 'reconciled_date',
+    nullable: true,
+    transformer: {
+      from: (value: string | Date | null): string | null => {
+        if (!value) return null;
+        if (typeof value === 'string') return value;
+        const year = value.getFullYear();
+        const month = String(value.getMonth() + 1).padStart(2, '0');
+        const day = String(value.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      },
+      to: (value: string | Date | null): string | Date | null => value,
+    },
+  })
+  reconciledDate: string | null;
 
   @Column({ name: 'is_split', default: false })
   isSplit: boolean;

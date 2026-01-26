@@ -12,8 +12,10 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
-import { format, parseISO, startOfWeek, endOfWeek, eachWeekOfInterval, subDays } from 'date-fns';
+import { format, startOfWeek, endOfWeek, eachWeekOfInterval, subDays } from 'date-fns';
 import { Transaction } from '@/types/transaction';
+import { parseLocalDate } from '@/lib/utils';
+import { useDateFormat } from '@/hooks/useDateFormat';
 
 interface IncomeExpensesBarChartProps {
   transactions: Transaction[];
@@ -25,6 +27,7 @@ export function IncomeExpensesBarChart({
   isLoading,
 }: IncomeExpensesBarChartProps) {
   const router = useRouter();
+  const { formatDate } = useDateFormat();
 
   // Group transactions by week and calculate income/expenses
   const chartData = useMemo(() => {
@@ -42,7 +45,7 @@ export function IncomeExpensesBarChart({
       return {
         weekStart,
         weekEnd,
-        label: format(weekStart, 'MMM d'),
+        label: formatDate(weekStart),
         income: 0,
         expenses: 0,
       };
@@ -50,7 +53,7 @@ export function IncomeExpensesBarChart({
 
     // Aggregate transactions by week
     transactions.forEach((tx) => {
-      const txDate = parseISO(tx.transactionDate);
+      const txDate = parseLocalDate(tx.transactionDate);
       const txWeekStart = startOfWeek(txDate, { weekStartsOn: 0 });
 
       const weekBucket = weekData.find(
@@ -74,7 +77,7 @@ export function IncomeExpensesBarChart({
       startDate: format(w.weekStart, 'yyyy-MM-dd'),
       endDate: format(w.weekEnd, 'yyyy-MM-dd'),
     }));
-  }, [transactions]);
+  }, [transactions, formatDate]);
 
   const handleChartClick = (data: { activePayload?: Array<{ payload: { startDate: string; endDate: string } }> } | null) => {
     if (data?.activePayload?.[0]?.payload) {

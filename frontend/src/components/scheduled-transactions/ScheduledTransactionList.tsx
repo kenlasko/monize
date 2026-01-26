@@ -1,10 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { format, isPast, isToday, addDays, isBefore } from 'date-fns';
+import { isPast, isToday, addDays, isBefore } from 'date-fns';
 import toast from 'react-hot-toast';
 import { ScheduledTransaction, FREQUENCY_LABELS } from '@/types/scheduled-transaction';
 import { scheduledTransactionsApi } from '@/lib/scheduled-transactions';
+import { parseLocalDate } from '@/lib/utils';
+import { useDateFormat } from '@/hooks/useDateFormat';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 type ConfirmAction = 'post' | 'skip' | 'delete';
@@ -26,6 +28,7 @@ export function ScheduledTransactionList({
   onEdit,
   onRefresh,
 }: ScheduledTransactionListProps) {
+  const { formatDate } = useDateFormat();
   const [actionInProgress, setActionInProgress] = useState<string | null>(null);
   const [confirmState, setConfirmState] = useState<ConfirmState>({
     isOpen: false,
@@ -125,7 +128,7 @@ export function ScheduledTransactionList({
   };
 
   const getDueDateStatus = (nextDueDate: string) => {
-    const date = new Date(nextDueDate);
+    const date = parseLocalDate(nextDueDate);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -250,7 +253,7 @@ export function ScheduledTransactionList({
                 {/* Schedule (Frequency + Next Due + Remaining) */}
                 <td className="px-4 py-3">
                   <div className="text-sm text-gray-900 dark:text-gray-100">
-                    {format(new Date(transaction.nextDueDate), 'MMM d')}
+                    {formatDate(transaction.nextDueDate)}
                     {dueDateStatus && (
                       <span
                         className={`ml-1.5 inline-flex text-xs font-medium rounded-full px-1.5 py-0.5 ${dueDateStatus.className}`}

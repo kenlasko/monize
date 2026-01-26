@@ -43,8 +43,22 @@ export class InvestmentTransaction {
   action: InvestmentAction;
 
   @ApiProperty()
-  @Column({ type: 'date', name: 'transaction_date' })
-  transactionDate: Date;
+  @Column({
+    type: 'date',
+    name: 'transaction_date',
+    transformer: {
+      from: (value: string | Date): string => {
+        if (!value) return value as string;
+        if (typeof value === 'string') return value;
+        const year = value.getFullYear();
+        const month = String(value.getMonth() + 1).padStart(2, '0');
+        const day = String(value.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      },
+      to: (value: string | Date): string | Date => value,
+    },
+  })
+  transactionDate: string;
 
   @ApiProperty({ example: 100, description: 'Number of shares' })
   @Column({ type: 'decimal', precision: 20, scale: 8, nullable: true })

@@ -38,20 +38,46 @@ export function getCategorySelectOptions(
     includeEmpty?: boolean;
     emptyLabel?: string;
     excludeIds?: Set<string>;
+    includeUncategorized?: boolean;
   }
 ): CategoryOption[] {
-  const { includeEmpty = false, emptyLabel = 'Uncategorized', excludeIds = new Set<string>() } = options || {};
+  const {
+    includeEmpty = false,
+    emptyLabel = 'Uncategorized',
+    excludeIds = new Set<string>(),
+    includeUncategorized = false,
+  } = options || {};
+
+  // Build a map for quick parent lookups
+  const categoryMap = new Map(categories.map((c) => [c.id, c]));
+
+  // Get full path label for a category (e.g., "Parent: Child")
+  const getFullLabel = (category: Category): string => {
+    if (category.parentId) {
+      const parent = categoryMap.get(category.parentId);
+      if (parent) {
+        return `${parent.name}: ${category.name}`;
+      }
+    }
+    return category.name;
+  };
 
   const tree = buildCategoryTree(categories, excludeIds);
 
-  const categoryOptions = tree.map(({ category, level }) => ({
+  const categoryOptions = tree.map(({ category }) => ({
     value: category.id,
-    label: `${'  '.repeat(level)}${level > 0 ? '└ ' : ''}${category.name}`,
+    label: getFullLabel(category),
   }));
 
+  const result: CategoryOption[] = [];
+
   if (includeEmpty) {
-    return [{ value: '', label: emptyLabel }, ...categoryOptions];
+    result.push({ value: '', label: emptyLabel });
   }
 
-  return categoryOptions;
+  if (includeUncategorized) {
+    result.push({ value: 'uncategorized', label: 'Uncategorized' });
+  }
+
+  return [...result, ...categoryOptions];
 }

@@ -34,3 +34,38 @@ export interface AuthState {
   isLoading: boolean;
   error: string | null;
 }
+
+export interface UserPreferences {
+  userId: string;
+  defaultCurrency: string;
+  dateFormat: string; // 'browser' = use browser locale
+  numberFormat: string; // 'browser' = use browser locale
+  theme: 'light' | 'dark' | 'system';
+  timezone: string; // 'browser' = use browser timezone
+  notificationEmail: boolean;
+  notificationBrowser: boolean;
+  twoFactorEnabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UpdateProfileData {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+}
+
+export interface UpdatePreferencesData {
+  defaultCurrency?: string;
+  dateFormat?: string;
+  numberFormat?: string;
+  theme?: 'light' | 'dark' | 'system';
+  timezone?: string;
+  notificationEmail?: boolean;
+  notificationBrowser?: boolean;
+}
+
+export interface ChangePasswordData {
+  currentPassword: string;
+  newPassword: string;
+}
