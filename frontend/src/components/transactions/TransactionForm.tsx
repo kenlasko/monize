@@ -88,8 +88,35 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
       : []
   );
 
-  // Transfer state
-  const [transferToAccountId, setTransferToAccountId] = useState<string>('');
+  // For transfers, determine from/to accounts based on amount sign
+  // Negative amount = outgoing (from this account), Positive amount = incoming (to this account)
+  const getTransferAccounts = () => {
+    if (!transaction?.isTransfer || !transaction.linkedTransaction) {
+      return { fromAccountId: '', toAccountId: '' };
+    }
+
+    const isOutgoing = Number(transaction.amount) < 0;
+    if (isOutgoing) {
+      // This transaction is the "from" side (money leaving)
+      return {
+        fromAccountId: transaction.accountId,
+        toAccountId: transaction.linkedTransaction.accountId,
+      };
+    } else {
+      // This transaction is the "to" side (money arriving)
+      return {
+        fromAccountId: transaction.linkedTransaction.accountId,
+        toAccountId: transaction.accountId,
+      };
+    }
+  };
+
+  const initialTransferAccounts = getTransferAccounts();
+
+  // Transfer state - initialize from linked transaction if editing a transfer
+  const [transferToAccountId, setTransferToAccountId] = useState<string>(
+    initialTransferAccounts.toAccountId
+  );
 
   const {
     register,
@@ -101,12 +128,18 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
     resolver: zodResolver(transactionSchema),
     defaultValues: transaction
       ? {
-          accountId: transaction.accountId,
+          // For transfers, use the "from" account as the primary account
+          accountId: transaction.isTransfer && initialTransferAccounts.fromAccountId
+            ? initialTransferAccounts.fromAccountId
+            : transaction.accountId,
           transactionDate: transaction.transactionDate,
           payeeId: transaction.payeeId || '',
           payeeName: transaction.payeeName || '',
           categoryId: transaction.categoryId || '',
-          amount: Math.round(Number(transaction.amount) * 100) / 100,
+          // For transfers, always show absolute amount
+          amount: transaction.isTransfer
+            ? Math.abs(Math.round(Number(transaction.amount) * 100) / 100)
+            : Math.round(Number(transaction.amount) * 100) / 100,
           currencyCode: transaction.currencyCode,
           description: transaction.description || '',
           referenceNumber: transaction.referenceNumber || '',

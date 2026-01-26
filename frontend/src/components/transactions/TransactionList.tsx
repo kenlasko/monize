@@ -18,6 +18,10 @@ interface TransactionListProps {
   onRefresh?: () => void;
   density?: DensityLevel;
   onDensityChange?: (density: DensityLevel) => void;
+  /** When viewing a single account, pass the account's current balance to show running balance column */
+  accountCurrentBalance?: number;
+  /** Whether we're viewing a single account (enables running balance column) */
+  isSingleAccountView?: boolean;
 }
 
 export function TransactionList({
@@ -27,6 +31,8 @@ export function TransactionList({
   onRefresh,
   density: propDensity,
   onDensityChange,
+  accountCurrentBalance,
+  isSingleAccountView = false,
 }: TransactionListProps) {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [localDensity, setLocalDensity] = useState<DensityLevel>('normal');
@@ -114,6 +120,26 @@ export function TransactionList({
     currency: 'CAD',
   }), []);
 
+  // Calculate running balances when viewing a single account
+  // Transactions are sorted newest first, so we start with current balance
+  // and subtract each transaction's amount to get the balance before that transaction
+  const runningBalances = useMemo(() => {
+    if (!isSingleAccountView || accountCurrentBalance === undefined) {
+      return new Map<string, number>();
+    }
+
+    const balances = new Map<string, number>();
+    let balance = accountCurrentBalance;
+
+    // First transaction shows current balance, then we work backwards
+    for (const tx of transactions) {
+      balances.set(tx.id, balance);
+      balance -= tx.amount; // Subtract to get what balance was before this transaction
+    }
+
+    return balances;
+  }, [transactions, accountCurrentBalance, isSingleAccountView]);
+
   const formatAmount = useCallback((amount: number) => {
     const isNegative = amount < 0;
     const absAmount = Math.abs(amount);
@@ -122,6 +148,15 @@ export function TransactionList({
     return (
       <span className={isNegative ? 'text-red-600' : 'text-green-600'}>
         {isNegative ? '-' : '+'}{formatted}
+      </span>
+    );
+  }, [currencyFormatter]);
+
+  const formatBalance = useCallback((balance: number) => {
+    const formatted = currencyFormatter.format(Math.abs(balance));
+    return (
+      <span className={balance < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-gray-100'}>
+        {balance < 0 ? `-${formatted}` : formatted}
       </span>
     );
   }, [currencyFormatter]);
@@ -187,6 +222,11 @@ export function TransactionList({
               <th className={`${headerPadding} text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>
                 Amount
               </th>
+              {isSingleAccountView && (
+                <th className={`${headerPadding} text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>
+                  Balance
+                </th>
+              )}
               <th className={`${headerPadding} text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>
                 Status
               </th>
@@ -286,6 +326,13 @@ export function TransactionList({
                 <td className={`${cellPadding} whitespace-nowrap text-sm font-medium text-right`}>
                   {formatAmount(transaction.amount)}
                 </td>
+                {isSingleAccountView && (
+                  <td className={`${cellPadding} whitespace-nowrap text-sm font-medium text-right`}>
+                    {runningBalances.has(transaction.id)
+                      ? formatBalance(runningBalances.get(transaction.id)!)
+                      : '-'}
+                  </td>
+                )}
                 <td className={`${cellPadding} whitespace-nowrap text-center`}>
                   <button
                     onClick={() => handleToggleCleared(transaction)}

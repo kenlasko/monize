@@ -90,6 +90,10 @@ export class Transaction {
   @Column({ type: 'uuid', name: 'linked_transaction_id', nullable: true })
   linkedTransactionId: string | null;
 
+  @ManyToOne(() => Transaction, { nullable: true })
+  @JoinColumn({ name: 'linked_transaction_id' })
+  linkedTransaction: Transaction | null;
+
   @OneToMany(() => TransactionSplit, (split) => split.transaction)
   splits: TransactionSplit[];
 

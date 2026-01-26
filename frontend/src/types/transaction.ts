@@ -35,6 +35,7 @@ export interface Transaction {
   parentTransactionId: string | null;
   isTransfer: boolean;
   linkedTransactionId: string | null;
+  linkedTransaction?: Transaction | null;
   splits?: TransactionSplit[];
   createdAt: string;
   updatedAt: string;

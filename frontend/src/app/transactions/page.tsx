@@ -142,8 +142,20 @@ export default function TransactionsPage() {
     setShowForm(true);
   };
 
-  const handleEdit = (transaction: Transaction) => {
-    setEditingTransaction(transaction);
+  const handleEdit = async (transaction: Transaction) => {
+    // For transfers, fetch the full transaction with linkedTransaction relation
+    if (transaction.isTransfer) {
+      try {
+        const fullTransaction = await transactionsApi.getById(transaction.id);
+        setEditingTransaction(fullTransaction);
+      } catch (error) {
+        console.error('Failed to load transaction details:', error);
+        // Fall back to using the list transaction
+        setEditingTransaction(transaction);
+      }
+    } else {
+      setEditingTransaction(transaction);
+    }
     setShowForm(true);
   };
 
@@ -384,6 +396,12 @@ export default function TransactionsPage() {
               onRefresh={loadData}
               density={listDensity}
               onDensityChange={setListDensity}
+              isSingleAccountView={!!filterAccountId}
+              accountCurrentBalance={
+                filterAccountId
+                  ? accounts.find(a => a.id === filterAccountId)?.currentBalance
+                  : undefined
+              }
             />
           )}
         </div>

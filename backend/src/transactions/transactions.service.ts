@@ -224,7 +224,7 @@ export class TransactionsService {
   async findOne(userId: string, id: string): Promise<Transaction> {
     const transaction = await this.transactionsRepository.findOne({
       where: { id },
-      relations: ['account', 'payee', 'category', 'splits', 'splits.category'],
+      relations: ['account', 'payee', 'category', 'splits', 'splits.category', 'linkedTransaction', 'linkedTransaction.account'],
     });
 
     if (!transaction) {

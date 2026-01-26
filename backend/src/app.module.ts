@@ -19,6 +19,7 @@ import { BudgetsModule } from './budgets/budgets.module';
 import { ReportsModule } from './reports/reports.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { DatabaseModule } from './database/database.module';
+import { ImportModule } from './import/import.module';
 
 @Module({
   imports: [
@@ -82,6 +83,7 @@ import { DatabaseModule } from './database/database.module';
     ReportsModule,
     NotificationsModule,
     DatabaseModule,
+    ImportModule,
   ],
 })
 export class AppModule {}

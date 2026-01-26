@@ -1,8 +1,10 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Account, AccountType } from '@/types/account';
 import { Button } from '@/components/ui/Button';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { accountsApi } from '@/lib/accounts';
 import toast from 'react-hot-toast';
 
@@ -14,24 +16,40 @@ interface AccountListProps {
 
 export function AccountList({ accounts, onEdit, onRefresh }: AccountListProps) {
   const router = useRouter();
+  const [closeDialogOpen, setCloseDialogOpen] = useState(false);
+  const [accountToClose, setAccountToClose] = useState<Account | null>(null);
+  const [isClosing, setIsClosing] = useState(false);
 
   const handleViewTransactions = (account: Account) => {
     router.push(`/transactions?accountId=${account.id}`);
   };
 
-  const handleClose = async (account: Account) => {
-    if (!confirm(`Are you sure you want to close "${account.name}"?`)) {
-      return;
-    }
+  const handleCloseClick = (account: Account) => {
+    setAccountToClose(account);
+    setCloseDialogOpen(true);
+  };
 
+  const handleCloseConfirm = async () => {
+    if (!accountToClose) return;
+
+    setIsClosing(true);
     try {
-      await accountsApi.close(account.id);
+      await accountsApi.close(accountToClose.id);
       toast.success('Account closed successfully');
+      setCloseDialogOpen(false);
+      setAccountToClose(null);
       onRefresh();
-    } catch (error) {
-      toast.error('Failed to close account');
-      console.error(error);
+    } catch (error: any) {
+      const message = error.response?.data?.message || 'Failed to close account';
+      toast.error(message);
+    } finally {
+      setIsClosing(false);
     }
+  };
+
+  const handleCloseCancel = () => {
+    setCloseDialogOpen(false);
+    setAccountToClose(null);
   };
 
   const handleReopen = async (account: Account) => {
@@ -39,9 +57,9 @@ export function AccountList({ accounts, onEdit, onRefresh }: AccountListProps) {
       await accountsApi.reopen(account.id);
       toast.success('Account reopened successfully');
       onRefresh();
-    } catch (error) {
-      toast.error('Failed to reopen account');
-      console.error(error);
+    } catch (error: any) {
+      const message = error.response?.data?.message || 'Failed to reopen account';
+      toast.error(message);
     }
   };
 
@@ -131,8 +149,8 @@ export function AccountList({ accounts, onEdit, onRefresh }: AccountListProps) {
         </thead>
         <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
           {accounts.map((account) => (
-            <tr key={account.id} className={`hover:bg-gray-50 dark:hover:bg-gray-800 ${!account.isClosed ? '' : 'opacity-50'}`}>
-              <td className="px-6 py-4 whitespace-nowrap">
+            <tr key={account.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+              <td className={`px-6 py-4 whitespace-nowrap ${account.isClosed ? 'opacity-50' : ''}`}>
                 <button
                   onClick={() => handleViewTransactions(account)}
                   className="text-left hover:underline"
@@ -155,7 +173,7 @@ export function AccountList({ accounts, onEdit, onRefresh }: AccountListProps) {
                   )}
                 </button>
               </td>
-              <td className="px-6 py-4 whitespace-nowrap">
+              <td className={`px-6 py-4 whitespace-nowrap ${account.isClosed ? 'opacity-50' : ''}`}>
                 <span
                   className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getAccountTypeColor(
                     account.accountType
@@ -164,7 +182,7 @@ export function AccountList({ accounts, onEdit, onRefresh }: AccountListProps) {
                   {formatAccountType(account.accountType)}
                 </span>
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-right">
+              <td className={`px-6 py-4 whitespace-nowrap text-right ${account.isClosed ? 'opacity-50' : ''}`}>
                 <div
                   className={`text-sm font-medium ${
                     account.currentBalance >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
@@ -202,7 +220,9 @@ export function AccountList({ accounts, onEdit, onRefresh }: AccountListProps) {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleClose(account)}
+                      onClick={() => handleCloseClick(account)}
+                      disabled={Number(account.currentBalance) !== 0}
+                      title={Number(account.currentBalance) !== 0 ? 'Account must have zero balance to close' : 'Close account'}
                     >
                       Close
                     </Button>
@@ -221,6 +241,21 @@ export function AccountList({ accounts, onEdit, onRefresh }: AccountListProps) {
           ))}
         </tbody>
       </table>
+
+      {/* Close Account Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={closeDialogOpen}
+        title="Close Account"
+        message={accountToClose
+          ? `Are you sure you want to close "${accountToClose.name}"? The account must have a zero balance to be closed.`
+          : ''
+        }
+        confirmLabel={isClosing ? 'Closing...' : 'Close Account'}
+        cancelLabel="Cancel"
+        variant="warning"
+        onConfirm={handleCloseConfirm}
+        onCancel={handleCloseCancel}
+      />
     </div>
   );
 }
