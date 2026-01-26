@@ -3,7 +3,8 @@
  *
  * Usage: docker exec -it moneymate-backend npx ts-node scripts/delete-all-transactions.ts
  *
- * WARNING: This will permanently delete ALL transactions and reset account balances!
+ * WARNING: This will permanently delete ALL transactions, investment activities,
+ * holdings, and reset account balances!
  */
 
 import { DataSource } from 'typeorm';
@@ -36,6 +37,14 @@ async function main() {
       // Delete all transactions
       const txResult = await manager.query('DELETE FROM transactions');
       console.log(`Deleted all transactions`);
+
+      // Delete all investment transactions
+      const investTxResult = await manager.query('DELETE FROM investment_transactions');
+      console.log(`Deleted all investment transactions`);
+
+      // Delete all holdings
+      const holdingsResult = await manager.query('DELETE FROM holdings');
+      console.log(`Deleted all holdings`);
 
       // Reset all account balances to their opening balance
       await manager.query(`

@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository, DataSource, IsNull } from 'typeorm';
 import { Transaction, TransactionStatus } from '../transactions/entities/transaction.entity';
 import { TransactionSplit } from '../transactions/entities/transaction-split.entity';
 import { Account } from '../accounts/entities/account.entity';
@@ -176,6 +176,8 @@ export class ImportService {
       for (const qifTx of result.transactions) {
         try {
           // Check for duplicates if requested
+          // A duplicate must match: date, amount, payee, AND description
+          // This allows importing transactions with same date/amount but different categories
           if (dto.skipDuplicates) {
             const existing = await queryRunner.manager.findOne(Transaction, {
               where: {
@@ -183,6 +185,8 @@ export class ImportService {
                 accountId: dto.accountId,
                 transactionDate: qifTx.date,
                 amount: qifTx.amount,
+                payeeName: qifTx.payee || IsNull(),
+                description: qifTx.memo || IsNull(),
               },
             });
             if (existing) {
