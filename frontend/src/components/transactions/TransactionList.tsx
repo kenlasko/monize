@@ -319,7 +319,7 @@ export function TransactionList({
                     </div>
                   ) : transaction.category ? (
                     <span
-                      className={`inline-flex text-xs leading-5 font-semibold rounded-full truncate max-w-[120px] ${density === 'dense' ? 'px-1.5 py-0.5' : 'px-2 py-1'}`}
+                      className={`inline-flex text-xs leading-5 font-semibold rounded-full truncate max-w-[160px] ${density === 'dense' ? 'px-1.5 py-0.5' : 'px-2 py-1'}`}
                       style={{
                         backgroundColor: transaction.category.color
                           ? `color-mix(in srgb, ${transaction.category.color} 15%, var(--category-bg-base, #e5e7eb))`
