@@ -39,6 +39,7 @@ export function getCategorySelectOptions(
     emptyLabel?: string;
     excludeIds?: Set<string>;
     includeUncategorized?: boolean;
+    includeTransfers?: boolean;
   }
 ): CategoryOption[] {
   const {
@@ -46,6 +47,7 @@ export function getCategorySelectOptions(
     emptyLabel = 'Uncategorized',
     excludeIds = new Set<string>(),
     includeUncategorized = false,
+    includeTransfers = false,
   } = options || {};
 
   // Build a map for quick parent lookups
@@ -77,6 +79,10 @@ export function getCategorySelectOptions(
 
   if (includeUncategorized) {
     result.push({ value: 'uncategorized', label: 'Uncategorized' });
+  }
+
+  if (includeTransfers) {
+    result.push({ value: 'transfer', label: 'Transfers' });
   }
 
   return [...result, ...categoryOptions];

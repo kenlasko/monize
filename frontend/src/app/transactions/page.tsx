@@ -83,6 +83,8 @@ export default function TransactionsPage() {
   // Get names for display when filtered
   const filteredCategory = filterCategoryId === 'uncategorized'
     ? { id: 'uncategorized', name: 'Uncategorized', color: null } as Category
+    : filterCategoryId === 'transfer'
+    ? { id: 'transfer', name: 'Transfers', color: null } as Category
     : categories.find(c => c.id === filterCategoryId);
   const filteredPayee = payees.find(p => p.id === filterPayeeId);
 
@@ -371,6 +373,7 @@ export default function TransactionsPage() {
                 includeEmpty: true,
                 emptyLabel: 'All categories',
                 includeUncategorized: true,
+                includeTransfers: true,
               })}
               value={filterCategoryId}
               onChange={(e) => handleFilterChange(setFilterCategoryId, e.target.value)}

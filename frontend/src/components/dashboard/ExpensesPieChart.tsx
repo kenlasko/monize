@@ -52,6 +52,9 @@ export function ExpensesPieChart({
     const categoryLookup = new Map(categories.map((c) => [c.id, c]));
 
     transactions.forEach((tx) => {
+      // Skip transfers - they're not real expenses
+      if (tx.isTransfer) return;
+
       // Only count expenses (negative amounts)
       const txAmount = Number(tx.amount) || 0;
       if (txAmount >= 0) return;
@@ -216,7 +219,7 @@ export function ExpensesPieChart({
           </PieChart>
         </ResponsiveContainer>
       </div>
-      <div className="mt-4 grid grid-cols-2 gap-2 max-h-32 overflow-y-auto flex-grow">
+      <div className="mt-4 grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
         {chartData.slice(0, 10).map((item, index) => (
           <button
             key={index}
@@ -232,7 +235,7 @@ export function ExpensesPieChart({
           </button>
         ))}
       </div>
-      <div className="mt-auto pt-4 border-t border-gray-200 dark:border-gray-700 text-center">
+      <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 text-center flex-shrink-0">
         <div className="text-sm text-gray-500 dark:text-gray-400">Total</div>
         <div className="font-semibold text-gray-900 dark:text-gray-100">
           {formatCurrency(totalExpenses)}

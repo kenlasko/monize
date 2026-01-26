@@ -53,6 +53,9 @@ export function IncomeExpensesBarChart({
 
     // Aggregate transactions by week
     transactions.forEach((tx) => {
+      // Skip transfers - they're not real income/expenses
+      if (tx.isTransfer) return;
+
       const txDate = parseLocalDate(tx.transactionDate);
       const txWeekStart = startOfWeek(txDate, { weekStartsOn: 0 });
 

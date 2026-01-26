@@ -218,10 +218,13 @@ export class TransactionsService {
 
     if (categoryId) {
       if (categoryId === 'uncategorized') {
-        // Match transactions without a category (and not split, or splits without category)
+        // Match transactions without a category (not split, not transfer)
         queryBuilder.andWhere(
-          '(transaction.categoryId IS NULL AND transaction.isSplit = false)',
+          '(transaction.categoryId IS NULL AND transaction.isSplit = false AND transaction.isTransfer = false)',
         );
+      } else if (categoryId === 'transfer') {
+        // Match transfer transactions
+        queryBuilder.andWhere('transaction.isTransfer = true');
       } else {
         // Get category IDs including all subcategories
         const categoryIds = await this.getCategoryIdsWithChildren(
@@ -507,10 +510,13 @@ export class TransactionsService {
 
     if (categoryId) {
       if (categoryId === 'uncategorized') {
-        // Match transactions without a category (and not split)
+        // Match transactions without a category (not split, not transfer)
         queryBuilder.andWhere(
-          '(transaction.categoryId IS NULL AND transaction.isSplit = false)',
+          '(transaction.categoryId IS NULL AND transaction.isSplit = false AND transaction.isTransfer = false)',
         );
+      } else if (categoryId === 'transfer') {
+        // Match transfer transactions
+        queryBuilder.andWhere('transaction.isTransfer = true');
       } else {
         // Get category IDs including all subcategories
         const categoryIds = await this.getCategoryIdsWithChildren(
