@@ -7,6 +7,8 @@ import { TransactionSplit } from '../transactions/entities/transaction-split.ent
 import { Account } from '../accounts/entities/account.entity';
 import { Category } from '../categories/entities/category.entity';
 import { Payee } from '../payees/entities/payee.entity';
+import { Security } from '../securities/entities/security.entity';
+import { InvestmentTransaction } from '../securities/entities/investment-transaction.entity';
 
 @Module({
   imports: [
@@ -16,6 +18,8 @@ import { Payee } from '../payees/entities/payee.entity';
       Account,
       Category,
       Payee,
+      Security,
+      InvestmentTransaction,
     ]),
   ],
   controllers: [ImportController],

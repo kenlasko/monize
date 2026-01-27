@@ -8,13 +8,20 @@
  * - T = Amount
  * - P = Payee
  * - M = Memo
- * - N = Number (cheque number)
+ * - N = Number (cheque number) OR Action (for investment transactions)
  * - C = Cleared status (* = cleared, X = reconciled)
  * - L = Category (transfers start with [])
  * - S = Split category
  * - E = Split memo
  * - $ = Split amount
  * - A = Address (multi-line)
+ *
+ * Investment-specific fields (!Type:Invst):
+ * - Y = Security name/symbol
+ * - I = Price per share
+ * - Q = Quantity (number of shares)
+ * - N = Action (Buy, Sell, Div, ReinvDiv, ShrsIn, ShrsOut, etc.)
+ * - O = Commission
  */
 
 export interface QifTransaction {
@@ -29,6 +36,12 @@ export interface QifTransaction {
   isTransfer: boolean;
   transferAccount: string;
   splits: QifSplit[];
+  // Investment-specific fields
+  security: string;
+  action: string;
+  price: number;
+  quantity: number;
+  commission: number;
 }
 
 export interface QifSplit {
@@ -45,6 +58,8 @@ export interface QifParseResult {
   transactions: QifTransaction[];
   categories: string[];
   transferAccounts: string[];
+  /** Unique securities found in investment transactions */
+  securities: string[];
   detectedDateFormat: string;
   sampleDates: string[];
   /** Opening balance extracted from the first "Opening Balance" record, if present */
@@ -60,6 +75,7 @@ export function parseQif(content: string, dateFormat?: DateFormat): QifParseResu
   const transactions: QifTransaction[] = [];
   const categoriesSet = new Set<string>();
   const transferAccountsSet = new Set<string>();
+  const securitiesSet = new Set<string>();
   const rawDates: string[] = [];
 
   let accountType = 'Bank';
@@ -123,6 +139,12 @@ export function parseQif(content: string, dateFormat?: DateFormat): QifParseResu
         isTransfer: false,
         transferAccount: '',
         splits: [],
+        // Investment-specific fields
+        security: '',
+        action: '',
+        price: 0,
+        quantity: 0,
+        commission: 0,
       };
       currentSplits = [];
       currentSplit = null;
@@ -149,8 +171,10 @@ export function parseQif(content: string, dateFormat?: DateFormat): QifParseResu
         currentTransaction.memo = value;
         break;
 
-      case 'N': // Number (cheque number)
+      case 'N': // Number (cheque number) OR Action (for investment transactions)
         currentTransaction.number = value;
+        // For investment transactions, N is the action (Buy, Sell, Div, etc.)
+        currentTransaction.action = value;
         break;
 
       case 'C': // Cleared status (* = cleared, X = reconciled)
@@ -208,6 +232,26 @@ export function parseQif(content: string, dateFormat?: DateFormat): QifParseResu
         }
         break;
 
+      // Investment-specific fields
+      case 'Y': // Security name/symbol
+        currentTransaction.security = value;
+        if (value) {
+          securitiesSet.add(value);
+        }
+        break;
+
+      case 'I': // Price per share
+        currentTransaction.price = parseQifAmount(value);
+        break;
+
+      case 'Q': // Quantity (number of shares)
+        currentTransaction.quantity = parseQifAmount(value);
+        break;
+
+      case 'O': // Commission
+        currentTransaction.commission = parseQifAmount(value);
+        break;
+
       case '^': // End of record
         // Save last split if exists
         if (currentSplit && currentSplit.category !== undefined) {
@@ -259,6 +303,7 @@ export function parseQif(content: string, dateFormat?: DateFormat): QifParseResu
     transactions,
     categories: Array.from(categoriesSet).sort(),
     transferAccounts: Array.from(transferAccountsSet).sort(),
+    securities: Array.from(securitiesSet).sort(),
     detectedDateFormat,
     sampleDates,
     openingBalance,

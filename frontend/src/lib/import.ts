@@ -7,6 +7,7 @@ export interface ParsedQifResponse {
   transactionCount: number;
   categories: string[];
   transferAccounts: string[];
+  securities: string[];
   dateRange: {
     start: string;
     end: string;
@@ -29,11 +30,20 @@ export interface AccountMapping {
   accountType?: string;
 }
 
+export interface SecurityMapping {
+  originalName: string;
+  securityId?: string;
+  createNew?: string;
+  securityName?: string;
+  securityType?: string;
+}
+
 export interface ImportQifRequest {
   content: string;
   accountId: string;
   categoryMappings: CategoryMapping[];
   accountMappings: AccountMapping[];
+  securityMappings?: SecurityMapping[];
   skipDuplicates?: boolean;
   dateFormat?: DateFormat;
 }
@@ -46,6 +56,7 @@ export interface ImportResult {
   categoriesCreated: number;
   accountsCreated: number;
   payeesCreated: number;
+  securitiesCreated: number;
 }
 
 export const importApi = {

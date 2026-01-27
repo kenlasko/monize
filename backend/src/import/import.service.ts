@@ -3,9 +3,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, IsNull } from 'typeorm';
 import { Transaction, TransactionStatus } from '../transactions/entities/transaction.entity';
 import { TransactionSplit } from '../transactions/entities/transaction-split.entity';
-import { Account } from '../accounts/entities/account.entity';
+import { Account, AccountType, AccountSubType } from '../accounts/entities/account.entity';
 import { Category } from '../categories/entities/category.entity';
 import { Payee } from '../payees/entities/payee.entity';
+import { Security } from '../securities/entities/security.entity';
+import { InvestmentTransaction, InvestmentAction } from '../securities/entities/investment-transaction.entity';
 import {
   parseQif,
   validateQifContent,
@@ -18,6 +20,7 @@ import {
   ImportResultDto,
   CategoryMappingDto,
   AccountMappingDto,
+  SecurityMappingDto,
 } from './dto/import.dto';
 
 @Injectable()
@@ -34,6 +37,10 @@ export class ImportService {
     private categoriesRepository: Repository<Category>,
     @InjectRepository(Payee)
     private payeesRepository: Repository<Payee>,
+    @InjectRepository(Security)
+    private securitiesRepository: Repository<Security>,
+    @InjectRepository(InvestmentTransaction)
+    private investmentTransactionsRepository: Repository<InvestmentTransaction>,
   ) {}
 
   async parseQifFile(userId: string, content: string): Promise<ParsedQifResponseDto> {
@@ -61,6 +68,7 @@ export class ImportService {
       transactionCount: result.transactions.length,
       categories: result.categories,
       transferAccounts: result.transferAccounts,
+      securities: result.securities,
       dateRange: {
         start: startDate,
         end: endDate,
@@ -87,6 +95,30 @@ export class ImportService {
     }
 
     const result = parseQif(dto.content, dto.dateFormat as any);
+
+    // Validate QIF type matches destination account type
+    // Investment QIF files should only go to brokerage accounts
+    // Regular QIF files should not go to any investment accounts
+    const isQifInvestment = result.accountType === 'INVESTMENT';
+    const isAccountBrokerage = account.accountSubType === AccountSubType.INVESTMENT_BROKERAGE;
+    const isAccountInvestment =
+      account.accountType === AccountType.INVESTMENT ||
+      account.accountSubType === AccountSubType.INVESTMENT_CASH ||
+      account.accountSubType === AccountSubType.INVESTMENT_BROKERAGE;
+
+    if (isQifInvestment && !isAccountBrokerage) {
+      throw new BadRequestException(
+        'This QIF file contains investment transactions but the selected account is not an investment brokerage account. ' +
+        'Please select a brokerage account for this import.',
+      );
+    }
+
+    if (!isQifInvestment && isAccountInvestment) {
+      throw new BadRequestException(
+        'This QIF file contains regular banking transactions but the selected account is an investment account. ' +
+        'Please select a non-investment account for this import.',
+      );
+    }
 
     // Build category mapping lookup
     const categoryMap = new Map<string, string | null>();
@@ -116,6 +148,22 @@ export class ImportService {
       }
     }
 
+    // Build security mapping lookup (for investment transactions)
+    const securityMap = new Map<string, string | null>();
+    const securitiesToCreate: SecurityMappingDto[] = [];
+
+    if (dto.securityMappings) {
+      for (const mapping of dto.securityMappings) {
+        if (mapping.securityId) {
+          securityMap.set(mapping.originalName, mapping.securityId);
+        } else if (mapping.createNew) {
+          securitiesToCreate.push(mapping);
+        } else {
+          securityMap.set(mapping.originalName, null);
+        }
+      }
+    }
+
     // Start transaction
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -129,6 +177,7 @@ export class ImportService {
       categoriesCreated: 0,
       accountsCreated: 0,
       payeesCreated: 0,
+      securitiesCreated: 0,
     };
 
     try {
@@ -160,6 +209,20 @@ export class ImportService {
         importResult.accountsCreated++;
       }
 
+      // Create new securities (for investment transactions)
+      for (const secMapping of securitiesToCreate) {
+        if (!secMapping.createNew) continue;
+        const newSecurity = new Security();
+        newSecurity.symbol = secMapping.createNew.toUpperCase();
+        newSecurity.name = secMapping.securityName || secMapping.createNew;
+        newSecurity.securityType = secMapping.securityType || null;
+        newSecurity.currencyCode = account.currencyCode;
+        newSecurity.isActive = true;
+        const saved = await queryRunner.manager.save(newSecurity);
+        securityMap.set(secMapping.originalName, saved.id);
+        importResult.securitiesCreated++;
+      }
+
       // Apply opening balance if present
       if (result.openingBalance !== null) {
         await queryRunner.manager.update(Account, dto.accountId, {
@@ -175,6 +238,83 @@ export class ImportService {
       // Import transactions
       for (const qifTx of result.transactions) {
         try {
+          // Handle investment transactions differently
+          if (isQifInvestment) {
+            // Map QIF action to InvestmentAction enum
+            const actionMap: Record<string, InvestmentAction> = {
+              'buy': InvestmentAction.BUY,
+              'sell': InvestmentAction.SELL,
+              'div': InvestmentAction.DIVIDEND,
+              'intinc': InvestmentAction.INTEREST,
+              'cglong': InvestmentAction.CAPITAL_GAIN,
+              'cgshort': InvestmentAction.CAPITAL_GAIN,
+              'stksplit': InvestmentAction.SPLIT,
+              'shrsin': InvestmentAction.TRANSFER_IN,
+              'shrsout': InvestmentAction.TRANSFER_OUT,
+              'reinvdiv': InvestmentAction.REINVEST,
+              'reinvint': InvestmentAction.REINVEST,
+              'reinvlg': InvestmentAction.REINVEST,
+              'reinvsh': InvestmentAction.REINVEST,
+            };
+
+            const qifAction = (qifTx.action || '').toLowerCase();
+            const action = actionMap[qifAction] || InvestmentAction.BUY;
+
+            // Get security ID from mapping
+            const securityId = qifTx.security ? securityMap.get(qifTx.security) || null : null;
+
+            // Check for duplicate investment transactions
+            if (dto.skipDuplicates && securityId) {
+              const existingInvTx = await queryRunner.manager.findOne(InvestmentTransaction, {
+                where: {
+                  userId,
+                  accountId: dto.accountId,
+                  transactionDate: qifTx.date,
+                  securityId,
+                  action,
+                  quantity: qifTx.quantity || 0,
+                },
+              });
+              if (existingInvTx) {
+                importResult.skipped++;
+                continue;
+              }
+            }
+
+            // Calculate total amount
+            const quantity = qifTx.quantity || 0;
+            const price = qifTx.price || 0;
+            const commission = qifTx.commission || 0;
+            // Use the transaction amount if provided, otherwise calculate
+            const totalAmount = qifTx.amount || (quantity * price) + commission;
+
+            // Create investment transaction
+            const investmentTx = new InvestmentTransaction();
+            investmentTx.userId = userId;
+            investmentTx.accountId = dto.accountId;
+            investmentTx.securityId = securityId;
+            investmentTx.action = action;
+            investmentTx.transactionDate = qifTx.date;
+            investmentTx.quantity = quantity || null;
+            investmentTx.price = price || null;
+            investmentTx.commission = commission;
+            investmentTx.totalAmount = totalAmount;
+            investmentTx.description = qifTx.memo || qifTx.payee || null;
+
+            await queryRunner.manager.save(investmentTx);
+
+            // Update account balance
+            await queryRunner.manager.increment(
+              Account,
+              { id: dto.accountId },
+              'currentBalance',
+              totalAmount,
+            );
+
+            importResult.imported++;
+            continue; // Skip the regular transaction handling
+          }
+
           // Check for duplicates if requested
           // A duplicate must match: date, amount, payee, AND description
           // This allows importing transactions with same date/amount but different categories

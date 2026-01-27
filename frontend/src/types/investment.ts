@@ -88,11 +88,11 @@ export interface InvestmentTransaction {
 
 export interface CreateInvestmentTransactionData {
   accountId: string;
-  securityId: string;
+  securityId?: string;
   action: InvestmentAction;
   transactionDate: string;
-  quantity: number;
-  price: number;
+  quantity?: number;
+  price?: number;
   commission?: number;
   description?: string;
 }

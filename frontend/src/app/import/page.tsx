@@ -8,14 +8,16 @@ import { AppHeader } from '@/components/layout/AppHeader';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { Input } from '@/components/ui/Input';
-import { importApi, ParsedQifResponse, CategoryMapping, AccountMapping, ImportResult, DateFormat } from '@/lib/import';
-import { accountsApi, Account } from '@/lib/accounts';
-import { categoriesApi, Category } from '@/lib/categories';
+import { importApi, ParsedQifResponse, CategoryMapping, AccountMapping, SecurityMapping, ImportResult, DateFormat } from '@/lib/import';
+import { accountsApi } from '@/lib/accounts';
+import { categoriesApi } from '@/lib/categories';
+import { investmentsApi } from '@/lib/investments';
 import { buildCategoryTree } from '@/lib/categoryUtils';
+import { Account, AccountType } from '@/types/account';
+import { Category } from '@/types/category';
+import { Security } from '@/types/investment';
 
-import { AccountType } from '@/types/account';
-
-type ImportStep = 'upload' | 'selectAccount' | 'dateFormat' | 'mapCategories' | 'mapAccounts' | 'review' | 'complete';
+type ImportStep = 'upload' | 'selectAccount' | 'dateFormat' | 'mapCategories' | 'mapSecurities' | 'mapAccounts' | 'review' | 'complete';
 
 const formatAccountType = (type: AccountType): string => {
   const labels: Record<AccountType, string> = {
@@ -40,6 +42,20 @@ const formatCategoryPath = (path: string): string => {
   return path.replace(/:/g, ': ').replace(/:  /g, ': ');
 };
 
+// Check if an account is an investment account (any type)
+const isInvestmentAccount = (account: Account): boolean => {
+  return (
+    account.accountType === 'INVESTMENT' ||
+    account.accountSubType === 'INVESTMENT_CASH' ||
+    account.accountSubType === 'INVESTMENT_BROKERAGE'
+  );
+};
+
+// Check if an account is specifically an investment brokerage account
+const isInvestmentBrokerageAccount = (account: Account): boolean => {
+  return account.accountSubType === 'INVESTMENT_BROKERAGE';
+};
+
 export default function ImportPage() {
   return (
     <ProtectedRoute>
@@ -62,21 +78,25 @@ function ImportContent() {
   const [selectedAccountId, setSelectedAccountId] = useState<string>(preselectedAccountId || '');
   const [categoryMappings, setCategoryMappings] = useState<CategoryMapping[]>([]);
   const [accountMappings, setAccountMappings] = useState<AccountMapping[]>([]);
+  const [securityMappings, setSecurityMappings] = useState<SecurityMapping[]>([]);
+  const [securities, setSecurities] = useState<Security[]>([]);
   const [skipDuplicates, setSkipDuplicates] = useState(true);
   const [dateFormat, setDateFormat] = useState<DateFormat>('MM/DD/YYYY');
   const [isLoading, setIsLoading] = useState(false);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
 
-  // Load accounts and categories
+  // Load accounts, categories, and securities
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [accountsData, categoriesData] = await Promise.all([
+        const [accountsData, categoriesData, securitiesData] = await Promise.all([
           accountsApi.getAll(),
           categoriesApi.getAll(),
+          investmentsApi.getSecurities(true), // Include inactive securities
         ]);
         setAccounts(accountsData);
         setCategories(categoriesData);
+        setSecurities(securitiesData);
 
         // If preselected account ID is provided, validate it exists
         if (preselectedAccountId) {
@@ -192,8 +212,56 @@ function ImportContent() {
       });
       setAccountMappings(accMappings);
 
-      // If account is already selected (from URL parameter), skip to date format step
+      // Initialize security mappings for investment transactions
+      const secMappings: SecurityMapping[] = (parsed.securities || []).map((sec) => {
+        // Try to find an existing security by symbol or name (case-insensitive)
+        const existingSec = securities.find(
+          (s) =>
+            s.symbol.toLowerCase() === sec.toLowerCase() ||
+            s.name.toLowerCase() === sec.toLowerCase()
+        );
+        return {
+          originalName: sec,
+          securityId: existingSec?.id,
+          // Pre-populate createNew only if no existing match found
+          createNew: existingSec ? undefined : sec,
+          securityName: existingSec ? undefined : sec,
+          securityType: undefined,
+        };
+      });
+      setSecurityMappings(secMappings);
+
+      // Check if preselected account is compatible with QIF file type
+      // Investment QIF files should only go to brokerage accounts
+      // Regular QIF files should not go to any investment accounts
+      const isQifInvestmentType = parsed.accountType === 'INVESTMENT';
+      let canUsePreselectedAccount = false;
+
       if (selectedAccountId) {
+        const preselectedAcc = accounts.find((a) => a.id === selectedAccountId);
+        if (preselectedAcc) {
+          if (isQifInvestmentType) {
+            // Investment QIF requires a brokerage account
+            canUsePreselectedAccount = isInvestmentBrokerageAccount(preselectedAcc);
+          } else {
+            // Regular QIF requires a non-investment account
+            canUsePreselectedAccount = !isInvestmentAccount(preselectedAcc);
+          }
+
+          if (!canUsePreselectedAccount) {
+            // Clear incompatible preselected account
+            setSelectedAccountId('');
+            toast.error(
+              isQifInvestmentType
+                ? 'The preselected account is not an investment brokerage account. Please select a compatible account.'
+                : 'The preselected account is an investment account. Please select a compatible account.'
+            );
+          }
+        }
+      }
+
+      // If account is already selected (from URL parameter) and is compatible, skip to date format step
+      if (selectedAccountId && canUsePreselectedAccount) {
         setStep('dateFormat');
       } else {
         setStep('selectAccount');
@@ -203,7 +271,7 @@ function ImportContent() {
     } finally {
       setIsLoading(false);
     }
-  }, [accounts, categories, selectedAccountId]);
+  }, [accounts, categories, securities, selectedAccountId]);
 
   const handleCategoryMappingChange = (index: number, field: keyof CategoryMapping, value: string) => {
     setCategoryMappings((prev) => {
@@ -257,6 +325,39 @@ function ImportContent() {
     });
   };
 
+  const handleSecurityMappingChange = (index: number, field: keyof SecurityMapping, value: string) => {
+    setSecurityMappings((prev) => {
+      const updated = [...prev];
+      if (field === 'securityId') {
+        updated[index] = {
+          ...updated[index],
+          securityId: value || undefined,
+          createNew: undefined,
+          securityName: undefined,
+          securityType: undefined,
+        };
+      } else if (field === 'createNew') {
+        updated[index] = {
+          ...updated[index],
+          securityId: undefined,
+          createNew: value || undefined,
+          // Don't overwrite securityName if user has already edited it
+        };
+      } else if (field === 'securityName') {
+        updated[index] = {
+          ...updated[index],
+          securityName: value || undefined,
+        };
+      } else if (field === 'securityType') {
+        updated[index] = {
+          ...updated[index],
+          securityType: value || undefined,
+        };
+      }
+      return updated;
+    });
+  };
+
   const handleImport = async () => {
     if (!selectedAccountId || !fileContent) return;
 
@@ -267,6 +368,7 @@ function ImportContent() {
         accountId: selectedAccountId,
         categoryMappings,
         accountMappings,
+        securityMappings,
         skipDuplicates,
         dateFormat,
       });
@@ -326,6 +428,23 @@ function ImportContent() {
     { value: 'INVESTMENT', label: 'Investment' },
     { value: 'ASSET', label: 'Asset' },
     { value: 'LIABILITY', label: 'Liability' },
+  ];
+
+  const getSecurityOptions = () => {
+    return [
+      { value: '', label: 'Skip (no security)' },
+      ...securities.map((s) => ({ value: s.id, label: `${s.symbol} - ${s.name}` })),
+    ];
+  };
+
+  const securityTypeOptions = [
+    { value: 'STOCK', label: 'Stock' },
+    { value: 'ETF', label: 'ETF' },
+    { value: 'MUTUAL_FUND', label: 'Mutual Fund' },
+    { value: 'BOND', label: 'Bond' },
+    { value: 'GIC', label: 'GIC' },
+    { value: 'CASH', label: 'Cash/Money Market' },
+    { value: 'OTHER', label: 'Other' },
   ];
 
   const dateFormatOptions: { value: DateFormat; label: string; example: string }[] = [
@@ -392,6 +511,22 @@ function ImportContent() {
         );
 
       case 'selectAccount':
+        // Determine if QIF file is investment type
+        const isQifInvestment = parsedData?.accountType === 'INVESTMENT';
+
+        // Filter accounts based on QIF type
+        // Investment QIF files should only go to brokerage accounts
+        // Regular QIF files should not go to any investment accounts
+        const compatibleAccounts = accounts.filter((a) => {
+          if (isQifInvestment) {
+            // Only show brokerage accounts for investment QIF files
+            return isInvestmentBrokerageAccount(a);
+          } else {
+            // Hide all investment accounts for regular QIF files
+            return !isInvestmentAccount(a);
+          }
+        });
+
         return (
           <div className="max-w-xl mx-auto">
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
@@ -414,15 +549,41 @@ function ImportContent() {
                   </p>
                 </div>
               )}
-              <Select
-                label="Import into account"
-                options={accounts.map((a) => ({
-                  value: a.id,
-                  label: `${a.name} (${formatAccountType(a.accountType)})`,
-                }))}
-                value={selectedAccountId}
-                onChange={(e) => setSelectedAccountId(e.target.value)}
-              />
+
+              {/* Show notice about account filtering */}
+              {isQifInvestment ? (
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4">
+                  <p className="text-sm text-blue-700 dark:text-blue-300">
+                    This file contains investment transactions. Only brokerage accounts are shown.
+                  </p>
+                </div>
+              ) : (
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4">
+                  <p className="text-sm text-blue-700 dark:text-blue-300">
+                    This file contains regular banking transactions. Investment accounts are hidden.
+                  </p>
+                </div>
+              )}
+
+              {compatibleAccounts.length === 0 ? (
+                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                  <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                    No compatible accounts found. {isQifInvestment
+                      ? 'Please create an investment brokerage account first.'
+                      : 'Please create a non-investment account first.'}
+                  </p>
+                </div>
+              ) : (
+                <Select
+                  label="Import into account"
+                  options={compatibleAccounts.map((a) => ({
+                    value: a.id,
+                    label: `${a.name} (${formatAccountType(a.accountType)})`,
+                  }))}
+                  value={selectedAccountId}
+                  onChange={(e) => setSelectedAccountId(e.target.value)}
+                />
+              )}
               <div className="mt-4">
                 <label className="flex items-center">
                   <input
@@ -442,7 +603,7 @@ function ImportContent() {
                 </Button>
                 <Button
                   onClick={() => setStep('dateFormat')}
-                  disabled={!selectedAccountId}
+                  disabled={!selectedAccountId || compatibleAccounts.length === 0}
                 >
                   Next
                 </Button>
@@ -522,6 +683,8 @@ function ImportContent() {
                   onClick={() => {
                     if (parsedData?.categories.length) {
                       setStep('mapCategories');
+                    } else if (parsedData?.securities?.length) {
+                      setStep('mapSecurities');
                     } else if (parsedData?.transferAccounts.length) {
                       setStep('mapAccounts');
                     } else {
@@ -653,6 +816,153 @@ function ImportContent() {
                 </Button>
                 <Button
                   onClick={() => {
+                    if (parsedData?.securities?.length) {
+                      setStep('mapSecurities');
+                    } else if (parsedData?.transferAccounts.length) {
+                      setStep('mapAccounts');
+                    } else {
+                      setStep('review');
+                    }
+                  }}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          </div>
+        );
+
+      case 'mapSecurities':
+        const unmatchedSecurities = securityMappings.filter((m) => !m.securityId);
+        const matchedSecurities = securityMappings.filter((m) => m.securityId);
+
+        return (
+          <div className="max-w-4xl mx-auto">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
+                Map Securities
+              </h2>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">
+                The following securities were found in your QIF file. Map them to existing
+                securities or create new ones.
+              </p>
+
+              {/* Summary */}
+              <div className="flex gap-4 mb-4 text-sm">
+                <span className="text-amber-600 dark:text-amber-400">
+                  {unmatchedSecurities.length} need attention
+                </span>
+                <span className="text-green-600 dark:text-green-400">
+                  {matchedSecurities.length} auto-matched
+                </span>
+              </div>
+
+              <div className="space-y-3 max-h-[32rem] overflow-y-auto">
+                {/* Unmatched securities first - highlighted */}
+                {unmatchedSecurities.map((mapping) => {
+                  const index = securityMappings.findIndex((m) => m.originalName === mapping.originalName);
+                  return (
+                    <div
+                      key={mapping.originalName}
+                      className="border-2 border-amber-300 dark:border-amber-600 bg-amber-50 dark:bg-amber-900/20 rounded-lg p-4"
+                    >
+                      <p className="font-medium text-gray-900 dark:text-gray-100 mb-2">
+                        {mapping.originalName}
+                      </p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <Select
+                          label="Map to existing"
+                          options={getSecurityOptions()}
+                          value={mapping.securityId || ''}
+                          onChange={(e) =>
+                            handleSecurityMappingChange(index, 'securityId', e.target.value)
+                          }
+                        />
+                        <div>
+                          <Input
+                            label="Or create new (symbol)"
+                            placeholder="e.g., AAPL"
+                            value={mapping.createNew || ''}
+                            onChange={(e) =>
+                              handleSecurityMappingChange(index, 'createNew', e.target.value)
+                            }
+                          />
+                          {mapping.createNew && (
+                            <div className="mt-2 space-y-2">
+                              <Input
+                                label="Security name"
+                                placeholder="e.g., Apple Inc."
+                                value={mapping.securityName || ''}
+                                onChange={(e) =>
+                                  handleSecurityMappingChange(index, 'securityName', e.target.value)
+                                }
+                              />
+                              <Select
+                                label="Security type"
+                                options={securityTypeOptions}
+                                value={mapping.securityType || 'STOCK'}
+                                onChange={(e) =>
+                                  handleSecurityMappingChange(index, 'securityType', e.target.value)
+                                }
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* Matched securities - minimized */}
+                {matchedSecurities.length > 0 && (
+                  <details className="group">
+                    <summary className="cursor-pointer text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 py-2">
+                      <span className="ml-1">Show {matchedSecurities.length} auto-matched securities</span>
+                    </summary>
+                    <div className="space-y-2 mt-2">
+                      {matchedSecurities.map((mapping) => {
+                        const index = securityMappings.findIndex((m) => m.originalName === mapping.originalName);
+                        return (
+                          <div
+                            key={mapping.originalName}
+                            className="border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20 rounded-lg p-3"
+                          >
+                            <div className="flex items-center gap-3">
+                              <span className="font-medium text-gray-900 dark:text-gray-100 whitespace-nowrap min-w-[200px]">
+                                {mapping.originalName}
+                              </span>
+                              <span className="text-gray-400">→</span>
+                              <Select
+                                options={getSecurityOptions()}
+                                value={mapping.securityId || ''}
+                                onChange={(e) =>
+                                  handleSecurityMappingChange(index, 'securityId', e.target.value)
+                                }
+                                className="flex-1"
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </details>
+                )}
+              </div>
+              <div className="flex justify-between mt-6">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    if (parsedData?.categories.length) {
+                      setStep('mapCategories');
+                    } else {
+                      setStep('dateFormat');
+                    }
+                  }}
+                >
+                  Back
+                </Button>
+                <Button
+                  onClick={() => {
                     if (parsedData?.transferAccounts.length) {
                       setStep('mapAccounts');
                     } else {
@@ -726,7 +1036,9 @@ function ImportContent() {
                 <Button
                   variant="outline"
                   onClick={() => {
-                    if (parsedData?.categories.length) {
+                    if (parsedData?.securities?.length) {
+                      setStep('mapSecurities');
+                    } else if (parsedData?.categories.length) {
                       setStep('mapCategories');
                     } else {
                       setStep('dateFormat');
@@ -747,6 +1059,8 @@ function ImportContent() {
         const newCategories = categoryMappings.filter((m) => m.createNew).length;
         const mappedAccounts = accountMappings.filter((m) => m.accountId || m.createNew).length;
         const newAccounts = accountMappings.filter((m) => m.createNew).length;
+        const mappedSecuritiesCount = securityMappings.filter((m) => m.securityId || m.createNew).length;
+        const newSecuritiesCount = securityMappings.filter((m) => m.createNew).length;
 
         return (
           <div className="max-w-xl mx-auto">
@@ -810,6 +1124,25 @@ function ImportContent() {
                     </ul>
                   </div>
                 )}
+
+                {securityMappings.length > 0 && (
+                  <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                    <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-2">
+                      Securities
+                    </h3>
+                    <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                      <li>
+                        <strong>Total:</strong> {securityMappings.length}
+                      </li>
+                      <li>
+                        <strong>Mapped:</strong> {mappedSecuritiesCount}
+                      </li>
+                      <li>
+                        <strong>New to create:</strong> {newSecuritiesCount}
+                      </li>
+                    </ul>
+                  </div>
+                )}
               </div>
               <div className="flex justify-between mt-6">
                 <Button
@@ -817,6 +1150,8 @@ function ImportContent() {
                   onClick={() => {
                     if (parsedData?.transferAccounts.length) {
                       setStep('mapAccounts');
+                    } else if (parsedData?.securities?.length) {
+                      setStep('mapSecurities');
                     } else if (parsedData?.categories.length) {
                       setStep('mapCategories');
                     } else {
@@ -880,6 +1215,9 @@ function ImportContent() {
                     <li>
                       <strong>Payees created:</strong> {importResult.payeesCreated}
                     </li>
+                    <li>
+                      <strong>Securities created:</strong> {importResult.securitiesCreated}
+                    </li>
                   </ul>
                   {importResult.errorMessages.length > 0 && (
                     <div className="mt-4">
@@ -910,6 +1248,7 @@ function ImportContent() {
                     setSelectedAccountId('');
                     setCategoryMappings([]);
                     setAccountMappings([]);
+                    setSecurityMappings([]);
                   }}
                 >
                   Import Another File
@@ -941,9 +1280,9 @@ function ImportContent() {
         {/* Progress indicator */}
         <div className="mb-8">
           <div className="flex items-center justify-center space-x-4">
-            {['upload', 'selectAccount', 'dateFormat', 'mapCategories', 'mapAccounts', 'review', 'complete'].map(
+            {['upload', 'selectAccount', 'dateFormat', 'mapCategories', 'mapSecurities', 'mapAccounts', 'review', 'complete'].map(
               (s, i) => {
-                const stepOrder = ['upload', 'selectAccount', 'dateFormat', 'mapCategories', 'mapAccounts', 'review', 'complete'];
+                const stepOrder = ['upload', 'selectAccount', 'dateFormat', 'mapCategories', 'mapSecurities', 'mapAccounts', 'review', 'complete'];
                 const currentIndex = stepOrder.indexOf(step);
                 const stepIndex = stepOrder.indexOf(s);
                 const isActive = s === step;
@@ -951,6 +1290,7 @@ function ImportContent() {
 
                 // Skip steps that aren't needed
                 if (s === 'mapCategories' && !parsedData?.categories.length) return null;
+                if (s === 'mapSecurities' && !parsedData?.securities?.length) return null;
                 if (s === 'mapAccounts' && !parsedData?.transferAccounts.length) return null;
 
                 return (
@@ -976,7 +1316,7 @@ function ImportContent() {
                         i + 1
                       )}
                     </div>
-                    {i < 6 && (
+                    {i < 7 && (
                       <div
                         className={`w-12 h-1 ${
                           isComplete ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'

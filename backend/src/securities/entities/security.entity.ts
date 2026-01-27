@@ -17,11 +17,11 @@ export class Security {
 
   @ApiProperty({ example: 'STOCK', description: 'Type of security' })
   @Column({ type: 'varchar', length: 50, name: 'security_type', nullable: true })
-  securityType: string;
+  securityType: string | null;
 
   @ApiProperty({ example: 'NASDAQ', description: 'Stock exchange' })
   @Column({ type: 'varchar', length: 50, nullable: true })
-  exchange: string;
+  exchange: string | null;
 
   @ApiProperty({ example: 'USD' })
   @Column({ type: 'varchar', length: 3, name: 'currency_code' })

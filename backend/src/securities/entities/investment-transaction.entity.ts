@@ -32,11 +32,11 @@ export class InvestmentTransaction {
 
   @ApiProperty({ required: false })
   @Column({ type: 'uuid', name: 'transaction_id', nullable: true })
-  transactionId: string;
+  transactionId: string | null;
 
   @ApiProperty({ required: false })
   @Column({ type: 'uuid', name: 'security_id', nullable: true })
-  securityId: string;
+  securityId: string | null;
 
   @ApiProperty({ enum: InvestmentAction })
   @Column({ type: 'varchar', length: 50 })
@@ -62,11 +62,11 @@ export class InvestmentTransaction {
 
   @ApiProperty({ example: 100, description: 'Number of shares' })
   @Column({ type: 'decimal', precision: 20, scale: 8, nullable: true })
-  quantity: number;
+  quantity: number | null;
 
   @ApiProperty({ example: 150.25, description: 'Price per share' })
   @Column({ type: 'decimal', precision: 20, scale: 4, nullable: true })
-  price: number;
+  price: number | null;
 
   @ApiProperty({ example: 9.99, description: 'Commission or fee' })
   @Column({ type: 'decimal', precision: 20, scale: 4, default: 0 })
@@ -78,7 +78,7 @@ export class InvestmentTransaction {
 
   @ApiProperty({ required: false })
   @Column({ type: 'text', nullable: true })
-  description: string;
+  description: string | null;
 
   @ManyToOne(() => Account)
   @JoinColumn({ name: 'account_id' })

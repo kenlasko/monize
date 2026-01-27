@@ -57,6 +57,32 @@ export class AccountMappingDto {
   accountType?: string;
 }
 
+export class SecurityMappingDto {
+  @ApiProperty({ description: 'Original security name/symbol from QIF' })
+  @IsString()
+  originalName: string;
+
+  @ApiPropertyOptional({ description: 'Existing security ID to map to' })
+  @IsOptional()
+  @IsUUID()
+  securityId?: string;
+
+  @ApiPropertyOptional({ description: 'Create new security with this symbol' })
+  @IsOptional()
+  @IsString()
+  createNew?: string;
+
+  @ApiPropertyOptional({ description: 'Full name for new security' })
+  @IsOptional()
+  @IsString()
+  securityName?: string;
+
+  @ApiPropertyOptional({ description: 'Security type for new security (STOCK, ETF, MUTUAL_FUND, BOND, OPTION, CRYPTO, OTHER)' })
+  @IsOptional()
+  @IsString()
+  securityType?: string;
+}
+
 export class ImportQifDto {
   @ApiProperty({ description: 'QIF file content as string' })
   @IsString()
@@ -77,6 +103,13 @@ export class ImportQifDto {
   @ValidateNested({ each: true })
   @Type(() => AccountMappingDto)
   accountMappings: AccountMappingDto[];
+
+  @ApiPropertyOptional({ description: 'Security mappings for investment transactions', type: [SecurityMappingDto] })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => SecurityMappingDto)
+  securityMappings?: SecurityMappingDto[];
 
   @ApiPropertyOptional({ description: 'Skip duplicate transactions based on date, amount, and payee' })
   @IsOptional()
@@ -101,6 +134,9 @@ export class ParsedQifResponseDto {
 
   @ApiProperty({ type: [String] })
   transferAccounts: string[];
+
+  @ApiProperty({ type: [String], description: 'Unique securities found in investment transactions' })
+  securities: string[];
 
   @ApiProperty()
   dateRange: {
@@ -142,4 +178,7 @@ export class ImportResultDto {
 
   @ApiProperty()
   payeesCreated: number;
+
+  @ApiProperty()
+  securitiesCreated: number;
 }
