@@ -87,15 +87,15 @@ export interface AssetAllocation {
 export interface InvestmentTransaction {
   id: string;
   accountId: string;
-  securityId: string;
+  securityId: string | null;
   action: InvestmentAction;
   transactionDate: string;
-  quantity: number;
-  price: number;
+  quantity: number | null;
+  price: number | null;
   commission: number | null;
   totalAmount: number;
   description: string | null;
-  security: Security;
+  security: Security | null;
   createdAt: string;
   updatedAt: string;
 }

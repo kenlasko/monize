@@ -292,7 +292,14 @@ export function TransactionList({
                   )}
                 </td>
                 <td className={`${cellPadding} ${density !== 'normal' ? 'whitespace-nowrap' : ''}`}>
-                  {transaction.isTransfer ? (
+                  {transaction.linkedInvestmentTransactionId ? (
+                    <span
+                      className={`inline-flex text-xs leading-5 font-semibold rounded-full bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200 ${density === 'dense' ? 'px-1.5 py-0.5' : 'px-2 py-1'}`}
+                      title="This transaction is linked to an investment transaction"
+                    >
+                      Investment
+                    </span>
+                  ) : transaction.isTransfer ? (
                     <span className={`inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 ${density === 'dense' ? 'px-1.5 py-0.5' : 'px-2 py-1'}`}>
                       Transfer
                     </span>
@@ -375,18 +382,26 @@ export function TransactionList({
                   {onEdit && (
                     <button
                       onClick={() => onEdit(transaction)}
-                      className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                      className={transaction.linkedInvestmentTransactionId
+                        ? "text-emerald-600 hover:text-emerald-900 dark:text-emerald-400 dark:hover:text-emerald-300"
+                        : "text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                      }
+                      title={transaction.linkedInvestmentTransactionId ? "View in Investments" : undefined}
                     >
-                      {density === 'dense' ? '✎' : 'Edit'}
+                      {transaction.linkedInvestmentTransactionId
+                        ? (density === 'dense' ? '📈' : 'View')
+                        : (density === 'dense' ? '✎' : 'Edit')}
                     </button>
                   )}
-                  <button
-                    onClick={() => handleDeleteClick(transaction)}
-                    disabled={deletingId === transaction.id}
-                    className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 disabled:opacity-50"
-                  >
-                    {deletingId === transaction.id ? '...' : density === 'dense' ? '✕' : 'Delete'}
-                  </button>
+                  {!transaction.linkedInvestmentTransactionId && (
+                    <button
+                      onClick={() => handleDeleteClick(transaction)}
+                      disabled={deletingId === transaction.id}
+                      className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 disabled:opacity-50"
+                    >
+                      {deletingId === transaction.id ? '...' : density === 'dense' ? '✕' : 'Delete'}
+                    </button>
+                  )}
                 </td>
               </tr>
             );

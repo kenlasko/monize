@@ -11,9 +11,10 @@ import {
   ParseBoolPipe,
   DefaultValuePipe,
 } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse, ApiQuery, ApiBody } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { SecuritiesService } from './securities.service';
+import { SecurityPriceService, PriceRefreshSummary } from './security-price.service';
 import { CreateSecurityDto } from './dto/create-security.dto';
 import { UpdateSecurityDto } from './dto/update-security.dto';
 import { Security } from './entities/security.entity';
@@ -23,7 +24,10 @@ import { Security } from './entities/security.entity';
 @UseGuards(AuthGuard('jwt'))
 @Controller('securities')
 export class SecuritiesController {
-  constructor(private readonly securitiesService: SecuritiesService) {}
+  constructor(
+    private readonly securitiesService: SecuritiesService,
+    private readonly securityPriceService: SecurityPriceService,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: 'Create a new security' })
@@ -90,5 +94,90 @@ export class SecuritiesController {
   @ApiResponse({ status: 200, description: 'Security activated', type: Security })
   activate(@Param('id', ParseUUIDPipe) id: string): Promise<Security> {
     return this.securitiesService.activate(id);
+  }
+
+  @Post('prices/refresh')
+  @ApiOperation({
+    summary: 'Refresh prices for all active securities',
+    description: 'Fetches latest prices from Yahoo Finance for all active securities',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Price refresh completed',
+    schema: {
+      type: 'object',
+      properties: {
+        totalSecurities: { type: 'number' },
+        updated: { type: 'number' },
+        failed: { type: 'number' },
+        skipped: { type: 'number' },
+        lastUpdated: { type: 'string', format: 'date-time' },
+        results: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              symbol: { type: 'string' },
+              success: { type: 'boolean' },
+              price: { type: 'number' },
+              error: { type: 'string' },
+            },
+          },
+        },
+      },
+    },
+  })
+  refreshAllPrices(): Promise<PriceRefreshSummary> {
+    return this.securityPriceService.refreshAllPrices();
+  }
+
+  @Post('prices/refresh/selected')
+  @ApiOperation({
+    summary: 'Refresh prices for selected securities',
+    description: 'Fetches latest prices from Yahoo Finance for specific securities',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        securityIds: {
+          type: 'array',
+          items: { type: 'string', format: 'uuid' },
+        },
+      },
+      required: ['securityIds'],
+    },
+  })
+  @ApiResponse({ status: 200, description: 'Price refresh completed' })
+  refreshSelectedPrices(@Body('securityIds') securityIds: string[]): Promise<PriceRefreshSummary> {
+    return this.securityPriceService.refreshPricesForSecurities(securityIds);
+  }
+
+  @Get('prices/status')
+  @ApiOperation({ summary: 'Get price update status' })
+  @ApiResponse({
+    status: 200,
+    description: 'Price update status',
+    schema: {
+      type: 'object',
+      properties: {
+        lastUpdated: { type: 'string', format: 'date-time', nullable: true },
+      },
+    },
+  })
+  async getPriceStatus() {
+    const lastUpdated = await this.securityPriceService.getLastUpdateTime();
+    return { lastUpdated };
+  }
+
+  @Get(':id/prices')
+  @ApiOperation({ summary: 'Get price history for a security' })
+  @ApiQuery({ name: 'limit', required: false, description: 'Number of records (default: 365)' })
+  @ApiResponse({ status: 200, description: 'Price history' })
+  getPriceHistory(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query('limit', new DefaultValuePipe(365)) limit: number,
+  ) {
+    return this.securityPriceService.getPriceHistory(id, undefined, undefined, limit);
   }
 }

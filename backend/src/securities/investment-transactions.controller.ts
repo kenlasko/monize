@@ -49,6 +49,8 @@ export class InvestmentTransactionsController {
   @ApiQuery({ name: 'endDate', required: false, description: 'Filter by end date (YYYY-MM-DD)' })
   @ApiQuery({ name: 'page', required: false, description: 'Page number (1-indexed, default: 1)' })
   @ApiQuery({ name: 'limit', required: false, description: 'Number of transactions per page (default: 50, max: 200)' })
+  @ApiQuery({ name: 'symbol', required: false, description: 'Filter by security symbol' })
+  @ApiQuery({ name: 'action', required: false, description: 'Filter by action type (BUY, SELL, DIVIDEND, etc.)' })
   @ApiResponse({ status: 200, description: 'List of investment transactions with pagination' })
   findAll(
     @Request() req,
@@ -57,6 +59,8 @@ export class InvestmentTransactionsController {
     @Query('endDate') endDate?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
+    @Query('symbol') symbol?: string,
+    @Query('action') action?: string,
   ) {
     return this.investmentTransactionsService.findAll(
       req.user.id,
@@ -65,6 +69,8 @@ export class InvestmentTransactionsController {
       endDate,
       page ? parseInt(page, 10) : undefined,
       limit ? parseInt(limit, 10) : undefined,
+      symbol,
+      action,
     );
   }
 

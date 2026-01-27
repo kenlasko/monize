@@ -46,6 +46,8 @@ export interface Transaction {
   isTransfer: boolean;
   linkedTransactionId: string | null;
   linkedTransaction?: Transaction | null;
+  /** ID of the linked investment transaction (if this is a cash transaction for an investment) */
+  linkedInvestmentTransactionId?: string | null;
   splits?: TransactionSplit[];
   createdAt: string;
   updatedAt: string;

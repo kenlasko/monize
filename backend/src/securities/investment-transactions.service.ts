@@ -8,17 +8,159 @@ import { AccountsService } from '../accounts/accounts.service';
 import { TransactionsService } from '../transactions/transactions.service';
 import { HoldingsService } from './holdings.service';
 import { SecuritiesService } from './securities.service';
+import { Transaction, TransactionStatus } from '../transactions/entities/transaction.entity';
+import { Account, AccountSubType } from '../accounts/entities/account.entity';
 
 @Injectable()
 export class InvestmentTransactionsService {
   constructor(
     @InjectRepository(InvestmentTransaction)
     private investmentTransactionsRepository: Repository<InvestmentTransaction>,
+    @InjectRepository(Transaction)
+    private transactionRepository: Repository<Transaction>,
     private accountsService: AccountsService,
     private transactionsService: TransactionsService,
     private holdingsService: HoldingsService,
     private securitiesService: SecuritiesService,
   ) {}
+
+  /**
+   * Find the appropriate cash account for an investment transaction.
+   * For paired accounts (cash + brokerage), returns the linked cash account.
+   * For standalone accounts, returns the same account.
+   */
+  private async findCashAccount(userId: string, accountId: string): Promise<Account> {
+    const account = await this.accountsService.findOne(userId, accountId);
+
+    // If this is a brokerage account with a linked cash account, return the cash account
+    if (account.accountSubType === AccountSubType.INVESTMENT_BROKERAGE && account.linkedAccountId) {
+      return this.accountsService.findOne(userId, account.linkedAccountId);
+    }
+
+    // For standalone accounts or cash accounts, return the same account
+    return account;
+  }
+
+  /**
+   * Format the payee name for a cash transaction created from an investment transaction.
+   * Format: "Action: SYMBOL Vol @ $Price" for buy/sell, "Action: SYMBOL $Amount" for dividends, etc.
+   */
+  private formatCashTransactionPayeeName(
+    action: InvestmentAction,
+    symbol: string | null,
+    quantity: number | null,
+    price: number | null,
+    totalAmount: number,
+  ): string {
+    const formatPrice = (value: number) => {
+      return value.toLocaleString('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 4,
+      });
+    };
+
+    const formatQuantity = (value: number) => {
+      // Show up to 4 decimal places, but trim trailing zeros
+      return Number(value.toFixed(4)).toString();
+    };
+
+    // Convert action to title case (e.g., "BUY" -> "Buy", "CAPITAL_GAIN" -> "Capital Gain")
+    const formatAction = (act: string) => {
+      return act
+        .split('_')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ');
+    };
+
+    const actionLabel = formatAction(action);
+
+    switch (action) {
+      case InvestmentAction.BUY:
+      case InvestmentAction.SELL:
+        return `${actionLabel}: ${symbol || 'Unknown'} ${formatQuantity(quantity || 0)} @ ${formatPrice(price || 0)}`;
+
+      case InvestmentAction.DIVIDEND:
+      case InvestmentAction.CAPITAL_GAIN:
+        return `${actionLabel}: ${symbol || 'Unknown'} ${formatPrice(totalAmount)}`;
+
+      case InvestmentAction.INTEREST:
+        return `${actionLabel}: ${formatPrice(totalAmount)}`;
+
+      default:
+        return `${actionLabel}: ${symbol || ''} ${formatPrice(totalAmount)}`;
+    }
+  }
+
+  /**
+   * Create a cash transaction in the cash account to record the cash effect of an investment transaction.
+   * Returns the created transaction ID.
+   */
+  private async createCashTransaction(
+    userId: string,
+    cashAccount: Account,
+    investmentTransaction: InvestmentTransaction,
+    amount: number, // Positive for inflows (sell, dividend), negative for outflows (buy)
+  ): Promise<string> {
+    // Get the security for the symbol
+    let symbol: string | null = null;
+    if (investmentTransaction.securityId) {
+      const security = await this.securitiesService.findOne(investmentTransaction.securityId);
+      symbol = security.symbol;
+    }
+
+    const payeeName = this.formatCashTransactionPayeeName(
+      investmentTransaction.action,
+      symbol,
+      investmentTransaction.quantity,
+      investmentTransaction.price,
+      Math.abs(investmentTransaction.totalAmount),
+    );
+
+    const cashTransaction = this.transactionRepository.create({
+      userId,
+      accountId: cashAccount.id,
+      transactionDate: investmentTransaction.transactionDate,
+      amount,
+      currencyCode: cashAccount.currencyCode,
+      exchangeRate: 1,
+      payeeName, // Display-only payee, not linked to a Payee entity
+      payeeId: null,
+      description: investmentTransaction.description,
+      status: TransactionStatus.CLEARED,
+    });
+
+    const saved = await this.transactionRepository.save(cashTransaction);
+
+    // Update the cash account balance
+    await this.accountsService.updateBalance(cashAccount.id, amount);
+
+    return saved.id;
+  }
+
+  /**
+   * Delete the cash transaction associated with an investment transaction
+   */
+  private async deleteCashTransaction(
+    userId: string,
+    transactionId: string | null,
+  ): Promise<void> {
+    if (!transactionId) return;
+
+    const cashTransaction = await this.transactionRepository.findOne({
+      where: { id: transactionId, userId },
+    });
+
+    if (cashTransaction) {
+      // Reverse the balance change
+      await this.accountsService.updateBalance(
+        cashTransaction.accountId,
+        -Number(cashTransaction.amount),
+      );
+      await this.transactionRepository.remove(cashTransaction);
+    }
+  }
 
   async create(
     userId: string,
@@ -101,6 +243,10 @@ export class InvestmentTransactionsService {
   ): Promise<void> {
     const { action, accountId, securityId, quantity, price, totalAmount } = transaction;
 
+    // Find the appropriate cash account for cash-affecting transactions
+    const cashAccount = await this.findCashAccount(userId, accountId);
+    let cashTransactionId: string | null = null;
+
     switch (action) {
       case InvestmentAction.BUY:
         // Add shares to holdings
@@ -112,8 +258,13 @@ export class InvestmentTransactionsService {
           Number(price),
         );
 
-        // Decrease cash balance (negative transaction)
-        await this.accountsService.updateBalance(accountId, -Number(totalAmount));
+        // Create cash transaction (negative amount for outflow)
+        cashTransactionId = await this.createCashTransaction(
+          userId,
+          cashAccount,
+          transaction,
+          -Number(totalAmount),
+        );
         break;
 
       case InvestmentAction.SELL:
@@ -126,15 +277,25 @@ export class InvestmentTransactionsService {
           Number(price),
         );
 
-        // Increase cash balance (positive transaction)
-        await this.accountsService.updateBalance(accountId, Number(totalAmount));
+        // Create cash transaction (positive amount for inflow)
+        cashTransactionId = await this.createCashTransaction(
+          userId,
+          cashAccount,
+          transaction,
+          Number(totalAmount),
+        );
         break;
 
       case InvestmentAction.DIVIDEND:
       case InvestmentAction.INTEREST:
       case InvestmentAction.CAPITAL_GAIN:
-        // Increase cash balance only (no holdings change)
-        await this.accountsService.updateBalance(accountId, Number(totalAmount));
+        // Create cash transaction (positive amount for inflow)
+        cashTransactionId = await this.createCashTransaction(
+          userId,
+          cashAccount,
+          transaction,
+          Number(totalAmount),
+        );
         break;
 
       case InvestmentAction.REINVEST:
@@ -181,6 +342,13 @@ export class InvestmentTransactionsService {
         }
         break;
     }
+
+    // Update the investment transaction with the cash transaction ID if one was created
+    if (cashTransactionId) {
+      await this.investmentTransactionsRepository.update(transaction.id, {
+        transactionId: cashTransactionId,
+      });
+    }
   }
 
   async findAll(
@@ -190,6 +358,8 @@ export class InvestmentTransactionsService {
     endDate?: string,
     page?: number,
     limit?: number,
+    symbol?: string,
+    action?: string,
   ): Promise<{
     data: InvestmentTransaction[];
     pagination: {
@@ -230,6 +400,14 @@ export class InvestmentTransactionsService {
 
     if (endDate) {
       query.andWhere('it.transactionDate <= :endDate', { endDate });
+    }
+
+    if (symbol) {
+      query.andWhere('LOWER(security.symbol) = LOWER(:symbol)', { symbol });
+    }
+
+    if (action) {
+      query.andWhere('it.action = :action', { action });
     }
 
     // Get total count for pagination
@@ -306,11 +484,16 @@ export class InvestmentTransactionsService {
     userId: string,
     transaction: InvestmentTransaction,
   ): Promise<void> {
-    const { action, accountId, securityId, quantity, price, totalAmount } = transaction;
+    const { action, accountId, securityId, quantity, price, transactionId } = transaction;
+
+    // Delete the linked cash transaction if it exists (this also reverses the balance)
+    if (transactionId) {
+      await this.deleteCashTransaction(userId, transactionId);
+    }
 
     switch (action) {
       case InvestmentAction.BUY:
-        // Reverse: remove shares, add cash back
+        // Reverse: remove shares
         if (securityId) {
           await this.holdingsService.updateHolding(
             userId,
@@ -320,11 +503,10 @@ export class InvestmentTransactionsService {
             Number(price),
           );
         }
-        await this.accountsService.updateBalance(accountId, Number(totalAmount));
         break;
 
       case InvestmentAction.SELL:
-        // Reverse: add shares back, remove cash
+        // Reverse: add shares back
         if (securityId) {
           await this.holdingsService.updateHolding(
             userId,
@@ -334,14 +516,12 @@ export class InvestmentTransactionsService {
             Number(price),
           );
         }
-        await this.accountsService.updateBalance(accountId, -Number(totalAmount));
         break;
 
       case InvestmentAction.DIVIDEND:
       case InvestmentAction.INTEREST:
       case InvestmentAction.CAPITAL_GAIN:
-        // Reverse: remove cash
-        await this.accountsService.updateBalance(accountId, -Number(totalAmount));
+        // Cash transaction deletion already handled above
         break;
 
       case InvestmentAction.REINVEST:

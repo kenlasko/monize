@@ -49,6 +49,8 @@ export const investmentsApi = {
     endDate?: string;
     page?: number;
     limit?: number;
+    symbol?: string;
+    action?: string;
   }): Promise<PaginatedInvestmentTransactions> => {
     const response = await apiClient.get<PaginatedInvestmentTransactions>(
       '/investment-transactions',
@@ -64,6 +66,14 @@ export const investmentsApi = {
     const response = await apiClient.post<InvestmentTransaction>(
       '/investment-transactions',
       data,
+    );
+    return response.data;
+  },
+
+  // Get a single investment transaction by ID
+  getTransaction: async (id: string): Promise<InvestmentTransaction> => {
+    const response = await apiClient.get<InvestmentTransaction>(
+      `/investment-transactions/${id}`,
     );
     return response.data;
   },
@@ -116,6 +126,30 @@ export const investmentsApi = {
     const response = await apiClient.get<Security[]>('/securities/search', {
       params: { q: query },
     });
+    return response.data;
+  },
+
+  // Refresh all security prices from Yahoo Finance
+  refreshPrices: async (): Promise<{
+    totalSecurities: number;
+    updated: number;
+    failed: number;
+    skipped: number;
+    results: Array<{
+      symbol: string;
+      success: boolean;
+      price?: number;
+      error?: string;
+    }>;
+    lastUpdated: string;
+  }> => {
+    const response = await apiClient.post('/securities/prices/refresh');
+    return response.data;
+  },
+
+  // Get price update status
+  getPriceStatus: async (): Promise<{ lastUpdated: string | null }> => {
+    const response = await apiClient.get('/securities/prices/status');
     return response.data;
   },
 };

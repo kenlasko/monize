@@ -23,6 +23,11 @@ import { AppHeader } from '@/components/layout/AppHeader';
 
 const PAGE_SIZE = 50;
 
+// Check if an account is specifically an investment brokerage account
+const isInvestmentBrokerageAccount = (account: Account): boolean => {
+  return account.accountSubType === 'INVESTMENT_BROKERAGE';
+};
+
 export default function TransactionsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -191,6 +196,15 @@ export default function TransactionsPage() {
   };
 
   const handleEdit = async (transaction: Transaction) => {
+    // For investment-linked transactions, redirect to the investments page with the transaction ID
+    if (transaction.linkedInvestmentTransactionId) {
+      toast('This transaction is linked to an investment. Opening in Investments page.', {
+        icon: '📈',
+      });
+      router.push(`/investments?edit=${transaction.linkedInvestmentTransactionId}`);
+      return;
+    }
+
     // For transfers, fetch the full transaction with linkedTransaction relation
     if (transaction.isTransfer) {
       try {
@@ -365,10 +379,12 @@ export default function TransactionsPage() {
               label="Account"
               options={[
                 { value: '', label: 'All accounts' },
-                ...accounts.map(account => ({
-                  value: account.id,
-                  label: account.name,
-                })),
+                ...accounts
+                  .filter(account => !isInvestmentBrokerageAccount(account))
+                  .map(account => ({
+                    value: account.id,
+                    label: account.name,
+                  })),
               ]}
               value={filterAccountId}
               onChange={(e) => handleFilterChange(setFilterAccountId, e.target.value)}

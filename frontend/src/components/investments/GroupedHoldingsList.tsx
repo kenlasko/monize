@@ -8,12 +8,14 @@ interface GroupedHoldingsListProps {
   holdingsByAccount: AccountHoldings[];
   isLoading: boolean;
   totalPortfolioValue: number;
+  onSymbolClick?: (symbol: string) => void;
 }
 
 export function GroupedHoldingsList({
   holdingsByAccount,
   isLoading,
   totalPortfolioValue,
+  onSymbolClick,
 }: GroupedHoldingsListProps) {
   const [expandedAccounts, setExpandedAccounts] = useState<Set<string>>(
     new Set(holdingsByAccount.map((a) => a.accountId)),
@@ -200,6 +202,7 @@ export function GroupedHoldingsList({
                           formatPercent={formatPercent}
                           getGainLossColor={getGainLossColor}
                           getPortfolioPercent={getPortfolioPercent}
+                          onSymbolClick={onSymbolClick}
                         />
                       ))}
 
@@ -245,6 +248,7 @@ interface HoldingRowProps {
   formatPercent: (value: number | null, showSign?: boolean) => string;
   getGainLossColor: (value: number | null) => string;
   getPortfolioPercent: (value: number | null) => string;
+  onSymbolClick?: (symbol: string) => void;
 }
 
 function HoldingRow({
@@ -254,16 +258,23 @@ function HoldingRow({
   formatPercent,
   getGainLossColor,
   getPortfolioPercent,
+  onSymbolClick,
 }: HoldingRowProps) {
   return (
     <tr className="hover:bg-gray-50 dark:hover:bg-gray-700/20">
       <td className="px-6 py-3 whitespace-nowrap">
-        <div className="font-medium text-gray-900 dark:text-gray-100">
-          {holding.symbol}
-        </div>
-        <div className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[180px]">
-          {holding.name}
-        </div>
+        <button
+          onClick={() => onSymbolClick?.(holding.symbol)}
+          className="text-left hover:underline focus:outline-none focus:underline"
+          title="Click to filter transactions by this symbol"
+        >
+          <div className="font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300">
+            {holding.symbol}
+          </div>
+          <div className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[180px]">
+            {holding.name}
+          </div>
+        </button>
       </td>
       <td className="px-4 py-3 whitespace-nowrap text-right text-sm text-gray-900 dark:text-gray-100">
         {formatQuantity(holding.quantity)}

@@ -7,6 +7,13 @@ import { InvestmentTransaction } from '@/types/investment';
 // Density levels: 'normal' | 'compact' | 'dense'
 export type DensityLevel = 'normal' | 'compact' | 'dense';
 
+export interface TransactionFilters {
+  symbol?: string;
+  action?: string;
+  startDate?: string;
+  endDate?: string;
+}
+
 interface InvestmentTransactionListProps {
   transactions: InvestmentTransaction[];
   isLoading: boolean;
@@ -14,6 +21,9 @@ interface InvestmentTransactionListProps {
   onEdit?: (transaction: InvestmentTransaction) => void;
   density?: DensityLevel;
   onDensityChange?: (density: DensityLevel) => void;
+  filters?: TransactionFilters;
+  onFiltersChange?: (filters: TransactionFilters) => void;
+  availableSymbols?: string[];
 }
 
 const ACTION_LABELS: Record<string, { label: string; color: string }> = {
@@ -28,6 +38,19 @@ const ACTION_LABELS: Record<string, { label: string; color: string }> = {
   REINVEST: { label: 'Reinvest', color: 'text-indigo-600 dark:text-indigo-400' },
 };
 
+const ACTION_OPTIONS = [
+  { value: '', label: 'All Actions' },
+  { value: 'BUY', label: 'Buy' },
+  { value: 'SELL', label: 'Sell' },
+  { value: 'DIVIDEND', label: 'Dividend' },
+  { value: 'INTEREST', label: 'Interest' },
+  { value: 'CAPITAL_GAIN', label: 'Capital Gain' },
+  { value: 'REINVEST', label: 'Reinvest' },
+  { value: 'SPLIT', label: 'Split' },
+  { value: 'TRANSFER_IN', label: 'Transfer In' },
+  { value: 'TRANSFER_OUT', label: 'Transfer Out' },
+];
+
 export function InvestmentTransactionList({
   transactions,
   isLoading,
@@ -35,8 +58,15 @@ export function InvestmentTransactionList({
   onEdit,
   density: propDensity,
   onDensityChange,
+  filters,
+  onFiltersChange,
+  availableSymbols = [],
 }: InvestmentTransactionListProps) {
   const [localDensity, setLocalDensity] = useState<DensityLevel>('normal');
+  const [showFilters, setShowFilters] = useState(false);
+
+  // Check if any filters are active
+  const hasActiveFilters = filters && (filters.symbol || filters.action || filters.startDate || filters.endDate);
 
   // Use prop density if provided, otherwise use local state
   const density = propDensity ?? localDensity;
@@ -114,13 +144,120 @@ export function InvestmentTransactionList({
     );
   }
 
+  const handleFilterChange = (key: keyof TransactionFilters, value: string) => {
+    if (onFiltersChange) {
+      onFiltersChange({
+        ...filters,
+        [key]: value || undefined,
+      });
+    }
+  };
+
+  const clearFilters = () => {
+    if (onFiltersChange) {
+      onFiltersChange({});
+    }
+  };
+
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 overflow-hidden">
       <div className="p-6 pb-0 flex justify-between items-center">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
           Recent Transactions
+          {hasActiveFilters && (
+            <span className="ml-2 text-sm font-normal text-gray-500 dark:text-gray-400">
+              (filtered)
+            </span>
+          )}
         </h3>
+        {onFiltersChange && (
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={`inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md ${
+              hasActiveFilters
+                ? 'text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30'
+                : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+            }`}
+          >
+            <svg className="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+            </svg>
+            Filter
+            {hasActiveFilters && (
+              <span className="ml-1.5 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-blue-600 rounded-full">
+                {[filters?.symbol, filters?.action, filters?.startDate, filters?.endDate].filter(Boolean).length}
+              </span>
+            )}
+          </button>
+        )}
       </div>
+
+      {/* Filter Bar */}
+      {showFilters && onFiltersChange && (
+        <div className="px-6 py-3 bg-gray-50 dark:bg-gray-700/30 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Symbol Filter */}
+            <div className="flex items-center gap-2">
+              <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Symbol:</label>
+              <select
+                value={filters?.symbol || ''}
+                onChange={(e) => handleFilterChange('symbol', e.target.value)}
+                className="text-sm font-sans border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500 min-w-36"
+              >
+                <option value="">All Symbols</option>
+                {availableSymbols.map((symbol) => (
+                  <option key={symbol} value={symbol}>{symbol}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Action Filter */}
+            <div className="flex items-center gap-2">
+              <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Action:</label>
+              <select
+                value={filters?.action || ''}
+                onChange={(e) => handleFilterChange('action', e.target.value)}
+                className="text-sm font-sans border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500 min-w-36"
+              >
+                {ACTION_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Date Range */}
+            <div className="flex items-center gap-2">
+              <label className="text-xs font-medium text-gray-500 dark:text-gray-400">From:</label>
+              <input
+                type="date"
+                value={filters?.startDate || ''}
+                onChange={(e) => handleFilterChange('startDate', e.target.value)}
+                className="text-sm border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-xs font-medium text-gray-500 dark:text-gray-400">To:</label>
+              <input
+                type="date"
+                value={filters?.endDate || ''}
+                onChange={(e) => handleFilterChange('endDate', e.target.value)}
+                className="text-sm border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+
+            {/* Clear Filters */}
+            {hasActiveFilters && (
+              <button
+                onClick={clearFilters}
+                className="text-sm text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 font-medium"
+              >
+                Clear Filters
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Density toggle */}
       <div className="flex justify-end p-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
         <button
@@ -184,19 +321,19 @@ export function InvestmentTransactionList({
                   </td>
                   <td className={`${cellPadding}`}>
                     <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                      {tx.security.symbol}
+                      {tx.security?.symbol || '-'}
                     </div>
                     {density === 'normal' && (
                       <div className="text-xs text-gray-500 dark:text-gray-400">
-                        {tx.security.name}
+                        {tx.security?.name || ''}
                       </div>
                     )}
                   </td>
                   <td className={`${cellPadding} whitespace-nowrap text-right text-sm text-gray-900 dark:text-gray-100`}>
-                    {formatQuantity(tx.quantity)}
+                    {formatQuantity(tx.quantity ?? 0)}
                   </td>
                   <td className={`${cellPadding} whitespace-nowrap text-right text-sm text-gray-900 dark:text-gray-100`}>
-                    {formatCurrency(tx.price)}
+                    {formatCurrency(tx.price ?? 0)}
                   </td>
                   <td className={`${cellPadding} whitespace-nowrap text-right text-sm font-medium text-gray-900 dark:text-gray-100`}>
                     {formatCurrency(tx.totalAmount)}

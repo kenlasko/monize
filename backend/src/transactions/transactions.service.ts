@@ -5,10 +5,11 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { Transaction, TransactionStatus } from './entities/transaction.entity';
 import { TransactionSplit } from './entities/transaction-split.entity';
 import { Category } from '../categories/entities/category.entity';
+import { InvestmentTransaction } from '../securities/entities/investment-transaction.entity';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
 import { CreateTransactionSplitDto } from './dto/create-transaction-split.dto';
@@ -16,8 +17,13 @@ import { CreateTransferDto } from './dto/create-transfer.dto';
 import { AccountsService } from '../accounts/accounts.service';
 import { PayeesService } from '../payees/payees.service';
 
+export interface TransactionWithInvestmentLink extends Transaction {
+  /** ID of the linked investment transaction (if this is a cash transaction for an investment) */
+  linkedInvestmentTransactionId?: string | null;
+}
+
 export interface PaginatedTransactions {
-  data: Transaction[];
+  data: TransactionWithInvestmentLink[];
   pagination: {
     page: number;
     limit: number;
@@ -43,6 +49,8 @@ export class TransactionsService {
     private splitsRepository: Repository<TransactionSplit>,
     @InjectRepository(Category)
     private categoriesRepository: Repository<Category>,
+    @InjectRepository(InvestmentTransaction)
+    private investmentTransactionsRepository: Repository<InvestmentTransaction>,
     private accountsService: AccountsService,
     private payeesService: PayeesService,
   ) {}
@@ -308,8 +316,36 @@ export class TransactionsService {
       }
     }
 
+    // Enrich transactions with linked investment transaction IDs
+    // This allows the frontend to know if a transaction is linked to an investment transaction
+    const transactionIds = data.map((tx) => tx.id);
+    let investmentLinkMap = new Map<string, string>();
+
+    if (transactionIds.length > 0) {
+      const linkedInvestmentTxs = await this.investmentTransactionsRepository.find({
+        where: { transactionId: In(transactionIds) },
+        select: ['id', 'transactionId'],
+      });
+
+      for (const invTx of linkedInvestmentTxs) {
+        if (invTx.transactionId) {
+          investmentLinkMap.set(invTx.transactionId, invTx.id);
+        }
+      }
+    }
+
+    // Add linkedInvestmentTransactionId to each transaction
+    // Note: We need to explicitly include getter properties since spread doesn't copy them
+    const enrichedData: TransactionWithInvestmentLink[] = data.map((tx) => ({
+      ...tx,
+      isCleared: tx.isCleared,
+      isReconciled: tx.isReconciled,
+      isVoid: tx.isVoid,
+      linkedInvestmentTransactionId: investmentLinkMap.get(tx.id) || null,
+    }));
+
     return {
-      data,
+      data: enrichedData,
       pagination: {
         page: safePage,
         limit: safeLimit,

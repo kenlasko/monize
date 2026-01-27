@@ -95,10 +95,13 @@ export function InvestmentTransactionForm({
           accountId: transaction.accountId,
           action: transaction.action,
           transactionDate: transaction.transactionDate,
-          securityId: transaction.securityId,
-          quantity: transaction.quantity,
-          price: transaction.price,
-          commission: transaction.commission || 0,
+          securityId: transaction.securityId || transaction.security?.id || '',
+          quantity: transaction.quantity ?? 0,
+          // For amount-only actions, use totalAmount as the price field value
+          price: amountOnlyActions.includes(transaction.action)
+            ? (transaction.totalAmount ?? 0)
+            : (transaction.price ?? 0),
+          commission: transaction.commission ?? 0,
           description: transaction.description || '',
         }
       : {
@@ -142,6 +145,16 @@ export function InvestmentTransactionForm({
     };
     loadSecurities();
   }, []);
+
+  // Re-sync form values when editing and securities are loaded
+  useEffect(() => {
+    if (transaction && securities.length > 0) {
+      const securityId = transaction.securityId || transaction.security?.id;
+      if (securityId) {
+        setValue('securityId', securityId);
+      }
+    }
+  }, [transaction, securities, setValue]);
 
   const handleCreateSecurity = async () => {
     if (!newSecurity.symbol || !newSecurity.name) {

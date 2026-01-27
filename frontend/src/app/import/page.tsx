@@ -112,6 +112,11 @@ function ImportContent() {
     loadData();
   }, [preselectedAccountId]);
 
+  // Scroll to top whenever the step changes
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [step]);
+
   const handleFileSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -244,8 +249,8 @@ function ImportContent() {
             // Investment QIF requires a brokerage account
             canUsePreselectedAccount = isInvestmentBrokerageAccount(preselectedAcc);
           } else {
-            // Regular QIF requires a non-investment account
-            canUsePreselectedAccount = !isInvestmentAccount(preselectedAcc);
+            // Regular QIF requires a non-brokerage account (cash accounts including investment cash are OK)
+            canUsePreselectedAccount = !isInvestmentBrokerageAccount(preselectedAcc);
           }
 
           if (!canUsePreselectedAccount) {
@@ -254,7 +259,7 @@ function ImportContent() {
             toast.error(
               isQifInvestmentType
                 ? 'The preselected account is not an investment brokerage account. Please select a compatible account.'
-                : 'The preselected account is an investment account. Please select a compatible account.'
+                : 'The preselected account is a brokerage account. Please select a compatible account.'
             );
           }
         }
@@ -414,9 +419,11 @@ function ImportContent() {
   };
 
   const getAccountOptions = () => {
+    // Filter out brokerage accounts - transfers should go to cash accounts
+    const transferableAccounts = accounts.filter((a) => !isInvestmentBrokerageAccount(a));
     return [
       { value: '', label: 'Skip (no transfer)' },
-      ...accounts.map((a) => ({ value: a.id, label: `${a.name} (${formatAccountType(a.accountType)})` })),
+      ...transferableAccounts.map((a) => ({ value: a.id, label: `${a.name} (${formatAccountType(a.accountType)})` })),
     ];
   };
 
@@ -516,14 +523,15 @@ function ImportContent() {
 
         // Filter accounts based on QIF type
         // Investment QIF files should only go to brokerage accounts
-        // Regular QIF files should not go to any investment accounts
+        // Regular QIF files should not go to brokerage accounts, but CAN go to investment cash accounts
         const compatibleAccounts = accounts.filter((a) => {
           if (isQifInvestment) {
             // Only show brokerage accounts for investment QIF files
             return isInvestmentBrokerageAccount(a);
           } else {
-            // Hide all investment accounts for regular QIF files
-            return !isInvestmentAccount(a);
+            // Hide brokerage accounts for regular QIF files (they hold securities, not cash)
+            // But allow investment cash accounts since they hold regular cash transactions
+            return !isInvestmentBrokerageAccount(a);
           }
         });
 
@@ -551,16 +559,10 @@ function ImportContent() {
               )}
 
               {/* Show notice about account filtering */}
-              {isQifInvestment ? (
+              {isQifInvestment && (
                 <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4">
                   <p className="text-sm text-blue-700 dark:text-blue-300">
                     This file contains investment transactions. Only brokerage accounts are shown.
-                  </p>
-                </div>
-              ) : (
-                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4">
-                  <p className="text-sm text-blue-700 dark:text-blue-300">
-                    This file contains regular banking transactions. Investment accounts are hidden.
                   </p>
                 </div>
               )}
@@ -570,7 +572,7 @@ function ImportContent() {
                   <p className="text-sm text-yellow-700 dark:text-yellow-300">
                     No compatible accounts found. {isQifInvestment
                       ? 'Please create an investment brokerage account first.'
-                      : 'Please create a non-investment account first.'}
+                      : 'Please create an account first.'}
                   </p>
                 </div>
               ) : (

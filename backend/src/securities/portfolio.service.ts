@@ -139,25 +139,36 @@ export class PortfolioService {
     }
 
     // Separate cash and brokerage accounts
+    // Also handle standalone investment accounts (no subType) - treat them as having holdings with their own cash balance
     const cashAccounts = accounts.filter(
       (a) => a.accountSubType === AccountSubType.INVESTMENT_CASH,
     );
     const brokerageAccounts = accounts.filter(
       (a) => a.accountSubType === AccountSubType.INVESTMENT_BROKERAGE,
     );
+    // Standalone accounts are investment accounts without a subType
+    const standaloneAccounts = accounts.filter(
+      (a) => a.accountSubType === null || a.accountSubType === undefined,
+    );
 
-    // Calculate total cash value from cash accounts
+    // Calculate total cash value from cash accounts + standalone accounts
     const totalCashValue = cashAccounts.reduce(
+      (sum, a) => sum + Number(a.currentBalance),
+      0,
+    ) + standaloneAccounts.reduce(
       (sum, a) => sum + Number(a.currentBalance),
       0,
     );
 
-    // Get holdings for brokerage accounts
-    const brokerageAccountIds = brokerageAccounts.map((a) => a.id);
+    // Get holdings for brokerage accounts AND standalone accounts
+    const holdingsAccountIds = [
+      ...brokerageAccounts.map((a) => a.id),
+      ...standaloneAccounts.map((a) => a.id),
+    ];
     let holdings: Holding[] = [];
-    if (brokerageAccountIds.length > 0) {
+    if (holdingsAccountIds.length > 0) {
       holdings = await this.holdingsRepository.find({
-        where: { accountId: In(brokerageAccountIds) },
+        where: { accountId: In(holdingsAccountIds) },
         relations: ['security'],
       });
     }
@@ -216,6 +227,8 @@ export class PortfolioService {
 
     // Build holdingsByAccount array with account info and totals
     const holdingsByAccount: AccountHoldings[] = [];
+
+    // Process brokerage accounts (paired with cash accounts)
     for (const brokerageAccount of brokerageAccounts) {
       const accountHoldings = holdingsByAccountMap.get(brokerageAccount.id) || [];
 
@@ -242,6 +255,38 @@ export class PortfolioService {
         accountName,
         cashAccountId: linkedCashAccount?.id ?? null,
         cashBalance: linkedCashAccount ? Number(linkedCashAccount.currentBalance) : 0,
+        holdings: accountHoldings.sort((a, b) => {
+          if (a.marketValue === null && b.marketValue === null) return 0;
+          if (a.marketValue === null) return 1;
+          if (b.marketValue === null) return -1;
+          return b.marketValue - a.marketValue;
+        }),
+        totalCostBasis: accountCostBasis,
+        totalMarketValue: accountMarketValue,
+        totalGainLoss: accountGainLoss,
+        totalGainLossPercent: accountGainLossPercent,
+      });
+    }
+
+    // Process standalone investment accounts (not paired, cash balance is on the same account)
+    for (const standaloneAccount of standaloneAccounts) {
+      const accountHoldings = holdingsByAccountMap.get(standaloneAccount.id) || [];
+
+      // Calculate account totals
+      const accountCostBasis = accountHoldings.reduce((sum, h) => sum + h.costBasis, 0);
+      const accountMarketValue = accountHoldings.reduce(
+        (sum, h) => sum + (h.marketValue ?? 0),
+        0,
+      );
+      const accountGainLoss = accountMarketValue - accountCostBasis;
+      const accountGainLossPercent =
+        accountCostBasis > 0 ? (accountGainLoss / accountCostBasis) * 100 : 0;
+
+      holdingsByAccount.push({
+        accountId: standaloneAccount.id,
+        accountName: standaloneAccount.name,
+        cashAccountId: standaloneAccount.id, // Cash is on this same account
+        cashBalance: Number(standaloneAccount.currentBalance),
         holdings: accountHoldings.sort((a, b) => {
           if (a.marketValue === null && b.marketValue === null) return 0;
           if (a.marketValue === null) return 1;

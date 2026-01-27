@@ -5,7 +5,9 @@ import { Holding } from './entities/holding.entity';
 import { InvestmentTransaction } from './entities/investment-transaction.entity';
 import { SecurityPrice } from './entities/security-price.entity';
 import { Account } from '../accounts/entities/account.entity';
+import { Transaction } from '../transactions/entities/transaction.entity';
 import { SecuritiesService } from './securities.service';
+import { SecurityPriceService } from './security-price.service';
 import { HoldingsService } from './holdings.service';
 import { InvestmentTransactionsService } from './investment-transactions.service';
 import { PortfolioService } from './portfolio.service';
@@ -24,12 +26,14 @@ import { TransactionsModule } from '../transactions/transactions.module';
       InvestmentTransaction,
       SecurityPrice,
       Account,
+      Transaction,
     ]),
     AccountsModule,
     TransactionsModule,
   ],
   providers: [
     SecuritiesService,
+    SecurityPriceService,
     HoldingsService,
     InvestmentTransactionsService,
     PortfolioService,
@@ -42,6 +46,7 @@ import { TransactionsModule } from '../transactions/transactions.module';
   ],
   exports: [
     SecuritiesService,
+    SecurityPriceService,
     HoldingsService,
     InvestmentTransactionsService,
     PortfolioService,

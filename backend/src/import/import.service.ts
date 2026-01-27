@@ -101,13 +101,9 @@ export class ImportService {
 
     // Validate QIF type matches destination account type
     // Investment QIF files should only go to brokerage accounts
-    // Regular QIF files should not go to any investment accounts
+    // Regular QIF files should not go to brokerage accounts, but CAN go to investment cash accounts
     const isQifInvestment = result.accountType === 'INVESTMENT';
     const isAccountBrokerage = account.accountSubType === AccountSubType.INVESTMENT_BROKERAGE;
-    const isAccountInvestment =
-      account.accountType === AccountType.INVESTMENT ||
-      account.accountSubType === AccountSubType.INVESTMENT_CASH ||
-      account.accountSubType === AccountSubType.INVESTMENT_BROKERAGE;
 
     if (isQifInvestment && !isAccountBrokerage) {
       throw new BadRequestException(
@@ -116,10 +112,10 @@ export class ImportService {
       );
     }
 
-    if (!isQifInvestment && isAccountInvestment) {
+    if (!isQifInvestment && isAccountBrokerage) {
       throw new BadRequestException(
-        'This QIF file contains regular banking transactions but the selected account is an investment account. ' +
-        'Please select a non-investment account for this import.',
+        'This QIF file contains regular banking transactions but the selected account is an investment brokerage account. ' +
+        'Please select a cash account (including investment cash accounts) for this import.',
       );
     }
 
@@ -289,7 +285,16 @@ export class ImportService {
             const price = qifTx.price || 0;
             const commission = qifTx.commission || 0;
             // Use the transaction amount if provided, otherwise calculate
-            const totalAmount = qifTx.amount || (quantity * price) + commission;
+            let totalAmount = qifTx.amount || (quantity * price) + commission;
+
+            // Adjust totalAmount based on action type
+            // For BUY: total = quantity * price + commission
+            // For SELL: total = quantity * price - commission
+            if (action === InvestmentAction.BUY) {
+              totalAmount = (quantity * price) + commission;
+            } else if (action === InvestmentAction.SELL) {
+              totalAmount = (quantity * price) - commission;
+            }
 
             // Create investment transaction
             const investmentTx = new InvestmentTransaction();
@@ -305,6 +310,85 @@ export class ImportService {
             investmentTx.description = qifTx.memo || qifTx.payee || null;
 
             await queryRunner.manager.save(investmentTx);
+
+            // Find the cash account for cash-affecting transactions
+            // For paired accounts (brokerage + cash), use the linked cash account
+            // For standalone accounts, use the same account
+            let cashAccountId = dto.accountId;
+            if (account.accountSubType === AccountSubType.INVESTMENT_BROKERAGE && account.linkedAccountId) {
+              cashAccountId = account.linkedAccountId;
+            }
+
+            // Determine if this action affects cash
+            const cashAffectingActions = [
+              InvestmentAction.BUY,
+              InvestmentAction.SELL,
+              InvestmentAction.DIVIDEND,
+              InvestmentAction.INTEREST,
+              InvestmentAction.CAPITAL_GAIN,
+            ];
+
+            if (cashAffectingActions.includes(action)) {
+              // Determine the cash amount (negative for outflows like BUY, positive for inflows like SELL/DIVIDEND)
+              const cashAmount = action === InvestmentAction.BUY ? -totalAmount : totalAmount;
+
+              // Get the security symbol from the database (not the raw QIF name)
+              let securitySymbol = 'Unknown';
+              if (securityId) {
+                const security = await queryRunner.manager.findOne(Security, {
+                  where: { id: securityId },
+                });
+                if (security) {
+                  securitySymbol = security.symbol;
+                }
+              }
+
+              // Convert action to title case (e.g., "BUY" -> "Buy", "CAPITAL_GAIN" -> "Capital Gain")
+              const formatAction = (act: string) => {
+                return act
+                  .split('_')
+                  .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                  .join(' ');
+              };
+              const actionLabel = formatAction(action);
+
+              // Format payee name for the cash transaction
+              let payeeName: string;
+              if (action === InvestmentAction.BUY || action === InvestmentAction.SELL) {
+                payeeName = `${actionLabel}: ${securitySymbol} ${quantity} @ $${price.toFixed(2)}`;
+              } else if (action === InvestmentAction.INTEREST) {
+                payeeName = `${actionLabel}: $${totalAmount.toFixed(2)}`;
+              } else {
+                payeeName = `${actionLabel}: ${securitySymbol} $${totalAmount.toFixed(2)}`;
+              }
+
+              // Create cash transaction
+              const cashTx = new Transaction();
+              cashTx.userId = userId;
+              cashTx.accountId = cashAccountId;
+              cashTx.transactionDate = qifTx.date;
+              cashTx.amount = cashAmount;
+              cashTx.currencyCode = account.currencyCode;
+              cashTx.exchangeRate = 1;
+              cashTx.payeeName = payeeName;
+              cashTx.payeeId = null;
+              cashTx.description = qifTx.memo || null;
+              cashTx.status = TransactionStatus.CLEARED;
+
+              const savedCashTx = await queryRunner.manager.save(cashTx);
+
+              // Link the cash transaction to the investment transaction
+              investmentTx.transactionId = savedCashTx.id;
+              await queryRunner.manager.save(investmentTx);
+
+              // Update cash account balance
+              await queryRunner.manager.increment(
+                Account,
+                { id: cashAccountId },
+                'currentBalance',
+                cashAmount,
+              );
+            }
 
             // Update holdings for actions that affect share counts
             const holdingsActions = [
@@ -354,14 +438,6 @@ export class ImportService {
 
               await queryRunner.manager.save(holding);
             }
-
-            // Update account balance
-            await queryRunner.manager.increment(
-              Account,
-              { id: dto.accountId },
-              'currentBalance',
-              totalAmount,
-            );
 
             importResult.imported++;
             continue; // Skip the regular transaction handling
