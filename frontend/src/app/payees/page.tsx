@@ -1,15 +1,18 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
 import { PayeeForm } from '@/components/payees/PayeeForm';
-import { PayeeList } from '@/components/payees/PayeeList';
+import { PayeeList, DensityLevel } from '@/components/payees/PayeeList';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { payeesApi } from '@/lib/payees';
 import { categoriesApi } from '@/lib/categories';
 import { Payee } from '@/types/payee';
 import { Category } from '@/types/category';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
+
+const PAGE_SIZE = 50;
 
 export default function PayeesPage() {
   const [payees, setPayees] = useState<Payee[]>([]);
@@ -18,6 +21,8 @@ export default function PayeesPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingPayee, setEditingPayee] = useState<Payee | undefined>();
   const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [listDensity, setListDensity] = useLocalStorage<DensityLevel>('moneymate-payees-density', 'normal');
 
   const loadData = async () => {
     setIsLoading(true);
@@ -82,11 +87,31 @@ export default function PayeesPage() {
     setEditingPayee(undefined);
   };
 
-  const filteredPayees = searchQuery
-    ? payees.filter((p) =>
-        p.name.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    : payees;
+  // Filter payees by search query
+  const filteredPayees = useMemo(() => {
+    if (!searchQuery) return payees;
+    return payees.filter((p) =>
+      p.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [payees, searchQuery]);
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredPayees.length / PAGE_SIZE);
+  const paginatedPayees = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return filteredPayees.slice(start, start + PAGE_SIZE);
+  }, [filteredPayees, currentPage]);
+
+  // Reset to page 1 when search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
+
+  const goToPage = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
 
   const payeesWithCategory = payees.filter((p) => p.defaultCategoryId).length;
   const payeesWithoutCategory = payees.length - payeesWithCategory;
@@ -234,9 +259,110 @@ export default function PayeesPage() {
               <p className="mt-2 text-gray-500 dark:text-gray-400">Loading payees...</p>
             </div>
           ) : (
-            <PayeeList payees={filteredPayees} onEdit={handleEdit} onRefresh={loadData} />
+            <PayeeList
+              payees={paginatedPayees}
+              onEdit={handleEdit}
+              onRefresh={loadData}
+              density={listDensity}
+              onDensityChange={setListDensity}
+            />
           )}
         </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="mt-4 flex items-center justify-between bg-white dark:bg-gray-800 px-4 py-3 shadow dark:shadow-gray-700/50 rounded-lg">
+            <div className="flex items-center text-sm text-gray-700 dark:text-gray-300">
+              <span>
+                Showing{' '}
+                <span className="font-medium">
+                  {((currentPage - 1) * PAGE_SIZE) + 1}
+                </span>
+                {' '}-{' '}
+                <span className="font-medium">
+                  {Math.min(currentPage * PAGE_SIZE, filteredPayees.length)}
+                </span>
+                {' '}of{' '}
+                <span className="font-medium">{filteredPayees.length}</span>
+                {' '}payees
+              </span>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => goToPage(1)}
+                disabled={currentPage === 1}
+                className="px-3 py-1 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                title="First page"
+              >
+                First
+              </button>
+              <button
+                onClick={() => goToPage(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="px-3 py-1 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Previous
+              </button>
+
+              <div className="flex items-center space-x-1">
+                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  .filter(page => {
+                    return (
+                      page === 1 ||
+                      page === totalPages ||
+                      Math.abs(page - currentPage) <= 1
+                    );
+                  })
+                  .map((page, index, arr) => {
+                    const prevPage = arr[index - 1];
+                    const showEllipsis = prevPage && page - prevPage > 1;
+
+                    return (
+                      <span key={page} className="flex items-center">
+                        {showEllipsis && (
+                          <span className="px-2 text-gray-500 dark:text-gray-400">...</span>
+                        )}
+                        <button
+                          onClick={() => goToPage(page)}
+                          className={`px-3 py-1 text-sm font-medium rounded-md ${
+                            page === currentPage
+                              ? 'bg-blue-600 dark:bg-blue-500 text-white'
+                              : 'text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      </span>
+                    );
+                  })}
+              </div>
+
+              <button
+                onClick={() => goToPage(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Next
+              </button>
+              <button
+                onClick={() => goToPage(totalPages)}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Last page"
+              >
+                Last
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Show total count when only one page */}
+        {totalPages <= 1 && filteredPayees.length > 0 && (
+          <div className="mt-4 text-sm text-gray-500 dark:text-gray-400 text-center">
+            {filteredPayees.length} payee{filteredPayees.length !== 1 ? 's' : ''}
+          </div>
+        )}
       </div>
     </div>
   );

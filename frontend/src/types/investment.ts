@@ -104,3 +104,16 @@ export interface CreateSecurityData {
   exchange?: string;
   currencyCode: string;
 }
+
+export interface InvestmentTransactionPaginationInfo {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasMore: boolean;
+}
+
+export interface PaginatedInvestmentTransactions {
+  data: InvestmentTransaction[];
+  pagination: InvestmentTransactionPaginationInfo;
+}

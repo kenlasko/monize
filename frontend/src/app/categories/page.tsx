@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
 import { CategoryForm } from '@/components/categories/CategoryForm';
-import { CategoryList } from '@/components/categories/CategoryList';
+import { CategoryList, DensityLevel } from '@/components/categories/CategoryList';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { categoriesApi } from '@/lib/categories';
 import { Category } from '@/types/category';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -15,6 +16,7 @@ export default function CategoriesPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | undefined>();
   const [filterType, setFilterType] = useState<'all' | 'income' | 'expense'>('all');
+  const [listDensity, setListDensity] = useLocalStorage<DensityLevel>('moneymate-categories-density', 'normal');
 
   const loadCategories = async () => {
     setIsLoading(true);
@@ -77,10 +79,11 @@ export default function CategoriesPage() {
     setEditingCategory(undefined);
   };
 
-  const filteredCategories =
-    filterType === 'all'
-      ? categories
-      : categories.filter((c) => (filterType === 'income' ? c.isIncome : !c.isIncome));
+  // Filter categories by type
+  const filteredCategories = useMemo(() => {
+    if (filterType === 'all') return categories;
+    return categories.filter((c) => (filterType === 'income' ? c.isIncome : !c.isIncome));
+  }, [categories, filterType]);
 
   const incomeCount = categories.filter((c) => c.isIncome).length;
   const expenseCount = categories.filter((c) => !c.isIncome).length;
@@ -288,9 +291,18 @@ export default function CategoriesPage() {
               categories={filteredCategories}
               onEdit={handleEdit}
               onRefresh={loadCategories}
+              density={listDensity}
+              onDensityChange={setListDensity}
             />
           )}
         </div>
+
+        {/* Total count */}
+        {filteredCategories.length > 0 && (
+          <div className="mt-4 text-sm text-gray-500 dark:text-gray-400 text-center">
+            {filteredCategories.length} categor{filteredCategories.length !== 1 ? 'ies' : 'y'}
+          </div>
+        )}
       </div>
     </div>
   );

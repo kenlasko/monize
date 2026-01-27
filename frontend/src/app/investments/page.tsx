@@ -7,15 +7,19 @@ import { Select } from '@/components/ui/Select';
 import { PortfolioSummaryCard } from '@/components/investments/PortfolioSummaryCard';
 import { HoldingsList } from '@/components/investments/HoldingsList';
 import { AssetAllocationChart } from '@/components/investments/AssetAllocationChart';
-import { InvestmentTransactionList } from '@/components/investments/InvestmentTransactionList';
+import { InvestmentTransactionList, DensityLevel } from '@/components/investments/InvestmentTransactionList';
 import { InvestmentTransactionForm } from '@/components/investments/InvestmentTransactionForm';
 import { investmentsApi } from '@/lib/investments';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { Account } from '@/types/account';
 import {
   PortfolioSummary,
   AssetAllocation,
   InvestmentTransaction,
+  InvestmentTransactionPaginationInfo,
 } from '@/types/investment';
+
+const PAGE_SIZE = 50;
 
 export default function InvestmentsPage() {
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -27,9 +31,12 @@ export default function InvestmentsPage() {
     null,
   );
   const [transactions, setTransactions] = useState<InvestmentTransaction[]>([]);
+  const [pagination, setPagination] = useState<InvestmentTransactionPaginationInfo | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [showTransactionForm, setShowTransactionForm] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<InvestmentTransaction | undefined>();
+  const [listDensity, setListDensity] = useLocalStorage<DensityLevel>('moneymate-investments-density', 'normal');
 
   const loadInvestmentAccounts = useCallback(async () => {
     try {
@@ -40,26 +47,30 @@ export default function InvestmentsPage() {
     }
   }, []);
 
-  const loadPortfolioData = useCallback(async (accountId?: string) => {
+  const loadPortfolioData = useCallback(async (accountId?: string, page: number = 1) => {
     setIsLoading(true);
     try {
-      const [summaryData, allocationData, txData] = await Promise.all([
+      const [summaryData, allocationData, txResponse] = await Promise.all([
         investmentsApi.getPortfolioSummary(accountId || undefined),
         investmentsApi.getAssetAllocation(accountId || undefined),
         investmentsApi.getTransactions({
           accountId: accountId || undefined,
+          page,
+          limit: PAGE_SIZE,
         }),
       ]);
 
       setPortfolioSummary(summaryData);
       setAssetAllocation(allocationData);
-      setTransactions(txData || []);
+      setTransactions(txResponse.data || []);
+      setPagination(txResponse.pagination);
     } catch (error) {
       console.error('Failed to load portfolio data:', error);
       // Set empty arrays on error to prevent undefined errors
       setPortfolioSummary(null);
       setAssetAllocation(null);
       setTransactions([]);
+      setPagination(null);
     } finally {
       setIsLoading(false);
     }
@@ -70,11 +81,12 @@ export default function InvestmentsPage() {
   }, [loadInvestmentAccounts]);
 
   useEffect(() => {
-    loadPortfolioData(selectedAccountId || undefined);
-  }, [loadPortfolioData, selectedAccountId]);
+    loadPortfolioData(selectedAccountId || undefined, currentPage);
+  }, [loadPortfolioData, selectedAccountId, currentPage]);
 
   const handleAccountChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedAccountId(e.target.value);
+    setCurrentPage(1); // Reset to page 1 when account changes
   };
 
   const handleDeleteTransaction = async (id: string) => {
@@ -82,7 +94,7 @@ export default function InvestmentsPage() {
     try {
       await investmentsApi.deleteTransaction(id);
       // Reload data
-      loadPortfolioData(selectedAccountId || undefined);
+      loadPortfolioData(selectedAccountId || undefined, currentPage);
     } catch (error) {
       console.error('Failed to delete transaction:', error);
       alert('Failed to delete transaction');
@@ -102,12 +114,18 @@ export default function InvestmentsPage() {
   const handleFormSuccess = () => {
     setShowTransactionForm(false);
     setEditingTransaction(undefined);
-    loadPortfolioData(selectedAccountId || undefined);
+    loadPortfolioData(selectedAccountId || undefined, currentPage);
   };
 
   const handleFormCancel = () => {
     setShowTransactionForm(false);
     setEditingTransaction(undefined);
+  };
+
+  const goToPage = (page: number) => {
+    if (page >= 1 && (!pagination || page <= pagination.totalPages)) {
+      setCurrentPage(page);
+    }
   };
 
   // Get brokerage account for the selected cash account
@@ -189,8 +207,108 @@ export default function InvestmentsPage() {
               isLoading={isLoading}
               onDelete={handleDeleteTransaction}
               onEdit={handleEditTransaction}
+              density={listDensity}
+              onDensityChange={setListDensity}
             />
           </div>
+
+          {/* Pagination */}
+          {pagination && pagination.totalPages > 1 && (
+            <div className="mt-4 flex items-center justify-between bg-white dark:bg-gray-800 px-4 py-3 shadow dark:shadow-gray-700/50 rounded-lg">
+              <div className="flex items-center text-sm text-gray-700 dark:text-gray-300">
+                <span>
+                  Showing{' '}
+                  <span className="font-medium">
+                    {((currentPage - 1) * PAGE_SIZE) + 1}
+                  </span>
+                  {' '}-{' '}
+                  <span className="font-medium">
+                    {Math.min(currentPage * PAGE_SIZE, pagination.total)}
+                  </span>
+                  {' '}of{' '}
+                  <span className="font-medium">{pagination.total}</span>
+                  {' '}transactions
+                </span>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => goToPage(1)}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="First page"
+                >
+                  First
+                </button>
+                <button
+                  onClick={() => goToPage(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Previous
+                </button>
+
+                <div className="flex items-center space-x-1">
+                  {/* Show page numbers */}
+                  {Array.from({ length: pagination.totalPages }, (_, i) => i + 1)
+                    .filter(page => {
+                      // Show first, last, current, and pages around current
+                      return (
+                        page === 1 ||
+                        page === pagination.totalPages ||
+                        Math.abs(page - currentPage) <= 1
+                      );
+                    })
+                    .map((page, index, arr) => {
+                      // Add ellipsis if there's a gap
+                      const prevPage = arr[index - 1];
+                      const showEllipsis = prevPage && page - prevPage > 1;
+
+                      return (
+                        <span key={page} className="flex items-center">
+                          {showEllipsis && (
+                            <span className="px-2 text-gray-500 dark:text-gray-400">...</span>
+                          )}
+                          <button
+                            onClick={() => goToPage(page)}
+                            className={`px-3 py-1 text-sm font-medium rounded-md ${
+                              page === currentPage
+                                ? 'bg-blue-600 dark:bg-blue-500 text-white'
+                                : 'text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'
+                            }`}
+                          >
+                            {page}
+                          </button>
+                        </span>
+                      );
+                    })}
+                </div>
+
+                <button
+                  onClick={() => goToPage(currentPage + 1)}
+                  disabled={!pagination.hasMore}
+                  className="px-3 py-1 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Next
+                </button>
+                <button
+                  onClick={() => goToPage(pagination.totalPages)}
+                  disabled={currentPage === pagination.totalPages}
+                  className="px-3 py-1 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Last page"
+                >
+                  Last
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Show total count when only one page */}
+          {pagination && pagination.totalPages <= 1 && pagination.total > 0 && (
+            <div className="mt-4 text-sm text-gray-500 dark:text-gray-400 text-center">
+              {pagination.total} transaction{pagination.total !== 1 ? 's' : ''}
+            </div>
+          )}
         </div>
       </main>
 

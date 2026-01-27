@@ -8,6 +8,7 @@ import {
   Holding,
   Security,
   CreateSecurityData,
+  PaginatedInvestmentTransactions,
 } from '@/types/investment';
 
 export const investmentsApi = {
@@ -41,13 +42,15 @@ export const investmentsApi = {
     return response.data;
   },
 
-  // Get investment transactions
+  // Get investment transactions with pagination
   getTransactions: async (params?: {
     accountId?: string;
     startDate?: string;
     endDate?: string;
-  }): Promise<InvestmentTransaction[]> => {
-    const response = await apiClient.get<InvestmentTransaction[]>(
+    page?: number;
+    limit?: number;
+  }): Promise<PaginatedInvestmentTransactions> => {
+    const response = await apiClient.get<PaginatedInvestmentTransactions>(
       '/investment-transactions',
       { params },
     );

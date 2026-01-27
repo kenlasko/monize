@@ -188,7 +188,21 @@ export class InvestmentTransactionsService {
     accountId?: string,
     startDate?: string,
     endDate?: string,
-  ): Promise<InvestmentTransaction[]> {
+    page?: number,
+    limit?: number,
+  ): Promise<{
+    data: InvestmentTransaction[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+      hasMore: boolean;
+    };
+  }> {
+    const pageNum = page && page > 0 ? page : 1;
+    const pageSize = limit && limit > 0 ? Math.min(limit, 200) : 50;
+
     const query = this.investmentTransactionsRepository
       .createQueryBuilder('it')
       .leftJoinAndSelect('it.account', 'account')
@@ -207,7 +221,28 @@ export class InvestmentTransactionsService {
       query.andWhere('it.transactionDate <= :endDate', { endDate });
     }
 
-    return query.orderBy('it.transactionDate', 'DESC').getMany();
+    // Get total count for pagination
+    const total = await query.getCount();
+
+    // Apply pagination
+    const data = await query
+      .orderBy('it.transactionDate', 'DESC')
+      .skip((pageNum - 1) * pageSize)
+      .take(pageSize)
+      .getMany();
+
+    const totalPages = Math.ceil(total / pageSize);
+
+    return {
+      data,
+      pagination: {
+        page: pageNum,
+        limit: pageSize,
+        total,
+        totalPages,
+        hasMore: pageNum < totalPages,
+      },
+    };
   }
 
   async findOne(userId: string, id: string): Promise<InvestmentTransaction> {
@@ -350,7 +385,9 @@ export class InvestmentTransactionsService {
   }
 
   async getSummary(userId: string, accountId?: string) {
-    const transactions = await this.findAll(userId, accountId);
+    // Get all transactions (no pagination for summary)
+    const result = await this.findAll(userId, accountId, undefined, undefined, 1, 10000);
+    const transactions = result.data;
 
     const summary = {
       totalTransactions: transactions.length,

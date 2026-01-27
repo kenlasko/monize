@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Category } from '@/types/category';
 import { Button } from '@/components/ui/Button';
@@ -8,15 +8,56 @@ import { DeleteCategoryDialog } from './DeleteCategoryDialog';
 import { categoriesApi } from '@/lib/categories';
 import toast from 'react-hot-toast';
 
+// Density levels: 'normal' | 'compact' | 'dense'
+export type DensityLevel = 'normal' | 'compact' | 'dense';
+
 interface CategoryListProps {
   categories: Category[];
   onEdit: (category: Category) => void;
   onRefresh: () => void;
+  density?: DensityLevel;
+  onDensityChange?: (density: DensityLevel) => void;
 }
 
-export function CategoryList({ categories, onEdit, onRefresh }: CategoryListProps) {
+export function CategoryList({
+  categories,
+  onEdit,
+  onRefresh,
+  density: propDensity,
+  onDensityChange,
+}: CategoryListProps) {
   const router = useRouter();
   const [deleteCategory, setDeleteCategory] = useState<Category | null>(null);
+  const [localDensity, setLocalDensity] = useState<DensityLevel>('normal');
+
+  // Use prop density if provided, otherwise use local state
+  const density = propDensity ?? localDensity;
+
+  // Memoize padding classes based on density
+  const cellPadding = useMemo(() => {
+    switch (density) {
+      case 'dense': return 'px-3 py-1';
+      case 'compact': return 'px-4 py-2';
+      default: return 'px-6 py-4';
+    }
+  }, [density]);
+
+  const headerPadding = useMemo(() => {
+    switch (density) {
+      case 'dense': return 'px-3 py-2';
+      case 'compact': return 'px-4 py-2';
+      default: return 'px-6 py-3';
+    }
+  }, [density]);
+
+  const cycleDensity = useCallback(() => {
+    const nextDensity = density === 'normal' ? 'compact' : density === 'compact' ? 'dense' : 'normal';
+    if (onDensityChange) {
+      onDensityChange(nextDensity);
+    } else {
+      setLocalDensity(nextDensity);
+    }
+  }, [density, onDensityChange]);
 
   const handleViewTransactions = (category: Category) => {
     router.push(`/transactions?categoryId=${category.id}`);
@@ -88,90 +129,112 @@ export function CategoryList({ categories, onEdit, onRefresh }: CategoryListProp
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-        <thead className="bg-gray-50 dark:bg-gray-800">
-          <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-              Name
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-              Type
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-              Description
-            </th>
-            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-              Actions
-            </th>
-          </tr>
-        </thead>
-        <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-          {treeCategories.map((category: Category & { _level?: number }) => (
-            <tr key={category.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
-              <td className="px-6 py-4 whitespace-nowrap">
-                <div
-                  className="flex items-center"
-                  style={{ paddingLeft: `${(category._level || 0) * 1.5}rem` }}
-                >
-                  {category.color && (
-                    <span
-                      className="w-3 h-3 rounded-full mr-2 flex-shrink-0"
-                      style={{ backgroundColor: category.color }}
-                    />
-                  )}
-                  <button
-                    onClick={() => handleViewTransactions(category)}
-                    className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline text-left"
-                    title="View transactions in this category"
+    <div>
+      {/* Density toggle */}
+      <div className="flex justify-end p-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+        <button
+          onClick={cycleDensity}
+          className="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+          title="Toggle row density"
+        >
+          <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+          {density === 'normal' ? 'Normal' : density === 'compact' ? 'Compact' : 'Dense'}
+        </button>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+          <thead className="bg-gray-50 dark:bg-gray-800">
+            <tr>
+              <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>
+                Name
+              </th>
+              <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>
+                Type
+              </th>
+              {density === 'normal' && (
+                <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>
+                  Description
+                </th>
+              )}
+              <th className={`${headerPadding} text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+            {treeCategories.map((category: Category & { _level?: number }, index) => (
+              <tr
+                key={category.id}
+                className={`hover:bg-gray-50 dark:hover:bg-gray-800 ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-gray-800/50' : ''}`}
+              >
+                <td className={`${cellPadding} whitespace-nowrap`}>
+                  <div
+                    className="flex items-center"
+                    style={{ paddingLeft: `${(category._level || 0) * (density === 'dense' ? 0.75 : 1.5)}rem` }}
                   >
-                    {category.name}
-                  </button>
-                  {category.isSystem && (
-                    <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">(System)</span>
-                  )}
-                </div>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <span
-                  className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                    category.isIncome
-                      ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                      : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                  }`}
-                >
-                  {category.isIncome ? 'Income' : 'Expense'}
-                </span>
-              </td>
-              <td className="px-6 py-4">
-                <div className="text-sm text-gray-500 dark:text-gray-400 max-w-xs truncate">
-                  {category.description || '-'}
-                </div>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onEdit(category)}
-                  className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300 mr-2"
-                >
-                  Edit
-                </Button>
-                {!category.isSystem && (
+                    {category.color && (
+                      <span
+                        className={`rounded-full mr-2 flex-shrink-0 ${density === 'dense' ? 'w-2 h-2' : 'w-3 h-3'}`}
+                        style={{ backgroundColor: category.color }}
+                      />
+                    )}
+                    <button
+                      onClick={() => handleViewTransactions(category)}
+                      className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline text-left"
+                      title="View transactions in this category"
+                    >
+                      {category.name}
+                    </button>
+                    {category.isSystem && density !== 'dense' && (
+                      <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">(System)</span>
+                    )}
+                  </div>
+                </td>
+                <td className={`${cellPadding} whitespace-nowrap`}>
+                  <span
+                    className={`inline-flex text-xs leading-5 font-semibold rounded-full ${
+                      category.isIncome
+                        ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                        : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                    } ${density === 'dense' ? 'px-1.5 py-0.5' : 'px-2 py-1'}`}
+                  >
+                    {density === 'dense' ? (category.isIncome ? 'Inc' : 'Exp') : (category.isIncome ? 'Income' : 'Expense')}
+                  </span>
+                </td>
+                {density === 'normal' && (
+                  <td className={`${cellPadding}`}>
+                    <div className="text-sm text-gray-500 dark:text-gray-400 max-w-xs truncate">
+                      {category.description || '-'}
+                    </div>
+                  </td>
+                )}
+                <td className={`${cellPadding} whitespace-nowrap text-right text-sm font-medium`}>
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => handleDeleteClick(category)}
-                    className="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300"
+                    onClick={() => onEdit(category)}
+                    className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300 mr-2"
                   >
-                    Delete
+                    {density === 'dense' ? '✎' : 'Edit'}
                   </Button>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+                  {!category.isSystem && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDeleteClick(category)}
+                      className="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300"
+                    >
+                      {density === 'dense' ? '✕' : 'Delete'}
+                    </Button>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
       <DeleteCategoryDialog
         isOpen={deleteCategory !== null}

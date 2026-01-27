@@ -47,14 +47,25 @@ export class InvestmentTransactionsController {
   @ApiQuery({ name: 'accountId', required: false, description: 'Filter by account ID' })
   @ApiQuery({ name: 'startDate', required: false, description: 'Filter by start date (YYYY-MM-DD)' })
   @ApiQuery({ name: 'endDate', required: false, description: 'Filter by end date (YYYY-MM-DD)' })
-  @ApiResponse({ status: 200, description: 'List of investment transactions', type: [InvestmentTransaction] })
+  @ApiQuery({ name: 'page', required: false, description: 'Page number (1-indexed, default: 1)' })
+  @ApiQuery({ name: 'limit', required: false, description: 'Number of transactions per page (default: 50, max: 200)' })
+  @ApiResponse({ status: 200, description: 'List of investment transactions with pagination' })
   findAll(
     @Request() req,
     @Query('accountId') accountId?: string,
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
-  ): Promise<InvestmentTransaction[]> {
-    return this.investmentTransactionsService.findAll(req.user.id, accountId, startDate, endDate);
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.investmentTransactionsService.findAll(
+      req.user.id,
+      accountId,
+      startDate,
+      endDate,
+      page ? parseInt(page, 10) : undefined,
+      limit ? parseInt(limit, 10) : undefined,
+    );
   }
 
   @Get('summary')
