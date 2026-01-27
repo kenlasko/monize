@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { Button } from '@/components/ui/Button';
+import { Select } from '@/components/ui/Select';
 import { PortfolioSummaryCard } from '@/components/investments/PortfolioSummaryCard';
 import { HoldingsList } from '@/components/investments/HoldingsList';
 import { AssetAllocationChart } from '@/components/investments/AssetAllocationChart';
@@ -151,18 +152,18 @@ export default function InvestmentsPage() {
 
             {/* Account Filter and Actions */}
             <div className="flex items-center gap-4">
-              <select
+              <Select
                 value={selectedAccountId}
                 onChange={handleAccountChange}
-                className="block w-64 rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              >
-                <option value="">All Investment Accounts</option>
-                {cashAccounts.map((account) => (
-                  <option key={account.id} value={account.id}>
-                    {getAccountDisplayName(account)}
-                  </option>
-                ))}
-              </select>
+                className="w-64"
+                options={[
+                  { value: '', label: 'All Investment Accounts' },
+                  ...cashAccounts.map((account) => ({
+                    value: account.id,
+                    label: getAccountDisplayName(account),
+                  })),
+                ]}
+              />
               <Button onClick={handleNewTransaction}>
                 New Transaction
               </Button>

@@ -314,9 +314,7 @@ function ImportContent() {
   const getAccountOptions = () => {
     return [
       { value: '', label: 'Skip (no transfer)' },
-      ...accounts
-        .filter((a) => a.accountSubType !== 'INVESTMENT_BROKERAGE')
-        .map((a) => ({ value: a.id, label: `${a.name} (${formatAccountType(a.accountType)})` })),
+      ...accounts.map((a) => ({ value: a.id, label: `${a.name} (${formatAccountType(a.accountType)})` })),
     ];
   };
 
@@ -418,12 +416,10 @@ function ImportContent() {
               )}
               <Select
                 label="Import into account"
-                options={accounts
-                  .filter((a) => a.accountSubType !== 'INVESTMENT_BROKERAGE')
-                  .map((a) => ({
-                    value: a.id,
-                    label: `${a.name} (${formatAccountType(a.accountType)})`,
-                  }))}
+                options={accounts.map((a) => ({
+                  value: a.id,
+                  label: `${a.name} (${formatAccountType(a.accountType)})`,
+                }))}
                 value={selectedAccountId}
                 onChange={(e) => setSelectedAccountId(e.target.value)}
               />

@@ -71,8 +71,16 @@ export const investmentsApi = {
   },
 
   // Get all securities
-  getSecurities: async (): Promise<Security[]> => {
-    const response = await apiClient.get<Security[]>('/securities');
+  getSecurities: async (includeInactive = false): Promise<Security[]> => {
+    const response = await apiClient.get<Security[]>('/securities', {
+      params: includeInactive ? { includeInactive: true } : undefined,
+    });
+    return response.data;
+  },
+
+  // Get a single security by ID
+  getSecurity: async (id: string): Promise<Security> => {
+    const response = await apiClient.get<Security>(`/securities/${id}`);
     return response.data;
   },
 
@@ -82,10 +90,28 @@ export const investmentsApi = {
     return response.data;
   },
 
+  // Update security
+  updateSecurity: async (id: string, data: Partial<CreateSecurityData>): Promise<Security> => {
+    const response = await apiClient.patch<Security>(`/securities/${id}`, data);
+    return response.data;
+  },
+
+  // Deactivate security
+  deactivateSecurity: async (id: string): Promise<Security> => {
+    const response = await apiClient.post<Security>(`/securities/${id}/deactivate`);
+    return response.data;
+  },
+
+  // Activate security
+  activateSecurity: async (id: string): Promise<Security> => {
+    const response = await apiClient.post<Security>(`/securities/${id}/activate`);
+    return response.data;
+  },
+
   // Search securities
   searchSecurities: async (query: string): Promise<Security[]> => {
-    const response = await apiClient.get<Security[]>('/securities', {
-      params: { search: query },
+    const response = await apiClient.get<Security[]>('/securities/search', {
+      params: { q: query },
     });
     return response.data;
   },
