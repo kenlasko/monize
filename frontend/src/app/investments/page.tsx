@@ -226,6 +226,10 @@ export default function InvestmentsPage() {
     setCurrentPage(1);
   };
 
+  const handleCashClick = (cashAccountId: string) => {
+    router.push(`/transactions?accountId=${cashAccountId}`);
+  };
+
   const handleFormCancel = () => {
     setShowTransactionForm(false);
     setEditingTransaction(undefined);
@@ -385,6 +389,7 @@ export default function InvestmentsPage() {
               isLoading={isLoading}
               totalPortfolioValue={portfolioSummary?.totalPortfolioValue || 0}
               onSymbolClick={handleSymbolClick}
+              onCashClick={handleCashClick}
             />
           </div>
 

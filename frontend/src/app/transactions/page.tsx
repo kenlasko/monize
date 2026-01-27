@@ -242,9 +242,13 @@ export default function TransactionsPage() {
   };
 
   // Handle in-place transaction update (e.g., clearing status) without full refresh
+  // Preserve linkedInvestmentTransactionId since it's only computed in findAll
   const handleTransactionUpdate = useCallback((updatedTransaction: Transaction) => {
     setTransactions(prev =>
-      prev.map(tx => tx.id === updatedTransaction.id ? updatedTransaction : tx)
+      prev.map(tx => tx.id === updatedTransaction.id
+        ? { ...updatedTransaction, linkedInvestmentTransactionId: tx.linkedInvestmentTransactionId }
+        : tx
+      )
     );
   }, []);
 
