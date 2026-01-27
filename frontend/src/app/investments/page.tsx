@@ -164,9 +164,7 @@ export default function InvestmentsPage() {
                   })),
                 ]}
               />
-              <Button onClick={handleNewTransaction}>
-                New Transaction
-              </Button>
+              <Button onClick={handleNewTransaction} className="whitespace-nowrap">+ New Transaction</Button>
             </div>
           </div>
 
