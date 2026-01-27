@@ -358,4 +358,25 @@ export class AccountsService {
 
     await this.accountsRepository.remove(account);
   }
+
+  /**
+   * Reset all brokerage account balances to 0 for a user.
+   * Used when clearing investment data for re-import.
+   */
+  async resetBrokerageBalances(userId: string): Promise<number> {
+    const brokerageAccounts = await this.accountsRepository.find({
+      where: {
+        userId,
+        accountType: AccountType.INVESTMENT,
+        accountSubType: AccountSubType.INVESTMENT_BROKERAGE,
+      },
+    });
+
+    for (const account of brokerageAccounts) {
+      account.currentBalance = 0;
+      await this.accountsRepository.save(account);
+    }
+
+    return brokerageAccounts.length;
+  }
 }

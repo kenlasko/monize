@@ -1,6 +1,7 @@
 import {
   Controller,
   Get,
+  Post,
   Delete,
   Param,
   Query,
@@ -51,5 +52,26 @@ export class HoldingsController {
   @ApiResponse({ status: 404, description: 'Holding not found' })
   remove(@Request() req, @Param('id', ParseUUIDPipe) id: string): Promise<void> {
     return this.holdingsService.remove(req.user.id, id);
+  }
+
+  @Post('rebuild')
+  @ApiOperation({
+    summary: 'Rebuild all holdings from investment transactions',
+    description: 'Recalculates all holdings based on transaction history. Useful for fixing data after imports.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Holdings rebuilt successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        holdingsCreated: { type: 'number' },
+        holdingsUpdated: { type: 'number' },
+        holdingsDeleted: { type: 'number' },
+      },
+    },
+  })
+  rebuild(@Request() req) {
+    return this.holdingsService.rebuildFromTransactions(req.user.id);
   }
 }

@@ -34,6 +34,7 @@ export interface Holding {
 
 export interface HoldingWithMarketValue {
   id: string;
+  accountId: string;
   symbol: string;
   name: string;
   securityType: string;
@@ -46,6 +47,18 @@ export interface HoldingWithMarketValue {
   gainLossPercent: number | null;
 }
 
+export interface AccountHoldings {
+  accountId: string;
+  accountName: string;
+  cashAccountId: string | null;
+  cashBalance: number;
+  holdings: HoldingWithMarketValue[];
+  totalCostBasis: number;
+  totalMarketValue: number;
+  totalGainLoss: number;
+  totalGainLossPercent: number;
+}
+
 export interface PortfolioSummary {
   totalCashValue: number;
   totalHoldingsValue: number;
@@ -54,6 +67,7 @@ export interface PortfolioSummary {
   totalGainLoss: number;
   totalGainLossPercent: number;
   holdings: HoldingWithMarketValue[];
+  holdingsByAccount: AccountHoldings[];
 }
 
 export interface AllocationItem {

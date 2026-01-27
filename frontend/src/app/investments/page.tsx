@@ -5,7 +5,7 @@ import { AppHeader } from '@/components/layout/AppHeader';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { PortfolioSummaryCard } from '@/components/investments/PortfolioSummaryCard';
-import { HoldingsList } from '@/components/investments/HoldingsList';
+import { GroupedHoldingsList } from '@/components/investments/GroupedHoldingsList';
 import { AssetAllocationChart } from '@/components/investments/AssetAllocationChart';
 import { InvestmentTransactionList, DensityLevel } from '@/components/investments/InvestmentTransactionList';
 import { InvestmentTransactionForm } from '@/components/investments/InvestmentTransactionForm';
@@ -194,9 +194,10 @@ export default function InvestmentsPage() {
 
           {/* Holdings List */}
           <div className="mb-6">
-            <HoldingsList
-              holdings={portfolioSummary?.holdings || []}
+            <GroupedHoldingsList
+              holdingsByAccount={portfolioSummary?.holdingsByAccount || []}
               isLoading={isLoading}
+              totalPortfolioValue={portfolioSummary?.totalPortfolioValue || 0}
             />
           </div>
 

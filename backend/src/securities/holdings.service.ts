@@ -1,7 +1,9 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { Holding } from './entities/holding.entity';
+import { InvestmentTransaction, InvestmentAction } from './entities/investment-transaction.entity';
+import { Account, AccountType, AccountSubType } from '../accounts/entities/account.entity';
 import { AccountsService } from '../accounts/accounts.service';
 import { SecuritiesService } from './securities.service';
 
@@ -10,6 +12,10 @@ export class HoldingsService {
   constructor(
     @InjectRepository(Holding)
     private holdingsRepository: Repository<Holding>,
+    @InjectRepository(InvestmentTransaction)
+    private investmentTransactionsRepository: Repository<InvestmentTransaction>,
+    @InjectRepository(Account)
+    private accountsRepository: Repository<Account>,
     private accountsService: AccountsService,
     private securitiesService: SecuritiesService,
   ) {}
@@ -143,5 +149,162 @@ export class HoldingsService {
     }
 
     await this.holdingsRepository.remove(holding);
+  }
+
+  /**
+   * Rebuild all holdings from existing investment transactions.
+   * This recalculates all holdings based on transaction history,
+   * useful for fixing data after imports that didn't create holdings.
+   */
+  async rebuildFromTransactions(userId: string): Promise<{
+    holdingsCreated: number;
+    holdingsUpdated: number;
+    holdingsDeleted: number;
+  }> {
+    // Get all brokerage accounts for the user
+    const brokerageAccounts = await this.accountsRepository.find({
+      where: {
+        userId,
+        accountType: AccountType.INVESTMENT,
+        accountSubType: AccountSubType.INVESTMENT_BROKERAGE,
+      },
+    });
+
+    if (brokerageAccounts.length === 0) {
+      return { holdingsCreated: 0, holdingsUpdated: 0, holdingsDeleted: 0 };
+    }
+
+    const brokerageAccountIds = brokerageAccounts.map((a) => a.id);
+
+    // Get all investment transactions for these accounts, ordered by date
+    const transactions = await this.investmentTransactionsRepository.find({
+      where: {
+        userId,
+        accountId: In(brokerageAccountIds),
+      },
+      order: {
+        transactionDate: 'ASC',
+        createdAt: 'ASC',
+      },
+    });
+
+    // Delete all existing holdings for these accounts
+    const existingHoldings = await this.holdingsRepository.find({
+      where: { accountId: In(brokerageAccountIds) },
+    });
+    const holdingsDeleted = existingHoldings.length;
+    if (existingHoldings.length > 0) {
+      await this.holdingsRepository.remove(existingHoldings);
+    }
+
+    // Actions that affect holdings
+    const holdingsActions = [
+      InvestmentAction.BUY,
+      InvestmentAction.SELL,
+      InvestmentAction.REINVEST,
+      InvestmentAction.TRANSFER_IN,
+      InvestmentAction.TRANSFER_OUT,
+    ];
+
+    // Rebuild holdings from transactions
+    // Map: accountId -> securityId -> { quantity, totalCost }
+    const holdingsMap = new Map<string, Map<string, { quantity: number; totalCost: number }>>();
+
+    for (const tx of transactions) {
+      if (!holdingsActions.includes(tx.action) || !tx.securityId) {
+        continue;
+      }
+
+      const quantity = Number(tx.quantity) || 0;
+      const price = Number(tx.price) || 0;
+
+      // Determine quantity change
+      const quantityChange = [InvestmentAction.SELL, InvestmentAction.TRANSFER_OUT].includes(tx.action)
+        ? -quantity
+        : quantity;
+
+      // Get or create account map
+      if (!holdingsMap.has(tx.accountId)) {
+        holdingsMap.set(tx.accountId, new Map());
+      }
+      const accountHoldings = holdingsMap.get(tx.accountId)!;
+
+      // Get or create security holding
+      if (!accountHoldings.has(tx.securityId)) {
+        accountHoldings.set(tx.securityId, { quantity: 0, totalCost: 0 });
+      }
+      const holding = accountHoldings.get(tx.securityId)!;
+
+      if (quantityChange > 0) {
+        // Buying: add to total cost
+        holding.totalCost += quantityChange * price;
+        holding.quantity += quantityChange;
+      } else {
+        // Selling: reduce quantity but keep proportional cost
+        const sellQuantity = Math.abs(quantityChange);
+        if (holding.quantity > 0) {
+          const avgCost = holding.totalCost / holding.quantity;
+          holding.totalCost -= sellQuantity * avgCost;
+          holding.quantity -= sellQuantity;
+        }
+      }
+    }
+
+    // Create new holdings from the calculated values
+    let holdingsCreated = 0;
+    for (const [accountId, securities] of holdingsMap) {
+      for (const [securityId, data] of securities) {
+        // Only create holding if there's a non-zero quantity
+        if (Math.abs(data.quantity) > 0.00000001) {
+          const avgCost = data.quantity > 0 ? data.totalCost / data.quantity : 0;
+          const holding = this.holdingsRepository.create({
+            accountId,
+            securityId,
+            quantity: data.quantity,
+            averageCost: avgCost,
+          });
+          await this.holdingsRepository.save(holding);
+          holdingsCreated++;
+        }
+      }
+    }
+
+    return {
+      holdingsCreated,
+      holdingsUpdated: 0, // We deleted and recreated, so no updates
+      holdingsDeleted,
+    };
+  }
+
+  /**
+   * Delete all holdings for a user's brokerage accounts.
+   */
+  async removeAllForUser(userId: string): Promise<number> {
+    // Get all brokerage accounts for the user
+    const brokerageAccounts = await this.accountsRepository.find({
+      where: {
+        userId,
+        accountType: AccountType.INVESTMENT,
+        accountSubType: AccountSubType.INVESTMENT_BROKERAGE,
+      },
+    });
+
+    if (brokerageAccounts.length === 0) {
+      return 0;
+    }
+
+    const brokerageAccountIds = brokerageAccounts.map((a) => a.id);
+
+    // Delete all holdings for these accounts
+    const holdings = await this.holdingsRepository.find({
+      where: { accountId: In(brokerageAccountIds) },
+    });
+
+    const count = holdings.length;
+    if (holdings.length > 0) {
+      await this.holdingsRepository.remove(holdings);
+    }
+
+    return count;
   }
 }

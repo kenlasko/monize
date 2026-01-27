@@ -210,7 +210,18 @@ export class InvestmentTransactionsService {
       .where('it.userId = :userId', { userId });
 
     if (accountId) {
-      query.andWhere('it.accountId = :accountId', { accountId });
+      // Resolve linked account if needed (cash account selected but transactions on brokerage)
+      try {
+        const account = await this.accountsService.findOne(userId, accountId);
+        const accountIds = [accountId];
+        if (account.linkedAccountId) {
+          accountIds.push(account.linkedAccountId);
+        }
+        query.andWhere('it.accountId IN (:...accountIds)', { accountIds });
+      } catch {
+        // If account not found, just filter by the provided ID
+        query.andWhere('it.accountId = :accountId', { accountId });
+      }
     }
 
     if (startDate) {
@@ -406,5 +417,39 @@ export class InvestmentTransactionsService {
     };
 
     return summary;
+  }
+
+  /**
+   * Delete all investment transactions and holdings for a user.
+   * Also resets brokerage account balances to 0.
+   * USE WITH CAUTION - this is destructive!
+   */
+  async removeAll(userId: string): Promise<{
+    transactionsDeleted: number;
+    holdingsDeleted: number;
+    accountsReset: number;
+  }> {
+    // Get all investment transactions for the user
+    const transactions = await this.investmentTransactionsRepository.find({
+      where: { userId },
+    });
+    const transactionsDeleted = transactions.length;
+
+    // Delete all transactions (without reversing effects since we'll reset balances)
+    if (transactions.length > 0) {
+      await this.investmentTransactionsRepository.remove(transactions);
+    }
+
+    // Delete all holdings via the holdings service
+    const holdingsResult = await this.holdingsService.removeAllForUser(userId);
+
+    // Reset brokerage account balances to 0
+    const accountsReset = await this.accountsService.resetBrokerageBalances(userId);
+
+    return {
+      transactionsDeleted,
+      holdingsDeleted: holdingsResult,
+      accountsReset,
+    };
   }
 }

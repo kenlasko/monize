@@ -107,4 +107,25 @@ export class InvestmentTransactionsController {
   remove(@Request() req, @Param('id', ParseUUIDPipe) id: string): Promise<void> {
     return this.investmentTransactionsService.remove(req.user.id, id);
   }
+
+  @Delete()
+  @ApiOperation({
+    summary: 'Delete ALL investment transactions and holdings',
+    description: 'DESTRUCTIVE: Deletes all investment transactions, holdings, and resets brokerage account balances to 0.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'All investment data deleted successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        transactionsDeleted: { type: 'number' },
+        holdingsDeleted: { type: 'number' },
+        accountsReset: { type: 'number' },
+      },
+    },
+  })
+  removeAll(@Request() req) {
+    return this.investmentTransactionsService.removeAll(req.user.id);
+  }
 }

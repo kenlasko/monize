@@ -135,7 +135,7 @@ Replace the dependencies section in `backend/package.json`:
   "tsconfig-paths": "^4.2.0",
   "typescript": "^5.7.3"
 }
-```
+```rfddddddddddddddcx
 
 ### Frontend - Latest Versions (January 2026)
 

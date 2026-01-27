@@ -8,6 +8,7 @@ import { Category } from '../categories/entities/category.entity';
 import { Payee } from '../payees/entities/payee.entity';
 import { Security } from '../securities/entities/security.entity';
 import { InvestmentTransaction, InvestmentAction } from '../securities/entities/investment-transaction.entity';
+import { Holding } from '../securities/entities/holding.entity';
 import {
   parseQif,
   validateQifContent,
@@ -41,6 +42,8 @@ export class ImportService {
     private securitiesRepository: Repository<Security>,
     @InjectRepository(InvestmentTransaction)
     private investmentTransactionsRepository: Repository<InvestmentTransaction>,
+    @InjectRepository(Holding)
+    private holdingsRepository: Repository<Holding>,
   ) {}
 
   async parseQifFile(userId: string, content: string): Promise<ParsedQifResponseDto> {
@@ -302,6 +305,55 @@ export class ImportService {
             investmentTx.description = qifTx.memo || qifTx.payee || null;
 
             await queryRunner.manager.save(investmentTx);
+
+            // Update holdings for actions that affect share counts
+            const holdingsActions = [
+              InvestmentAction.BUY,
+              InvestmentAction.SELL,
+              InvestmentAction.REINVEST,
+              InvestmentAction.TRANSFER_IN,
+              InvestmentAction.TRANSFER_OUT,
+            ];
+
+            if (holdingsActions.includes(action) && securityId && quantity) {
+              // Determine quantity change (negative for sells/transfers out)
+              const quantityChange = [InvestmentAction.SELL, InvestmentAction.TRANSFER_OUT].includes(action)
+                ? -quantity
+                : quantity;
+
+              // Find existing holding
+              let holding = await queryRunner.manager.findOne(Holding, {
+                where: { accountId: dto.accountId, securityId },
+              });
+
+              if (!holding) {
+                // Create new holding
+                holding = new Holding();
+                holding.accountId = dto.accountId;
+                holding.securityId = securityId;
+                holding.quantity = quantityChange;
+                holding.averageCost = price || 0;
+              } else {
+                // Update existing holding
+                const currentQuantity = Number(holding.quantity);
+                const currentAvgCost = Number(holding.averageCost || 0);
+                const newQuantity = currentQuantity + quantityChange;
+
+                if (quantityChange > 0 && price) {
+                  // Buying shares - calculate new average cost
+                  const totalCostBefore = currentQuantity * currentAvgCost;
+                  const totalCostAdded = quantityChange * price;
+                  holding.averageCost = newQuantity > 0
+                    ? (totalCostBefore + totalCostAdded) / newQuantity
+                    : 0;
+                }
+                // For sells, average cost doesn't change
+
+                holding.quantity = newQuantity;
+              }
+
+              await queryRunner.manager.save(holding);
+            }
 
             // Update account balance
             await queryRunner.manager.increment(

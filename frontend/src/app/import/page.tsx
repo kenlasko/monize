@@ -1235,8 +1235,11 @@ function ImportContent() {
               )}
 
               <div className="flex justify-center space-x-4">
-                <Button variant="outline" onClick={() => router.push('/transactions')}>
-                  View Transactions
+                <Button
+                  variant="outline"
+                  onClick={() => router.push(parsedData?.accountType === 'INVESTMENT' ? '/investments' : '/transactions')}
+                >
+                  {parsedData?.accountType === 'INVESTMENT' ? 'View Investments' : 'View Transactions'}
                 </Button>
                 <Button
                   onClick={() => {

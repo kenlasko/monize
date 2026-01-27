@@ -7,6 +7,7 @@ import { Account, AccountType, AccountSubType } from '../accounts/entities/accou
 
 export interface HoldingWithMarketValue {
   id: string;
+  accountId: string;
   symbol: string;
   name: string;
   securityType: string;
@@ -19,6 +20,18 @@ export interface HoldingWithMarketValue {
   gainLossPercent: number | null;
 }
 
+export interface AccountHoldings {
+  accountId: string;
+  accountName: string;
+  cashAccountId: string | null;
+  cashBalance: number;
+  holdings: HoldingWithMarketValue[];
+  totalCostBasis: number;
+  totalMarketValue: number;
+  totalGainLoss: number;
+  totalGainLossPercent: number;
+}
+
 export interface PortfolioSummary {
   totalCashValue: number;
   totalHoldingsValue: number;
@@ -27,6 +40,7 @@ export interface PortfolioSummary {
   totalGainLoss: number;
   totalGainLossPercent: number;
   holdings: HoldingWithMarketValue[];
+  holdingsByAccount: AccountHoldings[];
 }
 
 export interface AllocationItem {
@@ -178,6 +192,7 @@ export class PortfolioService {
 
         return {
           id: h.id,
+          accountId: h.accountId,
           symbol: h.security.symbol,
           name: h.security.name,
           securityType: h.security.securityType || 'STOCK',
@@ -190,6 +205,58 @@ export class PortfolioService {
           gainLossPercent,
         };
       });
+
+    // Group holdings by account
+    const holdingsByAccountMap = new Map<string, HoldingWithMarketValue[]>();
+    for (const holding of holdingsWithValues) {
+      const existing = holdingsByAccountMap.get(holding.accountId) || [];
+      existing.push(holding);
+      holdingsByAccountMap.set(holding.accountId, existing);
+    }
+
+    // Build holdingsByAccount array with account info and totals
+    const holdingsByAccount: AccountHoldings[] = [];
+    for (const brokerageAccount of brokerageAccounts) {
+      const accountHoldings = holdingsByAccountMap.get(brokerageAccount.id) || [];
+
+      // Find the linked cash account
+      const linkedCashAccount = cashAccounts.find(
+        (c) => c.linkedAccountId === brokerageAccount.id || brokerageAccount.linkedAccountId === c.id,
+      );
+
+      // Calculate account totals
+      const accountCostBasis = accountHoldings.reduce((sum, h) => sum + h.costBasis, 0);
+      const accountMarketValue = accountHoldings.reduce(
+        (sum, h) => sum + (h.marketValue ?? 0),
+        0,
+      );
+      const accountGainLoss = accountMarketValue - accountCostBasis;
+      const accountGainLossPercent =
+        accountCostBasis > 0 ? (accountGainLoss / accountCostBasis) * 100 : 0;
+
+      // Get display name (remove " - Brokerage" suffix if present)
+      const accountName = brokerageAccount.name.replace(' - Brokerage', '');
+
+      holdingsByAccount.push({
+        accountId: brokerageAccount.id,
+        accountName,
+        cashAccountId: linkedCashAccount?.id ?? null,
+        cashBalance: linkedCashAccount ? Number(linkedCashAccount.currentBalance) : 0,
+        holdings: accountHoldings.sort((a, b) => {
+          if (a.marketValue === null && b.marketValue === null) return 0;
+          if (a.marketValue === null) return 1;
+          if (b.marketValue === null) return -1;
+          return b.marketValue - a.marketValue;
+        }),
+        totalCostBasis: accountCostBasis,
+        totalMarketValue: accountMarketValue,
+        totalGainLoss: accountGainLoss,
+        totalGainLossPercent: accountGainLossPercent,
+      });
+    }
+
+    // Sort accounts by total market value descending
+    holdingsByAccount.sort((a, b) => b.totalMarketValue - a.totalMarketValue);
 
     const totalPortfolioValue = totalCashValue + totalHoldingsValue;
     const totalGainLoss = totalHoldingsValue - totalCostBasis;
@@ -210,6 +277,7 @@ export class PortfolioService {
         if (b.marketValue === null) return -1;
         return b.marketValue - a.marketValue;
       }),
+      holdingsByAccount,
     };
   }
 
