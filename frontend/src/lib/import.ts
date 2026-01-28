@@ -37,6 +37,7 @@ export interface SecurityMapping {
   securityName?: string;
   securityType?: string;
   exchange?: string;
+  currencyCode?: string;
 }
 
 export interface ImportQifRequest {

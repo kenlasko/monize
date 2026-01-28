@@ -86,6 +86,11 @@ export class SecurityMappingDto {
   @IsOptional()
   @IsString()
   exchange?: string;
+
+  @ApiPropertyOptional({ description: 'Currency code for new security (e.g., USD, CAD)' })
+  @IsOptional()
+  @IsString()
+  currencyCode?: string;
 }
 
 export class ImportQifDto {

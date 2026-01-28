@@ -69,6 +69,7 @@ export class SecuritiesController {
         name: { type: 'string' },
         exchange: { type: 'string', nullable: true },
         securityType: { type: 'string', nullable: true },
+        currencyCode: { type: 'string', nullable: true },
       },
     },
   })

@@ -28,6 +28,7 @@ export interface SecurityLookupResult {
   name: string;
   exchange: string | null;
   securityType: string | null;
+  currencyCode: string | null;
 }
 
 export interface PriceUpdateResult {
@@ -510,11 +511,15 @@ export class SecurityPriceService {
       // Map Yahoo type to our security type
       const securityType = this.mapYahooTypeToSecurityType(bestMatch.typeDisp);
 
+      // Get currency from exchange
+      const currencyCode = this.getCurrencyFromExchange(exchange, bestMatch.symbol);
+
       return {
         symbol: baseSymbol,
         name: bestMatch.longname || bestMatch.shortname || baseSymbol,
         exchange,
         securityType,
+        currencyCode,
       };
     } catch (error) {
       this.logger.error(`Failed to lookup security: ${error.message}`);
@@ -576,6 +581,37 @@ export class SecurityPriceService {
     };
 
     return typeMap[typeDisp] || null;
+  }
+
+  /**
+   * Get currency code from exchange name
+   */
+  private getCurrencyFromExchange(exchange: string | null, symbol: string): string | null {
+    // If no exchange suffix, assume US market
+    if (!exchange || symbol.indexOf('.') === -1) {
+      return 'USD';
+    }
+
+    const exchangeToCurrency: Record<string, string> = {
+      // Canadian
+      'TSX': 'CAD',
+      'TSX-V': 'CAD',
+      'CSE': 'CAD',
+      'NEO': 'CAD',
+      // UK
+      'LSE': 'GBP',
+      // Australia
+      'ASX': 'AUD',
+      // Europe
+      'Frankfurt': 'EUR',
+      'XETRA': 'EUR',
+      'Paris': 'EUR',
+      // Asia
+      'Tokyo': 'JPY',
+      'HKEX': 'HKD',
+    };
+
+    return exchangeToCurrency[exchange] || null;
   }
 
   /**

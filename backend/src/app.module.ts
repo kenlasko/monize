@@ -42,7 +42,7 @@ import { ImportModule } from './import/import.module';
         database: configService.get('DATABASE_NAME'),
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
         synchronize: false, // Use migrations in production
-        logging: configService.get('NODE_ENV') === 'development',
+        logging: ['error'],
         ssl: configService.get('NODE_ENV') === 'production' ? { rejectUnauthorized: false } : false,
       }),
     }),

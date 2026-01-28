@@ -135,6 +135,7 @@ export const investmentsApi = {
     name: string;
     exchange: string | null;
     securityType: string | null;
+    currencyCode: string | null;
   } | null> => {
     const response = await apiClient.get('/securities/lookup', {
       params: { q: query },

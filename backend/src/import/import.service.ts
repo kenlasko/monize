@@ -24,6 +24,50 @@ import {
   SecurityMappingDto,
 } from './dto/import.dto';
 
+/**
+ * Map stock exchanges to their primary currency.
+ * Used to set the correct currency when creating new securities.
+ */
+const EXCHANGE_CURRENCY_MAP: Record<string, string> = {
+  // US exchanges
+  NYSE: 'USD',
+  NASDAQ: 'USD',
+  AMEX: 'USD',
+  NYSEARCA: 'USD',
+  BATS: 'USD',
+  // Canadian exchanges
+  TSX: 'CAD',
+  'TSX-V': 'CAD',
+  TSXV: 'CAD',
+  NEO: 'CAD',
+  CSE: 'CAD',
+  // UK exchanges
+  LSE: 'GBP',
+  LON: 'GBP',
+  // European exchanges
+  XETRA: 'EUR',
+  FRA: 'EUR',
+  EPA: 'EUR',
+  AMS: 'EUR',
+  // Asian exchanges
+  TYO: 'JPY',
+  HKG: 'HKD',
+  SHA: 'CNY',
+  SHE: 'CNY',
+  // Australian exchanges
+  ASX: 'AUD',
+};
+
+/**
+ * Get currency code from exchange name.
+ * Returns the mapped currency or null if exchange is unknown.
+ */
+function getCurrencyFromExchange(exchange: string | null | undefined): string | null {
+  if (!exchange) return null;
+  const normalized = exchange.toUpperCase().replace(/[^A-Z0-9-]/g, '');
+  return EXCHANGE_CURRENCY_MAP[normalized] || null;
+}
+
 @Injectable()
 export class ImportService {
   constructor(
@@ -244,12 +288,18 @@ export class ImportService {
           // Use existing security instead of creating duplicate
           securityMap.set(secMapping.originalName, existingSecurity.id);
         } else {
+          // Determine currency: use provided currency, derive from exchange, or fall back to account currency
+          const currencyCode =
+            secMapping.currencyCode ||
+            getCurrencyFromExchange(secMapping.exchange) ||
+            account.currencyCode;
+
           const newSecurity = new Security();
           newSecurity.symbol = symbol;
           newSecurity.name = secMapping.securityName || secMapping.createNew;
           newSecurity.securityType = secMapping.securityType || null;
           newSecurity.exchange = secMapping.exchange || null;
-          newSecurity.currencyCode = account.currencyCode;
+          newSecurity.currencyCode = currencyCode;
           newSecurity.isActive = true;
           const saved = await queryRunner.manager.save(newSecurity);
           securityMap.set(secMapping.originalName, saved.id);

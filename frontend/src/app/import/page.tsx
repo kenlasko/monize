@@ -120,6 +120,26 @@ function ImportContent() {
     window.scrollTo(0, 0);
   }, [step]);
 
+  // Auto-select first compatible account when on selectAccount step with no selection
+  useEffect(() => {
+    if (step !== 'selectAccount' || selectedAccountId || accounts.length === 0) {
+      return;
+    }
+
+    const isQifInvestment = parsedData?.accountType === 'INVESTMENT';
+    const compatibleAccounts = accounts.filter((a) => {
+      if (isQifInvestment) {
+        return isInvestmentBrokerageAccount(a);
+      } else {
+        return !isInvestmentBrokerageAccount(a);
+      }
+    });
+
+    if (compatibleAccounts.length > 0) {
+      setSelectedAccountId(compatibleAccounts[0].id);
+    }
+  }, [step, selectedAccountId, accounts, parsedData]);
+
   // Run bulk security lookup when entering mapSecurities step
   useEffect(() => {
     if (step !== 'mapSecurities' || initialLookupDone || securityMappings.length === 0) {
@@ -156,6 +176,7 @@ function ImportContent() {
                   securityName: result.name,
                   securityType: result.securityType || 'STOCK',
                   exchange: result.exchange || undefined,
+                  currencyCode: result.currencyCode || undefined,
                 };
               }
               return updated;
@@ -300,8 +321,41 @@ function ImportContent() {
       const isQifInvestmentType = parsed.accountType === 'INVESTMENT';
       let canUsePreselectedAccount = false;
 
-      if (selectedAccountId) {
-        const preselectedAcc = accounts.find((a) => a.id === selectedAccountId);
+      // Try to match filename to an account name if no account is preselected
+      let accountIdToUse = selectedAccountId;
+      if (!accountIdToUse && file.name) {
+        // Extract base name from filename (remove extension like .qif, .QIF)
+        const baseName = file.name.replace(/\.[^/.]+$/, '').trim().toLowerCase();
+
+        // Filter compatible accounts based on QIF type
+        const compatibleAccounts = accounts.filter((a) => {
+          if (isQifInvestmentType) {
+            return isInvestmentBrokerageAccount(a);
+          } else {
+            return !isInvestmentBrokerageAccount(a);
+          }
+        });
+
+        // Try to find a matching account:
+        // 1. Exact match (case-insensitive)
+        // 2. Account name contains filename
+        // 3. Filename contains account name
+        const matchedAccount = compatibleAccounts.find((a) => {
+          const accountName = a.name.toLowerCase();
+          return accountName === baseName;
+        }) || compatibleAccounts.find((a) => {
+          const accountName = a.name.toLowerCase();
+          return accountName.includes(baseName) || baseName.includes(accountName);
+        });
+
+        if (matchedAccount) {
+          accountIdToUse = matchedAccount.id;
+          setSelectedAccountId(matchedAccount.id);
+        }
+      }
+
+      if (accountIdToUse) {
+        const preselectedAcc = accounts.find((a) => a.id === accountIdToUse);
         if (preselectedAcc) {
           if (isQifInvestmentType) {
             // Investment QIF requires a brokerage account
@@ -314,6 +368,7 @@ function ImportContent() {
           if (!canUsePreselectedAccount) {
             // Clear incompatible preselected account
             setSelectedAccountId('');
+            accountIdToUse = '';
             toast.error(
               isQifInvestmentType
                 ? 'The preselected account is not an investment brokerage account. Please select a compatible account.'
@@ -323,7 +378,8 @@ function ImportContent() {
         }
       }
 
-      // If account is already selected (from URL parameter) and is compatible, skip to date format step
+      // If account is already selected from URL parameter and is compatible, skip to date format step
+      // Filename matches still show the selectAccount step so user can confirm
       if (selectedAccountId && canUsePreselectedAccount) {
         setStep('dateFormat');
       } else {
@@ -479,6 +535,7 @@ function ImportContent() {
             securityName: result.name,
             securityType: result.securityType || 'STOCK',
             exchange: result.exchange || undefined,
+            currencyCode: result.currencyCode || undefined,
           };
           return updated;
         });
@@ -487,6 +544,9 @@ function ImportContent() {
         const details = [`Symbol: ${result.symbol}`, `Name: ${result.name}`];
         if (result.exchange) {
           details.push(`Exchange: ${result.exchange}`);
+        }
+        if (result.currencyCode) {
+          details.push(`Currency: ${result.currencyCode}`);
         }
         if (existingSecurity) {
           toast.success(`Found (exists in database): ${details.join(', ')}`);
@@ -1125,10 +1185,15 @@ function ImportContent() {
                 accounts or create new ones.
               </p>
               <div className="space-y-4 max-h-96 overflow-y-auto">
-                {accountMappings.map((mapping, index) => (
+                {accountMappings.map((mapping, index) => {
+                  const isReady = !!(mapping.accountId || mapping.createNew);
+                  return (
                   <div
                     key={mapping.originalName}
-                    className="border dark:border-gray-700 rounded-lg p-4"
+                    className={isReady
+                      ? "border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20 rounded-lg p-4"
+                      : "border-2 border-amber-300 dark:border-amber-600 bg-amber-50 dark:bg-amber-900/20 rounded-lg p-4"
+                    }
                   >
                     <p className="font-medium text-gray-900 dark:text-gray-100 mb-2">
                       {mapping.originalName}
@@ -1166,7 +1231,8 @@ function ImportContent() {
                       </div>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
               <div className="flex justify-between mt-6">
                 <Button
