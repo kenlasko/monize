@@ -200,7 +200,7 @@ export function CategoryList({
                         : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
                     } ${density === 'dense' ? 'px-1.5 py-0.5' : 'px-2 py-1'}`}
                   >
-                    {density === 'dense' ? (category.isIncome ? 'Inc' : 'Exp') : (category.isIncome ? 'Income' : 'Expense')}
+                    {category.isIncome ? 'Income' : 'Expense'}
                   </span>
                 </td>
                 {density === 'normal' && (

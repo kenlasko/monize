@@ -115,10 +115,14 @@ export function CategoryForm({ category, categories, onSubmit, onCancel }: Categ
 
   const parentOptions = [
     { value: '', label: 'No parent (top-level)' },
-    ...getAvailableParents().map(({ category: cat, level }) => ({
-      value: cat.id,
-      label: `${'  '.repeat(level)}${level > 0 ? '└ ' : ''}${cat.name}`,
-    })),
+    ...getAvailableParents().map(({ category: cat }) => {
+      const parent = cat.parentId ? categories.find(c => c.id === cat.parentId) : null;
+      const displayName = parent ? `${parent.name}: ${cat.name}` : cat.name;
+      return {
+        value: cat.id,
+        label: displayName,
+      };
+    }),
   ];
 
   const typeOptions = [

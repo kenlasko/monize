@@ -90,21 +90,21 @@ export function DeleteCategoryDialog({
             {isLoading ? (
               <div className="mt-2 flex items-center text-sm text-gray-500 dark:text-gray-400">
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-400 dark:border-gray-500 mr-2"></div>
-                Checking transactions...
+                Checking usage...
               </div>
             ) : transactionCount && transactionCount > 0 ? (
               <div className="mt-2">
                 <p className="text-sm text-gray-500 dark:text-gray-400">
                   This category is used by{' '}
                   <span className="font-semibold text-gray-700 dark:text-gray-300">
-                    {transactionCount} transaction{transactionCount !== 1 ? 's' : ''}
+                    {transactionCount} item{transactionCount !== 1 ? 's' : ''}
                   </span>
-                  .
+                  {' '}(transactions and/or scheduled bills & deposits).
                 </p>
 
                 <div className="mt-4">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Reassign transactions to:
+                    Reassign to:
                   </label>
                   <select
                     value={reassignTo}
@@ -130,7 +130,7 @@ export function DeleteCategoryDialog({
               </div>
             ) : (
               <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                This category has no transactions. It can be safely deleted.
+                This category is not used. It can be safely deleted.
               </p>
             )}
 

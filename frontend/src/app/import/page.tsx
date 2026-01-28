@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
@@ -88,6 +88,9 @@ function ImportContent() {
   const [initialLookupDone, setInitialLookupDone] = useState(false);
   const [bulkLookupInProgress, setBulkLookupInProgress] = useState(false);
 
+  // Refs for scrollable containers
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
   // Load accounts, categories, and securities
   useEffect(() => {
     const loadData = async () => {
@@ -118,6 +121,10 @@ function ImportContent() {
   // Scroll to top whenever the step changes
   useEffect(() => {
     window.scrollTo(0, 0);
+    // Also scroll any inner scrollable container to the top
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = 0;
+    }
   }, [step]);
 
   // Auto-select first compatible account when on selectAccount step with no selection
@@ -270,15 +277,11 @@ function ImportContent() {
           });
         }
 
-        // If no match found, suggest creating with just the subcategory name
-        // (user can select parent category separately)
-        const suggestedName = cat.split(':').pop()?.trim() || cat;
-
         return {
           originalName: cat,
           categoryId: existingCat?.id,
-          // Pre-populate createNew only if no existing match found
-          createNew: existingCat ? undefined : suggestedName,
+          // Don't pre-populate createNew - let user choose to create if needed
+          createNew: undefined,
         };
       });
       setCategoryMappings(catMappings);
@@ -624,7 +627,9 @@ function ImportContent() {
     const transferableAccounts = accounts.filter((a) => !isInvestmentBrokerageAccount(a));
     return [
       { value: '', label: 'Skip (no transfer)' },
-      ...transferableAccounts.map((a) => ({ value: a.id, label: `${a.name} (${formatAccountType(a.accountType)})` })),
+      ...transferableAccounts
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map((a) => ({ value: a.id, label: `${a.name} (${formatAccountType(a.accountType)})` })),
     ];
   };
 
@@ -781,10 +786,12 @@ function ImportContent() {
               ) : (
                 <Select
                   label="Import into account"
-                  options={compatibleAccounts.map((a) => ({
-                    value: a.id,
-                    label: `${a.name} (${formatAccountType(a.accountType)})`,
-                  }))}
+                  options={compatibleAccounts
+                    .sort((a, b) => a.name.localeCompare(b.name))
+                    .map((a) => ({
+                      value: a.id,
+                      label: `${a.name} (${formatAccountType(a.accountType)})`,
+                    }))}
                   value={selectedAccountId}
                   onChange={(e) => setSelectedAccountId(e.target.value)}
                 />
@@ -929,7 +936,7 @@ function ImportContent() {
                 </span>
               </div>
 
-              <div className="space-y-3 max-h-[32rem] overflow-y-auto">
+              <div ref={scrollContainerRef} className="space-y-3 max-h-[32rem] overflow-y-auto">
                 {/* Unmatched categories first - highlighted */}
                 {unmatchedCategories.map((mapping) => {
                   const index = categoryMappings.findIndex((m) => m.originalName === mapping.originalName);
@@ -1184,7 +1191,7 @@ function ImportContent() {
                 The following transfer accounts were found in your QIF file. Map them to existing
                 accounts or create new ones.
               </p>
-              <div className="space-y-4 max-h-96 overflow-y-auto">
+              <div ref={scrollContainerRef} className="space-y-4 max-h-96 overflow-y-auto">
                 {accountMappings.map((mapping, index) => {
                   const isReady = !!(mapping.accountId || mapping.createNew);
                   return (

@@ -246,16 +246,44 @@ export class ImportService {
     };
 
     try {
-      // Create new categories
+      // Create new categories (deduplicating by name + parentId to avoid constraint violations)
+      const processedCategories = new Map<string, string>(); // key: "name|parentId", value: categoryId
       for (const catMapping of categoriesToCreate) {
+        const categoryName = catMapping.createNew;
+        const parentId = catMapping.parentCategoryId || null;
+        const cacheKey = `${categoryName}|${parentId || 'null'}`;
+
+        // Check if we already processed this category in this import
+        if (processedCategories.has(cacheKey)) {
+          categoryMap.set(catMapping.originalName, processedCategories.get(cacheKey)!);
+          continue;
+        }
+
+        // Check if category already exists in database
+        const existingCategory = await queryRunner.manager.findOne(Category, {
+          where: {
+            userId,
+            name: categoryName,
+            parentId: parentId || IsNull(),
+          },
+        });
+
+        if (existingCategory) {
+          // Use existing category instead of creating duplicate
+          categoryMap.set(catMapping.originalName, existingCategory.id);
+          processedCategories.set(cacheKey, existingCategory.id);
+          continue;
+        }
+
         const newCategory = queryRunner.manager.create(Category, {
           userId,
-          name: catMapping.createNew,
-          parentId: catMapping.parentCategoryId || null,
+          name: categoryName,
+          parentId,
           isIncome: false,
         });
         const saved = await queryRunner.manager.save(newCategory);
         categoryMap.set(catMapping.originalName, saved.id);
+        processedCategories.set(cacheKey, saved.id);
         importResult.categoriesCreated++;
       }
 

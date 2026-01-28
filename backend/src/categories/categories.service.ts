@@ -10,6 +10,8 @@ import { Category } from './entities/category.entity';
 import { Transaction } from '../transactions/entities/transaction.entity';
 import { TransactionSplit } from '../transactions/entities/transaction-split.entity';
 import { Payee } from '../payees/entities/payee.entity';
+import { ScheduledTransaction } from '../scheduled-transactions/entities/scheduled-transaction.entity';
+import { ScheduledTransactionSplit } from '../scheduled-transactions/entities/scheduled-transaction-split.entity';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 
@@ -24,6 +26,10 @@ export class CategoriesService {
     private splitsRepository: Repository<TransactionSplit>,
     @InjectRepository(Payee)
     private payeesRepository: Repository<Payee>,
+    @InjectRepository(ScheduledTransaction)
+    private scheduledTransactionsRepository: Repository<ScheduledTransaction>,
+    @InjectRepository(ScheduledTransactionSplit)
+    private scheduledSplitsRepository: Repository<ScheduledTransactionSplit>,
   ) {}
 
   /**
@@ -190,20 +196,44 @@ export class CategoriesService {
   }
 
   /**
-   * Get the count of transactions using a category
+   * Get the count of transactions and scheduled items using a category
    */
   async getTransactionCount(userId: string, categoryId: string): Promise<number> {
     await this.findOne(userId, categoryId);
 
+    // Count regular transactions
     const transactionCount = await this.transactionsRepository.count({
       where: { userId, categoryId },
     });
 
+    // Count transaction splits
     const splitCount = await this.splitsRepository.count({
       where: { categoryId },
     });
 
-    return transactionCount + splitCount;
+    // Count scheduled transactions (bills & deposits)
+    const scheduledCount = await this.scheduledTransactionsRepository.count({
+      where: { userId, categoryId },
+    });
+
+    // Count scheduled transaction splits
+    const userScheduledTxIds = await this.scheduledTransactionsRepository
+      .createQueryBuilder('st')
+      .select('st.id')
+      .where('st.userId = :userId', { userId })
+      .getMany();
+
+    let scheduledSplitCount = 0;
+    if (userScheduledTxIds.length > 0) {
+      const scheduledTxIds = userScheduledTxIds.map((st) => st.id);
+      scheduledSplitCount = await this.scheduledSplitsRepository
+        .createQueryBuilder('ss')
+        .where('ss.categoryId = :categoryId', { categoryId })
+        .andWhere('ss.scheduledTransactionId IN (:...scheduledTxIds)', { scheduledTxIds })
+        .getCount();
+    }
+
+    return transactionCount + splitCount + scheduledCount + scheduledSplitCount;
   }
 
   /**
@@ -213,7 +243,7 @@ export class CategoriesService {
     userId: string,
     fromCategoryId: string,
     toCategoryId: string | null,
-  ): Promise<{ transactionsUpdated: number; splitsUpdated: number }> {
+  ): Promise<{ transactionsUpdated: number; splitsUpdated: number; scheduledUpdated: number }> {
     // Verify the source category exists and belongs to user
     await this.findOne(userId, fromCategoryId);
 
@@ -250,9 +280,34 @@ export class CategoriesService {
       splitsUpdated = splitResult.affected || 0;
     }
 
+    // Update scheduled transactions (bills & deposits)
+    const scheduledResult = await this.scheduledTransactionsRepository.update(
+      { userId, categoryId: fromCategoryId },
+      { categoryId: toCategoryId },
+    );
+
+    // Update scheduled transaction splits
+    const userScheduledTxIds = await this.scheduledTransactionsRepository
+      .createQueryBuilder('st')
+      .select('st.id')
+      .where('st.userId = :userId', { userId })
+      .getMany();
+
+    if (userScheduledTxIds.length > 0) {
+      const scheduledTxIds = userScheduledTxIds.map((st) => st.id);
+      await this.scheduledSplitsRepository
+        .createQueryBuilder()
+        .update(ScheduledTransactionSplit)
+        .set({ categoryId: toCategoryId })
+        .where('categoryId = :fromCategoryId', { fromCategoryId })
+        .andWhere('scheduledTransactionId IN (:...scheduledTxIds)', { scheduledTxIds })
+        .execute();
+    }
+
     return {
       transactionsUpdated: transactionResult.affected || 0,
       splitsUpdated,
+      scheduledUpdated: scheduledResult.affected || 0,
     };
   }
 
