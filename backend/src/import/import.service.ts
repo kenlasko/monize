@@ -311,15 +311,19 @@ export class ImportService {
             const price = qifTx.price || 0;
             const commission = qifTx.commission || 0;
             // Use the transaction amount if provided, otherwise calculate
-            let totalAmount = qifTx.amount || (quantity * price) + commission;
+            // Round to 2 decimal places to avoid floating-point precision errors
+            let totalAmount = qifTx.amount
+              ? Math.round(qifTx.amount * 100) / 100
+              : Math.round(((quantity * price) + commission) * 100) / 100;
 
             // Adjust totalAmount based on action type
             // For BUY: total = quantity * price + commission
             // For SELL: total = quantity * price - commission
+            // Round to 2 decimal places to avoid floating-point precision errors
             if (action === InvestmentAction.BUY) {
-              totalAmount = (quantity * price) + commission;
+              totalAmount = Math.round(((quantity * price) + commission) * 100) / 100;
             } else if (action === InvestmentAction.SELL) {
-              totalAmount = (quantity * price) - commission;
+              totalAmount = Math.round(((quantity * price) - commission) * 100) / 100;
             }
 
             // Create investment transaction

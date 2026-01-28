@@ -9,7 +9,6 @@ import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import toast from 'react-hot-toast';
 
 const navLinks = [
-  { href: '/dashboard', label: 'Dashboard' },
   { href: '/transactions', label: 'Transactions' },
   { href: '/accounts', label: 'Accounts' },
   { href: '/investments', label: 'Investments' },
