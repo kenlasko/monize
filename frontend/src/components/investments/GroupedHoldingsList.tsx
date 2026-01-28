@@ -317,7 +317,7 @@ function HoldingRow({
           <div className="font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300">
             {holding.symbol}
           </div>
-          <div className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[180px]">
+          <div className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[320px]">
             {holding.name}
           </div>
         </button>
