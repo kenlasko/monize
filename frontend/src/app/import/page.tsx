@@ -411,57 +411,31 @@ function ImportContent() {
         // Get current values to show what changed
         const currentMapping = securityMappings[index];
 
+        // Always fill in the Create New fields with lookup result
+        // This allows user to review before import
         setSecurityMappings((prev) => {
           const updated = [...prev];
           const current = updated[index];
-
-          if (existingSecurity) {
-            // Auto-select the existing security
-            updated[index] = {
-              ...current,
-              securityId: existingSecurity.id,
-              createNew: undefined,
-              securityName: undefined,
-              securityType: undefined,
-              exchange: undefined,
-            };
-          } else {
-            // Create new with lookup result values
-            updated[index] = {
-              ...current,
-              securityId: undefined,
-              createNew: result.symbol,
-              securityName: result.name,
-              securityType: result.securityType || 'STOCK',
-              exchange: result.exchange || undefined,
-            };
-          }
+          updated[index] = {
+            ...current,
+            securityId: undefined, // Don't auto-select, let user review
+            createNew: result.symbol,
+            securityName: result.name,
+            securityType: result.securityType || 'STOCK',
+            exchange: result.exchange || undefined,
+          };
           return updated;
         });
 
+        // Build a detailed message showing what was found
+        const details = [`Symbol: ${result.symbol}`, `Name: ${result.name}`];
+        if (result.exchange) {
+          details.push(`Exchange: ${result.exchange}`);
+        }
         if (existingSecurity) {
-          toast.success(`Matched existing security: ${existingSecurity.symbol} - ${existingSecurity.name}`);
+          toast.success(`Found (exists in database): ${details.join(', ')}`);
         } else {
-          // Build a detailed message showing what was found/updated
-          const updates: string[] = [];
-          if (result.symbol !== currentMapping.createNew) {
-            updates.push(`Symbol: ${result.symbol}`);
-          }
-          if (result.name !== currentMapping.securityName) {
-            updates.push(`Name: ${result.name}`);
-          }
-          if (result.exchange && result.exchange !== currentMapping.exchange) {
-            updates.push(`Exchange: ${result.exchange}`);
-          }
-          if (result.securityType && result.securityType !== currentMapping.securityType) {
-            updates.push(`Type: ${result.securityType}`);
-          }
-
-          if (updates.length > 0) {
-            toast.success(`Found and updated: ${updates.join(', ')}`);
-          } else {
-            toast.success(`Lookup confirmed: ${result.symbol} - ${result.name}${result.exchange ? ` (${result.exchange})` : ''}`);
-          }
+          toast.success(`Found: ${details.join(', ')}`);
         }
       } else {
         toast.error(`No security found for "${query}"`);
@@ -948,8 +922,9 @@ function ImportContent() {
         );
 
       case 'mapSecurities':
-        const unmatchedSecurities = securityMappings.filter((m) => !m.securityId);
-        const matchedSecurities = securityMappings.filter((m) => m.securityId);
+        // Count securities that have been looked up (have symbol and name filled in) or mapped to existing
+        const readyCount = securityMappings.filter((m) => m.securityId || (m.createNew && m.securityName)).length;
+        const needsAttentionCount = securityMappings.length - readyCount;
 
         return (
           <div className="max-w-4xl mx-auto">
@@ -965,21 +940,24 @@ function ImportContent() {
               {/* Summary */}
               <div className="flex gap-4 mb-4 text-sm">
                 <span className="text-amber-600 dark:text-amber-400">
-                  {unmatchedSecurities.length} need attention
+                  {needsAttentionCount} need attention
                 </span>
                 <span className="text-green-600 dark:text-green-400">
-                  {matchedSecurities.length} auto-matched
+                  {readyCount} ready
                 </span>
               </div>
 
               <div className="space-y-3 max-h-[32rem] overflow-y-auto">
-                {/* Unmatched securities first - highlighted */}
-                {unmatchedSecurities.map((mapping) => {
-                  const index = securityMappings.findIndex((m) => m.originalName === mapping.originalName);
+                {securityMappings.map((mapping, index) => {
+                  // Green if mapped to existing OR has symbol and name filled in
+                  const isReady = mapping.securityId || (mapping.createNew && mapping.securityName);
                   return (
                     <div
                       key={mapping.originalName}
-                      className="border-2 border-amber-300 dark:border-amber-600 bg-amber-50 dark:bg-amber-900/20 rounded-lg p-4"
+                      className={isReady
+                        ? "border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20 rounded-lg p-4"
+                        : "border-2 border-amber-300 dark:border-amber-600 bg-amber-50 dark:bg-amber-900/20 rounded-lg p-4"
+                      }
                     >
                       <div className="flex items-center justify-between mb-2">
                         <p className="font-medium text-gray-900 dark:text-gray-100">
@@ -1044,41 +1022,6 @@ function ImportContent() {
                     </div>
                   );
                 })}
-
-                {/* Matched securities - minimized */}
-                {matchedSecurities.length > 0 && (
-                  <details className="group">
-                    <summary className="cursor-pointer text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 py-2">
-                      <span className="ml-1">Show {matchedSecurities.length} auto-matched securities</span>
-                    </summary>
-                    <div className="space-y-2 mt-2">
-                      {matchedSecurities.map((mapping) => {
-                        const index = securityMappings.findIndex((m) => m.originalName === mapping.originalName);
-                        return (
-                          <div
-                            key={mapping.originalName}
-                            className="border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20 rounded-lg p-3"
-                          >
-                            <div className="flex items-center gap-3">
-                              <span className="font-medium text-gray-900 dark:text-gray-100 whitespace-nowrap min-w-[200px]">
-                                {mapping.originalName}
-                              </span>
-                              <span className="text-gray-400">→</span>
-                              <Select
-                                options={getSecurityOptions()}
-                                value={mapping.securityId || ''}
-                                onChange={(e) =>
-                                  handleSecurityMappingChange(index, 'securityId', e.target.value)
-                                }
-                                className="flex-1"
-                              />
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </details>
-                )}
               </div>
               <div className="flex justify-between mt-6">
                 <Button

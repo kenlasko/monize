@@ -1,10 +1,10 @@
 /**
- * Script to delete all transactions from all accounts
+ * Script to delete all transactions and securities from all accounts
  *
  * Usage: docker exec -it moneymate-backend npx ts-node scripts/delete-all-transactions.ts
  *
  * WARNING: This will permanently delete ALL transactions, investment activities,
- * holdings, and reset account balances!
+ * holdings, securities, and reset account balances!
  */
 
 import { DataSource } from 'typeorm';
@@ -46,6 +46,14 @@ async function main() {
       const holdingsResult = await manager.query('DELETE FROM holdings');
       console.log(`Deleted all holdings`);
 
+      // Delete all security prices
+      const pricesResult = await manager.query('DELETE FROM security_prices');
+      console.log(`Deleted all security prices`);
+
+      // Delete all securities
+      const securitiesResult = await manager.query('DELETE FROM securities');
+      console.log(`Deleted all securities`);
+
       // Reset all account balances to their opening balance
       await manager.query(`
         UPDATE accounts
@@ -54,7 +62,7 @@ async function main() {
       console.log('Reset all account balances to opening balance');
     });
 
-    console.log('\nAll transactions have been deleted successfully!');
+    console.log('\nAll transactions and securities have been deleted successfully!');
   } catch (error) {
     console.error('Error:', error);
     process.exit(1);
