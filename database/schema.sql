@@ -154,6 +154,8 @@ CREATE TABLE transaction_splits (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     transaction_id UUID NOT NULL REFERENCES transactions(id) ON DELETE CASCADE,
     category_id UUID REFERENCES categories(id),
+    transfer_account_id UUID REFERENCES accounts(id) ON DELETE SET NULL, -- target account for transfer splits
+    linked_transaction_id UUID REFERENCES transactions(id) ON DELETE SET NULL, -- linked transaction in target account
     amount NUMERIC(20, 4) NOT NULL,
     memo TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -161,6 +163,8 @@ CREATE TABLE transaction_splits (
 
 CREATE INDEX idx_transaction_splits_transaction ON transaction_splits(transaction_id);
 CREATE INDEX idx_transaction_splits_category ON transaction_splits(category_id);
+CREATE INDEX idx_transaction_splits_transfer_account ON transaction_splits(transfer_account_id);
+CREATE INDEX idx_transaction_splits_linked ON transaction_splits(linked_transaction_id);
 
 -- Scheduled Transactions (recurring payments / bills & deposits)
 CREATE TABLE scheduled_transactions (

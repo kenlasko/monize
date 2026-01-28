@@ -7,10 +7,15 @@ import {
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateTransactionSplitDto {
-  @ApiPropertyOptional({ description: 'Category ID for this split' })
+  @ApiPropertyOptional({ description: 'Category ID for this split (mutually exclusive with transferAccountId)' })
   @IsOptional()
   @IsUUID()
   categoryId?: string;
+
+  @ApiPropertyOptional({ description: 'Target account ID for transfer split (mutually exclusive with categoryId)' })
+  @IsOptional()
+  @IsUUID()
+  transferAccountId?: string;
 
   @ApiProperty({ description: 'Amount for this split (must be same sign as parent transaction)' })
   @IsNumber({ maxDecimalPlaces: 4 })

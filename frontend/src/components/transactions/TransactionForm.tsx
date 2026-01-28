@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { Combobox } from '@/components/ui/Combobox';
-import { SplitEditor, createEmptySplits, toSplitRows, toCreateSplitData } from './SplitEditor';
+import { SplitEditor, SplitRow, createEmptySplits, toSplitRows, toCreateSplitData } from './SplitEditor';
 import { transactionsApi } from '@/lib/transactions';
 import { payeesApi } from '@/lib/payees';
 import { categoriesApi } from '@/lib/categories';
@@ -51,11 +51,6 @@ interface TransactionFormProps {
   defaultAccountId?: string;
   onSuccess?: () => void;
   onCancel?: () => void;
-}
-
-// Type for split row with temporary ID
-interface SplitRow extends CreateSplitData {
-  id: string;
 }
 
 // Transaction mode type
@@ -677,6 +672,8 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
             splits={splits}
             onChange={setSplits}
             categories={categories}
+            accounts={accounts}
+            sourceAccountId={watchedAccountId || ''}
             transactionAmount={watchedAmount || 0}
             disabled={isLoading}
             onTransactionAmountChange={(amount) => setValue('amount', amount, { shouldDirty: true, shouldValidate: true })}

@@ -16,7 +16,6 @@ export default function AccountsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingAccount, setEditingAccount] = useState<Account | undefined>();
-  const [showClosedAccounts, setShowClosedAccounts] = useState(true);
 
   const loadAccounts = async () => {
     setIsLoading(true);
@@ -30,13 +29,6 @@ export default function AccountsPage() {
       setIsLoading(false);
     }
   };
-
-  // Filter accounts based on showClosedAccounts toggle
-  const filteredAccounts = showClosedAccounts
-    ? accounts
-    : accounts.filter((a) => !a.isClosed);
-
-  const closedAccountCount = accounts.filter((a) => a.isClosed).length;
 
   useEffect(() => {
     loadAccounts();
@@ -270,30 +262,13 @@ export default function AccountsPage() {
 
         {/* Accounts List */}
         <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg overflow-hidden">
-          {/* Toggle for closed accounts */}
-          {closedAccountCount > 0 && (
-            <div className="px-6 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-gray-50 dark:bg-gray-800">
-              <label className="flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={showClosedAccounts}
-                  onChange={(e) => setShowClosedAccounts(e.target.checked)}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded dark:border-gray-600 dark:bg-gray-700"
-                />
-                <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">
-                  Show closed accounts ({closedAccountCount})
-                </span>
-              </label>
-            </div>
-          )}
-
           {isLoading ? (
             <div className="p-12 text-center">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-blue-400"></div>
               <p className="mt-2 text-gray-500 dark:text-gray-400">Loading accounts...</p>
             </div>
           ) : (
-            <AccountList accounts={filteredAccounts} onEdit={handleEdit} onRefresh={loadAccounts} />
+            <AccountList accounts={accounts} onEdit={handleEdit} onRefresh={loadAccounts} />
           )}
         </div>
       </div>

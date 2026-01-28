@@ -124,7 +124,14 @@ export class TransactionsService {
 
     // Create splits if provided
     if (hasSplits) {
-      await this.createSplits(savedTransaction.id, splits);
+      await this.createSplits(
+        savedTransaction.id,
+        splits,
+        userId,
+        createTransactionDto.accountId,
+        new Date(createTransactionDto.transactionDate),
+        transactionData.payeeName,
+      );
     }
 
     // Update account balance only if not VOID
@@ -137,6 +144,35 @@ export class TransactionsService {
 
     // Return transaction with splits
     return this.findOne(userId, savedTransaction.id);
+  }
+
+  /**
+   * Delete transfer splits' linked transactions and revert their balances
+   */
+  private async deleteTransferSplitLinkedTransactions(transactionId: string): Promise<void> {
+    // Find all splits for this transaction that have linked transactions
+    const transferSplits = await this.splitsRepository.find({
+      where: { transactionId },
+      relations: ['linkedTransaction'],
+    });
+
+    for (const split of transferSplits) {
+      if (split.linkedTransactionId && split.transferAccountId) {
+        // Revert the balance change in the target account
+        // The linked transaction has the inverse amount, so we need to subtract it
+        const linkedTx = await this.transactionsRepository.findOne({
+          where: { id: split.linkedTransactionId },
+        });
+
+        if (linkedTx) {
+          await this.accountsService.updateBalance(
+            linkedTx.accountId,
+            -Number(linkedTx.amount),
+          );
+          await this.transactionsRepository.remove(linkedTx);
+        }
+      }
+    }
   }
 
   /**
@@ -167,21 +203,64 @@ export class TransactionsService {
 
   /**
    * Create splits for a transaction
+   * For transfer splits, also creates linked transactions in target accounts
    */
   private async createSplits(
     transactionId: string,
     splits: CreateTransactionSplitDto[],
+    userId?: string,
+    sourceAccountId?: string,
+    transactionDate?: Date,
+    parentPayeeName?: string | null,
   ): Promise<TransactionSplit[]> {
-    const splitEntities = splits.map((split) =>
-      this.splitsRepository.create({
+    const savedSplits: TransactionSplit[] = [];
+
+    for (const split of splits) {
+      const splitEntity = this.splitsRepository.create({
         transactionId,
         categoryId: split.categoryId || null,
+        transferAccountId: split.transferAccountId || null,
         amount: split.amount,
         memo: split.memo || null,
-      }),
-    );
+      });
 
-    return this.splitsRepository.save(splitEntities);
+      const savedSplit = await this.splitsRepository.save(splitEntity);
+
+      // For transfer splits, create linked transaction in target account
+      if (split.transferAccountId && userId && sourceAccountId) {
+        const targetAccount = await this.accountsService.findOne(userId, split.transferAccountId);
+        const sourceAccount = await this.accountsService.findOne(userId, sourceAccountId);
+
+        // Create the linked transaction in the target account (inverse amount)
+        const linkedTransaction = this.transactionsRepository.create({
+          userId,
+          accountId: split.transferAccountId,
+          transactionDate: transactionDate as any,
+          amount: -split.amount, // Inverse: if split is -40 (withdrawal), target gets +40 (deposit)
+          currencyCode: targetAccount.currencyCode,
+          exchangeRate: 1,
+          description: split.memo || `Split transfer from ${sourceAccount.name}`,
+          isTransfer: true,
+          payeeName: `Transfer from ${sourceAccount.name}`,
+        });
+
+        const savedLinkedTransaction = await this.transactionsRepository.save(linkedTransaction);
+
+        // Update the split with the linked transaction ID
+        await this.splitsRepository.update(savedSplit.id, {
+          linkedTransactionId: savedLinkedTransaction.id,
+        });
+
+        // Update target account balance
+        await this.accountsService.updateBalance(split.transferAccountId, -split.amount);
+
+        savedSplit.linkedTransactionId = savedLinkedTransaction.id;
+      }
+
+      savedSplits.push(savedSplit);
+    }
+
+    return savedSplits;
   }
 
   /**
@@ -210,6 +289,7 @@ export class TransactionsService {
       .leftJoinAndSelect('transaction.category', 'category')
       .leftJoinAndSelect('transaction.splits', 'splits')
       .leftJoinAndSelect('splits.category', 'splitCategory')
+      .leftJoinAndSelect('splits.transferAccount', 'splitTransferAccount')
       .where('transaction.userId = :userId', { userId })
       .orderBy('transaction.transactionDate', 'DESC')
       .addOrderBy('transaction.createdAt', 'DESC')
@@ -363,7 +443,7 @@ export class TransactionsService {
   async findOne(userId: string, id: string): Promise<Transaction> {
     const transaction = await this.transactionsRepository.findOne({
       where: { id },
-      relations: ['account', 'payee', 'category', 'splits', 'splits.category', 'linkedTransaction', 'linkedTransaction.account'],
+      relations: ['account', 'payee', 'category', 'splits', 'splits.category', 'splits.transferAccount', 'linkedTransaction', 'linkedTransaction.account'],
     });
 
     if (!transaction) {
@@ -405,10 +485,26 @@ export class TransactionsService {
         const amount = updateData.amount ?? transaction.amount;
         this.validateSplits(splits, amount);
 
+        // Clean up any linked transactions from old transfer splits
+        await this.deleteTransferSplitLinkedTransactions(id);
+
         // Delete existing splits and create new ones
         await this.splitsRepository.delete({ transactionId: id });
-        await this.createSplits(id, splits);
+
+        const accountId = updateData.accountId ?? transaction.accountId;
+        const txDate = updateData.transactionDate ?? transaction.transactionDate;
+        await this.createSplits(
+          id,
+          splits,
+          userId,
+          accountId,
+          new Date(txDate),
+          updateData.payeeName ?? transaction.payeeName,
+        );
       } else if (Array.isArray(splits) && splits.length === 0) {
+        // Clean up any linked transactions from old transfer splits
+        await this.deleteTransferSplitLinkedTransactions(id);
+
         // Explicitly empty array - convert back to simple transaction
         await this.splitsRepository.delete({ transactionId: id });
         await this.transactionsRepository.update(id, { isSplit: false });
@@ -481,6 +577,11 @@ export class TransactionsService {
    */
   async remove(userId: string, id: string): Promise<void> {
     const transaction = await this.findOne(userId, id);
+
+    // Clean up linked transactions from transfer splits
+    if (transaction.isSplit) {
+      await this.deleteTransferSplitLinkedTransactions(id);
+    }
 
     // Revert the balance change only if not VOID
     if (transaction.status !== TransactionStatus.VOID) {
@@ -775,7 +876,7 @@ export class TransactionsService {
 
     return this.splitsRepository.find({
       where: { transactionId },
-      relations: ['category'],
+      relations: ['category', 'transferAccount'],
       order: { createdAt: 'ASC' },
     });
   }
@@ -793,11 +894,21 @@ export class TransactionsService {
     // Validate splits
     this.validateSplits(splits, transaction.amount);
 
+    // Clean up any linked transactions from old transfer splits
+    await this.deleteTransferSplitLinkedTransactions(transactionId);
+
     // Delete existing splits
     await this.splitsRepository.delete({ transactionId });
 
     // Create new splits
-    const newSplits = await this.createSplits(transactionId, splits);
+    const newSplits = await this.createSplits(
+      transactionId,
+      splits,
+      userId,
+      transaction.accountId,
+      new Date(transaction.transactionDate),
+      transaction.payeeName,
+    );
 
     // Update transaction to be a split transaction
     await this.transactionsRepository.update(transactionId, {
@@ -838,11 +949,43 @@ export class TransactionsService {
     const split = this.splitsRepository.create({
       transactionId,
       categoryId: splitDto.categoryId || null,
+      transferAccountId: splitDto.transferAccountId || null,
       amount: splitDto.amount,
       memo: splitDto.memo || null,
     });
 
     const savedSplit = await this.splitsRepository.save(split);
+
+    // For transfer splits, create linked transaction in target account
+    if (splitDto.transferAccountId) {
+      const targetAccount = await this.accountsService.findOne(userId, splitDto.transferAccountId);
+      const sourceAccount = await this.accountsService.findOne(userId, transaction.accountId);
+
+      // Create the linked transaction in the target account (inverse amount)
+      const linkedTransaction = this.transactionsRepository.create({
+        userId,
+        accountId: splitDto.transferAccountId,
+        transactionDate: transaction.transactionDate,
+        amount: -splitDto.amount, // Inverse amount
+        currencyCode: targetAccount.currencyCode,
+        exchangeRate: 1,
+        description: splitDto.memo || `Split transfer from ${sourceAccount.name}`,
+        isTransfer: true,
+        payeeName: `Transfer from ${sourceAccount.name}`,
+      });
+
+      const savedLinkedTransaction = await this.transactionsRepository.save(linkedTransaction);
+
+      // Update the split with the linked transaction ID
+      await this.splitsRepository.update(savedSplit.id, {
+        linkedTransactionId: savedLinkedTransaction.id,
+      });
+
+      // Update target account balance
+      await this.accountsService.updateBalance(splitDto.transferAccountId, -splitDto.amount);
+
+      savedSplit.linkedTransactionId = savedLinkedTransaction.id;
+    }
 
     // Update transaction to be a split if it has 2+ splits now
     const totalSplits = existingSplits.length + 1;
@@ -853,16 +996,16 @@ export class TransactionsService {
       });
     }
 
-    const splitWithCategory = await this.splitsRepository.findOne({
+    const splitWithRelations = await this.splitsRepository.findOne({
       where: { id: savedSplit.id },
-      relations: ['category'],
+      relations: ['category', 'transferAccount'],
     });
 
-    if (!splitWithCategory) {
+    if (!splitWithRelations) {
       throw new NotFoundException(`Split with ID ${savedSplit.id} not found`);
     }
 
-    return splitWithCategory;
+    return splitWithRelations;
   }
 
   /**
@@ -884,19 +1027,51 @@ export class TransactionsService {
       throw new NotFoundException(`Split with ID ${splitId} not found`);
     }
 
+    // If this split has a linked transaction, clean it up
+    if (split.linkedTransactionId && split.transferAccountId) {
+      const linkedTx = await this.transactionsRepository.findOne({
+        where: { id: split.linkedTransactionId },
+      });
+
+      if (linkedTx) {
+        // Revert the balance change in the target account
+        await this.accountsService.updateBalance(
+          linkedTx.accountId,
+          -Number(linkedTx.amount),
+        );
+        await this.transactionsRepository.remove(linkedTx);
+      }
+    }
+
     await this.splitsRepository.remove(split);
 
     // Check remaining splits
     const remainingSplits = await this.getSplits(userId, transactionId);
     if (remainingSplits.length < 2) {
       // Convert back to simple transaction if less than 2 splits
-      // If 1 split remains, we could optionally move its category to the parent
       if (remainingSplits.length === 1) {
+        const lastSplit = remainingSplits[0];
+
+        // If the last split is a transfer, also clean it up
+        if (lastSplit.linkedTransactionId && lastSplit.transferAccountId) {
+          const linkedTx = await this.transactionsRepository.findOne({
+            where: { id: lastSplit.linkedTransactionId },
+          });
+
+          if (linkedTx) {
+            await this.accountsService.updateBalance(
+              linkedTx.accountId,
+              -Number(linkedTx.amount),
+            );
+            await this.transactionsRepository.remove(linkedTx);
+          }
+        }
+
         await this.transactionsRepository.update(transactionId, {
           isSplit: false,
-          categoryId: remainingSplits[0].categoryId,
+          categoryId: lastSplit.categoryId, // Will be null if it was a transfer split
         });
-        await this.splitsRepository.remove(remainingSplits[0]);
+        await this.splitsRepository.remove(lastSplit);
       } else {
         await this.transactionsRepository.update(transactionId, {
           isSplit: false,

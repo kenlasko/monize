@@ -1,12 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Account, AccountType } from '@/types/account';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { accountsApi } from '@/lib/accounts';
 import toast from 'react-hot-toast';
+
+type SortField = 'name' | 'type' | 'balance' | 'status';
+type SortDirection = 'asc' | 'desc';
 
 interface AccountListProps {
   accounts: Account[];
@@ -23,6 +26,15 @@ export function AccountList({ accounts, onEdit, onRefresh }: AccountListProps) {
   const [isClosing, setIsClosing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deletableAccounts, setDeletableAccounts] = useState<Set<string>>(new Set());
+
+  // Sorting state
+  const [sortField, setSortField] = useState<SortField>('name');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+
+  // Filter state
+  const [showFilters, setShowFilters] = useState(false);
+  const [filterAccountType, setFilterAccountType] = useState<AccountType | ''>('');
+  const [filterStatus, setFilterStatus] = useState<'active' | 'closed' | ''>('');
 
   // Check which accounts can be deleted (have no transactions)
   useEffect(() => {
@@ -45,6 +57,86 @@ export function AccountList({ accounts, onEdit, onRefresh }: AccountListProps) {
       checkDeletableAccounts();
     }
   }, [accounts]);
+
+  // Get unique account types from the accounts
+  const availableAccountTypes = useMemo(() => {
+    const types = new Set<AccountType>();
+    accounts.forEach((a) => types.add(a.accountType));
+    return Array.from(types).sort();
+  }, [accounts]);
+
+  // Filter and sort accounts
+  const filteredAndSortedAccounts = useMemo(() => {
+    let result = [...accounts];
+
+    // Apply filters
+    if (filterAccountType) {
+      result = result.filter((a) => a.accountType === filterAccountType);
+    }
+    if (filterStatus) {
+      result = result.filter((a) =>
+        filterStatus === 'active' ? !a.isClosed : a.isClosed
+      );
+    }
+
+    // Apply sorting
+    result.sort((a, b) => {
+      let comparison = 0;
+      switch (sortField) {
+        case 'name':
+          comparison = a.name.localeCompare(b.name);
+          break;
+        case 'type':
+          comparison = a.accountType.localeCompare(b.accountType);
+          break;
+        case 'balance':
+          comparison = Number(a.currentBalance) - Number(b.currentBalance);
+          break;
+        case 'status':
+          comparison = (a.isClosed ? 1 : 0) - (b.isClosed ? 1 : 0);
+          break;
+      }
+      return sortDirection === 'asc' ? comparison : -comparison;
+    });
+
+    return result;
+  }, [accounts, filterAccountType, filterStatus, sortField, sortDirection]);
+
+  // Count active filters
+  const activeFilterCount = [filterAccountType, filterStatus].filter(Boolean).length;
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const clearFilters = () => {
+    setFilterAccountType('');
+    setFilterStatus('');
+  };
+
+  const SortIcon = ({ field }: { field: SortField }) => {
+    if (sortField !== field) {
+      return (
+        <svg className="w-4 h-4 ml-1 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+        </svg>
+      );
+    }
+    return sortDirection === 'asc' ? (
+      <svg className="w-4 h-4 ml-1 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+      </svg>
+    ) : (
+      <svg className="w-4 h-4 ml-1 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+      </svg>
+    );
+  };
 
   const handleViewTransactions = (account: Account) => {
     router.push(`/transactions?accountId=${account.id}`);
@@ -184,29 +276,131 @@ export function AccountList({ accounts, onEdit, onRefresh }: AccountListProps) {
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-        <thead className="bg-gray-50 dark:bg-gray-800">
-          <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-              Account Name
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-              Type
-            </th>
-            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-              Balance
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-              Status
-            </th>
-            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-              Actions
-            </th>
-          </tr>
-        </thead>
-        <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-          {accounts.map((account) => (
+    <div>
+      {/* Filter Bar */}
+      <div className="px-6 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className="inline-flex items-center px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+          >
+            <svg className="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+            </svg>
+            Filters
+            {activeFilterCount > 0 && (
+              <span className="ml-1.5 inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold leading-none text-white bg-blue-600 rounded-full">
+                {activeFilterCount}
+              </span>
+            )}
+          </button>
+          <span className="text-sm text-gray-500 dark:text-gray-400">
+            {filteredAndSortedAccounts.length} of {accounts.length} accounts
+          </span>
+        </div>
+
+        {/* Expandable Filter Options */}
+        {showFilters && (
+          <div className="mt-3 flex flex-wrap items-center gap-4">
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-gray-600 dark:text-gray-400">Type:</label>
+              <select
+                value={filterAccountType}
+                onChange={(e) => setFilterAccountType(e.target.value as AccountType | '')}
+                className="text-sm font-sans border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              >
+                <option value="">All Types</option>
+                {availableAccountTypes.map((type) => (
+                  <option key={type} value={type}>
+                    {formatAccountType(type)}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-gray-600 dark:text-gray-400">Status:</label>
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value as 'active' | 'closed' | '')}
+                className="text-sm font-sans border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              >
+                <option value="">All</option>
+                <option value="active">Active</option>
+                <option value="closed">Closed</option>
+              </select>
+            </div>
+
+            {activeFilterCount > 0 && (
+              <button
+                onClick={clearFilters}
+                className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+              >
+                Clear Filters
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {filteredAndSortedAccounts.length === 0 ? (
+        <div className="text-center py-12">
+          <p className="text-gray-500 dark:text-gray-400">No accounts match your filters.</p>
+          <button
+            onClick={clearFilters}
+            className="mt-2 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+          >
+            Clear Filters
+          </button>
+        </div>
+      ) : (
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+          <thead className="bg-gray-50 dark:bg-gray-800">
+            <tr>
+              <th
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 select-none"
+                onClick={() => handleSort('name')}
+              >
+                <div className="flex items-center">
+                  Account Name
+                  <SortIcon field="name" />
+                </div>
+              </th>
+              <th
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 select-none"
+                onClick={() => handleSort('type')}
+              >
+                <div className="flex items-center">
+                  Type
+                  <SortIcon field="type" />
+                </div>
+              </th>
+              <th
+                className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 select-none"
+                onClick={() => handleSort('balance')}
+              >
+                <div className="flex items-center justify-end">
+                  Balance
+                  <SortIcon field="balance" />
+                </div>
+              </th>
+              <th
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 select-none"
+                onClick={() => handleSort('status')}
+              >
+                <div className="flex items-center">
+                  Status
+                  <SortIcon field="status" />
+                </div>
+              </th>
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+            {filteredAndSortedAccounts.map((account) => (
             <tr key={account.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
               <td className={`px-6 py-4 whitespace-nowrap ${account.isClosed ? 'opacity-50' : ''}`}>
                 <button
@@ -328,9 +522,11 @@ export function AccountList({ accounts, onEdit, onRefresh }: AccountListProps) {
                 )}
               </td>
             </tr>
-          ))}
-        </tbody>
-      </table>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      )}
 
       {/* Close Account Confirmation Dialog */}
       <ConfirmDialog

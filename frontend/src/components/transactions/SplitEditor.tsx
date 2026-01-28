@@ -3,19 +3,26 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+import { Select } from '@/components/ui/Select';
 import { Combobox } from '@/components/ui/Combobox';
 import { Category } from '@/types/category';
+import { Account } from '@/types/account';
 import { CreateSplitData } from '@/types/transaction';
 import { buildCategoryTree } from '@/lib/categoryUtils';
 
-interface SplitRow extends CreateSplitData {
+export type SplitType = 'category' | 'transfer';
+
+export interface SplitRow extends CreateSplitData {
   id: string; // Temporary ID for React keys
+  splitType: SplitType;
 }
 
 interface SplitEditorProps {
   splits: SplitRow[];
   onChange: (splits: SplitRow[]) => void;
   categories: Category[];
+  accounts?: Account[];
+  sourceAccountId?: string;
   transactionAmount: number;
   disabled?: boolean;
   onTransactionAmountChange?: (amount: number) => void;
@@ -41,6 +48,8 @@ export function SplitEditor({
   splits,
   onChange,
   categories,
+  accounts = [],
+  sourceAccountId = '',
   transactionAmount,
   disabled = false,
   onTransactionAmountChange,
@@ -48,6 +57,9 @@ export function SplitEditor({
 }: SplitEditorProps) {
   const currencySymbol = getCurrencySymbol(currencyCode);
   const [localSplits, setLocalSplits] = useState<SplitRow[]>(splits);
+
+  // Transfer support is only available when accounts are provided
+  const supportsTransfers = accounts.length > 0 && sourceAccountId;
 
   // Memoize category options to avoid rebuilding on every render
   const categoryOptions = useMemo(() => buildCategoryTree(categories).map(({ category }) => {
@@ -60,6 +72,17 @@ export function SplitEditor({
     };
   }), [categories]);
 
+  // Memoize account options (excluding source account)
+  const accountOptions = useMemo(() => {
+    if (!supportsTransfers) return [];
+    return accounts
+      .filter(a => a.id !== sourceAccountId)
+      .map(a => ({
+        value: a.id,
+        label: a.name,
+      }));
+  }, [accounts, sourceAccountId, supportsTransfers]);
+
   // Sync with parent when splits prop changes
   useEffect(() => {
     setLocalSplits(splits);
@@ -69,8 +92,20 @@ export function SplitEditor({
   const remaining = Number(transactionAmount) - splitsTotal;
   const isBalanced = Math.abs(remaining) < 0.01;
 
-  const handleSplitChange = (index: number, field: keyof CreateSplitData, value: any) => {
+  const handleSplitChange = (index: number, field: keyof SplitRow, value: any) => {
     const newSplits = [...localSplits];
+
+    // If changing split type, clear the other field
+    if (field === 'splitType') {
+      if (value === 'category') {
+        newSplits[index] = { ...newSplits[index], splitType: 'category', transferAccountId: undefined };
+      } else {
+        newSplits[index] = { ...newSplits[index], splitType: 'transfer', categoryId: undefined };
+      }
+      setLocalSplits(newSplits);
+      onChange(newSplits);
+      return;
+    }
 
     // If changing category, adjust the amount sign based on income/expense
     if (field === 'categoryId' && value) {
@@ -95,8 +130,10 @@ export function SplitEditor({
   const addSplit = () => {
     const newSplit: SplitRow = {
       id: `temp-${Date.now()}-${Math.random()}`,
+      splitType: 'category',
       categoryId: undefined,
-      amount: remaining, // Pre-fill with remaining amount
+      transferAccountId: undefined,
+      amount: Math.round(remaining * 100) / 100, // Pre-fill with remaining amount, rounded to 2 decimals
       memo: '',
     };
     const newSplits = [...localSplits, newSplit];
@@ -173,8 +210,13 @@ export function SplitEditor({
         <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
           <thead className="bg-gray-50 dark:bg-gray-800 rounded-t-lg">
             <tr>
+              {supportsTransfers && (
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase w-24">
+                  Type
+                </th>
+              )}
               <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                Category
+                {supportsTransfers ? 'Category / Account' : 'Category'}
               </th>
               <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                 Amount
@@ -194,17 +236,44 @@ export function SplitEditor({
 
               return (
               <tr key={split.id}>
+                {supportsTransfers && (
+                  <td className="px-4 py-2">
+                    <Select
+                      options={[
+                        { value: 'category', label: 'Category' },
+                        { value: 'transfer', label: 'Transfer' },
+                      ]}
+                      value={split.splitType}
+                      onChange={(e) => handleSplitChange(index, 'splitType', e.target.value)}
+                      disabled={disabled}
+                    />
+                  </td>
+                )}
                 <td className="px-4 py-2">
-                  <Combobox
-                    placeholder="Select category..."
-                    options={categoryOptions}
-                    value={split.categoryId || ''}
-                    initialDisplayValue={currentCategory?.name || ''}
-                    onChange={(categoryId) =>
-                      handleSplitChange(index, 'categoryId', categoryId || undefined)
-                    }
-                    disabled={disabled}
-                  />
+                  {split.splitType === 'category' || !supportsTransfers ? (
+                    <Combobox
+                      placeholder="Select category..."
+                      options={categoryOptions}
+                      value={split.categoryId || ''}
+                      initialDisplayValue={currentCategory?.name || ''}
+                      onChange={(categoryId) =>
+                        handleSplitChange(index, 'categoryId', categoryId || undefined)
+                      }
+                      disabled={disabled}
+                    />
+                  ) : (
+                    <Select
+                      options={[
+                        { value: '', label: 'Select account...' },
+                        ...accountOptions,
+                      ]}
+                      value={split.transferAccountId || ''}
+                      onChange={(e) =>
+                        handleSplitChange(index, 'transferAccountId', e.target.value || undefined)
+                      }
+                      disabled={disabled}
+                    />
+                  )}
                 </td>
                 <td className="px-4 py-2">
                   <div className="relative">
@@ -282,7 +351,7 @@ export function SplitEditor({
           <tfoot className="bg-gray-50 dark:bg-gray-800">
             {/* Add Split Button Row */}
             <tr className="border-t border-gray-200 dark:border-gray-700">
-              <td colSpan={4} className="p-0">
+              <td colSpan={5} className="p-0">
                 <button
                   type="button"
                   onClick={addSplit}
@@ -298,7 +367,7 @@ export function SplitEditor({
             </tr>
             {/* Total Row */}
             <tr className="border-t border-gray-200 dark:border-gray-700">
-              <td className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300">Total</td>
+              <td className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300" colSpan={2}>Total</td>
               <td className="px-4 py-2">
                 <span
                   className={`font-medium ${
@@ -344,19 +413,23 @@ export function SplitEditor({
 
 // Helper function to generate temporary IDs for new splits
 export function createEmptySplits(transactionAmount: number): SplitRow[] {
-  const halfAmount = Math.round((Number(transactionAmount) / 2) * 10000) / 10000;
-  const otherHalf = Number(transactionAmount) - halfAmount;
+  const halfAmount = Math.round((Number(transactionAmount) / 2) * 100) / 100;
+  const otherHalf = Math.round((Number(transactionAmount) - halfAmount) * 100) / 100;
 
   return [
     {
       id: `temp-${Date.now()}-1`,
+      splitType: 'category',
       categoryId: undefined,
+      transferAccountId: undefined,
       amount: halfAmount,
       memo: '',
     },
     {
       id: `temp-${Date.now()}-2`,
+      splitType: 'category',
       categoryId: undefined,
+      transferAccountId: undefined,
       amount: otherHalf,
       memo: '',
     },
@@ -364,19 +437,22 @@ export function createEmptySplits(transactionAmount: number): SplitRow[] {
 }
 
 // Convert API splits to SplitRow format
-export function toSplitRows(splits: { id?: string; categoryId?: string | null; amount: number; memo?: string | null }[]): SplitRow[] {
+export function toSplitRows(splits: { id?: string; categoryId?: string | null; transferAccountId?: string | null; amount: number; memo?: string | null }[]): SplitRow[] {
   return splits.map((split, index) => ({
     id: split.id || `temp-${Date.now()}-${index}`,
+    splitType: split.transferAccountId ? 'transfer' : 'category',
     categoryId: split.categoryId || undefined,
+    transferAccountId: split.transferAccountId || undefined,
     amount: Number(split.amount),
     memo: split.memo || '',
   }));
 }
 
-// Convert SplitRow to API format (removes temporary id)
+// Convert SplitRow to API format (removes temporary id and splitType)
 export function toCreateSplitData(splits: SplitRow[]): CreateSplitData[] {
   return splits.map((split) => ({
-    categoryId: split.categoryId,
+    categoryId: split.splitType === 'category' ? split.categoryId : undefined,
+    transferAccountId: split.splitType === 'transfer' ? split.transferAccountId : undefined,
     amount: split.amount,
     memo: split.memo || undefined,
   }));

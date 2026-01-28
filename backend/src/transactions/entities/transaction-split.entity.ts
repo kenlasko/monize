@@ -9,6 +9,7 @@ import {
 import { ApiProperty } from '@nestjs/swagger';
 import { Transaction } from './transaction.entity';
 import { Category } from '../../categories/entities/category.entity';
+import { Account } from '../../accounts/entities/account.entity';
 
 @Entity('transaction_splits')
 export class TransactionSplit {
@@ -31,6 +32,22 @@ export class TransactionSplit {
   @ManyToOne(() => Category, { nullable: true })
   @JoinColumn({ name: 'category_id' })
   category: Category | null;
+
+  @ApiProperty({ example: 'account-uuid', required: false, description: 'Target account for transfer splits' })
+  @Column({ type: 'uuid', name: 'transfer_account_id', nullable: true })
+  transferAccountId: string | null;
+
+  @ManyToOne(() => Account, { nullable: true })
+  @JoinColumn({ name: 'transfer_account_id' })
+  transferAccount: Account | null;
+
+  @ApiProperty({ example: 'linked-transaction-uuid', required: false, description: 'Linked transaction in target account for transfer splits' })
+  @Column({ type: 'uuid', name: 'linked_transaction_id', nullable: true })
+  linkedTransactionId: string | null;
+
+  @ManyToOne(() => Transaction, { nullable: true })
+  @JoinColumn({ name: 'linked_transaction_id' })
+  linkedTransaction: Transaction | null;
 
   @ApiProperty({ example: -50.00, description: 'Amount for this split' })
   @Column({ type: 'decimal', precision: 20, scale: 4 })

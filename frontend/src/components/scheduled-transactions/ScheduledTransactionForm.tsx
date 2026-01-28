@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { Combobox } from '@/components/ui/Combobox';
-import { SplitEditor, createEmptySplits, toSplitRows, toCreateSplitData } from '@/components/transactions/SplitEditor';
+import { SplitEditor, SplitRow, createEmptySplits, toSplitRows, toCreateSplitData } from '@/components/transactions/SplitEditor';
 import { scheduledTransactionsApi } from '@/lib/scheduled-transactions';
 import { payeesApi } from '@/lib/payees';
 import { categoriesApi } from '@/lib/categories';
@@ -18,12 +18,7 @@ import { ScheduledTransaction, FrequencyType, FREQUENCY_LABELS, CreateScheduledT
 import { Payee } from '@/types/payee';
 import { Category } from '@/types/category';
 import { Account } from '@/types/account';
-import { CreateSplitData } from '@/types/transaction';
 import { buildCategoryTree } from '@/lib/categoryUtils';
-
-interface SplitRow extends CreateSplitData {
-  id: string;
-}
 
 const optionalUuid = z.preprocess(
   (val) => (val === '' ? undefined : val),

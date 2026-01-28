@@ -669,11 +669,43 @@ export class ImportService {
               const transactionSplit = queryRunner.manager.create(TransactionSplit, {
                 transactionId: savedTx.id,
                 categoryId: splitCategoryId,
+                transferAccountId: splitTransferAccountId,
                 amount: split.amount,
                 memo: split.memo,
               });
 
-              await queryRunner.manager.save(transactionSplit);
+              const savedSplit = await queryRunner.manager.save(transactionSplit);
+
+              // For transfer splits, create linked transaction in target account
+              if (splitTransferAccountId) {
+                const linkedSplitTx = queryRunner.manager.create(Transaction, {
+                  userId,
+                  accountId: splitTransferAccountId,
+                  transactionDate: qifTx.date,
+                  amount: -split.amount, // Inverse amount
+                  payeeName: `Transfer from ${account.name}`,
+                  description: split.memo || `Split transfer from ${account.name}`,
+                  status,
+                  currencyCode: account.currencyCode,
+                  isTransfer: true,
+                  createdAt: new Date(baseTime.getTime() + 0.1), // Slightly offset
+                });
+
+                const savedLinkedSplitTx = await queryRunner.manager.save(linkedSplitTx);
+
+                // Update the split with the linked transaction ID
+                await queryRunner.manager.update(TransactionSplit, savedSplit.id, {
+                  linkedTransactionId: savedLinkedSplitTx.id,
+                });
+
+                // Update target account balance
+                await queryRunner.manager.increment(
+                  Account,
+                  { id: splitTransferAccountId },
+                  'currentBalance',
+                  Math.round(-split.amount * 100) / 100,
+                );
+              }
             }
           }
 

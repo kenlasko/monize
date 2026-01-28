@@ -14,6 +14,9 @@ export interface TransactionSplit {
   transactionId: string;
   categoryId: string | null;
   category: Category | null;
+  transferAccountId: string | null;
+  transferAccount: Account | null;
+  linkedTransactionId: string | null;
   amount: number;
   memo: string | null;
   createdAt: string;
@@ -55,6 +58,7 @@ export interface Transaction {
 
 export interface CreateSplitData {
   categoryId?: string;
+  transferAccountId?: string;
   amount: number;
   memo?: string;
 }
