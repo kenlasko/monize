@@ -5,7 +5,6 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 import { authApi } from '@/lib/auth';
 import { Button } from '@/components/ui/Button';
-import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import toast from 'react-hot-toast';
 
 const navLinks = [
@@ -127,7 +126,6 @@ export function AppHeader() {
             </nav>
           </div>
           <div className="flex items-center space-x-4">
-            <ThemeToggle />
             <button
               onClick={() => router.push('/settings')}
               className={`flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
