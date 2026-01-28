@@ -248,7 +248,9 @@ export class AccountsService {
       throw new BadRequestException('Cannot modify balance of a closed account');
     }
 
-    account.currentBalance = Number(account.currentBalance) + Number(amount);
+    // Round to 2 decimal places to avoid floating-point precision errors
+    account.currentBalance =
+      Math.round((Number(account.currentBalance) + Number(amount)) * 100) / 100;
     return this.accountsRepository.save(account);
   }
 

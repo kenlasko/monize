@@ -222,11 +222,14 @@ export class ImportService {
         importResult.securitiesCreated++;
       }
 
-      // Apply opening balance if present
+      // Apply opening balance if present (round to 2 decimal places)
       if (result.openingBalance !== null) {
+        const newBalance = Math.round(
+          (account.currentBalance + result.openingBalance - (account.openingBalance || 0)) * 100,
+        ) / 100;
         await queryRunner.manager.update(Account, dto.accountId, {
-          openingBalance: result.openingBalance,
-          currentBalance: account.currentBalance + result.openingBalance - (account.openingBalance || 0),
+          openingBalance: Math.round(result.openingBalance * 100) / 100,
+          currentBalance: newBalance,
         });
       }
 
@@ -381,12 +384,12 @@ export class ImportService {
               investmentTx.transactionId = savedCashTx.id;
               await queryRunner.manager.save(investmentTx);
 
-              // Update cash account balance
+              // Update cash account balance (round to 2 decimal places)
               await queryRunner.manager.increment(
                 Account,
                 { id: cashAccountId },
                 'currentBalance',
-                cashAmount,
+                Math.round(cashAmount * 100) / 100,
               );
             }
 
@@ -590,12 +593,12 @@ export class ImportService {
             }
           }
 
-          // Update account balance
+          // Update account balance (round to 2 decimal places)
           await queryRunner.manager.increment(
             Account,
             { id: dto.accountId },
             'currentBalance',
-            qifTx.amount,
+            Math.round(qifTx.amount * 100) / 100,
           );
 
           // If it's a transfer and we have a linked account, create the opposite transaction
@@ -625,12 +628,12 @@ export class ImportService {
               linkedTransactionId: savedLinkedTx.id,
             });
 
-            // Update linked account balance
+            // Update linked account balance (round to 2 decimal places)
             await queryRunner.manager.increment(
               Account,
               { id: transferAccountId },
               'currentBalance',
-              -qifTx.amount,
+              Math.round(-qifTx.amount * 100) / 100,
             );
           }
 
