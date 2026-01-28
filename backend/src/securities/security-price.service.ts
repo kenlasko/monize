@@ -423,6 +423,7 @@ export class SecurityPriceService {
    */
   async getLastUpdateTime(): Promise<Date | null> {
     const latest = await this.securityPriceRepository.findOne({
+      where: {},
       order: { createdAt: 'DESC' },
     });
     return latest?.createdAt ?? null;
