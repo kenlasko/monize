@@ -62,12 +62,9 @@ const accountTypeOptions = [
   { value: 'CREDIT_CARD', label: 'Credit Card' },
   { value: 'INVESTMENT', label: 'Investment' },
   { value: 'LOAN', label: 'Loan' },
-  { value: 'MORTGAGE', label: 'Mortgage' },
-  { value: 'RRSP', label: 'RRSP' },
-  { value: 'TFSA', label: 'TFSA' },
-  { value: 'RESP', label: 'RESP' },
-  { value: 'CASH', label: 'Cash' },
   { value: 'LINE_OF_CREDIT', label: 'Line of Credit' },
+  { value: 'MORTGAGE', label: 'Mortgage' },
+  { value: 'CASH', label: 'Cash' },
   { value: 'OTHER', label: 'Other' },
 ];
 

@@ -81,6 +81,11 @@ export class SecurityMappingDto {
   @IsOptional()
   @IsString()
   securityType?: string;
+
+  @ApiPropertyOptional({ description: 'Exchange for new security (e.g., TSX, NYSE, NASDAQ)' })
+  @IsOptional()
+  @IsString()
+  exchange?: string;
 }
 
 export class ImportQifDto {

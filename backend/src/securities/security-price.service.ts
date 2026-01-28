@@ -15,6 +15,21 @@ interface YahooQuoteResult {
   regularMarketTime?: number;
 }
 
+interface YahooSearchResult {
+  symbol: string;
+  shortname?: string;
+  longname?: string;
+  exchDisp?: string;
+  typeDisp?: string;
+}
+
+export interface SecurityLookupResult {
+  symbol: string;
+  name: string;
+  exchange: string | null;
+  securityType: string | null;
+}
+
 export interface PriceUpdateResult {
   symbol: string;
   success: boolean;
@@ -416,6 +431,151 @@ export class SecurityPriceService {
     }
 
     return query.getMany();
+  }
+
+  /**
+   * Get exchange priority for sorting (lower = higher priority)
+   * Priority: TSX (1), US exchanges (2), Other (3)
+   */
+  private getExchangePriority(symbol: string, exchDisp?: string): number {
+    const suffix = symbol.includes('.') ? symbol.substring(symbol.lastIndexOf('.')).toUpperCase() : '';
+    const exchange = (exchDisp || '').toUpperCase();
+
+    // TSX and Canadian exchanges - highest priority
+    if (suffix === '.TO' || suffix === '.V' || suffix === '.CN' || suffix === '.NE' ||
+        exchange.includes('TORONTO') || exchange.includes('TSX') || exchange.includes('CANADA')) {
+      return 1;
+    }
+
+    // US exchanges - second priority (no suffix typically means US)
+    if (suffix === '' || exchange.includes('NYSE') || exchange.includes('NASDAQ') ||
+        exchange.includes('AMEX') || exchange.includes('ARCA') || exchange === 'NYQ' ||
+        exchange === 'NMS' || exchange === 'NGM' || exchange === 'PCX') {
+      return 2;
+    }
+
+    // Everything else
+    return 3;
+  }
+
+  /**
+   * Lookup security information from Yahoo Finance
+   */
+  async lookupSecurity(query: string): Promise<SecurityLookupResult | null> {
+    try {
+      const url = `https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(query)}&quotesCount=10&newsCount=0`;
+
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        },
+      });
+
+      if (!response.ok) {
+        this.logger.warn(`Yahoo Finance search API returned ${response.status} for query: ${query}`);
+        return null;
+      }
+
+      const data = await response.json();
+      const quotes: YahooSearchResult[] = data.quotes || [];
+
+      if (quotes.length === 0) {
+        return null;
+      }
+
+      // Sort by exchange priority: TSX first, then US, then others
+      const sortedQuotes = [...quotes].sort((a, b) => {
+        const priorityA = this.getExchangePriority(a.symbol, a.exchDisp);
+        const priorityB = this.getExchangePriority(b.symbol, b.exchDisp);
+        return priorityA - priorityB;
+      });
+
+      // Find the best match - prefer exact symbol match within prioritized results
+      const upperQuery = query.toUpperCase().trim();
+      let bestMatch = sortedQuotes.find(
+        (q) => this.extractBaseSymbol(q.symbol).toUpperCase() === upperQuery,
+      );
+
+      // If no exact symbol match, use the first result (highest priority exchange)
+      if (!bestMatch) {
+        bestMatch = sortedQuotes[0];
+      }
+
+      // Extract base symbol (remove suffix like .TO, .V, etc.)
+      const baseSymbol = this.extractBaseSymbol(bestMatch.symbol);
+
+      // Extract exchange from symbol suffix
+      const exchange = this.extractExchangeFromSymbol(bestMatch.symbol) || bestMatch.exchDisp || null;
+
+      // Map Yahoo type to our security type
+      const securityType = this.mapYahooTypeToSecurityType(bestMatch.typeDisp);
+
+      return {
+        symbol: baseSymbol,
+        name: bestMatch.longname || bestMatch.shortname || baseSymbol,
+        exchange,
+        securityType,
+      };
+    } catch (error) {
+      this.logger.error(`Failed to lookup security: ${error.message}`);
+      return null;
+    }
+  }
+
+  /**
+   * Extract base symbol without exchange suffix
+   */
+  private extractBaseSymbol(symbol: string): string {
+    const dotIndex = symbol.lastIndexOf('.');
+    if (dotIndex > 0) {
+      return symbol.substring(0, dotIndex);
+    }
+    return symbol;
+  }
+
+  /**
+   * Extract exchange from Yahoo symbol suffix
+   */
+  private extractExchangeFromSymbol(symbol: string): string | null {
+    const dotIndex = symbol.lastIndexOf('.');
+    if (dotIndex <= 0) {
+      return null; // US market (no suffix)
+    }
+
+    const suffix = symbol.substring(dotIndex).toUpperCase();
+    const suffixToExchange: Record<string, string> = {
+      '.TO': 'TSX',
+      '.V': 'TSX-V',
+      '.CN': 'CSE',
+      '.NE': 'NEO',
+      '.L': 'LSE',
+      '.AX': 'ASX',
+      '.F': 'Frankfurt',
+      '.DE': 'XETRA',
+      '.PA': 'Paris',
+      '.T': 'Tokyo',
+      '.HK': 'HKEX',
+    };
+
+    return suffixToExchange[suffix] || null;
+  }
+
+  /**
+   * Map Yahoo type display to our security type
+   */
+  private mapYahooTypeToSecurityType(typeDisp: string | undefined): string | null {
+    if (!typeDisp) return null;
+
+    const typeMap: Record<string, string> = {
+      'Equity': 'STOCK',
+      'ETF': 'ETF',
+      'Mutual Fund': 'MUTUAL_FUND',
+      'Bond': 'BOND',
+      'Option': 'OPTION',
+      'Cryptocurrency': 'CRYPTO',
+    };
+
+    return typeMap[typeDisp] || null;
   }
 
   /**

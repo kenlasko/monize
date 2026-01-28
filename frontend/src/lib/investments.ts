@@ -129,6 +129,19 @@ export const investmentsApi = {
     return response.data;
   },
 
+  // Lookup security info from Yahoo Finance
+  lookupSecurity: async (query: string): Promise<{
+    symbol: string;
+    name: string;
+    exchange: string | null;
+    securityType: string | null;
+  } | null> => {
+    const response = await apiClient.get('/securities/lookup', {
+      params: { q: query },
+    });
+    return response.data;
+  },
+
   // Refresh all security prices from Yahoo Finance
   refreshPrices: async (): Promise<{
     totalSecurities: number;

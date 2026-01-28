@@ -84,6 +84,7 @@ function ImportContent() {
   const [dateFormat, setDateFormat] = useState<DateFormat>('MM/DD/YYYY');
   const [isLoading, setIsLoading] = useState(false);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
+  const [lookupLoadingIndex, setLookupLoadingIndex] = useState<number | null>(null);
 
   // Load accounts, categories, and securities
   useEffect(() => {
@@ -228,10 +229,11 @@ function ImportContent() {
         return {
           originalName: sec,
           securityId: existingSec?.id,
-          // Pre-populate createNew only if no existing match found
-          createNew: existingSec ? undefined : sec,
-          securityName: existingSec ? undefined : sec,
+          // Don't pre-populate - let user lookup or enter manually
+          createNew: undefined,
+          securityName: undefined,
           securityType: undefined,
+          exchange: undefined,
         };
       });
       setSecurityMappings(secMappings);
@@ -330,6 +332,15 @@ function ImportContent() {
     });
   };
 
+  // Check if a symbol matches an existing security
+  const findMatchingSecurityBySymbol = (symbol: string): Security | undefined => {
+    if (!symbol) return undefined;
+    const upperSymbol = symbol.toUpperCase().trim();
+    return securities.find(
+      (s) => s.symbol.toUpperCase() === upperSymbol
+    );
+  };
+
   const handleSecurityMappingChange = (index: number, field: keyof SecurityMapping, value: string) => {
     setSecurityMappings((prev) => {
       const updated = [...prev];
@@ -340,14 +351,30 @@ function ImportContent() {
           createNew: undefined,
           securityName: undefined,
           securityType: undefined,
+          exchange: undefined,
         };
       } else if (field === 'createNew') {
-        updated[index] = {
-          ...updated[index],
-          securityId: undefined,
-          createNew: value || undefined,
-          // Don't overwrite securityName if user has already edited it
-        };
+        // Check if entered symbol matches an existing security
+        const matchingSecurity = findMatchingSecurityBySymbol(value);
+        if (matchingSecurity) {
+          // Auto-select the existing security instead of creating new
+          updated[index] = {
+            ...updated[index],
+            securityId: matchingSecurity.id,
+            createNew: undefined,
+            securityName: undefined,
+            securityType: undefined,
+            exchange: undefined,
+          };
+          toast.success(`Found existing security: ${matchingSecurity.symbol} - ${matchingSecurity.name}`);
+        } else {
+          updated[index] = {
+            ...updated[index],
+            securityId: undefined,
+            createNew: value || undefined,
+            // Don't overwrite securityName if user has already edited it
+          };
+        }
       } else if (field === 'securityName') {
         updated[index] = {
           ...updated[index],
@@ -358,9 +385,93 @@ function ImportContent() {
           ...updated[index],
           securityType: value || undefined,
         };
+      } else if (field === 'exchange') {
+        updated[index] = {
+          ...updated[index],
+          exchange: value || undefined,
+        };
       }
       return updated;
     });
+  };
+
+  const handleSecurityLookup = async (index: number, query: string) => {
+    if (!query || query.length < 2) {
+      toast.error('Enter at least 2 characters to lookup');
+      return;
+    }
+
+    setLookupLoadingIndex(index);
+    try {
+      const result = await investmentsApi.lookupSecurity(query);
+      if (result) {
+        // Check if the looked up symbol already exists in our securities
+        const existingSecurity = findMatchingSecurityBySymbol(result.symbol);
+
+        // Get current values to show what changed
+        const currentMapping = securityMappings[index];
+
+        setSecurityMappings((prev) => {
+          const updated = [...prev];
+          const current = updated[index];
+
+          if (existingSecurity) {
+            // Auto-select the existing security
+            updated[index] = {
+              ...current,
+              securityId: existingSecurity.id,
+              createNew: undefined,
+              securityName: undefined,
+              securityType: undefined,
+              exchange: undefined,
+            };
+          } else {
+            // Create new with lookup result values
+            updated[index] = {
+              ...current,
+              securityId: undefined,
+              createNew: result.symbol,
+              securityName: result.name,
+              securityType: result.securityType || 'STOCK',
+              exchange: result.exchange || undefined,
+            };
+          }
+          return updated;
+        });
+
+        if (existingSecurity) {
+          toast.success(`Matched existing security: ${existingSecurity.symbol} - ${existingSecurity.name}`);
+        } else {
+          // Build a detailed message showing what was found/updated
+          const updates: string[] = [];
+          if (result.symbol !== currentMapping.createNew) {
+            updates.push(`Symbol: ${result.symbol}`);
+          }
+          if (result.name !== currentMapping.securityName) {
+            updates.push(`Name: ${result.name}`);
+          }
+          if (result.exchange && result.exchange !== currentMapping.exchange) {
+            updates.push(`Exchange: ${result.exchange}`);
+          }
+          if (result.securityType && result.securityType !== currentMapping.securityType) {
+            updates.push(`Type: ${result.securityType}`);
+          }
+
+          if (updates.length > 0) {
+            toast.success(`Found and updated: ${updates.join(', ')}`);
+          } else {
+            toast.success(`Lookup confirmed: ${result.symbol} - ${result.name}${result.exchange ? ` (${result.exchange})` : ''}`);
+          }
+        }
+      } else {
+        toast.error(`No security found for "${query}"`);
+      }
+    } catch (error) {
+      console.error('Security lookup failed:', error);
+      toast.error('Lookup failed - please try again');
+    } finally {
+      setLookupLoadingIndex(null);
+    }
   };
 
   const handleImport = async () => {
@@ -431,10 +542,12 @@ function ImportContent() {
     { value: 'CHEQUING', label: 'Chequing' },
     { value: 'SAVINGS', label: 'Savings' },
     { value: 'CREDIT_CARD', label: 'Credit Card' },
-    { value: 'CASH', label: 'Cash' },
     { value: 'INVESTMENT', label: 'Investment' },
-    { value: 'ASSET', label: 'Asset' },
-    { value: 'LIABILITY', label: 'Liability' },
+    { value: 'LOAN', label: 'Loan' },
+    { value: 'LINE_OF_CREDIT', label: 'Line of Credit' },
+    { value: 'MORTGAGE', label: 'Mortgage' },
+    { value: 'CASH', label: 'Cash' },
+    { value: 'OTHER', label: 'Other' },
   ];
 
   const getSecurityOptions = () => {
@@ -868,9 +981,20 @@ function ImportContent() {
                       key={mapping.originalName}
                       className="border-2 border-amber-300 dark:border-amber-600 bg-amber-50 dark:bg-amber-900/20 rounded-lg p-4"
                     >
-                      <p className="font-medium text-gray-900 dark:text-gray-100 mb-2">
-                        {mapping.originalName}
-                      </p>
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="font-medium text-gray-900 dark:text-gray-100">
+                          {mapping.originalName}
+                        </p>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleSecurityLookup(index, mapping.createNew || mapping.originalName)}
+                          disabled={lookupLoadingIndex === index}
+                        >
+                          {lookupLoadingIndex === index ? 'Looking up...' : 'Lookup'}
+                        </Button>
+                      </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <Select
                           label="Map to existing"
@@ -880,7 +1004,7 @@ function ImportContent() {
                             handleSecurityMappingChange(index, 'securityId', e.target.value)
                           }
                         />
-                        <div>
+                        <div className="space-y-2">
                           <Input
                             label="Or create new (symbol)"
                             placeholder="e.g., AAPL"
@@ -889,26 +1013,32 @@ function ImportContent() {
                               handleSecurityMappingChange(index, 'createNew', e.target.value)
                             }
                           />
-                          {mapping.createNew && (
-                            <div className="mt-2 space-y-2">
-                              <Input
-                                label="Security name"
-                                placeholder="e.g., Apple Inc."
-                                value={mapping.securityName || ''}
-                                onChange={(e) =>
-                                  handleSecurityMappingChange(index, 'securityName', e.target.value)
-                                }
-                              />
-                              <Select
-                                label="Security type"
-                                options={securityTypeOptions}
-                                value={mapping.securityType || 'STOCK'}
-                                onChange={(e) =>
-                                  handleSecurityMappingChange(index, 'securityType', e.target.value)
-                                }
-                              />
-                            </div>
-                          )}
+                          <Input
+                            label="Security name"
+                            placeholder="e.g., Apple Inc."
+                            value={mapping.securityName || ''}
+                            onChange={(e) =>
+                              handleSecurityMappingChange(index, 'securityName', e.target.value)
+                            }
+                          />
+                          <div className="grid grid-cols-2 gap-2">
+                            <Select
+                              label="Security type"
+                              options={securityTypeOptions}
+                              value={mapping.securityType || 'STOCK'}
+                              onChange={(e) =>
+                                handleSecurityMappingChange(index, 'securityType', e.target.value)
+                              }
+                            />
+                            <Input
+                              label="Exchange"
+                              placeholder="e.g., TSX, NYSE"
+                              value={mapping.exchange || ''}
+                              onChange={(e) =>
+                                handleSecurityMappingChange(index, 'exchange', e.target.value)
+                              }
+                            />
+                          </div>
                         </div>
                       </div>
                     </div>

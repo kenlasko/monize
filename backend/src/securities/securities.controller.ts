@@ -14,7 +14,7 @@ import {
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse, ApiQuery, ApiBody } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { SecuritiesService } from './securities.service';
-import { SecurityPriceService, PriceRefreshSummary } from './security-price.service';
+import { SecurityPriceService, PriceRefreshSummary, SecurityLookupResult } from './security-price.service';
 import { CreateSecurityDto } from './dto/create-security.dto';
 import { UpdateSecurityDto } from './dto/update-security.dto';
 import { Security } from './entities/security.entity';
@@ -53,6 +53,27 @@ export class SecuritiesController {
   @ApiResponse({ status: 200, description: 'Search results', type: [Security] })
   search(@Query('q') query: string): Promise<Security[]> {
     return this.securitiesService.search(query);
+  }
+
+  @Get('lookup')
+  @ApiOperation({ summary: 'Lookup security info from Yahoo Finance' })
+  @ApiQuery({ name: 'q', required: true, description: 'Symbol or name to lookup' })
+  @ApiResponse({
+    status: 200,
+    description: 'Security lookup result',
+    schema: {
+      type: 'object',
+      nullable: true,
+      properties: {
+        symbol: { type: 'string' },
+        name: { type: 'string' },
+        exchange: { type: 'string', nullable: true },
+        securityType: { type: 'string', nullable: true },
+      },
+    },
+  })
+  lookup(@Query('q') query: string): Promise<SecurityLookupResult | null> {
+    return this.securityPriceService.lookupSecurity(query);
   }
 
   @Get(':id')

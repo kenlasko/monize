@@ -215,6 +215,7 @@ export class ImportService {
         newSecurity.symbol = secMapping.createNew.toUpperCase();
         newSecurity.name = secMapping.securityName || secMapping.createNew;
         newSecurity.securityType = secMapping.securityType || null;
+        newSecurity.exchange = secMapping.exchange || null;
         newSecurity.currencyCode = account.currencyCode;
         newSecurity.isActive = true;
         const saved = await queryRunner.manager.save(newSecurity);
