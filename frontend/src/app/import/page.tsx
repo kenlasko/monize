@@ -85,6 +85,8 @@ function ImportContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const [lookupLoadingIndex, setLookupLoadingIndex] = useState<number | null>(null);
+  const [initialLookupDone, setInitialLookupDone] = useState(false);
+  const [bulkLookupInProgress, setBulkLookupInProgress] = useState(false);
 
   // Load accounts, categories, and securities
   useEffect(() => {
@@ -118,12 +120,66 @@ function ImportContent() {
     window.scrollTo(0, 0);
   }, [step]);
 
+  // Run bulk security lookup when entering mapSecurities step
+  useEffect(() => {
+    if (step !== 'mapSecurities' || initialLookupDone || securityMappings.length === 0) {
+      return;
+    }
+
+    const runBulkLookup = async () => {
+      setBulkLookupInProgress(true);
+      setInitialLookupDone(true);
+
+      // Process all securities that don't have a securityId (not already mapped)
+      const unmappedIndices = securityMappings
+        .map((m, i) => (!m.securityId ? i : -1))
+        .filter((i) => i !== -1);
+
+      for (const index of unmappedIndices) {
+        const mapping = securityMappings[index];
+        const query = mapping.originalName;
+
+        if (!query || query.length < 2) continue;
+
+        try {
+          const result = await investmentsApi.lookupSecurity(query);
+          if (result) {
+            setSecurityMappings((prev) => {
+              const updated = [...prev];
+              const current = updated[index];
+              // Only update if not already filled in
+              if (!current.createNew && !current.securityName) {
+                updated[index] = {
+                  ...current,
+                  securityId: undefined,
+                  createNew: result.symbol,
+                  securityName: result.name,
+                  securityType: result.securityType || 'STOCK',
+                  exchange: result.exchange || undefined,
+                };
+              }
+              return updated;
+            });
+          }
+        } catch (error) {
+          // Silently ignore errors during bulk lookup
+          console.error(`Bulk lookup failed for ${query}:`, error);
+        }
+      }
+
+      setBulkLookupInProgress(false);
+    };
+
+    runBulkLookup();
+  }, [step, initialLookupDone, securityMappings.length]);
+
   const handleFileSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     setFileName(file.name);
     setIsLoading(true);
+    setInitialLookupDone(false); // Reset for new file
 
     try {
       const content = await file.text();
@@ -945,6 +1001,11 @@ function ImportContent() {
                 <span className="text-green-600 dark:text-green-400">
                   {readyCount} ready
                 </span>
+                {bulkLookupInProgress && (
+                  <span className="text-blue-600 dark:text-blue-400">
+                    Looking up securities...
+                  </span>
+                )}
               </div>
 
               <div className="space-y-3 max-h-[32rem] overflow-y-auto">
@@ -1327,6 +1388,7 @@ function ImportContent() {
                     setCategoryMappings([]);
                     setAccountMappings([]);
                     setSecurityMappings([]);
+                    setInitialLookupDone(false);
                   }}
                 >
                   Import Another File

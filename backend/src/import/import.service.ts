@@ -46,6 +46,28 @@ export class ImportService {
     private holdingsRepository: Repository<Holding>,
   ) {}
 
+  /**
+   * Update account balance with proper decimal rounding.
+   * Uses explicit read-modify-write to avoid TypeORM increment precision issues.
+   */
+  private async updateAccountBalance(
+    queryRunner: any,
+    accountId: string,
+    amount: number,
+  ): Promise<void> {
+    const account = await queryRunner.manager.findOne(Account, {
+      where: { id: accountId },
+    });
+    if (account) {
+      // Round to 2 decimal places to avoid floating-point precision errors
+      const newBalance =
+        Math.round((Number(account.currentBalance) + Number(amount)) * 100) / 100;
+      await queryRunner.manager.update(Account, accountId, {
+        currentBalance: newBalance,
+      });
+    }
+  }
+
   async parseQifFile(userId: string, content: string): Promise<ParsedQifResponseDto> {
     const validation = validateQifContent(content);
     if (!validation.valid) {
@@ -385,13 +407,8 @@ export class ImportService {
               investmentTx.transactionId = savedCashTx.id;
               await queryRunner.manager.save(investmentTx);
 
-              // Update cash account balance (round to 2 decimal places)
-              await queryRunner.manager.increment(
-                Account,
-                { id: cashAccountId },
-                'currentBalance',
-                Math.round(cashAmount * 100) / 100,
-              );
+              // Update cash account balance
+              await this.updateAccountBalance(queryRunner, cashAccountId, cashAmount);
             }
 
             // Update holdings for actions that affect share counts
