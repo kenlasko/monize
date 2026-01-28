@@ -26,16 +26,16 @@ interface InvestmentTransactionListProps {
   availableSymbols?: string[];
 }
 
-const ACTION_LABELS: Record<string, { label: string; color: string }> = {
-  BUY: { label: 'Buy', color: 'text-green-600 dark:text-green-400' },
-  SELL: { label: 'Sell', color: 'text-red-600 dark:text-red-400' },
-  DIVIDEND: { label: 'Dividend', color: 'text-blue-600 dark:text-blue-400' },
-  INTEREST: { label: 'Interest', color: 'text-blue-600 dark:text-blue-400' },
-  CAPITAL_GAIN: { label: 'Capital Gain', color: 'text-purple-600 dark:text-purple-400' },
-  SPLIT: { label: 'Split', color: 'text-yellow-600 dark:text-yellow-400' },
-  TRANSFER_IN: { label: 'Transfer In', color: 'text-green-600 dark:text-green-400' },
-  TRANSFER_OUT: { label: 'Transfer Out', color: 'text-red-600 dark:text-red-400' },
-  REINVEST: { label: 'Reinvest', color: 'text-indigo-600 dark:text-indigo-400' },
+const ACTION_LABELS: Record<string, { label: string; shortLabel: string; color: string }> = {
+  BUY: { label: 'Buy', shortLabel: 'Buy', color: 'text-green-600 dark:text-green-400' },
+  SELL: { label: 'Sell', shortLabel: 'Sell', color: 'text-red-600 dark:text-red-400' },
+  DIVIDEND: { label: 'Dividend', shortLabel: 'Div', color: 'text-blue-600 dark:text-blue-400' },
+  INTEREST: { label: 'Interest', shortLabel: 'Int', color: 'text-blue-600 dark:text-blue-400' },
+  CAPITAL_GAIN: { label: 'Capital Gain', shortLabel: 'Cap', color: 'text-purple-600 dark:text-purple-400' },
+  SPLIT: { label: 'Split', shortLabel: 'Split', color: 'text-yellow-600 dark:text-yellow-400' },
+  TRANSFER_IN: { label: 'Transfer In', shortLabel: 'In', color: 'text-green-600 dark:text-green-400' },
+  TRANSFER_OUT: { label: 'Transfer Out', shortLabel: 'Out', color: 'text-red-600 dark:text-red-400' },
+  REINVEST: { label: 'Reinvest', shortLabel: 'Reinv', color: 'text-indigo-600 dark:text-indigo-400' },
 };
 
 const ACTION_OPTIONS = [
@@ -304,6 +304,7 @@ export function InvestmentTransactionList({
             {transactions.map((tx, index) => {
               const actionInfo = ACTION_LABELS[tx.action] || {
                 label: tx.action,
+                shortLabel: tx.action,
                 color: 'text-gray-600 dark:text-gray-400',
               };
               return (
@@ -316,7 +317,7 @@ export function InvestmentTransactionList({
                   </td>
                   <td className={`${cellPadding} whitespace-nowrap`}>
                     <span className={`text-sm font-medium ${actionInfo.color}`}>
-                      {density === 'dense' ? actionInfo.label.substring(0, 3) : actionInfo.label}
+                      {density === 'dense' ? actionInfo.shortLabel : actionInfo.label}
                     </span>
                   </td>
                   <td className={`${cellPadding}`}>

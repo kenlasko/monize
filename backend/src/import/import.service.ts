@@ -233,16 +233,28 @@ export class ImportService {
       // Create new securities (for investment transactions)
       for (const secMapping of securitiesToCreate) {
         if (!secMapping.createNew) continue;
-        const newSecurity = new Security();
-        newSecurity.symbol = secMapping.createNew.toUpperCase();
-        newSecurity.name = secMapping.securityName || secMapping.createNew;
-        newSecurity.securityType = secMapping.securityType || null;
-        newSecurity.exchange = secMapping.exchange || null;
-        newSecurity.currencyCode = account.currencyCode;
-        newSecurity.isActive = true;
-        const saved = await queryRunner.manager.save(newSecurity);
-        securityMap.set(secMapping.originalName, saved.id);
-        importResult.securitiesCreated++;
+        const symbol = secMapping.createNew.toUpperCase();
+
+        // Check if security with this symbol already exists
+        const existingSecurity = await queryRunner.manager.findOne(Security, {
+          where: { symbol },
+        });
+
+        if (existingSecurity) {
+          // Use existing security instead of creating duplicate
+          securityMap.set(secMapping.originalName, existingSecurity.id);
+        } else {
+          const newSecurity = new Security();
+          newSecurity.symbol = symbol;
+          newSecurity.name = secMapping.securityName || secMapping.createNew;
+          newSecurity.securityType = secMapping.securityType || null;
+          newSecurity.exchange = secMapping.exchange || null;
+          newSecurity.currencyCode = account.currencyCode;
+          newSecurity.isActive = true;
+          const saved = await queryRunner.manager.save(newSecurity);
+          securityMap.set(secMapping.originalName, saved.id);
+          importResult.securitiesCreated++;
+        }
       }
 
       // Apply opening balance if present (round to 2 decimal places)
