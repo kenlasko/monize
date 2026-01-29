@@ -7,6 +7,7 @@ import { ScheduledTransactionForm } from '@/components/scheduled-transactions/Sc
 import { ScheduledTransactionList } from '@/components/scheduled-transactions/ScheduledTransactionList';
 import { OverrideEditorDialog } from '@/components/scheduled-transactions/OverrideEditorDialog';
 import { OccurrenceDatePicker } from '@/components/scheduled-transactions/OccurrenceDatePicker';
+import { PostTransactionDialog } from '@/components/scheduled-transactions/PostTransactionDialog';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { scheduledTransactionsApi } from '@/lib/scheduled-transactions';
 import { categoriesApi } from '@/lib/categories';
@@ -45,6 +46,10 @@ export default function BillsPage() {
     transaction: ScheduledTransaction | null;
     overrideDates: string[];
   }>({ isOpen: false, transaction: null, overrideDates: [] });
+  const [postDialog, setPostDialog] = useState<{
+    isOpen: boolean;
+    transaction: ScheduledTransaction | null;
+  }>({ isOpen: false, transaction: null });
 
   const loadData = async () => {
     setIsLoading(true);
@@ -196,6 +201,18 @@ export default function BillsPage() {
   };
 
   const handleOverrideEditorSave = () => {
+    loadData();
+  };
+
+  const handlePost = (transaction: ScheduledTransaction) => {
+    setPostDialog({ isOpen: true, transaction });
+  };
+
+  const handlePostDialogClose = () => {
+    setPostDialog({ isOpen: false, transaction: null });
+  };
+
+  const handlePostDialogPosted = () => {
     loadData();
   };
 
@@ -478,6 +495,7 @@ export default function BillsPage() {
               transactions={filteredTransactions}
               onEdit={handleEdit}
               onEditOccurrence={handleEditOccurrence}
+              onPost={handlePost}
               onRefresh={loadData}
             />
           )}
@@ -505,6 +523,17 @@ export default function BillsPage() {
           existingOverride={overrideEditor.existingOverride}
           onClose={handleOverrideEditorClose}
           onSave={handleOverrideEditorSave}
+        />
+      )}
+
+      {/* Post Transaction Dialog */}
+      {postDialog.transaction && (
+        <PostTransactionDialog
+          isOpen={postDialog.isOpen}
+          scheduledTransaction={postDialog.transaction}
+          categories={categories}
+          onClose={handlePostDialogClose}
+          onPosted={handlePostDialogPosted}
         />
       )}
 

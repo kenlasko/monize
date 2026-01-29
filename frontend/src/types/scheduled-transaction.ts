@@ -134,3 +134,12 @@ export interface OverrideCheckResult {
   hasOverrides: boolean;
   count: number;
 }
+
+export interface PostScheduledTransactionData {
+  transactionDate?: string;
+  amount?: number | null;
+  categoryId?: string | null;
+  description?: string | null;
+  isSplit?: boolean;
+  splits?: OverrideSplit[];
+}

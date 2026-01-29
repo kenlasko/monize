@@ -7,6 +7,7 @@ import {
   CreateScheduledTransactionOverrideData,
   UpdateScheduledTransactionOverrideData,
   OverrideCheckResult,
+  PostScheduledTransactionData,
 } from '@/types/scheduled-transaction';
 
 export const scheduledTransactionsApi = {
@@ -60,10 +61,10 @@ export const scheduledTransactionsApi = {
   },
 
   // Post scheduled transaction (create actual transaction and advance)
-  post: async (id: string, transactionDate?: string): Promise<ScheduledTransaction> => {
+  post: async (id: string, data?: PostScheduledTransactionData): Promise<ScheduledTransaction> => {
     const response = await apiClient.post<ScheduledTransaction>(
       `/scheduled-transactions/${id}/post`,
-      { transactionDate },
+      data || {},
     );
     return response.data;
   },

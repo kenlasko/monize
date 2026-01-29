@@ -21,6 +21,7 @@ interface ScheduledTransactionListProps {
   transactions: ScheduledTransaction[];
   onEdit?: (transaction: ScheduledTransaction) => void;
   onEditOccurrence?: (transaction: ScheduledTransaction) => void;
+  onPost?: (transaction: ScheduledTransaction) => void;
   onRefresh?: () => void;
 }
 
@@ -28,6 +29,7 @@ export function ScheduledTransactionList({
   transactions,
   onEdit,
   onEditOccurrence,
+  onPost,
   onRefresh,
 }: ScheduledTransactionListProps) {
   const { formatDate } = useDateFormat();
@@ -297,7 +299,7 @@ export function ScheduledTransactionList({
                     {transaction.isActive && (
                       <>
                         <button
-                          onClick={() => openConfirm('post', transaction)}
+                          onClick={() => onPost ? onPost(transaction) : openConfirm('post', transaction)}
                           disabled={isProcessing}
                           className="p-1 text-green-600 dark:text-green-400 hover:text-green-900 dark:hover:text-green-300 hover:bg-green-50 dark:hover:bg-green-900/50 rounded disabled:opacity-50"
                           title="Post transaction"

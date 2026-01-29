@@ -22,6 +22,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { ScheduledTransactionsService } from './scheduled-transactions.service';
 import { CreateScheduledTransactionDto } from './dto/create-scheduled-transaction.dto';
 import { UpdateScheduledTransactionDto } from './dto/update-scheduled-transaction.dto';
+import { PostScheduledTransactionDto } from './dto/post-scheduled-transaction.dto';
 import {
   CreateScheduledTransactionOverrideDto,
   UpdateScheduledTransactionOverrideDto,
@@ -149,9 +150,9 @@ export class ScheduledTransactionsController {
   post(
     @Request() req,
     @Param('id') id: string,
-    @Body('transactionDate') transactionDate?: string,
+    @Body() postDto: PostScheduledTransactionDto,
   ) {
-    return this.scheduledTransactionsService.post(req.user.id, id, transactionDate);
+    return this.scheduledTransactionsService.post(req.user.id, id, postDto);
   }
 
   @Post(':id/skip')

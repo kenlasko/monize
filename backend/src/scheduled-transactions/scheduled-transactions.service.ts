@@ -16,6 +16,7 @@ import {
   CreateScheduledTransactionOverrideDto,
   UpdateScheduledTransactionOverrideDto,
 } from './dto/scheduled-transaction-override.dto';
+import { PostScheduledTransactionDto } from './dto/post-scheduled-transaction.dto';
 import { AccountsService } from '../accounts/accounts.service';
 import { TransactionsService } from '../transactions/transactions.service';
 
@@ -301,7 +302,7 @@ export class ScheduledTransactionsService {
     return this.findOne(userId, id);
   }
 
-  async post(userId: string, id: string, transactionDate?: string): Promise<ScheduledTransaction> {
+  async post(userId: string, id: string, postDto?: PostScheduledTransactionDto): Promise<ScheduledTransaction> {
     const scheduled = await this.findOne(userId, id);
 
     // Convert nextDueDate to string format for transaction
@@ -309,41 +310,65 @@ export class ScheduledTransactionsService {
       ? scheduled.nextDueDate.toISOString().split('T')[0]
       : String(scheduled.nextDueDate).split('T')[0];
 
-    const postDate = transactionDate || nextDueDateStr;
+    const postDate = postDto?.transactionDate || nextDueDateStr;
 
-    // Check for override for this specific date
-    const override = await this.overridesRepository.findOne({
+    // Check for stored override for this specific date
+    const storedOverride = await this.overridesRepository.findOne({
       where: {
         scheduledTransactionId: id,
         overrideDate: postDate,
       },
     });
 
-    // Build transaction payload - use override values if they exist
+    // Priority: inline values > stored override > base scheduled transaction
+    // Determine final values to use
+    const hasInlineAmount = postDto?.amount !== undefined && postDto?.amount !== null;
+    const hasInlineCategoryId = postDto?.categoryId !== undefined;
+    const hasInlineDescription = postDto?.description !== undefined;
+    const hasInlineIsSplit = postDto?.isSplit !== undefined && postDto?.isSplit !== null;
+    const hasInlineSplits = postDto?.splits && postDto.splits.length > 0;
+
+    const finalAmount = hasInlineAmount
+      ? Number(postDto.amount)
+      : (storedOverride?.amount !== null && storedOverride?.amount !== undefined)
+        ? Number(storedOverride.amount)
+        : Number(scheduled.amount);
+
+    const finalDescription = hasInlineDescription
+      ? postDto.description
+      : (storedOverride?.description !== null && storedOverride?.description !== undefined)
+        ? storedOverride.description
+        : (scheduled.description || undefined);
+
+    // Build transaction payload
     const transactionPayload: any = {
       accountId: scheduled.accountId,
       transactionDate: postDate,
       payeeId: scheduled.payeeId || undefined,
       payeeName: scheduled.payeeName || undefined,
-      amount: override?.amount !== null && override?.amount !== undefined
-        ? Number(override.amount)
-        : Number(scheduled.amount),
+      amount: finalAmount,
       currencyCode: scheduled.currencyCode,
-      description: override?.description !== null && override?.description !== undefined
-        ? override.description
-        : (scheduled.description || undefined),
+      description: finalDescription,
       isCleared: false,
     };
 
     // Determine if this should be a split transaction
-    const useSplits = override?.isSplit !== null && override?.isSplit !== undefined
-      ? override.isSplit
-      : scheduled.isSplit;
+    const useSplits = hasInlineIsSplit
+      ? postDto.isSplit
+      : (storedOverride?.isSplit !== null && storedOverride?.isSplit !== undefined)
+        ? storedOverride.isSplit
+        : scheduled.isSplit;
 
     if (useSplits) {
-      // Use override splits if available, otherwise base splits
-      if (override?.splits && override.splits.length > 0) {
-        transactionPayload.splits = override.splits.map((split) => ({
+      // Use inline splits > stored override splits > base splits
+      if (hasInlineSplits && postDto?.splits) {
+        transactionPayload.splits = postDto.splits.map((split) => ({
+          categoryId: split.categoryId || undefined,
+          amount: Number(split.amount),
+          memo: split.memo || undefined,
+        }));
+      } else if (storedOverride?.splits && storedOverride.splits.length > 0) {
+        transactionPayload.splits = storedOverride.splits.map((split) => ({
           categoryId: split.categoryId || undefined,
           amount: Number(split.amount),
           memo: split.memo || undefined,
@@ -356,18 +381,21 @@ export class ScheduledTransactionsService {
         }));
       }
     } else {
-      // Use override category if available, otherwise base category
-      transactionPayload.categoryId = override?.categoryId !== null && override?.categoryId !== undefined
-        ? override.categoryId
-        : (scheduled.categoryId || undefined);
+      // Use inline category > stored override category > base category
+      const finalCategoryId = hasInlineCategoryId
+        ? postDto.categoryId
+        : (storedOverride?.categoryId !== null && storedOverride?.categoryId !== undefined)
+          ? storedOverride.categoryId
+          : (scheduled.categoryId || undefined);
+      transactionPayload.categoryId = finalCategoryId || undefined;
     }
 
     // Create the actual transaction
     await this.transactionsService.create(userId, transactionPayload);
 
-    // Delete the override if it was used (it's now been posted)
-    if (override) {
-      await this.overridesRepository.remove(override);
+    // Delete the stored override if it was used (it's now been posted)
+    if (storedOverride) {
+      await this.overridesRepository.remove(storedOverride);
     }
 
     // Build update object for scheduled transaction
