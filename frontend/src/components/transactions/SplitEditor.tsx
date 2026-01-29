@@ -72,11 +72,12 @@ export function SplitEditor({
     };
   }), [categories]);
 
-  // Memoize account options (excluding source account)
+  // Memoize account options (excluding source account, sorted alphabetically)
   const accountOptions = useMemo(() => {
     if (!supportsTransfers) return [];
     return accounts
       .filter(a => a.id !== sourceAccountId)
+      .sort((a, b) => a.name.localeCompare(b.name))
       .map(a => ({
         value: a.id,
         label: a.name,

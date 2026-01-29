@@ -239,9 +239,9 @@ export class TransactionsService {
           amount: -split.amount, // Inverse: if split is -40 (withdrawal), target gets +40 (deposit)
           currencyCode: targetAccount.currencyCode,
           exchangeRate: 1,
-          description: split.memo || `Split transfer from ${sourceAccount.name}`,
+          description: split.memo || null,
           isTransfer: true,
-          payeeName: `Transfer from ${sourceAccount.name}`,
+          payeeName: parentPayeeName || `Transfer from ${sourceAccount.name}`,
         });
 
         const savedLinkedTransaction = await this.transactionsRepository.save(linkedTransaction);
@@ -581,6 +581,55 @@ export class TransactionsService {
     // Clean up linked transactions from transfer splits
     if (transaction.isSplit) {
       await this.deleteTransferSplitLinkedTransactions(id);
+    }
+
+    // Check if this transaction is a linked transaction from a split
+    // If so, we need to delete the entire parent transaction
+    const parentSplit = await this.splitsRepository.findOne({
+      where: { linkedTransactionId: id },
+    });
+
+    if (parentSplit) {
+      const parentTransactionId = parentSplit.transactionId;
+      const parentTransaction = await this.transactionsRepository.findOne({
+        where: { id: parentTransactionId },
+      });
+
+      if (parentTransaction) {
+        // Get all splits for the parent transaction
+        const allSplits = await this.splitsRepository.find({
+          where: { transactionId: parentTransactionId },
+        });
+
+        // Clean up all linked transactions from other transfer splits
+        for (const split of allSplits) {
+          if (split.linkedTransactionId && split.linkedTransactionId !== id) {
+            const linkedTx = await this.transactionsRepository.findOne({
+              where: { id: split.linkedTransactionId },
+            });
+
+            if (linkedTx) {
+              await this.accountsService.updateBalance(
+                linkedTx.accountId,
+                -Number(linkedTx.amount),
+              );
+              await this.transactionsRepository.remove(linkedTx);
+            }
+          }
+        }
+
+        // Delete all splits
+        await this.splitsRepository.remove(allSplits);
+
+        // Revert the parent transaction balance and delete it
+        if (parentTransaction.status !== TransactionStatus.VOID) {
+          await this.accountsService.updateBalance(
+            parentTransaction.accountId,
+            -Number(parentTransaction.amount),
+          );
+        }
+        await this.transactionsRepository.remove(parentTransaction);
+      }
     }
 
     // Revert the balance change only if not VOID
@@ -969,9 +1018,9 @@ export class TransactionsService {
         amount: -splitDto.amount, // Inverse amount
         currencyCode: targetAccount.currencyCode,
         exchangeRate: 1,
-        description: splitDto.memo || `Split transfer from ${sourceAccount.name}`,
+        description: splitDto.memo || null,
         isTransfer: true,
-        payeeName: `Transfer from ${sourceAccount.name}`,
+        payeeName: transaction.payeeName || `Transfer from ${sourceAccount.name}`,
       });
 
       const savedLinkedTransaction = await this.transactionsRepository.save(linkedTransaction);
@@ -1203,7 +1252,63 @@ export class TransactionsService {
       throw new BadRequestException('Transaction is not a transfer');
     }
 
-    // Get the linked transaction
+    // Check if this transaction is a linked transaction from a split
+    // If so, we need to clean up the parent split as well
+    const parentSplit = await this.splitsRepository.findOne({
+      where: { linkedTransactionId: transactionId },
+    });
+
+    if (parentSplit) {
+      // This is a linked transaction from a split - delete the entire parent transaction
+      const parentTransactionId = parentSplit.transactionId;
+      const parentTransaction = await this.transactionsRepository.findOne({
+        where: { id: parentTransactionId },
+      });
+
+      if (parentTransaction) {
+        // Get all splits for the parent transaction
+        const allSplits = await this.splitsRepository.find({
+          where: { transactionId: parentTransactionId },
+        });
+
+        // Clean up all linked transactions from other transfer splits
+        for (const split of allSplits) {
+          if (split.linkedTransactionId && split.linkedTransactionId !== transactionId) {
+            const linkedTx = await this.transactionsRepository.findOne({
+              where: { id: split.linkedTransactionId },
+            });
+
+            if (linkedTx) {
+              await this.accountsService.updateBalance(
+                linkedTx.accountId,
+                -Number(linkedTx.amount),
+              );
+              await this.transactionsRepository.remove(linkedTx);
+            }
+          }
+        }
+
+        // Delete all splits
+        await this.splitsRepository.remove(allSplits);
+
+        // Revert the parent transaction balance and delete it
+        await this.accountsService.updateBalance(
+          parentTransaction.accountId,
+          -Number(parentTransaction.amount),
+        );
+        await this.transactionsRepository.remove(parentTransaction);
+      }
+
+      // Revert the balance and remove this transaction (the linked one being deleted)
+      await this.accountsService.updateBalance(
+        transaction.accountId,
+        -Number(transaction.amount),
+      );
+      await this.transactionsRepository.remove(transaction);
+      return;
+    }
+
+    // Regular transfer deletion - get the linked transaction
     const linkedTransaction = transaction.linkedTransactionId
       ? await this.transactionsRepository.findOne({
           where: { id: transaction.linkedTransactionId },

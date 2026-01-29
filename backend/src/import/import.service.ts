@@ -351,7 +351,10 @@ export class ImportService {
       const dateCounters = new Map<string, number>();
 
       // Import transactions
+      let txIndex = 0;
+      const totalTransactions = result.transactions.length;
       for (const qifTx of result.transactions) {
+        txIndex++;
         try {
           // Handle investment transactions differently
           if (isQifInvestment) {
@@ -711,8 +714,8 @@ export class ImportService {
                   accountId: splitTransferAccountId,
                   transactionDate: qifTx.date,
                   amount: -split.amount, // Inverse amount
-                  payeeName: `Transfer from ${account.name}`,
-                  description: split.memo || `Split transfer from ${account.name}`,
+                  payeeName: qifTx.payee || `Transfer from ${account.name}`,
+                  description: split.memo || qifTx.memo,
                   status,
                   currencyCode: account.currencyCode,
                   isTransfer: true,
@@ -785,15 +788,22 @@ export class ImportService {
         } catch (error) {
           importResult.errors++;
           importResult.errorMessages.push(
-            `Error importing transaction on ${qifTx.date}: ${error.message}`,
+            `Error importing transaction ${txIndex}/${totalTransactions} on ${qifTx.date}: ${error.message}`,
           );
+          console.error(`Error importing transaction ${txIndex}/${totalTransactions}:`, error.message);
         }
       }
 
       await queryRunner.commitTransaction();
     } catch (error) {
+      console.error('=== IMPORT FAILED ===');
+      console.error('Error:', error.message);
+      console.error('Stack:', error.stack);
+      console.error(`Progress: ${importResult.imported} imported, ${importResult.errors} errors`);
       await queryRunner.rollbackTransaction();
-      throw new BadRequestException(`Import failed: ${error.message}`);
+      throw new BadRequestException(
+        `Import failed after ${importResult.imported} transactions: ${error.message}`,
+      );
     } finally {
       await queryRunner.release();
     }
