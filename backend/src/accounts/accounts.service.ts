@@ -3,6 +3,8 @@ import {
   NotFoundException,
   BadRequestException,
   ForbiddenException,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -11,6 +13,13 @@ import { Transaction } from '../transactions/entities/transaction.entity';
 import { InvestmentTransaction } from '../securities/entities/investment-transaction.entity';
 import { CreateAccountDto } from './dto/create-account.dto';
 import { UpdateAccountDto } from './dto/update-account.dto';
+import { CategoriesService } from '../categories/categories.service';
+import { ScheduledTransactionsService } from '../scheduled-transactions/scheduled-transactions.service';
+import {
+  calculateAmortization,
+  PaymentFrequency,
+  AmortizationResult,
+} from './loan-amortization.util';
 
 @Injectable()
 export class AccountsService {
@@ -21,6 +30,10 @@ export class AccountsService {
     private transactionRepository: Repository<Transaction>,
     @InjectRepository(InvestmentTransaction)
     private investmentTransactionRepository: Repository<InvestmentTransaction>,
+    @Inject(forwardRef(() => CategoriesService))
+    private categoriesService: CategoriesService,
+    @Inject(forwardRef(() => ScheduledTransactionsService))
+    private scheduledTransactionsService: ScheduledTransactionsService,
   ) {}
 
   /**
@@ -38,6 +51,17 @@ export class AccountsService {
       accountData.accountType === AccountType.INVESTMENT
     ) {
       return this.createInvestmentAccountPair(userId, createAccountDto);
+    }
+
+    // If creating a loan account with payment details, delegate to loan creation method
+    if (
+      accountData.accountType === AccountType.LOAN &&
+      createAccountDto.paymentAmount &&
+      createAccountDto.paymentFrequency &&
+      createAccountDto.paymentStartDate &&
+      createAccountDto.sourceAccountId
+    ) {
+      return this.createLoanAccount(userId, createAccountDto);
     }
 
     const account = this.accountsRepository.create({
@@ -161,6 +185,141 @@ export class AccountsService {
     } else {
       return { cashAccount: linkedAccount, brokerageAccount: account };
     }
+  }
+
+  /**
+   * Create a loan account with automatic scheduled payment setup
+   */
+  async createLoanAccount(
+    userId: string,
+    createAccountDto: CreateAccountDto,
+  ): Promise<Account> {
+    const {
+      openingBalance = 0,
+      paymentAmount,
+      paymentFrequency,
+      paymentStartDate,
+      sourceAccountId,
+      interestCategoryId,
+      interestRate,
+      institution,
+      ...accountData
+    } = createAccountDto;
+
+    // Validate required loan fields
+    if (!paymentAmount || !paymentFrequency || !paymentStartDate || !sourceAccountId) {
+      throw new BadRequestException(
+        'Loan accounts require paymentAmount, paymentFrequency, paymentStartDate, and sourceAccountId',
+      );
+    }
+    if (interestRate === undefined || interestRate === null) {
+      throw new BadRequestException('Loan accounts require an interest rate');
+    }
+    if (!institution) {
+      throw new BadRequestException('Loan accounts require an institution name');
+    }
+
+    // Verify source account belongs to user
+    await this.findOne(userId, sourceAccountId);
+
+    // Get loan categories (Loan Interest for interest portion)
+    // Principal portion will be a transfer to the loan account
+    let interestCatId = interestCategoryId;
+
+    if (!interestCatId) {
+      const { interestCategory } = await this.categoriesService.findLoanCategories(userId);
+      if (interestCategory) {
+        interestCatId = interestCategory.id;
+      }
+    }
+
+    // Calculate amortization for end date and first payment split
+    // User enters loan amount as positive, we store as negative (liability)
+    const loanAmount = Math.abs(openingBalance);
+    const amortization = calculateAmortization(
+      loanAmount,
+      interestRate,
+      paymentAmount,
+      paymentFrequency as PaymentFrequency,
+      new Date(paymentStartDate),
+    );
+
+    // Create the loan account with negative balance (liability)
+    const account = this.accountsRepository.create({
+      ...accountData,
+      userId,
+      openingBalance: -loanAmount, // Store as negative
+      currentBalance: -loanAmount,
+      interestRate,
+      institution,
+      paymentAmount,
+      paymentFrequency,
+      paymentStartDate: new Date(paymentStartDate),
+      sourceAccountId,
+      interestCategoryId: interestCatId || null,
+    });
+
+    const savedAccount = await this.accountsRepository.save(account);
+
+    // Create scheduled transaction for loan payments
+    // Total payment amount is negative (outflow from source account)
+    const endDateStr = amortization.totalPayments > 0 && amortization.totalPayments < 10000
+      ? amortization.endDate.toISOString().split('T')[0]
+      : undefined;
+
+    const scheduledTransaction = await this.scheduledTransactionsService.create(userId, {
+      accountId: sourceAccountId,
+      name: `Loan Payment - ${savedAccount.name}`,
+      payeeName: institution,
+      amount: -paymentAmount, // Negative outflow from source account
+      currencyCode: accountData.currencyCode,
+      frequency: paymentFrequency as any,
+      nextDueDate: paymentStartDate,
+      startDate: paymentStartDate,
+      endDate: endDateStr,
+      isActive: true,
+      autoPost: false,
+      splits: [
+        {
+          // Transfer to loan account (reduces debt)
+          // Amount is negative as part of the total outflow
+          transferAccountId: savedAccount.id,
+          amount: -amortization.principalPayment,
+          memo: 'Principal',
+        },
+        {
+          // Interest expense
+          categoryId: interestCatId || undefined,
+          amount: -amortization.interestPayment,
+          memo: 'Interest',
+        },
+      ],
+    });
+
+    // Update account with scheduled transaction reference
+    savedAccount.scheduledTransactionId = scheduledTransaction.id;
+    await this.accountsRepository.save(savedAccount);
+
+    return savedAccount;
+  }
+
+  /**
+   * Preview loan amortization without creating an account
+   */
+  previewLoanAmortization(
+    loanAmount: number,
+    interestRate: number,
+    paymentAmount: number,
+    paymentFrequency: PaymentFrequency,
+    paymentStartDate: Date,
+  ): AmortizationResult {
+    return calculateAmortization(
+      Math.abs(loanAmount),
+      interestRate,
+      paymentAmount,
+      paymentFrequency,
+      paymentStartDate,
+    );
   }
 
   /**

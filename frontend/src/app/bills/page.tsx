@@ -11,8 +11,10 @@ import { PostTransactionDialog } from '@/components/scheduled-transactions/PostT
 import { AppHeader } from '@/components/layout/AppHeader';
 import { scheduledTransactionsApi } from '@/lib/scheduled-transactions';
 import { categoriesApi } from '@/lib/categories';
+import { accountsApi } from '@/lib/accounts';
 import { ScheduledTransaction, ScheduledTransactionOverride } from '@/types/scheduled-transaction';
 import { Category } from '@/types/category';
+import { Account } from '@/types/account';
 import { parseLocalDate } from '@/lib/utils';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
@@ -26,6 +28,7 @@ interface OverrideEditorState {
 export default function BillsPage() {
   const [scheduledTransactions, setScheduledTransactions] = useState<ScheduledTransaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [accounts, setAccounts] = useState<Account[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<ScheduledTransaction | undefined>();
@@ -54,12 +57,14 @@ export default function BillsPage() {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [transactionsData, categoriesData] = await Promise.all([
+      const [transactionsData, categoriesData, accountsData] = await Promise.all([
         scheduledTransactionsApi.getAll(),
         categoriesApi.getAll(),
+        accountsApi.getAll(),
       ]);
       setScheduledTransactions(transactionsData);
       setCategories(categoriesData);
+      setAccounts(accountsData);
     } catch (error) {
       toast.error('Failed to load scheduled transactions');
       console.error(error);
@@ -431,7 +436,7 @@ export default function BillsPage() {
         {/* Form Modal */}
         {showForm && (
           <div className="fixed inset-0 bg-gray-500 dark:bg-gray-900 bg-opacity-75 dark:bg-opacity-80 flex items-center justify-center p-4 z-50">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl dark:shadow-gray-700/50 max-w-4xl w-full max-h-[90vh] overflow-y-auto p-6">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl dark:shadow-gray-700/50 max-w-5xl w-full max-h-[90vh] overflow-y-auto p-6">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
                 {editingTransaction ? 'Edit Scheduled Transaction' : 'New Scheduled Transaction'}
               </h2>
@@ -520,6 +525,7 @@ export default function BillsPage() {
           scheduledTransaction={overrideEditor.transaction}
           overrideDate={overrideEditor.date}
           categories={categories}
+          accounts={accounts}
           existingOverride={overrideEditor.existingOverride}
           onClose={handleOverrideEditorClose}
           onSave={handleOverrideEditorSave}
@@ -532,6 +538,7 @@ export default function BillsPage() {
           isOpen={postDialog.isOpen}
           scheduledTransaction={postDialog.transaction}
           categories={categories}
+          accounts={accounts}
           onClose={handlePostDialogClose}
           onPosted={handlePostDialogPosted}
         />

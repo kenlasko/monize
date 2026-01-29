@@ -23,6 +23,8 @@ import { AuthGuard } from '@nestjs/passport';
 import { AccountsService } from './accounts.service';
 import { CreateAccountDto } from './dto/create-account.dto';
 import { UpdateAccountDto } from './dto/update-account.dto';
+import { LoanPreviewDto } from './dto/loan-preview.dto';
+import { PaymentFrequency } from './loan-amortization.util';
 
 @ApiTags('Accounts')
 @Controller('accounts')
@@ -73,6 +75,28 @@ export class AccountsController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   getSummary(@Request() req) {
     return this.accountsService.getSummary(req.user.id);
+  }
+
+  @Post('loan-preview')
+  @ApiOperation({
+    summary: 'Preview loan amortization calculation',
+    description:
+      'Calculate and preview loan payment details including principal/interest split, total payments, and estimated end date',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Loan amortization preview calculated successfully',
+  })
+  @ApiResponse({ status: 400, description: 'Bad request - invalid loan parameters' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  previewLoanAmortization(@Body() loanPreviewDto: LoanPreviewDto) {
+    return this.accountsService.previewLoanAmortization(
+      loanPreviewDto.loanAmount,
+      loanPreviewDto.interestRate,
+      loanPreviewDto.paymentAmount,
+      loanPreviewDto.paymentFrequency as PaymentFrequency,
+      new Date(loanPreviewDto.paymentStartDate),
+    );
   }
 
   @Get(':id')

@@ -17,6 +17,11 @@ class InlineSplitDto {
   @IsUUID()
   categoryId?: string | null;
 
+  @ApiPropertyOptional({ description: 'Transfer account ID for this split' })
+  @IsOptional()
+  @IsUUID()
+  transferAccountId?: string | null;
+
   @ApiPropertyOptional({ description: 'Amount for this split' })
   @IsNumber()
   amount: number;

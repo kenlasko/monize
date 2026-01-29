@@ -5,6 +5,8 @@ import {
   UpdateAccountData,
   AccountSummary,
   InvestmentAccountPair,
+  LoanPreviewData,
+  AmortizationPreview,
 } from '@/types/account';
 
 export const accountsApi = {
@@ -77,5 +79,11 @@ export const accountsApi = {
   // Delete account (only if no transactions)
   delete: async (id: string): Promise<void> => {
     await apiClient.delete(`/accounts/${id}`);
+  },
+
+  // Preview loan amortization
+  previewLoanAmortization: async (data: LoanPreviewData): Promise<AmortizationPreview> => {
+    const response = await apiClient.post<AmortizationPreview>('/accounts/loan-preview', data);
+    return response.data;
   },
 };

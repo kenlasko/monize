@@ -1,8 +1,9 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ScheduledTransaction } from './entities/scheduled-transaction.entity';
 import { ScheduledTransactionSplit } from './entities/scheduled-transaction-split.entity';
 import { ScheduledTransactionOverride } from './entities/scheduled-transaction-override.entity';
+import { Account } from '../accounts/entities/account.entity';
 import { ScheduledTransactionsService } from './scheduled-transactions.service';
 import { ScheduledTransactionsController } from './scheduled-transactions.controller';
 import { AccountsModule } from '../accounts/accounts.module';
@@ -14,8 +15,9 @@ import { TransactionsModule } from '../transactions/transactions.module';
       ScheduledTransaction,
       ScheduledTransactionSplit,
       ScheduledTransactionOverride,
+      Account,
     ]),
-    AccountsModule,
+    forwardRef(() => AccountsModule),
     TransactionsModule,
   ],
   providers: [ScheduledTransactionsService],

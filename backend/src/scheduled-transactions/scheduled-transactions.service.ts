@@ -3,6 +3,8 @@ import {
   NotFoundException,
   ForbiddenException,
   BadRequestException,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, LessThanOrEqual } from 'typeorm';
@@ -19,6 +21,11 @@ import {
 import { PostScheduledTransactionDto } from './dto/post-scheduled-transaction.dto';
 import { AccountsService } from '../accounts/accounts.service';
 import { TransactionsService } from '../transactions/transactions.service';
+import { Account } from '../accounts/entities/account.entity';
+import {
+  calculatePaymentSplit,
+  PaymentFrequency,
+} from '../accounts/loan-amortization.util';
 
 @Injectable()
 export class ScheduledTransactionsService {
@@ -29,6 +36,9 @@ export class ScheduledTransactionsService {
     private splitsRepository: Repository<ScheduledTransactionSplit>,
     @InjectRepository(ScheduledTransactionOverride)
     private overridesRepository: Repository<ScheduledTransactionOverride>,
+    @InjectRepository(Account)
+    private accountsRepository: Repository<Account>,
+    @Inject(forwardRef(() => AccountsService))
     private accountsService: AccountsService,
     private transactionsService: TransactionsService,
   ) {}
@@ -97,6 +107,7 @@ export class ScheduledTransactionsService {
       this.splitsRepository.create({
         scheduledTransactionId,
         categoryId: split.categoryId || null,
+        transferAccountId: split.transferAccountId || null,
         amount: split.amount,
         memo: split.memo || null,
       }),
@@ -113,6 +124,7 @@ export class ScheduledTransactionsService {
       .leftJoinAndSelect('st.category', 'category')
       .leftJoinAndSelect('st.splits', 'splits')
       .leftJoinAndSelect('splits.category', 'splitCategory')
+      .leftJoinAndSelect('splits.transferAccount', 'splitTransferAccount')
       .loadRelationCountAndMap('st.overrideCount', 'st.overrides')
       .where('st.userId = :userId', { userId })
       .orderBy('st.nextDueDate', 'ASC')
@@ -146,7 +158,7 @@ export class ScheduledTransactionsService {
   async findOne(userId: string, id: string): Promise<ScheduledTransaction> {
     const scheduled = await this.scheduledTransactionsRepository.findOne({
       where: { id },
-      relations: ['account', 'payee', 'category', 'splits', 'splits.category'],
+      relations: ['account', 'payee', 'category', 'splits', 'splits.category', 'splits.transferAccount'],
     });
 
     if (!scheduled) {
@@ -170,7 +182,7 @@ export class ScheduledTransactionsService {
         isActive: true,
         nextDueDate: LessThanOrEqual(today),
       },
-      relations: ['account', 'payee', 'category', 'splits', 'splits.category'],
+      relations: ['account', 'payee', 'category', 'splits', 'splits.category', 'splits.transferAccount'],
       order: { nextDueDate: 'ASC' },
     });
   }
@@ -187,6 +199,7 @@ export class ScheduledTransactionsService {
       .leftJoinAndSelect('st.category', 'category')
       .leftJoinAndSelect('st.splits', 'splits')
       .leftJoinAndSelect('splits.category', 'splitCategory')
+      .leftJoinAndSelect('splits.transferAccount', 'splitTransferAccount')
       .where('st.userId = :userId', { userId })
       .andWhere('st.isActive = :isActive', { isActive: true })
       .andWhere('st.nextDueDate <= :futureDate', { futureDate })
@@ -364,18 +377,21 @@ export class ScheduledTransactionsService {
       if (hasInlineSplits && postDto?.splits) {
         transactionPayload.splits = postDto.splits.map((split) => ({
           categoryId: split.categoryId || undefined,
+          transferAccountId: split.transferAccountId || undefined,
           amount: Number(split.amount),
           memo: split.memo || undefined,
         }));
       } else if (storedOverride?.splits && storedOverride.splits.length > 0) {
-        transactionPayload.splits = storedOverride.splits.map((split) => ({
+        transactionPayload.splits = storedOverride.splits.map((split: any) => ({
           categoryId: split.categoryId || undefined,
+          transferAccountId: split.transferAccountId || undefined,
           amount: Number(split.amount),
           memo: split.memo || undefined,
         }));
       } else if (scheduled.splits && scheduled.splits.length > 0) {
         transactionPayload.splits = scheduled.splits.map((split) => ({
           categoryId: split.categoryId || undefined,
+          transferAccountId: split.transferAccountId || undefined,
           amount: Number(split.amount),
           memo: split.memo || undefined,
         }));
@@ -424,6 +440,15 @@ export class ScheduledTransactionsService {
 
     // Use repository.update() to avoid issues with loaded relations
     await this.scheduledTransactionsRepository.update(id, updateFields);
+
+    // If this was a loan payment, recalculate the splits for the next payment
+    if (scheduled.splits && scheduled.splits.length > 0) {
+      const loanAccountId = await this.findLoanAccountFromSplits(scheduled.splits);
+      if (loanAccountId) {
+        await this.recalculateLoanPaymentSplits(id, loanAccountId);
+      }
+    }
+
     return this.findOne(userId, id);
   }
 
@@ -672,5 +697,99 @@ export class ScheduledTransactionsService {
         throw new BadRequestException('Split amounts cannot be zero');
       }
     }
+  }
+
+  // ==================== Loan Payment Recalculation ====================
+
+  /**
+   * Recalculate the principal/interest split for a loan payment scheduled transaction
+   * based on the current loan balance. Called after posting a loan payment.
+   *
+   * @param scheduledTransactionId - The scheduled transaction ID
+   * @param loanAccountId - The loan account ID
+   */
+  async recalculateLoanPaymentSplits(
+    scheduledTransactionId: string,
+    loanAccountId: string,
+  ): Promise<void> {
+    // Get the loan account to check current balance and interest rate
+    const loanAccount = await this.accountsRepository.findOne({
+      where: { id: loanAccountId },
+    });
+
+    if (!loanAccount) {
+      return; // Loan account not found, nothing to do
+    }
+
+    // Get the scheduled transaction
+    const scheduledTransaction = await this.scheduledTransactionsRepository.findOne({
+      where: { id: scheduledTransactionId },
+      relations: ['splits'],
+    });
+
+    if (!scheduledTransaction || !scheduledTransaction.isActive) {
+      return; // Scheduled transaction not found or inactive
+    }
+
+    // Get current loan balance (stored as negative for liability)
+    const currentBalance = Math.abs(Number(loanAccount.currentBalance));
+
+    // If loan is paid off (balance is 0 or positive), deactivate the scheduled transaction
+    if (currentBalance <= 0.01) {
+      await this.scheduledTransactionsRepository.update(scheduledTransactionId, {
+        isActive: false,
+      });
+      return;
+    }
+
+    // Calculate new payment split based on remaining balance
+    const paymentAmount = Math.abs(Number(scheduledTransaction.amount));
+    const interestRate = Number(loanAccount.interestRate) || 0;
+    const frequency = (loanAccount.paymentFrequency || scheduledTransaction.frequency) as PaymentFrequency;
+
+    const newSplit = calculatePaymentSplit(
+      currentBalance,
+      interestRate,
+      paymentAmount,
+      frequency,
+    );
+
+    // Find the principal and interest splits
+    const splits = scheduledTransaction.splits || [];
+    const principalSplit = splits.find((s) => s.transferAccountId === loanAccountId);
+    const interestSplit = splits.find((s) => s.categoryId && !s.transferAccountId);
+
+    // Update the splits with new amounts
+    if (principalSplit) {
+      // Principal amount is negative (part of outflow)
+      principalSplit.amount = -newSplit.principal;
+      await this.splitsRepository.save(principalSplit);
+    }
+
+    if (interestSplit) {
+      // Interest amount is negative (part of outflow)
+      interestSplit.amount = -newSplit.interest;
+      await this.splitsRepository.save(interestSplit);
+    }
+  }
+
+  /**
+   * Check if a scheduled transaction is a loan payment
+   * (has a split with transferAccountId pointing to a loan account)
+   */
+  private async findLoanAccountFromSplits(
+    splits: ScheduledTransactionSplit[],
+  ): Promise<string | null> {
+    for (const split of splits) {
+      if (split.transferAccountId) {
+        const account = await this.accountsRepository.findOne({
+          where: { id: split.transferAccountId },
+        });
+        if (account && account.accountType === 'LOAN') {
+          return account.id;
+        }
+      }
+    }
+    return null;
   }
 }

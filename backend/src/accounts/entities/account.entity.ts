@@ -9,6 +9,8 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { Transaction } from '../../transactions/entities/transaction.entity';
+import { Category } from '../../categories/entities/category.entity';
+import { ScheduledTransaction } from '../../scheduled-transactions/entities/scheduled-transaction.entity';
 
 export enum AccountType {
   CHEQUING = 'CHEQUING',
@@ -116,6 +118,55 @@ export class Account {
   @ManyToOne(() => Account, { nullable: true })
   @JoinColumn({ name: 'linked_account_id' })
   linkedAccount: Account | null;
+
+  // Loan-specific fields
+  @Column({
+    type: 'decimal',
+    precision: 20,
+    scale: 4,
+    name: 'payment_amount',
+    nullable: true,
+  })
+  paymentAmount: number | null;
+
+  @Column({
+    type: 'varchar',
+    length: 20,
+    name: 'payment_frequency',
+    nullable: true,
+  })
+  paymentFrequency: string | null;
+
+  @Column({ type: 'date', name: 'payment_start_date', nullable: true })
+  paymentStartDate: Date | null;
+
+  @Column({ type: 'uuid', name: 'source_account_id', nullable: true })
+  sourceAccountId: string | null;
+
+  @ManyToOne(() => Account, { nullable: true })
+  @JoinColumn({ name: 'source_account_id' })
+  sourceAccount: Account | null;
+
+  @Column({ type: 'uuid', name: 'principal_category_id', nullable: true })
+  principalCategoryId: string | null;
+
+  @ManyToOne(() => Category, { nullable: true })
+  @JoinColumn({ name: 'principal_category_id' })
+  principalCategory: Category | null;
+
+  @Column({ type: 'uuid', name: 'interest_category_id', nullable: true })
+  interestCategoryId: string | null;
+
+  @ManyToOne(() => Category, { nullable: true })
+  @JoinColumn({ name: 'interest_category_id' })
+  interestCategory: Category | null;
+
+  @Column({ type: 'uuid', name: 'scheduled_transaction_id', nullable: true })
+  scheduledTransactionId: string | null;
+
+  @ManyToOne(() => ScheduledTransaction, { nullable: true })
+  @JoinColumn({ name: 'scheduled_transaction_id' })
+  scheduledTransaction: ScheduledTransaction | null;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

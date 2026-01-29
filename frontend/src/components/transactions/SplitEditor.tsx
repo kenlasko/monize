@@ -57,6 +57,8 @@ export function SplitEditor({
 }: SplitEditorProps) {
   const currencySymbol = getCurrencySymbol(currencyCode);
   const [localSplits, setLocalSplits] = useState<SplitRow[]>(splits);
+  // Track display values for amount inputs (allows free typing, formats on blur)
+  const [amountDisplays, setAmountDisplays] = useState<Record<string, string>>({});
 
   // Transfer support is only available when accounts are provided
   const supportsTransfers = accounts.length > 0 && sourceAccountId;
@@ -208,24 +210,24 @@ export function SplitEditor({
 
       {/* Splits Table */}
       <div className="border dark:border-gray-700 rounded-lg overflow-visible">
-        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+        <table className="w-full table-fixed divide-y divide-gray-200 dark:divide-gray-700">
           <thead className="bg-gray-50 dark:bg-gray-800 rounded-t-lg">
             <tr>
               {supportsTransfers && (
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase w-24">
+                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase" style={{ width: '17%' }}>
                   Type
                 </th>
               )}
-              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase" style={{ width: supportsTransfers ? '33%' : '45%' }}>
                 {supportsTransfers ? 'Category / Account' : 'Category'}
               </th>
-              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase" style={{ width: '15%' }}>
                 Amount
               </th>
-              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase" style={{ width: supportsTransfers ? '30%' : '35%' }}>
                 Memo
               </th>
-              <th className="px-4 py-2 w-24"></th>
+              <th className="px-3 py-2" style={{ width: '5%' }}></th>
             </tr>
           </thead>
           <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
@@ -238,7 +240,7 @@ export function SplitEditor({
               return (
               <tr key={split.id}>
                 {supportsTransfers && (
-                  <td className="px-4 py-2">
+                  <td className="px-3 py-2">
                     <Select
                       options={[
                         { value: 'category', label: 'Category' },
@@ -247,10 +249,11 @@ export function SplitEditor({
                       value={split.splitType}
                       onChange={(e) => handleSplitChange(index, 'splitType', e.target.value)}
                       disabled={disabled}
+                      className="w-full"
                     />
                   </td>
                 )}
-                <td className="px-4 py-2">
+                <td className="px-3 py-2">
                   {split.splitType === 'category' || !supportsTransfers ? (
                     <Combobox
                       placeholder="Select category..."
@@ -273,44 +276,53 @@ export function SplitEditor({
                         handleSplitChange(index, 'transferAccountId', e.target.value || undefined)
                       }
                       disabled={disabled}
+                      className="w-full"
                     />
                   )}
                 </td>
-                <td className="px-4 py-2">
+                <td className="px-3 py-2">
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 text-sm">
                       {currencySymbol}
                     </span>
                     <Input
-                      type="number"
-                      step="0.01"
-                      value={split.amount}
-                      onChange={(e) =>
-                        handleSplitChange(index, 'amount', parseFloat(e.target.value) || 0)
-                      }
+                      type="text"
+                      inputMode="decimal"
+                      value={amountDisplays[split.id] ?? split.amount.toFixed(2)}
+                      onChange={(e) => {
+                        const filtered = e.target.value.replace(/[^0-9.-]/g, '');
+                        setAmountDisplays(prev => ({ ...prev, [split.id]: filtered }));
+                        handleSplitChange(index, 'amount', parseFloat(filtered) || 0);
+                      }}
                       onBlur={(e) => {
-                        // Round to 2 decimal places on blur
+                        // Round to 2 decimal places on blur and clear display override
                         const rounded = Math.round(parseFloat(e.target.value) * 100) / 100;
                         if (!isNaN(rounded)) {
                           handleSplitChange(index, 'amount', rounded);
                         }
+                        setAmountDisplays(prev => {
+                          const next = { ...prev };
+                          delete next[split.id];
+                          return next;
+                        });
                       }}
                       disabled={disabled}
-                      className="w-32 pl-7"
+                      className="w-full pl-7"
                     />
                   </div>
                 </td>
-                <td className="px-4 py-2">
+                <td className="px-3 py-2">
                   <Input
                     type="text"
                     value={split.memo || ''}
                     onChange={(e) => handleSplitChange(index, 'memo', e.target.value)}
                     placeholder="Optional memo"
                     disabled={disabled}
+                    className="w-full"
                   />
                 </td>
-                <td className="px-4 py-2">
-                  <div className="flex space-x-1">
+                <td className="px-3 py-2">
+                  <div className="flex space-x-1 justify-end">
                     <button
                       type="button"
                       onClick={() => addRemainingToSplit(index)}
@@ -352,12 +364,12 @@ export function SplitEditor({
           <tfoot className="bg-gray-50 dark:bg-gray-800">
             {/* Add Split Button Row */}
             <tr className="border-t border-gray-200 dark:border-gray-700">
-              <td colSpan={5} className="p-0">
+              <td colSpan={supportsTransfers ? 5 : 4} className="p-0">
                 <button
                   type="button"
                   onClick={addSplit}
                   disabled={disabled}
-                  className="w-full px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-1"
+                  className="w-full px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-1"
                 >
                   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -368,8 +380,8 @@ export function SplitEditor({
             </tr>
             {/* Total Row */}
             <tr className="border-t border-gray-200 dark:border-gray-700">
-              <td className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300" colSpan={2}>Total</td>
-              <td className="px-4 py-2">
+              <td className="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300" colSpan={supportsTransfers ? 2 : 1}>Total</td>
+              <td className="px-3 py-2">
                 <span
                   className={`font-medium ${
                     isBalanced ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
@@ -383,7 +395,7 @@ export function SplitEditor({
                   </span>
                 )}
               </td>
-              <td colSpan={2} className="px-4 py-2">
+              <td colSpan={2} className="px-3 py-2">
                 {isBalanced ? (
                   <span className="text-xs text-green-600 dark:text-green-400">Balanced</span>
                 ) : (

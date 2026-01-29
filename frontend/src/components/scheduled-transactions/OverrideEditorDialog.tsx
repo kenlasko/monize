@@ -8,6 +8,7 @@ import { Combobox } from '@/components/ui/Combobox';
 import { SplitEditor, SplitRow, createEmptySplits, toSplitRows } from '@/components/transactions/SplitEditor';
 import { ScheduledTransaction, ScheduledTransactionOverride, CreateScheduledTransactionOverrideData } from '@/types/scheduled-transaction';
 import { Category } from '@/types/category';
+import { Account } from '@/types/account';
 import { scheduledTransactionsApi } from '@/lib/scheduled-transactions';
 import { buildCategoryTree } from '@/lib/categoryUtils';
 import { useDateFormat } from '@/hooks/useDateFormat';
@@ -17,6 +18,7 @@ interface OverrideEditorDialogProps {
   scheduledTransaction: ScheduledTransaction;
   overrideDate: string;
   categories: Category[];
+  accounts: Account[];
   existingOverride?: ScheduledTransactionOverride | null;
   onClose: () => void;
   onSave: () => void;
@@ -27,6 +29,7 @@ export function OverrideEditorDialog({
   scheduledTransaction,
   overrideDate,
   categories,
+  accounts,
   existingOverride,
   onClose,
   onSave,
@@ -102,7 +105,8 @@ export function OverrideEditorDialog({
         description: description || null,
         isSplit,
         splits: isSplit ? splits.map(s => ({
-          categoryId: s.categoryId ?? null,
+          categoryId: s.splitType === 'category' ? (s.categoryId ?? null) : null,
+          transferAccountId: s.splitType === 'transfer' ? (s.transferAccountId ?? null) : null,
           amount: s.amount,
           memo: s.memo ?? null,
         })) : null,
@@ -253,6 +257,8 @@ export function OverrideEditorDialog({
                 splits={splits}
                 onChange={setSplits}
                 categories={categories}
+                accounts={accounts}
+                sourceAccountId={scheduledTransaction.accountId}
                 transactionAmount={amount}
                 onTransactionAmountChange={handleAmountChange}
                 currencyCode={scheduledTransaction.currencyCode}

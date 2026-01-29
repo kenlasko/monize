@@ -8,9 +8,13 @@ import {
   MaxLength,
   Min,
   Max,
+  IsUUID,
+  IsDateString,
+  IsIn,
 } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { AccountType } from '../entities/account.entity';
+import { PAYMENT_FREQUENCIES, PaymentFrequency } from './create-account.dto';
 
 export class UpdateAccountDto {
   @ApiPropertyOptional({
@@ -101,4 +105,52 @@ export class UpdateAccountDto {
   @IsOptional()
   @IsBoolean()
   isFavourite?: boolean;
+
+  // Loan-specific fields
+  @ApiPropertyOptional({
+    example: 500.0,
+    description: 'Monthly payment amount for loans',
+  })
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 4 })
+  @IsPositive()
+  paymentAmount?: number;
+
+  @ApiPropertyOptional({
+    example: 'MONTHLY',
+    description: 'Payment frequency for loans (WEEKLY, BIWEEKLY, MONTHLY, QUARTERLY, YEARLY)',
+  })
+  @IsOptional()
+  @IsString()
+  @IsIn(PAYMENT_FREQUENCIES)
+  paymentFrequency?: PaymentFrequency;
+
+  @ApiPropertyOptional({
+    example: '2024-02-01',
+    description: 'Start date for loan payments (YYYY-MM-DD)',
+  })
+  @IsOptional()
+  @IsDateString()
+  paymentStartDate?: string;
+
+  @ApiPropertyOptional({
+    description: 'Source account ID for loan payments (where payments come from)',
+  })
+  @IsOptional()
+  @IsUUID()
+  sourceAccountId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Category ID for principal portion of payments',
+  })
+  @IsOptional()
+  @IsUUID()
+  principalCategoryId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Category ID for interest portion of payments',
+  })
+  @IsOptional()
+  @IsUUID()
+  interestCategoryId?: string;
 }

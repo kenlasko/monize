@@ -77,6 +77,14 @@ CREATE TABLE accounts (
     is_closed BOOLEAN DEFAULT false,
     closed_date DATE,
     is_favourite BOOLEAN DEFAULT false,
+    -- Loan-specific fields
+    payment_amount NUMERIC(20, 4), -- payment amount per period for loans
+    payment_frequency VARCHAR(20), -- 'WEEKLY', 'BIWEEKLY', 'MONTHLY', 'QUARTERLY', 'YEARLY'
+    payment_start_date DATE, -- when loan payments start
+    source_account_id UUID REFERENCES accounts(id) ON DELETE SET NULL, -- account payments come from
+    principal_category_id UUID, -- category for principal portion (FK added after categories table)
+    interest_category_id UUID, -- category for interest portion (FK added after categories table)
+    scheduled_transaction_id UUID, -- linked scheduled transaction for payments (FK added after scheduled_transactions table)
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -202,6 +210,7 @@ CREATE TABLE scheduled_transaction_splits (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     scheduled_transaction_id UUID NOT NULL REFERENCES scheduled_transactions(id) ON DELETE CASCADE,
     category_id UUID REFERENCES categories(id),
+    transfer_account_id UUID REFERENCES accounts(id) ON DELETE SET NULL, -- target account for transfer splits
     amount NUMERIC(20, 4) NOT NULL,
     memo TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -209,6 +218,15 @@ CREATE TABLE scheduled_transaction_splits (
 
 CREATE INDEX idx_scheduled_transaction_splits_scheduled ON scheduled_transaction_splits(scheduled_transaction_id);
 CREATE INDEX idx_scheduled_transaction_splits_category ON scheduled_transaction_splits(category_id);
+CREATE INDEX idx_scheduled_transaction_splits_transfer_account ON scheduled_transaction_splits(transfer_account_id);
+
+-- Add deferred foreign keys for loan accounts (after categories and scheduled_transactions tables exist)
+ALTER TABLE accounts ADD CONSTRAINT fk_accounts_principal_category
+    FOREIGN KEY (principal_category_id) REFERENCES categories(id) ON DELETE SET NULL;
+ALTER TABLE accounts ADD CONSTRAINT fk_accounts_interest_category
+    FOREIGN KEY (interest_category_id) REFERENCES categories(id) ON DELETE SET NULL;
+ALTER TABLE accounts ADD CONSTRAINT fk_accounts_scheduled_transaction
+    FOREIGN KEY (scheduled_transaction_id) REFERENCES scheduled_transactions(id) ON DELETE SET NULL;
 
 -- Scheduled Transaction Overrides (for modifying individual occurrences)
 CREATE TABLE scheduled_transaction_overrides (

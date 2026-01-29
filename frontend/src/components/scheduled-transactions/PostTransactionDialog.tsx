@@ -8,6 +8,7 @@ import { Combobox } from '@/components/ui/Combobox';
 import { SplitEditor, SplitRow, createEmptySplits, toSplitRows } from '@/components/transactions/SplitEditor';
 import { ScheduledTransaction, PostScheduledTransactionData } from '@/types/scheduled-transaction';
 import { Category } from '@/types/category';
+import { Account } from '@/types/account';
 import { scheduledTransactionsApi } from '@/lib/scheduled-transactions';
 import { buildCategoryTree } from '@/lib/categoryUtils';
 import { useDateFormat } from '@/hooks/useDateFormat';
@@ -16,6 +17,7 @@ interface PostTransactionDialogProps {
   isOpen: boolean;
   scheduledTransaction: ScheduledTransaction;
   categories: Category[];
+  accounts: Account[];
   onClose: () => void;
   onPosted: () => void;
 }
@@ -24,6 +26,7 @@ export function PostTransactionDialog({
   isOpen,
   scheduledTransaction,
   categories,
+  accounts,
   onClose,
   onPosted,
 }: PostTransactionDialogProps) {
@@ -113,7 +116,8 @@ export function PostTransactionDialog({
         description: description || null,
         isSplit,
         splits: isSplit ? splits.map(s => ({
-          categoryId: s.categoryId ?? null,
+          categoryId: s.splitType === 'category' ? (s.categoryId ?? null) : null,
+          transferAccountId: s.splitType === 'transfer' ? (s.transferAccountId ?? null) : null,
           amount: s.amount,
           memo: s.memo ?? null,
         })) : undefined,
@@ -161,7 +165,7 @@ export function PostTransactionDialog({
         <div className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-75" onClick={onClose} />
 
         {/* Modal */}
-        <div className="inline-block w-full max-w-2xl px-4 pt-5 pb-4 overflow-hidden text-left align-bottom transition-all transform bg-white dark:bg-gray-800 rounded-lg shadow-xl sm:my-8 sm:align-middle sm:p-6">
+        <div className="inline-block w-full max-w-5xl px-4 pt-5 pb-4 overflow-hidden text-left align-bottom transition-all transform bg-white dark:bg-gray-800 rounded-lg shadow-xl sm:my-8 sm:align-middle sm:p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
               Post Transaction
@@ -239,6 +243,8 @@ export function PostTransactionDialog({
                 splits={splits}
                 onChange={setSplits}
                 categories={categories}
+                accounts={accounts}
+                sourceAccountId={scheduledTransaction.accountId}
                 transactionAmount={amount}
                 onTransactionAmountChange={handleAmountChange}
                 currencyCode={scheduledTransaction.currencyCode}

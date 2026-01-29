@@ -14,6 +14,8 @@ export type AccountType =
 
 export type AccountSubType = 'INVESTMENT_CASH' | 'INVESTMENT_BROKERAGE' | null;
 
+export type PaymentFrequency = 'WEEKLY' | 'BIWEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY';
+
 export interface Account {
   id: string;
   userId: string;
@@ -32,6 +34,14 @@ export interface Account {
   isClosed: boolean;
   closedDate: string | null;
   isFavourite: boolean;
+  // Loan-specific fields
+  paymentAmount: number | null;
+  paymentFrequency: PaymentFrequency | null;
+  paymentStartDate: string | null;
+  sourceAccountId: string | null;
+  principalCategoryId: string | null;
+  interestCategoryId: string | null;
+  scheduledTransactionId: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -48,6 +58,13 @@ export interface CreateAccountData {
   interestRate?: number;
   isFavourite?: boolean;
   createInvestmentPair?: boolean;
+  // Loan-specific fields
+  paymentAmount?: number;
+  paymentFrequency?: PaymentFrequency;
+  paymentStartDate?: string;
+  sourceAccountId?: string;
+  principalCategoryId?: string;
+  interestCategoryId?: string;
 }
 
 export interface InvestmentAccountPair {
@@ -63,4 +80,21 @@ export interface AccountSummary {
   totalAssets: number;
   totalLiabilities: number;
   netWorth: number;
+}
+
+// Loan amortization types
+export interface LoanPreviewData {
+  loanAmount: number;
+  interestRate: number;
+  paymentAmount: number;
+  paymentFrequency: PaymentFrequency;
+  paymentStartDate: string;
+}
+
+export interface AmortizationPreview {
+  principalPayment: number;
+  interestPayment: number;
+  remainingBalance: number;
+  totalPayments: number;
+  endDate: string;
 }

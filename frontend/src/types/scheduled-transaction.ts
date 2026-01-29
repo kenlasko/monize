@@ -26,6 +26,8 @@ export interface ScheduledTransactionSplit {
   scheduledTransactionId: string;
   categoryId: string | null;
   category: Category | null;
+  transferAccountId: string | null;
+  transferAccount: Account | null;
   amount: number;
   memo: string | null;
   createdAt: string;
@@ -65,6 +67,7 @@ export interface ScheduledTransaction {
 
 export interface CreateScheduledTransactionSplitData {
   categoryId?: string;
+  transferAccountId?: string;
   amount: number;
   memo?: string;
 }
@@ -95,6 +98,7 @@ export interface UpdateScheduledTransactionData extends Partial<CreateScheduledT
 
 export interface OverrideSplit {
   categoryId: string | null;
+  transferAccountId?: string | null;
   amount: number;
   memo?: string | null;
 }

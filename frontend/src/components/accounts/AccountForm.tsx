@@ -4,10 +4,15 @@ import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useState, useEffect, useCallback } from 'react';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
-import { Account, AccountType } from '@/types/account';
+import { Account, AccountType, AmortizationPreview, PaymentFrequency } from '@/types/account';
+import { Category } from '@/types/category';
+import { accountsApi } from '@/lib/accounts';
+import { categoriesApi } from '@/lib/categories';
+import { formatCurrency } from '@/lib/format';
 
 // Helper to handle optional numeric fields that may be NaN from empty inputs
 const optionalNumber = z.preprocess(
@@ -20,6 +25,8 @@ const optionalNumberWithRange = (min: number, max: number) =>
     (val: unknown) => (val === '' || val === undefined || (typeof val === 'number' && isNaN(val)) ? undefined : val),
     z.number().min(min).max(max).optional()
   );
+
+const paymentFrequencies = ['WEEKLY', 'BIWEEKLY', 'MONTHLY', 'QUARTERLY', 'YEARLY'] as const;
 
 const accountSchema = z.object({
   name: z.string().min(1, 'Account name is required').max(255),
@@ -46,6 +53,12 @@ const accountSchema = z.object({
   institution: z.string().optional(),
   isFavourite: z.boolean().optional(),
   createInvestmentPair: z.boolean().optional(),
+  // Loan-specific fields
+  paymentAmount: optionalNumber,
+  paymentFrequency: z.enum(paymentFrequencies).optional(),
+  paymentStartDate: z.string().optional(),
+  sourceAccountId: z.string().optional(),
+  interestCategoryId: z.string().optional(),
 });
 
 type AccountFormData = z.infer<typeof accountSchema>;
@@ -76,13 +89,31 @@ const currencySymbols: Record<string, string> = {
   JPY: '¥',
 };
 
+const paymentFrequencyOptions = [
+  { value: 'WEEKLY', label: 'Weekly' },
+  { value: 'BIWEEKLY', label: 'Every 2 Weeks' },
+  { value: 'MONTHLY', label: 'Monthly' },
+  { value: 'QUARTERLY', label: 'Quarterly' },
+  { value: 'YEARLY', label: 'Yearly' },
+];
+
 export function AccountForm({ account, onSubmit, onCancel }: AccountFormProps) {
   const router = useRouter();
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [amortizationPreview, setAmortizationPreview] = useState<AmortizationPreview | null>(null);
+  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+  const [defaultLoanCategories, setDefaultLoanCategories] = useState<{
+    principalId: string | null;
+    interestId: string | null;
+  }>({ principalId: null, interestId: null });
+
   const {
     register,
     handleSubmit,
     watch,
     setValue,
+    getValues,
     formState: { errors, isSubmitting },
   } = useForm<AccountFormData>({
     resolver: zodResolver(accountSchema),
@@ -92,7 +123,7 @@ export function AccountForm({ account, onSubmit, onCancel }: AccountFormProps) {
           accountType: account.accountType,
           currencyCode: account.currencyCode,
           openingBalance: account.openingBalance !== undefined
-            ? Math.round(Number(account.openingBalance) * 100) / 100
+            ? Math.round(Math.abs(Number(account.openingBalance)) * 100) / 100
             : undefined,
           creditLimit: account.creditLimit
             ? Math.round(Number(account.creditLimit) * 100) / 100
@@ -102,11 +133,19 @@ export function AccountForm({ account, onSubmit, onCancel }: AccountFormProps) {
           accountNumber: account.accountNumber || undefined,
           institution: account.institution || undefined,
           isFavourite: account.isFavourite || false,
+          paymentAmount: account.paymentAmount
+            ? Math.round(Number(account.paymentAmount) * 100) / 100
+            : undefined,
+          paymentFrequency: account.paymentFrequency as PaymentFrequency || undefined,
+          paymentStartDate: account.paymentStartDate?.split('T')[0] || undefined,
+          sourceAccountId: account.sourceAccountId || undefined,
+          interestCategoryId: account.interestCategoryId || undefined,
         }
       : {
           currencyCode: 'CAD',
           openingBalance: 0,
           isFavourite: false,
+          paymentFrequency: 'MONTHLY' as PaymentFrequency,
         },
   });
 
@@ -114,10 +153,88 @@ export function AccountForm({ account, onSubmit, onCancel }: AccountFormProps) {
   const watchedIsFavourite = watch('isFavourite');
   const watchedAccountType = watch('accountType');
   const watchedCreateInvestmentPair = watch('createInvestmentPair');
+  const watchedOpeningBalance = watch('openingBalance');
+  const watchedInterestRate = watch('interestRate');
+  const watchedPaymentAmount = watch('paymentAmount');
+  const watchedPaymentFrequency = watch('paymentFrequency');
+  const watchedPaymentStartDate = watch('paymentStartDate');
   const currencySymbol = currencySymbols[watchedCurrency] || '$';
 
   // Show investment pair checkbox only when creating a new INVESTMENT account
   const showInvestmentPairOption = !account && watchedAccountType === 'INVESTMENT';
+
+  // Show loan fields only for LOAN account type
+  const isLoanAccount = watchedAccountType === 'LOAN';
+
+  // Load accounts and categories when LOAN type is selected
+  useEffect(() => {
+    if (isLoanAccount && !account) {
+      const loadData = async () => {
+        try {
+          const [accountsData, categoriesData] = await Promise.all([
+            accountsApi.getAll(false),
+            categoriesApi.getAll(),
+          ]);
+          // Filter out loan accounts from source account options
+          setAccounts(accountsData.filter(a => a.accountType !== 'LOAN'));
+          setCategories(categoriesData);
+
+          // Find default loan interest category
+          const loanParent = categoriesData.find(c => c.name === 'Loan' && !c.parentId);
+          if (loanParent) {
+            const interestCat = categoriesData.find(
+              c => c.name === 'Loan Interest' && c.parentId === loanParent.id
+            );
+            setDefaultLoanCategories({
+              principalId: null,
+              interestId: interestCat?.id || null,
+            });
+            // Set default interest category if not already set
+            if (interestCat && !getValues('interestCategoryId')) {
+              setValue('interestCategoryId', interestCat.id);
+            }
+          }
+        } catch (error) {
+          console.error('Failed to load accounts/categories:', error);
+        }
+      };
+      loadData();
+    }
+  }, [isLoanAccount, account, setValue, getValues]);
+
+  // Calculate amortization preview when loan fields change
+  const calculatePreview = useCallback(async () => {
+    if (!isLoanAccount || !watchedOpeningBalance || !watchedInterestRate ||
+        !watchedPaymentAmount || !watchedPaymentFrequency || !watchedPaymentStartDate) {
+      setAmortizationPreview(null);
+      return;
+    }
+
+    setIsLoadingPreview(true);
+    try {
+      const preview = await accountsApi.previewLoanAmortization({
+        loanAmount: watchedOpeningBalance,
+        interestRate: watchedInterestRate,
+        paymentAmount: watchedPaymentAmount,
+        paymentFrequency: watchedPaymentFrequency,
+        paymentStartDate: watchedPaymentStartDate,
+      });
+      setAmortizationPreview(preview);
+    } catch (error) {
+      console.error('Failed to calculate preview:', error);
+      setAmortizationPreview(null);
+    } finally {
+      setIsLoadingPreview(false);
+    }
+  }, [isLoanAccount, watchedOpeningBalance, watchedInterestRate, watchedPaymentAmount, watchedPaymentFrequency, watchedPaymentStartDate]);
+
+  // Debounced preview calculation
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      calculatePreview();
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [calculatePreview]);
 
   const toggleFavourite = () => {
     setValue('isFavourite', !watchedIsFavourite, { shouldDirty: true });
@@ -175,7 +292,7 @@ export function AccountForm({ account, onSubmit, onCancel }: AccountFormProps) {
         />
 
         <Input
-          label="Opening Balance"
+          label={isLoanAccount ? 'Loan Amount' : 'Opening Balance'}
           type="number"
           step="0.01"
           prefix={currencySymbol}
@@ -192,30 +309,145 @@ export function AccountForm({ account, onSubmit, onCancel }: AccountFormProps) {
         />
 
         <Input
-          label="Institution (optional)"
+          label={isLoanAccount ? 'Lender/Institution (required)' : 'Institution (optional)'}
           error={errors.institution?.message}
           {...register('institution')}
         />
       </div>
 
+      {/* Credit Limit and Interest Rate - hide Credit Limit for loans */}
       <div className="grid grid-cols-2 gap-4">
-        <Input
-          label="Credit Limit (optional)"
-          type="number"
-          step="0.01"
-          prefix={currencySymbol}
-          error={errors.creditLimit?.message}
-          {...register('creditLimit', { valueAsNumber: true })}
-        />
+        {!isLoanAccount && (
+          <Input
+            label="Credit Limit (optional)"
+            type="number"
+            step="0.01"
+            prefix={currencySymbol}
+            error={errors.creditLimit?.message}
+            {...register('creditLimit', { valueAsNumber: true })}
+          />
+        )}
 
         <Input
-          label="Interest Rate % (optional)"
+          label={isLoanAccount ? 'Interest Rate % (required)' : 'Interest Rate % (optional)'}
           type="number"
           step="0.01"
           error={errors.interestRate?.message}
           {...register('interestRate', { valueAsNumber: true })}
         />
+
+        {isLoanAccount && <div />} {/* Spacer for grid alignment */}
       </div>
+
+      {/* Loan-specific fields */}
+      {isLoanAccount && !account && (
+        <div className="space-y-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+          <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
+            Loan Payment Details
+          </h3>
+
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Payment Amount (required)"
+              type="number"
+              step="0.01"
+              prefix={currencySymbol}
+              error={errors.paymentAmount?.message}
+              {...register('paymentAmount', { valueAsNumber: true })}
+            />
+
+            <Select
+              label="Payment Frequency (required)"
+              options={[
+                { value: '', label: 'Select frequency...' },
+                ...paymentFrequencyOptions,
+              ]}
+              error={errors.paymentFrequency?.message}
+              {...register('paymentFrequency')}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="First Payment Date (required)"
+              type="date"
+              error={errors.paymentStartDate?.message}
+              {...register('paymentStartDate')}
+            />
+
+            <Select
+              label="Payment From Account (required)"
+              options={[
+                { value: '', label: 'Select account...' },
+                ...accounts
+                  .slice()
+                  .sort((a, b) => a.name.localeCompare(b.name))
+                  .map(a => ({
+                    value: a.id,
+                    label: `${a.name} (${a.currencyCode})`,
+                  })),
+              ]}
+              error={errors.sourceAccountId?.message}
+              {...register('sourceAccountId')}
+            />
+          </div>
+
+          <Select
+            label="Interest Category"
+            options={[
+              { value: '', label: 'Select category...' },
+              ...categories
+                .map(c => ({
+                  value: c.id,
+                  label: c.parentId
+                    ? `${categories.find(p => p.id === c.parentId)?.name || ''}: ${c.name}`
+                    : c.name,
+                }))
+                .sort((a, b) => a.label.localeCompare(b.label)),
+            ]}
+            error={errors.interestCategoryId?.message}
+            {...register('interestCategoryId')}
+          />
+
+          {/* Amortization Preview */}
+          {amortizationPreview && (
+            <div className="p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+              <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">
+                Payment Preview (First Payment)
+              </h4>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div>
+                  <span className="text-gray-500 dark:text-gray-400">Principal:</span>{' '}
+                  <span className="font-medium">{formatCurrency(amortizationPreview.principalPayment, watchedCurrency)}</span>
+                </div>
+                <div>
+                  <span className="text-gray-500 dark:text-gray-400">Interest:</span>{' '}
+                  <span className="font-medium">{formatCurrency(amortizationPreview.interestPayment, watchedCurrency)}</span>
+                </div>
+                <div>
+                  <span className="text-gray-500 dark:text-gray-400">Total Payments:</span>{' '}
+                  <span className="font-medium">
+                    {amortizationPreview.totalPayments > 0 ? amortizationPreview.totalPayments : 'N/A'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-gray-500 dark:text-gray-400">Est. Payoff:</span>{' '}
+                  <span className="font-medium">
+                    {amortizationPreview.totalPayments > 0
+                      ? new Date(amortizationPreview.endDate).toLocaleDateString()
+                      : 'N/A'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+          {isLoadingPreview && (
+            <div className="text-sm text-gray-500 dark:text-gray-400">
+              Calculating preview...
+            </div>
+          )}
+        </div>
+      )}
 
       <Input
         label="Description (optional)"

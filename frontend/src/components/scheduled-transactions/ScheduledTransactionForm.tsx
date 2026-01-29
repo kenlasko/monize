@@ -519,6 +519,8 @@ export function ScheduledTransactionForm({
           splits={splits}
           onChange={handleSplitsChange}
           categories={categories}
+          accounts={accounts}
+          sourceAccountId={watchedAccountId}
           transactionAmount={watchedAmount || 0}
           onTransactionAmountChange={handleTransactionAmountChange}
           currencyCode={watchedCurrencyCode || 'CAD'}

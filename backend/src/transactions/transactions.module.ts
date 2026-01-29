@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Transaction } from './entities/transaction.entity';
 import { TransactionSplit } from './entities/transaction-split.entity';
@@ -12,7 +12,7 @@ import { PayeesModule } from '../payees/payees.module';
 @Module({
   imports: [
     TypeOrmModule.forFeature([Transaction, TransactionSplit, Category, InvestmentTransaction]),
-    AccountsModule,
+    forwardRef(() => AccountsModule),
     PayeesModule,
   ],
   providers: [TransactionsService],

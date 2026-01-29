@@ -5,7 +5,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, IsNull } from 'typeorm';
 import { Category } from './entities/category.entity';
 import { Transaction } from '../transactions/entities/transaction.entity';
 import { TransactionSplit } from '../transactions/entities/transaction-split.entity';
@@ -331,6 +331,71 @@ export class CategoriesService {
       incomeCategories,
       expenseCategories,
       subcategories,
+    };
+  }
+
+  /**
+   * Find a category by name (optionally under a specific parent)
+   */
+  async findByName(
+    userId: string,
+    name: string,
+    parentName?: string,
+  ): Promise<Category | null> {
+    if (parentName) {
+      // First find the parent category
+      const parent = await this.categoriesRepository.findOne({
+        where: { userId, name: parentName, parentId: IsNull() },
+      });
+
+      if (!parent) {
+        return null;
+      }
+
+      // Then find the child category under that parent
+      return this.categoriesRepository.findOne({
+        where: { userId, name, parentId: parent.id },
+      });
+    }
+
+    // Find top-level category by name
+    return this.categoriesRepository.findOne({
+      where: { userId, name },
+    });
+  }
+
+  /**
+   * Find loan categories (Loan Principal and Loan Interest under Loan parent)
+   * Returns the categories if found, or null values if not found
+   */
+  async findLoanCategories(userId: string): Promise<{
+    principalCategory: Category | null;
+    interestCategory: Category | null;
+  }> {
+    // Find the Loan parent category
+    const loanParent = await this.categoriesRepository.findOne({
+      where: { userId, name: 'Loan', parentId: IsNull() },
+    });
+
+    if (!loanParent) {
+      return {
+        principalCategory: null,
+        interestCategory: null,
+      };
+    }
+
+    // Find Loan Principal and Loan Interest under the Loan parent
+    const principalCategory = await this.categoriesRepository.findOne({
+      where: { userId, name: 'Loan Principal', parentId: loanParent.id },
+    });
+
+    const interestCategory = await this.categoriesRepository.findOne({
+      where: { userId, name: 'Loan Interest', parentId: loanParent.id },
+    });
+
+    return {
+      principalCategory,
+      interestCategory,
     };
   }
 }
