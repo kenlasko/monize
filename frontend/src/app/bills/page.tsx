@@ -5,23 +5,56 @@ import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
 import { ScheduledTransactionForm } from '@/components/scheduled-transactions/ScheduledTransactionForm';
 import { ScheduledTransactionList } from '@/components/scheduled-transactions/ScheduledTransactionList';
+import { OverrideEditorDialog } from '@/components/scheduled-transactions/OverrideEditorDialog';
+import { OccurrenceDatePicker } from '@/components/scheduled-transactions/OccurrenceDatePicker';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { scheduledTransactionsApi } from '@/lib/scheduled-transactions';
-import { ScheduledTransaction } from '@/types/scheduled-transaction';
+import { categoriesApi } from '@/lib/categories';
+import { ScheduledTransaction, ScheduledTransactionOverride } from '@/types/scheduled-transaction';
+import { Category } from '@/types/category';
 import { parseLocalDate } from '@/lib/utils';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+
+interface OverrideEditorState {
+  isOpen: boolean;
+  transaction: ScheduledTransaction | null;
+  date: string;
+  existingOverride: ScheduledTransactionOverride | null;
+}
 
 export default function BillsPage() {
   const [scheduledTransactions, setScheduledTransactions] = useState<ScheduledTransaction[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<ScheduledTransaction | undefined>();
   const [filterType, setFilterType] = useState<'all' | 'bills' | 'deposits'>('all');
+  const [overrideEditor, setOverrideEditor] = useState<OverrideEditorState>({
+    isOpen: false,
+    transaction: null,
+    date: '',
+    existingOverride: null,
+  });
+  const [overrideConfirm, setOverrideConfirm] = useState<{
+    isOpen: boolean;
+    transaction: ScheduledTransaction | null;
+    overrideCount: number;
+  }>({ isOpen: false, transaction: null, overrideCount: 0 });
+  const [datePicker, setDatePicker] = useState<{
+    isOpen: boolean;
+    transaction: ScheduledTransaction | null;
+    overrideDates: string[];
+  }>({ isOpen: false, transaction: null, overrideDates: [] });
 
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const data = await scheduledTransactionsApi.getAll();
-      setScheduledTransactions(data);
+      const [transactionsData, categoriesData] = await Promise.all([
+        scheduledTransactionsApi.getAll(),
+        categoriesApi.getAll(),
+      ]);
+      setScheduledTransactions(transactionsData);
+      setCategories(categoriesData);
     } catch (error) {
       toast.error('Failed to load scheduled transactions');
       console.error(error);
@@ -39,9 +72,57 @@ export default function BillsPage() {
     setShowForm(true);
   };
 
-  const handleEdit = (transaction: ScheduledTransaction) => {
-    setEditingTransaction(transaction);
-    setShowForm(true);
+  const handleEdit = async (transaction: ScheduledTransaction) => {
+    try {
+      // Check if there are any overrides for this scheduled transaction
+      const { hasOverrides, count } = await scheduledTransactionsApi.hasOverrides(transaction.id);
+      if (hasOverrides) {
+        // Show confirmation dialog
+        setOverrideConfirm({
+          isOpen: true,
+          transaction,
+          overrideCount: count,
+        });
+      } else {
+        // No overrides, proceed directly to edit
+        setEditingTransaction(transaction);
+        setShowForm(true);
+      }
+    } catch (error) {
+      // If check fails, proceed anyway
+      console.error('Failed to check overrides:', error);
+      setEditingTransaction(transaction);
+      setShowForm(true);
+    }
+  };
+
+  const handleOverrideConfirmKeep = () => {
+    // Keep overrides and edit the base template
+    if (overrideConfirm.transaction) {
+      setEditingTransaction(overrideConfirm.transaction);
+      setShowForm(true);
+    }
+    setOverrideConfirm({ isOpen: false, transaction: null, overrideCount: 0 });
+  };
+
+  const handleOverrideConfirmDelete = async () => {
+    // Delete all overrides and then edit
+    if (overrideConfirm.transaction) {
+      try {
+        await scheduledTransactionsApi.deleteAllOverrides(overrideConfirm.transaction.id);
+        toast.success('Overrides deleted');
+        setEditingTransaction(overrideConfirm.transaction);
+        setShowForm(true);
+      } catch (error) {
+        toast.error('Failed to delete overrides');
+        console.error(error);
+      }
+    }
+    setOverrideConfirm({ isOpen: false, transaction: null, overrideCount: 0 });
+  };
+
+  const handleOverrideConfirmCancel = () => {
+    setOverrideConfirm({ isOpen: false, transaction: null, overrideCount: 0 });
   };
 
   const handleFormSuccess = () => {
@@ -53,6 +134,69 @@ export default function BillsPage() {
   const handleFormCancel = () => {
     setShowForm(false);
     setEditingTransaction(undefined);
+  };
+
+  const handleEditOccurrence = async (transaction: ScheduledTransaction) => {
+    // Fetch existing overrides to show which dates are modified
+    let overrideDates: string[] = [];
+    try {
+      const overrides = await scheduledTransactionsApi.getOverrides(transaction.id);
+      overrideDates = overrides.map(o => o.overrideDate);
+    } catch (error) {
+      console.error('Failed to fetch overrides:', error);
+    }
+
+    // Show the date picker to let user choose which occurrence to edit
+    setDatePicker({
+      isOpen: true,
+      transaction,
+      overrideDates,
+    });
+  };
+
+  const handleDatePickerSelect = async (date: string) => {
+    const transaction = datePicker.transaction;
+    if (!transaction) return;
+
+    // Close the date picker
+    setDatePicker({ isOpen: false, transaction: null, overrideDates: [] });
+
+    try {
+      // Check if an override already exists for this date
+      const existingOverride = await scheduledTransactionsApi.getOverrideByDate(transaction.id, date);
+      setOverrideEditor({
+        isOpen: true,
+        transaction,
+        date,
+        existingOverride,
+      });
+    } catch (error) {
+      console.error('Failed to check for existing override:', error);
+      // Open the editor anyway, without existing override data
+      setOverrideEditor({
+        isOpen: true,
+        transaction,
+        date,
+        existingOverride: null,
+      });
+    }
+  };
+
+  const handleDatePickerClose = () => {
+    setDatePicker({ isOpen: false, transaction: null, overrideDates: [] });
+  };
+
+  const handleOverrideEditorClose = () => {
+    setOverrideEditor({
+      isOpen: false,
+      transaction: null,
+      date: '',
+      existingOverride: null,
+    });
+  };
+
+  const handleOverrideEditorSave = () => {
+    loadData();
   };
 
   // Filter transactions based on type
@@ -333,11 +477,69 @@ export default function BillsPage() {
             <ScheduledTransactionList
               transactions={filteredTransactions}
               onEdit={handleEdit}
+              onEditOccurrence={handleEditOccurrence}
               onRefresh={loadData}
             />
           )}
         </div>
       </div>
+
+      {/* Occurrence Date Picker */}
+      {datePicker.transaction && (
+        <OccurrenceDatePicker
+          isOpen={datePicker.isOpen}
+          scheduledTransaction={datePicker.transaction}
+          overrideDates={datePicker.overrideDates}
+          onSelect={handleDatePickerSelect}
+          onClose={handleDatePickerClose}
+        />
+      )}
+
+      {/* Override Editor Dialog */}
+      {overrideEditor.transaction && (
+        <OverrideEditorDialog
+          isOpen={overrideEditor.isOpen}
+          scheduledTransaction={overrideEditor.transaction}
+          overrideDate={overrideEditor.date}
+          categories={categories}
+          existingOverride={overrideEditor.existingOverride}
+          onClose={handleOverrideEditorClose}
+          onSave={handleOverrideEditorSave}
+        />
+      )}
+
+      {/* Override Confirmation Dialog */}
+      {overrideConfirm.isOpen && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
+            <div className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-75" />
+            <div className="inline-block px-6 py-5 overflow-hidden text-left align-bottom transition-all transform bg-white dark:bg-gray-800 rounded-lg shadow-xl sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+              <div className="mb-4">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
+                  Existing Overrides Found
+                </h3>
+                <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                  This scheduled transaction has {overrideConfirm.overrideCount} individual occurrence{overrideConfirm.overrideCount !== 1 ? 's' : ''} with custom modifications.
+                </p>
+                <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                  What would you like to do with these modifications when you update the base template?
+                </p>
+              </div>
+              <div className="flex flex-col space-y-3 sm:flex-row sm:space-y-0 sm:space-x-3 sm:justify-end">
+                <Button variant="outline" onClick={handleOverrideConfirmCancel}>
+                  Cancel
+                </Button>
+                <Button variant="outline" onClick={handleOverrideConfirmKeep}>
+                  Keep Modifications
+                </Button>
+                <Button onClick={handleOverrideConfirmDelete} className="bg-red-600 hover:bg-red-700">
+                  Delete All Modifications
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

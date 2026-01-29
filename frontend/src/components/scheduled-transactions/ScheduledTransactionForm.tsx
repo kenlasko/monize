@@ -89,6 +89,16 @@ export function ScheduledTransactionForm({
       : []
   );
 
+  // Helper to round to 2 decimal places
+  const roundTo2Decimals = (value: number) => Math.round(value * 100) / 100;
+
+  // Separate display state for amount field to allow free typing
+  const [amountDisplay, setAmountDisplay] = useState<string>(
+    scheduledTransaction
+      ? roundTo2Decimals(Number(scheduledTransaction.amount)).toFixed(2)
+      : ''
+  );
+
   const {
     register,
     handleSubmit,
@@ -199,7 +209,9 @@ export function ScheduledTransactionForm({
           const absAmount = Math.abs(watchedAmount);
           const newAmount = category.isIncome ? absAmount : -absAmount;
           if (newAmount !== watchedAmount) {
-            setValue('amount', newAmount, { shouldDirty: true, shouldValidate: true });
+            const rounded = roundTo2Decimals(newAmount);
+            setValue('amount', rounded, { shouldDirty: true, shouldValidate: true });
+            setAmountDisplay(rounded.toFixed(2));
           }
         }
       }
@@ -236,7 +248,9 @@ export function ScheduledTransactionForm({
         const absAmount = Math.abs(watchedAmount);
         const newAmount = category.isIncome ? absAmount : -absAmount;
         if (newAmount !== watchedAmount) {
-          setValue('amount', newAmount, { shouldDirty: true, shouldValidate: true });
+          const rounded = roundTo2Decimals(newAmount);
+          setValue('amount', rounded, { shouldDirty: true, shouldValidate: true });
+          setAmountDisplay(rounded.toFixed(2));
         }
       }
     } else {
@@ -282,7 +296,9 @@ export function ScheduledTransactionForm({
   };
 
   const handleTransactionAmountChange = (amount: number) => {
-    setValue('amount', amount, { shouldDirty: true, shouldValidate: true });
+    const rounded = roundTo2Decimals(amount);
+    setValue('amount', rounded, { shouldDirty: true, shouldValidate: true });
+    setAmountDisplay(rounded.toFixed(2));
   };
 
   const onSubmit = async (data: ScheduledTransactionFormData) => {
@@ -374,20 +390,26 @@ export function ScheduledTransactionForm({
               {currencySymbol}
             </span>
             <input
-              type="number"
-              step="0.01"
+              type="text"
+              inputMode="decimal"
               placeholder="0.00"
               className={`block w-full pl-7 pr-3 py-2 rounded-md border ${
                 errors.amount ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
               } bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm focus:border-blue-500 focus:ring-blue-500`}
-              {...register('amount', { valueAsNumber: true })}
-              onBlur={(e) => {
-                // Round to 2 decimal places on blur
-                const value = parseFloat(e.target.value);
-                if (!isNaN(value)) {
-                  const rounded = Math.round(value * 100) / 100;
-                  setValue('amount', rounded, { shouldValidate: true });
-                }
+              value={amountDisplay}
+              onChange={(e) => {
+                // Allow user to type freely - only filter invalid characters
+                const filtered = e.target.value.replace(/[^0-9.-]/g, '');
+                setAmountDisplay(filtered);
+                // Update form value for validation/splits
+                const numericValue = parseFloat(filtered) || 0;
+                setValue('amount', roundTo2Decimals(numericValue), { shouldValidate: true });
+              }}
+              onBlur={() => {
+                // Format display value on blur
+                const numericValue = roundTo2Decimals(parseFloat(amountDisplay) || 0);
+                setValue('amount', numericValue, { shouldValidate: true });
+                setAmountDisplay(numericValue.toFixed(2));
               }}
             />
           </div>

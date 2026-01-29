@@ -12,6 +12,7 @@ import { Account } from '../../accounts/entities/account.entity';
 import { Payee } from '../../payees/entities/payee.entity';
 import { Category } from '../../categories/entities/category.entity';
 import { ScheduledTransactionSplit } from './scheduled-transaction-split.entity';
+import { ScheduledTransactionOverride } from './scheduled-transaction-override.entity';
 
 export type FrequencyType =
   | 'ONCE'
@@ -105,6 +106,9 @@ export class ScheduledTransaction {
 
   @OneToMany(() => ScheduledTransactionSplit, (split) => split.scheduledTransaction)
   splits: ScheduledTransactionSplit[];
+
+  @OneToMany(() => ScheduledTransactionOverride, (override) => override.scheduledTransaction)
+  overrides: ScheduledTransactionOverride[];
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

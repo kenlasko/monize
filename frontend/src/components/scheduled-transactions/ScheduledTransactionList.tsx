@@ -20,12 +20,14 @@ interface ConfirmState {
 interface ScheduledTransactionListProps {
   transactions: ScheduledTransaction[];
   onEdit?: (transaction: ScheduledTransaction) => void;
+  onEditOccurrence?: (transaction: ScheduledTransaction) => void;
   onRefresh?: () => void;
 }
 
 export function ScheduledTransactionList({
   transactions,
   onEdit,
+  onEditOccurrence,
   onRefresh,
 }: ScheduledTransactionListProps) {
   const { formatDate } = useDateFormat();
@@ -247,7 +249,18 @@ export function ScheduledTransactionList({
 
                 {/* Amount */}
                 <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-right">
-                  {formatAmount(transaction.amount)}
+                  {transaction.nextOverride?.amount !== undefined && transaction.nextOverride?.amount !== null ? (
+                    <div className="flex flex-col items-end">
+                      <span className="text-xs text-gray-400 dark:text-gray-500 line-through">
+                        {formatAmount(transaction.amount)}
+                      </span>
+                      <span title="Modified for next occurrence">
+                        {formatAmount(transaction.nextOverride.amount)}
+                      </span>
+                    </div>
+                  ) : (
+                    formatAmount(transaction.amount)
+                  )}
                 </td>
 
                 {/* Schedule (Frequency + Next Due + Remaining) */}
@@ -266,6 +279,14 @@ export function ScheduledTransactionList({
                     {FREQUENCY_LABELS[transaction.frequency]}
                     {transaction.occurrencesRemaining !== null && (
                       <span className="ml-1">· {transaction.occurrencesRemaining} left</span>
+                    )}
+                    {transaction.overrideCount !== undefined && transaction.overrideCount > 0 && (
+                      <span
+                        className="ml-1.5 inline-flex text-xs font-medium rounded-full px-1.5 py-0.5 bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200"
+                        title={`${transaction.overrideCount} upcoming occurrence${transaction.overrideCount !== 1 ? 's' : ''} modified`}
+                      >
+                        {transaction.overrideCount} modified
+                      </span>
                     )}
                   </div>
                 </td>
@@ -299,11 +320,22 @@ export function ScheduledTransactionList({
                         )}
                       </>
                     )}
+                    {onEditOccurrence && transaction.isActive && (
+                      <button
+                        onClick={() => onEditOccurrence(transaction)}
+                        className="p-1 text-purple-600 dark:text-purple-400 hover:text-purple-900 dark:hover:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/50 rounded"
+                        title="Edit occurrence"
+                      >
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </button>
+                    )}
                     {onEdit && (
                       <button
                         onClick={() => onEdit(transaction)}
                         className="p-1 text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/50 rounded"
-                        title="Edit"
+                        title="Edit schedule"
                       >
                         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />

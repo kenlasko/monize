@@ -22,6 +22,10 @@ import { AuthGuard } from '@nestjs/passport';
 import { ScheduledTransactionsService } from './scheduled-transactions.service';
 import { CreateScheduledTransactionDto } from './dto/create-scheduled-transaction.dto';
 import { UpdateScheduledTransactionDto } from './dto/update-scheduled-transaction.dto';
+import {
+  CreateScheduledTransactionOverrideDto,
+  UpdateScheduledTransactionOverrideDto,
+} from './dto/scheduled-transaction-override.dto';
 
 @ApiTags('Scheduled Transactions')
 @Controller('scheduled-transactions')
@@ -158,5 +162,113 @@ export class ScheduledTransactionsController {
   @ApiResponse({ status: 404, description: 'Scheduled transaction not found' })
   skip(@Request() req, @Param('id') id: string) {
     return this.scheduledTransactionsService.skip(req.user.id, id);
+  }
+
+  // ==================== Override Endpoints ====================
+
+  @Get(':id/overrides')
+  @ApiOperation({ summary: 'Get all overrides for a scheduled transaction' })
+  @ApiParam({ name: 'id', description: 'Scheduled transaction UUID' })
+  @ApiResponse({ status: 200, description: 'List of overrides retrieved successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Scheduled transaction not found' })
+  findOverrides(@Request() req, @Param('id') id: string) {
+    return this.scheduledTransactionsService.findOverrides(req.user.id, id);
+  }
+
+  @Get(':id/overrides/check')
+  @ApiOperation({ summary: 'Check if a scheduled transaction has any overrides' })
+  @ApiParam({ name: 'id', description: 'Scheduled transaction UUID' })
+  @ApiResponse({ status: 200, description: 'Override check completed' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Scheduled transaction not found' })
+  hasOverrides(@Request() req, @Param('id') id: string) {
+    return this.scheduledTransactionsService.hasOverrides(req.user.id, id);
+  }
+
+  @Get(':id/overrides/date/:date')
+  @ApiOperation({ summary: 'Get override for a specific date (if exists)' })
+  @ApiParam({ name: 'id', description: 'Scheduled transaction UUID' })
+  @ApiParam({ name: 'date', description: 'Date in YYYY-MM-DD format' })
+  @ApiResponse({ status: 200, description: 'Override retrieved (or null if none exists)' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Scheduled transaction not found' })
+  findOverrideByDate(
+    @Request() req,
+    @Param('id') id: string,
+    @Param('date') date: string,
+  ) {
+    return this.scheduledTransactionsService.findOverrideByDate(req.user.id, id, date);
+  }
+
+  @Post(':id/overrides')
+  @ApiOperation({ summary: 'Create an override for a specific occurrence' })
+  @ApiParam({ name: 'id', description: 'Scheduled transaction UUID' })
+  @ApiResponse({ status: 201, description: 'Override created successfully' })
+  @ApiResponse({ status: 400, description: 'Bad request - override already exists for this date' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Scheduled transaction not found' })
+  createOverride(
+    @Request() req,
+    @Param('id') id: string,
+    @Body() createDto: CreateScheduledTransactionOverrideDto,
+  ) {
+    return this.scheduledTransactionsService.createOverride(req.user.id, id, createDto);
+  }
+
+  @Get(':id/overrides/:overrideId')
+  @ApiOperation({ summary: 'Get a specific override by ID' })
+  @ApiParam({ name: 'id', description: 'Scheduled transaction UUID' })
+  @ApiParam({ name: 'overrideId', description: 'Override UUID' })
+  @ApiResponse({ status: 200, description: 'Override retrieved successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Override not found' })
+  findOverride(
+    @Request() req,
+    @Param('id') id: string,
+    @Param('overrideId') overrideId: string,
+  ) {
+    return this.scheduledTransactionsService.findOverride(req.user.id, id, overrideId);
+  }
+
+  @Patch(':id/overrides/:overrideId')
+  @ApiOperation({ summary: 'Update an override' })
+  @ApiParam({ name: 'id', description: 'Scheduled transaction UUID' })
+  @ApiParam({ name: 'overrideId', description: 'Override UUID' })
+  @ApiResponse({ status: 200, description: 'Override updated successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Override not found' })
+  updateOverride(
+    @Request() req,
+    @Param('id') id: string,
+    @Param('overrideId') overrideId: string,
+    @Body() updateDto: UpdateScheduledTransactionOverrideDto,
+  ) {
+    return this.scheduledTransactionsService.updateOverride(req.user.id, id, overrideId, updateDto);
+  }
+
+  @Delete(':id/overrides/:overrideId')
+  @ApiOperation({ summary: 'Delete an override' })
+  @ApiParam({ name: 'id', description: 'Scheduled transaction UUID' })
+  @ApiParam({ name: 'overrideId', description: 'Override UUID' })
+  @ApiResponse({ status: 200, description: 'Override deleted successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Override not found' })
+  removeOverride(
+    @Request() req,
+    @Param('id') id: string,
+    @Param('overrideId') overrideId: string,
+  ) {
+    return this.scheduledTransactionsService.removeOverride(req.user.id, id, overrideId);
+  }
+
+  @Delete(':id/overrides')
+  @ApiOperation({ summary: 'Delete all overrides for a scheduled transaction' })
+  @ApiParam({ name: 'id', description: 'Scheduled transaction UUID' })
+  @ApiResponse({ status: 200, description: 'All overrides deleted successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Scheduled transaction not found' })
+  removeAllOverrides(@Request() req, @Param('id') id: string) {
+    return this.scheduledTransactionsService.removeAllOverrides(req.user.id, id);
   }
 }

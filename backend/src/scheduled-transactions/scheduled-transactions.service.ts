@@ -8,9 +8,14 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, LessThanOrEqual } from 'typeorm';
 import { ScheduledTransaction, FrequencyType } from './entities/scheduled-transaction.entity';
 import { ScheduledTransactionSplit } from './entities/scheduled-transaction-split.entity';
+import { ScheduledTransactionOverride } from './entities/scheduled-transaction-override.entity';
 import { CreateScheduledTransactionDto } from './dto/create-scheduled-transaction.dto';
 import { UpdateScheduledTransactionDto } from './dto/update-scheduled-transaction.dto';
 import { CreateScheduledTransactionSplitDto } from './dto/create-scheduled-transaction-split.dto';
+import {
+  CreateScheduledTransactionOverrideDto,
+  UpdateScheduledTransactionOverrideDto,
+} from './dto/scheduled-transaction-override.dto';
 import { AccountsService } from '../accounts/accounts.service';
 import { TransactionsService } from '../transactions/transactions.service';
 
@@ -21,6 +26,8 @@ export class ScheduledTransactionsService {
     private scheduledTransactionsRepository: Repository<ScheduledTransaction>,
     @InjectRepository(ScheduledTransactionSplit)
     private splitsRepository: Repository<ScheduledTransactionSplit>,
+    @InjectRepository(ScheduledTransactionOverride)
+    private overridesRepository: Repository<ScheduledTransactionOverride>,
     private accountsService: AccountsService,
     private transactionsService: TransactionsService,
   ) {}
@@ -97,12 +104,42 @@ export class ScheduledTransactionsService {
     return this.splitsRepository.save(splitEntities);
   }
 
-  async findAll(userId: string): Promise<ScheduledTransaction[]> {
-    return this.scheduledTransactionsRepository.find({
-      where: { userId },
-      relations: ['account', 'payee', 'category', 'splits', 'splits.category'],
-      order: { nextDueDate: 'ASC' },
-    });
+  async findAll(userId: string): Promise<(ScheduledTransaction & { overrideCount?: number; nextOverride?: ScheduledTransactionOverride | null })[]> {
+    const transactions = await this.scheduledTransactionsRepository
+      .createQueryBuilder('st')
+      .leftJoinAndSelect('st.account', 'account')
+      .leftJoinAndSelect('st.payee', 'payee')
+      .leftJoinAndSelect('st.category', 'category')
+      .leftJoinAndSelect('st.splits', 'splits')
+      .leftJoinAndSelect('splits.category', 'splitCategory')
+      .loadRelationCountAndMap('st.overrideCount', 'st.overrides')
+      .where('st.userId = :userId', { userId })
+      .orderBy('st.nextDueDate', 'ASC')
+      .getMany();
+
+    // Fetch overrides for each transaction's next due date
+    const transactionsWithOverrides = await Promise.all(
+      transactions.map(async (transaction) => {
+        const nextDueDateStr = transaction.nextDueDate instanceof Date
+          ? transaction.nextDueDate.toISOString().split('T')[0]
+          : String(transaction.nextDueDate).split('T')[0];
+
+        const nextOverride = await this.overridesRepository.findOne({
+          where: {
+            scheduledTransactionId: transaction.id,
+            overrideDate: nextDueDateStr,
+          },
+          relations: ['category'],
+        });
+
+        return {
+          ...transaction,
+          nextOverride: nextOverride || null,
+        };
+      }),
+    );
+
+    return transactionsWithOverrides;
   }
 
   async findOne(userId: string, id: string): Promise<ScheduledTransaction> {
@@ -228,6 +265,17 @@ export class ScheduledTransactionsService {
   async skip(userId: string, id: string): Promise<ScheduledTransaction> {
     const scheduled = await this.findOne(userId, id);
 
+    // Convert nextDueDate to string format
+    const nextDueDateStr = scheduled.nextDueDate instanceof Date
+      ? scheduled.nextDueDate.toISOString().split('T')[0]
+      : String(scheduled.nextDueDate).split('T')[0];
+
+    // Delete any override for the skipped date
+    await this.overridesRepository.delete({
+      scheduledTransactionId: id,
+      overrideDate: nextDueDateStr,
+    });
+
     // Advance to next occurrence without posting
     const nextDate = this.calculateNextDueDate(new Date(scheduled.nextDueDate), scheduled.frequency);
 
@@ -261,31 +309,66 @@ export class ScheduledTransactionsService {
       ? scheduled.nextDueDate.toISOString().split('T')[0]
       : String(scheduled.nextDueDate).split('T')[0];
 
-    // Build transaction payload
+    const postDate = transactionDate || nextDueDateStr;
+
+    // Check for override for this specific date
+    const override = await this.overridesRepository.findOne({
+      where: {
+        scheduledTransactionId: id,
+        overrideDate: postDate,
+      },
+    });
+
+    // Build transaction payload - use override values if they exist
     const transactionPayload: any = {
       accountId: scheduled.accountId,
-      transactionDate: transactionDate || nextDueDateStr,
+      transactionDate: postDate,
       payeeId: scheduled.payeeId || undefined,
       payeeName: scheduled.payeeName || undefined,
-      amount: Number(scheduled.amount),
+      amount: override?.amount !== null && override?.amount !== undefined
+        ? Number(override.amount)
+        : Number(scheduled.amount),
       currencyCode: scheduled.currencyCode,
-      description: scheduled.description || undefined,
+      description: override?.description !== null && override?.description !== undefined
+        ? override.description
+        : (scheduled.description || undefined),
       isCleared: false,
     };
 
-    // If split transaction, include splits
-    if (scheduled.isSplit && scheduled.splits && scheduled.splits.length > 0) {
-      transactionPayload.splits = scheduled.splits.map((split) => ({
-        categoryId: split.categoryId || undefined,
-        amount: Number(split.amount),
-        memo: split.memo || undefined,
-      }));
+    // Determine if this should be a split transaction
+    const useSplits = override?.isSplit !== null && override?.isSplit !== undefined
+      ? override.isSplit
+      : scheduled.isSplit;
+
+    if (useSplits) {
+      // Use override splits if available, otherwise base splits
+      if (override?.splits && override.splits.length > 0) {
+        transactionPayload.splits = override.splits.map((split) => ({
+          categoryId: split.categoryId || undefined,
+          amount: Number(split.amount),
+          memo: split.memo || undefined,
+        }));
+      } else if (scheduled.splits && scheduled.splits.length > 0) {
+        transactionPayload.splits = scheduled.splits.map((split) => ({
+          categoryId: split.categoryId || undefined,
+          amount: Number(split.amount),
+          memo: split.memo || undefined,
+        }));
+      }
     } else {
-      transactionPayload.categoryId = scheduled.categoryId || undefined;
+      // Use override category if available, otherwise base category
+      transactionPayload.categoryId = override?.categoryId !== null && override?.categoryId !== undefined
+        ? override.categoryId
+        : (scheduled.categoryId || undefined);
     }
 
     // Create the actual transaction
     await this.transactionsService.create(userId, transactionPayload);
+
+    // Delete the override if it was used (it's now been posted)
+    if (override) {
+      await this.overridesRepository.remove(override);
+    }
 
     // Build update object for scheduled transaction
     const updateFields: Record<string, any> = {
@@ -345,5 +428,221 @@ export class ScheduledTransactionsService {
     }
 
     return date;
+  }
+
+  // ==================== Override Methods ====================
+
+  /**
+   * Create an override for a specific occurrence of a scheduled transaction
+   */
+  async createOverride(
+    userId: string,
+    scheduledTransactionId: string,
+    createDto: CreateScheduledTransactionOverrideDto,
+  ): Promise<ScheduledTransactionOverride> {
+    // Verify user has access to the scheduled transaction
+    await this.findOne(userId, scheduledTransactionId);
+
+    // Check if override already exists for this date
+    const existing = await this.overridesRepository.findOne({
+      where: {
+        scheduledTransactionId,
+        overrideDate: createDto.overrideDate,
+      },
+    });
+
+    if (existing) {
+      throw new BadRequestException(
+        `An override already exists for ${createDto.overrideDate}. Use update instead.`,
+      );
+    }
+
+    // Validate splits if provided
+    if (createDto.isSplit && createDto.splits && createDto.splits.length > 0) {
+      if (createDto.amount === undefined || createDto.amount === null) {
+        throw new BadRequestException('Amount is required when creating split override');
+      }
+      this.validateOverrideSplits(createDto.splits, createDto.amount);
+    }
+
+    const override = this.overridesRepository.create({
+      scheduledTransactionId,
+      overrideDate: createDto.overrideDate,
+      amount: createDto.amount ?? null,
+      categoryId: createDto.categoryId ?? null,
+      description: createDto.description ?? null,
+      isSplit: createDto.isSplit ?? null,
+      splits: createDto.splits?.map(s => ({
+        categoryId: s.categoryId ?? null,
+        amount: s.amount,
+        memo: s.memo ?? null,
+      })) ?? null,
+    });
+
+    return this.overridesRepository.save(override);
+  }
+
+  /**
+   * Get all overrides for a scheduled transaction
+   */
+  async findOverrides(
+    userId: string,
+    scheduledTransactionId: string,
+  ): Promise<ScheduledTransactionOverride[]> {
+    // Verify user has access
+    await this.findOne(userId, scheduledTransactionId);
+
+    return this.overridesRepository.find({
+      where: { scheduledTransactionId },
+      relations: ['category'],
+      order: { overrideDate: 'ASC' },
+    });
+  }
+
+  /**
+   * Get a specific override by ID
+   */
+  async findOverride(
+    userId: string,
+    scheduledTransactionId: string,
+    overrideId: string,
+  ): Promise<ScheduledTransactionOverride> {
+    // Verify user has access
+    await this.findOne(userId, scheduledTransactionId);
+
+    const override = await this.overridesRepository.findOne({
+      where: { id: overrideId, scheduledTransactionId },
+      relations: ['category'],
+    });
+
+    if (!override) {
+      throw new NotFoundException(`Override with ID ${overrideId} not found`);
+    }
+
+    return override;
+  }
+
+  /**
+   * Get override for a specific date (if exists)
+   */
+  async findOverrideByDate(
+    userId: string,
+    scheduledTransactionId: string,
+    date: string,
+  ): Promise<ScheduledTransactionOverride | null> {
+    // Verify user has access
+    await this.findOne(userId, scheduledTransactionId);
+
+    return this.overridesRepository.findOne({
+      where: { scheduledTransactionId, overrideDate: date },
+      relations: ['category'],
+    });
+  }
+
+  /**
+   * Update an override
+   */
+  async updateOverride(
+    userId: string,
+    scheduledTransactionId: string,
+    overrideId: string,
+    updateDto: UpdateScheduledTransactionOverrideDto,
+  ): Promise<ScheduledTransactionOverride> {
+    const override = await this.findOverride(userId, scheduledTransactionId, overrideId);
+
+    // Validate splits if provided
+    if (updateDto.isSplit && updateDto.splits && updateDto.splits.length > 0) {
+      const amount = updateDto.amount ?? override.amount;
+      if (amount === null) {
+        throw new BadRequestException('Amount is required for split override');
+      }
+      this.validateOverrideSplits(updateDto.splits, amount);
+    }
+
+    // Update fields
+    if (updateDto.amount !== undefined) override.amount = updateDto.amount;
+    if (updateDto.categoryId !== undefined) override.categoryId = updateDto.categoryId ?? null;
+    if (updateDto.description !== undefined) override.description = updateDto.description;
+    if (updateDto.isSplit !== undefined) override.isSplit = updateDto.isSplit;
+    if (updateDto.splits !== undefined) {
+      override.splits = updateDto.splits?.map(s => ({
+        categoryId: s.categoryId ?? null,
+        amount: s.amount,
+        memo: s.memo ?? null,
+      })) ?? null;
+    }
+
+    return this.overridesRepository.save(override);
+  }
+
+  /**
+   * Delete an override
+   */
+  async removeOverride(
+    userId: string,
+    scheduledTransactionId: string,
+    overrideId: string,
+  ): Promise<void> {
+    const override = await this.findOverride(userId, scheduledTransactionId, overrideId);
+    await this.overridesRepository.remove(override);
+  }
+
+  /**
+   * Delete all overrides for a scheduled transaction
+   */
+  async removeAllOverrides(
+    userId: string,
+    scheduledTransactionId: string,
+  ): Promise<number> {
+    // Verify user has access
+    await this.findOne(userId, scheduledTransactionId);
+
+    const result = await this.overridesRepository.delete({ scheduledTransactionId });
+    return result.affected || 0;
+  }
+
+  /**
+   * Check if a scheduled transaction has any overrides
+   */
+  async hasOverrides(
+    userId: string,
+    scheduledTransactionId: string,
+  ): Promise<{ hasOverrides: boolean; count: number }> {
+    // Verify user has access
+    await this.findOne(userId, scheduledTransactionId);
+
+    const count = await this.overridesRepository.count({
+      where: { scheduledTransactionId },
+    });
+
+    return { hasOverrides: count > 0, count };
+  }
+
+  /**
+   * Validate override splits
+   */
+  private validateOverrideSplits(
+    splits: { categoryId?: string | null; amount: number; memo?: string | null }[],
+    transactionAmount: number,
+  ): void {
+    if (splits.length < 2) {
+      throw new BadRequestException('Split overrides must have at least 2 splits');
+    }
+
+    const splitsSum = splits.reduce((sum, split) => sum + Number(split.amount), 0);
+    const roundedSum = Math.round(splitsSum * 10000) / 10000;
+    const roundedAmount = Math.round(Number(transactionAmount) * 10000) / 10000;
+
+    if (roundedSum !== roundedAmount) {
+      throw new BadRequestException(
+        `Split amounts (${roundedSum}) must equal transaction amount (${roundedAmount})`,
+      );
+    }
+
+    for (const split of splits) {
+      if (split.amount === 0) {
+        throw new BadRequestException('Split amounts cannot be zero');
+      }
+    }
   }
 }

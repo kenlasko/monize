@@ -57,6 +57,8 @@ export interface ScheduledTransaction {
   lastPostedDate: string | null;
   isSplit: boolean;
   splits?: ScheduledTransactionSplit[];
+  overrideCount?: number;
+  nextOverride?: ScheduledTransactionOverride | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -88,3 +90,47 @@ export interface CreateScheduledTransactionData {
 }
 
 export interface UpdateScheduledTransactionData extends Partial<CreateScheduledTransactionData> {}
+
+// ==================== Override Types ====================
+
+export interface OverrideSplit {
+  categoryId: string | null;
+  amount: number;
+  memo?: string | null;
+}
+
+export interface ScheduledTransactionOverride {
+  id: string;
+  scheduledTransactionId: string;
+  overrideDate: string;
+  amount: number | null;
+  categoryId: string | null;
+  category?: Category | null;
+  description: string | null;
+  isSplit: boolean | null;
+  splits: OverrideSplit[] | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateScheduledTransactionOverrideData {
+  overrideDate: string;
+  amount?: number | null;
+  categoryId?: string | null;
+  description?: string | null;
+  isSplit?: boolean | null;
+  splits?: OverrideSplit[] | null;
+}
+
+export interface UpdateScheduledTransactionOverrideData {
+  amount?: number | null;
+  categoryId?: string | null;
+  description?: string | null;
+  isSplit?: boolean | null;
+  splits?: OverrideSplit[] | null;
+}
+
+export interface OverrideCheckResult {
+  hasOverrides: boolean;
+  count: number;
+}

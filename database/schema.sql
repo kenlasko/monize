@@ -210,6 +210,24 @@ CREATE TABLE scheduled_transaction_splits (
 CREATE INDEX idx_scheduled_transaction_splits_scheduled ON scheduled_transaction_splits(scheduled_transaction_id);
 CREATE INDEX idx_scheduled_transaction_splits_category ON scheduled_transaction_splits(category_id);
 
+-- Scheduled Transaction Overrides (for modifying individual occurrences)
+CREATE TABLE scheduled_transaction_overrides (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    scheduled_transaction_id UUID NOT NULL REFERENCES scheduled_transactions(id) ON DELETE CASCADE,
+    override_date DATE NOT NULL,
+    amount NUMERIC(20, 4),
+    category_id UUID REFERENCES categories(id) ON DELETE SET NULL,
+    description TEXT,
+    is_split BOOLEAN,
+    splits JSONB, -- JSON array of split overrides: [{categoryId, amount, memo}]
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(scheduled_transaction_id, override_date)
+);
+
+CREATE INDEX idx_sched_txn_overrides_sched_txn_id ON scheduled_transaction_overrides(scheduled_transaction_id);
+CREATE INDEX idx_sched_txn_overrides_date ON scheduled_transaction_overrides(override_date);
+
 -- Securities (stocks, bonds, mutual funds, ETFs)
 CREATE TABLE securities (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -387,6 +405,7 @@ CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users FOR EACH ROW EXECU
 CREATE TRIGGER update_accounts_updated_at BEFORE UPDATE ON accounts FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_transactions_updated_at BEFORE UPDATE ON transactions FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_scheduled_transactions_updated_at BEFORE UPDATE ON scheduled_transactions FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_scheduled_transaction_overrides_updated_at BEFORE UPDATE ON scheduled_transaction_overrides FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_securities_updated_at BEFORE UPDATE ON securities FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_holdings_updated_at BEFORE UPDATE ON holdings FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_investment_transactions_updated_at BEFORE UPDATE ON investment_transactions FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
