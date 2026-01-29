@@ -63,12 +63,14 @@ export interface ImportResult {
 
 export const importApi = {
   parseQif: async (content: string): Promise<ParsedQifResponse> => {
-    const response = await api.post('/import/qif/parse', { content });
+    // Longer timeout for parsing large files (1 minute)
+    const response = await api.post('/import/qif/parse', { content }, { timeout: 60000 });
     return response.data;
   },
 
   importQif: async (data: ImportQifRequest): Promise<ImportResult> => {
-    const response = await api.post('/import/qif', data);
+    // Longer timeout for large imports (5 minutes)
+    const response = await api.post('/import/qif', data, { timeout: 300000 });
     return response.data;
   },
 };

@@ -679,7 +679,6 @@ export class ImportService {
             currencyCode: account.currencyCode,
             isSplit,
             isTransfer: qifTx.isTransfer,
-            linkedAccountId: transferAccountId,
             createdAt: baseTime,
           });
 
@@ -763,7 +762,6 @@ export class ImportService {
               status, // Use same status as the main transaction
               currencyCode: account.currencyCode,
               isTransfer: true,
-              linkedAccountId: dto.accountId,
               linkedTransactionId: savedTx.id,
               createdAt: linkedTime,
             });

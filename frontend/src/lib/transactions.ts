@@ -31,7 +31,8 @@ export const transactionsApi = {
     page?: number;
     limit?: number;
   }): Promise<PaginatedTransactions> => {
-    const response = await apiClient.get<PaginatedTransactions>('/transactions', { params });
+    // Use a longer timeout for accounts with many transactions
+    const response = await apiClient.get<PaginatedTransactions>('/transactions', { params, timeout: 60000 });
     return response.data;
   },
 
@@ -88,8 +89,10 @@ export const transactionsApi = {
     categoryId?: string;
     payeeId?: string;
   }): Promise<TransactionSummary> => {
+    // Use a longer timeout for accounts with many transactions
     const response = await apiClient.get<TransactionSummary>('/transactions/summary', {
       params,
+      timeout: 60000,
     });
     return response.data;
   },
