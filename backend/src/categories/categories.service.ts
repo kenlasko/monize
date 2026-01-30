@@ -415,88 +415,348 @@ export class CategoriesService {
       );
     }
 
-    // Income categories
+    // Income categories with subcategories
     const incomeCategories = [
-      { name: 'Salary', icon: '💰', color: '#2ECC71', isIncome: true },
-      { name: 'Freelance', icon: '💼', color: '#1ABC9C', isIncome: true },
-      { name: 'Investment Income', icon: '📈', color: '#3498DB', isIncome: true },
-      { name: 'Other Income', icon: '💵', color: '#16A085', isIncome: true },
+      {
+        name: 'Investment Income',
+        subcategories: ['Capital Gains', 'Interest', 'RESP Grant'],
+      },
+      {
+        name: 'Other Income',
+        subcategories: [
+          'Blogging',
+          'Business Reimbursement',
+          'Cashback',
+          'Consulting',
+          'Credit Card Reward',
+          'Employee Stock Option',
+          'Gifts Received',
+          'Income Tax Refund',
+          'Rental Income',
+          'State & Local Tax Refund',
+          'Transfer Bonus',
+          'Tutoring',
+        ],
+      },
+      {
+        name: 'Retirement Income',
+        subcategories: ['CPP/QPP Benefits'],
+      },
+      {
+        name: 'Wages & Salary',
+        subcategories: [
+          'Bonus',
+          'Commission',
+          'Employer Matching',
+          'Gross Pay',
+          'Net Pay',
+          'Overtime',
+          'Vacation Pay',
+        ],
+      },
     ];
 
     // Expense categories with subcategories
     const expenseCategories = [
       {
-        name: 'Housing',
-        icon: '🏠',
-        color: '#E74C3C',
-        subcategories: ['Rent/Mortgage', 'Utilities', 'Property Tax', 'Maintenance'],
+        name: 'Automobile',
+        subcategories: [
+          'Accessories',
+          'Car Payment',
+          'Cleaning',
+          'Fines',
+          'Gasoline',
+          'Licencing',
+          'Maintenance',
+          'Parking',
+          'Parts',
+          'Toll Charges',
+        ],
       },
       {
-        name: 'Transportation',
-        icon: '🚗',
-        color: '#3498DB',
-        subcategories: ['Fuel', 'Public Transit', 'Car Insurance', 'Maintenance'],
+        name: 'Bank Fees',
+        subcategories: ['ATM', 'Annual', 'NSF', 'Other', 'Overdraft', 'Service'],
       },
       {
-        name: 'Food',
-        icon: '🍽️',
-        color: '#E67E22',
-        subcategories: ['Groceries', 'Restaurants', 'Coffee Shops'],
+        name: 'Bills',
+        subcategories: [
+          'Accounting',
+          'Cable TV',
+          'Cell Phone',
+          'Electricity',
+          'Internet',
+          'Lawyer',
+          'Natural Gas',
+          'Satellite Radio',
+          'Streaming',
+          'Telephone',
+          'Water & Sewer',
+          'Water Heater',
+        ],
       },
       {
-        name: 'Shopping',
-        icon: '🛍️',
-        color: '#9B59B6',
-        subcategories: ['Clothing', 'Electronics', 'Home Goods'],
+        name: 'Business',
+        subcategories: [
+          'Airfare',
+          'Alcohol',
+          'Bank Fees',
+          'Car Rental',
+          'Cell Phone',
+          'Computer Hardware',
+          'Computer Software',
+          'Dining Out',
+          'Education',
+          'Gasoline',
+          'Internet',
+          'Lodging',
+          'Mileage',
+          'Miscellaneous',
+          'Parking',
+          'Recreation',
+          'Toll Charges',
+          'Transit',
+        ],
       },
       {
-        name: 'Entertainment',
-        icon: '🎬',
-        color: '#F39C12',
-        subcategories: ['Movies', 'Concerts', 'Streaming Services', 'Games'],
+        name: 'Cash Withdrawal',
+        subcategories: [
+          'Barbadian Dollars',
+          'Bermudian Dollars',
+          'Canadian Dollars',
+          'Costa Rican Colones',
+          'Croatian Kunas',
+          'Dominican Republic Pesos',
+          'Eastern Caribbean Dollars',
+          'Euros',
+          'Forints',
+          'Honduran Lempiras',
+          'Hong Kong Dollars',
+          'Indonesian Rupiah',
+          'Malaysian Ringgits',
+          'Mexican Pesos',
+          'Peruvian Soles',
+          'Singapore Dollars',
+          'Thai Baht',
+          'US Dollars',
+        ],
+      },
+      { name: 'Charitable Donations', subcategories: [] },
+      {
+        name: 'Childcare',
+        subcategories: [
+          'Activities',
+          'Allowance',
+          'Babysitting',
+          'Books',
+          'Clothing',
+          'Counselling',
+          'Daycare',
+          'Entertainment',
+          'Fees',
+          'Furnishings',
+          'Gifts',
+          'Haircut',
+          'Medication',
+          'Shoes',
+          'Sporting Goods',
+          'Sports',
+          'Supplies',
+          'Toiletries',
+          'Toys & Games',
+        ],
       },
       {
-        name: 'Health',
-        icon: '⚕️',
-        color: '#27AE60',
-        subcategories: ['Insurance', 'Doctor Visits', 'Pharmacy', 'Gym'],
+        name: 'Clothing',
+        subcategories: ['Accessories', 'Clothes', 'Coats', 'Shoes'],
+      },
+      {
+        name: 'Computer',
+        subcategories: ['Hardware', 'Software', 'Web Hosting'],
       },
       {
         name: 'Education',
-        icon: '📚',
-        color: '#2980B9',
-        subcategories: ['Tuition', 'Books', 'Courses'],
+        subcategories: ['Books', 'Fees', 'Tuition'],
+      },
+      {
+        name: 'Food',
+        subcategories: ['Alcohol', 'Cannabis', 'Dining Out', 'Groceries'],
+      },
+      {
+        name: 'Furnishings',
+        subcategories: [
+          'Accessories',
+          'Appliances',
+          'Basement',
+          'Bathroom',
+          'Bedroom',
+          'Dining Room',
+          'Dishes',
+          'Kitchen',
+          'Living Room',
+          'Office',
+          'Outdoor',
+          'Plants',
+        ],
+      },
+      {
+        name: 'Gifts',
+        subcategories: [
+          'Anniversary',
+          'Birthday',
+          'Cards',
+          'Christmas',
+          'Flowers',
+          "Mother's Day",
+          'RESP Contribution',
+          'Valentines',
+          'Wedding',
+        ],
+      },
+      {
+        name: 'Healthcare',
+        subcategories: [
+          'Counselling',
+          'Dental',
+          'Eyecare',
+          'Fertility',
+          'Fitness',
+          'Hospital',
+          'Massage',
+          'Medication',
+          'Physician',
+          'Physiotherapy',
+          'Prescriptions',
+          'Supplies',
+        ],
+      },
+      {
+        name: 'Housing',
+        subcategories: [
+          'Fees',
+          'Garden Supplies',
+          'Home Improvement',
+          'Maintenance',
+          'Mortgage Interest',
+          'Mortgage Principal',
+          'Rent',
+          'Supplies',
+          'Tools',
+        ],
+      },
+      {
+        name: 'Insurance',
+        subcategories: [
+          'Automobile',
+          'Disability',
+          'Health',
+          'Homeowner/Renter',
+          'Life',
+          'Travel',
+        ],
+      },
+      { name: 'Interest Expense', subcategories: [] },
+      {
+        name: 'Leisure',
+        subcategories: [
+          'Books & Magazines',
+          'CD',
+          'Camera/Film',
+          'Camping',
+          'Cover Charge',
+          'Cultural Events',
+          'DVD',
+          'Electronics',
+          'Entertaining',
+          'Entertainment',
+          'Fees',
+          'Gambling',
+          'LPs',
+          'Movies',
+          'Newspaper',
+          'Sporting Events',
+          'Sporting Goods',
+          'Sports',
+          'Toys & Games',
+          'Transit',
+          'VHS',
+          'Video Rentals',
+        ],
+      },
+      { name: 'Licencing Fees', subcategories: [] },
+      {
+        name: 'Loan',
+        subcategories: ['Loan Interest', 'Loan Principal', 'Mortgage Interest'],
+      },
+      {
+        name: 'Miscellaneous',
+        subcategories: ['Postage', 'Postcards', 'Tools', 'Transit'],
       },
       {
         name: 'Personal Care',
-        icon: '💇',
-        color: '#8E44AD',
-        subcategories: ['Haircut', 'Cosmetics', 'Spa'],
+        subcategories: [
+          'Dry Cleaning',
+          'Haircut',
+          'Laundry',
+          'Pedicure',
+          'Toiletries',
+        ],
       },
       {
-        name: 'Bills & Utilities',
-        icon: '📄',
-        color: '#C0392B',
-        subcategories: ['Phone', 'Internet', 'Electricity', 'Water', 'Insurance'],
+        name: 'Pet Care',
+        subcategories: ['Food', 'Supplies', 'Veterinarian'],
       },
-      { name: 'Gifts & Donations', icon: '🎁', color: '#E91E63', subcategories: [] },
-      { name: 'Travel', icon: '✈️', color: '#00BCD4', subcategories: [] },
-      { name: 'Miscellaneous', icon: '📌', color: '#95A5A6', subcategories: [] },
+      {
+        name: 'Taxes',
+        subcategories: [
+          'CPP/QPP Contributions',
+          'EI Premiums',
+          'Federal Income',
+          'Goods & Services',
+          'Other',
+          'Property',
+          'Real Estate',
+          'State/Provincial',
+          'Union Dues',
+        ],
+      },
+      {
+        name: 'Vacation',
+        subcategories: [
+          'Airfare',
+          'Car Rental',
+          'Entertainment',
+          'Gasoline',
+          'Lodging',
+          'Miscellaneous',
+          'Parking',
+          'Transit',
+          'Travel',
+        ],
+      },
     ];
 
     let categoryCount = 0;
 
-    // Create income categories
+    // Create income categories with subcategories
     for (const cat of incomeCategories) {
-      const category = this.categoriesRepository.create({
+      const parentCategory = this.categoriesRepository.create({
         userId,
         name: cat.name,
-        icon: cat.icon,
-        color: cat.color,
-        isIncome: cat.isIncome,
+        isIncome: true,
       });
-      await this.categoriesRepository.save(category);
+      const savedParent = await this.categoriesRepository.save(parentCategory);
       categoryCount++;
+
+      for (const subName of cat.subcategories) {
+        const subCategory = this.categoriesRepository.create({
+          userId,
+          parentId: savedParent.id,
+          name: subName,
+          isIncome: true,
+        });
+        await this.categoriesRepository.save(subCategory);
+        categoryCount++;
+      }
     }
 
     // Create expense categories with subcategories
@@ -504,14 +764,11 @@ export class CategoriesService {
       const parentCategory = this.categoriesRepository.create({
         userId,
         name: cat.name,
-        icon: cat.icon,
-        color: cat.color,
         isIncome: false,
       });
       const savedParent = await this.categoriesRepository.save(parentCategory);
       categoryCount++;
 
-      // Create subcategories
       for (const subName of cat.subcategories) {
         const subCategory = this.categoriesRepository.create({
           userId,

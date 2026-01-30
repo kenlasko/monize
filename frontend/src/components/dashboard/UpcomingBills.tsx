@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { differenceInDays, isToday, isTomorrow } from 'date-fns';
+import { differenceInDays, isToday, isTomorrow, startOfDay } from 'date-fns';
 import { ScheduledTransaction } from '@/types/scheduled-transaction';
 import { parseLocalDate } from '@/lib/utils';
 import { useDateFormat } from '@/hooks/useDateFormat';
@@ -16,7 +16,7 @@ export function UpcomingBills({ scheduledTransactions, isLoading }: UpcomingBill
   const { formatDate } = useDateFormat();
 
   // Filter to only bills (negative amounts) in the next 7 days
-  const today = new Date();
+  const today = startOfDay(new Date());
   const upcomingBills = scheduledTransactions
     .filter((st) => {
       if (!st.isActive || st.amount >= 0) return false;
