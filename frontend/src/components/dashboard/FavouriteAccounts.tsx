@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { Account } from '@/types/account';
+import { usePreferencesStore } from '@/store/preferencesStore';
 
 interface FavouriteAccountsProps {
   accounts: Account[];
@@ -10,13 +11,23 @@ interface FavouriteAccountsProps {
 
 export function FavouriteAccounts({ accounts, isLoading }: FavouriteAccountsProps) {
   const router = useRouter();
+  const { preferences } = usePreferencesStore();
+  const defaultCurrency = preferences?.defaultCurrency || 'CAD';
   const favouriteAccounts = accounts.filter((a) => a.isFavourite && !a.isClosed);
 
-  const formatCurrency = (amount: number, currency: string) => {
-    return new Intl.NumberFormat('en-CA', {
+  const formatCurrency = (amount: number | string | null | undefined, currency: string) => {
+    const numericAmount = Number(amount) || 0;
+    const formatted = new Intl.NumberFormat('en-CA', {
       style: 'currency',
       currency: currency,
-    }).format(amount);
+      currencyDisplay: 'narrowSymbol',
+    }).format(numericAmount);
+
+    // Only show currency code if it differs from user's default currency
+    if (currency !== defaultCurrency) {
+      return `${formatted} ${currency}`;
+    }
+    return formatted;
   };
 
   if (isLoading) {
@@ -80,7 +91,7 @@ export function FavouriteAccounts({ accounts, isLoading }: FavouriteAccountsProp
             </div>
             <div
               className={`font-semibold ${
-                account.currentBalance >= 0
+                Number(account.currentBalance) >= 0
                   ? 'text-green-600 dark:text-green-400'
                   : 'text-red-600 dark:text-red-400'
               }`}

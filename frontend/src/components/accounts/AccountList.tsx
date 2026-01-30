@@ -6,6 +6,7 @@ import { Account, AccountType } from '@/types/account';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { accountsApi } from '@/lib/accounts';
+import { usePreferencesStore } from '@/store/preferencesStore';
 import toast from 'react-hot-toast';
 
 type SortField = 'name' | 'type' | 'balance' | 'status';
@@ -19,6 +20,8 @@ interface AccountListProps {
 
 export function AccountList({ accounts, onEdit, onRefresh }: AccountListProps) {
   const router = useRouter();
+  const { preferences } = usePreferencesStore();
+  const defaultCurrency = preferences?.defaultCurrency || 'CAD';
   const [closeDialogOpen, setCloseDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [accountToClose, setAccountToClose] = useState<Account | null>(null);
@@ -213,11 +216,19 @@ export function AccountList({ accounts, onEdit, onRefresh }: AccountListProps) {
     }
   };
 
-  const formatCurrency = (amount: number, currency: string) => {
-    return new Intl.NumberFormat('en-US', {
+  const formatCurrency = (amount: number | string | null | undefined, currency: string) => {
+    const numericAmount = Number(amount) || 0;
+    const formatted = new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: currency,
-    }).format(amount);
+      currencyDisplay: 'narrowSymbol',
+    }).format(numericAmount);
+
+    // Only show currency code if it differs from user's default currency
+    if (currency !== defaultCurrency) {
+      return `${formatted} ${currency}`;
+    }
+    return formatted;
   };
 
   const formatAccountType = (type: AccountType) => {
@@ -437,7 +448,7 @@ export function AccountList({ accounts, onEdit, onRefresh }: AccountListProps) {
               <td className={`px-6 py-4 whitespace-nowrap text-right ${account.isClosed ? 'opacity-50' : ''}`}>
                 <div
                   className={`text-sm font-medium ${
-                    account.currentBalance >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                    Number(account.currentBalance) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
                   }`}
                 >
                   {formatCurrency(account.currentBalance, account.currencyCode)}

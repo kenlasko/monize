@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { transactionsApi } from '@/lib/transactions';
 import { accountsApi } from '@/lib/accounts';
+import { usePreferencesStore } from '@/store/preferencesStore';
 import { Account } from '@/types/account';
 import { Transaction, ReconciliationData, TransactionStatus } from '@/types/transaction';
 
@@ -28,6 +29,8 @@ function ReconcileContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const preselectedAccountId = searchParams.get('accountId');
+  const { preferences } = usePreferencesStore();
+  const defaultCurrency = preferences?.defaultCurrency || 'CAD';
 
   const [step, setStep] = useState<ReconcileStep>('setup');
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -161,11 +164,20 @@ function ReconcileContent() {
     setSelectedTransactionIds(new Set());
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-CA', {
+  const formatCurrency = (amount: number | string | null | undefined) => {
+    const numericAmount = Number(amount) || 0;
+    const currency = selectedAccount?.currencyCode || 'CAD';
+    const formatted = new Intl.NumberFormat('en-CA', {
       style: 'currency',
-      currency: selectedAccount?.currencyCode || 'CAD',
-    }).format(amount);
+      currency: currency,
+      currencyDisplay: 'narrowSymbol',
+    }).format(numericAmount);
+
+    // Only show currency code if it differs from user's default currency
+    if (currency !== defaultCurrency) {
+      return `${formatted} ${currency}`;
+    }
+    return formatted;
   };
 
   const renderSetupStep = () => (

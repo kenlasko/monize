@@ -517,6 +517,16 @@ export class AccountsService {
       }
     }
 
+    // If this is a loan account with an associated scheduled transaction, delete it
+    if (account.accountType === AccountType.LOAN && account.scheduledTransactionId) {
+      try {
+        await this.scheduledTransactionsService.remove(userId, account.scheduledTransactionId);
+      } catch (error) {
+        // Scheduled transaction may have already been deleted, continue with account deletion
+        console.log(`Could not delete scheduled transaction ${account.scheduledTransactionId}: ${error.message}`);
+      }
+    }
+
     await this.accountsRepository.remove(account);
   }
 
