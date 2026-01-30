@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
 import { ScheduledTransactionForm } from '@/components/scheduled-transactions/ScheduledTransactionForm';
+import { CashFlowForecastChart } from '@/components/bills/CashFlowForecastChart';
 import { ScheduledTransactionList } from '@/components/scheduled-transactions/ScheduledTransactionList';
 import { OverrideEditorDialog } from '@/components/scheduled-transactions/OverrideEditorDialog';
 import { OccurrenceDatePicker } from '@/components/scheduled-transactions/OccurrenceDatePicker';
@@ -432,6 +433,13 @@ export default function BillsPage() {
             </div>
           </div>
         </div>
+
+        {/* Cash Flow Forecast Chart */}
+        <CashFlowForecastChart
+          scheduledTransactions={scheduledTransactions}
+          accounts={accounts}
+          isLoading={isLoading}
+        />
 
         {/* Form Modal */}
         {showForm && (
