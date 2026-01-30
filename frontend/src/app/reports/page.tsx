@@ -243,10 +243,10 @@ export default function ReportsPage() {
               <button
                 key={report.id}
                 onClick={() => handleReportClick(report.id)}
-                className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 overflow-hidden hover:shadow-lg dark:hover:shadow-gray-700/70 transition-shadow text-left group"
+                className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 overflow-hidden hover:shadow-lg dark:hover:shadow-gray-700/70 transition-shadow text-left group flex flex-col h-full"
               >
                 {/* Preview Area */}
-                <div className={`h-32 ${report.color} bg-opacity-10 dark:bg-opacity-20 flex items-center justify-center relative`}>
+                <div className={`h-32 ${report.color} bg-opacity-10 dark:bg-opacity-20 flex items-center justify-center relative flex-shrink-0`}>
                   <div className={`${report.color} bg-opacity-20 dark:bg-opacity-30 rounded-full p-4`}>
                     <div className="text-gray-700 dark:text-gray-200">
                       {report.icon}
@@ -257,7 +257,7 @@ export default function ReportsPage() {
                   </span>
                 </div>
                 {/* Content */}
-                <div className="p-4">
+                <div className="p-4 flex flex-col flex-1">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                     {report.name}
                   </h3>

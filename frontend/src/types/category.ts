@@ -11,6 +11,7 @@ export interface Category {
   isIncome: boolean;
   isSystem: boolean;
   createdAt: string;
+  transactionCount?: number;
 }
 
 export interface CreateCategoryData {

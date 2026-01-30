@@ -11,6 +11,9 @@ import toast from 'react-hot-toast';
 // Density levels: 'normal' | 'compact' | 'dense'
 export type DensityLevel = 'normal' | 'compact' | 'dense';
 
+type SortField = 'name' | 'type' | 'count';
+type SortDirection = 'asc' | 'desc';
+
 interface CategoryListProps {
   categories: Category[];
   onEdit: (category: Category) => void;
@@ -29,6 +32,8 @@ export function CategoryList({
   const router = useRouter();
   const [deleteCategory, setDeleteCategory] = useState<Category | null>(null);
   const [localDensity, setLocalDensity] = useState<DensityLevel>('normal');
+  const [sortField, setSortField] = useState<SortField>('name');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 
   // Use prop density if provided, otherwise use local state
   const density = propDensity ?? localDensity;
@@ -58,6 +63,22 @@ export function CategoryList({
       setLocalDensity(nextDensity);
     }
   }, [density, onDensityChange]);
+
+  const handleSort = useCallback((field: SortField) => {
+    if (sortField === field) {
+      setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortField(field);
+      setSortDirection(field === 'count' ? 'desc' : 'asc');
+    }
+  }, [sortField]);
+
+  const SortIcon = ({ field }: { field: SortField }) => {
+    if (sortField !== field) {
+      return <span className="ml-1 text-gray-300 dark:text-gray-600">↕</span>;
+    }
+    return <span className="ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>;
+  };
 
   const handleViewTransactions = (category: Category) => {
     router.push(`/transactions?categoryId=${category.id}`);
@@ -93,18 +114,34 @@ export function CategoryList({
     }
   };
 
-  // Build tree structure
-  const buildTree = (parentId: string | null = null, level: number = 0): Category[] => {
-    return categories
-      .filter((c) => c.parentId === parentId)
-      .sort((a, b) => a.name.localeCompare(b.name))
-      .flatMap((category) => [
+  // Sorting function for categories
+  const sortCategories = useCallback((cats: Category[]) => {
+    return [...cats].sort((a, b) => {
+      let comparison = 0;
+      if (sortField === 'name') {
+        comparison = a.name.localeCompare(b.name);
+      } else if (sortField === 'type') {
+        // Income comes before Expense when ascending
+        comparison = (a.isIncome === b.isIncome) ? 0 : (a.isIncome ? -1 : 1);
+      } else if (sortField === 'count') {
+        comparison = (a.transactionCount ?? 0) - (b.transactionCount ?? 0);
+      }
+      return sortDirection === 'asc' ? comparison : -comparison;
+    });
+  }, [sortField, sortDirection]);
+
+  // Build tree structure with sorting
+  const treeCategories = useMemo(() => {
+    const buildTree = (parentId: string | null = null, level: number = 0): (Category & { _level: number })[] => {
+      const children = categories.filter((c) => c.parentId === parentId);
+      const sorted = sortCategories(children);
+      return sorted.flatMap((category) => [
         { ...category, _level: level },
         ...buildTree(category.id, level + 1),
       ]);
-  };
-
-  const treeCategories = buildTree();
+    };
+    return buildTree();
+  }, [categories, sortCategories]);
 
   if (categories.length === 0) {
     return (
@@ -147,11 +184,23 @@ export function CategoryList({
         <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
           <thead className="bg-gray-50 dark:bg-gray-800">
             <tr>
-              <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>
-                Name
+              <th
+                className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:text-gray-700 dark:hover:text-gray-200`}
+                onClick={() => handleSort('name')}
+              >
+                Name<SortIcon field="name" />
               </th>
-              <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>
-                Type
+              <th
+                className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:text-gray-700 dark:hover:text-gray-200`}
+                onClick={() => handleSort('type')}
+              >
+                Type<SortIcon field="type" />
+              </th>
+              <th
+                className={`${headerPadding} text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:text-gray-700 dark:hover:text-gray-200`}
+                onClick={() => handleSort('count')}
+              >
+                Count<SortIcon field="count" />
               </th>
               {density === 'normal' && (
                 <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>
@@ -202,6 +251,9 @@ export function CategoryList({
                   >
                     {category.isIncome ? 'Income' : 'Expense'}
                   </span>
+                </td>
+                <td className={`${cellPadding} whitespace-nowrap text-right text-sm text-gray-600 dark:text-gray-400`}>
+                  {category.transactionCount ?? 0}
                 </td>
                 {density === 'normal' && (
                   <td className={`${cellPadding}`}>

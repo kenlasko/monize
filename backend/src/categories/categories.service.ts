@@ -55,7 +55,7 @@ export class CategoriesService {
   /**
    * Find all categories for a user
    */
-  async findAll(userId: string, includeSystem = false): Promise<Category[]> {
+  async findAll(userId: string, includeSystem = false): Promise<(Category & { transactionCount: number })[]> {
     const queryBuilder = this.categoriesRepository
       .createQueryBuilder('category')
       .where('category.userId = :userId', { userId })
@@ -65,18 +65,63 @@ export class CategoriesService {
       queryBuilder.andWhere('category.isSystem = :isSystem', { isSystem: false });
     }
 
-    return queryBuilder.getMany();
+    const categories = await queryBuilder.getMany();
+
+    if (categories.length === 0) {
+      return [];
+    }
+
+    // Get transaction counts for all categories in one query
+    // Count direct transactions + transaction splits for each category
+    const categoryIds = categories.map(c => c.id);
+
+    // Count direct transactions per category
+    const directCounts = await this.transactionsRepository
+      .createQueryBuilder('t')
+      .select('t.category_id', 'categoryId')
+      .addSelect('COUNT(t.id)', 'count')
+      .where('t.user_id = :userId', { userId })
+      .andWhere('t.category_id IN (:...categoryIds)', { categoryIds })
+      .groupBy('t.category_id')
+      .getRawMany();
+
+    // Count split transactions per category
+    const splitCounts = await this.splitsRepository
+      .createQueryBuilder('s')
+      .innerJoin('s.transaction', 't')
+      .select('s.category_id', 'categoryId')
+      .addSelect('COUNT(s.id)', 'count')
+      .where('t.user_id = :userId', { userId })
+      .andWhere('s.category_id IN (:...categoryIds)', { categoryIds })
+      .groupBy('s.category_id')
+      .getRawMany();
+
+    // Create a map of category ID to total transaction count
+    const countMap = new Map<string, number>();
+    for (const row of directCounts) {
+      countMap.set(row.categoryId, parseInt(row.count || '0', 10));
+    }
+    for (const row of splitCounts) {
+      const existing = countMap.get(row.categoryId) || 0;
+      countMap.set(row.categoryId, existing + parseInt(row.count || '0', 10));
+    }
+
+    // Merge counts with categories
+    return categories.map((category) => ({
+      ...category,
+      transactionCount: countMap.get(category.id) || 0,
+    }));
   }
 
   /**
    * Get category tree structure (hierarchical)
    */
-  async getTree(userId: string): Promise<Category[]> {
+  async getTree(userId: string): Promise<(Category & { transactionCount: number })[]> {
     const allCategories = await this.findAll(userId, false);
 
     // Build a map for quick lookup
-    const categoryMap = new Map<string, Category & { children: Category[] }>();
-    const rootCategories: (Category & { children: Category[] })[] = [];
+    const categoryMap = new Map<string, Category & { children: Category[]; transactionCount: number }>();
+    const rootCategories: (Category & { children: Category[]; transactionCount: number })[] = [];
 
     // First pass: create map and initialize children arrays
     allCategories.forEach((cat) => {
