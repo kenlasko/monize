@@ -46,7 +46,6 @@ export interface ImportQifRequest {
   categoryMappings: CategoryMapping[];
   accountMappings: AccountMapping[];
   securityMappings?: SecurityMapping[];
-  skipDuplicates?: boolean;
   dateFormat?: DateFormat;
 }
 

@@ -5,7 +5,6 @@ import {
   IsOptional,
   IsArray,
   ValidateNested,
-  IsBoolean,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -120,11 +119,6 @@ export class ImportQifDto {
   @ValidateNested({ each: true })
   @Type(() => SecurityMappingDto)
   securityMappings?: SecurityMappingDto[];
-
-  @ApiPropertyOptional({ description: 'Skip duplicate transactions based on date, amount, and payee' })
-  @IsOptional()
-  @IsBoolean()
-  skipDuplicates?: boolean;
 
   @ApiPropertyOptional({ description: 'Date format to use for parsing (MM/DD/YYYY, DD/MM/YYYY, YYYY-MM-DD, YYYY-DD-MM)' })
   @IsOptional()

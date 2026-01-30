@@ -234,6 +234,10 @@ export class ImportService {
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
+    // Record import start time - used to only check for duplicates against
+    // transactions that existed BEFORE this import started
+    const importStartTime = new Date();
+
     const importResult: ImportResultDto = {
       imported: 0,
       skipped: 0,
@@ -380,24 +384,6 @@ export class ImportService {
 
             // Get security ID from mapping
             const securityId = qifTx.security ? securityMap.get(qifTx.security) || null : null;
-
-            // Check for duplicate investment transactions
-            if (dto.skipDuplicates && securityId) {
-              const existingInvTx = await queryRunner.manager.findOne(InvestmentTransaction, {
-                where: {
-                  userId,
-                  accountId: dto.accountId,
-                  transactionDate: qifTx.date,
-                  securityId,
-                  action,
-                  quantity: qifTx.quantity || 0,
-                },
-              });
-              if (existingInvTx) {
-                importResult.skipped++;
-                continue;
-              }
-            }
 
             // Calculate total amount
             const quantity = qifTx.quantity || 0;
@@ -561,54 +547,64 @@ export class ImportService {
             continue; // Skip the regular transaction handling
           }
 
-          // Check for duplicates if requested
-          // A duplicate must match: date, amount, payee, AND description
-          // This allows importing transactions with same date/amount but different categories
-          if (dto.skipDuplicates) {
-            const existing = await queryRunner.manager.findOne(Transaction, {
-              where: {
-                userId,
-                accountId: dto.accountId,
-                transactionDate: qifTx.date,
-                amount: qifTx.amount,
-                payeeName: qifTx.payee || IsNull(),
-                description: qifTx.memo || IsNull(),
-              },
-            });
-            if (existing) {
+          // Check for duplicate transfers that existed BEFORE this import started
+          // We only skip transfers that already exist in the database from a previous import,
+          // NOT transfers within the same QIF file (those are legitimate duplicates)
+          if (qifTx.isTransfer && qifTx.transferAccount) {
+            const mappedTransferAccountId = accountMap.get(qifTx.transferAccount);
+            if (mappedTransferAccountId) {
+              // Find transfers in the current account that link to transactions in the transfer account
+              // Only check transactions created BEFORE this import started
+              const existingLinkedTransfers = await queryRunner.manager
+                .createQueryBuilder(Transaction, 't')
+                .innerJoin(
+                  Transaction,
+                  'linked',
+                  't.linked_transaction_id = linked.id',
+                )
+                .where('t.user_id = :userId', { userId })
+                .andWhere('t.account_id = :accountId', { accountId: dto.accountId })
+                .andWhere('t.is_transfer = true')
+                .andWhere('t.transaction_date = :date', { date: qifTx.date })
+                .andWhere('t.amount = :amount', { amount: qifTx.amount })
+                .andWhere('linked.account_id = :linkedAccountId', {
+                  linkedAccountId: mappedTransferAccountId,
+                })
+                .andWhere('t.created_at < :importStartTime', { importStartTime })
+                .getOne();
+
+              if (existingLinkedTransfers) {
+                importResult.skipped++;
+                continue;
+              }
+            }
+          }
+
+          // Also check if this transaction already exists as a linked transaction
+          // from a SPLIT transfer in another account. Split transfers create a linked
+          // transaction but don't set linkedTransactionId on that transaction - only the
+          // split has the reference. So we need to look for transactions that are
+          // referenced by a split's linkedTransactionId.
+          // Only check transactions created BEFORE this import started
+          if (qifTx.isTransfer) {
+            const existingSplitLinkedTx = await queryRunner.manager
+              .createQueryBuilder(Transaction, 't')
+              .innerJoin(
+                TransactionSplit,
+                'split',
+                'split.linked_transaction_id = t.id',
+              )
+              .where('t.user_id = :userId', { userId })
+              .andWhere('t.account_id = :accountId', { accountId: dto.accountId })
+              .andWhere('t.is_transfer = true')
+              .andWhere('t.transaction_date = :date', { date: qifTx.date })
+              .andWhere('t.amount = :amount', { amount: qifTx.amount })
+              .andWhere('t.created_at < :importStartTime', { importStartTime })
+              .getOne();
+
+            if (existingSplitLinkedTx) {
               importResult.skipped++;
               continue;
-            }
-
-            // For transfers, also check if a linked transaction already exists
-            // This handles the case where Account B was imported first with a transfer to Account A,
-            // and now we're importing Account A - we don't want to duplicate the transfer
-            if (qifTx.isTransfer && qifTx.transferAccount) {
-              const mappedTransferAccountId = accountMap.get(qifTx.transferAccount);
-              if (mappedTransferAccountId) {
-                // Find transfers in the current account that link to transactions in the transfer account
-                const existingLinkedTransfers = await queryRunner.manager
-                  .createQueryBuilder(Transaction, 't')
-                  .innerJoin(
-                    Transaction,
-                    'linked',
-                    't.linked_transaction_id = linked.id',
-                  )
-                  .where('t.user_id = :userId', { userId })
-                  .andWhere('t.account_id = :accountId', { accountId: dto.accountId })
-                  .andWhere('t.is_transfer = true')
-                  .andWhere('t.transaction_date = :date', { date: qifTx.date })
-                  .andWhere('t.amount = :amount', { amount: qifTx.amount })
-                  .andWhere('linked.account_id = :linkedAccountId', {
-                    linkedAccountId: mappedTransferAccountId,
-                  })
-                  .getOne();
-
-                if (existingLinkedTransfers) {
-                  importResult.skipped++;
-                  continue;
-                }
-              }
             }
           }
 

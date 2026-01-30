@@ -80,7 +80,6 @@ function ImportContent() {
   const [accountMappings, setAccountMappings] = useState<AccountMapping[]>([]);
   const [securityMappings, setSecurityMappings] = useState<SecurityMapping[]>([]);
   const [securities, setSecurities] = useState<Security[]>([]);
-  const [skipDuplicates, setSkipDuplicates] = useState(true);
   const [dateFormat, setDateFormat] = useState<DateFormat>('MM/DD/YYYY');
   const [isLoading, setIsLoading] = useState(false);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
@@ -578,7 +577,6 @@ function ImportContent() {
         categoryMappings,
         accountMappings,
         securityMappings,
-        skipDuplicates,
         dateFormat,
       });
 
@@ -796,19 +794,6 @@ function ImportContent() {
                   onChange={(e) => setSelectedAccountId(e.target.value)}
                 />
               )}
-              <div className="mt-4">
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={skipDuplicates}
-                    onChange={(e) => setSkipDuplicates(e.target.checked)}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded dark:border-gray-600 dark:bg-gray-800"
-                  />
-                  <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">
-                    Skip duplicate transactions (same date and amount)
-                  </span>
-                </label>
-              </div>
               <div className="flex justify-between mt-6">
                 <Button variant="outline" onClick={() => setStep('upload')}>
                   Back
@@ -1290,9 +1275,6 @@ function ImportContent() {
                     <li>
                       <strong>Target account:</strong> {targetAccount?.name}
                     </li>
-                    <li>
-                      <strong>Skip duplicates:</strong> {skipDuplicates ? 'Yes' : 'No'}
-                    </li>
                   </ul>
                 </div>
 
@@ -1410,7 +1392,7 @@ function ImportContent() {
                       <strong>Imported:</strong> {importResult.imported} transactions
                     </li>
                     <li>
-                      <strong>Skipped:</strong> {importResult.skipped} duplicates
+                      <strong>Skipped:</strong> {importResult.skipped} duplicate transfers
                     </li>
                     <li>
                       <strong>Errors:</strong> {importResult.errors}
