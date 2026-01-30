@@ -103,9 +103,10 @@ export class ImportService {
       where: { id: accountId },
     });
     if (account) {
+      // Handle null/undefined currentBalance (treat as 0)
+      const currentBalance = Number(account.currentBalance) || 0;
       // Round to 2 decimal places to avoid floating-point precision errors
-      const newBalance =
-        Math.round((Number(account.currentBalance) + Number(amount)) * 100) / 100;
+      const newBalance = Math.round((currentBalance + Number(amount)) * 100) / 100;
       await queryRunner.manager.update(Account, accountId, {
         currentBalance: newBalance,
       });
@@ -339,15 +340,21 @@ export class ImportService {
         }
       }
 
-      // Apply opening balance if present (round to 2 decimal places)
+      // Apply opening balance from QIF if account doesn't already have one set
       if (result.openingBalance !== null) {
-        const newBalance = Math.round(
-          (account.currentBalance + result.openingBalance - (account.openingBalance || 0)) * 100,
-        ) / 100;
-        await queryRunner.manager.update(Account, dto.accountId, {
-          openingBalance: Math.round(result.openingBalance * 100) / 100,
-          currentBalance: newBalance,
-        });
+        const existingOpeningBalance = Number(account.openingBalance) || 0;
+        const existingCurrentBalance = Number(account.currentBalance) || 0;
+
+        // Only apply QIF's opening balance if the account doesn't have one
+        if (existingOpeningBalance === 0) {
+          const newBalance = Math.round(
+            (existingCurrentBalance + result.openingBalance) * 100,
+          ) / 100;
+          await queryRunner.manager.update(Account, dto.accountId, {
+            openingBalance: Math.round(result.openingBalance * 100) / 100,
+            currentBalance: newBalance,
+          });
+        }
       }
 
       // Track timestamps per date to avoid duplicate createdAt values
@@ -725,23 +732,17 @@ export class ImportService {
                 });
 
                 // Update target account balance
-                await queryRunner.manager.increment(
-                  Account,
-                  { id: splitTransferAccountId },
-                  'currentBalance',
-                  Math.round(-split.amount * 100) / 100,
+                await this.updateAccountBalance(
+                  queryRunner,
+                  splitTransferAccountId,
+                  -split.amount,
                 );
               }
             }
           }
 
-          // Update account balance (round to 2 decimal places)
-          await queryRunner.manager.increment(
-            Account,
-            { id: dto.accountId },
-            'currentBalance',
-            Math.round(qifTx.amount * 100) / 100,
-          );
+          // Update account balance
+          await this.updateAccountBalance(queryRunner, dto.accountId, qifTx.amount);
 
           // If it's a transfer and we have a linked account, create the opposite transaction
           if (qifTx.isTransfer && transferAccountId) {
@@ -769,13 +770,8 @@ export class ImportService {
               linkedTransactionId: savedLinkedTx.id,
             });
 
-            // Update linked account balance (round to 2 decimal places)
-            await queryRunner.manager.increment(
-              Account,
-              { id: transferAccountId },
-              'currentBalance',
-              Math.round(-qifTx.amount * 100) / 100,
-            );
+            // Update linked account balance
+            await this.updateAccountBalance(queryRunner, transferAccountId, -qifTx.amount);
           }
 
           importResult.imported++;

@@ -362,43 +362,34 @@ export class TransactionsService {
     let startingBalance: number | undefined;
     if (accountId && data.length > 0) {
       const account = await this.accountsService.findOne(userId, accountId);
-      const currentBalance = Number(account.currentBalance);
+      const currentBalance = Number(account.currentBalance) || 0;
 
       if (safePage === 1) {
         // Page 1: startingBalance = currentBalance (balance after newest tx overall)
         startingBalance = currentBalance;
       } else {
-        // For other pages, sum all transactions newer than the first tx on this page
-        // startingBalance = currentBalance - sum(txs newer than first tx)
-        const firstTxOnPage = data[0];
+        // For other pages, we need to sum the transactions on all previous pages.
+        // skip = (page - 1) * limit = number of transactions on previous pages
+        // Get the IDs of those transactions, then sum their amounts.
+        const previousPagesQuery = this.transactionsRepository
+          .createQueryBuilder('t')
+          .select('t.id')
+          .where('t.userId = :userId', { userId })
+          .andWhere('t.accountId = :accountId', { accountId })
+          .orderBy('t.transactionDate', 'DESC')
+          .addOrderBy('t.createdAt', 'DESC')
+          .addOrderBy('t.id', 'DESC')
+          .limit(skip);
 
-        // Sum all transactions that appear BEFORE the first transaction on this page.
-        // newerSum = sum(txs with date > firstDate) + sum(txs with date = firstDate but NOT on this page)
-        const pageIds = data.map(tx => tx.id);
-        const firstDate = firstTxOnPage.transactionDate;
-
-        // Sum of transactions with date strictly greater than first tx's date
-        const sumDateGreaterResult = await this.transactionsRepository
+        const sumResult = await this.transactionsRepository
           .createQueryBuilder('transaction')
           .select('SUM(transaction.amount)', 'sum')
-          .where('transaction.userId = :userId', { userId })
-          .andWhere('transaction.accountId = :accountId', { accountId })
-          .andWhere('transaction.transactionDate > :firstDate', { firstDate })
+          .where(`transaction.id IN (${previousPagesQuery.getQuery()})`)
+          .setParameters(previousPagesQuery.getParameters())
           .getRawOne();
 
-        // Sum of transactions with same date but NOT on this page (on earlier pages)
-        const sumSameDateNotOnPageResult = await this.transactionsRepository
-          .createQueryBuilder('transaction')
-          .select('SUM(transaction.amount)', 'sum')
-          .where('transaction.userId = :userId', { userId })
-          .andWhere('transaction.accountId = :accountId', { accountId })
-          .andWhere('transaction.transactionDate = :firstDate', { firstDate })
-          .andWhere('transaction.id NOT IN (:...pageIds)', { pageIds })
-          .getRawOne();
-
-        const sumDateGreater = Number(sumDateGreaterResult?.sum) || 0;
-        const sumSameDateNotOnPage = Number(sumSameDateNotOnPageResult?.sum) || 0;
-        startingBalance = currentBalance - sumDateGreater - sumSameDateNotOnPage;
+        const sumBefore = Number(sumResult?.sum) || 0;
+        startingBalance = currentBalance - sumBefore;
       }
     }
 
