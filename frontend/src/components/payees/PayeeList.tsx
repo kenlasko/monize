@@ -11,6 +11,9 @@ import toast from 'react-hot-toast';
 // Density levels: 'normal' | 'compact' | 'dense'
 export type DensityLevel = 'normal' | 'compact' | 'dense';
 
+type SortField = 'name' | 'category' | 'count';
+type SortDirection = 'asc' | 'desc';
+
 interface PayeeListProps {
   payees: Payee[];
   onEdit: (payee: Payee) => void;
@@ -29,6 +32,8 @@ export function PayeeList({
   const router = useRouter();
   const [deletePayee, setDeletePayee] = useState<Payee | null>(null);
   const [localDensity, setLocalDensity] = useState<DensityLevel>('normal');
+  const [sortField, setSortField] = useState<SortField>('name');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 
   // Use prop density if provided, otherwise use local state
   const density = propDensity ?? localDensity;
@@ -58,6 +63,38 @@ export function PayeeList({
       setLocalDensity(nextDensity);
     }
   }, [density, onDensityChange]);
+
+  const handleSort = useCallback((field: SortField) => {
+    if (sortField === field) {
+      setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortField(field);
+      setSortDirection(field === 'count' ? 'desc' : 'asc');
+    }
+  }, [sortField]);
+
+  const sortedPayees = useMemo(() => {
+    return [...payees].sort((a, b) => {
+      let comparison = 0;
+      if (sortField === 'name') {
+        comparison = a.name.localeCompare(b.name);
+      } else if (sortField === 'category') {
+        const catA = a.defaultCategory?.name || '';
+        const catB = b.defaultCategory?.name || '';
+        comparison = catA.localeCompare(catB);
+      } else if (sortField === 'count') {
+        comparison = (a.transactionCount ?? 0) - (b.transactionCount ?? 0);
+      }
+      return sortDirection === 'asc' ? comparison : -comparison;
+    });
+  }, [payees, sortField, sortDirection]);
+
+  const SortIcon = ({ field }: { field: SortField }) => {
+    if (sortField !== field) {
+      return <span className="ml-1 text-gray-300 dark:text-gray-600">↕</span>;
+    }
+    return <span className="ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>;
+  };
 
   const handleViewTransactions = (payee: Payee) => {
     router.push(`/transactions?payeeId=${payee.id}`);
@@ -119,11 +156,23 @@ export function PayeeList({
         <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
           <thead className="bg-gray-50 dark:bg-gray-800">
             <tr>
-              <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>
-                Name
+              <th
+                className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:text-gray-700 dark:hover:text-gray-200`}
+                onClick={() => handleSort('name')}
+              >
+                Name<SortIcon field="name" />
               </th>
-              <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>
-                Default Category
+              <th
+                className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:text-gray-700 dark:hover:text-gray-200`}
+                onClick={() => handleSort('category')}
+              >
+                Default Category<SortIcon field="category" />
+              </th>
+              <th
+                className={`${headerPadding} text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:text-gray-700 dark:hover:text-gray-200`}
+                onClick={() => handleSort('count')}
+              >
+                Count<SortIcon field="count" />
               </th>
               {density === 'normal' && (
                 <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>
@@ -136,7 +185,7 @@ export function PayeeList({
             </tr>
           </thead>
           <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-            {payees.map((payee, index) => (
+            {sortedPayees.map((payee, index) => (
               <tr
                 key={payee.id}
                 className={`hover:bg-gray-50 dark:hover:bg-gray-800 ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-gray-800/50' : ''}`}
@@ -168,6 +217,9 @@ export function PayeeList({
                   ) : (
                     <span className="text-sm text-gray-400 dark:text-gray-500">None</span>
                   )}
+                </td>
+                <td className={`${cellPadding} whitespace-nowrap text-right text-sm text-gray-600 dark:text-gray-400`}>
+                  {payee.transactionCount ?? 0}
                 </td>
                 {density === 'normal' && (
                   <td className={`${cellPadding}`}>

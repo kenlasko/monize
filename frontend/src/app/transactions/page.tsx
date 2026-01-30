@@ -426,11 +426,25 @@ export default function TransactionsPage() {
                     />
                   )}
                   {filteredCategory.name}
+                  <button
+                    onClick={() => handleFilterChange(setFilterCategoryId, '')}
+                    className="ml-2 hover:text-blue-600 dark:hover:text-blue-300"
+                    title="Clear category filter"
+                  >
+                    ×
+                  </button>
                 </span>
               )}
               {filteredPayee && (
                 <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200">
                   {filteredPayee.name}
+                  <button
+                    onClick={() => handleFilterChange(setFilterPayeeId, '')}
+                    className="ml-2 hover:text-purple-600 dark:hover:text-purple-300"
+                    title="Clear payee filter"
+                  >
+                    ×
+                  </button>
                 </span>
               )}
             </div>

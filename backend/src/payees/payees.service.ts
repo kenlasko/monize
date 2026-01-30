@@ -33,12 +33,38 @@ export class PayeesService {
     return this.payeesRepository.save(payee);
   }
 
-  async findAll(userId: string): Promise<Payee[]> {
-    return this.payeesRepository.find({
+  async findAll(userId: string): Promise<(Payee & { transactionCount: number })[]> {
+    // Get all payees with their default category
+    const payees = await this.payeesRepository.find({
       where: { userId },
       relations: ['defaultCategory'],
       order: { name: 'ASC' },
     });
+
+    if (payees.length === 0) {
+      return [];
+    }
+
+    // Get transaction counts for all payees in one query
+    const counts = await this.payeesRepository
+      .createQueryBuilder('payee')
+      .leftJoin('transactions', 'transaction', 'transaction.payee_id = payee.id')
+      .where('payee.user_id = :userId', { userId })
+      .groupBy('payee.id')
+      .select(['payee.id as id', 'COUNT(transaction.id) as count'])
+      .getRawMany();
+
+    // Create a map of payee ID to transaction count
+    const countMap = new Map<string, number>();
+    for (const row of counts) {
+      countMap.set(row.id, parseInt(row.count || '0', 10));
+    }
+
+    // Merge counts with payees
+    return payees.map((payee) => ({
+      ...payee,
+      transactionCount: countMap.get(payee.id) || 0,
+    }));
   }
 
   async findOne(userId: string, id: string): Promise<Payee> {

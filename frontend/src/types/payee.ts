@@ -8,6 +8,7 @@ export interface Payee {
   defaultCategory: Category | null;
   notes: string | null;
   createdAt: string;
+  transactionCount?: number;
 }
 
 export interface CreatePayeeData {
