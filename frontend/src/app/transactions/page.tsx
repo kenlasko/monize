@@ -24,6 +24,22 @@ import { AppHeader } from '@/components/layout/AppHeader';
 
 const PAGE_SIZE = 50;
 
+// LocalStorage keys for filter persistence
+const STORAGE_KEYS = {
+  accountId: 'transactions.filter.accountId',
+  categoryId: 'transactions.filter.categoryId',
+  payeeId: 'transactions.filter.payeeId',
+  startDate: 'transactions.filter.startDate',
+  endDate: 'transactions.filter.endDate',
+};
+
+// Helper to get stored filter value (URL params take precedence)
+function getStoredFilter(key: string, urlParam: string | null): string {
+  if (urlParam) return urlParam;
+  if (typeof window === 'undefined') return '';
+  return localStorage.getItem(key) || '';
+}
+
 // Check if an account is specifically an investment brokerage account
 const isInvestmentBrokerageAccount = (account: Account): boolean => {
   return account.accountSubType === 'INVESTMENT_BROKERAGE';
@@ -58,12 +74,13 @@ export default function TransactionsPage() {
     transactionCount: 0,
   });
 
-  // Filters - initialize from URL params
-  const [filterAccountId, setFilterAccountId] = useState<string>(searchParams.get('accountId') || '');
-  const [filterCategoryId, setFilterCategoryId] = useState<string>(searchParams.get('categoryId') || '');
-  const [filterPayeeId, setFilterPayeeId] = useState<string>(searchParams.get('payeeId') || '');
-  const [filterStartDate, setFilterStartDate] = useState<string>(searchParams.get('startDate') || '');
-  const [filterEndDate, setFilterEndDate] = useState<string>(searchParams.get('endDate') || '');
+  // Filters - initialize from URL params, falling back to localStorage
+  const [filterAccountId, setFilterAccountId] = useState<string>('');
+  const [filterCategoryId, setFilterCategoryId] = useState<string>('');
+  const [filterPayeeId, setFilterPayeeId] = useState<string>('');
+  const [filterStartDate, setFilterStartDate] = useState<string>('');
+  const [filterEndDate, setFilterEndDate] = useState<string>('');
+  const [filtersInitialized, setFiltersInitialized] = useState(false);
 
   // Update URL when filters or page change
   const updateUrl = useCallback((page: number, filters: {
@@ -165,11 +182,50 @@ export default function TransactionsPage() {
     loadStaticData();
   }, [loadStaticData]);
 
+  // Initialize filters from localStorage on mount (URL params take precedence)
+  useEffect(() => {
+    setFilterAccountId(getStoredFilter(STORAGE_KEYS.accountId, searchParams.get('accountId')));
+    setFilterCategoryId(getStoredFilter(STORAGE_KEYS.categoryId, searchParams.get('categoryId')));
+    setFilterPayeeId(getStoredFilter(STORAGE_KEYS.payeeId, searchParams.get('payeeId')));
+    setFilterStartDate(getStoredFilter(STORAGE_KEYS.startDate, searchParams.get('startDate')));
+    setFilterEndDate(getStoredFilter(STORAGE_KEYS.endDate, searchParams.get('endDate')));
+    setFiltersInitialized(true);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Persist filter changes to localStorage
+  useEffect(() => {
+    if (!filtersInitialized) return;
+    localStorage.setItem(STORAGE_KEYS.accountId, filterAccountId);
+  }, [filterAccountId, filtersInitialized]);
+
+  useEffect(() => {
+    if (!filtersInitialized) return;
+    localStorage.setItem(STORAGE_KEYS.categoryId, filterCategoryId);
+  }, [filterCategoryId, filtersInitialized]);
+
+  useEffect(() => {
+    if (!filtersInitialized) return;
+    localStorage.setItem(STORAGE_KEYS.payeeId, filterPayeeId);
+  }, [filterPayeeId, filtersInitialized]);
+
+  useEffect(() => {
+    if (!filtersInitialized) return;
+    localStorage.setItem(STORAGE_KEYS.startDate, filterStartDate);
+  }, [filterStartDate, filtersInitialized]);
+
+  useEffect(() => {
+    if (!filtersInitialized) return;
+    localStorage.setItem(STORAGE_KEYS.endDate, filterEndDate);
+  }, [filterEndDate, filtersInitialized]);
+
   // Track if this is a filter-triggered change (to reset page to 1)
   const isFilterChange = useRef(false);
 
   // Update URL and load transactions when page or filters change
   useEffect(() => {
+    // Wait for filters to be initialized from localStorage
+    if (!filtersInitialized) return;
+
     const page = isFilterChange.current ? 1 : currentPage;
     if (isFilterChange.current) {
       setCurrentPage(1);
@@ -183,7 +239,7 @@ export default function TransactionsPage() {
       endDate: filterEndDate,
     });
     loadTransactions(page);
-  }, [currentPage, filterAccountId, filterCategoryId, filterPayeeId, filterStartDate, filterEndDate, updateUrl, loadTransactions]);
+  }, [currentPage, filterAccountId, filterCategoryId, filterPayeeId, filterStartDate, filterEndDate, updateUrl, loadTransactions, filtersInitialized]);
 
   // Helper to update filter and mark as filter change
   const handleFilterChange = useCallback((setter: (value: string) => void, value: string) => {
@@ -466,6 +522,12 @@ export default function TransactionsPage() {
                     setFilterPayeeId('');
                     setFilterStartDate('');
                     setFilterEndDate('');
+                    // Also clear localStorage
+                    localStorage.removeItem(STORAGE_KEYS.accountId);
+                    localStorage.removeItem(STORAGE_KEYS.categoryId);
+                    localStorage.removeItem(STORAGE_KEYS.payeeId);
+                    localStorage.removeItem(STORAGE_KEYS.startDate);
+                    localStorage.removeItem(STORAGE_KEYS.endDate);
                     router.replace('/transactions', { scroll: false });
                   }}
                 >

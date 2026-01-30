@@ -12,6 +12,7 @@ const navLinks = [
   { href: '/accounts', label: 'Accounts' },
   { href: '/investments', label: 'Investments' },
   { href: '/bills', label: 'Bills & Deposits' },
+  { href: '/reports', label: 'Reports' },
 ];
 
 const toolsLinks = [
