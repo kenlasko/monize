@@ -83,6 +83,21 @@ export class CategoriesController {
     return this.categoriesService.getStats(req.user.id);
   }
 
+  @Post('import-defaults')
+  @ApiOperation({ summary: 'Import default categories for new users' })
+  @ApiResponse({
+    status: 201,
+    description: 'Default categories imported successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'User already has categories',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  importDefaults(@Request() req) {
+    return this.categoriesService.importDefaults(req.user.id);
+  }
+
   @Get('income')
   @ApiOperation({ summary: 'Get all income categories' })
   @ApiResponse({

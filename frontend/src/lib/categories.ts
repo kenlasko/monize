@@ -48,4 +48,12 @@ export const categoriesApi = {
     );
     return response.data;
   },
+
+  // Import default categories for new users
+  importDefaults: async (): Promise<{ categoriesCreated: number }> => {
+    const response = await apiClient.post<{ categoriesCreated: number }>(
+      '/categories/import-defaults',
+    );
+    return response.data;
+  },
 };

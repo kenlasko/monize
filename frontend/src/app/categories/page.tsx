@@ -13,6 +13,7 @@ import { useLocalStorage } from '@/hooks/useLocalStorage';
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isImporting, setIsImporting] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | undefined>();
   const [filterType, setFilterType] = useState<'all' | 'income' | 'expense'>('all');
@@ -77,6 +78,20 @@ export default function CategoriesPage() {
   const handleFormCancel = () => {
     setShowForm(false);
     setEditingCategory(undefined);
+  };
+
+  const handleImportDefaults = async () => {
+    setIsImporting(true);
+    try {
+      const result = await categoriesApi.importDefaults();
+      toast.success(`Successfully imported ${result.categoriesCreated} categories`);
+      loadCategories();
+    } catch (error: any) {
+      const message = error.response?.data?.message || 'Failed to import default categories';
+      toast.error(message);
+    } finally {
+      setIsImporting(false);
+    }
   };
 
   // Filter categories by type
@@ -285,6 +300,48 @@ export default function CategoriesPage() {
             <div className="p-12 text-center">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-blue-400"></div>
               <p className="mt-2 text-gray-500 dark:text-gray-400">Loading categories...</p>
+            </div>
+          ) : categories.length === 0 ? (
+            <div className="p-12 text-center">
+              <svg
+                className="mx-auto h-16 w-16 text-gray-400 dark:text-gray-500"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
+                />
+              </svg>
+              <h3 className="mt-4 text-lg font-medium text-gray-900 dark:text-gray-100">
+                No categories yet
+              </h3>
+              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 max-w-md mx-auto">
+                Categories help you organize your transactions. Get started by importing our default
+                set of categories, or create your own from scratch.
+              </p>
+              <div className="mt-6 flex flex-col sm:flex-row justify-center gap-3">
+                <Button
+                  onClick={handleImportDefaults}
+                  isLoading={isImporting}
+                  disabled={isImporting}
+                >
+                  Import Default Categories
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={handleCreateNew}
+                  disabled={isImporting}
+                >
+                  Create Your Own
+                </Button>
+              </div>
+              <p className="mt-4 text-xs text-gray-400 dark:text-gray-500">
+                The default set includes common income and expense categories with subcategories
+              </p>
             </div>
           ) : (
             <CategoryList

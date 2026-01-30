@@ -398,4 +398,132 @@ export class CategoriesService {
       interestCategory,
     };
   }
+
+  /**
+   * Import default categories for a user
+   * Only works if user has no existing categories
+   */
+  async importDefaults(userId: string): Promise<{ categoriesCreated: number }> {
+    // Check if user already has categories
+    const existingCount = await this.categoriesRepository.count({
+      where: { userId, isSystem: false },
+    });
+
+    if (existingCount > 0) {
+      throw new BadRequestException(
+        'Cannot import defaults: user already has categories. Delete existing categories first or start fresh.',
+      );
+    }
+
+    // Income categories
+    const incomeCategories = [
+      { name: 'Salary', icon: '💰', color: '#2ECC71', isIncome: true },
+      { name: 'Freelance', icon: '💼', color: '#1ABC9C', isIncome: true },
+      { name: 'Investment Income', icon: '📈', color: '#3498DB', isIncome: true },
+      { name: 'Other Income', icon: '💵', color: '#16A085', isIncome: true },
+    ];
+
+    // Expense categories with subcategories
+    const expenseCategories = [
+      {
+        name: 'Housing',
+        icon: '🏠',
+        color: '#E74C3C',
+        subcategories: ['Rent/Mortgage', 'Utilities', 'Property Tax', 'Maintenance'],
+      },
+      {
+        name: 'Transportation',
+        icon: '🚗',
+        color: '#3498DB',
+        subcategories: ['Fuel', 'Public Transit', 'Car Insurance', 'Maintenance'],
+      },
+      {
+        name: 'Food',
+        icon: '🍽️',
+        color: '#E67E22',
+        subcategories: ['Groceries', 'Restaurants', 'Coffee Shops'],
+      },
+      {
+        name: 'Shopping',
+        icon: '🛍️',
+        color: '#9B59B6',
+        subcategories: ['Clothing', 'Electronics', 'Home Goods'],
+      },
+      {
+        name: 'Entertainment',
+        icon: '🎬',
+        color: '#F39C12',
+        subcategories: ['Movies', 'Concerts', 'Streaming Services', 'Games'],
+      },
+      {
+        name: 'Health',
+        icon: '⚕️',
+        color: '#27AE60',
+        subcategories: ['Insurance', 'Doctor Visits', 'Pharmacy', 'Gym'],
+      },
+      {
+        name: 'Education',
+        icon: '📚',
+        color: '#2980B9',
+        subcategories: ['Tuition', 'Books', 'Courses'],
+      },
+      {
+        name: 'Personal Care',
+        icon: '💇',
+        color: '#8E44AD',
+        subcategories: ['Haircut', 'Cosmetics', 'Spa'],
+      },
+      {
+        name: 'Bills & Utilities',
+        icon: '📄',
+        color: '#C0392B',
+        subcategories: ['Phone', 'Internet', 'Electricity', 'Water', 'Insurance'],
+      },
+      { name: 'Gifts & Donations', icon: '🎁', color: '#E91E63', subcategories: [] },
+      { name: 'Travel', icon: '✈️', color: '#00BCD4', subcategories: [] },
+      { name: 'Miscellaneous', icon: '📌', color: '#95A5A6', subcategories: [] },
+    ];
+
+    let categoryCount = 0;
+
+    // Create income categories
+    for (const cat of incomeCategories) {
+      const category = this.categoriesRepository.create({
+        userId,
+        name: cat.name,
+        icon: cat.icon,
+        color: cat.color,
+        isIncome: cat.isIncome,
+      });
+      await this.categoriesRepository.save(category);
+      categoryCount++;
+    }
+
+    // Create expense categories with subcategories
+    for (const cat of expenseCategories) {
+      const parentCategory = this.categoriesRepository.create({
+        userId,
+        name: cat.name,
+        icon: cat.icon,
+        color: cat.color,
+        isIncome: false,
+      });
+      const savedParent = await this.categoriesRepository.save(parentCategory);
+      categoryCount++;
+
+      // Create subcategories
+      for (const subName of cat.subcategories) {
+        const subCategory = this.categoriesRepository.create({
+          userId,
+          parentId: savedParent.id,
+          name: subName,
+          isIncome: false,
+        });
+        await this.categoriesRepository.save(subCategory);
+        categoryCount++;
+      }
+    }
+
+    return { categoriesCreated: categoryCount };
+  }
 }
