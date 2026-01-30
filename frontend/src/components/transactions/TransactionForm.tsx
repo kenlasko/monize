@@ -504,7 +504,10 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
             { value: '', label: 'Select account...' },
             ...(mode === 'transfer'
               ? accounts
-                  .filter(account => account.accountSubType !== 'INVESTMENT_BROKERAGE')
+                  .filter(account =>
+                    account.accountSubType !== 'INVESTMENT_BROKERAGE' &&
+                    account.accountType !== 'ASSET'
+                  )
                   .map(account => ({
                     value: account.id,
                     label: `${account.name} (${account.currencyCode})`,
@@ -529,7 +532,8 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
               ...accounts
                 .filter(account =>
                   account.id !== watchedAccountId &&
-                  account.accountSubType !== 'INVESTMENT_BROKERAGE'
+                  account.accountSubType !== 'INVESTMENT_BROKERAGE' &&
+                  account.accountType !== 'ASSET'
                 )
                 .map(account => ({
                   value: account.id,

@@ -24,6 +24,7 @@ export enum AccountType {
   INVESTMENT = 'INVESTMENT',
   CASH = 'CASH',
   LINE_OF_CREDIT = 'LINE_OF_CREDIT',
+  ASSET = 'ASSET',
   OTHER = 'OTHER',
 }
 
@@ -160,6 +161,14 @@ export class Account {
   @ManyToOne(() => Category, { nullable: true })
   @JoinColumn({ name: 'interest_category_id' })
   interestCategory: Category | null;
+
+  // Asset-specific fields
+  @Column({ type: 'uuid', name: 'asset_category_id', nullable: true })
+  assetCategoryId: string | null;
+
+  @ManyToOne(() => Category, { nullable: true })
+  @JoinColumn({ name: 'asset_category_id' })
+  assetCategory: Category | null;
 
   @Column({ type: 'uuid', name: 'scheduled_transaction_id', nullable: true })
   scheduledTransactionId: string | null;

@@ -10,6 +10,7 @@ export type AccountType =
   | 'INVESTMENT'
   | 'CASH'
   | 'LINE_OF_CREDIT'
+  | 'ASSET'
   | 'OTHER';
 
 export type AccountSubType = 'INVESTMENT_CASH' | 'INVESTMENT_BROKERAGE' | null;
@@ -42,6 +43,8 @@ export interface Account {
   principalCategoryId: string | null;
   interestCategoryId: string | null;
   scheduledTransactionId: string | null;
+  // Asset-specific fields
+  assetCategoryId: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -65,6 +68,8 @@ export interface CreateAccountData {
   sourceAccountId?: string;
   principalCategoryId?: string;
   interestCategoryId?: string;
+  // Asset-specific fields
+  assetCategoryId?: string;
 }
 
 export interface InvestmentAccountPair {

@@ -425,7 +425,7 @@ export class AccountsService {
   }> {
     const accounts = await this.findAll(userId, false);
 
-    const assetTypes = ['CHEQUING', 'SAVINGS', 'RRSP', 'TFSA', 'RESP', 'INVESTMENT', 'CASH'];
+    const assetTypes = ['CHEQUING', 'SAVINGS', 'RRSP', 'TFSA', 'RESP', 'INVESTMENT', 'CASH', 'ASSET'];
     const liabilityTypes = ['CREDIT_CARD', 'LOAN', 'MORTGAGE', 'LINE_OF_CREDIT'];
 
     let totalBalance = 0;

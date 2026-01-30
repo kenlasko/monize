@@ -8,6 +8,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
+import { Combobox } from '@/components/ui/Combobox';
+import toast from 'react-hot-toast';
 import { Account, AccountType, AmortizationPreview, PaymentFrequency } from '@/types/account';
 import { Category } from '@/types/category';
 import { accountsApi } from '@/lib/accounts';
@@ -42,6 +44,7 @@ const accountSchema = z.object({
     'INVESTMENT',
     'CASH',
     'LINE_OF_CREDIT',
+    'ASSET',
     'OTHER',
   ]),
   currencyCode: z.string().length(3, 'Currency code must be 3 characters'),
@@ -59,6 +62,8 @@ const accountSchema = z.object({
   paymentStartDate: z.string().optional(),
   sourceAccountId: z.string().optional(),
   interestCategoryId: z.string().optional(),
+  // Asset-specific fields
+  assetCategoryId: z.string().optional(),
 });
 
 type AccountFormData = z.infer<typeof accountSchema>;
@@ -77,6 +82,7 @@ const accountTypeOptions = [
   { value: 'LOAN', label: 'Loan' },
   { value: 'LINE_OF_CREDIT', label: 'Line of Credit' },
   { value: 'MORTGAGE', label: 'Mortgage' },
+  { value: 'ASSET', label: 'Asset' },
   { value: 'CASH', label: 'Cash' },
   { value: 'OTHER', label: 'Other' },
 ];
@@ -107,6 +113,8 @@ export function AccountForm({ account, onSubmit, onCancel }: AccountFormProps) {
     principalId: string | null;
     interestId: string | null;
   }>({ principalId: null, interestId: null });
+  const [selectedAssetCategoryId, setSelectedAssetCategoryId] = useState<string>(account?.assetCategoryId || '');
+  const [assetCategoryName, setAssetCategoryName] = useState<string>('');
 
   const {
     register,
@@ -140,6 +148,7 @@ export function AccountForm({ account, onSubmit, onCancel }: AccountFormProps) {
           paymentStartDate: account.paymentStartDate?.split('T')[0] || undefined,
           sourceAccountId: account.sourceAccountId || undefined,
           interestCategoryId: account.interestCategoryId || undefined,
+          assetCategoryId: account.assetCategoryId || undefined,
         }
       : {
           currencyCode: 'CAD',
@@ -166,9 +175,17 @@ export function AccountForm({ account, onSubmit, onCancel }: AccountFormProps) {
   // Show loan fields only for LOAN account type
   const isLoanAccount = watchedAccountType === 'LOAN';
 
-  // Load accounts and categories when LOAN type is selected
+  // Show asset fields only for ASSET account type
+  const isAssetAccount = watchedAccountType === 'ASSET';
+
+  // Load accounts and categories when LOAN or ASSET type is selected
+  // For loans: only when creating new (loan payment setup is done at creation)
+  // For assets: always (to allow editing the value change category)
   useEffect(() => {
-    if (isLoanAccount && !account) {
+    const shouldLoadForLoan = isLoanAccount && !account;
+    const shouldLoadForAsset = isAssetAccount;
+
+    if (shouldLoadForLoan || shouldLoadForAsset) {
       const loadData = async () => {
         try {
           const [accountsData, categoriesData] = await Promise.all([
@@ -179,19 +196,21 @@ export function AccountForm({ account, onSubmit, onCancel }: AccountFormProps) {
           setAccounts(accountsData.filter(a => a.accountType !== 'LOAN'));
           setCategories(categoriesData);
 
-          // Find default loan interest category
-          const loanParent = categoriesData.find(c => c.name === 'Loan' && !c.parentId);
-          if (loanParent) {
-            const interestCat = categoriesData.find(
-              c => c.name === 'Loan Interest' && c.parentId === loanParent.id
-            );
-            setDefaultLoanCategories({
-              principalId: null,
-              interestId: interestCat?.id || null,
-            });
-            // Set default interest category if not already set
-            if (interestCat && !getValues('interestCategoryId')) {
-              setValue('interestCategoryId', interestCat.id);
+          if (isLoanAccount && !account) {
+            // Find default loan interest category
+            const loanParent = categoriesData.find(c => c.name === 'Loan' && !c.parentId);
+            if (loanParent) {
+              const interestCat = categoriesData.find(
+                c => c.name === 'Loan Interest' && c.parentId === loanParent.id
+              );
+              setDefaultLoanCategories({
+                principalId: null,
+                interestId: interestCat?.id || null,
+              });
+              // Set default interest category if not already set
+              if (interestCat && !getValues('interestCategoryId')) {
+                setValue('interestCategoryId', interestCat.id);
+              }
             }
           }
         } catch (error) {
@@ -200,7 +219,7 @@ export function AccountForm({ account, onSubmit, onCancel }: AccountFormProps) {
       };
       loadData();
     }
-  }, [isLoanAccount, account, setValue, getValues]);
+  }, [isLoanAccount, isAssetAccount, account, setValue, getValues]);
 
   // Calculate amortization preview when loan fields change
   const calculatePreview = useCallback(async () => {
@@ -243,6 +262,79 @@ export function AccountForm({ account, onSubmit, onCancel }: AccountFormProps) {
   const handleImportQif = () => {
     if (account) {
       router.push(`/import?accountId=${account.id}`);
+    }
+  };
+
+  // Handle asset category selection
+  const handleAssetCategoryChange = (categoryId: string, name: string) => {
+    setAssetCategoryName(name);
+    if (categoryId) {
+      setSelectedAssetCategoryId(categoryId);
+      setValue('assetCategoryId', categoryId, { shouldDirty: true, shouldValidate: true });
+    }
+  };
+
+  // Convert string to title case (capitalize first letter of each word)
+  const toTitleCase = (str: string): string => {
+    return str
+      .toLowerCase()
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
+
+  // Handle asset category creation - supports "Parent: Child" format
+  const handleAssetCategoryCreate = async (name: string) => {
+    if (!name.trim()) return;
+
+    try {
+      let categoryName = toTitleCase(name.trim());
+      let parentId: string | undefined;
+      let parentName: string | undefined;
+
+      // Check for "Parent: Child" format
+      if (categoryName.includes(':')) {
+        const parts = categoryName.split(':').map(p => p.trim());
+        if (parts.length === 2 && parts[0] && parts[1]) {
+          parentName = toTitleCase(parts[0]);
+          const childName = toTitleCase(parts[1]);
+
+          // Find existing parent category (case-insensitive, top-level only)
+          let parentCategory = categories.find(
+            c => c.name.toLowerCase() === parentName!.toLowerCase() && !c.parentId
+          );
+
+          // If parent doesn't exist, create it first
+          if (!parentCategory) {
+            const newParent = await categoriesApi.create({ name: parentName });
+            setCategories(prev => [...prev, newParent]);
+            parentCategory = newParent;
+          }
+
+          parentId = parentCategory.id;
+          parentName = parentCategory.name; // Use actual name from existing category
+          categoryName = childName;
+        }
+      }
+
+      const newCategory = await categoriesApi.create({
+        name: categoryName,
+        parentId,
+        isIncome: false, // Asset value changes are typically not income
+      });
+      setCategories(prev => [...prev, newCategory]);
+      setSelectedAssetCategoryId(newCategory.id);
+      setAssetCategoryName(parentName ? `${parentName}: ${categoryName}` : categoryName);
+      setValue('assetCategoryId', newCategory.id, { shouldDirty: true, shouldValidate: true });
+
+      if (parentId && parentName) {
+        toast.success(`Category "${parentName}: ${categoryName}" created`);
+      } else {
+        toast.success(`Category "${categoryName}" created`);
+      }
+    } catch (error) {
+      console.error('Failed to create category:', error);
+      toast.error('Failed to create category');
     }
   };
 
@@ -315,29 +407,31 @@ export function AccountForm({ account, onSubmit, onCancel }: AccountFormProps) {
         />
       </div>
 
-      {/* Credit Limit and Interest Rate - hide Credit Limit for loans */}
-      <div className="grid grid-cols-2 gap-4">
-        {!isLoanAccount && (
+      {/* Credit Limit and Interest Rate - hide for loans and assets */}
+      {!isAssetAccount && (
+        <div className="grid grid-cols-2 gap-4">
+          {!isLoanAccount && (
+            <Input
+              label="Credit Limit (optional)"
+              type="number"
+              step="0.01"
+              prefix={currencySymbol}
+              error={errors.creditLimit?.message}
+              {...register('creditLimit', { valueAsNumber: true })}
+            />
+          )}
+
           <Input
-            label="Credit Limit (optional)"
+            label={isLoanAccount ? 'Interest Rate % (required)' : 'Interest Rate % (optional)'}
             type="number"
             step="0.01"
-            prefix={currencySymbol}
-            error={errors.creditLimit?.message}
-            {...register('creditLimit', { valueAsNumber: true })}
+            error={errors.interestRate?.message}
+            {...register('interestRate', { valueAsNumber: true })}
           />
-        )}
 
-        <Input
-          label={isLoanAccount ? 'Interest Rate % (required)' : 'Interest Rate % (optional)'}
-          type="number"
-          step="0.01"
-          error={errors.interestRate?.message}
-          {...register('interestRate', { valueAsNumber: true })}
-        />
-
-        {isLoanAccount && <div />} {/* Spacer for grid alignment */}
-      </div>
+          {isLoanAccount && <div />} {/* Spacer for grid alignment */}
+        </div>
+      )}
 
       {/* Loan-specific fields */}
       {isLoanAccount && !account && (
@@ -446,6 +540,33 @@ export function AccountForm({ account, onSubmit, onCancel }: AccountFormProps) {
               Calculating preview...
             </div>
           )}
+        </div>
+      )}
+
+      {/* Asset-specific fields */}
+      {isAssetAccount && (
+        <div className="space-y-4 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+          <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
+            Asset Value Change Settings
+          </h3>
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            Select a category that will be used to track value changes for this asset (e.g., "Home Value Change", "Vehicle Depreciation").
+          </p>
+          <Combobox
+            label="Value Change Category"
+            placeholder="Select or create category..."
+            options={categories.map(c => ({
+              value: c.id,
+              label: c.parentId
+                ? `${categories.find(p => p.id === c.parentId)?.name || ''}: ${c.name}`
+                : c.name,
+            })).sort((a, b) => a.label.localeCompare(b.label))}
+            value={selectedAssetCategoryId}
+            initialDisplayValue={assetCategoryName || account?.assetCategoryId ? categories.find(c => c.id === (selectedAssetCategoryId || account?.assetCategoryId))?.name : ''}
+            onChange={handleAssetCategoryChange}
+            onCreateNew={handleAssetCategoryCreate}
+            allowCustomValue={true}
+          />
         </div>
       )}
 

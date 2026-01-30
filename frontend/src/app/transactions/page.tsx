@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/Input';
 import { Pagination } from '@/components/ui/Pagination';
 import { TransactionForm } from '@/components/transactions/TransactionForm';
 import { TransactionList, DensityLevel } from '@/components/transactions/TransactionList';
+import { AssetValueChangeForm } from '@/components/assets/AssetValueChangeForm';
 import { transactionsApi } from '@/lib/transactions';
 import { accountsApi } from '@/lib/accounts';
 import { categoriesApi } from '@/lib/categories';
@@ -43,6 +44,11 @@ function getStoredFilter(key: string, urlParam: string | null): string {
 // Check if an account is specifically an investment brokerage account
 const isInvestmentBrokerageAccount = (account: Account): boolean => {
   return account.accountSubType === 'INVESTMENT_BROKERAGE';
+};
+
+// Check if an account is an asset account
+const isAssetAccount = (account: Account): boolean => {
+  return account.accountType === 'ASSET';
 };
 
 export default function TransactionsPage() {
@@ -395,22 +401,43 @@ export default function TransactionsPage() {
         </div>
 
         {/* Form Modal */}
-        {showForm && (
-          <div className="fixed inset-0 bg-gray-500 dark:bg-gray-900 bg-opacity-75 dark:bg-opacity-80 flex items-center justify-center p-4 z-50">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl dark:shadow-gray-700/50 max-w-6xl w-full max-h-[90vh] overflow-y-auto p-6">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
-                {editingTransaction ? 'Edit Transaction' : 'New Transaction'}
-              </h2>
-              <TransactionForm
-                key={`${editingTransaction?.id || 'new'}-${filterAccountId}-${formKey}`}
-                transaction={editingTransaction}
-                defaultAccountId={filterAccountId}
-                onSuccess={handleFormSuccess}
-                onCancel={handleFormCancel}
-              />
+        {showForm && (() => {
+          // Determine if we should show the AssetValueChangeForm
+          // Either editing an asset transaction, or creating new with asset account filter
+          const editingAccount = editingTransaction?.account;
+          const filteredAccount = filterAccountId ? accounts.find(a => a.id === filterAccountId) : undefined;
+          const targetAccount = editingAccount || filteredAccount;
+          const showAssetForm = targetAccount && isAssetAccount(targetAccount);
+
+          return (
+            <div className="fixed inset-0 bg-gray-500 dark:bg-gray-900 bg-opacity-75 dark:bg-opacity-80 flex items-center justify-center p-4 z-50">
+              <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-xl dark:shadow-gray-700/50 ${showAssetForm ? 'max-w-lg' : 'max-w-6xl'} w-full max-h-[90vh] overflow-y-auto p-6`}>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
+                  {showAssetForm
+                    ? (editingTransaction ? 'Edit Value Change' : 'Record Value Change')
+                    : (editingTransaction ? 'Edit Transaction' : 'New Transaction')}
+                </h2>
+                {showAssetForm && targetAccount ? (
+                  <AssetValueChangeForm
+                    key={`${editingTransaction?.id || 'new'}-${filterAccountId}-${formKey}`}
+                    account={targetAccount}
+                    transaction={editingTransaction}
+                    onSuccess={handleFormSuccess}
+                    onCancel={handleFormCancel}
+                  />
+                ) : (
+                  <TransactionForm
+                    key={`${editingTransaction?.id || 'new'}-${filterAccountId}-${formKey}`}
+                    transaction={editingTransaction}
+                    defaultAccountId={filterAccountId}
+                    onSuccess={handleFormSuccess}
+                    onCancel={handleFormCancel}
+                  />
+                )}
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* Filters */}
         <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg p-6 mb-6">

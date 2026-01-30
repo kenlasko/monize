@@ -153,4 +153,12 @@ export class UpdateAccountDto {
   @IsOptional()
   @IsUUID()
   interestCategoryId?: string;
+
+  // Asset-specific fields
+  @ApiPropertyOptional({
+    description: 'Category ID for tracking value changes on asset accounts',
+  })
+  @IsOptional()
+  @IsUUID()
+  assetCategoryId?: string;
 }

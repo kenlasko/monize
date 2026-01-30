@@ -74,11 +74,15 @@ export function SplitEditor({
     };
   }), [categories]);
 
-  // Memoize account options (excluding source account, sorted alphabetically)
+  // Memoize account options (excluding source account, asset accounts, and investment accounts, sorted alphabetically)
   const accountOptions = useMemo(() => {
     if (!supportsTransfers) return [];
     return accounts
-      .filter(a => a.id !== sourceAccountId)
+      .filter(a =>
+        a.id !== sourceAccountId &&
+        a.accountType !== 'ASSET' &&
+        a.accountSubType !== 'INVESTMENT_BROKERAGE'
+      )
       .sort((a, b) => a.name.localeCompare(b.name))
       .map(a => ({
         value: a.id,

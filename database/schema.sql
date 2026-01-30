@@ -55,6 +55,7 @@ CREATE TYPE account_type AS ENUM (
     'INVESTMENT',
     'CASH',
     'LINE_OF_CREDIT',
+    'ASSET',
     'OTHER'
 );
 
@@ -85,6 +86,8 @@ CREATE TABLE accounts (
     principal_category_id UUID, -- category for principal portion (FK added after categories table)
     interest_category_id UUID, -- category for interest portion (FK added after categories table)
     scheduled_transaction_id UUID, -- linked scheduled transaction for payments (FK added after scheduled_transactions table)
+    -- Asset-specific fields
+    asset_category_id UUID, -- category for tracking value changes on asset accounts (FK added after categories table)
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -93,6 +96,7 @@ CREATE INDEX idx_accounts_user ON accounts(user_id);
 CREATE INDEX idx_accounts_type ON accounts(account_type);
 CREATE INDEX idx_accounts_account_sub_type ON accounts(account_sub_type);
 CREATE INDEX idx_accounts_linked_account_id ON accounts(linked_account_id);
+CREATE INDEX idx_accounts_asset_category ON accounts(asset_category_id);
 
 -- Categories for transactions
 CREATE TABLE categories (
@@ -230,6 +234,8 @@ ALTER TABLE accounts ADD CONSTRAINT fk_accounts_interest_category
     FOREIGN KEY (interest_category_id) REFERENCES categories(id) ON DELETE SET NULL;
 ALTER TABLE accounts ADD CONSTRAINT fk_accounts_scheduled_transaction
     FOREIGN KEY (scheduled_transaction_id) REFERENCES scheduled_transactions(id) ON DELETE SET NULL;
+ALTER TABLE accounts ADD CONSTRAINT fk_accounts_asset_category
+    FOREIGN KEY (asset_category_id) REFERENCES categories(id) ON DELETE SET NULL;
 
 -- Scheduled Transaction Overrides (for modifying individual occurrences)
 CREATE TABLE scheduled_transaction_overrides (

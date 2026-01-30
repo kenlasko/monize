@@ -639,6 +639,9 @@ export class ImportService {
           if (qifTx.isTransfer) {
             // For transfers, we don't set a category
             categoryId = null;
+          } else if (account.accountType === AccountType.ASSET && account.assetCategoryId) {
+            // For asset accounts, use the account's configured asset category
+            categoryId = account.assetCategoryId;
           } else if (qifTx.category) {
             categoryId = categoryMap.get(qifTx.category) || null;
           }
