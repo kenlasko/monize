@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
@@ -8,6 +8,7 @@ import { AppHeader } from '@/components/layout/AppHeader';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { Input } from '@/components/ui/Input';
+import { CategoryMappingRow } from '@/components/import/CategoryMappingRow';
 import { importApi, ParsedQifResponse, CategoryMapping, AccountMapping, SecurityMapping, ImportResult, DateFormat } from '@/lib/import';
 import { accountsApi } from '@/lib/accounts';
 import { categoriesApi } from '@/lib/categories';
@@ -595,7 +596,7 @@ function ImportContent() {
     }
   };
 
-  const getCategoryOptions = () => {
+  const categoryOptions = useMemo(() => {
     const options = [{ value: '', label: 'Skip (no category)' }];
     const tree = buildCategoryTree(categories);
     tree.forEach(({ category }) => {
@@ -608,9 +609,9 @@ function ImportContent() {
       });
     });
     return options;
-  };
+  }, [categories]);
 
-  const getParentCategoryOptions = () => {
+  const parentCategoryOptions = useMemo(() => {
     const options = [{ value: '', label: 'No parent (top-level)' }];
     categories
       .filter((c) => !c.parentId)
@@ -618,7 +619,7 @@ function ImportContent() {
         options.push({ value: c.id, label: c.name });
       });
     return options;
-  };
+  }, [categories]);
 
   const getAccountOptions = () => {
     // Filter out brokerage accounts - transfers should go to cash accounts
@@ -926,46 +927,21 @@ function ImportContent() {
                 {unmatchedCategories.map((mapping) => {
                   const index = categoryMappings.findIndex((m) => m.originalName === mapping.originalName);
                   return (
-                    <div
+                    <CategoryMappingRow
                       key={mapping.originalName}
-                      className="border-2 border-amber-300 dark:border-amber-600 bg-amber-50 dark:bg-amber-900/20 rounded-lg p-4"
-                    >
-                      <p className="font-medium text-gray-900 dark:text-gray-100 mb-2">
-                        {formatCategoryPath(mapping.originalName)}
-                      </p>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <Select
-                          label="Map to existing"
-                          options={getCategoryOptions()}
-                          value={mapping.categoryId || ''}
-                          onChange={(e) =>
-                            handleCategoryMappingChange(index, 'categoryId', e.target.value)
-                          }
-                        />
-                        <div>
-                          <Input
-                            label="Or create new"
-                            placeholder="New category name"
-                            value={mapping.createNew || ''}
-                            onChange={(e) =>
-                              handleCategoryMappingChange(index, 'createNew', e.target.value)
-                            }
-                          />
-                          {mapping.createNew && (
-                            <div className="mt-2">
-                              <Select
-                                label="Parent category"
-                                options={getParentCategoryOptions()}
-                                value={mapping.parentCategoryId || ''}
-                                onChange={(e) =>
-                                  handleCategoryMappingChange(index, 'parentCategoryId', e.target.value)
-                                }
-                              />
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
+                      mapping={mapping}
+                      categoryOptions={categoryOptions}
+                      parentCategoryOptions={parentCategoryOptions}
+                      onMappingChange={(update) => {
+                        setCategoryMappings((prev) => {
+                          const updated = [...prev];
+                          updated[index] = { ...updated[index], ...update };
+                          return updated;
+                        });
+                      }}
+                      formatCategoryPath={formatCategoryPath}
+                      isHighlighted={true}
+                    />
                   );
                 })}
 
@@ -979,25 +955,21 @@ function ImportContent() {
                       {matchedCategories.map((mapping) => {
                         const index = categoryMappings.findIndex((m) => m.originalName === mapping.originalName);
                         return (
-                          <div
+                          <CategoryMappingRow
                             key={mapping.originalName}
-                            className="border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20 rounded-lg p-3"
-                          >
-                            <div className="flex items-center gap-3">
-                              <span className="font-medium text-gray-900 dark:text-gray-100 whitespace-nowrap min-w-[200px]">
-                                {formatCategoryPath(mapping.originalName)}
-                              </span>
-                              <span className="text-gray-400">→</span>
-                              <Select
-                                options={getCategoryOptions()}
-                                value={mapping.categoryId || ''}
-                                onChange={(e) =>
-                                  handleCategoryMappingChange(index, 'categoryId', e.target.value)
-                                }
-                                className="flex-1"
-                              />
-                            </div>
-                          </div>
+                            mapping={mapping}
+                            categoryOptions={categoryOptions}
+                            parentCategoryOptions={parentCategoryOptions}
+                            onMappingChange={(update) => {
+                              setCategoryMappings((prev) => {
+                                const updated = [...prev];
+                                updated[index] = { ...updated[index], ...update };
+                                return updated;
+                              });
+                            }}
+                            formatCategoryPath={formatCategoryPath}
+                            isHighlighted={false}
+                          />
                         );
                       })}
                     </div>
