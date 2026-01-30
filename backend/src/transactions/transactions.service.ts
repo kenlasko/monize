@@ -1145,6 +1145,7 @@ export class TransactionsService {
       fromCurrencyCode,
       toCurrencyCode,
       exchangeRate = 1,
+      toAmount: explicitToAmount,
       description,
       referenceNumber,
       status = TransactionStatus.UNRECONCILED,
@@ -1164,8 +1165,10 @@ export class TransactionsService {
     const fromAccount = await this.accountsService.findOne(userId, fromAccountId);
     const toAccount = await this.accountsService.findOne(userId, toAccountId);
 
-    // Calculate the destination amount using exchange rate
-    const toAmount = Math.round(amount * exchangeRate * 10000) / 10000;
+    // Use explicit toAmount if provided (for cross-currency transfers), otherwise calculate from exchange rate
+    const toAmount = explicitToAmount !== undefined
+      ? Math.round(explicitToAmount * 10000) / 10000
+      : Math.round(amount * exchangeRate * 10000) / 10000;
     const destinationCurrency = toCurrencyCode || fromCurrencyCode;
 
     // Create the withdrawal transaction (from account - negative amount)
@@ -1379,14 +1382,18 @@ export class TransactionsService {
     // Update values
     const newAmount = updateDto.amount ?? oldFromAmount;
     const newExchangeRate = updateDto.exchangeRate ?? toTransaction.exchangeRate;
-    const newToAmount = Math.round(newAmount * newExchangeRate * 10000) / 10000;
+    // Use explicit toAmount if provided, otherwise calculate from exchange rate
+    const newToAmount = updateDto.toAmount !== undefined
+      ? Math.round(updateDto.toAmount * 10000) / 10000
+      : Math.round(newAmount * newExchangeRate * 10000) / 10000;
 
     // Check if accounts or amounts changed - need to update balances
     const accountsOrAmountsChanged =
       updateDto.fromAccountId ||
       updateDto.toAccountId ||
       updateDto.amount !== undefined ||
-      updateDto.exchangeRate !== undefined;
+      updateDto.exchangeRate !== undefined ||
+      updateDto.toAmount !== undefined;
 
     // Revert old account balances first if anything changed
     if (accountsOrAmountsChanged) {
@@ -1423,7 +1430,7 @@ export class TransactionsService {
     // Update to transaction
     const toUpdateData: Partial<Transaction> = {};
     if (updateDto.transactionDate) toUpdateData.transactionDate = updateDto.transactionDate as any;
-    if (updateDto.amount !== undefined || updateDto.exchangeRate !== undefined) toUpdateData.amount = newToAmount;
+    if (updateDto.amount !== undefined || updateDto.exchangeRate !== undefined || updateDto.toAmount !== undefined) toUpdateData.amount = newToAmount;
     if (updateDto.description !== undefined) toUpdateData.description = updateDto.description ?? null;
     if (updateDto.referenceNumber !== undefined) toUpdateData.referenceNumber = updateDto.referenceNumber ?? null;
     if (updateDto.status !== undefined) toUpdateData.status = updateDto.status;

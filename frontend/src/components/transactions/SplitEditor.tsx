@@ -74,11 +74,12 @@ export function SplitEditor({
     };
   }), [categories]);
 
-  // Memoize account options (excluding source account, asset accounts, and investment accounts, sorted alphabetically)
+  // Memoize account options (excluding source account, asset accounts, investment accounts, and closed accounts, sorted alphabetically)
   const accountOptions = useMemo(() => {
     if (!supportsTransfers) return [];
     return accounts
       .filter(a =>
+        !a.isClosed &&
         a.id !== sourceAccountId &&
         a.accountType !== 'ASSET' &&
         a.accountSubType !== 'INVESTMENT_BROKERAGE'

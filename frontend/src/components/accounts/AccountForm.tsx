@@ -385,11 +385,25 @@ export function AccountForm({ account, onSubmit, onCancel }: AccountFormProps) {
 
         <Input
           label={isLoanAccount ? 'Loan Amount' : 'Opening Balance'}
-          type="number"
-          step="0.01"
+          type="text"
+          inputMode="decimal"
           prefix={currencySymbol}
           error={errors.openingBalance?.message}
-          {...register('openingBalance', { valueAsNumber: true })}
+          {...register('openingBalance', {
+            setValueAs: (v) => {
+              if (v === '' || v === undefined) return undefined;
+              const parsed = parseFloat(v);
+              return isNaN(parsed) ? undefined : parsed;
+            },
+          })}
+          onBlur={(e) => {
+            const value = parseFloat(e.target.value);
+            if (!isNaN(value)) {
+              const rounded = Math.round(value * 100) / 100;
+              e.target.value = rounded.toFixed(2);
+              setValue('openingBalance', rounded, { shouldValidate: true });
+            }
+          }}
         />
       </div>
 
@@ -413,11 +427,25 @@ export function AccountForm({ account, onSubmit, onCancel }: AccountFormProps) {
           {!isLoanAccount && (
             <Input
               label="Credit Limit (optional)"
-              type="number"
-              step="0.01"
+              type="text"
+              inputMode="decimal"
               prefix={currencySymbol}
               error={errors.creditLimit?.message}
-              {...register('creditLimit', { valueAsNumber: true })}
+              {...register('creditLimit', {
+                setValueAs: (v) => {
+                  if (v === '' || v === undefined) return undefined;
+                  const parsed = parseFloat(v);
+                  return isNaN(parsed) ? undefined : parsed;
+                },
+              })}
+              onBlur={(e) => {
+                const value = parseFloat(e.target.value);
+                if (!isNaN(value)) {
+                  const rounded = Math.round(value * 100) / 100;
+                  e.target.value = rounded.toFixed(2);
+                  setValue('creditLimit', rounded, { shouldValidate: true });
+                }
+              }}
             />
           )}
 
@@ -443,11 +471,25 @@ export function AccountForm({ account, onSubmit, onCancel }: AccountFormProps) {
           <div className="grid grid-cols-2 gap-4">
             <Input
               label="Payment Amount (required)"
-              type="number"
-              step="0.01"
+              type="text"
+              inputMode="decimal"
               prefix={currencySymbol}
               error={errors.paymentAmount?.message}
-              {...register('paymentAmount', { valueAsNumber: true })}
+              {...register('paymentAmount', {
+                setValueAs: (v) => {
+                  if (v === '' || v === undefined) return undefined;
+                  const parsed = parseFloat(v);
+                  return isNaN(parsed) ? undefined : parsed;
+                },
+              })}
+              onBlur={(e) => {
+                const value = parseFloat(e.target.value);
+                if (!isNaN(value)) {
+                  const rounded = Math.round(value * 100) / 100;
+                  e.target.value = rounded.toFixed(2);
+                  setValue('paymentAmount', rounded, { shouldValidate: true });
+                }
+              }}
             />
 
             <Select

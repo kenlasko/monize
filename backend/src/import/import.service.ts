@@ -615,6 +615,50 @@ export class ImportService {
             }
           }
 
+          // For transfers: Check if there's a pending cross-currency transfer waiting to be updated
+          // This happens when the other account was imported first and created a placeholder
+          if (qifTx.isTransfer && qifTx.transferAccount) {
+            const mappedTransferAccountId = accountMap.get(qifTx.transferAccount);
+            if (mappedTransferAccountId) {
+              // Look for a pending transfer in THIS account that was created by importing the other account
+              // It should have the pending note and be linked to a transaction in the transfer account
+              const expectedSign = qifTx.amount >= 0 ? 1 : -1;
+              const pendingTransfer = await queryRunner.manager
+                .createQueryBuilder(Transaction, 't')
+                .leftJoinAndSelect('t.linkedTransaction', 'linked')
+                .where('t.user_id = :userId', { userId })
+                .andWhere('t.account_id = :accountId', { accountId: dto.accountId })
+                .andWhere('t.transaction_date = :date', { date: qifTx.date })
+                .andWhere('t.is_transfer = true')
+                .andWhere('t.description LIKE :note', { note: '%PENDING IMPORT%' })
+                .andWhere(expectedSign > 0 ? 't.amount > 0' : 't.amount < 0')
+                .andWhere('linked.account_id = :linkedAccountId', { linkedAccountId: mappedTransferAccountId })
+                .getOne();
+
+              if (pendingTransfer) {
+                // Found a pending transfer - update its amount and clear the note
+                const oldAmount = Number(pendingTransfer.amount);
+                const newAmount = qifTx.amount;
+                const balanceDiff = newAmount - oldAmount;
+
+                await queryRunner.manager.update(Transaction, pendingTransfer.id, {
+                  amount: newAmount,
+                  description: qifTx.memo || null, // Clear the pending note, use QIF memo
+                  payeeName: qifTx.payee || pendingTransfer.payeeName,
+                  referenceNumber: qifTx.number || pendingTransfer.referenceNumber,
+                });
+
+                // Adjust the balance difference
+                if (balanceDiff !== 0) {
+                  await this.updateAccountBalance(queryRunner, dto.accountId, balanceDiff);
+                }
+
+                importResult.imported++;
+                continue; // Skip normal transaction creation
+              }
+            }
+          }
+
           // Get or create payee
           let payeeId: string | null = null;
           if (qifTx.payee) {
@@ -749,32 +793,83 @@ export class ImportService {
 
           // If it's a transfer and we have a linked account, create the opposite transaction
           if (qifTx.isTransfer && transferAccountId) {
-            // Use same timestamp as the main transaction (slightly offset to ensure uniqueness)
-            const linkedTime = new Date(baseTime.getTime() + 0.5);
-            const linkedTx = queryRunner.manager.create(Transaction, {
-              userId,
-              accountId: transferAccountId,
-              transactionDate: qifTx.date,
-              amount: -qifTx.amount,
-              payeeName: qifTx.payee || `Transfer from ${account.name}`,
-              description: qifTx.memo,
-              referenceNumber: qifTx.number,
-              status, // Use same status as the main transaction
-              currencyCode: account.currencyCode,
-              isTransfer: true,
-              linkedTransactionId: savedTx.id,
-              createdAt: linkedTime,
+            // Get the target account to check currency
+            const targetAccount = await queryRunner.manager.findOne(Account, {
+              where: { id: transferAccountId },
             });
 
-            const savedLinkedTx = await queryRunner.manager.save(linkedTx);
+            const isCrossCurrency = targetAccount && targetAccount.currencyCode !== account.currencyCode;
+            const PENDING_IMPORT_NOTE = '⚠️ PENDING IMPORT: Amount may need adjustment when importing the other account.';
 
-            // Update the original transaction with linked ID
-            await queryRunner.manager.update(Transaction, savedTx.id, {
-              linkedTransactionId: savedLinkedTx.id,
-            });
+            // For cross-currency transfers, check if there's already a pending transfer waiting to be matched
+            let existingPendingTransfer: Transaction | null = null;
+            if (isCrossCurrency) {
+              // Look for a pending transfer in the target account that:
+              // 1. Is on the same date
+              // 2. Is a transfer
+              // 3. Has the pending import note
+              // 4. Amount sign matches what we expect (we're depositing, so target should be positive if our amount is negative)
+              const expectedSign = qifTx.amount < 0 ? 1 : -1; // If we're withdrawing (negative), target should be positive
+              existingPendingTransfer = await queryRunner.manager
+                .createQueryBuilder(Transaction, 't')
+                .where('t.user_id = :userId', { userId })
+                .andWhere('t.account_id = :accountId', { accountId: transferAccountId })
+                .andWhere('t.transaction_date = :date', { date: qifTx.date })
+                .andWhere('t.is_transfer = true')
+                .andWhere('t.linked_transaction_id IS NULL')
+                .andWhere('t.description LIKE :note', { note: '%PENDING IMPORT%' })
+                .andWhere(expectedSign > 0 ? 't.amount > 0' : 't.amount < 0')
+                .getOne();
+            }
 
-            // Update linked account balance
-            await this.updateAccountBalance(queryRunner, transferAccountId, -qifTx.amount);
+            if (existingPendingTransfer) {
+              // Found a pending transfer - link them together and clear the note
+              await queryRunner.manager.update(Transaction, existingPendingTransfer.id, {
+                linkedTransactionId: savedTx.id,
+                payeeName: qifTx.payee || `Transfer from ${account.name}`,
+                description: qifTx.memo || null, // Clear the pending note
+              });
+
+              await queryRunner.manager.update(Transaction, savedTx.id, {
+                linkedTransactionId: existingPendingTransfer.id,
+              });
+
+              // Balance was already updated when the pending transfer was created
+            } else {
+              // Use same timestamp as the main transaction (slightly offset to ensure uniqueness)
+              const linkedTime = new Date(baseTime.getTime() + 0.5);
+
+              // For cross-currency, use the source amount but mark as pending
+              const linkedAmount = -qifTx.amount;
+              const linkedDescription = isCrossCurrency
+                ? `${qifTx.memo || ''} ${PENDING_IMPORT_NOTE}`.trim()
+                : qifTx.memo;
+
+              const linkedTx = queryRunner.manager.create(Transaction, {
+                userId,
+                accountId: transferAccountId,
+                transactionDate: qifTx.date,
+                amount: linkedAmount,
+                payeeName: qifTx.payee || `Transfer from ${account.name}`,
+                description: linkedDescription,
+                referenceNumber: qifTx.number,
+                status, // Use same status as the main transaction
+                currencyCode: targetAccount?.currencyCode || account.currencyCode,
+                isTransfer: true,
+                linkedTransactionId: savedTx.id,
+                createdAt: linkedTime,
+              });
+
+              const savedLinkedTx = await queryRunner.manager.save(linkedTx);
+
+              // Update the original transaction with linked ID
+              await queryRunner.manager.update(Transaction, savedTx.id, {
+                linkedTransactionId: savedLinkedTx.id,
+              });
+
+              // Update linked account balance
+              await this.updateAccountBalance(queryRunner, transferAccountId, linkedAmount);
+            }
           }
 
           importResult.imported++;

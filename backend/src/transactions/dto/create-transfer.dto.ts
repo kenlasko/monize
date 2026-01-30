@@ -43,6 +43,11 @@ export class CreateTransferDto {
   @IsNumber({ maxDecimalPlaces: 10 })
   exchangeRate?: number;
 
+  @ApiPropertyOptional({ description: 'Destination amount (for cross-currency transfers). If provided, overrides exchangeRate calculation.' })
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 4 })
+  toAmount?: number;
+
   @ApiPropertyOptional({ description: 'Transfer description/notes' })
   @IsOptional()
   @IsString()

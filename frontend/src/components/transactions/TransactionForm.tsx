@@ -113,6 +113,29 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
     initialTransferAccounts.toAccountId
   );
 
+  // Target amount for cross-currency transfers
+  const [transferTargetAmount, setTransferTargetAmount] = useState<number | undefined>(() => {
+    // If editing a transfer with different currencies, initialize target amount from linked transaction
+    if (transaction?.isTransfer && transaction.linkedTransaction) {
+      const isOutgoing = Number(transaction.amount) < 0;
+      const toTx = isOutgoing ? transaction.linkedTransaction : transaction;
+      return Math.abs(Number(toTx.amount));
+    }
+    return undefined;
+  });
+  // Track display value for target amount input (allows free typing, formats on blur)
+  const [targetAmountDisplay, setTargetAmountDisplay] = useState<string>('');
+  // Track display value for main amount input (allows free typing, formats on blur)
+  const [amountDisplay, setAmountDisplay] = useState<string>(() => {
+    if (transaction) {
+      const amount = transaction.isTransfer
+        ? Math.abs(Number(transaction.amount))
+        : Number(transaction.amount);
+      return (Math.round(amount * 100) / 100).toFixed(2);
+    }
+    return '';
+  });
+
   const {
     register,
     handleSubmit,
@@ -151,6 +174,23 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
   const watchedAccountId = watch('accountId');
   const watchedAmount = watch('amount');
   const watchedCurrencyCode = watch('currencyCode');
+
+  // Determine if this is a cross-currency transfer
+  const crossCurrencyInfo = useMemo(() => {
+    if (mode !== 'transfer' || !watchedAccountId || !transferToAccountId) {
+      return null;
+    }
+    const fromAccount = accounts.find(a => a.id === watchedAccountId);
+    const toAccount = accounts.find(a => a.id === transferToAccountId);
+    if (!fromAccount || !toAccount) return null;
+    if (fromAccount.currencyCode === toAccount.currencyCode) return null;
+    return {
+      fromCurrency: fromAccount.currencyCode,
+      toCurrency: toAccount.currencyCode,
+      fromAccountName: fromAccount.name,
+      toAccountName: toAccount.name,
+    };
+  }, [mode, watchedAccountId, transferToAccountId, accounts]);
 
   // Memoize category tree to avoid rebuilding on every render
   const categoryTree = useMemo(() => buildCategoryTree(categories), [categories]);
@@ -380,16 +420,26 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
           return;
         }
 
-        const transferData = {
+        // Get the destination account's currency
+        const toAccount = accounts.find(a => a.id === transferToAccountId);
+        const toCurrencyCode = toAccount?.currencyCode || data.currencyCode;
+
+        const transferData: any = {
           fromAccountId: data.accountId,
           toAccountId: transferToAccountId,
           transactionDate: data.transactionDate,
           amount: Math.abs(data.amount),
           fromCurrencyCode: data.currencyCode,
+          toCurrencyCode: toCurrencyCode,
           description: data.description,
           referenceNumber: data.referenceNumber,
           status: data.status,
         };
+
+        // Include target amount for cross-currency transfers
+        if (crossCurrencyInfo && transferTargetAmount !== undefined && transferTargetAmount > 0) {
+          transferData.toAmount = transferTargetAmount;
+        }
 
         if (transaction?.isTransfer) {
           await transactionsApi.updateTransfer(transaction.id, transferData);
@@ -494,170 +544,412 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* From Account (or just Account for non-transfers) */}
-        <Select
-          label={mode === 'transfer' ? 'From Account' : 'Account'}
-          error={errors.accountId?.message}
-          value={watchedAccountId || ''}
-          options={[
-            { value: '', label: 'Select account...' },
-            ...(mode === 'transfer'
-              ? accounts
+      {/* TRANSACTION MODE LAYOUT */}
+      {mode === 'normal' && (
+        <div className="space-y-4">
+          {/* Row 1: Account and Date */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Select
+              label="Account"
+              error={errors.accountId?.message}
+              value={watchedAccountId || ''}
+              options={[
+                { value: '', label: 'Select account...' },
+                ...accounts
                   .filter(account =>
+                    !account.isClosed &&
                     account.accountSubType !== 'INVESTMENT_BROKERAGE' &&
                     account.accountType !== 'ASSET'
                   )
+                  .sort((a, b) => a.name.localeCompare(b.name))
                   .map(account => ({
                     value: account.id,
                     label: `${account.name} (${account.currencyCode})`,
-                  }))
-              : accounts.map(account => ({
-                  value: account.id,
-                  label: `${account.name} (${account.currencyCode})`,
-                }))
-            ),
-          ]}
-          {...register('accountId')}
-        />
-
-        {/* To Account - only for transfer mode */}
-        {mode === 'transfer' && (
-          <Select
-            label="To Account"
-            value={transferToAccountId}
-            onChange={(e) => setTransferToAccountId(e.target.value)}
-            options={[
-              { value: '', label: 'Select destination account...' },
-              ...accounts
-                .filter(account =>
-                  account.id !== watchedAccountId &&
-                  account.accountSubType !== 'INVESTMENT_BROKERAGE' &&
-                  account.accountType !== 'ASSET'
-                )
-                .map(account => ({
-                  value: account.id,
-                  label: `${account.name} (${account.currencyCode})`,
-                })),
-            ]}
-          />
-        )}
-
-        {/* Date */}
-        <Input
-          label="Date"
-          type="date"
-          error={errors.transactionDate?.message}
-          {...register('transactionDate')}
-        />
-
-        {/* Payee with autocomplete - only show for non-transfer mode */}
-        {mode !== 'transfer' && (
-          <Combobox
-            label="Payee"
-            placeholder="Select or type payee name..."
-            options={payees.map(payee => ({
-              value: payee.id,
-              label: payee.name,
-              subtitle: payee.defaultCategory?.name,
-            }))}
-            value={selectedPayeeId}
-            initialDisplayValue={transaction?.payeeName || ''}
-            onChange={handlePayeeChange}
-            onCreateNew={handlePayeeCreate}
-            allowCustomValue={true}
-            error={errors.payeeName?.message}
-          />
-        )}
-
-        {/* Amount - labeled appropriately based on mode */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            {mode === 'split' ? 'Total Amount' : mode === 'transfer' ? 'Transfer Amount' : 'Amount'}
-          </label>
-          <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400">
-              {(() => {
-                const symbols: Record<string, string> = { USD: '$', CAD: '$', EUR: '€', GBP: '£', JPY: '¥', CNY: '¥', AUD: '$', NZD: '$' };
-                return symbols[(watchedCurrencyCode || 'CAD').toUpperCase()] || '$';
-              })()}
-            </span>
-            <input
-              type="number"
-              step="0.01"
-              min={mode === 'transfer' ? '0.01' : undefined}
-              placeholder="0.00"
-              className={`block w-full pl-7 pr-3 py-2 rounded-md border ${
-                errors.amount ? 'border-red-500 dark:border-red-400' : 'border-gray-300 dark:border-gray-600'
-              } shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-100 dark:focus:border-blue-400 dark:focus:ring-blue-400`}
-              {...register('amount', { valueAsNumber: true })}
-              onBlur={(e) => {
-                // Round to 2 decimal places on blur
-                const value = parseFloat(e.target.value);
-                if (!isNaN(value)) {
-                  const rounded = Math.round(value * 100) / 100;
-                  // For transfers, ensure amount is positive
-                  const finalValue = mode === 'transfer' ? Math.abs(rounded) : rounded;
-                  setValue('amount', finalValue, { shouldValidate: true });
-                }
-              }}
+                  })
+                ),
+              ]}
+              {...register('accountId')}
+            />
+            <Input
+              label="Date"
+              type="date"
+              error={errors.transactionDate?.message}
+              {...register('transactionDate')}
             />
           </div>
-          {mode === 'transfer' && (
-            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              Amount must be positive for transfers
-            </p>
-          )}
-          {errors.amount && (
-            <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.amount.message}</p>
-          )}
-        </div>
 
-        {/* Category - only show for normal mode */}
-        {mode === 'normal' && (
-          <div className="flex items-end space-x-2">
-            <div className="flex-1">
-              <Combobox
-                label="Category"
-                placeholder="Select or create category..."
-                options={categoryOptions}
-                value={selectedCategoryId}
-                initialDisplayValue={transaction?.category?.name || ''}
-                onChange={handleCategoryChange}
-                onCreateNew={handleCategoryCreate}
-                allowCustomValue={true}
-                error={errors.categoryId?.message}
-              />
+          {/* Row 2: Payee and Category */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Combobox
+              label="Payee"
+              placeholder="Select or type payee name..."
+              options={payees.map(payee => ({
+                value: payee.id,
+                label: payee.name,
+                subtitle: payee.defaultCategory?.name,
+              }))}
+              value={selectedPayeeId}
+              initialDisplayValue={transaction?.payeeName || ''}
+              onChange={handlePayeeChange}
+              onCreateNew={handlePayeeCreate}
+              allowCustomValue={true}
+              error={errors.payeeName?.message}
+            />
+            <div className="flex items-end space-x-2">
+              <div className="flex-1">
+                <Combobox
+                  label="Category"
+                  placeholder="Select or create category..."
+                  options={categoryOptions}
+                  value={selectedCategoryId}
+                  initialDisplayValue={transaction?.category?.name || ''}
+                  onChange={handleCategoryChange}
+                  onCreateNew={handleCategoryCreate}
+                  allowCustomValue={true}
+                  error={errors.categoryId?.message}
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => handleModeChange('split')}
+                className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 whitespace-nowrap"
+              >
+                Split Transaction
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={() => handleModeChange('split')}
-              className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 whitespace-nowrap"
-            >
-              Split Transaction
-            </button>
           </div>
-        )}
 
-        {/* Currency */}
-        <Input
-          label="Currency"
-          type="text"
-          maxLength={3}
-          placeholder="CAD"
-          error={errors.currencyCode?.message}
-          {...register('currencyCode')}
-        />
+          {/* Row 3: Amount and Reference Number */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Amount
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400">
+                  {(() => {
+                    const symbols: Record<string, string> = { USD: '$', CAD: '$', EUR: '€', GBP: '£', JPY: '¥', CNY: '¥', AUD: '$', NZD: '$' };
+                    return symbols[(watchedCurrencyCode || 'CAD').toUpperCase()] || '$';
+                  })()}
+                </span>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="0.00"
+                  className={`block w-full pl-7 pr-3 py-2 rounded-md border ${
+                    errors.amount ? 'border-red-500 dark:border-red-400' : 'border-gray-300 dark:border-gray-600'
+                  } shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-100 dark:focus:border-blue-400 dark:focus:ring-blue-400`}
+                  value={amountDisplay}
+                  onChange={(e) => {
+                    const filtered = e.target.value.replace(/[^0-9.-]/g, '');
+                    setAmountDisplay(filtered);
+                    const parsed = parseFloat(filtered);
+                    if (!isNaN(parsed)) {
+                      setValue('amount', Math.round(parsed * 100) / 100, { shouldValidate: true });
+                    }
+                  }}
+                  onBlur={() => {
+                    const value = parseFloat(amountDisplay);
+                    if (!isNaN(value)) {
+                      const rounded = Math.round(value * 100) / 100;
+                      setAmountDisplay(rounded.toFixed(2));
+                      setValue('amount', rounded, { shouldValidate: true });
+                    }
+                  }}
+                />
+              </div>
+              {errors.amount && (
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.amount.message}</p>
+              )}
+            </div>
+            <Input
+              label="Reference Number"
+              type="text"
+              placeholder="Cheque #, confirmation #..."
+              error={errors.referenceNumber?.message}
+              {...register('referenceNumber')}
+            />
+          </div>
+        </div>
+      )}
 
-        {/* Reference Number */}
-        <Input
-          label="Reference Number"
-          type="text"
-          placeholder="Cheque #, confirmation #..."
-          error={errors.referenceNumber?.message}
-          {...register('referenceNumber')}
-        />
-      </div>
+      {/* SPLIT MODE LAYOUT */}
+      {mode === 'split' && (
+        <div className="space-y-4">
+          {/* Row 1: Account and Date */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Select
+              label="Account"
+              error={errors.accountId?.message}
+              value={watchedAccountId || ''}
+              options={[
+                { value: '', label: 'Select account...' },
+                ...accounts
+                  .filter(account =>
+                    !account.isClosed &&
+                    account.accountSubType !== 'INVESTMENT_BROKERAGE' &&
+                    account.accountType !== 'ASSET'
+                  )
+                  .sort((a, b) => a.name.localeCompare(b.name))
+                  .map(account => ({
+                    value: account.id,
+                    label: `${account.name} (${account.currencyCode})`,
+                  })
+                ),
+              ]}
+              {...register('accountId')}
+            />
+            <Input
+              label="Date"
+              type="date"
+              error={errors.transactionDate?.message}
+              {...register('transactionDate')}
+            />
+          </div>
+
+          {/* Row 2: Payee and Total Amount */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Combobox
+              label="Payee"
+              placeholder="Select or type payee name..."
+              options={payees.map(payee => ({
+                value: payee.id,
+                label: payee.name,
+                subtitle: payee.defaultCategory?.name,
+              }))}
+              value={selectedPayeeId}
+              initialDisplayValue={transaction?.payeeName || ''}
+              onChange={handlePayeeChange}
+              onCreateNew={handlePayeeCreate}
+              allowCustomValue={true}
+              error={errors.payeeName?.message}
+            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Total Amount
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400">
+                  {(() => {
+                    const symbols: Record<string, string> = { USD: '$', CAD: '$', EUR: '€', GBP: '£', JPY: '¥', CNY: '¥', AUD: '$', NZD: '$' };
+                    return symbols[(watchedCurrencyCode || 'CAD').toUpperCase()] || '$';
+                  })()}
+                </span>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="0.00"
+                  className={`block w-full pl-7 pr-3 py-2 rounded-md border ${
+                    errors.amount ? 'border-red-500 dark:border-red-400' : 'border-gray-300 dark:border-gray-600'
+                  } shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-100 dark:focus:border-blue-400 dark:focus:ring-blue-400`}
+                  value={amountDisplay}
+                  onChange={(e) => {
+                    const filtered = e.target.value.replace(/[^0-9.-]/g, '');
+                    setAmountDisplay(filtered);
+                    const parsed = parseFloat(filtered);
+                    if (!isNaN(parsed)) {
+                      setValue('amount', Math.round(parsed * 100) / 100, { shouldValidate: true });
+                    }
+                  }}
+                  onBlur={() => {
+                    const value = parseFloat(amountDisplay);
+                    if (!isNaN(value)) {
+                      const rounded = Math.round(value * 100) / 100;
+                      setAmountDisplay(rounded.toFixed(2));
+                      setValue('amount', rounded, { shouldValidate: true });
+                    }
+                  }}
+                />
+              </div>
+              {errors.amount && (
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.amount.message}</p>
+              )}
+            </div>
+          </div>
+
+          {/* Row 3: Reference Number */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              label="Reference Number"
+              type="text"
+              placeholder="Cheque #, confirmation #..."
+              error={errors.referenceNumber?.message}
+              {...register('referenceNumber')}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* TRANSFER MODE LAYOUT */}
+      {mode === 'transfer' && (
+        <div className="space-y-4">
+          {/* Row 1: Date */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              label="Date"
+              type="date"
+              error={errors.transactionDate?.message}
+              {...register('transactionDate')}
+            />
+          </div>
+
+          {/* Row 2: From and To Accounts side by side */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Select
+              label="From Account"
+              error={errors.accountId?.message}
+              value={watchedAccountId || ''}
+              options={[
+                { value: '', label: 'Select account...' },
+                ...accounts
+                  .filter(account =>
+                    !account.isClosed &&
+                    account.accountSubType !== 'INVESTMENT_BROKERAGE' &&
+                    account.accountType !== 'ASSET'
+                  )
+                  .sort((a, b) => a.name.localeCompare(b.name))
+                  .map(account => ({
+                    value: account.id,
+                    label: `${account.name} (${account.currencyCode})`,
+                  })
+                ),
+              ]}
+              {...register('accountId')}
+            />
+            <Select
+              label="To Account"
+              value={transferToAccountId}
+              onChange={(e) => {
+                setTransferToAccountId(e.target.value);
+                setTransferTargetAmount(undefined);
+              }}
+              options={[
+                { value: '', label: 'Select destination account...' },
+                ...accounts
+                  .filter(account =>
+                    !account.isClosed &&
+                    account.id !== watchedAccountId &&
+                    account.accountSubType !== 'INVESTMENT_BROKERAGE' &&
+                    account.accountType !== 'ASSET'
+                  )
+                  .sort((a, b) => a.name.localeCompare(b.name))
+                  .map(account => ({
+                    value: account.id,
+                    label: `${account.name} (${account.currencyCode})`,
+                  })),
+              ]}
+            />
+          </div>
+
+          {/* Row 3: Transfer Amount under From, Received Amount under To (for cross-currency) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Transfer Amount{crossCurrencyInfo ? ` (${crossCurrencyInfo.fromCurrency})` : ''}
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400">
+                  {(() => {
+                    const symbols: Record<string, string> = { USD: '$', CAD: '$', EUR: '€', GBP: '£', JPY: '¥', CNY: '¥', AUD: '$', NZD: '$' };
+                    return symbols[(watchedCurrencyCode || 'CAD').toUpperCase()] || '$';
+                  })()}
+                </span>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="0.00"
+                  className={`block w-full pl-7 pr-3 py-2 rounded-md border ${
+                    errors.amount ? 'border-red-500 dark:border-red-400' : 'border-gray-300 dark:border-gray-600'
+                  } shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-100 dark:focus:border-blue-400 dark:focus:ring-blue-400`}
+                  value={amountDisplay}
+                  onChange={(e) => {
+                    const filtered = e.target.value.replace(/[^0-9.-]/g, '');
+                    setAmountDisplay(filtered);
+                    const parsed = parseFloat(filtered);
+                    if (!isNaN(parsed)) {
+                      setValue('amount', Math.round(Math.abs(parsed) * 100) / 100, { shouldValidate: true });
+                    }
+                  }}
+                  onBlur={() => {
+                    const value = parseFloat(amountDisplay);
+                    if (!isNaN(value)) {
+                      const rounded = Math.round(Math.abs(value) * 100) / 100;
+                      setAmountDisplay(rounded.toFixed(2));
+                      setValue('amount', rounded, { shouldValidate: true });
+                    }
+                  }}
+                />
+              </div>
+              {!crossCurrencyInfo && (
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  Amount must be positive for transfers
+                </p>
+              )}
+              {errors.amount && (
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.amount.message}</p>
+              )}
+            </div>
+
+            {/* Received Amount - only for cross-currency transfers */}
+            {crossCurrencyInfo && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Amount Received ({crossCurrencyInfo.toCurrency})
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400">
+                    {(() => {
+                      const symbols: Record<string, string> = { USD: '$', CAD: '$', EUR: '€', GBP: '£', JPY: '¥', CNY: '¥', AUD: '$', NZD: '$' };
+                      return symbols[crossCurrencyInfo.toCurrency.toUpperCase()] || '$';
+                    })()}
+                  </span>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    placeholder="0.00"
+                    value={targetAmountDisplay || (transferTargetAmount !== undefined ? transferTargetAmount.toFixed(2) : '')}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setTargetAmountDisplay(val);
+                      if (val === '') {
+                        setTransferTargetAmount(undefined);
+                      } else {
+                        const parsed = parseFloat(val);
+                        if (!isNaN(parsed)) {
+                          setTransferTargetAmount(parsed);
+                        }
+                      }
+                    }}
+                    onBlur={(e) => {
+                      const value = parseFloat(e.target.value);
+                      if (!isNaN(value)) {
+                        const rounded = Math.round(Math.abs(value) * 100) / 100;
+                        setTransferTargetAmount(rounded);
+                      }
+                      setTargetAmountDisplay(''); // Clear display override to show formatted value
+                    }}
+                    className="block w-full pl-7 pr-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-100"
+                  />
+                </div>
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  Amount received after currency conversion
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Row 4: Reference Number */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              label="Reference Number"
+              type="text"
+              placeholder="Cheque #, confirmation #..."
+              error={errors.referenceNumber?.message}
+              {...register('referenceNumber')}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Split Editor - shown when in split mode */}
       {isSplitMode && (

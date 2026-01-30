@@ -365,11 +365,18 @@ export function InvestmentTransactionForm({
       {isAmountOnly && (
         <Input
           label="Amount"
-          type="number"
-          step="0.01"
-          min="0"
+          type="text"
+          inputMode="decimal"
           error={errors.price?.message}
           {...register('price')}
+          onBlur={(e) => {
+            const value = parseFloat(e.target.value);
+            if (!isNaN(value) && value >= 0) {
+              const rounded = Math.round(value * 100) / 100;
+              e.target.value = rounded.toFixed(2);
+              setValue('price', rounded, { shouldValidate: true });
+            }
+          }}
         />
       )}
 
@@ -377,11 +384,18 @@ export function InvestmentTransactionForm({
       {(needsQuantityPrice || watchedAction === 'SPLIT') && (
         <Input
           label="Commission / Fees"
-          type="number"
-          step="0.01"
-          min="0"
+          type="text"
+          inputMode="decimal"
           error={errors.commission?.message}
           {...register('commission')}
+          onBlur={(e) => {
+            const value = parseFloat(e.target.value);
+            if (!isNaN(value) && value >= 0) {
+              const rounded = Math.round(value * 100) / 100;
+              e.target.value = rounded.toFixed(2);
+              setValue('commission', rounded, { shouldValidate: true });
+            }
+          }}
         />
       )}
 

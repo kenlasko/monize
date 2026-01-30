@@ -33,6 +33,7 @@ export function AssetValueChangeForm({ account, transaction, onSuccess, onCancel
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<ValueChangeFormData>({
     resolver: zodResolver(valueChangeSchema),
@@ -114,14 +115,35 @@ export function AssetValueChangeForm({ account, transaction, onSuccess, onCancel
       />
 
       <div>
-        <Input
-          label="Value Change"
-          type="number"
-          step="0.01"
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          Value Change
+        </label>
+        <input
+          type="text"
+          inputMode="decimal"
           placeholder="Enter positive to increase, negative to decrease"
-          error={errors.amount?.message}
-          {...register('amount', { valueAsNumber: true })}
+          className={`block w-full px-3 py-2 rounded-md border ${
+            errors.amount ? 'border-red-500 dark:border-red-400' : 'border-gray-300 dark:border-gray-600'
+          } shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-100 dark:focus:border-blue-400 dark:focus:ring-blue-400`}
+          {...register('amount', {
+            setValueAs: (v) => {
+              if (v === '' || v === undefined) return undefined;
+              const parsed = parseFloat(v);
+              return isNaN(parsed) ? undefined : parsed;
+            },
+          })}
+          onBlur={(e) => {
+            const value = parseFloat(e.target.value);
+            if (!isNaN(value)) {
+              const rounded = Math.round(value * 100) / 100;
+              e.target.value = rounded.toFixed(2);
+              setValue('amount', rounded, { shouldValidate: true });
+            }
+          }}
         />
+        {errors.amount && (
+          <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.amount.message}</p>
+        )}
         <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
           Enter a positive number to increase value, negative to decrease
         </p>
