@@ -68,6 +68,7 @@ export interface PortfolioSummary {
   totalGainLossPercent: number;
   holdings: HoldingWithMarketValue[];
   holdingsByAccount: AccountHoldings[];
+  allocation: AllocationItem[];  // Included to avoid duplicate API call
 }
 
 export interface AllocationItem {

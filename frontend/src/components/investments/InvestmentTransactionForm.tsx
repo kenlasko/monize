@@ -201,8 +201,8 @@ export function InvestmentTransactionForm({
       };
 
       if (transaction) {
-        // TODO: Add update endpoint when needed
-        toast.error('Update not yet implemented');
+        await investmentsApi.updateTransaction(transaction.id, payload);
+        toast.success('Transaction updated');
       } else {
         await investmentsApi.createTransaction(payload);
         toast.success('Transaction created');

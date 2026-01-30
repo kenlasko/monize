@@ -70,6 +70,18 @@ export const investmentsApi = {
     return response.data;
   },
 
+  // Update investment transaction
+  updateTransaction: async (
+    id: string,
+    data: Partial<CreateInvestmentTransactionData>,
+  ): Promise<InvestmentTransaction> => {
+    const response = await apiClient.patch<InvestmentTransaction>(
+      `/investment-transactions/${id}`,
+      data,
+    );
+    return response.data;
+  },
+
   // Get a single investment transaction by ID
   getTransaction: async (id: string): Promise<InvestmentTransaction> => {
     const response = await apiClient.get<InvestmentTransaction>(

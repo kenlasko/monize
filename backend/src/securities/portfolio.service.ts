@@ -41,6 +41,7 @@ export interface PortfolioSummary {
   totalGainLossPercent: number;
   holdings: HoldingWithMarketValue[];
   holdingsByAccount: AccountHoldings[];
+  allocation: AllocationItem[];  // Include allocation to avoid duplicate API call
 }
 
 export interface AllocationItem {
@@ -70,6 +71,7 @@ export class PortfolioService {
 
   /**
    * Get the latest prices for a list of security IDs
+   * Uses DISTINCT ON for efficient single-pass query instead of correlated subquery
    */
   async getLatestPrices(
     securityIds: string[],
@@ -78,23 +80,20 @@ export class PortfolioService {
       return new Map();
     }
 
-    // Get the latest price for each security using a subquery
+    // Use DISTINCT ON (PostgreSQL) for efficient single-pass latest price lookup
+    // This is much faster than correlated subquery approach
     const latestPrices = await this.securityPriceRepository
-      .createQueryBuilder('sp')
-      .select(['sp.securityId', 'sp.closePrice', 'sp.priceDate'])
-      .where('sp.securityId IN (:...ids)', { ids: securityIds })
-      .andWhere(
-        `sp.priceDate = (
-          SELECT MAX(sp2.price_date)
-          FROM security_prices sp2
-          WHERE sp2.security_id = sp.security_id
-        )`,
-      )
-      .getRawMany();
+      .query(
+        `SELECT DISTINCT ON (security_id) security_id, close_price, price_date
+         FROM security_prices
+         WHERE security_id = ANY($1)
+         ORDER BY security_id, price_date DESC`,
+        [securityIds],
+      );
 
     const priceMap = new Map<string, number>();
     for (const price of latestPrices) {
-      priceMap.set(price.sp_security_id, Number(price.sp_close_price));
+      priceMap.set(price.security_id, Number(price.close_price));
     }
 
     return priceMap;
@@ -308,6 +307,49 @@ export class PortfolioService {
     const totalGainLossPercent =
       totalCostBasis > 0 ? (totalGainLoss / totalCostBasis) * 100 : 0;
 
+    // Sort holdings by market value
+    const sortedHoldings = holdingsWithValues.sort((a, b) => {
+      if (a.marketValue === null && b.marketValue === null) return 0;
+      if (a.marketValue === null) return 1;
+      if (b.marketValue === null) return -1;
+      return b.marketValue - a.marketValue;
+    });
+
+    // Build allocation data inline (avoid duplicate getPortfolioSummary call)
+    const allocation: AllocationItem[] = [];
+    const colors = [
+      '#3b82f6', '#22c55e', '#f97316', '#8b5cf6',
+      '#ec4899', '#14b8a6', '#eab308', '#ef4444',
+    ];
+
+    if (totalCashValue > 0) {
+      allocation.push({
+        name: 'Cash',
+        symbol: null,
+        type: 'cash',
+        value: totalCashValue,
+        percentage: totalPortfolioValue > 0 ? (totalCashValue / totalPortfolioValue) * 100 : 0,
+        color: '#6b7280',
+      });
+    }
+
+    let colorIndex = 0;
+    for (const holding of sortedHoldings) {
+      if (holding.marketValue !== null && holding.marketValue > 0) {
+        allocation.push({
+          name: holding.name,
+          symbol: holding.symbol,
+          type: 'security',
+          value: holding.marketValue,
+          percentage: totalPortfolioValue > 0 ? (holding.marketValue / totalPortfolioValue) * 100 : 0,
+          color: colors[colorIndex % colors.length],
+        });
+        colorIndex++;
+      }
+    }
+
+    allocation.sort((a, b) => b.value - a.value);
+
     return {
       totalCashValue,
       totalHoldingsValue,
@@ -315,74 +357,24 @@ export class PortfolioService {
       totalPortfolioValue,
       totalGainLoss,
       totalGainLossPercent,
-      holdings: holdingsWithValues.sort((a, b) => {
-        // Sort by market value descending, nulls last
-        if (a.marketValue === null && b.marketValue === null) return 0;
-        if (a.marketValue === null) return 1;
-        if (b.marketValue === null) return -1;
-        return b.marketValue - a.marketValue;
-      }),
+      holdings: sortedHoldings,
       holdingsByAccount,
+      allocation,
     };
   }
 
   /**
    * Get asset allocation breakdown
+   * Note: This now just extracts the pre-computed allocation from getPortfolioSummary
+   * to maintain backwards compatibility. Prefer using summary.allocation directly.
    */
   async getAssetAllocation(
     userId: string,
     accountId?: string,
   ): Promise<AssetAllocation> {
     const summary = await this.getPortfolioSummary(userId, accountId);
-    const allocation: AllocationItem[] = [];
-
-    // Add cash allocation
-    if (summary.totalCashValue > 0) {
-      allocation.push({
-        name: 'Cash',
-        symbol: null,
-        type: 'cash',
-        value: summary.totalCashValue,
-        percentage:
-          summary.totalPortfolioValue > 0
-            ? (summary.totalCashValue / summary.totalPortfolioValue) * 100
-            : 0,
-        color: '#6b7280', // gray
-      });
-    }
-
-    // Add securities allocation
-    const colors = [
-      '#3b82f6', // blue
-      '#22c55e', // green
-      '#f97316', // orange
-      '#8b5cf6', // purple
-      '#ec4899', // pink
-      '#14b8a6', // teal
-      '#eab308', // yellow
-      '#ef4444', // red
-    ];
-
-    let colorIndex = 0;
-    for (const holding of summary.holdings) {
-      if (holding.marketValue !== null && holding.marketValue > 0) {
-        allocation.push({
-          name: holding.name,
-          symbol: holding.symbol,
-          type: 'security',
-          value: holding.marketValue,
-          percentage:
-            summary.totalPortfolioValue > 0
-              ? (holding.marketValue / summary.totalPortfolioValue) * 100
-              : 0,
-          color: colors[colorIndex % colors.length],
-        });
-        colorIndex++;
-      }
-    }
-
     return {
-      allocation: allocation.sort((a, b) => b.value - a.value),
+      allocation: summary.allocation,
       totalValue: summary.totalPortfolioValue,
     };
   }

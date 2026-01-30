@@ -16,7 +16,6 @@ import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { Account } from '@/types/account';
 import {
   PortfolioSummary,
-  AssetAllocation,
   InvestmentTransaction,
   InvestmentTransactionPaginationInfo,
 } from '@/types/investment';
@@ -47,9 +46,6 @@ export default function InvestmentsPage() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [selectedAccountId, setSelectedAccountId] = useState<string>('');
   const [portfolioSummary, setPortfolioSummary] = useState<PortfolioSummary | null>(
-    null,
-  );
-  const [assetAllocation, setAssetAllocation] = useState<AssetAllocation | null>(
     null,
   );
   const [transactions, setTransactions] = useState<InvestmentTransaction[]>([]);
@@ -126,9 +122,9 @@ export default function InvestmentsPage() {
   ) => {
     setIsLoading(true);
     try {
-      const [summaryData, allocationData, txResponse] = await Promise.all([
+      // Portfolio summary now includes allocation data to avoid duplicate API call
+      const [summaryData, txResponse] = await Promise.all([
         investmentsApi.getPortfolioSummary(accountId || undefined),
-        investmentsApi.getAssetAllocation(accountId || undefined),
         investmentsApi.getTransactions({
           accountId: accountId || undefined,
           page,
@@ -141,14 +137,12 @@ export default function InvestmentsPage() {
       ]);
 
       setPortfolioSummary(summaryData);
-      setAssetAllocation(allocationData);
       setTransactions(txResponse.data || []);
       setPagination(txResponse.pagination);
     } catch (error) {
       console.error('Failed to load portfolio data:', error);
       // Set empty arrays on error to prevent undefined errors
       setPortfolioSummary(null);
-      setAssetAllocation(null);
       setTransactions([]);
       setPagination(null);
     } finally {
@@ -380,7 +374,10 @@ export default function InvestmentsPage() {
           {/* Summary and Allocation Row */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
             <PortfolioSummaryCard summary={portfolioSummary} isLoading={isLoading} />
-            <AssetAllocationChart allocation={assetAllocation} isLoading={isLoading} />
+            <AssetAllocationChart
+              allocation={portfolioSummary ? { allocation: portfolioSummary.allocation, totalValue: portfolioSummary.totalPortfolioValue } : null}
+              isLoading={isLoading}
+            />
           </div>
 
           {/* Holdings List */}

@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { InvestmentTransaction, InvestmentAction } from './entities/investment-transaction.entity';
 import { CreateInvestmentTransactionDto } from './dto/create-investment-transaction.dto';
 import { UpdateInvestmentTransactionDto } from './dto/update-investment-transaction.dto';
@@ -18,6 +18,7 @@ export class InvestmentTransactionsService {
     private investmentTransactionsRepository: Repository<InvestmentTransaction>,
     @InjectRepository(Transaction)
     private transactionRepository: Repository<Transaction>,
+    private dataSource: DataSource,
     private accountsService: AccountsService,
     private transactionsService: TransactionsService,
     private holdingsService: HoldingsService,
@@ -489,6 +490,8 @@ export class InvestmentTransactionsService {
     // Delete the linked cash transaction if it exists (this also reverses the balance)
     if (transactionId) {
       await this.deleteCashTransaction(userId, transactionId);
+      // Clear the reference to avoid foreign key constraint violation when saving
+      transaction.transactionId = null;
     }
 
     switch (action) {
