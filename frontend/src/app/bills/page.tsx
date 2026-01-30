@@ -229,15 +229,15 @@ export default function BillsPage() {
     return true;
   });
 
-  // Calculate summary stats
+  // Calculate summary stats (exclude transfers from bills/deposits)
   const summary = {
-    totalBills: scheduledTransactions.filter((t) => t.amount < 0 && t.isActive).length,
-    totalDeposits: scheduledTransactions.filter((t) => t.amount > 0 && t.isActive).length,
+    totalBills: scheduledTransactions.filter((t) => Number(t.amount) < 0 && t.isActive && !t.isTransfer).length,
+    totalDeposits: scheduledTransactions.filter((t) => Number(t.amount) > 0 && t.isActive && !t.isTransfer).length,
     monthlyBills: scheduledTransactions
-      .filter((t) => t.amount < 0 && t.isActive)
+      .filter((t) => Number(t.amount) < 0 && t.isActive && !t.isTransfer)
       .reduce((sum, t) => {
         // Normalize to monthly amount
-        const amount = Math.abs(t.amount);
+        const amount = Math.abs(Number(t.amount));
         switch (t.frequency) {
           case 'DAILY':
             return sum + amount * 30;
@@ -256,9 +256,9 @@ export default function BillsPage() {
         }
       }, 0),
     monthlyDeposits: scheduledTransactions
-      .filter((t) => t.amount > 0 && t.isActive)
+      .filter((t) => Number(t.amount) > 0 && t.isActive && !t.isTransfer)
       .reduce((sum, t) => {
-        const amount = t.amount;
+        const amount = Number(t.amount);
         switch (t.frequency) {
           case 'DAILY':
             return sum + amount * 30;

@@ -162,6 +162,11 @@ function generateOccurrences(
  * Check if a scheduled transaction is a transfer (affects two accounts, net zero for "all accounts" view)
  */
 function isTransfer(transaction: ScheduledTransaction): boolean {
+  // Check direct transfer field first
+  if (transaction.isTransfer && transaction.transferAccountId) {
+    return true;
+  }
+  // Fallback: check for split-based transfers (legacy)
   return transaction.isSplit &&
     (transaction.splits?.some(split => split.transferAccountId != null) ?? false);
 }

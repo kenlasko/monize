@@ -58,6 +58,9 @@ export interface ScheduledTransaction {
   reminderDaysBefore: number;
   lastPostedDate: string | null;
   isSplit: boolean;
+  isTransfer: boolean;
+  transferAccountId: string | null;
+  transferAccount: Account | null;
   splits?: ScheduledTransactionSplit[];
   overrideCount?: number;
   nextOverride?: ScheduledTransactionOverride | null;
@@ -89,6 +92,8 @@ export interface CreateScheduledTransactionData {
   isActive?: boolean;
   autoPost?: boolean;
   reminderDaysBefore?: number;
+  isTransfer?: boolean;
+  transferAccountId?: string;
   splits?: CreateScheduledTransactionSplitData[];
 }
 

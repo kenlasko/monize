@@ -17,6 +17,11 @@ export class OverrideSplitDto {
   @IsUUID()
   categoryId?: string | null;
 
+  @ApiPropertyOptional({ description: 'Transfer account ID for this split' })
+  @IsOptional()
+  @IsUUID()
+  transferAccountId?: string | null;
+
   @ApiProperty({ description: 'Amount for this split' })
   @IsNumber()
   amount: number;

@@ -50,11 +50,19 @@ export class ScheduledTransactionsService {
     // Verify account belongs to user
     await this.accountsService.findOne(userId, createDto.accountId);
 
-    const { splits, ...transactionData } = createDto;
+    // Verify transfer account if this is a transfer
+    if (createDto.isTransfer && createDto.transferAccountId) {
+      await this.accountsService.findOne(userId, createDto.transferAccountId);
+      if (createDto.transferAccountId === createDto.accountId) {
+        throw new BadRequestException('Source and destination accounts must be different');
+      }
+    }
+
+    const { splits, isTransfer, transferAccountId, ...transactionData } = createDto;
     const hasSplits = splits && splits.length > 0;
 
-    // Validate splits if provided
-    if (hasSplits) {
+    // Validate splits if provided (and not a simple transfer)
+    if (hasSplits && !isTransfer) {
       this.validateSplits(splits, createDto.amount);
     }
 
@@ -63,14 +71,16 @@ export class ScheduledTransactionsService {
       userId,
       startDate: transactionData.startDate || transactionData.nextDueDate,
       totalOccurrences: transactionData.occurrencesRemaining,
-      categoryId: hasSplits ? null : transactionData.categoryId,
-      isSplit: hasSplits,
+      categoryId: (hasSplits || isTransfer) ? null : transactionData.categoryId,
+      isSplit: hasSplits && !isTransfer,
+      isTransfer: isTransfer || false,
+      transferAccountId: isTransfer ? transferAccountId : null,
     });
 
     const saved = await this.scheduledTransactionsRepository.save(scheduledTransaction);
 
-    // Create splits if provided
-    if (hasSplits) {
+    // Create splits if provided (and not a simple transfer)
+    if (hasSplits && !isTransfer) {
       await this.createSplits(saved.id, splits);
     }
 
@@ -78,7 +88,10 @@ export class ScheduledTransactionsService {
   }
 
   private validateSplits(splits: CreateScheduledTransactionSplitDto[], transactionAmount: number): void {
-    if (splits.length < 2) {
+    // Allow single split for transfers (has transferAccountId)
+    const isTransfer = splits.length === 1 && splits[0].transferAccountId;
+
+    if (splits.length < 2 && !isTransfer) {
       throw new BadRequestException('Split transactions must have at least 2 splits');
     }
 
@@ -122,6 +135,7 @@ export class ScheduledTransactionsService {
       .leftJoinAndSelect('st.account', 'account')
       .leftJoinAndSelect('st.payee', 'payee')
       .leftJoinAndSelect('st.category', 'category')
+      .leftJoinAndSelect('st.transferAccount', 'transferAccount')
       .leftJoinAndSelect('st.splits', 'splits')
       .leftJoinAndSelect('splits.category', 'splitCategory')
       .leftJoinAndSelect('splits.transferAccount', 'splitTransferAccount')
@@ -158,7 +172,7 @@ export class ScheduledTransactionsService {
   async findOne(userId: string, id: string): Promise<ScheduledTransaction> {
     const scheduled = await this.scheduledTransactionsRepository.findOne({
       where: { id },
-      relations: ['account', 'payee', 'category', 'splits', 'splits.category', 'splits.transferAccount'],
+      relations: ['account', 'payee', 'category', 'transferAccount', 'splits', 'splits.category', 'splits.transferAccount'],
     });
 
     if (!scheduled) {
@@ -182,7 +196,7 @@ export class ScheduledTransactionsService {
         isActive: true,
         nextDueDate: LessThanOrEqual(today),
       },
-      relations: ['account', 'payee', 'category', 'splits', 'splits.category', 'splits.transferAccount'],
+      relations: ['account', 'payee', 'category', 'transferAccount', 'splits', 'splits.category', 'splits.transferAccount'],
       order: { nextDueDate: 'ASC' },
     });
   }
@@ -197,6 +211,7 @@ export class ScheduledTransactionsService {
       .leftJoinAndSelect('st.account', 'account')
       .leftJoinAndSelect('st.payee', 'payee')
       .leftJoinAndSelect('st.category', 'category')
+      .leftJoinAndSelect('st.transferAccount', 'transferAccount')
       .leftJoinAndSelect('st.splits', 'splits')
       .leftJoinAndSelect('splits.category', 'splitCategory')
       .leftJoinAndSelect('splits.transferAccount', 'splitTransferAccount')
@@ -219,7 +234,16 @@ export class ScheduledTransactionsService {
       await this.accountsService.findOne(userId, updateDto.accountId);
     }
 
-    const { splits, ...updateData } = updateDto;
+    // Verify transfer account if this is being changed to a transfer
+    if (updateDto.isTransfer && updateDto.transferAccountId) {
+      await this.accountsService.findOne(userId, updateDto.transferAccountId);
+      const accountId = updateDto.accountId || scheduled.accountId;
+      if (updateDto.transferAccountId === accountId) {
+        throw new BadRequestException('Source and destination accounts must be different');
+      }
+    }
+
+    const { splits, isTransfer, transferAccountId, ...updateData } = updateDto;
 
     // Handle splits if provided
     if (splits !== undefined) {
@@ -262,6 +286,20 @@ export class ScheduledTransactionsService {
     if (updateData.isActive !== undefined) fieldsToUpdate.isActive = updateData.isActive;
     if (updateData.autoPost !== undefined) fieldsToUpdate.autoPost = updateData.autoPost;
     if (updateData.reminderDaysBefore !== undefined) fieldsToUpdate.reminderDaysBefore = updateData.reminderDaysBefore;
+
+    // Handle transfer fields
+    if (isTransfer !== undefined) {
+      fieldsToUpdate.isTransfer = isTransfer;
+      if (isTransfer) {
+        // When switching to transfer mode, clear splits and category
+        fieldsToUpdate.isSplit = false;
+        fieldsToUpdate.categoryId = null;
+        await this.splitsRepository.delete({ scheduledTransactionId: id });
+      }
+    }
+    if (transferAccountId !== undefined) {
+      fieldsToUpdate.transferAccountId = transferAccountId || null;
+    }
 
     // Update using repository.update() to avoid issues with loaded relations
     if (Object.keys(fieldsToUpdate).length > 0) {
@@ -406,8 +444,21 @@ export class ScheduledTransactionsService {
       transactionPayload.categoryId = finalCategoryId || undefined;
     }
 
-    // Create the actual transaction
-    await this.transactionsService.create(userId, transactionPayload);
+    // Create the actual transaction(s)
+    if (scheduled.isTransfer && scheduled.transferAccountId) {
+      // For direct transfers, use createTransfer to create linked transactions
+      await this.transactionsService.createTransfer(userId, {
+        fromAccountId: scheduled.accountId,
+        toAccountId: scheduled.transferAccountId,
+        amount: Math.abs(finalAmount), // createTransfer expects positive amount
+        transactionDate: postDate,
+        fromCurrencyCode: scheduled.currencyCode,
+        description: finalDescription || undefined,
+      });
+    } else {
+      // For regular transactions or split transactions
+      await this.transactionsService.create(userId, transactionPayload);
+    }
 
     // Delete the stored override if it was used (it's now been posted)
     if (storedOverride) {

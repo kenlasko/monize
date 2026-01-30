@@ -197,6 +197,8 @@ CREATE TABLE scheduled_transactions (
     reminder_days_before INTEGER DEFAULT 3,
     last_posted_date DATE, -- when the transaction was last posted
     is_split BOOLEAN DEFAULT false, -- indicates amounts are split across categories
+    is_transfer BOOLEAN DEFAULT false, -- indicates this is an account-to-account transfer
+    transfer_account_id UUID REFERENCES accounts(id) ON DELETE SET NULL, -- destination account for transfers
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -204,6 +206,7 @@ CREATE TABLE scheduled_transactions (
 CREATE INDEX idx_scheduled_transactions_user ON scheduled_transactions(user_id);
 CREATE INDEX idx_scheduled_transactions_next_due ON scheduled_transactions(next_due_date);
 CREATE INDEX idx_scheduled_transactions_active ON scheduled_transactions(is_active);
+CREATE INDEX idx_scheduled_transactions_transfer_account ON scheduled_transactions(transfer_account_id);
 
 -- Scheduled Transaction Splits
 CREATE TABLE scheduled_transaction_splits (

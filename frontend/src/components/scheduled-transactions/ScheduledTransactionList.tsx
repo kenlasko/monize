@@ -223,7 +223,14 @@ export function ScheduledTransactionList({
 
                 {/* Category */}
                 <td className="px-4 py-3">
-                  {transaction.isSplit ? (
+                  {transaction.isTransfer ? (
+                    <span
+                      className="inline-flex text-xs font-medium rounded-full px-2 py-0.5 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                      title={`Transfer to ${transaction.transferAccount?.name || 'account'}`}
+                    >
+                      Transfer
+                    </span>
+                  ) : transaction.isSplit ? (
                     <span
                       className="inline-flex text-xs font-medium rounded-full px-2 py-0.5 bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200"
                       title={transaction.splits?.map(s => s.category?.name || 'Uncategorized').join(', ')}

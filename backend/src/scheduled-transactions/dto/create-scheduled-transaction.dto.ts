@@ -89,6 +89,14 @@ export class CreateScheduledTransactionDto {
   reminderDaysBefore?: number;
 
   @IsOptional()
+  @IsBoolean()
+  isTransfer?: boolean;
+
+  @IsOptional()
+  @IsUUID()
+  transferAccountId?: string;
+
+  @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CreateScheduledTransactionSplitDto)

@@ -182,7 +182,10 @@ export class TransactionsService {
    * Validate that splits sum to the transaction amount
    */
   private validateSplits(splits: CreateTransactionSplitDto[], transactionAmount: number): void {
-    if (splits.length < 2) {
+    // Allow single split for transfers (has transferAccountId)
+    const isTransfer = splits.length === 1 && splits[0].transferAccountId;
+
+    if (splits.length < 2 && !isTransfer) {
       throw new BadRequestException('Split transactions must have at least 2 splits');
     }
 

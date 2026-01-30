@@ -61,6 +61,17 @@ interface ScheduledTransactionFormProps {
   onCancel?: () => void;
 }
 
+// Determine if an existing scheduled transaction is a transfer
+function isScheduledTransfer(st?: ScheduledTransaction): boolean {
+  if (!st) return false;
+  return st.isTransfer && st.transferAccountId != null;
+}
+
+// Get the transfer destination account ID from an existing transfer
+function getTransferAccountId(st?: ScheduledTransaction): string {
+  return st?.transferAccountId || '';
+}
+
 export function ScheduledTransactionForm({
   scheduledTransaction,
   onSuccess,
@@ -71,6 +82,15 @@ export function ScheduledTransactionForm({
   const [categories, setCategories] = useState<Category[]>([]);
   const [payees, setPayees] = useState<Payee[]>([]);
   const [allPayees, setAllPayees] = useState<Payee[]>([]);
+
+  // Transaction type: 'payment' for bills/deposits, 'transfer' for account transfers
+  const [transactionType, setTransactionType] = useState<'payment' | 'transfer'>(
+    isScheduledTransfer(scheduledTransaction) ? 'transfer' : 'payment'
+  );
+  const [transferToAccountId, setTransferToAccountId] = useState<string>(
+    getTransferAccountId(scheduledTransaction)
+  );
+
   const [selectedPayeeId, setSelectedPayeeId] = useState<string>(
     scheduledTransaction?.payeeId || ''
   );
@@ -82,9 +102,11 @@ export function ScheduledTransactionForm({
     scheduledTransaction?.occurrencesRemaining !== null &&
     scheduledTransaction?.occurrencesRemaining !== undefined
   );
-  const [isSplit, setIsSplit] = useState<boolean>(scheduledTransaction?.isSplit || false);
+  const [isSplit, setIsSplit] = useState<boolean>(
+    scheduledTransaction?.isSplit && !isScheduledTransfer(scheduledTransaction) || false
+  );
   const [splits, setSplits] = useState<SplitRow[]>(
-    scheduledTransaction?.splits && scheduledTransaction.splits.length > 0
+    scheduledTransaction?.splits && scheduledTransaction.splits.length > 0 && !isScheduledTransfer(scheduledTransaction)
       ? toSplitRows(scheduledTransaction.splits)
       : []
   );
@@ -302,8 +324,20 @@ export function ScheduledTransactionForm({
   };
 
   const onSubmit = async (data: ScheduledTransactionFormData) => {
-    // Validate splits if in split mode
-    if (isSplit) {
+    // Validate transfer destination
+    if (transactionType === 'transfer') {
+      if (!transferToAccountId) {
+        toast.error('Please select a destination account for the transfer');
+        return;
+      }
+      if (transferToAccountId === data.accountId) {
+        toast.error('Source and destination accounts must be different');
+        return;
+      }
+    }
+
+    // Validate splits if in split mode (only for payment type)
+    if (isSplit && transactionType === 'payment') {
       if (splits.length < 2) {
         toast.error('Split transactions require at least 2 splits');
         return;
@@ -318,18 +352,45 @@ export function ScheduledTransactionForm({
 
     setIsLoading(true);
     try {
-      // Convert splits to API format
-      const splitData: CreateScheduledTransactionSplitData[] | undefined = isSplit
-        ? toCreateSplitData(splits)
-        : undefined;
-
-      const payload = {
+      // Build the payload based on transaction type
+      let payload: any = {
         ...data,
         endDate: useEndDate ? data.endDate : undefined,
         occurrencesRemaining: useOccurrences ? data.occurrencesRemaining : undefined,
-        categoryId: isSplit ? undefined : data.categoryId,
-        splits: splitData,
       };
+
+      if (transactionType === 'transfer') {
+        // For transfers, use direct transfer fields (no splits needed)
+        // Amount should be negative (money leaving source account)
+        const transferAmount = -Math.abs(Number(data.amount));
+        payload = {
+          ...payload,
+          amount: transferAmount,
+          isTransfer: true,
+          transferAccountId: transferToAccountId,
+          categoryId: undefined,
+          payeeId: undefined,
+          payeeName: undefined,
+          splits: undefined,
+        };
+      } else if (isSplit) {
+        // For split payments, convert splits to API format
+        payload = {
+          ...payload,
+          isTransfer: false,
+          transferAccountId: undefined,
+          categoryId: undefined,
+          splits: toCreateSplitData(splits),
+        };
+      } else {
+        // Regular payment - no splits, no transfer
+        payload = {
+          ...payload,
+          isTransfer: false,
+          transferAccountId: undefined,
+          splits: undefined,
+        };
+      }
 
       if (scheduledTransaction) {
         await scheduledTransactionsApi.update(scheduledTransaction.id, payload);
@@ -353,29 +414,82 @@ export function ScheduledTransactionForm({
     label,
   }));
 
+  // Get available "to" accounts for transfers (exclude source account, closed accounts, and brokerage accounts)
+  const transferToAccountOptions = accounts
+    .filter(a => !a.isClosed && a.id !== watchedAccountId && a.accountSubType !== 'INVESTMENT_BROKERAGE')
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map(a => ({ value: a.id, label: a.name }));
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      {/* Transaction Type Toggle */}
+      <div className="flex space-x-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1 w-fit">
+        <button
+          type="button"
+          onClick={() => {
+            setTransactionType('payment');
+            setTransferToAccountId('');
+          }}
+          className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+            transactionType === 'payment'
+              ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 shadow-sm'
+              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+          }`}
+        >
+          Bill / Deposit
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setTransactionType('transfer');
+            setIsSplit(false);
+            setSplits([]);
+            setSelectedCategoryId('');
+            setSelectedPayeeId('');
+            setValue('categoryId', '', { shouldDirty: true });
+            setValue('payeeId', undefined, { shouldDirty: true });
+            setValue('payeeName', '', { shouldDirty: true });
+            // Ensure amount is negative for transfers
+            if (watchedAmount > 0) {
+              const newAmount = -Math.abs(watchedAmount);
+              setValue('amount', newAmount, { shouldDirty: true });
+              setAmountDisplay(newAmount.toFixed(2));
+            }
+          }}
+          className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+            transactionType === 'transfer'
+              ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 shadow-sm'
+              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+          }`}
+        >
+          Transfer
+        </button>
+      </div>
+
       {/* Name */}
       <Input
         label="Name"
         type="text"
-        placeholder="e.g., Rent, Netflix, Salary..."
+        placeholder={transactionType === 'transfer' ? 'e.g., Savings Transfer, Credit Card Payment...' : 'e.g., Rent, Netflix, Salary...'}
         error={errors.name?.message}
         {...register('name')}
       />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Account */}
+        {/* Account (From Account for transfers) */}
         <Select
-          label="Account"
+          label={transactionType === 'transfer' ? 'From Account' : 'Account'}
           error={errors.accountId?.message}
           value={watchedAccountId || ''}
           options={[
             { value: '', label: 'Select account...' },
-            ...accounts.map((account) => ({
-              value: account.id,
-              label: `${account.name} (${account.currencyCode})`,
-            })),
+            ...accounts
+              .filter(a => !a.isClosed)
+              .sort((a, b) => a.name.localeCompare(b.name))
+              .map((account) => ({
+                value: account.id,
+                label: `${account.name} (${account.currencyCode})`,
+              })),
           ]}
           {...register('accountId')}
         />
@@ -418,63 +532,82 @@ export function ScheduledTransactionForm({
           )}
         </div>
 
-        {/* Payee */}
-        <Combobox
-          label="Payee"
-          placeholder="Select or type payee name..."
-          options={payees.map((payee) => ({
-            value: payee.id,
-            label: payee.name,
-            subtitle: payee.defaultCategory?.name,
-          }))}
-          value={selectedPayeeId}
-          initialDisplayValue={scheduledTransaction?.payeeName || ''}
-          onChange={handlePayeeChange}
-          onInputChange={handlePayeeSearch}
-          onCreateNew={handlePayeeCreate}
-          allowCustomValue={true}
-          error={errors.payeeName?.message}
-        />
+        {/* Transfer: To Account */}
+        {transactionType === 'transfer' ? (
+          <Select
+            label="To Account"
+            value={transferToAccountId}
+            onChange={(e) => setTransferToAccountId(e.target.value)}
+            options={[
+              { value: '', label: 'Select destination account...' },
+              ...transferToAccountOptions,
+            ]}
+            error={!transferToAccountId && watchedAccountId ? undefined : undefined}
+          />
+        ) : (
+          /* Payment: Payee */
+          <Combobox
+            label="Payee"
+            placeholder="Select or type payee name..."
+            options={payees.map((payee) => ({
+              value: payee.id,
+              label: payee.name,
+              subtitle: payee.defaultCategory?.name,
+            }))}
+            value={selectedPayeeId}
+            initialDisplayValue={scheduledTransaction?.payeeName || ''}
+            onChange={handlePayeeChange}
+            onInputChange={handlePayeeSearch}
+            onCreateNew={handlePayeeCreate}
+            allowCustomValue={true}
+            error={errors.payeeName?.message}
+          />
+        )}
 
-        {/* Category / Split Toggle */}
-        <div>
-          <div className="flex items-center justify-between mb-1">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Category</label>
-            <label className="flex items-center text-sm text-gray-600 dark:text-gray-400 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={isSplit}
-                onChange={(e) => handleSplitToggle(e.target.checked)}
-                className="h-3.5 w-3.5 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded mr-1.5"
-              />
-              Split
-            </label>
-          </div>
-          {!isSplit ? (
-            <Combobox
-              placeholder="Select or create category..."
-              options={buildCategoryTree(categories).map(({ category }) => {
-                const parentCategory = category.parentId
-                  ? categories.find(c => c.id === category.parentId)
-                  : null;
-                return {
-                  value: category.id,
-                  label: parentCategory ? `${parentCategory.name}: ${category.name}` : category.name,
-                };
-              })}
-              value={selectedCategoryId}
-              initialDisplayValue={scheduledTransaction?.category?.name || ''}
-              onChange={handleCategoryChange}
-              onCreateNew={handleCategoryCreate}
-              allowCustomValue={true}
-              error={errors.categoryId?.message}
-            />
-          ) : (
-            <div className="text-sm text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-700 rounded-md px-3 py-2">
-              {splits.length} categories · Configure below
+        {/* Transfer: Empty placeholder for grid alignment OR Payment: Category */}
+        {transactionType === 'transfer' ? (
+          <div /> /* Empty div for grid alignment */
+        ) : (
+          /* Payment: Category / Split Toggle */
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Category</label>
+              <label className="flex items-center text-sm text-gray-600 dark:text-gray-400 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={isSplit}
+                  onChange={(e) => handleSplitToggle(e.target.checked)}
+                  className="h-3.5 w-3.5 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded mr-1.5"
+                />
+                Split
+              </label>
             </div>
-          )}
-        </div>
+            {!isSplit ? (
+              <Combobox
+                placeholder="Select or create category..."
+                options={buildCategoryTree(categories).map(({ category }) => {
+                  const parentCategory = category.parentId
+                    ? categories.find(c => c.id === category.parentId)
+                    : null;
+                  return {
+                    value: category.id,
+                    label: parentCategory ? `${parentCategory.name}: ${category.name}` : category.name,
+                  };
+                })}
+                value={selectedCategoryId}
+                initialDisplayValue={scheduledTransaction?.category?.name || ''}
+                onChange={handleCategoryChange}
+                onCreateNew={handleCategoryCreate}
+                allowCustomValue={true}
+                error={errors.categoryId?.message}
+              />
+            ) : (
+              <div className="text-sm text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-700 rounded-md px-3 py-2">
+                {splits.length} categories · Configure below
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Frequency */}
         <Select
@@ -513,8 +646,8 @@ export function ScheduledTransactionForm({
         />
       </div>
 
-      {/* Split Editor */}
-      {isSplit && (
+      {/* Split Editor (only for payment type) */}
+      {isSplit && transactionType === 'payment' && (
         <SplitEditor
           splits={splits}
           onChange={handleSplitsChange}

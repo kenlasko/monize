@@ -181,8 +181,19 @@ export function PostTransactionDialog({
           </div>
 
           <div className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-            Post "{scheduledTransaction.name}" to {scheduledTransaction.account?.name}.
-            Modify values below if needed for this posting only.
+            {scheduledTransaction.isTransfer ? (
+              <>
+                Post transfer "{scheduledTransaction.name}" from{' '}
+                <span className="font-medium text-gray-700 dark:text-gray-300">{scheduledTransaction.account?.name}</span>
+                {' '}to{' '}
+                <span className="font-medium text-gray-700 dark:text-gray-300">{scheduledTransaction.transferAccount?.name}</span>.
+              </>
+            ) : (
+              <>
+                Post "{scheduledTransaction.name}" to {scheduledTransaction.account?.name}.
+                Modify values below if needed for this posting only.
+              </>
+            )}
           </div>
 
           <div className="space-y-4">
@@ -218,50 +229,66 @@ export function PostTransactionDialog({
               </div>
             </div>
 
-            {/* Split toggle */}
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="isSplit"
-                checked={isSplit}
-                onChange={(e) => {
-                  setIsSplit(e.target.checked);
-                  if (e.target.checked && splits.length < 2) {
-                    setSplits(createEmptySplits(amount));
-                  }
-                }}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-              />
-              <label htmlFor="isSplit" className="ml-2 text-sm text-gray-700 dark:text-gray-300">
-                Split this transaction
-              </label>
-            </div>
-
-            {/* Category or Splits */}
-            {isSplit ? (
-              <SplitEditor
-                splits={splits}
-                onChange={setSplits}
-                categories={categories}
-                accounts={accounts}
-                sourceAccountId={scheduledTransaction.accountId}
-                transactionAmount={amount}
-                onTransactionAmountChange={handleAmountChange}
-                currencyCode={scheduledTransaction.currencyCode}
-              />
-            ) : (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Category
-                </label>
-                <Combobox
-                  placeholder="Select category..."
-                  options={categoryOptions}
-                  value={categoryId}
-                  initialDisplayValue={currentCategory?.name || ''}
-                  onChange={(value) => setCategoryId(value || '')}
-                />
+            {/* Transfer indicator - shown instead of category for transfers */}
+            {scheduledTransaction.isTransfer ? (
+              <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
+                <div className="flex items-center">
+                  <svg className="h-5 w-5 text-blue-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                  </svg>
+                  <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                    Transfer: {scheduledTransaction.account?.name} → {scheduledTransaction.transferAccount?.name}
+                  </span>
+                </div>
               </div>
+            ) : (
+              <>
+                {/* Split toggle */}
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="isSplit"
+                    checked={isSplit}
+                    onChange={(e) => {
+                      setIsSplit(e.target.checked);
+                      if (e.target.checked && splits.length < 2) {
+                        setSplits(createEmptySplits(amount));
+                      }
+                    }}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <label htmlFor="isSplit" className="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                    Split this transaction
+                  </label>
+                </div>
+
+                {/* Category or Splits */}
+                {isSplit ? (
+                  <SplitEditor
+                    splits={splits}
+                    onChange={setSplits}
+                    categories={categories}
+                    accounts={accounts}
+                    sourceAccountId={scheduledTransaction.accountId}
+                    transactionAmount={amount}
+                    onTransactionAmountChange={handleAmountChange}
+                    currencyCode={scheduledTransaction.currencyCode}
+                  />
+                ) : (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Category
+                    </label>
+                    <Combobox
+                      placeholder="Select category..."
+                      options={categoryOptions}
+                      value={categoryId}
+                      initialDisplayValue={currentCategory?.name || ''}
+                      onChange={(value) => setCategoryId(value || '')}
+                    />
+                  </div>
+                )}
+              </>
             )}
 
             {/* Description */}

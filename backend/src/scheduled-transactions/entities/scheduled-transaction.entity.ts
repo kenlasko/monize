@@ -104,6 +104,16 @@ export class ScheduledTransaction {
   @Column({ name: 'is_split', default: false })
   isSplit: boolean;
 
+  @Column({ name: 'is_transfer', default: false })
+  isTransfer: boolean;
+
+  @Column({ type: 'uuid', name: 'transfer_account_id', nullable: true })
+  transferAccountId: string | null;
+
+  @ManyToOne(() => Account, { nullable: true })
+  @JoinColumn({ name: 'transfer_account_id' })
+  transferAccount: Account | null;
+
   @OneToMany(() => ScheduledTransactionSplit, (split) => split.scheduledTransaction)
   splits: ScheduledTransactionSplit[];
 

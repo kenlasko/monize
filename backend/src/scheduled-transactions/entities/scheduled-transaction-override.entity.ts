@@ -71,6 +71,7 @@ export class ScheduledTransactionOverride {
  */
 export interface OverrideSplit {
   categoryId: string | null;
+  transferAccountId?: string | null;
   amount: number;
   memo?: string | null;
 }

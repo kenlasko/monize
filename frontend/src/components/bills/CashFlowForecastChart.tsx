@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   LineChart,
   Line,
@@ -29,6 +29,22 @@ interface CashFlowForecastChartProps {
 }
 
 const PERIODS: ForecastPeriod[] = ['week', 'month', '90days', '6months', 'year'];
+const STORAGE_KEY_PERIOD = 'cashFlowForecast.period';
+const STORAGE_KEY_ACCOUNT = 'cashFlowForecast.accountId';
+
+function getStoredPeriod(): ForecastPeriod {
+  if (typeof window === 'undefined') return 'month';
+  const stored = localStorage.getItem(STORAGE_KEY_PERIOD);
+  if (stored && PERIODS.includes(stored as ForecastPeriod)) {
+    return stored as ForecastPeriod;
+  }
+  return 'month';
+}
+
+function getStoredAccountId(): string {
+  if (typeof window === 'undefined') return 'all';
+  return localStorage.getItem(STORAGE_KEY_ACCOUNT) || 'all';
+}
 
 export function CashFlowForecastChart({
   scheduledTransactions,
@@ -37,6 +53,28 @@ export function CashFlowForecastChart({
 }: CashFlowForecastChartProps) {
   const [selectedPeriod, setSelectedPeriod] = useState<ForecastPeriod>('month');
   const [selectedAccountId, setSelectedAccountId] = useState<string>('all');
+  const [initialized, setInitialized] = useState(false);
+
+  // Load persisted values on mount
+  useEffect(() => {
+    setSelectedPeriod(getStoredPeriod());
+    setSelectedAccountId(getStoredAccountId());
+    setInitialized(true);
+  }, []);
+
+  // Persist period changes
+  useEffect(() => {
+    if (initialized) {
+      localStorage.setItem(STORAGE_KEY_PERIOD, selectedPeriod);
+    }
+  }, [selectedPeriod, initialized]);
+
+  // Persist account changes
+  useEffect(() => {
+    if (initialized) {
+      localStorage.setItem(STORAGE_KEY_ACCOUNT, selectedAccountId);
+    }
+  }, [selectedAccountId, initialized]);
 
   const accountOptions = useMemo(() => {
     return [

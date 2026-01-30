@@ -380,41 +380,36 @@ export function SplitEditor({
             </tr>
             {/* Total Row */}
             <tr className="border-t border-gray-200 dark:border-gray-700">
-              <td className="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300" colSpan={supportsTransfers ? 2 : 1}>Total</td>
-              <td className="px-3 py-2">
-                <span
-                  className={`font-medium ${
-                    isBalanced ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
-                  }`}
-                >
-                  {currencySymbol}{splitsTotal.toFixed(2)}
-                </span>
-                {!isBalanced && (
-                  <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
-                    (Remaining: {currencySymbol}{remaining.toFixed(2)})
-                  </span>
-                )}
-              </td>
-              <td colSpan={2} className="px-3 py-2">
-                {isBalanced ? (
-                  <span className="text-xs text-green-600 dark:text-green-400">Balanced</span>
-                ) : (
-                  <div className="flex items-center space-x-2">
-                    <span className="text-xs text-red-600 dark:text-red-400">
-                      Splits must equal transaction amount ({currencySymbol}{Number(transactionAmount).toFixed(2)})
+              <td colSpan={supportsTransfers ? 5 : 4} className="px-3 py-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Total</span>
+                    <span
+                      className={`font-medium ${
+                        isBalanced ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                      }`}
+                    >
+                      {currencySymbol}{splitsTotal.toFixed(2)}
                     </span>
-                    {onTransactionAmountChange && splitsTotal !== 0 && (
-                      <button
-                        type="button"
-                        onClick={setTotalToSplitsSum}
-                        disabled={disabled}
-                        className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline disabled:opacity-50"
-                      >
-                        Set total to {currencySymbol}{splitsTotal.toFixed(2)}
-                      </button>
+                    {isBalanced ? (
+                      <span className="text-xs text-green-600 dark:text-green-400">Balanced</span>
+                    ) : (
+                      <span className="text-xs text-red-600 dark:text-red-400 whitespace-nowrap">
+                        Need {currencySymbol}{Number(transactionAmount).toFixed(2)} (remaining: {currencySymbol}{remaining.toFixed(2)})
+                      </span>
                     )}
                   </div>
-                )}
+                  {!isBalanced && onTransactionAmountChange && splitsTotal !== 0 && (
+                    <button
+                      type="button"
+                      onClick={setTotalToSplitsSum}
+                      disabled={disabled}
+                      className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline disabled:opacity-50 whitespace-nowrap"
+                    >
+                      Set total to {currencySymbol}{splitsTotal.toFixed(2)}
+                    </button>
+                  )}
+                </div>
               </td>
             </tr>
           </tfoot>
