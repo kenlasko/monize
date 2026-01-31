@@ -369,21 +369,23 @@ export class ImportService {
         }
       }
 
-      // Apply opening balance from QIF if account doesn't already have one set
+      // Apply opening balance from QIF file
       if (result.openingBalance !== null) {
         const existingOpeningBalance = Number(account.openingBalance) || 0;
         const existingCurrentBalance = Number(account.currentBalance) || 0;
+        const newOpeningBalance = Math.round(result.openingBalance * 100) / 100;
 
-        // Only apply QIF's opening balance if the account doesn't have one
-        if (existingOpeningBalance === 0) {
-          const newBalance = Math.round(
-            (existingCurrentBalance + result.openingBalance) * 100,
-          ) / 100;
-          await queryRunner.manager.update(Account, dto.accountId, {
-            openingBalance: Math.round(result.openingBalance * 100) / 100,
-            currentBalance: newBalance,
-          });
-        }
+        // Calculate new current balance by adjusting for the opening balance change
+        // currentBalance = openingBalance + sum(transactions)
+        // So: new currentBalance = old currentBalance - old openingBalance + new openingBalance
+        const newCurrentBalance = Math.round(
+          (existingCurrentBalance - existingOpeningBalance + newOpeningBalance) * 100,
+        ) / 100;
+
+        await queryRunner.manager.update(Account, dto.accountId, {
+          openingBalance: newOpeningBalance,
+          currentBalance: newCurrentBalance,
+        });
       }
 
       // Track timestamps per date to avoid duplicate createdAt values

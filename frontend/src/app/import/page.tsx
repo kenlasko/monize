@@ -20,6 +20,33 @@ import { Security } from '@/types/investment';
 
 type ImportStep = 'upload' | 'selectAccount' | 'dateFormat' | 'mapCategories' | 'mapSecurities' | 'mapAccounts' | 'review' | 'complete';
 
+// Data for each file in bulk import
+interface ImportFileData {
+  fileName: string;
+  fileContent: string;
+  parsedData: ParsedQifResponse;
+  selectedAccountId: string;
+}
+
+// Combined import result for bulk imports
+interface BulkImportResult {
+  totalImported: number;
+  totalSkipped: number;
+  totalErrors: number;
+  categoriesCreated: number;
+  accountsCreated: number;
+  payeesCreated: number;
+  securitiesCreated: number;
+  fileResults: Array<{
+    fileName: string;
+    accountName: string;
+    imported: number;
+    skipped: number;
+    errors: number;
+    errorMessages: string[];
+  }>;
+}
+
 const formatAccountType = (type: AccountType): string => {
   const labels: Record<AccountType, string> = {
     CHEQUING: 'Chequing',
@@ -69,12 +96,16 @@ function ImportContent() {
   const preselectedAccountId = searchParams.get('accountId');
 
   const [step, setStep] = useState<ImportStep>('upload');
-  const [fileContent, setFileContent] = useState<string>('');
-  const [fileName, setFileName] = useState<string>('');
-  const [parsedData, setParsedData] = useState<ParsedQifResponse | null>(null);
+  // Bulk import: array of files with their data
+  const [importFiles, setImportFiles] = useState<ImportFileData[]>([]);
+  // Legacy single-file state (used as derived from importFiles[0] for compatibility)
+  const fileContent = importFiles[0]?.fileContent || '';
+  const fileName = importFiles[0]?.fileName || '';
+  const parsedData = importFiles[0]?.parsedData || null;
+  const selectedAccountId = importFiles[0]?.selectedAccountId || '';
+
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [selectedAccountId, setSelectedAccountId] = useState<string>(preselectedAccountId || '');
   const [categoryMappings, setCategoryMappings] = useState<CategoryMapping[]>([]);
   const [accountMappings, setAccountMappings] = useState<AccountMapping[]>([]);
   const [securityMappings, setSecurityMappings] = useState<SecurityMapping[]>([]);
@@ -82,9 +113,23 @@ function ImportContent() {
   const [dateFormat, setDateFormat] = useState<DateFormat>('MM/DD/YYYY');
   const [isLoading, setIsLoading] = useState(false);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
+  const [bulkImportResult, setBulkImportResult] = useState<BulkImportResult | null>(null);
   const [lookupLoadingIndex, setLookupLoadingIndex] = useState<number | null>(null);
   const [initialLookupDone, setInitialLookupDone] = useState(false);
   const [bulkLookupInProgress, setBulkLookupInProgress] = useState(false);
+
+  // Helper to check if this is a bulk import (multiple files)
+  const isBulkImport = importFiles.length > 1;
+
+  // Helper to update a specific file's account selection
+  const setFileAccountId = (fileIndex: number, accountId: string) => {
+    setImportFiles(prev => prev.map((f, i) =>
+      i === fileIndex ? { ...f, selectedAccountId: accountId } : f
+    ));
+  };
+
+  // Legacy setter for single file (updates first file)
+  const setSelectedAccountId = (accountId: string) => setFileAccountId(0, accountId);
 
   // Refs for scrollable containers
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -199,96 +244,133 @@ function ImportContent() {
     runBulkLookup();
   }, [step, initialLookupDone, securityMappings.length]);
 
-  const handleFileSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  // Helper to get category path
+  const getCategoryPath = useCallback((category: Category): string => {
+    if (category.parentId) {
+      const parent = categories.find((c) => c.id === category.parentId);
+      if (parent) {
+        return `${parent.name}: ${category.name}`;
+      }
+    }
+    return category.name;
+  }, [categories]);
 
-    setFileName(file.name);
+  // Helper to find matching category
+  const findMatchingCategory = useCallback((cat: string): string | undefined => {
+    const normalizedQifCat = formatCategoryPath(cat).toLowerCase();
+    const qifSubcategory = cat.split(':').pop()?.trim().toLowerCase() || '';
+    const qifParts = cat.split(':');
+    const qifParentName = qifParts.length > 1 ? qifParts[0].trim().toLowerCase() : null;
+
+    // Try exact full path match
+    let existingCat = categories.find((c) => getCategoryPath(c).toLowerCase() === normalizedQifCat);
+
+    // Try matching category name against full normalized path
+    if (!existingCat) {
+      existingCat = categories.find((c) => c.name.toLowerCase() === normalizedQifCat);
+    }
+
+    // Try matching subcategory with correct parent
+    if (!existingCat && qifParentName) {
+      existingCat = categories.find((c) => {
+        if (c.name.toLowerCase() !== qifSubcategory) return false;
+        if (c.parentId) {
+          const parent = categories.find((p) => p.id === c.parentId);
+          return parent?.name.toLowerCase() === qifParentName;
+        }
+        return false;
+      });
+    }
+
+    // Match just the subcategory name (only if no parent specified in QIF)
+    if (!existingCat && !qifParentName) {
+      existingCat = categories.find((c) => c.name.toLowerCase() === qifSubcategory);
+    }
+
+    return existingCat?.id;
+  }, [categories, getCategoryPath]);
+
+  // Helper to match filename to account
+  const matchFilenameToAccount = useCallback((fileName: string, isInvestmentType: boolean): string => {
+    const baseName = fileName.replace(/\.[^/.]+$/, '').trim().toLowerCase();
+
+    const compatibleAccounts = accounts.filter((a) => {
+      if (isInvestmentType) {
+        return isInvestmentBrokerageAccount(a);
+      } else {
+        return !isInvestmentBrokerageAccount(a);
+      }
+    });
+
+    const matchedAccount = compatibleAccounts.find((a) => a.name.toLowerCase() === baseName)
+      || compatibleAccounts.find((a) => {
+        const accountName = a.name.toLowerCase();
+        return accountName.includes(baseName) || baseName.includes(accountName);
+      });
+
+    return matchedAccount?.id || '';
+  }, [accounts]);
+
+  const handleFileSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
     setIsLoading(true);
-    setInitialLookupDone(false); // Reset for new file
+    setInitialLookupDone(false);
 
     try {
-      const content = await file.text();
-      setFileContent(content);
+      const fileDataArray: ImportFileData[] = [];
+      const allCategories: Set<string> = new Set();
+      const allTransferAccounts: Set<string> = new Set();
+      const allSecurities: Set<string> = new Set();
+      let detectedFormat: DateFormat | null = null;
 
-      const parsed = await importApi.parseQif(content);
-      setParsedData(parsed);
+      // Process each file
+      for (const file of Array.from(files)) {
+        const content = await file.text();
+        const parsed = await importApi.parseQif(content);
 
-      // Set the detected date format
-      if (parsed.detectedDateFormat) {
-        setDateFormat(parsed.detectedDateFormat);
+        // Use first detected date format
+        if (!detectedFormat && parsed.detectedDateFormat) {
+          detectedFormat = parsed.detectedDateFormat;
+        }
+
+        // Collect unique categories, transfer accounts, and securities
+        parsed.categories.forEach((cat) => allCategories.add(cat));
+        parsed.transferAccounts.forEach((acc) => allTransferAccounts.add(acc));
+        (parsed.securities || []).forEach((sec) => allSecurities.add(sec));
+
+        // Match filename to account
+        const isInvestmentType = parsed.accountType === 'INVESTMENT';
+        const matchedAccountId = matchFilenameToAccount(file.name, isInvestmentType);
+
+        fileDataArray.push({
+          fileName: file.name,
+          fileContent: content,
+          parsedData: parsed,
+          selectedAccountId: matchedAccountId,
+        });
       }
 
-      // Build a map of full category paths to category IDs
-      const getCategoryPath = (category: Category): string => {
-        if (category.parentId) {
-          const parent = categories.find((c) => c.id === category.parentId);
-          if (parent) {
-            return `${parent.name}: ${category.name}`;
-          }
-        }
-        return category.name;
-      };
+      // Set the detected date format
+      if (detectedFormat) {
+        setDateFormat(detectedFormat);
+      }
 
-      // Initialize category mappings
-      const catMappings: CategoryMapping[] = parsed.categories.map((cat) => {
-        // Normalize the QIF category path for comparison (add space after colon)
-        // "Bills:Cell Phone" -> "bills: cell phone"
-        const normalizedQifCat = formatCategoryPath(cat).toLowerCase();
-        // Get the last part of the path (subcategory name)
-        const qifSubcategory = cat.split(':').pop()?.trim().toLowerCase() || '';
-        // Get the parent part if it exists (e.g., "Automobile" from "Automobile:Gasoline")
-        const qifParts = cat.split(':');
-        const qifParentName = qifParts.length > 1 ? qifParts[0].trim().toLowerCase() : null;
+      // Store all file data
+      setImportFiles(fileDataArray);
 
-        // Try to find an existing category match - prioritize exact matches
-        // First, try exact full path match
-        let existingCat = categories.find((c) => {
-          const fullPath = getCategoryPath(c).toLowerCase();
-          return fullPath === normalizedQifCat;
-        });
-
-        // If no exact path match, try matching category name against full normalized path
-        if (!existingCat) {
-          existingCat = categories.find((c) => {
-            return c.name.toLowerCase() === normalizedQifCat;
-          });
-        }
-
-        // If still no match and there's a parent in the QIF path, try matching subcategory with correct parent
-        if (!existingCat && qifParentName) {
-          existingCat = categories.find((c) => {
-            if (c.name.toLowerCase() !== qifSubcategory) return false;
-            // Check if this category's parent matches the QIF parent
-            if (c.parentId) {
-              const parent = categories.find((p) => p.id === c.parentId);
-              return parent?.name.toLowerCase() === qifParentName;
-            }
-            return false;
-          });
-        }
-
-        // Last resort: match just the subcategory name (only if no parent specified in QIF)
-        if (!existingCat && !qifParentName) {
-          existingCat = categories.find((c) => {
-            return c.name.toLowerCase() === qifSubcategory;
-          });
-        }
-
-        return {
-          originalName: cat,
-          categoryId: existingCat?.id,
-          // Don't pre-populate createNew - let user choose to create if needed
-          createNew: undefined,
-        };
-      });
+      // Initialize combined category mappings
+      const catMappings: CategoryMapping[] = Array.from(allCategories).map((cat) => ({
+        originalName: cat,
+        categoryId: findMatchingCategory(cat),
+        createNew: undefined,
+      }));
       setCategoryMappings(catMappings);
 
-      // Initialize account mappings for transfers
-      const accMappings: AccountMapping[] = parsed.transferAccounts.map((acc) => {
-        const existingAcc = accounts.find(
-          (a) => a.name.toLowerCase() === acc.toLowerCase()
-        );
+      // Initialize combined account mappings
+      const accMappings: AccountMapping[] = Array.from(allTransferAccounts).map((acc) => {
+        const existingAcc = accounts.find((a) => a.name.toLowerCase() === acc.toLowerCase());
         return {
           originalName: acc,
           accountId: existingAcc?.id,
@@ -296,18 +378,14 @@ function ImportContent() {
       });
       setAccountMappings(accMappings);
 
-      // Initialize security mappings for investment transactions
-      const secMappings: SecurityMapping[] = (parsed.securities || []).map((sec) => {
-        // Try to find an existing security by symbol or name (case-insensitive)
+      // Initialize combined security mappings
+      const secMappings: SecurityMapping[] = Array.from(allSecurities).map((sec) => {
         const existingSec = securities.find(
-          (s) =>
-            s.symbol.toLowerCase() === sec.toLowerCase() ||
-            s.name.toLowerCase() === sec.toLowerCase()
+          (s) => s.symbol.toLowerCase() === sec.toLowerCase() || s.name.toLowerCase() === sec.toLowerCase()
         );
         return {
           originalName: sec,
           securityId: existingSec?.id,
-          // Don't pre-populate - let user lookup or enter manually
           createNew: undefined,
           securityName: undefined,
           securityType: undefined,
@@ -316,82 +394,18 @@ function ImportContent() {
       });
       setSecurityMappings(secMappings);
 
-      // Check if preselected account is compatible with QIF file type
-      // Investment QIF files should only go to brokerage accounts
-      // Regular QIF files should not go to any investment accounts
-      const isQifInvestmentType = parsed.accountType === 'INVESTMENT';
-      let canUsePreselectedAccount = false;
+      // Always go to selectAccount step for bulk import to let user verify/adjust account mappings
+      setStep('selectAccount');
 
-      // Try to match filename to an account name if no account is preselected
-      let accountIdToUse = selectedAccountId;
-      if (!accountIdToUse && file.name) {
-        // Extract base name from filename (remove extension like .qif, .QIF)
-        const baseName = file.name.replace(/\.[^/.]+$/, '').trim().toLowerCase();
-
-        // Filter compatible accounts based on QIF type
-        const compatibleAccounts = accounts.filter((a) => {
-          if (isQifInvestmentType) {
-            return isInvestmentBrokerageAccount(a);
-          } else {
-            return !isInvestmentBrokerageAccount(a);
-          }
-        });
-
-        // Try to find a matching account:
-        // 1. Exact match (case-insensitive)
-        // 2. Account name contains filename
-        // 3. Filename contains account name
-        const matchedAccount = compatibleAccounts.find((a) => {
-          const accountName = a.name.toLowerCase();
-          return accountName === baseName;
-        }) || compatibleAccounts.find((a) => {
-          const accountName = a.name.toLowerCase();
-          return accountName.includes(baseName) || baseName.includes(accountName);
-        });
-
-        if (matchedAccount) {
-          accountIdToUse = matchedAccount.id;
-          setSelectedAccountId(matchedAccount.id);
-        }
-      }
-
-      if (accountIdToUse) {
-        const preselectedAcc = accounts.find((a) => a.id === accountIdToUse);
-        if (preselectedAcc) {
-          if (isQifInvestmentType) {
-            // Investment QIF requires a brokerage account
-            canUsePreselectedAccount = isInvestmentBrokerageAccount(preselectedAcc);
-          } else {
-            // Regular QIF requires a non-brokerage account (cash accounts including investment cash are OK)
-            canUsePreselectedAccount = !isInvestmentBrokerageAccount(preselectedAcc);
-          }
-
-          if (!canUsePreselectedAccount) {
-            // Clear incompatible preselected account
-            setSelectedAccountId('');
-            accountIdToUse = '';
-            toast.error(
-              isQifInvestmentType
-                ? 'The preselected account is not an investment brokerage account. Please select a compatible account.'
-                : 'The preselected account is a brokerage account. Please select a compatible account.'
-            );
-          }
-        }
-      }
-
-      // If account is already selected from URL parameter and is compatible, skip to date format step
-      // Filename matches still show the selectAccount step so user can confirm
-      if (selectedAccountId && canUsePreselectedAccount) {
-        setStep('dateFormat');
-      } else {
-        setStep('selectAccount');
+      if (fileDataArray.length > 1) {
+        toast.success(`Loaded ${fileDataArray.length} files for import`);
       }
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to parse QIF file');
+      toast.error(error.response?.data?.message || 'Failed to parse QIF file(s)');
     } finally {
       setIsLoading(false);
     }
-  }, [accounts, categories, securities, selectedAccountId]);
+  }, [accounts, securities, findMatchingCategory, matchFilenameToAccount]);
 
   const handleCategoryMappingChange = (index: number, field: keyof CategoryMapping, value: string) => {
     setCategoryMappings((prev) => {
@@ -566,26 +580,110 @@ function ImportContent() {
   };
 
   const handleImport = async () => {
-    if (!selectedAccountId || !fileContent) return;
+    if (importFiles.length === 0) return;
+
+    // Validate all files have accounts selected
+    const allFilesValid = importFiles.every((f) => f.selectedAccountId);
+    if (!allFilesValid) {
+      toast.error('Please select an account for all files');
+      return;
+    }
 
     setIsLoading(true);
     try {
-      const result = await importApi.importQif({
-        content: fileContent,
-        accountId: selectedAccountId,
-        categoryMappings,
-        accountMappings,
-        securityMappings,
-        dateFormat,
-      });
+      if (isBulkImport) {
+        // Bulk import: process each file sequentially
+        const fileResults: BulkImportResult['fileResults'] = [];
+        let totalImported = 0;
+        let totalSkipped = 0;
+        let totalErrors = 0;
+        let categoriesCreated = 0;
+        let accountsCreated = 0;
+        let payeesCreated = 0;
+        let securitiesCreated = 0;
 
-      setImportResult(result);
-      setStep('complete');
+        for (const fileData of importFiles) {
+          try {
+            const result = await importApi.importQif({
+              content: fileData.fileContent,
+              accountId: fileData.selectedAccountId,
+              categoryMappings,
+              accountMappings,
+              securityMappings,
+              dateFormat,
+            });
 
-      if (result.errors === 0) {
-        toast.success(`Successfully imported ${result.imported} transactions`);
+            const targetAccount = accounts.find((a) => a.id === fileData.selectedAccountId);
+            fileResults.push({
+              fileName: fileData.fileName,
+              accountName: targetAccount?.name || 'Unknown',
+              imported: result.imported,
+              skipped: result.skipped,
+              errors: result.errors,
+              errorMessages: result.errorMessages,
+            });
+
+            totalImported += result.imported;
+            totalSkipped += result.skipped;
+            totalErrors += result.errors;
+            // Only count created items from first file (they're shared across imports)
+            if (fileResults.length === 1) {
+              categoriesCreated = result.categoriesCreated;
+              accountsCreated = result.accountsCreated;
+              payeesCreated = result.payeesCreated;
+              securitiesCreated = result.securitiesCreated;
+            }
+          } catch (error: any) {
+            const targetAccount = accounts.find((a) => a.id === fileData.selectedAccountId);
+            fileResults.push({
+              fileName: fileData.fileName,
+              accountName: targetAccount?.name || 'Unknown',
+              imported: 0,
+              skipped: 0,
+              errors: 1,
+              errorMessages: [error.response?.data?.message || 'Import failed'],
+            });
+            totalErrors += 1;
+          }
+        }
+
+        setBulkImportResult({
+          totalImported,
+          totalSkipped,
+          totalErrors,
+          categoriesCreated,
+          accountsCreated,
+          payeesCreated,
+          securitiesCreated,
+          fileResults,
+        });
+
+        setStep('complete');
+
+        if (totalErrors === 0) {
+          toast.success(`Successfully imported ${totalImported} transactions from ${importFiles.length} files`);
+        } else {
+          toast.success(`Imported ${totalImported} transactions with ${totalErrors} errors`);
+        }
       } else {
-        toast.success(`Imported ${result.imported} transactions with ${result.errors} errors`);
+        // Single file import
+        const result = await importApi.importQif({
+          content: fileContent,
+          accountId: selectedAccountId,
+          categoryMappings,
+          accountMappings,
+          securityMappings,
+          dateFormat,
+        });
+
+        setImportResult(result);
+        setStep('complete');
+
+        if (result.errors === 0) {
+          toast.success(`Successfully imported ${result.imported} transactions`);
+        } else {
+          toast.success(`Imported ${result.imported} transactions with ${result.errors} errors`);
+        }
       }
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Import failed');
@@ -634,12 +732,17 @@ function ImportContent() {
     ];
   };
 
-  // Check if the selected account is an asset account (skip transfer mapping for assets)
-  const selectedAccount = accounts.find((a) => a.id === selectedAccountId);
-  const isAssetAccount = selectedAccount?.accountType === 'ASSET';
+  // Check if ALL files are going to asset accounts (skip transfer mapping if so)
+  // For single file, check if the selected account is an asset account
+  // For bulk import, check if all files are going to asset accounts
+  const allFilesAreAssetImports = importFiles.length > 0 && importFiles.every((f) => {
+    const targetAccount = accounts.find((a) => a.id === f.selectedAccountId);
+    return targetAccount?.accountType === 'ASSET';
+  });
 
   // Helper to determine if mapAccounts step should be shown
-  const shouldShowMapAccounts = parsedData?.transferAccounts.length && !isAssetAccount;
+  // Show if there are transfer accounts AND not all files are asset imports
+  const shouldShowMapAccounts = accountMappings.length > 0 && !allFilesAreAssetImports;
 
   const accountTypeOptions = [
     { value: 'CHEQUING', label: 'Chequing' },
@@ -680,12 +783,12 @@ function ImportContent() {
   const renderStep = () => {
     switch (step) {
       case 'upload':
-        const preselectedAccount = accounts.find((a) => a.id === selectedAccountId);
+        const preselectedAccount = accounts.find((a) => a.id === preselectedAccountId);
         return (
           <div className="max-w-xl mx-auto">
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
               <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
-                Upload QIF File
+                Upload QIF Files
               </h2>
               {preselectedAccount && (
                 <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-4">
@@ -695,13 +798,14 @@ function ImportContent() {
                 </div>
               )}
               <p className="text-gray-600 dark:text-gray-400 mb-6">
-                Select a QIF file to import transactions from. QIF is a common format exported by
-                many financial applications.
+                Select one or more QIF files to import. You can select multiple files at once for bulk import.
+                Files will be automatically matched to accounts based on filename.
               </p>
               <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center">
                 <input
                   type="file"
                   accept=".qif"
+                  multiple
                   onChange={handleFileSelect}
                   className="hidden"
                   id="qif-file"
@@ -725,7 +829,7 @@ function ImportContent() {
                     />
                   </svg>
                   <span className="text-gray-600 dark:text-gray-400">
-                    {isLoading ? 'Processing...' : 'Click to select a QIF file'}
+                    {isLoading ? 'Processing...' : 'Click to select QIF file(s)'}
                   </span>
                 </label>
               </div>
@@ -734,30 +838,31 @@ function ImportContent() {
         );
 
       case 'selectAccount':
-        // Determine if QIF file is investment type
-        const isQifInvestment = parsedData?.accountType === 'INVESTMENT';
+        // Helper to get compatible accounts for a file type
+        const getCompatibleAccountsForType = (isInvestment: boolean) => {
+          return accounts.filter((a) => {
+            if (isInvestment) {
+              return isInvestmentBrokerageAccount(a);
+            } else {
+              return !isInvestmentBrokerageAccount(a);
+            }
+          }).sort((a, b) => a.name.localeCompare(b.name));
+        };
 
-        // Filter accounts based on QIF type
-        // Investment QIF files should only go to brokerage accounts
-        // Regular QIF files should not go to brokerage accounts, but CAN go to investment cash accounts
-        const compatibleAccounts = accounts.filter((a) => {
-          if (isQifInvestment) {
-            // Only show brokerage accounts for investment QIF files
-            return isInvestmentBrokerageAccount(a);
-          } else {
-            // Hide brokerage accounts for regular QIF files (they hold securities, not cash)
-            // But allow investment cash accounts since they hold regular cash transactions
-            return !isInvestmentBrokerageAccount(a);
-          }
-        });
+        // Check if all files have valid account selections
+        const allFilesHaveAccounts = importFiles.every((f) => f.selectedAccountId);
 
-        return (
-          <div className="max-w-xl mx-auto">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
-                Select Destination Account
-              </h2>
-              {parsedData && (
+        // For single file, use the old display
+        if (!isBulkImport && parsedData) {
+          const isQifInvestment = parsedData.accountType === 'INVESTMENT';
+          const compatibleAccounts = getCompatibleAccountsForType(isQifInvestment);
+
+          return (
+            <div className="max-w-xl mx-auto">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
+                  Select Destination Account
+                </h2>
                 <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-6">
                   <p className="text-sm text-gray-600 dark:text-gray-400">
                     <strong>File:</strong> {fileName}
@@ -772,45 +877,114 @@ function ImportContent() {
                     <strong>Detected Type:</strong> {parsedData.accountType}
                   </p>
                 </div>
-              )}
 
-              {/* Show notice about account filtering */}
-              {isQifInvestment && (
-                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4">
-                  <p className="text-sm text-blue-700 dark:text-blue-300">
-                    This file contains investment transactions. Only brokerage accounts are shown.
-                  </p>
-                </div>
-              )}
+                {isQifInvestment && (
+                  <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4">
+                    <p className="text-sm text-blue-700 dark:text-blue-300">
+                      This file contains investment transactions. Only brokerage accounts are shown.
+                    </p>
+                  </div>
+                )}
 
-              {compatibleAccounts.length === 0 ? (
-                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
-                  <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                    No compatible accounts found. {isQifInvestment
-                      ? 'Please create an investment brokerage account first.'
-                      : 'Please create an account first.'}
-                  </p>
-                </div>
-              ) : (
-                <Select
-                  label="Import into account"
-                  options={compatibleAccounts
-                    .sort((a, b) => a.name.localeCompare(b.name))
-                    .map((a) => ({
+                {compatibleAccounts.length === 0 ? (
+                  <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                    <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                      No compatible accounts found. {isQifInvestment
+                        ? 'Please create an investment brokerage account first.'
+                        : 'Please create an account first.'}
+                    </p>
+                  </div>
+                ) : (
+                  <Select
+                    label="Import into account"
+                    options={compatibleAccounts.map((a) => ({
                       value: a.id,
                       label: `${a.name} (${formatAccountType(a.accountType)})`,
                     }))}
-                  value={selectedAccountId}
-                  onChange={(e) => setSelectedAccountId(e.target.value)}
-                />
-              )}
+                    value={selectedAccountId}
+                    onChange={(e) => setSelectedAccountId(e.target.value)}
+                  />
+                )}
+                <div className="flex justify-between mt-6">
+                  <Button variant="outline" onClick={() => setStep('upload')}>
+                    Back
+                  </Button>
+                  <Button
+                    onClick={() => setStep('dateFormat')}
+                    disabled={!selectedAccountId || compatibleAccounts.length === 0}
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
+            </div>
+          );
+        }
+
+        // Bulk import: show all files with their account selections
+        return (
+          <div className="max-w-4xl mx-auto">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
+                Select Destination Accounts
+              </h2>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
+                Verify or change the destination account for each file. Files have been automatically matched based on filename.
+              </p>
+
+              <div className="space-y-4 max-h-[32rem] overflow-y-auto">
+                {importFiles.map((fileData, index) => {
+                  const isInvestment = fileData.parsedData.accountType === 'INVESTMENT';
+                  const compatibleAccounts = getCompatibleAccountsForType(isInvestment);
+                  const hasValidAccount = !!fileData.selectedAccountId;
+
+                  return (
+                    <div
+                      key={index}
+                      className={`border rounded-lg p-4 ${
+                        hasValidAccount
+                          ? 'border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20'
+                          : 'border-amber-300 dark:border-amber-600 bg-amber-50 dark:bg-amber-900/20'
+                      }`}
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-gray-900 dark:text-gray-100 truncate">
+                            {fileData.fileName}
+                          </p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                            {fileData.parsedData.transactionCount} transactions
+                            {isInvestment && ' (Investment)'}
+                          </p>
+                        </div>
+                        <div className="sm:w-80">
+                          <Select
+                            options={compatibleAccounts.map((a) => ({
+                              value: a.id,
+                              label: `${a.name} (${formatAccountType(a.accountType)})`,
+                            }))}
+                            value={fileData.selectedAccountId}
+                            onChange={(e) => setFileAccountId(index, e.target.value)}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="mt-4 text-sm text-gray-600 dark:text-gray-400">
+                <strong>Total:</strong> {importFiles.length} files,{' '}
+                {importFiles.reduce((sum, f) => sum + f.parsedData.transactionCount, 0)} transactions
+              </div>
+
               <div className="flex justify-between mt-6">
                 <Button variant="outline" onClick={() => setStep('upload')}>
                   Back
                 </Button>
                 <Button
                   onClick={() => setStep('dateFormat')}
-                  disabled={!selectedAccountId || compatibleAccounts.length === 0}
+                  disabled={!allFilesHaveAccounts}
                 >
                   Next
                 </Button>
@@ -888,9 +1062,9 @@ function ImportContent() {
                 </Button>
                 <Button
                   onClick={() => {
-                    if (parsedData?.categories.length) {
+                    if (categoryMappings.length > 0) {
                       setStep('mapCategories');
-                    } else if (parsedData?.securities?.length) {
+                    } else if (securityMappings.length > 0) {
                       setStep('mapSecurities');
                     } else if (shouldShowMapAccounts) {
                       setStep('mapAccounts');
@@ -1004,7 +1178,7 @@ function ImportContent() {
                 </Button>
                 <Button
                   onClick={() => {
-                    if (parsedData?.securities?.length) {
+                    if (securityMappings.length > 0) {
                       setStep('mapSecurities');
                     } else if (shouldShowMapAccounts) {
                       setStep('mapAccounts');
@@ -1131,7 +1305,7 @@ function ImportContent() {
                 <Button
                   variant="outline"
                   onClick={() => {
-                    if (parsedData?.categories.length) {
+                    if (categoryMappings.length > 0) {
                       setStep('mapCategories');
                     } else {
                       setStep('dateFormat');
@@ -1221,9 +1395,9 @@ function ImportContent() {
                 <Button
                   variant="outline"
                   onClick={() => {
-                    if (parsedData?.securities?.length) {
+                    if (securityMappings.length > 0) {
                       setStep('mapSecurities');
-                    } else if (parsedData?.categories.length) {
+                    } else if (categoryMappings.length > 0) {
                       setStep('mapCategories');
                     } else {
                       setStep('dateFormat');
@@ -1239,7 +1413,6 @@ function ImportContent() {
         );
 
       case 'review':
-        const targetAccount = accounts.find((a) => a.id === selectedAccountId);
         const mappedCategories = categoryMappings.filter((m) => m.categoryId || m.createNew).length;
         const newCategories = categoryMappings.filter((m) => m.createNew).length;
         const loanCategories = categoryMappings.filter((m) => m.isLoanCategory).length;
@@ -1248,6 +1421,7 @@ function ImportContent() {
         const newAccounts = accountMappings.filter((m) => m.createNew).length;
         const mappedSecuritiesCount = securityMappings.filter((m) => m.securityId || m.createNew).length;
         const newSecuritiesCount = securityMappings.filter((m) => m.createNew).length;
+        const totalTransactions = importFiles.reduce((sum, f) => sum + f.parsedData.transactionCount, 0);
 
         return (
           <div className="max-w-xl mx-auto">
@@ -1257,18 +1431,39 @@ function ImportContent() {
               </h2>
               <div className="space-y-4">
                 <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                  <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-2">Summary</h3>
-                  <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                    <li>
-                      <strong>File:</strong> {fileName}
-                    </li>
-                    <li>
-                      <strong>Transactions to import:</strong> {parsedData?.transactionCount}
-                    </li>
-                    <li>
-                      <strong>Target account:</strong> {targetAccount?.name}
-                    </li>
-                  </ul>
+                  <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-2">
+                    {isBulkImport ? 'Files to Import' : 'Summary'}
+                  </h3>
+                  {isBulkImport ? (
+                    <div className="space-y-2">
+                      {importFiles.map((fileData, index) => {
+                        const targetAcc = accounts.find((a) => a.id === fileData.selectedAccountId);
+                        return (
+                          <div key={index} className="text-sm text-gray-600 dark:text-gray-400 border-b border-gray-200 dark:border-gray-600 pb-2 last:border-0">
+                            <p><strong>{fileData.fileName}</strong></p>
+                            <p className="ml-4">
+                              {fileData.parsedData.transactionCount} transactions → {targetAcc?.name}
+                            </p>
+                          </div>
+                        );
+                      })}
+                      <div className="pt-2 text-sm text-gray-600 dark:text-gray-400">
+                        <strong>Total:</strong> {importFiles.length} files, {totalTransactions} transactions
+                      </div>
+                    </div>
+                  ) : (
+                    <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                      <li>
+                        <strong>File:</strong> {fileName}
+                      </li>
+                      <li>
+                        <strong>Transactions to import:</strong> {parsedData?.transactionCount}
+                      </li>
+                      <li>
+                        <strong>Target account:</strong> {accounts.find((a) => a.id === selectedAccountId)?.name}
+                      </li>
+                    </ul>
+                  )}
                 </div>
 
                 {categoryMappings.length > 0 && (
@@ -1346,9 +1541,9 @@ function ImportContent() {
                   onClick={() => {
                     if (shouldShowMapAccounts) {
                       setStep('mapAccounts');
-                    } else if (parsedData?.securities?.length) {
+                    } else if (securityMappings.length > 0) {
                       setStep('mapSecurities');
-                    } else if (parsedData?.categories.length) {
+                    } else if (categoryMappings.length > 0) {
                       setStep('mapCategories');
                     } else {
                       setStep('dateFormat');
@@ -1366,8 +1561,11 @@ function ImportContent() {
         );
 
       case 'complete':
+        // Check if any file was an investment type
+        const hasInvestmentFile = importFiles.some((f) => f.parsedData.accountType === 'INVESTMENT');
+
         return (
-          <div className="max-w-xl mx-auto">
+          <div className={isBulkImport ? "max-w-4xl mx-auto" : "max-w-xl mx-auto"}>
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
               <div className="text-center mb-6">
                 <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 dark:bg-green-900 mb-4">
@@ -1390,7 +1588,61 @@ function ImportContent() {
                 </h2>
               </div>
 
-              {importResult && (
+              {/* Bulk import results */}
+              {bulkImportResult && (
+                <div className="space-y-4 mb-6">
+                  {/* Overall summary */}
+                  <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                    <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-2">Overall Summary</h3>
+                    <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                      <li><strong>Files imported:</strong> {bulkImportResult.fileResults.length}</li>
+                      <li><strong>Total imported:</strong> {bulkImportResult.totalImported} transactions</li>
+                      <li><strong>Total skipped:</strong> {bulkImportResult.totalSkipped} duplicate transfers</li>
+                      <li><strong>Total errors:</strong> {bulkImportResult.totalErrors}</li>
+                      <li><strong>Categories created:</strong> {bulkImportResult.categoriesCreated}</li>
+                      <li><strong>Accounts created:</strong> {bulkImportResult.accountsCreated}</li>
+                      <li><strong>Payees created:</strong> {bulkImportResult.payeesCreated}</li>
+                      <li><strong>Securities created:</strong> {bulkImportResult.securitiesCreated}</li>
+                    </ul>
+                  </div>
+
+                  {/* Per-file results */}
+                  <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                    <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-2">Per-File Results</h3>
+                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                      {bulkImportResult.fileResults.map((result, index) => (
+                        <div
+                          key={index}
+                          className={`text-sm p-2 rounded ${
+                            result.errors > 0
+                              ? 'bg-red-50 dark:bg-red-900/20'
+                              : 'bg-green-50 dark:bg-green-900/20'
+                          }`}
+                        >
+                          <p className="font-medium text-gray-900 dark:text-gray-100">{result.fileName}</p>
+                          <p className="text-gray-600 dark:text-gray-400">
+                            → {result.accountName}: {result.imported} imported, {result.skipped} skipped
+                            {result.errors > 0 && <span className="text-red-600 dark:text-red-400">, {result.errors} errors</span>}
+                          </p>
+                          {result.errorMessages.length > 0 && (
+                            <ul className="text-xs text-red-500 dark:text-red-400 mt-1">
+                              {result.errorMessages.slice(0, 3).map((msg, i) => (
+                                <li key={i}>{msg}</li>
+                              ))}
+                              {result.errorMessages.length > 3 && (
+                                <li>...and {result.errorMessages.length - 3} more errors</li>
+                              )}
+                            </ul>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Single file import result */}
+              {importResult && !bulkImportResult && (
                 <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-6">
                   <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
                     <li>
@@ -1439,25 +1691,23 @@ function ImportContent() {
               <div className="flex justify-center space-x-4">
                 <Button
                   variant="outline"
-                  onClick={() => router.push(parsedData?.accountType === 'INVESTMENT' ? '/investments' : '/transactions')}
+                  onClick={() => router.push(hasInvestmentFile ? '/investments' : '/transactions')}
                 >
-                  {parsedData?.accountType === 'INVESTMENT' ? 'View Investments' : 'View Transactions'}
+                  {hasInvestmentFile ? 'View Investments' : 'View Transactions'}
                 </Button>
                 <Button
                   onClick={() => {
                     setStep('upload');
-                    setFileContent('');
-                    setFileName('');
-                    setParsedData(null);
+                    setImportFiles([]);
                     setImportResult(null);
-                    setSelectedAccountId('');
+                    setBulkImportResult(null);
                     setCategoryMappings([]);
                     setAccountMappings([]);
                     setSecurityMappings([]);
                     setInitialLookupDone(false);
                   }}
                 >
-                  Import Another File
+                  Import More Files
                 </Button>
               </div>
             </div>
@@ -1495,8 +1745,8 @@ function ImportContent() {
                 const isComplete = stepIndex < currentIndex;
 
                 // Skip steps that aren't needed
-                if (s === 'mapCategories' && !parsedData?.categories.length) return null;
-                if (s === 'mapSecurities' && !parsedData?.securities?.length) return null;
+                if (s === 'mapCategories' && categoryMappings.length === 0) return null;
+                if (s === 'mapSecurities' && securityMappings.length === 0) return null;
                 if (s === 'mapAccounts' && !shouldShowMapAccounts) return null;
 
                 return (

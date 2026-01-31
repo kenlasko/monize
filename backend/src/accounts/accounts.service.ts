@@ -336,6 +336,21 @@ export class AccountsService {
       throw new BadRequestException('Cannot update a closed account');
     }
 
+    // If openingBalance is being changed, we need to recalculate currentBalance
+    // currentBalance = openingBalance + sum(all transaction amounts)
+    if (
+      updateAccountDto.openingBalance !== undefined &&
+      updateAccountDto.openingBalance !== account.openingBalance
+    ) {
+      const oldOpeningBalance = Number(account.openingBalance) || 0;
+      const newOpeningBalance = Number(updateAccountDto.openingBalance) || 0;
+      const difference = newOpeningBalance - oldOpeningBalance;
+
+      // Adjust currentBalance by the difference
+      account.currentBalance =
+        Math.round((Number(account.currentBalance) + difference) * 100) / 100;
+    }
+
     Object.assign(account, updateAccountDto);
     return this.accountsRepository.save(account);
   }
