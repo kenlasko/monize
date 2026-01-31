@@ -735,12 +735,15 @@ export class ImportService {
           }
 
           // Determine transfer account
+          // For split transactions, transfers are handled at the split level, not the main transaction
           let transferAccountId: string | null = null;
-          if (qifTx.isTransfer && qifTx.transferAccount) {
-            transferAccountId = accountMap.get(qifTx.transferAccount) || null;
-          } else if (isLoanPaymentTx && qifTx.category) {
-            // For loan payment transactions (non-split only), treat as transfer to loan account
-            transferAccountId = loanCategoryMap.get(qifTx.category) || null;
+          if (!isSplit) {
+            if (qifTx.isTransfer && qifTx.transferAccount) {
+              transferAccountId = accountMap.get(qifTx.transferAccount) || null;
+            } else if (isLoanPaymentTx && qifTx.category) {
+              // For loan payment transactions (non-split only), treat as transfer to loan account
+              transferAccountId = loanCategoryMap.get(qifTx.category) || null;
+            }
           }
 
           // Generate unique createdAt timestamp for deterministic ordering
@@ -760,7 +763,8 @@ export class ImportService {
 
           // Create transaction
           // Loan payments are treated as transfers to the loan account
-          const isTransfer = qifTx.isTransfer || isLoanPaymentTx;
+          // For split transactions, the main transaction is NOT a transfer - transfers are at the split level
+          const isTransfer = !isSplit && (qifTx.isTransfer || isLoanPaymentTx);
           const transaction = queryRunner.manager.create(Transaction, {
             userId,
             accountId: dto.accountId,
@@ -811,36 +815,117 @@ export class ImportService {
 
               // For transfer splits (including loan payments), create linked transaction in target account
               if (splitTransferAccountId) {
-                // For loan payments, the split amount is typically negative (outflow from source)
-                // The inverse amount goes to the loan account (positive = reducing debt)
-                const linkedSplitTx = queryRunner.manager.create(Transaction, {
-                  userId,
-                  accountId: splitTransferAccountId,
-                  transactionDate: qifTx.date,
-                  amount: -split.amount, // Inverse amount
-                  payeeName: isLoanPayment
-                    ? qifTx.payee || `Loan Payment from ${account.name}`
-                    : qifTx.payee || `Transfer from ${account.name}`,
-                  description: split.memo || qifTx.memo,
-                  status,
-                  currencyCode: account.currencyCode,
-                  isTransfer: true,
-                  createdAt: new Date(baseTime.getTime() + 0.1), // Slightly offset
-                });
+                const linkedAmount = -split.amount; // Inverse amount
 
-                const savedLinkedSplitTx = await queryRunner.manager.save(linkedSplitTx);
+                // Check if there's an existing transaction from a previous import that matches
+                // This handles the case where the other side of the transfer was imported first
+                // The existing transaction may already have a linkedTransactionId (pointing back to
+                // a placeholder in this account that we'll need to clean up)
+                const existingLinkedTx = await queryRunner.manager
+                  .createQueryBuilder(Transaction, 't')
+                  .where('t.user_id = :userId', { userId })
+                  .andWhere('t.account_id = :accountId', { accountId: splitTransferAccountId })
+                  .andWhere('t.transaction_date = :date', { date: qifTx.date })
+                  .andWhere('t.amount = :amount', { amount: linkedAmount })
+                  .andWhere('t.is_transfer = true')
+                  .andWhere('t.created_at < :importStartTime', { importStartTime })
+                  .getOne();
 
-                // Update the split with the linked transaction ID
-                await queryRunner.manager.update(TransactionSplit, savedSplit.id, {
-                  linkedTransactionId: savedLinkedSplitTx.id,
-                });
+                if (existingLinkedTx) {
+                  // Found existing transaction from previous import - link to it
+                  await queryRunner.manager.update(TransactionSplit, savedSplit.id, {
+                    linkedTransactionId: existingLinkedTx.id,
+                  });
 
-                // Update target account balance
-                await this.updateAccountBalance(
-                  queryRunner,
-                  splitTransferAccountId,
-                  -split.amount,
-                );
+                  // Check if there's a placeholder transaction in the CURRENT account that was
+                  // created when the other side was imported - if so, delete it and reverse balance
+                  if (existingLinkedTx.linkedTransactionId) {
+                    const placeholderTx = await queryRunner.manager.findOne(Transaction, {
+                      where: {
+                        id: existingLinkedTx.linkedTransactionId,
+                        accountId: dto.accountId, // In current account
+                      },
+                    });
+                    if (placeholderTx) {
+                      // Reverse the balance impact of the placeholder
+                      await this.updateAccountBalance(
+                        queryRunner,
+                        dto.accountId,
+                        -Number(placeholderTx.amount),
+                      );
+                      // Delete the placeholder
+                      await queryRunner.manager.delete(Transaction, placeholderTx.id);
+                      // Clear the linkedTransactionId on the existing transaction
+                      await queryRunner.manager.update(Transaction, existingLinkedTx.id, {
+                        linkedTransactionId: null,
+                      });
+                    }
+                  }
+                  // No balance update needed for target account - it was already applied
+                } else {
+                  // Also check for pending transfers (cross-currency case)
+                  const expectedSign = linkedAmount >= 0 ? 1 : -1;
+                  const pendingTransfer = await queryRunner.manager
+                    .createQueryBuilder(Transaction, 't')
+                    .where('t.user_id = :userId', { userId })
+                    .andWhere('t.account_id = :accountId', { accountId: splitTransferAccountId })
+                    .andWhere('t.transaction_date = :date', { date: qifTx.date })
+                    .andWhere('t.is_transfer = true')
+                    .andWhere('t.linked_transaction_id IS NULL')
+                    .andWhere('t.description LIKE :note', { note: '%PENDING IMPORT%' })
+                    .andWhere(expectedSign > 0 ? 't.amount > 0' : 't.amount < 0')
+                    .getOne();
+
+                  if (pendingTransfer) {
+                    // Update the pending transfer with correct amount
+                    const oldAmount = Number(pendingTransfer.amount);
+                    const balanceDiff = linkedAmount - oldAmount;
+
+                    await queryRunner.manager.update(Transaction, pendingTransfer.id, {
+                      amount: linkedAmount,
+                      description: split.memo || qifTx.memo || null,
+                    });
+
+                    await queryRunner.manager.update(TransactionSplit, savedSplit.id, {
+                      linkedTransactionId: pendingTransfer.id,
+                    });
+
+                    // Adjust balance for any difference
+                    if (balanceDiff !== 0) {
+                      await this.updateAccountBalance(queryRunner, splitTransferAccountId, balanceDiff);
+                    }
+                  } else {
+                    // No existing transaction - create new linked transaction
+                    const linkedSplitTx = queryRunner.manager.create(Transaction, {
+                      userId,
+                      accountId: splitTransferAccountId,
+                      transactionDate: qifTx.date,
+                      amount: linkedAmount,
+                      payeeName: isLoanPayment
+                        ? qifTx.payee || `Loan Payment from ${account.name}`
+                        : qifTx.payee || `Transfer from ${account.name}`,
+                      description: split.memo || qifTx.memo,
+                      status,
+                      currencyCode: account.currencyCode,
+                      isTransfer: true,
+                      createdAt: new Date(baseTime.getTime() + 0.1), // Slightly offset
+                    });
+
+                    const savedLinkedSplitTx = await queryRunner.manager.save(linkedSplitTx);
+
+                    // Update the split with the linked transaction ID
+                    await queryRunner.manager.update(TransactionSplit, savedSplit.id, {
+                      linkedTransactionId: savedLinkedSplitTx.id,
+                    });
+
+                    // Update target account balance
+                    await this.updateAccountBalance(
+                      queryRunner,
+                      splitTransferAccountId,
+                      linkedAmount,
+                    );
+                  }
+                }
               }
             }
           }

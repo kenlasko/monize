@@ -262,21 +262,34 @@ function ImportContent() {
     const qifParts = cat.split(':');
     const qifParentName = qifParts.length > 1 ? qifParts[0].trim().toLowerCase() : null;
 
+    // QIF files replace / with - in category names, so also try matching with - replaced by /
+    const normalizedQifCatWithSlash = normalizedQifCat.replace(/-/g, '/');
+    const qifSubcategoryWithSlash = qifSubcategory.replace(/-/g, '/');
+    const qifParentNameWithSlash = qifParentName?.replace(/-/g, '/') || null;
+
     // Try exact full path match
-    let existingCat = categories.find((c) => getCategoryPath(c).toLowerCase() === normalizedQifCat);
+    let existingCat = categories.find((c) => {
+      const catPath = getCategoryPath(c).toLowerCase();
+      return catPath === normalizedQifCat || catPath === normalizedQifCatWithSlash;
+    });
 
     // Try matching category name against full normalized path
     if (!existingCat) {
-      existingCat = categories.find((c) => c.name.toLowerCase() === normalizedQifCat);
+      existingCat = categories.find((c) => {
+        const catName = c.name.toLowerCase();
+        return catName === normalizedQifCat || catName === normalizedQifCatWithSlash;
+      });
     }
 
     // Try matching subcategory with correct parent
     if (!existingCat && qifParentName) {
       existingCat = categories.find((c) => {
-        if (c.name.toLowerCase() !== qifSubcategory) return false;
+        const catName = c.name.toLowerCase();
+        if (catName !== qifSubcategory && catName !== qifSubcategoryWithSlash) return false;
         if (c.parentId) {
           const parent = categories.find((p) => p.id === c.parentId);
-          return parent?.name.toLowerCase() === qifParentName;
+          const parentName = parent?.name.toLowerCase();
+          return parentName === qifParentName || parentName === qifParentNameWithSlash;
         }
         return false;
       });
@@ -284,15 +297,20 @@ function ImportContent() {
 
     // Match just the subcategory name (only if no parent specified in QIF)
     if (!existingCat && !qifParentName) {
-      existingCat = categories.find((c) => c.name.toLowerCase() === qifSubcategory);
+      existingCat = categories.find((c) => {
+        const catName = c.name.toLowerCase();
+        return catName === qifSubcategory || catName === qifSubcategoryWithSlash;
+      });
     }
 
     return existingCat?.id;
   }, [categories, getCategoryPath]);
 
   // Helper to match filename to account
+  // QIF files replace / with - in account names, so also try matching with - replaced by /
   const matchFilenameToAccount = useCallback((fileName: string, isInvestmentType: boolean): string => {
     const baseName = fileName.replace(/\.[^/.]+$/, '').trim().toLowerCase();
+    const baseNameWithSlash = baseName.replace(/-/g, '/');
 
     const compatibleAccounts = accounts.filter((a) => {
       if (isInvestmentType) {
@@ -302,10 +320,16 @@ function ImportContent() {
       }
     });
 
-    const matchedAccount = compatibleAccounts.find((a) => a.name.toLowerCase() === baseName)
+    // Try exact match first (with both - and / variants)
+    const matchedAccount = compatibleAccounts.find((a) => {
+      const accountName = a.name.toLowerCase();
+      return accountName === baseName || accountName === baseNameWithSlash;
+    })
+      // Then try partial matches
       || compatibleAccounts.find((a) => {
         const accountName = a.name.toLowerCase();
-        return accountName.includes(baseName) || baseName.includes(accountName);
+        return accountName.includes(baseName) || baseName.includes(accountName)
+          || accountName.includes(baseNameWithSlash) || baseNameWithSlash.includes(accountName);
       });
 
     return matchedAccount?.id || '';
@@ -369,8 +393,14 @@ function ImportContent() {
       setCategoryMappings(catMappings);
 
       // Initialize combined account mappings
+      // QIF files replace / with - in account names, so also try matching with - replaced by /
       const accMappings: AccountMapping[] = Array.from(allTransferAccounts).map((acc) => {
-        const existingAcc = accounts.find((a) => a.name.toLowerCase() === acc.toLowerCase());
+        const accLower = acc.toLowerCase();
+        const accWithSlash = accLower.replace(/-/g, '/');
+        const existingAcc = accounts.find((a) => {
+          const aName = a.name.toLowerCase();
+          return aName === accLower || aName === accWithSlash;
+        });
         return {
           originalName: acc,
           accountId: existingAcc?.id,
