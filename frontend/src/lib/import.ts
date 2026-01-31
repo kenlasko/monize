@@ -21,6 +21,12 @@ export interface CategoryMapping {
   categoryId?: string;
   createNew?: string;
   parentCategoryId?: string;
+  // Loan category fields
+  isLoanCategory?: boolean;
+  loanAccountId?: string;
+  createNewLoan?: string;
+  newLoanAmount?: number;
+  newLoanInstitution?: string;
 }
 
 export interface AccountMapping {

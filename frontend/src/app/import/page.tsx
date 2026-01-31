@@ -28,11 +28,9 @@ const formatAccountType = (type: AccountType): string => {
     INVESTMENT: 'Investment',
     LOAN: 'Loan',
     MORTGAGE: 'Mortgage',
-    RRSP: 'RRSP',
-    TFSA: 'TFSA',
-    RESP: 'RESP',
     CASH: 'Cash',
     LINE_OF_CREDIT: 'Line of Credit',
+    ASSET: 'Asset',
     OTHER: 'Other',
   };
   return labels[type] || type;
@@ -898,8 +896,14 @@ function ImportContent() {
         );
 
       case 'mapCategories':
-        const unmatchedCategories = categoryMappings.filter((m) => !m.categoryId);
-        const matchedCategories = categoryMappings.filter((m) => m.categoryId);
+        // A category is "matched" only if it has a category mapped OR is a loan with an account selected/created
+        // For new loans, require both the name AND the initial amount before considering it fully mapped
+        const isFullyMapped = (m: CategoryMapping) =>
+          m.categoryId || (m.isLoanCategory && (m.loanAccountId || (m.createNewLoan && m.newLoanAmount !== undefined)));
+        const unmatchedCategories = categoryMappings.filter((m) => !isFullyMapped(m));
+        const matchedCategories = categoryMappings.filter((m) => isFullyMapped(m));
+        // Filter loan accounts for the loan category mapping feature
+        const loanAccounts = accounts.filter((a) => a.accountType === 'LOAN' || a.accountType === 'MORTGAGE');
 
         return (
           <div className="max-w-4xl mx-auto">
@@ -932,6 +936,7 @@ function ImportContent() {
                       mapping={mapping}
                       categoryOptions={categoryOptions}
                       parentCategoryOptions={parentCategoryOptions}
+                      loanAccounts={loanAccounts}
                       onMappingChange={(update) => {
                         setCategoryMappings((prev) => {
                           const updated = [...prev];
@@ -960,6 +965,7 @@ function ImportContent() {
                             mapping={mapping}
                             categoryOptions={categoryOptions}
                             parentCategoryOptions={parentCategoryOptions}
+                            loanAccounts={loanAccounts}
                             onMappingChange={(update) => {
                               setCategoryMappings((prev) => {
                                 const updated = [...prev];
@@ -1223,6 +1229,8 @@ function ImportContent() {
         const targetAccount = accounts.find((a) => a.id === selectedAccountId);
         const mappedCategories = categoryMappings.filter((m) => m.categoryId || m.createNew).length;
         const newCategories = categoryMappings.filter((m) => m.createNew).length;
+        const loanCategories = categoryMappings.filter((m) => m.isLoanCategory).length;
+        const newLoanAccounts = categoryMappings.filter((m) => m.isLoanCategory && m.createNewLoan).length;
         const mappedAccounts = accountMappings.filter((m) => m.accountId || m.createNew).length;
         const newAccounts = accountMappings.filter((m) => m.createNew).length;
         const mappedSecuritiesCount = securityMappings.filter((m) => m.securityId || m.createNew).length;
@@ -1260,11 +1268,23 @@ function ImportContent() {
                         <strong>Total:</strong> {categoryMappings.length}
                       </li>
                       <li>
-                        <strong>Mapped:</strong> {mappedCategories}
+                        <strong>Mapped to categories:</strong> {mappedCategories}
                       </li>
                       <li>
-                        <strong>New to create:</strong> {newCategories}
+                        <strong>New categories to create:</strong> {newCategories}
                       </li>
+                      {loanCategories > 0 && (
+                        <>
+                          <li>
+                            <strong>Mapped to loan accounts:</strong> {loanCategories}
+                          </li>
+                          {newLoanAccounts > 0 && (
+                            <li>
+                              <strong>New loan accounts to create:</strong> {newLoanAccounts}
+                            </li>
+                          )}
+                        </>
+                      )}
                     </ul>
                   </div>
                 )}

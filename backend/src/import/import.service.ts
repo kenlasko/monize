@@ -189,9 +189,19 @@ export class ImportService {
     // Build category mapping lookup
     const categoryMap = new Map<string, string | null>();
     const categoriesToCreate: CategoryMappingDto[] = [];
+    // Loan category mappings - maps category name to loan account ID
+    const loanCategoryMap = new Map<string, string>();
+    const loanAccountsToCreate: CategoryMappingDto[] = [];
 
     for (const mapping of dto.categoryMappings) {
-      if (mapping.categoryId) {
+      if (mapping.isLoanCategory) {
+        // This category represents a loan payment - will be handled as transfer
+        if (mapping.loanAccountId) {
+          loanCategoryMap.set(mapping.originalName, mapping.loanAccountId);
+        } else if (mapping.createNewLoan) {
+          loanAccountsToCreate.push(mapping);
+        }
+      } else if (mapping.categoryId) {
         categoryMap.set(mapping.originalName, mapping.categoryId);
       } else if (mapping.createNew) {
         categoriesToCreate.push(mapping);
@@ -304,6 +314,25 @@ export class ImportService {
         });
         const saved = await queryRunner.manager.save(newAccount);
         accountMap.set(accMapping.originalName, saved.id);
+        importResult.accountsCreated++;
+      }
+
+      // Create new loan accounts for loan category mappings
+      for (const loanMapping of loanAccountsToCreate) {
+        // Initial loan amount is stored as negative opening balance (liability)
+        // Current balance starts at the loan amount (what's owed)
+        const loanAmount = loanMapping.newLoanAmount || 0;
+        const newLoanAccount = queryRunner.manager.create(Account, {
+          userId,
+          name: loanMapping.createNewLoan,
+          accountType: AccountType.LOAN,
+          currencyCode: account.currencyCode,
+          institution: loanMapping.newLoanInstitution || null,
+          openingBalance: -loanAmount,
+          currentBalance: -loanAmount,
+        });
+        const saved = await queryRunner.manager.save(newLoanAccount);
+        loanCategoryMap.set(loanMapping.originalName, saved.id);
         importResult.accountsCreated++;
       }
 
@@ -678,8 +707,13 @@ export class ImportService {
             }
           }
 
-          // Determine category
+          // Check if this is a split transaction - must check early as it affects other logic
+          const isSplit = qifTx.splits && qifTx.splits.length > 0;
+
+          // Determine category and check for loan category mapping
+          // Note: For split transactions, loan payment logic is handled at the split level, not here
           let categoryId: string | null = null;
+          let isLoanPaymentTx = false;
           if (qifTx.isTransfer) {
             // For transfers, we don't set a category
             categoryId = null;
@@ -687,17 +721,25 @@ export class ImportService {
             // For asset accounts, use the account's configured asset category
             categoryId = account.assetCategoryId;
           } else if (qifTx.category) {
-            categoryId = categoryMap.get(qifTx.category) || null;
+            // Check if this category is mapped as a loan payment (only for non-split transactions)
+            // Split transactions handle loan payments at the individual split level
+            if (!isSplit && loanCategoryMap.has(qifTx.category)) {
+              // This will be treated as a transfer to the loan account
+              categoryId = null;
+              isLoanPaymentTx = true;
+            } else {
+              categoryId = categoryMap.get(qifTx.category) || null;
+            }
           }
 
           // Determine transfer account
           let transferAccountId: string | null = null;
           if (qifTx.isTransfer && qifTx.transferAccount) {
             transferAccountId = accountMap.get(qifTx.transferAccount) || null;
+          } else if (isLoanPaymentTx && qifTx.category) {
+            // For loan payment transactions (non-split only), treat as transfer to loan account
+            transferAccountId = loanCategoryMap.get(qifTx.category) || null;
           }
-
-          // Check if this is a split transaction
-          const isSplit = qifTx.splits && qifTx.splits.length > 0;
 
           // Generate unique createdAt timestamp for deterministic ordering
           // Increment by 1ms for each transaction on the same date
@@ -715,6 +757,8 @@ export class ImportService {
               : TransactionStatus.UNRECONCILED;
 
           // Create transaction
+          // Loan payments are treated as transfers to the loan account
+          const isTransfer = qifTx.isTransfer || isLoanPaymentTx;
           const transaction = queryRunner.manager.create(Transaction, {
             userId,
             accountId: dto.accountId,
@@ -728,7 +772,7 @@ export class ImportService {
             status,
             currencyCode: account.currencyCode,
             isSplit,
-            isTransfer: qifTx.isTransfer,
+            isTransfer,
             createdAt: baseTime,
           });
 
@@ -739,11 +783,18 @@ export class ImportService {
             for (const split of qifTx.splits) {
               let splitCategoryId: string | null = null;
               let splitTransferAccountId: string | null = null;
+              let isLoanPayment = false;
 
               if (split.isTransfer && split.transferAccount) {
                 splitTransferAccountId = accountMap.get(split.transferAccount) || null;
               } else if (split.category) {
-                splitCategoryId = categoryMap.get(split.category) || null;
+                // Check if this category is mapped as a loan payment
+                if (loanCategoryMap.has(split.category)) {
+                  splitTransferAccountId = loanCategoryMap.get(split.category) || null;
+                  isLoanPayment = true;
+                } else {
+                  splitCategoryId = categoryMap.get(split.category) || null;
+                }
               }
 
               const transactionSplit = queryRunner.manager.create(TransactionSplit, {
@@ -756,14 +807,18 @@ export class ImportService {
 
               const savedSplit = await queryRunner.manager.save(transactionSplit);
 
-              // For transfer splits, create linked transaction in target account
+              // For transfer splits (including loan payments), create linked transaction in target account
               if (splitTransferAccountId) {
+                // For loan payments, the split amount is typically negative (outflow from source)
+                // The inverse amount goes to the loan account (positive = reducing debt)
                 const linkedSplitTx = queryRunner.manager.create(Transaction, {
                   userId,
                   accountId: splitTransferAccountId,
                   transactionDate: qifTx.date,
                   amount: -split.amount, // Inverse amount
-                  payeeName: qifTx.payee || `Transfer from ${account.name}`,
+                  payeeName: isLoanPayment
+                    ? qifTx.payee || `Loan Payment from ${account.name}`
+                    : qifTx.payee || `Transfer from ${account.name}`,
                   description: split.memo || qifTx.memo,
                   status,
                   currencyCode: account.currencyCode,
@@ -791,8 +846,8 @@ export class ImportService {
           // Update account balance
           await this.updateAccountBalance(queryRunner, dto.accountId, qifTx.amount);
 
-          // If it's a transfer and we have a linked account, create the opposite transaction
-          if (qifTx.isTransfer && transferAccountId) {
+          // If it's a transfer (including loan payments) and we have a linked account, create the opposite transaction
+          if (isTransfer && transferAccountId) {
             // Get the target account to check currency
             const targetAccount = await queryRunner.manager.findOne(Account, {
               where: { id: transferAccountId },
@@ -824,9 +879,12 @@ export class ImportService {
 
             if (existingPendingTransfer) {
               // Found a pending transfer - link them together and clear the note
+              const linkedPayeeName = isLoanPaymentTx
+                ? qifTx.payee || `Loan Payment from ${account.name}`
+                : qifTx.payee || `Transfer from ${account.name}`;
               await queryRunner.manager.update(Transaction, existingPendingTransfer.id, {
                 linkedTransactionId: savedTx.id,
-                payeeName: qifTx.payee || `Transfer from ${account.name}`,
+                payeeName: linkedPayeeName,
                 description: qifTx.memo || null, // Clear the pending note
               });
 
@@ -845,12 +903,15 @@ export class ImportService {
                 ? `${qifTx.memo || ''} ${PENDING_IMPORT_NOTE}`.trim()
                 : qifTx.memo;
 
+              const linkedPayeeName = isLoanPaymentTx
+                ? qifTx.payee || `Loan Payment from ${account.name}`
+                : qifTx.payee || `Transfer from ${account.name}`;
               const linkedTx = queryRunner.manager.create(Transaction, {
                 userId,
                 accountId: transferAccountId,
                 transactionDate: qifTx.date,
                 amount: linkedAmount,
-                payeeName: qifTx.payee || `Transfer from ${account.name}`,
+                payeeName: linkedPayeeName,
                 description: linkedDescription,
                 referenceNumber: qifTx.number,
                 status, // Use same status as the main transaction

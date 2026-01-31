@@ -33,6 +33,29 @@ export class CategoryMappingDto {
   @IsOptional()
   @IsUUID()
   parentCategoryId?: string;
+
+  @ApiPropertyOptional({ description: 'Whether this category represents a loan payment' })
+  @IsOptional()
+  isLoanCategory?: boolean;
+
+  @ApiPropertyOptional({ description: 'Existing loan account ID to transfer to' })
+  @IsOptional()
+  @IsUUID()
+  loanAccountId?: string;
+
+  @ApiPropertyOptional({ description: 'Name for new loan account to create' })
+  @IsOptional()
+  @IsString()
+  createNewLoan?: string;
+
+  @ApiPropertyOptional({ description: 'Initial loan amount for new loan account' })
+  @IsOptional()
+  newLoanAmount?: number;
+
+  @ApiPropertyOptional({ description: 'Institution name for new loan account' })
+  @IsOptional()
+  @IsString()
+  newLoanInstitution?: string;
 }
 
 export class AccountMappingDto {
