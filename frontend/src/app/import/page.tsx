@@ -620,12 +620,11 @@ function ImportContent() {
   }, [categories]);
 
   const getAccountOptions = () => {
-    // Filter out brokerage accounts, loan accounts, and asset accounts
+    // Filter out brokerage accounts and loan accounts
     // Brokerage accounts - transfers should go to cash accounts
     // Loan accounts - balances are built using transactions from other accounts
-    // Asset accounts - not used for transfers
     const transferableAccounts = accounts.filter(
-      (a) => !isInvestmentBrokerageAccount(a) && a.accountType !== 'LOAN' && a.accountType !== 'ASSET'
+      (a) => !isInvestmentBrokerageAccount(a) && a.accountType !== 'LOAN'
     );
     return [
       { value: '', label: 'Skip (no transfer)' },
@@ -634,6 +633,13 @@ function ImportContent() {
         .map((a) => ({ value: a.id, label: `${a.name} (${formatAccountType(a.accountType)})` })),
     ];
   };
+
+  // Check if the selected account is an asset account (skip transfer mapping for assets)
+  const selectedAccount = accounts.find((a) => a.id === selectedAccountId);
+  const isAssetAccount = selectedAccount?.accountType === 'ASSET';
+
+  // Helper to determine if mapAccounts step should be shown
+  const shouldShowMapAccounts = parsedData?.transferAccounts.length && !isAssetAccount;
 
   const accountTypeOptions = [
     { value: 'CHEQUING', label: 'Chequing' },
@@ -886,7 +892,7 @@ function ImportContent() {
                       setStep('mapCategories');
                     } else if (parsedData?.securities?.length) {
                       setStep('mapSecurities');
-                    } else if (parsedData?.transferAccounts.length) {
+                    } else if (shouldShowMapAccounts) {
                       setStep('mapAccounts');
                     } else {
                       setStep('review');
@@ -908,7 +914,9 @@ function ImportContent() {
         const unmatchedCategories = categoryMappings.filter((m) => !isFullyMapped(m));
         const matchedCategories = categoryMappings.filter((m) => isFullyMapped(m));
         // Filter loan accounts for the loan category mapping feature
-        const loanAccounts = accounts.filter((a) => a.accountType === 'LOAN' || a.accountType === 'MORTGAGE');
+        const loanAccounts = accounts
+          .filter((a) => a.accountType === 'LOAN' || a.accountType === 'MORTGAGE')
+          .sort((a, b) => a.name.localeCompare(b.name));
 
         return (
           <div className="max-w-4xl mx-auto">
@@ -998,7 +1006,7 @@ function ImportContent() {
                   onClick={() => {
                     if (parsedData?.securities?.length) {
                       setStep('mapSecurities');
-                    } else if (parsedData?.transferAccounts.length) {
+                    } else if (shouldShowMapAccounts) {
                       setStep('mapAccounts');
                     } else {
                       setStep('review');
@@ -1134,7 +1142,7 @@ function ImportContent() {
                 </Button>
                 <Button
                   onClick={() => {
-                    if (parsedData?.transferAccounts.length) {
+                    if (shouldShowMapAccounts) {
                       setStep('mapAccounts');
                     } else {
                       setStep('review');
@@ -1336,7 +1344,7 @@ function ImportContent() {
                 <Button
                   variant="outline"
                   onClick={() => {
-                    if (parsedData?.transferAccounts.length) {
+                    if (shouldShowMapAccounts) {
                       setStep('mapAccounts');
                     } else if (parsedData?.securities?.length) {
                       setStep('mapSecurities');
@@ -1385,6 +1393,12 @@ function ImportContent() {
               {importResult && (
                 <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-6">
                   <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                    <li>
+                      <strong>File:</strong> {fileName}
+                    </li>
+                    <li>
+                      <strong>Target Account:</strong> {accounts.find(a => a.id === selectedAccountId)?.name || 'Unknown'}
+                    </li>
                     <li>
                       <strong>Imported:</strong> {importResult.imported} transactions
                     </li>
@@ -1483,7 +1497,7 @@ function ImportContent() {
                 // Skip steps that aren't needed
                 if (s === 'mapCategories' && !parsedData?.categories.length) return null;
                 if (s === 'mapSecurities' && !parsedData?.securities?.length) return null;
-                if (s === 'mapAccounts' && !parsedData?.transferAccounts.length) return null;
+                if (s === 'mapAccounts' && !shouldShowMapAccounts) return null;
 
                 return (
                   <div key={s} className="flex items-center">
