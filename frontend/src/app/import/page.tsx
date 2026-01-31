@@ -620,8 +620,13 @@ function ImportContent() {
   }, [categories]);
 
   const getAccountOptions = () => {
-    // Filter out brokerage accounts - transfers should go to cash accounts
-    const transferableAccounts = accounts.filter((a) => !isInvestmentBrokerageAccount(a));
+    // Filter out brokerage accounts, loan accounts, and asset accounts
+    // Brokerage accounts - transfers should go to cash accounts
+    // Loan accounts - balances are built using transactions from other accounts
+    // Asset accounts - not used for transfers
+    const transferableAccounts = accounts.filter(
+      (a) => !isInvestmentBrokerageAccount(a) && a.accountType !== 'LOAN' && a.accountType !== 'ASSET'
+    );
     return [
       { value: '', label: 'Skip (no transfer)' },
       ...transferableAccounts
