@@ -300,8 +300,17 @@ export function TransactionList({
                       Investment
                     </span>
                   ) : transaction.isTransfer ? (
-                    <span className={`inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 ${density === 'dense' ? 'px-1.5 py-0.5' : 'px-2 py-1'}`}>
-                      Transfer
+                    <span
+                      className={`inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 truncate max-w-[160px] ${density === 'dense' ? 'px-1.5 py-0.5' : 'px-2 py-1'}`}
+                      title={transaction.linkedTransaction?.account?.name
+                        ? `Transfer ${Number(transaction.amount) < 0 ? 'to' : 'from'} ${transaction.linkedTransaction.account.name}`
+                        : 'Transfer'}
+                    >
+                      {transaction.linkedTransaction?.account?.name
+                        ? (Number(transaction.amount) < 0
+                            ? `→ ${transaction.linkedTransaction.account.name}`
+                            : `${transaction.linkedTransaction.account.name} →`)
+                        : 'Transfer'}
                     </span>
                   ) : transaction.isSplit ? (
                     <div>
@@ -315,7 +324,15 @@ export function TransactionList({
                             .slice(0, 3)
                             .map((split, idx) => (
                             <div key={split.id || idx} className="truncate max-w-[180px]">
-                              {split.category?.name || 'Uncategorized'}: ${Math.abs(Number(split.amount)).toFixed(2)}
+                              {split.transferAccount ? (
+                                <span className="text-blue-600 dark:text-blue-400">
+                                  {Number(split.amount) < 0
+                                    ? `→ ${split.transferAccount.name}`
+                                    : `${split.transferAccount.name} →`}: ${Math.abs(Number(split.amount)).toFixed(2)}
+                                </span>
+                              ) : (
+                                <>{split.category?.name || 'Uncategorized'}: ${Math.abs(Number(split.amount)).toFixed(2)}</>
+                              )}
                             </div>
                           ))}
                           {transaction.splits.length > 3 && (

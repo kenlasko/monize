@@ -296,6 +296,8 @@ export class TransactionsService {
       .leftJoinAndSelect('transaction.splits', 'splits')
       .leftJoinAndSelect('splits.category', 'splitCategory')
       .leftJoinAndSelect('splits.transferAccount', 'splitTransferAccount')
+      .leftJoinAndSelect('transaction.linkedTransaction', 'linkedTransaction')
+      .leftJoinAndSelect('linkedTransaction.account', 'linkedAccount')
       .where('transaction.userId = :userId', { userId })
       .orderBy('transaction.transactionDate', 'DESC')
       .addOrderBy('transaction.createdAt', 'DESC')
