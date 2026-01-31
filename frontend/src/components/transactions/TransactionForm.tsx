@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
 import { Input } from '@/components/ui/Input';
+import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { Combobox } from '@/components/ui/Combobox';
@@ -55,6 +56,12 @@ interface TransactionFormProps {
 
 // Transaction mode type
 type TransactionMode = 'normal' | 'split' | 'transfer';
+
+// Currency symbol lookup
+const currencySymbols: Record<string, string> = {
+  USD: '$', CAD: '$', EUR: '€', GBP: '£', JPY: '¥', CNY: '¥', AUD: '$', NZD: '$'
+};
+const getCurrencySymbol = (code?: string): string => currencySymbols[(code || 'CAD').toUpperCase()] || '$';
 
 export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCancel }: TransactionFormProps) {
   const [isLoading, setIsLoading] = useState(false);
@@ -123,18 +130,7 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
     }
     return undefined;
   });
-  // Track display value for target amount input (allows free typing, formats on blur)
-  const [targetAmountDisplay, setTargetAmountDisplay] = useState<string>('');
-  // Track display value for main amount input (allows free typing, formats on blur)
-  const [amountDisplay, setAmountDisplay] = useState<string>(() => {
-    if (transaction) {
-      const amount = transaction.isTransfer
-        ? Math.abs(Number(transaction.amount))
-        : Number(transaction.amount);
-      return (Math.round(amount * 100) / 100).toFixed(2);
-    }
-    return '';
-  });
+  // Note: CurrencyInput components manage their own display state internally
 
   const {
     register,
@@ -621,47 +617,13 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
 
           {/* Row 3: Amount and Reference Number */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Amount
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400">
-                  {(() => {
-                    const symbols: Record<string, string> = { USD: '$', CAD: '$', EUR: '€', GBP: '£', JPY: '¥', CNY: '¥', AUD: '$', NZD: '$' };
-                    return symbols[(watchedCurrencyCode || 'CAD').toUpperCase()] || '$';
-                  })()}
-                </span>
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  placeholder="0.00"
-                  className={`block w-full pl-7 pr-3 py-2 rounded-md border ${
-                    errors.amount ? 'border-red-500 dark:border-red-400' : 'border-gray-300 dark:border-gray-600'
-                  } shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-100 dark:focus:border-blue-400 dark:focus:ring-blue-400`}
-                  value={amountDisplay}
-                  onChange={(e) => {
-                    const filtered = e.target.value.replace(/[^0-9.-]/g, '');
-                    setAmountDisplay(filtered);
-                    const parsed = parseFloat(filtered);
-                    if (!isNaN(parsed)) {
-                      setValue('amount', Math.round(parsed * 100) / 100, { shouldValidate: true });
-                    }
-                  }}
-                  onBlur={() => {
-                    const value = parseFloat(amountDisplay);
-                    if (!isNaN(value)) {
-                      const rounded = Math.round(value * 100) / 100;
-                      setAmountDisplay(rounded.toFixed(2));
-                      setValue('amount', rounded, { shouldValidate: true });
-                    }
-                  }}
-                />
-              </div>
-              {errors.amount && (
-                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.amount.message}</p>
-              )}
-            </div>
+            <CurrencyInput
+              label="Amount"
+              prefix={getCurrencySymbol(watchedCurrencyCode)}
+              value={watchedAmount}
+              onChange={(value) => setValue('amount', value ?? 0, { shouldValidate: true })}
+              error={errors.amount?.message}
+            />
             <Input
               label="Reference Number"
               type="text"
@@ -724,47 +686,13 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
               allowCustomValue={true}
               error={errors.payeeName?.message}
             />
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Total Amount
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400">
-                  {(() => {
-                    const symbols: Record<string, string> = { USD: '$', CAD: '$', EUR: '€', GBP: '£', JPY: '¥', CNY: '¥', AUD: '$', NZD: '$' };
-                    return symbols[(watchedCurrencyCode || 'CAD').toUpperCase()] || '$';
-                  })()}
-                </span>
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  placeholder="0.00"
-                  className={`block w-full pl-7 pr-3 py-2 rounded-md border ${
-                    errors.amount ? 'border-red-500 dark:border-red-400' : 'border-gray-300 dark:border-gray-600'
-                  } shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-100 dark:focus:border-blue-400 dark:focus:ring-blue-400`}
-                  value={amountDisplay}
-                  onChange={(e) => {
-                    const filtered = e.target.value.replace(/[^0-9.-]/g, '');
-                    setAmountDisplay(filtered);
-                    const parsed = parseFloat(filtered);
-                    if (!isNaN(parsed)) {
-                      setValue('amount', Math.round(parsed * 100) / 100, { shouldValidate: true });
-                    }
-                  }}
-                  onBlur={() => {
-                    const value = parseFloat(amountDisplay);
-                    if (!isNaN(value)) {
-                      const rounded = Math.round(value * 100) / 100;
-                      setAmountDisplay(rounded.toFixed(2));
-                      setValue('amount', rounded, { shouldValidate: true });
-                    }
-                  }}
-                />
-              </div>
-              {errors.amount && (
-                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.amount.message}</p>
-              )}
-            </div>
+            <CurrencyInput
+              label="Total Amount"
+              prefix={getCurrencySymbol(watchedCurrencyCode)}
+              value={watchedAmount}
+              onChange={(value) => setValue('amount', value ?? 0, { shouldValidate: true })}
+              error={errors.amount?.message}
+            />
           </div>
 
           {/* Row 3: Reference Number */}
@@ -844,93 +772,31 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
           {/* Row 3: Transfer Amount under From, Received Amount under To (for cross-currency) */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Transfer Amount{crossCurrencyInfo ? ` (${crossCurrencyInfo.fromCurrency})` : ''}
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400">
-                  {(() => {
-                    const symbols: Record<string, string> = { USD: '$', CAD: '$', EUR: '€', GBP: '£', JPY: '¥', CNY: '¥', AUD: '$', NZD: '$' };
-                    return symbols[(watchedCurrencyCode || 'CAD').toUpperCase()] || '$';
-                  })()}
-                </span>
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  placeholder="0.00"
-                  className={`block w-full pl-7 pr-3 py-2 rounded-md border ${
-                    errors.amount ? 'border-red-500 dark:border-red-400' : 'border-gray-300 dark:border-gray-600'
-                  } shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-100 dark:focus:border-blue-400 dark:focus:ring-blue-400`}
-                  value={amountDisplay}
-                  onChange={(e) => {
-                    const filtered = e.target.value.replace(/[^0-9.-]/g, '');
-                    setAmountDisplay(filtered);
-                    const parsed = parseFloat(filtered);
-                    if (!isNaN(parsed)) {
-                      setValue('amount', Math.round(Math.abs(parsed) * 100) / 100, { shouldValidate: true });
-                    }
-                  }}
-                  onBlur={() => {
-                    const value = parseFloat(amountDisplay);
-                    if (!isNaN(value)) {
-                      const rounded = Math.round(Math.abs(value) * 100) / 100;
-                      setAmountDisplay(rounded.toFixed(2));
-                      setValue('amount', rounded, { shouldValidate: true });
-                    }
-                  }}
-                />
-              </div>
+              <CurrencyInput
+                label={`Transfer Amount${crossCurrencyInfo ? ` (${crossCurrencyInfo.fromCurrency})` : ''}`}
+                prefix={getCurrencySymbol(watchedCurrencyCode)}
+                value={watchedAmount}
+                onChange={(value) => setValue('amount', value !== undefined ? Math.abs(value) : 0, { shouldValidate: true })}
+                allowNegative={false}
+                error={errors.amount?.message}
+              />
               {!crossCurrencyInfo && (
                 <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                   Amount must be positive for transfers
                 </p>
-              )}
-              {errors.amount && (
-                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.amount.message}</p>
               )}
             </div>
 
             {/* Received Amount - only for cross-currency transfers */}
             {crossCurrencyInfo && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Amount Received ({crossCurrencyInfo.toCurrency})
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400">
-                    {(() => {
-                      const symbols: Record<string, string> = { USD: '$', CAD: '$', EUR: '€', GBP: '£', JPY: '¥', CNY: '¥', AUD: '$', NZD: '$' };
-                      return symbols[crossCurrencyInfo.toCurrency.toUpperCase()] || '$';
-                    })()}
-                  </span>
-                  <input
-                    type="text"
-                    inputMode="decimal"
-                    placeholder="0.00"
-                    value={targetAmountDisplay || (transferTargetAmount !== undefined ? transferTargetAmount.toFixed(2) : '')}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setTargetAmountDisplay(val);
-                      if (val === '') {
-                        setTransferTargetAmount(undefined);
-                      } else {
-                        const parsed = parseFloat(val);
-                        if (!isNaN(parsed)) {
-                          setTransferTargetAmount(parsed);
-                        }
-                      }
-                    }}
-                    onBlur={(e) => {
-                      const value = parseFloat(e.target.value);
-                      if (!isNaN(value)) {
-                        const rounded = Math.round(Math.abs(value) * 100) / 100;
-                        setTransferTargetAmount(rounded);
-                      }
-                      setTargetAmountDisplay(''); // Clear display override to show formatted value
-                    }}
-                    className="block w-full pl-7 pr-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-100"
-                  />
-                </div>
+                <CurrencyInput
+                  label={`Amount Received (${crossCurrencyInfo.toCurrency})`}
+                  prefix={getCurrencySymbol(crossCurrencyInfo.toCurrency)}
+                  value={transferTargetAmount}
+                  onChange={(value) => setTransferTargetAmount(value !== undefined ? Math.abs(value) : undefined)}
+                  allowNegative={false}
+                />
                 <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                   Amount received after currency conversion
                 </p>

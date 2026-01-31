@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { Combobox } from '@/components/ui/Combobox';
 import { SplitEditor, SplitRow, createEmptySplits, toSplitRows } from '@/components/transactions/SplitEditor';
 import { ScheduledTransaction, ScheduledTransactionOverride, CreateScheduledTransactionOverrideData } from '@/types/scheduled-transaction';
@@ -11,6 +12,7 @@ import { Category } from '@/types/category';
 import { Account } from '@/types/account';
 import { scheduledTransactionsApi } from '@/lib/scheduled-transactions';
 import { buildCategoryTree } from '@/lib/categoryUtils';
+import { roundToCents } from '@/lib/format';
 import { useDateFormat } from '@/hooks/useDateFormat';
 
 interface OverrideEditorDialogProps {
@@ -37,23 +39,18 @@ export function OverrideEditorDialog({
   const { formatDate } = useDateFormat();
   const [isLoading, setIsLoading] = useState(false);
   const [amount, setAmount] = useState<number>(0);
-  const [amountDisplay, setAmountDisplay] = useState<string>('0.00');
   const [categoryId, setCategoryId] = useState<string>('');
   const [description, setDescription] = useState<string>('');
   const [isSplit, setIsSplit] = useState(false);
   const [splits, setSplits] = useState<SplitRow[]>([]);
-
-  // Helper to round to 2 decimal places
-  const roundTo2Decimals = (value: number) => Math.round(value * 100) / 100;
 
   // Initialize form with base transaction or existing override values
   useEffect(() => {
     if (isOpen) {
       if (existingOverride) {
         // Use override values
-        const amt = roundTo2Decimals(existingOverride.amount ?? scheduledTransaction.amount);
+        const amt = roundToCents(existingOverride.amount ?? scheduledTransaction.amount);
         setAmount(amt);
-        setAmountDisplay(amt.toFixed(2));
         setCategoryId(existingOverride.categoryId ?? scheduledTransaction.categoryId ?? '');
         setDescription(existingOverride.description ?? scheduledTransaction.description ?? '');
         setIsSplit(existingOverride.isSplit ?? scheduledTransaction.isSplit);
@@ -69,9 +66,8 @@ export function OverrideEditorDialog({
         }
       } else {
         // Use base transaction values
-        const amt = roundTo2Decimals(scheduledTransaction.amount);
+        const amt = roundToCents(scheduledTransaction.amount);
         setAmount(amt);
-        setAmountDisplay(amt.toFixed(2));
         setCategoryId(scheduledTransaction.categoryId ?? '');
         setDescription(scheduledTransaction.description ?? '');
         setIsSplit(scheduledTransaction.isSplit);
@@ -155,27 +151,9 @@ export function OverrideEditorDialog({
     }
   };
 
-  const handleAmountDisplayChange = (displayValue: string) => {
-    // Allow user to type freely - only filter invalid characters
-    const filtered = displayValue.replace(/[^0-9.-]/g, '');
-    setAmountDisplay(filtered);
-    // Update numeric value for splits/validation
-    const numericValue = parseFloat(filtered) || 0;
-    setAmount(roundTo2Decimals(numericValue));
-  };
-
-  const handleAmountBlur = () => {
-    // Format display value on blur
-    const numericValue = roundTo2Decimals(parseFloat(amountDisplay) || 0);
-    setAmount(numericValue);
-    setAmountDisplay(numericValue.toFixed(2));
-  };
-
   // Handler for SplitEditor to update amount
   const handleAmountChange = (newAmount: number) => {
-    const rounded = roundTo2Decimals(newAmount);
-    setAmount(rounded);
-    setAmountDisplay(rounded.toFixed(2));
+    setAmount(roundToCents(newAmount));
   };
 
   if (!isOpen) return null;
@@ -213,24 +191,12 @@ export function OverrideEditorDialog({
 
           <div className="space-y-4">
             {/* Amount */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Amount
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400">
-                  $
-                </span>
-                <Input
-                  type="text"
-                  inputMode="decimal"
-                  value={amountDisplay}
-                  onChange={(e) => handleAmountDisplayChange(e.target.value)}
-                  onBlur={handleAmountBlur}
-                  className="pl-7"
-                />
-              </div>
-            </div>
+            <CurrencyInput
+              label="Amount"
+              prefix="$"
+              value={amount}
+              onChange={(value) => setAmount(value ?? 0)}
+            />
 
             {/* Split toggle */}
             <div className="flex items-center">

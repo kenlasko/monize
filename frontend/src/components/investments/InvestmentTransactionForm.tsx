@@ -7,6 +7,8 @@ import { z } from 'zod';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { CurrencyInput } from '@/components/ui/CurrencyInput';
+import { NumericInput } from '@/components/ui/NumericInput';
 import { Select } from '@/components/ui/Select';
 import { investmentsApi } from '@/lib/investments';
 import { Account } from '@/types/account';
@@ -342,60 +344,44 @@ export function InvestmentTransactionForm({
       {/* Quantity and Price - for buy/sell/reinvest */}
       {needsQuantityPrice && (
         <div className="grid grid-cols-2 gap-4">
-          <Input
+          <NumericInput
             label="Quantity (Shares)"
-            type="number"
-            step="0.00000001"
-            min="0"
+            value={watchedQuantity}
+            onChange={(value) => setValue('quantity', value ?? 0, { shouldValidate: true })}
+            decimalPlaces={8}
+            min={0}
             error={errors.quantity?.message}
-            {...register('quantity')}
           />
-          <Input
+          <NumericInput
             label="Price per Share"
-            type="number"
-            step="0.0001"
-            min="0"
+            value={watchedPrice}
+            onChange={(value) => setValue('price', value ?? 0, { shouldValidate: true })}
+            decimalPlaces={4}
+            min={0}
             error={errors.price?.message}
-            {...register('price')}
           />
         </div>
       )}
 
       {/* Amount - for dividend/interest/capital gain/transfers */}
       {isAmountOnly && (
-        <Input
+        <CurrencyInput
           label="Amount"
-          type="text"
-          inputMode="decimal"
+          value={watchedPrice}
+          onChange={(value) => setValue('price', value ?? 0, { shouldValidate: true })}
           error={errors.price?.message}
-          {...register('price')}
-          onBlur={(e) => {
-            const value = parseFloat(e.target.value);
-            if (!isNaN(value) && value >= 0) {
-              const rounded = Math.round(value * 100) / 100;
-              e.target.value = rounded.toFixed(2);
-              setValue('price', rounded, { shouldValidate: true });
-            }
-          }}
+          allowNegative={false}
         />
       )}
 
       {/* Commission */}
       {(needsQuantityPrice || watchedAction === 'SPLIT') && (
-        <Input
+        <CurrencyInput
           label="Commission / Fees"
-          type="text"
-          inputMode="decimal"
+          value={watchedCommission}
+          onChange={(value) => setValue('commission', value ?? 0, { shouldValidate: true })}
           error={errors.commission?.message}
-          {...register('commission')}
-          onBlur={(e) => {
-            const value = parseFloat(e.target.value);
-            if (!isNaN(value) && value >= 0) {
-              const rounded = Math.round(value * 100) / 100;
-              e.target.value = rounded.toFixed(2);
-              setValue('commission', rounded, { shouldValidate: true });
-            }
-          }}
+          allowNegative={false}
         />
       )}
 

@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
 import { Input } from '@/components/ui/Input';
+import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { Button } from '@/components/ui/Button';
 import { transactionsApi } from '@/lib/transactions';
 import { Account } from '@/types/account';
@@ -115,35 +116,13 @@ export function AssetValueChangeForm({ account, transaction, onSuccess, onCancel
       />
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          Value Change
-        </label>
-        <input
-          type="text"
-          inputMode="decimal"
-          placeholder="Enter positive to increase, negative to decrease"
-          className={`block w-full px-3 py-2 rounded-md border ${
-            errors.amount ? 'border-red-500 dark:border-red-400' : 'border-gray-300 dark:border-gray-600'
-          } shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-100 dark:focus:border-blue-400 dark:focus:ring-blue-400`}
-          {...register('amount', {
-            setValueAs: (v) => {
-              if (v === '' || v === undefined) return undefined;
-              const parsed = parseFloat(v);
-              return isNaN(parsed) ? undefined : parsed;
-            },
-          })}
-          onBlur={(e) => {
-            const value = parseFloat(e.target.value);
-            if (!isNaN(value)) {
-              const rounded = Math.round(value * 100) / 100;
-              e.target.value = rounded.toFixed(2);
-              setValue('amount', rounded, { shouldValidate: true });
-            }
-          }}
+        <CurrencyInput
+          label="Value Change"
+          value={watchedAmount}
+          onChange={(value) => setValue('amount', value ?? 0, { shouldValidate: true })}
+          error={errors.amount?.message}
+          allowNegative={true}
         />
-        {errors.amount && (
-          <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.amount.message}</p>
-        )}
         <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
           Enter a positive number to increase value, negative to decrease
         </p>

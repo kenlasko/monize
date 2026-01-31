@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useState, useEffect, useCallback } from 'react';
 import { Input } from '@/components/ui/Input';
+import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
 import { Combobox } from '@/components/ui/Combobox';
@@ -163,6 +164,7 @@ export function AccountForm({ account, onSubmit, onCancel }: AccountFormProps) {
   const watchedAccountType = watch('accountType');
   const watchedCreateInvestmentPair = watch('createInvestmentPair');
   const watchedOpeningBalance = watch('openingBalance');
+  const watchedCreditLimit = watch('creditLimit');
   const watchedInterestRate = watch('interestRate');
   const watchedPaymentAmount = watch('paymentAmount');
   const watchedPaymentFrequency = watch('paymentFrequency');
@@ -383,27 +385,13 @@ export function AccountForm({ account, onSubmit, onCancel }: AccountFormProps) {
           {...register('currencyCode')}
         />
 
-        <Input
+        <CurrencyInput
           label={isLoanAccount ? 'Loan Amount' : 'Opening Balance'}
-          type="text"
-          inputMode="decimal"
           prefix={currencySymbol}
+          value={watchedOpeningBalance}
+          onChange={(value) => setValue('openingBalance', value, { shouldValidate: true })}
           error={errors.openingBalance?.message}
-          {...register('openingBalance', {
-            setValueAs: (v) => {
-              if (v === '' || v === undefined) return undefined;
-              const parsed = parseFloat(v);
-              return isNaN(parsed) ? undefined : parsed;
-            },
-          })}
-          onBlur={(e) => {
-            const value = parseFloat(e.target.value);
-            if (!isNaN(value)) {
-              const rounded = Math.round(value * 100) / 100;
-              e.target.value = rounded.toFixed(2);
-              setValue('openingBalance', rounded, { shouldValidate: true });
-            }
-          }}
+          allowNegative={false}
         />
       </div>
 
@@ -425,27 +413,13 @@ export function AccountForm({ account, onSubmit, onCancel }: AccountFormProps) {
       {!isAssetAccount && (
         <div className="grid grid-cols-2 gap-4">
           {!isLoanAccount && (
-            <Input
+            <CurrencyInput
               label="Credit Limit (optional)"
-              type="text"
-              inputMode="decimal"
               prefix={currencySymbol}
+              value={watchedCreditLimit}
+              onChange={(value) => setValue('creditLimit', value, { shouldValidate: true })}
               error={errors.creditLimit?.message}
-              {...register('creditLimit', {
-                setValueAs: (v) => {
-                  if (v === '' || v === undefined) return undefined;
-                  const parsed = parseFloat(v);
-                  return isNaN(parsed) ? undefined : parsed;
-                },
-              })}
-              onBlur={(e) => {
-                const value = parseFloat(e.target.value);
-                if (!isNaN(value)) {
-                  const rounded = Math.round(value * 100) / 100;
-                  e.target.value = rounded.toFixed(2);
-                  setValue('creditLimit', rounded, { shouldValidate: true });
-                }
-              }}
+              allowNegative={false}
             />
           )}
 
@@ -469,27 +443,13 @@ export function AccountForm({ account, onSubmit, onCancel }: AccountFormProps) {
           </h3>
 
           <div className="grid grid-cols-2 gap-4">
-            <Input
+            <CurrencyInput
               label="Payment Amount (required)"
-              type="text"
-              inputMode="decimal"
               prefix={currencySymbol}
+              value={watchedPaymentAmount}
+              onChange={(value) => setValue('paymentAmount', value, { shouldValidate: true })}
               error={errors.paymentAmount?.message}
-              {...register('paymentAmount', {
-                setValueAs: (v) => {
-                  if (v === '' || v === undefined) return undefined;
-                  const parsed = parseFloat(v);
-                  return isNaN(parsed) ? undefined : parsed;
-                },
-              })}
-              onBlur={(e) => {
-                const value = parseFloat(e.target.value);
-                if (!isNaN(value)) {
-                  const rounded = Math.round(value * 100) / 100;
-                  e.target.value = rounded.toFixed(2);
-                  setValue('paymentAmount', rounded, { shouldValidate: true });
-                }
-              }}
+              allowNegative={false}
             />
 
             <Select

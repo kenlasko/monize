@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
 import { Input } from '@/components/ui/Input';
+import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { Combobox } from '@/components/ui/Combobox';
@@ -19,6 +20,7 @@ import { Payee } from '@/types/payee';
 import { Category } from '@/types/category';
 import { Account } from '@/types/account';
 import { buildCategoryTree } from '@/lib/categoryUtils';
+import { roundToCents } from '@/lib/format';
 
 const optionalUuid = z.preprocess(
   (val) => (val === '' ? undefined : val),
@@ -112,14 +114,7 @@ export function ScheduledTransactionForm({
   );
 
   // Helper to round to 2 decimal places
-  const roundTo2Decimals = (value: number) => Math.round(value * 100) / 100;
-
-  // Separate display state for amount field to allow free typing
-  const [amountDisplay, setAmountDisplay] = useState<string>(
-    scheduledTransaction
-      ? roundTo2Decimals(Number(scheduledTransaction.amount)).toFixed(2)
-      : ''
-  );
+  // Note: CurrencyInput handles display state and rounding internally
 
   const {
     register,
@@ -231,9 +226,9 @@ export function ScheduledTransactionForm({
           const absAmount = Math.abs(watchedAmount);
           const newAmount = category.isIncome ? absAmount : -absAmount;
           if (newAmount !== watchedAmount) {
-            const rounded = roundTo2Decimals(newAmount);
+            const rounded = roundToCents(newAmount);
             setValue('amount', rounded, { shouldDirty: true, shouldValidate: true });
-            setAmountDisplay(rounded.toFixed(2));
+            // CurrencyInput syncs display from value prop
           }
         }
       }
@@ -270,9 +265,9 @@ export function ScheduledTransactionForm({
         const absAmount = Math.abs(watchedAmount);
         const newAmount = category.isIncome ? absAmount : -absAmount;
         if (newAmount !== watchedAmount) {
-          const rounded = roundTo2Decimals(newAmount);
+          const rounded = roundToCents(newAmount);
           setValue('amount', rounded, { shouldDirty: true, shouldValidate: true });
-          setAmountDisplay(rounded.toFixed(2));
+          // CurrencyInput syncs display from value prop
         }
       }
     } else {
@@ -318,9 +313,9 @@ export function ScheduledTransactionForm({
   };
 
   const handleTransactionAmountChange = (amount: number) => {
-    const rounded = roundTo2Decimals(amount);
+    const rounded = roundToCents(amount);
     setValue('amount', rounded, { shouldDirty: true, shouldValidate: true });
-    setAmountDisplay(rounded.toFixed(2));
+    // CurrencyInput syncs display from value prop
   };
 
   const onSubmit = async (data: ScheduledTransactionFormData) => {
@@ -453,7 +448,6 @@ export function ScheduledTransactionForm({
             if (watchedAmount > 0) {
               const newAmount = -Math.abs(watchedAmount);
               setValue('amount', newAmount, { shouldDirty: true });
-              setAmountDisplay(newAmount.toFixed(2));
             }
           }}
           className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
@@ -495,42 +489,13 @@ export function ScheduledTransactionForm({
         />
 
         {/* Amount */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            {isSplit ? 'Total Amount' : 'Amount'}
-          </label>
-          <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400">
-              {currencySymbol}
-            </span>
-            <input
-              type="text"
-              inputMode="decimal"
-              placeholder="0.00"
-              className={`block w-full pl-7 pr-3 py-2 rounded-md border ${
-                errors.amount ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-              } bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm focus:border-blue-500 focus:ring-blue-500`}
-              value={amountDisplay}
-              onChange={(e) => {
-                // Allow user to type freely - only filter invalid characters
-                const filtered = e.target.value.replace(/[^0-9.-]/g, '');
-                setAmountDisplay(filtered);
-                // Update form value for validation/splits
-                const numericValue = parseFloat(filtered) || 0;
-                setValue('amount', roundTo2Decimals(numericValue), { shouldValidate: true });
-              }}
-              onBlur={() => {
-                // Format display value on blur
-                const numericValue = roundTo2Decimals(parseFloat(amountDisplay) || 0);
-                setValue('amount', numericValue, { shouldValidate: true });
-                setAmountDisplay(numericValue.toFixed(2));
-              }}
-            />
-          </div>
-          {errors.amount && (
-            <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.amount.message}</p>
-          )}
-        </div>
+        <CurrencyInput
+          label={isSplit ? 'Total Amount' : 'Amount'}
+          prefix={currencySymbol}
+          value={watchedAmount}
+          onChange={(value) => setValue('amount', value ?? 0, { shouldValidate: true })}
+          error={errors.amount?.message}
+        />
 
         {/* Transfer: To Account */}
         {transactionType === 'transfer' ? (

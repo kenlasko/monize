@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { Input } from '@/components/ui/Input';
+import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { Combobox } from '@/components/ui/Combobox';
@@ -9,6 +10,7 @@ import { Category } from '@/types/category';
 import { Account } from '@/types/account';
 import { CreateSplitData } from '@/types/transaction';
 import { buildCategoryTree } from '@/lib/categoryUtils';
+import { roundToCents } from '@/lib/format';
 
 export type SplitType = 'category' | 'transfer';
 
@@ -57,8 +59,6 @@ export function SplitEditor({
 }: SplitEditorProps) {
   const currencySymbol = getCurrencySymbol(currencyCode);
   const [localSplits, setLocalSplits] = useState<SplitRow[]>(splits);
-  // Track display values for amount inputs (allows free typing, formats on blur)
-  const [amountDisplays, setAmountDisplays] = useState<Record<string, string>>({});
 
   // Transfer support is only available when accounts are provided
   const supportsTransfers = accounts.length > 0 && sourceAccountId;
@@ -286,35 +286,13 @@ export function SplitEditor({
                   )}
                 </td>
                 <td className="px-3 py-2">
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 text-sm">
-                      {currencySymbol}
-                    </span>
-                    <Input
-                      type="text"
-                      inputMode="decimal"
-                      value={amountDisplays[split.id] ?? split.amount.toFixed(2)}
-                      onChange={(e) => {
-                        const filtered = e.target.value.replace(/[^0-9.-]/g, '');
-                        setAmountDisplays(prev => ({ ...prev, [split.id]: filtered }));
-                        handleSplitChange(index, 'amount', parseFloat(filtered) || 0);
-                      }}
-                      onBlur={(e) => {
-                        // Round to 2 decimal places on blur and clear display override
-                        const rounded = Math.round(parseFloat(e.target.value) * 100) / 100;
-                        if (!isNaN(rounded)) {
-                          handleSplitChange(index, 'amount', rounded);
-                        }
-                        setAmountDisplays(prev => {
-                          const next = { ...prev };
-                          delete next[split.id];
-                          return next;
-                        });
-                      }}
-                      disabled={disabled}
-                      className="w-full pl-7"
-                    />
-                  </div>
+                  <CurrencyInput
+                    prefix={currencySymbol}
+                    value={split.amount}
+                    onChange={(value) => handleSplitChange(index, 'amount', roundToCents(value ?? 0))}
+                    disabled={disabled}
+                    className="w-full"
+                  />
                 </td>
                 <td className="px-3 py-2">
                   <Input

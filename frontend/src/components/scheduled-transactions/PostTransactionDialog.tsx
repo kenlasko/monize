@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { Combobox } from '@/components/ui/Combobox';
 import { SplitEditor, SplitRow, createEmptySplits, toSplitRows } from '@/components/transactions/SplitEditor';
 import { ScheduledTransaction, PostScheduledTransactionData } from '@/types/scheduled-transaction';
@@ -11,6 +12,7 @@ import { Category } from '@/types/category';
 import { Account } from '@/types/account';
 import { scheduledTransactionsApi } from '@/lib/scheduled-transactions';
 import { buildCategoryTree } from '@/lib/categoryUtils';
+import { roundToCents } from '@/lib/format';
 import { useDateFormat } from '@/hooks/useDateFormat';
 
 interface PostTransactionDialogProps {
@@ -33,15 +35,11 @@ export function PostTransactionDialog({
   const { formatDate } = useDateFormat();
   const [isLoading, setIsLoading] = useState(false);
   const [amount, setAmount] = useState<number>(0);
-  const [amountDisplay, setAmountDisplay] = useState<string>('0.00');
   const [categoryId, setCategoryId] = useState<string>('');
   const [description, setDescription] = useState<string>('');
   const [isSplit, setIsSplit] = useState(false);
   const [splits, setSplits] = useState<SplitRow[]>([]);
   const [transactionDate, setTransactionDate] = useState<string>('');
-
-  // Helper to round to 2 decimal places
-  const roundTo2Decimals = (value: number) => Math.round(value * 100) / 100;
 
   // Initialize form with transaction values (including override if exists)
   useEffect(() => {
@@ -49,11 +47,10 @@ export function PostTransactionDialog({
       const nextOverride = scheduledTransaction.nextOverride;
 
       // Use override values if they exist, otherwise use base transaction values
-      const amt = roundTo2Decimals(
+      const amt = roundToCents(
         nextOverride?.amount ?? scheduledTransaction.amount
       );
       setAmount(amt);
-      setAmountDisplay(amt.toFixed(2));
       setCategoryId(nextOverride?.categoryId ?? scheduledTransaction.categoryId ?? '');
       setDescription(nextOverride?.description ?? scheduledTransaction.description ?? '');
       setIsSplit(nextOverride?.isSplit ?? scheduledTransaction.isSplit);
@@ -135,23 +132,8 @@ export function PostTransactionDialog({
     }
   };
 
-  const handleAmountDisplayChange = (displayValue: string) => {
-    const filtered = displayValue.replace(/[^0-9.-]/g, '');
-    setAmountDisplay(filtered);
-    const numericValue = parseFloat(filtered) || 0;
-    setAmount(roundTo2Decimals(numericValue));
-  };
-
-  const handleAmountBlur = () => {
-    const numericValue = roundTo2Decimals(parseFloat(amountDisplay) || 0);
-    setAmount(numericValue);
-    setAmountDisplay(numericValue.toFixed(2));
-  };
-
   const handleAmountChange = (newAmount: number) => {
-    const rounded = roundTo2Decimals(newAmount);
-    setAmount(rounded);
-    setAmountDisplay(rounded.toFixed(2));
+    setAmount(roundToCents(newAmount));
   };
 
   if (!isOpen) return null;
@@ -210,24 +192,12 @@ export function PostTransactionDialog({
             </div>
 
             {/* Amount */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Amount
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400">
-                  $
-                </span>
-                <Input
-                  type="text"
-                  inputMode="decimal"
-                  value={amountDisplay}
-                  onChange={(e) => handleAmountDisplayChange(e.target.value)}
-                  onBlur={handleAmountBlur}
-                  className="pl-7"
-                />
-              </div>
-            </div>
+            <CurrencyInput
+              label="Amount"
+              prefix="$"
+              value={amount}
+              onChange={(value) => setAmount(value ?? 0)}
+            />
 
             {/* Transfer indicator - shown instead of category for transfers */}
             {scheduledTransaction.isTransfer ? (
