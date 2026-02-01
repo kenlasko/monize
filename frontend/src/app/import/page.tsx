@@ -762,17 +762,8 @@ function ImportContent() {
     ];
   };
 
-  // Check if ALL files are going to asset accounts (skip transfer mapping if so)
-  // For single file, check if the selected account is an asset account
-  // For bulk import, check if all files are going to asset accounts
-  const allFilesAreAssetImports = importFiles.length > 0 && importFiles.every((f) => {
-    const targetAccount = accounts.find((a) => a.id === f.selectedAccountId);
-    return targetAccount?.accountType === 'ASSET';
-  });
-
   // Helper to determine if mapAccounts step should be shown
-  // Show if there are transfer accounts AND not all files are asset imports
-  const shouldShowMapAccounts = accountMappings.length > 0 && !allFilesAreAssetImports;
+  const shouldShowMapAccounts = accountMappings.length > 0;
 
   const accountTypeOptions = [
     { value: 'CHEQUING', label: 'Chequing' },

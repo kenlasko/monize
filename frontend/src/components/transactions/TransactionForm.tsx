@@ -554,8 +554,7 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
                 ...accounts
                   .filter(account =>
                     !account.isClosed &&
-                    account.accountSubType !== 'INVESTMENT_BROKERAGE' &&
-                    account.accountType !== 'ASSET'
+                    account.accountSubType !== 'INVESTMENT_BROKERAGE'
                   )
                   .sort((a, b) => a.name.localeCompare(b.name))
                   .map(account => ({
@@ -649,8 +648,7 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
                 ...accounts
                   .filter(account =>
                     !account.isClosed &&
-                    account.accountSubType !== 'INVESTMENT_BROKERAGE' &&
-                    account.accountType !== 'ASSET'
+                    account.accountSubType !== 'INVESTMENT_BROKERAGE'
                   )
                   .sort((a, b) => a.name.localeCompare(b.name))
                   .map(account => ({
@@ -732,8 +730,7 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
                 ...accounts
                   .filter(account =>
                     !account.isClosed &&
-                    account.accountSubType !== 'INVESTMENT_BROKERAGE' &&
-                    account.accountType !== 'ASSET'
+                    account.accountSubType !== 'INVESTMENT_BROKERAGE'
                   )
                   .sort((a, b) => a.name.localeCompare(b.name))
                   .map(account => ({
@@ -757,8 +754,7 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
                   .filter(account =>
                     !account.isClosed &&
                     account.id !== watchedAccountId &&
-                    account.accountSubType !== 'INVESTMENT_BROKERAGE' &&
-                    account.accountType !== 'ASSET'
+                    account.accountSubType !== 'INVESTMENT_BROKERAGE'
                   )
                   .sort((a, b) => a.name.localeCompare(b.name))
                   .map(account => ({

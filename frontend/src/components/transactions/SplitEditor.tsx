@@ -81,7 +81,6 @@ export function SplitEditor({
       .filter(a =>
         !a.isClosed &&
         a.id !== sourceAccountId &&
-        a.accountType !== 'ASSET' &&
         a.accountSubType !== 'INVESTMENT_BROKERAGE'
       )
       .sort((a, b) => a.name.localeCompare(b.name))
