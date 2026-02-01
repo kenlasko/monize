@@ -19,6 +19,8 @@ interface TransactionListProps {
   onRefresh?: () => void;
   /** Callback to update a single transaction in place without full refresh */
   onTransactionUpdate?: (transaction: Transaction) => void;
+  /** Callback when clicking on a payee name to edit it */
+  onPayeeClick?: (payeeId: string) => void;
   density?: DensityLevel;
   onDensityChange?: (density: DensityLevel) => void;
   /** Starting balance for running balance calculation (balance after first tx on page) */
@@ -39,6 +41,7 @@ export function TransactionList({
   onDelete,
   onRefresh,
   onTransactionUpdate,
+  onPayeeClick,
   density: propDensity,
   onDensityChange,
   startingBalance,
@@ -366,12 +369,22 @@ export function TransactionList({
                   {transaction.account?.name || '-'}
                 </td>
                 <td className={`${cellPadding} max-w-[120px] sm:max-w-none`}>
-                  <div
-                    className={`text-sm font-medium text-gray-900 dark:text-gray-100 truncate sm:max-w-[280px] ${isVoid ? 'line-through' : ''}`}
-                    title={transaction.payeeName || undefined}
-                  >
-                    {transaction.payeeName || '-'}
-                  </div>
+                  {transaction.payeeId && onPayeeClick ? (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onPayeeClick(transaction.payeeId!); }}
+                      className={`text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline truncate sm:max-w-[280px] text-left ${isVoid ? 'line-through' : ''}`}
+                      title={`Edit payee: ${transaction.payeeName}`}
+                    >
+                      {transaction.payeeName || '-'}
+                    </button>
+                  ) : (
+                    <div
+                      className={`text-sm font-medium text-gray-900 dark:text-gray-100 truncate sm:max-w-[280px] ${isVoid ? 'line-through' : ''}`}
+                      title={transaction.payeeName || undefined}
+                    >
+                      {transaction.payeeName || '-'}
+                    </div>
+                  )}
                   {density === 'normal' && transaction.referenceNumber && (
                     <div className="text-xs text-gray-500 dark:text-gray-400">
                       Ref: {transaction.referenceNumber}

@@ -5,9 +5,11 @@ import {
   BadRequestException,
   Inject,
   forwardRef,
+  Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, LessThanOrEqual } from 'typeorm';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { ScheduledTransaction, FrequencyType } from './entities/scheduled-transaction.entity';
 import { ScheduledTransactionSplit } from './entities/scheduled-transaction-split.entity';
 import { ScheduledTransactionOverride } from './entities/scheduled-transaction-override.entity';
@@ -29,6 +31,8 @@ import {
 
 @Injectable()
 export class ScheduledTransactionsService {
+  private readonly logger = new Logger(ScheduledTransactionsService.name);
+
   constructor(
     @InjectRepository(ScheduledTransaction)
     private scheduledTransactionsRepository: Repository<ScheduledTransaction>,
@@ -42,6 +46,61 @@ export class ScheduledTransactionsService {
     private accountsService: AccountsService,
     private transactionsService: TransactionsService,
   ) {}
+
+  /**
+   * Cron job to automatically post scheduled transactions that are due and have autoPost enabled.
+   * Runs every hour at minute 5 (e.g., 8:05, 9:05, etc.)
+   */
+  @Cron('5 * * * *')
+  async processAutoPostTransactions(): Promise<void> {
+    this.logger.log('Starting auto-post processing for scheduled transactions');
+
+    try {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      // Find all due scheduled transactions with autoPost enabled
+      const dueTransactions = await this.scheduledTransactionsRepository.find({
+        where: {
+          isActive: true,
+          autoPost: true,
+          nextDueDate: LessThanOrEqual(today),
+        },
+        relations: ['account', 'payee', 'category', 'transferAccount', 'splits', 'splits.category', 'splits.transferAccount'],
+        order: { nextDueDate: 'ASC' },
+      });
+
+      if (dueTransactions.length === 0) {
+        this.logger.log('No auto-post transactions due');
+        return;
+      }
+
+      this.logger.log(`Found ${dueTransactions.length} auto-post transaction(s) to process`);
+
+      let successCount = 0;
+      let errorCount = 0;
+
+      for (const scheduled of dueTransactions) {
+        try {
+          await this.post(scheduled.userId, scheduled.id);
+          successCount++;
+          this.logger.log(`Auto-posted: "${scheduled.name}" (ID: ${scheduled.id})`);
+        } catch (error) {
+          errorCount++;
+          this.logger.error(
+            `Failed to auto-post "${scheduled.name}" (ID: ${scheduled.id}): ${error.message}`,
+            error.stack,
+          );
+        }
+      }
+
+      this.logger.log(
+        `Auto-post processing complete: ${successCount} succeeded, ${errorCount} failed`,
+      );
+    } catch (error) {
+      this.logger.error('Auto-post processing failed', error.stack);
+    }
+  }
 
   async create(
     userId: string,

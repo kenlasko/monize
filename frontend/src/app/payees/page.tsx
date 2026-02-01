@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
 import { Pagination } from '@/components/ui/Pagination';
 import { PayeeForm } from '@/components/payees/PayeeForm';
-import { PayeeList, DensityLevel } from '@/components/payees/PayeeList';
+import { PayeeList, DensityLevel, SortField, SortDirection } from '@/components/payees/PayeeList';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { payeesApi } from '@/lib/payees';
 import { categoriesApi } from '@/lib/categories';
@@ -24,6 +24,8 @@ export default function PayeesPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [listDensity, setListDensity] = useLocalStorage<DensityLevel>('moneymate-payees-density', 'normal');
+  const [sortField, setSortField] = useState<SortField>('name');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 
   const loadData = async () => {
     setIsLoading(true);
@@ -96,12 +98,40 @@ export default function PayeesPage() {
     );
   }, [payees, searchQuery]);
 
+  // Sort filtered payees
+  const sortedPayees = useMemo(() => {
+    return [...filteredPayees].sort((a, b) => {
+      let comparison = 0;
+      if (sortField === 'name') {
+        comparison = a.name.localeCompare(b.name);
+      } else if (sortField === 'category') {
+        const catA = a.defaultCategory?.name || '';
+        const catB = b.defaultCategory?.name || '';
+        comparison = catA.localeCompare(catB);
+      } else if (sortField === 'count') {
+        comparison = (a.transactionCount ?? 0) - (b.transactionCount ?? 0);
+      }
+      return sortDirection === 'asc' ? comparison : -comparison;
+    });
+  }, [filteredPayees, sortField, sortDirection]);
+
   // Pagination logic
-  const totalPages = Math.ceil(filteredPayees.length / PAGE_SIZE);
+  const totalPages = Math.ceil(sortedPayees.length / PAGE_SIZE);
   const paginatedPayees = useMemo(() => {
     const start = (currentPage - 1) * PAGE_SIZE;
-    return filteredPayees.slice(start, start + PAGE_SIZE);
-  }, [filteredPayees, currentPage]);
+    return sortedPayees.slice(start, start + PAGE_SIZE);
+  }, [sortedPayees, currentPage]);
+
+  // Handle sort change from PayeeList
+  const handleSort = useCallback((field: SortField) => {
+    if (sortField === field) {
+      setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortField(field);
+      setSortDirection(field === 'count' ? 'desc' : 'asc');
+    }
+    setCurrentPage(1); // Reset to first page when sorting changes
+  }, [sortField]);
 
   // Reset to page 1 when search changes
   useEffect(() => {
@@ -266,6 +296,9 @@ export default function PayeesPage() {
               onRefresh={loadData}
               density={listDensity}
               onDensityChange={setListDensity}
+              sortField={sortField}
+              sortDirection={sortDirection}
+              onSort={handleSort}
             />
           )}
         </div>
@@ -276,7 +309,7 @@ export default function PayeesPage() {
             <Pagination
               currentPage={currentPage}
               totalPages={totalPages}
-              totalItems={filteredPayees.length}
+              totalItems={sortedPayees.length}
               pageSize={PAGE_SIZE}
               onPageChange={goToPage}
               itemName="payees"
@@ -285,9 +318,9 @@ export default function PayeesPage() {
         )}
 
         {/* Show total count when only one page */}
-        {totalPages <= 1 && filteredPayees.length > 0 && (
+        {totalPages <= 1 && sortedPayees.length > 0 && (
           <div className="mt-4 text-sm text-gray-500 dark:text-gray-400 text-center">
-            {filteredPayees.length} payee{filteredPayees.length !== 1 ? 's' : ''}
+            {sortedPayees.length} payee{sortedPayees.length !== 1 ? 's' : ''}
           </div>
         )}
       </div>

@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/Input';
 import { Pagination } from '@/components/ui/Pagination';
 import { TransactionForm } from '@/components/transactions/TransactionForm';
 import { TransactionList, DensityLevel } from '@/components/transactions/TransactionList';
+import { PayeeForm } from '@/components/payees/PayeeForm';
 import { transactionsApi } from '@/lib/transactions';
 import { accountsApi } from '@/lib/accounts';
 import { categoriesApi } from '@/lib/categories';
@@ -79,6 +80,8 @@ export default function TransactionsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | undefined>();
+  const [showPayeeForm, setShowPayeeForm] = useState(false);
+  const [editingPayee, setEditingPayee] = useState<Payee | undefined>();
   const [listDensity, setListDensity] = useLocalStorage<DensityLevel>('moneymate-transactions-density', 'normal');
 
   // Pagination state - initialize from URL
@@ -392,6 +395,43 @@ export default function TransactionsPage() {
     setEditingTransaction(undefined);
   };
 
+  const handlePayeeClick = async (payeeId: string) => {
+    try {
+      const payee = await payeesApi.getById(payeeId);
+      setEditingPayee(payee);
+      setShowPayeeForm(true);
+    } catch (error) {
+      toast.error('Failed to load payee details');
+      console.error(error);
+    }
+  };
+
+  const handlePayeeFormSubmit = async (data: any) => {
+    if (!editingPayee) return;
+    try {
+      const cleanedData = {
+        ...data,
+        defaultCategoryId: data.defaultCategoryId || undefined,
+        notes: data.notes || undefined,
+      };
+      await payeesApi.update(editingPayee.id, cleanedData);
+      toast.success('Payee updated successfully');
+      setShowPayeeForm(false);
+      setEditingPayee(undefined);
+      // Reload payees list and transactions to reflect any changes
+      const payeesData = await payeesApi.getAll();
+      setPayees(payeesData);
+    } catch (error: any) {
+      const message = error.response?.data?.message || 'Failed to update payee';
+      toast.error(message);
+    }
+  };
+
+  const handlePayeeFormCancel = () => {
+    setShowPayeeForm(false);
+    setEditingPayee(undefined);
+  };
+
   const goToPage = (page: number) => {
     if (page >= 1 && (!pagination || page <= pagination.totalPages)) {
       setCurrentPage(page);
@@ -507,6 +547,23 @@ export default function TransactionsPage() {
                 defaultAccountId={filterAccountIds.length === 1 ? filterAccountIds[0] : undefined}
                 onSuccess={handleFormSuccess}
                 onCancel={handleFormCancel}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Payee Edit Modal */}
+        {showPayeeForm && editingPayee && (
+          <div className="fixed inset-0 bg-gray-500 dark:bg-gray-900 bg-opacity-75 dark:bg-opacity-80 flex items-center justify-center p-4 z-50">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl dark:shadow-gray-700/50 max-w-lg w-full max-h-[90vh] overflow-y-auto p-6">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
+                Edit Payee
+              </h2>
+              <PayeeForm
+                payee={editingPayee}
+                categories={categories}
+                onSubmit={handlePayeeFormSubmit}
+                onCancel={handlePayeeFormCancel}
               />
             </div>
           </div>
@@ -808,6 +865,7 @@ export default function TransactionsPage() {
               onEdit={handleEdit}
               onRefresh={loadData}
               onTransactionUpdate={handleTransactionUpdate}
+              onPayeeClick={handlePayeeClick}
               density={listDensity}
               onDensityChange={setListDensity}
               isSingleAccountView={filterAccountIds.length === 1}

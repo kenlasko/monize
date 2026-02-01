@@ -11,8 +11,8 @@ import toast from 'react-hot-toast';
 // Density levels: 'normal' | 'compact' | 'dense'
 export type DensityLevel = 'normal' | 'compact' | 'dense';
 
-type SortField = 'name' | 'category' | 'count';
-type SortDirection = 'asc' | 'desc';
+export type SortField = 'name' | 'category' | 'count';
+export type SortDirection = 'asc' | 'desc';
 
 interface PayeeListProps {
   payees: Payee[];
@@ -20,6 +20,9 @@ interface PayeeListProps {
   onRefresh: () => void;
   density?: DensityLevel;
   onDensityChange?: (density: DensityLevel) => void;
+  sortField?: SortField;
+  sortDirection?: SortDirection;
+  onSort?: (field: SortField) => void;
 }
 
 export function PayeeList({
@@ -28,12 +31,19 @@ export function PayeeList({
   onRefresh,
   density: propDensity,
   onDensityChange,
+  sortField: propSortField,
+  sortDirection: propSortDirection,
+  onSort,
 }: PayeeListProps) {
   const router = useRouter();
   const [deletePayee, setDeletePayee] = useState<Payee | null>(null);
   const [localDensity, setLocalDensity] = useState<DensityLevel>('normal');
-  const [sortField, setSortField] = useState<SortField>('name');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const [localSortField, setLocalSortField] = useState<SortField>('name');
+  const [localSortDirection, setLocalSortDirection] = useState<SortDirection>('asc');
+
+  // Use prop sort state if provided (controlled), otherwise use local state
+  const sortField = propSortField ?? localSortField;
+  const sortDirection = propSortDirection ?? localSortDirection;
 
   // Use prop density if provided, otherwise use local state
   const density = propDensity ?? localDensity;
@@ -65,15 +75,27 @@ export function PayeeList({
   }, [density, onDensityChange]);
 
   const handleSort = useCallback((field: SortField) => {
-    if (sortField === field) {
-      setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+    if (onSort) {
+      // Controlled mode - let parent handle sort
+      onSort(field);
     } else {
-      setSortField(field);
-      setSortDirection(field === 'count' ? 'desc' : 'asc');
+      // Uncontrolled mode - manage sort locally
+      if (localSortField === field) {
+        setLocalSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+      } else {
+        setLocalSortField(field);
+        setLocalSortDirection(field === 'count' ? 'desc' : 'asc');
+      }
     }
-  }, [sortField]);
+  }, [onSort, localSortField]);
 
-  const sortedPayees = useMemo(() => {
+  // Only sort locally if not controlled (parent passes pre-sorted data when controlled)
+  const displayPayees = useMemo(() => {
+    if (onSort) {
+      // Controlled mode - payees are already sorted by parent
+      return payees;
+    }
+    // Uncontrolled mode - sort locally
     return [...payees].sort((a, b) => {
       let comparison = 0;
       if (sortField === 'name') {
@@ -87,7 +109,7 @@ export function PayeeList({
       }
       return sortDirection === 'asc' ? comparison : -comparison;
     });
-  }, [payees, sortField, sortDirection]);
+  }, [payees, sortField, sortDirection, onSort]);
 
   const SortIcon = ({ field }: { field: SortField }) => {
     if (sortField !== field) {
@@ -185,7 +207,7 @@ export function PayeeList({
             </tr>
           </thead>
           <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-            {sortedPayees.map((payee, index) => (
+            {displayPayees.map((payee, index) => (
               <tr
                 key={payee.id}
                 className={`hover:bg-gray-50 dark:hover:bg-gray-800 ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-gray-800/50' : ''}`}
