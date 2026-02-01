@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   BarChart,
   Bar,
@@ -20,6 +21,7 @@ import { parseLocalDate } from '@/lib/utils';
 type DateRange = '6m' | '1y' | '2y' | 'custom';
 
 export function IncomeVsExpensesReport() {
+  const router = useRouter();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [dateRange, setDateRange] = useState<DateRange>('1y');
@@ -115,8 +117,16 @@ export function IncomeVsExpensesReport() {
       Expenses: Math.round(m.expenses),
       Savings: Math.round(m.income - m.expenses),
       SavingsRate: m.income > 0 ? Math.round(((m.income - m.expenses) / m.income) * 100) : 0,
+      monthStart: format(startOfMonth(m.month), 'yyyy-MM-dd'),
+      monthEnd: format(endOfMonth(m.month), 'yyyy-MM-dd'),
     }));
   }, [transactions, dateRange, startDate, endDate, getDateRange]);
+
+  const handleMonthClick = (data: { monthStart: string; monthEnd: string }) => {
+    if (data?.monthStart && data?.monthEnd) {
+      router.push(`/transactions?startDate=${data.monthStart}&endDate=${data.monthEnd}`);
+    }
+  };
 
   const totals = useMemo(() => {
     const totalExpenses = chartData.reduce((sum, m) => sum + m.Expenses, 0);
@@ -235,7 +245,12 @@ export function IncomeVsExpensesReport() {
           <>
             <div className="h-96">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                <BarChart
+                  data={chartData}
+                  margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                  onClick={(data) => data?.activePayload?.[0]?.payload && handleMonthClick(data.activePayload[0].payload)}
+                  style={{ cursor: 'pointer' }}
+                >
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                   <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                   <YAxis
@@ -245,9 +260,9 @@ export function IncomeVsExpensesReport() {
                   <Tooltip content={<CustomTooltip />} />
                   <Legend />
                   <ReferenceLine y={0} stroke="#9ca3af" />
-                  <Bar dataKey="Income" fill="#22c55e" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="Expenses" fill="#ef4444" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="Savings" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="Income" fill="#22c55e" radius={[4, 4, 0, 0]} cursor="pointer" />
+                  <Bar dataKey="Expenses" fill="#ef4444" radius={[4, 4, 0, 0]} cursor="pointer" />
+                  <Bar dataKey="Savings" fill="#3b82f6" radius={[4, 4, 0, 0]} cursor="pointer" />
                 </BarChart>
               </ResponsiveContainer>
             </div>

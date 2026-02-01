@@ -284,8 +284,9 @@ export class TransactionsService {
     includeInvestmentBrokerage: boolean = false,
   ): Promise<PaginatedTransactions> {
     // Enforce limits
+    // Allow higher limits for reports that need to aggregate all data
     const safePage = Math.max(1, page);
-    const safeLimit = Math.min(200, Math.max(1, limit));
+    const safeLimit = Math.min(100000, Math.max(1, limit));
     const skip = (safePage - 1) * safeLimit;
 
     const queryBuilder = this.transactionsRepository

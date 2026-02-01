@@ -33,9 +33,15 @@ const STORAGE_KEYS = {
   endDate: 'transactions.filter.endDate',
 };
 
-// Helper to get stored filter value (URL params take precedence)
-function getStoredFilter(key: string, urlParam: string | null): string {
-  if (urlParam) return urlParam;
+// Helper to get filter value
+// If ANY URL params are present (navigation from reports), ignore localStorage entirely
+// This ensures clicking from a report gives a clean view with just that filter
+function getFilterValue(key: string, urlParam: string | null, hasAnyUrlParams: boolean): string {
+  if (hasAnyUrlParams) {
+    // Navigation from external link - only use URL param, ignore localStorage
+    return urlParam || '';
+  }
+  // No URL params - use localStorage (user's last filter state)
   if (typeof window === 'undefined') return '';
   return localStorage.getItem(key) || '';
 }
@@ -182,13 +188,21 @@ export default function TransactionsPage() {
     loadStaticData();
   }, [loadStaticData]);
 
-  // Initialize filters from localStorage on mount (URL params take precedence)
+  // Initialize filters on mount
+  // If ANY URL params are present (navigation from reports/links), ignore localStorage
+  // This ensures clicking from a report gives a clean view with just that filter
   useEffect(() => {
-    setFilterAccountId(getStoredFilter(STORAGE_KEYS.accountId, searchParams.get('accountId')));
-    setFilterCategoryId(getStoredFilter(STORAGE_KEYS.categoryId, searchParams.get('categoryId')));
-    setFilterPayeeId(getStoredFilter(STORAGE_KEYS.payeeId, searchParams.get('payeeId')));
-    setFilterStartDate(getStoredFilter(STORAGE_KEYS.startDate, searchParams.get('startDate')));
-    setFilterEndDate(getStoredFilter(STORAGE_KEYS.endDate, searchParams.get('endDate')));
+    const hasAnyUrlParams = searchParams.has('accountId') ||
+      searchParams.has('categoryId') ||
+      searchParams.has('payeeId') ||
+      searchParams.has('startDate') ||
+      searchParams.has('endDate');
+
+    setFilterAccountId(getFilterValue(STORAGE_KEYS.accountId, searchParams.get('accountId'), hasAnyUrlParams));
+    setFilterCategoryId(getFilterValue(STORAGE_KEYS.categoryId, searchParams.get('categoryId'), hasAnyUrlParams));
+    setFilterPayeeId(getFilterValue(STORAGE_KEYS.payeeId, searchParams.get('payeeId'), hasAnyUrlParams));
+    setFilterStartDate(getFilterValue(STORAGE_KEYS.startDate, searchParams.get('startDate'), hasAnyUrlParams));
+    setFilterEndDate(getFilterValue(STORAGE_KEYS.endDate, searchParams.get('endDate'), hasAnyUrlParams));
     setFiltersInitialized(true);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
