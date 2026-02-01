@@ -178,6 +178,33 @@ export function NetWorthReport() {
     return { current, change, changePercent };
   }, [chartData]);
 
+  // Calculate Y-axis domain to avoid starting at 0 when values are significantly higher
+  const yAxisDomain = useMemo(() => {
+    if (chartData.length === 0) return [0, 'auto'] as [number, 'auto'];
+
+    const values = chartData.map(d => d.NetWorth);
+    const minValue = Math.min(...values);
+    const maxValue = Math.max(...values);
+    const range = maxValue - minValue;
+
+    // If min is significantly above 0 (more than 20% of the range), don't start at 0
+    // Also check that all values are positive
+    if (minValue > 0 && minValue > range * 0.2) {
+      // Round down to a nice number for the axis minimum
+      const padding = range * 0.1; // 10% padding below minimum
+      const rawMin = minValue - padding;
+
+      // Round to a nice number based on magnitude
+      const magnitude = Math.pow(10, Math.floor(Math.log10(Math.abs(rawMin))));
+      const niceMin = Math.floor(rawMin / magnitude) * magnitude;
+
+      return [niceMin, 'auto'] as [number, 'auto'];
+    }
+
+    // If values cross 0 or start near 0, include 0 in the domain
+    return [Math.min(0, minValue), 'auto'] as [number, 'auto'];
+  }, [chartData]);
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-CA', {
       style: 'currency',
@@ -321,6 +348,7 @@ export function NetWorthReport() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                 <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                 <YAxis
+                  domain={yAxisDomain}
                   tickFormatter={(value) => `$${value >= 1000 ? `${(value / 1000).toFixed(0)}k` : value}`}
                   tick={{ fontSize: 12 }}
                 />

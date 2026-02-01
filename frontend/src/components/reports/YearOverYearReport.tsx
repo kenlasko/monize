@@ -177,12 +177,12 @@ export function YearOverYearReport() {
             <select
               value={yearsToCompare}
               onChange={(e) => setYearsToCompare(Number(e.target.value))}
-              className="rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm"
+              className="rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm font-sans"
             >
-              <option value={2}>2 Years</option>
-              <option value={3}>3 Years</option>
-              <option value={4}>4 Years</option>
-              <option value={5}>5 Years</option>
+              <option value={2} className="font-sans">2 Years</option>
+              <option value={3} className="font-sans">3 Years</option>
+              <option value={4} className="font-sans">4 Years</option>
+              <option value={5} className="font-sans">5 Years</option>
             </select>
           </div>
           <div className="flex gap-2">
