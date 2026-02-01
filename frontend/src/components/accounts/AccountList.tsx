@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Account, AccountType } from '@/types/account';
 import { Button } from '@/components/ui/Button';
@@ -11,6 +11,29 @@ import toast from 'react-hot-toast';
 
 type SortField = 'name' | 'type' | 'balance' | 'status';
 type SortDirection = 'asc' | 'desc';
+type DensityLevel = 'normal' | 'compact' | 'dense';
+
+// LocalStorage keys for filter persistence
+const STORAGE_KEYS = {
+  showFilters: 'accounts.filter.showFilters',
+  accountType: 'accounts.filter.accountType',
+  status: 'accounts.filter.status',
+  sortField: 'accounts.filter.sortField',
+  sortDirection: 'accounts.filter.sortDirection',
+  density: 'accounts.filter.density',
+};
+
+// Helper to get stored value
+function getStoredValue<T>(key: string, defaultValue: T): T {
+  if (typeof window === 'undefined') return defaultValue;
+  const stored = localStorage.getItem(key);
+  if (!stored) return defaultValue;
+  try {
+    return JSON.parse(stored) as T;
+  } catch {
+    return defaultValue;
+  }
+}
 
 interface AccountListProps {
   accounts: Account[];
@@ -30,14 +53,75 @@ export function AccountList({ accounts, onEdit, onRefresh }: AccountListProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [deletableAccounts, setDeletableAccounts] = useState<Set<string>>(new Set());
 
-  // Sorting state
-  const [sortField, setSortField] = useState<SortField>('name');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  // Sorting state - initialize from localStorage
+  const [sortField, setSortField] = useState<SortField>(() =>
+    getStoredValue<SortField>(STORAGE_KEYS.sortField, 'name')
+  );
+  const [sortDirection, setSortDirection] = useState<SortDirection>(() =>
+    getStoredValue<SortDirection>(STORAGE_KEYS.sortDirection, 'asc')
+  );
 
-  // Filter state
-  const [showFilters, setShowFilters] = useState(false);
-  const [filterAccountType, setFilterAccountType] = useState<AccountType | ''>('');
-  const [filterStatus, setFilterStatus] = useState<'active' | 'closed' | ''>('');
+  // Filter state - initialize from localStorage
+  const [showFilters, setShowFilters] = useState(() =>
+    getStoredValue<boolean>(STORAGE_KEYS.showFilters, false)
+  );
+  const [filterAccountType, setFilterAccountType] = useState<AccountType | ''>(() =>
+    getStoredValue<AccountType | ''>(STORAGE_KEYS.accountType, '')
+  );
+  const [filterStatus, setFilterStatus] = useState<'active' | 'closed' | ''>(() =>
+    getStoredValue<'active' | 'closed' | ''>(STORAGE_KEYS.status, '')
+  );
+
+  // Density state - initialize from localStorage
+  const [density, setDensity] = useState<DensityLevel>(() =>
+    getStoredValue<DensityLevel>(STORAGE_KEYS.density, 'normal')
+  );
+
+  // Persist filter/sort changes to localStorage
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.showFilters, JSON.stringify(showFilters));
+  }, [showFilters]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.accountType, JSON.stringify(filterAccountType));
+  }, [filterAccountType]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.status, JSON.stringify(filterStatus));
+  }, [filterStatus]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.sortField, JSON.stringify(sortField));
+  }, [sortField]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.sortDirection, JSON.stringify(sortDirection));
+  }, [sortDirection]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.density, JSON.stringify(density));
+  }, [density]);
+
+  // Memoize padding classes based on density
+  const cellPadding = useMemo(() => {
+    switch (density) {
+      case 'dense': return 'px-3 py-1';
+      case 'compact': return 'px-4 py-2';
+      default: return 'px-6 py-4';
+    }
+  }, [density]);
+
+  const headerPadding = useMemo(() => {
+    switch (density) {
+      case 'dense': return 'px-3 py-2';
+      case 'compact': return 'px-4 py-2';
+      default: return 'px-6 py-3';
+    }
+  }, [density]);
+
+  const cycleDensity = useCallback(() => {
+    setDensity(prev => prev === 'normal' ? 'compact' : prev === 'compact' ? 'dense' : 'normal');
+  }, []);
 
   // Check which accounts can be deleted (have no transactions)
   useEffect(() => {
@@ -120,6 +204,9 @@ export function AccountList({ accounts, onEdit, onRefresh }: AccountListProps) {
   const clearFilters = () => {
     setFilterAccountType('');
     setFilterStatus('');
+    // Also clear localStorage
+    localStorage.removeItem(STORAGE_KEYS.accountType);
+    localStorage.removeItem(STORAGE_KEYS.status);
   };
 
   const SortIcon = ({ field }: { field: SortField }) => {
@@ -347,12 +434,26 @@ export function AccountList({ accounts, onEdit, onRefresh }: AccountListProps) {
           </button>
         </div>
       ) : (
-      <div className="overflow-x-auto">
+      <div>
+        {/* Density toggle */}
+        <div className="flex justify-end p-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+          <button
+            onClick={cycleDensity}
+            className="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+            title="Toggle row density"
+          >
+            <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+            {density === 'normal' ? 'Normal' : density === 'compact' ? 'Compact' : 'Dense'}
+          </button>
+        </div>
+        <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
           <thead className="bg-gray-50 dark:bg-gray-800">
             <tr>
               <th
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 select-none"
+                className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 select-none`}
                 onClick={() => handleSort('name')}
               >
                 <div className="flex items-center">
@@ -361,7 +462,7 @@ export function AccountList({ accounts, onEdit, onRefresh }: AccountListProps) {
                 </div>
               </th>
               <th
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 select-none"
+                className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 select-none`}
                 onClick={() => handleSort('type')}
               >
                 <div className="flex items-center">
@@ -370,7 +471,7 @@ export function AccountList({ accounts, onEdit, onRefresh }: AccountListProps) {
                 </div>
               </th>
               <th
-                className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 select-none"
+                className={`${headerPadding} text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 select-none`}
                 onClick={() => handleSort('balance')}
               >
                 <div className="flex items-center justify-end">
@@ -379,7 +480,7 @@ export function AccountList({ accounts, onEdit, onRefresh }: AccountListProps) {
                 </div>
               </th>
               <th
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 select-none"
+                className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 select-none`}
                 onClick={() => handleSort('status')}
               >
                 <div className="flex items-center">
@@ -387,7 +488,7 @@ export function AccountList({ accounts, onEdit, onRefresh }: AccountListProps) {
                   <SortIcon field="status" />
                 </div>
               </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              <th className={`${headerPadding} text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>
                 Actions
               </th>
             </tr>
@@ -395,7 +496,7 @@ export function AccountList({ accounts, onEdit, onRefresh }: AccountListProps) {
           <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
             {filteredAndSortedAccounts.map((account) => (
             <tr key={account.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
-              <td className={`px-6 py-4 whitespace-nowrap ${account.isClosed ? 'opacity-50' : ''}`}>
+              <td className={`${cellPadding} whitespace-nowrap ${account.isClosed ? 'opacity-50' : ''}`}>
                 <button
                   onClick={() => handleViewTransactions(account)}
                   className="text-left hover:underline"
@@ -413,12 +514,12 @@ export function AccountList({ accounts, onEdit, onRefresh }: AccountListProps) {
                     )}
                     {account.name}
                   </div>
-                  {account.description && (
+                  {density === 'normal' && account.description && (
                     <div className="text-sm text-gray-500 dark:text-gray-400">{account.description}</div>
                   )}
                 </button>
               </td>
-              <td className={`px-6 py-4 whitespace-nowrap ${account.isClosed ? 'opacity-50' : ''}`}>
+              <td className={`${cellPadding} whitespace-nowrap ${account.isClosed ? 'opacity-50' : ''}`}>
                 <span
                   className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getAccountTypeColor(
                     account.accountType
@@ -427,7 +528,7 @@ export function AccountList({ accounts, onEdit, onRefresh }: AccountListProps) {
                   {formatAccountType(account.accountType)}
                 </span>
               </td>
-              <td className={`px-6 py-4 whitespace-nowrap text-right ${account.isClosed ? 'opacity-50' : ''}`}>
+              <td className={`${cellPadding} whitespace-nowrap text-right ${account.isClosed ? 'opacity-50' : ''}`}>
                 <div
                   className={`text-sm font-medium ${
                     Number(account.currentBalance) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
@@ -441,7 +542,7 @@ export function AccountList({ accounts, onEdit, onRefresh }: AccountListProps) {
                   </div>
                 )}
               </td>
-              <td className="px-6 py-4 whitespace-nowrap">
+              <td className={`${cellPadding} whitespace-nowrap`}>
                 <span
                   className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                     !account.isClosed
@@ -452,64 +553,143 @@ export function AccountList({ accounts, onEdit, onRefresh }: AccountListProps) {
                   {!account.isClosed ? 'Active' : 'Closed'}
                 </span>
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+              <td className={`${cellPadding} whitespace-nowrap text-right text-sm font-medium ${density === 'dense' ? 'space-x-1' : 'space-x-2'}`}>
                 {!account.isClosed ? (
                   <>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => onEdit(account)}
-                    >
-                      Edit
-                    </Button>
-                    {account.accountSubType !== 'INVESTMENT_BROKERAGE' && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleReconcile(account)}
-                        title="Reconcile account against a statement"
-                      >
-                        Reconcile
-                      </Button>
-                    )}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleCloseClick(account)}
-                      disabled={Number(account.currentBalance) !== 0}
-                      title={Number(account.currentBalance) !== 0 ? 'Account must have zero balance to close' : 'Close account'}
-                    >
-                      Close
-                    </Button>
-                    {deletableAccounts.has(account.id) && (
-                      <Button
-                        variant="danger"
-                        size="sm"
-                        onClick={() => handleDeleteClick(account)}
-                        title="Permanently delete account (no transactions)"
-                      >
-                        Delete
-                      </Button>
+                    {density === 'dense' ? (
+                      <>
+                        <button
+                          onClick={() => onEdit(account)}
+                          className="inline-flex items-center justify-center p-1.5 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                          title="Edit"
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
+                        {account.accountSubType !== 'INVESTMENT_BROKERAGE' && (
+                          <button
+                            onClick={() => handleReconcile(account)}
+                            className="inline-flex items-center justify-center p-1.5 text-gray-600 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                            title="Reconcile"
+                          >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleCloseClick(account)}
+                          disabled={Number(account.currentBalance) !== 0}
+                          className={`inline-flex items-center justify-center p-1.5 rounded ${
+                            Number(account.currentBalance) !== 0
+                              ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
+                              : 'text-gray-600 dark:text-gray-300 hover:text-orange-600 dark:hover:text-orange-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                          }`}
+                          title={Number(account.currentBalance) !== 0 ? 'Account must have zero balance to close' : 'Close account'}
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                          </svg>
+                        </button>
+                        {deletableAccounts.has(account.id) && (
+                          <button
+                            onClick={() => handleDeleteClick(account)}
+                            className="inline-flex items-center justify-center p-1.5 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/30 rounded"
+                            title="Permanently delete account (no transactions)"
+                          >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => onEdit(account)}
+                        >
+                          Edit
+                        </Button>
+                        {account.accountSubType !== 'INVESTMENT_BROKERAGE' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleReconcile(account)}
+                            title="Reconcile account against a statement"
+                          >
+                            Reconcile
+                          </Button>
+                        )}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleCloseClick(account)}
+                          disabled={Number(account.currentBalance) !== 0}
+                          title={Number(account.currentBalance) !== 0 ? 'Account must have zero balance to close' : 'Close account'}
+                        >
+                          Close
+                        </Button>
+                        {deletableAccounts.has(account.id) && (
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            onClick={() => handleDeleteClick(account)}
+                            title="Permanently delete account (no transactions)"
+                          >
+                            Delete
+                          </Button>
+                        )}
+                      </>
                     )}
                   </>
                 ) : (
                   <>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleReopen(account)}
-                    >
-                      Reopen
-                    </Button>
-                    {deletableAccounts.has(account.id) && (
-                      <Button
-                        variant="danger"
-                        size="sm"
-                        onClick={() => handleDeleteClick(account)}
-                        title="Permanently delete account (no transactions)"
-                      >
-                        Delete
-                      </Button>
+                    {density === 'dense' ? (
+                      <>
+                        <button
+                          onClick={() => handleReopen(account)}
+                          className="inline-flex items-center justify-center p-1.5 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                          title="Reopen"
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                          </svg>
+                        </button>
+                        {deletableAccounts.has(account.id) && (
+                          <button
+                            onClick={() => handleDeleteClick(account)}
+                            className="inline-flex items-center justify-center p-1.5 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/30 rounded"
+                            title="Permanently delete account (no transactions)"
+                          >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleReopen(account)}
+                        >
+                          Reopen
+                        </Button>
+                        {deletableAccounts.has(account.id) && (
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            onClick={() => handleDeleteClick(account)}
+                            title="Permanently delete account (no transactions)"
+                          >
+                            Delete
+                          </Button>
+                        )}
+                      </>
                     )}
                   </>
                 )}
@@ -518,6 +698,7 @@ export function AccountList({ accounts, onEdit, onRefresh }: AccountListProps) {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
       )}
 
