@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { Transaction, TransactionStatus } from '@/types/transaction';
 import { transactionsApi } from '@/lib/transactions';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { Pagination } from '@/components/ui/Pagination';
 import { useDateFormat } from '@/hooks/useDateFormat';
 
 // Density levels: 'normal' | 'compact' | 'dense'
@@ -24,6 +25,12 @@ interface TransactionListProps {
   startingBalance?: number;
   /** Whether we're viewing a single account (enables running balance column) */
   isSingleAccountView?: boolean;
+  /** Pagination props for top pagination controls */
+  currentPage?: number;
+  totalPages?: number;
+  totalItems?: number;
+  pageSize?: number;
+  onPageChange?: (page: number) => void;
 }
 
 export function TransactionList({
@@ -36,6 +43,11 @@ export function TransactionList({
   onDensityChange,
   startingBalance,
   isSingleAccountView = false,
+  currentPage,
+  totalPages,
+  totalItems,
+  pageSize,
+  onPageChange,
 }: TransactionListProps) {
   const { formatDate } = useDateFormat();
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -44,6 +56,60 @@ export function TransactionList({
     isOpen: false,
     transaction: null,
   });
+
+  // Long-press handling for delete on mobile
+  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+  const longPressTriggered = useRef(false);
+  const touchStartPos = useRef<{ x: number; y: number } | null>(null);
+  const LONG_PRESS_MOVE_THRESHOLD = 10; // pixels - cancel long-press if user moves finger this much
+
+  const handleLongPressStart = useCallback((transaction: Transaction, e?: React.TouchEvent) => {
+    // Don't allow delete for investment-linked transactions
+    if (transaction.linkedInvestmentTransactionId) return;
+
+    // Track initial touch position for scroll detection
+    if (e?.touches?.[0]) {
+      touchStartPos.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    } else {
+      touchStartPos.current = null;
+    }
+
+    longPressTriggered.current = false;
+    longPressTimer.current = setTimeout(() => {
+      longPressTriggered.current = true;
+      setDeleteConfirm({ isOpen: true, transaction });
+    }, 750); // 750ms long-press threshold
+  }, []);
+
+  const handleLongPressEnd = useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+    touchStartPos.current = null;
+  }, []);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    // If user moves finger beyond threshold, cancel the long-press (they're scrolling)
+    if (touchStartPos.current && longPressTimer.current && e.touches?.[0]) {
+      const deltaX = Math.abs(e.touches[0].clientX - touchStartPos.current.x);
+      const deltaY = Math.abs(e.touches[0].clientY - touchStartPos.current.y);
+      if (deltaX > LONG_PRESS_MOVE_THRESHOLD || deltaY > LONG_PRESS_MOVE_THRESHOLD) {
+        clearTimeout(longPressTimer.current);
+        longPressTimer.current = null;
+        touchStartPos.current = null;
+      }
+    }
+  }, []);
+
+  const handleRowClick = useCallback((transaction: Transaction) => {
+    // Don't trigger edit if long-press was triggered
+    if (longPressTriggered.current) {
+      longPressTriggered.current = false;
+      return;
+    }
+    onEdit?.(transaction);
+  }, [onEdit]);
 
   // Use prop density if provided, otherwise use local state
   const density = propDensity ?? localDensity;
@@ -216,8 +282,21 @@ export function TransactionList({
 
   return (
     <div>
-      {/* Density toggle */}
-      <div className="flex justify-end p-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+      {/* Density toggle and top pagination */}
+      <div className="flex items-center justify-between gap-1 p-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+        <div className="flex-1">
+          {currentPage !== undefined && totalPages !== undefined && totalPages > 1 && totalItems !== undefined && pageSize !== undefined && onPageChange && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={totalItems}
+              pageSize={pageSize}
+              onPageChange={onPageChange}
+              itemName="transactions"
+              minimal
+            />
+          )}
+        </div>
         <button
           onClick={cycleDensity}
           className="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
@@ -236,16 +315,16 @@ export function TransactionList({
               <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>
                 Date
               </th>
-              <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>
+              <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden md:table-cell`}>
                 Account
               </th>
               <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>
                 Payee
               </th>
-              <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>
+              <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden lg:table-cell`}>
                 Category
               </th>
-              <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>
+              <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden xl:table-cell`}>
                 Description
               </th>
               <th className={`${headerPadding} text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>
@@ -256,10 +335,10 @@ export function TransactionList({
                   Balance
                 </th>
               )}
-              <th className={`${headerPadding} text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>
+              <th className={`${headerPadding} text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden sm:table-cell`}>
                 Status
               </th>
-              <th className={`${headerPadding} text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>
+              <th className={`${headerPadding} text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden min-[480px]:table-cell`}>
                 Actions
               </th>
             </tr>
@@ -270,17 +349,25 @@ export function TransactionList({
               return (
               <tr
                 key={transaction.id}
-                className={`hover:bg-gray-100 dark:hover:bg-gray-800 ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-gray-800/50' : ''} ${isVoid ? 'opacity-50' : ''}`}
+                onClick={() => handleRowClick(transaction)}
+                onMouseDown={() => handleLongPressStart(transaction)}
+                onMouseUp={handleLongPressEnd}
+                onMouseLeave={handleLongPressEnd}
+                onTouchStart={(e) => handleLongPressStart(transaction, e)}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleLongPressEnd}
+                onTouchCancel={handleLongPressEnd}
+                className={`hover:bg-gray-100 dark:hover:bg-gray-800 ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-gray-800/50' : ''} ${isVoid ? 'opacity-50' : ''} ${onEdit ? 'cursor-pointer' : ''}`}
               >
                 <td className={`${cellPadding} whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 ${isVoid ? 'line-through' : ''}`}>
                   {formatDate(transaction.transactionDate)}
                 </td>
-                <td className={`${cellPadding} whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 ${isVoid ? 'line-through' : ''}`}>
+                <td className={`${cellPadding} whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 ${isVoid ? 'line-through' : ''} hidden md:table-cell`}>
                   {transaction.account?.name || '-'}
                 </td>
-                <td className={`${cellPadding}`}>
+                <td className={`${cellPadding} max-w-[120px] sm:max-w-none`}>
                   <div
-                    className={`text-sm font-medium text-gray-900 dark:text-gray-100 truncate max-w-[280px] ${isVoid ? 'line-through' : ''}`}
+                    className={`text-sm font-medium text-gray-900 dark:text-gray-100 truncate sm:max-w-[280px] ${isVoid ? 'line-through' : ''}`}
                     title={transaction.payeeName || undefined}
                   >
                     {transaction.payeeName || '-'}
@@ -291,7 +378,7 @@ export function TransactionList({
                     </div>
                   )}
                 </td>
-                <td className={`${cellPadding} ${density !== 'normal' ? 'whitespace-nowrap' : ''}`}>
+                <td className={`${cellPadding} ${density !== 'normal' ? 'whitespace-nowrap' : ''} hidden lg:table-cell`}>
                   {transaction.linkedInvestmentTransactionId ? (
                     <span
                       className={`inline-flex text-xs leading-5 font-semibold rounded-full bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200 ${density === 'dense' ? 'px-1.5 py-0.5' : 'px-2 py-1'}`}
@@ -360,7 +447,7 @@ export function TransactionList({
                     <span className="text-sm text-gray-400 dark:text-gray-500">-</span>
                   )}
                 </td>
-                <td className={`${cellPadding} text-sm text-gray-500 dark:text-gray-400`}>
+                <td className={`${cellPadding} text-sm text-gray-500 dark:text-gray-400 hidden xl:table-cell`}>
                   <div
                     className={`truncate max-w-[320px] ${isVoid ? 'line-through' : ''}`}
                     title={transaction.description || undefined}
@@ -378,9 +465,9 @@ export function TransactionList({
                       : '-'}
                   </td>
                 )}
-                <td className={`${cellPadding} whitespace-nowrap text-center`}>
+                <td className={`${cellPadding} whitespace-nowrap text-center hidden sm:table-cell`}>
                   <button
-                    onClick={() => handleCycleStatus(transaction)}
+                    onClick={(e) => { e.stopPropagation(); handleCycleStatus(transaction); }}
                     className="text-sm"
                     title="Click to cycle status"
                   >
@@ -395,10 +482,10 @@ export function TransactionList({
                     )}
                   </button>
                 </td>
-                <td className={`${cellPadding} whitespace-nowrap text-right text-sm font-medium space-x-2`}>
+                <td className={`${cellPadding} whitespace-nowrap text-right text-sm font-medium space-x-2 hidden min-[480px]:table-cell`}>
                   {onEdit && (
                     <button
-                      onClick={() => onEdit(transaction)}
+                      onClick={(e) => { e.stopPropagation(); onEdit(transaction); }}
                       className={transaction.linkedInvestmentTransactionId
                         ? "text-emerald-600 hover:text-emerald-900 dark:text-emerald-400 dark:hover:text-emerald-300"
                         : "text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
@@ -412,7 +499,7 @@ export function TransactionList({
                   )}
                   {!transaction.linkedInvestmentTransactionId && (
                     <button
-                      onClick={() => handleDeleteClick(transaction)}
+                      onClick={(e) => { e.stopPropagation(); handleDeleteClick(transaction); }}
                       disabled={deletingId === transaction.id}
                       className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 disabled:opacity-50"
                     >

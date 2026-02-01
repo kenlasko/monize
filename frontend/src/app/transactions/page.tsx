@@ -512,6 +512,45 @@ export default function TransactionsPage() {
           </div>
         )}
 
+        {/* Quick Account Select - Favourites */}
+        {accounts.filter(a => a.isFavourite && !isInvestmentBrokerageAccount(a)).length > 0 && (
+          <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-1">
+            <span className="text-xs font-medium text-gray-500 dark:text-gray-400 whitespace-nowrap flex-shrink-0">
+              Favourites:
+            </span>
+            {accounts
+              .filter(a => a.isFavourite && !isInvestmentBrokerageAccount(a))
+              .sort((a, b) => a.name.localeCompare(b.name))
+              .map(account => {
+                const isSelected = filterAccountIds.includes(account.id);
+                return (
+                  <button
+                    key={account.id}
+                    onClick={() => {
+                      if (isSelected && filterAccountIds.length === 1) {
+                        // Already the only selected account - deselect to show all
+                        handleArrayFilterChange(setFilterAccountIds, []);
+                      } else {
+                        // Select only this account
+                        handleArrayFilterChange(setFilterAccountIds, [account.id]);
+                      }
+                    }}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+                      isSelected
+                        ? 'bg-emerald-700 text-white dark:bg-emerald-600'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    <svg className="w-3.5 h-3.5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
+                    {account.name}
+                  </button>
+                );
+              })}
+          </div>
+        )}
+
         {/* Filters - Collapsible Panel */}
         <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg mb-6">
           {/* Filter Header - Always Visible */}
@@ -773,6 +812,11 @@ export default function TransactionsPage() {
               onDensityChange={setListDensity}
               isSingleAccountView={filterAccountIds.length === 1}
               startingBalance={startingBalance}
+              currentPage={currentPage}
+              totalPages={pagination?.totalPages ?? 1}
+              totalItems={pagination?.total ?? 0}
+              pageSize={PAGE_SIZE}
+              onPageChange={goToPage}
             />
           )}
         </div>

@@ -180,10 +180,10 @@ export function ScheduledTransactionList({
             <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
               Name / Payee
             </th>
-            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden sm:table-cell">
               Account
             </th>
-            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden md:table-cell">
               Category
             </th>
             <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -217,12 +217,12 @@ export function ScheduledTransactionList({
                 </td>
 
                 {/* Account */}
-                <td className="px-4 py-3">
+                <td className="px-4 py-3 hidden sm:table-cell">
                   <div className="text-sm text-gray-900 dark:text-gray-100">{transaction.account?.name}</div>
                 </td>
 
                 {/* Category */}
-                <td className="px-4 py-3">
+                <td className="px-4 py-3 hidden md:table-cell">
                   {transaction.isTransfer ? (
                     <span
                       className="inline-flex text-xs font-medium rounded-full px-2 py-0.5 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"

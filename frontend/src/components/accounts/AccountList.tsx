@@ -458,7 +458,7 @@ export function AccountList({ accounts, onEdit, onRefresh }: AccountListProps) {
                 </div>
               </th>
               <th
-                className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 select-none`}
+                className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 select-none hidden sm:table-cell`}
                 onClick={() => handleSort('type')}
               >
                 <div className="flex items-center">
@@ -476,7 +476,7 @@ export function AccountList({ accounts, onEdit, onRefresh }: AccountListProps) {
                 </div>
               </th>
               <th
-                className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 select-none`}
+                className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 select-none hidden md:table-cell`}
                 onClick={() => handleSort('status')}
               >
                 <div className="flex items-center">
@@ -492,15 +492,16 @@ export function AccountList({ accounts, onEdit, onRefresh }: AccountListProps) {
           <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
             {filteredAndSortedAccounts.map((account) => (
             <tr key={account.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
-              <td className={`${cellPadding} whitespace-nowrap ${account.isClosed ? 'opacity-50' : ''}`}>
+              <td className={`${cellPadding} ${account.isClosed ? 'opacity-50' : ''} max-w-[100px] sm:max-w-[180px] md:max-w-none`}>
                 <button
                   onClick={() => handleViewTransactions(account)}
-                  className="text-left hover:underline"
+                  className="text-left hover:underline w-full"
+                  title={account.name}
                 >
                   <div className="flex items-center text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300">
                     {account.isFavourite && (
                       <svg
-                        className="w-4 h-4 mr-1 text-yellow-500"
+                        className="w-4 h-4 mr-1 flex-shrink-0 text-yellow-500"
                         fill="currentColor"
                         viewBox="0 0 20 20"
                         aria-label="Favourite"
@@ -508,14 +509,14 @@ export function AccountList({ accounts, onEdit, onRefresh }: AccountListProps) {
                         <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                       </svg>
                     )}
-                    {account.name}
+                    <span className="truncate">{account.name}</span>
                   </div>
                   {density === 'normal' && account.description && (
-                    <div className="text-sm text-gray-500 dark:text-gray-400">{account.description}</div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400 truncate">{account.description}</div>
                   )}
                 </button>
               </td>
-              <td className={`${cellPadding} whitespace-nowrap ${account.isClosed ? 'opacity-50' : ''}`}>
+              <td className={`${cellPadding} whitespace-nowrap ${account.isClosed ? 'opacity-50' : ''} hidden sm:table-cell`}>
                 <span
                   className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getAccountTypeColor(
                     account.accountType
@@ -538,7 +539,7 @@ export function AccountList({ accounts, onEdit, onRefresh }: AccountListProps) {
                   </div>
                 )}
               </td>
-              <td className={`${cellPadding} whitespace-nowrap`}>
+              <td className={`${cellPadding} whitespace-nowrap hidden md:table-cell`}>
                 <span
                   className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                     !account.isClosed

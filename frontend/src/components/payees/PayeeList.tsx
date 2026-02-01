@@ -163,13 +163,13 @@ export function PayeeList({
                 Name<SortIcon field="name" />
               </th>
               <th
-                className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:text-gray-700 dark:hover:text-gray-200`}
+                className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:text-gray-700 dark:hover:text-gray-200 hidden sm:table-cell`}
                 onClick={() => handleSort('category')}
               >
                 Default Category<SortIcon field="category" />
               </th>
               <th
-                className={`${headerPadding} text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:text-gray-700 dark:hover:text-gray-200`}
+                className={`${headerPadding} text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:text-gray-700 dark:hover:text-gray-200 hidden md:table-cell`}
                 onClick={() => handleSort('count')}
               >
                 Count<SortIcon field="count" />
@@ -199,7 +199,7 @@ export function PayeeList({
                     {payee.name}
                   </button>
                 </td>
-                <td className={`${cellPadding} whitespace-nowrap`}>
+                <td className={`${cellPadding} whitespace-nowrap hidden sm:table-cell`}>
                   {payee.defaultCategory ? (
                     <span
                       className={`inline-flex text-xs leading-5 font-semibold rounded-full ${density === 'dense' ? 'px-1.5 py-0.5' : 'px-2 py-1'}`}
@@ -218,7 +218,7 @@ export function PayeeList({
                     <span className="text-sm text-gray-400 dark:text-gray-500">None</span>
                   )}
                 </td>
-                <td className={`${cellPadding} whitespace-nowrap text-right text-sm text-gray-600 dark:text-gray-400`}>
+                <td className={`${cellPadding} whitespace-nowrap text-right text-sm text-gray-600 dark:text-gray-400 hidden md:table-cell`}>
                   {payee.transactionCount ?? 0}
                 </td>
                 {density === 'normal' && (

@@ -27,18 +27,28 @@ export function AppHeader() {
   const pathname = usePathname();
   const { user, logout } = useAuthStore();
   const [toolsOpen, setToolsOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const toolsRef = useRef<HTMLDivElement>(null);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdown when clicking outside
+  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (toolsRef.current && !toolsRef.current.contains(event.target as Node)) {
         setToolsOpen(false);
       }
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target as Node)) {
+        setMobileMenuOpen(false);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [pathname]);
 
   const isToolsActive = toolsLinks.some((link) => pathname === link.href);
 
@@ -59,6 +69,97 @@ export function AppHeader() {
       <div className="px-4 sm:px-6 lg:px-12">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
+            {/* Mobile hamburger menu button */}
+            <div className="relative md:hidden" ref={mobileMenuRef}>
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="p-2 mr-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+                aria-label="Toggle menu"
+              >
+                {mobileMenuOpen ? (
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                ) : (
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  </svg>
+                )}
+              </button>
+
+              {/* Mobile menu dropdown */}
+              {mobileMenuOpen && (
+                <div className="absolute left-0 top-full mt-1 w-56 bg-white dark:bg-gray-800 rounded-md shadow-lg dark:shadow-gray-700/50 border border-gray-200 dark:border-gray-700 z-50">
+                  <div className="py-1">
+                    {/* Dashboard link */}
+                    <button
+                      onClick={() => router.push('/dashboard')}
+                      className={`block w-full text-left px-4 py-2 text-sm transition-colors ${
+                        pathname === '/dashboard'
+                          ? 'bg-blue-50 dark:bg-blue-900/50 text-blue-700 dark:text-blue-200'
+                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                      }`}
+                    >
+                      Dashboard
+                    </button>
+
+                    {/* Main nav links */}
+                    {navLinks.map((link) => (
+                      <button
+                        key={link.href}
+                        onClick={() => router.push(link.href)}
+                        className={`block w-full text-left px-4 py-2 text-sm transition-colors ${
+                          pathname === link.href
+                            ? 'bg-blue-50 dark:bg-blue-900/50 text-blue-700 dark:text-blue-200'
+                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                        }`}
+                      >
+                        {link.label}
+                      </button>
+                    ))}
+
+                    {/* Divider */}
+                    <div className="border-t border-gray-200 dark:border-gray-700 my-1" />
+
+                    {/* Tools section header */}
+                    <div className="px-4 py-1 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      Tools
+                    </div>
+
+                    {/* Tools links */}
+                    {toolsLinks.map((link) => (
+                      <button
+                        key={link.href}
+                        onClick={() => router.push(link.href)}
+                        className={`block w-full text-left px-4 py-2 text-sm transition-colors ${
+                          pathname === link.href
+                            ? 'bg-blue-50 dark:bg-blue-900/50 text-blue-700 dark:text-blue-200'
+                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                        }`}
+                      >
+                        {link.label}
+                      </button>
+                    ))}
+
+                    {/* Divider */}
+                    <div className="border-t border-gray-200 dark:border-gray-700 my-1" />
+
+                    {/* Settings link */}
+                    <button
+                      onClick={() => router.push('/settings')}
+                      className={`block w-full text-left px-4 py-2 text-sm transition-colors ${
+                        pathname === '/settings'
+                          ? 'bg-blue-50 dark:bg-blue-900/50 text-blue-700 dark:text-blue-200'
+                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                      }`}
+                    >
+                      Settings
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
             <button
               onClick={() => router.push('/dashboard')}
               className="text-2xl font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
