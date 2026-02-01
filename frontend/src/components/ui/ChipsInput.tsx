@@ -212,7 +212,7 @@ export function ChipsInput({
       {isOpen && availableOptions.length > 0 && (
         <div
           ref={listRef}
-          className="absolute z-20 mt-1 w-full bg-white dark:bg-gray-800 shadow-lg dark:shadow-gray-700/50 max-h-60 rounded-md py-1 ring-1 ring-black ring-opacity-5 dark:ring-gray-600 overflow-auto"
+          className="absolute z-20 mt-1 w-full bg-white dark:bg-gray-800 shadow-lg dark:shadow-gray-700/50 max-h-[30rem] rounded-md py-1 ring-1 ring-black ring-opacity-5 dark:ring-gray-600 overflow-auto"
         >
           {availableOptions.map((option, index) => (
             <div

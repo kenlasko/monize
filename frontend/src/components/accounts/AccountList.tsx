@@ -359,68 +359,64 @@ export function AccountList({ accounts, onEdit, onRefresh }: AccountListProps) {
     <div>
       {/* Filter Bar */}
       <div className="px-6 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-        <div className="flex items-center justify-between">
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className="inline-flex items-center px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
-          >
-            <svg className="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-            </svg>
-            Filters
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div className="flex items-center flex-wrap gap-4">
+            {/* Type dropdown */}
+            <select
+              value={filterAccountType}
+              onChange={(e) => setFilterAccountType(e.target.value as AccountType | '')}
+              className="text-sm font-sans border border-gray-300 dark:border-gray-600 rounded-md px-3 py-1.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+            >
+              <option value="">All Types</option>
+              {availableAccountTypes.map((type) => (
+                <option key={type} value={type}>{formatAccountType(type)}</option>
+              ))}
+            </select>
+
+            {/* Status segmented control */}
+            <div className="inline-flex rounded-md shadow-sm">
+              <button
+                onClick={() => setFilterStatus('')}
+                className={`px-3 py-1.5 text-sm font-medium rounded-l-md border ${
+                  filterStatus === ''
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'
+                }`}
+              >
+                All
+              </button>
+              <button
+                onClick={() => setFilterStatus('active')}
+                className={`px-3 py-1.5 text-sm font-medium border-t border-b ${
+                  filterStatus === 'active'
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'
+                }`}
+              >
+                Active
+              </button>
+              <button
+                onClick={() => setFilterStatus('closed')}
+                className={`px-3 py-1.5 text-sm font-medium rounded-r-md border ${
+                  filterStatus === 'closed'
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'
+                }`}
+              >
+                Closed
+              </button>
+            </div>
+
             {activeFilterCount > 0 && (
-              <span className="ml-1.5 inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold leading-none text-white bg-blue-600 rounded-full">
-                {activeFilterCount}
-              </span>
+              <button onClick={clearFilters} className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
+                Clear
+              </button>
             )}
-          </button>
+          </div>
           <span className="text-sm text-gray-500 dark:text-gray-400">
             {filteredAndSortedAccounts.length} of {accounts.length} accounts
           </span>
         </div>
-
-        {/* Expandable Filter Options */}
-        {showFilters && (
-          <div className="mt-3 flex flex-wrap items-center gap-4">
-            <div className="flex items-center gap-2">
-              <label className="text-sm text-gray-600 dark:text-gray-400">Type:</label>
-              <select
-                value={filterAccountType}
-                onChange={(e) => setFilterAccountType(e.target.value as AccountType | '')}
-                className="text-sm font-sans border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-              >
-                <option value="">All Types</option>
-                {availableAccountTypes.map((type) => (
-                  <option key={type} value={type}>
-                    {formatAccountType(type)}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <label className="text-sm text-gray-600 dark:text-gray-400">Status:</label>
-              <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value as 'active' | 'closed' | '')}
-                className="text-sm font-sans border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-              >
-                <option value="">All</option>
-                <option value="active">Active</option>
-                <option value="closed">Closed</option>
-              </select>
-            </div>
-
-            {activeFilterCount > 0 && (
-              <button
-                onClick={clearFilters}
-                className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
-              >
-                Clear Filters
-              </button>
-            )}
-          </div>
-        )}
       </div>
 
       {filteredAndSortedAccounts.length === 0 ? (

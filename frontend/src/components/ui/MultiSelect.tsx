@@ -279,7 +279,7 @@ export function MultiSelect({
           </div>
 
           {/* Options list */}
-          <div className="max-h-60 overflow-auto py-1">
+          <div className="max-h-[30rem] overflow-auto py-1">
             {filteredOptions.length === 0 ? (
               <div className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
                 No options found
