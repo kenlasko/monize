@@ -4,7 +4,8 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
-import { Select } from '@/components/ui/Select';
+import { MultiSelect, MultiSelectOption } from '@/components/ui/MultiSelect';
+import { ChipsInput } from '@/components/ui/ChipsInput';
 import { Input } from '@/components/ui/Input';
 import { Pagination } from '@/components/ui/Pagination';
 import { TransactionForm } from '@/components/transactions/TransactionForm';
@@ -26,22 +27,38 @@ const PAGE_SIZE = 50;
 
 // LocalStorage keys for filter persistence
 const STORAGE_KEYS = {
-  accountId: 'transactions.filter.accountId',
-  categoryId: 'transactions.filter.categoryId',
-  payeeId: 'transactions.filter.payeeId',
+  accountIds: 'transactions.filter.accountIds',
+  categoryIds: 'transactions.filter.categoryIds',
+  payeeIds: 'transactions.filter.payeeIds',
   startDate: 'transactions.filter.startDate',
   endDate: 'transactions.filter.endDate',
+  search: 'transactions.filter.search',
 };
 
-// Helper to get filter value
+// Helper to get filter values as array
 // If ANY URL params are present (navigation from reports), ignore localStorage entirely
 // This ensures clicking from a report gives a clean view with just that filter
-function getFilterValue(key: string, urlParam: string | null, hasAnyUrlParams: boolean): string {
+function getFilterValues(key: string, urlParam: string | null, hasAnyUrlParams: boolean): string[] {
   if (hasAnyUrlParams) {
     // Navigation from external link - only use URL param, ignore localStorage
-    return urlParam || '';
+    return urlParam ? urlParam.split(',').map(s => s.trim()).filter(s => s) : [];
   }
   // No URL params - use localStorage (user's last filter state)
+  if (typeof window === 'undefined') return [];
+  const stored = localStorage.getItem(key);
+  if (!stored) return [];
+  try {
+    return JSON.parse(stored);
+  } catch {
+    return [];
+  }
+}
+
+// Helper to get single string filter value
+function getFilterValue(key: string, urlParam: string | null, hasAnyUrlParams: boolean): string {
+  if (hasAnyUrlParams) {
+    return urlParam || '';
+  }
   if (typeof window === 'undefined') return '';
   return localStorage.getItem(key) || '';
 }
@@ -81,41 +98,47 @@ export default function TransactionsPage() {
   });
 
   // Filters - initialize from URL params, falling back to localStorage
-  const [filterAccountId, setFilterAccountId] = useState<string>('');
-  const [filterCategoryId, setFilterCategoryId] = useState<string>('');
-  const [filterPayeeId, setFilterPayeeId] = useState<string>('');
+  const [filterAccountIds, setFilterAccountIds] = useState<string[]>([]);
+  const [filterCategoryIds, setFilterCategoryIds] = useState<string[]>([]);
+  const [filterPayeeIds, setFilterPayeeIds] = useState<string[]>([]);
   const [filterStartDate, setFilterStartDate] = useState<string>('');
   const [filterEndDate, setFilterEndDate] = useState<string>('');
+  const [filterSearch, setFilterSearch] = useState<string>('');
   const [filtersInitialized, setFiltersInitialized] = useState(false);
 
   // Update URL when filters or page change
   const updateUrl = useCallback((page: number, filters: {
-    accountId: string;
-    categoryId: string;
-    payeeId: string;
+    accountIds: string[];
+    categoryIds: string[];
+    payeeIds: string[];
     startDate: string;
     endDate: string;
+    search: string;
   }) => {
     const params = new URLSearchParams();
     if (page > 1) params.set('page', page.toString());
-    if (filters.accountId) params.set('accountId', filters.accountId);
-    if (filters.categoryId) params.set('categoryId', filters.categoryId);
-    if (filters.payeeId) params.set('payeeId', filters.payeeId);
+    if (filters.accountIds.length) params.set('accountIds', filters.accountIds.join(','));
+    if (filters.categoryIds.length) params.set('categoryIds', filters.categoryIds.join(','));
+    if (filters.payeeIds.length) params.set('payeeIds', filters.payeeIds.join(','));
     if (filters.startDate) params.set('startDate', filters.startDate);
     if (filters.endDate) params.set('endDate', filters.endDate);
+    if (filters.search) params.set('search', filters.search);
 
     const queryString = params.toString();
     const newUrl = queryString ? `/transactions?${queryString}` : '/transactions';
     router.replace(newUrl, { scroll: false });
   }, [router]);
 
-  // Get names for display when filtered
-  const filteredCategory = filterCategoryId === 'uncategorized'
-    ? { id: 'uncategorized', name: 'Uncategorized', color: null } as Category
-    : filterCategoryId === 'transfer'
-    ? { id: 'transfer', name: 'Transfers', color: null } as Category
-    : categories.find(c => c.id === filterCategoryId);
-  const filteredPayee = payees.find(p => p.id === filterPayeeId);
+  // Get display info for selected filters
+  const selectedCategories = filterCategoryIds.map(id => {
+    if (id === 'uncategorized') return { id, name: 'Uncategorized', color: null } as Category;
+    if (id === 'transfer') return { id, name: 'Transfers', color: null } as Category;
+    return categories.find(c => c.id === id);
+  }).filter((c): c is Category => c !== undefined);
+
+  const selectedPayees = filterPayeeIds
+    .map(id => payees.find(p => p.id === id))
+    .filter((p): p is Payee => p !== undefined);
 
   // Track if static data has been loaded
   const staticDataLoaded = useRef(false);
@@ -146,20 +169,22 @@ export default function TransactionsPage() {
     try {
       const [transactionsResponse, summaryData] = await Promise.all([
         transactionsApi.getAll({
-          accountId: filterAccountId || undefined,
+          accountIds: filterAccountIds.length > 0 ? filterAccountIds : undefined,
           startDate: filterStartDate || undefined,
           endDate: filterEndDate || undefined,
-          categoryId: filterCategoryId || undefined,
-          payeeId: filterPayeeId || undefined,
+          categoryIds: filterCategoryIds.length > 0 ? filterCategoryIds : undefined,
+          payeeIds: filterPayeeIds.length > 0 ? filterPayeeIds : undefined,
+          search: filterSearch || undefined,
           page,
           limit: PAGE_SIZE,
         }),
         transactionsApi.getSummary({
-          accountId: filterAccountId || undefined,
+          accountIds: filterAccountIds.length > 0 ? filterAccountIds : undefined,
           startDate: filterStartDate || undefined,
           endDate: filterEndDate || undefined,
-          categoryId: filterCategoryId || undefined,
-          payeeId: filterPayeeId || undefined,
+          categoryIds: filterCategoryIds.length > 0 ? filterCategoryIds : undefined,
+          payeeIds: filterPayeeIds.length > 0 ? filterPayeeIds : undefined,
+          search: filterSearch || undefined,
         }),
       ]);
 
@@ -173,7 +198,7 @@ export default function TransactionsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [filterAccountId, filterCategoryId, filterPayeeId, filterStartDate, filterEndDate]);
+  }, [filterAccountIds, filterCategoryIds, filterPayeeIds, filterStartDate, filterEndDate, filterSearch]);
 
   // Refresh all data (called after form submission)
   const loadData = useCallback(async (page: number = currentPage) => {
@@ -193,34 +218,58 @@ export default function TransactionsPage() {
   // This ensures clicking from a report gives a clean view with just that filter
   useEffect(() => {
     const hasAnyUrlParams = searchParams.has('accountId') ||
+      searchParams.has('accountIds') ||
       searchParams.has('categoryId') ||
+      searchParams.has('categoryIds') ||
       searchParams.has('payeeId') ||
+      searchParams.has('payeeIds') ||
       searchParams.has('startDate') ||
-      searchParams.has('endDate');
+      searchParams.has('endDate') ||
+      searchParams.has('search');
 
-    setFilterAccountId(getFilterValue(STORAGE_KEYS.accountId, searchParams.get('accountId'), hasAnyUrlParams));
-    setFilterCategoryId(getFilterValue(STORAGE_KEYS.categoryId, searchParams.get('categoryId'), hasAnyUrlParams));
-    setFilterPayeeId(getFilterValue(STORAGE_KEYS.payeeId, searchParams.get('payeeId'), hasAnyUrlParams));
+    // Handle backward compatibility with single-value params
+    const getAccountIds = () => {
+      const ids = searchParams.get('accountIds');
+      const id = searchParams.get('accountId');
+      return getFilterValues(STORAGE_KEYS.accountIds, ids || id, hasAnyUrlParams);
+    };
+
+    const getCategoryIds = () => {
+      const ids = searchParams.get('categoryIds');
+      const id = searchParams.get('categoryId');
+      return getFilterValues(STORAGE_KEYS.categoryIds, ids || id, hasAnyUrlParams);
+    };
+
+    const getPayeeIds = () => {
+      const ids = searchParams.get('payeeIds');
+      const id = searchParams.get('payeeId');
+      return getFilterValues(STORAGE_KEYS.payeeIds, ids || id, hasAnyUrlParams);
+    };
+
+    setFilterAccountIds(getAccountIds());
+    setFilterCategoryIds(getCategoryIds());
+    setFilterPayeeIds(getPayeeIds());
     setFilterStartDate(getFilterValue(STORAGE_KEYS.startDate, searchParams.get('startDate'), hasAnyUrlParams));
     setFilterEndDate(getFilterValue(STORAGE_KEYS.endDate, searchParams.get('endDate'), hasAnyUrlParams));
+    setFilterSearch(getFilterValue(STORAGE_KEYS.search, searchParams.get('search'), hasAnyUrlParams));
     setFiltersInitialized(true);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Persist filter changes to localStorage
   useEffect(() => {
     if (!filtersInitialized) return;
-    localStorage.setItem(STORAGE_KEYS.accountId, filterAccountId);
-  }, [filterAccountId, filtersInitialized]);
+    localStorage.setItem(STORAGE_KEYS.accountIds, JSON.stringify(filterAccountIds));
+  }, [filterAccountIds, filtersInitialized]);
 
   useEffect(() => {
     if (!filtersInitialized) return;
-    localStorage.setItem(STORAGE_KEYS.categoryId, filterCategoryId);
-  }, [filterCategoryId, filtersInitialized]);
+    localStorage.setItem(STORAGE_KEYS.categoryIds, JSON.stringify(filterCategoryIds));
+  }, [filterCategoryIds, filtersInitialized]);
 
   useEffect(() => {
     if (!filtersInitialized) return;
-    localStorage.setItem(STORAGE_KEYS.payeeId, filterPayeeId);
-  }, [filterPayeeId, filtersInitialized]);
+    localStorage.setItem(STORAGE_KEYS.payeeIds, JSON.stringify(filterPayeeIds));
+  }, [filterPayeeIds, filtersInitialized]);
 
   useEffect(() => {
     if (!filtersInitialized) return;
@@ -231,6 +280,11 @@ export default function TransactionsPage() {
     if (!filtersInitialized) return;
     localStorage.setItem(STORAGE_KEYS.endDate, filterEndDate);
   }, [filterEndDate, filtersInitialized]);
+
+  useEffect(() => {
+    if (!filtersInitialized) return;
+    localStorage.setItem(STORAGE_KEYS.search, filterSearch);
+  }, [filterSearch, filtersInitialized]);
 
   // Track if this is a filter-triggered change (to reset page to 1)
   const isFilterChange = useRef(false);
@@ -246,16 +300,23 @@ export default function TransactionsPage() {
       isFilterChange.current = false;
     }
     updateUrl(page, {
-      accountId: filterAccountId,
-      categoryId: filterCategoryId,
-      payeeId: filterPayeeId,
+      accountIds: filterAccountIds,
+      categoryIds: filterCategoryIds,
+      payeeIds: filterPayeeIds,
       startDate: filterStartDate,
       endDate: filterEndDate,
+      search: filterSearch,
     });
     loadTransactions(page);
-  }, [currentPage, filterAccountId, filterCategoryId, filterPayeeId, filterStartDate, filterEndDate, updateUrl, loadTransactions, filtersInitialized]);
+  }, [currentPage, filterAccountIds, filterCategoryIds, filterPayeeIds, filterStartDate, filterEndDate, filterSearch, updateUrl, loadTransactions, filtersInitialized]);
 
-  // Helper to update filter and mark as filter change
+  // Helper to update array filter and mark as filter change
+  const handleArrayFilterChange = useCallback(<T,>(setter: (value: T) => void, value: T) => {
+    isFilterChange.current = true;
+    setter(value);
+  }, []);
+
+  // Helper to update string filter and mark as filter change
   const handleFilterChange = useCallback((setter: (value: string) => void, value: string) => {
     isFilterChange.current = true;
     setter(value);
@@ -416,9 +477,9 @@ export default function TransactionsPage() {
                 {editingTransaction ? 'Edit Transaction' : 'New Transaction'}
               </h2>
               <TransactionForm
-                key={`${editingTransaction?.id || 'new'}-${filterAccountId}-${formKey}`}
+                key={`${editingTransaction?.id || 'new'}-${filterAccountIds.join(',')}-${formKey}`}
                 transaction={editingTransaction}
-                defaultAccountId={filterAccountId}
+                defaultAccountId={filterAccountIds.length === 1 ? filterAccountIds[0] : undefined}
                 onSuccess={handleFormSuccess}
                 onCancel={handleFormCancel}
               />
@@ -430,85 +491,111 @@ export default function TransactionsPage() {
         <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Filters</h3>
-            <div className="flex gap-2">
-              {filteredCategory && (
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
-                  {filteredCategory.color && (
+            <div className="flex flex-wrap gap-2">
+              {selectedCategories.map(cat => (
+                <span key={cat.id} className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
+                  {cat.color && (
                     <span
                       className="w-2 h-2 rounded-full mr-2"
-                      style={{ backgroundColor: filteredCategory.color }}
+                      style={{ backgroundColor: cat.color }}
                     />
                   )}
-                  {filteredCategory.name}
+                  {cat.name}
                   <button
-                    onClick={() => handleFilterChange(setFilterCategoryId, '')}
+                    onClick={() => handleArrayFilterChange(setFilterCategoryIds, filterCategoryIds.filter(id => id !== cat.id))}
                     className="ml-2 hover:text-blue-600 dark:hover:text-blue-300"
-                    title="Clear category filter"
+                    title="Remove category filter"
                   >
                     ×
                   </button>
                 </span>
-              )}
-              {filteredPayee && (
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200">
-                  {filteredPayee.name}
+              ))}
+              {selectedPayees.map(payee => (
+                <span key={payee.id} className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200">
+                  {payee.name}
                   <button
-                    onClick={() => handleFilterChange(setFilterPayeeId, '')}
+                    onClick={() => handleArrayFilterChange(setFilterPayeeIds, filterPayeeIds.filter(id => id !== payee.id))}
                     className="ml-2 hover:text-purple-600 dark:hover:text-purple-300"
-                    title="Clear payee filter"
+                    title="Remove payee filter"
                   >
                     ×
                   </button>
                 </span>
-              )}
+              ))}
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Select
-              label="Account"
-              options={[
-                { value: '', label: 'All accounts' },
-                ...accounts
-                  .filter(account => !isInvestmentBrokerageAccount(account))
-                  .sort((a, b) => a.name.localeCompare(b.name))
-                  .map(account => ({
-                    value: account.id,
-                    label: account.name,
-                  })),
-              ]}
-              value={filterAccountId}
-              onChange={(e) => handleFilterChange(setFilterAccountId, e.target.value)}
+            <MultiSelect
+              label="Accounts"
+              options={accounts
+                .filter(account => !isInvestmentBrokerageAccount(account))
+                .sort((a, b) => a.name.localeCompare(b.name))
+                .map(account => ({
+                  value: account.id,
+                  label: account.name,
+                }))}
+              value={filterAccountIds}
+              onChange={(values) => handleArrayFilterChange(setFilterAccountIds, values)}
+              placeholder="All accounts"
             />
 
-            <Select
-              label="Category"
-              options={getCategorySelectOptions(categories, {
-                includeEmpty: true,
-                emptyLabel: 'All categories',
-                includeUncategorized: true,
-                includeTransfers: true,
-              })}
-              value={filterCategoryId}
-              onChange={(e) => handleFilterChange(setFilterCategoryId, e.target.value)}
+            <MultiSelect
+              label="Categories"
+              options={(() => {
+                // Build hierarchical options for MultiSelect
+                const specialOptions: MultiSelectOption[] = [
+                  { value: 'uncategorized', label: 'Uncategorized' },
+                  { value: 'transfer', label: 'Transfers' },
+                ];
+
+                // Build tree with parent-child relationships
+                const buildOptions = (parentId: string | null = null): MultiSelectOption[] => {
+                  return categories
+                    .filter(c => c.parentId === parentId)
+                    .sort((a, b) => a.name.localeCompare(b.name))
+                    .flatMap(cat => {
+                      const children = buildOptions(cat.id);
+                      return [{
+                        value: cat.id,
+                        label: cat.name,
+                        parentId: cat.parentId,
+                        children: children.length > 0 ? children : undefined,
+                      }];
+                    });
+                };
+
+                return [...specialOptions, ...buildOptions()];
+              })()}
+              value={filterCategoryIds}
+              onChange={(values) => handleArrayFilterChange(setFilterCategoryIds, values)}
+              placeholder="All categories"
             />
 
-            <Select
-              label="Payee"
-              options={[
-                { value: '', label: 'All payees' },
-                ...payees
-                  .sort((a, b) => a.name.localeCompare(b.name))
-                  .map(payee => ({
-                    value: payee.id,
-                    label: payee.name,
-                  })),
-              ]}
-              value={filterPayeeId}
-              onChange={(e) => handleFilterChange(setFilterPayeeId, e.target.value)}
+            <ChipsInput
+              label="Payees"
+              options={payees
+                .sort((a, b) => a.name.localeCompare(b.name))
+                .map(payee => ({
+                  value: payee.id,
+                  label: payee.name,
+                }))}
+              value={filterPayeeIds}
+              onChange={(values) => handleArrayFilterChange(setFilterPayeeIds, values)}
+              placeholder="Search payees..."
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
+            <div>
+              <Input
+                label="Search"
+                type="text"
+                value={filterSearch}
+                onChange={(e) => handleFilterChange(setFilterSearch, e.target.value)}
+                placeholder="Search descriptions..."
+              />
+            </div>
+
             <div>
               <Input
                 label="Start Date"
@@ -538,24 +625,26 @@ export default function TransactionsPage() {
             </div>
 
             <div className="flex items-end">
-              {(filterAccountId || filterCategoryId || filterPayeeId || filterStartDate || filterEndDate) && (
+              {(filterAccountIds.length > 0 || filterCategoryIds.length > 0 || filterPayeeIds.length > 0 || filterStartDate || filterEndDate || filterSearch) && (
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => {
                     // Clear all filters at once - reset page to 1 and update URL
                     setCurrentPage(1);
-                    setFilterAccountId('');
-                    setFilterCategoryId('');
-                    setFilterPayeeId('');
+                    setFilterAccountIds([]);
+                    setFilterCategoryIds([]);
+                    setFilterPayeeIds([]);
                     setFilterStartDate('');
                     setFilterEndDate('');
+                    setFilterSearch('');
                     // Also clear localStorage
-                    localStorage.removeItem(STORAGE_KEYS.accountId);
-                    localStorage.removeItem(STORAGE_KEYS.categoryId);
-                    localStorage.removeItem(STORAGE_KEYS.payeeId);
+                    localStorage.removeItem(STORAGE_KEYS.accountIds);
+                    localStorage.removeItem(STORAGE_KEYS.categoryIds);
+                    localStorage.removeItem(STORAGE_KEYS.payeeIds);
                     localStorage.removeItem(STORAGE_KEYS.startDate);
                     localStorage.removeItem(STORAGE_KEYS.endDate);
+                    localStorage.removeItem(STORAGE_KEYS.search);
                     router.replace('/transactions', { scroll: false });
                   }}
                 >
@@ -581,7 +670,7 @@ export default function TransactionsPage() {
               onTransactionUpdate={handleTransactionUpdate}
               density={listDensity}
               onDensityChange={setListDensity}
-              isSingleAccountView={!!filterAccountId}
+              isSingleAccountView={filterAccountIds.length === 1}
               startingBalance={startingBalance}
             />
           )}

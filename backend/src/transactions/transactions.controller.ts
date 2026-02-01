@@ -48,7 +48,12 @@ export class TransactionsController {
   @ApiQuery({
     name: 'accountId',
     required: false,
-    description: 'Filter by account ID',
+    description: 'Filter by account ID (single value, deprecated - use accountIds)',
+  })
+  @ApiQuery({
+    name: 'accountIds',
+    required: false,
+    description: 'Filter by account IDs (comma-separated)',
   })
   @ApiQuery({
     name: 'startDate',
@@ -63,12 +68,22 @@ export class TransactionsController {
   @ApiQuery({
     name: 'categoryId',
     required: false,
-    description: 'Filter by category ID (also matches split transactions with this category)',
+    description: 'Filter by category ID (single value, deprecated - use categoryIds)',
+  })
+  @ApiQuery({
+    name: 'categoryIds',
+    required: false,
+    description: 'Filter by category IDs (comma-separated, also matches split transactions)',
   })
   @ApiQuery({
     name: 'payeeId',
     required: false,
-    description: 'Filter by payee ID',
+    description: 'Filter by payee ID (single value, deprecated - use payeeIds)',
+  })
+  @ApiQuery({
+    name: 'payeeIds',
+    required: false,
+    description: 'Filter by payee IDs (comma-separated)',
   })
   @ApiQuery({
     name: 'page',
@@ -86,6 +101,11 @@ export class TransactionsController {
     description:
       'Include transactions from investment brokerage accounts (default: false)',
   })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    description: 'Search text to filter by description, payee name, or split memo',
+  })
   @ApiResponse({
     status: 200,
     description: 'List of transactions retrieved successfully',
@@ -94,24 +114,36 @@ export class TransactionsController {
   findAll(
     @Request() req,
     @Query('accountId') accountId?: string,
+    @Query('accountIds') accountIds?: string,
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
     @Query('categoryId') categoryId?: string,
+    @Query('categoryIds') categoryIds?: string,
     @Query('payeeId') payeeId?: string,
+    @Query('payeeIds') payeeIds?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
     @Query('includeInvestmentBrokerage') includeInvestmentBrokerage?: string,
+    @Query('search') search?: string,
   ) {
+    // Parse comma-separated IDs into arrays, with backward compatibility for singular params
+    const parseIds = (plural?: string, singular?: string): string[] | undefined => {
+      if (plural) return plural.split(',').map(id => id.trim()).filter(id => id);
+      if (singular) return [singular];
+      return undefined;
+    };
+
     return this.transactionsService.findAll(
       req.user.id,
-      accountId,
+      parseIds(accountIds, accountId),
       startDate,
       endDate,
-      categoryId,
-      payeeId,
+      parseIds(categoryIds, categoryId),
+      parseIds(payeeIds, payeeId),
       page ? parseInt(page, 10) : undefined,
       limit ? parseInt(limit, 10) : undefined,
       includeInvestmentBrokerage === 'true',
+      search,
     );
   }
 
@@ -120,7 +152,12 @@ export class TransactionsController {
   @ApiQuery({
     name: 'accountId',
     required: false,
-    description: 'Filter by account ID',
+    description: 'Filter by account ID (deprecated - use accountIds)',
+  })
+  @ApiQuery({
+    name: 'accountIds',
+    required: false,
+    description: 'Filter by account IDs (comma-separated)',
   })
   @ApiQuery({
     name: 'startDate',
@@ -135,12 +172,27 @@ export class TransactionsController {
   @ApiQuery({
     name: 'categoryId',
     required: false,
-    description: 'Filter by category ID',
+    description: 'Filter by category ID (deprecated - use categoryIds)',
+  })
+  @ApiQuery({
+    name: 'categoryIds',
+    required: false,
+    description: 'Filter by category IDs (comma-separated)',
   })
   @ApiQuery({
     name: 'payeeId',
     required: false,
-    description: 'Filter by payee ID',
+    description: 'Filter by payee ID (deprecated - use payeeIds)',
+  })
+  @ApiQuery({
+    name: 'payeeIds',
+    required: false,
+    description: 'Filter by payee IDs (comma-separated)',
+  })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    description: 'Search text to filter by description, payee name, or split memo',
   })
   @ApiResponse({
     status: 200,
@@ -150,18 +202,30 @@ export class TransactionsController {
   getSummary(
     @Request() req,
     @Query('accountId') accountId?: string,
+    @Query('accountIds') accountIds?: string,
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
     @Query('categoryId') categoryId?: string,
+    @Query('categoryIds') categoryIds?: string,
     @Query('payeeId') payeeId?: string,
+    @Query('payeeIds') payeeIds?: string,
+    @Query('search') search?: string,
   ) {
+    // Parse comma-separated IDs into arrays, with backward compatibility for singular params
+    const parseIds = (plural?: string, singular?: string): string[] | undefined => {
+      if (plural) return plural.split(',').map(id => id.trim()).filter(id => id);
+      if (singular) return [singular];
+      return undefined;
+    };
+
     return this.transactionsService.getSummary(
       req.user.id,
-      accountId,
+      parseIds(accountIds, accountId),
       startDate,
       endDate,
-      categoryId,
-      payeeId,
+      parseIds(categoryIds, categoryId),
+      parseIds(payeeIds, payeeId),
+      search,
     );
   }
 

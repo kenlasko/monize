@@ -24,15 +24,52 @@ export const transactionsApi = {
   // Get paginated transactions with optional filters
   getAll: async (params?: {
     accountId?: string;
+    accountIds?: string[];
     startDate?: string;
     endDate?: string;
     categoryId?: string;
+    categoryIds?: string[];
     payeeId?: string;
+    payeeIds?: string[];
     page?: number;
     limit?: number;
+    search?: string;
   }): Promise<PaginatedTransactions> => {
+    // Convert arrays to comma-separated strings for API
+    const apiParams: Record<string, string | number | undefined> = {
+      startDate: params?.startDate,
+      endDate: params?.endDate,
+      page: params?.page,
+      limit: params?.limit,
+      search: params?.search,
+    };
+
+    // Handle accountId/accountIds (prefer array)
+    if (params?.accountIds && params.accountIds.length > 0) {
+      apiParams.accountIds = params.accountIds.join(',');
+    } else if (params?.accountId) {
+      apiParams.accountId = params.accountId;
+    }
+
+    // Handle categoryId/categoryIds (prefer array)
+    if (params?.categoryIds && params.categoryIds.length > 0) {
+      apiParams.categoryIds = params.categoryIds.join(',');
+    } else if (params?.categoryId) {
+      apiParams.categoryId = params.categoryId;
+    }
+
+    // Handle payeeId/payeeIds (prefer array)
+    if (params?.payeeIds && params.payeeIds.length > 0) {
+      apiParams.payeeIds = params.payeeIds.join(',');
+    } else if (params?.payeeId) {
+      apiParams.payeeId = params.payeeId;
+    }
+
     // Use a longer timeout for accounts with many transactions
-    const response = await apiClient.get<PaginatedTransactions>('/transactions', { params, timeout: 60000 });
+    const response = await apiClient.get<PaginatedTransactions>('/transactions', {
+      params: apiParams,
+      timeout: 60000,
+    });
     return response.data;
   },
 
@@ -84,14 +121,46 @@ export const transactionsApi = {
   // Get transaction summary
   getSummary: async (params?: {
     accountId?: string;
+    accountIds?: string[];
     startDate?: string;
     endDate?: string;
     categoryId?: string;
+    categoryIds?: string[];
     payeeId?: string;
+    payeeIds?: string[];
+    search?: string;
   }): Promise<TransactionSummary> => {
+    // Convert arrays to comma-separated strings for API
+    const apiParams: Record<string, string | undefined> = {
+      startDate: params?.startDate,
+      endDate: params?.endDate,
+      search: params?.search,
+    };
+
+    // Handle accountId/accountIds (prefer array)
+    if (params?.accountIds && params.accountIds.length > 0) {
+      apiParams.accountIds = params.accountIds.join(',');
+    } else if (params?.accountId) {
+      apiParams.accountId = params.accountId;
+    }
+
+    // Handle categoryId/categoryIds (prefer array)
+    if (params?.categoryIds && params.categoryIds.length > 0) {
+      apiParams.categoryIds = params.categoryIds.join(',');
+    } else if (params?.categoryId) {
+      apiParams.categoryId = params.categoryId;
+    }
+
+    // Handle payeeId/payeeIds (prefer array)
+    if (params?.payeeIds && params.payeeIds.length > 0) {
+      apiParams.payeeIds = params.payeeIds.join(',');
+    } else if (params?.payeeId) {
+      apiParams.payeeId = params.payeeId;
+    }
+
     // Use a longer timeout for accounts with many transactions
     const response = await apiClient.get<TransactionSummary>('/transactions/summary', {
-      params,
+      params: apiParams,
       timeout: 60000,
     });
     return response.data;

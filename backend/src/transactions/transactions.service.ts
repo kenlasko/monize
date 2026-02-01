@@ -274,14 +274,15 @@ export class TransactionsService {
    */
   async findAll(
     userId: string,
-    accountId?: string,
+    accountIds?: string[],
     startDate?: string,
     endDate?: string,
-    categoryId?: string,
-    payeeId?: string,
+    categoryIds?: string[],
+    payeeIds?: string[],
     page: number = 1,
     limit: number = 50,
     includeInvestmentBrokerage: boolean = false,
+    search?: string,
   ): Promise<PaginatedTransactions> {
     // Enforce limits
     // Allow higher limits for reports that need to aggregate all data
@@ -311,8 +312,8 @@ export class TransactionsService {
       );
     }
 
-    if (accountId) {
-      queryBuilder.andWhere('transaction.accountId = :accountId', { accountId });
+    if (accountIds && accountIds.length > 0) {
+      queryBuilder.andWhere('transaction.accountId IN (:...accountIds)', { accountIds });
     }
 
     if (startDate) {
@@ -323,33 +324,58 @@ export class TransactionsService {
       queryBuilder.andWhere('transaction.transactionDate <= :endDate', { endDate });
     }
 
-    if (categoryId) {
-      if (categoryId === 'uncategorized') {
-        // Match transactions without a category (not split, not transfer)
-        queryBuilder.andWhere(
+    if (categoryIds && categoryIds.length > 0) {
+      // Check for special category filters
+      const hasUncategorized = categoryIds.includes('uncategorized');
+      const hasTransfer = categoryIds.includes('transfer');
+      const regularCategoryIds = categoryIds.filter(
+        (id) => id !== 'uncategorized' && id !== 'transfer',
+      );
+
+      const conditions: string[] = [];
+
+      if (hasUncategorized) {
+        conditions.push(
           '(transaction.categoryId IS NULL AND transaction.isSplit = false AND transaction.isTransfer = false)',
         );
-      } else if (categoryId === 'transfer') {
-        // Match transfer transactions
-        queryBuilder.andWhere('transaction.isTransfer = true');
-      } else {
-        // Get category IDs including all subcategories
-        const categoryIds = await this.getCategoryIdsWithChildren(
-          userId,
-          categoryId,
-        );
-        // Match transactions where:
-        // 1. The transaction has this category or any subcategory directly, OR
-        // 2. Any of the transaction's splits have this category or any subcategory
-        queryBuilder.andWhere(
-          '(transaction.categoryId IN (:...categoryIds) OR splits.categoryId IN (:...categoryIds))',
-          { categoryIds },
-        );
+      }
+
+      if (hasTransfer) {
+        conditions.push('transaction.isTransfer = true');
+      }
+
+      if (regularCategoryIds.length > 0) {
+        // Get all category IDs including subcategories for each selected category
+        const allCategoryIds: string[] = [];
+        for (const catId of regularCategoryIds) {
+          const idsWithChildren = await this.getCategoryIdsWithChildren(userId, catId);
+          allCategoryIds.push(...idsWithChildren);
+        }
+        const uniqueCategoryIds = [...new Set(allCategoryIds)];
+
+        if (uniqueCategoryIds.length > 0) {
+          conditions.push(
+            '(transaction.categoryId IN (:...filterCategoryIds) OR splits.categoryId IN (:...filterCategoryIds))',
+          );
+          queryBuilder.setParameter('filterCategoryIds', uniqueCategoryIds);
+        }
+      }
+
+      if (conditions.length > 0) {
+        queryBuilder.andWhere(`(${conditions.join(' OR ')})`);
       }
     }
 
-    if (payeeId) {
-      queryBuilder.andWhere('transaction.payeeId = :payeeId', { payeeId });
+    if (payeeIds && payeeIds.length > 0) {
+      queryBuilder.andWhere('transaction.payeeId IN (:...payeeIds)', { payeeIds });
+    }
+
+    if (search && search.trim()) {
+      const searchPattern = `%${search.trim()}%`;
+      queryBuilder.andWhere(
+        '(transaction.description ILIKE :search OR transaction.payeeName ILIKE :search OR splits.memo ILIKE :search)',
+        { search: searchPattern },
+      );
     }
 
     // Get total count and paginated results
@@ -363,8 +389,9 @@ export class TransactionsService {
     // Calculate starting balance for running balance column when viewing a single account
     // startingBalance = balance AFTER the first (newest) transaction on this page
     let startingBalance: number | undefined;
-    if (accountId && data.length > 0) {
-      const account = await this.accountsService.findOne(userId, accountId);
+    const singleAccountId = accountIds?.length === 1 ? accountIds[0] : undefined;
+    if (singleAccountId && data.length > 0) {
+      const account = await this.accountsService.findOne(userId, singleAccountId);
       const currentBalance = Number(account.currentBalance) || 0;
 
       if (safePage === 1) {
@@ -378,7 +405,7 @@ export class TransactionsService {
           .createQueryBuilder('t')
           .select('t.id')
           .where('t.userId = :userId', { userId })
-          .andWhere('t.accountId = :accountId', { accountId })
+          .andWhere('t.accountId = :singleAccountId', { singleAccountId })
           .orderBy('t.transactionDate', 'DESC')
           .addOrderBy('t.createdAt', 'DESC')
           .addOrderBy('t.id', 'DESC')
@@ -844,11 +871,12 @@ export class TransactionsService {
    */
   async getSummary(
     userId: string,
-    accountId?: string,
+    accountIds?: string[],
     startDate?: string,
     endDate?: string,
-    categoryId?: string,
-    payeeId?: string,
+    categoryIds?: string[],
+    payeeIds?: string[],
+    search?: string,
   ): Promise<{
     totalIncome: number;
     totalExpenses: number;
@@ -862,8 +890,8 @@ export class TransactionsService {
       .addSelect('COUNT(*)', 'transactionCount')
       .where('transaction.userId = :userId', { userId });
 
-    if (accountId) {
-      queryBuilder.andWhere('transaction.accountId = :accountId', { accountId });
+    if (accountIds && accountIds.length > 0) {
+      queryBuilder.andWhere('transaction.accountId IN (:...accountIds)', { accountIds });
     }
 
     if (startDate) {
@@ -874,33 +902,64 @@ export class TransactionsService {
       queryBuilder.andWhere('transaction.transactionDate <= :endDate', { endDate });
     }
 
-    if (categoryId) {
-      if (categoryId === 'uncategorized') {
-        // Match transactions without a category (not split, not transfer)
-        queryBuilder.andWhere(
+    if (categoryIds && categoryIds.length > 0) {
+      // Check for special category filters
+      const hasUncategorized = categoryIds.includes('uncategorized');
+      const hasTransfer = categoryIds.includes('transfer');
+      const regularCategoryIds = categoryIds.filter(
+        (id) => id !== 'uncategorized' && id !== 'transfer',
+      );
+
+      const conditions: string[] = [];
+
+      if (hasUncategorized) {
+        conditions.push(
           '(transaction.categoryId IS NULL AND transaction.isSplit = false AND transaction.isTransfer = false)',
         );
-      } else if (categoryId === 'transfer') {
-        // Match transfer transactions
-        queryBuilder.andWhere('transaction.isTransfer = true');
-      } else {
-        // Get category IDs including all subcategories
-        const categoryIds = await this.getCategoryIdsWithChildren(
-          userId,
-          categoryId,
-        );
-        // Need to join splits to match split transactions with this category
-        queryBuilder
-          .leftJoin('transaction.splits', 'splits')
-          .andWhere(
-            '(transaction.categoryId IN (:...categoryIds) OR splits.categoryId IN (:...categoryIds))',
-            { categoryIds },
+      }
+
+      if (hasTransfer) {
+        conditions.push('transaction.isTransfer = true');
+      }
+
+      if (regularCategoryIds.length > 0) {
+        // Get all category IDs including subcategories for each selected category
+        const allCategoryIds: string[] = [];
+        for (const catId of regularCategoryIds) {
+          const idsWithChildren = await this.getCategoryIdsWithChildren(userId, catId);
+          allCategoryIds.push(...idsWithChildren);
+        }
+        const uniqueCategoryIds = [...new Set(allCategoryIds)];
+
+        if (uniqueCategoryIds.length > 0) {
+          // Need to join splits to match split transactions with this category
+          queryBuilder.leftJoin('transaction.splits', 'splits');
+          conditions.push(
+            '(transaction.categoryId IN (:...summaryCategoryIds) OR splits.categoryId IN (:...summaryCategoryIds))',
           );
+          queryBuilder.setParameter('summaryCategoryIds', uniqueCategoryIds);
+        }
+      }
+
+      if (conditions.length > 0) {
+        queryBuilder.andWhere(`(${conditions.join(' OR ')})`);
       }
     }
 
-    if (payeeId) {
-      queryBuilder.andWhere('transaction.payeeId = :payeeId', { payeeId });
+    if (payeeIds && payeeIds.length > 0) {
+      queryBuilder.andWhere('transaction.payeeId IN (:...payeeIds)', { payeeIds });
+    }
+
+    if (search && search.trim()) {
+      const searchPattern = `%${search.trim()}%`;
+      // Need to join splits if not already joined for search
+      if (!categoryIds || categoryIds.length === 0) {
+        queryBuilder.leftJoin('transaction.splits', 'splits');
+      }
+      queryBuilder.andWhere(
+        '(transaction.description ILIKE :search OR transaction.payeeName ILIKE :search OR splits.memo ILIKE :search)',
+        { search: searchPattern },
+      );
     }
 
     const result = await queryBuilder.getRawOne();
