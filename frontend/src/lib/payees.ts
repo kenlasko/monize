@@ -1,5 +1,13 @@
 import apiClient from './api';
-import { Payee, CreatePayeeData, UpdatePayeeData, PayeeSummary } from '@/types/payee';
+import {
+  Payee,
+  CreatePayeeData,
+  UpdatePayeeData,
+  PayeeSummary,
+  CategorySuggestion,
+  CategorySuggestionsParams,
+  CategoryAssignment,
+} from '@/types/payee';
 
 export const payeesApi = {
   // Create payee
@@ -72,6 +80,24 @@ export const payeesApi = {
   // Get payees by category
   getByCategory: async (categoryId: string): Promise<Payee[]> => {
     const response = await apiClient.get<Payee[]>(`/payees/by-category/${categoryId}`);
+    return response.data;
+  },
+
+  // Get category auto-assignment suggestions
+  getCategorySuggestions: async (params: CategorySuggestionsParams): Promise<CategorySuggestion[]> => {
+    const response = await apiClient.get<CategorySuggestion[]>('/payees/category-suggestions/preview', {
+      params: {
+        minTransactions: params.minTransactions,
+        minPercentage: params.minPercentage,
+        onlyWithoutCategory: params.onlyWithoutCategory ?? true,
+      },
+    });
+    return response.data;
+  },
+
+  // Apply category auto-assignments
+  applyCategorySuggestions: async (assignments: CategoryAssignment[]): Promise<{ updated: number }> => {
+    const response = await apiClient.post<{ updated: number }>('/payees/category-suggestions/apply', assignments);
     return response.data;
   },
 };

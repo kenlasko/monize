@@ -224,6 +224,189 @@ export class PayeesService {
       order: { name: 'ASC' },
     });
   }
+
+  /**
+   * Calculate suggested category assignments for payees based on transaction history.
+   * @param userId The user ID
+   * @param minTransactions Minimum number of transactions a payee must have
+   * @param minPercentage Minimum percentage (0-100) a category must appear to be suggested
+   * @param onlyWithoutCategory If true, only consider payees without a default category
+   */
+  async calculateCategorySuggestions(
+    userId: string,
+    minTransactions: number,
+    minPercentage: number,
+    onlyWithoutCategory: boolean = true,
+  ): Promise<Array<{
+    payeeId: string;
+    payeeName: string;
+    currentCategoryId: string | null;
+    currentCategoryName: string | null;
+    suggestedCategoryId: string;
+    suggestedCategoryName: string;
+    transactionCount: number;
+    categoryCount: number;
+    percentage: number;
+  }>> {
+    // Get category usage statistics per payee
+    // This query counts how many times each category is used for each payee
+    const query = this.payeesRepository
+      .createQueryBuilder('payee')
+      .leftJoin('transactions', 't', 't.payee_id = payee.id AND t.is_transfer = false')
+      .leftJoin('categories', 'c', 'c.id = t.category_id')
+      .where('payee.user_id = :userId', { userId })
+      .andWhere('t.category_id IS NOT NULL')
+      .groupBy('payee.id')
+      .addGroupBy('payee.name')
+      .addGroupBy('payee.default_category_id')
+      .addGroupBy('t.category_id')
+      .addGroupBy('c.name')
+      .select([
+        'payee.id as payee_id',
+        'payee.name as payee_name',
+        'payee.default_category_id as current_category_id',
+        't.category_id as category_id',
+        'c.name as category_name',
+        'COUNT(t.id) as category_count',
+      ])
+      .having('COUNT(t.id) > 0');
+
+    if (onlyWithoutCategory) {
+      query.andWhere('payee.default_category_id IS NULL');
+    }
+
+    const categoryUsage = await query.getRawMany();
+
+    // Get total transaction count per payee
+    const totalCountsQuery = this.payeesRepository
+      .createQueryBuilder('payee')
+      .leftJoin('transactions', 't', 't.payee_id = payee.id AND t.is_transfer = false')
+      .where('payee.user_id = :userId', { userId })
+      .andWhere('t.category_id IS NOT NULL')
+      .groupBy('payee.id')
+      .select([
+        'payee.id as payee_id',
+        'COUNT(t.id) as total_count',
+      ])
+      .having('COUNT(t.id) >= :minTransactions', { minTransactions });
+
+    if (onlyWithoutCategory) {
+      totalCountsQuery.andWhere('payee.default_category_id IS NULL');
+    }
+
+    const totalCounts = await totalCountsQuery.getRawMany();
+    const totalCountMap = new Map<string, number>();
+    for (const row of totalCounts) {
+      totalCountMap.set(row.payee_id, parseInt(row.total_count, 10));
+    }
+
+    // Get current category names for payees that have one
+    const payeesWithCategories = await this.payeesRepository.find({
+      where: { userId },
+      relations: ['defaultCategory'],
+    });
+    const currentCategoryMap = new Map<string, { id: string | null; name: string | null }>();
+    for (const payee of payeesWithCategories) {
+      currentCategoryMap.set(payee.id, {
+        id: payee.defaultCategoryId,
+        name: payee.defaultCategory?.name || null,
+      });
+    }
+
+    // Find the most used category for each payee that meets the threshold
+    const suggestions: Array<{
+      payeeId: string;
+      payeeName: string;
+      currentCategoryId: string | null;
+      currentCategoryName: string | null;
+      suggestedCategoryId: string;
+      suggestedCategoryName: string;
+      transactionCount: number;
+      categoryCount: number;
+      percentage: number;
+    }> = [];
+
+    // Group category usage by payee
+    const payeeCategories = new Map<string, Array<{
+      payeeName: string;
+      categoryId: string;
+      categoryName: string;
+      count: number;
+    }>>();
+
+    for (const row of categoryUsage) {
+      const payeeId = row.payee_id;
+      if (!payeeCategories.has(payeeId)) {
+        payeeCategories.set(payeeId, []);
+      }
+      payeeCategories.get(payeeId)!.push({
+        payeeName: row.payee_name,
+        categoryId: row.category_id,
+        categoryName: row.category_name,
+        count: parseInt(row.category_count, 10),
+      });
+    }
+
+    // For each payee that meets minimum transaction threshold, find best category
+    for (const [payeeId, categories] of payeeCategories) {
+      const totalCount = totalCountMap.get(payeeId);
+      if (!totalCount || totalCount < minTransactions) continue;
+
+      // Sort categories by count (descending) and find the top one
+      categories.sort((a, b) => b.count - a.count);
+      const topCategory = categories[0];
+      const percentage = (topCategory.count / totalCount) * 100;
+
+      // Check if meets percentage threshold
+      if (percentage >= minPercentage) {
+        const current = currentCategoryMap.get(payeeId);
+        // Skip if already has this category assigned
+        if (current?.id === topCategory.categoryId) continue;
+
+        suggestions.push({
+          payeeId,
+          payeeName: topCategory.payeeName,
+          currentCategoryId: current?.id || null,
+          currentCategoryName: current?.name || null,
+          suggestedCategoryId: topCategory.categoryId,
+          suggestedCategoryName: topCategory.categoryName,
+          transactionCount: totalCount,
+          categoryCount: topCategory.count,
+          percentage: Math.round(percentage * 10) / 10,
+        });
+      }
+    }
+
+    // Sort by payee name
+    suggestions.sort((a, b) => a.payeeName.localeCompare(b.payeeName));
+
+    return suggestions;
+  }
+
+  /**
+   * Apply category suggestions to payees (bulk update)
+   */
+  async applyCategorySuggestions(
+    userId: string,
+    assignments: Array<{ payeeId: string; categoryId: string }>,
+  ): Promise<{ updated: number }> {
+    let updated = 0;
+
+    for (const assignment of assignments) {
+      // Verify payee belongs to user
+      const payee = await this.payeesRepository.findOne({
+        where: { id: assignment.payeeId, userId },
+      });
+
+      if (payee) {
+        payee.defaultCategoryId = assignment.categoryId;
+        await this.payeesRepository.save(payee);
+        updated++;
+      }
+    }
+
+    return { updated };
+  }
 }
 
 // Import these at the top with other imports

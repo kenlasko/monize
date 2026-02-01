@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Pagination } from '@/components/ui/Pagination';
 import { PayeeForm } from '@/components/payees/PayeeForm';
 import { PayeeList, DensityLevel, SortField, SortDirection } from '@/components/payees/PayeeList';
+import { CategoryAutoAssignDialog } from '@/components/payees/CategoryAutoAssignDialog';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { payeesApi } from '@/lib/payees';
 import { categoriesApi } from '@/lib/categories';
@@ -21,6 +22,7 @@ export default function PayeesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingPayee, setEditingPayee] = useState<Payee | undefined>();
+  const [showAutoAssign, setShowAutoAssign] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [listDensity, setListDensity] = useLocalStorage<DensityLevel>('moneymate-payees-density', 'normal');
@@ -161,7 +163,12 @@ export default function PayeesPage() {
                 Manage your payees and their default categories
               </p>
             </div>
-            <Button onClick={handleCreateNew}>+ New Payee</Button>
+            <div className="flex gap-3">
+              <Button variant="secondary" onClick={() => setShowAutoAssign(true)}>
+                Auto-Assign Categories
+              </Button>
+              <Button onClick={handleCreateNew}>+ New Payee</Button>
+            </div>
           </div>
         </div>
       </div>
@@ -324,6 +331,13 @@ export default function PayeesPage() {
           </div>
         )}
       </div>
+
+      {/* Auto-Assign Categories Dialog */}
+      <CategoryAutoAssignDialog
+        isOpen={showAutoAssign}
+        onClose={() => setShowAutoAssign(false)}
+        onSuccess={loadData}
+      />
     </div>
   );
 }

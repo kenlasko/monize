@@ -24,3 +24,26 @@ export interface PayeeSummary {
   payeesWithCategory: number;
   payeesWithoutCategory: number;
 }
+
+export interface CategorySuggestion {
+  payeeId: string;
+  payeeName: string;
+  currentCategoryId: string | null;
+  currentCategoryName: string | null;
+  suggestedCategoryId: string;
+  suggestedCategoryName: string;
+  transactionCount: number;
+  categoryCount: number;
+  percentage: number;
+}
+
+export interface CategorySuggestionsParams {
+  minTransactions: number;
+  minPercentage: number;
+  onlyWithoutCategory?: boolean;
+}
+
+export interface CategoryAssignment {
+  payeeId: string;
+  categoryId: string;
+}

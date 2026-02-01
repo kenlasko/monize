@@ -98,6 +98,36 @@ export class PayeesController {
     return this.payeesService.getSummary(req.user.id);
   }
 
+  @Get('category-suggestions/preview')
+  @ApiOperation({ summary: 'Preview category auto-assignment suggestions based on transaction history' })
+  @ApiQuery({ name: 'minTransactions', required: false, type: Number, description: 'Minimum transactions (default: 5)' })
+  @ApiQuery({ name: 'minPercentage', required: false, type: Number, description: 'Minimum percentage (default: 75)' })
+  @ApiQuery({ name: 'onlyWithoutCategory', required: false, type: Boolean, description: 'Only payees without category (default: true)' })
+  @ApiResponse({ status: 200, description: 'List of suggested category assignments' })
+  getCategorySuggestions(
+    @Request() req,
+    @Query('minTransactions', new DefaultValuePipe(5), ParseIntPipe) minTransactions: number,
+    @Query('minPercentage', new DefaultValuePipe(75), ParseIntPipe) minPercentage: number,
+    @Query('onlyWithoutCategory', new DefaultValuePipe('true')) onlyWithoutCategory: string,
+  ) {
+    return this.payeesService.calculateCategorySuggestions(
+      req.user.id,
+      minTransactions,
+      minPercentage,
+      onlyWithoutCategory === 'true',
+    );
+  }
+
+  @Post('category-suggestions/apply')
+  @ApiOperation({ summary: 'Apply category auto-assignments to payees' })
+  @ApiResponse({ status: 200, description: 'Assignments applied successfully' })
+  applyCategorySuggestions(
+    @Request() req,
+    @Body() assignments: Array<{ payeeId: string; categoryId: string }>,
+  ) {
+    return this.payeesService.applyCategorySuggestions(req.user.id, assignments);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get a payee by ID' })
   @ApiResponse({ status: 200, description: 'Payee details', type: Payee })
