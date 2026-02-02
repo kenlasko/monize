@@ -12,6 +12,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
+import type { CategoricalChartFunc } from 'recharts/types/chart/types';
 import { format, startOfWeek, endOfWeek, eachWeekOfInterval, subDays } from 'date-fns';
 import { Transaction } from '@/types/transaction';
 import { parseLocalDate } from '@/lib/utils';
@@ -82,9 +83,11 @@ export function IncomeExpensesBarChart({
     }));
   }, [transactions, formatDate]);
 
-  const handleChartClick = (data: { activePayload?: Array<{ payload: { startDate: string; endDate: string } }> } | null) => {
-    if (data?.activePayload?.[0]?.payload) {
-      const { startDate, endDate } = data.activePayload[0].payload;
+  const handleChartClick: CategoricalChartFunc = (state) => {
+    // Access the data point from chart data using activeIndex
+    const index = state?.activeIndex;
+    if (typeof index === 'number' && chartData[index]) {
+      const { startDate, endDate } = chartData[index];
       router.push(`/transactions?startDate=${startDate}&endDate=${endDate}`);
     }
   };

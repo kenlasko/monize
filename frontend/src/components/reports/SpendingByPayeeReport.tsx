@@ -251,7 +251,7 @@ export function SpendingByPayeeReport() {
                   <Bar
                     dataKey="value"
                     cursor="pointer"
-                    onClick={(data) => handlePayeeClick(data.id)}
+                    onClick={(data) => data.id && handlePayeeClick(data.id)}
                     radius={[0, 4, 4, 0]}
                   >
                     {chartData.map((entry, index) => (

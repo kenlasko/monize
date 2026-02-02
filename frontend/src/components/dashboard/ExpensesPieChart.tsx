@@ -209,7 +209,7 @@ export function ExpensesPieChart({
               paddingAngle={2}
               dataKey="value"
               cursor="pointer"
-              onClick={(data) => handleCategoryClick(data.id)}
+              onClick={(data) => data.id && handleCategoryClick(data.id)}
             >
               {chartData.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={entry.colour} />

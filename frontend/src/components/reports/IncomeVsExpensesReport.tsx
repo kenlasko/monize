@@ -13,6 +13,7 @@ import {
   Legend,
   ReferenceLine,
 } from 'recharts';
+import type { CategoricalChartFunc } from 'recharts/types/chart/types';
 import { format, subMonths, startOfMonth, endOfMonth, eachMonthOfInterval } from 'date-fns';
 import { transactionsApi } from '@/lib/transactions';
 import { Transaction } from '@/types/transaction';
@@ -122,9 +123,12 @@ export function IncomeVsExpensesReport() {
     }));
   }, [transactions, dateRange, startDate, endDate, getDateRange]);
 
-  const handleMonthClick = (data: { monthStart: string; monthEnd: string }) => {
-    if (data?.monthStart && data?.monthEnd) {
-      router.push(`/transactions?startDate=${data.monthStart}&endDate=${data.monthEnd}`);
+  const handleChartClick: CategoricalChartFunc = (state) => {
+    // Access the data point from chart data using activeIndex
+    const index = state?.activeIndex;
+    if (typeof index === 'number' && chartData[index]) {
+      const { monthStart, monthEnd } = chartData[index];
+      router.push(`/transactions?startDate=${monthStart}&endDate=${monthEnd}`);
     }
   };
 
@@ -248,7 +252,7 @@ export function IncomeVsExpensesReport() {
                 <BarChart
                   data={chartData}
                   margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                  onClick={(data) => data?.activePayload?.[0]?.payload && handleMonthClick(data.activePayload[0].payload)}
+                  onClick={handleChartClick}
                   style={{ cursor: 'pointer' }}
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />

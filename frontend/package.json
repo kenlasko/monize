@@ -23,7 +23,7 @@
     "react-hook-form": "^7.71.1",
     "react-hot-toast": "^2.6.0",
     "react-icons": "^5.5.0",
-    "recharts": "^2.15.4",
+    "recharts": "^3.7.0",
     "tailwind-merge": "^2.6.1",
     "zod": "^4.3.6",
     "zustand": "^5.0.11"
