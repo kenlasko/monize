@@ -13,7 +13,6 @@ import {
   Legend,
   ReferenceLine,
 } from 'recharts';
-import type { CategoricalChartFunc } from 'recharts/types/chart/types';
 import { format, subMonths, startOfMonth, endOfMonth, eachMonthOfInterval } from 'date-fns';
 import { transactionsApi } from '@/lib/transactions';
 import { Transaction } from '@/types/transaction';
@@ -123,11 +122,10 @@ export function IncomeVsExpensesReport() {
     }));
   }, [transactions, dateRange, startDate, endDate, getDateRange]);
 
-  const handleChartClick: CategoricalChartFunc = (state) => {
-    // Access the data point from chart data using activeIndex
-    const index = state?.activeIndex;
-    if (typeof index === 'number' && chartData[index]) {
-      const { monthStart, monthEnd } = chartData[index];
+  const handleChartClick = (state: unknown) => {
+    const chartState = state as { activePayload?: Array<{ payload: { monthStart: string; monthEnd: string } }> } | null;
+    if (chartState?.activePayload?.[0]?.payload) {
+      const { monthStart, monthEnd } = chartState.activePayload[0].payload;
       router.push(`/transactions?startDate=${monthStart}&endDate=${monthEnd}`);
     }
   };
