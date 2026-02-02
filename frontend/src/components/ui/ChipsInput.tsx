@@ -147,7 +147,7 @@ export function ChipsInput({
       {/* Input container with chips */}
       <div
         className={cn(
-          'flex flex-wrap items-center gap-1 min-h-[38px] rounded-md border border-gray-300 shadow-sm px-2 py-1',
+          'flex flex-wrap items-center gap-1 rounded-md border border-gray-300 shadow-sm px-3 py-2',
           'focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500',
           'dark:bg-gray-800 dark:border-gray-600',
           'dark:focus-within:border-blue-400 dark:focus-within:ring-blue-400',
@@ -187,7 +187,7 @@ export function ChipsInput({
           </span>
         ))}
 
-        {/* Search input */}
+        {/* Search input - uses inline styles to override globals.css [type='text'] rules */}
         <input
           ref={inputRef}
           type="text"
@@ -201,10 +201,19 @@ export function ChipsInput({
           placeholder={value.length === 0 ? placeholder : ''}
           disabled={disabled}
           className={cn(
-            'flex-1 min-w-[100px] border-none outline-none bg-transparent p-1 text-sm',
-            'placeholder:text-gray-400 dark:placeholder:text-gray-500',
+            'flex-1 min-w-[100px] text-sm',
+            'placeholder:text-gray-400 dark:placeholder:text-gray-400',
             'dark:text-gray-100'
           )}
+          style={{
+            border: 'none',
+            outline: 'none',
+            boxShadow: 'none',
+            padding: 0,
+            width: 'auto',
+            minHeight: 'auto',
+            background: 'transparent',
+          }}
         />
       </div>
 

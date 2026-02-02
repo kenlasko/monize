@@ -66,7 +66,19 @@ body {
 [multiple],
 textarea,
 select {
-  @apply w-full rounded-md border-gray-300 shadow-sm;
+  @apply w-full rounded-md border border-gray-300 shadow-sm px-3 py-2 text-base font-sans;
+  appearance: none;
+  background-color: #fff;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+/* Placeholder colors */
+::placeholder {
+  color: rgb(156 163 175); /* gray-400 */
+}
+
+.dark ::placeholder {
+  color: rgb(156 163 175); /* gray-400 */
 }
 
 [type='text']:focus,
@@ -102,20 +114,52 @@ select:focus {
 .dark [multiple],
 .dark textarea,
 .dark select {
-  @apply border-gray-600 bg-gray-700 text-gray-100;
+  @apply border-gray-600 text-gray-100;
+  background-color: rgb(31 41 55); /* gray-800 to match MultiSelect/ChipsInput */
+}
+
+/* Select dropdown arrow for dark mode */
+.dark select {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 0.5rem center;
+  background-repeat: no-repeat;
+  background-size: 1.5em 1.5em;
+  padding-right: 2.5rem;
+}
+
+/* Select dropdown arrow for light mode */
+select {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 0.5rem center;
+  background-repeat: no-repeat;
+  background-size: 1.5em 1.5em;
+  padding-right: 2.5rem;
 }
 
 [type='checkbox'],
 [type='radio'] {
   @apply rounded border-gray-300 text-sky-600;
+  width: 1rem;
+  height: 1rem;
 }
 
 [type='checkbox']:focus,
 [type='radio']:focus {
-  @apply ring-sky-500;
+  @apply ring-sky-500 ring-offset-2;
 }
 
 .dark [type='checkbox'],
 .dark [type='radio'] {
-  @apply border-gray-600 bg-gray-700;
+  @apply border-gray-600;
+  background-color: rgb(31 41 55); /* gray-800 */
+}
+
+/* Ensure option elements use the correct font */
+option {
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+/* Button base styling for consistency */
+button {
+  font-family: 'Inter', system-ui, sans-serif;
 }

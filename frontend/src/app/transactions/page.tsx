@@ -645,7 +645,7 @@ export default function TransactionsPage() {
                       localStorage.removeItem(STORAGE_KEYS.endDate);
                       localStorage.removeItem(STORAGE_KEYS.search);
                       router.replace('/transactions', { scroll: false });
-                      setFiltersExpanded(true);
+                      // Don't change filtersExpanded state - keep current collapse state
                     }}
                     className="text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                   >
