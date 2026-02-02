@@ -30,6 +30,7 @@ const PAGE_SIZE = 50;
 // LocalStorage keys for filter persistence
 const STORAGE_KEYS = {
   accountIds: 'transactions.filter.accountIds',
+  accountStatus: 'transactions.filter.accountStatus',
   categoryIds: 'transactions.filter.categoryIds',
   payeeIds: 'transactions.filter.payeeIds',
   startDate: 'transactions.filter.startDate',
@@ -63,6 +64,18 @@ function getFilterValue(key: string, urlParam: string | null, hasAnyUrlParams: b
   }
   if (typeof window === 'undefined') return '';
   return localStorage.getItem(key) || '';
+}
+
+// Helper to get stored value (for non-URL params like account status)
+function getStoredValue<T>(key: string, defaultValue: T): T {
+  if (typeof window === 'undefined') return defaultValue;
+  const stored = localStorage.getItem(key);
+  if (!stored) return defaultValue;
+  try {
+    return JSON.parse(stored) as T;
+  } catch {
+    return defaultValue;
+  }
 }
 
 // Check if an account is specifically an investment brokerage account
@@ -103,6 +116,9 @@ export default function TransactionsPage() {
 
   // Filters - initialize from URL params, falling back to localStorage
   const [filterAccountIds, setFilterAccountIds] = useState<string[]>([]);
+  const [filterAccountStatus, setFilterAccountStatus] = useState<'active' | 'closed' | ''>(() =>
+    getStoredValue<'active' | 'closed' | ''>(STORAGE_KEYS.accountStatus, '')
+  );
   const [filterCategoryIds, setFilterCategoryIds] = useState<string[]>([]);
   const [filterPayeeIds, setFilterPayeeIds] = useState<string[]>([]);
   const [filterStartDate, setFilterStartDate] = useState<string>('');
@@ -150,6 +166,28 @@ export default function TransactionsPage() {
     .map(id => accounts.find(a => a.id === id))
     .filter((a): a is Account => a !== undefined);
 
+  // Filter accounts by status for the dropdown
+  const filteredAccounts = useMemo(() => {
+    return accounts.filter(account => {
+      // Always exclude investment brokerage accounts from transactions
+      if (isInvestmentBrokerageAccount(account)) return false;
+      // Apply status filter
+      if (filterAccountStatus === 'active') return !account.isClosed;
+      if (filterAccountStatus === 'closed') return account.isClosed;
+      return true; // 'all' - show all non-investment accounts
+    });
+  }, [accounts, filterAccountStatus]);
+
+  // When account status filter changes, remove any selected accounts that no longer match
+  useEffect(() => {
+    if (!filtersInitialized || filterAccountIds.length === 0) return;
+    const filteredIds = new Set(filteredAccounts.map(a => a.id));
+    const validSelectedIds = filterAccountIds.filter(id => filteredIds.has(id));
+    if (validSelectedIds.length !== filterAccountIds.length) {
+      setFilterAccountIds(validSelectedIds);
+    }
+  }, [filterAccountStatus, filteredAccounts, filtersInitialized]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Calculate active filter count
   const activeFilterCount = useMemo(() => {
     let count = 0;
@@ -178,7 +216,7 @@ export default function TransactionsPage() {
 
     try {
       const [accountsData, categoriesData, payeesData] = await Promise.all([
-        accountsApi.getAll(),
+        accountsApi.getAll(true), // Include closed accounts for status filter
         categoriesApi.getAll(),
         payeesApi.getAll(),
       ]);
@@ -196,9 +234,20 @@ export default function TransactionsPage() {
   const loadTransactions = useCallback(async (page: number) => {
     setIsLoading(true);
     try {
+      // Determine which account IDs to use for the query
+      // If specific accounts are selected, use those
+      // Otherwise, if a status filter is active, use all accounts matching that status
+      let accountIdsForQuery: string[] | undefined;
+      if (filterAccountIds.length > 0) {
+        accountIdsForQuery = filterAccountIds;
+      } else if (filterAccountStatus && filteredAccounts.length > 0) {
+        // Status filter is active but no specific accounts selected - use all filtered accounts
+        accountIdsForQuery = filteredAccounts.map(a => a.id);
+      }
+
       const [transactionsResponse, summaryData] = await Promise.all([
         transactionsApi.getAll({
-          accountIds: filterAccountIds.length > 0 ? filterAccountIds : undefined,
+          accountIds: accountIdsForQuery,
           startDate: filterStartDate || undefined,
           endDate: filterEndDate || undefined,
           categoryIds: filterCategoryIds.length > 0 ? filterCategoryIds : undefined,
@@ -208,7 +257,7 @@ export default function TransactionsPage() {
           limit: PAGE_SIZE,
         }),
         transactionsApi.getSummary({
-          accountIds: filterAccountIds.length > 0 ? filterAccountIds : undefined,
+          accountIds: accountIdsForQuery,
           startDate: filterStartDate || undefined,
           endDate: filterEndDate || undefined,
           categoryIds: filterCategoryIds.length > 0 ? filterCategoryIds : undefined,
@@ -227,7 +276,7 @@ export default function TransactionsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [filterAccountIds, filterCategoryIds, filterPayeeIds, filterStartDate, filterEndDate, filterSearch]);
+  }, [filterAccountIds, filterAccountStatus, filteredAccounts, filterCategoryIds, filterPayeeIds, filterStartDate, filterEndDate, filterSearch]);
 
   // Refresh all data (called after form submission)
   const loadData = useCallback(async (page: number = currentPage) => {
@@ -289,6 +338,10 @@ export default function TransactionsPage() {
     if (!filtersInitialized) return;
     localStorage.setItem(STORAGE_KEYS.accountIds, JSON.stringify(filterAccountIds));
   }, [filterAccountIds, filtersInitialized]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.accountStatus, JSON.stringify(filterAccountStatus));
+  }, [filterAccountStatus]);
 
   useEffect(() => {
     if (!filtersInitialized) return;
@@ -565,13 +618,13 @@ export default function TransactionsPage() {
         )}
 
         {/* Quick Account Select - Favourites */}
-        {accounts.filter(a => a.isFavourite && !isInvestmentBrokerageAccount(a)).length > 0 && (
+        {filteredAccounts.filter(a => a.isFavourite).length > 0 && (
           <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-1">
             <span className="text-xs font-medium text-gray-500 dark:text-gray-400 whitespace-nowrap flex-shrink-0">
               Favourites:
             </span>
-            {accounts
-              .filter(a => a.isFavourite && !isInvestmentBrokerageAccount(a))
+            {filteredAccounts
+              .filter(a => a.isFavourite)
               .sort((a, b) => a.name.localeCompare(b.name))
               .map(account => {
                 const isSelected = filterAccountIds.includes(account.id);
@@ -628,12 +681,14 @@ export default function TransactionsPage() {
                     onClick={() => {
                       setCurrentPage(1);
                       setFilterAccountIds([]);
+                      setFilterAccountStatus('');
                       setFilterCategoryIds([]);
                       setFilterPayeeIds([]);
                       setFilterStartDate('');
                       setFilterEndDate('');
                       setFilterSearch('');
                       localStorage.removeItem(STORAGE_KEYS.accountIds);
+                      localStorage.removeItem(STORAGE_KEYS.accountStatus);
                       localStorage.removeItem(STORAGE_KEYS.categoryIds);
                       localStorage.removeItem(STORAGE_KEYS.payeeIds);
                       localStorage.removeItem(STORAGE_KEYS.startDate);
@@ -760,12 +815,48 @@ export default function TransactionsPage() {
           >
             <div className={filtersExpanded ? '' : 'overflow-hidden'}>
               <div className="px-4 pb-4 sm:px-6 border-t border-gray-200 dark:border-gray-700">
+                {/* Account status segmented control */}
+                <div className="flex items-center gap-3 pt-4 pb-2">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Show accounts:</span>
+                  <div className="inline-flex rounded-md shadow-sm">
+                    <button
+                      onClick={() => setFilterAccountStatus('')}
+                      className={`px-3 py-1.5 text-sm font-medium rounded-l-md border ${
+                        filterAccountStatus === ''
+                          ? 'bg-blue-600 text-white border-blue-600'
+                          : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'
+                      }`}
+                    >
+                      All
+                    </button>
+                    <button
+                      onClick={() => setFilterAccountStatus('active')}
+                      className={`px-3 py-1.5 text-sm font-medium border-t border-b ${
+                        filterAccountStatus === 'active'
+                          ? 'bg-blue-600 text-white border-blue-600'
+                          : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'
+                      }`}
+                    >
+                      Active
+                    </button>
+                    <button
+                      onClick={() => setFilterAccountStatus('closed')}
+                      className={`px-3 py-1.5 text-sm font-medium rounded-r-md border ${
+                        filterAccountStatus === 'closed'
+                          ? 'bg-blue-600 text-white border-blue-600'
+                          : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'
+                      }`}
+                    >
+                      Closed
+                    </button>
+                  </div>
+                </div>
+
                 {/* First row: Main filters */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
                   <MultiSelect
                     label="Accounts"
-                    options={accounts
-                      .filter(account => !isInvestmentBrokerageAccount(account))
+                    options={filteredAccounts
                       .sort((a, b) => a.name.localeCompare(b.name))
                       .map(account => ({
                         value: account.id,

@@ -8,7 +8,7 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 -- Users and Authentication
 CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    email VARCHAR(255) UNIQUE NOT NULL,
+    email VARCHAR(255) UNIQUE, -- NULL allowed for OIDC users without email
     password_hash VARCHAR(255), -- NULL for OIDC-only users
     first_name VARCHAR(100),
     last_name VARCHAR(100),

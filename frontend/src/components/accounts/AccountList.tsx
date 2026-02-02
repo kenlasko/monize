@@ -358,21 +358,22 @@ export function AccountList({ accounts, onEdit, onRefresh }: AccountListProps) {
       {/* Filter Bar */}
       <div className="px-6 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
         <div className="flex items-center justify-between flex-wrap gap-3">
-          <div className="flex items-center flex-wrap gap-4">
-            {/* Type dropdown */}
-            <select
-              value={filterAccountType}
-              onChange={(e) => setFilterAccountType(e.target.value as AccountType | '')}
-              className="text-sm font-sans border border-gray-300 dark:border-gray-600 rounded-md px-3 py-1.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-            >
-              <option value="">All Types</option>
-              {availableAccountTypes.map((type) => (
-                <option key={type} value={type}>{formatAccountType(type)}</option>
-              ))}
-            </select>
+          <div className="flex items-center gap-4">
+            {/* Type dropdown and Status segmented control - grouped together */}
+            <div className="flex items-center gap-3">
+              <select
+                value={filterAccountType}
+                onChange={(e) => setFilterAccountType(e.target.value as AccountType | '')}
+                className="text-sm font-sans border border-gray-300 dark:border-gray-600 rounded-md px-3 py-1.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              >
+                <option value="">All Types</option>
+                {availableAccountTypes.map((type) => (
+                  <option key={type} value={type}>{formatAccountType(type)}</option>
+                ))}
+              </select>
 
-            {/* Status segmented control */}
-            <div className="inline-flex rounded-md shadow-sm">
+              {/* Status segmented control */}
+              <div className="inline-flex rounded-md shadow-sm">
               <button
                 onClick={() => setFilterStatus('')}
                 className={`px-3 py-1.5 text-sm font-medium rounded-l-md border ${
@@ -403,6 +404,7 @@ export function AccountList({ accounts, onEdit, onRefresh }: AccountListProps) {
               >
                 Closed
               </button>
+              </div>
             </div>
 
             {activeFilterCount > 0 && (
