@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { CategoryForm } from '@/components/categories/CategoryForm';
 import { CategoryList, DensityLevel } from '@/components/categories/CategoryList';
 import { AppHeader } from '@/components/layout/AppHeader';
+import { Modal } from '@/components/ui/Modal';
 import { categoriesApi } from '@/lib/categories';
 import { Category } from '@/types/category';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
@@ -278,21 +279,17 @@ export default function CategoriesPage() {
         </div>
 
         {/* Form Modal */}
-        {showForm && (
-          <div className="fixed inset-0 bg-gray-500 dark:bg-gray-900 bg-opacity-75 dark:bg-opacity-80 flex items-center justify-center p-4 z-50">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl dark:shadow-gray-700/50 max-w-lg w-full max-h-[90vh] overflow-y-auto p-6">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
-                {editingCategory ? 'Edit Category' : 'New Category'}
-              </h2>
-              <CategoryForm
-                category={editingCategory}
-                categories={categories}
-                onSubmit={handleFormSubmit}
-                onCancel={handleFormCancel}
-              />
-            </div>
-          </div>
-        )}
+        <Modal isOpen={showForm} onClose={handleFormCancel} maxWidth="lg" className="p-6">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
+            {editingCategory ? 'Edit Category' : 'New Category'}
+          </h2>
+          <CategoryForm
+            category={editingCategory}
+            categories={categories}
+            onSubmit={handleFormSubmit}
+            onCancel={handleFormCancel}
+          />
+        </Modal>
 
         {/* Categories List */}
         <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg overflow-hidden">

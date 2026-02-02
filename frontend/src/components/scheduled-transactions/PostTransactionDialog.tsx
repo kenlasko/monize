@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { Combobox } from '@/components/ui/Combobox';
+import { Modal } from '@/components/ui/Modal';
 import { SplitEditor, SplitRow, createEmptySplits, toSplitRows } from '@/components/transactions/SplitEditor';
 import { ScheduledTransaction, PostScheduledTransactionData } from '@/types/scheduled-transaction';
 import { Category } from '@/types/category';
@@ -136,151 +137,146 @@ export function PostTransactionDialog({
     setAmount(roundToCents(newAmount));
   };
 
-  if (!isOpen) return null;
-
   const currentCategory = categoryId ? categories.find(c => c.id === categoryId) : null;
 
   return (
-    <div className="fixed inset-0 bg-gray-500 dark:bg-gray-900 bg-opacity-75 dark:bg-opacity-80 flex items-center justify-center p-4 z-50" onClick={onClose}>
-      {/* Modal */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl dark:shadow-gray-700/50 max-w-5xl w-full max-h-[90vh] overflow-y-auto p-6" onClick={(e) => e.stopPropagation()}>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
-              Post Transaction
-            </h3>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
-            >
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+    <Modal isOpen={isOpen} onClose={onClose} maxWidth="5xl" className="p-6">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
+          Post Transaction
+        </h3>
+        <button
+          onClick={onClose}
+          className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
+        >
+          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+        {scheduledTransaction.isTransfer ? (
+          <>
+            Post transfer "{scheduledTransaction.name}" from{' '}
+            <span className="font-medium text-gray-700 dark:text-gray-300">{scheduledTransaction.account?.name}</span>
+            {' '}to{' '}
+            <span className="font-medium text-gray-700 dark:text-gray-300">{scheduledTransaction.transferAccount?.name}</span>.
+          </>
+        ) : (
+          <>
+            Post "{scheduledTransaction.name}" to {scheduledTransaction.account?.name}.
+            Modify values below if needed for this posting only.
+          </>
+        )}
+      </div>
+
+      <div className="space-y-4">
+        {/* Transaction Date */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Transaction Date
+          </label>
+          <Input
+            type="date"
+            value={transactionDate}
+            onChange={(e) => setTransactionDate(e.target.value)}
+          />
+        </div>
+
+        {/* Amount */}
+        <CurrencyInput
+          label="Amount"
+          prefix="$"
+          value={amount}
+          onChange={(value) => setAmount(value ?? 0)}
+        />
+
+        {/* Transfer indicator - shown instead of category for transfers */}
+        {scheduledTransaction.isTransfer ? (
+          <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
+            <div className="flex items-center">
+              <svg className="h-5 w-5 text-blue-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
               </svg>
-            </button>
+              <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                Transfer: {scheduledTransaction.account?.name} → {scheduledTransaction.transferAccount?.name}
+              </span>
+            </div>
           </div>
-
-          <div className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-            {scheduledTransaction.isTransfer ? (
-              <>
-                Post transfer "{scheduledTransaction.name}" from{' '}
-                <span className="font-medium text-gray-700 dark:text-gray-300">{scheduledTransaction.account?.name}</span>
-                {' '}to{' '}
-                <span className="font-medium text-gray-700 dark:text-gray-300">{scheduledTransaction.transferAccount?.name}</span>.
-              </>
-            ) : (
-              <>
-                Post "{scheduledTransaction.name}" to {scheduledTransaction.account?.name}.
-                Modify values below if needed for this posting only.
-              </>
-            )}
-          </div>
-
-          <div className="space-y-4">
-            {/* Transaction Date */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Transaction Date
-              </label>
-              <Input
-                type="date"
-                value={transactionDate}
-                onChange={(e) => setTransactionDate(e.target.value)}
+        ) : (
+          <>
+            {/* Split toggle */}
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="isSplit"
+                checked={isSplit}
+                onChange={(e) => {
+                  setIsSplit(e.target.checked);
+                  if (e.target.checked && splits.length < 2) {
+                    setSplits(createEmptySplits(amount));
+                  }
+                }}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
               />
+              <label htmlFor="isSplit" className="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                Split this transaction
+              </label>
             </div>
 
-            {/* Amount */}
-            <CurrencyInput
-              label="Amount"
-              prefix="$"
-              value={amount}
-              onChange={(value) => setAmount(value ?? 0)}
-            />
-
-            {/* Transfer indicator - shown instead of category for transfers */}
-            {scheduledTransaction.isTransfer ? (
-              <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
-                <div className="flex items-center">
-                  <svg className="h-5 w-5 text-blue-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                  </svg>
-                  <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
-                    Transfer: {scheduledTransaction.account?.name} → {scheduledTransaction.transferAccount?.name}
-                  </span>
-                </div>
+            {/* Category or Splits */}
+            {isSplit ? (
+              <SplitEditor
+                splits={splits}
+                onChange={setSplits}
+                categories={categories}
+                accounts={accounts}
+                sourceAccountId={scheduledTransaction.accountId}
+                transactionAmount={amount}
+                onTransactionAmountChange={handleAmountChange}
+                currencyCode={scheduledTransaction.currencyCode}
+              />
+            ) : (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Category
+                </label>
+                <Combobox
+                  placeholder="Select category..."
+                  options={categoryOptions}
+                  value={categoryId}
+                  initialDisplayValue={currentCategory?.name || ''}
+                  onChange={(value) => setCategoryId(value || '')}
+                />
               </div>
-            ) : (
-              <>
-                {/* Split toggle */}
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="isSplit"
-                    checked={isSplit}
-                    onChange={(e) => {
-                      setIsSplit(e.target.checked);
-                      if (e.target.checked && splits.length < 2) {
-                        setSplits(createEmptySplits(amount));
-                      }
-                    }}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                  />
-                  <label htmlFor="isSplit" className="ml-2 text-sm text-gray-700 dark:text-gray-300">
-                    Split this transaction
-                  </label>
-                </div>
-
-                {/* Category or Splits */}
-                {isSplit ? (
-                  <SplitEditor
-                    splits={splits}
-                    onChange={setSplits}
-                    categories={categories}
-                    accounts={accounts}
-                    sourceAccountId={scheduledTransaction.accountId}
-                    transactionAmount={amount}
-                    onTransactionAmountChange={handleAmountChange}
-                    currencyCode={scheduledTransaction.currencyCode}
-                  />
-                ) : (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Category
-                    </label>
-                    <Combobox
-                      placeholder="Select category..."
-                      options={categoryOptions}
-                      value={categoryId}
-                      initialDisplayValue={currentCategory?.name || ''}
-                      onChange={(value) => setCategoryId(value || '')}
-                    />
-                  </div>
-                )}
-              </>
             )}
+          </>
+        )}
 
-            {/* Description */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Description (optional)
-              </label>
-              <Input
-                type="text"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Description..."
-              />
-            </div>
-          </div>
-
-        {/* Actions */}
-        <div className="mt-6 flex justify-end space-x-3">
-          <Button variant="outline" onClick={onClose} disabled={isLoading}>
-            Cancel
-          </Button>
-          <Button onClick={handlePost} isLoading={isLoading}>
-            Post Transaction
-          </Button>
+        {/* Description */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Description (optional)
+          </label>
+          <Input
+            type="text"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Description..."
+          />
         </div>
       </div>
-    </div>
+
+      {/* Actions */}
+      <div className="mt-6 flex justify-end space-x-3">
+        <Button variant="outline" onClick={onClose} disabled={isLoading}>
+          Cancel
+        </Button>
+        <Button onClick={handlePost} isLoading={isLoading}>
+          Post Transaction
+        </Button>
+      </div>
+    </Modal>
   );
 }

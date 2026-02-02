@@ -8,6 +8,7 @@ import { PayeeForm } from '@/components/payees/PayeeForm';
 import { PayeeList, DensityLevel, SortField, SortDirection } from '@/components/payees/PayeeList';
 import { CategoryAutoAssignDialog } from '@/components/payees/CategoryAutoAssignDialog';
 import { AppHeader } from '@/components/layout/AppHeader';
+import { Modal } from '@/components/ui/Modal';
 import { payeesApi } from '@/lib/payees';
 import { categoriesApi } from '@/lib/categories';
 import { Payee } from '@/types/payee';
@@ -273,21 +274,17 @@ export default function PayeesPage() {
         </div>
 
         {/* Form Modal */}
-        {showForm && (
-          <div className="fixed inset-0 bg-gray-500 dark:bg-gray-900 bg-opacity-75 dark:bg-opacity-80 flex items-center justify-center p-4 z-50">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl dark:shadow-gray-700/50 max-w-lg w-full max-h-[90vh] overflow-y-auto p-6">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
-                {editingPayee ? 'Edit Payee' : 'New Payee'}
-              </h2>
-              <PayeeForm
-                payee={editingPayee}
-                categories={categories}
-                onSubmit={handleFormSubmit}
-                onCancel={handleFormCancel}
-              />
-            </div>
-          </div>
-        )}
+        <Modal isOpen={showForm} onClose={handleFormCancel} maxWidth="lg" className="p-6">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
+            {editingPayee ? 'Edit Payee' : 'New Payee'}
+          </h2>
+          <PayeeForm
+            payee={editingPayee}
+            categories={categories}
+            onSubmit={handleFormSubmit}
+            onCancel={handleFormCancel}
+          />
+        </Modal>
 
         {/* Payees List */}
         <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg overflow-hidden">

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/Button';
+import { Modal } from '@/components/ui/Modal';
 import { payeesApi } from '@/lib/payees';
 import { CategorySuggestion } from '@/types/payee';
 import toast from 'react-hot-toast';
@@ -103,12 +104,9 @@ export function CategoryAutoAssignDialog({
     setSelectedIds(new Set());
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 bg-gray-500 dark:bg-gray-900 bg-opacity-75 dark:bg-opacity-80 flex items-center justify-center p-4 z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl dark:shadow-gray-700/50 max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-        {/* Header */}
+    <Modal isOpen={isOpen} onClose={onClose} maxWidth="2xl" className="overflow-hidden flex flex-col">
+      {/* Header */}
         <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
             Auto-Assign Default Categories
@@ -125,7 +123,8 @@ export function CategoryAutoAssignDialog({
             <p className="text-sm text-blue-700 dark:text-blue-300">
               This feature analyzes your transaction history to suggest default categories for payees.
               It looks at which category is most commonly used for each payee and suggests assigning
-              it as their default category for future transactions.
+              it as their default category for future transactions. You can always override the default 
+              category if needed.
             </p>
           </div>
 
@@ -325,7 +324,6 @@ export function CategoryAutoAssignDialog({
             </Button>
           </div>
         </div>
-      </div>
-    </div>
+      </Modal>
   );
 }

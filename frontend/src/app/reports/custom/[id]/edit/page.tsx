@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { Button } from '@/components/ui/Button';
+import { Modal } from '@/components/ui/Modal';
 import { CustomReportForm } from '@/components/reports/CustomReportForm';
 import { customReportsApi } from '@/lib/custom-reports';
 import { CustomReport, CreateCustomReportData } from '@/types/custom-report';
@@ -121,34 +122,30 @@ function EditCustomReportContent({ reportId }: { reportId: string }) {
       </main>
 
       {/* Delete Confirmation Modal */}
-      {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-              Delete Report
-            </h3>
-            <p className="text-gray-500 dark:text-gray-400 mb-6">
-              Are you sure you want to delete &quot;{report?.name}&quot;? This action cannot be undone.
-            </p>
-            <div className="flex justify-end gap-3">
-              <Button
-                variant="outline"
-                onClick={() => setShowDeleteConfirm(false)}
-                disabled={isDeleting}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleDelete}
-                disabled={isDeleting}
-                className="bg-red-600 hover:bg-red-700 text-white"
-              >
-                {isDeleting ? 'Deleting...' : 'Delete'}
-              </Button>
-            </div>
-          </div>
+      <Modal isOpen={showDeleteConfirm} onClose={() => setShowDeleteConfirm(false)} maxWidth="md" className="p-6">
+        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+          Delete Report
+        </h3>
+        <p className="text-gray-500 dark:text-gray-400 mb-6">
+          Are you sure you want to delete &quot;{report?.name}&quot;? This action cannot be undone.
+        </p>
+        <div className="flex justify-end gap-3">
+          <Button
+            variant="outline"
+            onClick={() => setShowDeleteConfirm(false)}
+            disabled={isDeleting}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleDelete}
+            disabled={isDeleting}
+            className="bg-red-600 hover:bg-red-700 text-white"
+          >
+            {isDeleting ? 'Deleting...' : 'Delete'}
+          </Button>
         </div>
-      )}
+      </Modal>
     </div>
   );
 }

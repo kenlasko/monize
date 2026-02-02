@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { Button } from '@/components/ui/Button';
+import { Modal } from '@/components/ui/Modal';
 import { Select } from '@/components/ui/Select';
 import { Pagination } from '@/components/ui/Pagination';
 import { PortfolioSummaryCard } from '@/components/investments/PortfolioSummaryCard';
@@ -430,28 +431,18 @@ export default function InvestmentsPage() {
       </main>
 
       {/* Transaction Form Modal */}
-      {showTransactionForm && (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div
-            className="fixed inset-0 bg-black bg-opacity-50"
-            onClick={handleFormCancel}
-          />
-          <div className="flex min-h-full items-center justify-center p-4">
-            <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-xl w-full p-6">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
-                {editingTransaction ? 'Edit Transaction' : 'New Investment Transaction'}
-              </h2>
-              <InvestmentTransactionForm
-                accounts={accounts}
-                transaction={editingTransaction}
-                defaultAccountId={getSelectedBrokerageAccountId()}
-                onSuccess={handleFormSuccess}
-                onCancel={handleFormCancel}
-              />
-            </div>
-          </div>
-        </div>
-      )}
+      <Modal isOpen={showTransactionForm} onClose={handleFormCancel} maxWidth="xl" className="p-6">
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
+          {editingTransaction ? 'Edit Transaction' : 'New Investment Transaction'}
+        </h2>
+        <InvestmentTransactionForm
+          accounts={accounts}
+          transaction={editingTransaction}
+          defaultAccountId={getSelectedBrokerageAccountId()}
+          onSuccess={handleFormSuccess}
+          onCancel={handleFormCancel}
+        />
+      </Modal>
     </div>
   );
 }

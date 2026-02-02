@@ -23,6 +23,7 @@ import { getCategorySelectOptions } from '@/lib/categoryUtils';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { AppHeader } from '@/components/layout/AppHeader';
+import { Modal } from '@/components/ui/Modal';
 
 const PAGE_SIZE = 50;
 
@@ -535,38 +536,32 @@ export default function TransactionsPage() {
         </div>
 
         {/* Form Modal */}
-        {showForm && (
-          <div className="fixed inset-0 bg-gray-500 dark:bg-gray-900 bg-opacity-75 dark:bg-opacity-80 flex items-center justify-center p-4 z-50">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl dark:shadow-gray-700/50 max-w-6xl w-full max-h-[90vh] overflow-y-auto p-6">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
-                {editingTransaction ? 'Edit Transaction' : 'New Transaction'}
-              </h2>
-              <TransactionForm
-                key={`${editingTransaction?.id || 'new'}-${filterAccountIds.join(',')}-${formKey}`}
-                transaction={editingTransaction}
-                defaultAccountId={filterAccountIds.length === 1 ? filterAccountIds[0] : undefined}
-                onSuccess={handleFormSuccess}
-                onCancel={handleFormCancel}
-              />
-            </div>
-          </div>
-        )}
+        <Modal isOpen={showForm} onClose={handleFormCancel} maxWidth="6xl" className="p-6">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
+            {editingTransaction ? 'Edit Transaction' : 'New Transaction'}
+          </h2>
+          <TransactionForm
+            key={`${editingTransaction?.id || 'new'}-${filterAccountIds.join(',')}-${formKey}`}
+            transaction={editingTransaction}
+            defaultAccountId={filterAccountIds.length === 1 ? filterAccountIds[0] : undefined}
+            onSuccess={handleFormSuccess}
+            onCancel={handleFormCancel}
+          />
+        </Modal>
 
         {/* Payee Edit Modal */}
-        {showPayeeForm && editingPayee && (
-          <div className="fixed inset-0 bg-gray-500 dark:bg-gray-900 bg-opacity-75 dark:bg-opacity-80 flex items-center justify-center p-4 z-50">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl dark:shadow-gray-700/50 max-w-lg w-full max-h-[90vh] overflow-y-auto p-6">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
-                Edit Payee
-              </h2>
-              <PayeeForm
-                payee={editingPayee}
-                categories={categories}
-                onSubmit={handlePayeeFormSubmit}
-                onCancel={handlePayeeFormCancel}
-              />
-            </div>
-          </div>
+        {editingPayee && (
+          <Modal isOpen={showPayeeForm} onClose={handlePayeeFormCancel} maxWidth="lg" className="p-6">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
+              Edit Payee
+            </h2>
+            <PayeeForm
+              payee={editingPayee}
+              categories={categories}
+              onSubmit={handlePayeeFormSubmit}
+              onCancel={handlePayeeFormCancel}
+            />
+          </Modal>
         )}
 
         {/* Quick Account Select - Favourites */}

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { AccountForm } from '@/components/accounts/AccountForm';
 import { AccountList } from '@/components/accounts/AccountList';
 import { AppHeader } from '@/components/layout/AppHeader';
+import { Modal } from '@/components/ui/Modal';
 import { accountsApi } from '@/lib/accounts';
 import { Account } from '@/types/account';
 
@@ -245,20 +246,16 @@ export default function AccountsPage() {
         </div>
 
         {/* Form Modal */}
-        {showForm && (
-          <div className="fixed inset-0 bg-gray-500 dark:bg-gray-900 bg-opacity-75 dark:bg-opacity-80 flex items-center justify-center p-4 z-50">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl dark:shadow-gray-700/50 max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
-                {editingAccount ? 'Edit Account' : 'New Account'}
-              </h2>
-              <AccountForm
-                account={editingAccount}
-                onSubmit={handleFormSubmit}
-                onCancel={handleFormCancel}
-              />
-            </div>
-          </div>
-        )}
+        <Modal isOpen={showForm} onClose={handleFormCancel} maxWidth="2xl" className="p-6">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
+            {editingAccount ? 'Edit Account' : 'New Account'}
+          </h2>
+          <AccountForm
+            account={editingAccount}
+            onSubmit={handleFormSubmit}
+            onCancel={handleFormCancel}
+          />
+        </Modal>
 
         {/* Accounts List */}
         <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg overflow-hidden">

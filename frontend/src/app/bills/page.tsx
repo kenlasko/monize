@@ -18,6 +18,7 @@ import { Category } from '@/types/category';
 import { Account } from '@/types/account';
 import { parseLocalDate } from '@/lib/utils';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { Modal } from '@/components/ui/Modal';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 
 interface OverrideEditorState {
@@ -476,21 +477,17 @@ export default function BillsPage() {
         </ErrorBoundary>
 
         {/* Form Modal */}
-        {showForm && (
-          <div className="fixed inset-0 bg-gray-500 dark:bg-gray-900 bg-opacity-75 dark:bg-opacity-80 flex items-center justify-center p-4 z-50">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl dark:shadow-gray-700/50 max-w-5xl w-full max-h-[90vh] overflow-y-auto p-6">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
-                {editingTransaction ? 'Edit Scheduled Transaction' : 'New Scheduled Transaction'}
-              </h2>
-              <ScheduledTransactionForm
-                key={editingTransaction?.id || 'new'}
-                scheduledTransaction={editingTransaction}
-                onSuccess={handleFormSuccess}
-                onCancel={handleFormCancel}
-              />
-            </div>
-          </div>
-        )}
+        <Modal isOpen={showForm} onClose={handleFormCancel} maxWidth="5xl" className="p-6">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
+            {editingTransaction ? 'Edit Scheduled Transaction' : 'New Scheduled Transaction'}
+          </h2>
+          <ScheduledTransactionForm
+            key={editingTransaction?.id || 'new'}
+            scheduledTransaction={editingTransaction}
+            onSuccess={handleFormSuccess}
+            onCancel={handleFormCancel}
+          />
+        </Modal>
 
         {/* Filter Tabs */}
         <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg mb-6">
@@ -587,37 +584,30 @@ export default function BillsPage() {
       )}
 
       {/* Override Confirmation Dialog */}
-      {overrideConfirm.isOpen && (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
-            <div className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-75" onClick={handleOverrideConfirmCancel} />
-            <div className="relative z-10 inline-block px-6 py-5 overflow-hidden text-left align-bottom transition-all transform bg-white dark:bg-gray-800 rounded-lg shadow-xl sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-              <div className="mb-4">
-                <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                  Existing Overrides Found
-                </h3>
-                <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                  This scheduled transaction has {overrideConfirm.overrideCount} individual occurrence{overrideConfirm.overrideCount !== 1 ? 's' : ''} with custom modifications.
-                </p>
-                <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                  What would you like to do with these modifications when you update the base template?
-                </p>
-              </div>
-              <div className="flex flex-col space-y-3 sm:flex-row sm:space-y-0 sm:space-x-3 sm:justify-end">
-                <Button variant="outline" onClick={handleOverrideConfirmCancel}>
-                  Cancel
-                </Button>
-                <Button variant="outline" onClick={handleOverrideConfirmKeep}>
-                  Keep Modifications
-                </Button>
-                <Button onClick={handleOverrideConfirmDelete} className="bg-red-600 hover:bg-red-700">
-                  Delete All Modifications
-                </Button>
-              </div>
-            </div>
-          </div>
+      <Modal isOpen={overrideConfirm.isOpen} onClose={handleOverrideConfirmCancel} maxWidth="lg" className="px-6 py-5">
+        <div className="mb-4">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
+            Existing Overrides Found
+          </h3>
+          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+            This scheduled transaction has {overrideConfirm.overrideCount} individual occurrence{overrideConfirm.overrideCount !== 1 ? 's' : ''} with custom modifications.
+          </p>
+          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+            What would you like to do with these modifications when you update the base template?
+          </p>
         </div>
-      )}
+        <div className="flex flex-col space-y-3 sm:flex-row sm:space-y-0 sm:space-x-3 sm:justify-end">
+          <Button variant="outline" onClick={handleOverrideConfirmCancel}>
+            Cancel
+          </Button>
+          <Button variant="outline" onClick={handleOverrideConfirmKeep}>
+            Keep Modifications
+          </Button>
+          <Button onClick={handleOverrideConfirmDelete} className="bg-red-600 hover:bg-red-700">
+            Delete All Modifications
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 }

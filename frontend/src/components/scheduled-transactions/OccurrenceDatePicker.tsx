@@ -1,9 +1,10 @@
 'use client';
 
 import { useMemo } from 'react';
-import { ScheduledTransaction, ScheduledTransactionOverride, FrequencyType } from '@/types/scheduled-transaction';
+import { ScheduledTransaction, FrequencyType } from '@/types/scheduled-transaction';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { parseLocalDate } from '@/lib/utils';
+import { Modal } from '@/components/ui/Modal';
 
 interface Override {
   originalDate: string;
@@ -133,75 +134,70 @@ export function OccurrenceDatePicker({
   // Track which date is the next due date
   const nextDueDate = scheduledTransaction.nextDueDate.split('T')[0];
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 bg-gray-500 dark:bg-gray-900 bg-opacity-75 dark:bg-opacity-80 flex items-center justify-center p-4 z-50" onClick={onClose}>
-      {/* Modal */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl dark:shadow-gray-700/50 max-w-sm w-full max-h-[90vh] overflow-y-auto p-6" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
-            Select Occurrence Date
-          </h3>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
-          >
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-          Choose which occurrence of "{scheduledTransaction.name}" to modify:
-        </p>
-
-        <div className="space-y-2">
-          {nextDates.map((date) => {
-            const hasOverride = overrideDateSet.has(date);
-            const isNextDue = date === nextDueDate;
-            return (
-              <button
-                key={date}
-                onClick={() => onSelect(date)}
-                className={`w-full px-4 py-3 text-left rounded-lg border transition-colors ${
-                  hasOverride
-                    ? 'border-purple-300 dark:border-purple-600 bg-purple-50 dark:bg-purple-900/20'
-                    : 'border-gray-200 dark:border-gray-700'
-                } hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-purple-300 dark:hover:border-purple-600`}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                    {formatDate(date)}
-                  </span>
-                  <div className="flex items-center space-x-2">
-                    {hasOverride && (
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
-                        Modified
-                      </span>
-                    )}
-                    {isNextDue && (
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                        Next Due
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-          <button
-            onClick={onClose}
-            className="w-full px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600"
-          >
-            Cancel
-          </button>
-        </div>
+    <Modal isOpen={isOpen} onClose={onClose} maxWidth="sm" className="p-6">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
+          Select Occurrence Date
+        </h3>
+        <button
+          onClick={onClose}
+          className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
+        >
+          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
       </div>
-    </div>
+
+      <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+        Choose which occurrence of "{scheduledTransaction.name}" to modify:
+      </p>
+
+      <div className="space-y-2">
+        {nextDates.map((date) => {
+          const hasOverride = overrideDateSet.has(date);
+          const isNextDue = date === nextDueDate;
+          return (
+            <button
+              key={date}
+              onClick={() => onSelect(date)}
+              className={`w-full px-4 py-3 text-left rounded-lg border transition-colors ${
+                hasOverride
+                  ? 'border-purple-300 dark:border-purple-600 bg-purple-50 dark:bg-purple-900/20'
+                  : 'border-gray-200 dark:border-gray-700'
+              } hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-purple-300 dark:hover:border-purple-600`}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                  {formatDate(date)}
+                </span>
+                <div className="flex items-center space-x-2">
+                  {hasOverride && (
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
+                      Modified
+                    </span>
+                  )}
+                  {isNextDue && (
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                      Next Due
+                    </span>
+                  )}
+                </div>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+        <button
+          onClick={onClose}
+          className="w-full px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600"
+        >
+          Cancel
+        </button>
+      </div>
+    </Modal>
   );
 }
