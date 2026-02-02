@@ -133,6 +133,10 @@ export class UsersService {
       );
     }
 
+    if (!user.passwordHash) {
+      throw new BadRequestException('No password set for this account');
+    }
+
     // Verify current password
     const isPasswordValid = await bcrypt.compare(
       dto.currentPassword,

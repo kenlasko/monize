@@ -64,3 +64,6 @@ backup.sql
 # Sensitive data
 secrets/
 credentials/
+
+# Claude stuff
+CLAUDE.md

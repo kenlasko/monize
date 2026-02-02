@@ -3,6 +3,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';
 import * as express from 'express';
+import * as cookieParser from 'cookie-parser';
 import * as pg from 'pg';
 import { AppModule } from './app.module';
 
@@ -17,6 +18,9 @@ async function bootstrap() {
   // Increase body size limit for large QIF file imports
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ limit: '10mb', extended: true }));
+
+  // Cookie parser for OIDC state/nonce and auth tokens
+  app.use(cookieParser());
 
   // Security middleware
   app.use(helmet());

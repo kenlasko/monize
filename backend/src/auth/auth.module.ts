@@ -9,7 +9,7 @@ import { AuthController } from './auth.controller';
 import { User } from '../users/entities/user.entity';
 import { LocalStrategy } from './strategies/local.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
-import { OidcStrategy } from './strategies/oidc.strategy';
+import { OidcService } from './oidc/oidc.service';
 import { UsersModule } from '../users/users.module';
 
 @Module({
@@ -28,8 +28,8 @@ import { UsersModule } from '../users/users.module';
       }),
     }),
   ],
-  providers: [AuthService, LocalStrategy, JwtStrategy, OidcStrategy],
+  providers: [AuthService, LocalStrategy, JwtStrategy, OidcService],
   controllers: [AuthController],
-  exports: [AuthService],
+  exports: [AuthService, OidcService],
 })
 export class AuthModule {}

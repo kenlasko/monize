@@ -14,24 +14,24 @@ export class User {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ unique: true })
-  email: string;
+  @Column({ unique: true, nullable: true })
+  email: string | null;
 
   @Column({ name: 'password_hash', nullable: true })
   @Exclude()
-  passwordHash: string;
+  passwordHash: string | null;
 
   @Column({ name: 'first_name', nullable: true })
-  firstName: string;
+  firstName: string | null;
 
   @Column({ name: 'last_name', nullable: true })
-  lastName: string;
+  lastName: string | null;
 
   @Column({ name: 'auth_provider', default: 'local' })
   authProvider: string;
 
   @Column({ name: 'oidc_subject', unique: true, nullable: true })
-  oidcSubject: string;
+  oidcSubject: string | null;
 
   @Column({ name: 'is_active', default: true })
   isActive: boolean;
@@ -43,7 +43,7 @@ export class User {
   updatedAt: Date;
 
   @Column({ name: 'last_login', type: 'timestamp', nullable: true })
-  lastLogin: Date;
+  lastLogin: Date | null;
 
   @OneToOne(() => UserPreference, (preference) => preference.user)
   preferences: UserPreference;

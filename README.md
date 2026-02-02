@@ -82,7 +82,7 @@ A comprehensive personal finance management application built with NestJS and Ne
 ## Project Structure
 
 ```
-finance-app/
+moneymate/
 ├── backend/                    # NestJS backend application
 │   ├── src/
 │   │   ├── auth/              # Authentication module (Local & OIDC)
@@ -153,7 +153,7 @@ The application uses a comprehensive PostgreSQL schema with the following main t
 1. Clone the repository:
 ```bash
 git clone <repository-url>
-cd finance-app
+cd moneymate
 ```
 
 2. Copy environment variables:
@@ -189,8 +189,8 @@ npm install
 
 2. Set up PostgreSQL database:
 ```bash
-createdb finance_db
-psql finance_db < ../database/schema.sql
+createdb moneymate_db
+psql moneymate_db < ../database/schema.sql
 ```
 
 3. Start Redis:

@@ -10,6 +10,7 @@ export const apiClient = axios.create({
     'Content-Type': 'application/json',
   },
   timeout: 10000,
+  withCredentials: true, // Include cookies in cross-origin requests (for OIDC httpOnly cookie auth)
 });
 
 // Request interceptor to add auth token

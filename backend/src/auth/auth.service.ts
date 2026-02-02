@@ -1,7 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DeepPartial } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
 
 import { User } from '../users/entities/user.entity';
@@ -99,8 +99,26 @@ export class AuthService {
     return null;
   }
 
-  async findOrCreateOidcUser(profile: any) {
-    const { sub, email, given_name, family_name } = profile;
+  async findOrCreateOidcUser(userInfo: Record<string, unknown>) {
+    // Standard OIDC claims
+    const sub = userInfo.sub as string;
+    const email = userInfo.email as string | undefined;
+
+    // Handle name claims - try specific claims first, fall back to 'name'
+    const fullName = userInfo.name as string | undefined;
+    const firstName =
+      (userInfo.given_name as string) ||
+      (userInfo.preferred_username as string) ||
+      fullName?.split(' ')[0] ||
+      undefined;
+    const lastName =
+      (userInfo.family_name as string) ||
+      fullName?.split(' ').slice(1).join(' ') ||
+      undefined;
+
+    if (!sub) {
+      throw new UnauthorizedException('OIDC provider did not return a subject identifier');
+    }
 
     let user = await this.usersRepository.findOne({
       where: { oidcSubject: sub },
@@ -108,26 +126,54 @@ export class AuthService {
 
     if (!user) {
       // Check if email exists with different auth provider
-      const existingUser = await this.usersRepository.findOne({
-        where: { email },
-      });
+      if (email) {
+        const existingUser = await this.usersRepository.findOne({
+          where: { email },
+        });
 
-      if (existingUser) {
-        throw new UnauthorizedException(
-          'Email already registered with different authentication method',
-        );
+        if (existingUser) {
+          // Link OIDC to existing local account
+          existingUser.oidcSubject = sub;
+          // Keep authProvider as 'local' if they have a password, allowing both login methods
+          // If they want OIDC-only, they can remove their password later
+          await this.usersRepository.save(existingUser);
+          user = existingUser;
+        }
       }
 
-      // Create new user
-      user = this.usersRepository.create({
-        email,
-        firstName: given_name,
-        lastName: family_name,
-        oidcSubject: sub,
-        authProvider: 'oidc',
-      });
+      if (!user) {
+        // Create new user (no existing account found)
+        const userData: DeepPartial<User> = {
+          email: email ?? null,
+          firstName: firstName ?? null,
+          lastName: lastName ?? null,
+          oidcSubject: sub,
+          authProvider: 'oidc',
+        };
+        user = this.usersRepository.create(userData);
 
-      await this.usersRepository.save(user);
+        await this.usersRepository.save(user);
+      }
+    } else {
+      // Update user info if it has changed (but don't overwrite with null)
+      let needsUpdate = false;
+
+      if (email && user.email !== email) {
+        user.email = email;
+        needsUpdate = true;
+      }
+      if (firstName && user.firstName !== firstName) {
+        user.firstName = firstName;
+        needsUpdate = true;
+      }
+      if (lastName && user.lastName !== lastName) {
+        user.lastName = lastName;
+        needsUpdate = true;
+      }
+
+      if (needsUpdate) {
+        await this.usersRepository.save(user);
+      }
     }
 
     // Update last login

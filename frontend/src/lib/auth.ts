@@ -1,6 +1,11 @@
 import apiClient from './api';
 import { LoginCredentials, RegisterData, AuthResponse } from '@/types/auth';
 
+export interface AuthMethods {
+  local: boolean;
+  oidc: boolean;
+}
+
 export const authApi = {
   login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
     const response = await apiClient.post<AuthResponse>('/auth/login', credentials);
@@ -18,6 +23,11 @@ export const authApi = {
 
   getProfile: async () => {
     const response = await apiClient.get('/auth/profile');
+    return response.data;
+  },
+
+  getAuthMethods: async (): Promise<AuthMethods> => {
+    const response = await apiClient.get<AuthMethods>('/auth/methods');
     return response.data;
   },
 

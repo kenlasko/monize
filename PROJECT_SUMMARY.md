@@ -219,7 +219,7 @@ Supports exchanges:
 
 ```bash
 # 1. Navigate to project
-cd /home/ken/finance-app
+cd /home/ken/moneymate
 
 # 2. Run the start script
 ./start.sh
@@ -233,7 +233,7 @@ cd /home/ken/finance-app
 ## Project Structure
 
 ```
-finance-app/
+moneymate/
 ├── backend/                    # NestJS backend
 │   ├── src/
 │   │   ├── auth/              # ✅ Authentication (complete)
@@ -304,7 +304,7 @@ finance-app/
 
 1. **Immediate** (Start here):
    ```bash
-   cd /home/ken/finance-app
+   cd /home/ken/moneymate
    ./start.sh
    ```
 

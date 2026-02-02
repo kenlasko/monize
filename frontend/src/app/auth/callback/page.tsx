@@ -15,31 +15,43 @@ function CallbackContent() {
     const handleCallback = async () => {
       setLoading(true);
       try {
-        const token = searchParams.get('token');
+        const success = searchParams.get('success');
         const error = searchParams.get('error');
+        const token = searchParams.get('token');
 
+        // Handle error from OIDC provider
         if (error) {
           toast.error(decodeURIComponent(error));
           router.push('/login');
           return;
         }
 
-        if (!token) {
-          toast.error('No authentication token received');
-          router.push('/login');
-          return;
+        // For legacy token-in-URL flow (local auth)
+        if (token) {
+          const { setToken } = useAuthStore.getState();
+          setToken(token);
         }
 
-        // Store token temporarily
-        const { setToken } = useAuthStore.getState();
-        setToken(token);
+        // For OIDC flow, token is in httpOnly cookie
+        // For both flows, fetch the user profile to validate authentication
+        try {
+          const user = await authApi.getProfile();
 
-        // Fetch user profile
-        const user = await authApi.getProfile();
-        login(user, token);
+          // For OIDC, we don't have the token in JS (it's httpOnly)
+          // Store a placeholder to indicate we're authenticated via cookie
+          login(user, token || 'httpOnly');
 
-        toast.success('Successfully signed in!');
-        router.push('/dashboard');
+          toast.success('Successfully signed in!');
+          router.push('/dashboard');
+        } catch (profileError: any) {
+          // If no token param and profile fetch fails, auth failed
+          if (!token && !success) {
+            toast.error('No authentication token received');
+          } else {
+            toast.error('Authentication failed');
+          }
+          router.push('/login');
+        }
       } catch (error: any) {
         const message = error.response?.data?.message || 'Authentication failed';
         setError(message);
@@ -54,13 +66,13 @@ function CallbackContent() {
   }, [searchParams, router, login, setLoading, setError]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
       <div className="text-center">
         <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
-        <h2 className="text-xl font-semibold text-gray-900">
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
           Completing sign in...
         </h2>
-        <p className="text-gray-600 mt-2">Please wait while we authenticate you</p>
+        <p className="text-gray-600 dark:text-gray-400 mt-2">Please wait while we authenticate you</p>
       </div>
     </div>
   );
@@ -69,10 +81,10 @@ function CallbackContent() {
 export default function CallbackPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
-          <h2 className="text-xl font-semibold text-gray-900">Loading...</h2>
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Loading...</h2>
         </div>
       </div>
     }>

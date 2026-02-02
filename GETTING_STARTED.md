@@ -16,7 +16,7 @@ Install the following on your system:
 
 ```bash
 # Navigate to the project directory
-cd /home/ken/finance-app
+cd /home/ken/moneymate
 
 # Copy the environment template
 cp .env.example .env
@@ -93,16 +93,16 @@ npm install
 
 ```bash
 # Create database
-createdb finance_db
+createdb moneymate_db
 
 # Create user
-psql -c "CREATE USER finance_user WITH PASSWORD 'changeme';"
+psql -c "CREATE USER moneymate_user WITH PASSWORD 'changeme';"
 
 # Grant privileges
-psql -c "GRANT ALL PRIVILEGES ON DATABASE finance_db TO finance_user;"
+psql -c "GRANT ALL PRIVILEGES ON DATABASE moneymate_db TO moneymate_user;"
 
 # Initialize schema
-psql finance_db < database/schema.sql
+psql moneymate_db < database/schema.sql
 ```
 
 ### 3. Start Redis
@@ -339,17 +339,17 @@ docker-compose up -d --build frontend
 
 ```bash
 # Using Docker
-docker-compose exec postgres pg_dump -U finance_user finance_db > backup.sql
+docker-compose exec postgres pg_dump -U moneymate_user moneymate_db > backup.sql
 
 # Restore
-docker-compose exec -T postgres psql -U finance_user finance_db < backup.sql
+docker-compose exec -T postgres psql -U moneymate_user moneymate_db < backup.sql
 ```
 
 ### Access Database
 
 ```bash
 # Using Docker
-docker-compose exec postgres psql -U finance_user -d finance_db
+docker-compose exec postgres psql -U moneymate_user -d moneymate_db
 
 # Or use a GUI tool like:
 # - pgAdmin: https://www.pgadmin.org/

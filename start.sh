@@ -72,8 +72,8 @@ echo ""
 # Wait for PostgreSQL to be ready
 echo "Waiting for PostgreSQL..."
 for i in {1..30}; do
-    if docker-compose exec -T postgres pg_isready -U finance_user -d finance_db &> /dev/null || \
-       docker compose exec -T postgres pg_isready -U finance_user -d finance_db &> /dev/null; then
+    if docker-compose exec -T postgres pg_isready -U moneymate_user -d moneymate_db &> /dev/null || \
+       docker compose exec -T postgres pg_isready -U moneymate_user -d moneymate_db &> /dev/null; then
         echo "✅ PostgreSQL is ready"
         break
     fi
