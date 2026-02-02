@@ -12,7 +12,7 @@ interface Report {
   name: string;
   description: string;
   icon: React.ReactNode;
-  category: 'spending' | 'income' | 'networth' | 'tax';
+  category: 'spending' | 'income' | 'networth' | 'tax' | 'debt' | 'investment' | 'insights' | 'maintenance' | 'bills';
   color: string;
 }
 
@@ -138,6 +138,143 @@ const reports: Report[] = [
       </svg>
     ),
   },
+  // Debt & Loans
+  {
+    id: 'debt-payoff-timeline',
+    name: 'Debt Payoff Timeline',
+    description: 'Visualize your debt reduction progress with projections for payoff dates.',
+    category: 'debt',
+    color: 'bg-orange-500',
+    icon: (
+      <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+      </svg>
+    ),
+  },
+  {
+    id: 'loan-amortization',
+    name: 'Loan Amortization Schedule',
+    description: 'Detailed payment schedules for mortgages and loans with principal vs interest breakdown.',
+    category: 'debt',
+    color: 'bg-amber-500',
+    icon: (
+      <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+      </svg>
+    ),
+  },
+  // Investment
+  {
+    id: 'investment-performance',
+    name: 'Investment Performance',
+    description: 'Track portfolio returns, gains/losses, and asset allocation over time.',
+    category: 'investment',
+    color: 'bg-lime-500',
+    icon: (
+      <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+      </svg>
+    ),
+  },
+  {
+    id: 'dividend-income',
+    name: 'Dividend & Interest Income',
+    description: 'Track passive income from dividends, interest, and other investment returns.',
+    category: 'investment',
+    color: 'bg-green-600',
+    icon: (
+      <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+      </svg>
+    ),
+  },
+  // Behavioral Insights
+  {
+    id: 'recurring-expenses',
+    name: 'Recurring Expenses Tracker',
+    description: 'Identify and monitor subscriptions, memberships, and recurring charges.',
+    category: 'insights',
+    color: 'bg-fuchsia-500',
+    icon: (
+      <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+      </svg>
+    ),
+  },
+  {
+    id: 'spending-anomalies',
+    name: 'Spending Anomalies',
+    description: 'Detect unusually large transactions and spending spikes that need attention.',
+    category: 'insights',
+    color: 'bg-rose-500',
+    icon: (
+      <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+      </svg>
+    ),
+  },
+  {
+    id: 'weekend-weekday-spending',
+    name: 'Weekend vs Weekday Spending',
+    description: 'Analyze your spending patterns based on day of week to understand habits.',
+    category: 'insights',
+    color: 'bg-pink-500',
+    icon: (
+      <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+      </svg>
+    ),
+  },
+  // Maintenance & Cleanup
+  {
+    id: 'uncategorized-transactions',
+    name: 'Uncategorized Transactions',
+    description: 'Find and categorize transactions that are missing categories.',
+    category: 'maintenance',
+    color: 'bg-gray-500',
+    icon: (
+      <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+      </svg>
+    ),
+  },
+  {
+    id: 'duplicate-transactions',
+    name: 'Duplicate Transaction Finder',
+    description: 'Identify potential duplicate entries that may need review or deletion.',
+    category: 'maintenance',
+    color: 'bg-slate-500',
+    icon: (
+      <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+      </svg>
+    ),
+  },
+  // Scheduled & Bills
+  {
+    id: 'upcoming-bills',
+    name: 'Upcoming Bills Calendar',
+    description: 'Visual calendar of scheduled transactions and upcoming bill due dates.',
+    category: 'bills',
+    color: 'bg-yellow-500',
+    icon: (
+      <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+      </svg>
+    ),
+  },
+  {
+    id: 'bill-payment-history',
+    name: 'Bill Payment History',
+    description: 'Track payment patterns and history for recurring bills and scheduled transactions.',
+    category: 'bills',
+    color: 'bg-yellow-600',
+    icon: (
+      <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+      </svg>
+    ),
+  },
 ];
 
 const categoryLabels: Record<Report['category'], string> = {
@@ -145,6 +282,11 @@ const categoryLabels: Record<Report['category'], string> = {
   income: 'Income',
   networth: 'Net Worth',
   tax: 'Tax',
+  debt: 'Debt & Loans',
+  investment: 'Investment',
+  insights: 'Insights',
+  maintenance: 'Maintenance',
+  bills: 'Bills',
 };
 
 const categoryColors: Record<Report['category'], string> = {
@@ -152,6 +294,11 @@ const categoryColors: Record<Report['category'], string> = {
   income: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
   networth: 'bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-300',
   tax: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+  debt: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300',
+  investment: 'bg-lime-100 text-lime-800 dark:bg-lime-900/30 dark:text-lime-300',
+  insights: 'bg-pink-100 text-pink-800 dark:bg-pink-900/30 dark:text-pink-300',
+  maintenance: 'bg-gray-100 text-gray-800 dark:bg-gray-700/50 dark:text-gray-300',
+  bills: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300',
 };
 
 export default function ReportsPage() {

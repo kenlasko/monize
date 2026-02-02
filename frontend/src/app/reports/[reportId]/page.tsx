@@ -12,6 +12,22 @@ import { AccountBalancesReport } from '@/components/reports/AccountBalancesRepor
 import { CashFlowReport } from '@/components/reports/CashFlowReport';
 import { TaxSummaryReport } from '@/components/reports/TaxSummaryReport';
 import { YearOverYearReport } from '@/components/reports/YearOverYearReport';
+// Debt & Loans
+import { DebtPayoffTimelineReport } from '@/components/reports/DebtPayoffTimelineReport';
+import { LoanAmortizationReport } from '@/components/reports/LoanAmortizationReport';
+// Investment
+import { InvestmentPerformanceReport } from '@/components/reports/InvestmentPerformanceReport';
+import { DividendIncomeReport } from '@/components/reports/DividendIncomeReport';
+// Behavioral Insights
+import { RecurringExpensesReport } from '@/components/reports/RecurringExpensesReport';
+import { SpendingAnomaliesReport } from '@/components/reports/SpendingAnomaliesReport';
+import { WeekendVsWeekdayReport } from '@/components/reports/WeekendVsWeekdayReport';
+// Maintenance & Cleanup
+import { UncategorizedTransactionsReport } from '@/components/reports/UncategorizedTransactionsReport';
+import { DuplicateTransactionReport } from '@/components/reports/DuplicateTransactionReport';
+// Scheduled & Bills
+import { UpcomingBillsReport } from '@/components/reports/UpcomingBillsReport';
+import { BillPaymentHistoryReport } from '@/components/reports/BillPaymentHistoryReport';
 
 const reportComponents: Record<string, React.ComponentType> = {
   'spending-by-category': SpendingByCategoryReport,
@@ -24,6 +40,22 @@ const reportComponents: Record<string, React.ComponentType> = {
   'cash-flow': CashFlowReport,
   'tax-summary': TaxSummaryReport,
   'year-over-year': YearOverYearReport,
+  // Debt & Loans
+  'debt-payoff-timeline': DebtPayoffTimelineReport,
+  'loan-amortization': LoanAmortizationReport,
+  // Investment
+  'investment-performance': InvestmentPerformanceReport,
+  'dividend-income': DividendIncomeReport,
+  // Behavioral Insights
+  'recurring-expenses': RecurringExpensesReport,
+  'spending-anomalies': SpendingAnomaliesReport,
+  'weekend-weekday-spending': WeekendVsWeekdayReport,
+  // Maintenance & Cleanup
+  'uncategorized-transactions': UncategorizedTransactionsReport,
+  'duplicate-transactions': DuplicateTransactionReport,
+  // Scheduled & Bills
+  'upcoming-bills': UpcomingBillsReport,
+  'bill-payment-history': BillPaymentHistoryReport,
 };
 
 const reportNames: Record<string, string> = {
@@ -37,6 +69,22 @@ const reportNames: Record<string, string> = {
   'cash-flow': 'Cash Flow Statement',
   'tax-summary': 'Tax Summary',
   'year-over-year': 'Year Over Year Comparison',
+  // Debt & Loans
+  'debt-payoff-timeline': 'Debt Payoff Timeline',
+  'loan-amortization': 'Loan Amortization Schedule',
+  // Investment
+  'investment-performance': 'Investment Performance',
+  'dividend-income': 'Dividend & Interest Income',
+  // Behavioral Insights
+  'recurring-expenses': 'Recurring Expenses Tracker',
+  'spending-anomalies': 'Spending Anomalies',
+  'weekend-weekday-spending': 'Weekend vs Weekday Spending',
+  // Maintenance & Cleanup
+  'uncategorized-transactions': 'Uncategorized Transactions',
+  'duplicate-transactions': 'Duplicate Transaction Finder',
+  // Scheduled & Bills
+  'upcoming-bills': 'Upcoming Bills Calendar',
+  'bill-payment-history': 'Bill Payment History',
 };
 
 export default function ReportPage() {
