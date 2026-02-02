@@ -2,11 +2,23 @@
 
 import { useState, useCallback, useRef } from 'react';
 import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Security, CreateSecurityData } from '@/types/investment';
 import { investmentsApi } from '@/lib/investments';
+
+const securitySchema = z.object({
+  symbol: z.string().min(1, 'Symbol is required').max(20, 'Symbol must be 20 characters or less'),
+  name: z.string().min(1, 'Name is required').max(255, 'Name must be 255 characters or less'),
+  securityType: z.string().optional(),
+  exchange: z.string().optional(),
+  currencyCode: z.string().min(1, 'Currency is required'),
+});
+
+type SecurityFormData = z.infer<typeof securitySchema>;
 
 interface SecurityFormProps {
   security?: Security;
@@ -42,7 +54,8 @@ export function SecurityForm({ security, onSubmit, onCancel }: SecurityFormProps
     setValue,
     getValues,
     formState: { errors, isSubmitting },
-  } = useForm<CreateSecurityData>({
+  } = useForm<SecurityFormData>({
+    resolver: zodResolver(securitySchema),
     defaultValues: {
       symbol: security?.symbol || '',
       name: security?.name || '',
@@ -119,15 +132,8 @@ export function SecurityForm({ security, onSubmit, onCancel }: SecurityFormProps
     await onSubmit(cleanedData);
   };
 
-  const symbolRegister = register('symbol', {
-    required: 'Symbol is required',
-    maxLength: { value: 20, message: 'Symbol must be 20 characters or less' },
-  });
-
-  const nameRegister = register('name', {
-    required: 'Name is required',
-    maxLength: { value: 255, message: 'Name must be 255 characters or less' },
-  });
+  const symbolRegister = register('symbol');
+  const nameRegister = register('name');
 
   return (
     <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
@@ -178,7 +184,7 @@ export function SecurityForm({ security, onSubmit, onCancel }: SecurityFormProps
       <Select
         label="Currency"
         options={currencyOptions}
-        {...register('currencyCode', { required: 'Currency is required' })}
+        {...register('currencyCode')}
         error={errors.currencyCode?.message}
       />
 

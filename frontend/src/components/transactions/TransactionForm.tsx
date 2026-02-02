@@ -38,7 +38,7 @@ const transactionSchema = z.object({
   payeeId: optionalUuid,
   payeeName: optionalString,
   categoryId: optionalUuid,
-  amount: z.number({ invalid_type_error: 'Amount is required' }),
+  amount: z.number({ error: 'Amount is required' }),
   currencyCode: z.string().default('CAD'),
   description: optionalString,
   referenceNumber: optionalString,
