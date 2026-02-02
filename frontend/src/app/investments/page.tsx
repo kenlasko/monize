@@ -89,7 +89,25 @@ export default function InvestmentsPage() {
     setRefreshResult(null);
     setShowRefreshDetails(false);
     try {
-      const result = await investmentsApi.refreshPrices();
+      // Get portfolio summary to find holdings in open accounts
+      // The backend already filters to only open investment accounts
+      const summary = await investmentsApi.getPortfolioSummary();
+
+      // Extract unique security IDs from holdings with non-zero quantities
+      const securityIds = [...new Set(
+        summary.holdings
+          .filter(h => h.quantity !== 0)
+          .map(h => h.securityId)
+      )];
+
+      if (securityIds.length === 0) {
+        setRefreshResult({ updated: 0, failed: 0, results: [] });
+        setTimeout(() => setRefreshResult(null), 3000);
+        return;
+      }
+
+      // Refresh only the securities we have holdings in
+      const result = await investmentsApi.refreshSelectedPrices(securityIds);
       setRefreshResult({
         updated: result.updated,
         failed: result.failed,

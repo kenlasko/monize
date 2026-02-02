@@ -5,6 +5,7 @@ import {
   ForbiddenException,
   Inject,
   forwardRef,
+  Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -23,6 +24,8 @@ import {
 
 @Injectable()
 export class AccountsService {
+  private readonly logger = new Logger(AccountsService.name);
+
   constructor(
     @InjectRepository(Account)
     private accountsRepository: Repository<Account>,
@@ -351,7 +354,25 @@ export class AccountsService {
         Math.round((Number(account.currentBalance) + difference) * 100) / 100;
     }
 
-    Object.assign(account, updateAccountDto);
+    // SECURITY: Explicit property mapping instead of Object.assign to prevent mass assignment
+    if (updateAccountDto.name !== undefined) account.name = updateAccountDto.name;
+    if (updateAccountDto.accountType !== undefined) account.accountType = updateAccountDto.accountType;
+    if (updateAccountDto.currencyCode !== undefined) account.currencyCode = updateAccountDto.currencyCode;
+    if (updateAccountDto.openingBalance !== undefined) account.openingBalance = updateAccountDto.openingBalance;
+    if (updateAccountDto.description !== undefined) account.description = updateAccountDto.description;
+    if (updateAccountDto.accountNumber !== undefined) account.accountNumber = updateAccountDto.accountNumber;
+    if (updateAccountDto.institution !== undefined) account.institution = updateAccountDto.institution;
+    if (updateAccountDto.creditLimit !== undefined) account.creditLimit = updateAccountDto.creditLimit;
+    if (updateAccountDto.interestRate !== undefined) account.interestRate = updateAccountDto.interestRate;
+    if (updateAccountDto.isFavourite !== undefined) account.isFavourite = updateAccountDto.isFavourite;
+    if (updateAccountDto.paymentAmount !== undefined) account.paymentAmount = updateAccountDto.paymentAmount;
+    if (updateAccountDto.paymentFrequency !== undefined) account.paymentFrequency = updateAccountDto.paymentFrequency;
+    if (updateAccountDto.paymentStartDate !== undefined) account.paymentStartDate = updateAccountDto.paymentStartDate ? new Date(updateAccountDto.paymentStartDate) : null;
+    if (updateAccountDto.sourceAccountId !== undefined) account.sourceAccountId = updateAccountDto.sourceAccountId;
+    if (updateAccountDto.principalCategoryId !== undefined) account.principalCategoryId = updateAccountDto.principalCategoryId;
+    if (updateAccountDto.interestCategoryId !== undefined) account.interestCategoryId = updateAccountDto.interestCategoryId;
+    if (updateAccountDto.assetCategoryId !== undefined) account.assetCategoryId = updateAccountDto.assetCategoryId;
+
     return this.accountsRepository.save(account);
   }
 
@@ -538,7 +559,7 @@ export class AccountsService {
         await this.scheduledTransactionsService.remove(userId, account.scheduledTransactionId);
       } catch (error) {
         // Scheduled transaction may have already been deleted, continue with account deletion
-        console.log(`Could not delete scheduled transaction ${account.scheduledTransactionId}: ${error.message}`);
+        this.logger.warn(`Could not delete scheduled transaction ${account.scheduledTransactionId}: ${error.message}`);
       }
     }
 

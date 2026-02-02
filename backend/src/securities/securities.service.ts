@@ -60,7 +60,14 @@ export class SecuritiesService {
       }
     }
 
-    Object.assign(security, updateSecurityDto);
+    // SECURITY: Explicit property mapping instead of Object.assign to prevent mass assignment
+    if (updateSecurityDto.symbol !== undefined) security.symbol = updateSecurityDto.symbol;
+    if (updateSecurityDto.name !== undefined) security.name = updateSecurityDto.name;
+    if (updateSecurityDto.securityType !== undefined) security.securityType = updateSecurityDto.securityType;
+    if (updateSecurityDto.exchange !== undefined) security.exchange = updateSecurityDto.exchange;
+    if (updateSecurityDto.currencyCode !== undefined) security.currencyCode = updateSecurityDto.currencyCode;
+    if (updateSecurityDto.isActive !== undefined) security.isActive = updateSecurityDto.isActive;
+
     return this.securitiesRepository.save(security);
   }
 

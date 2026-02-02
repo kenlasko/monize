@@ -206,7 +206,14 @@ export class CategoriesService {
       await this.findOne(userId, updateCategoryDto.parentId);
     }
 
-    Object.assign(category, updateCategoryDto);
+    // SECURITY: Explicit property mapping instead of Object.assign to prevent mass assignment
+    if (updateCategoryDto.name !== undefined) category.name = updateCategoryDto.name;
+    if (updateCategoryDto.description !== undefined) category.description = updateCategoryDto.description;
+    if (updateCategoryDto.icon !== undefined) category.icon = updateCategoryDto.icon;
+    if (updateCategoryDto.color !== undefined) category.color = updateCategoryDto.color;
+    if (updateCategoryDto.isIncome !== undefined) category.isIncome = updateCategoryDto.isIncome;
+    if (updateCategoryDto.parentId !== undefined) category.parentId = updateCategoryDto.parentId;
+
     return this.categoriesRepository.save(category);
   }
 

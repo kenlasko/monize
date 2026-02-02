@@ -34,7 +34,13 @@ export const useAuthStore = create<AuthState>()(
 
       setToken: (token) => {
         if (token) {
-          Cookies.set('auth_token', token, { expires: 7, sameSite: 'strict' });
+          // Note: httpOnly cannot be set from JS - backend should manage auth cookies
+          // Adding secure flag for HTTPS in production
+          Cookies.set('auth_token', token, {
+            expires: 7,
+            sameSite: 'strict',
+            secure: process.env.NODE_ENV === 'production',
+          });
         } else {
           Cookies.remove('auth_token');
         }
@@ -46,7 +52,15 @@ export const useAuthStore = create<AuthState>()(
       setLoading: (loading) => set({ isLoading: loading }),
 
       login: (user, token) => {
-        Cookies.set('auth_token', token, { expires: 7, sameSite: 'strict' });
+        // Note: httpOnly cannot be set from JS - backend should manage auth cookies
+        // For OIDC flow, backend sets httpOnly cookie; this is for local auth fallback
+        if (token && token !== 'httpOnly') {
+          Cookies.set('auth_token', token, {
+            expires: 7,
+            sameSite: 'strict',
+            secure: process.env.NODE_ENV === 'production',
+          });
+        }
         set({
           user,
           token,
@@ -76,9 +90,10 @@ export const useAuthStore = create<AuthState>()(
     {
       name: 'auth-storage',
       storage: createJSONStorage(() => localStorage),
+      // SECURITY: Do NOT persist token to localStorage - XSS vulnerable
+      // Token should only be in httpOnly cookies managed by backend
       partialize: (state) => ({
         user: state.user,
-        token: state.token,
         isAuthenticated: state.isAuthenticated,
       }),
       onRehydrateStorage: () => (state) => {

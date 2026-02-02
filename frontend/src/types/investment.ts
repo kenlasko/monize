@@ -35,6 +35,7 @@ export interface Holding {
 export interface HoldingWithMarketValue {
   id: string;
   accountId: string;
+  securityId: string;
   symbol: string;
   name: string;
   securityType: string;

@@ -9,10 +9,12 @@ import {
   Query,
   BadRequestException,
   ForbiddenException,
+  Logger,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ConfigService } from '@nestjs/config';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { Response, Request as ExpressRequest } from 'express';
 
 import { AuthService } from './auth.service';
@@ -23,6 +25,7 @@ import { LoginDto } from './dto/login.dto';
 @ApiTags('Authentication')
 @Controller('auth')
 export class AuthController {
+  private readonly logger = new Logger(AuthController.name);
   private localAuthEnabled: boolean;
 
   constructor(
@@ -36,23 +39,51 @@ export class AuthController {
   }
 
   @Post('register')
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ auth: { ttl: 900000, limit: 5 } }) // 5 attempts per 15 minutes
   @ApiOperation({ summary: 'Register a new user with local credentials' })
   @ApiResponse({ status: 403, description: 'Local authentication is disabled' })
-  async register(@Body() registerDto: RegisterDto) {
+  @ApiResponse({ status: 429, description: 'Too many requests' })
+  async register(@Body() registerDto: RegisterDto, @Res() res: Response) {
     if (!this.localAuthEnabled) {
       throw new ForbiddenException('Local authentication is disabled. Please use OIDC to sign in.');
     }
-    return this.authService.register(registerDto);
+    const result = await this.authService.register(registerDto);
+
+    // Set token as httpOnly cookie (SECURE - not accessible to JavaScript)
+    res.cookie('auth_token', result.token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+
+    // Return user without token (token is in httpOnly cookie)
+    res.json({ user: result.user });
   }
 
   @Post('login')
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ auth: { ttl: 900000, limit: 5 } }) // 5 attempts per 15 minutes
   @ApiOperation({ summary: 'Login with local credentials' })
   @ApiResponse({ status: 403, description: 'Local authentication is disabled' })
-  async login(@Body() loginDto: LoginDto) {
+  @ApiResponse({ status: 429, description: 'Too many requests' })
+  async login(@Body() loginDto: LoginDto, @Res() res: Response) {
     if (!this.localAuthEnabled) {
       throw new ForbiddenException('Local authentication is disabled. Please use OIDC to sign in.');
     }
-    return this.authService.login(loginDto);
+    const result = await this.authService.login(loginDto);
+
+    // Set token as httpOnly cookie (SECURE - not accessible to JavaScript)
+    res.cookie('auth_token', result.token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+
+    // Return user without token (token is in httpOnly cookie)
+    res.json({ user: result.user });
   }
 
   @Get('oidc')
@@ -129,8 +160,10 @@ export class AuthController {
 
       res.redirect(`${frontendUrl}/auth/callback?success=true`);
     } catch (error) {
-      console.error('OIDC callback error:', error.message);
-      res.redirect(`${frontendUrl}/auth/callback?error=${encodeURIComponent(error.message)}`);
+      // SECURITY: Log detailed error server-side only, don't expose to client
+      this.logger.error('OIDC callback error', error.stack);
+      // Return generic error message to prevent information disclosure
+      res.redirect(`${frontendUrl}/auth/callback?error=authentication_failed`);
     }
   }
 

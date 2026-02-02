@@ -53,12 +53,13 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
       const response = await authApi.login(data);
-      login(response.user, response.token);
+      // Token is now in httpOnly cookie, not in response body
+      login(response.user, 'httpOnly');
       toast.success('Welcome back!');
       router.push('/dashboard');
     } catch (error: any) {
-      const message = error.response?.data?.message || 'Invalid email or password';
-      toast.error(message);
+      // SECURITY: Use generic error message to prevent account enumeration
+      toast.error('Invalid email or password');
     } finally {
       setIsLoading(false);
     }

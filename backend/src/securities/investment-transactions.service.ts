@@ -461,8 +461,15 @@ export class InvestmentTransactionsService {
     // Reverse the original transaction effects
     await this.reverseTransactionEffects(userId, transaction);
 
-    // Update the transaction
-    Object.assign(transaction, updateDto);
+    // SECURITY: Explicit property mapping instead of Object.assign to prevent mass assignment
+    if (updateDto.accountId !== undefined) transaction.accountId = updateDto.accountId;
+    if (updateDto.action !== undefined) transaction.action = updateDto.action;
+    if (updateDto.transactionDate !== undefined) transaction.transactionDate = updateDto.transactionDate;
+    if (updateDto.securityId !== undefined) transaction.securityId = updateDto.securityId;
+    if (updateDto.quantity !== undefined) transaction.quantity = updateDto.quantity;
+    if (updateDto.price !== undefined) transaction.price = updateDto.price;
+    if (updateDto.commission !== undefined) transaction.commission = updateDto.commission;
+    if (updateDto.description !== undefined) transaction.description = updateDto.description;
 
     if (updateDto.quantity !== undefined || updateDto.price !== undefined || updateDto.commission !== undefined) {
       transaction.totalAmount = this.calculateTotalAmount({

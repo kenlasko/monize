@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, IsNull } from 'typeorm';
 import { Transaction, TransactionStatus } from '../transactions/entities/transaction.entity';
@@ -70,6 +70,8 @@ function getCurrencyFromExchange(exchange: string | null | undefined): string | 
 
 @Injectable()
 export class ImportService {
+  private readonly logger = new Logger(ImportService.name);
+
   constructor(
     private dataSource: DataSource,
     @InjectRepository(Transaction)
@@ -1026,16 +1028,15 @@ export class ImportService {
           importResult.errorMessages.push(
             `Error importing transaction ${txIndex}/${totalTransactions} on ${qifTx.date}: ${error.message}`,
           );
-          console.error(`Error importing transaction ${txIndex}/${totalTransactions}:`, error.message);
+          // SECURITY: Log error details server-side only, don't expose stack traces
+          this.logger.warn(`Error importing transaction ${txIndex}/${totalTransactions}: ${error.message}`);
         }
       }
 
       await queryRunner.commitTransaction();
     } catch (error) {
-      console.error('=== IMPORT FAILED ===');
-      console.error('Error:', error.message);
-      console.error('Stack:', error.stack);
-      console.error(`Progress: ${importResult.imported} imported, ${importResult.errors} errors`);
+      // SECURITY: Log detailed error server-side only, return generic message to client
+      this.logger.error(`Import failed after ${importResult.imported} transactions`, error.stack);
       await queryRunner.rollbackTransaction();
       throw new BadRequestException(
         `Import failed after ${importResult.imported} transactions: ${error.message}`,

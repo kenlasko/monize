@@ -173,6 +173,24 @@ export const investmentsApi = {
     return response.data;
   },
 
+  // Refresh prices for specific securities only
+  refreshSelectedPrices: async (securityIds: string[]): Promise<{
+    totalSecurities: number;
+    updated: number;
+    failed: number;
+    skipped: number;
+    results: Array<{
+      symbol: string;
+      success: boolean;
+      price?: number;
+      error?: string;
+    }>;
+    lastUpdated: string;
+  }> => {
+    const response = await apiClient.post('/securities/prices/refresh/selected', { securityIds });
+    return response.data;
+  },
+
   // Get price update status
   getPriceStatus: async (): Promise<{ lastUpdated: string | null }> => {
     const response = await apiClient.get('/securities/prices/status');

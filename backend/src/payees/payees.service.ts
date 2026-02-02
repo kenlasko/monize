@@ -144,7 +144,11 @@ export class PayeesService {
       }
     }
 
-    Object.assign(payee, updatePayeeDto);
+    // SECURITY: Explicit property mapping instead of Object.assign to prevent mass assignment
+    if (updatePayeeDto.name !== undefined) payee.name = updatePayeeDto.name;
+    if (updatePayeeDto.defaultCategoryId !== undefined) payee.defaultCategoryId = updatePayeeDto.defaultCategoryId;
+    if (updatePayeeDto.notes !== undefined) payee.notes = updatePayeeDto.notes;
+
     return this.payeesRepository.save(payee);
   }
 

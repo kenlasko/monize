@@ -97,17 +97,27 @@ export class ReportsService {
   async update(userId: string, id: string, dto: UpdateCustomReportDto): Promise<CustomReport> {
     const report = await this.findOne(userId, id);
 
+    // SECURITY: Explicit property mapping instead of Object.assign to prevent mass assignment
+    if (dto.name !== undefined) report.name = dto.name;
+    if (dto.description !== undefined) report.description = dto.description;
+    if (dto.icon !== undefined) report.icon = dto.icon;
+    if (dto.backgroundColor !== undefined) report.backgroundColor = dto.backgroundColor;
+    if (dto.viewType !== undefined) report.viewType = dto.viewType;
+    if (dto.timeframeType !== undefined) report.timeframeType = dto.timeframeType;
+    if (dto.groupBy !== undefined) report.groupBy = dto.groupBy;
+    if (dto.isFavourite !== undefined) report.isFavourite = dto.isFavourite;
+    if (dto.sortOrder !== undefined) report.sortOrder = dto.sortOrder;
+
     // Merge config if provided
     if (dto.config) {
-      dto.config = { ...report.config, ...dto.config };
+      report.config = { ...report.config, ...dto.config };
     }
 
     // Merge filters if provided
     if (dto.filters) {
-      dto.filters = { ...report.filters, ...dto.filters };
+      report.filters = { ...report.filters, ...dto.filters };
     }
 
-    Object.assign(report, dto);
     return this.reportsRepository.save(report);
   }
 

@@ -184,7 +184,7 @@ export function CustomReportViewer({ reportId }: CustomReportViewerProps) {
         {/* Timeframe Override */}
         <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
           <div className="flex flex-wrap items-end gap-4">
-            <div className="w-48">
+            <div className="w-64">
               <Select
                 label="Timeframe"
                 options={timeframeOptions}

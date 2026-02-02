@@ -66,12 +66,13 @@ export default function RegisterPage() {
     try {
       const { confirmPassword, ...registerData } = data;
       const response = await authApi.register(registerData);
-      login(response.user, response.token);
+      // Token is now in httpOnly cookie, not in response body
+      login(response.user, 'httpOnly');
       toast.success('Account created successfully!');
       router.push('/dashboard');
     } catch (error: any) {
-      const message = error.response?.data?.message || 'Failed to create account';
-      toast.error(message);
+      // SECURITY: Use generic error message to prevent account enumeration
+      toast.error('Unable to create account. Please try again.');
     } finally {
       setIsLoading(false);
     }

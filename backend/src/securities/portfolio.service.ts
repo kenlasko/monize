@@ -203,6 +203,7 @@ export class PortfolioService {
         return {
           id: h.id,
           accountId: h.accountId,
+          securityId: h.securityId,
           symbol: h.security.symbol,
           name: h.security.name,
           securityType: h.security.securityType || 'STOCK',

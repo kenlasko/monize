@@ -25,7 +25,8 @@ export class AuthService {
     });
 
     if (existingUser) {
-      throw new UnauthorizedException('Email already registered');
+      // SECURITY: Generic message to prevent account enumeration
+      throw new UnauthorizedException('Unable to complete registration');
     }
 
     // Hash password
@@ -103,6 +104,9 @@ export class AuthService {
     // Standard OIDC claims
     const sub = userInfo.sub as string;
     const email = userInfo.email as string | undefined;
+    // SECURITY: Only trust email if verified by the OIDC provider
+    const emailVerified = userInfo.email_verified === true;
+    const trustedEmail = emailVerified ? email : undefined;
 
     // Handle name claims - try specific claims first, fall back to 'name'
     const fullName = userInfo.name as string | undefined;
@@ -125,10 +129,11 @@ export class AuthService {
     });
 
     if (!user) {
-      // Check if email exists with different auth provider
-      if (email) {
+      // SECURITY: Only link to existing account if email is verified by OIDC provider
+      // This prevents account takeover via OIDC providers that don't verify emails
+      if (trustedEmail) {
         const existingUser = await this.usersRepository.findOne({
-          where: { email },
+          where: { email: trustedEmail },
         });
 
         if (existingUser) {
@@ -143,8 +148,9 @@ export class AuthService {
 
       if (!user) {
         // Create new user (no existing account found)
+        // Use trusted email if verified, otherwise store raw email but don't link accounts
         const userData: DeepPartial<User> = {
-          email: email ?? null,
+          email: trustedEmail ?? email ?? null,
           firstName: firstName ?? null,
           lastName: lastName ?? null,
           oidcSubject: sub,
@@ -158,8 +164,9 @@ export class AuthService {
       // Update user info if it has changed (but don't overwrite with null)
       let needsUpdate = false;
 
-      if (email && user.email !== email) {
-        user.email = email;
+      // SECURITY: Only update email if verified by OIDC provider
+      if (trustedEmail && user.email !== trustedEmail) {
+        user.email = trustedEmail;
         needsUpdate = true;
       }
       if (firstName && user.firstName !== firstName) {

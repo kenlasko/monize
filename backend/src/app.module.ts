@@ -60,11 +60,19 @@ import { ImportModule } from './import/import.module';
       }),
     }),
 
-    // Rate limiting
-    ThrottlerModule.forRoot([{
-      ttl: 60000, // 1 minute
-      limit: 100, // 100 requests per minute
-    }]),
+    // Rate limiting - multiple tiers
+    ThrottlerModule.forRoot([
+      {
+        name: 'default',
+        ttl: 60000, // 1 minute
+        limit: 100, // 100 requests per minute for general API
+      },
+      {
+        name: 'auth',
+        ttl: 900000, // 15 minutes
+        limit: 5, // 5 attempts per 15 minutes for auth endpoints (brute force protection)
+      },
+    ]),
 
     // Scheduled tasks
     ScheduleModule.forRoot(),

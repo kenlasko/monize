@@ -14,23 +14,23 @@ export class User {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ unique: true, nullable: true })
+  @Column({ type: 'varchar', unique: true, nullable: true })
   email: string | null;
 
-  @Column({ name: 'password_hash', nullable: true })
+  @Column({ name: 'password_hash', type: 'varchar', nullable: true })
   @Exclude()
   passwordHash: string | null;
 
-  @Column({ name: 'first_name', nullable: true })
+  @Column({ name: 'first_name', type: 'varchar', nullable: true })
   firstName: string | null;
 
-  @Column({ name: 'last_name', nullable: true })
+  @Column({ name: 'last_name', type: 'varchar', nullable: true })
   lastName: string | null;
 
   @Column({ name: 'auth_provider', default: 'local' })
   authProvider: string;
 
-  @Column({ name: 'oidc_subject', unique: true, nullable: true })
+  @Column({ name: 'oidc_subject', type: 'varchar', unique: true, nullable: true })
   oidcSubject: string | null;
 
   @Column({ name: 'is_active', default: true })
