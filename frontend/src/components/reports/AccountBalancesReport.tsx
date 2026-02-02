@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { accountsApi } from '@/lib/accounts';
 import { Account } from '@/types/account';
+import { useNumberFormat } from '@/hooks/useNumberFormat';
 
 type AccountTypeFilter = 'all' | 'assets' | 'liabilities';
 
@@ -24,6 +25,7 @@ const accountTypeLabels: Record<string, string> = {
 
 export function AccountBalancesReport() {
   const router = useRouter();
+  const { formatCurrency } = useNumberFormat();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [typeFilter, setTypeFilter] = useState<AccountTypeFilter>('all');
@@ -90,15 +92,6 @@ export function AccountBalancesReport() {
 
     return { assets, liabilities, netWorth: assets - liabilities };
   }, [filteredAccounts]);
-
-  const formatCurrency = (value: number, currency: string = 'CAD') => {
-    return new Intl.NumberFormat('en-CA', {
-      style: 'currency',
-      currency: currency,
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(value);
-  };
 
   const handleAccountClick = (accountId: string) => {
     router.push(`/transactions?accountId=${accountId}`);

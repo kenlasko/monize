@@ -15,6 +15,7 @@ import {
 import { format, subMonths, startOfMonth } from 'date-fns';
 import { transactionsApi } from '@/lib/transactions';
 import { Transaction } from '@/types/transaction';
+import { useNumberFormat } from '@/hooks/useNumberFormat';
 
 const COLOURS = [
   '#3b82f6', '#22c55e', '#f97316', '#8b5cf6', '#ec4899',
@@ -25,6 +26,7 @@ type DateRange = '1m' | '3m' | '6m' | '1y' | 'ytd' | 'custom';
 
 export function SpendingByPayeeReport() {
   const router = useRouter();
+  const { formatCurrencyCompact: formatCurrency } = useNumberFormat();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [dateRange, setDateRange] = useState<DateRange>('3m');
@@ -112,15 +114,6 @@ export function SpendingByPayeeReport() {
   }, [transactions, showTop]);
 
   const totalExpenses = chartData.reduce((sum, item) => sum + item.value, 0);
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-CA', {
-      style: 'currency',
-      currency: 'CAD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(value);
-  };
 
   const handlePayeeClick = (payeeId: string) => {
     if (payeeId) {

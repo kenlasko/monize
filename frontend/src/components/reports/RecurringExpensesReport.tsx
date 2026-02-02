@@ -12,6 +12,7 @@ import {
 import { format, subMonths } from 'date-fns';
 import { transactionsApi } from '@/lib/transactions';
 import { Transaction } from '@/types/transaction';
+import { useNumberFormat } from '@/hooks/useNumberFormat';
 
 interface RecurringExpense {
   payeeName: string;
@@ -31,6 +32,7 @@ const COLORS = [
 
 export function RecurringExpensesReport() {
   const router = useRouter();
+  const { formatCurrencyCompact: formatCurrency } = useNumberFormat();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [minOccurrences, setMinOccurrences] = useState(3);
@@ -137,15 +139,6 @@ export function RecurringExpensesReport() {
 
   const totalRecurring = recurringExpenses.reduce((sum, item) => sum + item.totalAmount, 0);
   const monthlyEstimate = totalRecurring / 6;
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-CA', {
-      style: 'currency',
-      currency: 'CAD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(value);
-  };
 
   const handlePayeeClick = (payeeId: string | null) => {
     if (payeeId) {

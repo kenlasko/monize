@@ -105,7 +105,7 @@ export const CurrencyInput = forwardRef<HTMLInputElement, CurrencyInputProps>(
         )}
         <div className={prefix ? 'relative' : undefined}>
           {prefix && (
-            <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500 dark:text-gray-400 pointer-events-none">
+            <span className="absolute inset-y-0 left-0 flex items-center text-gray-500 dark:text-gray-400 pointer-events-none" style={{ paddingLeft: '0.75rem' }}>
               {prefix}
             </span>
           )}
@@ -119,6 +119,7 @@ export const CurrencyInput = forwardRef<HTMLInputElement, CurrencyInputProps>(
             onChange={handleChange}
             onBlur={handleBlur}
             onFocus={handleFocus}
+            style={prefix ? { paddingLeft: '1.5rem' } : undefined}
             className={cn(
               'block w-full rounded-md border-gray-300 shadow-sm',
               'focus:border-blue-500 focus:ring-blue-500',
@@ -127,7 +128,6 @@ export const CurrencyInput = forwardRef<HTMLInputElement, CurrencyInputProps>(
               'dark:focus:border-blue-400 dark:focus:ring-blue-400',
               'dark:disabled:bg-gray-700 dark:disabled:text-gray-400',
               error && 'border-red-300 focus:border-red-500 focus:ring-red-500 dark:border-red-500',
-              prefix && 'pl-7',
               className
             )}
             {...props}

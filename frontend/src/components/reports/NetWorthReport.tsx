@@ -18,10 +18,12 @@ import { accountsApi } from '@/lib/accounts';
 import { Transaction } from '@/types/transaction';
 import { Account } from '@/types/account';
 import { parseLocalDate } from '@/lib/utils';
+import { useNumberFormat } from '@/hooks/useNumberFormat';
 
 type DateRange = '1y' | '2y' | '5y' | 'all' | 'custom';
 
 export function NetWorthReport() {
+  const { formatCurrencyCompact: formatCurrency } = useNumberFormat();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -204,15 +206,6 @@ export function NetWorthReport() {
     // If values cross 0 or start near 0, include 0 in the domain
     return [Math.min(0, minValue), 'auto'] as [number, 'auto'];
   }, [chartData]);
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-CA', {
-      style: 'currency',
-      currency: 'CAD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(value);
-  };
 
   const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: Array<{ name: string; value: number; color: string; payload: { fullName: string } }> }) => {
     if (active && payload && payload.length) {

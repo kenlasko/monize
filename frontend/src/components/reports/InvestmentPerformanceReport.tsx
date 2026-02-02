@@ -18,6 +18,7 @@ import { format, subMonths, subYears, startOfMonth } from 'date-fns';
 import { investmentsApi } from '@/lib/investments';
 import { PortfolioSummary, HoldingWithMarketValue } from '@/types/investment';
 import { Account } from '@/types/account';
+import { useNumberFormat } from '@/hooks/useNumberFormat';
 
 const COLORS = [
   '#3b82f6', '#22c55e', '#f97316', '#8b5cf6', '#ec4899',
@@ -27,6 +28,7 @@ const COLORS = [
 type DateRange = '1m' | '3m' | '6m' | '1y' | 'all';
 
 export function InvestmentPerformanceReport() {
+  const { formatCurrencyCompact: formatCurrency, formatPercent: formatPercentHook } = useNumberFormat();
   const [portfolio, setPortfolio] = useState<PortfolioSummary | null>(null);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [selectedAccountId, setSelectedAccountId] = useState<string>('');
@@ -52,15 +54,6 @@ export function InvestmentPerformanceReport() {
     };
     loadData();
   }, [selectedAccountId]);
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-CA', {
-      style: 'currency',
-      currency: 'CAD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(value);
-  };
 
   const formatPercent = (value: number) => {
     const sign = value >= 0 ? '+' : '';

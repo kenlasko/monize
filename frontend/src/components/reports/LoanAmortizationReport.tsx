@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { format, addMonths } from 'date-fns';
 import { accountsApi } from '@/lib/accounts';
 import { Account, PaymentFrequency } from '@/types/account';
+import { useNumberFormat } from '@/hooks/useNumberFormat';
 
 interface AmortizationRow {
   paymentNumber: number;
@@ -31,6 +32,7 @@ const FREQUENCY_LABELS: Record<PaymentFrequency, string> = {
 };
 
 export function LoanAmortizationReport() {
+  const { formatCurrency } = useNumberFormat();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [selectedAccountId, setSelectedAccountId] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
@@ -124,15 +126,6 @@ export function LoanAmortizationReport() {
       payoffDate: lastRow.date,
     };
   }, [amortizationSchedule]);
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-CA', {
-      style: 'currency',
-      currency: 'CAD',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(value);
-  };
 
   const displayedRows = showAllRows
     ? amortizationSchedule

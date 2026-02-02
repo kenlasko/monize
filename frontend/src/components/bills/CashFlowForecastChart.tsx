@@ -21,6 +21,7 @@ import {
   ForecastDataPoint,
   FORECAST_PERIOD_LABELS,
 } from '@/lib/forecast';
+import { useNumberFormat } from '@/hooks/useNumberFormat';
 
 interface CashFlowForecastChartProps {
   scheduledTransactions: ScheduledTransaction[];
@@ -51,6 +52,15 @@ export function CashFlowForecastChart({
   accounts,
   isLoading,
 }: CashFlowForecastChartProps) {
+  const { formatCurrencyCompact: formatCurrency } = useNumberFormat();
+
+  // Compact format for axis labels (e.g., "$5k")
+  const formatCompactCurrency = (value: number) => {
+    if (Math.abs(value) >= 1000) {
+      return `$${(value / 1000).toFixed(0)}k`;
+    }
+    return `$${value}`;
+  };
   const [selectedPeriod, setSelectedPeriod] = useState<ForecastPeriod>('month');
   const [selectedAccountId, setSelectedAccountId] = useState<string>('all');
   const [initialized, setInitialized] = useState(false);
@@ -98,22 +108,6 @@ export function CashFlowForecastChart({
   const totalForecastedTransactions = useMemo(() => {
     return forecastData.reduce((sum, dp) => sum + dp.transactions.length, 0);
   }, [forecastData]);
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-CA', {
-      style: 'currency',
-      currency: 'CAD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(value);
-  };
-
-  const formatCompactCurrency = (value: number) => {
-    if (Math.abs(value) >= 1000) {
-      return `$${(value / 1000).toFixed(0)}k`;
-    }
-    return `$${value}`;
-  };
 
   const CustomTooltip = ({
     active,

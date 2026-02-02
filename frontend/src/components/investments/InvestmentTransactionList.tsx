@@ -3,6 +3,7 @@
 import { useState, useMemo, useCallback } from 'react';
 import { format } from 'date-fns';
 import { InvestmentTransaction } from '@/types/investment';
+import { useNumberFormat } from '@/hooks/useNumberFormat';
 
 // Density levels: 'normal' | 'compact' | 'dense'
 export type DensityLevel = 'normal' | 'compact' | 'dense';
@@ -62,6 +63,7 @@ export function InvestmentTransactionList({
   onFiltersChange,
   availableSymbols = [],
 }: InvestmentTransactionListProps) {
+  const { formatCurrency, numberFormat } = useNumberFormat();
   const [localDensity, setLocalDensity] = useState<DensityLevel>('normal');
   const [showFilters, setShowFilters] = useState(false);
 
@@ -97,17 +99,9 @@ export function InvestmentTransactionList({
     }
   }, [density, onDensityChange]);
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-CA', {
-      style: 'currency',
-      currency: 'CAD',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(value);
-  };
-
   const formatQuantity = (value: number) => {
-    return new Intl.NumberFormat('en-CA', {
+    const locale = numberFormat === 'browser' ? undefined : numberFormat;
+    return new Intl.NumberFormat(locale, {
       minimumFractionDigits: 0,
       maximumFractionDigits: 4,
     }).format(value);

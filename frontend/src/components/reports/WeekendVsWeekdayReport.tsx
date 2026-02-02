@@ -21,6 +21,7 @@ import { categoriesApi } from '@/lib/categories';
 import { Transaction } from '@/types/transaction';
 import { Category } from '@/types/category';
 import { parseLocalDate } from '@/lib/utils';
+import { useNumberFormat } from '@/hooks/useNumberFormat';
 
 type DateRange = '1m' | '3m' | '6m' | '1y';
 
@@ -37,6 +38,7 @@ const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export function WeekendVsWeekdayReport() {
   const router = useRouter();
+  const { formatCurrencyCompact: formatCurrency } = useNumberFormat();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [dateRange, setDateRange] = useState<DateRange>('3m');
@@ -163,15 +165,6 @@ export function WeekendVsWeekdayReport() {
 
     return comparison.sort((a, b) => (b.weekendTotal + b.weekdayTotal) - (a.weekendTotal + a.weekdayTotal)).slice(0, 10);
   }, [transactions, categories]);
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-CA', {
-      style: 'currency',
-      currency: 'CAD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(value);
-  };
 
   const weekendAvg = weekendCount > 0 ? weekendTotal / weekendCount : 0;
   const weekdayAvg = weekdayCount > 0 ? weekdayTotal / weekdayCount : 0;

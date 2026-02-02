@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { Transaction } from '@/types/transaction';
 import { Category } from '@/types/category';
+import { useNumberFormat } from '@/hooks/useNumberFormat';
 
 interface ExpensesPieChartProps {
   transactions: Transaction[];
@@ -42,6 +43,7 @@ export function ExpensesPieChart({
   isLoading,
 }: ExpensesPieChartProps) {
   const router = useRouter();
+  const { formatCurrencyCompact: formatCurrency } = useNumberFormat();
 
   // Calculate spending by category
   const chartData = useMemo(() => {
@@ -136,15 +138,6 @@ export function ExpensesPieChart({
     if (categoryId) {
       router.push(`/transactions?categoryId=${categoryId}`);
     }
-  };
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-CA', {
-      style: 'currency',
-      currency: 'CAD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(value);
   };
 
   const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: Array<{ payload: { id: string; name: string; value: number; colour: string } }> }) => {

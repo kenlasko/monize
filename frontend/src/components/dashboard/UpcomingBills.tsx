@@ -5,6 +5,7 @@ import { differenceInDays, isToday, isTomorrow, startOfDay } from 'date-fns';
 import { ScheduledTransaction } from '@/types/scheduled-transaction';
 import { parseLocalDate } from '@/lib/utils';
 import { useDateFormat } from '@/hooks/useDateFormat';
+import { useNumberFormat } from '@/hooks/useNumberFormat';
 
 interface UpcomingBillsProps {
   scheduledTransactions: ScheduledTransaction[];
@@ -14,6 +15,7 @@ interface UpcomingBillsProps {
 export function UpcomingBills({ scheduledTransactions, isLoading }: UpcomingBillsProps) {
   const router = useRouter();
   const { formatDate } = useDateFormat();
+  const { formatCurrency: formatCurrencyBase } = useNumberFormat();
 
   // Filter to only bills (negative amounts) in the next 7 days
   const today = startOfDay(new Date());
@@ -27,10 +29,7 @@ export function UpcomingBills({ scheduledTransactions, isLoading }: UpcomingBill
     .sort((a, b) => parseLocalDate(a.nextDueDate).getTime() - parseLocalDate(b.nextDueDate).getTime());
 
   const formatCurrency = (amount: number, currency: string) => {
-    return new Intl.NumberFormat('en-CA', {
-      style: 'currency',
-      currency: currency,
-    }).format(Math.abs(amount));
+    return formatCurrencyBase(Math.abs(amount), currency);
   };
 
   const getDueDateLabel = (dateStr: string) => {

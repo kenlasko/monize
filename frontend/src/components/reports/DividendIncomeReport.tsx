@@ -16,6 +16,7 @@ import { investmentsApi } from '@/lib/investments';
 import { InvestmentTransaction } from '@/types/investment';
 import { Account } from '@/types/account';
 import { parseLocalDate } from '@/lib/utils';
+import { useNumberFormat } from '@/hooks/useNumberFormat';
 
 type DateRange = '6m' | '1y' | '2y' | 'all';
 
@@ -38,6 +39,7 @@ interface SecurityIncome {
 }
 
 export function DividendIncomeReport() {
+  const { formatCurrencyCompact: formatCurrency } = useNumberFormat();
   const [transactions, setTransactions] = useState<InvestmentTransaction[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [selectedAccountId, setSelectedAccountId] = useState<string>('');
@@ -206,15 +208,6 @@ export function DividendIncomeReport() {
       total: transactions.reduce((sum, t) => sum + Math.abs(t.totalAmount), 0),
     };
   }, [transactions]);
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-CA', {
-      style: 'currency',
-      currency: 'CAD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(value);
-  };
 
   const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ name: string; value: number; color: string }>; label?: string }) => {
     if (active && payload && payload.length) {

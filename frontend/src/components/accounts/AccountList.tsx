@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { accountsApi } from '@/lib/accounts';
 import { usePreferencesStore } from '@/store/preferencesStore';
+import { useNumberFormat } from '@/hooks/useNumberFormat';
 import toast from 'react-hot-toast';
 
 type SortField = 'name' | 'type' | 'balance' | 'status';
@@ -44,6 +45,7 @@ interface AccountListProps {
 export function AccountList({ accounts, onEdit, onRefresh }: AccountListProps) {
   const router = useRouter();
   const { preferences } = usePreferencesStore();
+  const { formatCurrency: formatCurrencyBase } = useNumberFormat();
   const defaultCurrency = preferences?.defaultCurrency || 'CAD';
   const [closeDialogOpen, setCloseDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -293,11 +295,7 @@ export function AccountList({ accounts, onEdit, onRefresh }: AccountListProps) {
 
   const formatCurrency = (amount: number | string | null | undefined, currency: string) => {
     const numericAmount = Number(amount) || 0;
-    const formatted = new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currency,
-      currencyDisplay: 'narrowSymbol',
-    }).format(numericAmount);
+    const formatted = formatCurrencyBase(numericAmount, currency);
 
     // Only show currency code if it differs from user's default currency
     if (currency !== defaultCurrency) {

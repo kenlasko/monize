@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { Account } from '@/types/account';
 import { usePreferencesStore } from '@/store/preferencesStore';
+import { useNumberFormat } from '@/hooks/useNumberFormat';
 
 interface FavouriteAccountsProps {
   accounts: Account[];
@@ -12,16 +13,13 @@ interface FavouriteAccountsProps {
 export function FavouriteAccounts({ accounts, isLoading }: FavouriteAccountsProps) {
   const router = useRouter();
   const { preferences } = usePreferencesStore();
+  const { formatCurrency: formatCurrencyBase } = useNumberFormat();
   const defaultCurrency = preferences?.defaultCurrency || 'CAD';
   const favouriteAccounts = accounts.filter((a) => a.isFavourite && !a.isClosed);
 
   const formatCurrency = (amount: number | string | null | undefined, currency: string) => {
     const numericAmount = Number(amount) || 0;
-    const formatted = new Intl.NumberFormat('en-CA', {
-      style: 'currency',
-      currency: currency,
-      currencyDisplay: 'narrowSymbol',
-    }).format(numericAmount);
+    const formatted = formatCurrencyBase(numericAmount, currency);
 
     // Only show currency code if it differs from user's default currency
     if (currency !== defaultCurrency) {

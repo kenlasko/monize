@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { AccountHoldings, HoldingWithMarketValue } from '@/types/investment';
 import { ChevronDownIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+import { useNumberFormat } from '@/hooks/useNumberFormat';
 
 interface GroupedHoldingsListProps {
   holdingsByAccount: AccountHoldings[];
@@ -19,6 +20,8 @@ export function GroupedHoldingsList({
   onSymbolClick,
   onCashClick,
 }: GroupedHoldingsListProps) {
+  const { formatCurrency: formatCurrencyBase, numberFormat } = useNumberFormat();
+
   const [expandedAccounts, setExpandedAccounts] = useState<Set<string>>(
     new Set(holdingsByAccount.map((a) => a.accountId)),
   );
@@ -37,12 +40,7 @@ export function GroupedHoldingsList({
 
   const formatCurrency = (value: number | null) => {
     if (value === null) return '-';
-    return new Intl.NumberFormat('en-CA', {
-      style: 'currency',
-      currency: 'CAD',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(value);
+    return formatCurrencyBase(value);
   };
 
   const formatPercent = (value: number | null, showSign = true) => {
@@ -52,7 +50,8 @@ export function GroupedHoldingsList({
   };
 
   const formatQuantity = (value: number) => {
-    return new Intl.NumberFormat('en-CA', {
+    const locale = numberFormat === 'browser' ? undefined : numberFormat;
+    return new Intl.NumberFormat(locale, {
       minimumFractionDigits: 0,
       maximumFractionDigits: 4,
     }).format(value);

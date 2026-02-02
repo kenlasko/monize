@@ -6,6 +6,7 @@ import { format, subMonths, differenceInDays } from 'date-fns';
 import { transactionsApi } from '@/lib/transactions';
 import { Transaction } from '@/types/transaction';
 import { parseLocalDate } from '@/lib/utils';
+import { useNumberFormat } from '@/hooks/useNumberFormat';
 
 interface DuplicateGroup {
   key: string;
@@ -18,6 +19,7 @@ type DateRange = '1m' | '3m' | '6m';
 
 export function DuplicateTransactionReport() {
   const router = useRouter();
+  const { formatCurrency } = useNumberFormat();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [dateRange, setDateRange] = useState<DateRange>('3m');
   const [isLoading, setIsLoading] = useState(true);
@@ -182,15 +184,6 @@ export function DuplicateTransactionReport() {
       potentialSavings,
     };
   }, [duplicateGroups]);
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-CA', {
-      style: 'currency',
-      currency: 'CAD',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(value);
-  };
 
   const handleTransactionClick = (tx: Transaction) => {
     router.push(`/transactions?search=${encodeURIComponent(tx.payee?.name || tx.payeeName || '')}`);

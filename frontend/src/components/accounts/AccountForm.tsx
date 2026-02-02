@@ -15,7 +15,7 @@ import { Account, AccountType, AmortizationPreview, PaymentFrequency } from '@/t
 import { Category } from '@/types/category';
 import { accountsApi } from '@/lib/accounts';
 import { categoriesApi } from '@/lib/categories';
-import { formatCurrency } from '@/lib/format';
+import { useNumberFormat } from '@/hooks/useNumberFormat';
 
 // Helper to handle optional numeric fields that may be NaN from empty inputs
 const optionalNumber = z.preprocess(
@@ -106,6 +106,7 @@ const paymentFrequencyOptions = [
 
 export function AccountForm({ account, onSubmit, onCancel }: AccountFormProps) {
   const router = useRouter();
+  const { formatCurrency } = useNumberFormat();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [amortizationPreview, setAmortizationPreview] = useState<AmortizationPreview | null>(null);

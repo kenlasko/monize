@@ -1,6 +1,7 @@
 'use client';
 
 import { PortfolioSummary } from '@/types/investment';
+import { useNumberFormat } from '@/hooks/useNumberFormat';
 
 interface PortfolioSummaryCardProps {
   summary: PortfolioSummary | null;
@@ -11,14 +12,7 @@ export function PortfolioSummaryCard({
   summary,
   isLoading,
 }: PortfolioSummaryCardProps) {
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-CA', {
-      style: 'currency',
-      currency: 'CAD',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(value);
-  };
+  const { formatCurrency } = useNumberFormat();
 
   const formatPercent = (value: number) => {
     const sign = value >= 0 ? '+' : '';

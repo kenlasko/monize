@@ -1,6 +1,7 @@
 'use client';
 
 import { HoldingWithMarketValue } from '@/types/investment';
+import { useNumberFormat } from '@/hooks/useNumberFormat';
 
 interface HoldingsListProps {
   holdings: HoldingWithMarketValue[];
@@ -8,14 +9,11 @@ interface HoldingsListProps {
 }
 
 export function HoldingsList({ holdings, isLoading }: HoldingsListProps) {
+  const { formatCurrency: formatCurrencyBase, numberFormat } = useNumberFormat();
+
   const formatCurrency = (value: number | null) => {
     if (value === null) return '-';
-    return new Intl.NumberFormat('en-CA', {
-      style: 'currency',
-      currency: 'CAD',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(value);
+    return formatCurrencyBase(value);
   };
 
   const formatPercent = (value: number | null) => {
@@ -25,7 +23,8 @@ export function HoldingsList({ holdings, isLoading }: HoldingsListProps) {
   };
 
   const formatQuantity = (value: number) => {
-    return new Intl.NumberFormat('en-CA', {
+    const locale = numberFormat === 'browser' ? undefined : numberFormat;
+    return new Intl.NumberFormat(locale, {
       minimumFractionDigits: 0,
       maximumFractionDigits: 4,
     }).format(value);

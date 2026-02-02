@@ -15,10 +15,12 @@ import { format, startOfYear, endOfYear, eachMonthOfInterval, startOfMonth } fro
 import { transactionsApi } from '@/lib/transactions';
 import { Transaction } from '@/types/transaction';
 import { parseLocalDate } from '@/lib/utils';
+import { useNumberFormat } from '@/hooks/useNumberFormat';
 
 const YEAR_COLOURS = ['#3b82f6', '#22c55e', '#f97316', '#8b5cf6', '#ec4899'];
 
 export function YearOverYearReport() {
+  const { formatCurrencyCompact: formatCurrency } = useNumberFormat();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [yearsToCompare, setYearsToCompare] = useState(2);
@@ -128,15 +130,6 @@ export function YearOverYearReport() {
 
     return totals;
   }, [transactions, years]);
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-CA', {
-      style: 'currency',
-      currency: 'CAD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(value);
-  };
 
   const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ name: string; value: number; color: string }>; label?: string }) => {
     if (active && payload && payload.length) {

@@ -21,6 +21,7 @@ import {
 import { scheduledTransactionsApi } from '@/lib/scheduled-transactions';
 import { ScheduledTransaction, FrequencyType } from '@/types/scheduled-transaction';
 import { parseLocalDate } from '@/lib/utils';
+import { useNumberFormat } from '@/hooks/useNumberFormat';
 
 interface CalendarDay {
   date: Date;
@@ -38,6 +39,7 @@ interface UpcomingBill {
 
 export function UpcomingBillsReport() {
   const router = useRouter();
+  const { formatCurrencyCompact: formatCurrency } = useNumberFormat();
   const [scheduledTransactions, setScheduledTransactions] = useState<ScheduledTransaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -179,15 +181,6 @@ export function UpcomingBillsReport() {
       thisMonthTotal: thisMonth.reduce((sum, b) => sum + Math.abs(b.amount), 0),
     };
   }, [upcomingBills, currentMonth]);
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-CA', {
-      style: 'currency',
-      currency: 'CAD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(value);
-  };
 
   const handleBillClick = (st: ScheduledTransaction) => {
     router.push(`/scheduled-transactions?id=${st.id}`);

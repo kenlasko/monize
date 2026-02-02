@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Pagination } from '@/components/ui/Pagination';
 import { useDateFormat } from '@/hooks/useDateFormat';
+import { useNumberFormat } from '@/hooks/useNumberFormat';
 
 // Density levels: 'normal' | 'compact' | 'dense'
 export type DensityLevel = 'normal' | 'compact' | 'dense';
@@ -53,6 +54,7 @@ export function TransactionList({
   onPageChange,
 }: TransactionListProps) {
   const { formatDate } = useDateFormat();
+  const { formatCurrency } = useNumberFormat();
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [localDensity, setLocalDensity] = useState<DensityLevel>('normal');
   const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; transaction: Transaction | null }>({
@@ -213,12 +215,6 @@ export function TransactionList({
     }
   }, [onRefresh, onTransactionUpdate]);
 
-  // Memoize the number formatter
-  const currencyFormatter = useMemo(() => new Intl.NumberFormat('en-CA', {
-    style: 'currency',
-    currency: 'CAD',
-  }), []);
-
   // Calculate running balances when viewing a single account
   // startingBalance = balance AFTER the first (newest) transaction on this page
   // For each tx: balance = startingBalance - sum of all preceding transactions on this page
@@ -241,23 +237,23 @@ export function TransactionList({
   const formatAmount = useCallback((amount: number) => {
     const isNegative = amount < 0;
     const absAmount = Math.abs(amount);
-    const formatted = currencyFormatter.format(absAmount);
+    const formatted = formatCurrency(absAmount);
 
     return (
       <span className={isNegative ? 'text-red-600' : 'text-green-600'}>
         {isNegative ? '-' : '+'}{formatted}
       </span>
     );
-  }, [currencyFormatter]);
+  }, [formatCurrency]);
 
   const formatBalance = useCallback((balance: number) => {
-    const formatted = currencyFormatter.format(Math.abs(balance));
+    const formatted = formatCurrency(Math.abs(balance));
     return (
       <span className={balance < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-gray-100'}>
         {balance < 0 ? `-${formatted}` : formatted}
       </span>
     );
-  }, [currencyFormatter]);
+  }, [formatCurrency]);
 
   if (transactions.length === 0) {
     return (

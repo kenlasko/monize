@@ -17,6 +17,7 @@ import { scheduledTransactionsApi } from '@/lib/scheduled-transactions';
 import { Transaction } from '@/types/transaction';
 import { ScheduledTransaction } from '@/types/scheduled-transaction';
 import { parseLocalDate } from '@/lib/utils';
+import { useNumberFormat } from '@/hooks/useNumberFormat';
 
 type DateRange = '6m' | '1y' | '2y';
 
@@ -37,6 +38,7 @@ interface MonthlyTotal {
 
 export function BillPaymentHistoryReport() {
   const router = useRouter();
+  const { formatCurrencyCompact: formatCurrency } = useNumberFormat();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [scheduledTransactions, setScheduledTransactions] = useState<ScheduledTransaction[]>([]);
   const [dateRange, setDateRange] = useState<DateRange>('1y');
@@ -199,15 +201,6 @@ export function BillPaymentHistoryReport() {
       monthlyAverage,
     };
   }, [billPayments, dateRange]);
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-CA', {
-      style: 'currency',
-      currency: 'CAD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(value);
-  };
 
   const handleBillClick = (st: ScheduledTransaction) => {
     router.push(`/scheduled-transactions?id=${st.id}`);

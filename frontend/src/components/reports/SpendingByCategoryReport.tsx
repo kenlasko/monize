@@ -20,6 +20,7 @@ import { categoriesApi } from '@/lib/categories';
 import { Transaction } from '@/types/transaction';
 import { Category } from '@/types/category';
 import { parseLocalDate } from '@/lib/utils';
+import { useNumberFormat } from '@/hooks/useNumberFormat';
 
 const DEFAULT_COLOURS = [
   '#3b82f6', '#22c55e', '#f97316', '#8b5cf6', '#ec4899',
@@ -30,6 +31,7 @@ type DateRange = '1m' | '3m' | '6m' | '1y' | 'ytd' | 'custom';
 
 export function SpendingByCategoryReport() {
   const router = useRouter();
+  const { formatCurrencyCompact: formatCurrency } = useNumberFormat();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -172,15 +174,6 @@ export function SpendingByCategoryReport() {
   }, [transactions, categories]);
 
   const totalExpenses = chartData.reduce((sum, item) => sum + item.value, 0);
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-CA', {
-      style: 'currency',
-      currency: 'CAD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(value);
-  };
 
   const handleCategoryClick = (categoryId: string) => {
     if (categoryId) {

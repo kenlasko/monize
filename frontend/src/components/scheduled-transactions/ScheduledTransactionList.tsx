@@ -7,6 +7,7 @@ import { ScheduledTransaction, FREQUENCY_LABELS } from '@/types/scheduled-transa
 import { scheduledTransactionsApi } from '@/lib/scheduled-transactions';
 import { parseLocalDate } from '@/lib/utils';
 import { useDateFormat } from '@/hooks/useDateFormat';
+import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 type ConfirmAction = 'post' | 'skip' | 'delete';
@@ -33,6 +34,7 @@ export function ScheduledTransactionList({
   onRefresh,
 }: ScheduledTransactionListProps) {
   const { formatDate } = useDateFormat();
+  const { formatCurrency } = useNumberFormat();
   const [actionInProgress, setActionInProgress] = useState<string | null>(null);
   const [confirmState, setConfirmState] = useState<ConfirmState>({
     isOpen: false,
@@ -118,10 +120,7 @@ export function ScheduledTransactionList({
   const formatAmount = (amount: number) => {
     const isNegative = amount < 0;
     const absAmount = Math.abs(amount);
-    const formatted = new Intl.NumberFormat('en-CA', {
-      style: 'currency',
-      currency: 'CAD',
-    }).format(absAmount);
+    const formatted = formatCurrency(absAmount);
 
     return (
       <span className={isNegative ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}>

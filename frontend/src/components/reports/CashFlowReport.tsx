@@ -19,11 +19,13 @@ import { categoriesApi } from '@/lib/categories';
 import { Transaction } from '@/types/transaction';
 import { Category } from '@/types/category';
 import { parseLocalDate } from '@/lib/utils';
+import { useNumberFormat } from '@/hooks/useNumberFormat';
 
 type DateRange = '3m' | '6m' | '1y' | 'custom';
 
 export function CashFlowReport() {
   const router = useRouter();
+  const { formatCurrencyCompact: formatCurrency } = useNumberFormat();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -182,15 +184,6 @@ export function CashFlowReport() {
       Net: Math.round(m.income - m.expenses),
     }));
   }, [transactions, dateRange, startDate, endDate, getDateRange]);
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-CA', {
-      style: 'currency',
-      currency: 'CAD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(value);
-  };
 
   const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: Array<{ name: string; value: number; color: string; payload: { fullName: string } }> }) => {
     if (active && payload && payload.length) {

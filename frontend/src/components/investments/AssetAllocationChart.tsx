@@ -3,6 +3,7 @@
 import { useMemo } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { AssetAllocation } from '@/types/investment';
+import { useNumberFormat } from '@/hooks/useNumberFormat';
 
 interface AssetAllocationChartProps {
   allocation: AssetAllocation | null;
@@ -13,14 +14,7 @@ export function AssetAllocationChart({
   allocation,
   isLoading,
 }: AssetAllocationChartProps) {
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-CA', {
-      style: 'currency',
-      currency: 'CAD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(value);
-  };
+  const { formatCurrencyCompact: formatCurrency } = useNumberFormat();
 
   const chartData = useMemo(() => {
     if (!allocation) return [];

@@ -6,6 +6,7 @@ import { format, subMonths } from 'date-fns';
 import { transactionsApi } from '@/lib/transactions';
 import { Transaction } from '@/types/transaction';
 import { parseLocalDate } from '@/lib/utils';
+import { useNumberFormat } from '@/hooks/useNumberFormat';
 
 type DateRange = '1m' | '3m' | '6m' | '1y' | 'all';
 type SortField = 'date' | 'amount' | 'payee';
@@ -13,6 +14,7 @@ type SortOrder = 'asc' | 'desc';
 
 export function UncategorizedTransactionsReport() {
   const router = useRouter();
+  const { formatCurrency } = useNumberFormat();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [dateRange, setDateRange] = useState<DateRange>('3m');
   const [isLoading, setIsLoading] = useState(true);
@@ -116,15 +118,6 @@ export function UncategorizedTransactionsReport() {
       incomeTotal: income.reduce((sum, tx) => sum + Number(tx.amount), 0),
     };
   }, [transactions]);
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-CA', {
-      style: 'currency',
-      currency: 'CAD',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(value);
-  };
 
   const handleTransactionClick = (tx: Transaction) => {
     router.push(`/transactions?search=${encodeURIComponent(tx.payee?.name || tx.payeeName || tx.description || '')}`);

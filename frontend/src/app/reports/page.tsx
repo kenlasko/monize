@@ -1,19 +1,25 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppHeader } from '@/components/layout/AppHeader';
+import { Button } from '@/components/ui/Button';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { customReportsApi } from '@/lib/custom-reports';
+import { CustomReport, VIEW_TYPE_LABELS, TIMEFRAME_LABELS } from '@/types/custom-report';
+import { getIconComponent } from '@/components/ui/IconPicker';
 
 type DensityLevel = 'normal' | 'compact' | 'dense';
+type ReportCategory = 'spending' | 'income' | 'networth' | 'tax' | 'debt' | 'investment' | 'insights' | 'maintenance' | 'bills' | 'custom';
 
 interface Report {
   id: string;
   name: string;
   description: string;
   icon: React.ReactNode;
-  category: 'spending' | 'income' | 'networth' | 'tax' | 'debt' | 'investment' | 'insights' | 'maintenance' | 'bills';
+  category: ReportCategory;
   color: string;
+  isCustom?: boolean;
 }
 
 const reports: Report[] = [
@@ -277,7 +283,7 @@ const reports: Report[] = [
   },
 ];
 
-const categoryLabels: Record<Report['category'], string> = {
+const categoryLabels: Record<ReportCategory, string> = {
   spending: 'Spending',
   income: 'Income',
   networth: 'Net Worth',
@@ -287,9 +293,10 @@ const categoryLabels: Record<Report['category'], string> = {
   insights: 'Insights',
   maintenance: 'Maintenance',
   bills: 'Bills',
+  custom: 'Custom',
 };
 
-const categoryColors: Record<Report['category'], string> = {
+const categoryColors: Record<ReportCategory, string> = {
   spending: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
   income: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
   networth: 'bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-300',
@@ -299,12 +306,29 @@ const categoryColors: Record<Report['category'], string> = {
   insights: 'bg-pink-100 text-pink-800 dark:bg-pink-900/30 dark:text-pink-300',
   maintenance: 'bg-gray-100 text-gray-800 dark:bg-gray-700/50 dark:text-gray-300',
   bills: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300',
+  custom: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300',
 };
 
 export default function ReportsPage() {
   const router = useRouter();
   const [density, setDensity] = useLocalStorage<DensityLevel>('moneymate-reports-density', 'normal');
-  const [categoryFilter, setCategoryFilter] = useState<Report['category'] | 'all'>('all');
+  const [categoryFilter, setCategoryFilter] = useLocalStorage<ReportCategory | 'all'>('moneymate-reports-category', 'all');
+  const [customReports, setCustomReports] = useState<CustomReport[]>([]);
+  const [isLoadingCustom, setIsLoadingCustom] = useState(true);
+
+  useEffect(() => {
+    const loadCustomReports = async () => {
+      try {
+        const data = await customReportsApi.getAll();
+        setCustomReports(data);
+      } catch (error) {
+        console.error('Failed to load custom reports:', error);
+      } finally {
+        setIsLoadingCustom(false);
+      }
+    };
+    loadCustomReports();
+  }, []);
 
   const cycleDensity = () => {
     const levels: DensityLevel[] = ['normal', 'compact', 'dense'];
@@ -319,9 +343,29 @@ export default function ReportsPage() {
     dense: 'Dense',
   };
 
+  // Convert custom reports to the Report interface
+  const customReportsAsReports: Report[] = customReports.map((cr) => {
+    const iconNode = cr.icon ? getIconComponent(cr.icon) : null;
+    return {
+      id: `custom/${cr.id}`,
+      name: cr.name,
+      description: cr.description || `${VIEW_TYPE_LABELS[cr.viewType]} · ${TIMEFRAME_LABELS[cr.timeframeType]}`,
+      category: 'custom' as ReportCategory,
+      color: cr.backgroundColor ? '' : 'bg-purple-500',
+      isCustom: true,
+      icon: iconNode || (
+        <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+      ),
+    };
+  });
+
+  const allReports = [...reports, ...customReportsAsReports];
+
   const filteredReports = categoryFilter === 'all'
-    ? reports
-    : reports.filter(r => r.category === categoryFilter);
+    ? allReports
+    : allReports.filter(r => r.category === categoryFilter);
 
   const handleReportClick = (reportId: string) => {
     router.push(`/reports/${reportId}`);
@@ -341,16 +385,27 @@ export default function ReportsPage() {
                 Generate insights about your financial health
               </p>
             </div>
-            <button
-              onClick={cycleDensity}
-              className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-              title={`Switch to ${densityLabels[density === 'normal' ? 'compact' : density === 'compact' ? 'dense' : 'normal']} view`}
-            >
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-              </svg>
-              {densityLabels[density]}
-            </button>
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={() => router.push('/reports/custom/new')}
+                className="inline-flex items-center gap-2"
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Create Custom Report
+              </Button>
+              <button
+                onClick={cycleDensity}
+                className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                title={`Switch to ${densityLabels[density === 'normal' ? 'compact' : density === 'compact' ? 'dense' : 'normal']} view`}
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                </svg>
+                {densityLabels[density]}
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -368,7 +423,7 @@ export default function ReportsPage() {
           >
             All Reports
           </button>
-          {(Object.keys(categoryLabels) as Report['category'][]).map((cat) => (
+          {(Object.keys(categoryLabels) as ReportCategory[]).map((cat) => (
             <button
               key={cat}
               onClick={() => setCategoryFilter(cat)}
@@ -386,65 +441,86 @@ export default function ReportsPage() {
         {/* Reports Grid */}
         {density === 'normal' && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredReports.map((report) => (
-              <button
-                key={report.id}
-                onClick={() => handleReportClick(report.id)}
-                className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 overflow-hidden hover:shadow-lg dark:hover:shadow-gray-700/70 transition-shadow text-left group flex flex-col h-full"
-              >
-                {/* Preview Area */}
-                <div className={`h-32 ${report.color} bg-opacity-10 dark:bg-opacity-20 flex items-center justify-center relative flex-shrink-0`}>
-                  <div className={`${report.color} bg-opacity-20 dark:bg-opacity-30 rounded-full p-4`}>
-                    <div className="text-gray-700 dark:text-gray-200">
-                      {report.icon}
+            {filteredReports.map((report) => {
+              const customReport = report.isCustom ? customReports.find(cr => `custom/${cr.id}` === report.id) : null;
+              const bgColor = customReport?.backgroundColor || '';
+              const colorClass = report.color || 'bg-purple-500';
+
+              return (
+                <button
+                  key={report.id}
+                  onClick={() => handleReportClick(report.id)}
+                  className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 overflow-hidden hover:shadow-lg dark:hover:shadow-gray-700/70 transition-shadow text-left group flex flex-col h-full"
+                >
+                  {/* Preview Area */}
+                  <div
+                    className={`h-32 ${!bgColor ? `${colorClass} bg-opacity-10 dark:bg-opacity-20` : ''} flex items-center justify-center relative flex-shrink-0`}
+                    style={bgColor ? { backgroundColor: `${bgColor}20` } : undefined}
+                  >
+                    <div
+                      className={`${!bgColor ? `${colorClass} bg-opacity-20 dark:bg-opacity-30` : ''} rounded-full p-4`}
+                      style={bgColor ? { backgroundColor: `${bgColor}40` } : undefined}
+                    >
+                      <div className="text-gray-700 dark:text-gray-200">
+                        {report.icon}
+                      </div>
                     </div>
+                    <span className={`absolute top-3 right-3 px-2 py-1 text-xs font-medium rounded ${categoryColors[report.category]}`}>
+                      {categoryLabels[report.category]}
+                    </span>
                   </div>
-                  <span className={`absolute top-3 right-3 px-2 py-1 text-xs font-medium rounded ${categoryColors[report.category]}`}>
-                    {categoryLabels[report.category]}
-                  </span>
-                </div>
-                {/* Content */}
-                <div className="p-4 flex flex-col flex-1">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                    {report.name}
-                  </h3>
-                  <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                    {report.description}
-                  </p>
-                </div>
-              </button>
-            ))}
+                  {/* Content */}
+                  <div className="p-4 flex flex-col flex-1">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                      {report.name}
+                    </h3>
+                    <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                      {report.description}
+                    </p>
+                  </div>
+                </button>
+              );
+            })}
           </div>
         )}
 
         {density === 'compact' && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {filteredReports.map((report) => (
-              <button
-                key={report.id}
-                onClick={() => handleReportClick(report.id)}
-                className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4 hover:shadow-md dark:hover:shadow-gray-700/70 transition-shadow text-left flex items-center gap-4 group"
-              >
-                <div className={`${report.color} bg-opacity-20 dark:bg-opacity-30 rounded-lg p-3 flex-shrink-0`}>
-                  <div className="text-gray-700 dark:text-gray-200">
-                    {report.icon}
+            {filteredReports.map((report) => {
+              const customReport = report.isCustom ? customReports.find(cr => `custom/${cr.id}` === report.id) : null;
+              const bgColor = customReport?.backgroundColor || '';
+              const colorClass = report.color || 'bg-purple-500';
+
+              return (
+                <button
+                  key={report.id}
+                  onClick={() => handleReportClick(report.id)}
+                  className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4 hover:shadow-md dark:hover:shadow-gray-700/70 transition-shadow text-left flex items-center gap-4 group"
+                >
+                  <div
+                    className={`${!bgColor ? `${colorClass} bg-opacity-20 dark:bg-opacity-30` : ''} rounded-lg p-3 flex-shrink-0`}
+                    style={bgColor ? { backgroundColor: `${bgColor}40` } : undefined}
+                  >
+                    <div className="text-gray-700 dark:text-gray-200">
+                      {report.icon}
+                    </div>
                   </div>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate">
-                      {report.name}
-                    </h3>
-                    <span className={`px-2 py-0.5 text-xs font-medium rounded ${categoryColors[report.category]} flex-shrink-0`}>
-                      {categoryLabels[report.category]}
-                    </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate">
+                        {report.name}
+                      </h3>
+                      <span className={`px-2 py-0.5 text-xs font-medium rounded ${categoryColors[report.category]} flex-shrink-0`}>
+                        {categoryLabels[report.category]}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400 line-clamp-1">
+                      {report.description}
+                    </p>
                   </div>
-                  <p className="mt-1 text-sm text-gray-500 dark:text-gray-400 line-clamp-1">
-                    {report.description}
-                  </p>
-                </div>
-              </button>
-            ))}
+                </button>
+              );
+            })}
           </div>
         )}
 
@@ -465,34 +541,43 @@ export default function ReportsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                {filteredReports.map((report) => (
-                  <tr
-                    key={report.id}
-                    onClick={() => handleReportClick(report.id)}
-                    className="hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition-colors"
-                  >
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        <div className={`${report.color} bg-opacity-20 dark:bg-opacity-30 rounded p-1.5 flex-shrink-0 flex items-center justify-center`}>
-                          <div className="text-gray-700 dark:text-gray-200 [&>svg]:h-5 [&>svg]:w-5">
-                            {report.icon}
+                {filteredReports.map((report) => {
+                  const customReport = report.isCustom ? customReports.find(cr => `custom/${cr.id}` === report.id) : null;
+                  const bgColor = customReport?.backgroundColor || '';
+                  const colorClass = report.color || 'bg-purple-500';
+
+                  return (
+                    <tr
+                      key={report.id}
+                      onClick={() => handleReportClick(report.id)}
+                      className="hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition-colors"
+                    >
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`${!bgColor ? `${colorClass} bg-opacity-20 dark:bg-opacity-30` : ''} rounded p-1.5 flex-shrink-0 flex items-center justify-center`}
+                            style={bgColor ? { backgroundColor: `${bgColor}40` } : undefined}
+                          >
+                            <div className="text-gray-700 dark:text-gray-200 [&>svg]:h-5 [&>svg]:w-5">
+                              {report.icon}
+                            </div>
                           </div>
+                          <span className="font-medium text-gray-900 dark:text-gray-100">
+                            {report.name}
+                          </span>
                         </div>
-                        <span className="font-medium text-gray-900 dark:text-gray-100">
-                          {report.name}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`px-2 py-0.5 text-xs font-medium rounded ${categoryColors[report.category]}`}>
+                          {categoryLabels[report.category]}
                         </span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-0.5 text-xs font-medium rounded ${categoryColors[report.category]}`}>
-                        {categoryLabels[report.category]}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 hidden md:table-cell">
-                      {report.description}
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 hidden md:table-cell">
+                        {report.description}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -501,6 +586,7 @@ export default function ReportsPage() {
         {/* Report Count */}
         <div className="mt-6 text-sm text-gray-500 dark:text-gray-400 text-center">
           {filteredReports.length} report{filteredReports.length !== 1 ? 's' : ''} available
+          {isLoadingCustom && ' (loading custom reports...)'}
         </div>
       </div>
     </div>

@@ -8,6 +8,7 @@ import { categoriesApi } from '@/lib/categories';
 import { Transaction } from '@/types/transaction';
 import { Category } from '@/types/category';
 import { parseLocalDate } from '@/lib/utils';
+import { useNumberFormat } from '@/hooks/useNumberFormat';
 
 interface Anomaly {
   type: 'large_transaction' | 'category_spike' | 'unusual_payee' | 'frequency_change';
@@ -25,6 +26,7 @@ interface Anomaly {
 
 export function SpendingAnomaliesReport() {
   const router = useRouter();
+  const { formatCurrencyCompact: formatCurrency } = useNumberFormat();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -182,15 +184,6 @@ export function SpendingAnomaliesReport() {
       return (b.amount || 0) - (a.amount || 0);
     });
   }, [transactions, categories, threshold]);
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-CA', {
-      style: 'currency',
-      currency: 'CAD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(value);
-  };
 
   const handleTransactionClick = (tx: Transaction | undefined) => {
     if (tx) {

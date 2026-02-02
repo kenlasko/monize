@@ -66,7 +66,7 @@ export function Pagination({
   // Determine which jump buttons to show based on total pages
   const showLargeJumps = totalPages > 10;
 
-  const buttonClass = "px-2 py-1 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed";
+  const buttonClass = "px-2 h-[26px] text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed";
 
   return (
     <div className={`flex flex-col sm:flex-row items-center justify-between gap-3 ${minimal ? 'bg-transparent' : 'bg-white dark:bg-gray-800 px-4 py-3 shadow dark:shadow-gray-700/50 rounded-lg'}`}>
@@ -116,14 +116,17 @@ export function Pagination({
         </button>
 
         {/* Page input */}
-        <div className="flex items-center space-x-1 px-1">
+        <div className="inline-flex items-center gap-1 px-1 whitespace-nowrap flex-shrink-0">
           <input
             type="text"
+            inputMode="numeric"
             value={inputPage}
             onChange={handleInputChange}
             onKeyDown={handleInputKeyDown}
             onBlur={handleInputBlur}
-            className="w-12 px-2 py-1 text-sm text-center font-medium text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            maxLength={4}
+            size={4}
+            className="w-10 h-[26px] px-1 py-0 text-xs text-center font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             title="Enter page number"
           />
           <span className="text-sm text-gray-500 dark:text-gray-400">

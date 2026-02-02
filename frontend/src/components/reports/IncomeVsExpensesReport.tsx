@@ -17,11 +17,13 @@ import { format, subMonths, startOfMonth, endOfMonth, eachMonthOfInterval } from
 import { transactionsApi } from '@/lib/transactions';
 import { Transaction } from '@/types/transaction';
 import { parseLocalDate } from '@/lib/utils';
+import { useNumberFormat } from '@/hooks/useNumberFormat';
 
 type DateRange = '6m' | '1y' | '2y' | 'custom';
 
 export function IncomeVsExpensesReport() {
   const router = useRouter();
+  const { formatCurrencyCompact: formatCurrency } = useNumberFormat();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [dateRange, setDateRange] = useState<DateRange>('1y');
@@ -137,15 +139,6 @@ export function IncomeVsExpensesReport() {
     const savingsRate = totalIncome > 0 ? (totalSavings / totalIncome) * 100 : 0;
     return { totalExpenses, totalIncome, totalSavings, savingsRate };
   }, [chartData]);
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-CA', {
-      style: 'currency',
-      currency: 'CAD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(value);
-  };
 
   const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ name: string; value: number; color: string; payload: { fullName: string; SavingsRate: number } }>; label?: string }) => {
     if (active && payload && payload.length) {

@@ -405,7 +405,7 @@ CREATE TABLE user_preferences (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Reports (saved custom reports)
+-- Reports (saved custom reports - legacy)
 CREATE TABLE reports (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -418,6 +418,43 @@ CREATE TABLE reports (
 );
 
 CREATE INDEX idx_reports_user ON reports(user_id);
+
+-- Custom Reports (user-defined configurable reports)
+-- view_type: TABLE, LINE_CHART, BAR_CHART, PIE_CHART
+-- timeframe_type: LAST_7_DAYS, LAST_30_DAYS, LAST_MONTH, LAST_3_MONTHS, LAST_6_MONTHS, LAST_12_MONTHS, LAST_YEAR, YEAR_TO_DATE, CUSTOM
+-- group_by: NONE, CATEGORY, PAYEE, MONTH, WEEK, DAY
+-- filters: { accountIds?: string[], categoryIds?: string[], payeeIds?: string[], searchText?: string }
+-- config: {
+--   metric: NONE | TOTAL_AMOUNT | COUNT | AVERAGE,
+--   includeTransfers: boolean,
+--   direction: INCOME_ONLY | EXPENSES_ONLY | BOTH,
+--   customStartDate?: string,
+--   customEndDate?: string,
+--   tableColumns?: (LABEL | VALUE | COUNT | PERCENTAGE | DATE | PAYEE | DESCRIPTION | MEMO | CATEGORY | ACCOUNT)[],
+--   sortBy?: LABEL | VALUE | COUNT | PERCENTAGE | DATE | PAYEE | DESCRIPTION | MEMO | CATEGORY | ACCOUNT,
+--   sortDirection?: ASC | DESC
+-- }
+CREATE TABLE custom_reports (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    icon VARCHAR(50),
+    background_color VARCHAR(7),
+    view_type VARCHAR(20) NOT NULL DEFAULT 'BAR_CHART',
+    timeframe_type VARCHAR(30) NOT NULL DEFAULT 'LAST_3_MONTHS',
+    group_by VARCHAR(20) NOT NULL DEFAULT 'CATEGORY',
+    filters JSONB NOT NULL DEFAULT '{}',
+    config JSONB NOT NULL DEFAULT '{"metric": "TOTAL_AMOUNT", "includeTransfers": false, "direction": "EXPENSES_ONLY"}',
+    is_favourite BOOLEAN NOT NULL DEFAULT FALSE,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_custom_reports_user ON custom_reports(user_id);
+CREATE INDEX idx_custom_reports_user_favourite ON custom_reports(user_id, is_favourite);
+CREATE INDEX idx_custom_reports_user_sort ON custom_reports(user_id, sort_order);
 
 -- Triggers for updated_at timestamps
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -439,6 +476,7 @@ CREATE TRIGGER update_investment_transactions_updated_at BEFORE UPDATE ON invest
 CREATE TRIGGER update_budgets_updated_at BEFORE UPDATE ON budgets FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_user_preferences_updated_at BEFORE UPDATE ON user_preferences FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_reports_updated_at BEFORE UPDATE ON reports FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_custom_reports_updated_at BEFORE UPDATE ON custom_reports FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Function to update account balance
 -- VOID transactions do not affect account balance

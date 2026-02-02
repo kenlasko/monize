@@ -16,6 +16,7 @@ import { format, startOfWeek, endOfWeek, eachWeekOfInterval, subDays } from 'dat
 import { Transaction } from '@/types/transaction';
 import { parseLocalDate } from '@/lib/utils';
 import { useDateFormat } from '@/hooks/useDateFormat';
+import { useNumberFormat } from '@/hooks/useNumberFormat';
 
 interface IncomeExpensesBarChartProps {
   transactions: Transaction[];
@@ -28,6 +29,7 @@ export function IncomeExpensesBarChart({
 }: IncomeExpensesBarChartProps) {
   const router = useRouter();
   const { formatDate } = useDateFormat();
+  const { formatCurrencyCompact: formatCurrency } = useNumberFormat();
 
   // Group transactions by week and calculate income/expenses
   const chartData = useMemo(() => {
@@ -99,15 +101,6 @@ export function IncomeExpensesBarChart({
       { income: 0, expenses: 0 }
     );
   }, [chartData]);
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-CA', {
-      style: 'currency',
-      currency: 'CAD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(value);
-  };
 
   const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ name: string; value: number; color: string }>; label?: string }) => {
     if (active && payload && payload.length) {

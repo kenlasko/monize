@@ -16,6 +16,7 @@ import {
 import { format, addMonths, parseISO } from 'date-fns';
 import { accountsApi } from '@/lib/accounts';
 import { Account, PaymentFrequency } from '@/types/account';
+import { useNumberFormat } from '@/hooks/useNumberFormat';
 
 interface PayoffScheduleItem {
   date: string;
@@ -36,6 +37,7 @@ const FREQUENCY_MONTHS: Record<PaymentFrequency, number> = {
 };
 
 export function DebtPayoffTimelineReport() {
+  const { formatCurrencyCompact: formatCurrency } = useNumberFormat();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [selectedAccountId, setSelectedAccountId] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
@@ -141,15 +143,6 @@ export function DebtPayoffTimelineReport() {
       originalBalance,
     };
   }, [payoffSchedule, selectedAccount]);
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-CA', {
-      style: 'currency',
-      currency: 'CAD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(value);
-  };
 
   const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ name: string; value: number; color: string }>; label?: string }) => {
     if (active && payload && payload.length) {

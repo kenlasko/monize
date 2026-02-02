@@ -14,6 +14,7 @@ import { accountsApi } from '@/lib/accounts';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { Account } from '@/types/account';
 import { Transaction, ReconciliationData, TransactionStatus } from '@/types/transaction';
+import { useNumberFormat } from '@/hooks/useNumberFormat';
 
 type ReconcileStep = 'setup' | 'reconcile' | 'complete';
 
@@ -31,6 +32,7 @@ function ReconcileContent() {
   const preselectedAccountId = searchParams.get('accountId');
   const { preferences } = usePreferencesStore();
   const defaultCurrency = preferences?.defaultCurrency || 'CAD';
+  const { formatCurrency: formatCurrencyBase } = useNumberFormat();
 
   const [step, setStep] = useState<ReconcileStep>('setup');
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -167,11 +169,7 @@ function ReconcileContent() {
   const formatCurrency = (amount: number | string | null | undefined) => {
     const numericAmount = Number(amount) || 0;
     const currency = selectedAccount?.currencyCode || 'CAD';
-    const formatted = new Intl.NumberFormat('en-CA', {
-      style: 'currency',
-      currency: currency,
-      currencyDisplay: 'narrowSymbol',
-    }).format(numericAmount);
+    const formatted = formatCurrencyBase(numericAmount, currency);
 
     // Only show currency code if it differs from user's default currency
     if (currency !== defaultCurrency) {
