@@ -198,28 +198,37 @@ export class ScheduledTransactionsService {
       .leftJoinAndSelect('st.splits', 'splits')
       .leftJoinAndSelect('splits.category', 'splitCategory')
       .leftJoinAndSelect('splits.transferAccount', 'splitTransferAccount')
-      .loadRelationCountAndMap('st.overrideCount', 'st.overrides')
       .where('st.userId = :userId', { userId })
       .orderBy('st.nextDueDate', 'ASC')
       .getMany();
 
-    // Fetch overrides for each transaction's next due date
+    // Fetch overrides and count for each transaction (only for dates >= nextDueDate)
     const transactionsWithOverrides = await Promise.all(
       transactions.map(async (transaction) => {
         const nextDueDateStr = transaction.nextDueDate instanceof Date
           ? transaction.nextDueDate.toISOString().split('T')[0]
           : String(transaction.nextDueDate).split('T')[0];
 
-        const nextOverride = await this.overridesRepository.findOne({
-          where: {
-            scheduledTransactionId: transaction.id,
-            overrideDate: nextDueDateStr,
-          },
-          relations: ['category'],
-        });
+        // Get the next override (for the next due date specifically)
+        // Use originalDate to find the override, since overrideDate may differ
+        const nextOverride = await this.overridesRepository
+          .createQueryBuilder('override')
+          .leftJoinAndSelect('override.category', 'category')
+          .where('override.scheduledTransactionId = :id', { id: transaction.id })
+          .andWhere('override.originalDate = :date', { date: nextDueDateStr })
+          .getOne();
+
+        // Count only future overrides (dates >= nextDueDate)
+        // Use originalDate since that represents when the occurrence was originally scheduled
+        const overrideCount = await this.overridesRepository
+          .createQueryBuilder('o')
+          .where('o.scheduledTransactionId = :id', { id: transaction.id })
+          .andWhere('o.originalDate >= :nextDueDate', { nextDueDate: nextDueDateStr })
+          .getCount();
 
         return {
           ...transaction,
+          overrideCount,
           nextOverride: nextOverride || null,
         };
       }),
@@ -423,12 +432,11 @@ export class ScheduledTransactionsService {
     const postDate = postDto?.transactionDate || nextDueDateStr;
 
     // Check for stored override for this specific date
-    const storedOverride = await this.overridesRepository.findOne({
-      where: {
-        scheduledTransactionId: id,
-        overrideDate: postDate,
-      },
-    });
+    const storedOverride = await this.overridesRepository
+      .createQueryBuilder('override')
+      .where('override.scheduledTransactionId = :id', { id })
+      .andWhere('override.overrideDate = :postDate', { postDate })
+      .getOne();
 
     // Priority: inline values > stored override > base scheduled transaction
     // Determine final values to use
@@ -524,6 +532,22 @@ export class ScheduledTransactionsService {
       await this.overridesRepository.remove(storedOverride);
     }
 
+    // Calculate the new next due date to know which overrides are now stale
+    const newNextDueDate = scheduled.frequency === 'ONCE'
+      ? null
+      : this.calculateNextDueDate(new Date(scheduled.nextDueDate), scheduled.frequency);
+
+    // Clean up any overrides for dates before the new nextDueDate (stale overrides)
+    if (newNextDueDate) {
+      const newNextDueDateStr = newNextDueDate.toISOString().split('T')[0];
+      await this.overridesRepository
+        .createQueryBuilder()
+        .delete()
+        .where('scheduledTransactionId = :id', { id })
+        .andWhere('overrideDate < :newNextDueDate', { newNextDueDate: newNextDueDateStr })
+        .execute();
+    }
+
     // Build update object for scheduled transaction
     const updateFields: Record<string, any> = {
       lastPostedDate: new Date(),
@@ -575,6 +599,16 @@ export class ScheduledTransactionsService {
       case 'BIWEEKLY':
         date.setDate(date.getDate() + 14);
         break;
+      case 'SEMIMONTHLY':
+        // Twice a month: 15th and last day of month
+        if (date.getDate() <= 15) {
+          // Go to end of current month
+          date.setMonth(date.getMonth() + 1, 0); // Day 0 of next month = last day of current month
+        } else {
+          // Go to 15th of next month
+          date.setMonth(date.getMonth() + 1, 15);
+        }
+        break;
       case 'MONTHLY':
         date.setMonth(date.getMonth() + 1);
         break;
@@ -606,17 +640,16 @@ export class ScheduledTransactionsService {
     // Verify user has access to the scheduled transaction
     await this.findOne(userId, scheduledTransactionId);
 
-    // Check if override already exists for this date
-    const existing = await this.overridesRepository.findOne({
-      where: {
-        scheduledTransactionId,
-        overrideDate: createDto.overrideDate,
-      },
-    });
+    // Check if override already exists for this original date
+    const existing = await this.overridesRepository
+      .createQueryBuilder('override')
+      .where('override.scheduledTransactionId = :scheduledTransactionId', { scheduledTransactionId })
+      .andWhere('override.originalDate = :date', { date: createDto.originalDate })
+      .getOne();
 
     if (existing) {
       throw new BadRequestException(
-        `An override already exists for ${createDto.overrideDate}. Use update instead.`,
+        `An override already exists for the ${createDto.originalDate} occurrence. Use update instead.`,
       );
     }
 
@@ -630,6 +663,7 @@ export class ScheduledTransactionsService {
 
     const override = this.overridesRepository.create({
       scheduledTransactionId,
+      originalDate: createDto.originalDate,
       overrideDate: createDto.overrideDate,
       amount: createDto.amount ?? null,
       categoryId: createDto.categoryId ?? null,
@@ -696,10 +730,31 @@ export class ScheduledTransactionsService {
     // Verify user has access
     await this.findOne(userId, scheduledTransactionId);
 
-    return this.overridesRepository.findOne({
-      where: { scheduledTransactionId, overrideDate: date },
+    // Normalize the date to YYYY-MM-DD format
+    const normalizedDate = date.split('T')[0];
+
+    this.logger.debug(`findOverrideByDate: Looking for override with scheduledTransactionId=${scheduledTransactionId}, date=${normalizedDate}`);
+
+    // Get all overrides for this transaction and find matching date in code
+    // This avoids any potential date comparison issues in PostgreSQL
+    const allOverrides = await this.overridesRepository.find({
+      where: { scheduledTransactionId },
       relations: ['category'],
     });
+
+    this.logger.debug(`findOverrideByDate: Found ${allOverrides.length} total overrides for transaction`);
+
+    // Find the override matching the original date (compare as strings in YYYY-MM-DD format)
+    // We match on originalDate because that identifies which occurrence was overridden
+    const override = allOverrides.find(o => {
+      const originalDate = String(o.originalDate).split('T')[0];
+      this.logger.debug(`findOverrideByDate: Comparing originalDate ${originalDate} with ${normalizedDate}`);
+      return originalDate === normalizedDate;
+    });
+
+    this.logger.debug(`findOverrideByDate: Result = ${override ? `found id=${override.id}` : 'null'}`);
+
+    return override || null;
   }
 
   /**

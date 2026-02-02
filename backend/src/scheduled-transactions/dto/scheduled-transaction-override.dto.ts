@@ -33,7 +33,11 @@ export class OverrideSplitDto {
 }
 
 export class CreateScheduledTransactionOverrideDto {
-  @ApiProperty({ description: 'The date this override applies to (YYYY-MM-DD)' })
+  @ApiProperty({ description: 'The original calculated occurrence date being overridden (YYYY-MM-DD)' })
+  @IsDateString()
+  originalDate: string;
+
+  @ApiProperty({ description: 'The actual date for this occurrence (YYYY-MM-DD), may be same as originalDate or different if date was changed' })
   @IsDateString()
   overrideDate: string;
 
@@ -100,6 +104,9 @@ export class ScheduledTransactionOverrideResponseDto {
 
   @ApiProperty()
   scheduledTransactionId: string;
+
+  @ApiProperty()
+  originalDate: string;
 
   @ApiProperty()
   overrideDate: string;

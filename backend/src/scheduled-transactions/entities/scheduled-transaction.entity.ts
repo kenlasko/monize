@@ -19,6 +19,7 @@ export type FrequencyType =
   | 'DAILY'
   | 'WEEKLY'
   | 'BIWEEKLY'
+  | 'SEMIMONTHLY'
   | 'MONTHLY'
   | 'QUARTERLY'
   | 'YEARLY';

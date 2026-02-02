@@ -117,9 +117,13 @@ export function ScheduledTransactionList({
     }
   };
 
-  const formatAmount = (amount: number) => {
-    const isNegative = amount < 0;
-    const absAmount = Math.abs(amount);
+  const formatAmount = (amount: number | null | undefined) => {
+    if (amount == null) return <span className="text-gray-400">—</span>;
+    const numAmount = Number(amount);
+    if (isNaN(numAmount)) return <span className="text-gray-400">—</span>;
+
+    const isNegative = numAmount < 0;
+    const absAmount = Math.abs(numAmount);
     const formatted = formatCurrency(absAmount);
 
     return (
@@ -130,21 +134,29 @@ export function ScheduledTransactionList({
     );
   };
 
-  const getDueDateStatus = (nextDueDate: string) => {
-    const date = parseLocalDate(nextDueDate);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+  const getDueDateStatus = (nextDueDate: string | undefined | null) => {
+    if (!nextDueDate) return null;
 
-    if (isPast(date) && !isToday(date)) {
-      return { label: 'Overdue', className: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' };
+    try {
+      const date = parseLocalDate(nextDueDate);
+      if (!date || isNaN(date.getTime())) return null;
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      if (isPast(date) && !isToday(date)) {
+        return { label: 'Overdue', className: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' };
+      }
+      if (isToday(date)) {
+        return { label: 'Due Today', className: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' };
+      }
+      if (isBefore(date, addDays(today, 7))) {
+        return { label: 'Due Soon', className: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' };
+      }
+      return null;
+    } catch {
+      return null;
     }
-    if (isToday(date)) {
-      return { label: 'Due Today', className: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' };
-    }
-    if (isBefore(date, addDays(today, 7))) {
-      return { label: 'Due Soon', className: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' };
-    }
-    return null;
   };
 
   if (transactions.length === 0) {
@@ -198,7 +210,9 @@ export function ScheduledTransactionList({
         </thead>
         <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
           {transactions.map((transaction) => {
-            const dueDateStatus = getDueDateStatus(transaction.nextDueDate);
+            // Use override date for due status if it exists, fallback to nextDueDate
+            const effectiveDueDate = transaction.nextOverride?.overrideDate || transaction.nextDueDate || '';
+            const dueDateStatus = effectiveDueDate ? getDueDateStatus(effectiveDueDate) : null;
             const isProcessing = actionInProgress === transaction.id;
             const payee = transaction.payeeName || transaction.payee?.name;
 
@@ -257,7 +271,8 @@ export function ScheduledTransactionList({
 
                 {/* Amount */}
                 <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-right">
-                  {transaction.nextOverride?.amount !== undefined && transaction.nextOverride?.amount !== null ? (
+                  {transaction.nextOverride?.amount != null &&
+                   Number(transaction.nextOverride.amount) !== Number(transaction.amount) ? (
                     <div className="flex flex-col items-end">
                       <span className="text-xs text-gray-400 dark:text-gray-500 line-through">
                         {formatAmount(transaction.amount)}
@@ -274,7 +289,21 @@ export function ScheduledTransactionList({
                 {/* Schedule (Frequency + Next Due + Remaining) */}
                 <td className="px-4 py-3">
                   <div className="text-sm text-gray-900 dark:text-gray-100">
-                    {formatDate(transaction.nextDueDate)}
+                    {/* Show override date if it differs from the original next due date */}
+                    {transaction.nextOverride?.overrideDate &&
+                     transaction.nextDueDate &&
+                     transaction.nextOverride.overrideDate !== String(transaction.nextDueDate).split('T')[0] ? (
+                      <span className="flex flex-col">
+                        <span className="text-xs text-gray-400 dark:text-gray-500 line-through">
+                          {formatDate(transaction.nextDueDate)}
+                        </span>
+                        <span title="Date modified for this occurrence">
+                          {formatDate(transaction.nextOverride.overrideDate)}
+                        </span>
+                      </span>
+                    ) : (
+                      transaction.nextDueDate ? formatDate(transaction.nextDueDate) : '—'
+                    )}
                     {dueDateStatus && (
                       <span
                         className={`ml-1.5 inline-flex text-xs font-medium rounded-full px-1.5 py-0.5 ${dueDateStatus.className}`}

@@ -233,11 +233,11 @@ export function CashFlowForecastChart({
           </p>
         </div>
       ) : totalForecastedTransactions === 0 ? (
-        <div className="h-72">
+        <div className="h-72" style={{ minHeight: 288 }}>
           <div className="text-center text-sm text-gray-500 dark:text-gray-400 mb-2">
             No upcoming transactions in this period - showing current balance
           </div>
-          <ResponsiveContainer width="100%" height="90%">
+          <ResponsiveContainer width="100%" height="90%" minWidth={0}>
             <LineChart data={forecastData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" className="dark:stroke-gray-700" />
               <XAxis dataKey="label" tick={{ fill: '#6b7280', fontSize: 12 }} tickLine={false} axisLine={{ stroke: '#e5e7eb' }} interval="preserveStartEnd" />
@@ -249,8 +249,8 @@ export function CashFlowForecastChart({
           </ResponsiveContainer>
         </div>
       ) : (
-        <div className="h-72">
-          <ResponsiveContainer width="100%" height="100%">
+        <div className="h-72" style={{ minHeight: 288 }}>
+          <ResponsiveContainer width="100%" height="100%" minWidth={0}>
             <LineChart data={forecastData}>
               <CartesianGrid
                 strokeDasharray="3 3"

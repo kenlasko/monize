@@ -141,13 +141,9 @@ export function PostTransactionDialog({
   const currentCategory = categoryId ? categories.find(c => c.id === categoryId) : null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-        {/* Backdrop */}
-        <div className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-75" onClick={onClose} />
-
-        {/* Modal */}
-        <div className="inline-block w-full max-w-5xl px-4 pt-5 pb-4 overflow-hidden text-left align-bottom transition-all transform bg-white dark:bg-gray-800 rounded-lg shadow-xl sm:my-8 sm:align-middle sm:p-6">
+    <div className="fixed inset-0 bg-gray-500 dark:bg-gray-900 bg-opacity-75 dark:bg-opacity-80 flex items-center justify-center p-4 z-50" onClick={onClose}>
+      {/* Modal */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl dark:shadow-gray-700/50 max-w-5xl w-full max-h-[90vh] overflow-y-auto p-6" onClick={(e) => e.stopPropagation()}>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
               Post Transaction
@@ -275,15 +271,14 @@ export function PostTransactionDialog({
             </div>
           </div>
 
-          {/* Actions */}
-          <div className="mt-6 flex justify-end space-x-3">
-            <Button variant="outline" onClick={onClose} disabled={isLoading}>
-              Cancel
-            </Button>
-            <Button onClick={handlePost} isLoading={isLoading}>
-              Post Transaction
-            </Button>
-          </div>
+        {/* Actions */}
+        <div className="mt-6 flex justify-end space-x-3">
+          <Button variant="outline" onClick={onClose} disabled={isLoading}>
+            Cancel
+          </Button>
+          <Button onClick={handlePost} isLoading={isLoading}>
+            Post Transaction
+          </Button>
         </div>
       </div>
     </div>

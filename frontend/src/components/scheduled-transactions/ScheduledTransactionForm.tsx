@@ -46,7 +46,7 @@ const scheduledTransactionSchema = z.object({
   amount: z.number({ error: 'Amount is required' }),
   currencyCode: z.string().default('CAD'),
   description: optionalString,
-  frequency: z.enum(['ONCE', 'DAILY', 'WEEKLY', 'BIWEEKLY', 'MONTHLY', 'QUARTERLY', 'YEARLY']),
+  frequency: z.enum(['ONCE', 'DAILY', 'WEEKLY', 'BIWEEKLY', 'SEMIMONTHLY', 'MONTHLY', 'QUARTERLY', 'YEARLY']),
   nextDueDate: z.string().min(1, 'Due date is required'),
   endDate: optionalString,
   occurrencesRemaining: optionalNumber,

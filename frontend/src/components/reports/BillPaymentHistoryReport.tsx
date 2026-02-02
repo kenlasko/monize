@@ -203,7 +203,7 @@ export function BillPaymentHistoryReport() {
   }, [billPayments, dateRange]);
 
   const handleBillClick = (st: ScheduledTransaction) => {
-    router.push(`/scheduled-transactions?id=${st.id}`);
+    router.push('/bills');
   };
 
   const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number }>; label?: string }) => {

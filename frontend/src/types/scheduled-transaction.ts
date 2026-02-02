@@ -7,6 +7,7 @@ export type FrequencyType =
   | 'DAILY'
   | 'WEEKLY'
   | 'BIWEEKLY'
+  | 'SEMIMONTHLY'
   | 'MONTHLY'
   | 'QUARTERLY'
   | 'YEARLY';
@@ -16,6 +17,7 @@ export const FREQUENCY_LABELS: Record<FrequencyType, string> = {
   DAILY: 'Daily',
   WEEKLY: 'Weekly',
   BIWEEKLY: 'Every 2 Weeks',
+  SEMIMONTHLY: 'Twice a Month',
   MONTHLY: 'Monthly',
   QUARTERLY: 'Quarterly',
   YEARLY: 'Yearly',
@@ -111,7 +113,8 @@ export interface OverrideSplit {
 export interface ScheduledTransactionOverride {
   id: string;
   scheduledTransactionId: string;
-  overrideDate: string;
+  originalDate: string; // The original calculated occurrence date this override replaces
+  overrideDate: string; // The actual date for this occurrence (may differ if date was changed)
   amount: number | null;
   categoryId: string | null;
   category?: Category | null;
@@ -123,7 +126,8 @@ export interface ScheduledTransactionOverride {
 }
 
 export interface CreateScheduledTransactionOverrideData {
-  overrideDate: string;
+  originalDate: string; // The original calculated occurrence date being overridden
+  overrideDate: string; // The actual date for this occurrence
   amount?: number | null;
   categoryId?: string | null;
   description?: string | null;

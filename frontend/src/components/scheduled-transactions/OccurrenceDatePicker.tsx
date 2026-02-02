@@ -1,14 +1,19 @@
 'use client';
 
 import { useMemo } from 'react';
-import { ScheduledTransaction, FrequencyType } from '@/types/scheduled-transaction';
+import { ScheduledTransaction, ScheduledTransactionOverride, FrequencyType } from '@/types/scheduled-transaction';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { parseLocalDate } from '@/lib/utils';
+
+interface Override {
+  originalDate: string;
+  overrideDate: string;
+}
 
 interface OccurrenceDatePickerProps {
   isOpen: boolean;
   scheduledTransaction: ScheduledTransaction;
-  overrideDates?: string[]; // Dates that already have overrides
+  overrides?: Override[]; // Full override objects with originalDate and overrideDate
   onSelect: (date: string) => void;
   onClose: () => void;
 }
@@ -35,6 +40,16 @@ function calculateNextDates(startDate: string, frequency: FrequencyType, count: 
       case 'BIWEEKLY':
         currentDate.setDate(currentDate.getDate() + 14);
         break;
+      case 'SEMIMONTHLY':
+        // Twice a month: 15th and last day of month
+        if (currentDate.getDate() <= 15) {
+          // Go to end of current month
+          currentDate.setMonth(currentDate.getMonth() + 1, 0); // Day 0 of next month = last day of current month
+        } else {
+          // Go to 15th of next month
+          currentDate.setMonth(currentDate.getMonth() + 1, 15);
+        }
+        break;
       case 'MONTHLY':
         currentDate.setMonth(currentDate.getMonth() + 1);
         break;
@@ -57,16 +72,27 @@ function calculateNextDates(startDate: string, frequency: FrequencyType, count: 
 export function OccurrenceDatePicker({
   isOpen,
   scheduledTransaction,
-  overrideDates = [],
+  overrides = [],
   onSelect,
   onClose,
 }: OccurrenceDatePickerProps) {
   const { formatDate } = useDateFormat();
 
-  // Convert to Set for O(1) lookups
-  const overrideDateSet = useMemo(() => new Set(overrideDates), [overrideDates]);
+  // Create maps for O(1) lookups
+  // originalDateToOverrideDate: maps original calculated dates to their override dates
+  // overrideDateSet: set of all override dates (to mark them as "modified")
+  const { originalDateToOverrideDate, overrideDateSet } = useMemo(() => {
+    const dateMap = new Map<string, string>();
+    const dateSet = new Set<string>();
+    for (const override of overrides) {
+      dateMap.set(override.originalDate, override.overrideDate);
+      dateSet.add(override.overrideDate);
+    }
+    return { originalDateToOverrideDate: dateMap, overrideDateSet: dateSet };
+  }, [overrides]);
 
-  const nextDates = useMemo(() => {
+  // Calculate next dates based on frequency
+  const calculatedDates = useMemo(() => {
     return calculateNextDates(
       scheduledTransaction.nextDueDate,
       scheduledTransaction.frequency,
@@ -74,80 +100,106 @@ export function OccurrenceDatePicker({
     );
   }, [scheduledTransaction.nextDueDate, scheduledTransaction.frequency]);
 
+  // Build the final list of dates to display:
+  // - For each calculated date, if it has an override, show the override date instead
+  // - This ensures we don't show BOTH the original and override dates
+  const nextDates = useMemo(() => {
+    const resultDates: string[] = [];
+    const addedDates = new Set<string>();
+
+    for (const calculatedDate of calculatedDates) {
+      const overrideDate = originalDateToOverrideDate.get(calculatedDate);
+      const dateToShow = overrideDate || calculatedDate;
+
+      // Avoid duplicates (in case an override date matches another calculated date)
+      if (!addedDates.has(dateToShow)) {
+        resultDates.push(dateToShow);
+        addedDates.add(dateToShow);
+      }
+    }
+
+    // Also add any override dates that aren't already included
+    // (for overrides of dates outside the calculated window)
+    for (const override of overrides) {
+      if (!addedDates.has(override.overrideDate)) {
+        resultDates.push(override.overrideDate);
+        addedDates.add(override.overrideDate);
+      }
+    }
+
+    return resultDates.sort();
+  }, [calculatedDates, originalDateToOverrideDate, overrides]);
+
+  // Track which date is the next due date
+  const nextDueDate = scheduledTransaction.nextDueDate.split('T')[0];
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
-        {/* Backdrop */}
-        <div
-          className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-75"
-          onClick={onClose}
-        />
+    <div className="fixed inset-0 bg-gray-500 dark:bg-gray-900 bg-opacity-75 dark:bg-opacity-80 flex items-center justify-center p-4 z-50" onClick={onClose}>
+      {/* Modal */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl dark:shadow-gray-700/50 max-w-sm w-full max-h-[90vh] overflow-y-auto p-6" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
+            Select Occurrence Date
+          </h3>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
+          >
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
 
-        {/* Modal */}
-        <div className="inline-block w-full max-w-sm px-4 pt-5 pb-4 overflow-hidden text-left align-bottom transition-all transform bg-white dark:bg-gray-800 rounded-lg shadow-xl sm:my-8 sm:align-middle sm:p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
-              Select Occurrence Date
-            </h3>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
-            >
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+          Choose which occurrence of "{scheduledTransaction.name}" to modify:
+        </p>
 
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-            Choose which occurrence of "{scheduledTransaction.name}" to modify:
-          </p>
-
-          <div className="space-y-2">
-            {nextDates.map((date, index) => {
-              const hasOverride = overrideDateSet.has(date);
-              return (
-                <button
-                  key={date}
-                  onClick={() => onSelect(date)}
-                  className={`w-full px-4 py-3 text-left rounded-lg border transition-colors ${
-                    hasOverride
-                      ? 'border-purple-300 dark:border-purple-600 bg-purple-50 dark:bg-purple-900/20'
-                      : 'border-gray-200 dark:border-gray-700'
-                  } hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-purple-300 dark:hover:border-purple-600`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                      {formatDate(date)}
-                    </span>
-                    <div className="flex items-center space-x-2">
-                      {hasOverride && (
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
-                          Modified
-                        </span>
-                      )}
-                      {index === 0 && (
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                          Next Due
-                        </span>
-                      )}
-                    </div>
+        <div className="space-y-2">
+          {nextDates.map((date) => {
+            const hasOverride = overrideDateSet.has(date);
+            const isNextDue = date === nextDueDate;
+            return (
+              <button
+                key={date}
+                onClick={() => onSelect(date)}
+                className={`w-full px-4 py-3 text-left rounded-lg border transition-colors ${
+                  hasOverride
+                    ? 'border-purple-300 dark:border-purple-600 bg-purple-50 dark:bg-purple-900/20'
+                    : 'border-gray-200 dark:border-gray-700'
+                } hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-purple-300 dark:hover:border-purple-600`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                    {formatDate(date)}
+                  </span>
+                  <div className="flex items-center space-x-2">
+                    {hasOverride && (
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
+                        Modified
+                      </span>
+                    )}
+                    {isNextDue && (
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                        Next Due
+                      </span>
+                    )}
                   </div>
-                </button>
-              );
-            })}
-          </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
 
-          <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-            <button
-              onClick={onClose}
-              className="w-full px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600"
-            >
-              Cancel
-            </button>
-          </div>
+        <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <button
+            onClick={onClose}
+            className="w-full px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600"
+          >
+            Cancel
+          </button>
         </div>
       </div>
     </div>

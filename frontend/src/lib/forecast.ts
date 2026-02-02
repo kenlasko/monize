@@ -73,6 +73,16 @@ function addFrequencyInterval(date: Date, frequency: FrequencyType): Date {
     case 'BIWEEKLY':
       newDate.setDate(newDate.getDate() + 14);
       break;
+    case 'SEMIMONTHLY':
+      // Twice a month: 15th and last day of month
+      if (newDate.getDate() <= 15) {
+        // Go to end of current month
+        newDate.setMonth(newDate.getMonth() + 1, 0); // Day 0 of next month = last day of current month
+      } else {
+        // Go to 15th of next month
+        newDate.setMonth(newDate.getMonth() + 1, 15);
+      }
+      break;
     case 'MONTHLY':
       newDate.setMonth(newDate.getMonth() + 1);
       break;
@@ -88,6 +98,7 @@ function addFrequencyInterval(date: Date, frequency: FrequencyType): Date {
 
 /**
  * Generate all occurrence dates for a scheduled transaction within a date range.
+ * Uses override amount for the next due date if an override exists.
  */
 function generateOccurrences(
   transaction: ScheduledTransaction,
@@ -106,6 +117,16 @@ function generateOccurrences(
   let currentDate = parseLocalDate(transaction.nextDueDate);
   let remainingOccurrences = transaction.occurrencesRemaining;
 
+  // Get the next due date key to check for override
+  const nextDueDateKey = formatDateKey(parseLocalDate(transaction.nextDueDate));
+
+  // Determine the amount to use for the next due date (with override if exists)
+  const baseAmount = Number(transaction.amount);
+  const overrideAmount = transaction.nextOverride?.amount;
+  const nextDueAmount = overrideAmount !== null && overrideAmount !== undefined
+    ? Number(overrideAmount)
+    : baseAmount;
+
   // For ONCE frequency, just check if it's in range
   if (transaction.frequency === 'ONCE') {
     const currentTime = currentDate.getTime();
@@ -113,7 +134,7 @@ function generateOccurrences(
       if (!txEndTime || currentTime <= txEndTime) {
         occurrences.push({
           date: formatDateKey(currentDate),
-          amount: Number(transaction.amount),
+          amount: nextDueAmount,
         });
       }
     }
@@ -128,6 +149,7 @@ function generateOccurrences(
   while (iterations < maxIterations) {
     iterations++;
     const currentTime = currentDate.getTime();
+    const currentDateKey = formatDateKey(currentDate);
 
     // Check if we've passed the forecast end date
     if (currentTime > endTime) break;
@@ -140,9 +162,12 @@ function generateOccurrences(
 
     // Only include if within our forecast range (on or after start date)
     if (currentTime >= startTime) {
+      // Use override amount for the next due date, base amount for all others
+      const amount = currentDateKey === nextDueDateKey ? nextDueAmount : baseAmount;
+
       occurrences.push({
-        date: formatDateKey(currentDate),
-        amount: Number(transaction.amount),
+        date: currentDateKey,
+        amount,
       });
 
       // Only decrement for occurrences we actually count

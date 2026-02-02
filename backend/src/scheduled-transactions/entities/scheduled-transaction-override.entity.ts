@@ -29,7 +29,11 @@ export class ScheduledTransactionOverride {
   @JoinColumn({ name: 'scheduled_transaction_id' })
   scheduledTransaction: ScheduledTransaction;
 
-  @ApiProperty({ example: '2024-01-15', description: 'The specific date this override applies to' })
+  @ApiProperty({ example: '2024-01-15', description: 'The original calculated occurrence date this override replaces' })
+  @Column({ type: 'date', name: 'original_date' })
+  originalDate: string;
+
+  @ApiProperty({ example: '2024-01-15', description: 'The actual date for this occurrence (may differ from originalDate if date was changed)' })
   @Column({ type: 'date', name: 'override_date' })
   overrideDate: string;
 

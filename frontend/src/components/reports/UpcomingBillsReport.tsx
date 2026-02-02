@@ -183,7 +183,7 @@ export function UpcomingBillsReport() {
   }, [upcomingBills, currentMonth]);
 
   const handleBillClick = (st: ScheduledTransaction) => {
-    router.push(`/scheduled-transactions?id=${st.id}`);
+    router.push('/bills');
   };
 
   if (isLoading) {

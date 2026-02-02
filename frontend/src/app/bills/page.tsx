@@ -18,6 +18,7 @@ import { Category } from '@/types/category';
 import { Account } from '@/types/account';
 import { parseLocalDate } from '@/lib/utils';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 
 interface OverrideEditorState {
   isOpen: boolean;
@@ -48,8 +49,8 @@ export default function BillsPage() {
   const [datePicker, setDatePicker] = useState<{
     isOpen: boolean;
     transaction: ScheduledTransaction | null;
-    overrideDates: string[];
-  }>({ isOpen: false, transaction: null, overrideDates: [] });
+    overrides: Array<{ originalDate: string; overrideDate: string }>;
+  }>({ isOpen: false, transaction: null, overrides: [] });
   const [postDialog, setPostDialog] = useState<{
     isOpen: boolean;
     transaction: ScheduledTransaction | null;
@@ -149,10 +150,13 @@ export default function BillsPage() {
 
   const handleEditOccurrence = async (transaction: ScheduledTransaction) => {
     // Fetch existing overrides to show which dates are modified
-    let overrideDates: string[] = [];
+    let overrides: Array<{ originalDate: string; overrideDate: string }> = [];
     try {
-      const overrides = await scheduledTransactionsApi.getOverrides(transaction.id);
-      overrideDates = overrides.map(o => o.overrideDate);
+      const fetchedOverrides = await scheduledTransactionsApi.getOverrides(transaction.id);
+      overrides = fetchedOverrides.map(o => ({
+        originalDate: o.originalDate,
+        overrideDate: o.overrideDate,
+      }));
     } catch (error) {
       console.error('Failed to fetch overrides:', error);
     }
@@ -161,7 +165,7 @@ export default function BillsPage() {
     setDatePicker({
       isOpen: true,
       transaction,
-      overrideDates,
+      overrides,
     });
   };
 
@@ -169,16 +173,35 @@ export default function BillsPage() {
     const transaction = datePicker.transaction;
     if (!transaction) return;
 
+    // Check if the selected date is an override date (user clicked on a modified occurrence)
+    // or an original calculated date (user clicked on an unmodified occurrence)
+    const overrideByOverrideDate = datePicker.overrides.find(o => o.overrideDate === date);
+    const overrideByOriginalDate = datePicker.overrides.find(o => o.originalDate === date);
+
     // Close the date picker
-    setDatePicker({ isOpen: false, transaction: null, overrideDates: [] });
+    setDatePicker({ isOpen: false, transaction: null, overrides: [] });
 
     try {
-      // Check if an override already exists for this date
-      const existingOverride = await scheduledTransactionsApi.getOverrideByDate(transaction.id, date);
+      let existingOverride: ScheduledTransactionOverride | null = null;
+
+      if (overrideByOverrideDate) {
+        // User clicked on a date that is the override date - fetch the full override
+        existingOverride = await scheduledTransactionsApi.getOverrideByDate(
+          transaction.id,
+          overrideByOverrideDate.originalDate
+        );
+      } else if (overrideByOriginalDate) {
+        // User clicked on an original date that has been overridden (shouldn't happen with new logic)
+        existingOverride = await scheduledTransactionsApi.getOverrideByDate(
+          transaction.id,
+          overrideByOriginalDate.originalDate
+        );
+      }
+
       setOverrideEditor({
         isOpen: true,
         transaction,
-        date,
+        date: overrideByOverrideDate?.originalDate || date, // Use original date if this was an override
         existingOverride,
       });
     } catch (error) {
@@ -194,7 +217,7 @@ export default function BillsPage() {
   };
 
   const handleDatePickerClose = () => {
-    setDatePicker({ isOpen: false, transaction: null, overrideDates: [] });
+    setDatePicker({ isOpen: false, transaction: null, overrides: [] });
   };
 
   const handleOverrideEditorClose = () => {
@@ -277,11 +300,16 @@ export default function BillsPage() {
         }
       }, 0),
     dueCount: scheduledTransactions.filter((t) => {
-      if (!t.isActive) return false;
-      const dueDate = parseLocalDate(t.nextDueDate);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      return dueDate <= today;
+      if (!t.isActive || !t.nextDueDate) return false;
+      try {
+        const dueDate = parseLocalDate(t.nextDueDate);
+        if (!dueDate || isNaN(dueDate.getTime())) return false;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return dueDate <= today;
+      } catch {
+        return false;
+      }
     }).length,
   };
 
@@ -435,11 +463,17 @@ export default function BillsPage() {
         </div>
 
         {/* Cash Flow Forecast Chart */}
-        <CashFlowForecastChart
-          scheduledTransactions={scheduledTransactions}
-          accounts={accounts}
-          isLoading={isLoading}
-        />
+        <ErrorBoundary fallback={
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6 mb-6">
+            <p className="text-gray-500 dark:text-gray-400">Chart temporarily unavailable</p>
+          </div>
+        }>
+          <CashFlowForecastChart
+            scheduledTransactions={scheduledTransactions}
+            accounts={accounts}
+            isLoading={isLoading}
+          />
+        </ErrorBoundary>
 
         {/* Form Modal */}
         {showForm && (
@@ -520,7 +554,7 @@ export default function BillsPage() {
         <OccurrenceDatePicker
           isOpen={datePicker.isOpen}
           scheduledTransaction={datePicker.transaction}
-          overrideDates={datePicker.overrideDates}
+          overrides={datePicker.overrides}
           onSelect={handleDatePickerSelect}
           onClose={handleDatePickerClose}
         />
@@ -556,8 +590,8 @@ export default function BillsPage() {
       {overrideConfirm.isOpen && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
-            <div className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-75" />
-            <div className="inline-block px-6 py-5 overflow-hidden text-left align-bottom transition-all transform bg-white dark:bg-gray-800 rounded-lg shadow-xl sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+            <div className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-75" onClick={handleOverrideConfirmCancel} />
+            <div className="relative z-10 inline-block px-6 py-5 overflow-hidden text-left align-bottom transition-all transform bg-white dark:bg-gray-800 rounded-lg shadow-xl sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
               <div className="mb-4">
                 <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
                   Existing Overrides Found

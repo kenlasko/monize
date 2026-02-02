@@ -241,7 +241,8 @@ ALTER TABLE accounts ADD CONSTRAINT fk_accounts_asset_category
 CREATE TABLE scheduled_transaction_overrides (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     scheduled_transaction_id UUID NOT NULL REFERENCES scheduled_transactions(id) ON DELETE CASCADE,
-    override_date DATE NOT NULL,
+    original_date DATE NOT NULL, -- The original calculated occurrence date this override replaces
+    override_date DATE NOT NULL, -- The actual date for this occurrence (may differ if date was changed)
     amount NUMERIC(20, 4),
     category_id UUID REFERENCES categories(id) ON DELETE SET NULL,
     description TEXT,
@@ -249,11 +250,12 @@ CREATE TABLE scheduled_transaction_overrides (
     splits JSONB, -- JSON array of split overrides: [{categoryId, amount, memo}]
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(scheduled_transaction_id, override_date)
+    UNIQUE(scheduled_transaction_id, original_date) -- One override per original occurrence
 );
 
 CREATE INDEX idx_sched_txn_overrides_sched_txn_id ON scheduled_transaction_overrides(scheduled_transaction_id);
-CREATE INDEX idx_sched_txn_overrides_date ON scheduled_transaction_overrides(override_date);
+CREATE INDEX idx_sched_txn_overrides_original_date ON scheduled_transaction_overrides(original_date);
+CREATE INDEX idx_sched_txn_overrides_override_date ON scheduled_transaction_overrides(override_date);
 
 -- Securities (stocks, bonds, mutual funds, ETFs)
 CREATE TABLE securities (
