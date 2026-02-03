@@ -1,10 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
 import { subDays, format } from 'date-fns';
 import { useAuthStore } from '@/store/authStore';
-import { AppHeader } from '@/components/layout/AppHeader';
 import { FavouriteAccounts } from '@/components/dashboard/FavouriteAccounts';
 import { UpcomingBills } from '@/components/dashboard/UpcomingBills';
 import { ExpensesPieChart } from '@/components/dashboard/ExpensesPieChart';
@@ -17,9 +15,9 @@ import { Account } from '@/types/account';
 import { Transaction } from '@/types/transaction';
 import { Category } from '@/types/category';
 import { ScheduledTransaction } from '@/types/scheduled-transaction';
+import { PageLayout } from '@/components/layout/PageLayout';
 
 export default function DashboardPage() {
-  const router = useRouter();
   const { user } = useAuthStore();
 
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -39,7 +37,7 @@ export default function DashboardPage() {
         transactionsApi.getAll({
           startDate: thirtyDaysAgo,
           endDate: today,
-          limit: 1000, // Get enough transactions for reports
+          limit: 1000,
         }),
         categoriesApi.getAll(),
         scheduledTransactionsApi.getAll(),
@@ -61,9 +59,7 @@ export default function DashboardPage() {
   }, [loadDashboardData]);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <AppHeader />
-
+    <PageLayout>
       <main className="px-4 sm:px-6 lg:px-12 py-6">
         <div className="px-4 sm:px-0">
           {/* Welcome section */}
@@ -95,6 +91,6 @@ export default function DashboardPage() {
           </div>
         </div>
       </main>
-    </div>
+    </PageLayout>
   );
 }

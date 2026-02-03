@@ -19,11 +19,13 @@ import { Transaction, PaginationInfo, TransactionSummary } from '@/types/transac
 import { Account } from '@/types/account';
 import { Category } from '@/types/category';
 import { Payee } from '@/types/payee';
-import { getCategorySelectOptions } from '@/lib/categoryUtils';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useDateFormat } from '@/hooks/useDateFormat';
-import { AppHeader } from '@/components/layout/AppHeader';
 import { Modal } from '@/components/ui/Modal';
+import { PageLayout } from '@/components/layout/PageLayout';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { SummaryCard, SummaryIcons } from '@/components/ui/SummaryCard';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 const PAGE_SIZE = 50;
 
@@ -505,88 +507,36 @@ export default function TransactionsPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <AppHeader />
-
-      {/* Page Header */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-        <div className="px-4 sm:px-6 lg:px-12 py-4">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Transactions</h1>
-              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                Manage your income and expenses
-              </p>
-            </div>
-            <Button onClick={handleCreateNew}>
-              + New Transaction
-            </Button>
-          </div>
-        </div>
-      </div>
+    <PageLayout>
+      <PageHeader
+        title="Transactions"
+        subtitle="Manage your income and expenses"
+        actions={<Button onClick={handleCreateNew}>+ New Transaction</Button>}
+        borderStyle="border"
+        paddingClass="px-4 sm:px-6 lg:px-12 py-4"
+      />
 
       <div className="px-4 sm:px-6 lg:px-12 py-8">
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          <div className="bg-white dark:bg-gray-800 overflow-hidden shadow dark:shadow-gray-700/50 rounded-lg">
-            <div className="p-5">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <svg className="h-6 w-6 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                  </svg>
-                </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">Total Income</dt>
-                    <dd className="text-lg font-semibold text-green-600 dark:text-green-400">
-                      ${summary.totalIncome.toFixed(2)}
-                    </dd>
-                  </dl>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-gray-800 overflow-hidden shadow dark:shadow-gray-700/50 rounded-lg">
-            <div className="p-5">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <svg className="h-6 w-6 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
-                  </svg>
-                </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">Total Expenses</dt>
-                    <dd className="text-lg font-semibold text-red-600 dark:text-red-400">
-                      ${summary.totalExpenses.toFixed(2)}
-                    </dd>
-                  </dl>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-gray-800 overflow-hidden shadow dark:shadow-gray-700/50 rounded-lg">
-            <div className="p-5">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <svg className="h-6 w-6 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">Net Cash Flow</dt>
-                    <dd className={`text-lg font-semibold ${summary.netCashFlow >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-red-600 dark:text-red-400'}`}>
-                      ${summary.netCashFlow.toFixed(2)}
-                    </dd>
-                  </dl>
-                </div>
-              </div>
-            </div>
-          </div>
+          <SummaryCard
+            label="Total Income"
+            value={`$${summary.totalIncome.toFixed(2)}`}
+            icon={SummaryIcons.plus}
+            valueColor="green"
+          />
+          <SummaryCard
+            label="Total Expenses"
+            value={`$${summary.totalExpenses.toFixed(2)}`}
+            icon={SummaryIcons.minus}
+            valueColor="red"
+          />
+          <SummaryCard
+            label="Net Cash Flow"
+            value={`$${summary.netCashFlow.toFixed(2)}`}
+            icon={SummaryIcons.money}
+            valueColor={summary.netCashFlow >= 0 ? 'blue' : 'red'}
+          />
         </div>
 
         {/* Form Modal */}
@@ -942,10 +892,7 @@ export default function TransactionsPage() {
         {/* Transactions List */}
         <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg overflow-hidden">
           {isLoading ? (
-            <div className="p-12 text-center">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-blue-400"></div>
-              <p className="mt-2 text-gray-500 dark:text-gray-400">Loading transactions...</p>
-            </div>
+            <LoadingSpinner text="Loading transactions..." />
           ) : (
             <TransactionList
               transactions={transactions}
@@ -987,6 +934,6 @@ export default function TransactionsPage() {
           </div>
         )}
       </div>
-    </div>
+    </PageLayout>
   );
 }
