@@ -248,6 +248,10 @@ export default function TransactionsPage() {
         accountIdsForQuery = filteredAccounts.map(a => a.id);
       }
 
+      // Check if we need to navigate to a specific transaction
+      const targetTransactionId = targetTransactionIdRef.current;
+      targetTransactionIdRef.current = null; // Clear after reading
+
       const [transactionsResponse, summaryData] = await Promise.all([
         transactionsApi.getAll({
           accountIds: accountIdsForQuery,
@@ -258,6 +262,7 @@ export default function TransactionsPage() {
           search: filterSearch || undefined,
           page,
           limit: PAGE_SIZE,
+          targetTransactionId: targetTransactionId || undefined,
         }),
         transactionsApi.getSummary({
           accountIds: accountIdsForQuery,
@@ -273,6 +278,11 @@ export default function TransactionsPage() {
       setPagination(transactionsResponse.pagination);
       setStartingBalance(transactionsResponse.startingBalance);
       setSummary(summaryData);
+
+      // If we navigated to a specific transaction, update the page from the response
+      if (targetTransactionId && transactionsResponse.pagination.page !== page) {
+        setCurrentPage(transactionsResponse.pagination.page);
+      }
     } catch (error) {
       toast.error('Failed to load transactions');
       console.error(error);
@@ -373,6 +383,8 @@ export default function TransactionsPage() {
 
   // Track if this is a filter-triggered change (to reset page to 1)
   const isFilterChange = useRef(false);
+  // Target transaction ID for navigating to a specific transaction (e.g., from transfer click)
+  const targetTransactionIdRef = useRef<string | null>(null);
 
   // Update URL and load transactions when page or filters change
   useEffect(() => {
@@ -462,6 +474,17 @@ export default function TransactionsPage() {
       console.error(error);
     }
   };
+
+  const handleTransferClick = useCallback((linkedAccountId: string, linkedTransactionId: string) => {
+    // Navigate to the linked account and jump to the page containing the linked transaction
+    // Store the target transaction ID so loadTransactions can request the correct page
+    targetTransactionIdRef.current = linkedTransactionId;
+    // Reset account status filter to show all accounts (in case the linked account doesn't match current status filter)
+    setFilterAccountStatus('');
+    // Set the account filter to the linked account
+    isFilterChange.current = true;
+    setFilterAccountIds([linkedAccountId]);
+  }, []);
 
   const handlePayeeFormSubmit = async (data: any) => {
     if (!editingPayee) return;
@@ -609,8 +632,11 @@ export default function TransactionsPage() {
 
         {/* Filters - Collapsible Panel */}
         <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg mb-6">
-          {/* Filter Header - Always Visible */}
-          <div className="px-4 py-3 sm:px-6">
+          {/* Filter Header - Always Visible, Clickable to toggle */}
+          <div
+            className="px-4 py-3 sm:px-6 cursor-pointer select-none"
+            onClick={() => setFiltersExpanded(!filtersExpanded)}
+          >
             <div className="flex items-center justify-between gap-4">
               {/* Left side: Filter icon, title, and count */}
               <div className="flex items-center gap-2 min-w-0">
@@ -629,7 +655,8 @@ export default function TransactionsPage() {
               <div className="flex items-center gap-2 flex-shrink-0">
                 {activeFilterCount > 0 && (
                   <button
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.stopPropagation();
                       setCurrentPage(1);
                       setFilterAccountIds([]);
                       setFilterAccountStatus('');
@@ -653,10 +680,7 @@ export default function TransactionsPage() {
                     Clear
                   </button>
                 )}
-                <button
-                  onClick={() => setFiltersExpanded(!filtersExpanded)}
-                  className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
-                >
+                <span className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 dark:text-blue-400">
                   {filtersExpanded ? 'Hide' : 'Show'}
                   <svg
                     className={`w-4 h-4 transition-transform duration-200 ${filtersExpanded ? 'rotate-180' : ''}`}
@@ -666,13 +690,13 @@ export default function TransactionsPage() {
                   >
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
-                </button>
+                </span>
               </div>
             </div>
 
             {/* Active Filter Chips - Show when collapsed and filters are active */}
             {!filtersExpanded && activeFilterCount > 0 && (
-              <div className="flex gap-2 mt-3 overflow-x-auto pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap sm:overflow-visible">
+              <div className="flex gap-2 mt-3 overflow-x-auto pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap sm:overflow-visible" onClick={(e) => e.stopPropagation()}>
                 {/* Account chips - Emerald */}
                 {selectedAccounts.map(account => (
                   <span
@@ -900,6 +924,7 @@ export default function TransactionsPage() {
               onRefresh={loadData}
               onTransactionUpdate={handleTransactionUpdate}
               onPayeeClick={handlePayeeClick}
+              onTransferClick={handleTransferClick}
               density={listDensity}
               onDensityChange={setListDensity}
               isSingleAccountView={filterAccountIds.length === 1}

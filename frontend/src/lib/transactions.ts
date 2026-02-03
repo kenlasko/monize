@@ -34,6 +34,7 @@ export const transactionsApi = {
     page?: number;
     limit?: number;
     search?: string;
+    targetTransactionId?: string;
   }): Promise<PaginatedTransactions> => {
     // Convert arrays to comma-separated strings for API
     const apiParams: Record<string, string | number | undefined> = {
@@ -42,6 +43,7 @@ export const transactionsApi = {
       page: params?.page,
       limit: params?.limit,
       search: params?.search,
+      targetTransactionId: params?.targetTransactionId,
     };
 
     // Handle accountId/accountIds (prefer array)

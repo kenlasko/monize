@@ -22,6 +22,8 @@ interface TransactionListProps {
   onTransactionUpdate?: (transaction: Transaction) => void;
   /** Callback when clicking on a payee name to edit it */
   onPayeeClick?: (payeeId: string) => void;
+  /** Callback when clicking on a transfer badge to navigate to linked account */
+  onTransferClick?: (linkedAccountId: string, linkedTransactionId: string) => void;
   density?: DensityLevel;
   onDensityChange?: (density: DensityLevel) => void;
   /** Starting balance for running balance calculation (balance after first tx on page) */
@@ -43,6 +45,7 @@ export function TransactionList({
   onRefresh,
   onTransactionUpdate,
   onPayeeClick,
+  onTransferClick,
   density: propDensity,
   onDensityChange,
   startingBalance,
@@ -396,18 +399,33 @@ export function TransactionList({
                       Investment
                     </span>
                   ) : transaction.isTransfer ? (
-                    <span
-                      className={`inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 truncate max-w-[160px] ${density === 'dense' ? 'px-1.5 py-0.5' : 'px-2 py-1'}`}
-                      title={transaction.linkedTransaction?.account?.name
-                        ? `Transfer ${Number(transaction.amount) < 0 ? 'to' : 'from'} ${transaction.linkedTransaction.account.name}`
-                        : 'Transfer'}
-                    >
-                      {transaction.linkedTransaction?.account?.name
-                        ? (Number(transaction.amount) < 0
-                            ? `→ ${transaction.linkedTransaction.account.name}`
-                            : `${transaction.linkedTransaction.account.name} →`)
-                        : 'Transfer'}
-                    </span>
+                    onTransferClick && transaction.linkedTransaction?.account?.id && transaction.linkedTransactionId ? (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onTransferClick(transaction.linkedTransaction!.account!.id, transaction.linkedTransactionId!);
+                        }}
+                        className={`inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 truncate max-w-[160px] hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors ${density === 'dense' ? 'px-1.5 py-0.5' : 'px-2 py-1'}`}
+                        title={`Click to view in ${transaction.linkedTransaction.account.name}`}
+                      >
+                        {Number(transaction.amount) < 0
+                          ? `→ ${transaction.linkedTransaction.account.name}`
+                          : `${transaction.linkedTransaction.account.name} →`}
+                      </button>
+                    ) : (
+                      <span
+                        className={`inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 truncate max-w-[160px] ${density === 'dense' ? 'px-1.5 py-0.5' : 'px-2 py-1'}`}
+                        title={transaction.linkedTransaction?.account?.name
+                          ? `Transfer ${Number(transaction.amount) < 0 ? 'to' : 'from'} ${transaction.linkedTransaction.account.name}`
+                          : 'Transfer'}
+                      >
+                        {transaction.linkedTransaction?.account?.name
+                          ? (Number(transaction.amount) < 0
+                              ? `→ ${transaction.linkedTransaction.account.name}`
+                              : `${transaction.linkedTransaction.account.name} →`)
+                          : 'Transfer'}
+                      </span>
+                    )
                   ) : transaction.isSplit ? (
                     <div>
                       <span className={`inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 ${density === 'dense' ? 'px-1.5 py-0.5' : 'px-2 py-1'}`}>

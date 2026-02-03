@@ -106,6 +106,11 @@ export class TransactionsController {
     required: false,
     description: 'Search text to filter by description, payee name, or split memo',
   })
+  @ApiQuery({
+    name: 'targetTransactionId',
+    required: false,
+    description: 'Navigate to the page containing this transaction ID (overrides page parameter)',
+  })
   @ApiResponse({
     status: 200,
     description: 'List of transactions retrieved successfully',
@@ -125,6 +130,7 @@ export class TransactionsController {
     @Query('limit') limit?: string,
     @Query('includeInvestmentBrokerage') includeInvestmentBrokerage?: string,
     @Query('search') search?: string,
+    @Query('targetTransactionId') targetTransactionId?: string,
   ) {
     // Parse comma-separated IDs into arrays, with backward compatibility for singular params
     const parseIds = (plural?: string, singular?: string): string[] | undefined => {
@@ -144,6 +150,7 @@ export class TransactionsController {
       limit ? parseInt(limit, 10) : undefined,
       includeInvestmentBrokerage === 'true',
       search,
+      targetTransactionId,
     );
   }
 

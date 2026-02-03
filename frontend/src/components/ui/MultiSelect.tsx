@@ -27,7 +27,7 @@ export function MultiSelect({
   value,
   onChange,
   placeholder = 'Select...',
-  showSearch = false,
+  showSearch = true,
   error,
   disabled = false,
 }: MultiSelectProps) {
@@ -290,6 +290,10 @@ export function MultiSelect({
                 const isChecked = selectionState === 'all';
                 const isIndeterminate = selectionState === 'some';
 
+                // When searching, show parent name for context (flatten the hierarchy)
+                const isSearching = searchText.length > 0;
+                const parentLabel = option.parentValue ? optionMap.get(option.parentValue)?.label : null;
+
                 return (
                   <label
                     key={option.value}
@@ -298,7 +302,7 @@ export function MultiSelect({
                       'hover:bg-gray-100 dark:hover:bg-gray-700',
                       option.hasChildren && 'font-medium'
                     )}
-                    style={{ paddingLeft: `${(option.level * 1.25) + 0.75}rem` }}
+                    style={{ paddingLeft: isSearching ? '0.75rem' : `${(option.level * 1.25) + 0.75}rem` }}
                   >
                     <input
                       type="checkbox"
@@ -317,6 +321,11 @@ export function MultiSelect({
                       'ml-2 text-sm text-gray-900 dark:text-gray-100',
                       option.hasChildren && 'font-medium'
                     )}>
+                      {isSearching && parentLabel && (
+                        <span className="text-gray-500 dark:text-gray-400">
+                          {parentLabel} &rsaquo;{' '}
+                        </span>
+                      )}
                       {option.label}
                     </span>
                   </label>
