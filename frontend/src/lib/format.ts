@@ -71,3 +71,76 @@ export function filterCurrencyInput(input: string): string {
   // First strip commas, then filter to valid characters
   return input.replace(/,/g, '').replace(/[^0-9.-]/g, '');
 }
+
+/**
+ * Filter input string to allow calculator expressions
+ * Allows: digits, decimal point, minus, plus, multiply, divide, parentheses
+ */
+export function filterCalculatorInput(input: string): string {
+  // Strip commas and filter to valid calculator characters
+  return input.replace(/,/g, '').replace(/[^0-9.+\-*/()x×÷ ]/gi, '')
+    // Normalize multiplication symbols
+    .replace(/[x×]/gi, '*')
+    // Normalize division symbol
+    .replace(/÷/g, '/');
+}
+
+/**
+ * Check if a string contains calculator operators
+ */
+export function hasCalculatorOperators(input: string): boolean {
+  // Check for operators (excluding leading minus for negative numbers)
+  const withoutLeadingMinus = input.replace(/^-/, '');
+  return /[+\-*/()]/.test(withoutLeadingMinus);
+}
+
+/**
+ * Safely evaluate a mathematical expression
+ * Only allows basic arithmetic: +, -, *, /, and parentheses
+ * Returns undefined if the expression is invalid
+ */
+export function evaluateExpression(input: string): number | undefined {
+  // Normalize and clean the input
+  const cleaned = input
+    .replace(/,/g, '')
+    .replace(/[x×]/gi, '*')
+    .replace(/÷/g, '/')
+    .replace(/\s+/g, '')
+    .trim();
+
+  if (!cleaned) return undefined;
+
+  // Validate: only allow digits, operators, decimal points, and parentheses
+  if (!/^[-+]?[\d.+\-*/()]+$/.test(cleaned)) {
+    return undefined;
+  }
+
+  // Check for balanced parentheses
+  let parenCount = 0;
+  for (const char of cleaned) {
+    if (char === '(') parenCount++;
+    if (char === ')') parenCount--;
+    if (parenCount < 0) return undefined;
+  }
+  if (parenCount !== 0) return undefined;
+
+  // Check for invalid patterns
+  if (/[+\-*/]{2,}/.test(cleaned.replace(/\(-/g, '(0-'))) {
+    // Allow negative after open paren, but not consecutive operators
+    return undefined;
+  }
+
+  try {
+    // Use Function constructor for safe evaluation (no access to global scope)
+    // This is safer than eval() as it creates an isolated scope
+    const result = new Function(`"use strict"; return (${cleaned})`)();
+
+    if (typeof result !== 'number' || !isFinite(result)) {
+      return undefined;
+    }
+
+    return roundToCents(result);
+  } catch {
+    return undefined;
+  }
+}

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, forwardRef, InputHTMLAttributes, FocusEvent } from 'react';
 import { cn } from '@/lib/utils';
-import { formatAmount, formatAmountWithCommas, parseAmount, filterCurrencyInput } from '@/lib/format';
+import { formatAmountWithCommas, parseAmount, filterCurrencyInput, filterCalculatorInput, hasCalculatorOperators, evaluateExpression } from '@/lib/format';
 
 interface CurrencyInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'onChange' | 'value' | 'type'> {
   label?: string;
@@ -14,6 +14,8 @@ interface CurrencyInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>,
   onChange: (value: number | undefined) => void;
   /** Allow negative values (default: true) */
   allowNegative?: boolean;
+  /** Allow calculator expressions like "100*1.13" (default: true) */
+  allowCalculator?: boolean;
 }
 
 /**
@@ -22,6 +24,7 @@ interface CurrencyInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>,
  * - Free editing while focused (can delete trailing zeros)
  * - Filtering non-numeric characters
  * - Proper rounding to cents
+ * - Calculator expressions (e.g., "100*1.13" for tax calculations)
  */
 export const CurrencyInput = forwardRef<HTMLInputElement, CurrencyInputProps>(
   (
@@ -32,6 +35,7 @@ export const CurrencyInput = forwardRef<HTMLInputElement, CurrencyInputProps>(
       value,
       onChange,
       allowNegative = true,
+      allowCalculator = true,
       className,
       id,
       onBlur,
@@ -54,29 +58,52 @@ export const CurrencyInput = forwardRef<HTMLInputElement, CurrencyInputProps>(
     const inputId = id || `input-${label?.toLowerCase().replace(/\s+/g, '-')}`;
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      let filtered = filterCurrencyInput(e.target.value);
+      // Use calculator filter if calculator is enabled, otherwise standard currency filter
+      let filtered = allowCalculator
+        ? filterCalculatorInput(e.target.value)
+        : filterCurrencyInput(e.target.value);
 
-      // Remove minus sign if negative not allowed
-      if (!allowNegative) {
+      // Remove minus sign if negative not allowed (but keep for expressions like "100-10")
+      if (!allowNegative && !allowCalculator) {
         filtered = filtered.replace(/-/g, '');
       }
 
       setDisplayValue(filtered);
 
-      // Parse and notify parent
-      const parsed = parseAmount(filtered);
-      onChange(parsed);
+      // Only notify parent immediately if not a calculator expression
+      // (expressions are evaluated on blur)
+      if (!allowCalculator || !hasCalculatorOperators(filtered)) {
+        const parsed = parseAmount(filtered);
+        onChange(parsed);
+      }
     };
 
     const handleBlur = (e: FocusEvent<HTMLInputElement>) => {
       setIsFocused(false);
 
-      // Format to 2 decimal places with commas on blur
-      const parsed = parseAmount(displayValue);
-      if (parsed !== undefined) {
-        setDisplayValue(formatAmountWithCommas(parsed));
+      let finalValue: number | undefined;
+
+      // Check if this is a calculator expression
+      if (allowCalculator && hasCalculatorOperators(displayValue)) {
+        // Evaluate the expression
+        finalValue = evaluateExpression(displayValue);
+
+        // Apply negative restriction to the result
+        if (finalValue !== undefined && !allowNegative && finalValue < 0) {
+          finalValue = Math.abs(finalValue);
+        }
+      } else {
+        // Standard parsing
+        finalValue = parseAmount(displayValue);
+      }
+
+      // Format and update
+      if (finalValue !== undefined) {
+        setDisplayValue(formatAmountWithCommas(finalValue));
+        onChange(finalValue);
       } else if (displayValue.trim() === '') {
         setDisplayValue('');
+        onChange(undefined);
       } else {
         // Invalid input - reset to last valid value
         setDisplayValue(formatAmountWithCommas(value));
