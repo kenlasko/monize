@@ -21,7 +21,7 @@ interface CategoryDef {
 const categories: CategoryDef[] = [
   { parent: 'Automobile', children: ['Accessories', 'Car Payment', 'Cleaning', 'Fines', 'Gasoline', 'Licensing', 'Maintenance', 'Parking', 'Parts', 'Toll Charges'] },
   { parent: 'Bank Fees', children: ['ATM', 'Annual Fees', 'NSF', 'Other', 'Overdraft', 'Service'] },
-  { parent: 'Bills', children: ['Accounting', 'Cable TV', 'Cell Phone', 'Electricity', 'Internet', 'Lawyer', 'Natural Gas', 'Satellite Radio', 'Streaming', 'Telephone', 'Water & Sewer', 'Water Heater'] },
+  { parent: 'Bills', children: ['Accounting', 'Cable TV', 'Cell Phone', 'Electricity', 'Internet', 'Lawyer', 'Membership Fees', 'Natural Gas', 'Satellite Radio', 'Streaming', 'Telephone', 'Water & Sewer', 'Water Heater'] },
   { parent: 'Business', children: ['Airfare', 'Alcohol', 'Bank Fees', 'Car Rental', 'Cell Phone', 'Computer Software', 'Computer Hardware', 'Dining Out', 'Education', 'Internet', 'Lodging', 'Mileage', 'Miscellaneous', 'Parking', 'Recreation', 'Toll Charges', 'Transit'] },
   { parent: 'Cash Withdrawal', children: ['Barbadian Dollars', 'Bermudian Dollars', 'Canadian Dollars', 'Costa Rica Colones', 'Dominican Republic Pesos', 'Eastern Caribbean Dollars', 'Euros', 'Forints', 'Honduran Lempiras', 'Hong Kong Dollars', 'Indonesian Rupiah', 'Malaysian Ringgits', 'Mexican Pesos', 'Peruvian Soles', 'Singapore Dollars', 'Thai Baht', 'US Dollars'] },
   { parent: 'Childcare', children: ['Activities', 'Allowance', 'Babysitting', 'Books', 'Clothing', 'Counselling', 'Daycare', 'Entertainment', 'Fees', 'Furnishings', 'Gifts', 'Haircut', 'Medication', 'Shoes', 'Sporting Goods', 'Sports', 'Supplies', 'Toiletries', 'Toys & Games'] },

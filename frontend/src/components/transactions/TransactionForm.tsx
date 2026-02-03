@@ -332,6 +332,40 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
     }
   };
 
+  // Handle amount change - adjust sign based on selected category
+  // Only auto-adjust when the absolute value changes, not when user explicitly changes sign
+  const handleAmountChange = (value: number | undefined) => {
+    if (value === undefined || value === 0) {
+      setValue('amount', value ?? 0, { shouldValidate: true });
+      return;
+    }
+
+    // Check if user is just changing the sign (same absolute value)
+    const currentAbsAmount = watchedAmount !== undefined ? Math.abs(watchedAmount) : 0;
+    const newAbsAmount = Math.abs(value);
+    const isJustSignChange = currentAbsAmount === newAbsAmount && currentAbsAmount !== 0;
+
+    // If user explicitly changed the sign, respect their choice
+    if (isJustSignChange) {
+      setValue('amount', value, { shouldValidate: true });
+      return;
+    }
+
+    // If a category is selected, adjust sign based on category type
+    if (selectedCategoryId && mode === 'normal') {
+      const category = categories.find(c => c.id === selectedCategoryId);
+      if (category) {
+        const absAmount = Math.abs(value);
+        const newAmount = category.isIncome ? absAmount : -absAmount;
+        setValue('amount', newAmount, { shouldValidate: true });
+        return;
+      }
+    }
+
+    // No category selected or not normal mode, use value as-is
+    setValue('amount', value, { shouldValidate: true });
+  };
+
   // Convert string to title case (capitalize first letter of each word)
   const toTitleCase = (str: string): string => {
     return str
@@ -620,7 +654,7 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
               label="Amount"
               prefix={getCurrencySymbol(watchedCurrencyCode)}
               value={watchedAmount}
-              onChange={(value) => setValue('amount', value ?? 0, { shouldValidate: true })}
+              onChange={handleAmountChange}
               error={errors.amount?.message}
             />
             <Input
