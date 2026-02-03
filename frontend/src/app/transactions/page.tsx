@@ -179,14 +179,15 @@ export default function TransactionsPage() {
   }, [accounts, filterAccountStatus]);
 
   // When account status filter changes, remove any selected accounts that no longer match
+  // But only after accounts have loaded - otherwise we'd clear selections before we can validate them
   useEffect(() => {
-    if (!filtersInitialized || filterAccountIds.length === 0) return;
+    if (!filtersInitialized || filterAccountIds.length === 0 || accounts.length === 0) return;
     const filteredIds = new Set(filteredAccounts.map(a => a.id));
     const validSelectedIds = filterAccountIds.filter(id => filteredIds.has(id));
     if (validSelectedIds.length !== filterAccountIds.length) {
       setFilterAccountIds(validSelectedIds);
     }
-  }, [filterAccountStatus, filteredAccounts, filtersInitialized]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [filterAccountStatus, filteredAccounts, filtersInitialized, accounts.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Calculate active filter count
   const activeFilterCount = useMemo(() => {
