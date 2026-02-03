@@ -154,6 +154,16 @@ select {
   background-color: rgb(31 41 55); /* gray-800 */
 }
 
+/* Date input styling - empty date inputs should match placeholder color */
+.date-empty {
+  color: rgb(156 163 175) !important; /* gray-400 - matches placeholder */
+}
+
+/* Calendar picker indicator for dark mode */
+.dark [type='date']::-webkit-calendar-picker-indicator {
+  filter: invert(0.7);
+}
+
 /* Ensure option elements use the correct font */
 option {
   font-family: 'Inter', system-ui, sans-serif;
