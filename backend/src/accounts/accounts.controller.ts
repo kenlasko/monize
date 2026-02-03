@@ -24,7 +24,10 @@ import { AccountsService } from './accounts.service';
 import { CreateAccountDto } from './dto/create-account.dto';
 import { UpdateAccountDto } from './dto/update-account.dto';
 import { LoanPreviewDto } from './dto/loan-preview.dto';
+import { MortgagePreviewDto, MortgagePreviewResponseDto } from './dto/mortgage-preview.dto';
+import { UpdateMortgageRateDto, UpdateMortgageRateResponseDto } from './dto/update-mortgage-rate.dto';
 import { PaymentFrequency } from './loan-amortization.util';
+import { MortgagePaymentFrequency } from './mortgage-amortization.util';
 
 @ApiTags('Accounts')
 @Controller('accounts')
@@ -97,6 +100,35 @@ export class AccountsController {
       loanPreviewDto.paymentFrequency as PaymentFrequency,
       new Date(loanPreviewDto.paymentStartDate),
     );
+  }
+
+  @Post('mortgage-preview')
+  @ApiOperation({
+    summary: 'Preview mortgage amortization calculation',
+    description:
+      'Calculate and preview mortgage payment details including principal/interest split, total payments, estimated end date, and effective annual rate. Supports Canadian mortgages with semi-annual compounding.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Mortgage amortization preview calculated successfully',
+    type: MortgagePreviewResponseDto,
+  })
+  @ApiResponse({ status: 400, description: 'Bad request - invalid mortgage parameters' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  previewMortgageAmortization(@Body() mortgagePreviewDto: MortgagePreviewDto): MortgagePreviewResponseDto {
+    const result = this.accountsService.previewMortgageAmortization(
+      mortgagePreviewDto.mortgageAmount,
+      mortgagePreviewDto.interestRate,
+      mortgagePreviewDto.amortizationMonths,
+      mortgagePreviewDto.paymentFrequency as MortgagePaymentFrequency,
+      new Date(mortgagePreviewDto.paymentStartDate),
+      mortgagePreviewDto.isCanadian,
+      mortgagePreviewDto.isVariableRate,
+    );
+    return {
+      ...result,
+      endDate: result.endDate.toISOString().split('T')[0],
+    };
   }
 
   @Get(':id')
@@ -179,6 +211,39 @@ export class AccountsController {
     @Body() updateAccountDto: UpdateAccountDto,
   ) {
     return this.accountsService.update(req.user.id, id, updateAccountDto);
+  }
+
+  @Patch(':id/mortgage-rate')
+  @ApiOperation({
+    summary: 'Update mortgage interest rate',
+    description:
+      'Update the interest rate for a mortgage account. Optionally specify a new payment amount, otherwise it will be recalculated based on remaining balance and amortization.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Mortgage account UUID',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Mortgage rate updated successfully',
+    type: UpdateMortgageRateResponseDto,
+  })
+  @ApiResponse({ status: 400, description: 'Bad request - not a mortgage account' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - account does not belong to user' })
+  @ApiResponse({ status: 404, description: 'Account not found' })
+  updateMortgageRate(
+    @Request() req,
+    @Param('id') id: string,
+    @Body() updateMortgageRateDto: UpdateMortgageRateDto,
+  ): Promise<UpdateMortgageRateResponseDto> {
+    return this.accountsService.updateMortgageRate(
+      req.user.id,
+      id,
+      updateMortgageRateDto.newRate,
+      new Date(updateMortgageRateDto.effectiveDate),
+      updateMortgageRateDto.newPaymentAmount,
+    );
   }
 
   @Post(':id/close')

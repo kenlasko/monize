@@ -174,11 +174,14 @@ export function InvestmentPerformanceReport() {
               className="rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm"
             >
               <option value="">All Accounts</option>
-              {accounts.map((account) => (
-                <option key={account.id} value={account.id}>
-                  {account.name}
-                </option>
-              ))}
+              {accounts
+                .slice()
+                .sort((a, b) => a.name.localeCompare(b.name))
+                .map((account) => (
+                  <option key={account.id} value={account.id}>
+                    {account.name}
+                  </option>
+                ))}
             </select>
           </div>
           <div className="flex gap-2">

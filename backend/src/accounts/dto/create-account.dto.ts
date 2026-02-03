@@ -25,6 +25,17 @@ export const PAYMENT_FREQUENCIES = [
 
 export type PaymentFrequency = (typeof PAYMENT_FREQUENCIES)[number];
 
+export const MORTGAGE_PAYMENT_FREQUENCIES = [
+  'MONTHLY',
+  'SEMI_MONTHLY',
+  'BIWEEKLY',
+  'ACCELERATED_BIWEEKLY',
+  'WEEKLY',
+  'ACCELERATED_WEEKLY',
+] as const;
+
+export type MortgagePaymentFrequency = (typeof MORTGAGE_PAYMENT_FREQUENCIES)[number];
+
 export class CreateAccountDto {
   @ApiProperty({
     enum: AccountType,
@@ -172,4 +183,50 @@ export class CreateAccountDto {
   @IsOptional()
   @IsUUID()
   assetCategoryId?: string;
+
+  // Mortgage-specific fields
+  @ApiPropertyOptional({
+    example: true,
+    description: 'Whether this is a Canadian mortgage (uses semi-annual compounding for fixed rates)',
+    default: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  isCanadianMortgage?: boolean;
+
+  @ApiPropertyOptional({
+    example: false,
+    description: 'Whether this is a variable rate mortgage (uses monthly compounding)',
+    default: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  isVariableRate?: boolean;
+
+  @ApiPropertyOptional({
+    example: 60,
+    description: 'Mortgage term length in months (e.g., 60 for 5-year term)',
+  })
+  @IsOptional()
+  @IsNumber()
+  @IsPositive()
+  termMonths?: number;
+
+  @ApiPropertyOptional({
+    example: 300,
+    description: 'Total amortization period in months (e.g., 300 for 25 years)',
+  })
+  @IsOptional()
+  @IsNumber()
+  @IsPositive()
+  amortizationMonths?: number;
+
+  @ApiPropertyOptional({
+    example: 'MONTHLY',
+    description: 'Payment frequency for mortgages (MONTHLY, SEMI_MONTHLY, BIWEEKLY, ACCELERATED_BIWEEKLY, WEEKLY, ACCELERATED_WEEKLY)',
+  })
+  @IsOptional()
+  @IsString()
+  @IsIn(MORTGAGE_PAYMENT_FREQUENCIES)
+  mortgagePaymentFrequency?: MortgagePaymentFrequency;
 }

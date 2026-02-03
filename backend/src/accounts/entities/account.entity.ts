@@ -170,6 +170,31 @@ export class Account {
   @JoinColumn({ name: 'asset_category_id' })
   assetCategory: Category | null;
 
+  // Mortgage-specific fields
+  @Column({ name: 'is_canadian_mortgage', default: false })
+  isCanadianMortgage: boolean;
+
+  @Column({ name: 'is_variable_rate', default: false })
+  isVariableRate: boolean;
+
+  @Column({ type: 'integer', name: 'term_months', nullable: true })
+  termMonths: number | null;
+
+  @Column({ type: 'date', name: 'term_end_date', nullable: true })
+  termEndDate: Date | null;
+
+  @Column({ type: 'integer', name: 'amortization_months', nullable: true })
+  amortizationMonths: number | null;
+
+  @Column({
+    type: 'decimal',
+    precision: 20,
+    scale: 4,
+    name: 'original_principal',
+    nullable: true,
+  })
+  originalPrincipal: number | null;
+
   @Column({ type: 'uuid', name: 'scheduled_transaction_id', nullable: true })
   scheduledTransactionId: string | null;
 

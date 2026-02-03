@@ -14,6 +14,14 @@ export type AccountSubType = 'INVESTMENT_CASH' | 'INVESTMENT_BROKERAGE' | null;
 
 export type PaymentFrequency = 'WEEKLY' | 'BIWEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY';
 
+export type MortgagePaymentFrequency =
+  | 'MONTHLY'
+  | 'SEMI_MONTHLY'
+  | 'BIWEEKLY'
+  | 'ACCELERATED_BIWEEKLY'
+  | 'WEEKLY'
+  | 'ACCELERATED_WEEKLY';
+
 export interface Account {
   id: string;
   userId: string;
@@ -42,6 +50,13 @@ export interface Account {
   scheduledTransactionId: string | null;
   // Asset-specific fields
   assetCategoryId: string | null;
+  // Mortgage-specific fields
+  isCanadianMortgage: boolean;
+  isVariableRate: boolean;
+  termMonths: number | null;
+  termEndDate: string | null;
+  amortizationMonths: number | null;
+  originalPrincipal: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -67,6 +82,12 @@ export interface CreateAccountData {
   interestCategoryId?: string;
   // Asset-specific fields
   assetCategoryId?: string;
+  // Mortgage-specific fields
+  isCanadianMortgage?: boolean;
+  isVariableRate?: boolean;
+  termMonths?: number;
+  amortizationMonths?: number;
+  mortgagePaymentFrequency?: MortgagePaymentFrequency;
 }
 
 export interface InvestmentAccountPair {
@@ -99,4 +120,39 @@ export interface AmortizationPreview {
   remainingBalance: number;
   totalPayments: number;
   endDate: string;
+}
+
+// Mortgage amortization types
+export interface MortgagePreviewData {
+  mortgageAmount: number;
+  interestRate: number;
+  amortizationMonths: number;
+  paymentFrequency: MortgagePaymentFrequency;
+  paymentStartDate: string;
+  isCanadian: boolean;
+  isVariableRate: boolean;
+}
+
+export interface MortgageAmortizationPreview {
+  paymentAmount: number;
+  principalPayment: number;
+  interestPayment: number;
+  totalPayments: number;
+  endDate: string;
+  totalInterest: number;
+  effectiveAnnualRate: number;
+}
+
+export interface UpdateMortgageRateData {
+  newRate: number;
+  newPaymentAmount?: number;
+  effectiveDate: string;
+}
+
+export interface UpdateMortgageRateResponse {
+  newRate: number;
+  paymentAmount: number;
+  principalPayment: number;
+  interestPayment: number;
+  effectiveDate: string;
 }

@@ -5,6 +5,7 @@ import { Transaction } from '../transactions/entities/transaction.entity';
 import { InvestmentTransaction } from '../securities/entities/investment-transaction.entity';
 import { AccountsService } from './accounts.service';
 import { AccountsController } from './accounts.controller';
+import { MortgageReminderService } from './mortgage-reminder.service';
 import { CategoriesModule } from '../categories/categories.module';
 import { ScheduledTransactionsModule } from '../scheduled-transactions/scheduled-transactions.module';
 
@@ -14,7 +15,7 @@ import { ScheduledTransactionsModule } from '../scheduled-transactions/scheduled
     forwardRef(() => CategoriesModule),
     forwardRef(() => ScheduledTransactionsModule),
   ],
-  providers: [AccountsService],
+  providers: [AccountsService, MortgageReminderService],
   controllers: [AccountsController],
   exports: [AccountsService],
 })

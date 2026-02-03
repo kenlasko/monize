@@ -161,4 +161,39 @@ export class UpdateAccountDto {
   @IsOptional()
   @IsUUID()
   assetCategoryId?: string;
+
+  // Mortgage-specific fields
+  @ApiPropertyOptional({
+    example: true,
+    description: 'Whether this is a Canadian mortgage',
+  })
+  @IsOptional()
+  @IsBoolean()
+  isCanadianMortgage?: boolean;
+
+  @ApiPropertyOptional({
+    example: false,
+    description: 'Whether this is a variable rate mortgage',
+  })
+  @IsOptional()
+  @IsBoolean()
+  isVariableRate?: boolean;
+
+  @ApiPropertyOptional({
+    example: 60,
+    description: 'Mortgage term length in months',
+  })
+  @IsOptional()
+  @IsNumber()
+  @IsPositive()
+  termMonths?: number;
+
+  @ApiPropertyOptional({
+    example: 300,
+    description: 'Total amortization period in months',
+  })
+  @IsOptional()
+  @IsNumber()
+  @IsPositive()
+  amortizationMonths?: number;
 }

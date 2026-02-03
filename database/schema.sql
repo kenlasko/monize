@@ -88,6 +88,13 @@ CREATE TABLE accounts (
     scheduled_transaction_id UUID, -- linked scheduled transaction for payments (FK added after scheduled_transactions table)
     -- Asset-specific fields
     asset_category_id UUID, -- category for tracking value changes on asset accounts (FK added after categories table)
+    -- Mortgage-specific fields
+    is_canadian_mortgage BOOLEAN DEFAULT false, -- Canadian mortgages use semi-annual compounding for fixed rates
+    is_variable_rate BOOLEAN DEFAULT false, -- Variable rate mortgages use monthly compounding
+    term_months INTEGER, -- Mortgage term length in months (e.g., 60 for 5-year term)
+    term_end_date DATE, -- When the current term ends (for renewal reminders)
+    amortization_months INTEGER, -- Total amortization period in months (e.g., 300 for 25 years)
+    original_principal NUMERIC(20, 4), -- Original mortgage amount for reference
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -97,6 +104,7 @@ CREATE INDEX idx_accounts_type ON accounts(account_type);
 CREATE INDEX idx_accounts_account_sub_type ON accounts(account_sub_type);
 CREATE INDEX idx_accounts_linked_account_id ON accounts(linked_account_id);
 CREATE INDEX idx_accounts_asset_category ON accounts(asset_category_id);
+CREATE INDEX idx_accounts_term_end_date ON accounts(term_end_date) WHERE account_type = 'MORTGAGE' AND term_end_date IS NOT NULL;
 
 -- Categories for transactions
 CREATE TABLE categories (

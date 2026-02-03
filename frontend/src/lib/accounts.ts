@@ -7,6 +7,10 @@ import {
   InvestmentAccountPair,
   LoanPreviewData,
   AmortizationPreview,
+  MortgagePreviewData,
+  MortgageAmortizationPreview,
+  UpdateMortgageRateData,
+  UpdateMortgageRateResponse,
 } from '@/types/account';
 
 export const accountsApi = {
@@ -84,6 +88,18 @@ export const accountsApi = {
   // Preview loan amortization
   previewLoanAmortization: async (data: LoanPreviewData): Promise<AmortizationPreview> => {
     const response = await apiClient.post<AmortizationPreview>('/accounts/loan-preview', data);
+    return response.data;
+  },
+
+  // Preview mortgage amortization
+  previewMortgageAmortization: async (data: MortgagePreviewData): Promise<MortgageAmortizationPreview> => {
+    const response = await apiClient.post<MortgageAmortizationPreview>('/accounts/mortgage-preview', data);
+    return response.data;
+  },
+
+  // Update mortgage interest rate
+  updateMortgageRate: async (id: string, data: UpdateMortgageRateData): Promise<UpdateMortgageRateResponse> => {
+    const response = await apiClient.patch<UpdateMortgageRateResponse>(`/accounts/${id}/mortgage-rate`, data);
     return response.data;
   },
 };
