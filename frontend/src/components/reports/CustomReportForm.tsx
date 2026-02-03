@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
+import { zodResolver } from '@/lib/zodResolver';
 import { z } from 'zod';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
