@@ -10,7 +10,6 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@headlessui/react": "^2.2.9",
     "@heroicons/react": "^2.2.0",
     "@hookform/resolvers": "^3.10.0",
     "@tailwindcss/postcss": "^4.1.18",
@@ -23,7 +22,6 @@
     "react-dom": "^19.2.4",
     "react-hook-form": "^7.71.1",
     "react-hot-toast": "^2.6.0",
-    "react-icons": "^5.5.0",
     "recharts": "^3.7.0",
     "tailwind-merge": "^3.4.0",
     "zod": "^4.3.6",
