@@ -839,6 +839,14 @@ export class ImportService {
                     linkedTransactionId: existingLinkedTx.id,
                   });
 
+                  // Also set linkedTransactionId on the existing transaction to point back to the parent
+                  // This allows traversing from the target account transaction back to the source splits
+                  if (!existingLinkedTx.linkedTransactionId) {
+                    await queryRunner.manager.update(Transaction, existingLinkedTx.id, {
+                      linkedTransactionId: savedTx.id,
+                    });
+                  }
+
                   // Check if there's a placeholder transaction in the CURRENT account that was
                   // created when the other side was imported - if so, delete it and reverse balance
                   if (existingLinkedTx.linkedTransactionId) {
@@ -886,6 +894,7 @@ export class ImportService {
                     await queryRunner.manager.update(Transaction, pendingTransfer.id, {
                       amount: linkedAmount,
                       description: split.memo || qifTx.memo || null,
+                      linkedTransactionId: savedTx.id, // Point back to the parent transaction
                     });
 
                     await queryRunner.manager.update(TransactionSplit, savedSplit.id, {
@@ -918,6 +927,12 @@ export class ImportService {
                     // Update the split with the linked transaction ID
                     await queryRunner.manager.update(TransactionSplit, savedSplit.id, {
                       linkedTransactionId: savedLinkedSplitTx.id,
+                    });
+
+                    // Also set linkedTransactionId on the created transaction pointing back to the parent
+                    // This allows traversing from the target account transaction back to the source splits
+                    await queryRunner.manager.update(Transaction, savedLinkedSplitTx.id, {
+                      linkedTransactionId: savedTx.id,
                     });
 
                     // Update target account balance

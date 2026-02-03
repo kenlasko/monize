@@ -1,12 +1,14 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { format, addMonths } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { accountsApi } from '@/lib/accounts';
+import { transactionsApi } from '@/lib/transactions';
 import { Account, PaymentFrequency } from '@/types/account';
+import { Transaction } from '@/types/transaction';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 
-interface AmortizationRow {
+interface PaymentRow {
   paymentNumber: number;
   date: string;
   payment: number;
@@ -14,14 +16,6 @@ interface AmortizationRow {
   interest: number;
   balance: number;
 }
-
-const FREQUENCY_MONTHS: Record<PaymentFrequency, number> = {
-  WEEKLY: 1 / 4.33,
-  BIWEEKLY: 1 / 2.17,
-  MONTHLY: 1,
-  QUARTERLY: 3,
-  YEARLY: 12,
-};
 
 const FREQUENCY_LABELS: Record<PaymentFrequency, string> = {
   WEEKLY: 'Weekly',
@@ -34,16 +28,20 @@ const FREQUENCY_LABELS: Record<PaymentFrequency, string> = {
 export function LoanAmortizationReport() {
   const { formatCurrency } = useNumberFormat();
   const [accounts, setAccounts] = useState<Account[]>([]);
+  const [allAccounts, setAllAccounts] = useState<Account[]>([]);
   const [selectedAccountId, setSelectedAccountId] = useState<string>('');
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showAllRows, setShowAllRows] = useState(false);
 
+  // Load all accounts and filter for loans
   useEffect(() => {
     const loadAccounts = async () => {
       setIsLoading(true);
       try {
-        const allAccounts = await accountsApi.getAll();
-        const loanAccounts = allAccounts.filter(
+        const fetchedAccounts = await accountsApi.getAll();
+        setAllAccounts(fetchedAccounts);
+        const loanAccounts = fetchedAccounts.filter(
           (a) => (a.accountType === 'LOAN' || a.accountType === 'MORTGAGE') && !a.isClosed
         );
         setAccounts(loanAccounts);
@@ -61,75 +59,119 @@ export function LoanAmortizationReport() {
 
   const selectedAccount = accounts.find((a) => a.id === selectedAccountId);
 
-  const amortizationSchedule = useMemo((): AmortizationRow[] => {
-    if (!selectedAccount) return [];
-
-    const balance = Math.abs(selectedAccount.currentBalance);
-    const rate = (selectedAccount.interestRate || 0) / 100;
-    const payment = selectedAccount.paymentAmount || 0;
-    const frequency = selectedAccount.paymentFrequency || 'MONTHLY';
-
-    if (balance <= 0 || payment <= 0) return [];
-
-    const monthlyRate = rate / 12;
-    const paymentMonths = FREQUENCY_MONTHS[frequency];
-    const schedule: AmortizationRow[] = [];
-    let currentBalance = balance;
-    let currentDate = selectedAccount.paymentStartDate
-      ? new Date(selectedAccount.paymentStartDate)
-      : new Date();
-    let paymentNumber = 1;
-    const maxPayments = 1200; // 100 years max
-
-    while (currentBalance > 0.01 && paymentNumber <= maxPayments) {
-      const monthsElapsed = paymentMonths;
-      const interestAmount = currentBalance * monthlyRate * monthsElapsed;
-      const actualPayment = Math.min(payment, currentBalance + interestAmount);
-      const principalAmount = actualPayment - interestAmount;
-
-      if (principalAmount <= 0) {
-        // Payment doesn't cover interest
-        break;
+  // Load transactions from the loan account
+  useEffect(() => {
+    const loadTransactions = async () => {
+      if (!selectedAccountId) {
+        setTransactions([]);
+        return;
       }
 
-      currentBalance = Math.max(0, currentBalance - principalAmount);
+      try {
+        // Fetch transactions from the loan account
+        // The linkedTransaction will have splits with principal/interest breakdown
+        const result = await transactionsApi.getAll({
+          accountId: selectedAccountId,
+          limit: 1000,
+        });
+        setTransactions(result.data);
+      } catch (error) {
+        console.error('Failed to load transactions:', error);
+        setTransactions([]);
+      }
+    };
 
-      schedule.push({
+    loadTransactions();
+  }, [selectedAccountId]);
+
+  // Build payment history from actual transactions
+  const paymentHistory = useMemo((): PaymentRow[] => {
+    if (!selectedAccount || transactions.length === 0) return [];
+
+    const loanAccountId = selectedAccount.id;
+    const payments: PaymentRow[] = [];
+
+    // Filter for positive transactions (payments to loan)
+    const sortedTransactions = [...transactions]
+      .filter((t) => t.amount > 0)
+      .sort((a, b) => new Date(a.transactionDate).getTime() - new Date(b.transactionDate).getTime());
+
+    // Calculate total principal paid to determine original balance if openingBalance is not set
+    const totalPrincipalPaid = sortedTransactions.reduce((sum, t) => sum + Math.abs(t.amount), 0);
+
+    // Use openingBalance if available, otherwise calculate from currentBalance + total principal paid
+    const openingBalance = Math.abs(selectedAccount.openingBalance || 0);
+    const currentBalance = Math.abs(selectedAccount.currentBalance || 0);
+    const calculatedOriginalBalance = currentBalance + totalPrincipalPaid;
+
+    // Use the larger of openingBalance or calculated original balance
+    // This handles cases where the account was imported mid-way with 0 opening balance
+    let runningBalance = openingBalance > 0 ? openingBalance : calculatedOriginalBalance;
+
+    let paymentNumber = 1;
+
+    // Track which parent transactions we've already counted interest for
+    // This prevents double-counting when multiple splits in the same parent go to the loan
+    const processedParentIds = new Set<string>();
+
+    for (const transaction of sortedTransactions) {
+      const principal = Math.abs(transaction.amount);
+      let interest = 0;
+
+      // Look at the linkedTransaction's splits to find the interest portion
+      // The linkedTransaction is from the source account and has the split breakdown
+      const linkedTx = transaction.linkedTransaction;
+      if (linkedTx?.splits && linkedTx.splits.length > 0) {
+        // Only count interest once per parent transaction
+        if (!processedParentIds.has(linkedTx.id)) {
+          processedParentIds.add(linkedTx.id);
+          // Find the interest split - any split that is NOT a transfer to this loan
+          const interestSplit = linkedTx.splits.find(
+            (s) => s.transferAccountId !== loanAccountId
+          );
+          if (interestSplit) {
+            interest = Math.abs(interestSplit.amount);
+          }
+        }
+      }
+
+      runningBalance = Math.max(0, runningBalance - principal);
+
+      payments.push({
         paymentNumber,
-        date: format(currentDate, 'yyyy-MM-dd'),
-        payment: actualPayment,
-        principal: principalAmount,
-        interest: interestAmount,
-        balance: currentBalance,
+        date: transaction.transactionDate,
+        payment: principal + interest,
+        principal,
+        interest,
+        balance: runningBalance,
       });
 
-      currentDate = addMonths(currentDate, Math.ceil(paymentMonths));
       paymentNumber++;
     }
 
-    return schedule;
-  }, [selectedAccount]);
+    return payments;
+  }, [selectedAccount, transactions]);
 
   const summary = useMemo(() => {
-    if (amortizationSchedule.length === 0) return null;
+    if (paymentHistory.length === 0) return null;
 
-    const totalInterest = amortizationSchedule.reduce((sum, row) => sum + row.interest, 0);
-    const totalPrincipal = amortizationSchedule.reduce((sum, row) => sum + row.principal, 0);
-    const totalPayments = amortizationSchedule.reduce((sum, row) => sum + row.payment, 0);
-    const lastRow = amortizationSchedule[amortizationSchedule.length - 1];
+    const totalInterest = paymentHistory.reduce((sum, row) => sum + row.interest, 0);
+    const totalPrincipal = paymentHistory.reduce((sum, row) => sum + row.principal, 0);
+    const totalPayments = paymentHistory.reduce((sum, row) => sum + row.payment, 0);
+    const lastRow = paymentHistory[paymentHistory.length - 1];
 
     return {
       totalPayments,
       totalPrincipal,
       totalInterest,
-      numberOfPayments: amortizationSchedule.length,
-      payoffDate: lastRow.date,
+      numberOfPayments: paymentHistory.length,
+      lastPaymentDate: lastRow.date,
     };
-  }, [amortizationSchedule]);
+  }, [paymentHistory]);
 
   const displayedRows = showAllRows
-    ? amortizationSchedule
-    : amortizationSchedule.slice(0, 24);
+    ? paymentHistory
+    : paymentHistory.slice(0, 24);
 
   if (isLoading) {
     return (
@@ -146,7 +188,7 @@ export function LoanAmortizationReport() {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
         <p className="text-gray-500 dark:text-gray-400 text-center py-8">
-          No loan or mortgage accounts found. Add a loan account with payment details to see the amortization schedule.
+          No loan or mortgage accounts found. Add a loan account to see the payment history.
         </p>
       </div>
     );
@@ -166,18 +208,21 @@ export function LoanAmortizationReport() {
               onChange={(e) => setSelectedAccountId(e.target.value)}
               className="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
             >
-              {accounts.map((account) => (
-                <option key={account.id} value={account.id}>
-                  {account.name}
-                </option>
-              ))}
+              {accounts
+                .slice()
+                .sort((a, b) => a.name.localeCompare(b.name))
+                .map((account) => (
+                  <option key={account.id} value={account.id}>
+                    {account.name}
+                  </option>
+                ))}
             </select>
           </div>
         </div>
       </div>
 
       {/* Summary Cards */}
-      {summary && selectedAccount && (
+      {selectedAccount && (
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
             <div className="text-sm text-gray-500 dark:text-gray-400">Current Balance</div>
@@ -186,12 +231,9 @@ export function LoanAmortizationReport() {
             </div>
           </div>
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
-            <div className="text-sm text-gray-500 dark:text-gray-400">Payment</div>
+            <div className="text-sm text-gray-500 dark:text-gray-400">Original Amount</div>
             <div className="text-lg font-bold text-gray-900 dark:text-gray-100">
-              {formatCurrency(selectedAccount.paymentAmount || 0)}
-              <span className="text-xs text-gray-500 dark:text-gray-400 ml-1">
-                / {selectedAccount.paymentFrequency ? FREQUENCY_LABELS[selectedAccount.paymentFrequency].toLowerCase() : 'month'}
-              </span>
+              {formatCurrency(Math.abs(selectedAccount.openingBalance))}
             </div>
           </div>
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
@@ -201,37 +243,36 @@ export function LoanAmortizationReport() {
             </div>
           </div>
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
-            <div className="text-sm text-gray-500 dark:text-gray-400">Total Interest</div>
+            <div className="text-sm text-gray-500 dark:text-gray-400">Total Interest Paid</div>
             <div className="text-lg font-bold text-orange-600 dark:text-orange-400">
-              {formatCurrency(summary.totalInterest)}
+              {formatCurrency(summary?.totalInterest || 0)}
             </div>
           </div>
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
-            <div className="text-sm text-gray-500 dark:text-gray-400">Payoff Date</div>
+            <div className="text-sm text-gray-500 dark:text-gray-400">Payments Made</div>
             <div className="text-lg font-bold text-green-600 dark:text-green-400">
-              {format(new Date(summary.payoffDate), 'MMM yyyy')}
+              {summary?.numberOfPayments || 0}
             </div>
           </div>
         </div>
       )}
 
-      {/* Amortization Table */}
+      {/* Payment History Table */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-            Amortization Schedule
+            Payment History
           </h3>
           {summary && (
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              {summary.numberOfPayments} payments over{' '}
-              {Math.ceil(summary.numberOfPayments / 12)} years
+              {summary.numberOfPayments} payments totaling {formatCurrency(summary.totalPayments)}
             </p>
           )}
         </div>
 
-        {amortizationSchedule.length === 0 ? (
+        {paymentHistory.length === 0 ? (
           <p className="px-6 py-8 text-gray-500 dark:text-gray-400 text-center">
-            Unable to generate amortization schedule. Please ensure the loan has a balance, payment amount, and interest rate configured.
+            No payments found for this loan. Make payments to your loan account to see them here.
           </p>
         ) : (
           <>
@@ -266,7 +307,7 @@ export function LoanAmortizationReport() {
                         {row.paymentNumber}
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                        {format(new Date(row.date), 'MMM d, yyyy')}
+                        {format(parseISO(row.date), 'MMM d, yyyy')}
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-right text-gray-900 dark:text-gray-100">
                         {formatCurrency(row.payment)}
@@ -286,7 +327,7 @@ export function LoanAmortizationReport() {
               </table>
             </div>
 
-            {amortizationSchedule.length > 24 && (
+            {paymentHistory.length > 24 && (
               <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
                 <button
                   onClick={() => setShowAllRows(!showAllRows)}
@@ -294,7 +335,7 @@ export function LoanAmortizationReport() {
                 >
                   {showAllRows
                     ? 'Show fewer rows'
-                    : `Show all ${amortizationSchedule.length} payments`}
+                    : `Show all ${paymentHistory.length} payments`}
                 </button>
               </div>
             )}

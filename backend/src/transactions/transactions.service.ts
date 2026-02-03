@@ -257,6 +257,12 @@ export class TransactionsService {
           linkedTransactionId: savedLinkedTransaction.id,
         });
 
+        // Also set linkedTransactionId on the created transaction pointing back to the parent
+        // This allows traversing from the target account transaction back to the source splits
+        await this.transactionsRepository.update(savedLinkedTransaction.id, {
+          linkedTransactionId: transactionId,
+        });
+
         // Update target account balance
         await this.accountsService.updateBalance(split.transferAccountId, -split.amount);
 
@@ -300,6 +306,9 @@ export class TransactionsService {
       .leftJoinAndSelect('splits.transferAccount', 'splitTransferAccount')
       .leftJoinAndSelect('transaction.linkedTransaction', 'linkedTransaction')
       .leftJoinAndSelect('linkedTransaction.account', 'linkedAccount')
+      .leftJoinAndSelect('linkedTransaction.splits', 'linkedSplits')
+      .leftJoinAndSelect('linkedSplits.category', 'linkedSplitCategory')
+      .leftJoinAndSelect('linkedSplits.transferAccount', 'linkedSplitTransferAccount')
       .where('transaction.userId = :userId', { userId })
       .orderBy('transaction.transactionDate', 'DESC')
       .addOrderBy('transaction.createdAt', 'DESC')
