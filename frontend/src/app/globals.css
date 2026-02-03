@@ -115,7 +115,7 @@ select:focus {
 .dark textarea,
 .dark select {
   @apply border-gray-600 text-gray-100;
-  background-color: rgb(31 41 55); /* gray-800 to match MultiSelect/ChipsInput */
+  background-color: rgb(31 41 55); /* gray-800 to match MultiSelect */
 }
 
 /* Select dropdown arrow for dark mode */

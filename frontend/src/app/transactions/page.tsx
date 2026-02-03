@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
 import { MultiSelect, MultiSelectOption } from '@/components/ui/MultiSelect';
-import { ChipsInput } from '@/components/ui/ChipsInput';
 import { Input } from '@/components/ui/Input';
 import { Pagination } from '@/components/ui/Pagination';
 import { TransactionForm } from '@/components/transactions/TransactionForm';
@@ -870,7 +869,7 @@ export default function TransactionsPage() {
                     placeholder="All categories"
                   />
 
-                  <ChipsInput
+                  <MultiSelect
                     label="Payees"
                     options={payees
                       .sort((a, b) => a.name.localeCompare(b.name))
@@ -880,7 +879,7 @@ export default function TransactionsPage() {
                       }))}
                     value={filterPayeeIds}
                     onChange={(values) => handleArrayFilterChange(setFilterPayeeIds, values)}
-                    placeholder="Search payees..."
+                    placeholder="All payees"
                   />
                 </div>
 

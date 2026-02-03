@@ -10,7 +10,6 @@ import { Button } from '@/components/ui/Button';
 import { IconPicker } from '@/components/ui/IconPicker';
 import { ColorPicker } from '@/components/ui/ColorPicker';
 import { MultiSelect } from '@/components/ui/MultiSelect';
-import { ChipsInput } from '@/components/ui/ChipsInput';
 import { getCategorySelectOptions } from '@/lib/categoryUtils';
 import {
   CustomReport,
@@ -421,12 +420,12 @@ export function CustomReportForm({ report, onSubmit, onCancel }: CustomReportFor
             name="payeeIds"
             control={control}
             render={({ field }) => (
-              <ChipsInput
+              <MultiSelect
                 label="Payees"
                 options={payeeOptions}
                 value={field.value || []}
                 onChange={field.onChange}
-                placeholder="Search and select payees..."
+                placeholder="All payees"
               />
             )}
           />

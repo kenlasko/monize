@@ -142,16 +142,6 @@ export function MultiSelect({
     onChange(newValue);
   };
 
-  // Select all / clear all
-  const handleSelectAll = () => {
-    const allValues = flatOptions.map(o => o.value);
-    onChange(allValues);
-  };
-
-  const handleClearAll = () => {
-    onChange([]);
-  };
-
   // Filter options by search
   const filteredOptions = useMemo(() => {
     if (!searchText) return flatOptions;
@@ -160,6 +150,21 @@ export function MultiSelect({
       opt.label.toLowerCase().includes(searchLower)
     );
   }, [flatOptions, searchText]);
+
+  // Select all / clear all - only affects visible (filtered) options
+  const handleSelectAll = () => {
+    const visibleValues = filteredOptions.map(o => o.value);
+    // Add all visible options to current selection
+    const newValue = [...new Set([...value, ...visibleValues])];
+    onChange(newValue);
+  };
+
+  const handleClearAll = () => {
+    const visibleValues = new Set(filteredOptions.map(o => o.value));
+    // Remove only visible options from current selection
+    const newValue = value.filter(v => !visibleValues.has(v));
+    onChange(newValue);
+  };
 
   // Close on click outside
   useEffect(() => {
@@ -245,18 +250,34 @@ export function MultiSelect({
           {/* Search input */}
           {showSearch && (
             <div className="p-2 border-b border-gray-200 dark:border-gray-700">
-              <input
-                ref={searchInputRef}
-                type="text"
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-                placeholder="Search..."
-                className={cn(
-                  'block w-full rounded-md border-gray-300 shadow-sm text-sm',
-                  'focus:border-blue-500 focus:ring-blue-500',
-                  'dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-400'
+              <div className="relative">
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  value={searchText}
+                  onChange={(e) => setSearchText(e.target.value)}
+                  placeholder="Search..."
+                  className={cn(
+                    'block w-full rounded-md border-gray-300 shadow-sm text-sm pr-8',
+                    'focus:border-blue-500 focus:ring-blue-500',
+                    'dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-400'
+                  )}
+                />
+                {searchText && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearchText('');
+                      searchInputRef.current?.focus();
+                    }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
                 )}
-              />
+              </div>
             </div>
           )}
 
