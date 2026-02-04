@@ -334,6 +334,7 @@ CREATE TABLE investment_transactions (
     account_id UUID NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
     transaction_id UUID REFERENCES transactions(id) ON DELETE SET NULL,
     security_id UUID REFERENCES securities(id),
+    funding_account_id UUID REFERENCES accounts(id) ON DELETE SET NULL,
     action investment_action NOT NULL,
     transaction_date DATE NOT NULL,
     quantity NUMERIC(20, 8),

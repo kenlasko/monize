@@ -18,7 +18,7 @@ import { Account, AccountType } from '@/types/account';
 import { Category } from '@/types/category';
 import { Security } from '@/types/investment';
 
-type ImportStep = 'upload' | 'selectAccount' | 'dateFormat' | 'mapCategories' | 'mapSecurities' | 'mapAccounts' | 'review' | 'complete';
+type ImportStep = 'upload' | 'selectAccount' | 'mapCategories' | 'mapSecurities' | 'mapAccounts' | 'review' | 'complete';
 
 // Data for each file in bulk import
 interface ImportFileData {
@@ -213,7 +213,9 @@ function ImportContent() {
 
         try {
           const result = await investmentsApi.lookupSecurity(query);
-          if (result) {
+          // Ignore results where the discovered symbol is longer than 6 characters
+          // (likely a bad match rather than a real ticker symbol)
+          if (result && result.symbol.length <= 6) {
             setSecurityMappings((prev) => {
               const updated = [...prev];
               const current = updated[index];
@@ -802,11 +804,10 @@ function ImportContent() {
   }, [categories]);
 
   const getAccountOptions = () => {
-    // Filter out loan accounts only
-    // Loan accounts - balances are built using transactions from other accounts
-    // Brokerage accounts are now allowed since investment purchases can come from them
+    // Filter out loan/mortgage accounts (balances built from transactions in other accounts)
+    // and brokerage accounts (transfers redirect to linked cash account automatically)
     const transferableAccounts = accounts.filter(
-      (a) => a.accountType !== 'LOAN' && a.accountType !== 'MORTGAGE'
+      (a) => a.accountType !== 'LOAN' && a.accountType !== 'MORTGAGE' && !isInvestmentBrokerageAccount(a)
     );
     return [
       { value: '', label: 'Skip (no transfer)' },
@@ -817,7 +818,10 @@ function ImportContent() {
   };
 
   // Helper to determine if mapAccounts step should be shown
-  const shouldShowMapAccounts = accountMappings.length > 0;
+  // Never show for investment imports - transfers always go to the linked cash account
+  const isInvestmentImport = parsedData?.accountType === 'INVESTMENT' ||
+    (isBulkImport && importFiles.some((f) => f.parsedData.accountType === 'INVESTMENT'));
+  const shouldShowMapAccounts = accountMappings.length > 0 && !isInvestmentImport;
 
   const accountTypeOptions = [
     { value: 'CHEQUING', label: 'Chequing' },
@@ -846,13 +850,6 @@ function ImportContent() {
     { value: 'GIC', label: 'GIC' },
     { value: 'CASH', label: 'Cash/Money Market' },
     { value: 'OTHER', label: 'Other' },
-  ];
-
-  const dateFormatOptions: { value: DateFormat; label: string; example: string }[] = [
-    { value: 'MM/DD/YYYY', label: 'MM/DD/YYYY', example: '12/31/2024' },
-    { value: 'DD/MM/YYYY', label: 'DD/MM/YYYY', example: '31/12/2024' },
-    { value: 'YYYY-MM-DD', label: 'YYYY-MM-DD', example: '2024-12-31' },
-    { value: 'YYYY-DD-MM', label: 'YYYY-DD-MM', example: '2024-31-12' },
   ];
 
   const renderStep = () => {
@@ -985,7 +982,17 @@ function ImportContent() {
                     Back
                   </Button>
                   <Button
-                    onClick={() => setStep('dateFormat')}
+                    onClick={() => {
+                      if (categoryMappings.length > 0) {
+                        setStep('mapCategories');
+                      } else if (securityMappings.length > 0) {
+                        setStep('mapSecurities');
+                      } else if (shouldShowMapAccounts) {
+                        setStep('mapAccounts');
+                      } else {
+                        setStep('review');
+                      }
+                    }}
                     disabled={!selectedAccountId || compatibleAccounts.length === 0}
                   >
                     Next
@@ -1058,84 +1065,6 @@ function ImportContent() {
                   Back
                 </Button>
                 <Button
-                  onClick={() => setStep('dateFormat')}
-                  disabled={!allFilesHaveAccounts}
-                >
-                  Next
-                </Button>
-              </div>
-            </div>
-          </div>
-        );
-
-      case 'dateFormat':
-        return (
-          <div className="max-w-xl mx-auto">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
-                Confirm Date Format
-              </h2>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
-                We detected the date format from your file. Please verify it is correct or select
-                a different format.
-              </p>
-
-              {parsedData?.sampleDates && parsedData.sampleDates.length > 0 && (
-                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-6">
-                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Sample dates from your file:
-                  </p>
-                  <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                    {parsedData.sampleDates.map((date, i) => (
-                      <li key={i} className="font-mono">{date}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              <div className="space-y-3">
-                {dateFormatOptions.map((option) => (
-                  <label
-                    key={option.value}
-                    className={`flex items-center justify-between p-4 border rounded-lg cursor-pointer transition-colors ${
-                      dateFormat === option.value
-                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                        : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
-                    }`}
-                  >
-                    <div className="flex items-center">
-                      <input
-                        type="radio"
-                        name="dateFormat"
-                        value={option.value}
-                        checked={dateFormat === option.value}
-                        onChange={() => setDateFormat(option.value)}
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600"
-                      />
-                      <span className="ml-3 font-medium text-gray-900 dark:text-gray-100">
-                        {option.label}
-                      </span>
-                      {parsedData?.detectedDateFormat === option.value && (
-                        <span className="ml-2 text-xs px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded">
-                          Detected
-                        </span>
-                      )}
-                    </div>
-                    <span className="text-sm text-gray-500 dark:text-gray-400 font-mono">
-                      e.g., {option.example}
-                    </span>
-                  </label>
-                ))}
-              </div>
-
-              <div className="flex justify-between mt-6">
-                <Button
-                  variant="outline"
-                  onClick={() => setStep(preselectedAccountId ? 'upload' : 'selectAccount')}
-                >
-                  Back
-                </Button>
-                <Button
                   onClick={() => {
                     if (categoryMappings.length > 0) {
                       setStep('mapCategories');
@@ -1147,6 +1076,7 @@ function ImportContent() {
                       setStep('review');
                     }
                   }}
+                  disabled={!allFilesHaveAccounts}
                 >
                   Next
                 </Button>
@@ -1292,7 +1222,7 @@ function ImportContent() {
               <div className="flex justify-between mt-6">
                 <Button
                   variant="outline"
-                  onClick={() => setStep('dateFormat')}
+                  onClick={() => setStep('selectAccount')}
                 >
                   Back
                 </Button>
@@ -1428,7 +1358,7 @@ function ImportContent() {
                     if (categoryMappings.length > 0) {
                       setStep('mapCategories');
                     } else {
-                      setStep('dateFormat');
+                      setStep('selectAccount');
                     }
                   }}
                 >
@@ -1520,7 +1450,7 @@ function ImportContent() {
                     } else if (categoryMappings.length > 0) {
                       setStep('mapCategories');
                     } else {
-                      setStep('dateFormat');
+                      setStep('selectAccount');
                     }
                   }}
                 >
@@ -1666,7 +1596,7 @@ function ImportContent() {
                     } else if (categoryMappings.length > 0) {
                       setStep('mapCategories');
                     } else {
-                      setStep('dateFormat');
+                      setStep('selectAccount');
                     }
                   }}
                 >
@@ -1856,9 +1786,9 @@ function ImportContent() {
         {/* Progress indicator */}
         <div className="mb-8">
           <div className="flex items-center justify-center space-x-4">
-            {['upload', 'selectAccount', 'dateFormat', 'mapCategories', 'mapSecurities', 'mapAccounts', 'review', 'complete'].map(
+            {['upload', 'selectAccount', 'mapCategories', 'mapSecurities', 'mapAccounts', 'review', 'complete'].map(
               (s, i) => {
-                const stepOrder = ['upload', 'selectAccount', 'dateFormat', 'mapCategories', 'mapSecurities', 'mapAccounts', 'review', 'complete'];
+                const stepOrder = ['upload', 'selectAccount', 'mapCategories', 'mapSecurities', 'mapAccounts', 'review', 'complete'];
                 const currentIndex = stepOrder.indexOf(step);
                 const stepIndex = stepOrder.indexOf(s);
                 const isActive = s === step;
@@ -1892,7 +1822,7 @@ function ImportContent() {
                         i + 1
                       )}
                     </div>
-                    {i < 7 && (
+                    {i < 6 && (
                       <div
                         className={`w-12 h-1 ${
                           isComplete ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'

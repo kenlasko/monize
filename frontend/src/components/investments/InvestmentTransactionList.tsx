@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useCallback } from 'react';
-import { format } from 'date-fns';
+import { useDateFormat } from '@/hooks/useDateFormat';
 import { InvestmentTransaction } from '@/types/investment';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 
@@ -64,6 +64,7 @@ export function InvestmentTransactionList({
   availableSymbols = [],
 }: InvestmentTransactionListProps) {
   const { formatCurrency, numberFormat } = useNumberFormat();
+  const { formatDate } = useDateFormat();
   const [localDensity, setLocalDensity] = useState<DensityLevel>('normal');
   const [showFilters, setShowFilters] = useState(false);
 
@@ -307,7 +308,7 @@ export function InvestmentTransactionList({
                   className={`hover:bg-gray-50 dark:hover:bg-gray-700/30 ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-gray-800/50' : ''}`}
                 >
                   <td className={`${cellPadding} whitespace-nowrap text-sm text-gray-900 dark:text-gray-100`}>
-                    {format(new Date(tx.transactionDate), density === 'dense' ? 'MM/dd/yy' : 'MMM d, yyyy')}
+                    {formatDate(tx.transactionDate)}
                   </td>
                   <td className={`${cellPadding} whitespace-nowrap`}>
                     <span className={`text-sm font-medium ${actionInfo.color}`}>

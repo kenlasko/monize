@@ -38,6 +38,10 @@ export class InvestmentTransaction {
   @Column({ type: 'uuid', name: 'security_id', nullable: true })
   securityId: string | null;
 
+  @ApiProperty({ required: false, description: 'Account where funds come from (BUY) or go to (SELL)' })
+  @Column({ type: 'uuid', name: 'funding_account_id', nullable: true })
+  fundingAccountId: string | null;
+
   @ApiProperty({ enum: InvestmentAction })
   @Column({ type: 'varchar', length: 50 })
   action: InvestmentAction;
@@ -91,6 +95,10 @@ export class InvestmentTransaction {
   @ManyToOne(() => Security, { nullable: true })
   @JoinColumn({ name: 'security_id' })
   security: Security;
+
+  @ManyToOne(() => Account, { nullable: true })
+  @JoinColumn({ name: 'funding_account_id' })
+  fundingAccount: Account | null;
 
   @ApiProperty()
   @CreateDateColumn({ name: 'created_at' })

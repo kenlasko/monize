@@ -91,6 +91,7 @@ export interface InvestmentTransaction {
   id: string;
   accountId: string;
   securityId: string | null;
+  fundingAccountId: string | null;
   action: InvestmentAction;
   transactionDate: string;
   quantity: number | null;
@@ -99,6 +100,10 @@ export interface InvestmentTransaction {
   totalAmount: number;
   description: string | null;
   security: Security | null;
+  fundingAccount: {
+    id: string;
+    name: string;
+  } | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -106,6 +111,7 @@ export interface InvestmentTransaction {
 export interface CreateInvestmentTransactionData {
   accountId: string;
   securityId?: string;
+  fundingAccountId?: string;
   action: InvestmentAction;
   transactionDate: string;
   quantity?: number;

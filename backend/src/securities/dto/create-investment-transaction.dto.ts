@@ -20,6 +20,11 @@ export class CreateInvestmentTransactionDto {
   @IsUUID()
   securityId?: string;
 
+  @ApiProperty({ required: false, description: 'Account where funds come from (BUY) or go to (SELL)' })
+  @IsOptional()
+  @IsUUID()
+  fundingAccountId?: string;
+
   @ApiProperty({ required: false, description: 'Number of shares' })
   @IsOptional()
   @IsNumber({ maxDecimalPlaces: 8 })

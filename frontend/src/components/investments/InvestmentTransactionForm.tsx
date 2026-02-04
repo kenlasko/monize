@@ -24,6 +24,7 @@ const investmentTransactionSchema = z.object({
   action: z.enum(['BUY', 'SELL', 'DIVIDEND', 'INTEREST', 'CAPITAL_GAIN', 'SPLIT', 'TRANSFER_IN', 'TRANSFER_OUT', 'REINVEST']),
   transactionDate: z.string().min(1, 'Date is required'),
   securityId: z.string().optional(),
+  fundingAccountId: z.string().optional(),
   quantity: z.coerce.number().min(0).optional(),
   price: z.coerce.number().min(0).optional(),
   commission: z.coerce.number().min(0).optional(),
@@ -34,6 +35,7 @@ type InvestmentTransactionFormData = z.infer<typeof investmentTransactionSchema>
 
 interface InvestmentTransactionFormProps {
   accounts: Account[];
+  allAccounts?: Account[];  // All accounts for funding dropdown (if not provided, uses accounts)
   transaction?: InvestmentTransaction;
   defaultAccountId?: string;
   onSuccess?: () => void;
@@ -61,8 +63,12 @@ const quantityPriceActions: InvestmentAction[] = ['BUY', 'SELL', 'REINVEST'];
 // Actions that only need an amount (no quantity/price)
 const amountOnlyActions: InvestmentAction[] = ['DIVIDEND', 'INTEREST', 'CAPITAL_GAIN', 'TRANSFER_IN', 'TRANSFER_OUT'];
 
+// Actions that can have an external funding account (where funds come from/go to)
+const fundingAccountActions: InvestmentAction[] = ['BUY', 'SELL'];
+
 export function InvestmentTransactionForm({
   accounts,
+  allAccounts,
   transaction,
   defaultAccountId,
   onSuccess,
@@ -78,10 +84,25 @@ export function InvestmentTransactionForm({
     currencyCode: 'CAD',
   });
 
-  // Filter to only show brokerage accounts
+  // Filter to only show brokerage accounts (sorted)
   const brokerageAccounts = useMemo(
-    () => accounts.filter((a) => a.accountSubType === 'INVESTMENT_BROKERAGE'),
+    () => accounts
+      .filter((a) => a.accountSubType === 'INVESTMENT_BROKERAGE')
+      .sort((a, b) => a.name.localeCompare(b.name)),
     [accounts]
+  );
+
+  // All accounts that can be used as funding source/destination (sorted)
+  // Excludes investment cash accounts, cash accounts, and asset accounts
+  const fundingAccounts = useMemo(
+    () => [...(allAccounts || accounts)]
+      .filter((a) =>
+        a.accountSubType !== 'INVESTMENT_CASH' &&
+        a.accountType !== 'CASH' &&
+        a.accountType !== 'ASSET'
+      )
+      .sort((a, b) => a.name.localeCompare(b.name)),
+    [allAccounts, accounts]
   );
 
   const {
@@ -98,6 +119,7 @@ export function InvestmentTransactionForm({
           action: transaction.action,
           transactionDate: transaction.transactionDate,
           securityId: transaction.securityId || transaction.security?.id || '',
+          fundingAccountId: transaction.fundingAccountId || '',
           quantity: transaction.quantity ?? 0,
           // For amount-only actions, use totalAmount as the price field value
           price: amountOnlyActions.includes(transaction.action)
@@ -110,6 +132,7 @@ export function InvestmentTransactionForm({
           accountId: defaultAccountId || '',
           action: 'BUY',
           transactionDate: new Date().toISOString().split('T')[0],
+          fundingAccountId: '',
           quantity: 0,
           price: 0,
           commission: 0,
@@ -194,6 +217,9 @@ export function InvestmentTransactionForm({
         securityId: securityRequiredActions.includes(data.action as InvestmentAction)
           ? data.securityId
           : undefined,
+        fundingAccountId: fundingAccountActions.includes(data.action as InvestmentAction) && data.fundingAccountId
+          ? data.fundingAccountId
+          : undefined,
         quantity: quantityPriceActions.includes(data.action as InvestmentAction)
           ? data.quantity
           : undefined,
@@ -220,6 +246,7 @@ export function InvestmentTransactionForm({
   const needsSecurity = securityRequiredActions.includes(watchedAction);
   const needsQuantityPrice = quantityPriceActions.includes(watchedAction);
   const isAmountOnly = amountOnlyActions.includes(watchedAction);
+  const canHaveFundingAccount = fundingAccountActions.includes(watchedAction);
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -255,6 +282,21 @@ export function InvestmentTransactionForm({
         error={errors.transactionDate?.message}
         {...register('transactionDate')}
       />
+
+      {/* Funding Account - for Buy/Sell to specify where funds come from/go to */}
+      {canHaveFundingAccount && (
+        <Select
+          label={watchedAction === 'BUY' ? 'Funds From (optional)' : 'Funds To (optional)'}
+          options={[
+            { value: '', label: 'Default cash account' },
+            ...fundingAccounts.map((a) => ({
+              value: a.id,
+              label: a.name,
+            })),
+          ]}
+          {...register('fundingAccountId')}
+        />
+      )}
 
       {/* Security Selection - only for actions that need it */}
       {needsSecurity && (

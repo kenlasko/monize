@@ -197,6 +197,7 @@ export class InvestmentTransactionsService {
       userId,
       accountId: createDto.accountId,
       securityId: createDto.securityId,
+      fundingAccountId: createDto.fundingAccountId || null,
       action: createDto.action,
       transactionDate: createDto.transactionDate,
       quantity: createDto.quantity,
@@ -242,10 +243,16 @@ export class InvestmentTransactionsService {
     userId: string,
     transaction: InvestmentTransaction,
   ): Promise<void> {
-    const { action, accountId, securityId, quantity, price, totalAmount } = transaction;
+    const { action, accountId, securityId, quantity, price, totalAmount, fundingAccountId } = transaction;
 
     // Find the appropriate cash account for cash-affecting transactions
-    const cashAccount = await this.findCashAccount(userId, accountId);
+    // If fundingAccountId is specified, use that; otherwise use the default linked cash account
+    let cashAccount: Account;
+    if (fundingAccountId) {
+      cashAccount = await this.accountsService.findOne(userId, fundingAccountId);
+    } else {
+      cashAccount = await this.findCashAccount(userId, accountId);
+    }
     let cashTransactionId: string | null = null;
 
     switch (action) {
@@ -378,6 +385,7 @@ export class InvestmentTransactionsService {
       .createQueryBuilder('it')
       .leftJoinAndSelect('it.account', 'account')
       .leftJoinAndSelect('it.security', 'security')
+      .leftJoinAndSelect('it.fundingAccount', 'fundingAccount')
       .where('it.userId = :userId', { userId });
 
     if (accountId) {
@@ -440,6 +448,7 @@ export class InvestmentTransactionsService {
       .createQueryBuilder('it')
       .leftJoinAndSelect('it.account', 'account')
       .leftJoinAndSelect('it.security', 'security')
+      .leftJoinAndSelect('it.fundingAccount', 'fundingAccount')
       .where('it.id = :id', { id })
       .andWhere('it.userId = :userId', { userId })
       .getOne();
@@ -461,11 +470,12 @@ export class InvestmentTransactionsService {
     // Reverse the original transaction effects
     await this.reverseTransactionEffects(userId, transaction);
 
-    // SECURITY: Explicit property mapping instead of Object.assign to prevent mass assignment
+    // Update entity properties directly
     if (updateDto.accountId !== undefined) transaction.accountId = updateDto.accountId;
     if (updateDto.action !== undefined) transaction.action = updateDto.action;
     if (updateDto.transactionDate !== undefined) transaction.transactionDate = updateDto.transactionDate;
     if (updateDto.securityId !== undefined) transaction.securityId = updateDto.securityId;
+    if (updateDto.fundingAccountId !== undefined) transaction.fundingAccountId = updateDto.fundingAccountId || null;
     if (updateDto.quantity !== undefined) transaction.quantity = updateDto.quantity;
     if (updateDto.price !== undefined) transaction.price = updateDto.price;
     if (updateDto.commission !== undefined) transaction.commission = updateDto.commission;
@@ -496,9 +506,11 @@ export class InvestmentTransactionsService {
 
     // Delete the linked cash transaction if it exists (this also reverses the balance)
     if (transactionId) {
-      await this.deleteCashTransaction(userId, transactionId);
-      // Clear the reference to avoid foreign key constraint violation when saving
+      // Clear the FK reference in the database BEFORE deleting the cash transaction
+      // to avoid TypeORM entity tracking conflicts from ON DELETE SET NULL
+      await this.investmentTransactionsRepository.update(transaction.id, { transactionId: null });
       transaction.transactionId = null;
+      await this.deleteCashTransaction(userId, transactionId);
     }
 
     switch (action) {

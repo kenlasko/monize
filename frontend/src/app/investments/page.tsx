@@ -13,6 +13,7 @@ import { AssetAllocationChart } from '@/components/investments/AssetAllocationCh
 import { InvestmentTransactionList, DensityLevel, TransactionFilters } from '@/components/investments/InvestmentTransactionList';
 import { InvestmentTransactionForm } from '@/components/investments/InvestmentTransactionForm';
 import { investmentsApi } from '@/lib/investments';
+import { accountsApi } from '@/lib/accounts';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { Account } from '@/types/account';
 import {
@@ -45,6 +46,7 @@ export default function InvestmentsPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [accounts, setAccounts] = useState<Account[]>([]);
+  const [allAccounts, setAllAccounts] = useState<Account[]>([]);
   const [selectedAccountId, setSelectedAccountId] = useState<string>('');
   const [portfolioSummary, setPortfolioSummary] = useState<PortfolioSummary | null>(
     null,
@@ -72,6 +74,15 @@ export default function InvestmentsPage() {
       setAccounts(accountsData);
     } catch (error) {
       console.error('Failed to load investment accounts:', error);
+    }
+  }, []);
+
+  const loadAllAccounts = useCallback(async () => {
+    try {
+      const accountsData = await accountsApi.getAll();
+      setAllAccounts(accountsData);
+    } catch (error) {
+      console.error('Failed to load all accounts:', error);
     }
   }, []);
 
@@ -171,8 +182,9 @@ export default function InvestmentsPage() {
 
   useEffect(() => {
     loadInvestmentAccounts();
+    loadAllAccounts();
     loadPriceStatus();
-  }, [loadInvestmentAccounts, loadPriceStatus]);
+  }, [loadInvestmentAccounts, loadAllAccounts, loadPriceStatus]);
 
   useEffect(() => {
     loadPortfolioData(selectedAccountId || undefined, currentPage, transactionFilters);
@@ -462,6 +474,7 @@ export default function InvestmentsPage() {
         </h2>
         <InvestmentTransactionForm
           accounts={accounts}
+          allAccounts={allAccounts}
           transaction={editingTransaction}
           defaultAccountId={getSelectedBrokerageAccountId()}
           onSuccess={handleFormSuccess}

@@ -423,7 +423,6 @@ export class ImportService {
             // Handle "X" suffix actions (e.g., BuyX, SellX, DivX) - these indicate transfer from/to another account
             // Strip the 'x' suffix for action mapping
             const baseAction = qifAction.replace(/x$/, '');
-            const isTransferAction = qifAction.endsWith('x');
             const action = actionMap[baseAction] || actionMap[qifAction] || InvestmentAction.BUY;
 
             // Get security ID from mapping, or auto-create if not mapped
@@ -521,27 +520,12 @@ export class ImportService {
             await queryRunner.manager.save(investmentTx);
 
             // Find the cash account for cash-affecting transactions
-            // Priority:
-            // 1. If transaction specifies a transfer account (e.g., BuyX action), use that
-            // 2. For paired accounts (brokerage + cash), use the linked cash account
-            // 3. For standalone accounts, use the same account
+            // Always use the linked cash account for brokerage imports,
+            // ignoring QIF transfer account fields (they redirect to the associated cash account)
             let cashAccountId = dto.accountId;
             let cashAccountCurrency = account.currencyCode;
 
-            // Check if transaction specifies a transfer account (via L field or X-suffix action)
-            if ((isTransferAction || qifTx.isTransfer) && qifTx.transferAccount) {
-              const mappedTransferAccountId = accountMap.get(qifTx.transferAccount);
-              if (mappedTransferAccountId) {
-                cashAccountId = mappedTransferAccountId;
-                // Get the transfer account's currency
-                const transferAccount = await queryRunner.manager.findOne(Account, {
-                  where: { id: mappedTransferAccountId },
-                });
-                if (transferAccount) {
-                  cashAccountCurrency = transferAccount.currencyCode;
-                }
-              }
-            } else if (account.accountSubType === AccountSubType.INVESTMENT_BROKERAGE && account.linkedAccountId) {
+            if (account.accountSubType === AccountSubType.INVESTMENT_BROKERAGE && account.linkedAccountId) {
               cashAccountId = account.linkedAccountId;
               // Get the linked account's currency
               const linkedAccount = await queryRunner.manager.findOne(Account, {
@@ -607,8 +591,8 @@ export class ImportService {
               cashTx.payeeId = null;
               cashTx.description = qifTx.memo || null;
               cashTx.status = TransactionStatus.CLEARED;
-              // Mark as transfer if cash comes from/goes to a different account
-              cashTx.isTransfer = (isTransferAction || qifTx.isTransfer) && qifTx.transferAccount ? true : false;
+              // Cash transactions for investment imports always go to the linked cash account, not a transfer
+              cashTx.isTransfer = false;
 
               const savedCashTx = await queryRunner.manager.save(cashTx);
 
