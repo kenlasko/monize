@@ -128,9 +128,9 @@ export class SecurityPriceService {
     const startTime = Date.now();
     this.logger.log('Starting price refresh for all securities');
 
-    // Get all active securities
+    // Get all active securities that don't have price updates disabled
     const securities = await this.securitiesRepository.find({
-      where: { isActive: true },
+      where: { isActive: true, skipPriceUpdates: false },
     });
 
     if (securities.length === 0) {
@@ -217,7 +217,7 @@ export class SecurityPriceService {
    */
   async refreshPricesForSecurities(securityIds: string[]): Promise<PriceRefreshSummary> {
     const securities = await this.securitiesRepository.find({
-      where: { id: In(securityIds), isActive: true },
+      where: { id: In(securityIds), isActive: true, skipPriceUpdates: false },
     });
 
     if (securities.length === 0) {

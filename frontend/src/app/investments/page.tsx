@@ -445,6 +445,13 @@ export default function InvestmentsPage() {
               {pagination.total} transaction{pagination.total !== 1 ? 's' : ''}
             </div>
           )}
+
+          {/* Footer note for auto-generated symbols */}
+          <div className="mt-8 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <p className="text-xs text-gray-400 dark:text-gray-500">
+              * Auto-generated symbol name. Could not find in Yahoo dataset.
+            </p>
+          </div>
         </div>
       </main>
 

@@ -17,6 +17,7 @@ export interface Security {
   exchange: string | null;
   currencyCode: string;
   isActive: boolean;
+  skipPriceUpdates: boolean;
   createdAt: string;
   updatedAt: string;
 }

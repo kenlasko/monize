@@ -306,6 +306,37 @@ function ImportContent() {
     return existingCat?.id;
   }, [categories, getCategoryPath]);
 
+  // Helper to find matching loan account for a category name
+  const findMatchingLoanAccount = useCallback((cat: string): string | undefined => {
+    // Get loan/mortgage accounts
+    const loanAccounts = accounts.filter(
+      (a) => a.accountType === 'LOAN' || a.accountType === 'MORTGAGE'
+    );
+
+    if (loanAccounts.length === 0) return undefined;
+
+    // Normalize the category name (QIF files replace / with - in names)
+    const normalizedCat = cat.toLowerCase().trim();
+    const normalizedCatWithSlash = normalizedCat.replace(/-/g, '/');
+
+    // Try exact match first
+    let matchedLoan = loanAccounts.find((a) => {
+      const loanName = a.name.toLowerCase();
+      return loanName === normalizedCat || loanName === normalizedCatWithSlash;
+    });
+
+    // Try partial match (category contains loan name or vice versa)
+    if (!matchedLoan) {
+      matchedLoan = loanAccounts.find((a) => {
+        const loanName = a.name.toLowerCase();
+        return normalizedCat.includes(loanName) || loanName.includes(normalizedCat) ||
+               normalizedCatWithSlash.includes(loanName) || loanName.includes(normalizedCatWithSlash);
+      });
+    }
+
+    return matchedLoan?.id;
+  }, [accounts]);
+
   // Helper to match filename to account
   // QIF files replace / with - in account names, so also try matching with - replaced by /
   const matchFilenameToAccount = useCallback((fileName: string, isInvestmentType: boolean): string => {
@@ -385,11 +416,34 @@ function ImportContent() {
       setImportFiles(fileDataArray);
 
       // Initialize combined category mappings
-      const catMappings: CategoryMapping[] = Array.from(allCategories).map((cat) => ({
-        originalName: cat,
-        categoryId: findMatchingCategory(cat),
-        createNew: undefined,
-      }));
+      // First try to match to a category, then try to match to a loan account
+      const catMappings: CategoryMapping[] = Array.from(allCategories).map((cat) => {
+        const categoryId = findMatchingCategory(cat);
+        if (categoryId) {
+          return {
+            originalName: cat,
+            categoryId,
+            createNew: undefined,
+          };
+        }
+
+        // If no category match, try to match to a loan account
+        const loanAccountId = findMatchingLoanAccount(cat);
+        if (loanAccountId) {
+          return {
+            originalName: cat,
+            isLoanCategory: true,
+            loanAccountId,
+          };
+        }
+
+        // No match found
+        return {
+          originalName: cat,
+          categoryId: undefined,
+          createNew: undefined,
+        };
+      });
       setCategoryMappings(catMappings);
 
       // Initialize combined account mappings
@@ -435,7 +489,7 @@ function ImportContent() {
     } finally {
       setIsLoading(false);
     }
-  }, [accounts, securities, findMatchingCategory, matchFilenameToAccount]);
+  }, [accounts, securities, findMatchingCategory, findMatchingLoanAccount, matchFilenameToAccount]);
 
   const handleCategoryMappingChange = (index: number, field: keyof CategoryMapping, value: string) => {
     setCategoryMappings((prev) => {
@@ -748,11 +802,11 @@ function ImportContent() {
   }, [categories]);
 
   const getAccountOptions = () => {
-    // Filter out brokerage accounts and loan accounts
-    // Brokerage accounts - transfers should go to cash accounts
+    // Filter out loan accounts only
     // Loan accounts - balances are built using transactions from other accounts
+    // Brokerage accounts are now allowed since investment purchases can come from them
     const transferableAccounts = accounts.filter(
-      (a) => !isInvestmentBrokerageAccount(a) && a.accountType !== 'LOAN'
+      (a) => a.accountType !== 'LOAN' && a.accountType !== 'MORTGAGE'
     );
     return [
       { value: '', label: 'Skip (no transfer)' },
@@ -1107,11 +1161,19 @@ function ImportContent() {
         const isFullyMapped = (m: CategoryMapping) =>
           m.categoryId || (m.isLoanCategory && (m.loanAccountId || (m.createNewLoan && m.newLoanAmount !== undefined)));
         const unmatchedCategories = categoryMappings.filter((m) => !isFullyMapped(m));
-        const matchedCategories = categoryMappings.filter((m) => isFullyMapped(m));
+        // Separate matched categories from matched loans
+        const matchedCategoriesOnly = categoryMappings.filter((m) => m.categoryId);
+        const matchedLoansOnly = categoryMappings.filter((m) => m.isLoanCategory && m.loanAccountId);
         // Filter loan accounts for the loan category mapping feature
         const loanAccounts = accounts
           .filter((a) => a.accountType === 'LOAN' || a.accountType === 'MORTGAGE')
           .sort((a, b) => a.name.localeCompare(b.name));
+
+        // Helper to get loan account name by ID
+        const getLoanAccountName = (loanId: string) => {
+          const loan = loanAccounts.find((a) => a.id === loanId);
+          return loan?.name || 'Unknown';
+        };
 
         return (
           <div className="max-w-4xl mx-auto">
@@ -1125,13 +1187,18 @@ function ImportContent() {
               </p>
 
               {/* Summary */}
-              <div className="flex gap-4 mb-4 text-sm">
+              <div className="flex flex-wrap gap-4 mb-4 text-sm">
                 <span className="text-amber-600 dark:text-amber-400">
                   {unmatchedCategories.length} need attention
                 </span>
                 <span className="text-green-600 dark:text-green-400">
-                  {matchedCategories.length} auto-matched
+                  {matchedCategoriesOnly.length} matched to categories
                 </span>
+                {matchedLoansOnly.length > 0 && (
+                  <span className="text-blue-600 dark:text-blue-400">
+                    {matchedLoansOnly.length} matched to loans
+                  </span>
+                )}
               </div>
 
               <div ref={scrollContainerRef} className="space-y-3 max-h-[32rem] overflow-y-auto">
@@ -1158,14 +1225,46 @@ function ImportContent() {
                   );
                 })}
 
-                {/* Matched categories - minimized */}
-                {matchedCategories.length > 0 && (
-                  <details className="group">
-                    <summary className="cursor-pointer text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 py-2">
-                      <span className="ml-1">Show {matchedCategories.length} auto-matched categories</span>
+                {/* Matched loans - shown separately with blue styling */}
+                {matchedLoansOnly.length > 0 && (
+                  <details className="group" open>
+                    <summary className="cursor-pointer text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 py-2">
+                      <span className="ml-1">Show {matchedLoansOnly.length} auto-matched to loan accounts</span>
                     </summary>
                     <div className="space-y-2 mt-2">
-                      {matchedCategories.map((mapping) => {
+                      {matchedLoansOnly.map((mapping) => {
+                        const index = categoryMappings.findIndex((m) => m.originalName === mapping.originalName);
+                        return (
+                          <CategoryMappingRow
+                            key={mapping.originalName}
+                            mapping={mapping}
+                            categoryOptions={categoryOptions}
+                            parentCategoryOptions={parentCategoryOptions}
+                            loanAccounts={loanAccounts}
+                            onMappingChange={(update) => {
+                              setCategoryMappings((prev) => {
+                                const updated = [...prev];
+                                updated[index] = { ...updated[index], ...update };
+                                return updated;
+                              });
+                            }}
+                            formatCategoryPath={formatCategoryPath}
+                            isHighlighted={false}
+                          />
+                        );
+                      })}
+                    </div>
+                  </details>
+                )}
+
+                {/* Matched categories - minimized */}
+                {matchedCategoriesOnly.length > 0 && (
+                  <details className="group">
+                    <summary className="cursor-pointer text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 py-2">
+                      <span className="ml-1">Show {matchedCategoriesOnly.length} auto-matched to categories</span>
+                    </summary>
+                    <div className="space-y-2 mt-2">
+                      {matchedCategoriesOnly.map((mapping) => {
                         const index = categoryMappings.findIndex((m) => m.originalName === mapping.originalName);
                         return (
                           <CategoryMappingRow

@@ -31,6 +31,10 @@ export class Security {
   @Column({ type: 'boolean', default: true, name: 'is_active' })
   isActive: boolean;
 
+  @ApiProperty({ example: false, description: 'Skip price updates for auto-generated symbols' })
+  @Column({ type: 'boolean', default: false, name: 'skip_price_updates' })
+  skipPriceUpdates: boolean;
+
   @ApiProperty()
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

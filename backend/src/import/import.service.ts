@@ -420,10 +420,70 @@ export class ImportService {
             };
 
             const qifAction = (qifTx.action || '').toLowerCase();
-            const action = actionMap[qifAction] || InvestmentAction.BUY;
+            // Handle "X" suffix actions (e.g., BuyX, SellX, DivX) - these indicate transfer from/to another account
+            // Strip the 'x' suffix for action mapping
+            const baseAction = qifAction.replace(/x$/, '');
+            const isTransferAction = qifAction.endsWith('x');
+            const action = actionMap[baseAction] || actionMap[qifAction] || InvestmentAction.BUY;
 
-            // Get security ID from mapping
-            const securityId = qifTx.security ? securityMap.get(qifTx.security) || null : null;
+            // Get security ID from mapping, or auto-create if not mapped
+            let securityId = qifTx.security ? securityMap.get(qifTx.security) || null : null;
+
+            // If no security mapping exists but we have a security name, auto-create one
+            if (!securityId && qifTx.security) {
+              // Generate symbol from first letter of each word (e.g., "Vanguard Total Stock Market" -> "VTSM")
+              const words = qifTx.security.trim().split(/\s+/);
+              let generatedSymbol = words
+                .map(word => word.charAt(0).toUpperCase())
+                .join('');
+
+              // Ensure symbol is at least 2 characters
+              if (generatedSymbol.length < 2) {
+                generatedSymbol = qifTx.security.substring(0, 4).toUpperCase().replace(/[^A-Z]/g, '');
+              }
+              // Limit to 9 characters max (leaving room for * suffix)
+              generatedSymbol = generatedSymbol.substring(0, 9);
+              // Add * suffix to indicate auto-generated symbol
+              generatedSymbol = `${generatedSymbol}*`;
+
+              // Check if this generated symbol already exists
+              let existingSecurity = await queryRunner.manager.findOne(Security, {
+                where: { symbol: generatedSymbol },
+              });
+
+              // If symbol exists but for a different security, append a number
+              if (existingSecurity && existingSecurity.name !== qifTx.security) {
+                let counter = 2;
+                let uniqueSymbol = `${generatedSymbol}${counter}`;
+                while (await queryRunner.manager.findOne(Security, { where: { symbol: uniqueSymbol } })) {
+                  counter++;
+                  uniqueSymbol = `${generatedSymbol}${counter}`;
+                }
+                generatedSymbol = uniqueSymbol;
+                existingSecurity = null; // Force creation of new security
+              }
+
+              if (existingSecurity) {
+                securityId = existingSecurity.id;
+              } else {
+                // Create the security with skipPriceUpdates=true since it's an auto-generated symbol
+                const newSecurity = new Security();
+                newSecurity.symbol = generatedSymbol;
+                newSecurity.name = qifTx.security;
+                newSecurity.securityType = null;
+                newSecurity.exchange = null;
+                newSecurity.currencyCode = account.currencyCode;
+                newSecurity.isActive = true;
+                newSecurity.skipPriceUpdates = true; // Auto-generated symbols can't be looked up
+                const savedSecurity = await queryRunner.manager.save(newSecurity);
+                securityId = savedSecurity.id;
+                importResult.securitiesCreated++;
+                this.logger.log(`Auto-created security: ${generatedSymbol} for "${qifTx.security}" (price updates disabled)`);
+              }
+
+              // Cache the mapping for subsequent transactions with the same security name
+              securityMap.set(qifTx.security, securityId);
+            }
 
             // Calculate total amount
             const quantity = qifTx.quantity || 0;
@@ -461,11 +521,35 @@ export class ImportService {
             await queryRunner.manager.save(investmentTx);
 
             // Find the cash account for cash-affecting transactions
-            // For paired accounts (brokerage + cash), use the linked cash account
-            // For standalone accounts, use the same account
+            // Priority:
+            // 1. If transaction specifies a transfer account (e.g., BuyX action), use that
+            // 2. For paired accounts (brokerage + cash), use the linked cash account
+            // 3. For standalone accounts, use the same account
             let cashAccountId = dto.accountId;
-            if (account.accountSubType === AccountSubType.INVESTMENT_BROKERAGE && account.linkedAccountId) {
+            let cashAccountCurrency = account.currencyCode;
+
+            // Check if transaction specifies a transfer account (via L field or X-suffix action)
+            if ((isTransferAction || qifTx.isTransfer) && qifTx.transferAccount) {
+              const mappedTransferAccountId = accountMap.get(qifTx.transferAccount);
+              if (mappedTransferAccountId) {
+                cashAccountId = mappedTransferAccountId;
+                // Get the transfer account's currency
+                const transferAccount = await queryRunner.manager.findOne(Account, {
+                  where: { id: mappedTransferAccountId },
+                });
+                if (transferAccount) {
+                  cashAccountCurrency = transferAccount.currencyCode;
+                }
+              }
+            } else if (account.accountSubType === AccountSubType.INVESTMENT_BROKERAGE && account.linkedAccountId) {
               cashAccountId = account.linkedAccountId;
+              // Get the linked account's currency
+              const linkedAccount = await queryRunner.manager.findOne(Account, {
+                where: { id: account.linkedAccountId },
+              });
+              if (linkedAccount) {
+                cashAccountCurrency = linkedAccount.currencyCode;
+              }
             }
 
             // Determine if this action affects cash
@@ -517,12 +601,14 @@ export class ImportService {
               cashTx.accountId = cashAccountId;
               cashTx.transactionDate = qifTx.date;
               cashTx.amount = cashAmount;
-              cashTx.currencyCode = account.currencyCode;
+              cashTx.currencyCode = cashAccountCurrency;
               cashTx.exchangeRate = 1;
               cashTx.payeeName = payeeName;
               cashTx.payeeId = null;
               cashTx.description = qifTx.memo || null;
               cashTx.status = TransactionStatus.CLEARED;
+              // Mark as transfer if cash comes from/goes to a different account
+              cashTx.isTransfer = (isTransferAction || qifTx.isTransfer) && qifTx.transferAccount ? true : false;
 
               const savedCashTx = await queryRunner.manager.save(cashTx);
 

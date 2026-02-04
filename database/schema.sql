@@ -274,6 +274,7 @@ CREATE TABLE securities (
     exchange VARCHAR(50), -- 'NYSE', 'NASDAQ', 'TSX', 'TSXV', etc
     currency_code VARCHAR(3) NOT NULL REFERENCES currencies(code),
     is_active BOOLEAN DEFAULT true,
+    skip_price_updates BOOLEAN DEFAULT false, -- for auto-generated symbols that can't be looked up
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
