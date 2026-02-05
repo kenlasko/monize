@@ -1,14 +1,15 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { format, subMonths } from 'date-fns';
+import { format } from 'date-fns';
 import { transactionsApi } from '@/lib/transactions';
 import { Transaction } from '@/types/transaction';
 import { parseLocalDate } from '@/lib/utils';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { useDateRange } from '@/hooks/useDateRange';
+import { DateRangeSelector } from '@/components/ui/DateRangeSelector';
 
-type DateRange = '1m' | '3m' | '6m' | '1y' | 'all';
 type SortField = 'date' | 'amount' | 'payee';
 type SortOrder = 'asc' | 'desc';
 
@@ -16,43 +17,18 @@ export function UncategorizedTransactionsReport() {
   const router = useRouter();
   const { formatCurrency } = useNumberFormat();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [dateRange, setDateRange] = useState<DateRange>('3m');
+  const { dateRange, setDateRange, resolvedRange, isValid } = useDateRange({ defaultRange: '3m', alignment: 'day' });
   const [isLoading, setIsLoading] = useState(true);
   const [sortField, setSortField] = useState<SortField>('date');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [filterType, setFilterType] = useState<'all' | 'income' | 'expense'>('all');
 
-  const getDateRange = useCallback((range: DateRange): { start: string; end: string } => {
-    const now = new Date();
-    const end = format(now, 'yyyy-MM-dd');
-    let start = '';
-
-    switch (range) {
-      case '1m':
-        start = format(subMonths(now, 1), 'yyyy-MM-dd');
-        break;
-      case '3m':
-        start = format(subMonths(now, 3), 'yyyy-MM-dd');
-        break;
-      case '6m':
-        start = format(subMonths(now, 6), 'yyyy-MM-dd');
-        break;
-      case '1y':
-        start = format(subMonths(now, 12), 'yyyy-MM-dd');
-        break;
-      case 'all':
-        start = '';
-        break;
-    }
-
-    return { start, end };
-  }, []);
-
   useEffect(() => {
+    if (!isValid) return;
     const loadData = async () => {
       setIsLoading(true);
       try {
-        const { start, end } = getDateRange(dateRange);
+        const { start, end } = resolvedRange;
         const txData = await transactionsApi.getAll({
           startDate: start || undefined,
           endDate: end,
@@ -72,7 +48,7 @@ export function UncategorizedTransactionsReport() {
       }
     };
     loadData();
-  }, [dateRange, getDateRange]);
+  }, [resolvedRange, isValid]);
 
   const filteredAndSortedTransactions = useMemo(() => {
     let filtered = [...transactions];
@@ -204,21 +180,11 @@ export function UncategorizedTransactionsReport() {
       {/* Controls */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
         <div className="flex flex-wrap gap-4 items-center justify-between">
-          <div className="flex flex-wrap gap-2">
-            {(['1m', '3m', '6m', '1y', 'all'] as DateRange[]).map((range) => (
-              <button
-                key={range}
-                onClick={() => setDateRange(range)}
-                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                  dateRange === range
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                }`}
-              >
-                {range === 'all' ? 'All Time' : range.toUpperCase()}
-              </button>
-            ))}
-          </div>
+          <DateRangeSelector
+            ranges={['1m', '3m', '6m', '1y', 'all']}
+            value={dateRange}
+            onChange={setDateRange}
+          />
           <div className="flex gap-2">
             <button
               onClick={() => setFilterType('all')}

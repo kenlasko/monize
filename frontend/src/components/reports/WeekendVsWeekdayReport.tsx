@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   BarChart,
@@ -15,15 +15,15 @@ import {
   Pie,
   Cell,
 } from 'recharts';
-import { format, subMonths, isWeekend, getDay, startOfWeek, endOfWeek, eachDayOfInterval } from 'date-fns';
+import { isWeekend, getDay } from 'date-fns';
 import { transactionsApi } from '@/lib/transactions';
 import { categoriesApi } from '@/lib/categories';
 import { Transaction } from '@/types/transaction';
 import { Category } from '@/types/category';
 import { parseLocalDate } from '@/lib/utils';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
-
-type DateRange = '1m' | '3m' | '6m' | '1y';
+import { useDateRange } from '@/hooks/useDateRange';
+import { DateRangeSelector } from '@/components/ui/DateRangeSelector';
 
 interface DaySpending {
   day: string;
@@ -41,38 +41,15 @@ export function WeekendVsWeekdayReport() {
   const { formatCurrencyCompact: formatCurrency } = useNumberFormat();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [dateRange, setDateRange] = useState<DateRange>('3m');
+  const { dateRange, setDateRange, resolvedRange } = useDateRange({ defaultRange: '3m', alignment: 'day' });
   const [isLoading, setIsLoading] = useState(true);
   const [viewType, setViewType] = useState<'comparison' | 'byDay' | 'categories'>('comparison');
-
-  const getDateRange = useCallback((range: DateRange): { start: string; end: string } => {
-    const now = new Date();
-    const end = format(now, 'yyyy-MM-dd');
-    let start: string;
-
-    switch (range) {
-      case '1m':
-        start = format(subMonths(now, 1), 'yyyy-MM-dd');
-        break;
-      case '3m':
-        start = format(subMonths(now, 3), 'yyyy-MM-dd');
-        break;
-      case '6m':
-        start = format(subMonths(now, 6), 'yyyy-MM-dd');
-        break;
-      case '1y':
-        start = format(subMonths(now, 12), 'yyyy-MM-dd');
-        break;
-    }
-
-    return { start, end };
-  }, []);
 
   useEffect(() => {
     const loadData = async () => {
       setIsLoading(true);
       try {
-        const { start, end } = getDateRange(dateRange);
+        const { start, end } = resolvedRange;
         const [txData, catData] = await Promise.all([
           transactionsApi.getAll({ startDate: start, endDate: end, limit: 50000 }),
           categoriesApi.getAll(),
@@ -87,7 +64,7 @@ export function WeekendVsWeekdayReport() {
       }
     };
     loadData();
-  }, [dateRange, getDateRange]);
+  }, [resolvedRange]);
 
   const { weekendTotal, weekdayTotal, weekendCount, weekdayCount, dayData } = useMemo(() => {
     let weekendTotal = 0;
@@ -242,21 +219,11 @@ export function WeekendVsWeekdayReport() {
       {/* Controls */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
         <div className="flex flex-wrap gap-4 items-center justify-between">
-          <div className="flex flex-wrap gap-2">
-            {(['1m', '3m', '6m', '1y'] as DateRange[]).map((range) => (
-              <button
-                key={range}
-                onClick={() => setDateRange(range)}
-                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                  dateRange === range
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                }`}
-              >
-                {range.toUpperCase()}
-              </button>
-            ))}
-          </div>
+          <DateRangeSelector
+            ranges={['1m', '3m', '6m', '1y']}
+            value={dateRange}
+            onChange={setDateRange}
+          />
           <div className="flex gap-2">
             <button
               onClick={() => setViewType('comparison')}

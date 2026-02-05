@@ -20,11 +20,7 @@ import { PortfolioSummary, HoldingWithMarketValue } from '@/types/investment';
 import { Account } from '@/types/account';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
-
-const COLORS = [
-  '#3b82f6', '#22c55e', '#f97316', '#8b5cf6', '#ec4899',
-  '#14b8a6', '#eab308', '#ef4444', '#6366f1', '#06b6d4',
-];
+import { CHART_COLOURS } from '@/lib/chart-colours';
 
 type DateRange = '1m' | '3m' | '6m' | '1y' | 'all';
 
@@ -117,7 +113,7 @@ export function InvestmentPerformanceReport() {
       .sort((a, b) => (b.marketValue || 0) - (a.marketValue || 0))
       .map((h, index) => ({
         ...h,
-        color: COLORS[index % COLORS.length],
+        color: CHART_COLOURS[index % CHART_COLOURS.length],
       }));
   }, [portfolio]);
 
@@ -125,7 +121,7 @@ export function InvestmentPerformanceReport() {
     if (!portfolio) return [];
     return portfolio.allocation.map((item, index) => ({
       ...item,
-      color: item.color || COLORS[index % COLORS.length],
+      color: item.color || CHART_COLOURS[index % CHART_COLOURS.length],
     }));
   }, [portfolio]);
 

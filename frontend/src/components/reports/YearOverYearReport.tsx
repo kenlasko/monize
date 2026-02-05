@@ -16,8 +16,7 @@ import { transactionsApi } from '@/lib/transactions';
 import { Transaction } from '@/types/transaction';
 import { parseLocalDate } from '@/lib/utils';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
-
-const YEAR_COLOURS = ['#3b82f6', '#22c55e', '#f97316', '#8b5cf6', '#ec4899'];
+import { CHART_COLOURS } from '@/lib/chart-colours';
 
 export function YearOverYearReport() {
   const { formatCurrencyCompact: formatCurrency } = useNumberFormat();
@@ -202,7 +201,7 @@ export function YearOverYearReport() {
           <div
             key={year}
             className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4"
-            style={{ borderLeft: `4px solid ${YEAR_COLOURS[index % YEAR_COLOURS.length]}` }}
+            style={{ borderLeft: `4px solid ${CHART_COLOURS[index % CHART_COLOURS.length]}` }}
           >
             <div className="text-lg font-bold text-gray-900 dark:text-gray-100">{year}</div>
             <div className="mt-2 space-y-1 text-sm">
@@ -253,7 +252,7 @@ export function YearOverYearReport() {
                 <Bar
                   key={year}
                   dataKey={`${year}`}
-                  fill={YEAR_COLOURS[index % YEAR_COLOURS.length]}
+                  fill={CHART_COLOURS[index % CHART_COLOURS.length]}
                   radius={[4, 4, 0, 0]}
                   name={`${year}`}
                 />

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   BarChart,
@@ -13,71 +13,40 @@ import {
   Legend,
   ReferenceLine,
 } from 'recharts';
-import { format, subMonths, startOfMonth, endOfMonth, eachMonthOfInterval } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachMonthOfInterval } from 'date-fns';
 import { transactionsApi } from '@/lib/transactions';
 import { Transaction } from '@/types/transaction';
 import { parseLocalDate } from '@/lib/utils';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
-
-type DateRange = '6m' | '1y' | '2y' | 'custom';
+import { useDateRange } from '@/hooks/useDateRange';
+import { DateRangeSelector } from '@/components/ui/DateRangeSelector';
 
 export function IncomeVsExpensesReport() {
   const router = useRouter();
   const { formatCurrencyCompact: formatCurrency } = useNumberFormat();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [dateRange, setDateRange] = useState<DateRange>('1y');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-
-  const getDateRange = useCallback((range: DateRange): { start: string; end: string } => {
-    const now = new Date();
-    const end = format(endOfMonth(now), 'yyyy-MM-dd');
-    let start: string;
-
-    switch (range) {
-      case '6m':
-        start = format(startOfMonth(subMonths(now, 5)), 'yyyy-MM-dd');
-        break;
-      case '1y':
-        start = format(startOfMonth(subMonths(now, 11)), 'yyyy-MM-dd');
-        break;
-      case '2y':
-        start = format(startOfMonth(subMonths(now, 23)), 'yyyy-MM-dd');
-        break;
-      default:
-        start = startDate || format(startOfMonth(subMonths(now, 11)), 'yyyy-MM-dd');
-    }
-
-    return { start, end };
-  }, [startDate]);
-
-  const loadData = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const { start, end } = dateRange === 'custom'
-        ? { start: startDate, end: endDate }
-        : getDateRange(dateRange);
-
-      const txData = await transactionsApi.getAll({ startDate: start, endDate: end, limit: 50000 });
-      setTransactions(txData.data);
-    } catch (error) {
-      console.error('Failed to load data:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [dateRange, startDate, endDate, getDateRange]);
+  const { dateRange, setDateRange, startDate, setStartDate, endDate, setEndDate, resolvedRange, isValid } = useDateRange({ defaultRange: '1y', alignment: 'month' });
 
   useEffect(() => {
-    if (dateRange !== 'custom' || (startDate && endDate)) {
-      loadData();
-    }
-  }, [dateRange, startDate, endDate, loadData]);
+    if (!isValid) return;
+    const loadData = async () => {
+      setIsLoading(true);
+      try {
+        const { start, end } = resolvedRange;
+        const txData = await transactionsApi.getAll({ startDate: start, endDate: end, limit: 50000 });
+        setTransactions(txData.data);
+      } catch (error) {
+        console.error('Failed to load data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadData();
+  }, [resolvedRange, isValid]);
 
   const chartData = useMemo(() => {
-    const { start, end } = dateRange === 'custom'
-      ? { start: startDate, end: endDate }
-      : getDateRange(dateRange);
+    const { start, end } = resolvedRange;
 
     if (!start || !end) return [];
 
@@ -122,7 +91,7 @@ export function IncomeVsExpensesReport() {
       monthStart: format(startOfMonth(m.month), 'yyyy-MM-dd'),
       monthEnd: format(endOfMonth(m.month), 'yyyy-MM-dd'),
     }));
-  }, [transactions, dateRange, startDate, endDate, getDateRange]);
+  }, [transactions, resolvedRange]);
 
   const handleChartClick = (state: unknown) => {
     const chartState = state as { activePayload?: Array<{ payload: { monthStart: string; monthEnd: string } }> } | null;
@@ -175,59 +144,16 @@ export function IncomeVsExpensesReport() {
     <div className="space-y-6">
       {/* Controls */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
-        <div className="flex flex-wrap gap-4 items-center">
-          <div className="flex flex-wrap gap-2">
-            {(['6m', '1y', '2y'] as DateRange[]).map((range) => (
-              <button
-                key={range}
-                onClick={() => setDateRange(range)}
-                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                  dateRange === range
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                }`}
-              >
-                {range.toUpperCase()}
-              </button>
-            ))}
-            <button
-              onClick={() => setDateRange('custom')}
-              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                dateRange === 'custom'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-              }`}
-            >
-              Custom
-            </button>
-          </div>
-        </div>
-        {dateRange === 'custom' && (
-          <div className="flex gap-4 mt-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Start Date
-              </label>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                End Date
-              </label>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-              />
-            </div>
-          </div>
-        )}
+        <DateRangeSelector
+          ranges={['6m', '1y', '2y']}
+          value={dateRange}
+          onChange={setDateRange}
+          showCustom
+          customStartDate={startDate}
+          onCustomStartDateChange={setStartDate}
+          customEndDate={endDate}
+          onCustomEndDateChange={setEndDate}
+        />
       </div>
 
       {/* Chart */}

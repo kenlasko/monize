@@ -13,6 +13,7 @@ import { format, subMonths } from 'date-fns';
 import { transactionsApi } from '@/lib/transactions';
 import { Transaction } from '@/types/transaction';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { CHART_COLOURS } from '@/lib/chart-colours';
 
 interface RecurringExpense {
   payeeName: string;
@@ -25,10 +26,6 @@ interface RecurringExpense {
   categoryName: string;
 }
 
-const COLORS = [
-  '#3b82f6', '#22c55e', '#f97316', '#8b5cf6', '#ec4899',
-  '#14b8a6', '#eab308', '#ef4444', '#6366f1', '#06b6d4',
-];
 
 export function RecurringExpensesReport() {
   const router = useRouter();
@@ -133,7 +130,7 @@ export function RecurringExpensesReport() {
   const chartData = useMemo(() => {
     return recurringExpenses.slice(0, 10).map((item, index) => ({
       ...item,
-      color: COLORS[index % COLORS.length],
+      color: CHART_COLOURS[index % CHART_COLOURS.length],
     }));
   }, [recurringExpenses]);
 

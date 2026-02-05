@@ -1,12 +1,14 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { format, subMonths, differenceInDays } from 'date-fns';
+import { format, differenceInDays } from 'date-fns';
 import { transactionsApi } from '@/lib/transactions';
 import { Transaction } from '@/types/transaction';
 import { parseLocalDate } from '@/lib/utils';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { useDateRange } from '@/hooks/useDateRange';
+import { DateRangeSelector } from '@/components/ui/DateRangeSelector';
 
 interface DuplicateGroup {
   key: string;
@@ -15,41 +17,19 @@ interface DuplicateGroup {
   confidence: 'high' | 'medium' | 'low';
 }
 
-type DateRange = '1m' | '3m' | '6m';
-
 export function DuplicateTransactionReport() {
   const router = useRouter();
   const { formatCurrency } = useNumberFormat();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [dateRange, setDateRange] = useState<DateRange>('3m');
+  const { dateRange, setDateRange, resolvedRange } = useDateRange({ defaultRange: '3m', alignment: 'day' });
   const [isLoading, setIsLoading] = useState(true);
   const [sensitivity, setSensitivity] = useState<'high' | 'medium' | 'low'>('medium');
-
-  const getDateRange = useCallback((range: DateRange): { start: string; end: string } => {
-    const now = new Date();
-    const end = format(now, 'yyyy-MM-dd');
-    let start: string;
-
-    switch (range) {
-      case '1m':
-        start = format(subMonths(now, 1), 'yyyy-MM-dd');
-        break;
-      case '3m':
-        start = format(subMonths(now, 3), 'yyyy-MM-dd');
-        break;
-      case '6m':
-        start = format(subMonths(now, 6), 'yyyy-MM-dd');
-        break;
-    }
-
-    return { start, end };
-  }, []);
 
   useEffect(() => {
     const loadData = async () => {
       setIsLoading(true);
       try {
-        const { start, end } = getDateRange(dateRange);
+        const { start, end } = resolvedRange;
         const txData = await transactionsApi.getAll({
           startDate: start,
           endDate: end,
@@ -64,7 +44,7 @@ export function DuplicateTransactionReport() {
       }
     };
     loadData();
-  }, [dateRange, getDateRange]);
+  }, [resolvedRange]);
 
   const duplicateGroups = useMemo((): DuplicateGroup[] => {
     const groups: DuplicateGroup[] = [];
@@ -257,21 +237,11 @@ export function DuplicateTransactionReport() {
       {/* Controls */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
         <div className="flex flex-wrap gap-4 items-center justify-between">
-          <div className="flex flex-wrap gap-2 items-center">
-            {(['1m', '3m', '6m'] as DateRange[]).map((range) => (
-              <button
-                key={range}
-                onClick={() => setDateRange(range)}
-                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                  dateRange === range
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                }`}
-              >
-                {range.toUpperCase()}
-              </button>
-            ))}
-          </div>
+          <DateRangeSelector
+            ranges={['1m', '3m', '6m']}
+            value={dateRange}
+            onChange={setDateRange}
+          />
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-600 dark:text-gray-400">Sensitivity:</span>
             <select

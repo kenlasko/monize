@@ -6,6 +6,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { Transaction } from '@/types/transaction';
 import { Category } from '@/types/category';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { CHART_COLOURS } from '@/lib/chart-colours';
 
 interface ExpensesPieChartProps {
   transactions: Transaction[];
@@ -13,29 +14,6 @@ interface ExpensesPieChartProps {
   isLoading: boolean;
 }
 
-// Default colours for categories without a colour
-const DEFAULT_COLOURS = [
-  '#3b82f6', // blue
-  '#22c55e', // green
-  '#f97316', // orange
-  '#8b5cf6', // purple
-  '#ec4899', // pink
-  '#14b8a6', // teal
-  '#eab308', // yellow
-  '#ef4444', // red
-  '#6366f1', // indigo
-  '#06b6d4', // cyan
-  '#84cc16', // lime
-  '#f43f5e', // rose
-  '#a855f7', // violet
-  '#10b981', // emerald
-  '#f59e0b', // amber
-  '#64748b', // slate
-  '#78716c', // stone
-  '#71717a', // zinc
-  '#737373', // neutral
-  '#6b7280', // gray
-];
 
 export function ExpensesPieChart({
   transactions,
@@ -125,7 +103,7 @@ export function ExpensesPieChart({
     let colourIndex = 0;
     data.forEach((item) => {
       if (!item.colour) {
-        item.colour = DEFAULT_COLOURS[colourIndex % DEFAULT_COLOURS.length];
+        item.colour = CHART_COLOURS[colourIndex % CHART_COLOURS.length];
         colourIndex++;
       }
     });

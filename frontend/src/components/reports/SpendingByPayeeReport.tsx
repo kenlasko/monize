@@ -16,11 +16,7 @@ import { format, subMonths, startOfMonth } from 'date-fns';
 import { transactionsApi } from '@/lib/transactions';
 import { Transaction } from '@/types/transaction';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
-
-const COLOURS = [
-  '#3b82f6', '#22c55e', '#f97316', '#8b5cf6', '#ec4899',
-  '#14b8a6', '#eab308', '#ef4444', '#6366f1', '#06b6d4',
-];
+import { CHART_COLOURS } from '@/lib/chart-colours';
 
 type DateRange = '1m' | '3m' | '6m' | '1y' | 'ytd' | 'custom';
 
@@ -248,7 +244,7 @@ export function SpendingByPayeeReport() {
                     radius={[0, 4, 4, 0]}
                   >
                     {chartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLOURS[index % COLOURS.length]} />
+                      <Cell key={`cell-${index}`} fill={CHART_COLOURS[index % CHART_COLOURS.length]} />
                     ))}
                   </Bar>
                 </BarChart>

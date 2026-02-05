@@ -12,54 +12,25 @@ import {
   Legend,
   ReferenceLine,
 } from 'recharts';
-import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
+import { format } from 'date-fns';
 import { netWorthApi } from '@/lib/net-worth';
 import { MonthlyNetWorth } from '@/types/net-worth';
 import { parseLocalDate } from '@/lib/utils';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
-
-type DateRange = '1y' | '2y' | '5y' | 'all' | 'custom';
+import { useDateRange } from '@/hooks/useDateRange';
+import { DateRangeSelector } from '@/components/ui/DateRangeSelector';
 
 export function NetWorthReport() {
   const { formatCurrencyCompact: formatCurrency } = useNumberFormat();
   const [monthlyData, setMonthlyData] = useState<MonthlyNetWorth[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRecalculating, setIsRecalculating] = useState(false);
-  const [dateRange, setDateRange] = useState<DateRange>('1y');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-
-  const getDateRange = useCallback((range: DateRange): { start: string; end: string } => {
-    const now = new Date();
-    const end = format(endOfMonth(now), 'yyyy-MM-dd');
-    let start: string;
-
-    switch (range) {
-      case '1y':
-        start = format(startOfMonth(subMonths(now, 11)), 'yyyy-MM-dd');
-        break;
-      case '2y':
-        start = format(startOfMonth(subMonths(now, 23)), 'yyyy-MM-dd');
-        break;
-      case '5y':
-        start = format(startOfMonth(subMonths(now, 59)), 'yyyy-MM-dd');
-        break;
-      case 'all':
-        start = '1990-01-01';
-        break;
-      default:
-        start = startDate || format(startOfMonth(subMonths(now, 11)), 'yyyy-MM-dd');
-    }
-
-    return { start, end };
-  }, [startDate]);
+  const { dateRange, setDateRange, startDate, setStartDate, endDate, setEndDate, resolvedRange, isValid } = useDateRange({ defaultRange: '1y', alignment: 'month' });
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const { start, end } = dateRange === 'custom'
-        ? { start: startDate, end: endDate }
-        : getDateRange(dateRange);
+      const { start, end } = resolvedRange;
 
       if (!start || !end) return;
 
@@ -73,13 +44,13 @@ export function NetWorthReport() {
     } finally {
       setIsLoading(false);
     }
-  }, [dateRange, startDate, endDate, getDateRange]);
+  }, [resolvedRange]);
 
   useEffect(() => {
-    if (dateRange !== 'custom' || (startDate && endDate)) {
+    if (isValid) {
       loadData();
     }
-  }, [dateRange, startDate, endDate, loadData]);
+  }, [isValid, loadData]);
 
   const handleRecalculate = async () => {
     setIsRecalculating(true);
@@ -208,31 +179,16 @@ export function NetWorthReport() {
       {/* Controls */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
         <div className="flex flex-wrap gap-4 items-center justify-between">
-          <div className="flex flex-wrap gap-2">
-            {(['1y', '2y', '5y', 'all'] as DateRange[]).map((range) => (
-              <button
-                key={range}
-                onClick={() => setDateRange(range)}
-                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                  dateRange === range
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                }`}
-              >
-                {range === 'all' ? 'All Time' : range.toUpperCase()}
-              </button>
-            ))}
-            <button
-              onClick={() => setDateRange('custom')}
-              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                dateRange === 'custom'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-              }`}
-            >
-              Custom
-            </button>
-          </div>
+          <DateRangeSelector
+            ranges={['1y', '2y', '5y', 'all']}
+            value={dateRange}
+            onChange={setDateRange}
+            showCustom
+            customStartDate={startDate}
+            onCustomStartDateChange={setStartDate}
+            customEndDate={endDate}
+            onCustomEndDateChange={setEndDate}
+          />
           <button
             onClick={handleRecalculate}
             disabled={isRecalculating}
@@ -241,32 +197,6 @@ export function NetWorthReport() {
             {isRecalculating ? 'Recalculating...' : 'Recalculate'}
           </button>
         </div>
-        {dateRange === 'custom' && (
-          <div className="flex gap-4 mt-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Start Date
-              </label>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                End Date
-              </label>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-              />
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Chart */}

@@ -9,6 +9,7 @@ import { Account } from '@/types/account';
 import { PortfolioSummary } from '@/types/investment';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
+import { CHART_COLOURS } from '@/lib/chart-colours';
 
 type AccountTypeFilter = 'all' | 'assets' | 'liabilities';
 type ViewMode = 'table' | 'chart';
@@ -31,12 +32,6 @@ const accountTypeLabels: Record<string, string> = {
   OTHER: 'Other',
 };
 
-const CHART_COLORS = [
-  '#3b82f6', '#22c55e', '#f97316', '#8b5cf6',
-  '#ec4899', '#14b8a6', '#eab308', '#ef4444',
-  '#6366f1', '#06b6d4', '#84cc16', '#f43f5e',
-  '#a855f7', '#0ea5e9', '#d946ef', '#10b981',
-];
 
 export function AccountBalancesReport() {
   const router = useRouter();
@@ -158,7 +153,7 @@ export function AccountBalancesReport() {
           data.push({
             name: accountTypeLabels[type] || type,
             value: total,
-            color: CHART_COLORS[colorIdx % CHART_COLORS.length],
+            color: CHART_COLOURS[colorIdx % CHART_COLOURS.length],
           });
           colorIdx++;
         }
@@ -172,7 +167,7 @@ export function AccountBalancesReport() {
           data.push({
             name: acc.name,
             value: converted,
-            color: CHART_COLORS[idx % CHART_COLORS.length],
+            color: CHART_COLOURS[idx % CHART_COLOURS.length],
           });
         }
       });

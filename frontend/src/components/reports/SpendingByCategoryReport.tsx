@@ -14,20 +14,15 @@ import {
   YAxis,
   CartesianGrid,
 } from 'recharts';
-import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 import { transactionsApi } from '@/lib/transactions';
 import { categoriesApi } from '@/lib/categories';
 import { Transaction } from '@/types/transaction';
 import { Category } from '@/types/category';
-import { parseLocalDate } from '@/lib/utils';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
-
-const DEFAULT_COLOURS = [
-  '#3b82f6', '#22c55e', '#f97316', '#8b5cf6', '#ec4899',
-  '#14b8a6', '#eab308', '#ef4444', '#6366f1', '#06b6d4',
-];
-
-type DateRange = '1m' | '3m' | '6m' | '1y' | 'ytd' | 'custom';
+import { useDateRange } from '@/hooks/useDateRange';
+import { CHART_COLOURS } from '@/lib/chart-colours';
+import { DateRangeSelector } from '@/components/ui/DateRangeSelector';
+import { ChartViewToggle } from '@/components/ui/ChartViewToggle';
 
 export function SpendingByCategoryReport() {
   const router = useRouter();
@@ -35,46 +30,14 @@ export function SpendingByCategoryReport() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [dateRange, setDateRange] = useState<DateRange>('3m');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
   const [viewType, setViewType] = useState<'pie' | 'bar'>('pie');
-
-  const getDateRange = useCallback((range: DateRange): { start: string; end: string } => {
-    const now = new Date();
-    const end = format(now, 'yyyy-MM-dd');
-    let start: string;
-
-    switch (range) {
-      case '1m':
-        start = format(subMonths(now, 1), 'yyyy-MM-dd');
-        break;
-      case '3m':
-        start = format(subMonths(now, 3), 'yyyy-MM-dd');
-        break;
-      case '6m':
-        start = format(subMonths(now, 6), 'yyyy-MM-dd');
-        break;
-      case '1y':
-        start = format(subMonths(now, 12), 'yyyy-MM-dd');
-        break;
-      case 'ytd':
-        start = format(startOfMonth(new Date(now.getFullYear(), 0, 1)), 'yyyy-MM-dd');
-        break;
-      default:
-        start = startDate || format(subMonths(now, 3), 'yyyy-MM-dd');
-    }
-
-    return { start, end };
-  }, [startDate]);
+  const { dateRange, setDateRange, startDate, setStartDate, endDate, setEndDate, resolvedRange, isValid } =
+    useDateRange({ defaultRange: '3m' });
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const { start, end } = dateRange === 'custom'
-        ? { start: startDate, end: endDate }
-        : getDateRange(dateRange);
-
+      const { start, end } = resolvedRange;
       const [txData, catData] = await Promise.all([
         transactionsApi.getAll({ startDate: start, endDate: end, limit: 10000 }),
         categoriesApi.getAll(),
@@ -86,13 +49,11 @@ export function SpendingByCategoryReport() {
     } finally {
       setIsLoading(false);
     }
-  }, [dateRange, startDate, endDate, getDateRange]);
+  }, [resolvedRange]);
 
   useEffect(() => {
-    if (dateRange !== 'custom' || (startDate && endDate)) {
-      loadData();
-    }
-  }, [dateRange, startDate, endDate, loadData]);
+    if (isValid) loadData();
+  }, [isValid, loadData]);
 
   const chartData = useMemo(() => {
     const categoryMap = new Map<string, { id: string; name: string; value: number; colour: string }>();
@@ -166,7 +127,7 @@ export function SpendingByCategoryReport() {
     let colourIndex = 0;
     data.forEach((item) => {
       if (!item.colour) {
-        item.colour = DEFAULT_COLOURS[colourIndex % DEFAULT_COLOURS.length];
+        item.colour = CHART_COLOURS[colourIndex % CHART_COLOURS.length];
         colourIndex++;
       }
     });
@@ -178,9 +139,7 @@ export function SpendingByCategoryReport() {
 
   const handleCategoryClick = (categoryId: string) => {
     if (categoryId) {
-      const { start, end } = dateRange === 'custom'
-        ? { start: startDate, end: endDate }
-        : getDateRange(dateRange);
+      const { start, end } = resolvedRange;
       router.push(`/transactions?categoryId=${categoryId}&startDate=${start}&endDate=${end}`);
     }
   };
@@ -217,86 +176,18 @@ export function SpendingByCategoryReport() {
       {/* Controls */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
         <div className="flex flex-wrap gap-4 items-center justify-between">
-          <div className="flex flex-wrap gap-2">
-            {(['1m', '3m', '6m', '1y', 'ytd'] as DateRange[]).map((range) => (
-              <button
-                key={range}
-                onClick={() => setDateRange(range)}
-                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                  dateRange === range
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                }`}
-              >
-                {range === 'ytd' ? 'YTD' : range.toUpperCase()}
-              </button>
-            ))}
-            <button
-              onClick={() => setDateRange('custom')}
-              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                dateRange === 'custom'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-              }`}
-            >
-              Custom
-            </button>
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setViewType('pie')}
-              className={`p-2 rounded-md transition-colors ${
-                viewType === 'pie'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
-              }`}
-              title="Pie Chart"
-            >
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
-              </svg>
-            </button>
-            <button
-              onClick={() => setViewType('bar')}
-              className={`p-2 rounded-md transition-colors ${
-                viewType === 'bar'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
-              }`}
-              title="Bar Chart"
-            >
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
-            </button>
-          </div>
+          <DateRangeSelector
+            ranges={['1m', '3m', '6m', '1y', 'ytd']}
+            value={dateRange}
+            onChange={setDateRange}
+            showCustom
+            customStartDate={startDate}
+            onCustomStartDateChange={setStartDate}
+            customEndDate={endDate}
+            onCustomEndDateChange={setEndDate}
+          />
+          <ChartViewToggle value={viewType} onChange={setViewType} />
         </div>
-        {dateRange === 'custom' && (
-          <div className="flex gap-4 mt-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Start Date
-              </label>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                End Date
-              </label>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-              />
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Chart */}

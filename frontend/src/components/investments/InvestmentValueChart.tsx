@@ -10,13 +10,13 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
-import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
+import { format } from 'date-fns';
 import { netWorthApi } from '@/lib/net-worth';
 import { MonthlyInvestmentValue } from '@/types/net-worth';
 import { parseLocalDate } from '@/lib/utils';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
-
-type DateRange = '1y' | '2y' | '5y' | 'all';
+import { useDateRange } from '@/hooks/useDateRange';
+import { DateRangeSelector } from '@/components/ui/DateRangeSelector';
 
 interface InvestmentValueChartProps {
   accountIds?: string[];
@@ -26,35 +26,12 @@ export function InvestmentValueChart({ accountIds }: InvestmentValueChartProps) 
   const { formatCurrencyCompact: formatCurrency } = useNumberFormat();
   const [monthlyData, setMonthlyData] = useState<MonthlyInvestmentValue[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [dateRange, setDateRange] = useState<DateRange>('1y');
-
-  const getDateRange = useCallback((range: DateRange): { start: string; end: string } => {
-    const now = new Date();
-    const end = format(endOfMonth(now), 'yyyy-MM-dd');
-    let start: string;
-
-    switch (range) {
-      case '1y':
-        start = format(startOfMonth(subMonths(now, 11)), 'yyyy-MM-dd');
-        break;
-      case '2y':
-        start = format(startOfMonth(subMonths(now, 23)), 'yyyy-MM-dd');
-        break;
-      case '5y':
-        start = format(startOfMonth(subMonths(now, 59)), 'yyyy-MM-dd');
-        break;
-      case 'all':
-        start = '1990-01-01';
-        break;
-    }
-
-    return { start, end };
-  }, []);
+  const { dateRange, setDateRange, resolvedRange, isValid } = useDateRange({ defaultRange: '1y', alignment: 'month' });
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const { start, end } = getDateRange(dateRange);
+      const { start, end } = resolvedRange;
       const data = await netWorthApi.getInvestmentsMonthly({
         startDate: start,
         endDate: end,
@@ -66,11 +43,13 @@ export function InvestmentValueChart({ accountIds }: InvestmentValueChartProps) 
     } finally {
       setIsLoading(false);
     }
-  }, [dateRange, getDateRange, accountIds]);
+  }, [resolvedRange, accountIds]);
 
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    if (isValid) {
+      loadData();
+    }
+  }, [isValid, loadData]);
 
   const chartData = useMemo(() =>
     monthlyData.map((d) => ({
@@ -147,21 +126,13 @@ export function InvestmentValueChart({ accountIds }: InvestmentValueChartProps) 
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
           Portfolio Value Over Time
         </h3>
-        <div className="flex gap-2">
-          {(['1y', '2y', '5y', 'all'] as DateRange[]).map((range) => (
-            <button
-              key={range}
-              onClick={() => setDateRange(range)}
-              className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
-                dateRange === range
-                  ? 'bg-emerald-600 text-white'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-              }`}
-            >
-              {range === 'all' ? 'All' : range.toUpperCase()}
-            </button>
-          ))}
-        </div>
+        <DateRangeSelector
+          ranges={['1y', '2y', '5y', 'all']}
+          value={dateRange}
+          onChange={setDateRange}
+          activeColour="bg-emerald-600"
+          size="sm"
+        />
       </div>
 
       {/* Summary cards */}

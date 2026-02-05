@@ -11,15 +11,15 @@ import {
   ResponsiveContainer,
   Legend,
 } from 'recharts';
-import { format, subMonths, subYears, startOfMonth, endOfMonth, eachMonthOfInterval } from 'date-fns';
+import { format, eachMonthOfInterval } from 'date-fns';
 import { investmentsApi } from '@/lib/investments';
 import { InvestmentTransaction } from '@/types/investment';
 import { Account } from '@/types/account';
 import { parseLocalDate } from '@/lib/utils';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
-
-type DateRange = '6m' | '1y' | '2y' | 'all';
+import { useDateRange } from '@/hooks/useDateRange';
+import { DateRangeSelector } from '@/components/ui/DateRangeSelector';
 
 interface MonthlyIncome {
   month: string;
@@ -45,31 +45,9 @@ export function DividendIncomeReport() {
   const [transactions, setTransactions] = useState<InvestmentTransaction[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [selectedAccountId, setSelectedAccountId] = useState<string>('');
-  const [dateRange, setDateRange] = useState<DateRange>('1y');
+  const { dateRange, setDateRange, resolvedRange, isValid } = useDateRange({ defaultRange: '1y', alignment: 'month' });
   const [isLoading, setIsLoading] = useState(true);
   const [viewType, setViewType] = useState<'monthly' | 'bySecurity'>('monthly');
-
-  const getDateRange = useCallback((range: DateRange): { start: string; end: string } => {
-    const now = new Date();
-    const end = format(endOfMonth(now), 'yyyy-MM-dd');
-    let start: string;
-
-    switch (range) {
-      case '6m':
-        start = format(startOfMonth(subMonths(now, 5)), 'yyyy-MM-dd');
-        break;
-      case '1y':
-        start = format(startOfMonth(subYears(now, 1)), 'yyyy-MM-dd');
-        break;
-      case '2y':
-        start = format(startOfMonth(subYears(now, 2)), 'yyyy-MM-dd');
-        break;
-      default:
-        start = '';
-    }
-
-    return { start, end };
-  }, []);
 
   // Build account currency lookup
   const accountCurrencyMap = useMemo(() => {
@@ -102,10 +80,11 @@ export function DividendIncomeReport() {
   }, [isForeign, displayCurrency, formatCurrencyFull]);
 
   useEffect(() => {
+    if (!isValid) return;
     const loadData = async () => {
       setIsLoading(true);
       try {
-        const { start, end } = getDateRange(dateRange);
+        const { start, end } = resolvedRange;
         const [txData, accountsData] = await Promise.all([
           investmentsApi.getTransactions({
             accountIds: selectedAccountId || undefined,
@@ -130,10 +109,10 @@ export function DividendIncomeReport() {
       }
     };
     loadData();
-  }, [selectedAccountId, dateRange, getDateRange]);
+  }, [selectedAccountId, resolvedRange, isValid]);
 
   const monthlyData = useMemo((): MonthlyIncome[] => {
-    const { start, end } = getDateRange(dateRange);
+    const { start, end } = resolvedRange;
     if (!start && dateRange !== 'all') return [];
 
     const startDate = start ? parseLocalDate(start) : null;
@@ -192,7 +171,7 @@ export function DividendIncomeReport() {
     });
 
     return Array.from(monthMap.values()).sort((a, b) => a.month.localeCompare(b.month));
-  }, [transactions, dateRange, getDateRange, getTxAmount]);
+  }, [transactions, dateRange, resolvedRange, getTxAmount]);
 
   const securityData = useMemo((): SecurityIncome[] => {
     const securityMap = new Map<string, SecurityIncome>();
@@ -317,19 +296,11 @@ export function DividendIncomeReport() {
                   </option>
                 ))}
             </select>
-            {(['6m', '1y', '2y', 'all'] as DateRange[]).map((range) => (
-              <button
-                key={range}
-                onClick={() => setDateRange(range)}
-                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                  dateRange === range
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                }`}
-              >
-                {range === 'all' ? 'All Time' : range.toUpperCase()}
-              </button>
-            ))}
+            <DateRangeSelector
+              ranges={['6m', '1y', '2y', 'all']}
+              value={dateRange}
+              onChange={setDateRange}
+            />
           </div>
           <div className="flex gap-2">
             <button

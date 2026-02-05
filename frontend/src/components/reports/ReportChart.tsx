@@ -18,14 +18,7 @@ import {
 import { ReportViewType, AggregatedDataPoint, GroupByType, TableColumn } from '@/types/custom-report';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useDateFormat } from '@/hooks/useDateFormat';
-
-// Default colours for data without a colour
-const DEFAULT_COLOURS = [
-  '#3b82f6', '#22c55e', '#f97316', '#8b5cf6', '#ec4899',
-  '#14b8a6', '#eab308', '#ef4444', '#6366f1', '#06b6d4',
-  '#84cc16', '#f43f5e', '#a855f7', '#10b981', '#f59e0b',
-  '#64748b', '#78716c', '#71717a', '#737373', '#6b7280',
-];
+import { CHART_COLOURS } from '@/lib/chart-colours';
 
 // Default columns if none specified
 const DEFAULT_TABLE_COLUMNS = [TableColumn.LABEL, TableColumn.VALUE, TableColumn.PERCENTAGE, TableColumn.COUNT];
@@ -48,7 +41,7 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
     let colourIndex = 0;
     return data.map((item) => ({
       ...item,
-      color: item.color || DEFAULT_COLOURS[colourIndex++ % DEFAULT_COLOURS.length],
+      color: item.color || CHART_COLOURS[colourIndex++ % CHART_COLOURS.length],
     }));
   }, [data]);
 
