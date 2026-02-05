@@ -19,6 +19,7 @@ import { investmentsApi } from '@/lib/investments';
 import { PortfolioSummary, HoldingWithMarketValue } from '@/types/investment';
 import { Account } from '@/types/account';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { useExchangeRates } from '@/hooks/useExchangeRates';
 
 const COLORS = [
   '#3b82f6', '#22c55e', '#f97316', '#8b5cf6', '#ec4899',
@@ -28,7 +29,8 @@ const COLORS = [
 type DateRange = '1m' | '3m' | '6m' | '1y' | 'all';
 
 export function InvestmentPerformanceReport() {
-  const { formatCurrencyCompact: formatCurrency, formatPercent: formatPercentHook } = useNumberFormat();
+  const { formatCurrencyCompact: formatCurrency, formatCurrency: formatCurrencyFull, formatPercent: formatPercentHook } = useNumberFormat();
+  const { defaultCurrency } = useExchangeRates();
   const [portfolio, setPortfolio] = useState<PortfolioSummary | null>(null);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [selectedAccountId, setSelectedAccountId] = useState<string>('');
@@ -58,6 +60,54 @@ export function InvestmentPerformanceReport() {
   const formatPercent = (value: number) => {
     const sign = value >= 0 ? '+' : '';
     return `${sign}${value.toFixed(2)}%`;
+  };
+
+  // When a single account is selected, show summary values in that account's native currency
+  // (per-account totals are in native currency; top-level totals are converted to default)
+  const selectedAccount = accounts.find((a) => a.id === selectedAccountId);
+  const summaryCurrency = selectedAccount?.currencyCode || defaultCurrency;
+  const isForeignSummary = summaryCurrency !== defaultCurrency;
+
+  // Derive native-currency summary from holdingsByAccount when a single account is selected
+  const summaryValues = useMemo(() => {
+    if (!portfolio) return null;
+    if (selectedAccountId && portfolio.holdingsByAccount.length > 0) {
+      // Use per-account totals (native currency) instead of converted top-level totals
+      let totalMarketValue = 0;
+      let totalCashBalance = 0;
+      let totalCostBasis = 0;
+      for (const acct of portfolio.holdingsByAccount) {
+        totalMarketValue += acct.totalMarketValue;
+        totalCashBalance += acct.cashBalance;
+        totalCostBasis += acct.totalCostBasis;
+      }
+      const totalPortfolioValue = totalMarketValue + totalCashBalance;
+      const totalGainLoss = totalMarketValue - totalCostBasis;
+      const totalGainLossPercent = totalCostBasis > 0 ? (totalGainLoss / totalCostBasis) * 100 : 0;
+      return { totalPortfolioValue, totalCostBasis, totalGainLoss, totalGainLossPercent };
+    }
+    // All accounts: use the backend-converted totals (already in default currency)
+    return {
+      totalPortfolioValue: portfolio.totalPortfolioValue,
+      totalCostBasis: portfolio.totalCostBasis,
+      totalGainLoss: portfolio.totalGainLoss,
+      totalGainLossPercent: portfolio.totalGainLossPercent,
+    };
+  }, [portfolio, selectedAccountId]);
+
+  const fmtSummary = (value: number) => {
+    if (isForeignSummary) {
+      return `${formatCurrencyFull(value, summaryCurrency)} ${summaryCurrency}`;
+    }
+    return formatCurrency(value);
+  };
+
+  const fmtHolding = (value: number | null, currencyCode: string) => {
+    if (value === null) return 'N/A';
+    if (currencyCode && currencyCode !== defaultCurrency) {
+      return `${formatCurrencyFull(value, currencyCode)} ${currencyCode}`;
+    }
+    return formatCurrency(value);
   };
 
   const holdingsData = useMemo(() => {
@@ -124,7 +174,7 @@ export function InvestmentPerformanceReport() {
     );
   }
 
-  if (!portfolio || portfolio.holdings.length === 0) {
+  if (!portfolio || !summaryValues || portfolio.holdings.length === 0) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
         <p className="text-gray-500 dark:text-gray-400 text-center py-8">
@@ -141,25 +191,25 @@ export function InvestmentPerformanceReport() {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
           <div className="text-sm text-gray-500 dark:text-gray-400">Total Value</div>
           <div className="text-xl font-bold text-gray-900 dark:text-gray-100">
-            {formatCurrency(portfolio.totalPortfolioValue)}
+            {fmtSummary(summaryValues.totalPortfolioValue)}
           </div>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
           <div className="text-sm text-gray-500 dark:text-gray-400">Cost Basis</div>
           <div className="text-xl font-bold text-gray-900 dark:text-gray-100">
-            {formatCurrency(portfolio.totalCostBasis)}
+            {fmtSummary(summaryValues.totalCostBasis)}
           </div>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
           <div className="text-sm text-gray-500 dark:text-gray-400">Total Gain/Loss</div>
-          <div className={`text-xl font-bold ${portfolio.totalGainLoss >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-            {portfolio.totalGainLoss >= 0 ? '+' : ''}{formatCurrency(portfolio.totalGainLoss)}
+          <div className={`text-xl font-bold ${summaryValues.totalGainLoss >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+            {summaryValues.totalGainLoss >= 0 ? '+' : ''}{fmtSummary(summaryValues.totalGainLoss)}
           </div>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
           <div className="text-sm text-gray-500 dark:text-gray-400">Return</div>
-          <div className={`text-xl font-bold ${portfolio.totalGainLossPercent >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-            {formatPercent(portfolio.totalGainLossPercent)}
+          <div className={`text-xl font-bold ${summaryValues.totalGainLossPercent >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+            {formatPercent(summaryValues.totalGainLossPercent)}
           </div>
         </div>
       </div>
@@ -175,11 +225,11 @@ export function InvestmentPerformanceReport() {
             >
               <option value="">All Accounts</option>
               {accounts
-                .slice()
+                .filter((a) => a.accountSubType !== 'INVESTMENT_BROKERAGE')
                 .sort((a, b) => a.name.localeCompare(b.name))
                 .map((account) => (
                   <option key={account.id} value={account.id}>
-                    {account.name}
+                    {account.name.replace(/ - (Brokerage|Cash)$/, '')}
                   </option>
                 ))}
             </select>
@@ -288,16 +338,16 @@ export function InvestmentPerformanceReport() {
                         {holding.quantity.toFixed(4)}
                       </td>
                       <td className="px-4 py-3 text-right text-sm text-gray-900 dark:text-gray-100">
-                        {formatCurrency(holding.averageCost)}
+                        {fmtHolding(holding.averageCost, holding.currencyCode)}
                       </td>
                       <td className="px-4 py-3 text-right text-sm text-gray-900 dark:text-gray-100">
-                        {holding.currentPrice ? formatCurrency(holding.currentPrice) : 'N/A'}
+                        {fmtHolding(holding.currentPrice, holding.currencyCode)}
                       </td>
                       <td className="px-4 py-3 text-right text-sm font-medium text-gray-900 dark:text-gray-100">
-                        {holding.marketValue ? formatCurrency(holding.marketValue) : 'N/A'}
+                        {fmtHolding(holding.marketValue, holding.currencyCode)}
                       </td>
                       <td className={`px-4 py-3 text-right text-sm ${(holding.gainLoss || 0) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                        {holding.gainLoss !== null ? formatCurrency(holding.gainLoss) : 'N/A'}
+                        {fmtHolding(holding.gainLoss, holding.currencyCode)}
                       </td>
                       <td className={`px-4 py-3 text-right text-sm font-medium ${(holding.gainLossPercent || 0) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                         {holding.gainLossPercent !== null ? formatPercent(holding.gainLossPercent) : 'N/A'}

@@ -6,6 +6,7 @@ import { InvestmentTransaction } from './entities/investment-transaction.entity'
 import { SecurityPrice } from './entities/security-price.entity';
 import { Account } from '../accounts/entities/account.entity';
 import { Transaction } from '../transactions/entities/transaction.entity';
+import { UserPreference } from '../users/entities/user-preference.entity';
 import { SecuritiesService } from './securities.service';
 import { SecurityPriceService } from './security-price.service';
 import { HoldingsService } from './holdings.service';
@@ -17,6 +18,7 @@ import { InvestmentTransactionsController } from './investment-transactions.cont
 import { PortfolioController } from './portfolio.controller';
 import { AccountsModule } from '../accounts/accounts.module';
 import { TransactionsModule } from '../transactions/transactions.module';
+import { CurrenciesModule } from '../currencies/currencies.module';
 
 @Module({
   imports: [
@@ -27,9 +29,11 @@ import { TransactionsModule } from '../transactions/transactions.module';
       SecurityPrice,
       Account,
       Transaction,
+      UserPreference,
     ]),
     AccountsModule,
     TransactionsModule,
+    CurrenciesModule,
   ],
   providers: [
     SecuritiesService,

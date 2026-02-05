@@ -4,10 +4,13 @@ import { Repository, In } from 'typeorm';
 import { Holding } from './entities/holding.entity';
 import { SecurityPrice } from './entities/security-price.entity';
 import { Account, AccountType, AccountSubType } from '../accounts/entities/account.entity';
+import { UserPreference } from '../users/entities/user-preference.entity';
+import { ExchangeRateService } from '../currencies/exchange-rate.service';
 
 export interface HoldingWithMarketValue {
   id: string;
   accountId: string;
+  securityId: string;
   symbol: string;
   name: string;
   securityType: string;
@@ -70,7 +73,37 @@ export class PortfolioService {
     private securityPriceRepository: Repository<SecurityPrice>,
     @InjectRepository(Account)
     private accountsRepository: Repository<Account>,
+    @InjectRepository(UserPreference)
+    private prefRepository: Repository<UserPreference>,
+    private exchangeRateService: ExchangeRateService,
   ) {}
+
+  /**
+   * Convert an amount from one currency to another using latest exchange rates.
+   * Returns the original amount if no rate is found or currencies match.
+   */
+  private async convertToDefault(
+    amount: number,
+    fromCurrency: string,
+    defaultCurrency: string,
+    rateCache: Map<string, number>,
+  ): Promise<number> {
+    if (fromCurrency === defaultCurrency) return amount;
+
+    const cacheKey = `${fromCurrency}->${defaultCurrency}`;
+    let rate = rateCache.get(cacheKey);
+    if (rate === undefined) {
+      const directRate = await this.exchangeRateService.getLatestRate(fromCurrency, defaultCurrency);
+      if (directRate !== null) {
+        rate = directRate;
+      } else {
+        const reverseRate = await this.exchangeRateService.getLatestRate(defaultCurrency, fromCurrency);
+        rate = reverseRate !== null ? 1 / reverseRate : 1;
+      }
+      rateCache.set(cacheKey, rate);
+    }
+    return amount * rate;
+  }
 
   /**
    * Get the latest prices for a list of security IDs
@@ -122,6 +155,11 @@ export class PortfolioService {
     userId: string,
     accountIds?: string[],
   ): Promise<PortfolioSummary> {
+    // Get user's default currency for conversion
+    const pref = await this.prefRepository.findOne({ where: { userId } });
+    const defaultCurrency = pref?.defaultCurrency || 'CAD';
+    const rateCache = new Map<string, number>();
+
     // Get investment accounts
     let accounts: Account[];
     if (accountIds && accountIds.length > 0) {
@@ -156,14 +194,13 @@ export class PortfolioService {
       (a) => a.accountSubType === null || a.accountSubType === undefined,
     );
 
-    // Calculate total cash value from cash accounts + standalone accounts
-    const totalCashValue = cashAccounts.reduce(
-      (sum, a) => sum + Number(a.currentBalance),
-      0,
-    ) + standaloneAccounts.reduce(
-      (sum, a) => sum + Number(a.currentBalance),
-      0,
-    );
+    // Calculate total cash value from cash accounts + standalone accounts (converted to default currency)
+    let totalCashValue = 0;
+    for (const a of [...cashAccounts, ...standaloneAccounts]) {
+      totalCashValue += await this.convertToDefault(
+        Number(a.currentBalance), a.currencyCode, defaultCurrency, rateCache,
+      );
+    }
 
     // Get holdings for brokerage accounts AND standalone accounts
     const holdingsAccountIds = [
@@ -183,46 +220,49 @@ export class PortfolioService {
     const priceMap = await this.getLatestPrices(securityIds);
 
     // Calculate holdings with market values
+    // Individual holding values stay in native currency; totals are converted to default currency
     let totalCostBasis = 0;
     let totalHoldingsValue = 0;
 
-    const holdingsWithValues: HoldingWithMarketValue[] = holdings
-      .filter((h) => Number(h.quantity) !== 0)
-      .map((h) => {
-        const quantity = Number(h.quantity);
-        const averageCost = Number(h.averageCost || 0);
-        const costBasis = quantity * averageCost;
-        const currentPrice = priceMap.get(h.securityId) ?? null;
-        const marketValue = currentPrice !== null ? quantity * currentPrice : null;
-        const gainLoss =
-          marketValue !== null && costBasis > 0 ? marketValue - costBasis : null;
-        const gainLossPercent =
-          gainLoss !== null && costBasis > 0
-            ? (gainLoss / costBasis) * 100
-            : null;
+    const holdingsWithValues: HoldingWithMarketValue[] = [];
+    for (const h of holdings) {
+      if (Number(h.quantity) === 0) continue;
 
-        totalCostBasis += costBasis;
-        if (marketValue !== null) {
-          totalHoldingsValue += marketValue;
-        }
+      const quantity = Number(h.quantity);
+      const averageCost = Number(h.averageCost || 0);
+      const costBasis = quantity * averageCost;
+      const currentPrice = priceMap.get(h.securityId) ?? null;
+      const marketValue = currentPrice !== null ? quantity * currentPrice : null;
+      const gainLoss =
+        marketValue !== null && costBasis > 0 ? marketValue - costBasis : null;
+      const gainLossPercent =
+        gainLoss !== null && costBasis > 0
+          ? (gainLoss / costBasis) * 100
+          : null;
 
-        return {
-          id: h.id,
-          accountId: h.accountId,
-          securityId: h.securityId,
-          symbol: h.security.symbol,
-          name: h.security.name,
-          securityType: h.security.securityType || 'STOCK',
-          currencyCode: h.security.currencyCode,
-          quantity,
-          averageCost,
-          costBasis,
-          currentPrice,
-          marketValue,
-          gainLoss,
-          gainLossPercent,
-        };
+      const holdingCurrency = h.security.currencyCode;
+      totalCostBasis += await this.convertToDefault(costBasis, holdingCurrency, defaultCurrency, rateCache);
+      if (marketValue !== null) {
+        totalHoldingsValue += await this.convertToDefault(marketValue, holdingCurrency, defaultCurrency, rateCache);
+      }
+
+      holdingsWithValues.push({
+        id: h.id,
+        accountId: h.accountId,
+        securityId: h.securityId,
+        symbol: h.security.symbol,
+        name: h.security.name,
+        securityType: h.security.securityType || 'STOCK',
+        currencyCode: holdingCurrency,
+        quantity,
+        averageCost,
+        costBasis,
+        currentPrice,
+        marketValue,
+        gainLoss,
+        gainLossPercent,
       });
+    }
 
     // Group holdings by account
     const holdingsByAccountMap = new Map<string, HoldingWithMarketValue[]>();
@@ -344,23 +384,26 @@ export class PortfolioService {
         value: totalCashValue,
         percentage: totalPortfolioValue > 0 ? (totalCashValue / totalPortfolioValue) * 100 : 0,
         color: '#6b7280',
-        currencyCode: cashCurrencyCode,
+        currencyCode: defaultCurrency,
       });
     }
 
     let colorIndex = 0;
     for (const holding of sortedHoldings) {
       if (holding.marketValue !== null && holding.marketValue > 0) {
-        // Find the original holding to get the security's currency
         const originalHolding = holdings.find((h) => h.id === holding.id);
+        const holdingCurrency = originalHolding?.security?.currencyCode || defaultCurrency;
+        const convertedValue = await this.convertToDefault(
+          holding.marketValue, holdingCurrency, defaultCurrency, rateCache,
+        );
         allocation.push({
           name: holding.name,
           symbol: holding.symbol,
           type: 'security',
-          value: holding.marketValue,
-          percentage: totalPortfolioValue > 0 ? (holding.marketValue / totalPortfolioValue) * 100 : 0,
+          value: convertedValue,
+          percentage: totalPortfolioValue > 0 ? (convertedValue / totalPortfolioValue) * 100 : 0,
           color: colors[colorIndex % colors.length],
-          currencyCode: originalHolding?.security?.currencyCode,
+          currencyCode: holdingCurrency,
         });
         colorIndex++;
       }

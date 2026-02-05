@@ -17,6 +17,7 @@ import { InvestmentTransaction } from '@/types/investment';
 import { Account } from '@/types/account';
 import { parseLocalDate } from '@/lib/utils';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { useExchangeRates } from '@/hooks/useExchangeRates';
 
 type DateRange = '6m' | '1y' | '2y' | 'all';
 
@@ -39,7 +40,8 @@ interface SecurityIncome {
 }
 
 export function DividendIncomeReport() {
-  const { formatCurrencyCompact: formatCurrency } = useNumberFormat();
+  const { formatCurrencyCompact: formatCurrency, formatCurrency: formatCurrencyFull } = useNumberFormat();
+  const { defaultCurrency, convertToDefault } = useExchangeRates();
   const [transactions, setTransactions] = useState<InvestmentTransaction[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [selectedAccountId, setSelectedAccountId] = useState<string>('');
@@ -68,6 +70,36 @@ export function DividendIncomeReport() {
 
     return { start, end };
   }, []);
+
+  // Build account currency lookup
+  const accountCurrencyMap = useMemo(() => {
+    const map = new Map<string, string>();
+    accounts.forEach((a) => map.set(a.id, a.currencyCode));
+    return map;
+  }, [accounts]);
+
+  // When a single account is selected, show in native currency; otherwise convert to default
+  const selectedAccount = accounts.find((a) => a.id === selectedAccountId);
+  const displayCurrency = selectedAccount?.currencyCode || defaultCurrency;
+  const isForeign = displayCurrency !== defaultCurrency;
+
+  const getTxAmount = useCallback((tx: InvestmentTransaction): number => {
+    const amount = Math.abs(tx.totalAmount);
+    if (selectedAccountId) {
+      // Single account selected: native currency, no conversion needed
+      return amount;
+    }
+    // All accounts: convert to default currency
+    const txCurrency = accountCurrencyMap.get(tx.accountId) || defaultCurrency;
+    return convertToDefault(amount, txCurrency);
+  }, [selectedAccountId, accountCurrencyMap, defaultCurrency, convertToDefault]);
+
+  const fmtValue = useCallback((value: number): string => {
+    if (isForeign) {
+      return `${formatCurrencyFull(value, displayCurrency)} ${displayCurrency}`;
+    }
+    return formatCurrencyFull(value);
+  }, [isForeign, displayCurrency, formatCurrencyFull]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -144,7 +176,7 @@ export function DividendIncomeReport() {
         monthMap.set(monthKey, bucket);
       }
 
-      const amount = Math.abs(tx.totalAmount);
+      const amount = getTxAmount(tx);
       switch (tx.action) {
         case 'DIVIDEND':
           bucket.dividends += amount;
@@ -160,7 +192,7 @@ export function DividendIncomeReport() {
     });
 
     return Array.from(monthMap.values()).sort((a, b) => a.month.localeCompare(b.month));
-  }, [transactions, dateRange, getDateRange]);
+  }, [transactions, dateRange, getDateRange, getTxAmount]);
 
   const securityData = useMemo((): SecurityIncome[] => {
     const securityMap = new Map<string, SecurityIncome>();
@@ -182,7 +214,7 @@ export function DividendIncomeReport() {
         securityMap.set(symbol, bucket);
       }
 
-      const amount = Math.abs(tx.totalAmount);
+      const amount = getTxAmount(tx);
       switch (tx.action) {
         case 'DIVIDEND':
           bucket.dividends += amount;
@@ -198,16 +230,16 @@ export function DividendIncomeReport() {
     });
 
     return Array.from(securityMap.values()).sort((a, b) => b.total - a.total);
-  }, [transactions]);
+  }, [transactions, getTxAmount]);
 
   const totals = useMemo(() => {
     return {
-      dividends: transactions.filter((t) => t.action === 'DIVIDEND').reduce((sum, t) => sum + Math.abs(t.totalAmount), 0),
-      interest: transactions.filter((t) => t.action === 'INTEREST').reduce((sum, t) => sum + Math.abs(t.totalAmount), 0),
-      capitalGains: transactions.filter((t) => t.action === 'CAPITAL_GAIN').reduce((sum, t) => sum + Math.abs(t.totalAmount), 0),
-      total: transactions.reduce((sum, t) => sum + Math.abs(t.totalAmount), 0),
+      dividends: transactions.filter((t) => t.action === 'DIVIDEND').reduce((sum, t) => sum + getTxAmount(t), 0),
+      interest: transactions.filter((t) => t.action === 'INTEREST').reduce((sum, t) => sum + getTxAmount(t), 0),
+      capitalGains: transactions.filter((t) => t.action === 'CAPITAL_GAIN').reduce((sum, t) => sum + getTxAmount(t), 0),
+      total: transactions.reduce((sum, t) => sum + getTxAmount(t), 0),
     };
-  }, [transactions]);
+  }, [transactions, getTxAmount]);
 
   const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ name: string; value: number; color: string }>; label?: string }) => {
     if (active && payload && payload.length) {
@@ -216,7 +248,7 @@ export function DividendIncomeReport() {
           <p className="font-medium text-gray-900 dark:text-gray-100 mb-1">{label}</p>
           {payload.map((entry, index) => (
             <p key={index} className="text-sm" style={{ color: entry.color }}>
-              {entry.name}: {formatCurrency(entry.value)}
+              {entry.name}: {fmtValue(entry.value)}
             </p>
           ))}
         </div>
@@ -243,25 +275,25 @@ export function DividendIncomeReport() {
         <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
           <div className="text-sm text-green-600 dark:text-green-400">Dividends</div>
           <div className="text-xl font-bold text-green-700 dark:text-green-300">
-            {formatCurrency(totals.dividends)}
+            {fmtValue(totals.dividends)}
           </div>
         </div>
         <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
           <div className="text-sm text-blue-600 dark:text-blue-400">Interest</div>
           <div className="text-xl font-bold text-blue-700 dark:text-blue-300">
-            {formatCurrency(totals.interest)}
+            {fmtValue(totals.interest)}
           </div>
         </div>
         <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4">
           <div className="text-sm text-purple-600 dark:text-purple-400">Capital Gains</div>
           <div className="text-xl font-bold text-purple-700 dark:text-purple-300">
-            {formatCurrency(totals.capitalGains)}
+            {fmtValue(totals.capitalGains)}
           </div>
         </div>
         <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
           <div className="text-sm text-gray-600 dark:text-gray-400">Total Income</div>
           <div className="text-xl font-bold text-gray-900 dark:text-gray-100">
-            {formatCurrency(totals.total)}
+            {fmtValue(totals.total)}
           </div>
         </div>
       </div>
@@ -277,11 +309,11 @@ export function DividendIncomeReport() {
             >
               <option value="">All Accounts</option>
               {accounts
-                .slice()
+                .filter((a) => a.accountSubType !== 'INVESTMENT_BROKERAGE')
                 .sort((a, b) => a.name.localeCompare(b.name))
                 .map((account) => (
                   <option key={account.id} value={account.id}>
-                    {account.name}
+                    {account.name.replace(/ - (Brokerage|Cash)$/, '')}
                   </option>
                 ))}
             </select>
@@ -392,16 +424,16 @@ export function DividendIncomeReport() {
                       </div>
                     </td>
                     <td className="px-4 py-3 text-right text-sm text-green-600 dark:text-green-400">
-                      {security.dividends > 0 ? formatCurrency(security.dividends) : '-'}
+                      {security.dividends > 0 ? fmtValue(security.dividends) : '-'}
                     </td>
                     <td className="px-4 py-3 text-right text-sm text-blue-600 dark:text-blue-400">
-                      {security.interest > 0 ? formatCurrency(security.interest) : '-'}
+                      {security.interest > 0 ? fmtValue(security.interest) : '-'}
                     </td>
                     <td className="px-4 py-3 text-right text-sm text-purple-600 dark:text-purple-400">
-                      {security.capitalGains > 0 ? formatCurrency(security.capitalGains) : '-'}
+                      {security.capitalGains > 0 ? fmtValue(security.capitalGains) : '-'}
                     </td>
                     <td className="px-4 py-3 text-right text-sm font-medium text-gray-900 dark:text-gray-100">
-                      {formatCurrency(security.total)}
+                      {fmtValue(security.total)}
                     </td>
                   </tr>
                 ))}
