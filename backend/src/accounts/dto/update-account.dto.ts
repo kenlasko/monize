@@ -162,6 +162,14 @@ export class UpdateAccountDto {
   @IsUUID()
   assetCategoryId?: string;
 
+  @ApiPropertyOptional({
+    example: '2020-06-15',
+    description: 'Date the asset was acquired (YYYY-MM-DD)',
+  })
+  @IsOptional()
+  @IsDateString()
+  dateAcquired?: string;
+
   // Mortgage-specific fields
   @ApiPropertyOptional({
     example: true,

@@ -47,7 +47,7 @@ export default function InvestmentsPage() {
   const router = useRouter();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [allAccounts, setAllAccounts] = useState<Account[]>([]);
-  const [selectedAccountId, setSelectedAccountId] = useState<string>('');
+  const [selectedAccountId, setSelectedAccountId] = useLocalStorage<string>('moneymate-investments-account', '');
   const [portfolioSummary, setPortfolioSummary] = useState<PortfolioSummary | null>(
     null,
   );

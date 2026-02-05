@@ -170,6 +170,9 @@ export class Account {
   @JoinColumn({ name: 'asset_category_id' })
   assetCategory: Category | null;
 
+  @Column({ type: 'date', name: 'date_acquired', nullable: true })
+  dateAcquired: Date | null;
+
   // Mortgage-specific fields
   @Column({ name: 'is_canadian_mortgage', default: false })
   isCanadianMortgage: boolean;

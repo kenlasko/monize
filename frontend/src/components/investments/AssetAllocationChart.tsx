@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { AssetAllocation } from '@/types/investment';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { usePreferencesStore } from '@/store/preferencesStore';
 
 interface AssetAllocationChartProps {
   allocation: AssetAllocation | null;
@@ -15,6 +16,7 @@ export function AssetAllocationChart({
   isLoading,
 }: AssetAllocationChartProps) {
   const { formatCurrencyCompact: formatCurrency } = useNumberFormat();
+  const defaultCurrency = usePreferencesStore((state) => state.preferences?.defaultCurrency) || 'CAD';
 
   const chartData = useMemo(() => {
     if (!allocation) return [];
@@ -24,6 +26,7 @@ export function AssetAllocationChart({
       value: item.value,
       percentage: item.percentage,
       color: item.color || '#6b7280',
+      currencyCode: item.currencyCode,
     }));
   }, [allocation]);
 
@@ -33,11 +36,12 @@ export function AssetAllocationChart({
   }: {
     active?: boolean;
     payload?: Array<{
-      payload: { fullName: string; value: number; percentage: number };
+      payload: { fullName: string; value: number; percentage: number; currencyCode?: string };
     }>;
   }) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
+      const isForeign = data.currencyCode && data.currencyCode !== defaultCurrency;
       return (
         <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
           <p className="font-medium text-gray-900 dark:text-gray-100">
@@ -45,6 +49,9 @@ export function AssetAllocationChart({
           </p>
           <p className="text-gray-600 dark:text-gray-400">
             {formatCurrency(data.value)} ({data.percentage.toFixed(1)}%)
+            {isForeign && (
+              <span className="ml-1 text-xs text-amber-600 dark:text-amber-400">{data.currencyCode}</span>
+            )}
           </p>
         </div>
       );
@@ -103,21 +110,27 @@ export function AssetAllocationChart({
           </PieChart>
         </ResponsiveContainer>
       </div>
-      <div className="mt-4 grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
-        {chartData.slice(0, 10).map((item, index) => (
-          <div key={index} className="flex items-center gap-2 text-sm">
-            <div
-              className="w-3 h-3 rounded-full flex-shrink-0"
-              style={{ backgroundColor: item.color }}
-            />
-            <span className="text-gray-600 dark:text-gray-400 truncate">
-              {item.name}
-            </span>
-            <span className="text-gray-900 dark:text-gray-100 ml-auto">
-              {item.percentage.toFixed(1)}%
-            </span>
-          </div>
-        ))}
+      <div className="mt-4 grid grid-cols-2 gap-2">
+        {chartData.slice(0, 10).map((item, index) => {
+          const isForeign = item.currencyCode && item.currencyCode !== defaultCurrency;
+          return (
+            <div key={index} className="flex items-center gap-2 text-sm">
+              <div
+                className="w-3 h-3 rounded-full flex-shrink-0"
+                style={{ backgroundColor: item.color }}
+              />
+              <span className="text-gray-600 dark:text-gray-400 truncate">
+                {item.name}
+                {isForeign && (
+                  <span className="ml-1 text-xs text-amber-600 dark:text-amber-400">({item.currencyCode})</span>
+                )}
+              </span>
+              <span className="text-gray-900 dark:text-gray-100 ml-auto">
+                {item.percentage.toFixed(1)}%
+              </span>
+            </div>
+          );
+        })}
       </div>
       <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 text-center">
         <div className="text-sm text-gray-500 dark:text-gray-400">Total</div>

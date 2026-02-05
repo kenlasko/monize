@@ -1,7 +1,9 @@
 'use client';
 
+import { useMemo } from 'react';
 import { PortfolioSummary } from '@/types/investment';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { useExchangeRates } from '@/hooks/useExchangeRates';
 
 interface PortfolioSummaryCardProps {
   summary: PortfolioSummary | null;
@@ -13,6 +15,23 @@ export function PortfolioSummaryCard({
   isLoading,
 }: PortfolioSummaryCardProps) {
   const { formatCurrency } = useNumberFormat();
+  const { convertToDefault } = useExchangeRates();
+
+  const converted = useMemo(() => {
+    if (!summary) return null;
+    let cash = 0;
+    let holdings = 0;
+    let costBasis = 0;
+    for (const acct of summary.holdingsByAccount) {
+      cash += convertToDefault(acct.cashBalance, acct.currencyCode);
+      holdings += convertToDefault(acct.totalMarketValue, acct.currencyCode);
+      costBasis += convertToDefault(acct.totalCostBasis, acct.currencyCode);
+    }
+    const portfolio = cash + holdings;
+    const gainLoss = holdings - costBasis;
+    const gainLossPercent = costBasis > 0 ? (gainLoss / costBasis) * 100 : 0;
+    return { cash, holdings, costBasis, portfolio, gainLoss, gainLossPercent };
+  }, [summary, convertToDefault]);
 
   const formatPercent = (value: number) => {
     const sign = value >= 0 ? '+' : '';
@@ -63,7 +82,7 @@ export function PortfolioSummaryCard({
             Total Portfolio Value
           </div>
           <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            {formatCurrency(summary.totalPortfolioValue)}
+            {formatCurrency(converted?.portfolio ?? summary.totalPortfolioValue)}
           </div>
         </div>
 
@@ -74,7 +93,7 @@ export function PortfolioSummaryCard({
               Holdings Value
             </div>
             <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              {formatCurrency(summary.totalHoldingsValue)}
+              {formatCurrency(converted?.holdings ?? summary.totalHoldingsValue)}
             </div>
           </div>
           <div>
@@ -82,7 +101,7 @@ export function PortfolioSummaryCard({
               Cash Balance
             </div>
             <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              {formatCurrency(summary.totalCashValue)}
+              {formatCurrency(converted?.cash ?? summary.totalCashValue)}
             </div>
           </div>
         </div>
@@ -95,21 +114,21 @@ export function PortfolioSummaryCard({
           <div className="flex items-baseline gap-2">
             <span
               className={`text-lg font-semibold ${
-                summary.totalGainLoss >= 0
+                (converted?.gainLoss ?? summary.totalGainLoss) >= 0
                   ? 'text-green-600 dark:text-green-400'
                   : 'text-red-600 dark:text-red-400'
               }`}
             >
-              {formatCurrency(summary.totalGainLoss)}
+              {formatCurrency(converted?.gainLoss ?? summary.totalGainLoss)}
             </span>
             <span
               className={`text-sm ${
-                summary.totalGainLossPercent >= 0
+                (converted?.gainLossPercent ?? summary.totalGainLossPercent) >= 0
                   ? 'text-green-600 dark:text-green-400'
                   : 'text-red-600 dark:text-red-400'
               }`}
             >
-              ({formatPercent(summary.totalGainLossPercent)})
+              ({formatPercent(converted?.gainLossPercent ?? summary.totalGainLossPercent)})
             </span>
           </div>
         </div>
@@ -120,7 +139,7 @@ export function PortfolioSummaryCard({
             Total Cost Basis
           </div>
           <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-            {formatCurrency(summary.totalCostBasis)}
+            {formatCurrency(converted?.costBasis ?? summary.totalCostBasis)}
           </div>
         </div>
       </div>

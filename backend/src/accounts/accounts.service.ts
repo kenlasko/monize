@@ -685,6 +685,7 @@ export class AccountsService {
     if (updateAccountDto.principalCategoryId !== undefined) account.principalCategoryId = updateAccountDto.principalCategoryId;
     if (updateAccountDto.interestCategoryId !== undefined) account.interestCategoryId = updateAccountDto.interestCategoryId;
     if (updateAccountDto.assetCategoryId !== undefined) account.assetCategoryId = updateAccountDto.assetCategoryId;
+    if (updateAccountDto.dateAcquired !== undefined) account.dateAcquired = updateAccountDto.dateAcquired ? new Date(updateAccountDto.dateAcquired) : null;
     // Mortgage-specific fields
     if (updateAccountDto.isCanadianMortgage !== undefined) account.isCanadianMortgage = updateAccountDto.isCanadianMortgage;
     if (updateAccountDto.isVariableRate !== undefined) account.isVariableRate = updateAccountDto.isVariableRate;
@@ -715,7 +716,21 @@ export class AccountsService {
     account.isClosed = true;
     account.closedDate = new Date();
 
-    return this.accountsRepository.save(account);
+    const saved = await this.accountsRepository.save(account);
+
+    // If this is an investment cash account, also close the linked brokerage account
+    if (account.accountSubType === AccountSubType.INVESTMENT_CASH && account.linkedAccountId) {
+      const brokerageAccount = await this.accountsRepository.findOne({
+        where: { id: account.linkedAccountId, userId },
+      });
+      if (brokerageAccount && !brokerageAccount.isClosed) {
+        brokerageAccount.isClosed = true;
+        brokerageAccount.closedDate = new Date();
+        await this.accountsRepository.save(brokerageAccount);
+      }
+    }
+
+    return saved;
   }
 
   /**
@@ -731,7 +746,21 @@ export class AccountsService {
     account.isClosed = false;
     account.closedDate = null;
 
-    return this.accountsRepository.save(account);
+    const saved = await this.accountsRepository.save(account);
+
+    // If this is an investment cash account, also reopen the linked brokerage account
+    if (account.accountSubType === AccountSubType.INVESTMENT_CASH && account.linkedAccountId) {
+      const brokerageAccount = await this.accountsRepository.findOne({
+        where: { id: account.linkedAccountId, userId },
+      });
+      if (brokerageAccount && brokerageAccount.isClosed) {
+        brokerageAccount.isClosed = false;
+        brokerageAccount.closedDate = null;
+        await this.accountsRepository.save(brokerageAccount);
+      }
+    }
+
+    return saved;
   }
 
   /**

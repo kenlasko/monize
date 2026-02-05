@@ -40,6 +40,7 @@ export interface HoldingWithMarketValue {
   symbol: string;
   name: string;
   securityType: string;
+  currencyCode: string;
   quantity: number;
   averageCost: number;
   costBasis: number;
@@ -52,6 +53,7 @@ export interface HoldingWithMarketValue {
 export interface AccountHoldings {
   accountId: string;
   accountName: string;
+  currencyCode: string;
   cashAccountId: string | null;
   cashBalance: number;
   holdings: HoldingWithMarketValue[];
@@ -80,6 +82,7 @@ export interface AllocationItem {
   value: number;
   percentage: number;
   color?: string;
+  currencyCode?: string;
 }
 
 export interface AssetAllocation {

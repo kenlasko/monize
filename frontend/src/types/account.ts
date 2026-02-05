@@ -50,6 +50,7 @@ export interface Account {
   scheduledTransactionId: string | null;
   // Asset-specific fields
   assetCategoryId: string | null;
+  dateAcquired: string | null;
   // Mortgage-specific fields
   isCanadianMortgage: boolean;
   isVariableRate: boolean;
@@ -82,6 +83,7 @@ export interface CreateAccountData {
   interestCategoryId?: string;
   // Asset-specific fields
   assetCategoryId?: string;
+  dateAcquired?: string;
   // Mortgage-specific fields
   isCanadianMortgage?: boolean;
   isVariableRate?: boolean;

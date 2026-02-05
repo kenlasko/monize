@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { AccountHoldings, HoldingWithMarketValue } from '@/types/investment';
 import { ChevronDownIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { useExchangeRates } from '@/hooks/useExchangeRates';
 
 interface GroupedHoldingsListProps {
   holdingsByAccount: AccountHoldings[];
@@ -21,6 +22,7 @@ export function GroupedHoldingsList({
   onCashClick,
 }: GroupedHoldingsListProps) {
   const { formatCurrency: formatCurrencyBase, numberFormat } = useNumberFormat();
+  const { convertToDefault, defaultCurrency } = useExchangeRates();
 
   const [expandedAccounts, setExpandedAccounts] = useState<Set<string>>(
     new Set(holdingsByAccount.map((a) => a.accountId)),
@@ -155,8 +157,15 @@ export function GroupedHoldingsList({
                 </div>
                 <div className="text-right">
                   <div className="font-semibold text-gray-900 dark:text-gray-100">
-                    {formatCurrency(accountTotalValue)}
+                    {account.currencyCode && account.currencyCode !== defaultCurrency
+                      ? `${formatCurrencyBase(accountTotalValue, account.currencyCode)} ${account.currencyCode}`
+                      : formatCurrency(accountTotalValue)}
                   </div>
+                  {account.currencyCode && account.currencyCode !== defaultCurrency && (
+                    <div className="text-xs text-gray-400 dark:text-gray-500">
+                      {'\u2248 '}{formatCurrencyBase(convertToDefault(accountTotalValue, account.currencyCode), defaultCurrency)}
+                    </div>
+                  )}
                   <div className={`text-sm ${getGainLossColor(account.totalGainLoss)}`}>
                     {formatCurrency(account.totalGainLoss)} ({formatPercent(account.totalGainLossPercent)})
                   </div>
@@ -200,6 +209,7 @@ export function GroupedHoldingsList({
                         <HoldingRow
                           key={holding.id}
                           holding={holding}
+                          defaultCurrency={defaultCurrency}
                           formatCurrency={formatCurrency}
                           formatQuantity={formatQuantity}
                           formatPercent={formatPercent}
@@ -260,7 +270,14 @@ export function GroupedHoldingsList({
                           {formatCurrency(account.totalCostBasis + account.cashBalance)}
                         </td>
                         <td className="px-4 py-3 text-right text-sm text-gray-900 dark:text-gray-100">
-                          {formatCurrency(accountTotalValue)}
+                          <div>{account.currencyCode && account.currencyCode !== defaultCurrency
+                            ? `${formatCurrencyBase(accountTotalValue, account.currencyCode)} ${account.currencyCode}`
+                            : formatCurrency(accountTotalValue)}</div>
+                          {account.currencyCode && account.currencyCode !== defaultCurrency && (
+                            <div className="text-xs font-normal text-gray-400 dark:text-gray-500">
+                              {'\u2248 '}{formatCurrencyBase(convertToDefault(accountTotalValue, account.currencyCode), defaultCurrency)}
+                            </div>
+                          )}
                         </td>
                         <td className="px-4 py-3 text-right">
                           <div className={`text-sm ${getGainLossColor(account.totalGainLoss)}`}>
@@ -288,6 +305,7 @@ export function GroupedHoldingsList({
 
 interface HoldingRowProps {
   holding: HoldingWithMarketValue;
+  defaultCurrency: string;
   formatCurrency: (value: number | null) => string;
   formatQuantity: (value: number) => string;
   formatPercent: (value: number | null, showSign?: boolean) => string;
@@ -298,6 +316,7 @@ interface HoldingRowProps {
 
 function HoldingRow({
   holding,
+  defaultCurrency,
   formatCurrency,
   formatQuantity,
   formatPercent,
@@ -305,6 +324,7 @@ function HoldingRow({
   getPortfolioPercent,
   onSymbolClick,
 }: HoldingRowProps) {
+  const isForeign = holding.currencyCode && holding.currencyCode !== defaultCurrency;
   return (
     <tr className="hover:bg-gray-50 dark:hover:bg-gray-700/20">
       <td className="px-6 py-3 whitespace-nowrap">
@@ -315,6 +335,9 @@ function HoldingRow({
         >
           <div className="font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300">
             {holding.symbol}
+            {isForeign && (
+              <span className="ml-1 text-xs font-normal text-amber-600 dark:text-amber-400">({holding.currencyCode})</span>
+            )}
           </div>
           <div className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[320px]">
             {holding.name}

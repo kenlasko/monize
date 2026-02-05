@@ -4,6 +4,7 @@ import { useState, useMemo, useCallback } from 'react';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { InvestmentTransaction } from '@/types/investment';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { useExchangeRates } from '@/hooks/useExchangeRates';
 
 // Density levels: 'normal' | 'compact' | 'dense'
 export type DensityLevel = 'normal' | 'compact' | 'dense';
@@ -65,6 +66,7 @@ export function InvestmentTransactionList({
 }: InvestmentTransactionListProps) {
   const { formatCurrency, numberFormat } = useNumberFormat();
   const { formatDate } = useDateFormat();
+  const { defaultCurrency } = useExchangeRates();
   const [localDensity, setLocalDensity] = useState<DensityLevel>('normal');
   const [showFilters, setShowFilters] = useState(false);
 
@@ -329,10 +331,16 @@ export function InvestmentTransactionList({
                     {formatQuantity(tx.quantity ?? 0)}
                   </td>
                   <td className={`${cellPadding} whitespace-nowrap text-right text-sm text-gray-900 dark:text-gray-100`}>
-                    {formatCurrency(tx.price ?? 0)}
+                    {formatCurrency(tx.price ?? 0, tx.security?.currencyCode)}
+                    {tx.security?.currencyCode && tx.security.currencyCode !== defaultCurrency && (
+                      <span className="ml-1">{tx.security.currencyCode}</span>
+                    )}
                   </td>
                   <td className={`${cellPadding} whitespace-nowrap text-right text-sm font-medium text-gray-900 dark:text-gray-100`}>
-                    {formatCurrency(tx.totalAmount)}
+                    {formatCurrency(tx.totalAmount, tx.security?.currencyCode)}
+                    {tx.security?.currencyCode && tx.security.currencyCode !== defaultCurrency && (
+                      <span className="ml-1 font-normal">{tx.security.currencyCode}</span>
+                    )}
                   </td>
                   {(onDelete || onEdit) && (
                     <td className={`${cellPadding} whitespace-nowrap text-right text-sm space-x-3`}>

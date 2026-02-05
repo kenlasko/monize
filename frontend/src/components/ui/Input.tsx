@@ -10,7 +10,7 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 export const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ label, error, prefix, className, id, type, value, ...props }, ref) => {
     const inputId = id || `input-${label?.toLowerCase().replace(/\s+/g, '-')}`;
-    const isEmptyDate = type === 'date' && !value;
+    const isEmptyDate = type === 'date' && value !== undefined && !value;
 
     return (
       <div className="w-full">

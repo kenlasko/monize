@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
 import { zodResolver } from '@/lib/zodResolver';
 import { z } from 'zod';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Input } from '@/components/ui/Input';
 import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { Select } from '@/components/ui/Select';
@@ -15,7 +15,9 @@ import { Account, AccountType, AmortizationPreview, PaymentFrequency, MortgagePa
 import { Category } from '@/types/category';
 import { accountsApi } from '@/lib/accounts';
 import { categoriesApi } from '@/lib/categories';
+import { exchangeRatesApi, CurrencyInfo } from '@/lib/exchange-rates';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { useExchangeRates } from '@/hooks/useExchangeRates';
 
 // Helper to handle optional numeric fields that may be NaN from empty inputs
 const optionalNumber = z.preprocess(
@@ -66,6 +68,7 @@ const accountSchema = z.object({
   interestCategoryId: z.string().optional(),
   // Asset-specific fields
   assetCategoryId: z.string().optional(),
+  dateAcquired: z.string().optional(),
   // Mortgage-specific fields
   isCanadianMortgage: z.boolean().optional(),
   isVariableRate: z.boolean().optional(),
@@ -141,6 +144,8 @@ const amortizationOptions = [
 export function AccountForm({ account, onSubmit, onCancel }: AccountFormProps) {
   const router = useRouter();
   const { formatCurrency } = useNumberFormat();
+  const { defaultCurrency } = useExchangeRates();
+  const [currencies, setCurrencies] = useState<CurrencyInfo[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [amortizationPreview, setAmortizationPreview] = useState<AmortizationPreview | null>(null);
@@ -186,9 +191,10 @@ export function AccountForm({ account, onSubmit, onCancel }: AccountFormProps) {
           sourceAccountId: account.sourceAccountId || undefined,
           interestCategoryId: account.interestCategoryId || undefined,
           assetCategoryId: account.assetCategoryId || undefined,
+          dateAcquired: account.dateAcquired?.split('T')[0] || undefined,
         }
       : {
-          currencyCode: 'CAD',
+          currencyCode: defaultCurrency,
           openingBalance: 0,
           isFavourite: false,
           paymentFrequency: 'MONTHLY' as PaymentFrequency,
@@ -215,6 +221,7 @@ export function AccountForm({ account, onSubmit, onCancel }: AccountFormProps) {
 
   // Show asset fields only for ASSET account type
   const isAssetAccount = watchedAccountType === 'ASSET';
+  const watchedDateAcquired = watch('dateAcquired');
 
   // Show mortgage fields only for MORTGAGE account type
   const isMortgageAccount = watchedAccountType === 'MORTGAGE';
@@ -223,6 +230,24 @@ export function AccountForm({ account, onSubmit, onCancel }: AccountFormProps) {
   const watchedTermMonths = watch('termMonths');
   const watchedAmortizationMonths = watch('amortizationMonths');
   const watchedMortgagePaymentFrequency = watch('mortgagePaymentFrequency');
+
+  // Load supported currencies
+  useEffect(() => {
+    exchangeRatesApi.getCurrencies().then(setCurrencies).catch(() => {});
+  }, []);
+
+  // Build currency options: default currency first, then alphabetical
+  const currencyOptions = useMemo(() => {
+    const sorted = [...currencies].sort((a, b) => {
+      if (a.code === defaultCurrency) return -1;
+      if (b.code === defaultCurrency) return 1;
+      return a.code.localeCompare(b.code);
+    });
+    return sorted.map((c) => ({
+      value: c.code,
+      label: `${c.code} - ${c.name} (${c.symbol})`,
+    }));
+  }, [currencies, defaultCurrency]);
 
   // Load accounts and categories when LOAN, MORTGAGE, or ASSET type is selected
   // For loans/mortgages: only when creating new (payment setup is done at creation)
@@ -474,9 +499,9 @@ export function AccountForm({ account, onSubmit, onCancel }: AccountFormProps) {
       )}
 
       <div className="grid grid-cols-2 gap-4">
-        <Input
-          label="Currency Code"
-          placeholder="CAD"
+        <Select
+          label="Currency"
+          options={currencyOptions}
           error={errors.currencyCode?.message}
           {...register('currencyCode')}
         />
@@ -839,6 +864,16 @@ export function AccountForm({ account, onSubmit, onCancel }: AccountFormProps) {
             onCreateNew={handleAssetCategoryCreate}
             allowCustomValue={true}
           />
+          <Input
+            label="Date Acquired"
+            type="date"
+            className={watchedDateAcquired ? '' : 'date-empty'}
+            error={errors.dateAcquired?.message}
+            {...register('dateAcquired')}
+          />
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            The asset will be excluded from net worth calculations before this date.
+          </p>
         </div>
       )}
 

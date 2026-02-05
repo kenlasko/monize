@@ -88,6 +88,7 @@ CREATE TABLE accounts (
     scheduled_transaction_id UUID, -- linked scheduled transaction for payments (FK added after scheduled_transactions table)
     -- Asset-specific fields
     asset_category_id UUID, -- category for tracking value changes on asset accounts (FK added after categories table)
+    date_acquired DATE, -- date the asset was acquired (for net worth historical accuracy)
     -- Mortgage-specific fields
     is_canadian_mortgage BOOLEAN DEFAULT false, -- Canadian mortgages use semi-annual compounding for fixed rates
     is_variable_rate BOOLEAN DEFAULT false, -- Variable rate mortgages use monthly compounding

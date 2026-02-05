@@ -11,6 +11,7 @@ export interface HoldingWithMarketValue {
   symbol: string;
   name: string;
   securityType: string;
+  currencyCode: string;
   quantity: number;
   averageCost: number;
   costBasis: number;
@@ -23,6 +24,7 @@ export interface HoldingWithMarketValue {
 export interface AccountHoldings {
   accountId: string;
   accountName: string;
+  currencyCode: string;
   cashAccountId: string | null;
   cashBalance: number;
   holdings: HoldingWithMarketValue[];
@@ -51,6 +53,7 @@ export interface AllocationItem {
   value: number;
   percentage: number;
   color?: string;
+  currencyCode?: string;
 }
 
 export interface AssetAllocation {
@@ -207,6 +210,7 @@ export class PortfolioService {
           symbol: h.security.symbol,
           name: h.security.name,
           securityType: h.security.securityType || 'STOCK',
+          currencyCode: h.security.currencyCode,
           quantity,
           averageCost,
           costBasis,
@@ -253,6 +257,7 @@ export class PortfolioService {
       holdingsByAccount.push({
         accountId: brokerageAccount.id,
         accountName,
+        currencyCode: brokerageAccount.currencyCode,
         cashAccountId: linkedCashAccount?.id ?? null,
         cashBalance: linkedCashAccount ? Number(linkedCashAccount.currentBalance) : 0,
         holdings: accountHoldings.sort((a, b) => {
@@ -285,6 +290,7 @@ export class PortfolioService {
       holdingsByAccount.push({
         accountId: standaloneAccount.id,
         accountName: standaloneAccount.name,
+        currencyCode: standaloneAccount.currencyCode,
         cashAccountId: standaloneAccount.id, // Cash is on this same account
         cashBalance: Number(standaloneAccount.currentBalance),
         holdings: accountHoldings.sort((a, b) => {
@@ -323,6 +329,10 @@ export class PortfolioService {
       '#ec4899', '#14b8a6', '#eab308', '#ef4444',
     ];
 
+    // Determine cash currency from the contributing accounts
+    const cashCurrencyAccounts = [...cashAccounts, ...standaloneAccounts];
+    const cashCurrencyCode = cashCurrencyAccounts.length > 0 ? cashCurrencyAccounts[0].currencyCode : undefined;
+
     if (totalCashValue > 0) {
       allocation.push({
         name: 'Cash',
@@ -331,12 +341,15 @@ export class PortfolioService {
         value: totalCashValue,
         percentage: totalPortfolioValue > 0 ? (totalCashValue / totalPortfolioValue) * 100 : 0,
         color: '#6b7280',
+        currencyCode: cashCurrencyCode,
       });
     }
 
     let colorIndex = 0;
     for (const holding of sortedHoldings) {
       if (holding.marketValue !== null && holding.marketValue > 0) {
+        // Find the original holding to get the security's currency
+        const originalHolding = holdings.find((h) => h.id === holding.id);
         allocation.push({
           name: holding.name,
           symbol: holding.symbol,
@@ -344,6 +357,7 @@ export class PortfolioService {
           value: holding.marketValue,
           percentage: totalPortfolioValue > 0 ? (holding.marketValue / totalPortfolioValue) * 100 : 0,
           color: colors[colorIndex % colors.length],
+          currencyCode: originalHolding?.security?.currencyCode,
         });
         colorIndex++;
       }

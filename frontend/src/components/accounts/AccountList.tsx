@@ -6,8 +6,8 @@ import { Account, AccountType } from '@/types/account';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { accountsApi } from '@/lib/accounts';
-import { usePreferencesStore } from '@/store/preferencesStore';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { useExchangeRates } from '@/hooks/useExchangeRates';
 import toast from 'react-hot-toast';
 
 type SortField = 'name' | 'type' | 'balance' | 'status';
@@ -38,15 +38,15 @@ function getStoredValue<T>(key: string, defaultValue: T): T {
 
 interface AccountListProps {
   accounts: Account[];
+  brokerageMarketValues?: Map<string, number>;
   onEdit: (account: Account) => void;
   onRefresh: () => void;
 }
 
-export function AccountList({ accounts, onEdit, onRefresh }: AccountListProps) {
+export function AccountList({ accounts, brokerageMarketValues, onEdit, onRefresh }: AccountListProps) {
   const router = useRouter();
-  const { preferences } = usePreferencesStore();
   const { formatCurrency: formatCurrencyBase } = useNumberFormat();
-  const defaultCurrency = preferences?.defaultCurrency || 'CAD';
+  const { convertToDefault, defaultCurrency } = useExchangeRates();
   const [closeDialogOpen, setCloseDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [accountToClose, setAccountToClose] = useState<Account | null>(null);
@@ -191,6 +191,13 @@ export function AccountList({ accounts, onEdit, onRefresh }: AccountListProps) {
     return result;
   }, [accounts, filterAccountType, filterStatus, sortField, sortDirection]);
 
+  // Build a map of account IDs to names for showing linked account pairs
+  const accountNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    accounts.forEach((a) => map.set(a.id, a.name));
+    return map;
+  }, [accounts]);
+
   // Count active filters
   const activeFilterCount = [filterAccountType, filterStatus].filter(Boolean).length;
 
@@ -219,7 +226,11 @@ export function AccountList({ accounts, onEdit, onRefresh }: AccountListProps) {
   };
 
   const handleViewTransactions = (account: Account) => {
-    router.push(`/transactions?accountId=${account.id}`);
+    if (account.accountSubType === 'INVESTMENT_BROKERAGE') {
+      router.push('/investments');
+    } else {
+      router.push(`/transactions?accountId=${account.id}`);
+    }
   };
 
   const handleReconcile = (account: Account) => {
@@ -496,7 +507,9 @@ export function AccountList({ accounts, onEdit, onRefresh }: AccountListProps) {
                 <button
                   onClick={() => handleViewTransactions(account)}
                   className="text-left hover:underline w-full"
-                  title={account.name}
+                  title={account.linkedAccountId && (account.accountSubType === 'INVESTMENT_CASH' || account.accountSubType === 'INVESTMENT_BROKERAGE')
+                    ? `${account.name} — Paired with ${accountNameMap.get(account.linkedAccountId) || 'linked account'}`
+                    : account.name}
                 >
                   <div className="flex items-center text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300">
                     {account.isFavourite && (
@@ -510,8 +523,21 @@ export function AccountList({ accounts, onEdit, onRefresh }: AccountListProps) {
                       </svg>
                     )}
                     <span className="truncate">{account.name}</span>
+                    {density !== 'normal' && account.linkedAccountId && (account.accountSubType === 'INVESTMENT_CASH' || account.accountSubType === 'INVESTMENT_BROKERAGE') && (
+                      <svg className="w-3.5 h-3.5 ml-1 flex-shrink-0 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                      </svg>
+                    )}
                   </div>
-                  {density === 'normal' && account.description && (
+                  {density === 'normal' && account.linkedAccountId && (account.accountSubType === 'INVESTMENT_CASH' || account.accountSubType === 'INVESTMENT_BROKERAGE') && (
+                    <div className="text-xs text-gray-400 dark:text-gray-500 truncate flex items-center gap-1">
+                      <svg className="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                      </svg>
+                      Paired with {accountNameMap.get(account.linkedAccountId) || 'linked account'}
+                    </div>
+                  )}
+                  {density === 'normal' && account.description && !account.linkedAccountId && (
                     <div className="text-sm text-gray-500 dark:text-gray-400 truncate">{account.description}</div>
                   )}
                 </button>
@@ -522,21 +548,48 @@ export function AccountList({ accounts, onEdit, onRefresh }: AccountListProps) {
                     account.accountType
                   )}`}
                 >
-                  {formatAccountType(account.accountType)}
+                  {account.accountSubType === 'INVESTMENT_BROKERAGE' ? 'Brokerage' :
+                   account.accountSubType === 'INVESTMENT_CASH' ? 'Inv. Cash' :
+                   formatAccountType(account.accountType)}
                 </span>
               </td>
               <td className={`${cellPadding} whitespace-nowrap text-right ${account.isClosed ? 'opacity-50' : ''}`}>
-                <div
-                  className={`text-sm font-medium ${
-                    Number(account.currentBalance) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
-                  }`}
-                >
-                  {formatCurrency(account.currentBalance, account.currencyCode)}
-                </div>
-                {account.creditLimit && (
-                  <div className="text-xs text-gray-500 dark:text-gray-400">
-                    Limit: {formatCurrency(account.creditLimit, account.currencyCode)}
-                  </div>
+                {account.accountSubType === 'INVESTMENT_BROKERAGE' && brokerageMarketValues?.has(account.id) ? (
+                  <>
+                    <div className="text-sm font-medium text-green-600 dark:text-green-400">
+                      {formatCurrency(brokerageMarketValues.get(account.id)!, account.currencyCode)}
+                    </div>
+                    {density === 'normal' && (
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                        Market value
+                      </div>
+                    )}
+                    {account.currencyCode !== defaultCurrency && (
+                      <div className="text-xs text-gray-400 dark:text-gray-500">
+                        {'\u2248 '}{formatCurrencyBase(convertToDefault(brokerageMarketValues.get(account.id)!, account.currencyCode), defaultCurrency)}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <div
+                      className={`text-sm font-medium ${
+                        Number(account.currentBalance) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                      }`}
+                    >
+                      {formatCurrency(account.currentBalance, account.currencyCode)}
+                    </div>
+                    {account.currencyCode !== defaultCurrency && (
+                      <div className="text-xs text-gray-400 dark:text-gray-500">
+                        {'\u2248 '}{formatCurrencyBase(convertToDefault(Number(account.currentBalance) || 0, account.currencyCode), defaultCurrency)}
+                      </div>
+                    )}
+                    {account.creditLimit && (
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                        Limit: {formatCurrency(account.creditLimit, account.currencyCode)}
+                      </div>
+                    )}
+                  </>
                 )}
               </td>
               <td className={`${cellPadding} whitespace-nowrap hidden md:table-cell`}>
