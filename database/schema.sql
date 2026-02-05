@@ -570,3 +570,9 @@ CREATE INDEX idx_mab_user_month ON monthly_account_balances(user_id, month);
 CREATE INDEX idx_transactions_status ON transactions(status);
 CREATE INDEX idx_accounts_closed ON accounts(is_closed);
 CREATE INDEX idx_scheduled_transactions_account ON scheduled_transactions(account_id);
+
+-- Composite indexes for common query patterns
+CREATE INDEX idx_transactions_user_date_created ON transactions(user_id, transaction_date DESC, created_at DESC, id DESC);
+CREATE INDEX idx_transactions_account_date ON transactions(account_id, transaction_date DESC);
+CREATE INDEX idx_mab_account_month ON monthly_account_balances(account_id, month);
+CREATE INDEX idx_security_prices_security_date ON security_prices(security_id, price_date DESC);

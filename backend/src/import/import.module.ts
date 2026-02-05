@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ImportController } from './import.controller';
 import { ImportService } from './import.service';
@@ -10,6 +10,7 @@ import { Payee } from '../payees/entities/payee.entity';
 import { Security } from '../securities/entities/security.entity';
 import { InvestmentTransaction } from '../securities/entities/investment-transaction.entity';
 import { Holding } from '../securities/entities/holding.entity';
+import { NetWorthModule } from '../net-worth/net-worth.module';
 @Module({
   imports: [
     TypeOrmModule.forFeature([
@@ -22,6 +23,7 @@ import { Holding } from '../securities/entities/holding.entity';
       InvestmentTransaction,
       Holding,
     ]),
+    forwardRef(() => NetWorthModule),
   ],
   controllers: [ImportController],
   providers: [ImportService],

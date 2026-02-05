@@ -1,6 +1,7 @@
-import { Injectable, BadRequestException, Logger } from '@nestjs/common';
+import { Injectable, BadRequestException, Logger, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, IsNull } from 'typeorm';
+import { NetWorthService } from '../net-worth/net-worth.service';
 import { Transaction, TransactionStatus } from '../transactions/entities/transaction.entity';
 import { TransactionSplit } from '../transactions/entities/transaction-split.entity';
 import { Account, AccountType, AccountSubType } from '../accounts/entities/account.entity';
@@ -90,6 +91,8 @@ export class ImportService {
     private investmentTransactionsRepository: Repository<InvestmentTransaction>,
     @InjectRepository(Holding)
     private holdingsRepository: Repository<Holding>,
+    @Inject(forwardRef(() => NetWorthService))
+    private netWorthService: NetWorthService,
   ) {}
 
   /**
@@ -246,6 +249,10 @@ export class ImportService {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
+
+    // Track all affected account IDs for post-import net worth recalculation
+    const affectedAccountIds = new Set<string>();
+    affectedAccountIds.add(dto.accountId);
 
     // Record import start time - used to only check for duplicates against
     // transactions that existed BEFORE this import started
@@ -527,6 +534,7 @@ export class ImportService {
 
             if (account.accountSubType === AccountSubType.INVESTMENT_BROKERAGE && account.linkedAccountId) {
               cashAccountId = account.linkedAccountId;
+              affectedAccountIds.add(cashAccountId);
               // Get the linked account's currency
               const linkedAccount = await queryRunner.manager.findOne(Account, {
                 where: { id: account.linkedAccountId },
@@ -887,6 +895,7 @@ export class ImportService {
 
               // For transfer splits (including loan payments), create linked transaction in target account
               if (splitTransferAccountId) {
+                affectedAccountIds.add(splitTransferAccountId);
                 const linkedAmount = -split.amount; // Inverse amount
 
                 // Check if there's an existing transaction from a previous import that matches
@@ -1022,6 +1031,7 @@ export class ImportService {
 
           // If it's a transfer (including loan payments) and we have a linked account, create the opposite transaction
           if (isTransfer && transferAccountId) {
+            affectedAccountIds.add(transferAccountId);
             // Get the target account to check currency
             const targetAccount = await queryRunner.manager.findOne(Account, {
               where: { id: transferAccountId },
@@ -1128,6 +1138,13 @@ export class ImportService {
       );
     } finally {
       await queryRunner.release();
+    }
+
+    // Trigger net worth recalculation for all affected accounts (fire-and-forget)
+    for (const accountId of affectedAccountIds) {
+      this.netWorthService.recalculateAccount(userId, accountId).catch((err) =>
+        this.logger.warn(`Post-import net worth recalc failed for account ${accountId}: ${err.message}`),
+      );
     }
 
     return importResult;

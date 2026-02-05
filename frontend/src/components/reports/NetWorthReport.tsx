@@ -32,10 +32,10 @@ export function NetWorthReport() {
     try {
       const { start, end } = resolvedRange;
 
-      if (!start || !end) return;
+      if (!end) return;
 
       const data = await netWorthApi.getMonthly({
-        startDate: start,
+        startDate: start || undefined,
         endDate: end,
       });
       setMonthlyData(data);

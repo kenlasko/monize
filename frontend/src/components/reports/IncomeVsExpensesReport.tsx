@@ -65,6 +65,7 @@ export function IncomeVsExpensesReport() {
 
     transactions.forEach((tx) => {
       if (tx.isTransfer) return;
+      if (tx.account?.accountType === 'INVESTMENT') return;
       const txDate = parseLocalDate(tx.transactionDate);
       const txMonth = startOfMonth(txDate);
       const monthBucket = monthData.find(

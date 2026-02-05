@@ -85,6 +85,7 @@ export function SpendingByPayeeReport() {
 
     transactions.forEach((tx) => {
       if (tx.isTransfer) return;
+      if (tx.account?.accountType === 'INVESTMENT') return;
       const txAmount = Number(tx.amount) || 0;
       if (txAmount >= 0) return;
       const expenseAmount = Math.abs(txAmount);

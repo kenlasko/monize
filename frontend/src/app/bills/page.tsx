@@ -1,7 +1,21 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import toast from 'react-hot-toast';
+import {
+  format,
+  startOfMonth,
+  endOfMonth,
+  eachDayOfInterval,
+  isSameMonth,
+  isToday as checkIsToday,
+  addMonths,
+  subMonths,
+  getDay,
+  addWeeks,
+  addDays,
+  addYears,
+} from 'date-fns';
 import { Button } from '@/components/ui/Button';
 import { ScheduledTransactionForm } from '@/components/scheduled-transactions/ScheduledTransactionForm';
 import { CashFlowForecastChart } from '@/components/bills/CashFlowForecastChart';
@@ -38,6 +52,8 @@ export default function BillsPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<ScheduledTransaction | undefined>();
   const [filterType, setFilterType] = useState<'all' | 'bills' | 'deposits'>('all');
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
+  const [calendarMonth, setCalendarMonth] = useState(new Date());
   const [overrideEditor, setOverrideEditor] = useState<OverrideEditorState>({
     isOpen: false,
     transaction: null,
@@ -316,6 +332,63 @@ export default function BillsPage() {
     }).length,
   };
 
+  // Generate upcoming occurrences for calendar view
+  const getNextOccurrences = (st: ScheduledTransaction, monthsAhead: number = 3): Date[] => {
+    if (!st.nextDueDate) return [];
+    const occurrences: Date[] = [];
+    const startDate = subMonths(startOfMonth(calendarMonth), 1);
+    const endDate = addMonths(endOfMonth(calendarMonth), 1);
+    let nextDate = parseLocalDate(st.nextDueDate);
+    let count = 0;
+
+    while (nextDate <= endDate && count < 100) {
+      if (nextDate >= startDate) {
+        occurrences.push(new Date(nextDate));
+      }
+      switch (st.frequency) {
+        case 'ONCE': return occurrences;
+        case 'DAILY': nextDate = addDays(nextDate, 1); break;
+        case 'WEEKLY': nextDate = addWeeks(nextDate, 1); break;
+        case 'BIWEEKLY': nextDate = addWeeks(nextDate, 2); break;
+        case 'MONTHLY': nextDate = addMonths(nextDate, 1); break;
+        case 'QUARTERLY': nextDate = addMonths(nextDate, 3); break;
+        case 'YEARLY': nextDate = addYears(nextDate, 1); break;
+      }
+      count++;
+    }
+    return occurrences;
+  };
+
+  const calendarDays = useMemo(() => {
+    const monthStart = startOfMonth(calendarMonth);
+    const monthEnd = endOfMonth(calendarMonth);
+    const calStart = new Date(monthStart);
+    calStart.setDate(calStart.getDate() - getDay(monthStart));
+    const calEnd = new Date(monthEnd);
+    calEnd.setDate(calEnd.getDate() + (6 - getDay(monthEnd)));
+
+    const days = eachDayOfInterval({ start: calStart, end: calEnd });
+    const billsByDate = new Map<string, ScheduledTransaction[]>();
+
+    const activeNonTransfer = scheduledTransactions.filter((st) => st.isActive && !st.isTransfer);
+    activeNonTransfer.forEach((st) => {
+      getNextOccurrences(st).forEach((date) => {
+        const key = format(date, 'yyyy-MM-dd');
+        const existing = billsByDate.get(key) || [];
+        existing.push(st);
+        billsByDate.set(key, existing);
+      });
+    });
+
+    return days.map((date) => ({
+      date,
+      isCurrentMonth: isSameMonth(date, calendarMonth),
+      isToday: checkIsToday(date),
+      bills: billsByDate.get(format(date, 'yyyy-MM-dd')) || [],
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [calendarMonth, scheduledTransactions]);
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <AppHeader />
@@ -491,61 +564,162 @@ export default function BillsPage() {
           />
         </Modal>
 
-        {/* Filter Tabs */}
+        {/* View Toggle + Filter Tabs */}
         <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg mb-6">
-          <div className="border-b border-gray-200 dark:border-gray-700">
+          <div className="border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
             <nav className="-mb-px flex">
               <button
-                onClick={() => setFilterType('all')}
+                onClick={() => setViewMode('list')}
                 className={`py-4 px-6 text-sm font-medium border-b-2 ${
-                  filterType === 'all'
+                  viewMode === 'list'
                     ? 'border-blue-500 text-blue-600 dark:text-blue-400'
                     : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
                 }`}
               >
-                All ({scheduledTransactions.length})
+                List
               </button>
               <button
-                onClick={() => setFilterType('bills')}
+                onClick={() => setViewMode('calendar')}
                 className={`py-4 px-6 text-sm font-medium border-b-2 ${
-                  filterType === 'bills'
+                  viewMode === 'calendar'
                     ? 'border-blue-500 text-blue-600 dark:text-blue-400'
                     : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
                 }`}
               >
-                Bills ({scheduledTransactions.filter((t) => t.amount < 0).length})
-              </button>
-              <button
-                onClick={() => setFilterType('deposits')}
-                className={`py-4 px-6 text-sm font-medium border-b-2 ${
-                  filterType === 'deposits'
-                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
-                }`}
-              >
-                Deposits ({scheduledTransactions.filter((t) => t.amount > 0).length})
+                Calendar
               </button>
             </nav>
+            {viewMode === 'list' && (
+              <div className="flex pr-4 gap-2">
+                {(['all', 'bills', 'deposits'] as const).map((type) => (
+                  <button
+                    key={type}
+                    onClick={() => setFilterType(type)}
+                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                      filterType === type
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    {type === 'all' ? `All (${scheduledTransactions.length})` :
+                     type === 'bills' ? `Bills (${scheduledTransactions.filter((t) => t.amount < 0).length})` :
+                     `Deposits (${scheduledTransactions.filter((t) => t.amount > 0).length})`}
+                  </button>
+                ))}
+              </div>
+            )}
+            {viewMode === 'calendar' && (
+              <div className="flex items-center gap-2 pr-4">
+                <button
+                  onClick={() => setCalendarMonth(subMonths(calendarMonth, 1))}
+                  className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+                >
+                  <svg className="h-5 w-5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+                <span className="text-sm font-semibold text-gray-900 dark:text-gray-100 min-w-[130px] text-center">
+                  {format(calendarMonth, 'MMMM yyyy')}
+                </span>
+                <button
+                  onClick={() => setCalendarMonth(addMonths(calendarMonth, 1))}
+                  className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+                >
+                  <svg className="h-5 w-5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+                <button
+                  onClick={() => setCalendarMonth(new Date())}
+                  className="ml-1 px-3 py-1 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md"
+                >
+                  Today
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Scheduled Transactions List */}
-        <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg overflow-hidden">
-          {isLoading ? (
-            <div className="p-12 text-center">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-blue-400"></div>
-              <p className="mt-2 text-gray-500 dark:text-gray-400">Loading scheduled transactions...</p>
+        {viewMode === 'list' ? (
+          /* Scheduled Transactions List */
+          <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg overflow-hidden">
+            {isLoading ? (
+              <div className="p-12 text-center">
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-blue-400"></div>
+                <p className="mt-2 text-gray-500 dark:text-gray-400">Loading scheduled transactions...</p>
+              </div>
+            ) : (
+              <ScheduledTransactionList
+                transactions={filteredTransactions}
+                onEdit={handleEdit}
+                onEditOccurrence={handleEditOccurrence}
+                onPost={handlePost}
+                onRefresh={loadData}
+              />
+            )}
+          </div>
+        ) : (
+          /* Calendar View */
+          <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg overflow-hidden">
+            <div className="grid grid-cols-7">
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
+                <div
+                  key={day}
+                  className="px-2 py-3 text-center text-sm font-medium text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700"
+                >
+                  {day}
+                </div>
+              ))}
             </div>
-          ) : (
-            <ScheduledTransactionList
-              transactions={filteredTransactions}
-              onEdit={handleEdit}
-              onEditOccurrence={handleEditOccurrence}
-              onPost={handlePost}
-              onRefresh={loadData}
-            />
-          )}
-        </div>
+            <div className="grid grid-cols-7">
+              {calendarDays.map((day, index) => (
+                <div
+                  key={index}
+                  className={`min-h-[100px] p-1 border-b border-r border-gray-200 dark:border-gray-700 ${
+                    !day.isCurrentMonth
+                      ? 'bg-gray-50 dark:bg-gray-900/50'
+                      : 'bg-white dark:bg-gray-800'
+                  }`}
+                >
+                  <div
+                    className={`text-sm font-medium mb-1 w-7 h-7 flex items-center justify-center rounded-full ${
+                      day.isToday
+                        ? 'bg-blue-600 text-white'
+                        : day.isCurrentMonth
+                        ? 'text-gray-900 dark:text-gray-100'
+                        : 'text-gray-400 dark:text-gray-600'
+                    }`}
+                  >
+                    {format(day.date, 'd')}
+                  </div>
+                  <div className="space-y-0.5">
+                    {day.bills.slice(0, 3).map((bill, billIndex) => {
+                      const isExpense = bill.amount < 0;
+                      return (
+                        <div
+                          key={billIndex}
+                          onClick={() => handleEdit(bill)}
+                          className={`px-1 py-0.5 text-xs rounded truncate cursor-pointer ${
+                            isExpense
+                              ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                              : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                          } hover:opacity-80`}
+                        >
+                          {bill.name}
+                        </div>
+                      );
+                    })}
+                    {day.bills.length > 3 && (
+                      <div className="text-xs text-gray-500 dark:text-gray-400 px-1">
+                        +{day.bills.length - 3} more
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Occurrence Date Picker */}

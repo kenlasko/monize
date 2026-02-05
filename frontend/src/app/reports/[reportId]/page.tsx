@@ -1,61 +1,36 @@
 'use client';
 
+import { Suspense, lazy } from 'react';
 import { useParams } from 'next/navigation';
 import { AppHeader } from '@/components/layout/AppHeader';
-import { SpendingByCategoryReport } from '@/components/reports/SpendingByCategoryReport';
-import { SpendingByPayeeReport } from '@/components/reports/SpendingByPayeeReport';
-import { MonthlySpendingTrendReport } from '@/components/reports/MonthlySpendingTrendReport';
-import { IncomeVsExpensesReport } from '@/components/reports/IncomeVsExpensesReport';
-import { IncomeBySourceReport } from '@/components/reports/IncomeBySourceReport';
-import { NetWorthReport } from '@/components/reports/NetWorthReport';
-import { AccountBalancesReport } from '@/components/reports/AccountBalancesReport';
-import { CashFlowReport } from '@/components/reports/CashFlowReport';
-import { TaxSummaryReport } from '@/components/reports/TaxSummaryReport';
-import { YearOverYearReport } from '@/components/reports/YearOverYearReport';
-// Debt & Loans
-import { DebtPayoffTimelineReport } from '@/components/reports/DebtPayoffTimelineReport';
-import { LoanAmortizationReport } from '@/components/reports/LoanAmortizationReport';
-// Investment
-import { InvestmentPerformanceReport } from '@/components/reports/InvestmentPerformanceReport';
-import { DividendIncomeReport } from '@/components/reports/DividendIncomeReport';
-// Behavioral Insights
-import { RecurringExpensesReport } from '@/components/reports/RecurringExpensesReport';
-import { SpendingAnomaliesReport } from '@/components/reports/SpendingAnomaliesReport';
-import { WeekendVsWeekdayReport } from '@/components/reports/WeekendVsWeekdayReport';
-// Maintenance & Cleanup
-import { UncategorizedTransactionsReport } from '@/components/reports/UncategorizedTransactionsReport';
-import { DuplicateTransactionReport } from '@/components/reports/DuplicateTransactionReport';
-// Scheduled & Bills
-import { UpcomingBillsReport } from '@/components/reports/UpcomingBillsReport';
-import { BillPaymentHistoryReport } from '@/components/reports/BillPaymentHistoryReport';
 
-const reportComponents: Record<string, React.ComponentType> = {
-  'spending-by-category': SpendingByCategoryReport,
-  'spending-by-payee': SpendingByPayeeReport,
-  'monthly-spending-trend': MonthlySpendingTrendReport,
-  'income-vs-expenses': IncomeVsExpensesReport,
-  'income-by-source': IncomeBySourceReport,
-  'net-worth': NetWorthReport,
-  'account-balances': AccountBalancesReport,
-  'cash-flow': CashFlowReport,
-  'tax-summary': TaxSummaryReport,
-  'year-over-year': YearOverYearReport,
+const reportComponents: Record<string, React.LazyExoticComponent<React.ComponentType>> = {
+  'spending-by-category': lazy(() => import('@/components/reports/SpendingByCategoryReport').then(m => ({ default: m.SpendingByCategoryReport }))),
+  'spending-by-payee': lazy(() => import('@/components/reports/SpendingByPayeeReport').then(m => ({ default: m.SpendingByPayeeReport }))),
+  'monthly-spending-trend': lazy(() => import('@/components/reports/MonthlySpendingTrendReport').then(m => ({ default: m.MonthlySpendingTrendReport }))),
+  'income-vs-expenses': lazy(() => import('@/components/reports/IncomeVsExpensesReport').then(m => ({ default: m.IncomeVsExpensesReport }))),
+  'income-by-source': lazy(() => import('@/components/reports/IncomeBySourceReport').then(m => ({ default: m.IncomeBySourceReport }))),
+  'net-worth': lazy(() => import('@/components/reports/NetWorthReport').then(m => ({ default: m.NetWorthReport }))),
+  'account-balances': lazy(() => import('@/components/reports/AccountBalancesReport').then(m => ({ default: m.AccountBalancesReport }))),
+  'cash-flow': lazy(() => import('@/components/reports/CashFlowReport').then(m => ({ default: m.CashFlowReport }))),
+  'tax-summary': lazy(() => import('@/components/reports/TaxSummaryReport').then(m => ({ default: m.TaxSummaryReport }))),
+  'year-over-year': lazy(() => import('@/components/reports/YearOverYearReport').then(m => ({ default: m.YearOverYearReport }))),
   // Debt & Loans
-  'debt-payoff-timeline': DebtPayoffTimelineReport,
-  'loan-amortization': LoanAmortizationReport,
+  'debt-payoff-timeline': lazy(() => import('@/components/reports/DebtPayoffTimelineReport').then(m => ({ default: m.DebtPayoffTimelineReport }))),
+  'loan-amortization': lazy(() => import('@/components/reports/LoanAmortizationReport').then(m => ({ default: m.LoanAmortizationReport }))),
   // Investment
-  'investment-performance': InvestmentPerformanceReport,
-  'dividend-income': DividendIncomeReport,
+  'investment-performance': lazy(() => import('@/components/reports/InvestmentPerformanceReport').then(m => ({ default: m.InvestmentPerformanceReport }))),
+  'dividend-income': lazy(() => import('@/components/reports/DividendIncomeReport').then(m => ({ default: m.DividendIncomeReport }))),
   // Behavioral Insights
-  'recurring-expenses': RecurringExpensesReport,
-  'spending-anomalies': SpendingAnomaliesReport,
-  'weekend-weekday-spending': WeekendVsWeekdayReport,
+  'recurring-expenses': lazy(() => import('@/components/reports/RecurringExpensesReport').then(m => ({ default: m.RecurringExpensesReport }))),
+  'spending-anomalies': lazy(() => import('@/components/reports/SpendingAnomaliesReport').then(m => ({ default: m.SpendingAnomaliesReport }))),
+  'weekend-weekday-spending': lazy(() => import('@/components/reports/WeekendVsWeekdayReport').then(m => ({ default: m.WeekendVsWeekdayReport }))),
   // Maintenance & Cleanup
-  'uncategorized-transactions': UncategorizedTransactionsReport,
-  'duplicate-transactions': DuplicateTransactionReport,
+  'uncategorized-transactions': lazy(() => import('@/components/reports/UncategorizedTransactionsReport').then(m => ({ default: m.UncategorizedTransactionsReport }))),
+  'duplicate-transactions': lazy(() => import('@/components/reports/DuplicateTransactionReport').then(m => ({ default: m.DuplicateTransactionReport }))),
   // Scheduled & Bills
-  'upcoming-bills': UpcomingBillsReport,
-  'bill-payment-history': BillPaymentHistoryReport,
+  'upcoming-bills': lazy(() => import('@/components/reports/UpcomingBillsReport').then(m => ({ default: m.UpcomingBillsReport }))),
+  'bill-payment-history': lazy(() => import('@/components/reports/BillPaymentHistoryReport').then(m => ({ default: m.BillPaymentHistoryReport }))),
 };
 
 const reportNames: Record<string, string> = {
@@ -86,6 +61,26 @@ const reportNames: Record<string, string> = {
   'upcoming-bills': 'Upcoming Bills Calendar',
   'bill-payment-history': 'Bill Payment History',
 };
+
+function ReportSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+        <div className="animate-pulse flex gap-2">
+          <div className="h-8 w-12 bg-gray-200 dark:bg-gray-700 rounded" />
+          <div className="h-8 w-12 bg-gray-200 dark:bg-gray-700 rounded" />
+          <div className="h-8 w-12 bg-gray-200 dark:bg-gray-700 rounded" />
+        </div>
+      </div>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/3" />
+          <div className="h-64 bg-gray-200 dark:bg-gray-700 rounded" />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function ReportPage() {
   const params = useParams();
@@ -136,7 +131,9 @@ export default function ReportPage() {
       </div>
 
       <div className="px-4 sm:px-6 lg:px-12 py-8">
-        <ReportComponent />
+        <Suspense fallback={<ReportSkeleton />}>
+          <ReportComponent />
+        </Suspense>
       </div>
     </div>
   );

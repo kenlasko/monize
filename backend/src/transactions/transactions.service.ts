@@ -47,6 +47,8 @@ export interface TransferResult {
 @Injectable()
 export class TransactionsService {
   private readonly logger = new Logger(TransactionsService.name);
+  private readonly recalcTimers = new Map<string, ReturnType<typeof setTimeout>>();
+  private static readonly RECALC_DEBOUNCE_MS = 2000;
 
   constructor(
     @InjectRepository(Transaction)
@@ -65,10 +67,20 @@ export class TransactionsService {
   ) {}
 
   private triggerNetWorthRecalc(accountId: string, userId: string): void {
-    this.netWorthService.recalculateAccount(userId, accountId).catch((err) =>
-      this.logger.warn(
-        `Net worth recalc failed for account ${accountId}: ${err.message}`,
-      ),
+    const key = `${userId}:${accountId}`;
+    const existing = this.recalcTimers.get(key);
+    if (existing) clearTimeout(existing);
+
+    this.recalcTimers.set(
+      key,
+      setTimeout(() => {
+        this.recalcTimers.delete(key);
+        this.netWorthService.recalculateAccount(userId, accountId).catch((err) =>
+          this.logger.warn(
+            `Net worth recalc failed for account ${accountId}: ${err.message}`,
+          ),
+        );
+      }, TransactionsService.RECALC_DEBOUNCE_MS),
     );
   }
 
