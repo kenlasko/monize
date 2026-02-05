@@ -12,30 +12,19 @@ import {
   Legend,
   ReferenceLine,
 } from 'recharts';
-import { format, subMonths, startOfMonth, endOfMonth, eachMonthOfInterval } from 'date-fns';
-import { transactionsApi } from '@/lib/transactions';
-import { accountsApi } from '@/lib/accounts';
-import { investmentsApi } from '@/lib/investments';
-import { exchangeRatesApi, ExchangeRate } from '@/lib/exchange-rates';
-import { Transaction } from '@/types/transaction';
-import { Account } from '@/types/account';
-import { PortfolioSummary } from '@/types/investment';
+import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
+import { netWorthApi } from '@/lib/net-worth';
+import { MonthlyNetWorth } from '@/types/net-worth';
 import { parseLocalDate } from '@/lib/utils';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
-import { useExchangeRates, convertWithRateMap } from '@/hooks/useExchangeRates';
-
-const LIABILITY_TYPES = ['CREDIT_CARD', 'LOAN', 'MORTGAGE', 'LINE_OF_CREDIT'];
 
 type DateRange = '1y' | '2y' | '5y' | 'all' | 'custom';
 
 export function NetWorthReport() {
   const { formatCurrencyCompact: formatCurrency } = useNumberFormat();
-  const { rates: currentRates, defaultCurrency } = useExchangeRates();
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [portfolioSummary, setPortfolioSummary] = useState<PortfolioSummary | null>(null);
-  const [historicalRates, setHistoricalRates] = useState<ExchangeRate[]>([]);
+  const [monthlyData, setMonthlyData] = useState<MonthlyNetWorth[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRecalculating, setIsRecalculating] = useState(false);
   const [dateRange, setDateRange] = useState<DateRange>('1y');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -56,7 +45,7 @@ export function NetWorthReport() {
         start = format(startOfMonth(subMonths(now, 59)), 'yyyy-MM-dd');
         break;
       case 'all':
-        start = '2000-01-01';
+        start = '1990-01-01';
         break;
       default:
         start = startDate || format(startOfMonth(subMonths(now, 11)), 'yyyy-MM-dd');
@@ -72,18 +61,15 @@ export function NetWorthReport() {
         ? { start: startDate, end: endDate }
         : getDateRange(dateRange);
 
-      const [txData, accData, portfolio, rateHistory] = await Promise.all([
-        transactionsApi.getAll({ startDate: start, endDate: end, limit: 100000 }),
-        accountsApi.getAll(),
-        investmentsApi.getPortfolioSummary().catch(() => null),
-        exchangeRatesApi.getRateHistory(start, end).catch(() => [] as ExchangeRate[]),
-      ]);
-      setTransactions(txData.data);
-      setAccounts(accData);
-      setPortfolioSummary(portfolio);
-      setHistoricalRates(rateHistory);
+      if (!start || !end) return;
+
+      const data = await netWorthApi.getMonthly({
+        startDate: start,
+        endDate: end,
+      });
+      setMonthlyData(data);
     } catch (error) {
-      console.error('Failed to load data:', error);
+      console.error('Failed to load net worth data:', error);
     } finally {
       setIsLoading(false);
     }
@@ -95,203 +81,26 @@ export function NetWorthReport() {
     }
   }, [dateRange, startDate, endDate, loadData]);
 
-  const chartData = useMemo(() => {
-    const { start, end } = dateRange === 'custom'
-      ? { start: startDate, end: endDate }
-      : getDateRange(dateRange);
-
-    if (!start || !end) return [];
-
-    // Get all months in range
-    const months = eachMonthOfInterval({
-      start: parseLocalDate(start),
-      end: parseLocalDate(end),
-    });
-
-    // Build a map of brokerage account ID -> total market value
-    const brokerageValues = new Map<string, number>();
-    if (portfolioSummary) {
-      for (const accountHoldings of portfolioSummary.holdingsByAccount) {
-        const totalValue = accountHoldings.totalMarketValue + accountHoldings.cashBalance;
-        brokerageValues.set(accountHoldings.accountId, totalValue);
-      }
+  const handleRecalculate = async () => {
+    setIsRecalculating(true);
+    try {
+      await netWorthApi.recalculate();
+      await loadData();
+    } catch (error) {
+      console.error('Failed to recalculate:', error);
+    } finally {
+      setIsRecalculating(false);
     }
+  };
 
-    // Build per-account current balances in native currency
-    const activeAccounts = accounts.filter((acc) => !acc.isClosed);
-    const accountCurrentBalances = new Map<string, number>();
-    const accountCurrencies = new Map<string, string>();
-    const accountTypes = new Map<string, string>();
-    const accountDateAcquired = new Map<string, string | null>();
-    const accountOpeningBalances = new Map<string, number>();
-
-    activeAccounts.forEach((acc) => {
-      const effectiveBalance = acc.accountSubType === 'INVESTMENT_BROKERAGE'
-        ? (brokerageValues.get(acc.id) ?? 0)
-        : (Number(acc.currentBalance) || 0);
-      accountCurrentBalances.set(acc.id, effectiveBalance);
-      accountCurrencies.set(acc.id, acc.currencyCode);
-      accountTypes.set(acc.id, acc.accountType);
-      accountDateAcquired.set(acc.id, acc.dateAcquired);
-      accountOpeningBalances.set(acc.id, Number(acc.openingBalance) || 0);
-    });
-
-    // Group transactions by account and month
-    const txByAccountMonth = new Map<string, Map<string, Transaction[]>>();
-    transactions.forEach((tx) => {
-      const monthKey = format(parseLocalDate(tx.transactionDate), 'yyyy-MM');
-      if (!txByAccountMonth.has(tx.accountId)) {
-        txByAccountMonth.set(tx.accountId, new Map());
-      }
-      const accountMonths = txByAccountMonth.get(tx.accountId)!;
-      if (!accountMonths.has(monthKey)) {
-        accountMonths.set(monthKey, []);
-      }
-      accountMonths.get(monthKey)!.push(tx);
-    });
-
-    // Build per-account monthly balances by working backwards from current
-    const accountMonthlyBalances = new Map<string, Map<string, number>>();
-
-    accountCurrentBalances.forEach((currentBal, accountId) => {
-      const monthlyBals = new Map<string, number>();
-      let running = currentBal;
-      const accountTxMonths = txByAccountMonth.get(accountId) || new Map<string, Transaction[]>();
-
-      for (let i = months.length - 1; i >= 0; i--) {
-        const monthKey = format(months[i], 'yyyy-MM');
-        monthlyBals.set(monthKey, running);
-
-        // Reverse transactions for this month to get earlier balance
-        const monthTxs = accountTxMonths.get(monthKey) || [];
-        monthTxs.forEach((tx) => {
-          running -= (Number(tx.amount) || 0);
-        });
-      }
-
-      // For ASSET accounts: use openingBalance for months before the earliest
-      // transaction, since the backward computation would incorrectly carry the
-      // current value (which includes appreciation) into historical months.
-      const accType = accountTypes.get(accountId);
-      if (accType === 'ASSET') {
-        const openingBal = accountOpeningBalances.get(accountId) ?? 0;
-
-        // Find the earliest month with transactions on this account
-        let earliestTxMonthIdx = -1;
-        for (let i = 0; i < months.length; i++) {
-          const monthKey = format(months[i], 'yyyy-MM');
-          if (accountTxMonths.has(monthKey)) {
-            earliestTxMonthIdx = i;
-            break;
-          }
-        }
-
-        if (earliestTxMonthIdx > 0) {
-          // Use openingBalance for months before earliest transaction
-          for (let i = 0; i < earliestTxMonthIdx; i++) {
-            monthlyBals.set(format(months[i], 'yyyy-MM'), openingBal);
-          }
-        } else if (earliestTxMonthIdx === -1 && openingBal !== currentBal) {
-          // No transactions at all — use openingBalance for all months except the last
-          for (let i = 0; i < months.length - 1; i++) {
-            monthlyBals.set(format(months[i], 'yyyy-MM'), openingBal);
-          }
-        }
-      }
-
-      accountMonthlyBalances.set(accountId, monthlyBals);
-    });
-
-    // Build monthly rate maps from historical rates
-    // Sort rates by date, group by pair, find latest rate <= each month-end
-    const sortedRates = [...historicalRates].sort(
-      (a, b) => a.rateDate.localeCompare(b.rateDate),
-    );
-    const ratesByPair = new Map<string, Array<{ date: string; rate: number }>>();
-    sortedRates.forEach((r) => {
-      const key = `${r.fromCurrency}->${r.toCurrency}`;
-      if (!ratesByPair.has(key)) {
-        ratesByPair.set(key, []);
-      }
-      ratesByPair.get(key)!.push({ date: r.rateDate, rate: Number(r.rate) });
-    });
-
-    // Also add current rates as a fallback for the most recent month
-    currentRates.forEach((r) => {
-      const key = `${r.fromCurrency}->${r.toCurrency}`;
-      if (!ratesByPair.has(key)) {
-        ratesByPair.set(key, []);
-      }
-      ratesByPair.get(key)!.push({ date: r.rateDate, rate: Number(r.rate) });
-    });
-
-    // For each month, find the best rate per pair
-    const monthRateMaps = new Map<string, Map<string, number>>();
-    months.forEach((month) => {
-      const monthEnd = format(endOfMonth(month), 'yyyy-MM-dd');
-      const monthKey = format(month, 'yyyy-MM');
-      const rateMap = new Map<string, number>();
-
-      ratesByPair.forEach((rates, pair) => {
-        let bestRate: number | null = null;
-        for (const r of rates) {
-          if (r.date <= monthEnd) {
-            bestRate = r.rate;
-          }
-        }
-        // If no rate found before month-end, use the earliest available rate
-        if (bestRate === null && rates.length > 0) {
-          bestRate = rates[0].rate;
-        }
-        if (bestRate !== null) {
-          rateMap.set(pair, bestRate);
-        }
-      });
-
-      monthRateMaps.set(monthKey, rateMap);
-    });
-
-    // Convert per-account balances and aggregate by month
-    return months.map((month) => {
-      const monthKey = format(month, 'yyyy-MM');
-      const rateMap = monthRateMaps.get(monthKey) || new Map();
-
-      let assets = 0;
-      let liabilities = 0;
-
-      accountCurrentBalances.forEach((_, accountId) => {
-        const accType = accountTypes.get(accountId) || 'OTHER';
-
-        // Skip ASSET accounts before their acquisition date
-        const dateAcquired = accountDateAcquired.get(accountId);
-        if (dateAcquired && accType === 'ASSET') {
-          const monthEnd = endOfMonth(month);
-          const acquiredDate = parseLocalDate(dateAcquired.substring(0, 10));
-          if (monthEnd < acquiredDate) {
-            return;
-          }
-        }
-
-        const balance = accountMonthlyBalances.get(accountId)?.get(monthKey) ?? 0;
-        const currency = accountCurrencies.get(accountId) || defaultCurrency;
-
-        const converted = convertWithRateMap(balance, currency, defaultCurrency, rateMap);
-
-        if (LIABILITY_TYPES.includes(accType)) {
-          liabilities += Math.abs(converted);
-        } else {
-          assets += converted;
-        }
-      });
-
-      return {
-        name: format(month, 'MMM yyyy'),
-        Assets: Math.round(assets),
-        Liabilities: Math.round(liabilities),
-        NetWorth: Math.round(assets - liabilities),
-      };
-    });
-  }, [transactions, accounts, portfolioSummary, historicalRates, currentRates, defaultCurrency, dateRange, startDate, endDate, getDateRange]);
+  const chartData = useMemo(() =>
+    monthlyData.map((d) => ({
+      name: format(parseLocalDate(d.month), 'MMM yyyy'),
+      Assets: Math.round(d.assets),
+      Liabilities: Math.round(d.liabilities),
+      NetWorth: Math.round(d.netWorth),
+    })),
+  [monthlyData]);
 
   const summary = useMemo(() => {
     if (chartData.length === 0) return { current: 0, change: 0, changePercent: 0 };
@@ -398,7 +207,7 @@ export function NetWorthReport() {
 
       {/* Controls */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
-        <div className="flex flex-wrap gap-4 items-center">
+        <div className="flex flex-wrap gap-4 items-center justify-between">
           <div className="flex flex-wrap gap-2">
             {(['1y', '2y', '5y', 'all'] as DateRange[]).map((range) => (
               <button
@@ -424,6 +233,13 @@ export function NetWorthReport() {
               Custom
             </button>
           </div>
+          <button
+            onClick={handleRecalculate}
+            disabled={isRecalculating}
+            className="px-3 py-1.5 text-sm font-medium rounded-md transition-colors bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50"
+          >
+            {isRecalculating ? 'Recalculating...' : 'Recalculate'}
+          </button>
         </div>
         {dateRange === 'custom' && (
           <div className="flex gap-4 mt-4">

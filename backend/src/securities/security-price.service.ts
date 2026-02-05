@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { Repository, In, DataSource } from 'typeorm';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { SecurityPrice } from './entities/security-price.entity';
 import { Security } from './entities/security.entity';
@@ -47,6 +47,21 @@ export interface PriceRefreshSummary {
   lastUpdated: Date;
 }
 
+export interface HistoricalBackfillResult {
+  symbol: string;
+  success: boolean;
+  pricesLoaded?: number;
+  error?: string;
+}
+
+export interface HistoricalBackfillSummary {
+  totalSecurities: number;
+  successful: number;
+  failed: number;
+  totalPricesLoaded: number;
+  results: HistoricalBackfillResult[];
+}
+
 @Injectable()
 export class SecurityPriceService {
   private readonly logger = new Logger(SecurityPriceService.name);
@@ -56,6 +71,7 @@ export class SecurityPriceService {
     private securityPriceRepository: Repository<SecurityPrice>,
     @InjectRepository(Security)
     private securitiesRepository: Repository<Security>,
+    private dataSource: DataSource,
   ) {}
 
   /**
@@ -623,6 +639,195 @@ export class SecurityPriceService {
       order: { createdAt: 'DESC' },
     });
     return latest?.createdAt ?? null;
+  }
+
+  /**
+   * Fetch historical daily prices from Yahoo Finance for a single symbol
+   */
+  private async fetchYahooHistorical(
+    symbol: string,
+  ): Promise<Array<{ date: Date; open: number | null; high: number | null; low: number | null; close: number; volume: number | null }> | null> {
+    try {
+      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=max`;
+
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        },
+      });
+
+      if (!response.ok) {
+        this.logger.warn(`Yahoo Finance API returned ${response.status} for historical ${symbol}`);
+        return null;
+      }
+
+      const data = await response.json();
+      const result = data.chart?.result?.[0];
+      if (!result?.timestamp || !result?.indicators?.quote?.[0]) {
+        return null;
+      }
+
+      const timestamps: number[] = result.timestamp;
+      const quote = result.indicators.quote[0];
+      const prices: Array<{ date: Date; open: number | null; high: number | null; low: number | null; close: number; volume: number | null }> = [];
+
+      for (let i = 0; i < timestamps.length; i++) {
+        const close = quote.close?.[i];
+        if (close == null || isNaN(close)) continue;
+
+        const date = new Date(timestamps[i] * 1000);
+        date.setHours(0, 0, 0, 0);
+
+        prices.push({
+          date,
+          open: quote.open?.[i] ?? null,
+          high: quote.high?.[i] ?? null,
+          low: quote.low?.[i] ?? null,
+          close,
+          volume: quote.volume?.[i] ?? null,
+        });
+      }
+
+      return prices;
+    } catch (error) {
+      this.logger.error(`Failed to fetch historical prices for ${symbol}: ${error.message}`);
+      return null;
+    }
+  }
+
+  /**
+   * Backfill historical prices for all active securities.
+   * Only fetches prices back to the earliest investment transaction date for each security.
+   */
+  async backfillHistoricalPrices(): Promise<HistoricalBackfillSummary> {
+    const startTime = Date.now();
+    this.logger.log('Starting historical price backfill');
+
+    const securities = await this.securitiesRepository.find({
+      where: { isActive: true, skipPriceUpdates: false },
+    });
+
+    // Find earliest investment transaction date per security
+    const earliestTxRows: Array<{ security_id: string; earliest: string }> =
+      await this.dataSource.query(
+        `SELECT security_id, MIN(transaction_date)::TEXT as earliest
+         FROM investment_transactions
+         WHERE security_id IS NOT NULL
+         GROUP BY security_id`,
+      );
+    const earliestTxDate = new Map(
+      earliestTxRows.map((r) => [r.security_id, r.earliest]),
+    );
+
+    const results: HistoricalBackfillResult[] = [];
+    let successful = 0;
+    let failed = 0;
+    let totalPricesLoaded = 0;
+
+    // Process sequentially to avoid rate limiting
+    for (const security of securities) {
+      const earliest = earliestTxDate.get(security.id);
+      if (!earliest) {
+        results.push({ symbol: security.symbol, success: true, pricesLoaded: 0 });
+        successful++;
+        continue;
+      }
+
+      const yahooSymbol = this.getYahooSymbol(security.symbol, security.exchange);
+      let prices = await this.fetchYahooHistorical(yahooSymbol);
+
+      // Fallback to alternate symbols if needed
+      if (!prices && yahooSymbol === security.symbol) {
+        const alternateSymbols = this.getAlternateSymbols(security.symbol);
+        for (const altSymbol of alternateSymbols) {
+          prices = await this.fetchYahooHistorical(altSymbol);
+          if (prices) break;
+        }
+      }
+
+      if (!prices || prices.length === 0) {
+        results.push({ symbol: security.symbol, success: false, error: 'No historical data available' });
+        failed++;
+        continue;
+      }
+
+      // Filter to only keep prices from the earliest transaction date onward
+      const cutoff = new Date(earliest);
+      cutoff.setHours(0, 0, 0, 0);
+      prices = prices.filter((p) => p.date >= cutoff);
+
+      // Deduplicate by date (Yahoo can return duplicate timestamps)
+      const seen = new Set<string>();
+      prices = prices.filter((p) => {
+        const key = p.date.toISOString().substring(0, 10);
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+
+      if (prices.length === 0) {
+        results.push({ symbol: security.symbol, success: true, pricesLoaded: 0 });
+        successful++;
+        continue;
+      }
+
+      try {
+        // Bulk upsert using raw SQL for performance
+        const batchSize = 500;
+        for (let i = 0; i < prices.length; i += batchSize) {
+          const batch = prices.slice(i, i + batchSize);
+          const values = batch.map(
+            (p, idx) => {
+              const offset = idx * 7;
+              return `($${offset + 1}::UUID, $${offset + 2}::DATE, $${offset + 3}, $${offset + 4}, $${offset + 5}, $${offset + 6}, $${offset + 7}, 'yahoo_finance')`;
+            },
+          ).join(', ');
+
+          const params: any[] = [];
+          for (const p of batch) {
+            params.push(security.id, p.date, p.open, p.high, p.low, p.close, p.volume);
+          }
+
+          await this.dataSource.query(
+            `INSERT INTO security_prices (security_id, price_date, open_price, high_price, low_price, close_price, volume, source)
+             VALUES ${values}
+             ON CONFLICT (security_id, price_date) DO UPDATE SET
+               close_price = EXCLUDED.close_price,
+               open_price = EXCLUDED.open_price,
+               high_price = EXCLUDED.high_price,
+               low_price = EXCLUDED.low_price,
+               volume = EXCLUDED.volume,
+               source = EXCLUDED.source`,
+            params,
+          );
+        }
+
+        this.logger.log(`Backfilled ${prices.length} prices for ${security.symbol} (from ${earliest})`);
+        results.push({ symbol: security.symbol, success: true, pricesLoaded: prices.length });
+        successful++;
+        totalPricesLoaded += prices.length;
+      } catch (error) {
+        this.logger.error(`Failed to save historical prices for ${security.symbol}: ${error.message}`);
+        results.push({ symbol: security.symbol, success: false, error: error.message });
+        failed++;
+      }
+
+      // Small delay between securities to avoid rate limiting
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+
+    const duration = Date.now() - startTime;
+    this.logger.log(
+      `Historical backfill completed in ${duration}ms: ${successful} successful, ${failed} failed, ${totalPricesLoaded} total prices`,
+    );
+
+    return {
+      totalSecurities: securities.length,
+      successful,
+      failed,
+      totalPricesLoaded,
+      results,
+    };
   }
 
   /**

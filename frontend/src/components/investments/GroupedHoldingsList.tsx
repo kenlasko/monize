@@ -131,6 +131,12 @@ export function GroupedHoldingsList({
         {holdingsByAccount.map((account) => {
           const isExpanded = expandedAccounts.has(account.accountId);
           const accountTotalValue = account.totalMarketValue + account.cashBalance;
+          const isForeignAcct = account.currencyCode && account.currencyCode !== defaultCurrency;
+          const fmtAcct = (value: number | null) => {
+            if (value === null) return '-';
+            if (isForeignAcct) return `${formatCurrencyBase(value, account.currencyCode)} ${account.currencyCode}`;
+            return formatCurrency(value);
+          };
 
           return (
             <div key={account.accountId}>
@@ -157,17 +163,15 @@ export function GroupedHoldingsList({
                 </div>
                 <div className="text-right">
                   <div className="font-semibold text-gray-900 dark:text-gray-100">
-                    {account.currencyCode && account.currencyCode !== defaultCurrency
-                      ? `${formatCurrencyBase(accountTotalValue, account.currencyCode)} ${account.currencyCode}`
-                      : formatCurrency(accountTotalValue)}
+                    {fmtAcct(accountTotalValue)}
                   </div>
-                  {account.currencyCode && account.currencyCode !== defaultCurrency && (
+                  {isForeignAcct && (
                     <div className="text-xs text-gray-400 dark:text-gray-500">
                       {'\u2248 '}{formatCurrencyBase(convertToDefault(accountTotalValue, account.currencyCode), defaultCurrency)}
                     </div>
                   )}
                   <div className={`text-sm ${getGainLossColor(account.totalGainLoss)}`}>
-                    {formatCurrency(account.totalGainLoss)} ({formatPercent(account.totalGainLossPercent)})
+                    {fmtAcct(account.totalGainLoss)} ({formatPercent(account.totalGainLossPercent)})
                   </div>
                 </div>
               </button>
@@ -211,6 +215,7 @@ export function GroupedHoldingsList({
                           holding={holding}
                           defaultCurrency={defaultCurrency}
                           formatCurrency={formatCurrency}
+                          formatCurrencyWithCode={formatCurrencyBase}
                           formatQuantity={formatQuantity}
                           formatPercent={formatPercent}
                           getGainLossColor={getGainLossColor}
@@ -247,10 +252,10 @@ export function GroupedHoldingsList({
                             -
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap text-right text-sm text-gray-500 dark:text-gray-400">
-                            {formatCurrency(account.cashBalance)}
+                            {fmtAcct(account.cashBalance)}
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium text-gray-900 dark:text-gray-100">
-                            {formatCurrency(account.cashBalance)}
+                            {fmtAcct(account.cashBalance)}
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap text-right">
                             <div className="text-sm text-gray-400 dark:text-gray-500">-</div>
@@ -267,13 +272,11 @@ export function GroupedHoldingsList({
                           Account Total
                         </td>
                         <td className="px-4 py-3 text-right text-sm text-gray-900 dark:text-gray-100">
-                          {formatCurrency(account.totalCostBasis + account.cashBalance)}
+                          {fmtAcct(account.totalCostBasis + account.cashBalance)}
                         </td>
                         <td className="px-4 py-3 text-right text-sm text-gray-900 dark:text-gray-100">
-                          <div>{account.currencyCode && account.currencyCode !== defaultCurrency
-                            ? `${formatCurrencyBase(accountTotalValue, account.currencyCode)} ${account.currencyCode}`
-                            : formatCurrency(accountTotalValue)}</div>
-                          {account.currencyCode && account.currencyCode !== defaultCurrency && (
+                          <div>{fmtAcct(accountTotalValue)}</div>
+                          {isForeignAcct && (
                             <div className="text-xs font-normal text-gray-400 dark:text-gray-500">
                               {'\u2248 '}{formatCurrencyBase(convertToDefault(accountTotalValue, account.currencyCode), defaultCurrency)}
                             </div>
@@ -281,7 +284,7 @@ export function GroupedHoldingsList({
                         </td>
                         <td className="px-4 py-3 text-right">
                           <div className={`text-sm ${getGainLossColor(account.totalGainLoss)}`}>
-                            {formatCurrency(account.totalGainLoss)}
+                            {fmtAcct(account.totalGainLoss)}
                           </div>
                           <div className={`text-xs ${getGainLossColor(account.totalGainLossPercent)}`}>
                             {formatPercent(account.totalGainLossPercent)}
@@ -307,6 +310,7 @@ interface HoldingRowProps {
   holding: HoldingWithMarketValue;
   defaultCurrency: string;
   formatCurrency: (value: number | null) => string;
+  formatCurrencyWithCode: (value: number, currencyCode: string) => string;
   formatQuantity: (value: number) => string;
   formatPercent: (value: number | null, showSign?: boolean) => string;
   getGainLossColor: (value: number | null) => string;
@@ -318,6 +322,7 @@ function HoldingRow({
   holding,
   defaultCurrency,
   formatCurrency,
+  formatCurrencyWithCode,
   formatQuantity,
   formatPercent,
   getGainLossColor,
@@ -325,6 +330,13 @@ function HoldingRow({
   onSymbolClick,
 }: HoldingRowProps) {
   const isForeign = holding.currencyCode && holding.currencyCode !== defaultCurrency;
+
+  const fmtVal = (value: number | null) => {
+    if (value === null) return '-';
+    if (isForeign) return `${formatCurrencyWithCode(value, holding.currencyCode)} ${holding.currencyCode}`;
+    return formatCurrency(value);
+  };
+
   return (
     <tr className="hover:bg-gray-50 dark:hover:bg-gray-700/20">
       <td className="px-6 py-3 whitespace-nowrap">
@@ -335,9 +347,6 @@ function HoldingRow({
         >
           <div className="font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300">
             {holding.symbol}
-            {isForeign && (
-              <span className="ml-1 text-xs font-normal text-amber-600 dark:text-amber-400">({holding.currencyCode})</span>
-            )}
           </div>
           <div className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[320px]">
             {holding.name}
@@ -348,20 +357,20 @@ function HoldingRow({
         {formatQuantity(holding.quantity)}
       </td>
       <td className="px-4 py-3 whitespace-nowrap text-right text-sm text-gray-900 dark:text-gray-100">
-        {formatCurrency(holding.averageCost)}
+        {fmtVal(holding.averageCost)}
       </td>
       <td className="px-4 py-3 whitespace-nowrap text-right text-sm text-gray-900 dark:text-gray-100">
-        {formatCurrency(holding.currentPrice)}
+        {fmtVal(holding.currentPrice)}
       </td>
       <td className="px-4 py-3 whitespace-nowrap text-right text-sm text-gray-500 dark:text-gray-400">
-        {formatCurrency(holding.costBasis)}
+        {fmtVal(holding.costBasis)}
       </td>
       <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium text-gray-900 dark:text-gray-100">
-        {formatCurrency(holding.marketValue)}
+        {fmtVal(holding.marketValue)}
       </td>
       <td className="px-4 py-3 whitespace-nowrap text-right">
         <div className={`text-sm font-medium ${getGainLossColor(holding.gainLoss)}`}>
-          {formatCurrency(holding.gainLoss)}
+          {fmtVal(holding.gainLoss)}
         </div>
         <div className={`text-xs ${getGainLossColor(holding.gainLossPercent)}`}>
           {formatPercent(holding.gainLossPercent)}

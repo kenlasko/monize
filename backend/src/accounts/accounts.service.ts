@@ -16,6 +16,7 @@ import { CreateAccountDto } from './dto/create-account.dto';
 import { UpdateAccountDto } from './dto/update-account.dto';
 import { CategoriesService } from '../categories/categories.service';
 import { ScheduledTransactionsService } from '../scheduled-transactions/scheduled-transactions.service';
+import { NetWorthService } from '../net-worth/net-worth.service';
 import {
   calculateAmortization,
   PaymentFrequency,
@@ -46,6 +47,8 @@ export class AccountsService {
     private categoriesService: CategoriesService,
     @Inject(forwardRef(() => ScheduledTransactionsService))
     private scheduledTransactionsService: ScheduledTransactionsService,
+    @Inject(forwardRef(() => NetWorthService))
+    private netWorthService: NetWorthService,
   ) {}
 
   /**
@@ -692,7 +695,21 @@ export class AccountsService {
     if (updateAccountDto.termMonths !== undefined) account.termMonths = updateAccountDto.termMonths;
     if (updateAccountDto.amortizationMonths !== undefined) account.amortizationMonths = updateAccountDto.amortizationMonths;
 
-    return this.accountsRepository.save(account);
+    const savedAccount = await this.accountsRepository.save(account);
+
+    // Trigger net worth recalculation if balance-affecting fields changed
+    const needsRecalc =
+      updateAccountDto.openingBalance !== undefined ||
+      updateAccountDto.dateAcquired !== undefined;
+    if (needsRecalc) {
+      this.netWorthService.recalculateAccount(userId, id).catch((err) =>
+        this.logger.warn(
+          `Net worth recalc failed for account ${id}: ${err.message}`,
+        ),
+      );
+    }
+
+    return savedAccount;
   }
 
   /**

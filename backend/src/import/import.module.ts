@@ -10,7 +10,6 @@ import { Payee } from '../payees/entities/payee.entity';
 import { Security } from '../securities/entities/security.entity';
 import { InvestmentTransaction } from '../securities/entities/investment-transaction.entity';
 import { Holding } from '../securities/entities/holding.entity';
-
 @Module({
   imports: [
     TypeOrmModule.forFeature([

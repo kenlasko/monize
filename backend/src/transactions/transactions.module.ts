@@ -8,11 +8,13 @@ import { TransactionsService } from './transactions.service';
 import { TransactionsController } from './transactions.controller';
 import { AccountsModule } from '../accounts/accounts.module';
 import { PayeesModule } from '../payees/payees.module';
+import { NetWorthModule } from '../net-worth/net-worth.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Transaction, TransactionSplit, Category, InvestmentTransaction]),
     forwardRef(() => AccountsModule),
+    forwardRef(() => NetWorthModule),
     PayeesModule,
   ],
   providers: [TransactionsService],

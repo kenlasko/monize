@@ -8,12 +8,14 @@ import { AccountsController } from './accounts.controller';
 import { MortgageReminderService } from './mortgage-reminder.service';
 import { CategoriesModule } from '../categories/categories.module';
 import { ScheduledTransactionsModule } from '../scheduled-transactions/scheduled-transactions.module';
+import { NetWorthModule } from '../net-worth/net-worth.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Account, Transaction, InvestmentTransaction]),
     forwardRef(() => CategoriesModule),
     forwardRef(() => ScheduledTransactionsModule),
+    forwardRef(() => NetWorthModule),
   ],
   providers: [AccountsService, MortgageReminderService],
   controllers: [AccountsController],

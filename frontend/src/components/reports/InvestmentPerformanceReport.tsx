@@ -41,7 +41,7 @@ export function InvestmentPerformanceReport() {
       setIsLoading(true);
       try {
         const [portfolioData, accountsData] = await Promise.all([
-          investmentsApi.getPortfolioSummary(selectedAccountId || undefined),
+          investmentsApi.getPortfolioSummary(selectedAccountId ? [selectedAccountId] : undefined),
           investmentsApi.getInvestmentAccounts(),
         ]);
         setPortfolio(portfolioData);

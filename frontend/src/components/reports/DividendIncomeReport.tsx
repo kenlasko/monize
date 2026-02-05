@@ -76,7 +76,7 @@ export function DividendIncomeReport() {
         const { start, end } = getDateRange(dateRange);
         const [txData, accountsData] = await Promise.all([
           investmentsApi.getTransactions({
-            accountId: selectedAccountId || undefined,
+            accountIds: selectedAccountId || undefined,
             startDate: start || undefined,
             endDate: end,
             limit: 10000,

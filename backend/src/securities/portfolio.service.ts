@@ -120,22 +120,25 @@ export class PortfolioService {
    */
   async getPortfolioSummary(
     userId: string,
-    accountId?: string,
+    accountIds?: string[],
   ): Promise<PortfolioSummary> {
     // Get investment accounts
     let accounts: Account[];
-    if (accountId) {
-      // If account ID provided, get the pair
-      const account = await this.accountsRepository.findOne({
-        where: { id: accountId, userId },
-      });
-      if (account?.linkedAccountId) {
-        accounts = await this.accountsRepository.find({
-          where: { id: In([accountId, account.linkedAccountId]) },
+    if (accountIds && accountIds.length > 0) {
+      // Resolve linked pairs for each provided account ID
+      const resolvedIds = new Set<string>();
+      for (const id of accountIds) {
+        resolvedIds.add(id);
+        const account = await this.accountsRepository.findOne({
+          where: { id, userId },
         });
-      } else {
-        accounts = account ? [account] : [];
+        if (account?.linkedAccountId) {
+          resolvedIds.add(account.linkedAccountId);
+        }
       }
+      accounts = await this.accountsRepository.find({
+        where: { id: In([...resolvedIds]), userId },
+      });
     } else {
       accounts = await this.getInvestmentAccounts(userId);
     }
@@ -385,9 +388,9 @@ export class PortfolioService {
    */
   async getAssetAllocation(
     userId: string,
-    accountId?: string,
+    accountIds?: string[],
   ): Promise<AssetAllocation> {
-    const summary = await this.getPortfolioSummary(userId, accountId);
+    const summary = await this.getPortfolioSummary(userId, accountIds);
     return {
       allocation: summary.allocation,
       totalValue: summary.totalPortfolioValue,

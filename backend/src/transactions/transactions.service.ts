@@ -5,6 +5,7 @@ import {
   ForbiddenException,
   Inject,
   forwardRef,
+  Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
@@ -18,6 +19,7 @@ import { CreateTransactionSplitDto } from './dto/create-transaction-split.dto';
 import { CreateTransferDto } from './dto/create-transfer.dto';
 import { AccountsService } from '../accounts/accounts.service';
 import { PayeesService } from '../payees/payees.service';
+import { NetWorthService } from '../net-worth/net-worth.service';
 
 export interface TransactionWithInvestmentLink extends Transaction {
   /** ID of the linked investment transaction (if this is a cash transaction for an investment) */
@@ -44,6 +46,8 @@ export interface TransferResult {
 
 @Injectable()
 export class TransactionsService {
+  private readonly logger = new Logger(TransactionsService.name);
+
   constructor(
     @InjectRepository(Transaction)
     private transactionsRepository: Repository<Transaction>,
@@ -56,7 +60,17 @@ export class TransactionsService {
     @Inject(forwardRef(() => AccountsService))
     private accountsService: AccountsService,
     private payeesService: PayeesService,
+    @Inject(forwardRef(() => NetWorthService))
+    private netWorthService: NetWorthService,
   ) {}
+
+  private triggerNetWorthRecalc(accountId: string, userId: string): void {
+    this.netWorthService.recalculateAccount(userId, accountId).catch((err) =>
+      this.logger.warn(
+        `Net worth recalc failed for account ${accountId}: ${err.message}`,
+      ),
+    );
+  }
 
   /**
    * Get all category IDs including subcategories for a given category
@@ -144,6 +158,8 @@ export class TransactionsService {
         Number(createTransactionDto.amount),
       );
     }
+
+    this.triggerNetWorthRecalc(createTransactionDto.accountId, userId);
 
     // Return transaction with splits
     return this.findOne(userId, savedTransaction.id);
@@ -677,6 +693,11 @@ export class TransactionsService {
     }
     // If both were VOID and still VOID, no balance changes needed
 
+    this.triggerNetWorthRecalc(newAccountId, userId);
+    if (oldAccountId !== newAccountId) {
+      this.triggerNetWorthRecalc(oldAccountId, userId);
+    }
+
     return savedTransaction;
   }
 
@@ -748,6 +769,8 @@ export class TransactionsService {
       );
     }
 
+    this.triggerNetWorthRecalc(transaction.accountId, userId);
+
     await this.transactionsRepository.remove(transaction);
   }
 
@@ -771,6 +794,10 @@ export class TransactionsService {
 
     // Update the status
     await this.transactionsRepository.update(id, { status });
+
+    if (wasVoid !== isVoid) {
+      this.triggerNetWorthRecalc(transaction.accountId, userId);
+    }
 
     // Set reconciled date when marking as reconciled
     if (status === TransactionStatus.RECONCILED && oldStatus !== TransactionStatus.RECONCILED) {
@@ -1360,6 +1387,9 @@ export class TransactionsService {
     await this.accountsService.updateBalance(fromAccountId, -amount);
     await this.accountsService.updateBalance(toAccountId, toAmount);
 
+    this.triggerNetWorthRecalc(fromAccountId, userId);
+    this.triggerNetWorthRecalc(toAccountId, userId);
+
     // Return both transactions with full relations
     return {
       fromTransaction: await this.findOne(userId, savedFromTransaction.id),
@@ -1447,6 +1477,7 @@ export class TransactionsService {
         transaction.accountId,
         -Number(transaction.amount),
       );
+      this.triggerNetWorthRecalc(transaction.accountId, userId);
       await this.transactionsRepository.remove(transaction);
       return;
     }
@@ -1469,9 +1500,12 @@ export class TransactionsService {
         linkedTransaction.accountId,
         -Number(linkedTransaction.amount),
       );
+      this.triggerNetWorthRecalc(linkedTransaction.accountId, userId);
       // Remove linked transaction first (to avoid FK issues if any)
       await this.transactionsRepository.remove(linkedTransaction);
     }
+
+    this.triggerNetWorthRecalc(transaction.accountId, userId);
 
     // Remove the main transaction
     await this.transactionsRepository.remove(transaction);
@@ -1601,6 +1635,12 @@ export class TransactionsService {
     if (accountsOrAmountsChanged) {
       await this.accountsService.updateBalance(newFromAccountId, -newAmount);
       await this.accountsService.updateBalance(newToAccountId, newToAmount);
+    }
+
+    // Trigger net worth recalc for all affected accounts
+    const affectedAccounts = new Set([oldFromAccountId, oldToAccountId, newFromAccountId, newToAccountId]);
+    for (const accId of affectedAccounts) {
+      this.triggerNetWorthRecalc(accId, userId);
     }
 
     return {

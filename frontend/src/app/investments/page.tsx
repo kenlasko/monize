@@ -5,13 +5,14 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
-import { Select } from '@/components/ui/Select';
+import { MultiSelect } from '@/components/ui/MultiSelect';
 import { Pagination } from '@/components/ui/Pagination';
 import { PortfolioSummaryCard } from '@/components/investments/PortfolioSummaryCard';
 import { GroupedHoldingsList } from '@/components/investments/GroupedHoldingsList';
 import { AssetAllocationChart } from '@/components/investments/AssetAllocationChart';
 import { InvestmentTransactionList, DensityLevel, TransactionFilters } from '@/components/investments/InvestmentTransactionList';
 import { InvestmentTransactionForm } from '@/components/investments/InvestmentTransactionForm';
+import { InvestmentValueChart } from '@/components/investments/InvestmentValueChart';
 import { investmentsApi } from '@/lib/investments';
 import { accountsApi } from '@/lib/accounts';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
@@ -47,7 +48,7 @@ export default function InvestmentsPage() {
   const router = useRouter();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [allAccounts, setAllAccounts] = useState<Account[]>([]);
-  const [selectedAccountId, setSelectedAccountId] = useLocalStorage<string>('moneymate-investments-account', '');
+  const [selectedAccountIds, setSelectedAccountIds] = useLocalStorage<string[]>('moneymate-investments-accounts', []);
   const [portfolioSummary, setPortfolioSummary] = useState<PortfolioSummary | null>(
     null,
   );
@@ -126,7 +127,7 @@ export default function InvestmentsPage() {
       });
       setLastPriceUpdate(result.lastUpdated);
       // Reload portfolio data to show updated prices
-      loadPortfolioData(selectedAccountId || undefined, currentPage, transactionFilters);
+      loadPortfolioData(selectedAccountIds, currentPage, transactionFilters);
       // Auto-show details if there are failures
       if (result.failed > 0) {
         setShowRefreshDetails(true);
@@ -146,17 +147,17 @@ export default function InvestmentsPage() {
   };
 
   const loadPortfolioData = useCallback(async (
-    accountId?: string,
+    accountIds: string[],
     page: number = 1,
     filters: TransactionFilters = {},
   ) => {
     setIsLoading(true);
     try {
-      // Portfolio summary now includes allocation data to avoid duplicate API call
+      const ids = accountIds.length > 0 ? accountIds : undefined;
       const [summaryData, txResponse] = await Promise.all([
-        investmentsApi.getPortfolioSummary(accountId || undefined),
+        investmentsApi.getPortfolioSummary(ids),
         investmentsApi.getTransactions({
-          accountId: accountId || undefined,
+          accountIds: ids ? ids.join(',') : undefined,
           page,
           limit: PAGE_SIZE,
           symbol: filters.symbol,
@@ -171,7 +172,6 @@ export default function InvestmentsPage() {
       setPagination(txResponse.pagination);
     } catch (error) {
       console.error('Failed to load portfolio data:', error);
-      // Set empty arrays on error to prevent undefined errors
       setPortfolioSummary(null);
       setTransactions([]);
       setPagination(null);
@@ -187,8 +187,8 @@ export default function InvestmentsPage() {
   }, [loadInvestmentAccounts, loadAllAccounts, loadPriceStatus]);
 
   useEffect(() => {
-    loadPortfolioData(selectedAccountId || undefined, currentPage, transactionFilters);
-  }, [loadPortfolioData, selectedAccountId, currentPage, transactionFilters]);
+    loadPortfolioData(selectedAccountIds, currentPage, transactionFilters);
+  }, [loadPortfolioData, selectedAccountIds, currentPage, transactionFilters]);
 
   // Handle edit URL parameter (when redirected from transactions page)
   useEffect(() => {
@@ -209,17 +209,16 @@ export default function InvestmentsPage() {
     }
   }, [searchParams, router]);
 
-  const handleAccountChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedAccountId(e.target.value);
-    setCurrentPage(1); // Reset to page 1 when account changes
+  const handleAccountChange = (values: string[]) => {
+    setSelectedAccountIds(values);
+    setCurrentPage(1);
   };
 
   const handleDeleteTransaction = async (id: string) => {
     if (!confirm('Are you sure you want to delete this transaction?')) return;
     try {
       await investmentsApi.deleteTransaction(id);
-      // Reload data
-      loadPortfolioData(selectedAccountId || undefined, currentPage, transactionFilters);
+      loadPortfolioData(selectedAccountIds, currentPage, transactionFilters);
     } catch (error) {
       console.error('Failed to delete transaction:', error);
       alert('Failed to delete transaction');
@@ -239,7 +238,7 @@ export default function InvestmentsPage() {
   const handleFormSuccess = () => {
     setShowTransactionForm(false);
     setEditingTransaction(undefined);
-    loadPortfolioData(selectedAccountId || undefined, currentPage, transactionFilters);
+    loadPortfolioData(selectedAccountIds, currentPage, transactionFilters);
   };
 
   const handleFiltersChange = (newFilters: TransactionFilters) => {
@@ -267,10 +266,10 @@ export default function InvestmentsPage() {
     }
   };
 
-  // Get brokerage account for the selected cash account
+  // Get brokerage account for the first selected cash account (for new transaction default)
   const getSelectedBrokerageAccountId = () => {
-    if (!selectedAccountId) return undefined;
-    const cashAccount = accounts.find((a) => a.id === selectedAccountId);
+    if (selectedAccountIds.length === 0) return undefined;
+    const cashAccount = accounts.find((a) => a.id === selectedAccountIds[0]);
     if (cashAccount?.linkedAccountId) {
       return cashAccount.linkedAccountId;
     }
@@ -309,18 +308,18 @@ export default function InvestmentsPage() {
 
             {/* Account Filter and Actions */}
             <div className="flex items-center gap-3">
-              <Select
-                value={selectedAccountId}
-                onChange={handleAccountChange}
-                className="w-64"
-                options={[
-                  { value: '', label: 'All Investment Accounts' },
-                  ...cashAccounts.map((account) => ({
+              <div className="w-64">
+                <MultiSelect
+                  value={selectedAccountIds}
+                  onChange={handleAccountChange}
+                  placeholder="All Investment Accounts"
+                  showSearch={false}
+                  options={cashAccounts.map((account) => ({
                     value: account.id,
                     label: getAccountDisplayName(account),
-                  })),
-                ]}
-              />
+                  }))}
+                />
+              </div>
               <div className="relative">
                 <Button
                   variant="outline"
@@ -409,6 +408,11 @@ export default function InvestmentsPage() {
               allocation={portfolioSummary ? { allocation: portfolioSummary.allocation, totalValue: portfolioSummary.totalPortfolioValue } : null}
               isLoading={isLoading}
             />
+          </div>
+
+          {/* Portfolio Value Over Time */}
+          <div className="mb-6">
+            <InvestmentValueChart accountIds={selectedAccountIds} />
           </div>
 
           {/* Holdings List */}

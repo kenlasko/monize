@@ -14,7 +14,7 @@ import {
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse, ApiQuery, ApiBody } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { SecuritiesService } from './securities.service';
-import { SecurityPriceService, PriceRefreshSummary, SecurityLookupResult } from './security-price.service';
+import { SecurityPriceService, PriceRefreshSummary, HistoricalBackfillSummary, SecurityLookupResult } from './security-price.service';
 import { CreateSecurityDto } from './dto/create-security.dto';
 import { UpdateSecurityDto } from './dto/update-security.dto';
 import { Security } from './entities/security.entity';
@@ -173,6 +173,16 @@ export class SecuritiesController {
   @ApiResponse({ status: 200, description: 'Price refresh completed' })
   refreshSelectedPrices(@Body('securityIds') securityIds: string[]): Promise<PriceRefreshSummary> {
     return this.securityPriceService.refreshPricesForSecurities(securityIds);
+  }
+
+  @Post('prices/backfill')
+  @ApiOperation({
+    summary: 'Backfill historical prices for all active securities',
+    description: 'Fetches full price history from Yahoo Finance for all active securities',
+  })
+  @ApiResponse({ status: 200, description: 'Historical backfill completed' })
+  backfillHistoricalPrices(): Promise<HistoricalBackfillSummary> {
+    return this.securityPriceService.backfillHistoricalPrices();
   }
 
   @Get('prices/status')

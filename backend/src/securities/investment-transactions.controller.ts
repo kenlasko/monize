@@ -44,7 +44,7 @@ export class InvestmentTransactionsController {
 
   @Get()
   @ApiOperation({ summary: 'Get all investment transactions for the authenticated user' })
-  @ApiQuery({ name: 'accountId', required: false, description: 'Filter by account ID' })
+  @ApiQuery({ name: 'accountIds', required: false, description: 'Comma-separated account IDs to filter by' })
   @ApiQuery({ name: 'startDate', required: false, description: 'Filter by start date (YYYY-MM-DD)' })
   @ApiQuery({ name: 'endDate', required: false, description: 'Filter by end date (YYYY-MM-DD)' })
   @ApiQuery({ name: 'page', required: false, description: 'Page number (1-indexed, default: 1)' })
@@ -54,7 +54,7 @@ export class InvestmentTransactionsController {
   @ApiResponse({ status: 200, description: 'List of investment transactions with pagination' })
   findAll(
     @Request() req,
-    @Query('accountId') accountId?: string,
+    @Query('accountIds') accountIds?: string,
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
     @Query('page') page?: string,
@@ -62,9 +62,10 @@ export class InvestmentTransactionsController {
     @Query('symbol') symbol?: string,
     @Query('action') action?: string,
   ) {
+    const ids = accountIds ? accountIds.split(',').filter(Boolean) : undefined;
     return this.investmentTransactionsService.findAll(
       req.user.id,
-      accountId,
+      ids,
       startDate,
       endDate,
       page ? parseInt(page, 10) : undefined,
@@ -76,10 +77,11 @@ export class InvestmentTransactionsController {
 
   @Get('summary')
   @ApiOperation({ summary: 'Get investment transaction summary' })
-  @ApiQuery({ name: 'accountId', required: false, description: 'Filter by account ID' })
+  @ApiQuery({ name: 'accountIds', required: false, description: 'Comma-separated account IDs to filter by' })
   @ApiResponse({ status: 200, description: 'Investment transaction summary' })
-  getSummary(@Request() req, @Query('accountId') accountId?: string) {
-    return this.investmentTransactionsService.getSummary(req.user.id, accountId);
+  getSummary(@Request() req, @Query('accountIds') accountIds?: string) {
+    const ids = accountIds ? accountIds.split(',').filter(Boolean) : undefined;
+    return this.investmentTransactionsService.getSummary(req.user.id, ids);
   }
 
   @Get(':id')

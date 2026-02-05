@@ -551,6 +551,21 @@ INSERT INTO currencies (code, name, symbol, decimal_places) VALUES
     ('AUD', 'Australian Dollar', 'A$', 2),
     ('CNY', 'Chinese Yuan', '¥', 2);
 
+-- Monthly Account Balances (cached end-of-month balances for net worth report)
+CREATE TABLE monthly_account_balances (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  account_id UUID NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+  month DATE NOT NULL,
+  balance NUMERIC(20, 4) NOT NULL DEFAULT 0,
+  market_value NUMERIC(20, 4),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE (account_id, month)
+);
+
+CREATE INDEX idx_mab_user_month ON monthly_account_balances(user_id, month);
+
 -- Create indexes for performance
 CREATE INDEX idx_transactions_status ON transactions(status);
 CREATE INDEX idx_accounts_closed ON accounts(is_closed);

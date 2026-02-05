@@ -27,18 +27,19 @@ export class PortfolioController {
     summary: 'Get portfolio summary with holdings and market values',
   })
   @ApiQuery({
-    name: 'accountId',
+    name: 'accountIds',
     required: false,
     description:
-      'Filter by investment account ID (will include linked pair)',
+      'Comma-separated account IDs to filter by (will include linked pairs)',
   })
   @ApiResponse({
     status: 200,
     description: 'Portfolio summary retrieved successfully',
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  getSummary(@Request() req, @Query('accountId') accountId?: string) {
-    return this.portfolioService.getPortfolioSummary(req.user.id, accountId);
+  getSummary(@Request() req, @Query('accountIds') accountIds?: string) {
+    const ids = accountIds ? accountIds.split(',').filter(Boolean) : undefined;
+    return this.portfolioService.getPortfolioSummary(req.user.id, ids);
   }
 
   @Get('allocation')
@@ -46,18 +47,19 @@ export class PortfolioController {
     summary: 'Get asset allocation breakdown',
   })
   @ApiQuery({
-    name: 'accountId',
+    name: 'accountIds',
     required: false,
     description:
-      'Filter by investment account ID (will include linked pair)',
+      'Comma-separated account IDs to filter by (will include linked pairs)',
   })
   @ApiResponse({
     status: 200,
     description: 'Asset allocation retrieved successfully',
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  getAllocation(@Request() req, @Query('accountId') accountId?: string) {
-    return this.portfolioService.getAssetAllocation(req.user.id, accountId);
+  getAllocation(@Request() req, @Query('accountIds') accountIds?: string) {
+    const ids = accountIds ? accountIds.split(',').filter(Boolean) : undefined;
+    return this.portfolioService.getAssetAllocation(req.user.id, ids);
   }
 
   @Get('accounts')

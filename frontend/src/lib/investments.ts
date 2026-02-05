@@ -13,17 +13,17 @@ import {
 
 export const investmentsApi = {
   // Get portfolio summary
-  getPortfolioSummary: async (accountId?: string): Promise<PortfolioSummary> => {
+  getPortfolioSummary: async (accountIds?: string[]): Promise<PortfolioSummary> => {
     const response = await apiClient.get<PortfolioSummary>('/portfolio/summary', {
-      params: accountId ? { accountId } : undefined,
+      params: accountIds && accountIds.length > 0 ? { accountIds: accountIds.join(',') } : undefined,
     });
     return response.data;
   },
 
   // Get asset allocation
-  getAssetAllocation: async (accountId?: string): Promise<AssetAllocation> => {
+  getAssetAllocation: async (accountIds?: string[]): Promise<AssetAllocation> => {
     const response = await apiClient.get<AssetAllocation>('/portfolio/allocation', {
-      params: accountId ? { accountId } : undefined,
+      params: accountIds && accountIds.length > 0 ? { accountIds: accountIds.join(',') } : undefined,
     });
     return response.data;
   },
@@ -44,7 +44,7 @@ export const investmentsApi = {
 
   // Get investment transactions with pagination
   getTransactions: async (params?: {
-    accountId?: string;
+    accountIds?: string;
     startDate?: string;
     endDate?: string;
     page?: number;

@@ -361,7 +361,7 @@ export class InvestmentTransactionsService {
 
   async findAll(
     userId: string,
-    accountId?: string,
+    accountIds?: string[],
     startDate?: string,
     endDate?: string,
     page?: number,
@@ -388,19 +388,21 @@ export class InvestmentTransactionsService {
       .leftJoinAndSelect('it.fundingAccount', 'fundingAccount')
       .where('it.userId = :userId', { userId });
 
-    if (accountId) {
-      // Resolve linked account if needed (cash account selected but transactions on brokerage)
-      try {
-        const account = await this.accountsService.findOne(userId, accountId);
-        const accountIds = [accountId];
-        if (account.linkedAccountId) {
-          accountIds.push(account.linkedAccountId);
+    if (accountIds && accountIds.length > 0) {
+      // Resolve linked accounts for each provided ID
+      const resolvedIds = new Set<string>(accountIds);
+      for (const id of accountIds) {
+        try {
+          const account = await this.accountsService.findOne(userId, id);
+          if (account.linkedAccountId) {
+            resolvedIds.add(account.linkedAccountId);
+          }
+        } catch {
+          // Account not found, keep the original ID
         }
-        query.andWhere('it.accountId IN (:...accountIds)', { accountIds });
-      } catch {
-        // If account not found, just filter by the provided ID
-        query.andWhere('it.accountId = :accountId', { accountId });
       }
+      const allIds = [...resolvedIds];
+      query.andWhere('it.accountId IN (:...allIds)', { allIds });
     }
 
     if (startDate) {
@@ -597,9 +599,9 @@ export class InvestmentTransactionsService {
     await this.investmentTransactionsRepository.remove(transaction);
   }
 
-  async getSummary(userId: string, accountId?: string) {
+  async getSummary(userId: string, accountIds?: string[]) {
     // Get all transactions (no pagination for summary)
-    const result = await this.findAll(userId, accountId, undefined, undefined, 1, 10000);
+    const result = await this.findAll(userId, accountIds, undefined, undefined, 1, 10000);
     const transactions = result.data;
 
     const summary = {
