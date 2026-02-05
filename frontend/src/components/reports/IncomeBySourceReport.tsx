@@ -98,29 +98,42 @@ export function IncomeBySourceReport() {
     let uncategorizedTotal = 0;
     const categoryLookup = new Map(categories.map((c) => [c.id, c]));
 
-    transactions.forEach((tx) => {
-      if (tx.isTransfer) return;
-      const txAmount = Number(tx.amount) || 0;
-      if (txAmount <= 0) return; // Only positive amounts (income)
-      const incomeAmount = txAmount;
-
-      if (tx.categoryId && tx.category) {
-        const cat = categoryLookup.get(tx.categoryId) || tx.category;
+    const addToCategory = (catId: string | null, catObj: { id: string; name: string; color?: string; parentId?: string | null } | null | undefined, amount: number) => {
+      const cat = catId ? categoryLookup.get(catId) || catObj : catObj;
+      if (cat) {
         const parentCat = cat.parentId ? categoryLookup.get(cat.parentId) : null;
         const displayCat = parentCat || cat;
         const existing = categoryMap.get(displayCat.id);
         if (existing) {
-          existing.value += incomeAmount;
+          existing.value += amount;
         } else {
           categoryMap.set(displayCat.id, {
             id: displayCat.id,
             name: displayCat.name,
-            value: incomeAmount,
+            value: amount,
             colour: displayCat.color || '',
           });
         }
       } else {
-        uncategorizedTotal += incomeAmount;
+        uncategorizedTotal += amount;
+      }
+    };
+
+    transactions.forEach((tx) => {
+      if (tx.isTransfer) return;
+      if (tx.account?.accountType === 'INVESTMENT') return;
+      const txAmount = Number(tx.amount) || 0;
+      if (txAmount <= 0) return; // Only positive amounts (income)
+
+      if (tx.isSplit && tx.splits && tx.splits.length > 0) {
+        tx.splits.forEach((split) => {
+          if (split.transferAccountId) return;
+          const splitAmt = Number(split.amount) || 0;
+          if (splitAmt <= 0) return;
+          addToCategory(split.categoryId, split.category, splitAmt);
+        });
+      } else {
+        addToCategory(tx.categoryId, tx.category, txAmount);
       }
     });
 

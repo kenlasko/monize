@@ -59,9 +59,9 @@ export function UncategorizedTransactionsReport() {
           limit: 50000,
         });
 
-        // Filter to uncategorized, non-transfer transactions
+        // Filter to uncategorized, non-transfer, non-investment transactions
         const uncategorized = txData.data.filter(
-          (tx) => !tx.isTransfer && !tx.categoryId && (!tx.isSplit || !tx.splits?.some((s) => s.categoryId))
+          (tx) => !tx.isTransfer && tx.account?.accountType !== 'INVESTMENT' && !tx.categoryId && (!tx.isSplit || !tx.splits?.some((s) => s.categoryId))
         );
 
         setTransactions(uncategorized);

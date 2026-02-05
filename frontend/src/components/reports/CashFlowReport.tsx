@@ -90,6 +90,7 @@ export function CashFlowReport() {
 
     transactions.forEach((tx) => {
       if (tx.isTransfer) return;
+      if (tx.account?.accountType === 'INVESTMENT') return;
       const amount = Number(tx.amount) || 0;
 
       const processCategory = (catId: string | null, catName: string, amt: number) => {
@@ -118,6 +119,7 @@ export function CashFlowReport() {
 
       if (tx.isSplit && tx.splits && tx.splits.length > 0) {
         tx.splits.forEach((split) => {
+          if (split.transferAccountId) return;
           const splitAmt = Number(split.amount) || 0;
           processCategory(split.categoryId || null, split.category?.name || '', splitAmt);
         });
@@ -160,6 +162,7 @@ export function CashFlowReport() {
 
     transactions.forEach((tx) => {
       if (tx.isTransfer) return;
+      if (tx.account?.accountType === 'INVESTMENT') return;
       const txDate = parseLocalDate(tx.transactionDate);
       const txMonth = startOfMonth(txDate);
       const monthBucket = monthData.find(

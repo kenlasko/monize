@@ -79,6 +79,7 @@ export function TaxSummaryReport() {
 
     transactions.forEach((tx) => {
       if (tx.isTransfer) return;
+      if (tx.account?.accountType === 'INVESTMENT') return;
       const amount = Number(tx.amount) || 0;
 
       const processTransaction = (catId: string | null, catObj: Category | null, amt: number) => {
@@ -109,6 +110,7 @@ export function TaxSummaryReport() {
 
       if (tx.isSplit && tx.splits && tx.splits.length > 0) {
         tx.splits.forEach((split) => {
+          if (split.transferAccountId) return;
           const splitAmt = Number(split.amount) || 0;
           processTransaction(split.categoryId || null, split.category || null, splitAmt);
         });

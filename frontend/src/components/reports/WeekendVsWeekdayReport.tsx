@@ -78,7 +78,7 @@ export function WeekendVsWeekdayReport() {
           categoriesApi.getAll(),
         ]);
 
-        setTransactions(txData.data.filter((tx) => !tx.isTransfer && Number(tx.amount) < 0));
+        setTransactions(txData.data.filter((tx) => !tx.isTransfer && tx.account?.accountType !== 'INVESTMENT' && Number(tx.amount) < 0));
         setCategories(catData);
       } catch (error) {
         console.error('Failed to load data:', error);

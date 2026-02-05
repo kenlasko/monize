@@ -45,7 +45,7 @@ export function SpendingAnomaliesReport() {
           categoriesApi.getAll(),
         ]);
 
-        setTransactions(txData.data.filter((tx) => !tx.isTransfer));
+        setTransactions(txData.data.filter((tx) => !tx.isTransfer && tx.account?.accountType !== 'INVESTMENT'));
         setCategories(catData);
       } catch (error) {
         console.error('Failed to load data:', error);

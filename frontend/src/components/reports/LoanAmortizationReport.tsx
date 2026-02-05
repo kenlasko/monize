@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, Fragment } from 'react';
 import { format, parseISO } from 'date-fns';
 import { accountsApi } from '@/lib/accounts';
 import { transactionsApi } from '@/lib/transactions';
@@ -475,16 +475,15 @@ export function LoanAmortizationReport() {
                     const prevRow = idx > 0 ? displayedRows[idx - 1] : null;
                     const showSeparator = row.isProjected && prevRow && !prevRow.isProjected;
                     return (
-                      <>
+                      <Fragment key={row.paymentNumber}>
                         {showSeparator && (
-                          <tr key={`sep-${row.paymentNumber}`} className="bg-gray-100 dark:bg-gray-700">
+                          <tr className="bg-gray-100 dark:bg-gray-700">
                             <td colSpan={6} className="px-4 py-2 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                               Projected Future Payments
                             </td>
                           </tr>
                         )}
                         <tr
-                          key={row.paymentNumber}
                           className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 ${
                             row.isProjected ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''
                           }`}
@@ -511,7 +510,7 @@ export function LoanAmortizationReport() {
                             {formatCurrency(row.balance)}
                           </td>
                         </tr>
-                      </>
+                      </Fragment>
                     );
                   })}
                 </tbody>
