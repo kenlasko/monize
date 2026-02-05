@@ -24,23 +24,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # Redis for caching and sessions
-  redis:
-    image: redis:7-alpine
-    container_name: finance-redis
-    restart: unless-stopped
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    networks:
-      - finance-network
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 3s
-      retries: 5
-
   # Backend API (NestJS)
   backend:
     build:
@@ -60,14 +43,8 @@ services:
       DATABASE_NAME: ${POSTGRES_DB:-moneymate}
       DATABASE_USER: ${POSTGRES_USER:-moneymate_user}
       DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-moneymate_password}
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
       ###JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set}
       JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-this-in-production}
-      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
-      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
-      GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL:-http://localhost:3000/auth/google/callback}
       PUBLIC_APP_URL: ${PUBLIC_APP_URL:-http://localhost:3001}
     volumes:
       - ./backend:/app
@@ -110,6 +87,4 @@ networks:
 
 volumes:
   postgres_data:
-    driver: local
-  redis_data:
     driver: local

@@ -71,7 +71,6 @@ A comprehensive personal finance management application built with NestJS and Ne
 ### Backend
 - **Framework**: NestJS (Node.js/TypeScript)
 - **Database**: PostgreSQL 16
-- **Cache**: Redis
 - **Authentication**: Passport.js (Local & OIDC strategies)
 - **API Documentation**: Swagger/OpenAPI (development only)
 - **ORM**: TypeORM

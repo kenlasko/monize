@@ -20,21 +20,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # Redis for caching
-  redis:
-    image: redis:7-alpine
-    container_name: moneymate-redis
-    restart: unless-stopped
-    volumes:
-      - redis_data:/data
-    networks:
-      - moneymate-network
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 3s
-      retries: 5
-
   # Backend API (NestJS)
   backend:
     build:
@@ -46,8 +31,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      redis:
-        condition: service_healthy
     environment:
       NODE_ENV: production
       PORT: 3000
@@ -56,10 +39,7 @@ services:
       DATABASE_NAME: ${POSTGRES_DB}
       DATABASE_USER: ${POSTGRES_USER}
       DATABASE_PASSWORD: ${POSTGRES_PASSWORD}
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
       JWT_SECRET: ${JWT_SECRET}
-      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
       OIDC_ISSUER_URL: ${OIDC_ISSUER_URL:-}
       OIDC_CLIENT_ID: ${OIDC_CLIENT_ID:-}
       OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET:-}
@@ -106,6 +86,4 @@ networks:
 
 volumes:
   postgres_data:
-    driver: local
-  redis_data:
     driver: local
