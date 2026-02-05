@@ -68,7 +68,7 @@ services:
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
       GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL:-http://localhost:3000/auth/google/callback}
-      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3001}
+      PUBLIC_APP_URL: ${PUBLIC_APP_URL:-http://localhost:3001}
     volumes:
       - ./backend:/app
       - /app/node_modules
@@ -91,7 +91,8 @@ services:
       - backend
     environment:
       NODE_ENV: ${NODE_ENV:-development}
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3000}
+      INTERNAL_API_URL: http://backend:3000
+      PUBLIC_APP_URL: http://localhost:3001
     volumes:
       - ./frontend:/app
       - /app/node_modules

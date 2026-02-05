@@ -120,7 +120,7 @@ export class AuthController {
     @Request() req: ExpressRequest,
     @Res() res: Response,
   ) {
-    const frontendUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const frontendUrl = process.env.PUBLIC_APP_URL || 'http://localhost:3000';
 
     try {
       const state = req.cookies?.['oidc_state'];

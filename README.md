@@ -1,28 +1,31 @@
-# MoneyMate 💰
+# MoneyMate
 
 A comprehensive personal finance management application built with NestJS and Next.js.
 
 ## Features
 
 ### Account Management
-- Multiple account types: Chequing, Savings, Credit Cards, Loans, Mortgages
-- Investment accounts: RRSP, TFSA, RESP, and general investment accounts
+- Multiple account types: Chequing, Savings, Credit Cards, Loans, Mortgages, Line of Credit
+- Investment accounts with brokerage support
 - Support for multiple currencies per account
 - Track balances, credit limits, and interest rates
+- Account reconciliation
 
 ### Transaction Management
-- Full transaction tracking with categories
+- Full transaction tracking with categories and payees
 - Split transaction support for complex transactions
 - Transaction reconciliation and clearing
-- Support for payees with auto-categorization
+- Payees with auto-categorization rules
 - Multi-currency transactions with automatic exchange rate tracking
+- QIF file import support
 
 ### Investment Features
 - Track stocks, bonds, ETFs, and mutual funds
-- Support for US and Canadian stock exchanges (NYSE, NASDAQ, TSX, TSXV)
-- Daily price updates from market data providers
-- Investment transactions: buy, sell, dividend, interest, splits
+- Support for US and Canadian exchanges (NYSE, NASDAQ, TSX, TSXV)
+- Daily price updates from Yahoo Finance
+- Investment transactions: buy, sell, dividend, interest, splits, transfers
 - Portfolio tracking with real-time valuations
+- Historical price backfill
 
 ### Multi-Currency Support
 - Support for multiple currencies (USD, CAD, EUR, GBP, JPY, CHF, AUD, CNY)
@@ -30,31 +33,38 @@ A comprehensive personal finance management application built with NestJS and Ne
 - Automatic currency conversion for reporting
 - Per-account currency settings
 
-### Scheduled Transactions & Notifications
-- Recurring payment tracking (daily, weekly, monthly, quarterly, yearly)
+### Scheduled Transactions
+- Recurring payment tracking (daily, weekly, bi-weekly, monthly, quarterly, yearly)
 - Automatic transaction entry option
-- Customizable notification reminders
-- Email and browser notifications
-- Budget alerts and low balance warnings
+- Skip and override individual occurrences
+- Bill payment history tracking
 
-### Budgeting & Reporting
-- Category-based budgeting
-- Monthly, quarterly, and yearly budget periods
-- Customizable financial reports
-- Income vs expense analysis
-- Net worth tracking
-- Cash flow reports
-- Visual charts and graphs
+### Reports
+- **Built-in Reports** (server-side aggregated):
+  - Spending by Category / Payee
+  - Income by Source
+  - Monthly Spending Trend
+  - Income vs Expenses
+  - Cash Flow
+  - Year over Year Comparison
+  - Weekend vs Weekday Spending
+  - Spending Anomalies Detection
+  - Tax Summary
+  - Recurring Expenses
+  - Bill Payment History
+  - Uncategorized Transactions
+  - Duplicate Transaction Finder
+- **Net Worth Report**: Historical net worth tracking with monthly snapshots
+- **Custom Reports**: Build your own reports with flexible filters
+- Visual charts (pie, bar, line, area)
 
 ### Security
-- Secure by default with industry best practices
-- OIDC (OpenID Connect) authentication support
+- OIDC (OpenID Connect) authentication (Authentik, Authelia, Pocket-ID, etc.)
 - Local credential authentication with bcrypt hashing
-- JWT-based session management
+- JWT-based session management with httpOnly cookies
 - Rate limiting and request throttling
 - Helmet security headers
-- HTTPS/TLS encryption in production
-- Audit logging for all critical operations
+- CORS protection
 
 ## Technology Stack
 
@@ -63,21 +73,23 @@ A comprehensive personal finance management application built with NestJS and Ne
 - **Database**: PostgreSQL 16
 - **Cache**: Redis
 - **Authentication**: Passport.js (Local & OIDC strategies)
-- **API Documentation**: Swagger/OpenAPI
+- **API Documentation**: Swagger/OpenAPI (development only)
 - **ORM**: TypeORM
 - **Validation**: class-validator & class-transformer
 
 ### Frontend
-- **Framework**: Next.js 14 (React)
-- **Styling**: Tailwind CSS (to be implemented)
-- **State Management**: React Context/Zustand (to be implemented)
-- **Charts**: Recharts/Chart.js (to be implemented)
-- **Forms**: React Hook Form (to be implemented)
+- **Framework**: Next.js 14 (React/TypeScript)
+- **Styling**: Tailwind CSS
+- **State Management**: Zustand
+- **Charts**: Recharts
+- **Forms**: React Hook Form
+- **HTTP Client**: Axios
+- **Date Handling**: date-fns
 
 ### DevOps
 - **Containerization**: Docker & Docker Compose
-- **Reverse Proxy**: Nginx (optional, to be configured)
-- **Process Management**: PM2 (optional)
+- **Orchestration**: Kubernetes-ready
+- **Output**: Next.js standalone build for minimal container size
 
 ## Project Structure
 
@@ -85,59 +97,39 @@ A comprehensive personal finance management application built with NestJS and Ne
 moneymate/
 ├── backend/                    # NestJS backend application
 │   ├── src/
-│   │   ├── auth/              # Authentication module (Local & OIDC)
+│   │   ├── auth/              # Authentication (Local & OIDC)
 │   │   ├── users/             # User management
-│   │   ├── accounts/          # Account management (to be implemented)
-│   │   ├── transactions/      # Transaction management (to be implemented)
-│   │   ├── categories/        # Category management (to be implemented)
-│   │   ├── currencies/        # Currency & exchange rates (to be implemented)
-│   │   ├── securities/        # Stock/security management (to be implemented)
-│   │   ├── scheduled-transactions/ # Recurring payments (to be implemented)
-│   │   ├── budgets/           # Budget management (to be implemented)
-│   │   ├── reports/           # Reporting engine (to be implemented)
-│   │   ├── notifications/     # Notification service (to be implemented)
+│   │   ├── accounts/          # Account management
+│   │   ├── transactions/      # Transaction management
+│   │   ├── categories/        # Category management (hierarchical)
+│   │   ├── payees/            # Payee management
+│   │   ├── currencies/        # Currency & exchange rates
+│   │   ├── securities/        # Stock/security management
+│   │   ├── investment-transactions/  # Investment transactions
+│   │   ├── scheduled-transactions/   # Recurring payments
+│   │   ├── net-worth/         # Net worth calculations
+│   │   ├── built-in-reports/  # Server-side report aggregation
+│   │   ├── custom-reports/    # User-defined custom reports
+│   │   ├── import/            # QIF file import
+│   │   ├── health/            # Health check endpoints
 │   │   └── main.ts            # Application entry point
-│   ├── Dockerfile
-│   ├── package.json
-│   └── tsconfig.json
-├── frontend/                   # Next.js frontend application (to be implemented)
+│   └── Dockerfile
+├── frontend/                   # Next.js frontend application
 │   ├── src/
-│   │   ├── app/
-│   │   ├── components/
-│   │   ├── lib/
-│   │   └── styles/
-│   ├── Dockerfile
-│   ├── package.json
-│   └── tsconfig.json
+│   │   ├── app/               # Next.js App Router pages
+│   │   ├── components/        # React components
+│   │   ├── lib/               # API clients and utilities
+│   │   ├── hooks/             # Custom React hooks
+│   │   ├── store/             # Zustand state stores
+│   │   └── types/             # TypeScript type definitions
+│   └── Dockerfile
 ├── database/
 │   └── schema.sql             # Complete PostgreSQL schema
-├── docker-compose.yml         # Multi-container orchestration
+├── docker-compose.yml         # Development environment
+├── docker-compose.prod.yml    # Production environment
 ├── .env.example               # Environment variables template
-└── README.md                  # This file
+└── README.md
 ```
-
-## Database Schema
-
-The application uses a comprehensive PostgreSQL schema with the following main tables:
-
-- **users**: User accounts with authentication support
-- **user_preferences**: User settings and preferences
-- **currencies**: Supported currencies
-- **exchange_rates**: Historical currency exchange rates
-- **accounts**: Financial accounts (bank, credit, investment)
-- **categories**: Transaction categories (hierarchical)
-- **payees**: Transaction payees with auto-categorization
-- **transactions**: Financial transactions with split support
-- **transaction_splits**: Split transaction details
-- **scheduled_transactions**: Recurring payment definitions
-- **securities**: Stocks, bonds, ETFs, mutual funds
-- **security_prices**: Historical security prices
-- **holdings**: Current investment holdings
-- **investment_transactions**: Buy/sell/dividend transactions
-- **budgets**: Category-based budgets
-- **notifications**: User notifications
-- **reports**: Saved custom reports
-- **audit_log**: Audit trail for compliance
 
 ## Getting Started
 
@@ -148,7 +140,7 @@ The application uses a comprehensive PostgreSQL schema with the following main t
 - PostgreSQL 16+ (if running without Docker)
 - Redis (if running without Docker)
 
-### Installation
+### Quick Start with Docker
 
 1. Clone the repository:
 ```bash
@@ -161,23 +153,20 @@ cd moneymate
 cp .env.example .env
 ```
 
-3. Edit `.env` and update the following:
-   - Change `POSTGRES_PASSWORD` to a secure password
-   - Change `JWT_SECRET` to a random secure string
-   - Add your API keys for exchange rates and stock data
-   - Configure OIDC settings if using OpenID Connect
+3. Edit `.env` and configure:
+   - `POSTGRES_PASSWORD` - secure database password
+   - `JWT_SECRET` - generate with `openssl rand -base64 32`
+   - `PUBLIC_APP_URL` - your public frontend URL
+   - OIDC settings (optional) for SSO authentication
 
-4. Start the application with Docker Compose:
+4. Start the application:
 ```bash
 docker-compose up -d
 ```
 
-5. The services will be available at:
-   - Frontend: http://localhost:3000
-   - Backend API: http://localhost:3001
-   - API Documentation: http://localhost:3001/api/docs
-   - PostgreSQL: localhost:5432
-   - Redis: localhost:6379
+5. Access the application:
+   - Frontend: http://localhost:3001
+   - Backend API: http://localhost:3000
 
 ### Development Setup (Without Docker)
 
@@ -189,8 +178,8 @@ npm install
 
 2. Set up PostgreSQL database:
 ```bash
-createdb moneymate_db
-psql moneymate_db < ../database/schema.sql
+createdb moneymate
+psql moneymate < ../database/schema.sql
 ```
 
 3. Start Redis:
@@ -198,173 +187,129 @@ psql moneymate_db < ../database/schema.sql
 redis-server
 ```
 
-4. Start the backend:
+4. Create `backend/.env`:
+```env
+DATABASE_HOST=localhost
+DATABASE_PORT=5432
+DATABASE_NAME=moneymate
+DATABASE_USER=your_user
+DATABASE_PASSWORD=your_password
+JWT_SECRET=your-secret-key
+PUBLIC_APP_URL=http://localhost:3001
+```
+
+5. Start the backend:
 ```bash
 npm run start:dev
 ```
 
-5. Install frontend dependencies (once implemented):
+6. In a new terminal, set up frontend:
 ```bash
 cd frontend
 npm install
+cp .env.local.example .env.local
 npm run dev
+```
+
+## Environment Variables
+
+### Required Variables
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `POSTGRES_DB` | Database name | `moneymate` |
+| `POSTGRES_USER` | Database user | `moneymate_user` |
+| `POSTGRES_PASSWORD` | Database password | `secure-password` |
+| `JWT_SECRET` | JWT signing key (min 32 chars) | `openssl rand -base64 32` |
+| `PUBLIC_APP_URL` | Public frontend URL | `https://money.example.com` |
+
+### Optional Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `INTERNAL_API_URL` | Backend URL for server-side calls | `http://localhost:3001` |
+| `CORS_ORIGIN` | Additional CORS origin | - |
+| `LOCAL_AUTH_ENABLED` | Enable local auth | `true` |
+| `OIDC_ISSUER_URL` | OIDC provider URL | - |
+| `OIDC_CLIENT_ID` | OIDC client ID | - |
+| `OIDC_CLIENT_SECRET` | OIDC client secret | - |
+| `OIDC_CALLBACK_URL` | OIDC callback URL | - |
+
+## Deployment
+
+### Docker Compose (Production)
+
+1. Create `.env.prod` with production values:
+```env
+POSTGRES_DB=moneymate
+POSTGRES_USER=moneymate_user
+POSTGRES_PASSWORD=<strong-password>
+JWT_SECRET=<generate-with-openssl>
+PUBLIC_APP_URL=https://your-domain.com
+```
+
+2. Build and start:
+```bash
+docker-compose -f docker-compose.prod.yml --env-file .env.prod up -d
+```
+
+### Kubernetes
+
+The application is Kubernetes-ready with:
+- Health endpoints: `/api/v1/health/live` and `/api/v1/health/ready`
+- Standalone Next.js build for minimal image size
+- Environment-based configuration
+
+Example environment for K8s:
+```yaml
+# Frontend pod
+- name: INTERNAL_API_URL
+  value: "http://backend-svc:3000"
+- name: PUBLIC_APP_URL
+  value: "https://money.example.com"
+
+# Backend pod
+- name: PUBLIC_APP_URL
+  value: "https://money.example.com"
 ```
 
 ## API Documentation
 
-Once the backend is running, visit http://localhost:3001/api/docs to access the interactive Swagger API documentation.
+Swagger UI is available at `/api/docs` in **development mode only** (disabled in production for security).
 
-### Authentication Endpoints
+### Key Endpoints
 
 - `POST /api/v1/auth/register` - Register with local credentials
 - `POST /api/v1/auth/login` - Login with local credentials
 - `GET /api/v1/auth/oidc` - Initiate OIDC authentication
-- `GET /api/v1/auth/oidc/callback` - OIDC callback handler
-- `GET /api/v1/auth/profile` - Get current user profile
-- `POST /api/v1/auth/logout` - Logout
+- `GET /api/v1/accounts` - List accounts
+- `GET /api/v1/transactions` - List transactions
+- `GET /api/v1/built-in-reports/*` - Pre-aggregated reports
+- `GET /api/v1/health/live` - Liveness probe
+- `GET /api/v1/health/ready` - Readiness probe
 
-## External API Integration
+## Database Schema
 
-### Currency Exchange Rates
+Main tables:
+- **users** / **user_preferences**: User accounts and settings
+- **accounts**: Financial accounts (bank, credit, investment)
+- **transactions** / **transaction_splits**: Financial transactions
+- **categories**: Hierarchical transaction categories
+- **payees** / **payee_rules**: Payees with auto-categorization
+- **scheduled_transactions**: Recurring payments
+- **securities** / **security_prices**: Stocks and price history
+- **investment_transactions**: Buy/sell/dividend transactions
+- **monthly_account_balances**: Net worth snapshots
+- **custom_reports**: User-defined report configurations
 
-The application supports multiple providers for currency exchange rates:
+## Security Notes
 
-- **Fixer.io**: https://fixer.io/ (recommended, requires API key)
-- **ExchangeRate-API**: https://www.exchangerate-api.com/ (free tier available)
-- **Open Exchange Rates**: https://openexchangerates.org/
-
-Configure your preferred provider in the `EXCHANGE_RATE_API_KEY` environment variable.
-
-### Stock Market Data
-
-For US and Canadian stock prices, the application supports:
-
-- **Alpha Vantage**: https://www.alphavantage.co/ (free tier: 5 requests/min)
-- **Finnhub**: https://finnhub.io/ (free tier: 60 requests/min)
-- **IEX Cloud**: https://iexcloud.io/ (free tier available)
-
-Configure your preferred provider in the `STOCK_API_KEY` environment variable.
-
-## Scheduled Services
-
-The scheduler service runs the following tasks:
-
-1. **Daily Currency Rate Updates** (midnight UTC)
-   - Fetches latest exchange rates
-   - Updates historical rate data
-
-2. **Daily Stock Price Updates** (after market close)
-   - Updates prices for all tracked securities
-   - Calculates portfolio valuations
-
-3. **Scheduled Transaction Processing** (hourly)
-   - Checks for due scheduled transactions
-   - Creates transactions or sends notifications
-
-4. **Notification Delivery** (every 5 minutes)
-   - Processes pending notifications
-   - Sends email and browser notifications
-
-## Security Best Practices
-
-1. **Always change default passwords** in production
-2. **Use strong JWT secrets** (minimum 32 characters)
-3. **Enable HTTPS/TLS** for production deployments
-4. **Regularly update dependencies** for security patches
-5. **Enable two-factor authentication** when available
-6. **Use environment-specific .env files** (never commit secrets)
-7. **Regular database backups** are essential
-8. **Monitor audit logs** for suspicious activity
-
-## Development Roadmap
-
-### Phase 1: Backend Core (In Progress)
-- [x] Database schema design
-- [x] Docker configuration
-- [x] Authentication system (Local & OIDC)
-- [ ] Account management endpoints
-- [ ] Transaction management endpoints
-- [ ] Category management endpoints
-- [ ] Multi-currency support
-
-### Phase 2: Backend Services
-- [ ] Currency exchange rate service
-- [ ] Stock price update service
-- [ ] Scheduled transaction processor
-- [ ] Notification service
-- [ ] Budget tracking
-- [ ] Report generation
-
-### Phase 3: Frontend Development
-- [ ] Next.js project setup
-- [ ] Authentication UI
-- [ ] Dashboard layout
-- [ ] Account management UI
-- [ ] Transaction entry and management
-- [ ] Investment portfolio tracking
-- [ ] Budget management UI
-- [ ] Reporting and charts
-- [ ] Mobile-responsive design
-
-### Phase 4: Advanced Features
-- [ ] Data import/export (OFX, QFX, CSV)
-- [ ] Automatic bank transaction import
-- [ ] Receipt capture and OCR
-- [ ] Advanced reporting with custom filters
-- [ ] Multi-user support with shared accounts
-- [ ] Mobile app (React Native)
-
-## Testing
-
-```bash
-# Unit tests
-cd backend
-npm run test
-
-# E2E tests
-npm run test:e2e
-
-# Test coverage
-npm run test:cov
-```
-
-## Deployment
-
-### Production with Docker
-
-1. Update environment variables for production
-2. Build production images:
-```bash
-docker-compose -f docker-compose.prod.yml build
-```
-
-3. Start services:
-```bash
-docker-compose -f docker-compose.prod.yml up -d
-```
-
-### Manual Deployment
-
-Refer to individual service documentation for manual deployment options.
-
-## Contributing
-
-This is a personal project template. Feel free to fork and customize for your own needs.
+- Swagger/OpenAPI is **disabled in production**
+- JWT tokens stored in httpOnly cookies (not accessible to JavaScript)
+- Rate limiting enabled on authentication endpoints
+- Always use HTTPS in production
+- Generate strong JWT secrets (`openssl rand -base64 32`)
 
 ## License
 
-MIT License - See LICENSE file for details
-
-## Support
-
-For issues and questions, please refer to the documentation or create an issue in the repository.
-
-## Acknowledgments
-
-- Inspired by Microsoft Money
-- Built with modern open-source technologies
-- Community-driven development
-
----
-
-**Note**: This application is under active development. Features and documentation will be updated regularly.
+MIT License - See LICENSE file for details.

@@ -84,7 +84,7 @@ This is a comprehensive web-based personal finance management application design
 
 ### Account Management
 - ✅ Multiple account types (checking, savings, credit card, loans, mortgages)
-- ✅ Investment accounts (RRSP, TFSA, RESP)
+- ✅ Investment accounts with brokerage support
 - ✅ Multi-currency support
 - ✅ Account balance tracking with automatic updates
 

@@ -15,13 +15,12 @@ import { CurrenciesModule } from './currencies/currencies.module';
 import { SecuritiesModule } from './securities/securities.module';
 import { PayeesModule } from './payees/payees.module';
 import { ScheduledTransactionsModule } from './scheduled-transactions/scheduled-transactions.module';
-import { BudgetsModule } from './budgets/budgets.module';
 import { ReportsModule } from './reports/reports.module';
-import { NotificationsModule } from './notifications/notifications.module';
 import { DatabaseModule } from './database/database.module';
 import { ImportModule } from './import/import.module';
 import { NetWorthModule } from './net-worth/net-worth.module';
 import { BuiltInReportsModule } from './built-in-reports/built-in-reports.module';
+import { HealthModule } from './health/health.module';
 
 @Module({
   imports: [
@@ -80,6 +79,7 @@ import { BuiltInReportsModule } from './built-in-reports/built-in-reports.module
     ScheduleModule.forRoot(),
 
     // Feature modules
+    HealthModule,
     AuthModule,
     UsersModule,
     AccountsModule,
@@ -89,9 +89,7 @@ import { BuiltInReportsModule } from './built-in-reports/built-in-reports.module
     CurrenciesModule,
     SecuritiesModule,
     ScheduledTransactionsModule,
-    BudgetsModule,
     ReportsModule,
-    NotificationsModule,
     DatabaseModule,
     ImportModule,
     NetWorthModule,

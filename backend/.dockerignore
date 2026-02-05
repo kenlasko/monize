@@ -1,0 +1,14 @@
+node_modules
+dist
+.git
+.gitignore
+*.md
+.env*
+!.env.example
+coverage
+.nyc_output
+*.log
+.vscode
+.idea
+test
+*.spec.ts

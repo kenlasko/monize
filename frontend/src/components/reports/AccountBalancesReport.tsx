@@ -25,10 +25,8 @@ const accountTypeLabels: Record<string, string> = {
   LOAN: 'Loan',
   MORTGAGE: 'Mortgage',
   INVESTMENT: 'Investment',
-  RRSP: 'RRSP',
-  TFSA: 'TFSA',
-  RESP: 'RESP',
   CASH: 'Cash',
+  ASSET: 'Asset',
   OTHER: 'Other',
 };
 

@@ -32,7 +32,7 @@ export const authApi = {
   },
 
   initiateOidc: () => {
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-    window.location.href = `${API_URL}/api/v1/auth/oidc`;
+    // Use relative URL - Next.js rewrites handle routing to backend
+    window.location.href = '/api/v1/auth/oidc';
   },
 };

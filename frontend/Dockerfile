@@ -25,27 +25,27 @@ RUN npm install
 COPY . .
 RUN npm run build
 
-# Production stage
+# Production stage (uses standalone output)
 FROM node:20-alpine AS production
 
 WORKDIR /app
 
 ENV NODE_ENV=production
 
-# Install only production dependencies
-COPY package*.json ./
-RUN npm install --only=production
-
-# Copy built application
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/public ./public
-
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nextjs -u 1001
+
+# Copy standalone build (much smaller than full node_modules)
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 
 USER nextjs
 
 EXPOSE 3000
 
-CMD ["npm", "start"]
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+
+CMD ["node", "server.js"]
