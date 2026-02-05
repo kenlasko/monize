@@ -564,7 +564,7 @@ export function AccountList({ accounts, brokerageMarketValues, onEdit, onRefresh
                         Market value
                       </div>
                     )}
-                    {account.currencyCode !== defaultCurrency && (
+                    {density !== 'dense' && account.currencyCode !== defaultCurrency && (
                       <div className="text-xs text-gray-400 dark:text-gray-500">
                         {'\u2248 '}{formatCurrencyBase(convertToDefault(brokerageMarketValues.get(account.id)!, account.currencyCode), defaultCurrency)}
                       </div>
@@ -579,7 +579,7 @@ export function AccountList({ accounts, brokerageMarketValues, onEdit, onRefresh
                     >
                       {formatCurrency(account.currentBalance, account.currencyCode)}
                     </div>
-                    {account.currencyCode !== defaultCurrency && (
+                    {density !== 'dense' && account.currencyCode !== defaultCurrency && (
                       <div className="text-xs text-gray-400 dark:text-gray-500">
                         {'\u2248 '}{formatCurrencyBase(convertToDefault(Number(account.currentBalance) || 0, account.currencyCode), defaultCurrency)}
                       </div>

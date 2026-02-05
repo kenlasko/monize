@@ -17,6 +17,7 @@ import { ScheduledTransaction, ScheduledTransactionOverride } from '@/types/sche
 import { Category } from '@/types/category';
 import { Account } from '@/types/account';
 import { parseLocalDate } from '@/lib/utils';
+import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Modal } from '@/components/ui/Modal';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
@@ -29,6 +30,7 @@ interface OverrideEditorState {
 }
 
 export default function BillsPage() {
+  const { formatCurrency } = useNumberFormat();
   const [scheduledTransactions, setScheduledTransactions] = useState<ScheduledTransaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -420,7 +422,7 @@ export default function BillsPage() {
                           : 'text-red-600 dark:text-red-400'
                       }`}
                     >
-                      ${(summary.monthlyDeposits - summary.monthlyBills).toFixed(2)}
+                      {formatCurrency(summary.monthlyDeposits - summary.monthlyBills)}
                     </dd>
                   </dl>
                 </div>

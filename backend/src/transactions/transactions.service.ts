@@ -361,7 +361,7 @@ export class TransactionsService {
 
       if (hasUncategorized) {
         conditions.push(
-          '(transaction.categoryId IS NULL AND transaction.isSplit = false AND transaction.isTransfer = false)',
+          '(transaction.categoryId IS NULL AND transaction.isSplit = false AND transaction.isTransfer = false AND account.accountType != \'INVESTMENT\')',
         );
       }
 
@@ -1021,8 +1021,9 @@ export class TransactionsService {
       const conditions: string[] = [];
 
       if (hasUncategorized) {
+        queryBuilder.leftJoin('transaction.account', 'summaryAccount');
         conditions.push(
-          '(transaction.categoryId IS NULL AND transaction.isSplit = false AND transaction.isTransfer = false)',
+          '(transaction.categoryId IS NULL AND transaction.isSplit = false AND transaction.isTransfer = false AND summaryAccount.accountType != \'INVESTMENT\')',
         );
       }
 

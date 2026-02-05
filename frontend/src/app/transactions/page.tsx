@@ -20,6 +20,7 @@ import { Category } from '@/types/category';
 import { Payee } from '@/types/payee';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useDateFormat } from '@/hooks/useDateFormat';
+import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { Modal } from '@/components/ui/Modal';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -88,6 +89,7 @@ export default function TransactionsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { formatDate } = useDateFormat();
+  const { formatCurrency } = useNumberFormat();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -543,19 +545,19 @@ export default function TransactionsPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           <SummaryCard
             label="Total Income"
-            value={`$${summary.totalIncome.toFixed(2)}`}
+            value={formatCurrency(summary.totalIncome)}
             icon={SummaryIcons.plus}
             valueColor="green"
           />
           <SummaryCard
             label="Total Expenses"
-            value={`$${summary.totalExpenses.toFixed(2)}`}
+            value={formatCurrency(summary.totalExpenses)}
             icon={SummaryIcons.minus}
             valueColor="red"
           />
           <SummaryCard
             label="Net Cash Flow"
-            value={`$${summary.netCashFlow.toFixed(2)}`}
+            value={formatCurrency(summary.netCashFlow)}
             icon={SummaryIcons.money}
             valueColor={summary.netCashFlow >= 0 ? 'blue' : 'red'}
           />

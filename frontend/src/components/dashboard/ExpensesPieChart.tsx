@@ -54,8 +54,9 @@ export function ExpensesPieChart({
     const categoryLookup = new Map(categories.map((c) => [c.id, c]));
 
     transactions.forEach((tx) => {
-      // Skip transfers - they're not real expenses
+      // Skip transfers and investment account transactions
       if (tx.isTransfer) return;
+      if (tx.account?.accountType === 'INVESTMENT') return;
 
       // Only count expenses (negative amounts)
       const txAmount = Number(tx.amount) || 0;
@@ -81,7 +82,7 @@ export function ExpensesPieChart({
                 colour: cat.color || '',
               });
             }
-          } else {
+          } else if (!split.transferAccountId) {
             uncategorizedTotal += splitAmount;
           }
         });
@@ -212,8 +213,8 @@ export function ExpensesPieChart({
           </PieChart>
         </ResponsiveContainer>
       </div>
-      <div className="mt-4 grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
-        {chartData.slice(0, 10).map((item, index) => (
+      <div className="mt-4 grid grid-cols-2 gap-2">
+        {chartData.map((item, index) => (
           <button
             key={index}
             onClick={() => handleCategoryClick(item.id)}
