@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   PieChart,
@@ -14,21 +14,26 @@ import {
   YAxis,
   CartesianGrid,
 } from 'recharts';
-import { transactionsApi } from '@/lib/transactions';
-import { categoriesApi } from '@/lib/categories';
-import { Transaction } from '@/types/transaction';
-import { Category } from '@/types/category';
+import { builtInReportsApi } from '@/lib/built-in-reports';
+import { IncomeSourceItem } from '@/types/built-in-reports';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useDateRange } from '@/hooks/useDateRange';
 import { DateRangeSelector } from '@/components/ui/DateRangeSelector';
 import { ChartViewToggle } from '@/components/ui/ChartViewToggle';
 import { CHART_COLOURS_INCOME } from '@/lib/chart-colours';
 
+interface ChartDataItem {
+  id: string;
+  name: string;
+  value: number;
+  colour: string;
+}
+
 export function IncomeBySourceReport() {
   const router = useRouter();
   const { formatCurrencyCompact: formatCurrency } = useNumberFormat();
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [chartData, setChartData] = useState<ChartDataItem[]>([]);
+  const [totalIncome, setTotalIncome] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const { dateRange, setDateRange, startDate, setStartDate, endDate, setEndDate, resolvedRange, isValid } = useDateRange({ defaultRange: '1y', alignment: 'day' });
   const [viewType, setViewType] = useState<'pie' | 'bar'>('pie');
@@ -37,13 +42,29 @@ export function IncomeBySourceReport() {
     setIsLoading(true);
     try {
       const { start, end } = resolvedRange;
+      const response = await builtInReportsApi.getIncomeBySource({
+        startDate: start || undefined,
+        endDate: end,
+      });
 
-      const [txData, catData] = await Promise.all([
-        transactionsApi.getAll({ startDate: start, endDate: end, limit: 10000 }),
-        categoriesApi.getAll(),
-      ]);
-      setTransactions(txData.data);
-      setCategories(catData);
+      // Map response to chart data with colours
+      let colourIndex = 0;
+      const data: ChartDataItem[] = response.data.map((item: IncomeSourceItem) => {
+        let colour = item.color || '';
+        if (!colour) {
+          colour = CHART_COLOURS_INCOME[colourIndex % CHART_COLOURS_INCOME.length];
+          colourIndex++;
+        }
+        return {
+          id: item.categoryId || '',
+          name: item.categoryName,
+          value: item.total,
+          colour,
+        };
+      });
+
+      setChartData(data);
+      setTotalIncome(response.totalIncome);
     } catch (error) {
       console.error('Failed to load data:', error);
     } finally {
@@ -55,77 +76,7 @@ export function IncomeBySourceReport() {
     if (isValid) {
       loadData();
     }
-  }, [isValid, resolvedRange, loadData]);
-
-  const chartData = useMemo(() => {
-    const categoryMap = new Map<string, { id: string; name: string; value: number; colour: string }>();
-    let uncategorizedTotal = 0;
-    const categoryLookup = new Map(categories.map((c) => [c.id, c]));
-
-    const addToCategory = (catId: string | null, catObj: { id: string; name: string; color?: string | null; parentId?: string | null } | null | undefined, amount: number) => {
-      const cat = catId ? categoryLookup.get(catId) || catObj : catObj;
-      if (cat) {
-        const parentCat = cat.parentId ? categoryLookup.get(cat.parentId) : null;
-        const displayCat = parentCat || cat;
-        const existing = categoryMap.get(displayCat.id);
-        if (existing) {
-          existing.value += amount;
-        } else {
-          categoryMap.set(displayCat.id, {
-            id: displayCat.id,
-            name: displayCat.name,
-            value: amount,
-            colour: displayCat.color || '',
-          });
-        }
-      } else {
-        uncategorizedTotal += amount;
-      }
-    };
-
-    transactions.forEach((tx) => {
-      if (tx.isTransfer) return;
-      if (tx.account?.accountType === 'INVESTMENT') return;
-      const txAmount = Number(tx.amount) || 0;
-      if (txAmount <= 0) return; // Only positive amounts (income)
-
-      if (tx.isSplit && tx.splits && tx.splits.length > 0) {
-        tx.splits.forEach((split) => {
-          if (split.transferAccountId) return;
-          const splitAmt = Number(split.amount) || 0;
-          if (splitAmt <= 0) return;
-          addToCategory(split.categoryId, split.category, splitAmt);
-        });
-      } else {
-        addToCategory(tx.categoryId, tx.category, txAmount);
-      }
-    });
-
-    if (uncategorizedTotal > 0) {
-      categoryMap.set('uncategorized', {
-        id: '',
-        name: 'Uncategorized',
-        value: uncategorizedTotal,
-        colour: '#9ca3af',
-      });
-    }
-
-    const data = Array.from(categoryMap.values())
-      .sort((a, b) => b.value - a.value)
-      .slice(0, 15);
-
-    let colourIndex = 0;
-    data.forEach((item) => {
-      if (!item.colour) {
-        item.colour = CHART_COLOURS_INCOME[colourIndex % CHART_COLOURS_INCOME.length];
-        colourIndex++;
-      }
-    });
-
-    return data;
-  }, [transactions, categories]);
-
-  const totalIncome = chartData.reduce((sum, item) => sum + item.value, 0);
+  }, [isValid, loadData]);
 
   const handleCategoryClick = (categoryId: string) => {
     if (categoryId) {
@@ -137,7 +88,7 @@ export function IncomeBySourceReport() {
   const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: Array<{ payload: { id: string; name: string; value: number } }> }) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
-      const percentage = ((data.value / totalIncome) * 100).toFixed(1);
+      const percentage = totalIncome > 0 ? ((data.value / totalIncome) * 100).toFixed(1) : '0';
       return (
         <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
           <p className="font-medium text-gray-900 dark:text-gray-100">{data.name}</p>
@@ -236,7 +187,7 @@ export function IncomeBySourceReport() {
             {/* Legend */}
             <div className="mt-6 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
               {chartData.map((item, index) => {
-                const percentage = ((item.value / totalIncome) * 100).toFixed(1);
+                const percentage = totalIncome > 0 ? ((item.value / totalIncome) * 100).toFixed(1) : '0';
                 return (
                   <button
                     key={index}

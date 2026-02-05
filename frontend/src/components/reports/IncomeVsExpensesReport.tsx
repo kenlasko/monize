@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   BarChart,
@@ -13,86 +13,75 @@ import {
   Legend,
   ReferenceLine,
 } from 'recharts';
-import { format, startOfMonth, endOfMonth, eachMonthOfInterval } from 'date-fns';
-import { transactionsApi } from '@/lib/transactions';
-import { Transaction } from '@/types/transaction';
-import { parseLocalDate } from '@/lib/utils';
+import { format, parseISO, startOfMonth, endOfMonth } from 'date-fns';
+import { builtInReportsApi } from '@/lib/built-in-reports';
+import { MonthlyIncomeExpenseItem } from '@/types/built-in-reports';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useDateRange } from '@/hooks/useDateRange';
 import { DateRangeSelector } from '@/components/ui/DateRangeSelector';
 
+interface ChartDataItem {
+  name: string;
+  fullName: string;
+  Income: number;
+  Expenses: number;
+  Savings: number;
+  SavingsRate: number;
+  monthStart: string;
+  monthEnd: string;
+}
+
 export function IncomeVsExpensesReport() {
   const router = useRouter();
   const { formatCurrencyCompact: formatCurrency } = useNumberFormat();
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [chartData, setChartData] = useState<ChartDataItem[]>([]);
+  const [totals, setTotals] = useState({ totalIncome: 0, totalExpenses: 0, totalSavings: 0, savingsRate: 0 });
   const [isLoading, setIsLoading] = useState(true);
   const { dateRange, setDateRange, startDate, setStartDate, endDate, setEndDate, resolvedRange, isValid } = useDateRange({ defaultRange: '1y', alignment: 'month' });
 
+  const loadData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const { start, end } = resolvedRange;
+      const response = await builtInReportsApi.getIncomeVsExpenses({
+        startDate: start || undefined,
+        endDate: end,
+      });
+
+      // Map response to chart data
+      const data: ChartDataItem[] = response.data.map((item: MonthlyIncomeExpenseItem) => {
+        const monthDate = parseISO(item.month + '-01');
+        const savings = item.income - item.expenses;
+        const savingsRate = item.income > 0 ? Math.round((savings / item.income) * 100) : 0;
+        return {
+          name: format(monthDate, 'MMM'),
+          fullName: format(monthDate, 'MMM yyyy'),
+          Income: Math.round(item.income),
+          Expenses: Math.round(item.expenses),
+          Savings: Math.round(savings),
+          SavingsRate: savingsRate,
+          monthStart: format(startOfMonth(monthDate), 'yyyy-MM-dd'),
+          monthEnd: format(endOfMonth(monthDate), 'yyyy-MM-dd'),
+        };
+      });
+
+      setChartData(data);
+
+      const totalIncome = response.totals.income;
+      const totalExpenses = response.totals.expenses;
+      const totalSavings = totalIncome - totalExpenses;
+      const savingsRate = totalIncome > 0 ? (totalSavings / totalIncome) * 100 : 0;
+      setTotals({ totalIncome, totalExpenses, totalSavings, savingsRate });
+    } catch (error) {
+      console.error('Failed to load data:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [resolvedRange]);
+
   useEffect(() => {
-    if (!isValid) return;
-    const loadData = async () => {
-      setIsLoading(true);
-      try {
-        const { start, end } = resolvedRange;
-        const txData = await transactionsApi.getAll({ startDate: start, endDate: end, limit: 50000 });
-        setTransactions(txData.data);
-      } catch (error) {
-        console.error('Failed to load data:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    loadData();
-  }, [resolvedRange, isValid]);
-
-  const chartData = useMemo(() => {
-    const { start, end } = resolvedRange;
-
-    if (!start || !end) return [];
-
-    const months = eachMonthOfInterval({
-      start: parseLocalDate(start),
-      end: parseLocalDate(end),
-    });
-
-    const monthData = months.map((month) => ({
-      month,
-      label: format(month, 'MMM yyyy'),
-      shortLabel: format(month, 'MMM'),
-      expenses: 0,
-      income: 0,
-    }));
-
-    transactions.forEach((tx) => {
-      if (tx.isTransfer) return;
-      if (tx.account?.accountType === 'INVESTMENT') return;
-      const txDate = parseLocalDate(tx.transactionDate);
-      const txMonth = startOfMonth(txDate);
-      const monthBucket = monthData.find(
-        (m) => m.month.getTime() === txMonth.getTime()
-      );
-
-      if (monthBucket) {
-        const amount = Number(tx.amount) || 0;
-        if (amount >= 0) {
-          monthBucket.income += amount;
-        } else {
-          monthBucket.expenses += Math.abs(amount);
-        }
-      }
-    });
-
-    return monthData.map((m) => ({
-      name: m.shortLabel,
-      fullName: m.label,
-      Income: Math.round(m.income),
-      Expenses: Math.round(m.expenses),
-      Savings: Math.round(m.income - m.expenses),
-      SavingsRate: m.income > 0 ? Math.round(((m.income - m.expenses) / m.income) * 100) : 0,
-      monthStart: format(startOfMonth(m.month), 'yyyy-MM-dd'),
-      monthEnd: format(endOfMonth(m.month), 'yyyy-MM-dd'),
-    }));
-  }, [transactions, resolvedRange]);
+    if (isValid) loadData();
+  }, [isValid, loadData]);
 
   const handleChartClick = (state: unknown) => {
     const chartState = state as { activePayload?: Array<{ payload: { monthStart: string; monthEnd: string } }> } | null;
@@ -101,14 +90,6 @@ export function IncomeVsExpensesReport() {
       router.push(`/transactions?startDate=${monthStart}&endDate=${monthEnd}`);
     }
   };
-
-  const totals = useMemo(() => {
-    const totalExpenses = chartData.reduce((sum, m) => sum + m.Expenses, 0);
-    const totalIncome = chartData.reduce((sum, m) => sum + m.Income, 0);
-    const totalSavings = totalIncome - totalExpenses;
-    const savingsRate = totalIncome > 0 ? (totalSavings / totalIncome) * 100 : 0;
-    return { totalExpenses, totalIncome, totalSavings, savingsRate };
-  }, [chartData]);
 
   const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ name: string; value: number; color: string; payload: { fullName: string; SavingsRate: number } }>; label?: string }) => {
     if (active && payload && payload.length) {

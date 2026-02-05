@@ -1,34 +1,15 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
-import { transactionsApi } from '@/lib/transactions';
-import { categoriesApi } from '@/lib/categories';
-import { Transaction } from '@/types/transaction';
-import { Category } from '@/types/category';
-import { parseLocalDate } from '@/lib/utils';
+import { builtInReportsApi } from '@/lib/built-in-reports';
+import { SpendingAnomaly, SpendingAnomaliesResponse } from '@/types/built-in-reports';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
-
-interface Anomaly {
-  type: 'large_transaction' | 'category_spike' | 'unusual_payee' | 'frequency_change';
-  severity: 'high' | 'medium' | 'low';
-  title: string;
-  description: string;
-  amount?: number;
-  transaction?: Transaction;
-  categoryId?: string;
-  categoryName?: string;
-  currentPeriodAmount?: number;
-  previousPeriodAmount?: number;
-  percentChange?: number;
-}
 
 export function SpendingAnomaliesReport() {
   const router = useRouter();
   const { formatCurrencyCompact: formatCurrency } = useNumberFormat();
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [anomaliesData, setAnomaliesData] = useState<SpendingAnomaliesResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [threshold, setThreshold] = useState(2); // Standard deviations
 
@@ -36,17 +17,8 @@ export function SpendingAnomaliesReport() {
     const loadData = async () => {
       setIsLoading(true);
       try {
-        const now = new Date();
-        const startDate = format(subMonths(now, 6), 'yyyy-MM-dd');
-        const endDate = format(now, 'yyyy-MM-dd');
-
-        const [txData, catData] = await Promise.all([
-          transactionsApi.getAll({ startDate, endDate, limit: 50000 }),
-          categoriesApi.getAll(),
-        ]);
-
-        setTransactions(txData.data.filter((tx) => !tx.isTransfer && tx.account?.accountType !== 'INVESTMENT'));
-        setCategories(catData);
+        const data = await builtInReportsApi.getSpendingAnomalies(threshold);
+        setAnomaliesData(data);
       } catch (error) {
         console.error('Failed to load data:', error);
       } finally {
@@ -54,140 +26,11 @@ export function SpendingAnomaliesReport() {
       }
     };
     loadData();
-  }, []);
+  }, [threshold]);
 
-  const anomalies = useMemo((): Anomaly[] => {
-    const results: Anomaly[] = [];
-
-    // Get only expenses
-    const expenses = transactions.filter((tx) => Number(tx.amount) < 0);
-
-    // Calculate statistics for transaction amounts
-    const amounts = expenses.map((tx) => Math.abs(Number(tx.amount)));
-    if (amounts.length < 10) return [];
-
-    const mean = amounts.reduce((sum, a) => sum + a, 0) / amounts.length;
-    const variance = amounts.reduce((sum, a) => sum + Math.pow(a - mean, 2), 0) / amounts.length;
-    const stdDev = Math.sqrt(variance);
-
-    // 1. Large single transactions
-    expenses.forEach((tx) => {
-      const amount = Math.abs(Number(tx.amount));
-      const zScore = (amount - mean) / stdDev;
-
-      if (zScore > threshold) {
-        const severity = zScore > threshold * 2 ? 'high' : zScore > threshold * 1.5 ? 'medium' : 'low';
-        results.push({
-          type: 'large_transaction',
-          severity,
-          title: `Unusually large transaction`,
-          description: `${tx.payee?.name || tx.payeeName || 'Unknown payee'} - ${format(parseLocalDate(tx.transactionDate), 'MMM d, yyyy')}`,
-          amount,
-          transaction: tx,
-        });
-      }
-    });
-
-    // 2. Category spending spikes (compare current month to previous months)
-    const now = new Date();
-    const currentMonthStart = startOfMonth(now);
-    const currentMonthEnd = endOfMonth(now);
-    const previousMonthStart = startOfMonth(subMonths(now, 1));
-    const previousMonthEnd = endOfMonth(subMonths(now, 1));
-
-    const categoryLookup = new Map(categories.map((c) => [c.id, c]));
-    const currentMonthByCategory = new Map<string, number>();
-    const previousMonthByCategory = new Map<string, number>();
-
-    expenses.forEach((tx) => {
-      const txDate = parseLocalDate(tx.transactionDate);
-      const amount = Math.abs(Number(tx.amount));
-      const categoryId = tx.categoryId || 'uncategorized';
-
-      if (txDate >= currentMonthStart && txDate <= currentMonthEnd) {
-        currentMonthByCategory.set(categoryId, (currentMonthByCategory.get(categoryId) || 0) + amount);
-      } else if (txDate >= previousMonthStart && txDate <= previousMonthEnd) {
-        previousMonthByCategory.set(categoryId, (previousMonthByCategory.get(categoryId) || 0) + amount);
-      }
-    });
-
-    currentMonthByCategory.forEach((currentAmount, categoryId) => {
-      const previousAmount = previousMonthByCategory.get(categoryId) || 0;
-      if (previousAmount < 50) return; // Skip if previous spending was minimal
-
-      const percentChange = ((currentAmount - previousAmount) / previousAmount) * 100;
-
-      if (percentChange > 100) {
-        const category = categoryLookup.get(categoryId);
-        const severity = percentChange > 300 ? 'high' : percentChange > 200 ? 'medium' : 'low';
-        results.push({
-          type: 'category_spike',
-          severity,
-          title: `Spending spike in ${category?.name || 'Uncategorized'}`,
-          description: `${Math.round(percentChange)}% increase from last month`,
-          categoryId,
-          categoryName: category?.name || 'Uncategorized',
-          currentPeriodAmount: currentAmount,
-          previousPeriodAmount: previousAmount,
-          percentChange,
-        });
-      }
-    });
-
-    // 3. Unusual/new payees (payees seen for the first time recently)
-    const now6MonthsAgo = subMonths(now, 6);
-    const now1MonthAgo = subMonths(now, 1);
-
-    const payeeFirstSeen = new Map<string, Date>();
-    const sortedExpenses = [...expenses].sort(
-      (a, b) => new Date(a.transactionDate).getTime() - new Date(b.transactionDate).getTime()
-    );
-
-    sortedExpenses.forEach((tx) => {
-      const payeeName = (tx.payee?.name || tx.payeeName || '').toLowerCase().trim();
-      if (!payeeName) return;
-
-      if (!payeeFirstSeen.has(payeeName)) {
-        payeeFirstSeen.set(payeeName, parseLocalDate(tx.transactionDate));
-      }
-    });
-
-    // Find new payees with significant spending
-    payeeFirstSeen.forEach((firstSeen, payeeName) => {
-      if (firstSeen >= now1MonthAgo) {
-        const recentTx = expenses.filter(
-          (tx) =>
-            (tx.payee?.name || tx.payeeName || '').toLowerCase().trim() === payeeName &&
-            parseLocalDate(tx.transactionDate) >= now1MonthAgo
-        );
-
-        const totalSpent = recentTx.reduce((sum, tx) => sum + Math.abs(Number(tx.amount)), 0);
-
-        if (totalSpent > 100 && recentTx.length > 0) {
-          results.push({
-            type: 'unusual_payee',
-            severity: totalSpent > 500 ? 'high' : totalSpent > 200 ? 'medium' : 'low',
-            title: `New payee detected`,
-            description: `${recentTx[0].payee?.name || recentTx[0].payeeName} - ${recentTx.length} transaction(s)`,
-            amount: totalSpent,
-            transaction: recentTx[0],
-          });
-        }
-      }
-    });
-
-    // Sort by severity and amount
-    const severityOrder: Record<string, number> = { high: 0, medium: 1, low: 2 };
-    return results.sort((a, b) => {
-      const severityDiff = severityOrder[a.severity] - severityOrder[b.severity];
-      if (severityDiff !== 0) return severityDiff;
-      return (b.amount || 0) - (a.amount || 0);
-    });
-  }, [transactions, categories, threshold]);
-
-  const handleTransactionClick = (tx: Transaction | undefined) => {
-    if (tx) {
-      router.push(`/transactions?search=${encodeURIComponent(tx.payee?.name || tx.payeeName || '')}`);
+  const handleTransactionClick = (anomaly: SpendingAnomaly) => {
+    if (anomaly.transactionId && anomaly.payeeName) {
+      router.push(`/transactions?search=${encodeURIComponent(anomaly.payeeName)}`);
     }
   };
 
@@ -197,7 +40,7 @@ export function SpendingAnomaliesReport() {
     }
   };
 
-  const getSeverityStyles = (severity: Anomaly['severity']) => {
+  const getSeverityStyles = (severity: SpendingAnomaly['severity']) => {
     switch (severity) {
       case 'high':
         return 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800';
@@ -208,7 +51,7 @@ export function SpendingAnomaliesReport() {
     }
   };
 
-  const getSeverityBadge = (severity: Anomaly['severity']) => {
+  const getSeverityBadge = (severity: SpendingAnomaly['severity']) => {
     switch (severity) {
       case 'high':
         return 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400';
@@ -219,7 +62,7 @@ export function SpendingAnomaliesReport() {
     }
   };
 
-  const getTypeIcon = (type: Anomaly['type']) => {
+  const getTypeIcon = (type: SpendingAnomaly['type']) => {
     switch (type) {
       case 'large_transaction':
         return (
@@ -239,12 +82,6 @@ export function SpendingAnomaliesReport() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
           </svg>
         );
-      case 'frequency_change':
-        return (
-          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
-        );
     }
   };
 
@@ -259,6 +96,9 @@ export function SpendingAnomaliesReport() {
     );
   }
 
+  const anomalies = anomaliesData?.anomalies ?? [];
+  const counts = anomaliesData?.counts ?? { high: 0, medium: 0, low: 0 };
+
   return (
     <div className="space-y-6">
       {/* Summary */}
@@ -266,19 +106,19 @@ export function SpendingAnomaliesReport() {
         <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4">
           <div className="text-sm text-red-600 dark:text-red-400">High Priority</div>
           <div className="text-2xl font-bold text-red-700 dark:text-red-300">
-            {anomalies.filter((a) => a.severity === 'high').length}
+            {counts.high}
           </div>
         </div>
         <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4">
           <div className="text-sm text-orange-600 dark:text-orange-400">Medium Priority</div>
           <div className="text-2xl font-bold text-orange-700 dark:text-orange-300">
-            {anomalies.filter((a) => a.severity === 'medium').length}
+            {counts.medium}
           </div>
         </div>
         <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-4">
           <div className="text-sm text-yellow-600 dark:text-yellow-400">Low Priority</div>
           <div className="text-2xl font-bold text-yellow-700 dark:text-yellow-300">
-            {anomalies.filter((a) => a.severity === 'low').length}
+            {counts.low}
           </div>
         </div>
       </div>
@@ -320,13 +160,13 @@ export function SpendingAnomaliesReport() {
             <div
               key={index}
               className={`rounded-lg border p-4 ${getSeverityStyles(anomaly.severity)} ${
-                anomaly.transaction || anomaly.categoryId ? 'cursor-pointer hover:opacity-80' : ''
+                anomaly.transactionId || anomaly.categoryId ? 'cursor-pointer hover:opacity-80' : ''
               }`}
               onClick={() => {
                 if (anomaly.type === 'category_spike') {
                   handleCategoryClick(anomaly.categoryId);
                 } else {
-                  handleTransactionClick(anomaly.transaction);
+                  handleTransactionClick(anomaly);
                 }
               }}
             >

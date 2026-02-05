@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   BarChart,
@@ -11,36 +11,18 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
-import { format, eachMonthOfInterval } from 'date-fns';
-import { transactionsApi } from '@/lib/transactions';
-import { scheduledTransactionsApi } from '@/lib/scheduled-transactions';
-import { Transaction } from '@/types/transaction';
-import { ScheduledTransaction } from '@/types/scheduled-transaction';
+import { format } from 'date-fns';
+import { builtInReportsApi } from '@/lib/built-in-reports';
+import { BillPaymentHistoryResponse } from '@/types/built-in-reports';
 import { parseLocalDate } from '@/lib/utils';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useDateRange } from '@/hooks/useDateRange';
 import { DateRangeSelector } from '@/components/ui/DateRangeSelector';
 
-interface BillPayment {
-  scheduledTransaction: ScheduledTransaction;
-  transactions: Transaction[];
-  totalPaid: number;
-  paymentCount: number;
-  averagePayment: number;
-  lastPaymentDate: string | null;
-}
-
-interface MonthlyTotal {
-  month: string;
-  label: string;
-  total: number;
-}
-
 export function BillPaymentHistoryReport() {
   const router = useRouter();
   const { formatCurrencyCompact: formatCurrency } = useNumberFormat();
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [scheduledTransactions, setScheduledTransactions] = useState<ScheduledTransaction[]>([]);
+  const [billData, setBillData] = useState<BillPaymentHistoryResponse | null>(null);
   const { dateRange, setDateRange, resolvedRange } = useDateRange({ defaultRange: '1y', alignment: 'day' });
   const [isLoading, setIsLoading] = useState(true);
   const [viewType, setViewType] = useState<'overview' | 'byBill'>('overview');
@@ -50,16 +32,13 @@ export function BillPaymentHistoryReport() {
       setIsLoading(true);
       try {
         const { start, end } = resolvedRange;
-        const [txData, stData] = await Promise.all([
-          transactionsApi.getAll({ startDate: start, endDate: end, limit: 50000 }),
-          scheduledTransactionsApi.getAll(),
-        ]);
-
-        // Filter to non-transfer transactions only
-        setTransactions(txData.data.filter((tx) => !tx.isTransfer));
-        setScheduledTransactions(stData.filter((st) => !st.isTransfer));
+        const data = await builtInReportsApi.getBillPaymentHistory({
+          startDate: start,
+          endDate: end,
+        });
+        setBillData(data);
       } catch (error) {
-        console.error('Failed to load data:', error);
+        console.error('Failed to load bill payment history:', error);
       } finally {
         setIsLoading(false);
       }
@@ -67,122 +46,7 @@ export function BillPaymentHistoryReport() {
     loadData();
   }, [resolvedRange]);
 
-  const billPayments = useMemo((): BillPayment[] => {
-    const paymentMap = new Map<string, BillPayment>();
-
-    // Initialize with all scheduled transactions
-    scheduledTransactions.forEach((st) => {
-      paymentMap.set(st.id, {
-        scheduledTransaction: st,
-        transactions: [],
-        totalPaid: 0,
-        paymentCount: 0,
-        averagePayment: 0,
-        lastPaymentDate: null,
-      });
-    });
-
-    // Match transactions to scheduled transactions by payee name and similar amount
-    transactions.forEach((tx) => {
-      const txPayeeName = (tx.payee?.name || tx.payeeName || '').toLowerCase().trim();
-      const txAmount = Math.abs(Number(tx.amount));
-      if (!txPayeeName) return;
-
-      // Find matching scheduled transaction
-      for (const st of scheduledTransactions) {
-        const stPayeeName = (st.payee?.name || st.payeeName || '').toLowerCase().trim();
-        const stAmount = Math.abs(st.amount);
-
-        // Match by payee name (must match) and amount (within 20% tolerance for variable bills)
-        if (
-          txPayeeName === stPayeeName &&
-          txAmount >= stAmount * 0.8 &&
-          txAmount <= stAmount * 1.2
-        ) {
-          const payment = paymentMap.get(st.id);
-          if (payment) {
-            payment.transactions.push(tx);
-            payment.totalPaid += txAmount;
-            payment.paymentCount++;
-          }
-          break; // Only match to one scheduled transaction
-        }
-      }
-    });
-
-    // Calculate averages and last payment dates
-    paymentMap.forEach((payment) => {
-      if (payment.paymentCount > 0) {
-        payment.averagePayment = payment.totalPaid / payment.paymentCount;
-
-        // Find last payment date
-        const sortedTx = [...payment.transactions].sort(
-          (a, b) => new Date(b.transactionDate).getTime() - new Date(a.transactionDate).getTime()
-        );
-        payment.lastPaymentDate = sortedTx[0]?.transactionDate || null;
-      }
-    });
-
-    // Sort by total paid
-    return Array.from(paymentMap.values())
-      .filter((p) => p.paymentCount > 0)
-      .sort((a, b) => b.totalPaid - a.totalPaid);
-  }, [transactions, scheduledTransactions]);
-
-  // Get all matched transactions from bill payments
-  const matchedTransactions = useMemo(() => {
-    const txSet = new Set<Transaction>();
-    billPayments.forEach((bp) => {
-      bp.transactions.forEach((tx) => txSet.add(tx));
-    });
-    return Array.from(txSet);
-  }, [billPayments]);
-
-  const monthlyData = useMemo((): MonthlyTotal[] => {
-    const { start, end } = resolvedRange;
-    const startDate = parseLocalDate(start);
-    const endDate = parseLocalDate(end);
-
-    const months = eachMonthOfInterval({ start: startDate, end: endDate });
-    const monthMap = new Map<string, MonthlyTotal>();
-
-    months.forEach((month) => {
-      const key = format(month, 'yyyy-MM');
-      monthMap.set(key, {
-        month: key,
-        label: format(month, 'MMM yy'),
-        total: 0,
-      });
-    });
-
-    matchedTransactions.forEach((tx) => {
-      const txDate = parseLocalDate(tx.transactionDate);
-      const monthKey = format(txDate, 'yyyy-MM');
-      const bucket = monthMap.get(monthKey);
-      if (bucket) {
-        bucket.total += Math.abs(Number(tx.amount));
-      }
-    });
-
-    return Array.from(monthMap.values()).sort((a, b) => a.month.localeCompare(b.month));
-  }, [matchedTransactions, resolvedRange]);
-
-  const summary = useMemo(() => {
-    const totalPaid = billPayments.reduce((sum, bp) => sum + bp.totalPaid, 0);
-    const totalPayments = billPayments.reduce((sum, bp) => sum + bp.paymentCount, 0);
-    const uniqueBills = billPayments.length;
-    const monthsInRange = dateRange === '6m' ? 6 : dateRange === '1y' ? 12 : 24;
-    const monthlyAverage = totalPaid / monthsInRange;
-
-    return {
-      totalPaid,
-      totalPayments,
-      uniqueBills,
-      monthlyAverage,
-    };
-  }, [billPayments, dateRange]);
-
-  const handleBillClick = (st: ScheduledTransaction) => {
+  const handleBillClick = () => {
     router.push('/bills');
   };
 
@@ -211,6 +75,16 @@ export function BillPaymentHistoryReport() {
     );
   }
 
+  if (!billData) {
+    return (
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+        <p className="text-gray-500 dark:text-gray-400 text-center py-8">
+          Failed to load bill payment history data.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Summary Cards */}
@@ -218,26 +92,26 @@ export function BillPaymentHistoryReport() {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
           <div className="text-sm text-gray-500 dark:text-gray-400">Total Paid</div>
           <div className="text-xl font-bold text-gray-900 dark:text-gray-100">
-            {formatCurrency(summary.totalPaid)}
+            {formatCurrency(billData.summary.totalPaid)}
           </div>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
           <div className="text-sm text-gray-500 dark:text-gray-400">Monthly Average</div>
           <div className="text-xl font-bold text-blue-600 dark:text-blue-400">
-            {formatCurrency(summary.monthlyAverage)}
+            {formatCurrency(billData.summary.monthlyAverage)}
           </div>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
           <div className="text-sm text-gray-500 dark:text-gray-400">Bills Paid</div>
           <div className="text-xl font-bold text-gray-900 dark:text-gray-100">
-            {summary.uniqueBills}
+            {billData.summary.uniqueBills}
           </div>
           <div className="text-xs text-gray-500 dark:text-gray-400">unique bills</div>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
           <div className="text-sm text-gray-500 dark:text-gray-400">Total Payments</div>
           <div className="text-xl font-bold text-gray-900 dark:text-gray-100">
-            {summary.totalPayments}
+            {billData.summary.totalPayments}
           </div>
         </div>
       </div>
@@ -275,7 +149,7 @@ export function BillPaymentHistoryReport() {
         </div>
       </div>
 
-      {transactions.length === 0 ? (
+      {billData.billPayments.length === 0 ? (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
           <p className="text-gray-500 dark:text-gray-400 text-center py-8">
             No bill payments found for this period. Post scheduled transactions to see payment history.
@@ -289,7 +163,7 @@ export function BillPaymentHistoryReport() {
           </h3>
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={monthlyData}>
+              <BarChart data={billData.monthlyTotals}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                 <XAxis dataKey="label" tick={{ fontSize: 11 }} />
                 <YAxis tickFormatter={(value) => `$${value >= 1000 ? `${(value / 1000).toFixed(0)}k` : value}`} />
@@ -329,18 +203,18 @@ export function BillPaymentHistoryReport() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                {billPayments.map((bp) => (
+                {billData.billPayments.map((bp) => (
                   <tr
-                    key={bp.scheduledTransaction.id}
+                    key={bp.scheduledTransactionId}
                     className="hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer"
-                    onClick={() => handleBillClick(bp.scheduledTransaction)}
+                    onClick={handleBillClick}
                   >
                     <td className="px-4 py-3">
                       <div className="font-medium text-gray-900 dark:text-gray-100">
-                        {bp.scheduledTransaction.name}
+                        {bp.scheduledTransactionName}
                       </div>
                       <div className="text-sm text-gray-500 dark:text-gray-400">
-                        {bp.scheduledTransaction.payee?.name || bp.scheduledTransaction.payeeName || 'No payee'}
+                        {bp.payeeName || 'No payee'}
                       </div>
                     </td>
                     <td className="px-4 py-3 text-center text-sm text-gray-900 dark:text-gray-100">

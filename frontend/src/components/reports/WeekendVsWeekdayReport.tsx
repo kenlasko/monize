@@ -15,17 +15,13 @@ import {
   Pie,
   Cell,
 } from 'recharts';
-import { isWeekend, getDay } from 'date-fns';
-import { transactionsApi } from '@/lib/transactions';
-import { categoriesApi } from '@/lib/categories';
-import { Transaction } from '@/types/transaction';
-import { Category } from '@/types/category';
-import { parseLocalDate } from '@/lib/utils';
+import { builtInReportsApi } from '@/lib/built-in-reports';
+import { WeekendVsWeekdayResponse } from '@/types/built-in-reports';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useDateRange } from '@/hooks/useDateRange';
 import { DateRangeSelector } from '@/components/ui/DateRangeSelector';
 
-interface DaySpending {
+interface DaySpendingDisplay {
   day: string;
   dayIndex: number;
   total: number;
@@ -39,8 +35,7 @@ const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 export function WeekendVsWeekdayReport() {
   const router = useRouter();
   const { formatCurrencyCompact: formatCurrency } = useNumberFormat();
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [reportData, setReportData] = useState<WeekendVsWeekdayResponse | null>(null);
   const { dateRange, setDateRange, resolvedRange } = useDateRange({ defaultRange: '3m', alignment: 'day' });
   const [isLoading, setIsLoading] = useState(true);
   const [viewType, setViewType] = useState<'comparison' | 'byDay' | 'categories'>('comparison');
@@ -50,13 +45,11 @@ export function WeekendVsWeekdayReport() {
       setIsLoading(true);
       try {
         const { start, end } = resolvedRange;
-        const [txData, catData] = await Promise.all([
-          transactionsApi.getAll({ startDate: start, endDate: end, limit: 50000 }),
-          categoriesApi.getAll(),
-        ]);
-
-        setTransactions(txData.data.filter((tx) => !tx.isTransfer && tx.account?.accountType !== 'INVESTMENT' && Number(tx.amount) < 0));
-        setCategories(catData);
+        const data = await builtInReportsApi.getWeekendVsWeekday({
+          startDate: start,
+          endDate: end,
+        });
+        setReportData(data);
       } catch (error) {
         console.error('Failed to load data:', error);
       } finally {
@@ -67,81 +60,57 @@ export function WeekendVsWeekdayReport() {
   }, [resolvedRange]);
 
   const { weekendTotal, weekdayTotal, weekendCount, weekdayCount, dayData } = useMemo(() => {
-    let weekendTotal = 0;
-    let weekdayTotal = 0;
-    let weekendCount = 0;
-    let weekdayCount = 0;
-    const dayTotals: number[] = [0, 0, 0, 0, 0, 0, 0];
-    const dayCounts: number[] = [0, 0, 0, 0, 0, 0, 0];
-
-    transactions.forEach((tx) => {
-      const txDate = parseLocalDate(tx.transactionDate);
-      const amount = Math.abs(Number(tx.amount));
-      const dayOfWeek = getDay(txDate);
-
-      dayTotals[dayOfWeek] += amount;
-      dayCounts[dayOfWeek]++;
-
-      if (isWeekend(txDate)) {
-        weekendTotal += amount;
-        weekendCount++;
-      } else {
-        weekdayTotal += amount;
-        weekdayCount++;
-      }
-    });
-
-    const dayData: DaySpending[] = DAY_NAMES.map((day, index) => ({
-      day,
-      dayIndex: index,
-      total: dayTotals[index],
-      count: dayCounts[index],
-      average: dayCounts[index] > 0 ? dayTotals[index] / dayCounts[index] : 0,
-      isWeekend: index === 0 || index === 6,
-    }));
-
-    return { weekendTotal, weekdayTotal, weekendCount, weekdayCount, dayData };
-  }, [transactions]);
-
-  const categoryComparison = useMemo(() => {
-    const weekendByCategory = new Map<string, { name: string; total: number }>();
-    const weekdayByCategory = new Map<string, { name: string; total: number }>();
-    const categoryLookup = new Map(categories.map((c) => [c.id, c]));
-
-    transactions.forEach((tx) => {
-      const txDate = parseLocalDate(tx.transactionDate);
-      const amount = Math.abs(Number(tx.amount));
-      const cat = tx.categoryId ? categoryLookup.get(tx.categoryId) : null;
-      const parentCat = cat?.parentId ? categoryLookup.get(cat.parentId) : null;
-      const displayCat = parentCat || cat;
-      const categoryId = displayCat?.id || 'uncategorized';
-      const categoryName = displayCat?.name || 'Uncategorized';
-
-      const targetMap = isWeekend(txDate) ? weekendByCategory : weekdayByCategory;
-      const existing = targetMap.get(categoryId);
-      if (existing) {
-        existing.total += amount;
-      } else {
-        targetMap.set(categoryId, { name: categoryName, total: amount });
-      }
-    });
-
-    // Get all unique categories
-    const allCategories = new Set([...weekendByCategory.keys(), ...weekdayByCategory.keys()]);
-    const comparison = Array.from(allCategories).map((catId) => {
-      const weekend = weekendByCategory.get(catId);
-      const weekday = weekdayByCategory.get(catId);
+    if (!reportData) {
       return {
-        categoryId: catId,
-        name: weekend?.name || weekday?.name || 'Unknown',
-        weekendTotal: weekend?.total || 0,
-        weekdayTotal: weekday?.total || 0,
-        difference: (weekend?.total || 0) - (weekday?.total || 0),
+        weekendTotal: 0,
+        weekdayTotal: 0,
+        weekendCount: 0,
+        weekdayCount: 0,
+        dayData: [] as DaySpendingDisplay[],
+      };
+    }
+
+    const { summary, byDay } = reportData;
+
+    const dayData: DaySpendingDisplay[] = DAY_NAMES.map((dayName, index) => {
+      const dayInfo = byDay.find((d) => d.dayOfWeek === index);
+      const total = dayInfo?.total || 0;
+      const count = dayInfo?.count || 0;
+      return {
+        day: dayName,
+        dayIndex: index,
+        total,
+        count,
+        average: count > 0 ? total / count : 0,
+        isWeekend: index === 0 || index === 6,
       };
     });
 
-    return comparison.sort((a, b) => (b.weekendTotal + b.weekdayTotal) - (a.weekendTotal + a.weekdayTotal)).slice(0, 10);
-  }, [transactions, categories]);
+    return {
+      weekendTotal: summary.weekendTotal,
+      weekdayTotal: summary.weekdayTotal,
+      weekendCount: summary.weekendCount,
+      weekdayCount: summary.weekdayCount,
+      dayData,
+    };
+  }, [reportData]);
+
+  const categoryComparison = useMemo(() => {
+    if (!reportData) {
+      return [];
+    }
+
+    return reportData.byCategory
+      .map((cat) => ({
+        categoryId: cat.categoryId,
+        name: cat.categoryName,
+        weekendTotal: cat.weekendTotal,
+        weekdayTotal: cat.weekdayTotal,
+        difference: cat.weekendTotal - cat.weekdayTotal,
+      }))
+      .sort((a, b) => (b.weekendTotal + b.weekdayTotal) - (a.weekendTotal + a.weekdayTotal))
+      .slice(0, 10);
+  }, [reportData]);
 
   const weekendAvg = weekendCount > 0 ? weekendTotal / weekendCount : 0;
   const weekdayAvg = weekdayCount > 0 ? weekdayTotal / weekdayCount : 0;
@@ -174,11 +143,13 @@ export function WeekendVsWeekdayReport() {
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
         <div className="animate-pulse space-y-4">
           <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/3" />
-          <div className="h-64 bg-gray-200 dark:bg-gray-700 rounded" />
+          <div className="h-96 bg-gray-200 dark:bg-gray-700 rounded" />
         </div>
       </div>
     );
   }
+
+  const hasData = totalSpending > 0;
 
   return (
     <div className="space-y-6">
@@ -203,13 +174,13 @@ export function WeekendVsWeekdayReport() {
           </div>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
-          <div className="text-sm text-gray-500 dark:text-gray-400">Avg per Weekend Tx</div>
+          <div className="text-sm text-gray-500 dark:text-gray-400">Avg Weekend Transaction</div>
           <div className="text-xl font-bold text-gray-900 dark:text-gray-100">
             {formatCurrency(weekendAvg)}
           </div>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
-          <div className="text-sm text-gray-500 dark:text-gray-400">Avg per Weekday Tx</div>
+          <div className="text-sm text-gray-500 dark:text-gray-400">Avg Weekday Transaction</div>
           <div className="text-xl font-bold text-gray-900 dark:text-gray-100">
             {formatCurrency(weekdayAvg)}
           </div>
@@ -259,7 +230,7 @@ export function WeekendVsWeekdayReport() {
         </div>
       </div>
 
-      {transactions.length === 0 ? (
+      {!hasData ? (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
           <p className="text-gray-500 dark:text-gray-400 text-center py-8">
             No expense transactions found for this period.
@@ -271,15 +242,15 @@ export function WeekendVsWeekdayReport() {
             Weekend vs Weekday Split
           </h3>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="h-64">
+            <div className="h-96">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
                     data={pieData}
                     cx="50%"
                     cy="50%"
-                    innerRadius={50}
-                    outerRadius={90}
+                    innerRadius={70}
+                    outerRadius={140}
                     paddingAngle={5}
                     dataKey="value"
                   >
@@ -329,7 +300,7 @@ export function WeekendVsWeekdayReport() {
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
             Spending by Day of Week
           </h3>
-          <div className="h-80">
+          <div className="h-96">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={dayData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
@@ -371,7 +342,7 @@ export function WeekendVsWeekdayReport() {
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
             Category Comparison
           </h3>
-          <div className="h-80">
+          <div className="h-[480px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={categoryComparison} layout="vertical" margin={{ left: 100 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />

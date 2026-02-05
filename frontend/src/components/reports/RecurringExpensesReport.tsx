@@ -9,28 +9,17 @@ import {
   ResponsiveContainer,
   Tooltip,
 } from 'recharts';
-import { format, subMonths } from 'date-fns';
-import { transactionsApi } from '@/lib/transactions';
-import { Transaction } from '@/types/transaction';
+import { format } from 'date-fns';
+import { builtInReportsApi } from '@/lib/built-in-reports';
+import { RecurringExpenseItem, RecurringExpensesResponse } from '@/types/built-in-reports';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { CHART_COLOURS } from '@/lib/chart-colours';
-
-interface RecurringExpense {
-  payeeName: string;
-  payeeId: string | null;
-  occurrences: number;
-  totalAmount: number;
-  averageAmount: number;
-  lastTransaction: string;
-  frequency: string;
-  categoryName: string;
-}
 
 
 export function RecurringExpensesReport() {
   const router = useRouter();
   const { formatCurrencyCompact: formatCurrency } = useNumberFormat();
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [recurringData, setRecurringData] = useState<RecurringExpensesResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [minOccurrences, setMinOccurrences] = useState(3);
 
@@ -38,104 +27,24 @@ export function RecurringExpensesReport() {
     const loadData = async () => {
       setIsLoading(true);
       try {
-        // Get last 6 months of transactions
-        const now = new Date();
-        const startDate = format(subMonths(now, 6), 'yyyy-MM-dd');
-        const endDate = format(now, 'yyyy-MM-dd');
-
-        const txData = await transactionsApi.getAll({
-          startDate,
-          endDate,
-          limit: 50000,
-        });
-
-        // Filter to expenses only (negative amounts, not transfers)
-        const expenses = txData.data.filter(
-          (tx) => !tx.isTransfer && Number(tx.amount) < 0
-        );
-        setTransactions(expenses);
+        const data = await builtInReportsApi.getRecurringExpenses(minOccurrences);
+        setRecurringData(data);
       } catch (error) {
-        console.error('Failed to load transactions:', error);
+        console.error('Failed to load recurring expenses:', error);
       } finally {
         setIsLoading(false);
       }
     };
     loadData();
-  }, []);
-
-  const recurringExpenses = useMemo((): RecurringExpense[] => {
-    // Group by payee name (case insensitive)
-    const payeeMap = new Map<string, {
-      payeeName: string;
-      payeeId: string | null;
-      transactions: Transaction[];
-      categoryName: string;
-    }>();
-
-    transactions.forEach((tx) => {
-      const payeeName = (tx.payee?.name || tx.payeeName || 'Unknown').toLowerCase().trim();
-      if (!payeeName || payeeName === 'unknown') return;
-
-      let entry = payeeMap.get(payeeName);
-      if (!entry) {
-        entry = {
-          payeeName: tx.payee?.name || tx.payeeName || 'Unknown',
-          payeeId: tx.payeeId,
-          transactions: [],
-          categoryName: tx.category?.name || 'Uncategorized',
-        };
-        payeeMap.set(payeeName, entry);
-      }
-      entry.transactions.push(tx);
-    });
-
-    // Calculate recurring patterns
-    const recurring: RecurringExpense[] = [];
-
-    payeeMap.forEach((entry) => {
-      if (entry.transactions.length < minOccurrences) return;
-
-      const amounts = entry.transactions.map((tx) => Math.abs(Number(tx.amount)));
-      const totalAmount = amounts.reduce((sum, a) => sum + a, 0);
-      const averageAmount = totalAmount / amounts.length;
-
-      // Sort transactions by date
-      const sortedTx = [...entry.transactions].sort(
-        (a, b) => new Date(b.transactionDate).getTime() - new Date(a.transactionDate).getTime()
-      );
-
-      // Estimate frequency based on occurrence count over 6 months
-      const occurrences = entry.transactions.length;
-      let frequency = 'Irregular';
-      if (occurrences >= 24) frequency = 'Weekly';
-      else if (occurrences >= 12) frequency = 'Bi-weekly';
-      else if (occurrences >= 5) frequency = 'Monthly';
-      else if (occurrences >= 3) frequency = 'Occasional';
-
-      recurring.push({
-        payeeName: entry.payeeName,
-        payeeId: entry.payeeId,
-        occurrences,
-        totalAmount,
-        averageAmount,
-        lastTransaction: sortedTx[0].transactionDate,
-        frequency,
-        categoryName: entry.categoryName,
-      });
-    });
-
-    return recurring.sort((a, b) => b.totalAmount - a.totalAmount);
-  }, [transactions, minOccurrences]);
+  }, [minOccurrences]);
 
   const chartData = useMemo(() => {
-    return recurringExpenses.slice(0, 10).map((item, index) => ({
+    if (!recurringData) return [];
+    return recurringData.data.slice(0, 10).map((item, index) => ({
       ...item,
       color: CHART_COLOURS[index % CHART_COLOURS.length],
     }));
-  }, [recurringExpenses]);
-
-  const totalRecurring = recurringExpenses.reduce((sum, item) => sum + item.totalAmount, 0);
-  const monthlyEstimate = totalRecurring / 6;
+  }, [recurringData]);
 
   const handlePayeeClick = (payeeId: string | null) => {
     if (payeeId) {
@@ -143,14 +52,14 @@ export function RecurringExpensesReport() {
     }
   };
 
-  const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: Array<{ payload: RecurringExpense & { color: string } }> }) => {
+  const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: Array<{ payload: RecurringExpenseItem & { color: string } }> }) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
         <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
           <p className="font-medium text-gray-900 dark:text-gray-100">{data.payeeName}</p>
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            {data.occurrences} transactions • {data.frequency}
+            {data.occurrences} transactions - {data.frequency}
           </p>
           <p className="text-sm text-gray-900 dark:text-gray-100 mt-1">
             Total: {formatCurrency(data.totalAmount)}
@@ -175,6 +84,16 @@ export function RecurringExpensesReport() {
     );
   }
 
+  if (!recurringData) {
+    return (
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+        <p className="text-gray-500 dark:text-gray-400 text-center py-8">
+          Failed to load recurring expenses data.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Summary Cards */}
@@ -182,20 +101,20 @@ export function RecurringExpensesReport() {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
           <div className="text-sm text-gray-500 dark:text-gray-400">Recurring Expenses</div>
           <div className="text-xl font-bold text-gray-900 dark:text-gray-100">
-            {recurringExpenses.length}
+            {recurringData.summary.uniquePayees}
           </div>
           <div className="text-xs text-gray-500 dark:text-gray-400">identified payees</div>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
           <div className="text-sm text-gray-500 dark:text-gray-400">6-Month Total</div>
           <div className="text-xl font-bold text-red-600 dark:text-red-400">
-            {formatCurrency(totalRecurring)}
+            {formatCurrency(recurringData.summary.totalRecurring)}
           </div>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
           <div className="text-sm text-gray-500 dark:text-gray-400">Monthly Estimate</div>
           <div className="text-xl font-bold text-orange-600 dark:text-orange-400">
-            {formatCurrency(monthlyEstimate)}
+            {formatCurrency(recurringData.summary.monthlyEstimate)}
           </div>
         </div>
       </div>
@@ -223,7 +142,7 @@ export function RecurringExpensesReport() {
         </div>
       </div>
 
-      {recurringExpenses.length === 0 ? (
+      {recurringData.data.length === 0 ? (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
           <p className="text-gray-500 dark:text-gray-400 text-center py-8">
             No recurring expenses found with {minOccurrences}+ occurrences in the last 6 months.
@@ -295,7 +214,7 @@ export function RecurringExpensesReport() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                  {recurringExpenses.map((expense, index) => (
+                  {recurringData.data.map((expense, index) => (
                     <tr
                       key={index}
                       className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 ${expense.payeeId ? 'cursor-pointer' : ''}`}
@@ -330,7 +249,7 @@ export function RecurringExpensesReport() {
                         {formatCurrency(expense.totalAmount)}
                       </td>
                       <td className="px-4 py-3 text-sm text-right text-gray-500 dark:text-gray-400">
-                        {format(new Date(expense.lastTransaction), 'MMM d')}
+                        {format(new Date(expense.lastTransactionDate), 'MMM d')}
                       </td>
                     </tr>
                   ))}

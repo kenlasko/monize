@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   BarChart,
@@ -12,111 +12,60 @@ import {
   ResponsiveContainer,
   Cell,
 } from 'recharts';
-import { format, subMonths, startOfMonth } from 'date-fns';
-import { transactionsApi } from '@/lib/transactions';
-import { Transaction } from '@/types/transaction';
+import { builtInReportsApi } from '@/lib/built-in-reports';
+import { PayeeSpendingItem } from '@/types/built-in-reports';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { useDateRange } from '@/hooks/useDateRange';
+import { DateRangeSelector } from '@/components/ui/DateRangeSelector';
 import { CHART_COLOURS } from '@/lib/chart-colours';
 
-type DateRange = '1m' | '3m' | '6m' | '1y' | 'ytd' | 'custom';
+interface ChartDataItem {
+  id: string;
+  name: string;
+  value: number;
+}
 
 export function SpendingByPayeeReport() {
   const router = useRouter();
   const { formatCurrencyCompact: formatCurrency } = useNumberFormat();
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [chartData, setChartData] = useState<ChartDataItem[]>([]);
+  const [totalExpenses, setTotalExpenses] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
-  const [dateRange, setDateRange] = useState<DateRange>('3m');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [showTop, setShowTop] = useState(15);
-
-  const getDateRange = useCallback((range: DateRange): { start: string; end: string } => {
-    const now = new Date();
-    const end = format(now, 'yyyy-MM-dd');
-    let start: string;
-
-    switch (range) {
-      case '1m':
-        start = format(subMonths(now, 1), 'yyyy-MM-dd');
-        break;
-      case '3m':
-        start = format(subMonths(now, 3), 'yyyy-MM-dd');
-        break;
-      case '6m':
-        start = format(subMonths(now, 6), 'yyyy-MM-dd');
-        break;
-      case '1y':
-        start = format(subMonths(now, 12), 'yyyy-MM-dd');
-        break;
-      case 'ytd':
-        start = format(startOfMonth(new Date(now.getFullYear(), 0, 1)), 'yyyy-MM-dd');
-        break;
-      default:
-        start = startDate || format(subMonths(now, 3), 'yyyy-MM-dd');
-    }
-
-    return { start, end };
-  }, [startDate]);
+  const { dateRange, setDateRange, startDate, setStartDate, endDate, setEndDate, resolvedRange, isValid } =
+    useDateRange({ defaultRange: '3m' });
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const { start, end } = dateRange === 'custom'
-        ? { start: startDate, end: endDate }
-        : getDateRange(dateRange);
+      const { start, end } = resolvedRange;
+      const response = await builtInReportsApi.getSpendingByPayee({
+        startDate: start || undefined,
+        endDate: end,
+      });
 
-      const txData = await transactionsApi.getAll({ startDate: start, endDate: end, limit: 10000 });
-      setTransactions(txData.data);
+      // Map response to chart data
+      const data: ChartDataItem[] = response.data.map((item: PayeeSpendingItem) => ({
+        id: item.payeeId || '',
+        name: item.payeeName,
+        value: item.total,
+      }));
+
+      setChartData(data);
+      setTotalExpenses(response.totalSpending);
     } catch (error) {
       console.error('Failed to load data:', error);
     } finally {
       setIsLoading(false);
     }
-  }, [dateRange, startDate, endDate, getDateRange]);
+  }, [resolvedRange]);
 
   useEffect(() => {
-    if (dateRange !== 'custom' || (startDate && endDate)) {
-      loadData();
-    }
-  }, [dateRange, startDate, endDate, loadData]);
-
-  const chartData = useMemo(() => {
-    const payeeMap = new Map<string, { id: string; name: string; value: number }>();
-
-    transactions.forEach((tx) => {
-      if (tx.isTransfer) return;
-      if (tx.account?.accountType === 'INVESTMENT') return;
-      const txAmount = Number(tx.amount) || 0;
-      if (txAmount >= 0) return;
-      const expenseAmount = Math.abs(txAmount);
-
-      const payeeName = tx.payee?.name || tx.payeeName || 'Unknown';
-      const payeeId = tx.payeeId || '';
-
-      const existing = payeeMap.get(payeeName);
-      if (existing) {
-        existing.value += expenseAmount;
-      } else {
-        payeeMap.set(payeeName, {
-          id: payeeId,
-          name: payeeName,
-          value: expenseAmount,
-        });
-      }
-    });
-
-    return Array.from(payeeMap.values())
-      .sort((a, b) => b.value - a.value)
-      .slice(0, showTop);
-  }, [transactions, showTop]);
-
-  const totalExpenses = chartData.reduce((sum, item) => sum + item.value, 0);
+    if (isValid) loadData();
+  }, [isValid, loadData]);
 
   const handlePayeeClick = (payeeId: string) => {
     if (payeeId) {
-      const { start, end } = dateRange === 'custom'
-        ? { start: startDate, end: endDate }
-        : getDateRange(dateRange);
+      const { start, end } = resolvedRange;
       router.push(`/transactions?payeeId=${payeeId}&startDate=${start}&endDate=${end}`);
     }
   };
@@ -124,7 +73,7 @@ export function SpendingByPayeeReport() {
   const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: Array<{ payload: { name: string; value: number } }> }) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
-      const percentage = ((data.value / totalExpenses) * 100).toFixed(1);
+      const percentage = totalExpenses > 0 ? ((data.value / totalExpenses) * 100).toFixed(1) : '0';
       return (
         <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
           <p className="font-medium text-gray-900 dark:text-gray-100">{data.name}</p>
@@ -153,71 +102,17 @@ export function SpendingByPayeeReport() {
       {/* Controls */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
         <div className="flex flex-wrap gap-4 items-center justify-between">
-          <div className="flex flex-wrap gap-2">
-            {(['1m', '3m', '6m', '1y', 'ytd'] as DateRange[]).map((range) => (
-              <button
-                key={range}
-                onClick={() => setDateRange(range)}
-                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                  dateRange === range
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                }`}
-              >
-                {range === 'ytd' ? 'YTD' : range.toUpperCase()}
-              </button>
-            ))}
-            <button
-              onClick={() => setDateRange('custom')}
-              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                dateRange === 'custom'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-              }`}
-            >
-              Custom
-            </button>
-          </div>
-          <div className="flex items-center gap-2">
-            <label className="text-sm text-gray-600 dark:text-gray-400">Show top:</label>
-            <select
-              value={showTop}
-              onChange={(e) => setShowTop(Number(e.target.value))}
-              className="rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm"
-            >
-              <option value={10}>10</option>
-              <option value={15}>15</option>
-              <option value={25}>25</option>
-              <option value={50}>50</option>
-            </select>
-          </div>
+          <DateRangeSelector
+            ranges={['1m', '3m', '6m', '1y', 'ytd']}
+            value={dateRange}
+            onChange={setDateRange}
+            showCustom
+            customStartDate={startDate}
+            onCustomStartDateChange={setStartDate}
+            customEndDate={endDate}
+            onCustomEndDateChange={setEndDate}
+          />
         </div>
-        {dateRange === 'custom' && (
-          <div className="flex gap-4 mt-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Start Date
-              </label>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                End Date
-              </label>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-              />
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Chart */}

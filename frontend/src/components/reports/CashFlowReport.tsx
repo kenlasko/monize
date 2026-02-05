@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useCallback } from 'react';
 import {
   BarChart,
   Bar,
@@ -13,180 +12,76 @@ import {
   Legend,
   ReferenceLine,
 } from 'recharts';
-import { format, subMonths, startOfMonth, endOfMonth, eachMonthOfInterval } from 'date-fns';
-import { transactionsApi } from '@/lib/transactions';
-import { categoriesApi } from '@/lib/categories';
-import { Transaction } from '@/types/transaction';
-import { Category } from '@/types/category';
-import { parseLocalDate } from '@/lib/utils';
+import { format, parseISO } from 'date-fns';
+import { builtInReportsApi } from '@/lib/built-in-reports';
+import { MonthlyIncomeExpenseItem, CategorySpendingItem, IncomeSourceItem } from '@/types/built-in-reports';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { useDateRange } from '@/hooks/useDateRange';
+import { DateRangeSelector } from '@/components/ui/DateRangeSelector';
 
-type DateRange = '3m' | '6m' | '1y' | 'custom';
+interface ChartDataItem {
+  name: string;
+  fullName: string;
+  Income: number;
+  Expenses: number;
+  Net: number;
+}
 
 export function CashFlowReport() {
-  const router = useRouter();
   const { formatCurrencyCompact: formatCurrency } = useNumberFormat();
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [monthlyData, setMonthlyData] = useState<ChartDataItem[]>([]);
+  const [incomeItems, setIncomeItems] = useState<IncomeSourceItem[]>([]);
+  const [expenseItems, setExpenseItems] = useState<CategorySpendingItem[]>([]);
+  const [totals, setTotals] = useState({ totalIncome: 0, totalExpenses: 0, netCashFlow: 0 });
   const [isLoading, setIsLoading] = useState(true);
-  const [dateRange, setDateRange] = useState<DateRange>('6m');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-
-  const getDateRange = useCallback((range: DateRange): { start: string; end: string } => {
-    const now = new Date();
-    const end = format(endOfMonth(now), 'yyyy-MM-dd');
-    let start: string;
-
-    switch (range) {
-      case '3m':
-        start = format(startOfMonth(subMonths(now, 2)), 'yyyy-MM-dd');
-        break;
-      case '6m':
-        start = format(startOfMonth(subMonths(now, 5)), 'yyyy-MM-dd');
-        break;
-      case '1y':
-        start = format(startOfMonth(subMonths(now, 11)), 'yyyy-MM-dd');
-        break;
-      default:
-        start = startDate || format(startOfMonth(subMonths(now, 5)), 'yyyy-MM-dd');
-    }
-
-    return { start, end };
-  }, [startDate]);
+  const { dateRange, setDateRange, startDate, setStartDate, endDate, setEndDate, resolvedRange, isValid } = useDateRange({ defaultRange: '6m', alignment: 'month' });
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const { start, end } = dateRange === 'custom'
-        ? { start: startDate, end: endDate }
-        : getDateRange(dateRange);
+      const { start, end } = resolvedRange;
+      const params = {
+        startDate: start || undefined,
+        endDate: end,
+      };
 
-      const [txData, catData] = await Promise.all([
-        transactionsApi.getAll({ startDate: start, endDate: end, limit: 50000 }),
-        categoriesApi.getAll(),
+      // Fetch all data in parallel
+      const [cashFlowResponse, incomeResponse, spendingResponse] = await Promise.all([
+        builtInReportsApi.getCashFlow(params),
+        builtInReportsApi.getIncomeBySource(params),
+        builtInReportsApi.getSpendingByCategory(params),
       ]);
-      setTransactions(txData.data);
-      setCategories(catData);
+
+      // Map monthly data
+      const data: ChartDataItem[] = cashFlowResponse.data.map((item: MonthlyIncomeExpenseItem) => {
+        const monthDate = parseISO(item.month + '-01');
+        return {
+          name: format(monthDate, 'MMM'),
+          fullName: format(monthDate, 'MMM yyyy'),
+          Income: Math.round(item.income),
+          Expenses: Math.round(item.expenses),
+          Net: Math.round(item.net),
+        };
+      });
+
+      setMonthlyData(data);
+      setIncomeItems(incomeResponse.data);
+      setExpenseItems(spendingResponse.data);
+      setTotals({
+        totalIncome: cashFlowResponse.totals.income,
+        totalExpenses: cashFlowResponse.totals.expenses,
+        netCashFlow: cashFlowResponse.totals.net,
+      });
     } catch (error) {
       console.error('Failed to load data:', error);
     } finally {
       setIsLoading(false);
     }
-  }, [dateRange, startDate, endDate, getDateRange]);
+  }, [resolvedRange]);
 
   useEffect(() => {
-    if (dateRange !== 'custom' || (startDate && endDate)) {
-      loadData();
-    }
-  }, [dateRange, startDate, endDate, loadData]);
-
-  const cashFlowData = useMemo(() => {
-    const categoryLookup = new Map(categories.map((c) => [c.id, c]));
-
-    // Group by income/expense categories
-    const incomeByCategory = new Map<string, { name: string; total: number }>();
-    const expenseByCategory = new Map<string, { name: string; total: number }>();
-
-    transactions.forEach((tx) => {
-      if (tx.isTransfer) return;
-      if (tx.account?.accountType === 'INVESTMENT') return;
-      const amount = Number(tx.amount) || 0;
-
-      const processCategory = (catId: string | null, catName: string, amt: number) => {
-        const cat = catId ? categoryLookup.get(catId) : null;
-        const parentCat = cat?.parentId ? categoryLookup.get(cat.parentId) : null;
-        const displayCat = parentCat || cat;
-        const name = displayCat?.name || catName || 'Uncategorized';
-        const id = displayCat?.id || 'uncategorized';
-
-        if (amt > 0) {
-          const existing = incomeByCategory.get(id);
-          if (existing) {
-            existing.total += amt;
-          } else {
-            incomeByCategory.set(id, { name, total: amt });
-          }
-        } else {
-          const existing = expenseByCategory.get(id);
-          if (existing) {
-            existing.total += Math.abs(amt);
-          } else {
-            expenseByCategory.set(id, { name, total: Math.abs(amt) });
-          }
-        }
-      };
-
-      if (tx.isSplit && tx.splits && tx.splits.length > 0) {
-        tx.splits.forEach((split) => {
-          if (split.transferAccountId) return;
-          const splitAmt = Number(split.amount) || 0;
-          processCategory(split.categoryId || null, split.category?.name || '', splitAmt);
-        });
-      } else {
-        processCategory(tx.categoryId || null, tx.category?.name || '', amount);
-      }
-    });
-
-    const incomeItems = Array.from(incomeByCategory.values())
-      .sort((a, b) => b.total - a.total);
-    const expenseItems = Array.from(expenseByCategory.values())
-      .sort((a, b) => b.total - a.total);
-
-    const totalIncome = incomeItems.reduce((sum, item) => sum + item.total, 0);
-    const totalExpenses = expenseItems.reduce((sum, item) => sum + item.total, 0);
-    const netCashFlow = totalIncome - totalExpenses;
-
-    return { incomeItems, expenseItems, totalIncome, totalExpenses, netCashFlow };
-  }, [transactions, categories]);
-
-  const monthlyData = useMemo(() => {
-    const { start, end } = dateRange === 'custom'
-      ? { start: startDate, end: endDate }
-      : getDateRange(dateRange);
-
-    if (!start || !end) return [];
-
-    const months = eachMonthOfInterval({
-      start: parseLocalDate(start),
-      end: parseLocalDate(end),
-    });
-
-    const monthData = months.map((month) => ({
-      month,
-      label: format(month, 'MMM yyyy'),
-      shortLabel: format(month, 'MMM'),
-      income: 0,
-      expenses: 0,
-    }));
-
-    transactions.forEach((tx) => {
-      if (tx.isTransfer) return;
-      if (tx.account?.accountType === 'INVESTMENT') return;
-      const txDate = parseLocalDate(tx.transactionDate);
-      const txMonth = startOfMonth(txDate);
-      const monthBucket = monthData.find(
-        (m) => m.month.getTime() === txMonth.getTime()
-      );
-
-      if (monthBucket) {
-        const amount = Number(tx.amount) || 0;
-        if (amount >= 0) {
-          monthBucket.income += amount;
-        } else {
-          monthBucket.expenses += Math.abs(amount);
-        }
-      }
-    });
-
-    return monthData.map((m) => ({
-      name: m.shortLabel,
-      fullName: m.label,
-      Income: Math.round(m.income),
-      Expenses: Math.round(m.expenses),
-      Net: Math.round(m.income - m.expenses),
-    }));
-  }, [transactions, dateRange, startDate, endDate, getDateRange]);
+    if (isValid) loadData();
+  }, [isValid, loadData]);
 
   const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: Array<{ name: string; value: number; color: string; payload: { fullName: string } }> }) => {
     if (active && payload && payload.length) {
@@ -223,90 +118,49 @@ export function CashFlowReport() {
         <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-6">
           <div className="text-sm text-green-600 dark:text-green-400">Total Inflows</div>
           <div className="text-2xl font-bold text-green-700 dark:text-green-300">
-            {formatCurrency(cashFlowData.totalIncome)}
+            {formatCurrency(totals.totalIncome)}
           </div>
         </div>
         <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-6">
           <div className="text-sm text-red-600 dark:text-red-400">Total Outflows</div>
           <div className="text-2xl font-bold text-red-700 dark:text-red-300">
-            {formatCurrency(cashFlowData.totalExpenses)}
+            {formatCurrency(totals.totalExpenses)}
           </div>
         </div>
         <div className={`rounded-lg p-6 ${
-          cashFlowData.netCashFlow >= 0
+          totals.netCashFlow >= 0
             ? 'bg-blue-50 dark:bg-blue-900/20'
             : 'bg-orange-50 dark:bg-orange-900/20'
         }`}>
           <div className={`text-sm ${
-            cashFlowData.netCashFlow >= 0
+            totals.netCashFlow >= 0
               ? 'text-blue-600 dark:text-blue-400'
               : 'text-orange-600 dark:text-orange-400'
           }`}>
             Net Cash Flow
           </div>
           <div className={`text-2xl font-bold ${
-            cashFlowData.netCashFlow >= 0
+            totals.netCashFlow >= 0
               ? 'text-blue-700 dark:text-blue-300'
               : 'text-orange-700 dark:text-orange-300'
           }`}>
-            {cashFlowData.netCashFlow >= 0 ? '+' : ''}{formatCurrency(cashFlowData.netCashFlow)}
+            {totals.netCashFlow >= 0 ? '+' : ''}{formatCurrency(totals.netCashFlow)}
           </div>
         </div>
       </div>
 
       {/* Controls */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
-        <div className="flex flex-wrap gap-2">
-          {(['3m', '6m', '1y'] as DateRange[]).map((range) => (
-            <button
-              key={range}
-              onClick={() => setDateRange(range)}
-              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                dateRange === range
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-              }`}
-            >
-              {range.toUpperCase()}
-            </button>
-          ))}
-          <button
-            onClick={() => setDateRange('custom')}
-            className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-              dateRange === 'custom'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-            }`}
-          >
-            Custom
-          </button>
-        </div>
-        {dateRange === 'custom' && (
-          <div className="flex gap-4 mt-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Start Date
-              </label>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                End Date
-              </label>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-              />
-            </div>
-          </div>
-        )}
+        <DateRangeSelector
+          ranges={['3m', '6m', '1y']}
+          value={dateRange}
+          onChange={setDateRange}
+          showCustom
+          customStartDate={startDate}
+          onCustomStartDateChange={setStartDate}
+          customEndDate={endDate}
+          onCustomEndDateChange={setEndDate}
+        />
       </div>
 
       {/* Monthly Chart */}
@@ -343,12 +197,12 @@ export function CashFlowReport() {
             </h3>
           </div>
           <div className="divide-y divide-gray-200 dark:divide-gray-700 max-h-96 overflow-y-auto">
-            {cashFlowData.incomeItems.length === 0 ? (
+            {incomeItems.length === 0 ? (
               <p className="px-6 py-4 text-gray-500 dark:text-gray-400">No income in this period</p>
             ) : (
-              cashFlowData.incomeItems.map((item, index) => (
+              incomeItems.map((item, index) => (
                 <div key={index} className="px-6 py-3 flex items-center justify-between">
-                  <span className="text-gray-900 dark:text-gray-100">{item.name}</span>
+                  <span className="text-gray-900 dark:text-gray-100">{item.categoryName}</span>
                   <span className="font-medium text-green-600 dark:text-green-400">
                     {formatCurrency(item.total)}
                   </span>
@@ -366,12 +220,12 @@ export function CashFlowReport() {
             </h3>
           </div>
           <div className="divide-y divide-gray-200 dark:divide-gray-700 max-h-96 overflow-y-auto">
-            {cashFlowData.expenseItems.length === 0 ? (
+            {expenseItems.length === 0 ? (
               <p className="px-6 py-4 text-gray-500 dark:text-gray-400">No expenses in this period</p>
             ) : (
-              cashFlowData.expenseItems.map((item, index) => (
+              expenseItems.map((item, index) => (
                 <div key={index} className="px-6 py-3 flex items-center justify-between">
-                  <span className="text-gray-900 dark:text-gray-100">{item.name}</span>
+                  <span className="text-gray-900 dark:text-gray-100">{item.categoryName}</span>
                   <span className="font-medium text-red-600 dark:text-red-400">
                     {formatCurrency(item.total)}
                   </span>

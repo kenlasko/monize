@@ -21,6 +21,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { DatabaseModule } from './database/database.module';
 import { ImportModule } from './import/import.module';
 import { NetWorthModule } from './net-worth/net-worth.module';
+import { BuiltInReportsModule } from './built-in-reports/built-in-reports.module';
 
 @Module({
   imports: [
@@ -94,6 +95,7 @@ import { NetWorthModule } from './net-worth/net-worth.module';
     DatabaseModule,
     ImportModule,
     NetWorthModule,
+    BuiltInReportsModule,
   ],
 })
 export class AppModule {}

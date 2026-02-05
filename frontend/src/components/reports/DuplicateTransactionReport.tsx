@@ -1,26 +1,19 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { format, differenceInDays } from 'date-fns';
-import { transactionsApi } from '@/lib/transactions';
-import { Transaction } from '@/types/transaction';
+import { format } from 'date-fns';
+import { builtInReportsApi } from '@/lib/built-in-reports';
+import { DuplicateTransactionsResponse, DuplicateGroup, DuplicateTransactionItem } from '@/types/built-in-reports';
 import { parseLocalDate } from '@/lib/utils';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useDateRange } from '@/hooks/useDateRange';
 import { DateRangeSelector } from '@/components/ui/DateRangeSelector';
 
-interface DuplicateGroup {
-  key: string;
-  transactions: Transaction[];
-  reason: string;
-  confidence: 'high' | 'medium' | 'low';
-}
-
 export function DuplicateTransactionReport() {
   const router = useRouter();
   const { formatCurrency } = useNumberFormat();
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [reportData, setReportData] = useState<DuplicateTransactionsResponse | null>(null);
   const { dateRange, setDateRange, resolvedRange } = useDateRange({ defaultRange: '3m', alignment: 'day' });
   const [isLoading, setIsLoading] = useState(true);
   const [sensitivity, setSensitivity] = useState<'high' | 'medium' | 'low'>('medium');
@@ -30,143 +23,23 @@ export function DuplicateTransactionReport() {
       setIsLoading(true);
       try {
         const { start, end } = resolvedRange;
-        const txData = await transactionsApi.getAll({
+        const data = await builtInReportsApi.getDuplicateTransactions({
           startDate: start,
           endDate: end,
-          limit: 50000,
+          sensitivity,
         });
-
-        setTransactions(txData.data.filter((tx) => !tx.isTransfer));
+        setReportData(data);
       } catch (error) {
-        console.error('Failed to load transactions:', error);
+        console.error('Failed to load data:', error);
       } finally {
         setIsLoading(false);
       }
     };
     loadData();
-  }, [resolvedRange]);
+  }, [resolvedRange, sensitivity]);
 
-  const duplicateGroups = useMemo((): DuplicateGroup[] => {
-    const groups: DuplicateGroup[] = [];
-    const processed = new Set<string>();
-
-    // Configure sensitivity
-    const maxDaysDiff = sensitivity === 'high' ? 3 : sensitivity === 'medium' ? 1 : 0;
-    const checkPayee = sensitivity !== 'low';
-
-    // Sort transactions by date
-    const sortedTx = [...transactions].sort(
-      (a, b) => new Date(a.transactionDate).getTime() - new Date(b.transactionDate).getTime()
-    );
-
-    for (let i = 0; i < sortedTx.length; i++) {
-      const tx1 = sortedTx[i];
-      if (processed.has(tx1.id)) continue;
-
-      const amount1 = Number(tx1.amount);
-      const date1 = parseLocalDate(tx1.transactionDate);
-      const payee1 = (tx1.payee?.name || tx1.payeeName || '').toLowerCase().trim();
-
-      const matches: Transaction[] = [tx1];
-
-      for (let j = i + 1; j < sortedTx.length; j++) {
-        const tx2 = sortedTx[j];
-        if (processed.has(tx2.id)) continue;
-
-        const amount2 = Number(tx2.amount);
-        const date2 = parseLocalDate(tx2.transactionDate);
-        const payee2 = (tx2.payee?.name || tx2.payeeName || '').toLowerCase().trim();
-
-        // Check if dates are within range
-        const daysDiff = Math.abs(differenceInDays(date1, date2));
-        if (daysDiff > maxDaysDiff) {
-          // Since transactions are sorted, no more matches possible
-          if (daysDiff > 7) break;
-          continue;
-        }
-
-        // Check amount match
-        if (Math.abs(amount1 - amount2) > 0.01) continue;
-
-        // Check payee match if required
-        if (checkPayee && payee1 && payee2 && payee1 !== payee2) continue;
-
-        // Exclude if same transaction (shouldn't happen but just in case)
-        if (tx1.id === tx2.id) continue;
-
-        matches.push(tx2);
-      }
-
-      if (matches.length > 1) {
-        // Mark all as processed
-        matches.forEach((m) => processed.add(m.id));
-
-        // Determine confidence based on match quality
-        const allSameDate = matches.every(
-          (m) => m.transactionDate === matches[0].transactionDate
-        );
-        const allSamePayee = matches.every(
-          (m) =>
-            (m.payee?.name || m.payeeName || '').toLowerCase().trim() ===
-            (matches[0].payee?.name || matches[0].payeeName || '').toLowerCase().trim()
-        );
-
-        let confidence: 'high' | 'medium' | 'low' = 'low';
-        let reason = 'Same amount';
-
-        if (allSameDate && allSamePayee) {
-          confidence = 'high';
-          reason = 'Same date, amount, and payee';
-        } else if (allSameDate) {
-          confidence = 'medium';
-          reason = 'Same date and amount';
-        } else if (allSamePayee) {
-          confidence = 'medium';
-          reason = 'Same payee and amount within ' + maxDaysDiff + ' day(s)';
-        } else {
-          reason = 'Same amount within ' + maxDaysDiff + ' day(s)';
-        }
-
-        groups.push({
-          key: `${matches[0].id}-${matches.length}`,
-          transactions: matches,
-          reason,
-          confidence,
-        });
-      }
-    }
-
-    // Sort by confidence then by amount
-    const confidenceOrder: Record<string, number> = { high: 0, medium: 1, low: 2 };
-    return groups.sort((a, b) => {
-      const confDiff = confidenceOrder[a.confidence] - confidenceOrder[b.confidence];
-      if (confDiff !== 0) return confDiff;
-      return Math.abs(Number(b.transactions[0].amount)) - Math.abs(Number(a.transactions[0].amount));
-    });
-  }, [transactions, sensitivity]);
-
-  const summary = useMemo(() => {
-    const high = duplicateGroups.filter((g) => g.confidence === 'high');
-    const medium = duplicateGroups.filter((g) => g.confidence === 'medium');
-    const low = duplicateGroups.filter((g) => g.confidence === 'low');
-
-    const potentialSavings = duplicateGroups.reduce((sum, group) => {
-      // Count all but one as potential duplicates
-      const duplicateCount = group.transactions.length - 1;
-      return sum + Math.abs(Number(group.transactions[0].amount)) * duplicateCount;
-    }, 0);
-
-    return {
-      totalGroups: duplicateGroups.length,
-      highCount: high.length,
-      mediumCount: medium.length,
-      lowCount: low.length,
-      potentialSavings,
-    };
-  }, [duplicateGroups]);
-
-  const handleTransactionClick = (tx: Transaction) => {
-    router.push(`/transactions?search=${encodeURIComponent(tx.payee?.name || tx.payeeName || '')}`);
+  const handleTransactionClick = (tx: DuplicateTransactionItem) => {
+    router.push(`/transactions?search=${encodeURIComponent(tx.payeeName || '')}`);
   };
 
   const getConfidenceStyles = (confidence: DuplicateGroup['confidence']) => {
@@ -202,6 +75,16 @@ export function DuplicateTransactionReport() {
       </div>
     );
   }
+
+  const summary = reportData?.summary || {
+    totalGroups: 0,
+    highCount: 0,
+    mediumCount: 0,
+    lowCount: 0,
+    potentialSavings: 0,
+  };
+
+  const duplicateGroups = reportData?.groups || [];
 
   return (
     <div className="space-y-6">
@@ -304,7 +187,7 @@ export function DuplicateTransactionReport() {
                             {format(parseLocalDate(tx.transactionDate), 'MMM d, yyyy')}
                           </span>
                           <span className="font-medium text-gray-900 dark:text-gray-100 truncate">
-                            {tx.payee?.name || tx.payeeName || 'Unknown'}
+                            {tx.payeeName || 'Unknown'}
                           </span>
                         </div>
                         {tx.description && (
@@ -313,15 +196,15 @@ export function DuplicateTransactionReport() {
                           </div>
                         )}
                         <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-                          {tx.account?.name || 'Unknown account'}
+                          {tx.accountName || 'Unknown account'}
                         </div>
                       </div>
                       <div className={`text-sm font-medium ${
-                        Number(tx.amount) >= 0
+                        tx.amount >= 0
                           ? 'text-green-600 dark:text-green-400'
                           : 'text-red-600 dark:text-red-400'
                       }`}>
-                        {formatCurrency(Number(tx.amount))}
+                        {formatCurrency(tx.amount)}
                       </div>
                     </div>
                   ))}

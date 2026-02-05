@@ -3,8 +3,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
-import { transactionsApi } from '@/lib/transactions';
-import { Transaction } from '@/types/transaction';
+import { builtInReportsApi } from '@/lib/built-in-reports';
+import { UncategorizedTransactionsResponse, UncategorizedTransactionItem } from '@/types/built-in-reports';
 import { parseLocalDate } from '@/lib/utils';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useDateRange } from '@/hooks/useDateRange';
@@ -16,7 +16,7 @@ type SortOrder = 'asc' | 'desc';
 export function UncategorizedTransactionsReport() {
   const router = useRouter();
   const { formatCurrency } = useNumberFormat();
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [reportData, setReportData] = useState<UncategorizedTransactionsResponse | null>(null);
   const { dateRange, setDateRange, resolvedRange, isValid } = useDateRange({ defaultRange: '3m', alignment: 'day' });
   const [isLoading, setIsLoading] = useState(true);
   const [sortField, setSortField] = useState<SortField>('date');
@@ -29,20 +29,14 @@ export function UncategorizedTransactionsReport() {
       setIsLoading(true);
       try {
         const { start, end } = resolvedRange;
-        const txData = await transactionsApi.getAll({
+        const data = await builtInReportsApi.getUncategorizedTransactions({
           startDate: start || undefined,
           endDate: end,
-          limit: 50000,
+          limit: 500,
         });
-
-        // Filter to uncategorized, non-transfer, non-investment transactions
-        const uncategorized = txData.data.filter(
-          (tx) => !tx.isTransfer && tx.account?.accountType !== 'INVESTMENT' && !tx.categoryId && (!tx.isSplit || !tx.splits?.some((s) => s.categoryId))
-        );
-
-        setTransactions(uncategorized);
+        setReportData(data);
       } catch (error) {
-        console.error('Failed to load transactions:', error);
+        console.error('Failed to load data:', error);
       } finally {
         setIsLoading(false);
       }
@@ -51,13 +45,15 @@ export function UncategorizedTransactionsReport() {
   }, [resolvedRange, isValid]);
 
   const filteredAndSortedTransactions = useMemo(() => {
-    let filtered = [...transactions];
+    if (!reportData) return [];
+
+    let filtered = [...reportData.transactions];
 
     // Apply type filter
     if (filterType === 'income') {
-      filtered = filtered.filter((tx) => Number(tx.amount) > 0);
+      filtered = filtered.filter((tx) => tx.amount > 0);
     } else if (filterType === 'expense') {
-      filtered = filtered.filter((tx) => Number(tx.amount) < 0);
+      filtered = filtered.filter((tx) => tx.amount < 0);
     }
 
     // Apply sort
@@ -68,11 +64,11 @@ export function UncategorizedTransactionsReport() {
           comparison = new Date(a.transactionDate).getTime() - new Date(b.transactionDate).getTime();
           break;
         case 'amount':
-          comparison = Math.abs(Number(a.amount)) - Math.abs(Number(b.amount));
+          comparison = Math.abs(a.amount) - Math.abs(b.amount);
           break;
         case 'payee':
-          const payeeA = (a.payee?.name || a.payeeName || '').toLowerCase();
-          const payeeB = (b.payee?.name || b.payeeName || '').toLowerCase();
+          const payeeA = (a.payeeName || '').toLowerCase();
+          const payeeB = (b.payeeName || '').toLowerCase();
           comparison = payeeA.localeCompare(payeeB);
           break;
       }
@@ -80,23 +76,10 @@ export function UncategorizedTransactionsReport() {
     });
 
     return filtered;
-  }, [transactions, filterType, sortField, sortOrder]);
+  }, [reportData, filterType, sortField, sortOrder]);
 
-  const summary = useMemo(() => {
-    const expenses = transactions.filter((tx) => Number(tx.amount) < 0);
-    const income = transactions.filter((tx) => Number(tx.amount) > 0);
-
-    return {
-      totalCount: transactions.length,
-      expenseCount: expenses.length,
-      expenseTotal: expenses.reduce((sum, tx) => sum + Math.abs(Number(tx.amount)), 0),
-      incomeCount: income.length,
-      incomeTotal: income.reduce((sum, tx) => sum + Number(tx.amount), 0),
-    };
-  }, [transactions]);
-
-  const handleTransactionClick = (tx: Transaction) => {
-    router.push(`/transactions?search=${encodeURIComponent(tx.payee?.name || tx.payeeName || tx.description || '')}`);
+  const handleTransactionClick = (tx: UncategorizedTransactionItem) => {
+    router.push(`/transactions?search=${encodeURIComponent(tx.payeeName || tx.description || '')}`);
   };
 
   const handleSort = (field: SortField) => {
@@ -137,6 +120,14 @@ export function UncategorizedTransactionsReport() {
       </div>
     );
   }
+
+  const summary = reportData?.summary || {
+    totalCount: 0,
+    expenseCount: 0,
+    expenseTotal: 0,
+    incomeCount: 0,
+    incomeTotal: 0,
+  };
 
   return (
     <div className="space-y-6">
@@ -221,7 +212,7 @@ export function UncategorizedTransactionsReport() {
       </div>
 
       {/* Transactions Table */}
-      {transactions.length === 0 ? (
+      {summary.totalCount === 0 ? (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
           <div className="text-center py-8">
             <svg className="h-12 w-12 mx-auto text-green-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -290,7 +281,7 @@ export function UncategorizedTransactionsReport() {
                     </td>
                     <td className="px-4 py-3 text-sm">
                       <div className="font-medium text-gray-900 dark:text-gray-100">
-                        {tx.payee?.name || tx.payeeName || 'Unknown'}
+                        {tx.payeeName || 'Unknown'}
                       </div>
                       {tx.description && (
                         <div className="text-gray-500 dark:text-gray-400 truncate max-w-xs">
@@ -299,14 +290,14 @@ export function UncategorizedTransactionsReport() {
                       )}
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                      {tx.account?.name || 'Unknown'}
+                      {tx.accountName || 'Unknown'}
                     </td>
                     <td className={`px-4 py-3 whitespace-nowrap text-sm text-right font-medium ${
-                      Number(tx.amount) >= 0
+                      tx.amount >= 0
                         ? 'text-green-600 dark:text-green-400'
                         : 'text-red-600 dark:text-red-400'
                     }`}>
-                      {formatCurrency(Number(tx.amount))}
+                      {formatCurrency(tx.amount)}
                     </td>
                   </tr>
                 ))}

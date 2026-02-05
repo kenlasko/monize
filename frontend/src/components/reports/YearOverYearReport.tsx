@@ -11,124 +11,68 @@ import {
   ResponsiveContainer,
   Legend,
 } from 'recharts';
-import { format, startOfYear, endOfYear, eachMonthOfInterval, startOfMonth } from 'date-fns';
-import { transactionsApi } from '@/lib/transactions';
-import { Transaction } from '@/types/transaction';
-import { parseLocalDate } from '@/lib/utils';
+import { builtInReportsApi } from '@/lib/built-in-reports';
+import { YearData } from '@/types/built-in-reports';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { CHART_COLOURS } from '@/lib/chart-colours';
 
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
 export function YearOverYearReport() {
   const { formatCurrencyCompact: formatCurrency } = useNumberFormat();
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [yearData, setYearData] = useState<YearData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [yearsToCompare, setYearsToCompare] = useState(2);
   const [metric, setMetric] = useState<'expenses' | 'income' | 'savings'>('expenses');
 
-  const currentYear = new Date().getFullYear();
-  const years = useMemo(() =>
-    Array.from({ length: yearsToCompare }, (_, i) => currentYear - i).reverse(),
-    [yearsToCompare, currentYear]
-  );
+  const years = useMemo(() => yearData.map((yd) => yd.year), [yearData]);
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const oldestYear = currentYear - yearsToCompare + 1;
-      const start = format(startOfYear(new Date(oldestYear, 0, 1)), 'yyyy-MM-dd');
-      const end = format(new Date(), 'yyyy-MM-dd');
-
-      const txData = await transactionsApi.getAll({ startDate: start, endDate: end, limit: 100000 });
-      setTransactions(txData.data);
+      const response = await builtInReportsApi.getYearOverYear(yearsToCompare);
+      setYearData(response.data);
     } catch (error) {
       console.error('Failed to load data:', error);
     } finally {
       setIsLoading(false);
     }
-  }, [currentYear, yearsToCompare]);
+  }, [yearsToCompare]);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
 
   const chartData = useMemo(() => {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return MONTH_NAMES.map((monthName, monthIndex) => {
+      const data: { name: string; [key: string]: number | string } = { name: monthName };
 
-    // Initialize data structure
-    const monthData = months.map((month, index) => {
-      const data: { name: string; [key: string]: number | string } = { name: month };
-      years.forEach((year) => {
-        data[`${year}`] = 0;
+      yearData.forEach((yd) => {
+        const monthData = yd.months.find((m) => m.month === monthIndex + 1);
+        if (monthData) {
+          data[`${yd.year}`] = Math.round(monthData[metric]);
+        } else {
+          data[`${yd.year}`] = 0;
+        }
       });
+
       return data;
     });
-
-    // Group transactions by year and month
-    transactions.forEach((tx) => {
-      if (tx.isTransfer) return;
-      const txDate = parseLocalDate(tx.transactionDate);
-      const txYear = txDate.getFullYear();
-      const txMonth = txDate.getMonth();
-      const amount = Number(tx.amount) || 0;
-
-      if (!years.includes(txYear)) return;
-
-      const monthBucket = monthData[txMonth];
-      if (monthBucket) {
-        const yearKey = `${txYear}`;
-        let value = 0;
-
-        switch (metric) {
-          case 'expenses':
-            if (amount < 0) value = Math.abs(amount);
-            break;
-          case 'income':
-            if (amount > 0) value = amount;
-            break;
-          case 'savings':
-            value = amount; // Will be net
-            break;
-        }
-
-        monthBucket[yearKey] = ((monthBucket[yearKey] as number) || 0) + value;
-      }
-    });
-
-    // Round all values
-    monthData.forEach((data) => {
-      years.forEach((year) => {
-        data[`${year}`] = Math.round(data[`${year}`] as number);
-      });
-    });
-
-    return monthData;
-  }, [transactions, years, metric]);
+  }, [yearData, metric]);
 
   const yearTotals = useMemo(() => {
     const totals: Record<number, { income: number; expenses: number; savings: number }> = {};
 
-    years.forEach((year) => {
-      totals[year] = { income: 0, expenses: 0, savings: 0 };
-    });
-
-    transactions.forEach((tx) => {
-      if (tx.isTransfer) return;
-      const txDate = parseLocalDate(tx.transactionDate);
-      const txYear = txDate.getFullYear();
-      const amount = Number(tx.amount) || 0;
-
-      if (!years.includes(txYear)) return;
-
-      if (amount > 0) {
-        totals[txYear].income += amount;
-      } else {
-        totals[txYear].expenses += Math.abs(amount);
-      }
-      totals[txYear].savings += amount;
+    yearData.forEach((yd) => {
+      totals[yd.year] = {
+        income: yd.totals.income,
+        expenses: yd.totals.expenses,
+        savings: yd.totals.savings,
+      };
     });
 
     return totals;
-  }, [transactions, years]);
+  }, [yearData]);
 
   const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ name: string; value: number; color: string }>; label?: string }) => {
     if (active && payload && payload.length) {
