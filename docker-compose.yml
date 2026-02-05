@@ -62,6 +62,7 @@ services:
       DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-moneymate_password}
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      ###JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set}
       JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-this-in-production}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}

@@ -106,6 +106,10 @@ CREATE INDEX idx_accounts_account_sub_type ON accounts(account_sub_type);
 CREATE INDEX idx_accounts_linked_account_id ON accounts(linked_account_id);
 CREATE INDEX idx_accounts_asset_category ON accounts(asset_category_id);
 CREATE INDEX idx_accounts_term_end_date ON accounts(term_end_date) WHERE account_type = 'MORTGAGE' AND term_end_date IS NOT NULL;
+CREATE INDEX idx_accounts_interest_category ON accounts(interest_category_id);
+CREATE INDEX idx_accounts_principal_category ON accounts(principal_category_id);
+CREATE INDEX idx_accounts_scheduled_transaction ON accounts(scheduled_transaction_id);
+CREATE INDEX idx_accounts_source_account ON accounts(source_account_id);
 
 -- Categories for transactions
 CREATE TABLE categories (
@@ -152,8 +156,10 @@ CREATE TABLE transactions (
     exchange_rate NUMERIC(20, 10) DEFAULT 1, -- rate at transaction time
     description TEXT,
     reference_number VARCHAR(100), -- check number, confirmation number, etc
-    status VARCHAR(20) DEFAULT 'UNRECONCILED', -- 'UNRECONCILED', 'CLEARED', 'RECONCILED', 'VOID'
+    is_cleared BOOLEAN DEFAULT false, -- LEGACY: replaced by status field
+    is_reconciled BOOLEAN DEFAULT false, -- LEGACY: replaced by status field
     reconciled_date DATE,
+    status VARCHAR(20) DEFAULT 'UNRECONCILED', -- 'UNRECONCILED', 'CLEARED', 'RECONCILED', 'VOID'
     is_split BOOLEAN DEFAULT false, -- indicates this is a split transaction
     parent_transaction_id UUID REFERENCES transactions(id) ON DELETE CASCADE, -- for split children
     is_transfer BOOLEAN DEFAULT false, -- indicates this is part of an account-to-account transfer
@@ -169,6 +175,9 @@ CREATE INDEX idx_transactions_payee ON transactions(payee_id);
 CREATE INDEX idx_transactions_category ON transactions(category_id);
 CREATE INDEX idx_transactions_parent ON transactions(parent_transaction_id);
 CREATE INDEX idx_transactions_linked ON transactions(linked_transaction_id);
+CREATE INDEX idx_transactions_cleared ON transactions(is_cleared); -- LEGACY
+CREATE INDEX idx_transactions_reconciled ON transactions(is_reconciled); -- LEGACY
+CREATE INDEX idx_transactions_user_cleared ON transactions(user_id, is_cleared); -- LEGACY
 
 -- Transaction Splits (details for split transactions)
 CREATE TABLE transaction_splits (
@@ -259,12 +268,11 @@ CREATE TABLE scheduled_transaction_overrides (
     splits JSONB, -- JSON array of split overrides: [{categoryId, amount, memo}]
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(scheduled_transaction_id, original_date) -- One override per original occurrence
+    UNIQUE(scheduled_transaction_id, override_date) -- NOTE: DB uses override_date, not original_date
 );
 
 CREATE INDEX idx_sched_txn_overrides_sched_txn_id ON scheduled_transaction_overrides(scheduled_transaction_id);
-CREATE INDEX idx_sched_txn_overrides_original_date ON scheduled_transaction_overrides(original_date);
-CREATE INDEX idx_sched_txn_overrides_override_date ON scheduled_transaction_overrides(override_date);
+CREATE INDEX idx_sched_txn_overrides_date ON scheduled_transaction_overrides(override_date);
 
 -- Securities (stocks, bonds, mutual funds, ETFs)
 CREATE TABLE securities (
@@ -352,57 +360,6 @@ CREATE INDEX idx_investment_transactions_account ON investment_transactions(acco
 CREATE INDEX idx_investment_transactions_security ON investment_transactions(security_id);
 CREATE INDEX idx_investment_transactions_date ON investment_transactions(transaction_date DESC);
 
--- Budgets
-CREATE TABLE budgets (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    category_id UUID NOT NULL REFERENCES categories(id) ON DELETE CASCADE,
-    amount NUMERIC(20, 4) NOT NULL,
-    period VARCHAR(20) NOT NULL, -- 'MONTHLY', 'QUARTERLY', 'YEARLY'
-    start_date DATE NOT NULL,
-    end_date DATE,
-    is_active BOOLEAN DEFAULT true,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX idx_budgets_user ON budgets(user_id);
-CREATE INDEX idx_budgets_category ON budgets(category_id);
-
--- Notifications
-CREATE TABLE notifications (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    title VARCHAR(255) NOT NULL,
-    message TEXT NOT NULL,
-    notification_type VARCHAR(50), -- 'SCHEDULED_PAYMENT', 'LOW_BALANCE', 'BUDGET_ALERT', etc
-    related_id UUID, -- can reference scheduled_transaction, account, etc
-    is_read BOOLEAN DEFAULT false,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX idx_notifications_user ON notifications(user_id);
-CREATE INDEX idx_notifications_read ON notifications(is_read);
-CREATE INDEX idx_notifications_created ON notifications(created_at DESC);
-
--- Audit Log
-CREATE TABLE audit_log (
-    id BIGSERIAL PRIMARY KEY,
-    user_id UUID REFERENCES users(id) ON DELETE SET NULL,
-    table_name VARCHAR(100) NOT NULL,
-    record_id UUID,
-    action VARCHAR(20) NOT NULL, -- 'INSERT', 'UPDATE', 'DELETE'
-    old_values JSONB,
-    new_values JSONB,
-    ip_address INET,
-    user_agent TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX idx_audit_log_user ON audit_log(user_id);
-CREATE INDEX idx_audit_log_table ON audit_log(table_name);
-CREATE INDEX idx_audit_log_created ON audit_log(created_at DESC);
-
 -- User Preferences
 CREATE TABLE user_preferences (
     user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
@@ -417,20 +374,6 @@ CREATE TABLE user_preferences (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
--- Reports (saved custom reports - legacy)
-CREATE TABLE reports (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    name VARCHAR(255) NOT NULL,
-    report_type VARCHAR(50) NOT NULL, -- 'INCOME_EXPENSE', 'NET_WORTH', 'CASH_FLOW', etc
-    parameters JSONB, -- store report configuration
-    is_favorite BOOLEAN DEFAULT false,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX idx_reports_user ON reports(user_id);
 
 -- Custom Reports (user-defined configurable reports)
 -- view_type: TABLE, LINE_CHART, BAR_CHART, PIE_CHART
@@ -465,7 +408,7 @@ CREATE TABLE custom_reports (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_custom_reports_user ON custom_reports(user_id);
+CREATE INDEX idx_custom_reports_user_id ON custom_reports(user_id);
 CREATE INDEX idx_custom_reports_user_favourite ON custom_reports(user_id, is_favourite);
 CREATE INDEX idx_custom_reports_user_sort ON custom_reports(user_id, sort_order);
 
@@ -486,9 +429,7 @@ CREATE TRIGGER update_scheduled_transaction_overrides_updated_at BEFORE UPDATE O
 CREATE TRIGGER update_securities_updated_at BEFORE UPDATE ON securities FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_holdings_updated_at BEFORE UPDATE ON holdings FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_investment_transactions_updated_at BEFORE UPDATE ON investment_transactions FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER update_budgets_updated_at BEFORE UPDATE ON budgets FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_user_preferences_updated_at BEFORE UPDATE ON user_preferences FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER update_reports_updated_at BEFORE UPDATE ON reports FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_custom_reports_updated_at BEFORE UPDATE ON custom_reports FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Function to update account balance
@@ -572,6 +513,8 @@ CREATE INDEX idx_accounts_closed ON accounts(is_closed);
 CREATE INDEX idx_scheduled_transactions_account ON scheduled_transactions(account_id);
 
 -- Composite indexes for common query patterns
+CREATE INDEX idx_transactions_user_date ON transactions(user_id, transaction_date DESC);
+CREATE INDEX idx_transactions_user_account_date ON transactions(user_id, account_id, transaction_date DESC);
 CREATE INDEX idx_transactions_user_date_created ON transactions(user_id, transaction_date DESC, created_at DESC, id DESC);
 CREATE INDEX idx_transactions_account_date ON transactions(account_id, transaction_date DESC);
 CREATE INDEX idx_mab_account_month ON monthly_account_balances(account_id, month);
