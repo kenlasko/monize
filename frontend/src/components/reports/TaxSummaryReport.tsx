@@ -4,6 +4,9 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { builtInReportsApi } from '@/lib/built-in-reports';
 import { TaxSummaryResponse } from '@/types/built-in-reports';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('TaxSummaryReport');
 
 export function TaxSummaryReport() {
   const { formatCurrency } = useNumberFormat();
@@ -22,7 +25,7 @@ export function TaxSummaryReport() {
       const data = await builtInReportsApi.getTaxSummary(selectedYear);
       setTaxData(data);
     } catch (error) {
-      console.error('Failed to load data:', error);
+      logger.error('Failed to load data:', error);
     } finally {
       setIsLoading(false);
     }

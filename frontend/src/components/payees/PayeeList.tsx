@@ -7,6 +7,9 @@ import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { payeesApi } from '@/lib/payees';
 import toast from 'react-hot-toast';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('PayeeList');
 
 // Density levels: 'normal' | 'compact' | 'dense'
 export type DensityLevel = 'normal' | 'compact' | 'dense';
@@ -131,7 +134,7 @@ export function PayeeList({
       onRefresh();
     } catch (error) {
       toast.error('Failed to delete payee');
-      console.error(error);
+      logger.error(error);
     } finally {
       setDeletePayee(null);
     }

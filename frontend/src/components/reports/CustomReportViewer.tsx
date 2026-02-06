@@ -19,6 +19,9 @@ import {
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { getIconComponent } from '@/components/ui/IconPicker';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('CustomReportViewer');
 
 interface CustomReportViewerProps {
   reportId: string;
@@ -42,7 +45,7 @@ export function CustomReportViewer({ reportId }: CustomReportViewerProps) {
       setReport(reportData);
     } catch (error) {
       toast.error('Failed to load report');
-      console.error(error);
+      logger.error(error);
     }
   }, [reportId]);
 
@@ -68,7 +71,7 @@ export function CustomReportViewer({ reportId }: CustomReportViewerProps) {
       setResult(resultData);
     } catch (error) {
       toast.error('Failed to execute report');
-      console.error(error);
+      logger.error(error);
     } finally {
       setIsExecuting(false);
     }

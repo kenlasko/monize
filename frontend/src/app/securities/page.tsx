@@ -12,6 +12,9 @@ import { Security, CreateSecurityData } from '@/types/investment';
 import { SecurityForm } from '@/components/securities/SecurityForm';
 import { SecurityList, DensityLevel } from '@/components/securities/SecurityList';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('Securities');
 
 const PAGE_SIZE = 50;
 
@@ -40,7 +43,7 @@ function SecuritiesContent() {
       setSecurities(data);
     } catch (error) {
       toast.error('Failed to load securities');
-      console.error(error);
+      logger.error(error);
     } finally {
       setIsLoading(false);
     }

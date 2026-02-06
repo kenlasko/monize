@@ -21,6 +21,9 @@ import { Account } from '@/types/account';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { CHART_COLOURS } from '@/lib/chart-colours';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('InvestmentPerformanceReport');
 
 type DateRange = '1m' | '3m' | '6m' | '1y' | 'all';
 
@@ -45,7 +48,7 @@ export function InvestmentPerformanceReport() {
         setPortfolio(portfolioData);
         setAccounts(accountsData);
       } catch (error) {
-        console.error('Failed to load investment data:', error);
+        logger.error('Failed to load investment data:', error);
       } finally {
         setIsLoading(false);
       }

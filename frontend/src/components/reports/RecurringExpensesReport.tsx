@@ -14,6 +14,9 @@ import { builtInReportsApi } from '@/lib/built-in-reports';
 import { RecurringExpenseItem, RecurringExpensesResponse } from '@/types/built-in-reports';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { CHART_COLOURS } from '@/lib/chart-colours';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('RecurringExpensesReport');
 
 
 export function RecurringExpensesReport() {
@@ -30,7 +33,7 @@ export function RecurringExpensesReport() {
         const data = await builtInReportsApi.getRecurringExpenses(minOccurrences);
         setRecurringData(data);
       } catch (error) {
-        console.error('Failed to load recurring expenses:', error);
+        logger.error('Failed to load recurring expenses:', error);
       } finally {
         setIsLoading(false);
       }

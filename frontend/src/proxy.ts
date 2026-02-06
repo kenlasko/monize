@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { createLogger } from '@/lib/logger';
 
+const logger = createLogger('Proxy');
 const publicPaths = ['/login', '/register', '/auth/callback'];
+let backendConnected = false;
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -10,6 +13,7 @@ export async function proxy(request: NextRequest) {
   if (pathname.startsWith('/api/')) {
     const apiUrl = process.env.INTERNAL_API_URL || 'http://localhost:3001';
     const url = new URL(pathname + request.nextUrl.search, apiUrl);
+    logger.debug(`${request.method} ${pathname} -> ${apiUrl}`);
 
     const headers = new Headers(request.headers);
     headers.delete('host');
@@ -23,6 +27,11 @@ export async function proxy(request: NextRequest) {
         duplex: 'half',
       });
 
+      if (!backendConnected) {
+        backendConnected = true;
+        console.info(`[Proxy] Backend connected at ${apiUrl}`);
+      }
+
       const responseHeaders = new Headers(response.headers);
       responseHeaders.delete('transfer-encoding');
 
@@ -32,7 +41,7 @@ export async function proxy(request: NextRequest) {
         headers: responseHeaders,
       });
     } catch (error) {
-      console.error('API proxy error:', error);
+      logger.error('API proxy error:', error);
       return NextResponse.json({ error: 'Backend unavailable' }, { status: 502 });
     }
   }

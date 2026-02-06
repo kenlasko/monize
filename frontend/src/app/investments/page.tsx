@@ -22,6 +22,9 @@ import {
   InvestmentTransaction,
   InvestmentTransactionPaginationInfo,
 } from '@/types/investment';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('Investments');
 
 const PAGE_SIZE = 50;
 
@@ -74,7 +77,7 @@ export default function InvestmentsPage() {
       const accountsData = await investmentsApi.getInvestmentAccounts();
       setAccounts(accountsData);
     } catch (error) {
-      console.error('Failed to load investment accounts:', error);
+      logger.error('Failed to load investment accounts:', error);
     }
   }, []);
 
@@ -83,7 +86,7 @@ export default function InvestmentsPage() {
       const accountsData = await accountsApi.getAll();
       setAllAccounts(accountsData);
     } catch (error) {
-      console.error('Failed to load all accounts:', error);
+      logger.error('Failed to load all accounts:', error);
     }
   }, []);
 
@@ -92,7 +95,7 @@ export default function InvestmentsPage() {
       const status = await investmentsApi.getPriceStatus();
       setLastPriceUpdate(status.lastUpdated);
     } catch (error) {
-      console.error('Failed to load price status:', error);
+      logger.error('Failed to load price status:', error);
     }
   }, []);
 
@@ -138,7 +141,7 @@ export default function InvestmentsPage() {
         setShowRefreshDetails(false);
       }, result.failed > 0 ? 15000 : 5000);
     } catch (error) {
-      console.error('Failed to refresh prices:', error);
+      logger.error('Failed to refresh prices:', error);
       setRefreshResult({ updated: 0, failed: -1 }); // -1 indicates API error
       setTimeout(() => setRefreshResult(null), 5000);
     } finally {
@@ -171,7 +174,7 @@ export default function InvestmentsPage() {
       setTransactions(txResponse.data || []);
       setPagination(txResponse.pagination);
     } catch (error) {
-      console.error('Failed to load portfolio data:', error);
+      logger.error('Failed to load portfolio data:', error);
       setPortfolioSummary(null);
       setTransactions([]);
       setPagination(null);
@@ -203,7 +206,7 @@ export default function InvestmentsPage() {
           router.replace('/investments', { scroll: false });
         })
         .catch((error) => {
-          console.error('Failed to load investment transaction:', error);
+          logger.error('Failed to load investment transaction:', error);
           router.replace('/investments', { scroll: false });
         });
     }
@@ -220,7 +223,7 @@ export default function InvestmentsPage() {
       await investmentsApi.deleteTransaction(id);
       loadPortfolioData(selectedAccountIds, currentPage, transactionFilters);
     } catch (error) {
-      console.error('Failed to delete transaction:', error);
+      logger.error('Failed to delete transaction:', error);
       alert('Failed to delete transaction');
     }
   };

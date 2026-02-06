@@ -21,6 +21,9 @@ import { Category } from '@/types/category';
 import { Account } from '@/types/account';
 import { buildCategoryTree } from '@/lib/categoryUtils';
 import { roundToCents } from '@/lib/format';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('ScheduledTxForm');
 
 const optionalUuid = z.preprocess(
   (val) => (val === '' ? undefined : val),
@@ -157,6 +160,16 @@ export function ScheduledTransactionForm({
   const watchedFrequency = watch('frequency');
   const watchedCurrencyCode = watch('currencyCode');
 
+  // Auto-set currencyCode from the selected account
+  useEffect(() => {
+    if (watchedAccountId && accounts.length > 0) {
+      const account = accounts.find(a => a.id === watchedAccountId);
+      if (account) {
+        setValue('currencyCode', account.currencyCode, { shouldDirty: true });
+      }
+    }
+  }, [watchedAccountId, accounts, setValue]);
+
   // Get currency symbol from code
   const getCurrencySymbol = (code: string): string => {
     const symbols: Record<string, string> = {
@@ -188,7 +201,7 @@ export function ScheduledTransactionForm({
       })
       .catch((error) => {
         toast.error('Failed to load form data');
-        console.error(error);
+        logger.error(error);
       });
   }, []);
 
@@ -249,7 +262,7 @@ export function ScheduledTransactionForm({
       setValue('payeeName', newPayee.name, { shouldDirty: true, shouldValidate: true });
       toast.success(`Payee "${name}" created`);
     } catch (error) {
-      console.error('Failed to create payee:', error);
+      logger.error('Failed to create payee:', error);
       toast.error('Failed to create payee');
     }
   };
@@ -286,7 +299,7 @@ export function ScheduledTransactionForm({
       setValue('categoryId', newCategory.id, { shouldDirty: true, shouldValidate: true });
       toast.success(`Category "${name}" created`);
     } catch (error) {
-      console.error('Failed to create category:', error);
+      logger.error('Failed to create category:', error);
       toast.error('Failed to create category');
     }
   };
@@ -396,7 +409,7 @@ export function ScheduledTransactionForm({
       }
       onSuccess?.();
     } catch (error: any) {
-      console.error('Submit error:', error);
+      logger.error('Submit error:', error);
       const message = error.response?.data?.message || 'Failed to save scheduled transaction';
       toast.error(message);
     } finally {
@@ -589,16 +602,6 @@ export function ScheduledTransactionForm({
           type="date"
           error={errors.nextDueDate?.message}
           {...register('nextDueDate')}
-        />
-
-        {/* Currency */}
-        <Input
-          label="Currency"
-          type="text"
-          maxLength={3}
-          placeholder="CAD"
-          error={errors.currencyCode?.message}
-          {...register('currencyCode')}
         />
 
         {/* Reminder Days */}

@@ -15,6 +15,9 @@ import { builtInReportsApi } from '@/lib/built-in-reports';
 import { YearData } from '@/types/built-in-reports';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { CHART_COLOURS } from '@/lib/chart-colours';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('YearOverYearReport');
 
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -33,7 +36,7 @@ export function YearOverYearReport() {
       const response = await builtInReportsApi.getYearOverYear(yearsToCompare);
       setYearData(response.data);
     } catch (error) {
-      console.error('Failed to load data:', error);
+      logger.error('Failed to load data:', error);
     } finally {
       setIsLoading(false);
     }

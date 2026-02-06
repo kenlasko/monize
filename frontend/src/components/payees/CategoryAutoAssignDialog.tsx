@@ -6,6 +6,9 @@ import { Modal } from '@/components/ui/Modal';
 import { payeesApi } from '@/lib/payees';
 import { CategorySuggestion } from '@/types/payee';
 import toast from 'react-hot-toast';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('CategoryAutoAssign');
 
 interface CategoryAutoAssignDialogProps {
   isOpen: boolean;
@@ -42,7 +45,7 @@ export function CategoryAutoAssignDialog({
       setHasPreviewLoaded(true);
     } catch (error) {
       toast.error('Failed to load suggestions');
-      console.error(error);
+      logger.error(error);
     } finally {
       setIsLoading(false);
     }
@@ -78,7 +81,7 @@ export function CategoryAutoAssignDialog({
       onClose();
     } catch (error) {
       toast.error('Failed to apply category assignments');
-      console.error(error);
+      logger.error(error);
     } finally {
       setIsApplying(false);
     }

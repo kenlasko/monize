@@ -18,6 +18,9 @@ import {
   UpdatePreferencesData,
   ChangePasswordData,
 } from '@/types/auth';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('Settings');
 
 const DATE_FORMAT_OPTIONS = [
   { value: 'browser', label: 'Use browser locale (auto-detect)' },
@@ -129,7 +132,7 @@ export default function SettingsPage() {
       setDefaultCurrency(prefsData.defaultCurrency);
     } catch (error) {
       toast.error('Failed to load settings');
-      console.error(error);
+      logger.error(error);
     } finally {
       setIsLoading(false);
     }

@@ -14,6 +14,9 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { SummaryCard, SummaryIcons } from '@/components/ui/SummaryCard';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useFormModal } from '@/hooks/useFormModal';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('Categories');
 
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -30,7 +33,7 @@ export default function CategoriesPage() {
       setCategories(data);
     } catch (error) {
       toast.error('Failed to load categories');
-      console.error(error);
+      logger.error(error);
     } finally {
       setIsLoading(false);
     }

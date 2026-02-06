@@ -16,6 +16,9 @@ import { Transaction } from '@/types/transaction';
 import { Category } from '@/types/category';
 import { ScheduledTransaction } from '@/types/scheduled-transaction';
 import { PageLayout } from '@/components/layout/PageLayout';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('Dashboard');
 
 export default function DashboardPage() {
   const { user } = useAuthStore();
@@ -48,7 +51,7 @@ export default function DashboardPage() {
       setCategories(categoriesData);
       setScheduledTransactions(scheduledData);
     } catch (error) {
-      console.error('Failed to load dashboard data:', error);
+      logger.error('Failed to load dashboard data:', error);
     } finally {
       setIsLoading(false);
     }

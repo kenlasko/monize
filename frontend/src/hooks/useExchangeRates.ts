@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { exchangeRatesApi, ExchangeRate } from '@/lib/exchange-rates';
 import { usePreferencesStore } from '@/store/preferencesStore';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('ExchangeRates');
 
 export function useExchangeRates() {
   const [rates, setRates] = useState<ExchangeRate[]>([]);
@@ -14,7 +17,7 @@ export function useExchangeRates() {
         const data = await exchangeRatesApi.getLatestRates();
         setRates(data);
       } catch (error) {
-        console.error('Failed to load exchange rates:', error);
+        logger.error('Failed to load exchange rates:', error);
       } finally {
         setIsLoading(false);
       }

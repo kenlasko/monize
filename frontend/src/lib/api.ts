@@ -1,6 +1,9 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import Cookies from 'js-cookie';
 import { useAuthStore } from '@/store/authStore';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('API');
 
 // Use relative URL - Next.js rewrites handle routing to backend
 export const apiClient = axios.create({
@@ -19,6 +22,7 @@ apiClient.interceptors.request.use(
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    logger.debug(`${config.method?.toUpperCase()} ${config.url}`);
     return config;
   },
   (error) => {
@@ -33,6 +37,7 @@ apiClient.interceptors.response.use(
   async (error: AxiosError) => {
     if (error.response?.status === 401 && !isLoggingOut) {
       isLoggingOut = true;
+      logger.warn('401 received, logging out');
       // Token expired or invalid, logout user
       const { logout } = useAuthStore.getState();
       logout();

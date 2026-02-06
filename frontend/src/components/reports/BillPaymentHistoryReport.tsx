@@ -18,6 +18,9 @@ import { parseLocalDate } from '@/lib/utils';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useDateRange } from '@/hooks/useDateRange';
 import { DateRangeSelector } from '@/components/ui/DateRangeSelector';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('BillPaymentHistoryReport');
 
 export function BillPaymentHistoryReport() {
   const router = useRouter();
@@ -38,7 +41,7 @@ export function BillPaymentHistoryReport() {
         });
         setBillData(data);
       } catch (error) {
-        console.error('Failed to load bill payment history:', error);
+        logger.error('Failed to load bill payment history:', error);
       } finally {
         setIsLoading(false);
       }

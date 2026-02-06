@@ -8,6 +8,7 @@ import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { Select } from '@/components/ui/Select';
 import { transactionsApi } from '@/lib/transactions';
 import { accountsApi } from '@/lib/accounts';
@@ -15,6 +16,13 @@ import { usePreferencesStore } from '@/store/preferencesStore';
 import { Account } from '@/types/account';
 import { Transaction, ReconciliationData, TransactionStatus } from '@/types/transaction';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+
+const currencySymbols: Record<string, string> = {
+  USD: '$', CAD: '$', EUR: '€', GBP: '£', JPY: '¥', CNY: '¥', AUD: '$', CHF: 'CHF',
+};
+const getCurrencySymbol = (code?: string): string => currencySymbols[(code || 'CAD').toUpperCase()] || '$';
+
+const LIABILITY_TYPES = new Set(['CREDIT_CARD', 'LOAN', 'MORTGAGE', 'LINE_OF_CREDIT']);
 
 type ReconcileStep = 'setup' | 'reconcile' | 'complete';
 
@@ -40,7 +48,7 @@ function ReconcileContent() {
   const [statementDate, setStatementDate] = useState<string>(
     new Date().toISOString().split('T')[0]
   );
-  const [statementBalance, setStatementBalance] = useState<string>('');
+  const [statementBalance, setStatementBalance] = useState<number | undefined>(undefined);
   const [reconciliationData, setReconciliationData] = useState<ReconciliationData | null>(null);
   const [selectedTransactionIds, setSelectedTransactionIds] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(false);
@@ -68,8 +76,10 @@ function ReconcileContent() {
     [accounts, selectedAccountId]
   );
 
+  const isLiability = selectedAccount ? LIABILITY_TYPES.has(selectedAccount.accountType) : false;
+
   const handleStartReconciliation = async () => {
-    if (!selectedAccountId || !statementDate || !statementBalance) {
+    if (!selectedAccountId || !statementDate || statementBalance === undefined) {
       toast.error('Please fill in all fields');
       return;
     }
@@ -79,7 +89,7 @@ function ReconcileContent() {
       const data = await transactionsApi.getReconciliationData(
         selectedAccountId,
         statementDate,
-        parseFloat(statementBalance)
+        statementBalance
       );
       setReconciliationData(data);
 
@@ -122,6 +132,7 @@ function ReconcileContent() {
   };
 
   // Calculate the current difference based on selected transactions
+  // Use rounding to avoid floating-point precision drift from summing many decimals
   const calculatedDifference = useMemo(() => {
     if (!reconciliationData) return 0;
 
@@ -129,13 +140,13 @@ function ReconcileContent() {
       .filter((t) => selectedTransactionIds.has(t.id))
       .reduce((sum, t) => sum + Number(t.amount), 0);
 
-    const newBalance = reconciliationData.reconciledBalance + selectedSum;
-    return parseFloat(statementBalance) - newBalance;
+    const newBalance = Number(reconciliationData.reconciledBalance) + selectedSum;
+    return Math.round(((statementBalance ?? 0) - newBalance) * 100) / 100;
   }, [reconciliationData, selectedTransactionIds, statementBalance]);
 
   const handleFinishReconciliation = async () => {
     if (Math.abs(calculatedDifference) > 0.01) {
-      toast.error('The difference must be $0.00 to finish reconciliation');
+      toast.error(`The difference must be ${formatCurrency(0)} to finish reconciliation`);
       return;
     }
 
@@ -209,14 +220,18 @@ function ReconcileContent() {
             onChange={(e) => setStatementDate(e.target.value)}
           />
 
-          <Input
+          <CurrencyInput
             label="Statement Ending Balance"
-            type="number"
-            step="0.01"
-            placeholder="0.00"
+            prefix={getCurrencySymbol(selectedAccount?.currencyCode)}
+            placeholder={isLiability ? '-0.00' : '0.00'}
             value={statementBalance}
-            onChange={(e) => setStatementBalance(e.target.value)}
+            onChange={setStatementBalance}
           />
+          {isLiability && (
+            <p className="text-xs text-gray-500 dark:text-gray-400 -mt-2">
+              Liability accounts typically have a negative balance
+            </p>
+          )}
         </div>
 
         <div className="flex justify-between mt-6">
@@ -226,7 +241,7 @@ function ReconcileContent() {
           <Button
             onClick={handleStartReconciliation}
             isLoading={isLoading}
-            disabled={!selectedAccountId || !statementDate || !statementBalance}
+            disabled={!selectedAccountId || !statementDate || statementBalance === undefined}
           >
             Start Reconciliation
           </Button>
@@ -249,7 +264,7 @@ function ReconcileContent() {
             <div>
               <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">Statement Balance</p>
               <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                {formatCurrency(parseFloat(statementBalance))}
+                {formatCurrency(statementBalance ?? 0)}
               </p>
             </div>
             <div>
@@ -435,7 +450,7 @@ function ReconcileContent() {
               setStep('setup');
               setReconciliationData(null);
               setSelectedTransactionIds(new Set());
-              setStatementBalance('');
+              setStatementBalance(undefined);
             }}
           >
             Reconcile Another Account

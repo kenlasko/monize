@@ -11,6 +11,9 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/store/authStore';
 import { authApi, AuthMethods } from '@/lib/auth';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('Login');
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -33,7 +36,7 @@ export default function LoginPage() {
         setAuthMethods(methods);
       } catch (error) {
         // Default to local auth if we can't fetch methods
-        console.error('Failed to fetch auth methods:', error);
+        logger.error('Failed to fetch auth methods:', error);
       } finally {
         setIsLoadingMethods(false);
       }

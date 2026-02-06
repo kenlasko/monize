@@ -20,6 +20,9 @@ import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { useDateRange } from '@/hooks/useDateRange';
 import { DateRangeSelector } from '@/components/ui/DateRangeSelector';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('DividendIncomeReport');
 
 interface MonthlyIncome {
   month: string;
@@ -103,7 +106,7 @@ export function DividendIncomeReport() {
         setTransactions(incomeTransactions);
         setAccounts(accountsData);
       } catch (error) {
-        console.error('Failed to load investment transactions:', error);
+        logger.error('Failed to load investment transactions:', error);
       } finally {
         setIsLoading(false);
       }

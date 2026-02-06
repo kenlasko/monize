@@ -890,12 +890,14 @@ export class TransactionsService {
     const account = await this.accountsService.findOne(userId, accountId);
 
     // Get all unreconciled/cleared transactions up to statement date (exclude VOID and RECONCILED)
+    // Filter out split child transactions to avoid double-counting
     const transactions = await this.transactionsRepository
       .createQueryBuilder('transaction')
       .leftJoinAndSelect('transaction.payee', 'payee')
       .leftJoinAndSelect('transaction.category', 'category')
       .where('transaction.userId = :userId', { userId })
       .andWhere('transaction.accountId = :accountId', { accountId })
+      .andWhere('transaction.parentTransactionId IS NULL')
       .andWhere('transaction.status IN (:...statuses)', {
         statuses: [TransactionStatus.UNRECONCILED, TransactionStatus.CLEARED],
       })
@@ -905,11 +907,13 @@ export class TransactionsService {
       .getMany();
 
     // Calculate reconciled balance (sum of all reconciled transactions + opening balance)
+    // Exclude split child transactions to avoid double-counting
     const reconciledResult = await this.transactionsRepository
       .createQueryBuilder('transaction')
       .select('SUM(transaction.amount)', 'sum')
       .where('transaction.userId = :userId', { userId })
       .andWhere('transaction.accountId = :accountId', { accountId })
+      .andWhere('transaction.parentTransactionId IS NULL')
       .andWhere('transaction.status = :status', { status: TransactionStatus.RECONCILED })
       .getRawOne();
 
@@ -917,11 +921,13 @@ export class TransactionsService {
     const reconciledBalance = Number(account.openingBalance) + reconciledSum;
 
     // Calculate cleared balance (reconciled + cleared but not reconciled)
+    // Exclude split child transactions to avoid double-counting
     const clearedResult = await this.transactionsRepository
       .createQueryBuilder('transaction')
       .select('SUM(transaction.amount)', 'sum')
       .where('transaction.userId = :userId', { userId })
       .andWhere('transaction.accountId = :accountId', { accountId })
+      .andWhere('transaction.parentTransactionId IS NULL')
       .andWhere('transaction.status = :status', { status: TransactionStatus.CLEARED })
       .andWhere('transaction.transactionDate <= :statementDate', { statementDate })
       .getRawOne();

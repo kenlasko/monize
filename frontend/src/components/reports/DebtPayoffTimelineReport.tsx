@@ -20,6 +20,9 @@ import { transactionsApi } from '@/lib/transactions';
 import { Account } from '@/types/account';
 import { Transaction } from '@/types/transaction';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('DebtPayoffTimelineReport');
 
 interface PayoffScheduleItem {
   date: string;
@@ -126,7 +129,7 @@ export function DebtPayoffTimelineReport() {
           setSelectedAccountId(debtAccounts[0].id);
         }
       } catch (error) {
-        console.error('Failed to load accounts:', error);
+        logger.error('Failed to load accounts:', error);
       } finally {
         setIsLoading(false);
       }
@@ -151,7 +154,7 @@ export function DebtPayoffTimelineReport() {
         });
         setTransactions(result.data);
       } catch (error) {
-        console.error('Failed to load transactions:', error);
+        logger.error('Failed to load transactions:', error);
         setTransactions([]);
       }
     };

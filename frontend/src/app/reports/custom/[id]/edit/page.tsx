@@ -10,6 +10,9 @@ import { Modal } from '@/components/ui/Modal';
 import { CustomReportForm } from '@/components/reports/CustomReportForm';
 import { customReportsApi } from '@/lib/custom-reports';
 import { CustomReport, CreateCustomReportData } from '@/types/custom-report';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('ReportEdit');
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -67,7 +70,7 @@ function EditCustomReportContent({ reportId }: { reportId: string }) {
       router.push('/reports');
     } catch (error) {
       toast.error('Failed to delete report');
-      console.error(error);
+      logger.error(error);
     } finally {
       setIsDeleting(false);
       setShowDeleteConfirm(false);

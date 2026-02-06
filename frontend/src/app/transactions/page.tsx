@@ -26,6 +26,9 @@ import { PageLayout } from '@/components/layout/PageLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { SummaryCard, SummaryIcons } from '@/components/ui/SummaryCard';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('Transactions');
 
 const PAGE_SIZE = 50;
 
@@ -230,7 +233,7 @@ export default function TransactionsPage() {
       staticDataLoaded.current = true;
     } catch (error) {
       toast.error('Failed to load form data');
-      console.error(error);
+      logger.error(error);
     }
   }, []);
 
@@ -286,7 +289,7 @@ export default function TransactionsPage() {
       }
     } catch (error) {
       toast.error('Failed to load transactions');
-      console.error(error);
+      logger.error(error);
     } finally {
       setIsLoading(false);
     }
@@ -441,7 +444,7 @@ export default function TransactionsPage() {
         const fullTransaction = await transactionsApi.getById(transaction.id);
         setEditingTransaction(fullTransaction);
       } catch (error) {
-        console.error('Failed to load transaction details:', error);
+        logger.error('Failed to load transaction details:', error);
         // Fall back to using the list transaction
         setEditingTransaction(transaction);
       }
@@ -472,7 +475,7 @@ export default function TransactionsPage() {
       setShowPayeeForm(true);
     } catch (error) {
       toast.error('Failed to load payee details');
-      console.error(error);
+      logger.error(error);
     }
   };
 

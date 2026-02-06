@@ -9,6 +9,9 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Security, CreateSecurityData } from '@/types/investment';
 import { investmentsApi } from '@/lib/investments';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('SecurityForm');
 
 const securitySchema = z.object({
   symbol: z.string().min(1, 'Symbol is required').max(20, 'Symbol must be 20 characters or less'),
@@ -99,7 +102,7 @@ export function SecurityForm({ security, onSubmit, onCancel }: SecurityFormProps
           }
         }
       } catch (error) {
-        console.error('Security lookup failed:', error);
+        logger.error('Security lookup failed:', error);
       } finally {
         setIsLookingUp(false);
       }

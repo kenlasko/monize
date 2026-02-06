@@ -18,6 +18,9 @@ import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useDateRange } from '@/hooks/useDateRange';
 import { DateRangeSelector } from '@/components/ui/DateRangeSelector';
 import { CHART_COLOURS } from '@/lib/chart-colours';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('SpendingByPayeeReport');
 
 interface ChartDataItem {
   id: string;
@@ -53,7 +56,7 @@ export function SpendingByPayeeReport() {
       setChartData(data);
       setTotalExpenses(response.totalSpending);
     } catch (error) {
-      console.error('Failed to load data:', error);
+      logger.error('Failed to load data:', error);
     } finally {
       setIsLoading(false);
     }

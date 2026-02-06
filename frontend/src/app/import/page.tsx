@@ -17,6 +17,9 @@ import { buildCategoryTree } from '@/lib/categoryUtils';
 import { Account, AccountType } from '@/types/account';
 import { Category } from '@/types/category';
 import { Security } from '@/types/investment';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('Import');
 
 type ImportStep = 'upload' | 'selectAccount' | 'mapCategories' | 'mapSecurities' | 'mapAccounts' | 'review' | 'complete';
 
@@ -236,7 +239,7 @@ function ImportContent() {
           }
         } catch (error) {
           // Silently ignore errors during bulk lookup
-          console.error(`Bulk lookup failed for ${query}:`, error);
+          logger.error(`Bulk lookup failed for ${query}:`, error);
         }
       }
 
@@ -658,7 +661,7 @@ function ImportContent() {
         toast.error(`No security found for "${query}"`);
       }
     } catch (error) {
-      console.error('Security lookup failed:', error);
+      logger.error('Security lookup failed:', error);
       toast.error('Lookup failed - please try again');
     } finally {
       setLookupLoadingIndex(null);

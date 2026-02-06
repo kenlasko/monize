@@ -5,6 +5,9 @@ import { useRouter } from 'next/navigation';
 import { builtInReportsApi } from '@/lib/built-in-reports';
 import { SpendingAnomaly, SpendingAnomaliesResponse } from '@/types/built-in-reports';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('SpendingAnomaliesReport');
 
 export function SpendingAnomaliesReport() {
   const router = useRouter();
@@ -20,7 +23,7 @@ export function SpendingAnomaliesReport() {
         const data = await builtInReportsApi.getSpendingAnomalies(threshold);
         setAnomaliesData(data);
       } catch (error) {
-        console.error('Failed to load data:', error);
+        logger.error('Failed to load data:', error);
       } finally {
         setIsLoading(false);
       }

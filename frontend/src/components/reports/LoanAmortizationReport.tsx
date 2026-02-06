@@ -7,6 +7,9 @@ import { transactionsApi } from '@/lib/transactions';
 import { Account } from '@/types/account';
 import { Transaction } from '@/types/transaction';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('LoanAmortizationReport');
 
 interface PaymentRow {
   paymentNumber: number;
@@ -119,7 +122,7 @@ export function LoanAmortizationReport() {
           setSelectedAccountId(loanAccounts[0].id);
         }
       } catch (error) {
-        console.error('Failed to load accounts:', error);
+        logger.error('Failed to load accounts:', error);
       } finally {
         setIsLoading(false);
       }
@@ -144,7 +147,7 @@ export function LoanAmortizationReport() {
         });
         setTransactions(result.data);
       } catch (error) {
-        console.error('Failed to load transactions:', error);
+        logger.error('Failed to load transactions:', error);
         setTransactions([]);
       }
     };

@@ -7,6 +7,9 @@ import { Button } from '@/components/ui/Button';
 import { DeleteCategoryDialog } from './DeleteCategoryDialog';
 import { categoriesApi } from '@/lib/categories';
 import toast from 'react-hot-toast';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('CategoryList');
 
 // Density levels: 'normal' | 'compact' | 'dense'
 export type DensityLevel = 'normal' | 'compact' | 'dense';
@@ -108,7 +111,7 @@ export function CategoryList({
     } catch (error: any) {
       const message = error.response?.data?.message || 'Failed to delete category';
       toast.error(message);
-      console.error(error);
+      logger.error(error);
     } finally {
       setDeleteCategory(null);
     }

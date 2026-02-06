@@ -9,6 +9,9 @@ import { parseLocalDate } from '@/lib/utils';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useDateRange } from '@/hooks/useDateRange';
 import { DateRangeSelector } from '@/components/ui/DateRangeSelector';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('UncategorizedTransactionsReport');
 
 type SortField = 'date' | 'amount' | 'payee';
 type SortOrder = 'asc' | 'desc';
@@ -36,7 +39,7 @@ export function UncategorizedTransactionsReport() {
         });
         setReportData(data);
       } catch (error) {
-        console.error('Failed to load data:', error);
+        logger.error('Failed to load data:', error);
       } finally {
         setIsLoading(false);
       }

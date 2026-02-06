@@ -18,6 +18,9 @@ import { MonthlyIncomeExpenseItem, CategorySpendingItem, IncomeSourceItem } from
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useDateRange } from '@/hooks/useDateRange';
 import { DateRangeSelector } from '@/components/ui/DateRangeSelector';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('CashFlowReport');
 
 interface ChartDataItem {
   name: string;
@@ -73,7 +76,7 @@ export function CashFlowReport() {
         netCashFlow: cashFlowResponse.totals.net,
       });
     } catch (error) {
-      console.error('Failed to load data:', error);
+      logger.error('Failed to load data:', error);
     } finally {
       setIsLoading(false);
     }

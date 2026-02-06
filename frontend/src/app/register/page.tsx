@@ -11,6 +11,9 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/store/authStore';
 import { authApi, AuthMethods } from '@/lib/auth';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('Register');
 
 const registerSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -45,7 +48,7 @@ export default function RegisterPage() {
           router.replace('/login');
         }
       } catch (error) {
-        console.error('Failed to fetch auth methods:', error);
+        logger.error('Failed to fetch auth methods:', error);
       } finally {
         setIsLoadingMethods(false);
       }

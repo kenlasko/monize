@@ -18,6 +18,9 @@ import {
   Security,
   CreateSecurityData,
 } from '@/types/investment';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('InvestmentTxForm');
 
 const investmentTransactionSchema = z.object({
   accountId: z.string().min(1, 'Account is required'),
@@ -165,7 +168,7 @@ export function InvestmentTransactionForm({
         const data = await investmentsApi.getSecurities();
         setSecurities(data);
       } catch (error) {
-        console.error('Failed to load securities:', error);
+        logger.error('Failed to load securities:', error);
       }
     };
     loadSecurities();

@@ -18,6 +18,9 @@ import { categoriesApi } from '@/lib/categories';
 import { exchangeRatesApi, CurrencyInfo } from '@/lib/exchange-rates';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('AccountForm');
 
 // Helper to handle optional numeric fields that may be NaN from empty inputs
 const optionalNumber = z.preprocess(
@@ -298,7 +301,7 @@ export function AccountForm({ account, onSubmit, onCancel }: AccountFormProps) {
             }
           }
         } catch (error) {
-          console.error('Failed to load accounts/categories:', error);
+          logger.error('Failed to load accounts/categories:', error);
         }
       };
       loadData();
@@ -324,7 +327,7 @@ export function AccountForm({ account, onSubmit, onCancel }: AccountFormProps) {
       });
       setAmortizationPreview(preview);
     } catch (error) {
-      console.error('Failed to calculate preview:', error);
+      logger.error('Failed to calculate preview:', error);
       setAmortizationPreview(null);
     } finally {
       setIsLoadingPreview(false);
@@ -352,7 +355,7 @@ export function AccountForm({ account, onSubmit, onCancel }: AccountFormProps) {
       });
       setMortgagePreview(preview);
     } catch (error) {
-      console.error('Failed to calculate mortgage preview:', error);
+      logger.error('Failed to calculate mortgage preview:', error);
       setMortgagePreview(null);
     } finally {
       setIsLoadingPreview(false);
@@ -453,7 +456,7 @@ export function AccountForm({ account, onSubmit, onCancel }: AccountFormProps) {
         toast.success(`Category "${categoryName}" created`);
       }
     } catch (error) {
-      console.error('Failed to create category:', error);
+      logger.error('Failed to create category:', error);
       toast.error('Failed to create category');
     }
   };

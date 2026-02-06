@@ -22,6 +22,9 @@ import { scheduledTransactionsApi } from '@/lib/scheduled-transactions';
 import { ScheduledTransaction, FrequencyType } from '@/types/scheduled-transaction';
 import { parseLocalDate } from '@/lib/utils';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('UpcomingBillsReport');
 
 interface CalendarDay {
   date: Date;
@@ -55,7 +58,7 @@ export function UpcomingBillsReport() {
           data.filter((st) => st.isActive && !st.isTransfer)
         );
       } catch (error) {
-        console.error('Failed to load scheduled transactions:', error);
+        logger.error('Failed to load scheduled transactions:', error);
       } finally {
         setIsLoading(false);
       }

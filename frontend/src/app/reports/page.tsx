@@ -8,6 +8,9 @@ import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { customReportsApi } from '@/lib/custom-reports';
 import { CustomReport, VIEW_TYPE_LABELS, TIMEFRAME_LABELS } from '@/types/custom-report';
 import { getIconComponent } from '@/components/ui/IconPicker';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('Reports');
 
 type DensityLevel = 'normal' | 'compact' | 'dense';
 type ReportCategory = 'spending' | 'income' | 'networth' | 'tax' | 'debt' | 'investment' | 'insights' | 'maintenance' | 'bills' | 'custom';
@@ -322,7 +325,7 @@ export default function ReportsPage() {
         const data = await customReportsApi.getAll();
         setCustomReports(data);
       } catch (error) {
-        console.error('Failed to load custom reports:', error);
+        logger.error('Failed to load custom reports:', error);
       } finally {
         setIsLoadingCustom(false);
       }

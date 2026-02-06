@@ -35,6 +35,9 @@ import { Payee } from '@/types/payee';
 import { accountsApi } from '@/lib/accounts';
 import { categoriesApi } from '@/lib/categories';
 import { payeesApi } from '@/lib/payees';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('CustomReportForm');
 
 const customReportSchema = z.object({
   name: z.string().min(1, 'Name is required').max(255),
@@ -143,7 +146,7 @@ export function CustomReportForm({ report, onSubmit, onCancel }: CustomReportFor
         setCategories(categoriesData);
         setPayees(payeesData);
       } catch (error) {
-        console.error('Failed to load data:', error);
+        logger.error('Failed to load data:', error);
       } finally {
         setIsLoadingData(false);
       }

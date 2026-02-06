@@ -10,6 +10,9 @@ import { PortfolioSummary } from '@/types/investment';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { CHART_COLOURS } from '@/lib/chart-colours';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('AccountBalancesReport');
 
 type AccountTypeFilter = 'all' | 'assets' | 'liabilities';
 type ViewMode = 'table' | 'chart';
@@ -53,7 +56,7 @@ export function AccountBalancesReport() {
         setAccounts(data);
         setPortfolioSummary(portfolio);
       } catch (error) {
-        console.error('Failed to load accounts:', error);
+        logger.error('Failed to load accounts:', error);
       } finally {
         setIsLoading(false);
       }

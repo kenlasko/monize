@@ -35,6 +35,9 @@ import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Modal } from '@/components/ui/Modal';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('Bills');
 
 interface OverrideEditorState {
   isOpen: boolean;
@@ -88,7 +91,7 @@ export default function BillsPage() {
       setAccounts(accountsData);
     } catch (error) {
       toast.error('Failed to load scheduled transactions');
-      console.error(error);
+      logger.error(error);
     } finally {
       setIsLoading(false);
     }
@@ -121,7 +124,7 @@ export default function BillsPage() {
       }
     } catch (error) {
       // If check fails, proceed anyway
-      console.error('Failed to check overrides:', error);
+      logger.error('Failed to check overrides:', error);
       setEditingTransaction(transaction);
       setShowForm(true);
     }
@@ -146,7 +149,7 @@ export default function BillsPage() {
         setShowForm(true);
       } catch (error) {
         toast.error('Failed to delete overrides');
-        console.error(error);
+        logger.error(error);
       }
     }
     setOverrideConfirm({ isOpen: false, transaction: null, overrideCount: 0 });
@@ -177,7 +180,7 @@ export default function BillsPage() {
         overrideDate: o.overrideDate,
       }));
     } catch (error) {
-      console.error('Failed to fetch overrides:', error);
+      logger.error('Failed to fetch overrides:', error);
     }
 
     // Show the date picker to let user choose which occurrence to edit
@@ -224,7 +227,7 @@ export default function BillsPage() {
         existingOverride,
       });
     } catch (error) {
-      console.error('Failed to check for existing override:', error);
+      logger.error('Failed to check for existing override:', error);
       // Open the editor anyway, without existing override data
       setOverrideEditor({
         isOpen: true,

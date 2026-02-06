@@ -21,6 +21,9 @@ import { useDateRange } from '@/hooks/useDateRange';
 import { DateRangeSelector } from '@/components/ui/DateRangeSelector';
 import { ChartViewToggle } from '@/components/ui/ChartViewToggle';
 import { CHART_COLOURS_INCOME } from '@/lib/chart-colours';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('IncomeBySourceReport');
 
 interface ChartDataItem {
   id: string;
@@ -66,7 +69,7 @@ export function IncomeBySourceReport() {
       setChartData(data);
       setTotalIncome(response.totalIncome);
     } catch (error) {
-      console.error('Failed to load data:', error);
+      logger.error('Failed to load data:', error);
     } finally {
       setIsLoading(false);
     }

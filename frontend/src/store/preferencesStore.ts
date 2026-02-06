@@ -2,6 +2,9 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { UserPreferences } from '@/types/auth';
 import { userSettingsApi } from '@/lib/user-settings';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('Preferences');
 
 interface PreferencesState {
   preferences: UserPreferences | null;
@@ -23,9 +26,10 @@ export const usePreferencesStore = create<PreferencesState>()(
       loadPreferences: async () => {
         try {
           const prefs = await userSettingsApi.getPreferences();
+          logger.debug('Preferences loaded:', prefs.defaultCurrency, prefs.theme);
           set({ preferences: prefs, isLoaded: true });
         } catch (error) {
-          console.error('Failed to load preferences:', error);
+          logger.error('Failed to load preferences:', error);
           // Set defaults if loading fails
           set({ isLoaded: true });
         }

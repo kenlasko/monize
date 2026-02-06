@@ -18,6 +18,9 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { SummaryCard, SummaryIcons } from '@/components/ui/SummaryCard';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useFormModal } from '@/hooks/useFormModal';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('Payees');
 
 const PAGE_SIZE = 50;
 
@@ -44,7 +47,7 @@ export default function PayeesPage() {
       setCategories(categoriesData);
     } catch (error) {
       toast.error('Failed to load data');
-      console.error(error);
+      logger.error(error);
     } finally {
       setIsLoading(false);
     }

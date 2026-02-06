@@ -17,6 +17,9 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useFormModal } from '@/hooks/useFormModal';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('Accounts');
 
 export default function AccountsPage() {
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -37,7 +40,7 @@ export default function AccountsPage() {
       setPortfolioSummary(portfolio);
     } catch (error) {
       toast.error('Failed to load accounts');
-      console.error(error);
+      logger.error(error);
     } finally {
       setIsLoading(false);
     }
