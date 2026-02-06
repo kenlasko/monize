@@ -12,6 +12,8 @@ import { InvestmentTransaction } from '../securities/entities/investment-transac
 import { Holding } from '../securities/entities/holding.entity';
 import { NetWorthModule } from '../net-worth/net-worth.module';
 import { SecuritiesModule } from '../securities/securities.module';
+import { CurrenciesModule } from '../currencies/currencies.module';
+
 @Module({
   imports: [
     TypeOrmModule.forFeature([
@@ -26,6 +28,7 @@ import { SecuritiesModule } from '../securities/securities.module';
     ]),
     forwardRef(() => NetWorthModule),
     forwardRef(() => SecuritiesModule),
+    forwardRef(() => CurrenciesModule),
   ],
   controllers: [ImportController],
   providers: [ImportService],

@@ -14,6 +14,8 @@ export enum InvestmentAction {
   TRANSFER_IN = 'TRANSFER_IN',
   TRANSFER_OUT = 'TRANSFER_OUT',
   REINVEST = 'REINVEST',
+  ADD_SHARES = 'ADD_SHARES',
+  REMOVE_SHARES = 'REMOVE_SHARES',
 }
 
 @Entity('investment_transactions')

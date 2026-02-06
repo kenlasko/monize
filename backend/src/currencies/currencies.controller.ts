@@ -1,7 +1,7 @@
-import { Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Query, Request, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
-import { ExchangeRateService, RateRefreshSummary } from './exchange-rate.service';
+import { ExchangeRateService, RateRefreshSummary, HistoricalRateBackfillSummary } from './exchange-rate.service';
 import { ExchangeRate } from './entities/exchange-rate.entity';
 import { Currency } from './entities/currency.entity';
 
@@ -51,5 +51,14 @@ export class CurrenciesController {
   @ApiResponse({ status: 201, description: 'Refresh summary' })
   refreshRates(): Promise<RateRefreshSummary> {
     return this.exchangeRateService.refreshAllRates();
+  }
+
+  @Post('exchange-rates/backfill')
+  @ApiOperation({ summary: 'Manually trigger historical exchange rate backfill' })
+  @ApiResponse({ status: 201, description: 'Backfill summary' })
+  backfillHistoricalRates(
+    @Request() req,
+  ): Promise<HistoricalRateBackfillSummary> {
+    return this.exchangeRateService.backfillHistoricalRates(req.user.id);
   }
 }

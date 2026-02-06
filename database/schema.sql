@@ -334,7 +334,9 @@ CREATE TYPE investment_action AS ENUM (
     'SPLIT',
     'TRANSFER_IN',
     'TRANSFER_OUT',
-    'REINVEST'
+    'REINVEST',
+    'ADD_SHARES',
+    'REMOVE_SHARES'
 );
 
 CREATE TABLE investment_transactions (

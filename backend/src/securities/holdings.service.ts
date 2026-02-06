@@ -117,6 +117,38 @@ export class HoldingsService {
     return this.createOrUpdate(userId, accountId, securityId, quantityDelta, price);
   }
 
+  /**
+   * Adjust holding quantity without affecting average cost.
+   * Used for ADD_SHARES / REMOVE_SHARES to fix minor discrepancies.
+   */
+  async adjustQuantity(
+    userId: string,
+    accountId: string,
+    securityId: string,
+    quantityChange: number,
+  ): Promise<Holding> {
+    await this.accountsService.findOne(userId, accountId);
+    await this.securitiesService.findOne(securityId);
+
+    let holding = await this.findByAccountAndSecurity(accountId, securityId);
+
+    if (!holding) {
+      if (quantityChange < 0) {
+        throw new NotFoundException('Cannot remove shares from a non-existent holding');
+      }
+      holding = this.holdingsRepository.create({
+        accountId,
+        securityId,
+        quantity: quantityChange,
+        averageCost: 0,
+      });
+    } else {
+      holding.quantity = Number(holding.quantity) + quantityChange;
+    }
+
+    return this.holdingsRepository.save(holding);
+  }
+
   async getHoldingsSummary(userId: string, accountId: string) {
     const holdings = await this.findAll(userId, accountId);
 
@@ -204,6 +236,14 @@ export class HoldingsService {
       InvestmentAction.REINVEST,
       InvestmentAction.TRANSFER_IN,
       InvestmentAction.TRANSFER_OUT,
+      InvestmentAction.ADD_SHARES,
+      InvestmentAction.REMOVE_SHARES,
+    ];
+
+    // Actions that adjust quantity only (no cost basis change)
+    const quantityOnlyActions = [
+      InvestmentAction.ADD_SHARES,
+      InvestmentAction.REMOVE_SHARES,
     ];
 
     // Rebuild holdings from transactions
@@ -219,7 +259,7 @@ export class HoldingsService {
       const price = Number(tx.price) || 0;
 
       // Determine quantity change
-      const quantityChange = [InvestmentAction.SELL, InvestmentAction.TRANSFER_OUT].includes(tx.action)
+      const quantityChange = [InvestmentAction.SELL, InvestmentAction.TRANSFER_OUT, InvestmentAction.REMOVE_SHARES].includes(tx.action)
         ? -quantity
         : quantity;
 
@@ -235,7 +275,10 @@ export class HoldingsService {
       }
       const holding = accountHoldings.get(tx.securityId)!;
 
-      if (quantityChange > 0) {
+      if (quantityOnlyActions.includes(tx.action)) {
+        // ADD_SHARES / REMOVE_SHARES: adjust quantity only, no cost basis change
+        holding.quantity += quantityChange;
+      } else if (quantityChange > 0) {
         // Buying: add to total cost
         holding.totalCost += quantityChange * price;
         holding.quantity += quantityChange;

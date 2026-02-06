@@ -406,7 +406,15 @@ export default function InvestmentsPage() {
 
           {/* Summary and Allocation Row */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            <PortfolioSummaryCard summary={portfolioSummary} isLoading={isLoading} />
+            <PortfolioSummaryCard
+              summary={portfolioSummary}
+              isLoading={isLoading}
+              singleAccountCurrency={
+                selectedAccountIds.length === 1
+                  ? accounts.find(a => a.id === selectedAccountIds[0])?.currencyCode ?? null
+                  : null
+              }
+            />
             <AssetAllocationChart
               allocation={portfolioSummary ? { allocation: portfolioSummary.allocation, totalValue: portfolioSummary.totalPortfolioValue } : null}
               isLoading={isLoading}
@@ -436,6 +444,7 @@ export default function InvestmentsPage() {
               isLoading={isLoading}
               onDelete={handleDeleteTransaction}
               onEdit={handleEditTransaction}
+              onNewTransaction={handleNewTransaction}
               density={listDensity}
               onDensityChange={setListDensity}
               filters={transactionFilters}

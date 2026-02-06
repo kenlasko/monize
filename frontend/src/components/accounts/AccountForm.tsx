@@ -236,6 +236,19 @@ export function AccountForm({ account, onSubmit, onCancel }: AccountFormProps) {
     exchangeRatesApi.getCurrencies().then(setCurrencies).catch(() => {});
   }, []);
 
+  // Re-sync the currency select value after options load.
+  // react-hook-form's register sets the select value on mount, but if options
+  // haven't loaded yet, the browser ignores it. When options arrive, the select
+  // defaults to the first option instead of the form's actual value.
+  useEffect(() => {
+    if (currencies.length > 0) {
+      const current = getValues('currencyCode');
+      if (current) {
+        setValue('currencyCode', current, { shouldDirty: false });
+      }
+    }
+  }, [currencies, setValue, getValues]);
+
   // Build currency options: default currency first, then alphabetical
   const currencyOptions = useMemo(() => {
     const sorted = [...currencies].sort((a, b) => {

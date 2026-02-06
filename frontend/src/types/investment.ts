@@ -7,7 +7,9 @@ export type InvestmentAction =
   | 'SPLIT'
   | 'TRANSFER_IN'
   | 'TRANSFER_OUT'
-  | 'REINVEST';
+  | 'REINVEST'
+  | 'ADD_SHARES'
+  | 'REMOVE_SHARES';
 
 export interface Security {
   id: string;

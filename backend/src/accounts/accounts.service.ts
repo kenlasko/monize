@@ -697,6 +697,21 @@ export class AccountsService {
 
     const savedAccount = await this.accountsRepository.save(account);
 
+    // If currency changed on an investment account, update the linked account too
+    if (
+      updateAccountDto.currencyCode !== undefined &&
+      account.linkedAccountId &&
+      account.accountType === AccountType.INVESTMENT
+    ) {
+      const linkedAccount = await this.accountsRepository.findOne({
+        where: { id: account.linkedAccountId, userId },
+      });
+      if (linkedAccount) {
+        linkedAccount.currencyCode = updateAccountDto.currencyCode;
+        await this.accountsRepository.save(linkedAccount);
+      }
+    }
+
     // Trigger net worth recalculation if balance-affecting fields changed
     const needsRecalc =
       updateAccountDto.openingBalance !== undefined ||

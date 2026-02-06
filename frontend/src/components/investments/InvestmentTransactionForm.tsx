@@ -24,7 +24,7 @@ const logger = createLogger('InvestmentTxForm');
 
 const investmentTransactionSchema = z.object({
   accountId: z.string().min(1, 'Account is required'),
-  action: z.enum(['BUY', 'SELL', 'DIVIDEND', 'INTEREST', 'CAPITAL_GAIN', 'SPLIT', 'TRANSFER_IN', 'TRANSFER_OUT', 'REINVEST']),
+  action: z.enum(['BUY', 'SELL', 'DIVIDEND', 'INTEREST', 'CAPITAL_GAIN', 'SPLIT', 'TRANSFER_IN', 'TRANSFER_OUT', 'REINVEST', 'ADD_SHARES', 'REMOVE_SHARES']),
   transactionDate: z.string().min(1, 'Date is required'),
   securityId: z.string().optional(),
   fundingAccountId: z.string().optional(),
@@ -55,13 +55,18 @@ const actionLabels: Record<InvestmentAction, string> = {
   TRANSFER_IN: 'Transfer In',
   TRANSFER_OUT: 'Transfer Out',
   REINVEST: 'Reinvest Dividend',
+  ADD_SHARES: 'Add Shares',
+  REMOVE_SHARES: 'Remove Shares',
 };
 
 // Actions that require a security selection
-const securityRequiredActions: InvestmentAction[] = ['BUY', 'SELL', 'DIVIDEND', 'CAPITAL_GAIN', 'SPLIT', 'REINVEST'];
+const securityRequiredActions: InvestmentAction[] = ['BUY', 'SELL', 'DIVIDEND', 'CAPITAL_GAIN', 'SPLIT', 'REINVEST', 'ADD_SHARES', 'REMOVE_SHARES'];
 
 // Actions that require quantity and price
 const quantityPriceActions: InvestmentAction[] = ['BUY', 'SELL', 'REINVEST'];
+
+// Actions that only need quantity (no price, no cash effect)
+const quantityOnlyActions: InvestmentAction[] = ['ADD_SHARES', 'REMOVE_SHARES'];
 
 // Actions that only need an amount (no quantity/price)
 const amountOnlyActions: InvestmentAction[] = ['DIVIDEND', 'INTEREST', 'CAPITAL_GAIN', 'TRANSFER_IN', 'TRANSFER_OUT'];
@@ -223,11 +228,15 @@ export function InvestmentTransactionForm({
         fundingAccountId: fundingAccountActions.includes(data.action as InvestmentAction) && data.fundingAccountId
           ? data.fundingAccountId
           : undefined,
-        quantity: quantityPriceActions.includes(data.action as InvestmentAction)
+        quantity: (quantityPriceActions.includes(data.action as InvestmentAction) || quantityOnlyActions.includes(data.action as InvestmentAction))
           ? data.quantity
           : undefined,
-        price: data.price,
-        commission: data.commission,
+        price: quantityOnlyActions.includes(data.action as InvestmentAction)
+          ? undefined
+          : data.price,
+        commission: quantityOnlyActions.includes(data.action as InvestmentAction)
+          ? undefined
+          : data.commission,
         description: data.description,
       };
 
@@ -248,6 +257,7 @@ export function InvestmentTransactionForm({
 
   const needsSecurity = securityRequiredActions.includes(watchedAction);
   const needsQuantityPrice = quantityPriceActions.includes(watchedAction);
+  const isQuantityOnly = quantityOnlyActions.includes(watchedAction);
   const isAmountOnly = amountOnlyActions.includes(watchedAction);
   const canHaveFundingAccount = fundingAccountActions.includes(watchedAction);
 
@@ -406,6 +416,18 @@ export function InvestmentTransactionForm({
             error={errors.price?.message}
           />
         </div>
+      )}
+
+      {/* Quantity only - for add/remove shares (no price, no cost basis impact) */}
+      {isQuantityOnly && (
+        <NumericInput
+          label="Quantity (Shares)"
+          value={watchedQuantity}
+          onChange={(value) => setValue('quantity', value ?? 0, { shouldValidate: true })}
+          decimalPlaces={8}
+          min={0}
+          error={errors.quantity?.message}
+        />
       )}
 
       {/* Amount - for dividend/interest/capital gain/transfers */}

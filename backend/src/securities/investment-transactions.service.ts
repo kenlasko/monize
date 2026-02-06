@@ -200,7 +200,7 @@ export class InvestmentTransactionsService {
 
     // Validate that security is provided for buy/sell transactions
     if (
-      [InvestmentAction.BUY, InvestmentAction.SELL, InvestmentAction.SPLIT, InvestmentAction.REINVEST].includes(
+      [InvestmentAction.BUY, InvestmentAction.SELL, InvestmentAction.SPLIT, InvestmentAction.REINVEST, InvestmentAction.ADD_SHARES, InvestmentAction.REMOVE_SHARES].includes(
         createDto.action,
       ) &&
       !createDto.securityId
@@ -224,8 +224,8 @@ export class InvestmentTransactionsService {
       fundingAccountId: createDto.fundingAccountId || null,
       action: createDto.action,
       transactionDate: createDto.transactionDate,
-      quantity: createDto.quantity,
-      price: createDto.price,
+      quantity: createDto.quantity ?? 0,
+      price: createDto.price ?? 0,
       commission: createDto.commission || 0,
       totalAmount,
       description: createDto.description,
@@ -260,6 +260,11 @@ export class InvestmentTransactionsService {
         // Total = amount received (no quantity/price needed)
         // These should be passed in as a single amount
         return (quantity || 0) * (price || 1); // Use price as amount if quantity is 1
+
+      case InvestmentAction.ADD_SHARES:
+      case InvestmentAction.REMOVE_SHARES:
+        // Pure quantity adjustment, no monetary value
+        return 0;
 
       default:
         return 0;
@@ -373,6 +378,30 @@ export class InvestmentTransactionsService {
             securityId,
             -Number(quantity),
             Number(price),
+          );
+        }
+        break;
+
+      case InvestmentAction.ADD_SHARES:
+        // Add shares without affecting cost basis or cash
+        if (securityId && quantity) {
+          await this.holdingsService.adjustQuantity(
+            userId,
+            accountId,
+            securityId,
+            Number(quantity),
+          );
+        }
+        break;
+
+      case InvestmentAction.REMOVE_SHARES:
+        // Remove shares without affecting cost basis or cash
+        if (securityId && quantity) {
+          await this.holdingsService.adjustQuantity(
+            userId,
+            accountId,
+            securityId,
+            -Number(quantity),
           );
         }
         break;
@@ -613,6 +642,30 @@ export class InvestmentTransactionsService {
             securityId,
             Number(quantity),
             Number(price),
+          );
+        }
+        break;
+
+      case InvestmentAction.ADD_SHARES:
+        // Reverse: remove the added shares
+        if (securityId && quantity) {
+          await this.holdingsService.adjustQuantity(
+            userId,
+            accountId,
+            securityId,
+            -Number(quantity),
+          );
+        }
+        break;
+
+      case InvestmentAction.REMOVE_SHARES:
+        // Reverse: add the removed shares back
+        if (securityId && quantity) {
+          await this.holdingsService.adjustQuantity(
+            userId,
+            accountId,
+            securityId,
+            Number(quantity),
           );
         }
         break;

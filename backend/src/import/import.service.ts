@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, IsNull } from 'typeorm';
 import { NetWorthService } from '../net-worth/net-worth.service';
 import { SecurityPriceService } from '../securities/security-price.service';
+import { ExchangeRateService } from '../currencies/exchange-rate.service';
 import { Transaction, TransactionStatus } from '../transactions/entities/transaction.entity';
 import { TransactionSplit } from '../transactions/entities/transaction-split.entity';
 import { Account, AccountType, AccountSubType } from '../accounts/entities/account.entity';
@@ -96,6 +97,8 @@ export class ImportService {
     private netWorthService: NetWorthService,
     @Inject(forwardRef(() => SecurityPriceService))
     private securityPriceService: SecurityPriceService,
+    @Inject(forwardRef(() => ExchangeRateService))
+    private exchangeRateService: ExchangeRateService,
   ) {}
 
   /**
@@ -1152,6 +1155,18 @@ export class ImportService {
       } catch (err) {
         this.logger.warn(`Post-import historical price backfill failed: ${err.message}`);
       }
+    }
+
+    // Backfill historical exchange rates for any affected accounts with non-default currencies
+    try {
+      this.logger.log('Post-import: backfilling historical exchange rates');
+      await this.exchangeRateService.backfillHistoricalRates(
+        userId,
+        Array.from(affectedAccountIds),
+      );
+      this.logger.log('Post-import: historical rate backfill complete');
+    } catch (err) {
+      this.logger.warn(`Post-import historical rate backfill failed: ${err.message}`);
     }
 
     // Trigger net worth recalculation for all affected accounts (fire-and-forget)

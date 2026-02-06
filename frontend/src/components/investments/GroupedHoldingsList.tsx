@@ -66,9 +66,12 @@ export function GroupedHoldingsList({
       : 'text-red-600 dark:text-red-400';
   };
 
-  const getPortfolioPercent = (value: number | null): string => {
+  const getPortfolioPercent = (value: number | null, currencyCode?: string): string => {
     if (value === null || totalPortfolioValue === 0) return '-';
-    return ((value / totalPortfolioValue) * 100).toFixed(1) + '%';
+    const converted = currencyCode && currencyCode !== defaultCurrency
+      ? convertToDefault(value, currencyCode)
+      : value;
+    return ((converted / totalPortfolioValue) * 100).toFixed(1) + '%';
   };
 
   if (isLoading) {
@@ -132,9 +135,16 @@ export function GroupedHoldingsList({
           const isExpanded = expandedAccounts.has(account.accountId);
           const accountTotalValue = account.totalMarketValue + account.cashBalance;
           const isForeignAcct = account.currencyCode && account.currencyCode !== defaultCurrency;
+          // Also detect when account is in default currency but holds foreign securities
+          const foreignHoldingCurrencies = [...new Set(
+            account.holdings.map(h => h.currencyCode).filter(c => c && c !== defaultCurrency),
+          )];
+          const acctDisplayCurrency = isForeignAcct
+            ? account.currencyCode
+            : (foreignHoldingCurrencies.length === 1 ? foreignHoldingCurrencies[0] : null);
           const fmtAcct = (value: number | null) => {
             if (value === null) return '-';
-            if (isForeignAcct) return `${formatCurrencyBase(value, account.currencyCode)} ${account.currencyCode}`;
+            if (acctDisplayCurrency) return `${formatCurrencyBase(value, acctDisplayCurrency)} ${acctDisplayCurrency}`;
             return formatCurrency(value);
           };
 
@@ -165,9 +175,9 @@ export function GroupedHoldingsList({
                   <div className="font-semibold text-gray-900 dark:text-gray-100">
                     {fmtAcct(accountTotalValue)}
                   </div>
-                  {isForeignAcct && (
+                  {acctDisplayCurrency && (
                     <div className="text-xs text-gray-400 dark:text-gray-500">
-                      {'\u2248 '}{formatCurrencyBase(convertToDefault(accountTotalValue, account.currencyCode), defaultCurrency)}
+                      {'\u2248 '}{formatCurrencyBase(convertToDefault(accountTotalValue, acctDisplayCurrency), defaultCurrency)} {defaultCurrency}
                     </div>
                   )}
                   <div className={`text-sm ${getGainLossColor(account.totalGainLoss)}`}>
@@ -261,7 +271,7 @@ export function GroupedHoldingsList({
                             <div className="text-sm text-gray-400 dark:text-gray-500">-</div>
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap text-right text-sm text-gray-500 dark:text-gray-400">
-                            {getPortfolioPercent(account.cashBalance)}
+                            {getPortfolioPercent(account.cashBalance, acctDisplayCurrency || account.currencyCode)}
                           </td>
                         </tr>
                       )}
@@ -276,9 +286,9 @@ export function GroupedHoldingsList({
                         </td>
                         <td className="px-4 py-3 text-right text-sm text-gray-900 dark:text-gray-100">
                           <div>{fmtAcct(accountTotalValue)}</div>
-                          {isForeignAcct && (
+                          {acctDisplayCurrency && (
                             <div className="text-xs font-normal text-gray-400 dark:text-gray-500">
-                              {'\u2248 '}{formatCurrencyBase(convertToDefault(accountTotalValue, account.currencyCode), defaultCurrency)}
+                              {'\u2248 '}{formatCurrencyBase(convertToDefault(accountTotalValue, acctDisplayCurrency), defaultCurrency)} {defaultCurrency}
                             </div>
                           )}
                         </td>
@@ -291,7 +301,7 @@ export function GroupedHoldingsList({
                           </div>
                         </td>
                         <td className="px-4 py-3 text-right text-sm text-gray-500 dark:text-gray-400">
-                          {getPortfolioPercent(accountTotalValue)}
+                          {getPortfolioPercent(accountTotalValue, acctDisplayCurrency || account.currencyCode)}
                         </td>
                       </tr>
                     </tbody>
@@ -314,7 +324,7 @@ interface HoldingRowProps {
   formatQuantity: (value: number) => string;
   formatPercent: (value: number | null, showSign?: boolean) => string;
   getGainLossColor: (value: number | null) => string;
-  getPortfolioPercent: (value: number | null) => string;
+  getPortfolioPercent: (value: number | null, currencyCode?: string) => string;
   onSymbolClick?: (symbol: string) => void;
 }
 
@@ -362,7 +372,7 @@ function HoldingRow({
       <td className="px-4 py-3 whitespace-nowrap text-right text-sm text-gray-900 dark:text-gray-100">
         {fmtVal(holding.currentPrice)}
       </td>
-      <td className="px-4 py-3 whitespace-nowrap text-right text-sm text-gray-500 dark:text-gray-400">
+      <td className="px-4 py-3 whitespace-nowrap text-right text-sm text-gray-900 dark:text-gray-100">
         {fmtVal(holding.costBasis)}
       </td>
       <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium text-gray-900 dark:text-gray-100">
@@ -377,7 +387,7 @@ function HoldingRow({
         </div>
       </td>
       <td className="px-4 py-3 whitespace-nowrap text-right text-sm text-gray-500 dark:text-gray-400">
-        {getPortfolioPercent(holding.marketValue)}
+        {getPortfolioPercent(holding.marketValue, holding.currencyCode)}
       </td>
     </tr>
   );

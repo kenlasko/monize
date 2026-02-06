@@ -21,6 +21,7 @@ interface InvestmentTransactionListProps {
   isLoading: boolean;
   onDelete?: (id: string) => void;
   onEdit?: (transaction: InvestmentTransaction) => void;
+  onNewTransaction?: () => void;
   density?: DensityLevel;
   onDensityChange?: (density: DensityLevel) => void;
   filters?: TransactionFilters;
@@ -38,6 +39,8 @@ const ACTION_LABELS: Record<string, { label: string; shortLabel: string; color: 
   TRANSFER_IN: { label: 'Transfer In', shortLabel: 'In', color: 'text-green-600 dark:text-green-400' },
   TRANSFER_OUT: { label: 'Transfer Out', shortLabel: 'Out', color: 'text-red-600 dark:text-red-400' },
   REINVEST: { label: 'Reinvest', shortLabel: 'Reinv', color: 'text-indigo-600 dark:text-indigo-400' },
+  ADD_SHARES: { label: 'Add Shares', shortLabel: 'Add', color: 'text-teal-600 dark:text-teal-400' },
+  REMOVE_SHARES: { label: 'Remove Shares', shortLabel: 'Rem', color: 'text-orange-600 dark:text-orange-400' },
 };
 
 const ACTION_OPTIONS = [
@@ -51,6 +54,8 @@ const ACTION_OPTIONS = [
   { value: 'SPLIT', label: 'Split' },
   { value: 'TRANSFER_IN', label: 'Transfer In' },
   { value: 'TRANSFER_OUT', label: 'Transfer Out' },
+  { value: 'ADD_SHARES', label: 'Add Shares' },
+  { value: 'REMOVE_SHARES', label: 'Remove Shares' },
 ];
 
 export function InvestmentTransactionList({
@@ -58,6 +63,7 @@ export function InvestmentTransactionList({
   isLoading,
   onDelete,
   onEdit,
+  onNewTransaction,
   density: propDensity,
   onDensityChange,
   filters,
@@ -131,9 +137,19 @@ export function InvestmentTransactionList({
   if (transactions.length === 0) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-          Recent Transactions
-        </h3>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+            Recent Transactions
+          </h3>
+          {onNewTransaction && (
+            <button
+              onClick={onNewTransaction}
+              className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+            >
+              + New Transaction
+            </button>
+          )}
+        </div>
         <p className="text-gray-500 dark:text-gray-400">
           No investment transactions yet.
         </p>
@@ -167,6 +183,15 @@ export function InvestmentTransactionList({
             </span>
           )}
         </h3>
+        <div className="flex items-center gap-2">
+        {onNewTransaction && (
+          <button
+            onClick={onNewTransaction}
+            className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+          >
+            + New Transaction
+          </button>
+        )}
         {onFiltersChange && (
           <button
             onClick={() => setShowFilters(!showFilters)}
@@ -187,6 +212,7 @@ export function InvestmentTransactionList({
             )}
           </button>
         )}
+        </div>
       </div>
 
       {/* Filter Bar */}

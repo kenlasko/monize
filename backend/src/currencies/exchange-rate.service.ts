@@ -1,10 +1,11 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, MoreThanOrEqual, LessThanOrEqual, And } from 'typeorm';
+import { Repository, DataSource, MoreThanOrEqual, LessThanOrEqual, And } from 'typeorm';
 import { Cron } from '@nestjs/schedule';
 import { ExchangeRate } from './entities/exchange-rate.entity';
 import { Currency } from './entities/currency.entity';
 import { Account } from '../accounts/entities/account.entity';
+import { UserPreference } from '../users/entities/user-preference.entity';
 
 export interface RateUpdateResult {
   pair: string;
@@ -21,8 +22,23 @@ export interface RateRefreshSummary {
   lastUpdated: Date;
 }
 
+export interface HistoricalRateBackfillResult {
+  pair: string;
+  success: boolean;
+  ratesLoaded: number;
+  error?: string;
+}
+
+export interface HistoricalRateBackfillSummary {
+  totalPairs: number;
+  successful: number;
+  failed: number;
+  totalRatesLoaded: number;
+  results: HistoricalRateBackfillResult[];
+}
+
 @Injectable()
-export class ExchangeRateService {
+export class ExchangeRateService implements OnModuleInit {
   private readonly logger = new Logger(ExchangeRateService.name);
 
   constructor(
@@ -32,7 +48,73 @@ export class ExchangeRateService {
     private currencyRepository: Repository<Currency>,
     @InjectRepository(Account)
     private accountRepository: Repository<Account>,
+    @InjectRepository(UserPreference)
+    private userPreferenceRepository: Repository<UserPreference>,
+    private dataSource: DataSource,
   ) {}
+
+  /**
+   * On application startup, check if exchange rates exist and are recent.
+   * If not, trigger a refresh so currency conversions work immediately.
+   */
+  async onModuleInit(): Promise<void> {
+    try {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      // Check for rates within the last 3 days (covers weekends — Friday rates still valid on Monday)
+      const cutoff = new Date(today);
+      cutoff.setDate(cutoff.getDate() - 3);
+
+      const recentRate = await this.exchangeRateRepository.findOne({
+        where: { rateDate: MoreThanOrEqual(cutoff) },
+      });
+
+      if (!recentRate) {
+        this.logger.log(
+          'No recent exchange rates found — fetching rates on startup',
+        );
+        const summary = await this.refreshAllRates();
+        this.logger.log(
+          `Startup rate refresh: ${summary.updated} updated, ${summary.failed} failed`,
+        );
+      } else {
+        this.logger.log('Exchange rates are up to date');
+      }
+      // Check if historical rates need backfilling for any user's accounts or securities
+      const usersWithForeignAccounts: Array<{ user_id: string }> =
+        await this.dataSource.query(
+          `SELECT DISTINCT user_id FROM (
+             SELECT a.user_id
+             FROM accounts a
+             INNER JOIN user_preferences up ON up.user_id = a.user_id
+             WHERE a.is_closed = false
+               AND a.currency_code != up.default_currency
+             UNION
+             SELECT a.user_id
+             FROM securities s
+             INNER JOIN holdings h ON h.security_id = s.id
+             INNER JOIN accounts a ON a.id = h.account_id AND a.is_closed = false
+             INNER JOIN user_preferences up ON up.user_id = a.user_id
+             WHERE s.currency_code != up.default_currency
+               AND s.is_active = true
+               AND h.quantity > 0
+           ) sub`,
+        );
+
+      for (const { user_id } of usersWithForeignAccounts) {
+        this.backfillHistoricalRates(user_id).catch((err) =>
+          this.logger.warn(
+            `Startup historical rate backfill failed for user ${user_id}: ${err.message}`,
+          ),
+        );
+      }
+    } catch (error) {
+      this.logger.error(
+        `Failed to check/refresh exchange rates on startup: ${error.message}`,
+      );
+    }
+  }
 
   /**
    * Fetch exchange rate from Yahoo Finance for a currency pair
@@ -69,6 +151,63 @@ export class ExchangeRateService {
     } catch (error) {
       this.logger.error(
         `Failed to fetch exchange rate for ${from}/${to}: ${error.message}`,
+      );
+      return null;
+    }
+  }
+
+  /**
+   * Fetch historical daily exchange rates from Yahoo Finance for a currency pair.
+   * Uses the same v8 chart API with range=max to get all available history.
+   */
+  private async fetchYahooHistoricalRates(
+    from: string,
+    to: string,
+  ): Promise<Array<{ date: Date; rate: number }> | null> {
+    if (from === to) return [];
+
+    try {
+      const symbol = `${from}${to}=X`;
+      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=max`;
+
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        },
+      });
+
+      if (!response.ok) {
+        this.logger.warn(
+          `Yahoo Finance API returned ${response.status} for historical ${symbol}`,
+        );
+        return null;
+      }
+
+      const data = await response.json();
+      const result = data.chart?.result?.[0];
+      if (!result?.timestamp || !result?.indicators?.quote?.[0]) {
+        return null;
+      }
+
+      const timestamps: number[] = result.timestamp;
+      const quote = result.indicators.quote[0];
+      const rates: Array<{ date: Date; rate: number }> = [];
+
+      for (let i = 0; i < timestamps.length; i++) {
+        const close = quote.close?.[i];
+        if (close == null || isNaN(close)) continue;
+
+        const date = new Date(timestamps[i] * 1000);
+        date.setHours(0, 0, 0, 0);
+
+        rates.push({ date, rate: close });
+      }
+
+      return rates;
+    } catch (error) {
+      this.logger.error(
+        `Failed to fetch historical rates for ${from}/${to}: ${error.message}`,
       );
       return null;
     }
@@ -114,12 +253,18 @@ export class ExchangeRateService {
     const startTime = Date.now();
     this.logger.log('Starting exchange rate refresh');
 
-    // Only fetch rates for currencies that are actually used in accounts
-    const usedCurrencies: { code: string }[] = await this.accountRepository
-      .createQueryBuilder('a')
-      .select('DISTINCT a.currency_code', 'code')
-      .where('a.is_closed = false')
-      .getRawMany();
+    // Fetch rates for currencies used in accounts AND in securities held in active accounts
+    const usedCurrencies: { code: string }[] = await this.dataSource.query(
+      `SELECT DISTINCT code FROM (
+         SELECT currency_code AS code FROM accounts WHERE is_closed = false
+         UNION
+         SELECT s.currency_code AS code
+         FROM securities s
+         INNER JOIN holdings h ON h.security_id = s.id
+         INNER JOIN accounts a ON a.id = h.account_id AND a.is_closed = false
+         WHERE s.is_active = true AND h.quantity > 0
+       ) sub`,
+    );
 
     const codes = usedCurrencies.map((c) => c.code);
     this.logger.log(`Currencies in use: ${codes.join(', ')}`);
@@ -187,6 +332,205 @@ export class ExchangeRateService {
       results,
       lastUpdated: new Date(),
     };
+  }
+
+  /**
+   * Backfill historical exchange rates for accounts with non-default currencies.
+   * Fetches daily rates from the earliest transaction date to today.
+   *
+   * @param userId - The user whose default currency determines the conversion target
+   * @param accountIds - Optional list of account IDs to scope the backfill (e.g. post-import)
+   */
+  async backfillHistoricalRates(
+    userId: string,
+    accountIds?: string[],
+  ): Promise<HistoricalRateBackfillSummary> {
+    const startTime = Date.now();
+    this.logger.log('Starting historical exchange rate backfill');
+
+    // 1. Get user's default currency
+    const pref = await this.userPreferenceRepository.findOne({
+      where: { userId },
+    });
+    const defaultCurrency = pref?.defaultCurrency || 'USD';
+
+    // 2. Find non-default currencies and their earliest transaction dates
+    //    Includes both account currencies AND security currencies held in those accounts
+    let accountFilter = '';
+    const params: any[] = [defaultCurrency];
+
+    if (accountIds && accountIds.length > 0) {
+      accountFilter = `AND a.id = ANY($2::UUID[])`;
+      params.push(accountIds);
+    }
+
+    // Query 1: Account-level currencies (accounts in a non-default currency)
+    const accountCurrencyRows: Array<{
+      currency_code: string;
+      earliest: string;
+    }> = await this.dataSource.query(
+      `SELECT a.currency_code,
+              LEAST(
+                (SELECT MIN(t.transaction_date) FROM transactions t WHERE t.account_id = a.id),
+                (SELECT MIN(it.transaction_date) FROM investment_transactions it WHERE it.account_id = a.id)
+              )::TEXT AS earliest
+       FROM accounts a
+       WHERE a.currency_code != $1
+         AND a.is_closed = false
+         ${accountFilter}`,
+      params,
+    );
+
+    // Query 2: Security-level currencies (securities in a non-default currency held in active accounts)
+    const securityCurrencyRows: Array<{
+      currency_code: string;
+      earliest: string;
+    }> = await this.dataSource.query(
+      `SELECT DISTINCT s.currency_code,
+              (SELECT MIN(it.transaction_date)::TEXT
+               FROM investment_transactions it
+               WHERE it.security_id = s.id) AS earliest
+       FROM securities s
+       INNER JOIN holdings h ON h.security_id = s.id
+       INNER JOIN accounts a ON a.id = h.account_id AND a.is_closed = false
+       WHERE s.currency_code != $1
+         AND s.is_active = true
+         AND h.quantity > 0
+         ${accountFilter ? `AND h.account_id = ANY($2::UUID[])` : ''}`,
+      params,
+    );
+
+    // 3. Determine unique currency pairs and the global earliest date per pair
+    const pairEarliest = new Map<string, Date>();
+    const allRows = [...accountCurrencyRows, ...securityCurrencyRows];
+    for (const row of allRows) {
+      if (!row.earliest) continue;
+      const pairKey = `${row.currency_code}->${defaultCurrency}`;
+      const earliest = new Date(row.earliest);
+      earliest.setHours(0, 0, 0, 0);
+      const existing = pairEarliest.get(pairKey);
+      if (!existing || earliest < existing) {
+        pairEarliest.set(pairKey, earliest);
+      }
+    }
+
+    if (pairEarliest.size === 0) {
+      this.logger.log('No currency pairs require historical backfill');
+      return {
+        totalPairs: 0,
+        successful: 0,
+        failed: 0,
+        totalRatesLoaded: 0,
+        results: [],
+      };
+    }
+
+    this.logger.log(
+      `Currency pairs to backfill: ${Array.from(pairEarliest.keys()).join(', ')}`,
+    );
+
+    // 4. Fetch and store historical rates for each pair
+    const results: HistoricalRateBackfillResult[] = [];
+    let successful = 0;
+    let failed = 0;
+    let totalRatesLoaded = 0;
+
+    for (const [pairKey, cutoffDate] of pairEarliest.entries()) {
+      const [from, to] = pairKey.split('->');
+
+      const rates = await this.fetchYahooHistoricalRates(from, to);
+
+      if (!rates || rates.length === 0) {
+        results.push({
+          pair: `${from}/${to}`,
+          success: false,
+          ratesLoaded: 0,
+          error: 'No historical data available',
+        });
+        failed++;
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        continue;
+      }
+
+      // Filter to only keep rates from the earliest transaction date onward
+      let filtered = rates.filter((r) => r.date >= cutoffDate);
+
+      // Deduplicate by date
+      const seen = new Set<string>();
+      filtered = filtered.filter((r) => {
+        const key = r.date.toISOString().substring(0, 10);
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        results.push({ pair: `${from}/${to}`, success: true, ratesLoaded: 0 });
+        successful++;
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        continue;
+      }
+
+      try {
+        // Bulk upsert using raw SQL for performance
+        const batchSize = 500;
+        for (let i = 0; i < filtered.length; i += batchSize) {
+          const batch = filtered.slice(i, i + batchSize);
+          const values = batch
+            .map((_, idx) => {
+              const offset = idx * 4;
+              return `($${offset + 1}, $${offset + 2}, $${offset + 3}::DATE, $${offset + 4}, 'yahoo_finance')`;
+            })
+            .join(', ');
+
+          const batchParams: any[] = [];
+          for (const r of batch) {
+            batchParams.push(from, to, r.date, r.rate);
+          }
+
+          await this.dataSource.query(
+            `INSERT INTO exchange_rates (from_currency, to_currency, rate_date, rate, source)
+             VALUES ${values}
+             ON CONFLICT (from_currency, to_currency, rate_date) DO UPDATE SET
+               rate = EXCLUDED.rate,
+               source = EXCLUDED.source`,
+            batchParams,
+          );
+        }
+
+        this.logger.log(
+          `Backfilled ${filtered.length} rates for ${from}/${to} (from ${cutoffDate.toISOString().substring(0, 10)})`,
+        );
+        results.push({
+          pair: `${from}/${to}`,
+          success: true,
+          ratesLoaded: filtered.length,
+        });
+        successful++;
+        totalRatesLoaded += filtered.length;
+      } catch (error) {
+        this.logger.error(
+          `Failed to save historical rates for ${from}/${to}: ${error.message}`,
+        );
+        results.push({
+          pair: `${from}/${to}`,
+          success: false,
+          ratesLoaded: 0,
+          error: error.message,
+        });
+        failed++;
+      }
+
+      // Small delay between pairs to avoid rate limiting
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+
+    const duration = Date.now() - startTime;
+    this.logger.log(
+      `Historical rate backfill completed in ${duration}ms: ${successful} successful, ${failed} failed, ${totalRatesLoaded} total rates`,
+    );
+
+    return { totalPairs: pairEarliest.size, successful, failed, totalRatesLoaded, results };
   }
 
   /**

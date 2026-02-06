@@ -8,17 +8,41 @@ import { useExchangeRates } from '@/hooks/useExchangeRates';
 interface PortfolioSummaryCardProps {
   summary: PortfolioSummary | null;
   isLoading: boolean;
+  singleAccountCurrency?: string | null;
 }
 
 export function PortfolioSummaryCard({
   summary,
   isLoading,
+  singleAccountCurrency,
 }: PortfolioSummaryCardProps) {
   const { formatCurrency } = useNumberFormat();
-  const { convertToDefault } = useExchangeRates();
+  const { convertToDefault, defaultCurrency } = useExchangeRates();
+
+  // When viewing a single foreign-currency account, show values in that currency
+  const foreignCurrency = singleAccountCurrency && singleAccountCurrency !== defaultCurrency
+    ? singleAccountCurrency
+    : null;
 
   const converted = useMemo(() => {
     if (!summary) return null;
+
+    if (foreignCurrency) {
+      // Single foreign account: use raw values without conversion
+      let cash = 0;
+      let holdings = 0;
+      let costBasis = 0;
+      for (const acct of summary.holdingsByAccount) {
+        cash += acct.cashBalance;
+        holdings += acct.totalMarketValue;
+        costBasis += acct.totalCostBasis;
+      }
+      const portfolio = cash + holdings;
+      const gainLoss = holdings - costBasis;
+      const gainLossPercent = costBasis > 0 ? (gainLoss / costBasis) * 100 : 0;
+      return { cash, holdings, costBasis, portfolio, gainLoss, gainLossPercent };
+    }
+
     let cash = 0;
     let holdings = 0;
     let costBasis = 0;
@@ -31,7 +55,23 @@ export function PortfolioSummaryCard({
     const gainLoss = holdings - costBasis;
     const gainLossPercent = costBasis > 0 ? (gainLoss / costBasis) * 100 : 0;
     return { cash, holdings, costBasis, portfolio, gainLoss, gainLossPercent };
-  }, [summary, convertToDefault]);
+  }, [summary, convertToDefault, foreignCurrency]);
+
+  // Compute default-currency total when showing foreign, for the "approx" line
+  const defaultTotal = useMemo(() => {
+    if (!summary || !foreignCurrency) return null;
+    let total = 0;
+    for (const acct of summary.holdingsByAccount) {
+      total += convertToDefault(acct.cashBalance, acct.currencyCode);
+      total += convertToDefault(acct.totalMarketValue, acct.currencyCode);
+    }
+    return total;
+  }, [summary, convertToDefault, foreignCurrency]);
+
+  const fmtVal = (value: number) => {
+    if (foreignCurrency) return `${formatCurrency(value, foreignCurrency)} ${foreignCurrency}`;
+    return formatCurrency(value);
+  };
 
   const formatPercent = (value: number) => {
     const sign = value >= 0 ? '+' : '';
@@ -82,8 +122,13 @@ export function PortfolioSummaryCard({
             Total Portfolio Value
           </div>
           <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            {formatCurrency(converted?.portfolio ?? summary.totalPortfolioValue)}
+            {fmtVal(converted?.portfolio ?? summary.totalPortfolioValue)}
           </div>
+          {foreignCurrency && defaultTotal !== null && (
+            <div className="text-xs text-gray-400 dark:text-gray-500">
+              {'\u2248 '}{formatCurrency(defaultTotal, defaultCurrency)} {defaultCurrency}
+            </div>
+          )}
         </div>
 
         {/* Breakdown */}
@@ -93,7 +138,7 @@ export function PortfolioSummaryCard({
               Holdings Value
             </div>
             <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              {formatCurrency(converted?.holdings ?? summary.totalHoldingsValue)}
+              {fmtVal(converted?.holdings ?? summary.totalHoldingsValue)}
             </div>
           </div>
           <div>
@@ -101,7 +146,7 @@ export function PortfolioSummaryCard({
               Cash Balance
             </div>
             <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              {formatCurrency(converted?.cash ?? summary.totalCashValue)}
+              {fmtVal(converted?.cash ?? summary.totalCashValue)}
             </div>
           </div>
         </div>
@@ -119,7 +164,7 @@ export function PortfolioSummaryCard({
                   : 'text-red-600 dark:text-red-400'
               }`}
             >
-              {formatCurrency(converted?.gainLoss ?? summary.totalGainLoss)}
+              {fmtVal(converted?.gainLoss ?? summary.totalGainLoss)}
             </span>
             <span
               className={`text-sm ${
@@ -139,7 +184,7 @@ export function PortfolioSummaryCard({
             Total Cost Basis
           </div>
           <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-            {formatCurrency(converted?.costBasis ?? summary.totalCostBasis)}
+            {fmtVal(converted?.costBasis ?? summary.totalCostBasis)}
           </div>
         </div>
       </div>
