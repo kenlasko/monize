@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { InvestmentTransaction, InvestmentAction } from './entities/investment-transaction.entity';
@@ -8,11 +8,16 @@ import { AccountsService } from '../accounts/accounts.service';
 import { TransactionsService } from '../transactions/transactions.service';
 import { HoldingsService } from './holdings.service';
 import { SecuritiesService } from './securities.service';
+import { NetWorthService } from '../net-worth/net-worth.service';
 import { Transaction, TransactionStatus } from '../transactions/entities/transaction.entity';
 import { Account, AccountSubType } from '../accounts/entities/account.entity';
 
 @Injectable()
 export class InvestmentTransactionsService {
+  private readonly logger = new Logger(InvestmentTransactionsService.name);
+  private readonly recalcTimers = new Map<string, ReturnType<typeof setTimeout>>();
+  private static readonly RECALC_DEBOUNCE_MS = 2000;
+
   constructor(
     @InjectRepository(InvestmentTransaction)
     private investmentTransactionsRepository: Repository<InvestmentTransaction>,
@@ -23,7 +28,26 @@ export class InvestmentTransactionsService {
     private transactionsService: TransactionsService,
     private holdingsService: HoldingsService,
     private securitiesService: SecuritiesService,
+    private netWorthService: NetWorthService,
   ) {}
+
+  private triggerNetWorthRecalc(accountId: string, userId: string): void {
+    const key = `${userId}:${accountId}`;
+    const existing = this.recalcTimers.get(key);
+    if (existing) clearTimeout(existing);
+
+    this.recalcTimers.set(
+      key,
+      setTimeout(() => {
+        this.recalcTimers.delete(key);
+        this.netWorthService.recalculateAccount(userId, accountId).catch((err) =>
+          this.logger.warn(
+            `Net worth recalc failed for account ${accountId}: ${err.message}`,
+          ),
+        );
+      }, InvestmentTransactionsService.RECALC_DEBOUNCE_MS),
+    );
+  }
 
   /**
    * Find the appropriate cash account for an investment transaction.
@@ -211,6 +235,9 @@ export class InvestmentTransactionsService {
 
     // Process the transaction effects
     await this.processTransactionEffects(userId, saved);
+
+    // Trigger net worth recalculation for the brokerage account
+    this.triggerNetWorthRecalc(saved.accountId, userId);
 
     return this.findOne(userId, saved.id);
   }
@@ -497,6 +524,9 @@ export class InvestmentTransactionsService {
     // Apply the new transaction effects
     await this.processTransactionEffects(userId, saved);
 
+    // Trigger net worth recalculation for the brokerage account
+    this.triggerNetWorthRecalc(saved.accountId, userId);
+
     return this.findOne(userId, saved.id);
   }
 
@@ -591,12 +621,16 @@ export class InvestmentTransactionsService {
 
   async remove(userId: string, id: string): Promise<void> {
     const transaction = await this.findOne(userId, id);
+    const { accountId } = transaction;
 
     // Reverse the transaction effects
     await this.reverseTransactionEffects(userId, transaction);
 
     // Delete the transaction
     await this.investmentTransactionsRepository.remove(transaction);
+
+    // Trigger net worth recalculation for the brokerage account
+    this.triggerNetWorthRecalc(accountId, userId);
   }
 
   async getSummary(userId: string, accountIds?: string[]) {

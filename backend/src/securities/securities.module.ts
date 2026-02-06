@@ -19,6 +19,7 @@ import { PortfolioController } from './portfolio.controller';
 import { AccountsModule } from '../accounts/accounts.module';
 import { TransactionsModule } from '../transactions/transactions.module';
 import { CurrenciesModule } from '../currencies/currencies.module';
+import { NetWorthModule } from '../net-worth/net-worth.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { CurrenciesModule } from '../currencies/currencies.module';
     AccountsModule,
     TransactionsModule,
     CurrenciesModule,
+    NetWorthModule,
   ],
   providers: [
     SecuritiesService,

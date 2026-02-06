@@ -2,6 +2,7 @@ import { Injectable, BadRequestException, Logger, Inject, forwardRef } from '@ne
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, IsNull } from 'typeorm';
 import { NetWorthService } from '../net-worth/net-worth.service';
+import { SecurityPriceService } from '../securities/security-price.service';
 import { Transaction, TransactionStatus } from '../transactions/entities/transaction.entity';
 import { TransactionSplit } from '../transactions/entities/transaction-split.entity';
 import { Account, AccountType, AccountSubType } from '../accounts/entities/account.entity';
@@ -93,6 +94,8 @@ export class ImportService {
     private holdingsRepository: Repository<Holding>,
     @Inject(forwardRef(() => NetWorthService))
     private netWorthService: NetWorthService,
+    @Inject(forwardRef(() => SecurityPriceService))
+    private securityPriceService: SecurityPriceService,
   ) {}
 
   /**
@@ -1138,6 +1141,17 @@ export class ImportService {
       );
     } finally {
       await queryRunner.release();
+    }
+
+    // For investment imports, backfill historical security prices before recalculating net worth
+    if (isQifInvestment) {
+      try {
+        this.logger.log('Post-import: backfilling historical security prices');
+        await this.securityPriceService.backfillHistoricalPrices();
+        this.logger.log('Post-import: historical price backfill complete');
+      } catch (err) {
+        this.logger.warn(`Post-import historical price backfill failed: ${err.message}`);
+      }
     }
 
     // Trigger net worth recalculation for all affected accounts (fire-and-forget)
