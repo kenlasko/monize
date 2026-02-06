@@ -27,8 +27,8 @@ services:
   # Backend API (NestJS)
   backend:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/Dockerfile
       target: development
     container_name: moneymate-backend
     restart: unless-stopped
@@ -48,6 +48,7 @@ services:
       PUBLIC_APP_URL: ${PUBLIC_APP_URL:-http://localhost:3001}
     volumes:
       - ./backend:/app
+      - ./database/schema.sql:/app/schema.sql:ro
       - /app/node_modules
       - /app/dist
     ports:

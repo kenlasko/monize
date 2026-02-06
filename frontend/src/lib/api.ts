@@ -27,18 +27,28 @@ apiClient.interceptors.request.use(
 );
 
 // Response interceptor to handle errors
+let isLoggingOut = false;
 apiClient.interceptors.response.use(
   (response) => response,
-  (error: AxiosError) => {
-    if (error.response?.status === 401) {
+  async (error: AxiosError) => {
+    if (error.response?.status === 401 && !isLoggingOut) {
+      isLoggingOut = true;
       // Token expired or invalid, logout user
       const { logout } = useAuthStore.getState();
       logout();
+
+      // Call backend to clear the httpOnly cookie
+      try {
+        await axios.post('/api/v1/auth/logout', {}, { withCredentials: true });
+      } catch (_) {
+        // Ignore errors - backend may be unreachable
+      }
 
       // Redirect to login if not already there
       if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
         window.location.href = '/login';
       }
+      isLoggingOut = false;
     }
 
     return Promise.reject(error);

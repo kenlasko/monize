@@ -23,8 +23,8 @@ services:
   # Backend API (NestJS)
   backend:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/Dockerfile
       target: production
     container_name: moneymate-backend
     restart: unless-stopped

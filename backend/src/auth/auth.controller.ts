@@ -193,11 +193,9 @@ export class AuthController {
   }
 
   @Post('logout')
-  @UseGuards(AuthGuard('jwt'))
-  @ApiBearerAuth()
   @ApiOperation({ summary: 'Logout current user' })
   async logout(@Res() res: Response) {
-    // Clear the auth cookie
+    // Clear the auth cookie - no auth guard needed so logout works even with invalid/expired tokens
     res.clearCookie('auth_token');
     res.json({ message: 'Logged out successfully' });
   }

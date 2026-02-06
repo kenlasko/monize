@@ -1,4 +1,4 @@
--- Personal Finance Management System - Database Schema
+-- MoneyMate - Database Schema
 -- PostgreSQL Schema for Microsoft Money replacement
 
 -- Extensions
@@ -432,54 +432,9 @@ CREATE TRIGGER update_investment_transactions_updated_at BEFORE UPDATE ON invest
 CREATE TRIGGER update_user_preferences_updated_at BEFORE UPDATE ON user_preferences FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_custom_reports_updated_at BEFORE UPDATE ON custom_reports FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
--- Function to update account balance
--- VOID transactions do not affect account balance
-CREATE OR REPLACE FUNCTION update_account_balance()
-RETURNS TRIGGER AS $$
-BEGIN
-    IF TG_OP = 'INSERT' THEN
-        -- Only add to balance if not VOID
-        IF NEW.status IS NULL OR NEW.status != 'VOID' THEN
-            UPDATE accounts
-            SET current_balance = current_balance + NEW.amount
-            WHERE id = NEW.account_id;
-        END IF;
-    ELSIF TG_OP = 'UPDATE' THEN
-        -- Handle status changes to/from VOID
-        IF (OLD.status IS NULL OR OLD.status != 'VOID') AND (NEW.status = 'VOID') THEN
-            -- Changing TO VOID: remove amount from balance
-            UPDATE accounts
-            SET current_balance = current_balance - OLD.amount
-            WHERE id = OLD.account_id;
-        ELSIF (OLD.status = 'VOID') AND (NEW.status IS NULL OR NEW.status != 'VOID') THEN
-            -- Changing FROM VOID: add amount to balance
-            UPDATE accounts
-            SET current_balance = current_balance + NEW.amount
-            WHERE id = NEW.account_id;
-        ELSIF (OLD.status IS NULL OR OLD.status != 'VOID') AND (NEW.status IS NULL OR NEW.status != 'VOID') THEN
-            -- Normal update (not VOID): adjust balance for amount change
-            UPDATE accounts
-            SET current_balance = current_balance - OLD.amount + NEW.amount
-            WHERE id = NEW.account_id;
-        END IF;
-        -- If both old and new are VOID, no balance change needed
-    ELSIF TG_OP = 'DELETE' THEN
-        -- Only subtract from balance if not VOID
-        IF OLD.status IS NULL OR OLD.status != 'VOID' THEN
-            UPDATE accounts
-            SET current_balance = current_balance - OLD.amount
-            WHERE id = OLD.account_id;
-        END IF;
-    END IF;
-    RETURN NEW;
-END;
-$$ language 'plpgsql';
-
-CREATE TRIGGER transaction_balance_update
-    AFTER INSERT OR UPDATE OR DELETE ON transactions
-    FOR EACH ROW
-    WHEN (NEW.parent_transaction_id IS NULL OR OLD.parent_transaction_id IS NULL)
-    EXECUTE FUNCTION update_account_balance();
+-- NOTE: Account balances (current_balance) are managed by application code
+-- (accounts.service.ts, transactions.service.ts, import.service.ts) via updateBalance() calls.
+-- No database trigger is used for balance tracking.
 
 -- Insert default currencies
 INSERT INTO currencies (code, name, symbol, decimal_places) VALUES

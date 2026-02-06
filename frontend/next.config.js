@@ -5,16 +5,8 @@ const nextConfig = {
   env: {
     PUBLIC_APP_URL: process.env.PUBLIC_APP_URL || 'http://localhost:3000',
   },
-  async rewrites() {
-    // INTERNAL_API_URL: Backend URL for server-side (K8s service DNS or docker network)
-    const apiUrl = process.env.INTERNAL_API_URL || 'http://localhost:3001';
-    return [
-      {
-        source: '/api/:path*',
-        destination: `${apiUrl}/api/:path*`,
-      },
-    ];
-  },
+  // API proxying is handled by middleware.ts at runtime
+  // This allows INTERNAL_API_URL to be set at container start, not build time
 };
 
 module.exports = nextConfig;

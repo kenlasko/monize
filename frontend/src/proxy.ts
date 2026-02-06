@@ -2,18 +2,47 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 const publicPaths = ['/login', '/register', '/auth/callback'];
-const authPaths = ['/login', '/register'];
 
-export function proxy(request: NextRequest) {
-  const token = request.cookies.get('auth_token')?.value;
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Allow public paths
-  if (publicPaths.some(path => pathname.startsWith(path))) {
-    // If user is authenticated and tries to access auth pages, redirect to dashboard
-    if (token && authPaths.some(path => pathname.startsWith(path))) {
-      return NextResponse.redirect(new URL('/dashboard', request.url));
+  // Handle API proxying to backend
+  if (pathname.startsWith('/api/')) {
+    const apiUrl = process.env.INTERNAL_API_URL || 'http://localhost:3001';
+    const url = new URL(pathname + request.nextUrl.search, apiUrl);
+
+    const headers = new Headers(request.headers);
+    headers.delete('host');
+
+    try {
+      const response = await fetch(url.toString(), {
+        method: request.method,
+        headers,
+        body: request.body,
+        // @ts-expect-error - duplex is required for streaming bodies
+        duplex: 'half',
+      });
+
+      const responseHeaders = new Headers(response.headers);
+      responseHeaders.delete('transfer-encoding');
+
+      return new NextResponse(response.body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: responseHeaders,
+      });
+    } catch (error) {
+      console.error('API proxy error:', error);
+      return NextResponse.json({ error: 'Backend unavailable' }, { status: 502 });
     }
+  }
+
+  // Handle auth redirects for non-API routes
+  const token = request.cookies.get('auth_token')?.value;
+
+  // Allow public paths - don't redirect auth pages to dashboard based on cookie alone,
+  // as the cookie may reference a deleted/inactive user. Let the client handle redirects.
+  if (publicPaths.some(path => pathname.startsWith(path))) {
     return NextResponse.next();
   }
 
@@ -29,14 +58,9 @@ export function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public folder
-     */
-    '/((?!api|_next/static|_next/image|favicon.ico|.*\\..*|public).*)',
+    // Match API routes for proxying
+    '/api/:path*',
+    // Match all other paths except static files
+    '/((?!_next/static|_next/image|favicon.ico|.*\\..*|public).*)',
   ],
 };

@@ -14,8 +14,8 @@ EXPOSE 3000
 
 CMD ["npm", "run", "dev"]
 
-# Builder stage
-FROM node:20-alpine AS builder
+# Builder stage (uses slim/glibc to avoid Alpine musl SIGSEGV during next build)
+FROM node:20-slim AS builder
 
 WORKDIR /app
 
