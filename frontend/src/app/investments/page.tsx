@@ -346,7 +346,7 @@ export default function InvestmentsPage() {
                       </svg>
                       Refresh
                       {!refreshResult && lastPriceUpdate && (
-                        <span className="ml-1.5 text-xs text-gray-500 dark:text-gray-400">
+                        <span className="hidden sm:inline ml-1.5 text-xs text-gray-500 dark:text-gray-400">
                           ({formatRelativeTime(lastPriceUpdate)})
                         </span>
                       )}

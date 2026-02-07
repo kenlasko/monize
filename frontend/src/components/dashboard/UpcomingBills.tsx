@@ -111,8 +111,15 @@ export function UpcomingBills({ scheduledTransactions, isLoading }: UpcomingBill
                 {getDueDateLabel(bill.nextDueDate)}
               </span>
               <div>
-                <div className="font-medium text-gray-900 dark:text-gray-100">
-                  {bill.name}
+                <div className="flex items-center gap-1.5">
+                  <span className="font-medium text-gray-900 dark:text-gray-100">
+                    {bill.name}
+                  </span>
+                  {!bill.autoPost && (
+                    <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400 text-xs rounded font-medium" title="Requires manual posting">
+                      Manual
+                    </span>
+                  )}
                 </div>
                 {(bill.payeeName || bill.payee?.name) && (
                   <div className="text-xs text-gray-500 dark:text-gray-400">

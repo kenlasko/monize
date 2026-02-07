@@ -334,13 +334,19 @@ export function UpcomingBillsReport() {
                       <div
                         key={billIndex}
                         onClick={() => handleBillClick(bill)}
-                        className={`px-1 py-0.5 text-xs rounded truncate cursor-pointer ${
+                        className={`px-1 py-0.5 text-xs rounded truncate cursor-pointer flex items-center gap-0.5 ${
                           isExpense
                             ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
                             : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
                         } hover:opacity-80`}
+                        title={`${bill.name}${bill.autoPost ? ' (Auto)' : ' (Manual)'}`}
                       >
-                        {bill.name}
+                        {!bill.autoPost && (
+                          <svg className="h-3 w-3 flex-shrink-0 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 9v2m0 4h.01" />
+                          </svg>
+                        )}
+                        <span className="truncate">{bill.name}</span>
                       </div>
                     );
                   })}
@@ -378,6 +384,15 @@ export function UpcomingBillsReport() {
                     {bill.isOverdue && (
                       <span className="px-1.5 py-0.5 bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400 text-xs rounded">
                         Overdue
+                      </span>
+                    )}
+                    {bill.scheduledTransaction.autoPost ? (
+                      <span className="px-1.5 py-0.5 bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400 text-xs rounded" title="Auto-posts when due">
+                        Auto
+                      </span>
+                    ) : (
+                      <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400 text-xs rounded font-medium" title="Requires manual posting">
+                        Manual
                       </span>
                     )}
                   </div>
