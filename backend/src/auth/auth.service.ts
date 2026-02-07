@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ForbiddenException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DeepPartial } from 'typeorm';
@@ -100,7 +100,7 @@ export class AuthService {
     return null;
   }
 
-  async findOrCreateOidcUser(userInfo: Record<string, unknown>) {
+  async findOrCreateOidcUser(userInfo: Record<string, unknown>, registrationEnabled = true) {
     // Standard OIDC claims
     const sub = userInfo.sub as string;
     const email = userInfo.email as string | undefined;
@@ -147,6 +147,9 @@ export class AuthService {
       }
 
       if (!user) {
+        if (!registrationEnabled) {
+          throw new ForbiddenException('New account registration is disabled.');
+        }
         // Create new user (no existing account found)
         // Use trusted email if verified, otherwise store raw email but don't link accounts
         const userData: DeepPartial<User> = {
@@ -158,7 +161,25 @@ export class AuthService {
         };
         user = this.usersRepository.create(userData);
 
-        await this.usersRepository.save(user);
+        try {
+          await this.usersRepository.save(user);
+        } catch (err: any) {
+          // Handle duplicate email: link OIDC to the existing account
+          if (err.code === '23505' && email) {
+            const existingUser = await this.usersRepository.findOne({
+              where: { email },
+            });
+            if (existingUser) {
+              existingUser.oidcSubject = sub;
+              await this.usersRepository.save(existingUser);
+              user = existingUser;
+            } else {
+              throw err;
+            }
+          } else {
+            throw err;
+          }
+        }
       }
     } else {
       // Update user info if it has changed (but don't overwrite with null)

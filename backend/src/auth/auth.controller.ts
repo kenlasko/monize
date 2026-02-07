@@ -27,6 +27,7 @@ import { LoginDto } from './dto/login.dto';
 export class AuthController {
   private readonly logger = new Logger(AuthController.name);
   private localAuthEnabled: boolean;
+  private registrationEnabled: boolean;
 
   constructor(
     private authService: AuthService,
@@ -36,6 +37,8 @@ export class AuthController {
     // Default to true if not explicitly set to 'false'
     const localAuthSetting = this.configService.get<string>('LOCAL_AUTH_ENABLED', 'true');
     this.localAuthEnabled = localAuthSetting.toLowerCase() !== 'false';
+    const registrationSetting = this.configService.get<string>('REGISTRATION_ENABLED', 'true');
+    this.registrationEnabled = registrationSetting.toLowerCase() !== 'false';
   }
 
   @Post('register')
@@ -47,6 +50,9 @@ export class AuthController {
   async register(@Body() registerDto: RegisterDto, @Res() res: Response) {
     if (!this.localAuthEnabled) {
       throw new ForbiddenException('Local authentication is disabled. Please use OIDC to sign in.');
+    }
+    if (!this.registrationEnabled) {
+      throw new ForbiddenException('New account registration is disabled.');
     }
     const result = await this.authService.register(registerDto);
 
@@ -145,7 +151,7 @@ export class AuthController {
       const userInfo = await this.oidcService.getUserInfo(tokenSet.access_token);
 
       // Find or create user
-      const user = await this.authService.findOrCreateOidcUser(userInfo);
+      const user = await this.authService.findOrCreateOidcUser(userInfo, this.registrationEnabled);
 
       // Generate our JWT token
       const token = this.authService.generateToken(user);
@@ -181,6 +187,7 @@ export class AuthController {
     return {
       local: this.localAuthEnabled,
       oidc: this.oidcService.enabled,
+      registration: this.registrationEnabled,
     };
   }
 

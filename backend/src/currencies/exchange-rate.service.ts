@@ -438,6 +438,19 @@ export class ExchangeRateService implements OnModuleInit {
     for (const [pairKey, cutoffDate] of pairEarliest.entries()) {
       const [from, to] = pairKey.split('->');
 
+      // Skip if we already have historical rates for this pair
+      const existingRates = await this.dataSource.query(
+        `SELECT COUNT(*)::INT AS count FROM exchange_rates
+         WHERE from_currency = $1 AND to_currency = $2`,
+        [from, to],
+      );
+
+      if (existingRates[0]?.count > 0) {
+        results.push({ pair: `${from}/${to}`, success: true, ratesLoaded: 0 });
+        successful++;
+        continue;
+      }
+
       const rates = await this.fetchYahooHistoricalRates(from, to);
 
       if (!rates || rates.length === 0) {

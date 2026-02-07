@@ -35,7 +35,7 @@ export default function RegisterPage() {
   const router = useRouter();
   const { login } = useAuthStore();
   const [isLoading, setIsLoading] = useState(false);
-  const [authMethods, setAuthMethods] = useState<AuthMethods>({ local: true, oidc: false });
+  const [authMethods, setAuthMethods] = useState<AuthMethods>({ local: true, oidc: false, registration: true });
   const [isLoadingMethods, setIsLoadingMethods] = useState(true);
 
   useEffect(() => {
@@ -43,8 +43,8 @@ export default function RegisterPage() {
       try {
         const methods = await authApi.getAuthMethods();
         setAuthMethods(methods);
-        // Redirect to login if local auth is disabled
-        if (!methods.local) {
+        // Redirect to login if local auth or registration is disabled
+        if (!methods.local || !methods.registration) {
           router.replace('/login');
         }
       } catch (error) {
@@ -85,7 +85,7 @@ export default function RegisterPage() {
     authApi.initiateOidc();
   };
 
-  if (isLoadingMethods || !authMethods.local) {
+  if (isLoadingMethods || !authMethods.local || !authMethods.registration) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
         <div className="text-gray-500 dark:text-gray-400">Loading...</div>
@@ -190,9 +190,14 @@ export default function RegisterPage() {
                   <svg
                     className="w-5 h-5 mr-2"
                     viewBox="0 0 24 24"
-                    fill="currentColor"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
                   >
-                    <path d="M12.545,10.239v3.821h5.445c-0.712,2.315-2.647,3.972-5.445,3.972c-3.332,0-6.033-2.701-6.033-6.032s2.701-6.032,6.033-6.032c1.498,0,2.866,0.549,3.921,1.453l2.814-2.814C17.503,2.988,15.139,2,12.545,2C7.021,2,2.543,6.477,2.543,12s4.478,10,10.002,10c8.396,0,10.249-7.85,9.426-11.748L12.545,10.239z" />
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                   </svg>
                   Sign up with SSO
                 </Button>

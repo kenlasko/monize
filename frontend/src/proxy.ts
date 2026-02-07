@@ -23,6 +23,7 @@ export async function proxy(request: NextRequest) {
         method: request.method,
         headers,
         body: request.body,
+        redirect: 'manual',
         // @ts-expect-error - duplex is required for streaming bodies
         duplex: 'half',
       });

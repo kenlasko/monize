@@ -4,6 +4,7 @@ import { LoginCredentials, RegisterData, AuthResponse } from '@/types/auth';
 export interface AuthMethods {
   local: boolean;
   oidc: boolean;
+  registration: boolean;
 }
 
 export const authApi = {
