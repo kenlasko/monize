@@ -627,24 +627,33 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
               allowCustomValue={true}
               error={errors.payeeName?.message}
             />
-            <div className="flex items-end space-x-2">
-              <div className="flex-1">
-                <Combobox
-                  label="Category"
-                  placeholder="Select or create category..."
-                  options={categoryOptions}
-                  value={selectedCategoryId}
-                  initialDisplayValue={transaction?.category?.name || ''}
-                  onChange={handleCategoryChange}
-                  onCreateNew={handleCategoryCreate}
-                  allowCustomValue={true}
-                  error={errors.categoryId?.message}
-                />
+            <div>
+              <div className="flex items-end sm:space-x-2">
+                <div className="flex-1">
+                  <Combobox
+                    label="Category"
+                    placeholder="Select or create category..."
+                    options={categoryOptions}
+                    value={selectedCategoryId}
+                    initialDisplayValue={transaction?.category?.name || ''}
+                    onChange={handleCategoryChange}
+                    onCreateNew={handleCategoryCreate}
+                    allowCustomValue={true}
+                    error={errors.categoryId?.message}
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleModeChange('split')}
+                  className="hidden sm:block px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 whitespace-nowrap"
+                >
+                  Split Transaction
+                </button>
               </div>
               <button
                 type="button"
                 onClick={() => handleModeChange('split')}
-                className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 whitespace-nowrap"
+                className="sm:hidden mt-2 w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
               >
                 Split Transaction
               </button>

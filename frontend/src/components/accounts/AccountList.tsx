@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Account, AccountType } from '@/types/account';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { Modal } from '@/components/ui/Modal';
 import { accountsApi } from '@/lib/accounts';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
@@ -103,6 +104,59 @@ export function AccountList({ accounts, brokerageMarketValues, onEdit, onRefresh
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.density, JSON.stringify(density));
   }, [density]);
+
+  // Long-press handling for context menu on mobile
+  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+  const longPressTriggered = useRef(false);
+  const touchStartPos = useRef<{ x: number; y: number } | null>(null);
+  const LONG_PRESS_MOVE_THRESHOLD = 10;
+  const [contextAccount, setContextAccount] = useState<Account | null>(null);
+
+  const handleLongPressStart = useCallback((account: Account, e?: React.TouchEvent) => {
+    if (e?.touches?.[0]) {
+      touchStartPos.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    } else {
+      touchStartPos.current = null;
+    }
+
+    longPressTriggered.current = false;
+    longPressTimer.current = setTimeout(() => {
+      longPressTriggered.current = true;
+      setContextAccount(account);
+    }, 750);
+  }, []);
+
+  const handleLongPressEnd = useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+    touchStartPos.current = null;
+  }, []);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (touchStartPos.current && longPressTimer.current && e.touches?.[0]) {
+      const deltaX = Math.abs(e.touches[0].clientX - touchStartPos.current.x);
+      const deltaY = Math.abs(e.touches[0].clientY - touchStartPos.current.y);
+      if (deltaX > LONG_PRESS_MOVE_THRESHOLD || deltaY > LONG_PRESS_MOVE_THRESHOLD) {
+        clearTimeout(longPressTimer.current);
+        longPressTimer.current = null;
+        touchStartPos.current = null;
+      }
+    }
+  }, []);
+
+  const handleRowClick = useCallback((account: Account) => {
+    if (longPressTriggered.current) {
+      longPressTriggered.current = false;
+      return;
+    }
+    if (account.accountSubType === 'INVESTMENT_BROKERAGE') {
+      router.push('/investments');
+    } else {
+      router.push(`/transactions?accountId=${account.id}`);
+    }
+  }, [router]);
 
   // Memoize padding classes based on density
   const cellPadding = useMemo(() => {
@@ -495,18 +549,28 @@ export function AccountList({ accounts, brokerageMarketValues, onEdit, onRefresh
                   <SortIcon field="status" />
                 </div>
               </th>
-              <th className={`${headerPadding} text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>
+              <th className={`${headerPadding} text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden min-[480px]:table-cell`}>
                 Actions
               </th>
             </tr>
           </thead>
           <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
             {filteredAndSortedAccounts.map((account) => (
-            <tr key={account.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
-              <td className={`${cellPadding} ${account.isClosed ? 'opacity-50' : ''} max-w-[100px] sm:max-w-[180px] md:max-w-none`}>
-                <button
-                  onClick={() => handleViewTransactions(account)}
-                  className="text-left hover:underline w-full"
+            <tr
+              key={account.id}
+              className="hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer select-none"
+              onClick={() => handleRowClick(account)}
+              onMouseDown={() => handleLongPressStart(account)}
+              onMouseUp={handleLongPressEnd}
+              onMouseLeave={handleLongPressEnd}
+              onTouchStart={(e) => handleLongPressStart(account, e)}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleLongPressEnd}
+              onTouchCancel={handleLongPressEnd}
+            >
+              <td className={`${cellPadding} ${account.isClosed ? 'opacity-50' : ''} max-w-[50vw] sm:max-w-[180px] md:max-w-none`}>
+                <div
+                  className="text-left w-full"
                   title={account.linkedAccountId && (account.accountSubType === 'INVESTMENT_CASH' || account.accountSubType === 'INVESTMENT_BROKERAGE')
                     ? `${account.name} — Paired with ${accountNameMap.get(account.linkedAccountId) || 'linked account'}`
                     : account.name}
@@ -540,7 +604,7 @@ export function AccountList({ accounts, brokerageMarketValues, onEdit, onRefresh
                   {density === 'normal' && account.description && !account.linkedAccountId && (
                     <div className="text-sm text-gray-500 dark:text-gray-400 truncate">{account.description}</div>
                   )}
-                </button>
+                </div>
               </td>
               <td className={`${cellPadding} whitespace-nowrap ${account.isClosed ? 'opacity-50' : ''} hidden sm:table-cell`}>
                 <span
@@ -603,7 +667,7 @@ export function AccountList({ accounts, brokerageMarketValues, onEdit, onRefresh
                   {!account.isClosed ? 'Active' : 'Closed'}
                 </span>
               </td>
-              <td className={`${cellPadding} whitespace-nowrap text-right text-sm font-medium ${density === 'dense' ? 'space-x-1' : 'space-x-2'}`}>
+              <td className={`${cellPadding} whitespace-nowrap text-right text-sm font-medium ${density === 'dense' ? 'space-x-1' : 'space-x-2'} hidden min-[480px]:table-cell`} onClick={(e) => e.stopPropagation()}>
                 {!account.isClosed ? (
                   <>
                     {density === 'dense' ? (
@@ -751,6 +815,97 @@ export function AccountList({ accounts, brokerageMarketValues, onEdit, onRefresh
         </div>
       </div>
       )}
+
+      {/* Long-press Context Menu */}
+      <Modal isOpen={!!contextAccount} onClose={() => setContextAccount(null)} maxWidth="sm" className="p-0">
+        {contextAccount && (
+          <div>
+            <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 truncate">{contextAccount.name}</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                {contextAccount.accountSubType === 'INVESTMENT_BROKERAGE' ? 'Brokerage' :
+                 contextAccount.accountSubType === 'INVESTMENT_CASH' ? 'Inv. Cash' :
+                 formatAccountType(contextAccount.accountType)}
+                {contextAccount.isClosed ? ' — Closed' : ''}
+              </p>
+            </div>
+            <div className="py-2">
+              <button
+                onClick={() => { setContextAccount(null); handleViewTransactions(contextAccount); }}
+                className="w-full text-left px-5 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3"
+              >
+                <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+                View Transactions
+              </button>
+              {!contextAccount.isClosed && (
+                <>
+                  <button
+                    onClick={() => { setContextAccount(null); onEdit(contextAccount); }}
+                    className="w-full text-left px-5 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3"
+                  >
+                    <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    Edit Account
+                  </button>
+                  {contextAccount.accountSubType !== 'INVESTMENT_BROKERAGE' && (
+                    <button
+                      onClick={() => { setContextAccount(null); handleReconcile(contextAccount); }}
+                      className="w-full text-left px-5 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3"
+                    >
+                      <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      Reconcile
+                    </button>
+                  )}
+                  <button
+                    onClick={() => { setContextAccount(null); handleCloseClick(contextAccount); }}
+                    disabled={Number(contextAccount.currentBalance) !== 0}
+                    className={`w-full text-left px-5 py-3 text-sm flex items-center gap-3 ${
+                      Number(contextAccount.currentBalance) !== 0
+                        ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
+                        : 'text-orange-600 dark:text-orange-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                    </svg>
+                    Close Account
+                    {Number(contextAccount.currentBalance) !== 0 && (
+                      <span className="text-xs text-gray-400 dark:text-gray-500 ml-auto">Balance must be zero</span>
+                    )}
+                  </button>
+                </>
+              )}
+              {contextAccount.isClosed && (
+                <button
+                  onClick={() => { setContextAccount(null); handleReopen(contextAccount); }}
+                  className="w-full text-left px-5 py-3 text-sm text-blue-600 dark:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  Reopen Account
+                </button>
+              )}
+              {deletableAccounts.has(contextAccount.id) && (
+                <button
+                  onClick={() => { setContextAccount(null); handleDeleteClick(contextAccount); }}
+                  className="w-full text-left px-5 py-3 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  Delete Account
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+      </Modal>
 
       {/* Close Account Confirmation Dialog */}
       <ConfirmDialog

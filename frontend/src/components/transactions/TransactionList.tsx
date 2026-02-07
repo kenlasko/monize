@@ -495,7 +495,7 @@ export function TransactionList({
                 <td className={`${cellPadding} whitespace-nowrap text-center hidden sm:table-cell`}>
                   <button
                     onClick={(e) => { e.stopPropagation(); handleCycleStatus(transaction); }}
-                    className="text-sm"
+                    className="text-sm px-3 py-1.5 -my-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                     title="Click to cycle status"
                   >
                     {transaction.status === TransactionStatus.RECONCILED ? (
