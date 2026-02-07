@@ -377,11 +377,11 @@ export function TransactionList({
                 <td className={`${cellPadding} whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 ${isVoid ? 'line-through' : ''} hidden md:table-cell`}>
                   {transaction.account?.name || '-'}
                 </td>
-                <td className={`${cellPadding} max-w-[120px] sm:max-w-none`}>
+                <td className={`${cellPadding} max-w-[100px] sm:max-w-none overflow-hidden`}>
                   {transaction.payeeId && onPayeeClick ? (
                     <button
                       onClick={(e) => { e.stopPropagation(); onPayeeClick(transaction.payeeId!); }}
-                      className={`text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline truncate sm:max-w-[280px] text-left ${isVoid ? 'line-through' : ''}`}
+                      className={`text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline block truncate sm:max-w-[280px] text-left ${isVoid ? 'line-through' : ''}`}
                       title={`Edit payee: ${transaction.payeeName}`}
                     >
                       {transaction.payeeName || '-'}
