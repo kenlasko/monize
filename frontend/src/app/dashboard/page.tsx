@@ -64,7 +64,7 @@ export default function DashboardPage() {
   return (
     <PageLayout>
       <main className="px-4 sm:px-6 lg:px-12 py-6">
-        <div className="px-4 sm:px-0">
+        <div className="sm:px-0">
           {/* Welcome section */}
           <div className="mb-6">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">

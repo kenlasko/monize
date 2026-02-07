@@ -285,31 +285,41 @@ export function TransactionList({
   return (
     <div>
       {/* Density toggle and top pagination */}
-      <div className="flex items-center justify-between gap-1 p-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-        <div className="flex-1">
-          {currentPage !== undefined && totalPages !== undefined && totalPages > 1 && totalItems !== undefined && pageSize !== undefined && onPageChange && (
-            <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              totalItems={totalItems}
-              pageSize={pageSize}
-              onPageChange={onPageChange}
-              itemName="transactions"
-              minimal
-            />
-          )}
-        </div>
-        <button
-          onClick={cycleDensity}
-          className="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-          title="Toggle row density"
-        >
-          <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
-          {density === 'normal' ? 'Normal' : density === 'compact' ? 'Compact' : 'Dense'}
-        </button>
-      </div>
+      {(() => {
+        const densityButton = (
+          <button
+            onClick={cycleDensity}
+            className="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded flex-shrink-0"
+            title="Toggle row density"
+          >
+            <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+            {density === 'normal' ? 'Normal' : density === 'compact' ? 'Compact' : 'Dense'}
+          </button>
+        );
+        const showPagination = currentPage !== undefined && totalPages !== undefined && totalPages > 1 && totalItems !== undefined && pageSize !== undefined && onPageChange;
+        return (
+          <div className="flex items-center justify-end p-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+            {showPagination ? (
+              <div className="flex-1">
+                <Pagination
+                  currentPage={currentPage!}
+                  totalPages={totalPages!}
+                  totalItems={totalItems!}
+                  pageSize={pageSize!}
+                  onPageChange={onPageChange!}
+                  itemName="transactions"
+                  minimal
+                  infoRight={densityButton}
+                />
+              </div>
+            ) : (
+              densityButton
+            )}
+          </div>
+        );
+      })()}
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
           <thead className="bg-gray-50 dark:bg-gray-800">

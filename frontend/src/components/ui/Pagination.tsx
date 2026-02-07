@@ -10,6 +10,7 @@ interface PaginationProps {
   onPageChange: (page: number) => void;
   itemName?: string; // e.g., "transactions", "securities"
   minimal?: boolean; // Remove shadow and rounded styling for inline use
+  infoRight?: React.ReactNode; // Optional content to render right of "Showing X-Y of Z"
 }
 
 export function Pagination({
@@ -20,6 +21,7 @@ export function Pagination({
   onPageChange,
   itemName = 'items',
   minimal = false,
+  infoRight,
 }: PaginationProps) {
   const [inputPage, setInputPage] = useState(currentPage.toString());
 
@@ -71,14 +73,17 @@ export function Pagination({
   return (
     <div className={`flex flex-col sm:flex-row items-center justify-between gap-3 ${minimal ? 'bg-transparent' : 'bg-white dark:bg-gray-800 px-4 py-3 shadow dark:shadow-gray-700/50 rounded-lg'}`}>
       {/* Showing X-Y of Z */}
-      <div className="text-sm text-gray-700 dark:text-gray-300">
-        Showing{' '}
-        <span className="font-medium">{startItem}</span>
-        {' '}-{' '}
-        <span className="font-medium">{endItem}</span>
-        {' '}of{' '}
-        <span className="font-medium">{totalItems}</span>
-        {' '}{itemName}
+      <div className={`flex items-center ${infoRight ? 'justify-between w-full sm:w-auto' : ''} gap-2`}>
+        <div className="text-sm text-gray-700 dark:text-gray-300">
+          Showing{' '}
+          <span className="font-medium">{startItem}</span>
+          {' '}-{' '}
+          <span className="font-medium">{endItem}</span>
+          {' '}of{' '}
+          <span className="font-medium">{totalItems}</span>
+          {' '}{itemName}
+        </div>
+        {infoRight}
       </div>
 
       {/* Navigation controls */}
@@ -98,7 +103,7 @@ export function Pagination({
           <button
             onClick={() => goToPage(currentPage - 10)}
             disabled={currentPage <= 1}
-            className={buttonClass}
+            className={`${buttonClass} hidden sm:inline-flex`}
             title="Back 10 pages"
           >
             -10
@@ -149,7 +154,7 @@ export function Pagination({
           <button
             onClick={() => goToPage(currentPage + 10)}
             disabled={currentPage >= totalPages}
-            className={buttonClass}
+            className={`${buttonClass} hidden sm:inline-flex`}
             title="Forward 10 pages"
           >
             +10
