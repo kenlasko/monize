@@ -569,7 +569,7 @@ export default function BillsPage() {
 
         {/* View Toggle + Filter Tabs */}
         <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg mb-6">
-          <div className="border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+          <div className="border-b border-gray-200 dark:border-gray-700 flex flex-wrap items-center justify-between">
             <nav className="-mb-px flex">
               <button
                 onClick={() => setViewMode('list')}
@@ -593,7 +593,7 @@ export default function BillsPage() {
               </button>
             </nav>
             {viewMode === 'list' && (
-              <div className="flex pr-4 gap-2">
+              <div className="hidden sm:flex pr-4 gap-2">
                 {(['all', 'bills', 'deposits'] as const).map((type) => (
                   <button
                     key={type}
@@ -612,7 +612,7 @@ export default function BillsPage() {
               </div>
             )}
             {viewMode === 'calendar' && (
-              <div className="flex items-center gap-2 pr-4">
+              <div className="flex items-center gap-2 px-4 py-2 sm:py-0 sm:pr-4 sm:pl-0 w-full sm:w-auto justify-center sm:justify-end">
                 <button
                   onClick={() => setCalendarMonth(subMonths(calendarMonth, 1))}
                   className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"

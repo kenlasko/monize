@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useRef } from 'react';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { InvestmentTransaction } from '@/types/investment';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 // Density levels: 'normal' | 'compact' | 'dense'
 export type DensityLevel = 'normal' | 'compact' | 'dense';
@@ -75,6 +76,70 @@ export function InvestmentTransactionList({
   const { defaultCurrency } = useExchangeRates();
   const [localDensity, setLocalDensity] = useState<DensityLevel>('normal');
   const [showFilters, setShowFilters] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; transaction: InvestmentTransaction | null }>({ isOpen: false, transaction: null });
+
+  // Long-press handling for delete on mobile
+  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+  const longPressTriggered = useRef(false);
+  const touchStartPos = useRef<{ x: number; y: number } | null>(null);
+  const LONG_PRESS_MOVE_THRESHOLD = 10;
+
+  const handleLongPressStart = useCallback((transaction: InvestmentTransaction, e?: React.TouchEvent) => {
+    if (!onDelete) return;
+
+    if (e?.touches?.[0]) {
+      touchStartPos.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    } else {
+      touchStartPos.current = null;
+    }
+
+    longPressTriggered.current = false;
+    longPressTimer.current = setTimeout(() => {
+      longPressTriggered.current = true;
+      setDeleteConfirm({ isOpen: true, transaction });
+    }, 750);
+  }, [onDelete]);
+
+  const handleLongPressEnd = useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+    touchStartPos.current = null;
+  }, []);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (touchStartPos.current && longPressTimer.current && e.touches?.[0]) {
+      const deltaX = Math.abs(e.touches[0].clientX - touchStartPos.current.x);
+      const deltaY = Math.abs(e.touches[0].clientY - touchStartPos.current.y);
+      if (deltaX > LONG_PRESS_MOVE_THRESHOLD || deltaY > LONG_PRESS_MOVE_THRESHOLD) {
+        clearTimeout(longPressTimer.current);
+        longPressTimer.current = null;
+        touchStartPos.current = null;
+      }
+    }
+  }, []);
+
+  const handleRowClick = useCallback((transaction: InvestmentTransaction) => {
+    if (longPressTriggered.current) {
+      longPressTriggered.current = false;
+      return;
+    }
+    if (onEdit) {
+      onEdit(transaction);
+    }
+  }, [onEdit]);
+
+  const handleDeleteConfirm = useCallback(() => {
+    if (deleteConfirm.transaction && onDelete) {
+      onDelete(deleteConfirm.transaction.id);
+    }
+    setDeleteConfirm({ isOpen: false, transaction: null });
+  }, [deleteConfirm.transaction, onDelete]);
+
+  const handleDeleteCancel = useCallback(() => {
+    setDeleteConfirm({ isOpen: false, transaction: null });
+  }, []);
 
   // Check if any filters are active
   const hasActiveFilters = filters && (filters.symbol || filters.action || filters.startDate || filters.endDate);
@@ -174,7 +239,7 @@ export function InvestmentTransactionList({
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 overflow-hidden">
-      <div className="p-6 pb-0 flex justify-between items-center">
+      <div className="p-6 pb-0 flex flex-wrap justify-between items-center gap-2">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
           Recent Transactions
           {hasActiveFilters && (
@@ -189,7 +254,8 @@ export function InvestmentTransactionList({
             onClick={onNewTransaction}
             className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
           >
-            + New Transaction
+            <span className="sm:hidden">+ New</span>
+            <span className="hidden sm:inline">+ New Transaction</span>
           </button>
         )}
         {onFiltersChange && (
@@ -307,17 +373,17 @@ export function InvestmentTransactionList({
               <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>
                 Symbol
               </th>
-              <th className={`${headerPadding} text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>
+              <th className={`${headerPadding} text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden sm:table-cell`}>
                 Shares
               </th>
-              <th className={`${headerPadding} text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>
+              <th className={`${headerPadding} text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden md:table-cell`}>
                 Price
               </th>
               <th className={`${headerPadding} text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>
                 Total
               </th>
               {(onDelete || onEdit) && (
-                <th className={`${headerPadding} text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>
+                <th className={`${headerPadding} text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden min-[480px]:table-cell`}>
                   Actions
                 </th>
               )}
@@ -333,7 +399,15 @@ export function InvestmentTransactionList({
               return (
                 <tr
                   key={tx.id}
-                  className={`hover:bg-gray-50 dark:hover:bg-gray-700/30 ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-gray-800/50' : ''}`}
+                  onClick={() => handleRowClick(tx)}
+                  onMouseDown={() => handleLongPressStart(tx)}
+                  onMouseUp={handleLongPressEnd}
+                  onMouseLeave={handleLongPressEnd}
+                  onTouchStart={(e) => handleLongPressStart(tx, e)}
+                  onTouchMove={handleTouchMove}
+                  onTouchEnd={handleLongPressEnd}
+                  onTouchCancel={handleLongPressEnd}
+                  className={`hover:bg-gray-50 dark:hover:bg-gray-700/30 ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-gray-800/50' : ''} ${onEdit ? 'cursor-pointer' : ''}`}
                 >
                   <td className={`${cellPadding} whitespace-nowrap text-sm text-gray-900 dark:text-gray-100`}>
                     {formatDate(tx.transactionDate)}
@@ -353,10 +427,10 @@ export function InvestmentTransactionList({
                       </div>
                     )}
                   </td>
-                  <td className={`${cellPadding} whitespace-nowrap text-right text-sm text-gray-900 dark:text-gray-100`}>
+                  <td className={`${cellPadding} whitespace-nowrap text-right text-sm text-gray-900 dark:text-gray-100 hidden sm:table-cell`}>
                     {formatQuantity(tx.quantity ?? 0)}
                   </td>
-                  <td className={`${cellPadding} whitespace-nowrap text-right text-sm text-gray-900 dark:text-gray-100`}>
+                  <td className={`${cellPadding} whitespace-nowrap text-right text-sm text-gray-900 dark:text-gray-100 hidden md:table-cell`}>
                     {formatCurrency(tx.price ?? 0, tx.security?.currencyCode)}
                     {tx.security?.currencyCode && tx.security.currencyCode !== defaultCurrency && (
                       <span className="ml-1">{tx.security.currencyCode}</span>
@@ -369,10 +443,10 @@ export function InvestmentTransactionList({
                     )}
                   </td>
                   {(onDelete || onEdit) && (
-                    <td className={`${cellPadding} whitespace-nowrap text-right text-sm space-x-3`}>
+                    <td className={`${cellPadding} whitespace-nowrap text-right text-sm space-x-3 hidden min-[480px]:table-cell`}>
                       {onEdit && (
                         <button
-                          onClick={() => onEdit(tx)}
+                          onClick={(e) => { e.stopPropagation(); onEdit(tx); }}
                           className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
                         >
                           {density === 'dense' ? '✎' : 'Edit'}
@@ -380,7 +454,7 @@ export function InvestmentTransactionList({
                       )}
                       {onDelete && (
                         <button
-                          onClick={() => onDelete(tx.id)}
+                          onClick={(e) => { e.stopPropagation(); setDeleteConfirm({ isOpen: true, transaction: tx }); }}
                           className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
                         >
                           {density === 'dense' ? '✕' : 'Delete'}
@@ -394,6 +468,20 @@ export function InvestmentTransactionList({
           </tbody>
         </table>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={deleteConfirm.isOpen}
+        title="Delete Transaction"
+        message={deleteConfirm.transaction
+          ? `Are you sure you want to delete this ${ACTION_LABELS[deleteConfirm.transaction.action]?.label || deleteConfirm.transaction.action} transaction${deleteConfirm.transaction.security ? ` for ${deleteConfirm.transaction.security.symbol}` : ''}?`
+          : 'Are you sure you want to delete this transaction?'}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="danger"
+        onConfirm={handleDeleteConfirm}
+        onCancel={handleDeleteCancel}
+      />
     </div>
   );
 }

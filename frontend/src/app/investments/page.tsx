@@ -310,7 +310,7 @@ export default function InvestmentsPage() {
             </div>
 
             {/* Account Filter and Actions */}
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <div className="w-64">
                 <MultiSelect
                   value={selectedAccountIds}

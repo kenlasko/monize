@@ -90,7 +90,7 @@ export function CashFlowForecastChart({
     return [
       { value: 'all', label: 'All Accounts' },
       ...accounts
-        .filter(a => !a.isClosed)
+        .filter(a => !a.isClosed && a.accountType !== 'ASSET' && a.accountSubType !== 'INVESTMENT_BROKERAGE')
         .sort((a, b) => a.name.localeCompare(b.name))
         .map(a => ({ value: a.id, label: a.name })),
     ];

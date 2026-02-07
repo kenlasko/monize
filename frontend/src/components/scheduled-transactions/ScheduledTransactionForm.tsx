@@ -422,9 +422,9 @@ export function ScheduledTransactionForm({
     label,
   }));
 
-  // Get available "to" accounts for transfers (exclude source account, closed accounts, and brokerage accounts)
+  // Get available "to" accounts for transfers (exclude source account, closed accounts, brokerage accounts, and asset accounts)
   const transferToAccountOptions = accounts
-    .filter(a => !a.isClosed && a.id !== watchedAccountId && a.accountSubType !== 'INVESTMENT_BROKERAGE')
+    .filter(a => !a.isClosed && a.id !== watchedAccountId && a.accountType !== 'ASSET' && a.accountSubType !== 'INVESTMENT_BROKERAGE')
     .sort((a, b) => a.name.localeCompare(b.name))
     .map(a => ({ value: a.id, label: a.name }));
 
@@ -491,7 +491,7 @@ export function ScheduledTransactionForm({
           options={[
             { value: '', label: 'Select account...' },
             ...accounts
-              .filter(a => !a.isClosed)
+              .filter(a => !a.isClosed && a.accountType !== 'ASSET' && a.accountSubType !== 'INVESTMENT_BROKERAGE')
               .sort((a, b) => a.name.localeCompare(b.name))
               .map((account) => ({
                 value: account.id,

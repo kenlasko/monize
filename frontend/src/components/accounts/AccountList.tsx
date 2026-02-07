@@ -584,7 +584,7 @@ export function AccountList({ accounts, brokerageMarketValues, onEdit, onRefresh
                         {'\u2248 '}{formatCurrencyBase(convertToDefault(Number(account.currentBalance) || 0, account.currencyCode), defaultCurrency)}
                       </div>
                     )}
-                    {account.creditLimit && (
+                    {density !== 'dense' && account.creditLimit && (
                       <div className="text-xs text-gray-500 dark:text-gray-400">
                         Limit: {formatCurrency(account.creditLimit, account.currencyCode)}
                       </div>
