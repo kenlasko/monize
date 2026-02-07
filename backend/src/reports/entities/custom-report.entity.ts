@@ -30,6 +30,7 @@ export enum GroupByType {
   NONE = 'NONE',
   CATEGORY = 'CATEGORY',
   PAYEE = 'PAYEE',
+  YEAR = 'YEAR',
   MONTH = 'MONTH',
   WEEK = 'WEEK',
   DAY = 'DAY',

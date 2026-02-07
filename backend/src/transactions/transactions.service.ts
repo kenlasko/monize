@@ -1336,6 +1336,8 @@ export class TransactionsService {
       exchangeRate = 1,
       toAmount: explicitToAmount,
       description,
+      payeeId,
+      payeeName: customPayeeName,
       referenceNumber,
       status = TransactionStatus.UNRECONCILED,
     } = createTransferDto;
@@ -1360,6 +1362,10 @@ export class TransactionsService {
       : Math.round(amount * exchangeRate * 10000) / 10000;
     const destinationCurrency = toCurrencyCode || fromCurrencyCode;
 
+    // Payee name: use custom name if provided, otherwise default to transfer description
+    const fromPayeeName = customPayeeName || `Transfer to ${toAccount.name}`;
+    const toPayeeName = customPayeeName || `Transfer from ${fromAccount.name}`;
+
     // Create the withdrawal transaction (from account - negative amount)
     const fromTransaction = this.transactionsRepository.create({
       userId,
@@ -1372,7 +1378,8 @@ export class TransactionsService {
       referenceNumber,
       status,
       isTransfer: true,
-      payeeName: `Transfer to ${toAccount.name}`,
+      payeeId: payeeId || null,
+      payeeName: fromPayeeName,
     });
 
     // Create the deposit transaction (to account - positive amount)
@@ -1387,7 +1394,8 @@ export class TransactionsService {
       referenceNumber,
       status,
       isTransfer: true,
-      payeeName: `Transfer from ${fromAccount.name}`,
+      payeeId: payeeId || null,
+      payeeName: toPayeeName,
     });
 
     // Save both transactions
@@ -1605,14 +1613,16 @@ export class TransactionsService {
     if (updateDto.referenceNumber !== undefined) fromUpdateData.referenceNumber = updateDto.referenceNumber ?? null;
     if (updateDto.status !== undefined) fromUpdateData.status = updateDto.status;
     if (updateDto.fromCurrencyCode) fromUpdateData.currencyCode = updateDto.fromCurrencyCode;
+    if (updateDto.payeeId !== undefined) fromUpdateData.payeeId = updateDto.payeeId || null;
+    if (updateDto.payeeName !== undefined) fromUpdateData.payeeName = updateDto.payeeName || null;
 
     // Handle account change for from transaction
     if (updateDto.fromAccountId && updateDto.fromAccountId !== oldFromAccountId) {
       fromUpdateData.accountId = updateDto.fromAccountId;
     }
 
-    // Update payeeName if toAccount changed
-    if (updateDto.toAccountId && updateDto.toAccountId !== oldToAccountId) {
+    // Update payeeName if toAccount changed (only if no custom payee provided)
+    if (updateDto.toAccountId && updateDto.toAccountId !== oldToAccountId && updateDto.payeeName === undefined) {
       fromUpdateData.payeeName = `Transfer to ${newToAccount.name}`;
       if (updateDto.description === undefined) {
         fromUpdateData.description = `Transfer to ${newToAccount.name}`;
@@ -1632,14 +1642,16 @@ export class TransactionsService {
     if (updateDto.status !== undefined) toUpdateData.status = updateDto.status;
     if (updateDto.toCurrencyCode) toUpdateData.currencyCode = updateDto.toCurrencyCode;
     if (updateDto.exchangeRate) toUpdateData.exchangeRate = updateDto.exchangeRate;
+    if (updateDto.payeeId !== undefined) toUpdateData.payeeId = updateDto.payeeId || null;
+    if (updateDto.payeeName !== undefined) toUpdateData.payeeName = updateDto.payeeName || null;
 
     // Handle account change for to transaction
     if (updateDto.toAccountId && updateDto.toAccountId !== oldToAccountId) {
       toUpdateData.accountId = updateDto.toAccountId;
     }
 
-    // Update payeeName if fromAccount changed
-    if (updateDto.fromAccountId && updateDto.fromAccountId !== oldFromAccountId) {
+    // Update payeeName if fromAccount changed (only if no custom payee provided)
+    if (updateDto.fromAccountId && updateDto.fromAccountId !== oldFromAccountId && updateDto.payeeName === undefined) {
       toUpdateData.payeeName = `Transfer from ${newFromAccount.name}`;
       if (updateDto.description === undefined) {
         toUpdateData.description = `Transfer from ${newFromAccount.name}`;

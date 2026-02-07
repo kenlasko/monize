@@ -9,6 +9,7 @@ import {
   MetricType,
   DirectionFilter,
   ReportConfig,
+  ReportFilters,
   TableColumn,
   SortDirection,
 } from './entities/custom-report.entity';
@@ -110,12 +111,12 @@ export class ReportsService {
 
     // Replace config if provided (full replacement so cleared fields take effect)
     if (dto.config) {
-      report.config = dto.config;
+      report.config = { ...report.config, ...dto.config };
     }
 
     // Replace filters if provided (full replacement so cleared filters take effect)
     if (dto.filters) {
-      report.filters = dto.filters;
+      report.filters = dto.filters as ReportFilters;
     }
 
     return this.reportsRepository.save(report);
@@ -400,6 +401,8 @@ export class ReportsService {
         return this.aggregateByCategory(transactions, metric, categoryMap);
       case GroupByType.PAYEE:
         return this.aggregateByPayee(transactions, metric, payeeMap);
+      case GroupByType.YEAR:
+        return this.aggregateByTime(transactions, metric, 'year');
       case GroupByType.MONTH:
         return this.aggregateByTime(transactions, metric, 'month');
       case GroupByType.WEEK:
@@ -568,7 +571,7 @@ export class ReportsService {
   private aggregateByTime(
     transactions: Transaction[],
     metric: MetricType,
-    period: 'month' | 'week' | 'day',
+    period: 'year' | 'month' | 'week' | 'day',
   ): AggregatedDataPoint[] {
     const dataMap = new Map<string, { sum: number; count: number; label: string }>();
 
@@ -578,6 +581,10 @@ export class ReportsService {
       let label: string;
 
       switch (period) {
+        case 'year':
+          key = format(startOfYear(date), 'yyyy');
+          label = format(date, 'yyyy');
+          break;
         case 'month':
           key = format(startOfMonth(date), 'yyyy-MM');
           label = format(date, 'MMM yyyy');

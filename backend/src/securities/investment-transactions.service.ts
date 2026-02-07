@@ -257,9 +257,8 @@ export class InvestmentTransactionsService {
       case InvestmentAction.DIVIDEND:
       case InvestmentAction.INTEREST:
       case InvestmentAction.CAPITAL_GAIN:
-        // Total = amount received (no quantity/price needed)
-        // These should be passed in as a single amount
-        return (quantity || 0) * (price || 1); // Use price as amount if quantity is 1
+        // Total = amount received (quantity defaults to 1 so price acts as the amount)
+        return (quantity || 1) * (price || 0);
 
       case InvestmentAction.ADD_SHARES:
       case InvestmentAction.REMOVE_SHARES:

@@ -1,37 +1,29 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { createLogger } from '@/lib/logger';
 
 const logger = createLogger('LocalStorage');
 
 /**
  * Hook that persists state to localStorage
- * Handles SSR by only accessing localStorage on the client
+ * Reads synchronously from localStorage on mount to avoid stale-default race conditions
  */
 export function useLocalStorage<T>(
   key: string,
   initialValue: T
 ): [T, (value: T | ((prev: T) => T)) => void] {
-  // State to store the value
-  // Initialize with initialValue, will be updated from localStorage in useEffect
-  const [storedValue, setStoredValue] = useState<T>(initialValue);
-  const [isHydrated, setIsHydrated] = useState(false);
-
-  // Load from localStorage on mount (client-side only)
-  useEffect(() => {
+  const [storedValue, setStoredValue] = useState<T>(() => {
+    if (typeof window === 'undefined') return initialValue;
     try {
       const item = window.localStorage.getItem(key);
-      if (item !== null) {
-        setStoredValue(JSON.parse(item));
-      }
+      return item !== null ? JSON.parse(item) : initialValue;
     } catch (error) {
       logger.warn(`Error reading localStorage key "${key}":`, error);
+      return initialValue;
     }
-    setIsHydrated(true);
-  }, [key]);
+  });
 
-  // Update localStorage when value changes (after hydration)
   const setValue = useCallback(
     (value: T | ((prev: T) => T)) => {
       setStoredValue((prev) => {

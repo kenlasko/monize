@@ -133,6 +133,14 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
     }
     return undefined;
   });
+  // Transfer payee (optional)
+  const [transferPayeeId, setTransferPayeeId] = useState<string>(
+    transaction?.isTransfer ? (transaction.payeeId || '') : '',
+  );
+  const [transferPayeeName, setTransferPayeeName] = useState<string>(
+    transaction?.isTransfer ? (transaction.payeeName || '') : '',
+  );
+
   // Note: CurrencyInput components manage their own display state internally
 
   const {
@@ -467,6 +475,8 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
           description: data.description,
           referenceNumber: data.referenceNumber,
           status: data.status,
+          payeeId: transferPayeeId || undefined,
+          payeeName: transferPayeeName || undefined,
         };
 
         // Include target amount for cross-currency transfers
@@ -775,13 +785,14 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
                 { value: '', label: 'Select account...' },
                 ...accounts
                   .filter(account =>
-                    !account.isClosed &&
-                    account.accountSubType !== 'INVESTMENT_BROKERAGE'
+                    account.accountSubType !== 'INVESTMENT_BROKERAGE' &&
+                    (!account.isClosed || account.id === watchedAccountId)
                   )
                   .sort((a, b) => a.name.localeCompare(b.name))
                   .map(account => ({
                     value: account.id,
-                    label: `${account.name} (${account.currencyCode})`,
+                    label: `${account.name} (${account.currencyCode})${account.isClosed ? ' (Closed)' : ''}`,
+                    disabled: account.isClosed && account.id !== watchedAccountId,
                   })
                 ),
               ]}
@@ -798,14 +809,15 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
                 { value: '', label: 'Select destination account...' },
                 ...accounts
                   .filter(account =>
-                    !account.isClosed &&
                     account.id !== watchedAccountId &&
-                    account.accountSubType !== 'INVESTMENT_BROKERAGE'
+                    account.accountSubType !== 'INVESTMENT_BROKERAGE' &&
+                    (!account.isClosed || account.id === transferToAccountId)
                   )
                   .sort((a, b) => a.name.localeCompare(b.name))
                   .map(account => ({
                     value: account.id,
-                    label: `${account.name} (${account.currencyCode})`,
+                    label: `${account.name} (${account.currencyCode})${account.isClosed ? ' (Closed)' : ''}`,
+                    disabled: account.isClosed && account.id !== transferToAccountId,
                   })),
               ]}
             />
@@ -846,8 +858,23 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
             )}
           </div>
 
-          {/* Row 4: Reference Number */}
+          {/* Row 4: Payee and Reference Number */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Combobox
+              label="Payee (Optional)"
+              placeholder="Select or type payee name..."
+              options={payees.map(payee => ({
+                value: payee.id,
+                label: payee.name,
+              }))}
+              value={transferPayeeId}
+              initialDisplayValue={transferPayeeName}
+              onChange={(payeeId: string, payeeName: string) => {
+                setTransferPayeeId(payeeId);
+                setTransferPayeeName(payeeName);
+              }}
+              allowCustomValue={true}
+            />
             <Input
               label="Reference Number"
               type="text"

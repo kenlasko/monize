@@ -48,6 +48,17 @@ export class CreateTransferDto {
   @IsNumber({ maxDecimalPlaces: 4 })
   toAmount?: number;
 
+  @ApiPropertyOptional({ description: 'Payee ID (optional, links transfer to a payee)' })
+  @IsOptional()
+  @IsUUID()
+  payeeId?: string;
+
+  @ApiPropertyOptional({ description: 'Payee name (optional, displayed name for the transfer)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  payeeName?: string;
+
   @ApiPropertyOptional({ description: 'Transfer description/notes' })
   @IsOptional()
   @IsString()
