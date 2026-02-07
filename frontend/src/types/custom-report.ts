@@ -59,11 +59,25 @@ export enum SortDirection {
   DESC = 'DESC',
 }
 
+export type FilterField = 'account' | 'category' | 'payee' | 'text';
+
+export interface FilterCondition {
+  field: FilterField;
+  value: string; // UUID for entity fields, search string for text
+}
+
+export interface FilterGroup {
+  conditions: FilterCondition[]; // Combined with OR
+}
+
 export interface ReportFilters {
+  // Legacy (kept for backward compat, ignored when filterGroups present)
   accountIds?: string[];
   categoryIds?: string[];
   payeeIds?: string[];
   searchText?: string;
+  // Advanced
+  filterGroups?: FilterGroup[];
 }
 
 export interface ReportConfig {

@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Brackets } from 'typeorm';
 import {
   CustomReport,
   ReportViewType,
@@ -277,35 +277,37 @@ export class ReportsService {
       .andWhere('transaction.transactionDate <= :endDate', { endDate })
       .andWhere("transaction.status != 'VOID'");
 
-    // Apply account filter
-    if (filters.accountIds && filters.accountIds.length > 0) {
-      queryBuilder.andWhere('transaction.accountId IN (:...accountIds)', {
-        accountIds: filters.accountIds,
-      });
-    }
+    // Advanced filter groups take precedence over legacy filters
+    if (filters.filterGroups && filters.filterGroups.length > 0) {
+      this.applyFilterGroups(queryBuilder, filters.filterGroups);
+    } else {
+      // Legacy simple filters (backward compat)
+      if (filters.accountIds && filters.accountIds.length > 0) {
+        queryBuilder.andWhere('transaction.accountId IN (:...accountIds)', {
+          accountIds: filters.accountIds,
+        });
+      }
 
-    // Apply category filter (includes split categories)
-    if (filters.categoryIds && filters.categoryIds.length > 0) {
-      queryBuilder.andWhere(
-        '(transaction.categoryId IN (:...categoryIds) OR splits.categoryId IN (:...categoryIds))',
-        { categoryIds: filters.categoryIds },
-      );
-    }
+      if (filters.categoryIds && filters.categoryIds.length > 0) {
+        queryBuilder.andWhere(
+          '(transaction.categoryId IN (:...categoryIds) OR splits.categoryId IN (:...categoryIds))',
+          { categoryIds: filters.categoryIds },
+        );
+      }
 
-    // Apply payee filter
-    if (filters.payeeIds && filters.payeeIds.length > 0) {
-      queryBuilder.andWhere('transaction.payeeId IN (:...payeeIds)', {
-        payeeIds: filters.payeeIds,
-      });
-    }
+      if (filters.payeeIds && filters.payeeIds.length > 0) {
+        queryBuilder.andWhere('transaction.payeeId IN (:...payeeIds)', {
+          payeeIds: filters.payeeIds,
+        });
+      }
 
-    // Apply text search filter
-    if (filters.searchText && filters.searchText.trim()) {
-      const searchTerm = `%${filters.searchText.trim().toLowerCase()}%`;
-      queryBuilder.andWhere(
-        '(LOWER(transaction.payeeName) LIKE :searchTerm OR LOWER(transaction.description) LIKE :searchTerm)',
-        { searchTerm },
-      );
+      if (filters.searchText && filters.searchText.trim()) {
+        const searchTerm = `%${filters.searchText.trim().toLowerCase()}%`;
+        queryBuilder.andWhere(
+          '(LOWER(transaction.payeeName) LIKE :searchTerm OR LOWER(transaction.description) LIKE :searchTerm)',
+          { searchTerm },
+        );
+      }
     }
 
     // Filter by direction
@@ -321,6 +323,67 @@ export class ReportsService {
     }
 
     return queryBuilder.orderBy('transaction.transactionDate', 'ASC').getMany();
+  }
+
+  private applyFilterGroups(
+    queryBuilder: ReturnType<Repository<Transaction>['createQueryBuilder']>,
+    filterGroups: Array<{ conditions: Array<{ field: string; value: string }> }>,
+  ): void {
+    for (let gi = 0; gi < filterGroups.length; gi++) {
+      const group = filterGroups[gi];
+      if (!group.conditions || group.conditions.length === 0) continue;
+
+      queryBuilder.andWhere(
+        new Brackets((qb) => {
+          for (let ci = 0; ci < group.conditions.length; ci++) {
+            const condition = group.conditions[ci];
+            const param = `p_g${gi}_c${ci}`;
+            const method = ci === 0 ? 'where' : 'orWhere';
+
+            switch (condition.field) {
+              case 'account':
+                qb[method](`transaction.accountId = :${param}`, {
+                  [param]: condition.value,
+                });
+                break;
+              case 'category':
+                qb[method](
+                  new Brackets((inner) => {
+                    inner
+                      .where(`transaction.categoryId = :${param}`, {
+                        [param]: condition.value,
+                      })
+                      .orWhere(`splits.categoryId = :${param}`, {
+                        [param]: condition.value,
+                      });
+                  }),
+                );
+                break;
+              case 'payee':
+                qb[method](`transaction.payeeId = :${param}`, {
+                  [param]: condition.value,
+                });
+                break;
+              case 'text': {
+                const textParam = `%${condition.value.trim().toLowerCase()}%`;
+                qb[method](
+                  new Brackets((inner) => {
+                    inner
+                      .where(`LOWER(transaction.payeeName) LIKE :${param}`, {
+                        [param]: textParam,
+                      })
+                      .orWhere(`LOWER(transaction.description) LIKE :${param}`, {
+                        [param]: textParam,
+                      });
+                  }),
+                );
+                break;
+              }
+            }
+          }
+        }),
+      );
+    }
   }
 
   private aggregateData(

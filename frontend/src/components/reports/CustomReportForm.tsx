@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/Button';
 import { IconPicker } from '@/components/ui/IconPicker';
 import { ColorPicker } from '@/components/ui/ColorPicker';
 import { MultiSelect } from '@/components/ui/MultiSelect';
-import { getCategorySelectOptions } from '@/lib/categoryUtils';
+import { FilterBuilder } from '@/components/reports/FilterBuilder';
 import {
   CustomReport,
   CreateCustomReportData,
@@ -21,6 +21,7 @@ import {
   DirectionFilter,
   TableColumn,
   SortDirection,
+  FilterGroup,
   VIEW_TYPE_LABELS,
   TIMEFRAME_LABELS,
   GROUP_BY_LABELS,
@@ -39,6 +40,41 @@ import { createLogger } from '@/lib/logger';
 
 const logger = createLogger('CustomReportForm');
 
+/** Convert legacy flat filters to the new filterGroups format */
+function convertLegacyFilters(filters: CustomReport['filters']): FilterGroup[] {
+  // If already has filterGroups, use them
+  if (filters.filterGroups && filters.filterGroups.length > 0) {
+    return filters.filterGroups;
+  }
+
+  const groups: FilterGroup[] = [];
+
+  // Each legacy filter type becomes one group with conditions ORed
+  const accountConditions = (filters.accountIds || []).map((id) => ({
+    field: 'account' as const,
+    value: id,
+  }));
+  if (accountConditions.length > 0) groups.push({ conditions: accountConditions });
+
+  const categoryConditions = (filters.categoryIds || []).map((id) => ({
+    field: 'category' as const,
+    value: id,
+  }));
+  if (categoryConditions.length > 0) groups.push({ conditions: categoryConditions });
+
+  const payeeConditions = (filters.payeeIds || []).map((id) => ({
+    field: 'payee' as const,
+    value: id,
+  }));
+  if (payeeConditions.length > 0) groups.push({ conditions: payeeConditions });
+
+  if (filters.searchText?.trim()) {
+    groups.push({ conditions: [{ field: 'text', value: filters.searchText.trim() }] });
+  }
+
+  return groups;
+}
+
 const customReportSchema = z.object({
   name: z.string().min(1, 'Name is required').max(255),
   description: z.string().optional(),
@@ -52,10 +88,6 @@ const customReportSchema = z.object({
   includeTransfers: z.boolean(),
   customStartDate: z.string().optional(),
   customEndDate: z.string().optional(),
-  accountIds: z.array(z.string()).optional(),
-  categoryIds: z.array(z.string()).optional(),
-  payeeIds: z.array(z.string()).optional(),
-  searchText: z.string().optional(),
   isFavourite: z.boolean().optional(),
   tableColumns: z.array(z.nativeEnum(TableColumn)).optional(),
   sortBy: z.nativeEnum(TableColumn).optional().nullable(),
@@ -75,6 +107,9 @@ export function CustomReportForm({ report, onSubmit, onCancel }: CustomReportFor
   const [categories, setCategories] = useState<Category[]>([]);
   const [payees, setPayees] = useState<Payee[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
+  const [filterGroups, setFilterGroups] = useState<FilterGroup[]>(
+    report ? convertLegacyFilters(report.filters) : [],
+  );
 
   const {
     register,
@@ -98,10 +133,6 @@ export function CustomReportForm({ report, onSubmit, onCancel }: CustomReportFor
           includeTransfers: report.config.includeTransfers,
           customStartDate: report.config.customStartDate || '',
           customEndDate: report.config.customEndDate || '',
-          accountIds: report.filters.accountIds || [],
-          categoryIds: report.filters.categoryIds || [],
-          payeeIds: report.filters.payeeIds || [],
-          searchText: report.filters.searchText || '',
           isFavourite: report.isFavourite,
           tableColumns: report.config.tableColumns || [TableColumn.LABEL, TableColumn.VALUE, TableColumn.COUNT, TableColumn.PERCENTAGE],
           sortBy: report.config.sortBy || null,
@@ -120,10 +151,6 @@ export function CustomReportForm({ report, onSubmit, onCancel }: CustomReportFor
           includeTransfers: false,
           customStartDate: '',
           customEndDate: '',
-          accountIds: [],
-          categoryIds: [],
-          payeeIds: [],
-          searchText: '',
           isFavourite: false,
           tableColumns: [TableColumn.LABEL, TableColumn.VALUE, TableColumn.COUNT, TableColumn.PERCENTAGE],
           sortBy: null,
@@ -164,10 +191,7 @@ export function CustomReportForm({ report, onSubmit, onCancel }: CustomReportFor
       timeframeType: data.timeframeType,
       groupBy: data.groupBy,
       filters: {
-        accountIds: data.accountIds?.length ? data.accountIds : [],
-        categoryIds: data.categoryIds?.length ? data.categoryIds : [],
-        payeeIds: data.payeeIds?.length ? data.payeeIds : [],
-        searchText: data.searchText?.trim() || '',
+        filterGroups: filterGroups.filter((g) => g.conditions.length > 0 && g.conditions.every((c) => c.value)),
       },
       config: {
         metric: data.metric,
@@ -227,13 +251,6 @@ export function CustomReportForm({ report, onSubmit, onCancel }: CustomReportFor
     value,
     label,
   }));
-
-  const accountOptions = accounts.map((a) => ({ value: a.id, label: a.name }));
-  const categoryOptions = getCategorySelectOptions(categories, {
-    includeUncategorized: true,
-    includeTransfers: true,
-  });
-  const payeeOptions = payees.map((p) => ({ value: p.id, label: p.name }));
 
   if (isLoadingData) {
     return (
@@ -384,55 +401,13 @@ export function CustomReportForm({ report, onSubmit, onCancel }: CustomReportFor
         <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
           Filters (Optional)
         </h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-          Leave empty to include all data
-        </p>
-        <div className="grid grid-cols-1 gap-4">
-          <Input
-            label="Search Text"
-            {...register('searchText')}
-            placeholder="Search in payee, description, or memo..."
-          />
-          <Controller
-            name="accountIds"
-            control={control}
-            render={({ field }) => (
-              <MultiSelect
-                label="Accounts"
-                options={accountOptions}
-                value={field.value || []}
-                onChange={field.onChange}
-                placeholder="All accounts"
-              />
-            )}
-          />
-          <Controller
-            name="categoryIds"
-            control={control}
-            render={({ field }) => (
-              <MultiSelect
-                label="Categories"
-                options={categoryOptions}
-                value={field.value || []}
-                onChange={field.onChange}
-                placeholder="All categories"
-              />
-            )}
-          />
-          <Controller
-            name="payeeIds"
-            control={control}
-            render={({ field }) => (
-              <MultiSelect
-                label="Payees"
-                options={payeeOptions}
-                value={field.value || []}
-                onChange={field.onChange}
-                placeholder="All payees"
-              />
-            )}
-          />
-        </div>
+        <FilterBuilder
+          value={filterGroups}
+          onChange={setFilterGroups}
+          accounts={accounts}
+          categories={categories}
+          payees={payees}
+        />
       </div>
 
       {/* Aggregation Options Section */}

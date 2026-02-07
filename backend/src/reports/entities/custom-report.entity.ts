@@ -69,12 +69,25 @@ export enum SortDirection {
   DESC = 'DESC',
 }
 
+// Filter group types
+export type FilterField = 'account' | 'category' | 'payee' | 'text';
+
+export interface FilterCondition {
+  field: FilterField;
+  value: string;
+}
+
+export interface FilterGroup {
+  conditions: FilterCondition[];
+}
+
 // JSON column interfaces
 export interface ReportFilters {
   accountIds?: string[];
   categoryIds?: string[];
   payeeIds?: string[];
   searchText?: string;
+  filterGroups?: FilterGroup[];
 }
 
 export interface ReportConfig {

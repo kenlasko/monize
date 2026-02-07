@@ -6,6 +6,7 @@ import {
   IsArray,
   IsUUID,
   IsObject,
+  IsIn,
   MaxLength,
   ValidateNested,
   IsDateString,
@@ -24,29 +25,54 @@ import {
   SortDirection,
 } from '../entities/custom-report.entity';
 
+export class FilterConditionDto {
+  @ApiProperty({ description: 'Field to filter on', enum: ['account', 'category', 'payee', 'text'] })
+  @IsIn(['account', 'category', 'payee', 'text'])
+  field: 'account' | 'category' | 'payee' | 'text';
+
+  @ApiProperty({ description: 'Value to match (UUID for entity fields, search string for text)' })
+  @IsString()
+  value: string;
+}
+
+export class FilterGroupDto {
+  @ApiProperty({ description: 'Conditions combined with OR', type: [FilterConditionDto] })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => FilterConditionDto)
+  conditions: FilterConditionDto[];
+}
+
 export class ReportFiltersDto {
-  @ApiPropertyOptional({ description: 'Account IDs to filter by' })
+  @ApiPropertyOptional({ description: 'Account IDs to filter by (legacy)' })
   @IsOptional()
   @IsArray()
   @IsUUID('4', { each: true })
   accountIds?: string[];
 
-  @ApiPropertyOptional({ description: 'Category IDs to filter by' })
+  @ApiPropertyOptional({ description: 'Category IDs to filter by (legacy)' })
   @IsOptional()
   @IsArray()
   @IsUUID('4', { each: true })
   categoryIds?: string[];
 
-  @ApiPropertyOptional({ description: 'Payee IDs to filter by' })
+  @ApiPropertyOptional({ description: 'Payee IDs to filter by (legacy)' })
   @IsOptional()
   @IsArray()
   @IsUUID('4', { each: true })
   payeeIds?: string[];
 
-  @ApiPropertyOptional({ description: 'Text to search in payee, description, or memo' })
+  @ApiPropertyOptional({ description: 'Text to search in payee, description, or memo (legacy)' })
   @IsOptional()
   @IsString()
   searchText?: string;
+
+  @ApiPropertyOptional({ description: 'Advanced filter groups (AND between groups, OR within)', type: [FilterGroupDto] })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => FilterGroupDto)
+  filterGroups?: FilterGroupDto[];
 }
 
 export class ReportConfigDto {
