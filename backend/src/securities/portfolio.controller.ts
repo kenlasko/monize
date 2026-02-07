@@ -62,6 +62,19 @@ export class PortfolioController {
     return this.portfolioService.getAssetAllocation(req.user.id, ids);
   }
 
+  @Get('top-movers')
+  @ApiOperation({
+    summary: 'Get top daily movers among held securities',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Top movers retrieved successfully',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  getTopMovers(@Request() req) {
+    return this.portfolioService.getTopMovers(req.user.id);
+  }
+
   @Get('accounts')
   @ApiOperation({
     summary: 'Get all investment accounts for the user',

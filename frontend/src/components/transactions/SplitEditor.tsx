@@ -190,6 +190,26 @@ export function SplitEditor({
     onChange(newSplits);
   };
 
+  // Distribute remaining amount equally across all splits
+  const distributeRemaining = () => {
+    if (localSplits.length === 0 || Math.abs(remaining) < 0.01) return;
+
+    const perSplit = Math.round((remaining / localSplits.length) * 100) / 100;
+    const newSplits = localSplits.map((split, index) => {
+      const currentAmount = Number(split.amount) || 0;
+      if (index === localSplits.length - 1) {
+        // Last split absorbs rounding remainder
+        const distributed = Math.round(perSplit * (localSplits.length - 1) * 100) / 100;
+        const lastPortion = Math.round((remaining - distributed) * 100) / 100;
+        return { ...split, amount: Math.round((currentAmount + lastPortion) * 100) / 100 };
+      }
+      return { ...split, amount: Math.round((currentAmount + perSplit) * 100) / 100 };
+    });
+
+    setLocalSplits(newSplits);
+    onChange(newSplits);
+  };
+
   // Set the transaction total to the sum of splits
   const setTotalToSplitsSum = () => {
     if (onTransactionAmountChange && splitsTotal !== 0) {
@@ -199,21 +219,171 @@ export function SplitEditor({
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center gap-2">
         <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Split Details</h4>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={distributeEvenly}
-          disabled={disabled || localSplits.length === 0}
-        >
-          Distribute Evenly
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={distributeRemaining}
+            disabled={disabled || localSplits.length === 0 || Math.abs(remaining) < 0.01}
+            title="Add the remaining amount equally to each split"
+          >
+            Distribute Remaining
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={distributeEvenly}
+            disabled={disabled || localSplits.length === 0}
+          >
+            Distribute Evenly
+          </Button>
+        </div>
       </div>
 
-      {/* Splits Table */}
-      <div className="border dark:border-gray-700 rounded-lg overflow-visible">
+      {/* Splits — Mobile Card Layout */}
+      <div className="md:hidden border dark:border-gray-700 rounded-lg overflow-visible">
+        <div className="divide-y divide-gray-200 dark:divide-gray-700">
+          {localSplits.map((split, index) => {
+            const currentCategory = split.categoryId
+              ? categories.find(c => c.id === split.categoryId)
+              : null;
+
+            return (
+              <div key={split.id} className="p-3 space-y-2 bg-white dark:bg-gray-900">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Split {index + 1}</span>
+                  <div className="flex space-x-1">
+                    <button
+                      type="button"
+                      onClick={() => addRemainingToSplit(index)}
+                      disabled={disabled || Math.abs(remaining) < 0.01}
+                      className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                      title={Math.abs(remaining) < 0.01 ? 'No unassigned amount' : `Add remaining to this split`}
+                    >
+                      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => removeSplit(index)}
+                      disabled={disabled || localSplits.length <= 2}
+                      className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                      title={localSplits.length <= 2 ? 'Minimum 2 splits required' : 'Remove split'}
+                    >
+                      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                {supportsTransfers && (
+                  <Select
+                    options={[
+                      { value: 'category', label: 'Category' },
+                      { value: 'transfer', label: 'Transfer' },
+                    ]}
+                    value={split.splitType}
+                    onChange={(e) => handleSplitChange(index, 'splitType', e.target.value)}
+                    disabled={disabled}
+                    className="w-full"
+                  />
+                )}
+                {split.splitType === 'category' || !supportsTransfers ? (
+                  <Combobox
+                    placeholder="Select category..."
+                    options={categoryOptions}
+                    value={split.categoryId || ''}
+                    initialDisplayValue={currentCategory?.name || ''}
+                    onChange={(categoryId) =>
+                      handleSplitChange(index, 'categoryId', categoryId || undefined)
+                    }
+                    disabled={disabled}
+                  />
+                ) : (
+                  <Select
+                    options={[
+                      { value: '', label: 'Select account...' },
+                      ...accountOptions,
+                    ]}
+                    value={split.transferAccountId || ''}
+                    onChange={(e) =>
+                      handleSplitChange(index, 'transferAccountId', e.target.value || undefined)
+                    }
+                    disabled={disabled}
+                    className="w-full"
+                  />
+                )}
+                <div className="grid grid-cols-2 gap-2">
+                  <CurrencyInput
+                    prefix={currencySymbol}
+                    value={split.amount}
+                    onChange={(value) => handleSplitChange(index, 'amount', roundToCents(value ?? 0))}
+                    disabled={disabled}
+                    className="w-full"
+                  />
+                  <Input
+                    type="text"
+                    value={split.memo || ''}
+                    onChange={(e) => handleSplitChange(index, 'memo', e.target.value)}
+                    placeholder="Memo"
+                    disabled={disabled}
+                    className="w-full"
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        {/* Add Split + Total */}
+        <div className="bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+          <button
+            type="button"
+            onClick={addSplit}
+            disabled={disabled}
+            className="w-full px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-1"
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            <span>Add Split</span>
+          </button>
+          <div className="px-3 py-2 border-t border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-between flex-wrap gap-1">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Total</span>
+                <span className={`font-medium ${isBalanced ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                  {currencySymbol}{splitsTotal.toFixed(2)}
+                </span>
+                {isBalanced ? (
+                  <span className="text-xs text-green-600 dark:text-green-400">Balanced</span>
+                ) : (
+                  <span className="text-xs text-red-600 dark:text-red-400">
+                    Remaining: {currencySymbol}{remaining.toFixed(2)}
+                  </span>
+                )}
+              </div>
+              {!isBalanced && onTransactionAmountChange && splitsTotal !== 0 && (
+                <button
+                  type="button"
+                  onClick={setTotalToSplitsSum}
+                  disabled={disabled}
+                  className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline disabled:opacity-50 whitespace-nowrap"
+                >
+                  Set total to {currencySymbol}{splitsTotal.toFixed(2)}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Splits — Desktop Table Layout */}
+      <div className="hidden md:block border dark:border-gray-700 rounded-lg overflow-visible">
         <table className="w-full table-fixed divide-y divide-gray-200 dark:divide-gray-700">
           <thead className="bg-gray-50 dark:bg-gray-800 rounded-t-lg">
             <tr>

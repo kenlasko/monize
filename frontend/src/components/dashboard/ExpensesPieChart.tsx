@@ -95,9 +95,22 @@ export function ExpensesPieChart({
     }
 
     // Convert to array and sort by value descending
-    const data = Array.from(categoryMap.values())
-      .sort((a, b) => b.value - a.value)
-      .slice(0, 20); // Top 20
+    const sorted = Array.from(categoryMap.values())
+      .sort((a, b) => b.value - a.value);
+
+    const MAX_SLICES = 11;
+    let data: typeof sorted;
+
+    if (sorted.length > MAX_SLICES) {
+      const top = sorted.slice(0, MAX_SLICES);
+      const otherTotal = sorted.slice(MAX_SLICES).reduce((sum, item) => sum + item.value, 0);
+      data = [
+        ...top,
+        { id: '', name: 'Other', value: otherTotal, colour: '#9ca3af' },
+      ];
+    } else {
+      data = sorted;
+    }
 
     // Assign colours to categories without one
     let colourIndex = 0;
@@ -191,7 +204,7 @@ export function ExpensesPieChart({
           </PieChart>
         </ResponsiveContainer>
       </div>
-      <div className="mt-4 grid grid-cols-2 gap-2">
+      <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-x-3 gap-y-1.5">
         {chartData.map((item, index) => (
           <button
             key={index}

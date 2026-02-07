@@ -116,7 +116,7 @@ export function UpcomingBills({ scheduledTransactions, isLoading }: UpcomingBill
                     {bill.name}
                   </span>
                   {!bill.autoPost && (
-                    <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400 text-xs rounded font-medium" title="Requires manual posting">
+                    <span className="px-1.5 py-0.5 bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400 text-xs rounded" title="Requires manual posting">
                       Manual
                     </span>
                   )}

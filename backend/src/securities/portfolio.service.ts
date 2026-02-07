@@ -7,6 +7,17 @@ import { Account, AccountType, AccountSubType } from '../accounts/entities/accou
 import { UserPreference } from '../users/entities/user-preference.entity';
 import { ExchangeRateService } from '../currencies/exchange-rate.service';
 
+export interface TopMover {
+  securityId: string;
+  symbol: string;
+  name: string;
+  currentPrice: number;
+  previousPrice: number;
+  dailyChange: number;
+  dailyChangePercent: number;
+  marketValue: number | null;
+}
+
 export interface HoldingWithMarketValue {
   id: string;
   accountId: string;
@@ -422,6 +433,102 @@ export class PortfolioService {
       holdingsByAccount,
       allocation,
     };
+  }
+
+  /**
+   * Get top movers (daily price changes) for held securities
+   */
+  async getTopMovers(userId: string): Promise<TopMover[]> {
+    // Get all open investment accounts
+    const accounts = await this.getInvestmentAccounts(userId);
+    const brokerageAccounts = accounts.filter(
+      (a) => a.accountSubType === AccountSubType.INVESTMENT_BROKERAGE,
+    );
+    const standaloneAccounts = accounts.filter(
+      (a) => a.accountSubType === null || a.accountSubType === undefined,
+    );
+    const holdingsAccountIds = [
+      ...brokerageAccounts.map((a) => a.id),
+      ...standaloneAccounts.map((a) => a.id),
+    ];
+
+    if (holdingsAccountIds.length === 0) return [];
+
+    // Get holdings with non-zero quantity
+    const holdings = await this.holdingsRepository.find({
+      where: { accountId: In(holdingsAccountIds) },
+      relations: ['security'],
+    });
+    const activeHoldings = holdings.filter((h) => Number(h.quantity) !== 0);
+    if (activeHoldings.length === 0) return [];
+
+    // Get unique security IDs
+    const securityIds = [...new Set(activeHoldings.map((h) => h.securityId))];
+
+    // Query the two most recent prices for each security using a lateral join
+    const priceRows: Array<{
+      security_id: string;
+      close_price: string;
+      rn: string;
+    }> = await this.securityPriceRepository.query(
+      `SELECT security_id, close_price, rn FROM (
+         SELECT security_id, close_price,
+                ROW_NUMBER() OVER (PARTITION BY security_id ORDER BY price_date DESC) as rn
+         FROM security_prices
+         WHERE security_id = ANY($1)
+       ) sub
+       WHERE rn <= 2
+       ORDER BY security_id, rn`,
+      [securityIds],
+    );
+
+    // Build a map: securityId -> [latestPrice, previousPrice]
+    const priceMap = new Map<string, number[]>();
+    for (const row of priceRows) {
+      const existing = priceMap.get(row.security_id) || [];
+      existing.push(Number(row.close_price));
+      priceMap.set(row.security_id, existing);
+    }
+
+    // Aggregate quantity per security (across accounts)
+    const quantityMap = new Map<string, number>();
+    for (const h of activeHoldings) {
+      const qty = quantityMap.get(h.securityId) || 0;
+      quantityMap.set(h.securityId, qty + Number(h.quantity));
+    }
+
+    // Build movers list
+    const movers: TopMover[] = [];
+    const securityLookup = new Map(activeHoldings.map((h) => [h.securityId, h.security]));
+
+    for (const securityId of securityIds) {
+      const prices = priceMap.get(securityId);
+      if (!prices || prices.length < 2) continue;
+
+      const [currentPrice, previousPrice] = prices;
+      if (previousPrice === 0) continue;
+
+      const dailyChange = currentPrice - previousPrice;
+      const dailyChangePercent = (dailyChange / previousPrice) * 100;
+      const security = securityLookup.get(securityId);
+      const totalQty = quantityMap.get(securityId) || 0;
+
+      movers.push({
+        securityId,
+        symbol: security?.symbol || 'Unknown',
+        name: security?.name || 'Unknown',
+        currentPrice,
+        previousPrice,
+        dailyChange,
+        dailyChangePercent,
+        marketValue: currentPrice * totalQty,
+      });
+    }
+
+    // Sort by absolute daily change percent descending
+    movers.sort((a, b) => Math.abs(b.dailyChangePercent) - Math.abs(a.dailyChangePercent));
+
+    return movers;
   }
 
   /**

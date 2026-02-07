@@ -115,8 +115,11 @@ export const CurrencyInput = forwardRef<HTMLInputElement, CurrencyInputProps>(
 
     const handleFocus = (e: FocusEvent<HTMLInputElement>) => {
       setIsFocused(true);
-      // Strip commas when focused for easier editing
-      setDisplayValue(prev => prev.replace(/,/g, ''));
+      // Strip commas when focused for easier editing, and clear if zero
+      setDisplayValue(prev => {
+        const stripped = prev.replace(/,/g, '');
+        return stripped === '0.00' || stripped === '0' ? '' : stripped;
+      });
       onFocus?.(e);
     };
 

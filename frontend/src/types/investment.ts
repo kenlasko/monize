@@ -125,6 +125,17 @@ export interface CreateInvestmentTransactionData {
   description?: string;
 }
 
+export interface TopMover {
+  securityId: string;
+  symbol: string;
+  name: string;
+  currentPrice: number;
+  previousPrice: number;
+  dailyChange: number;
+  dailyChangePercent: number;
+  marketValue: number | null;
+}
+
 export interface CreateSecurityData {
   symbol: string;
   name: string;

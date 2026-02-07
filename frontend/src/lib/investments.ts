@@ -9,6 +9,7 @@ import {
   Security,
   CreateSecurityData,
   PaginatedInvestmentTransactions,
+  TopMover,
 } from '@/types/investment';
 
 export const investmentsApi = {
@@ -31,6 +32,12 @@ export const investmentsApi = {
   // Get all investment accounts
   getInvestmentAccounts: async (): Promise<Account[]> => {
     const response = await apiClient.get<Account[]>('/portfolio/accounts');
+    return response.data;
+  },
+
+  // Get top movers (daily price changes)
+  getTopMovers: async (): Promise<TopMover[]> => {
+    const response = await apiClient.get<TopMover[]>('/portfolio/top-movers');
     return response.data;
   },
 
