@@ -252,6 +252,11 @@ export function CashFlowForecastChart({
         <div className="h-72" style={{ minHeight: 288 }}>
           <ResponsiveContainer width="100%" height="100%" minWidth={0}>
             <LineChart data={forecastData}>
+              <defs>
+                <filter id="minShadow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feDropShadow dx="0" dy="1" stdDeviation="2" floodOpacity="0.3" />
+                </filter>
+              </defs>
               <CartesianGrid
                 strokeDasharray="3 3"
                 stroke="#e5e7eb"
@@ -280,12 +285,67 @@ export function CashFlowForecastChart({
                 strokeDasharray="5 5"
                 strokeOpacity={0.5}
               />
+              {/* Reference line at minimum balance */}
+              {summary.minBalance !== summary.startingBalance && (
+                <ReferenceLine
+                  y={summary.minBalance}
+                  stroke={summary.minBalance < 0 ? '#ef4444' : '#f59e0b'}
+                  strokeDasharray="3 3"
+                  strokeOpacity={0.4}
+                />
+              )}
               <Line
                 type="monotone"
                 dataKey="balance"
                 stroke="#3b82f6"
                 strokeWidth={2}
-                dot={false}
+                dot={(props: any) => {
+                  const { cx, cy, payload } = props;
+                  if (payload.balance === summary.minBalance) {
+                    const color = summary.minBalance < 0 ? '#ef4444' : '#f59e0b';
+                    const label = formatCompactCurrency(summary.minBalance);
+                    const labelWidth = label.length * 7 + 14;
+                    const labelHeight = 22;
+                    const arrowSize = 5;
+                    const gap = 24;
+                    const bubbleBottom = cy - gap;
+                    const bubbleTop = bubbleBottom - arrowSize - labelHeight;
+                    return (
+                      <g key={`min-${props.index}`}>
+                        <circle cx={cx} cy={cy} r={5} fill={color} stroke="#fff" strokeWidth={2} />
+                        {/* Connector line from dot to arrow */}
+                        <line x1={cx} y1={cy - 5} x2={cx} y2={bubbleBottom} stroke={color} strokeWidth={1.5} strokeDasharray="3 2" />
+                        {/* Bubble */}
+                        <rect
+                          x={cx - labelWidth / 2}
+                          y={bubbleTop}
+                          width={labelWidth}
+                          height={labelHeight}
+                          rx={5}
+                          fill={color}
+                          filter="url(#minShadow)"
+                        />
+                        {/* Arrow */}
+                        <polygon
+                          points={`${cx - arrowSize},${bubbleTop + labelHeight} ${cx + arrowSize},${bubbleTop + labelHeight} ${cx},${bubbleBottom}`}
+                          fill={color}
+                        />
+                        <text
+                          x={cx}
+                          y={bubbleTop + labelHeight / 2}
+                          textAnchor="middle"
+                          dominantBaseline="central"
+                          fill="#fff"
+                          fontSize={11}
+                          fontWeight={600}
+                        >
+                          {label}
+                        </text>
+                      </g>
+                    );
+                  }
+                  return <circle key={`dot-${props.index}`} cx={cx} cy={cy} r={0} fill="none" />;
+                }}
                 activeDot={{ r: 6, fill: '#3b82f6' }}
               />
             </LineChart>

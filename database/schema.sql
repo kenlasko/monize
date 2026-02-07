@@ -373,6 +373,7 @@ CREATE TABLE user_preferences (
     notification_email BOOLEAN DEFAULT true,
     notification_browser BOOLEAN DEFAULT true,
     two_factor_enabled BOOLEAN DEFAULT false,
+    getting_started_dismissed BOOLEAN DEFAULT false,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

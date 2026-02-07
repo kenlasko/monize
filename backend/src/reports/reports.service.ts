@@ -108,14 +108,14 @@ export class ReportsService {
     if (dto.isFavourite !== undefined) report.isFavourite = dto.isFavourite;
     if (dto.sortOrder !== undefined) report.sortOrder = dto.sortOrder;
 
-    // Merge config if provided
+    // Replace config if provided (full replacement so cleared fields take effect)
     if (dto.config) {
-      report.config = { ...report.config, ...dto.config };
+      report.config = dto.config;
     }
 
-    // Merge filters if provided
+    // Replace filters if provided (full replacement so cleared filters take effect)
     if (dto.filters) {
-      report.filters = { ...report.filters, ...dto.filters };
+      report.filters = dto.filters;
     }
 
     return this.reportsRepository.save(report);

@@ -164,10 +164,10 @@ export function CustomReportForm({ report, onSubmit, onCancel }: CustomReportFor
       timeframeType: data.timeframeType,
       groupBy: data.groupBy,
       filters: {
-        accountIds: data.accountIds?.length ? data.accountIds : undefined,
-        categoryIds: data.categoryIds?.length ? data.categoryIds : undefined,
-        payeeIds: data.payeeIds?.length ? data.payeeIds : undefined,
-        searchText: data.searchText?.trim() || undefined,
+        accountIds: data.accountIds?.length ? data.accountIds : [],
+        categoryIds: data.categoryIds?.length ? data.categoryIds : [],
+        payeeIds: data.payeeIds?.length ? data.payeeIds : [],
+        searchText: data.searchText?.trim() || '',
       },
       config: {
         metric: data.metric,

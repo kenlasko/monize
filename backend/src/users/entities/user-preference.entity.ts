@@ -38,6 +38,9 @@ export class UserPreference {
   @Column({ name: 'two_factor_enabled', default: false })
   twoFactorEnabled: boolean;
 
+  @Column({ name: 'getting_started_dismissed', default: false })
+  gettingStartedDismissed: boolean;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

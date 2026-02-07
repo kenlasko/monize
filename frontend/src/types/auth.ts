@@ -45,6 +45,7 @@ export interface UserPreferences {
   notificationEmail: boolean;
   notificationBrowser: boolean;
   twoFactorEnabled: boolean;
+  gettingStartedDismissed: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -63,6 +64,7 @@ export interface UpdatePreferencesData {
   timezone?: string;
   notificationEmail?: boolean;
   notificationBrowser?: boolean;
+  gettingStartedDismissed?: boolean;
 }
 
 export interface ChangePasswordData {

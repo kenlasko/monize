@@ -44,4 +44,9 @@ export class UpdatePreferencesDto {
   @IsOptional()
   @IsBoolean()
   notificationBrowser?: boolean;
+
+  @ApiPropertyOptional({ description: 'Dismiss the Getting Started guide' })
+  @IsOptional()
+  @IsBoolean()
+  gettingStartedDismissed?: boolean;
 }

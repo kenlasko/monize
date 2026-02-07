@@ -7,6 +7,7 @@ import { FavouriteAccounts } from '@/components/dashboard/FavouriteAccounts';
 import { UpcomingBills } from '@/components/dashboard/UpcomingBills';
 import { ExpensesPieChart } from '@/components/dashboard/ExpensesPieChart';
 import { IncomeExpensesBarChart } from '@/components/dashboard/IncomeExpensesBarChart';
+import { GettingStarted } from '@/components/dashboard/GettingStarted';
 import { accountsApi } from '@/lib/accounts';
 import { transactionsApi } from '@/lib/transactions';
 import { categoriesApi } from '@/lib/categories';
@@ -74,6 +75,8 @@ export default function DashboardPage() {
               Here&apos;s your financial overview
             </p>
           </div>
+
+          <GettingStarted />
 
           {/* Reports Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">

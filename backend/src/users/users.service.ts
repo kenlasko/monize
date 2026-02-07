@@ -75,6 +75,7 @@ export class UsersService {
       preferences.notificationEmail = true;
       preferences.notificationBrowser = true;
       preferences.twoFactorEnabled = false;
+      preferences.gettingStartedDismissed = false;
       await this.preferencesRepository.save(preferences);
     }
 
@@ -115,6 +116,9 @@ export class UsersService {
     }
     if (dto.notificationBrowser !== undefined) {
       preferences.notificationBrowser = dto.notificationBrowser;
+    }
+    if (dto.gettingStartedDismissed !== undefined) {
+      preferences.gettingStartedDismissed = dto.gettingStartedDismissed;
     }
 
     return this.preferencesRepository.save(preferences);
