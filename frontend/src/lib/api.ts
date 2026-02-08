@@ -15,12 +15,16 @@ export const apiClient = axios.create({
   withCredentials: true, // Include cookies in cross-origin requests (for OIDC httpOnly cookie auth)
 });
 
-// Request interceptor to add auth token
+// Request interceptor to add auth token and CSRF token
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const token = Cookies.get('auth_token');
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
+    }
+    const csrfToken = Cookies.get('csrf_token');
+    if (csrfToken && config.headers) {
+      config.headers['X-CSRF-Token'] = csrfToken;
     }
     logger.debug(`${config.method?.toUpperCase()} ${config.url}`);
     return config;

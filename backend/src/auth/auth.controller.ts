@@ -29,6 +29,8 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 import { VerifyTotpDto } from './dto/verify-totp.dto';
 import { Setup2faDto } from './dto/setup-2fa.dto';
 import { passwordResetTemplate } from '../notifications/email-templates';
+import { SkipCsrf } from '../common/decorators/skip-csrf.decorator';
+import { generateCsrfToken, getCsrfCookieOptions } from '../common/csrf.util';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -37,6 +39,7 @@ export class AuthController {
   private localAuthEnabled: boolean;
   private registrationEnabled: boolean;
   private force2fa: boolean;
+  private isProduction: boolean;
 
   constructor(
     private authService: AuthService,
@@ -51,9 +54,11 @@ export class AuthController {
     this.registrationEnabled = registrationSetting.toLowerCase() !== 'false';
     const force2faSetting = this.configService.get<string>('FORCE_2FA', 'false');
     this.force2fa = force2faSetting.toLowerCase() === 'true';
+    this.isProduction = this.configService.get<string>('NODE_ENV') === 'production';
   }
 
   @Post('register')
+  @SkipCsrf()
   @UseGuards(ThrottlerGuard)
   @Throttle({ auth: { ttl: 900000, limit: 5 } }) // 5 attempts per 15 minutes
   @ApiOperation({ summary: 'Register a new user with local credentials' })
@@ -75,12 +80,14 @@ export class AuthController {
       sameSite: 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
+    res.cookie('csrf_token', generateCsrfToken(), getCsrfCookieOptions(this.isProduction));
 
     // Return user without token (token is in httpOnly cookie)
     res.json({ user: result.user });
   }
 
   @Post('login')
+  @SkipCsrf()
   @UseGuards(ThrottlerGuard)
   @Throttle({ auth: { ttl: 900000, limit: 5 } }) // 5 attempts per 15 minutes
   @ApiOperation({ summary: 'Login with local credentials' })
@@ -105,6 +112,7 @@ export class AuthController {
       sameSite: 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
+    res.cookie('csrf_token', generateCsrfToken(), getCsrfCookieOptions(this.isProduction));
 
     // Return user without token (token is in httpOnly cookie)
     res.json({ user: result.user });
@@ -181,6 +189,7 @@ export class AuthController {
         sameSite: 'lax',
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       });
+      res.cookie('csrf_token', generateCsrfToken(), getCsrfCookieOptions(this.isProduction));
 
       res.redirect(`${frontendUrl}/auth/callback?success=true`);
     } catch (error) {
@@ -221,6 +230,7 @@ export class AuthController {
   }
 
   @Post('forgot-password')
+  @SkipCsrf()
   @UseGuards(ThrottlerGuard)
   @Throttle({ auth: { ttl: 900000, limit: 3 } })
   @ApiOperation({ summary: 'Request password reset email' })
@@ -261,6 +271,7 @@ export class AuthController {
   }
 
   @Post('reset-password')
+  @SkipCsrf()
   @UseGuards(ThrottlerGuard)
   @Throttle({ auth: { ttl: 900000, limit: 5 } })
   @ApiOperation({ summary: 'Reset password using token' })
@@ -270,6 +281,7 @@ export class AuthController {
   }
 
   @Post('2fa/verify')
+  @SkipCsrf()
   @UseGuards(ThrottlerGuard)
   @Throttle({ auth: { ttl: 900000, limit: 5 } })
   @ApiOperation({ summary: 'Verify TOTP code to complete 2FA login' })
@@ -290,6 +302,7 @@ export class AuthController {
       sameSite: 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
+    res.cookie('csrf_token', generateCsrfToken(), getCsrfCookieOptions(this.isProduction));
 
     if (result.trustedDeviceToken) {
       res.cookie('trusted_device', result.trustedDeviceToken, {
@@ -382,10 +395,12 @@ export class AuthController {
   }
 
   @Post('logout')
+  @SkipCsrf()
   @ApiOperation({ summary: 'Logout current user' })
   async logout(@Res() res: Response) {
-    // Clear the auth cookie - no auth guard needed so logout works even with invalid/expired tokens
+    // Clear auth and CSRF cookies - no auth guard needed so logout works even with invalid/expired tokens
     res.clearCookie('auth_token');
+    res.clearCookie('csrf_token');
     res.json({ message: 'Logged out successfully' });
   }
 }
