@@ -134,7 +134,9 @@ export function ScheduledTransactionForm({
           payeeId: scheduledTransaction.payeeId || '',
           payeeName: scheduledTransaction.payeeName || '',
           categoryId: scheduledTransaction.categoryId || '',
-          amount: Math.round(Number(scheduledTransaction.amount) * 100) / 100,
+          amount: isScheduledTransfer(scheduledTransaction)
+            ? Math.abs(Math.round(Number(scheduledTransaction.amount) * 100) / 100)
+            : Math.round(Number(scheduledTransaction.amount) * 100) / 100,
           currencyCode: scheduledTransaction.currencyCode,
           description: scheduledTransaction.description || '',
           frequency: scheduledTransaction.frequency,
@@ -224,24 +226,26 @@ export function ScheduledTransactionForm({
     if (payeeId) {
       setValue('payeeId', payeeId, { shouldDirty: true, shouldValidate: true });
 
-      // Auto-fill category from payee's default category
-      const payee = payees.find((p) => p.id === payeeId);
-      if (payee?.defaultCategoryId && !selectedCategoryId) {
-        setSelectedCategoryId(payee.defaultCategoryId);
-        setValue('categoryId', payee.defaultCategoryId, {
-          shouldDirty: true,
-          shouldValidate: true,
-        });
+      // Auto-fill category from payee's default category (payment mode only)
+      if (transactionType === 'payment') {
+        const payee = payees.find((p) => p.id === payeeId);
+        if (payee?.defaultCategoryId && !selectedCategoryId) {
+          setSelectedCategoryId(payee.defaultCategoryId);
+          setValue('categoryId', payee.defaultCategoryId, {
+            shouldDirty: true,
+            shouldValidate: true,
+          });
 
-        // Adjust amount sign based on default category type
-        const category = categories.find((c) => c.id === payee.defaultCategoryId);
-        if (category && watchedAmount !== undefined && watchedAmount !== 0) {
-          const absAmount = Math.abs(watchedAmount);
-          const newAmount = category.isIncome ? absAmount : -absAmount;
-          if (newAmount !== watchedAmount) {
-            const rounded = roundToCents(newAmount);
-            setValue('amount', rounded, { shouldDirty: true, shouldValidate: true });
-            // CurrencyInput syncs display from value prop
+          // Adjust amount sign based on default category type
+          const category = categories.find((c) => c.id === payee.defaultCategoryId);
+          if (category && watchedAmount !== undefined && watchedAmount !== 0) {
+            const absAmount = Math.abs(watchedAmount);
+            const newAmount = category.isIncome ? absAmount : -absAmount;
+            if (newAmount !== watchedAmount) {
+              const rounded = roundToCents(newAmount);
+              setValue('amount', rounded, { shouldDirty: true, shouldValidate: true });
+              // CurrencyInput syncs display from value prop
+            }
           }
         }
       }
@@ -377,8 +381,6 @@ export function ScheduledTransactionForm({
           isTransfer: true,
           transferAccountId: transferToAccountId,
           categoryId: undefined,
-          payeeId: undefined,
-          payeeName: undefined,
           splits: undefined,
         };
       } else if (isSplit) {
@@ -453,14 +455,10 @@ export function ScheduledTransactionForm({
             setIsSplit(false);
             setSplits([]);
             setSelectedCategoryId('');
-            setSelectedPayeeId('');
             setValue('categoryId', '', { shouldDirty: true });
-            setValue('payeeId', undefined, { shouldDirty: true });
-            setValue('payeeName', '', { shouldDirty: true });
-            // Ensure amount is negative for transfers
-            if (watchedAmount > 0) {
-              const newAmount = -Math.abs(watchedAmount);
-              setValue('amount', newAmount, { shouldDirty: true });
+            // Show absolute amount for transfers (sign is applied on submit)
+            if (watchedAmount < 0) {
+              setValue('amount', Math.abs(watchedAmount), { shouldDirty: true });
             }
           }}
           className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
@@ -511,7 +509,7 @@ export function ScheduledTransactionForm({
         />
 
         {/* Transfer: To Account */}
-        {transactionType === 'transfer' ? (
+        {transactionType === 'transfer' && (
           <Select
             label="To Account"
             value={transferToAccountId}
@@ -522,31 +520,28 @@ export function ScheduledTransactionForm({
             ]}
             error={!transferToAccountId && watchedAccountId ? undefined : undefined}
           />
-        ) : (
-          /* Payment: Payee */
-          <Combobox
-            label="Payee"
-            placeholder="Select or type payee name..."
-            options={payees.map((payee) => ({
-              value: payee.id,
-              label: payee.name,
-              subtitle: payee.defaultCategory?.name,
-            }))}
-            value={selectedPayeeId}
-            initialDisplayValue={scheduledTransaction?.payeeName || ''}
-            onChange={handlePayeeChange}
-            onInputChange={handlePayeeSearch}
-            onCreateNew={handlePayeeCreate}
-            allowCustomValue={true}
-            error={errors.payeeName?.message}
-          />
         )}
 
-        {/* Transfer: Empty placeholder for grid alignment OR Payment: Category */}
-        {transactionType === 'transfer' ? (
-          <div /> /* Empty div for grid alignment */
-        ) : (
-          /* Payment: Category / Split Toggle */
+        {/* Payee (both payment and transfer) */}
+        <Combobox
+          label="Payee"
+          placeholder="Select or type payee name..."
+          options={payees.map((payee) => ({
+            value: payee.id,
+            label: payee.name,
+            subtitle: payee.defaultCategory?.name,
+          }))}
+          value={selectedPayeeId}
+          initialDisplayValue={scheduledTransaction?.payeeName || ''}
+          onChange={handlePayeeChange}
+          onInputChange={handlePayeeSearch}
+          onCreateNew={handlePayeeCreate}
+          allowCustomValue={true}
+          error={errors.payeeName?.message}
+        />
+
+        {/* Payment: Category / Split Toggle */}
+        {transactionType === 'payment' && (
           <div>
             <div className="flex items-center justify-between mb-1">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Category</label>

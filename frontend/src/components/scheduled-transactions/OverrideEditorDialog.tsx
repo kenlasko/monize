@@ -58,8 +58,9 @@ export function OverrideEditorDialog({
       }
 
       if (existingOverride) {
-        // Use override values
-        const amt = roundToCents(existingOverride.amount ?? scheduledTransaction.amount);
+        // Use override values (absolute value for transfers - sign is applied on save)
+        const rawAmt = roundToCents(existingOverride.amount ?? scheduledTransaction.amount);
+        const amt = scheduledTransaction.isTransfer ? Math.abs(rawAmt) : rawAmt;
         setAmount(amt);
         setCategoryId(existingOverride.categoryId ?? scheduledTransaction.categoryId ?? '');
         setDescription(existingOverride.description ?? scheduledTransaction.description ?? '');
@@ -75,8 +76,9 @@ export function OverrideEditorDialog({
           setSplits(createEmptySplits(amt));
         }
       } else {
-        // Use base transaction values
-        const amt = roundToCents(scheduledTransaction.amount);
+        // Use base transaction values (absolute value for transfers - sign is applied on save)
+        const rawAmt = roundToCents(scheduledTransaction.amount);
+        const amt = scheduledTransaction.isTransfer ? Math.abs(rawAmt) : rawAmt;
         setAmount(amt);
         setCategoryId(scheduledTransaction.categoryId ?? '');
         setDescription(scheduledTransaction.description ?? '');
@@ -105,8 +107,10 @@ export function OverrideEditorDialog({
   const handleSave = async () => {
     setIsLoading(true);
     try {
+      // For transfers, negate the amount (user enters positive, stored as negative)
+      const savedAmount = scheduledTransaction.isTransfer ? -Math.abs(amount) : amount;
       const baseData = {
-        amount,
+        amount: savedAmount,
         categoryId: isSplit ? null : (categoryId || null),
         description: description || null,
         isSplit,
