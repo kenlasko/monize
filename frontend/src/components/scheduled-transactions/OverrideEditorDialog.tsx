@@ -13,7 +13,7 @@ import { Category } from '@/types/category';
 import { Account } from '@/types/account';
 import { scheduledTransactionsApi } from '@/lib/scheduled-transactions';
 import { buildCategoryTree } from '@/lib/categoryUtils';
-import { roundToCents } from '@/lib/format';
+import { roundToCents, getCurrencySymbol } from '@/lib/format';
 import { useDateFormat } from '@/hooks/useDateFormat';
 
 interface OverrideEditorDialogProps {
@@ -226,7 +226,7 @@ export function OverrideEditorDialog({
         {/* Amount */}
         <CurrencyInput
           label="Amount"
-          prefix="$"
+          prefix={getCurrencySymbol(scheduledTransaction.currencyCode)}
           value={amount}
           onChange={(value) => setAmount(value ?? 0)}
         />

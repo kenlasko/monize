@@ -18,6 +18,8 @@ import {
   Security,
   CreateSecurityData,
 } from '@/types/investment';
+import { getCurrencySymbol } from '@/lib/format';
+import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { createLogger } from '@/lib/logger';
 
 const logger = createLogger('InvestmentTxForm');
@@ -82,6 +84,7 @@ export function InvestmentTransactionForm({
   onSuccess,
   onCancel,
 }: InvestmentTransactionFormProps) {
+  const { defaultCurrency } = useNumberFormat();
   const [isLoading, setIsLoading] = useState(false);
   const [securities, setSecurities] = useState<Security[]>([]);
   const [showNewSecurityForm, setShowNewSecurityForm] = useState(false);
@@ -89,7 +92,7 @@ export function InvestmentTransactionForm({
     symbol: '',
     name: '',
     securityType: 'STOCK',
-    currencyCode: 'CAD',
+    currencyCode: defaultCurrency,
   });
 
   // Filter to only show brokerage accounts (sorted)
@@ -148,10 +151,21 @@ export function InvestmentTransactionForm({
         },
   });
 
+  const watchedAccountId = watch('accountId');
   const watchedAction = watch('action') as InvestmentAction;
   const watchedQuantity = Number(watch('quantity')) || 0;
   const watchedPrice = Number(watch('price')) || 0;
   const watchedCommission = Number(watch('commission')) || 0;
+
+  // Derive currency from selected account
+  const accountCurrency = useMemo(() => {
+    if (watchedAccountId) {
+      const account = accounts.find(a => a.id === watchedAccountId);
+      if (account) return account.currencyCode;
+    }
+    return defaultCurrency;
+  }, [watchedAccountId, accounts, defaultCurrency]);
+  const currencySymbol = getCurrencySymbol(accountCurrency);
 
   // Calculate total amount
   const totalAmount = useMemo(() => {
@@ -205,7 +219,7 @@ export function InvestmentTransactionForm({
         symbol: '',
         name: '',
         securityType: 'STOCK',
-        currencyCode: 'CAD',
+        currencyCode: defaultCurrency,
       });
       toast.success('Security created');
     } catch (error: any) {
@@ -409,9 +423,10 @@ export function InvestmentTransactionForm({
           />
           <NumericInput
             label="Price per Share"
+            prefix={currencySymbol}
             value={watchedPrice}
             onChange={(value) => setValue('price', value ?? 0, { shouldValidate: true })}
-            decimalPlaces={4}
+            decimalPlaces={5}
             min={0}
             error={errors.price?.message}
           />
@@ -434,6 +449,7 @@ export function InvestmentTransactionForm({
       {isAmountOnly && (
         <CurrencyInput
           label="Amount"
+          prefix={currencySymbol}
           value={watchedPrice}
           onChange={(value) => setValue('price', value ?? 0, { shouldValidate: true })}
           error={errors.price?.message}
@@ -445,6 +461,7 @@ export function InvestmentTransactionForm({
       {(needsQuantityPrice || watchedAction === 'SPLIT') && (
         <CurrencyInput
           label="Commission / Fees"
+          prefix={currencySymbol}
           value={watchedCommission}
           onChange={(value) => setValue('commission', value ?? 0, { shouldValidate: true })}
           error={errors.commission?.message}
@@ -468,13 +485,13 @@ export function InvestmentTransactionForm({
               Total Amount
             </span>
             <span className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              ${totalAmount.toFixed(2)}
+              {currencySymbol}{totalAmount.toFixed(2)}
             </span>
           </div>
           {needsQuantityPrice && (
             <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              {watchedQuantity} shares @ ${watchedPrice.toFixed(4)}
-              {watchedCommission > 0 && ` ${watchedAction === 'SELL' ? '-' : '+'} $${watchedCommission.toFixed(2)} commission`}
+              {watchedQuantity} shares @ {currencySymbol}{watchedPrice.toFixed(5)}
+              {watchedCommission > 0 && ` ${watchedAction === 'SELL' ? '-' : '+'} ${currencySymbol}${watchedCommission.toFixed(2)} commission`}
             </div>
           )}
         </div>

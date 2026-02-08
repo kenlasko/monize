@@ -169,6 +169,10 @@ export const NumericInput = forwardRef<HTMLInputElement, NumericInputProps>(
             onChange={handleChange}
             onBlur={handleBlur}
             onFocus={handleFocus}
+            style={{
+              ...(prefix ? { paddingLeft: '1.75rem' } : {}),
+              ...(suffix ? { paddingRight: '3rem' } : {}),
+            }}
             className={cn(
               'block w-full rounded-md border-gray-300 shadow-sm',
               'focus:border-blue-500 focus:ring-blue-500',
@@ -177,8 +181,6 @@ export const NumericInput = forwardRef<HTMLInputElement, NumericInputProps>(
               'dark:focus:border-blue-400 dark:focus:ring-blue-400',
               'dark:disabled:bg-gray-700 dark:disabled:text-gray-400',
               error && 'border-red-300 focus:border-red-500 focus:ring-red-500 dark:border-red-500',
-              prefix && 'pl-7',
-              suffix && 'pr-12',
               className
             )}
             {...props}

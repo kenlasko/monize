@@ -17,6 +17,7 @@ import { Transaction } from '@/types/transaction';
 import { parseLocalDate } from '@/lib/utils';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { useExchangeRates } from '@/hooks/useExchangeRates';
 
 interface IncomeExpensesBarChartProps {
   transactions: Transaction[];
@@ -29,7 +30,8 @@ export function IncomeExpensesBarChart({
 }: IncomeExpensesBarChartProps) {
   const router = useRouter();
   const { formatDate } = useDateFormat();
-  const { formatCurrencyCompact: formatCurrency } = useNumberFormat();
+  const { formatCurrencyCompact: formatCurrency, formatCurrencyAxis } = useNumberFormat();
+  const { convertToDefault } = useExchangeRates();
 
   // Group transactions by week and calculate income/expenses
   const chartData = useMemo(() => {
@@ -66,7 +68,8 @@ export function IncomeExpensesBarChart({
       );
 
       if (weekBucket) {
-        const amount = Number(tx.amount) || 0;
+        const rawAmount = Number(tx.amount) || 0;
+        const amount = convertToDefault(rawAmount, tx.currencyCode);
         if (amount >= 0) {
           weekBucket.income += amount;
         } else {
@@ -82,7 +85,7 @@ export function IncomeExpensesBarChart({
       startDate: format(w.weekStart, 'yyyy-MM-dd'),
       endDate: format(w.weekEnd, 'yyyy-MM-dd'),
     }));
-  }, [transactions, formatDate]);
+  }, [transactions, formatDate, convertToDefault]);
 
   const handleChartClick = (state: unknown) => {
     const chartState = state as { activePayload?: Array<{ payload: { startDate: string; endDate: string } }> } | null;
@@ -168,7 +171,7 @@ export function IncomeExpensesBarChart({
               tick={{ fill: '#6b7280', fontSize: 12 }}
               tickLine={false}
               axisLine={{ stroke: '#e5e7eb' }}
-              tickFormatter={(value) => `$${value >= 1000 ? `${(value / 1000).toFixed(0)}k` : value}`}
+              tickFormatter={formatCurrencyAxis}
             />
             <Tooltip content={<CustomTooltip />} />
             <Legend

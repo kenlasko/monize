@@ -10,7 +10,7 @@ import { Category } from '@/types/category';
 import { Account } from '@/types/account';
 import { CreateSplitData } from '@/types/transaction';
 import { buildCategoryTree } from '@/lib/categoryUtils';
-import { roundToCents } from '@/lib/format';
+import { roundToCents, getCurrencySymbol } from '@/lib/format';
 
 export type SplitType = 'category' | 'transfer';
 
@@ -30,21 +30,6 @@ interface SplitEditorProps {
   onTransactionAmountChange?: (amount: number) => void;
   currencyCode?: string;
 }
-
-// Get currency symbol from code
-const getCurrencySymbol = (code: string): string => {
-  const symbols: Record<string, string> = {
-    USD: '$',
-    CAD: '$',
-    EUR: '€',
-    GBP: '£',
-    JPY: '¥',
-    CNY: '¥',
-    AUD: '$',
-    NZD: '$',
-  };
-  return symbols[code.toUpperCase()] || '$';
-};
 
 export function SplitEditor({
   splits,

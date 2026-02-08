@@ -109,7 +109,7 @@ function advanceDate(date: Date, frequency: string): Date {
 }
 
 export function DebtPayoffTimelineReport() {
-  const { formatCurrencyCompact: formatCurrency } = useNumberFormat();
+  const { formatCurrencyCompact: formatCurrency, formatCurrencyAxis } = useNumberFormat();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [selectedAccountId, setSelectedAccountId] = useState<string>('');
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -523,7 +523,7 @@ export function DebtPayoffTimelineReport() {
                       interval="preserveStartEnd"
                     />
                     <YAxis
-                      tickFormatter={(value) => `$${Math.round(value / 1000)}k`}
+                      tickFormatter={formatCurrencyAxis}
                       tick={{ fontSize: 12 }}
                     />
                     <Tooltip content={<CustomTooltip />} />
@@ -578,7 +578,7 @@ export function DebtPayoffTimelineReport() {
                       interval="preserveStartEnd"
                     />
                     <YAxis
-                      tickFormatter={(value) => `$${Math.round(value / 1000)}k`}
+                      tickFormatter={formatCurrencyAxis}
                       tick={{ fontSize: 12 }}
                     />
                     <Tooltip content={<CustomTooltip />} />

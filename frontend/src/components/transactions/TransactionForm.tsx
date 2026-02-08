@@ -20,6 +20,8 @@ import { Payee } from '@/types/payee';
 import { Category } from '@/types/category';
 import { Account } from '@/types/account';
 import { buildCategoryTree } from '@/lib/categoryUtils';
+import { getCurrencySymbol } from '@/lib/format';
+import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { createLogger } from '@/lib/logger';
 
 const logger = createLogger('TransactionForm');
@@ -60,13 +62,8 @@ interface TransactionFormProps {
 // Transaction mode type
 type TransactionMode = 'normal' | 'split' | 'transfer';
 
-// Currency symbol lookup
-const currencySymbols: Record<string, string> = {
-  USD: '$', CAD: '$', EUR: '€', GBP: '£', JPY: '¥', CNY: '¥', AUD: '$', NZD: '$'
-};
-const getCurrencySymbol = (code?: string): string => currencySymbols[(code || 'CAD').toUpperCase()] || '$';
-
 export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCancel }: TransactionFormProps) {
+  const { defaultCurrency } = useNumberFormat();
   const [isLoading, setIsLoading] = useState(false);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -173,7 +170,7 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
       : {
           accountId: defaultAccountId || '',
           transactionDate: new Date().toISOString().split('T')[0],
-          currencyCode: 'CAD',
+          currencyCode: defaultCurrency,
           status: TransactionStatus.UNRECONCILED,
         },
   });
@@ -181,6 +178,16 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
   const watchedAccountId = watch('accountId');
   const watchedAmount = watch('amount');
   const watchedCurrencyCode = watch('currencyCode');
+
+  // Auto-set currencyCode from the selected account
+  useEffect(() => {
+    if (watchedAccountId && accounts.length > 0) {
+      const account = accounts.find(a => a.id === watchedAccountId);
+      if (account) {
+        setValue('currencyCode', account.currencyCode, { shouldDirty: true });
+      }
+    }
+  }, [watchedAccountId, accounts, setValue]);
 
   // Determine if this is a cross-currency transfer
   const crossCurrencyInfo = useMemo(() => {
@@ -908,7 +915,7 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
             transactionAmount={watchedAmount || 0}
             disabled={isLoading}
             onTransactionAmountChange={(amount) => setValue('amount', amount, { shouldDirty: true, shouldValidate: true })}
-            currencyCode={watchedCurrencyCode || 'CAD'}
+            currencyCode={watchedCurrencyCode || defaultCurrency}
           />
         </div>
       )}

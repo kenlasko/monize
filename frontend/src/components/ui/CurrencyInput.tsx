@@ -55,6 +55,21 @@ export const CurrencyInput = forwardRef<HTMLInputElement, CurrencyInputProps>(
       }
     }, [value, isFocused]);
 
+    // Sync sign from parent value while focused (e.g., category auto-sign sets negative)
+    useEffect(() => {
+      if (isFocused && value !== undefined && value !== 0) {
+        const isDisplayNeg = displayValue.startsWith('-');
+        const isValueNeg = value < 0;
+        if (isDisplayNeg !== isValueNeg) {
+          setDisplayValue(prev => {
+            const stripped = prev.replace(/^-/, '');
+            return isValueNeg ? '-' + stripped : stripped;
+          });
+        }
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [value]);
+
     const inputId = id || `input-${label?.toLowerCase().replace(/\s+/g, '-')}`;
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -99,8 +114,16 @@ export const CurrencyInput = forwardRef<HTMLInputElement, CurrencyInputProps>(
 
       // Format and update
       if (finalValue !== undefined) {
-        setDisplayValue(formatAmountWithCommas(finalValue));
-        onChange(finalValue);
+        // If only the sign differs (same magnitude), preserve the parent's value
+        // This prevents blur from undoing programmatic sign changes (e.g., category auto-sign)
+        if (value !== undefined &&
+            Math.abs(finalValue) === Math.abs(value) &&
+            finalValue !== value) {
+          setDisplayValue(formatAmountWithCommas(value));
+        } else {
+          setDisplayValue(formatAmountWithCommas(finalValue));
+          onChange(finalValue);
+        }
       } else if (displayValue.trim() === '') {
         setDisplayValue('');
         onChange(undefined);
@@ -149,7 +172,7 @@ export const CurrencyInput = forwardRef<HTMLInputElement, CurrencyInputProps>(
             onChange={handleChange}
             onBlur={handleBlur}
             onFocus={handleFocus}
-            style={prefix ? { paddingLeft: '1.5rem' } : undefined}
+            style={prefix ? { paddingLeft: '1.75rem' } : undefined}
             className={cn(
               'block w-full rounded-md border-gray-300 shadow-sm',
               'focus:border-blue-500 focus:ring-blue-500',

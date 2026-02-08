@@ -4,6 +4,8 @@ import { Repository } from 'typeorm';
 import { Transaction } from '../transactions/entities/transaction.entity';
 import { Category } from '../categories/entities/category.entity';
 import { Payee } from '../payees/entities/payee.entity';
+import { UserPreference } from '../users/entities/user-preference.entity';
+import { ExchangeRateService } from '../currencies/exchange-rate.service';
 import {
   SpendingByCategoryResponse,
   CategorySpendingItem,
@@ -39,17 +41,20 @@ import {
 
 interface RawCategoryAggregate {
   category_id: string | null;
+  currency_code: string;
   total: string;
 }
 
 interface RawPayeeAggregate {
   payee_id: string | null;
   payee_name: string | null;
+  currency_code: string;
   total: string;
 }
 
 interface RawMonthlyAggregate {
   month: string;
+  currency_code: string;
   income: string;
   expenses: string;
 }
@@ -57,8 +62,11 @@ interface RawMonthlyAggregate {
 interface RawMonthlyCategoryAggregate {
   month: string;
   category_id: string | null;
+  currency_code: string;
   total: string;
 }
+
+type RateMap = Map<string, number>;
 
 @Injectable()
 export class BuiltInReportsService {
@@ -69,7 +77,40 @@ export class BuiltInReportsService {
     private categoriesRepository: Repository<Category>,
     @InjectRepository(Payee)
     private payeesRepository: Repository<Payee>,
+    @InjectRepository(UserPreference)
+    private userPreferenceRepository: Repository<UserPreference>,
+    private exchangeRateService: ExchangeRateService,
   ) {}
+
+  private async getDefaultCurrency(userId: string): Promise<string> {
+    const pref = await this.userPreferenceRepository.findOne({ where: { userId } });
+    return pref?.defaultCurrency || 'USD';
+  }
+
+  private async buildRateMap(defaultCurrency: string): Promise<RateMap> {
+    const rates = await this.exchangeRateService.getLatestRates();
+    const rateMap: RateMap = new Map();
+    for (const rate of rates) {
+      rateMap.set(`${rate.fromCurrency}->${rate.toCurrency}`, Number(rate.rate));
+    }
+    return rateMap;
+  }
+
+  private convertAmount(
+    amount: number,
+    fromCurrency: string,
+    defaultCurrency: string,
+    rateMap: RateMap,
+  ): number {
+    if (!fromCurrency || fromCurrency === defaultCurrency) return amount;
+    const directKey = `${fromCurrency}->${defaultCurrency}`;
+    const directRate = rateMap.get(directKey);
+    if (directRate) return amount * directRate;
+    const inverseKey = `${defaultCurrency}->${fromCurrency}`;
+    const inverseRate = rateMap.get(inverseKey);
+    if (inverseRate && inverseRate !== 0) return amount / inverseRate;
+    return amount;
+  }
 
   /**
    * Get spending by category with parent rollup
@@ -79,11 +120,15 @@ export class BuiltInReportsService {
     startDate: string | undefined,
     endDate: string,
   ): Promise<SpendingByCategoryResponse> {
+    const defaultCurrency = await this.getDefaultCurrency(userId);
+    const rateMap = await this.buildRateMap(defaultCurrency);
+
     // Build the base query for aggregating expenses by category
     // Uses COALESCE to handle split transactions
     let query = `
       SELECT
         COALESCE(ts.category_id, t.category_id) as category_id,
+        t.currency_code,
         SUM(ABS(COALESCE(ts.amount, t.amount))) as total
       FROM transactions t
       LEFT JOIN transaction_splits ts ON ts.transaction_id = t.id
@@ -105,7 +150,7 @@ export class BuiltInReportsService {
       params.push(startDate);
     }
 
-    query += ` GROUP BY COALESCE(ts.category_id, t.category_id)`;
+    query += ` GROUP BY COALESCE(ts.category_id, t.category_id), t.currency_code`;
 
     const rawResults: RawCategoryAggregate[] =
       await this.transactionsRepository.query(query, params);
@@ -123,7 +168,7 @@ export class BuiltInReportsService {
     >();
 
     for (const row of rawResults) {
-      const total = parseFloat(row.total) || 0;
+      const total = this.convertAmount(parseFloat(row.total) || 0, row.currency_code, defaultCurrency, rateMap);
       const categoryId = row.category_id;
 
       if (!categoryId) {
@@ -191,10 +236,14 @@ export class BuiltInReportsService {
     startDate: string | undefined,
     endDate: string,
   ): Promise<SpendingByPayeeResponse> {
+    const defaultCurrency = await this.getDefaultCurrency(userId);
+    const rateMap = await this.buildRateMap(defaultCurrency);
+
     let query = `
       SELECT
         t.payee_id,
         t.payee_name,
+        t.currency_code,
         SUM(ABS(t.amount)) as total
       FROM transactions t
       LEFT JOIN accounts a ON a.id = t.account_id
@@ -214,7 +263,7 @@ export class BuiltInReportsService {
       params.push(startDate);
     }
 
-    query += ` GROUP BY t.payee_id, t.payee_name ORDER BY total DESC LIMIT 20`;
+    query += ` GROUP BY t.payee_id, t.payee_name, t.currency_code`;
 
     const rawResults: RawPayeeAggregate[] =
       await this.transactionsRepository.query(query, params);
@@ -230,14 +279,32 @@ export class BuiltInReportsService {
         : [];
     const payeeMap = new Map(payees.map((p) => [p.id, p]));
 
-    const data: PayeeSpendingItem[] = rawResults.map((row) => {
+    // Merge rows by payee (multiple currencies per payee), converting amounts
+    const payeeTotals = new Map<string, { payeeId: string | null; payeeName: string; total: number }>();
+    for (const row of rawResults) {
+      const total = this.convertAmount(parseFloat(row.total) || 0, row.currency_code, defaultCurrency, rateMap);
+      const key = row.payee_id || row.payee_name || 'unknown';
       const payee = row.payee_id ? payeeMap.get(row.payee_id) : null;
-      return {
-        payeeId: row.payee_id,
-        payeeName: payee?.name || row.payee_name || 'Unknown',
-        total: Math.round(parseFloat(row.total) * 100) / 100,
-      };
-    });
+      const existing = payeeTotals.get(key);
+      if (existing) {
+        existing.total += total;
+      } else {
+        payeeTotals.set(key, {
+          payeeId: row.payee_id,
+          payeeName: payee?.name || row.payee_name || 'Unknown',
+          total,
+        });
+      }
+    }
+
+    const data: PayeeSpendingItem[] = Array.from(payeeTotals.values())
+      .map((row) => ({
+        payeeId: row.payeeId,
+        payeeName: row.payeeName,
+        total: Math.round(row.total * 100) / 100,
+      }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 20);
 
     const totalSpending = data.reduce((sum, item) => sum + item.total, 0);
 
@@ -255,9 +322,13 @@ export class BuiltInReportsService {
     startDate: string | undefined,
     endDate: string,
   ): Promise<IncomeBySourceResponse> {
+    const defaultCurrency = await this.getDefaultCurrency(userId);
+    const rateMap = await this.buildRateMap(defaultCurrency);
+
     let query = `
       SELECT
         COALESCE(ts.category_id, t.category_id) as category_id,
+        t.currency_code,
         SUM(COALESCE(ts.amount, t.amount)) as total
       FROM transactions t
       LEFT JOIN transaction_splits ts ON ts.transaction_id = t.id
@@ -279,7 +350,7 @@ export class BuiltInReportsService {
       params.push(startDate);
     }
 
-    query += ` GROUP BY COALESCE(ts.category_id, t.category_id)`;
+    query += ` GROUP BY COALESCE(ts.category_id, t.category_id), t.currency_code`;
 
     const rawResults: RawCategoryAggregate[] =
       await this.transactionsRepository.query(query, params);
@@ -297,7 +368,7 @@ export class BuiltInReportsService {
     >();
 
     for (const row of rawResults) {
-      const total = parseFloat(row.total) || 0;
+      const total = this.convertAmount(parseFloat(row.total) || 0, row.currency_code, defaultCurrency, rateMap);
       const categoryId = row.category_id;
 
       if (!categoryId) {
@@ -361,10 +432,14 @@ export class BuiltInReportsService {
     startDate: string | undefined,
     endDate: string,
   ): Promise<MonthlySpendingTrendResponse> {
+    const defaultCurrency = await this.getDefaultCurrency(userId);
+    const rateMap = await this.buildRateMap(defaultCurrency);
+
     let query = `
       SELECT
         TO_CHAR(t.transaction_date, 'YYYY-MM') as month,
         COALESCE(ts.category_id, t.category_id) as category_id,
+        t.currency_code,
         SUM(ABS(COALESCE(ts.amount, t.amount))) as total
       FROM transactions t
       LEFT JOIN transaction_splits ts ON ts.transaction_id = t.id
@@ -387,7 +462,7 @@ export class BuiltInReportsService {
     }
 
     query += `
-      GROUP BY TO_CHAR(t.transaction_date, 'YYYY-MM'), COALESCE(ts.category_id, t.category_id)
+      GROUP BY TO_CHAR(t.transaction_date, 'YYYY-MM'), COALESCE(ts.category_id, t.category_id), t.currency_code
       ORDER BY month
     `;
 
@@ -408,7 +483,7 @@ export class BuiltInReportsService {
 
     for (const row of rawResults) {
       const month = row.month;
-      const total = parseFloat(row.total) || 0;
+      const total = this.convertAmount(parseFloat(row.total) || 0, row.currency_code, defaultCurrency, rateMap);
       const categoryId = row.category_id;
 
       if (!monthlyData.has(month)) {
@@ -494,9 +569,13 @@ export class BuiltInReportsService {
     startDate: string | undefined,
     endDate: string,
   ): Promise<IncomeVsExpensesResponse> {
+    const defaultCurrency = await this.getDefaultCurrency(userId);
+    const rateMap = await this.buildRateMap(defaultCurrency);
+
     let query = `
       SELECT
         TO_CHAR(t.transaction_date, 'YYYY-MM') as month,
+        t.currency_code,
         SUM(CASE WHEN COALESCE(ts.amount, t.amount) > 0 THEN COALESCE(ts.amount, t.amount) ELSE 0 END) as income,
         SUM(CASE WHEN COALESCE(ts.amount, t.amount) < 0 THEN ABS(COALESCE(ts.amount, t.amount)) ELSE 0 END) as expenses
       FROM transactions t
@@ -519,23 +598,35 @@ export class BuiltInReportsService {
     }
 
     query += `
-      GROUP BY TO_CHAR(t.transaction_date, 'YYYY-MM')
+      GROUP BY TO_CHAR(t.transaction_date, 'YYYY-MM'), t.currency_code
       ORDER BY month
     `;
 
     const rawResults: RawMonthlyAggregate[] =
       await this.transactionsRepository.query(query, params);
 
-    const data: MonthlyIncomeExpenseItem[] = rawResults.map((row) => {
-      const income = Math.round(parseFloat(row.income) * 100) / 100;
-      const expenses = Math.round(parseFloat(row.expenses) * 100) / 100;
-      return {
-        month: row.month,
-        income,
-        expenses,
+    // Merge rows by month (multiple currencies per month)
+    const monthlyMap = new Map<string, { income: number; expenses: number }>();
+    for (const row of rawResults) {
+      const income = this.convertAmount(parseFloat(row.income) || 0, row.currency_code, defaultCurrency, rateMap);
+      const expenses = this.convertAmount(parseFloat(row.expenses) || 0, row.currency_code, defaultCurrency, rateMap);
+      const existing = monthlyMap.get(row.month);
+      if (existing) {
+        existing.income += income;
+        existing.expenses += expenses;
+      } else {
+        monthlyMap.set(row.month, { income, expenses });
+      }
+    }
+
+    const data: MonthlyIncomeExpenseItem[] = Array.from(monthlyMap.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([month, { income, expenses }]) => ({
+        month,
+        income: Math.round(income * 100) / 100,
+        expenses: Math.round(expenses * 100) / 100,
         net: Math.round((income - expenses) * 100) / 100,
-      };
-    });
+      }));
 
     const totals = data.reduce(
       (acc, item) => ({
@@ -563,6 +654,9 @@ export class BuiltInReportsService {
     userId: string,
     yearsToCompare: number,
   ): Promise<YearOverYearResponse> {
+    const defaultCurrency = await this.getDefaultCurrency(userId);
+    const rateMap = await this.buildRateMap(defaultCurrency);
+
     const currentYear = new Date().getFullYear();
     const oldestYear = currentYear - yearsToCompare + 1;
 
@@ -570,6 +664,7 @@ export class BuiltInReportsService {
       SELECT
         EXTRACT(YEAR FROM t.transaction_date)::int as year,
         EXTRACT(MONTH FROM t.transaction_date)::int as month,
+        t.currency_code,
         SUM(CASE WHEN COALESCE(ts.amount, t.amount) > 0 THEN COALESCE(ts.amount, t.amount) ELSE 0 END) as income,
         SUM(CASE WHEN COALESCE(ts.amount, t.amount) < 0 THEN ABS(COALESCE(ts.amount, t.amount)) ELSE 0 END) as expenses
       FROM transactions t
@@ -583,13 +678,14 @@ export class BuiltInReportsService {
         AND t.parent_transaction_id IS NULL
         AND a.account_type != 'INVESTMENT'
         AND (ts.transfer_account_id IS NULL OR ts.id IS NULL)
-      GROUP BY EXTRACT(YEAR FROM t.transaction_date), EXTRACT(MONTH FROM t.transaction_date)
+      GROUP BY EXTRACT(YEAR FROM t.transaction_date), EXTRACT(MONTH FROM t.transaction_date), t.currency_code
       ORDER BY year, month
     `;
 
     interface RawYearMonth {
       year: number;
       month: number;
+      currency_code: string;
       income: string;
       expenses: string;
     }
@@ -618,11 +714,11 @@ export class BuiltInReportsService {
       const yearData = yearMap.get(row.year);
       if (yearData) {
         const monthData = yearData.months[row.month - 1];
-        const income = Math.round(parseFloat(row.income) * 100) / 100;
-        const expenses = Math.round(parseFloat(row.expenses) * 100) / 100;
-        monthData.income = income;
-        monthData.expenses = expenses;
-        monthData.savings = Math.round((income - expenses) * 100) / 100;
+        const income = this.convertAmount(parseFloat(row.income) || 0, row.currency_code, defaultCurrency, rateMap);
+        const expenses = this.convertAmount(parseFloat(row.expenses) || 0, row.currency_code, defaultCurrency, rateMap);
+        monthData.income += Math.round(income * 100) / 100;
+        monthData.expenses += Math.round(expenses * 100) / 100;
+        monthData.savings = Math.round((monthData.income - monthData.expenses) * 100) / 100;
 
         yearData.totals.income += income;
         yearData.totals.expenses += expenses;
@@ -651,10 +747,14 @@ export class BuiltInReportsService {
     startDate: string | undefined,
     endDate: string,
   ): Promise<WeekendVsWeekdayResponse> {
+    const defaultCurrency = await this.getDefaultCurrency(userId);
+    const rateMap = await this.buildRateMap(defaultCurrency);
+
     let query = `
       SELECT
         EXTRACT(DOW FROM t.transaction_date)::int as day_of_week,
         COALESCE(ts.category_id, t.category_id) as category_id,
+        t.currency_code,
         COUNT(*)::int as tx_count,
         SUM(ABS(COALESCE(ts.amount, t.amount))) as total
       FROM transactions t
@@ -677,11 +777,12 @@ export class BuiltInReportsService {
       params.push(startDate);
     }
 
-    query += ` GROUP BY EXTRACT(DOW FROM t.transaction_date), COALESCE(ts.category_id, t.category_id)`;
+    query += ` GROUP BY EXTRACT(DOW FROM t.transaction_date), COALESCE(ts.category_id, t.category_id), t.currency_code`;
 
     interface RawDayCategory {
       day_of_week: number;
       category_id: string | null;
+      currency_code: string;
       tx_count: number;
       total: string;
     }
@@ -710,7 +811,7 @@ export class BuiltInReportsService {
     >();
 
     rawResults.forEach((row) => {
-      const total = parseFloat(row.total) || 0;
+      const total = this.convertAmount(parseFloat(row.total) || 0, row.currency_code, defaultCurrency, rateMap);
       const count = row.tx_count;
       const isWeekend = row.day_of_week === 0 || row.day_of_week === 6;
 
@@ -805,6 +906,9 @@ export class BuiltInReportsService {
     userId: string,
     threshold: number = 2,
   ): Promise<SpendingAnomaliesResponse> {
+    const defaultCurrency = await this.getDefaultCurrency(userId);
+    const rateMap = await this.buildRateMap(defaultCurrency);
+
     // Get last 6 months of expenses
     const now = new Date();
     const sixMonthsAgo = new Date(now);
@@ -819,6 +923,7 @@ export class BuiltInReportsService {
         t.transaction_date,
         t.payee_id,
         t.payee_name,
+        t.currency_code,
         COALESCE(ts.category_id, t.category_id) as category_id,
         ABS(COALESCE(ts.amount, t.amount)) as amount
       FROM transactions t
@@ -841,6 +946,7 @@ export class BuiltInReportsService {
       transaction_date: Date;
       payee_id: string | null;
       payee_name: string | null;
+      currency_code: string;
       category_id: string | null;
       amount: string;
     }
@@ -864,8 +970,8 @@ export class BuiltInReportsService {
     });
     const categoryMap = new Map(categories.map((c) => [c.id, c]));
 
-    // Calculate statistics
-    const amounts = rawResults.map((r) => parseFloat(r.amount));
+    // Calculate statistics with converted amounts
+    const amounts = rawResults.map((r) => this.convertAmount(parseFloat(r.amount) || 0, r.currency_code, defaultCurrency, rateMap));
     const mean = amounts.reduce((sum, a) => sum + a, 0) / amounts.length;
     const variance =
       amounts.reduce((sum, a) => sum + Math.pow(a - mean, 2), 0) /
@@ -876,7 +982,7 @@ export class BuiltInReportsService {
 
     // 1. Large single transactions
     rawResults.forEach((row) => {
-      const amount = parseFloat(row.amount);
+      const amount = this.convertAmount(parseFloat(row.amount) || 0, row.currency_code, defaultCurrency, rateMap);
       const zScore = (amount - mean) / stdDev;
 
       if (zScore > threshold) {
@@ -910,7 +1016,7 @@ export class BuiltInReportsService {
 
     rawResults.forEach((row) => {
       const txDate = new Date(row.transaction_date);
-      const amount = parseFloat(row.amount);
+      const amount = this.convertAmount(parseFloat(row.amount) || 0, row.currency_code, defaultCurrency, rateMap);
       const categoryId = row.category_id || 'uncategorized';
 
       if (txDate >= currentMonthStart) {
@@ -979,12 +1085,12 @@ export class BuiltInReportsService {
       if (txDate >= oneMonthAgo) {
         const existing = payeeRecentSpending.get(payeeName);
         if (existing) {
-          existing.total += parseFloat(row.amount);
+          existing.total += this.convertAmount(parseFloat(row.amount) || 0, row.currency_code, defaultCurrency, rateMap);
           existing.count++;
         } else {
           payeeRecentSpending.set(payeeName, {
             name: row.payee_name || 'Unknown',
-            total: parseFloat(row.amount),
+            total: this.convertAmount(parseFloat(row.amount) || 0, row.currency_code, defaultCurrency, rateMap),
             count: 1,
             txId: row.id,
           });
@@ -1041,12 +1147,16 @@ export class BuiltInReportsService {
    * Get tax summary for a given year
    */
   async getTaxSummary(userId: string, year: number): Promise<TaxSummaryResponse> {
+    const defaultCurrency = await this.getDefaultCurrency(userId);
+    const rateMap = await this.buildRateMap(defaultCurrency);
+
     const startDate = `${year}-01-01`;
     const endDate = `${year}-12-31`;
 
     const query = `
       SELECT
         COALESCE(ts.category_id, t.category_id) as category_id,
+        t.currency_code,
         COALESCE(ts.amount, t.amount) as amount
       FROM transactions t
       LEFT JOIN transaction_splits ts ON ts.transaction_id = t.id
@@ -1063,6 +1173,7 @@ export class BuiltInReportsService {
 
     interface RawTaxRow {
       category_id: string | null;
+      currency_code: string;
       amount: string;
     }
 
@@ -1116,7 +1227,7 @@ export class BuiltInReportsService {
     let totalExpenses = 0;
 
     rawResults.forEach((row) => {
-      const amount = parseFloat(row.amount) || 0;
+      const amount = this.convertAmount(parseFloat(row.amount) || 0, row.currency_code, defaultCurrency, rateMap);
       const category = row.category_id ? categoryMap.get(row.category_id) : null;
       const parentCategory = category?.parentId
         ? categoryMap.get(category.parentId)
@@ -1182,6 +1293,9 @@ export class BuiltInReportsService {
     userId: string,
     minOccurrences: number = 3,
   ): Promise<RecurringExpensesResponse> {
+    const defaultCurrency = await this.getDefaultCurrency(userId);
+    const rateMap = await this.buildRateMap(defaultCurrency);
+
     // Get last 6 months of expenses
     const now = new Date();
     const sixMonthsAgo = new Date(now);
@@ -1195,6 +1309,7 @@ export class BuiltInReportsService {
         LOWER(TRIM(COALESCE(p.name, t.payee_name))) as payee_name_normalized,
         COALESCE(p.name, t.payee_name) as payee_name,
         c.name as category_name,
+        t.currency_code,
         COUNT(*)::int as occurrences,
         SUM(ABS(t.amount)) as total_amount,
         MAX(t.transaction_date) as last_transaction_date
@@ -1211,7 +1326,7 @@ export class BuiltInReportsService {
         AND t.parent_transaction_id IS NULL
         AND a.account_type != 'INVESTMENT'
         AND (COALESCE(p.name, t.payee_name) IS NOT NULL AND TRIM(COALESCE(p.name, t.payee_name)) != '')
-      GROUP BY t.payee_id, LOWER(TRIM(COALESCE(p.name, t.payee_name))), COALESCE(p.name, t.payee_name), c.name
+      GROUP BY t.payee_id, LOWER(TRIM(COALESCE(p.name, t.payee_name))), COALESCE(p.name, t.payee_name), c.name, t.currency_code
       HAVING COUNT(*) >= $4
       ORDER BY SUM(ABS(t.amount)) DESC
     `;
@@ -1221,6 +1336,7 @@ export class BuiltInReportsService {
       payee_name_normalized: string;
       payee_name: string;
       category_name: string | null;
+      currency_code: string;
       occurrences: number;
       total_amount: string;
       last_transaction_date: Date;
@@ -1231,8 +1347,40 @@ export class BuiltInReportsService {
       [userId, startDate, endDate, minOccurrences],
     );
 
-    const data: RecurringExpenseItem[] = rawResults.map((row) => {
-      const totalAmount = parseFloat(row.total_amount);
+    // Merge rows by payee (multiple currencies per payee)
+    const payeeMerged = new Map<string, {
+      payeeName: string;
+      payeeId: string | null;
+      occurrences: number;
+      totalAmount: number;
+      lastTransactionDate: Date;
+      categoryName: string | null;
+    }>();
+
+    for (const row of rawResults) {
+      const totalAmount = this.convertAmount(parseFloat(row.total_amount) || 0, row.currency_code, defaultCurrency, rateMap);
+      const key = row.payee_name_normalized;
+      const existing = payeeMerged.get(key);
+      if (existing) {
+        existing.occurrences += row.occurrences;
+        existing.totalAmount += totalAmount;
+        if (new Date(row.last_transaction_date) > existing.lastTransactionDate) {
+          existing.lastTransactionDate = new Date(row.last_transaction_date);
+        }
+      } else {
+        payeeMerged.set(key, {
+          payeeName: row.payee_name,
+          payeeId: row.payee_id,
+          occurrences: row.occurrences,
+          totalAmount,
+          lastTransactionDate: new Date(row.last_transaction_date),
+          categoryName: row.category_name,
+        });
+      }
+    }
+
+    const data: RecurringExpenseItem[] = Array.from(payeeMerged.values()).map((row) => {
+      const totalAmount = row.totalAmount;
       const occurrences = row.occurrences;
 
       // Estimate frequency based on occurrences over 6 months
@@ -1243,16 +1391,16 @@ export class BuiltInReportsService {
       else if (occurrences >= 3) frequency = 'Occasional';
 
       return {
-        payeeName: row.payee_name,
-        payeeId: row.payee_id,
+        payeeName: row.payeeName,
+        payeeId: row.payeeId,
         occurrences,
         totalAmount: Math.round(totalAmount * 100) / 100,
         averageAmount: Math.round((totalAmount / occurrences) * 100) / 100,
-        lastTransactionDate: new Date(row.last_transaction_date)
+        lastTransactionDate: row.lastTransactionDate
           .toISOString()
           .split('T')[0],
         frequency,
-        categoryName: row.category_name || 'Uncategorized',
+        categoryName: row.categoryName || 'Uncategorized',
       };
     });
 
@@ -1276,6 +1424,9 @@ export class BuiltInReportsService {
     startDate: string | undefined,
     endDate: string,
   ): Promise<BillPaymentHistoryResponse> {
+    const defaultCurrency = await this.getDefaultCurrency(userId);
+    const rateMap = await this.buildRateMap(defaultCurrency);
+
     // Get scheduled transactions
     const scheduledQuery = `
       SELECT
@@ -1334,6 +1485,7 @@ export class BuiltInReportsService {
       SELECT
         t.id,
         t.transaction_date,
+        t.currency_code,
         ABS(t.amount) as amount,
         LOWER(TRIM(COALESCE(p.name, t.payee_name))) as payee_name_normalized
       FROM transactions t
@@ -1357,6 +1509,7 @@ export class BuiltInReportsService {
     interface RawTx {
       id: string;
       transaction_date: Date;
+      currency_code: string;
       amount: string;
       payee_name_normalized: string | null;
     }
@@ -1382,7 +1535,7 @@ export class BuiltInReportsService {
       const scheduled = payeeToScheduled.get(tx.payee_name_normalized);
       if (!scheduled) return;
 
-      const txAmount = parseFloat(tx.amount);
+      const txAmount = this.convertAmount(parseFloat(tx.amount) || 0, tx.currency_code, defaultCurrency, rateMap);
       // Match within 20% tolerance
       if (
         txAmount >= scheduled.amount * 0.8 &&
@@ -1484,6 +1637,9 @@ export class BuiltInReportsService {
     endDate: string,
     limit: number = 500,
   ): Promise<UncategorizedTransactionsResponse> {
+    const defaultCurrency = await this.getDefaultCurrency(userId);
+    const rateMap = await this.buildRateMap(defaultCurrency);
+
     // Build query for uncategorized transactions
     // A transaction is uncategorized if:
     // - Non-split: category_id is NULL
@@ -1492,6 +1648,7 @@ export class BuiltInReportsService {
       SELECT
         t.id,
         t.transaction_date,
+        t.currency_code,
         t.amount,
         COALESCE(p.name, t.payee_name) as payee_name,
         t.description,
@@ -1528,6 +1685,7 @@ export class BuiltInReportsService {
     interface RawUncategorizedTx {
       id: string;
       transaction_date: string;
+      currency_code: string;
       amount: string;
       payee_name: string | null;
       description: string | null;
@@ -1540,15 +1698,16 @@ export class BuiltInReportsService {
     const transactions: UncategorizedTransactionItem[] = rows.map((row) => ({
       id: row.id,
       transactionDate: new Date(row.transaction_date).toISOString().split('T')[0],
-      amount: parseFloat(row.amount),
+      amount: this.convertAmount(parseFloat(row.amount) || 0, row.currency_code, defaultCurrency, rateMap),
       payeeName: row.payee_name,
       description: row.description,
       accountName: row.account_name,
     }));
 
-    // Get summary stats (separate query without limit)
+    // Get summary stats (separate query without limit), grouped by currency for conversion
     let summaryQuery = `
       SELECT
+        t.currency_code,
         COUNT(*) as total_count,
         COUNT(*) FILTER (WHERE t.amount < 0) as expense_count,
         COALESCE(SUM(ABS(t.amount)) FILTER (WHERE t.amount < 0), 0) as expense_total,
@@ -1576,7 +1735,10 @@ export class BuiltInReportsService {
       summaryParams.push(startDate);
     }
 
+    summaryQuery += ` GROUP BY t.currency_code`;
+
     interface RawSummary {
+      currency_code: string;
       total_count: string;
       expense_count: string;
       expense_total: string;
@@ -1584,17 +1746,30 @@ export class BuiltInReportsService {
       income_total: string;
     }
 
-    const [summaryRow]: RawSummary[] =
+    const summaryRows: RawSummary[] =
       await this.transactionsRepository.query(summaryQuery, summaryParams);
+
+    let totalCount = 0;
+    let expenseCount = 0;
+    let expenseTotal = 0;
+    let incomeCount = 0;
+    let incomeTotal = 0;
+    for (const row of summaryRows) {
+      totalCount += parseInt(row.total_count, 10);
+      expenseCount += parseInt(row.expense_count, 10);
+      expenseTotal += this.convertAmount(parseFloat(row.expense_total) || 0, row.currency_code, defaultCurrency, rateMap);
+      incomeCount += parseInt(row.income_count, 10);
+      incomeTotal += this.convertAmount(parseFloat(row.income_total) || 0, row.currency_code, defaultCurrency, rateMap);
+    }
 
     return {
       transactions,
       summary: {
-        totalCount: parseInt(summaryRow.total_count, 10),
-        expenseCount: parseInt(summaryRow.expense_count, 10),
-        expenseTotal: Math.round(parseFloat(summaryRow.expense_total) * 100) / 100,
-        incomeCount: parseInt(summaryRow.income_count, 10),
-        incomeTotal: Math.round(parseFloat(summaryRow.income_total) * 100) / 100,
+        totalCount,
+        expenseCount,
+        expenseTotal: Math.round(expenseTotal * 100) / 100,
+        incomeCount,
+        incomeTotal: Math.round(incomeTotal * 100) / 100,
       },
     };
   }

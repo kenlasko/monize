@@ -83,11 +83,19 @@ export interface CreateTransactionData {
 
 export interface UpdateTransactionData extends Partial<CreateTransactionData> {}
 
+export interface CurrencySummary {
+  totalIncome: number;
+  totalExpenses: number;
+  netCashFlow: number;
+  transactionCount: number;
+}
+
 export interface TransactionSummary {
   totalIncome: number;
   totalExpenses: number;
   netCashFlow: number;
   transactionCount: number;
+  byCurrency?: Record<string, CurrencySummary>;
 }
 
 export interface TransactionFilters {

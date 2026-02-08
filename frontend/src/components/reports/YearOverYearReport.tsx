@@ -22,7 +22,7 @@ const logger = createLogger('YearOverYearReport');
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 export function YearOverYearReport() {
-  const { formatCurrencyCompact: formatCurrency } = useNumberFormat();
+  const { formatCurrencyCompact: formatCurrency, formatCurrencyAxis } = useNumberFormat();
   const [yearData, setYearData] = useState<YearData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [yearsToCompare, setYearsToCompare] = useState(2);
@@ -190,7 +190,7 @@ export function YearOverYearReport() {
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
               <XAxis dataKey="name" tick={{ fontSize: 12 }} />
               <YAxis
-                tickFormatter={(value) => `$${Math.abs(value) >= 1000 ? `${(value / 1000).toFixed(0)}k` : value}`}
+                tickFormatter={formatCurrencyAxis}
                 tick={{ fontSize: 12 }}
               />
               <Tooltip content={<CustomTooltip />} />

@@ -16,6 +16,7 @@ import { Category } from '@/types/category';
 import { accountsApi } from '@/lib/accounts';
 import { categoriesApi } from '@/lib/categories';
 import { exchangeRatesApi, CurrencyInfo } from '@/lib/exchange-rates';
+import { getCurrencySymbol } from '@/lib/format';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { createLogger } from '@/lib/logger';
@@ -98,13 +99,6 @@ const accountTypeOptions = [
   { value: 'OTHER', label: 'Other' },
 ];
 
-const currencySymbols: Record<string, string> = {
-  CAD: '$',
-  USD: '$',
-  EUR: '€',
-  GBP: '£',
-  JPY: '¥',
-};
 
 const paymentFrequencyOptions = [
   { value: 'WEEKLY', label: 'Weekly' },
@@ -211,7 +205,7 @@ export function AccountForm({ account, onSubmit, onCancel }: AccountFormProps) {
   const watchedPaymentAmount = watch('paymentAmount');
   const watchedPaymentFrequency = watch('paymentFrequency');
   const watchedPaymentStartDate = watch('paymentStartDate');
-  const currencySymbol = currencySymbols[watchedCurrency] || '$';
+  const currencySymbol = getCurrencySymbol(watchedCurrency || defaultCurrency);
 
   // Show investment pair checkbox only when creating a new INVESTMENT account
   const showInvestmentPairOption = !account && watchedAccountType === 'INVESTMENT';

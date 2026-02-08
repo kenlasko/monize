@@ -52,15 +52,7 @@ export function CashFlowForecastChart({
   accounts,
   isLoading,
 }: CashFlowForecastChartProps) {
-  const { formatCurrencyCompact: formatCurrency } = useNumberFormat();
-
-  // Compact format for axis labels (e.g., "$5k")
-  const formatCompactCurrency = (value: number) => {
-    if (Math.abs(value) >= 1000) {
-      return `$${(value / 1000).toFixed(0)}k`;
-    }
-    return `$${value}`;
-  };
+  const { formatCurrencyCompact: formatCurrency, formatCurrencyAxis } = useNumberFormat();
   const [selectedPeriod, setSelectedPeriod] = useState<ForecastPeriod>('month');
   const [selectedAccountId, setSelectedAccountId] = useState<string>('all');
   const [initialized, setInitialized] = useState(false);
@@ -241,7 +233,7 @@ export function CashFlowForecastChart({
             <LineChart data={forecastData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" className="dark:stroke-gray-700" />
               <XAxis dataKey="label" tick={{ fill: '#6b7280', fontSize: 12 }} tickLine={false} axisLine={{ stroke: '#e5e7eb' }} interval="preserveStartEnd" />
-              <YAxis tick={{ fill: '#6b7280', fontSize: 12 }} tickLine={false} axisLine={{ stroke: '#e5e7eb' }} tickFormatter={formatCompactCurrency} width={60} domain={['auto', 'auto']} />
+              <YAxis tick={{ fill: '#6b7280', fontSize: 12 }} tickLine={false} axisLine={{ stroke: '#e5e7eb' }} tickFormatter={formatCurrencyAxis} width={60} domain={['auto', 'auto']} />
               <Tooltip content={<CustomTooltip />} />
               <ReferenceLine y={0} stroke="#ef4444" strokeDasharray="5 5" strokeOpacity={0.5} />
               <Line type="monotone" dataKey="balance" stroke="#9ca3af" strokeWidth={2} dot={false} strokeDasharray="5 5" />
@@ -273,7 +265,7 @@ export function CashFlowForecastChart({
                 tick={{ fill: '#6b7280', fontSize: 12 }}
                 tickLine={false}
                 axisLine={{ stroke: '#e5e7eb' }}
-                tickFormatter={formatCompactCurrency}
+                tickFormatter={formatCurrencyAxis}
                 width={60}
                 domain={['auto', 'auto']}
               />
@@ -303,7 +295,7 @@ export function CashFlowForecastChart({
                   const { cx, cy, payload } = props;
                   if (payload.balance === summary.minBalance) {
                     const color = summary.minBalance < 0 ? '#ef4444' : '#f59e0b';
-                    const label = formatCompactCurrency(summary.minBalance);
+                    const label = formatCurrencyAxis(summary.minBalance);
                     const labelWidth = label.length * 7 + 14;
                     const labelHeight = 22;
                     const arrowSize = 5;

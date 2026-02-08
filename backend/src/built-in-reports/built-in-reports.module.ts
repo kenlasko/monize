@@ -7,6 +7,8 @@ import { TransactionSplit } from '../transactions/entities/transaction-split.ent
 import { Category } from '../categories/entities/category.entity';
 import { Payee } from '../payees/entities/payee.entity';
 import { Account } from '../accounts/entities/account.entity';
+import { UserPreference } from '../users/entities/user-preference.entity';
+import { CurrenciesModule } from '../currencies/currencies.module';
 
 @Module({
   imports: [
@@ -16,7 +18,9 @@ import { Account } from '../accounts/entities/account.entity';
       Category,
       Payee,
       Account,
+      UserPreference,
     ]),
+    CurrenciesModule,
   ],
   controllers: [BuiltInReportsController],
   providers: [BuiltInReportsService],

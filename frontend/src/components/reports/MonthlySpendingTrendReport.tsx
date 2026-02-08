@@ -30,7 +30,7 @@ interface ChartDataItem {
 }
 
 export function MonthlySpendingTrendReport() {
-  const { formatCurrencyCompact: formatCurrency } = useNumberFormat();
+  const { formatCurrencyCompact: formatCurrency, formatCurrencyAxis } = useNumberFormat();
   const [chartData, setChartData] = useState<ChartDataItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { dateRange, setDateRange, startDate, setStartDate, endDate, setEndDate, resolvedRange, isValid } = useDateRange({ defaultRange: '1y', alignment: 'month' });
@@ -134,7 +134,7 @@ export function MonthlySpendingTrendReport() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                   <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                   <YAxis
-                    tickFormatter={(value) => `$${value >= 1000 ? `${(value / 1000).toFixed(0)}k` : value}`}
+                    tickFormatter={formatCurrencyAxis}
                     tick={{ fontSize: 12 }}
                   />
                   <Tooltip content={<CustomTooltip />} />

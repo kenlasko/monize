@@ -1,4 +1,20 @@
 /**
+ * Get the narrow currency symbol for a given currency code (e.g., '$', '€', '£').
+ * Uses Intl.NumberFormat so it works for any valid ISO 4217 currency code.
+ */
+export function getCurrencySymbol(currencyCode: string): string {
+  try {
+    return new Intl.NumberFormat('en', {
+      style: 'currency',
+      currency: currencyCode,
+      currencyDisplay: 'narrowSymbol',
+    }).formatToParts(0).find(p => p.type === 'currency')?.value || '$';
+  } catch {
+    return '$';
+  }
+}
+
+/**
  * Format a number as currency with the specified currency code
  */
 export function formatCurrency(amount: number, currencyCode: string = 'USD'): string {

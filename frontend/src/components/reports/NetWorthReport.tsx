@@ -24,7 +24,7 @@ import { createLogger } from '@/lib/logger';
 const logger = createLogger('NetWorthReport');
 
 export function NetWorthReport() {
-  const { formatCurrencyCompact: formatCurrency } = useNumberFormat();
+  const { formatCurrencyCompact: formatCurrency, formatCurrencyAxis } = useNumberFormat();
   const [monthlyData, setMonthlyData] = useState<MonthlyNetWorth[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRecalculating, setIsRecalculating] = useState(false);
@@ -238,7 +238,7 @@ export function NetWorthReport() {
                 />
                 <YAxis
                   domain={yAxisDomain}
-                  tickFormatter={(value) => `$${value >= 1000 ? `${(value / 1000).toFixed(0)}k` : value}`}
+                  tickFormatter={formatCurrencyAxis}
                   tick={{ fontSize: 12 }}
                 />
                 <Tooltip content={<CustomTooltip />} />

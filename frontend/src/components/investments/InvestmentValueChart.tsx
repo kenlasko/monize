@@ -26,7 +26,7 @@ interface InvestmentValueChartProps {
 }
 
 export function InvestmentValueChart({ accountIds }: InvestmentValueChartProps) {
-  const { formatCurrencyCompact: formatCurrency } = useNumberFormat();
+  const { formatCurrencyCompact: formatCurrency, formatCurrencyAxis } = useNumberFormat();
   const [monthlyData, setMonthlyData] = useState<MonthlyInvestmentValue[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { dateRange, setDateRange, resolvedRange, isValid } = useDateRange({ defaultRange: '1y', alignment: 'month' });
@@ -196,7 +196,7 @@ export function InvestmentValueChart({ accountIds }: InvestmentValueChartProps) 
               />
               <YAxis
                 domain={yAxisDomain}
-                tickFormatter={(value) => `$${value >= 1000 ? `${(value / 1000).toFixed(0)}k` : value}`}
+                tickFormatter={formatCurrencyAxis}
                 tick={{ fontSize: 12 }}
               />
               <Tooltip content={<CustomTooltip />} />

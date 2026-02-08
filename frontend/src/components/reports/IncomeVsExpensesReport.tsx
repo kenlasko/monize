@@ -36,7 +36,7 @@ interface ChartDataItem {
 
 export function IncomeVsExpensesReport() {
   const router = useRouter();
-  const { formatCurrencyCompact: formatCurrency } = useNumberFormat();
+  const { formatCurrencyCompact: formatCurrency, formatCurrencyAxis } = useNumberFormat();
   const [chartData, setChartData] = useState<ChartDataItem[]>([]);
   const [totals, setTotals] = useState({ totalIncome: 0, totalExpenses: 0, totalSavings: 0, savingsRate: 0 });
   const [isLoading, setIsLoading] = useState(true);
@@ -160,7 +160,7 @@ export function IncomeVsExpensesReport() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                   <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                   <YAxis
-                    tickFormatter={(value) => `$${value >= 1000 ? `${(value / 1000).toFixed(0)}k` : value}`}
+                    tickFormatter={formatCurrencyAxis}
                     tick={{ fontSize: 12 }}
                   />
                   <Tooltip content={<CustomTooltip />} />

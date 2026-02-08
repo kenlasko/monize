@@ -6,6 +6,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { Transaction } from '@/types/transaction';
 import { Category } from '@/types/category';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { CHART_COLOURS } from '@/lib/chart-colours';
 
 interface ExpensesPieChartProps {
@@ -22,6 +23,7 @@ export function ExpensesPieChart({
 }: ExpensesPieChartProps) {
   const router = useRouter();
   const { formatCurrencyCompact: formatCurrency } = useNumberFormat();
+  const { convertToDefault } = useExchangeRates();
 
   // Calculate spending by category
   const chartData = useMemo(() => {
@@ -39,14 +41,14 @@ export function ExpensesPieChart({
       // Only count expenses (negative amounts)
       const txAmount = Number(tx.amount) || 0;
       if (txAmount >= 0) return;
-      const expenseAmount = Math.abs(txAmount);
+      const expenseAmount = Math.abs(convertToDefault(txAmount, tx.currencyCode));
 
       if (tx.isSplit && tx.splits && tx.splits.length > 0) {
         // Handle split transactions
         tx.splits.forEach((split) => {
           const splitAmt = Number(split.amount) || 0;
           if (splitAmt >= 0) return;
-          const splitAmount = Math.abs(splitAmt);
+          const splitAmount = Math.abs(convertToDefault(splitAmt, tx.currencyCode));
           if (split.categoryId && split.category) {
             const cat = categoryLookup.get(split.categoryId) || split.category;
             const existing = categoryMap.get(split.categoryId);
@@ -122,7 +124,7 @@ export function ExpensesPieChart({
     });
 
     return data;
-  }, [transactions, categories]);
+  }, [transactions, categories, convertToDefault]);
 
   const totalExpenses = chartData.reduce((sum, item) => sum + item.value, 0);
 

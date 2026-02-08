@@ -6,6 +6,7 @@ import { ScheduledTransaction } from '@/types/scheduled-transaction';
 import { parseLocalDate } from '@/lib/utils';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { useExchangeRates } from '@/hooks/useExchangeRates';
 
 interface UpcomingBillsProps {
   scheduledTransactions: ScheduledTransaction[];
@@ -16,6 +17,7 @@ export function UpcomingBills({ scheduledTransactions, isLoading }: UpcomingBill
   const router = useRouter();
   const { formatDate } = useDateFormat();
   const { formatCurrency: formatCurrencyBase } = useNumberFormat();
+  const { convertToDefault } = useExchangeRates();
 
   // Filter to only bills (negative amounts) in the next 7 days
   const today = startOfDay(new Date());
@@ -83,7 +85,7 @@ export function UpcomingBills({ scheduledTransactions, isLoading }: UpcomingBill
     );
   }
 
-  const totalDue = upcomingBills.reduce((sum, bill) => sum + Math.abs(bill.amount), 0);
+  const totalDue = upcomingBills.reduce((sum, bill) => sum + Math.abs(convertToDefault(bill.amount, bill.currencyCode)), 0);
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
@@ -137,7 +139,7 @@ export function UpcomingBills({ scheduledTransactions, isLoading }: UpcomingBill
       <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
         <span className="text-sm text-gray-600 dark:text-gray-400">Total due</span>
         <span className="font-semibold text-red-600 dark:text-red-400">
-          -${totalDue.toLocaleString('en-CA', { minimumFractionDigits: 2 })}
+          -{formatCurrencyBase(totalDue)}
         </span>
       </div>
       <button

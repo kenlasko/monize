@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Security, CreateSecurityData } from '@/types/investment';
 import { investmentsApi } from '@/lib/investments';
+import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { createLogger } from '@/lib/logger';
 
 const logger = createLogger('SecurityForm');
@@ -48,6 +49,7 @@ const currencyOptions = [
 ];
 
 export function SecurityForm({ security, onSubmit, onCancel }: SecurityFormProps) {
+  const { defaultCurrency } = useNumberFormat();
   const [isLookingUp, setIsLookingUp] = useState(false);
   const lookupTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -64,7 +66,7 @@ export function SecurityForm({ security, onSubmit, onCancel }: SecurityFormProps
       name: security?.name || '',
       securityType: security?.securityType || '',
       exchange: security?.exchange || '',
-      currencyCode: security?.currencyCode || 'CAD',
+      currencyCode: security?.currencyCode || defaultCurrency,
     },
   });
 

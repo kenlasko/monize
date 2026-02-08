@@ -166,14 +166,14 @@ export function ScheduledTransactionList({
     }
   };
 
-  const formatAmount = (amount: number | null | undefined) => {
+  const formatAmount = (amount: number | null | undefined, currencyCode?: string) => {
     if (amount == null) return <span className="text-gray-400">—</span>;
     const numAmount = Number(amount);
     if (isNaN(numAmount)) return <span className="text-gray-400">—</span>;
 
     const isNegative = numAmount < 0;
     const absAmount = Math.abs(numAmount);
-    const formatted = formatCurrency(absAmount);
+    const formatted = formatCurrency(absAmount, currencyCode);
 
     return (
       <span className={isNegative ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}>
@@ -347,14 +347,14 @@ export function ScheduledTransactionList({
                    Number(transaction.nextOverride.amount) !== Number(transaction.amount) ? (
                     <div className="flex flex-col items-end">
                       <span className="text-xs text-gray-400 dark:text-gray-500 line-through">
-                        {formatAmount(transaction.amount)}
+                        {formatAmount(transaction.amount, transaction.currencyCode)}
                       </span>
                       <span title="Modified for next occurrence">
-                        {formatAmount(transaction.nextOverride.amount)}
+                        {formatAmount(transaction.nextOverride.amount, transaction.currencyCode)}
                       </span>
                     </div>
                   ) : (
-                    formatAmount(transaction.amount)
+                    formatAmount(transaction.amount, transaction.currencyCode)
                   )}
                 </td>
 

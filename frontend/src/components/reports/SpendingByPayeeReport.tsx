@@ -30,7 +30,7 @@ interface ChartDataItem {
 
 export function SpendingByPayeeReport() {
   const router = useRouter();
-  const { formatCurrencyCompact: formatCurrency } = useNumberFormat();
+  const { formatCurrencyCompact: formatCurrency, formatCurrencyAxis } = useNumberFormat();
   const [chartData, setChartData] = useState<ChartDataItem[]>([]);
   const [totalExpenses, setTotalExpenses] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -132,7 +132,7 @@ export function SpendingByPayeeReport() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                   <XAxis
                     type="number"
-                    tickFormatter={(value) => `$${value >= 1000 ? `${(value / 1000).toFixed(0)}k` : value}`}
+                    tickFormatter={formatCurrencyAxis}
                   />
                   <YAxis type="category" dataKey="name" tick={{ fontSize: 12 }} width={120} />
                   <Tooltip content={<CustomTooltip />} />

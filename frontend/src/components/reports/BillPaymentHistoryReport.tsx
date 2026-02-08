@@ -24,7 +24,7 @@ const logger = createLogger('BillPaymentHistoryReport');
 
 export function BillPaymentHistoryReport() {
   const router = useRouter();
-  const { formatCurrencyCompact: formatCurrency } = useNumberFormat();
+  const { formatCurrencyCompact: formatCurrency, formatCurrencyAxis } = useNumberFormat();
   const [billData, setBillData] = useState<BillPaymentHistoryResponse | null>(null);
   const { dateRange, setDateRange, resolvedRange } = useDateRange({ defaultRange: '1y', alignment: 'day' });
   const [isLoading, setIsLoading] = useState(true);
@@ -169,7 +169,7 @@ export function BillPaymentHistoryReport() {
               <BarChart data={billData.monthlyTotals}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                 <XAxis dataKey="label" tick={{ fontSize: 11 }} />
-                <YAxis tickFormatter={(value) => `$${value >= 1000 ? `${(value / 1000).toFixed(0)}k` : value}`} />
+                <YAxis tickFormatter={formatCurrencyAxis} />
                 <Tooltip content={<CustomTooltip />} />
                 <Bar dataKey="total" fill="#3b82f6" name="Total Paid" radius={[4, 4, 0, 0]} />
               </BarChart>

@@ -43,7 +43,7 @@ interface SecurityIncome {
 }
 
 export function DividendIncomeReport() {
-  const { formatCurrencyCompact: formatCurrency, formatCurrency: formatCurrencyFull } = useNumberFormat();
+  const { formatCurrencyCompact: formatCurrency, formatCurrency: formatCurrencyFull, formatCurrencyAxis } = useNumberFormat();
   const { defaultCurrency, convertToDefault } = useExchangeRates();
   const [transactions, setTransactions] = useState<InvestmentTransaction[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -347,7 +347,7 @@ export function DividendIncomeReport() {
               <BarChart data={monthlyData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                 <XAxis dataKey="label" tick={{ fontSize: 11 }} />
-                <YAxis tickFormatter={(value) => `$${value >= 1000 ? `${(value / 1000).toFixed(0)}k` : value}`} />
+                <YAxis tickFormatter={formatCurrencyAxis} />
                 <Tooltip content={<CustomTooltip />} />
                 <Legend />
                 <Bar dataKey="dividends" stackId="a" fill="#22c55e" name="Dividends" />

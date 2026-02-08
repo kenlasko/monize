@@ -21,6 +21,7 @@ import { Payee } from '@/types/payee';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { Modal } from '@/components/ui/Modal';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -93,6 +94,7 @@ export default function TransactionsPage() {
   const searchParams = useSearchParams();
   const { formatDate } = useDateFormat();
   const { formatCurrency } = useNumberFormat();
+  const { convertToDefault, defaultCurrency } = useExchangeRates();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -119,6 +121,22 @@ export default function TransactionsPage() {
     netCashFlow: 0,
     transactionCount: 0,
   });
+
+  // Convert per-currency totals to the user's base currency
+  const convertedSummary = useMemo(() => {
+    const bc = summary.byCurrency;
+    if (!bc || Object.keys(bc).length <= 1) {
+      // Single currency or no breakdown — use raw totals (no conversion needed)
+      return { totalIncome: summary.totalIncome, totalExpenses: summary.totalExpenses, netCashFlow: summary.netCashFlow };
+    }
+    let totalIncome = 0;
+    let totalExpenses = 0;
+    for (const [currency, data] of Object.entries(bc)) {
+      totalIncome += convertToDefault(data.totalIncome, currency);
+      totalExpenses += convertToDefault(data.totalExpenses, currency);
+    }
+    return { totalIncome, totalExpenses, netCashFlow: totalIncome - totalExpenses };
+  }, [summary, convertToDefault]);
 
   // Filters - initialize from URL params, falling back to localStorage
   const [filterAccountIds, setFilterAccountIds] = useState<string[]>([]);
@@ -548,21 +566,21 @@ export default function TransactionsPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           <SummaryCard
             label="Total Income"
-            value={formatCurrency(summary.totalIncome)}
+            value={formatCurrency(convertedSummary.totalIncome)}
             icon={SummaryIcons.plus}
             valueColor="green"
           />
           <SummaryCard
             label="Total Expenses"
-            value={formatCurrency(summary.totalExpenses)}
+            value={formatCurrency(convertedSummary.totalExpenses)}
             icon={SummaryIcons.minus}
             valueColor="red"
           />
           <SummaryCard
             label="Net Cash Flow"
-            value={formatCurrency(summary.netCashFlow)}
+            value={formatCurrency(convertedSummary.netCashFlow)}
             icon={SummaryIcons.money}
-            valueColor={summary.netCashFlow >= 0 ? 'blue' : 'red'}
+            valueColor={convertedSummary.netCashFlow >= 0 ? 'blue' : 'red'}
           />
         </div>
 

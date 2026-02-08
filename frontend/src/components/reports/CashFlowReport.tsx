@@ -31,7 +31,7 @@ interface ChartDataItem {
 }
 
 export function CashFlowReport() {
-  const { formatCurrencyCompact: formatCurrency } = useNumberFormat();
+  const { formatCurrencyCompact: formatCurrency, formatCurrencyAxis } = useNumberFormat();
   const [monthlyData, setMonthlyData] = useState<ChartDataItem[]>([]);
   const [incomeItems, setIncomeItems] = useState<IncomeSourceItem[]>([]);
   const [expenseItems, setExpenseItems] = useState<CategorySpendingItem[]>([]);
@@ -177,7 +177,7 @@ export function CashFlowReport() {
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
               <XAxis dataKey="name" tick={{ fontSize: 12 }} />
               <YAxis
-                tickFormatter={(value) => `$${Math.abs(value) >= 1000 ? `${(value / 1000).toFixed(0)}k` : value}`}
+                tickFormatter={formatCurrencyAxis}
                 tick={{ fontSize: 12 }}
               />
               <Tooltip content={<CustomTooltip />} />

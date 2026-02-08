@@ -12,15 +12,10 @@ import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { Select } from '@/components/ui/Select';
 import { transactionsApi } from '@/lib/transactions';
 import { accountsApi } from '@/lib/accounts';
-import { usePreferencesStore } from '@/store/preferencesStore';
 import { Account } from '@/types/account';
 import { Transaction, ReconciliationData, TransactionStatus } from '@/types/transaction';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
-
-const currencySymbols: Record<string, string> = {
-  USD: '$', CAD: '$', EUR: '€', GBP: '£', JPY: '¥', CNY: '¥', AUD: '$', CHF: 'CHF',
-};
-const getCurrencySymbol = (code?: string): string => currencySymbols[(code || 'CAD').toUpperCase()] || '$';
+import { getCurrencySymbol } from '@/lib/format';
 
 const LIABILITY_TYPES = new Set(['CREDIT_CARD', 'LOAN', 'MORTGAGE', 'LINE_OF_CREDIT']);
 
@@ -38,9 +33,7 @@ function ReconcileContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const preselectedAccountId = searchParams.get('accountId');
-  const { preferences } = usePreferencesStore();
-  const defaultCurrency = preferences?.defaultCurrency || 'CAD';
-  const { formatCurrency: formatCurrencyBase } = useNumberFormat();
+  const { formatCurrency: formatCurrencyBase, defaultCurrency } = useNumberFormat();
 
   const [step, setStep] = useState<ReconcileStep>('setup');
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -179,7 +172,7 @@ function ReconcileContent() {
 
   const formatCurrency = (amount: number | string | null | undefined) => {
     const numericAmount = Number(amount) || 0;
-    const currency = selectedAccount?.currencyCode || 'CAD';
+    const currency = selectedAccount?.currencyCode || defaultCurrency;
     const formatted = formatCurrencyBase(numericAmount, currency);
 
     // Only show currency code if it differs from user's default currency
@@ -222,7 +215,7 @@ function ReconcileContent() {
 
           <CurrencyInput
             label="Statement Ending Balance"
-            prefix={getCurrencySymbol(selectedAccount?.currencyCode)}
+            prefix={getCurrencySymbol(selectedAccount?.currencyCode || defaultCurrency)}
             placeholder={isLiability ? '-0.00' : '0.00'}
             value={statementBalance}
             onChange={setStatementBalance}

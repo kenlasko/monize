@@ -37,7 +37,7 @@ const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export function WeekendVsWeekdayReport() {
   const router = useRouter();
-  const { formatCurrencyCompact: formatCurrency } = useNumberFormat();
+  const { formatCurrencyCompact: formatCurrency, formatCurrencyAxis } = useNumberFormat();
   const [reportData, setReportData] = useState<WeekendVsWeekdayResponse | null>(null);
   const { dateRange, setDateRange, resolvedRange } = useDateRange({ defaultRange: '3m', alignment: 'day' });
   const [isLoading, setIsLoading] = useState(true);
@@ -308,7 +308,7 @@ export function WeekendVsWeekdayReport() {
               <BarChart data={dayData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                 <XAxis dataKey="day" />
-                <YAxis tickFormatter={(value) => `$${value >= 1000 ? `${(value / 1000).toFixed(0)}k` : value}`} />
+                <YAxis tickFormatter={formatCurrencyAxis} />
                 <Tooltip content={<CustomTooltip />} />
                 <Bar dataKey="total" name="Total Spent">
                   {dayData.map((entry, index) => (
@@ -349,7 +349,7 @@ export function WeekendVsWeekdayReport() {
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={categoryComparison} layout="vertical" margin={{ left: 100 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis type="number" tickFormatter={(value) => `$${value >= 1000 ? `${(value / 1000).toFixed(0)}k` : value}`} />
+                <XAxis type="number" tickFormatter={formatCurrencyAxis} />
                 <YAxis type="category" dataKey="name" tick={{ fontSize: 12 }} width={100} />
                 <Tooltip content={<CustomTooltip />} />
                 <Legend />

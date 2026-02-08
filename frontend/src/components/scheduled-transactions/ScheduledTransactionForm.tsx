@@ -20,7 +20,8 @@ import { Payee } from '@/types/payee';
 import { Category } from '@/types/category';
 import { Account } from '@/types/account';
 import { buildCategoryTree } from '@/lib/categoryUtils';
-import { roundToCents } from '@/lib/format';
+import { roundToCents, getCurrencySymbol } from '@/lib/format';
+import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { createLogger } from '@/lib/logger';
 
 const logger = createLogger('ScheduledTxForm');
@@ -82,6 +83,7 @@ export function ScheduledTransactionForm({
   onSuccess,
   onCancel,
 }: ScheduledTransactionFormProps) {
+  const { defaultCurrency } = useNumberFormat();
   const [isLoading, setIsLoading] = useState(false);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -148,7 +150,7 @@ export function ScheduledTransactionForm({
           reminderDaysBefore: scheduledTransaction.reminderDaysBefore,
         }
       : {
-          currencyCode: 'CAD',
+          currencyCode: defaultCurrency,
           frequency: 'MONTHLY' as FrequencyType,
           nextDueDate: new Date().toISOString().split('T')[0],
           isActive: true,
@@ -172,21 +174,7 @@ export function ScheduledTransactionForm({
     }
   }, [watchedAccountId, accounts, setValue]);
 
-  // Get currency symbol from code
-  const getCurrencySymbol = (code: string): string => {
-    const symbols: Record<string, string> = {
-      USD: '$',
-      CAD: '$',
-      EUR: '€',
-      GBP: '£',
-      JPY: '¥',
-      CNY: '¥',
-      AUD: '$',
-      NZD: '$',
-    };
-    return symbols[code?.toUpperCase()] || '$';
-  };
-  const currencySymbol = getCurrencySymbol(watchedCurrencyCode || 'CAD');
+  const currencySymbol = getCurrencySymbol(watchedCurrencyCode || defaultCurrency);
 
   // Load accounts, categories, payees on mount
   useEffect(() => {
@@ -619,7 +607,7 @@ export function ScheduledTransactionForm({
           sourceAccountId={watchedAccountId}
           transactionAmount={watchedAmount || 0}
           onTransactionAmountChange={handleTransactionAmountChange}
-          currencyCode={watchedCurrencyCode || 'CAD'}
+          currencyCode={watchedCurrencyCode || defaultCurrency}
         />
       )}
 

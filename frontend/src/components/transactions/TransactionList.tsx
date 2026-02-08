@@ -237,10 +237,10 @@ export function TransactionList({
     return balances;
   }, [transactions, startingBalance, isSingleAccountView]);
 
-  const formatAmount = useCallback((amount: number) => {
+  const formatAmount = useCallback((amount: number, currencyCode?: string) => {
     const isNegative = amount < 0;
     const absAmount = Math.abs(amount);
-    const formatted = formatCurrency(absAmount);
+    const formatted = formatCurrency(absAmount, currencyCode);
 
     return (
       <span className={isNegative ? 'text-red-600' : 'text-green-600'}>
@@ -249,8 +249,8 @@ export function TransactionList({
     );
   }, [formatCurrency]);
 
-  const formatBalance = useCallback((balance: number) => {
-    const formatted = formatCurrency(Math.abs(balance));
+  const formatBalance = useCallback((balance: number, currencyCode?: string) => {
+    const formatted = formatCurrency(Math.abs(balance), currencyCode);
     return (
       <span className={balance < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-gray-100'}>
         {balance < 0 ? `-${formatted}` : formatted}
@@ -493,12 +493,12 @@ export function TransactionList({
                   </div>
                 </td>
                 <td className={`${cellPadding} whitespace-nowrap text-sm font-medium text-right ${isVoid ? 'line-through' : ''}`}>
-                  {formatAmount(transaction.amount)}
+                  {formatAmount(transaction.amount, transaction.currencyCode)}
                 </td>
                 {isSingleAccountView && (
                   <td className={`${cellPadding} whitespace-nowrap text-sm font-medium text-right`}>
                     {runningBalances.has(transaction.id)
-                      ? formatBalance(runningBalances.get(transaction.id)!)
+                      ? formatBalance(runningBalances.get(transaction.id)!, transaction.currencyCode)
                       : '-'}
                   </td>
                 )}

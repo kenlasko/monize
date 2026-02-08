@@ -1008,10 +1008,12 @@ export class TransactionsService {
     totalExpenses: number;
     netCashFlow: number;
     transactionCount: number;
+    byCurrency: Record<string, { totalIncome: number; totalExpenses: number; netCashFlow: number; transactionCount: number }>;
   }> {
     const queryBuilder = this.transactionsRepository
       .createQueryBuilder('transaction')
-      .select('SUM(CASE WHEN transaction.amount > 0 THEN transaction.amount ELSE 0 END)', 'totalIncome')
+      .select('transaction.currencyCode', 'currencyCode')
+      .addSelect('SUM(CASE WHEN transaction.amount > 0 THEN transaction.amount ELSE 0 END)', 'totalIncome')
       .addSelect('SUM(CASE WHEN transaction.amount < 0 THEN ABS(transaction.amount) ELSE 0 END)', 'totalExpenses')
       .addSelect('COUNT(*)', 'transactionCount')
       .where('transaction.userId = :userId', { userId });
@@ -1089,16 +1091,38 @@ export class TransactionsService {
       );
     }
 
-    const result = await queryBuilder.getRawOne();
+    queryBuilder.groupBy('transaction.currencyCode');
 
-    const totalIncome = Number(result.totalIncome) || 0;
-    const totalExpenses = Number(result.totalExpenses) || 0;
+    const rows = await queryBuilder.getRawMany();
+
+    let totalIncome = 0;
+    let totalExpenses = 0;
+    let transactionCount = 0;
+    const byCurrency: Record<string, { totalIncome: number; totalExpenses: number; netCashFlow: number; transactionCount: number }> = {};
+
+    for (const row of rows) {
+      const income = Number(row.totalIncome) || 0;
+      const expenses = Number(row.totalExpenses) || 0;
+      const count = Number(row.transactionCount) || 0;
+      totalIncome += income;
+      totalExpenses += expenses;
+      transactionCount += count;
+      if (row.currencyCode) {
+        byCurrency[row.currencyCode] = {
+          totalIncome: income,
+          totalExpenses: expenses,
+          netCashFlow: income - expenses,
+          transactionCount: count,
+        };
+      }
+    }
 
     return {
       totalIncome,
       totalExpenses,
       netCashFlow: totalIncome - totalExpenses,
-      transactionCount: Number(result.transactionCount) || 0,
+      transactionCount,
+      byCurrency,
     };
   }
 
