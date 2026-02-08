@@ -14,6 +14,8 @@ This design allows you to:
 - Buy/sell securities using the cash in the account
 - Track dividends, interest, and capital gains
 - Calculate performance and gains/losses
+- View portfolio summaries with real-time valuations
+- Track daily price movements and top movers
 
 ## Architecture
 
@@ -24,6 +26,7 @@ This design allows you to:
 {
   id: UUID
   accountType: 'INVESTMENT'
+  investmentSubtype: 'BROKERAGE' | 'RRSP' | 'TFSA' | 'RESP' | '401K' | 'IRA' | 'ROTH_IRA' | 'OTHER'
   name: 'My Brokerage Account'
   currentBalance: 5000.00  // Cash available in the account
   currencyCode: 'USD'
@@ -38,7 +41,7 @@ This design allows you to:
   id: UUID
   symbol: 'AAPL'
   name: 'Apple Inc.'
-  securityType: 'STOCK'
+  securityType: 'STOCK' | 'ETF' | 'BOND' | 'MUTUAL_FUND'
   exchange: 'NASDAQ'
   currencyCode: 'USD'
   isActive: true
@@ -56,7 +59,21 @@ This design allows you to:
 }
 ```
 
-#### 4. InvestmentTransaction
+#### 4. SecurityPrice
+```typescript
+{
+  id: UUID
+  securityId: UUID
+  priceDate: Date  // Trading day date (weekdays only)
+  openPrice: 148.50
+  highPrice: 152.00
+  lowPrice: 147.80
+  closePrice: 151.25
+  volume: 58000000
+}
+```
+
+#### 5. InvestmentTransaction
 ```typescript
 {
   id: UUID
@@ -71,6 +88,24 @@ This design allows you to:
   totalAmount: 15035.99  // Calculated: (qty * price) + commission
 }
 ```
+
+## Price Integration
+
+MoneyMate integrates with Yahoo Finance for real-time and historical security prices.
+
+### Automatic Price Updates
+- **Schedule**: Monday–Friday at 5 PM EST via cron job (`0 17 * * 1-5`)
+- **Scope**: All active securities with holdings
+- **Trading Date**: Uses Yahoo Finance's `regularMarketTime` to determine the actual trading date (avoids weekend duplicates)
+- **Exchanges**: Supports US (NYSE, NASDAQ, AMEX) and Canadian (TSX, TSXV) exchanges
+- Yahoo Finance symbols: US stocks use plain symbols (e.g., `AAPL`), Canadian stocks use `.TO` suffix (e.g., `RY.TO`)
+
+### Manual Price Refresh
+- `POST /api/v1/securities/prices/refresh` — Refresh prices for all held securities
+- `POST /api/v1/securities/prices/refresh-security/:id` — Refresh a single security
+
+### Historical Backfill
+- `POST /api/v1/securities/prices/backfill/:id` — Backfill historical prices for a security
 
 ## Investment Transaction Types
 
@@ -159,9 +194,13 @@ This design allows you to:
 - **Use Case**: Moving securities between accounts
 
 ### SPLIT
-- **Effect on Holdings**: Special handling for stock splits
+- **Effect on Holdings**: Adjusts quantity and average cost for stock splits
 - **Effect on Cash**: No change
-- **Note**: Future implementation for corporate actions
+
+### ADD_SHARES / REMOVE_SHARES
+- **Effect on Holdings**: Directly adds or removes shares
+- **Effect on Cash**: No change
+- **Use Case**: Correcting positions, initial setup
 
 ### INTEREST / CAPITAL_GAIN
 - **Effect on Holdings**: No change
@@ -194,6 +233,12 @@ Authorization: Bearer {token}
 #### Search Securities
 ```http
 GET /api/v1/securities/search?q=apple
+Authorization: Bearer {token}
+```
+
+#### Lookup Security (Yahoo Finance)
+```http
+GET /api/v1/securities/lookup?q=AAPL
 Authorization: Bearer {token}
 ```
 
@@ -232,6 +277,76 @@ Response:
     }
   ]
 }
+```
+
+### Portfolio
+
+#### Portfolio Summary
+```http
+GET /api/v1/portfolio/summary
+Authorization: Bearer {token}
+
+Response:
+{
+  "totalMarketValue": 125000.00,
+  "totalCostBasis": 100000.00,
+  "totalGainLoss": 25000.00,
+  "totalGainLossPercent": 25.00,
+  "holdings": [...]
+}
+```
+
+#### Top Daily Movers
+```http
+GET /api/v1/portfolio/top-movers
+Authorization: Bearer {token}
+
+Response:
+[
+  {
+    "securityId": "uuid",
+    "symbol": "AAPL",
+    "name": "Apple Inc.",
+    "currencyCode": "USD",
+    "currentPrice": 185.50,
+    "previousPrice": 182.00,
+    "dailyChange": 3.50,
+    "dailyChangePercent": 1.92,
+    "marketValue": 18550.00
+  }
+]
+```
+
+#### Asset Allocation
+```http
+GET /api/v1/portfolio/asset-allocation
+Authorization: Bearer {token}
+```
+
+### Security Prices
+
+#### Refresh All Prices
+```http
+POST /api/v1/securities/prices/refresh
+Authorization: Bearer {token}
+```
+
+#### Refresh Single Security
+```http
+POST /api/v1/securities/prices/refresh-security/{id}
+Authorization: Bearer {token}
+```
+
+#### Backfill Historical Prices
+```http
+POST /api/v1/securities/prices/backfill/{id}
+Authorization: Bearer {token}
+```
+
+#### Get Price History
+```http
+GET /api/v1/securities/{id}/prices?startDate=2026-01-01&endDate=2026-01-31
+Authorization: Bearer {token}
 ```
 
 ### Investment Transactions
@@ -319,26 +434,23 @@ Authorization: Bearer {token}
 POST /api/v1/accounts
 {
   "accountType": "INVESTMENT",
+  "investmentSubtype": "BROKERAGE",
   "name": "My Brokerage",
   "currencyCode": "USD",
   "openingBalance": 10000,
   "institution": "TD Ameritrade"
 }
 
-# Step 2: Create securities you want to track
+# Step 2: Search for securities (via Yahoo Finance lookup)
+GET /api/v1/securities/lookup?q=AAPL
+
+# Step 3: Create securities you want to track
 POST /api/v1/securities
 {
   "symbol": "AAPL",
   "name": "Apple Inc.",
   "securityType": "STOCK",
-  "currencyCode": "USD"
-}
-
-POST /api/v1/securities
-{
-  "symbol": "MSFT",
-  "name": "Microsoft Corporation",
-  "securityType": "STOCK",
+  "exchange": "NASDAQ",
   "currencyCode": "USD"
 }
 ```
@@ -536,37 +648,48 @@ DELETE /api/v1/investment-transactions/{id}
 
 All tables are already created in the database:
 
-- `securities` - Security master data
-- `holdings` - Current positions per account
-- `investment_transactions` - Transaction history
-- `security_prices` - Historical price data (for future use)
+- `securities` - Security master data (symbol, name, type, exchange, currency)
+- `holdings` - Current positions per account (quantity, average cost)
+- `investment_transactions` - Transaction history (buy, sell, dividend, etc.)
+- `security_prices` - Historical price data with daily OHLCV data (updated automatically)
 
 Constraints:
 - `UNIQUE(account_id, security_id)` on holdings - one holding per security per account
+- `UNIQUE(security_id, price_date)` on security_prices - one price per security per trading day
 - Foreign keys with CASCADE deletes for data integrity
 - Decimal precision: 20,4 for prices, 20,8 for quantities
+
+## Multi-Currency Support
+
+Securities can be denominated in different currencies than the investment account:
+- Each security has its own `currencyCode` (e.g., USD for US stocks, CAD for TSX stocks)
+- The portfolio summary and top movers display prices in the security's native currency
+- Foreign securities (different from user's default currency) show the currency code alongside the price
+- Exchange rates are updated daily for portfolio valuation in the user's default currency
 
 ## Next Steps
 
 Potential enhancements:
-1. **Price Integration**: Fetch real-time prices from APIs
-2. **Performance Tracking**: Calculate IRR, TWR, and other metrics
-3. **Tax Reporting**: Generate capital gains reports
-4. **Lot Tracking**: Track specific tax lots (FIFO, LIFO, specific identification)
-5. **Corporate Actions**: Handle stock splits, mergers, spinoffs
-6. **Multi-Currency**: Support securities in different currencies
-7. **Margin Accounts**: Track margin borrowing and interest
+1. **Performance Tracking**: Calculate IRR, TWR, and other metrics
+2. **Tax Reporting**: Generate capital gains reports
+3. **Lot Tracking**: Track specific tax lots (FIFO, LIFO, specific identification)
+4. **Corporate Actions**: Handle mergers, spinoffs
+5. **Margin Accounts**: Track margin borrowing and interest
 
 ## File Reference
 
 Key backend files:
 - [security.entity.ts](src/securities/entities/security.entity.ts) - Security model
+- [security-price.entity.ts](src/securities/entities/security-price.entity.ts) - Price data model
 - [holding.entity.ts](src/securities/entities/holding.entity.ts) - Holding model
 - [investment-transaction.entity.ts](src/securities/entities/investment-transaction.entity.ts) - Transaction model
 - [securities.service.ts](src/securities/securities.service.ts) - Security operations
+- [security-price.service.ts](src/securities/security-price.service.ts) - Price refresh and Yahoo Finance integration
+- [portfolio.service.ts](src/securities/portfolio.service.ts) - Portfolio summary, top movers, asset allocation
 - [holdings.service.ts](src/securities/holdings.service.ts) - Holdings operations
 - [investment-transactions.service.ts](src/securities/investment-transactions.service.ts) - Transaction processing
 - [securities.controller.ts](src/securities/securities.controller.ts) - Security API
 - [holdings.controller.ts](src/securities/holdings.controller.ts) - Holdings API
+- [portfolio.controller.ts](src/securities/portfolio.controller.ts) - Portfolio API
 - [investment-transactions.controller.ts](src/securities/investment-transactions.controller.ts) - Transactions API
 - [securities.module.ts](src/securities/securities.module.ts) - Module configuration

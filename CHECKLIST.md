@@ -4,453 +4,348 @@ Use this checklist to track your progress as you complete the Personal Finance M
 
 ## Setup & Configuration
 
-- [ ] Run `./start.sh` to verify Docker setup works
-- [ ] Copy `.env.example` to `.env` and configure
-- [ ] Sign up for Exchange Rate API key
-- [ ] Sign up for Stock Market API key (Alpha Vantage)
-- [ ] Configure OIDC provider (optional)
-- [ ] Test database connection
-- [ ] Test Redis connection
-- [ ] Access API documentation at http://localhost:3001/api/docs
+- [x] Docker Compose setup (dev and prod)
+- [x] Copy `.env.example` to `.env` and configure
+- [x] Exchange rate integration (Bank of Canada via Yahoo Finance)
+- [x] Stock price integration (Yahoo Finance)
+- [x] Configure OIDC provider (optional)
+- [x] Database connection with TypeORM
+- [x] API documentation at /api/docs (dev mode only)
 
 ## Backend - Core Modules
 
+### Auth Module
+- [x] Local authentication (email/password with bcrypt)
+- [x] OIDC/OpenID Connect authentication
+- [x] JWT-based session management with httpOnly cookies
+- [x] TOTP two-factor authentication
+- [x] Trusted device management (30-day "don't ask again")
+- [x] Password reset via email with temporary passwords
+- [x] Forced password change policy
+- [x] Forced 2FA policy (FORCE_2FA env var)
+- [x] Registration enable/disable (REGISTRATION_ENABLED env var)
+- [x] Rate limiting on auth endpoints
+
+### Admin Module
+- [x] List all users with roles and status
+- [x] Change user roles (admin/user)
+- [x] Toggle user active/disabled status
+- [x] Reset user passwords (generate temporary password)
+- [x] Delete users
+- [x] Admin-only route guards
+
 ### Accounts Module
-- [x] Create account entity
-- [x] Create accounts module
-- [ ] Implement AccountsService
-  - [ ] create() method
-  - [ ] findAll() method
-  - [ ] findOne() method
-  - [ ] update() method
-  - [ ] close() method
-  - [ ] getBalance() method
-- [ ] Implement AccountsController with endpoints
-- [ ] Write unit tests
-- [ ] Test API endpoints in Swagger
+- [x] Account entity with types (Chequing, Savings, Credit, Loan, Mortgage, LOC, Investment)
+- [x] Investment account subtypes (Brokerage, RRSP, TFSA, etc.)
+- [x] CRUD operations
+- [x] Account closing/reopening
+- [x] Balance tracking
+- [x] Account reconciliation
+- [x] Favourite accounts for dashboard
 
 ### Transactions Module
-- [ ] Create transaction entity
-- [ ] Create transaction-split entity
-- [ ] Create transactions module
-- [ ] Implement TransactionsService
-  - [ ] create() method
-  - [ ] createSplit() method
-  - [ ] findAll() with filters
-  - [ ] findOne() method
-  - [ ] update() method
-  - [ ] delete() method
-  - [ ] reconcile() method
-- [ ] Implement TransactionsController
-- [ ] Write unit tests
-- [ ] Test API endpoints
+- [x] Transaction entity with full CRUD
+- [x] Split transaction support
+- [x] Transaction reconciliation and clearing
+- [x] Payee integration with auto-categorization
+- [x] Multi-currency transactions
+- [x] QIF file import
+- [x] Pagination, filtering, and search
 
 ### Categories Module
-- [ ] Create category entity
-- [ ] Create categories module
-- [ ] Implement CategoriesService
-  - [ ] create() method
-  - [ ] findAll() method
-  - [ ] findAllWithChildren() for tree structure
-  - [ ] update() method
-  - [ ] delete() method
-- [ ] Seed default categories
-- [ ] Implement CategoriesController
-- [ ] Write unit tests
-- [ ] Test API endpoints
+- [x] Hierarchical category system (parent/child)
+- [x] System default categories with seeding
+- [x] CRUD operations
+- [x] Category usage tracking
 
 ### Payees Module
-- [ ] Create payee entity
-- [ ] Create payees module
-- [ ] Implement PayeesService
-- [ ] Implement PayeesController
-- [ ] Add auto-categorization logic
-- [ ] Write unit tests
+- [x] Payee CRUD with default categories
+- [x] Autocomplete and search
+- [x] Most-used and recently-used endpoints
+- [x] Find-or-create pattern for imports
+- [x] Payee summary statistics
 
 ### Currencies Module
-- [ ] Create currency entity
-- [ ] Create exchange-rate entity
-- [ ] Create currencies module
-- [ ] Implement CurrenciesService
-- [ ] Implement ExchangeRatesService
-  - [ ] updateDailyRates() method
-  - [ ] getRate() method
-  - [ ] getHistoricalRates() method
-  - [ ] convert() method
-- [ ] Integrate exchange rate API
-- [ ] Implement CurrenciesController
-- [ ] Write unit tests
-- [ ] Test currency conversion
+- [x] Multi-currency support (USD, CAD, EUR, GBP, JPY, CHF, AUD, CNY)
+- [x] Daily exchange rate updates
+- [x] Historical exchange rates
+- [x] Automatic currency conversion for reporting
 
 ## Backend - Investment Features
 
 ### Securities Module
-- [ ] Create security entity
-- [ ] Create security-price entity
-- [ ] Create holding entity
-- [ ] Create securities module
-- [ ] Implement SecuritiesService
-  - [ ] create() method
-  - [ ] findBySymbol() method
-  - [ ] search() method
-  - [ ] updatePrice() method
-- [ ] Implement SecurityPricesService
-- [ ] Implement HoldingsService
-  - [ ] getPortfolio() method
-  - [ ] calculatePortfolioValue() method
-  - [ ] getPortfolioPerformance() method
-- [ ] Integrate stock price API
-- [ ] Add support for US exchanges (NYSE, NASDAQ)
-- [ ] Add support for Canadian exchanges (TSX, TSXV)
-- [ ] Implement SecuritiesController
-- [ ] Write unit tests
+- [x] Security entity (stocks, ETFs, bonds, mutual funds)
+- [x] Security price entity with historical data
+- [x] Holdings entity linking accounts to securities
+- [x] Yahoo Finance price integration
+- [x] US and Canadian exchange support (NYSE, NASDAQ, TSX, TSXV, etc.)
+- [x] Scheduled price refresh (5 PM EST, Mon-Fri)
+- [x] Historical price backfill
+- [x] Security lookup/search
+- [x] Portfolio summary with valuations
+- [x] Top daily movers with currency display
+- [x] Asset allocation breakdown
 
-### Investment Transactions Module
-- [ ] Create investment-transaction entity
-- [ ] Create investment-transactions module
-- [ ] Implement InvestmentTransactionsService
-  - [ ] buy() method
-  - [ ] sell() method
-  - [ ] dividend() method
-  - [ ] split() method
-  - [ ] calculateCapitalGains() method
-- [ ] Implement InvestmentTransactionsController
-- [ ] Write unit tests
+### Investment Transactions
+- [x] Buy, Sell, Dividend, Interest, Capital Gain
+- [x] Reinvest, Transfer In/Out, Split, Add/Remove Shares
+- [x] Average cost calculation
+- [x] Cash balance integration
+- [x] Transaction reversals (update/delete)
+- [x] Funding account support
 
 ## Backend - Advanced Features
 
 ### Scheduled Transactions Module
-- [ ] Create scheduled-transaction entity
-- [ ] Create scheduled-transaction-split entity
-- [ ] Create scheduled-transactions module
-- [ ] Implement ScheduledTransactionsService
-  - [ ] create() method
-  - [ ] findAll() method
-  - [ ] update() method
-  - [ ] delete() method
-  - [ ] processDueTransactions() method
-  - [ ] calculateNextDueDate() method
-- [ ] Implement ScheduledTransactionsController
-- [ ] Write unit tests
+- [x] Recurring payments (daily, weekly, bi-weekly, monthly, quarterly, yearly)
+- [x] Auto-entry processing
+- [x] Skip and override individual occurrences
+- [x] Transfer support between accounts
+- [x] Bill payment history tracking
 
 ### Notifications Module
-- [ ] Create notification entity
-- [ ] Create notifications module
-- [ ] Implement NotificationsService
-  - [ ] create() method
-  - [ ] findAll() method
-  - [ ] markAsRead() method
-  - [ ] sendEmail() method
-  - [ ] checkScheduledPayments() method
-  - [ ] checkLowBalances() method
-  - [ ] checkBudgetAlerts() method
-- [ ] Configure email service (nodemailer)
-- [ ] Implement WebSocket gateway for real-time notifications
-- [ ] Implement NotificationsController
-- [ ] Write unit tests
-
-### Budgets Module
-- [ ] Create budget entity
-- [ ] Create budgets module
-- [ ] Implement BudgetsService
-  - [ ] create() method
-  - [ ] findAll() method
-  - [ ] getBudgetStatus() method
-  - [ ] getSpendingByCategory() method
-  - [ ] checkBudgetAlerts() method
-- [ ] Implement BudgetsController
-- [ ] Write unit tests
+- [x] Email notifications via SMTP
+- [x] Upcoming bill reminders
+- [x] Test email functionality
+- [x] Configurable per-user notification preferences
 
 ### Reports Module
-- [ ] Create report entity
-- [ ] Create reports module
-- [ ] Implement ReportsService
-- [ ] Create Income/Expense report generator
-- [ ] Create Net Worth report generator
-- [ ] Create Cash Flow report generator
-- [ ] Create Investment Performance report generator
-- [ ] Create Tax report generator
-- [ ] Implement ReportsController
-- [ ] Write unit tests
+- [x] Spending by Category / Payee
+- [x] Income by Source
+- [x] Monthly Spending Trend
+- [x] Income vs Expenses
+- [x] Cash Flow
+- [x] Year over Year Comparison
+- [x] Weekend vs Weekday Spending
+- [x] Spending Anomalies Detection
+- [x] Tax Summary
+- [x] Recurring Expenses
+- [x] Bill Payment History
+- [x] Uncategorized Transactions
+- [x] Duplicate Transaction Finder
+- [x] Net Worth (historical monthly snapshots)
+- [x] Investment Performance
+- [x] Dividend Income
+- [x] Account Balances
+- [x] Debt Payoff Timeline
+- [x] Loan Amortization
+- [x] Custom reports (user-defined with flexible filters)
+
+### Net Worth Module
+- [x] Monthly snapshots with account balances
+- [x] Historical tracking
+- [x] Automatic snapshot generation
 
 ## Backend - Scheduler Service
 
-- [ ] Create scheduler.ts entry point
-- [ ] Implement daily currency rate updates (cron job)
-- [ ] Implement daily stock price updates (cron job)
-- [ ] Implement hourly scheduled transaction processing
-- [ ] Implement periodic notification checks
-- [ ] Test all scheduled jobs
-- [ ] Add error handling and logging
+- [x] Daily exchange rate updates (cron job)
+- [x] Daily stock price updates (5 PM EST, Mon-Fri)
+- [x] Scheduled transaction processing
+- [x] Error handling and logging
 
 ## Frontend - Setup
 
-- [ ] Initialize Next.js app structure
-- [ ] Set up Tailwind CSS
-- [ ] Configure TypeScript
-- [ ] Create folder structure (app/, components/, lib/)
-- [ ] Set up API client (Axios)
-- [ ] Configure environment variables
-- [ ] Set up state management (Zustand)
+- [x] Next.js 14 App Router with TypeScript
+- [x] Tailwind CSS styling with dark mode
+- [x] Zustand state management
+- [x] Axios API client with interceptors
+- [x] Environment variable configuration
+- [x] Responsive design throughout
 
 ## Frontend - Authentication
 
-- [ ] Create login page
-- [ ] Create register page
-- [ ] Create OIDC callback page
-- [ ] Implement auth store
-- [ ] Add protected route wrapper
-- [ ] Add token management
-- [ ] Add logout functionality
-- [ ] Style authentication pages
+- [x] Login page with email/password
+- [x] Registration page
+- [x] OIDC callback handler
+- [x] Auth store with persistence
+- [x] Protected route wrapper
+- [x] Token management (httpOnly cookies)
+- [x] Logout functionality
+- [x] 2FA verification screen with "remember device" option
+- [x] 2FA setup flow
+- [x] Change password page
+- [x] Forced password change redirect
+- [x] Forced 2FA setup redirect
 
 ## Frontend - Core Components
 
 ### UI Components
-- [ ] Button component
-- [ ] Input component
-- [ ] Select component
-- [ ] Card component
-- [ ] Modal component
-- [ ] Table component
-- [ ] Loading spinner
-- [ ] Toast notifications
+- [x] Button component (variants: primary, secondary, outline, danger, ghost)
+- [x] Input component
+- [x] Select component
+- [x] Modal component
+- [x] Loading spinners
+- [x] Toast notifications (react-hot-toast)
 
 ### Layout Components
-- [ ] Header with navigation
-- [ ] Sidebar menu
-- [ ] Footer
-- [ ] Page container
-- [ ] Responsive mobile menu
+- [x] App header with navigation
+- [x] Page layout container
+- [x] Responsive mobile menu
 
 ### Form Components
-- [ ] Account form
-- [ ] Transaction form
-- [ ] Split transaction form
-- [ ] Category selector
-- [ ] Date picker
-- [ ] Currency selector
-- [ ] Amount input
+- [x] Account form
+- [x] Transaction form with split support
+- [x] Scheduled transaction form
+- [x] Category selector
+- [x] Date picker
+- [x] Currency selector
+- [x] Calculator-enabled amount input
 
 ### Chart Components
-- [ ] Line chart
-- [ ] Bar chart
-- [ ] Pie chart
-- [ ] Area chart
-- [ ] Donut chart
+- [x] Line chart (Recharts)
+- [x] Bar chart
+- [x] Pie chart
+- [x] Area chart
 
 ## Frontend - Pages
 
 ### Dashboard
-- [ ] Create dashboard page
-- [ ] Show account balances summary
-- [ ] Display recent transactions
-- [ ] Show upcoming payments
-- [ ] Display budget status
-- [ ] Add net worth chart
-- [ ] Make responsive for mobile
+- [x] Favourite accounts summary
+- [x] Upcoming bills
+- [x] Expenses pie chart
+- [x] Income vs expenses bar chart
+- [x] Net worth chart
+- [x] Top movers (daily price changes with currency)
+- [x] Getting started guide (dismissable)
+- [x] Responsive design
 
 ### Accounts
-- [ ] Create accounts list page
-- [ ] Create account details page
-- [ ] Create new account page
-- [ ] Implement account CRUD operations
-- [ ] Add account type icons
-- [ ] Show account balances
-- [ ] Make responsive
+- [x] Account list with grouping by type
+- [x] Account details
+- [x] Create/edit/close/reopen accounts
+- [x] Balance display with currency formatting
+- [x] Favourite toggle
 
 ### Transactions
-- [ ] Create transactions list page
-- [ ] Create transaction details page
-- [ ] Create add transaction page
-- [ ] Implement split transaction UI
-- [ ] Add transaction filters
-- [ ] Add search functionality
-- [ ] Implement reconciliation UI
-- [ ] Make responsive
+- [x] Transaction list with pagination
+- [x] Transaction form with payee autocomplete
+- [x] Split transaction editor
+- [x] Search and filtering
+- [x] Reconciliation UI
+- [x] QIF import
 
 ### Investments
-- [ ] Create portfolio overview page
-- [ ] Show current holdings
-- [ ] Display portfolio value chart
-- [ ] Show gain/loss calculations
-- [ ] Add security search
-- [ ] Implement buy/sell forms
-- [ ] Make responsive
+- [x] Portfolio summary with gain/loss
+- [x] Holdings list (grouped by account)
+- [x] Investment transaction list
+- [x] Buy/sell/dividend forms
+- [x] Asset allocation chart
+- [x] Investment value chart
+- [x] Security price refresh
 
-### Budgets
-- [ ] Create budgets list page
-- [ ] Create new budget page
-- [ ] Show budget progress bars
-- [ ] Display spending by category
-- [ ] Add budget alerts
-- [ ] Show budget vs actual charts
-- [ ] Make responsive
+### Bills & Scheduled Transactions
+- [x] Scheduled transaction list
+- [x] Create/edit scheduled transactions
+- [x] Cash flow forecast chart
+- [x] Skip/override individual occurrences
+- [x] Transfer support
 
 ### Reports
-- [ ] Create reports page
-- [ ] Implement income/expense report
-- [ ] Implement net worth report
-- [ ] Implement cash flow report
-- [ ] Add date range selector
-- [ ] Add export functionality (PDF, CSV)
-- [ ] Add interactive charts
-- [ ] Make responsive
+- [x] Reports page with all built-in reports
+- [x] Custom report builder
+- [x] Date range selectors
+- [x] Interactive charts
+- [x] Responsive layouts
 
 ### Settings
-- [ ] Create user preferences page
-- [ ] Add currency settings
-- [ ] Add notification settings
-- [ ] Add theme settings
-- [ ] Add profile management
-- [ ] Make responsive
+- [x] Profile editing (name, email)
+- [x] Password change
+- [x] 2FA enable/disable
+- [x] Trusted devices management (list, revoke, revoke all)
+- [x] Theme selection (light/dark/system)
+- [x] Currency, date format, number format, timezone preferences
+- [x] Email notification toggle with test email
+- [x] Account deletion
 
-## Testing
-
-### Backend Tests
-- [ ] Write unit tests for all services
-- [ ] Write integration tests for API endpoints
-- [ ] Write E2E tests for critical flows
-- [ ] Test authentication flows
-- [ ] Test transaction processing
-- [ ] Test scheduled jobs
-- [ ] Achieve >80% code coverage
-
-### Frontend Tests
-- [ ] Write unit tests for components
-- [ ] Write integration tests for pages
-- [ ] Write E2E tests with Playwright
-- [ ] Test authentication flows
-- [ ] Test responsive design
-- [ ] Test accessibility
+### Admin
+- [x] User management table
+- [x] Role assignment (admin/user)
+- [x] User status toggle (active/disabled)
+- [x] Password reset
+- [x] User deletion
+- [x] Create new user
 
 ## Security & Performance
 
 ### Security
-- [x] Implement JWT authentication
-- [x] Add password hashing
-- [x] Configure CORS
-- [x] Add rate limiting
-- [x] Add helmet security headers
-- [ ] Implement CSRF protection
-- [ ] Add input validation everywhere
-- [ ] Sanitize user inputs
-- [ ] Implement SQL injection prevention
-- [ ] Add XSS protection
-- [ ] Configure secure cookies
-- [ ] Add two-factor authentication (optional)
-- [ ] Perform security audit
+- [x] JWT authentication with httpOnly cookies
+- [x] Password hashing (bcrypt)
+- [x] CORS protection
+- [x] Rate limiting
+- [x] Helmet security headers
+- [x] Input validation (class-validator)
+- [x] Secure cookies (httpOnly, sameSite)
+- [x] TOTP two-factor authentication
+- [x] Trusted device tokens (SHA256-hashed)
+- [x] Role-based access control (admin/user)
+- [ ] CSRF protection
+- [ ] Security audit
 
 ### Performance
-- [ ] Add database indexes for common queries
-- [ ] Implement Redis caching
-- [ ] Optimize API response sizes
-- [ ] Add pagination for large lists
-- [ ] Lazy load frontend components
-- [ ] Optimize images
-- [ ] Enable compression
-- [ ] Add CDN for static assets (production)
-- [ ] Database query optimization
+- [x] Database indexes for common queries
+- [x] Pagination for large lists
+- [x] Optimized SQL queries (window functions, aggregations)
+- [x] Next.js standalone build for minimal container size
+- [ ] Redis caching
 - [ ] Load testing
 
 ## Documentation
 
 - [x] README.md
-- [x] GETTING_STARTED.md
-- [x] IMPLEMENTATION_GUIDE.md
-- [x] PROJECT_SUMMARY.md
-- [ ] API documentation (complete Swagger annotations)
+- [x] CATEGORY_INTEGRATION.md
+- [x] INVESTMENT_ACCOUNTS.md
+- [x] PAYEES_GUIDE.md
+- [x] AUTH_SETUP.md
+- [x] QUICKSTART.md
+- [x] Swagger/OpenAPI annotations
 - [ ] User manual
-- [ ] Deployment guide
-- [ ] Troubleshooting guide
 - [ ] Contribution guidelines
-- [ ] Change log
 
 ## Deployment
 
 ### Pre-deployment
-- [ ] Update all dependencies
-- [ ] Run security audit
-- [ ] Fix all security vulnerabilities
-- [ ] Run all tests
-- [ ] Build production Docker images
-- [ ] Test production build locally
-- [ ] Configure environment variables for production
-- [ ] Set up SSL/TLS certificates
-- [ ] Configure firewall rules
-- [ ] Set up monitoring
+- [x] Docker Compose production configuration
+- [x] Environment variable documentation
+- [x] Health check endpoints
+- [ ] Automated testing pipeline
+- [ ] SSL/TLS configuration guide
 
 ### Production Setup
-- [ ] Choose hosting platform
-- [ ] Set up production database
-- [ ] Configure automated backups
-- [ ] Set up Redis in production
-- [ ] Deploy backend service
-- [ ] Deploy frontend service
-- [ ] Deploy scheduler service
-- [ ] Configure domain and DNS
-- [ ] Set up reverse proxy (Nginx)
-- [ ] Enable HTTPS
-- [ ] Configure email service
-- [ ] Set up monitoring and alerts
-- [ ] Set up logging aggregation
-- [ ] Configure error tracking (Sentry)
-- [ ] Set up uptime monitoring
-
-### Post-deployment
-- [ ] Verify all services are running
-- [ ] Test all functionality in production
-- [ ] Verify scheduled jobs are running
-- [ ] Test email notifications
-- [ ] Monitor performance
-- [ ] Monitor error logs
-- [ ] Set up automated backups
-- [ ] Create disaster recovery plan
-- [ ] Document deployment process
-
-## Maintenance
-
-- [ ] Set up automated dependency updates
-- [ ] Schedule regular security audits
-- [ ] Plan for database migrations
-- [ ] Set up backup verification
-- [ ] Create runbook for common issues
-- [ ] Plan for scaling if needed
+- [x] Docker Compose deployment
+- [x] Kubernetes-ready (health probes, standalone build)
+- [x] Database migrations
+- [ ] Automated backups
+- [ ] Monitoring and alerting
+- [ ] Log aggregation
 
 ## Optional Enhancements
 
-- [ ] Add data import (OFX, QFX, CSV)
-- [ ] Add data export functionality
-- [ ] Implement automatic bank import (Plaid)
-- [ ] Add receipt capture with OCR
-- [ ] Create mobile app (React Native)
-- [ ] Add spending trends analysis
-- [ ] Implement financial forecasting
-- [ ] Add goal tracking
-- [ ] Implement multi-user support
-- [ ] Add shared accounts
-- [ ] Implement role-based permissions
-- [ ] Add dark mode
-- [ ] Add multi-language support
-- [ ] Create browser extension
-- [ ] Add AI-powered insights
+- [x] QIF file import
+- [x] Dark mode
+- [ ] OFX/QFX/CSV import
+- [ ] Data export (CSV, PDF)
+- [ ] Automatic bank import (Plaid)
+- [ ] Receipt capture with OCR
+- [ ] Mobile app (React Native)
+- [ ] Multi-language support
+- [ ] Budget tracking module
+- [ ] AI-powered insights
 
 ---
 
 ## Progress Tracking
 
-### Overall Completion: ____%
+### Overall Completion: ~85%
 
-- Foundation & Setup: 95% ✅
-- Backend Core: 20% 🚧
-- Backend Advanced: 0% ⏳
-- Frontend: 5% 🚧
-- Testing: 0% ⏳
-- Documentation: 80% ✅
-- Deployment: 0% ⏳
+- Foundation & Setup: 100%
+- Backend Core: 100%
+- Backend Advanced: 95%
+- Frontend: 95%
+- Security: 85%
+- Testing: 10%
+- Documentation: 80%
+- Deployment: 60%
 
 ---
 
-**Last Updated**: 2026-01-19
-
-Use this checklist to stay organized and track your progress. Check off items as you complete them!
+**Last Updated**: 2026-02-08

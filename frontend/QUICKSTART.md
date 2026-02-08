@@ -2,11 +2,25 @@
 
 ## Prerequisites
 
-- Node.js 18+ installed
+- Node.js 20+ installed
 - Backend server running on `http://localhost:3001`
-- npm or yarn package manager
+- npm package manager
 
 ## Installation
+
+### Option 1: Docker (Recommended)
+
+The easiest way to run MoneyMate is via Docker Compose from the project root:
+
+```bash
+cd /home/ken/moneymate
+cp .env.example .env  # Configure as needed
+docker compose up -d
+```
+
+This starts the frontend, backend, and PostgreSQL database together.
+
+### Option 2: Local Development
 
 1. Navigate to the frontend directory:
 ```bash
@@ -34,11 +48,7 @@ npm run dev
 
 ### Option 1: Create a New Account
 1. Visit `http://localhost:3000/register`
-2. Enter:
-   - Email: `test@example.com`
-   - Password: `password123`
-   - First Name: `Test` (optional)
-   - Last Name: `User` (optional)
+2. Enter email, password, and optional name fields
 3. Click "Create account"
 4. You'll be redirected to the dashboard
 
@@ -46,7 +56,8 @@ npm run dev
 1. Visit `http://localhost:3000/login`
 2. Enter your email and password
 3. Click "Sign in"
-4. You'll be redirected to the dashboard
+4. If 2FA is enabled, enter your authenticator code
+5. You'll be redirected to the dashboard
 
 ### Option 3: SSO/OIDC Login
 1. Visit `http://localhost:3000/login`
@@ -56,15 +67,29 @@ npm run dev
 
 ## Available Routes
 
-- `/` - Home page (redirects to login)
+### Public Routes
 - `/login` - Login page
-- `/register` - Registration page
-- `/dashboard` - Protected dashboard (requires authentication)
+- `/register` - Registration page (when enabled)
 - `/auth/callback` - OIDC callback handler (automatic)
+
+### Protected Routes
+- `/dashboard` - Dashboard with account summaries, charts, upcoming bills, top movers
+- `/accounts` - Account list and management
+- `/accounts/[id]` - Account details and transactions
+- `/transactions` - Transaction list with search and filtering
+- `/investments` - Investment portfolio, holdings, and transactions
+- `/bills` - Scheduled transactions and cash flow forecast
+- `/reports` - Financial reports (spending, income, net worth, etc.)
+- `/settings` - Profile, password, 2FA, trusted devices, preferences
+- `/change-password` - Change password (also used for forced password change)
+- `/setup-2fa` - Two-factor authentication setup (also used for forced 2FA)
+
+### Admin Routes
+- `/admin` - User management (admin role required)
 
 ## Testing Protected Routes
 
-Try accessing `/dashboard` without logging in - you'll be automatically redirected to `/login`.
+Try accessing `/dashboard` without logging in — you'll be automatically redirected to `/login`.
 
 ## Troubleshooting
 
@@ -108,11 +133,13 @@ npm run type-check
 
 ## What's Next?
 
-After confirming authentication works:
-1. Build dashboard features (accounts, transactions, budgets)
-2. Add email verification
-3. Implement password reset
-4. Add two-factor authentication
-5. Create user settings page
+After confirming the application works:
+1. Set up your accounts (chequing, savings, credit, investment, etc.)
+2. Import transactions via QIF file import
+3. Configure categories and payees
+4. Set up scheduled transactions for recurring bills
+5. Add investment holdings and securities
+6. Enable two-factor authentication for security
+7. Configure notification preferences for bill reminders
 
-See [AUTH_SETUP.md](AUTH_SETUP.md) for detailed documentation.
+See [AUTH_SETUP.md](AUTH_SETUP.md) for detailed authentication documentation.
