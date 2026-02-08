@@ -251,6 +251,31 @@ export class ImportService {
       }
     }
 
+    // Validate that all mapped entity IDs belong to the authenticated user
+    const mappedAccountIds = [...accountMap.values(), ...Array.from(loanCategoryMap.values())].filter(Boolean) as string[];
+    for (const accId of mappedAccountIds) {
+      const acc = await this.accountsRepository.findOne({ where: { id: accId, userId } });
+      if (!acc) {
+        throw new BadRequestException(`Account mapping references an invalid account: ${accId}`);
+      }
+    }
+
+    const mappedCategoryIds = [...categoryMap.values()].filter(Boolean) as string[];
+    for (const catId of mappedCategoryIds) {
+      const cat = await this.dataSource.getRepository('Category').findOne({ where: { id: catId, userId } });
+      if (!cat) {
+        throw new BadRequestException(`Category mapping references an invalid category: ${catId}`);
+      }
+    }
+
+    const mappedSecurityIds = [...securityMap.values()].filter(Boolean) as string[];
+    for (const secId of mappedSecurityIds) {
+      const sec = await this.dataSource.getRepository('Security').findOne({ where: { id: secId, userId } });
+      if (!sec) {
+        throw new BadRequestException(`Security mapping references an invalid security: ${secId}`);
+      }
+    }
+
     // Start transaction
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();

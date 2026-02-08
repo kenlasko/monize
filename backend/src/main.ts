@@ -29,10 +29,12 @@ async function bootstrap() {
   const allowedOrigins = [
     process.env.PUBLIC_APP_URL,
     process.env.CORS_ORIGIN,
-    'http://localhost:3001',
-    'http://localhost:3000',
-    'http://127.0.0.1:3001',
-    'http://127.0.0.1:3000',
+    ...(process.env.NODE_ENV !== 'production' ? [
+      'http://localhost:3001',
+      'http://localhost:3000',
+      'http://127.0.0.1:3001',
+      'http://127.0.0.1:3000',
+    ] : []),
   ].filter(Boolean);
 
   app.enableCors({
@@ -40,7 +42,7 @@ async function bootstrap() {
       // Allow requests with no origin (like mobile apps or curl)
       if (!origin) return callback(null, true);
 
-      if (allowedOrigins.includes(origin) || process.env.NODE_ENV === 'development') {
+      if (allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
         callback(new Error('Not allowed by CORS'));

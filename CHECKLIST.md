@@ -82,6 +82,8 @@ Use this checklist to track your progress as you complete the Personal Finance M
 - [x] Scheduled price refresh (5 PM EST, Mon-Fri)
 - [x] Historical price backfill
 - [x] Security lookup/search
+- [x] User-scoped securities with per-user unique constraints
+- [x] Deduplicated price fetches across users (same symbol fetched once)
 - [x] Portfolio summary with valuations
 - [x] Top daily movers with currency display
 - [x] Asset allocation breakdown
@@ -278,8 +280,16 @@ Use this checklist to track your progress as you complete the Personal Finance M
 - [x] TOTP two-factor authentication
 - [x] Trusted device tokens (SHA256-hashed)
 - [x] Role-based access control (admin/user)
-- [ ] CSRF protection
-- [ ] Security audit
+- [x] CSRF protection (double-submit cookie with auto-refresh on expiry)
+- [x] User-scoped data isolation (multi-tenant securities)
+- [x] Security audit (comprehensive 5-area audit with fixes applied)
+- [x] JWT algorithm pinning (HS256)
+- [x] Global rate limiting (100 req/min default, 5/15min auth)
+- [x] Security headers (X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Permissions-Policy)
+- [x] CORS hardening (localhost restricted to non-production)
+- [x] Import mapping ownership validation
+- [x] Sensitive data sanitization in all API responses
+- [x] npm vulnerability patching (@isaacs/brace-expansion)
 
 ### Performance
 - [x] Database indexes for common queries
@@ -335,13 +345,13 @@ Use this checklist to track your progress as you complete the Personal Finance M
 
 ## Progress Tracking
 
-### Overall Completion: ~85%
+### Overall Completion: ~89%
 
 - Foundation & Setup: 100%
 - Backend Core: 100%
 - Backend Advanced: 95%
 - Frontend: 95%
-- Security: 85%
+- Security: 97%
 - Testing: 10%
 - Documentation: 80%
 - Deployment: 60%

@@ -174,7 +174,11 @@ export class SecuritiesController {
     },
   })
   @ApiResponse({ status: 200, description: 'Price refresh completed' })
-  refreshSelectedPrices(@Body('securityIds') securityIds: string[]): Promise<PriceRefreshSummary> {
+  async refreshSelectedPrices(@Req() req, @Body('securityIds') securityIds: string[]): Promise<PriceRefreshSummary> {
+    // Verify all security IDs belong to the requesting user
+    for (const id of securityIds) {
+      await this.securitiesService.findOne(req.user.id, id);
+    }
     return this.securityPriceService.refreshPricesForSecurities(securityIds);
   }
 
@@ -209,10 +213,13 @@ export class SecuritiesController {
   @ApiOperation({ summary: 'Get price history for a security' })
   @ApiQuery({ name: 'limit', required: false, description: 'Number of records (default: 365)' })
   @ApiResponse({ status: 200, description: 'Price history' })
-  getPriceHistory(
+  async getPriceHistory(
+    @Req() req,
     @Param('id', ParseUUIDPipe) id: string,
     @Query('limit', new DefaultValuePipe(365)) limit: number,
   ) {
+    // Verify security belongs to the requesting user
+    await this.securitiesService.findOne(req.user.id, id);
     return this.securityPriceService.getPriceHistory(id, undefined, undefined, limit);
   }
 }

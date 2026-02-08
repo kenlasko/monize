@@ -3,7 +3,7 @@ import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ScheduleModule } from '@nestjs/schedule';
-import { ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { CsrfGuard } from './common/guards/csrf.guard';
 import { CsrfRefreshInterceptor } from './common/interceptors/csrf-refresh.interceptor';
 
@@ -47,7 +47,9 @@ import { AdminModule } from './admin/admin.module';
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
         synchronize: false, // Use migrations in production
         logging: ['error'],
-        ssl: configService.get('NODE_ENV') === 'production' ? { rejectUnauthorized: false } : false,
+        ssl: configService.get('DATABASE_SSL') === 'true'
+          ? { rejectUnauthorized: configService.get('DATABASE_SSL_REJECT_UNAUTHORIZED') !== 'false' }
+          : false,
       }),
     }),
 
@@ -88,6 +90,7 @@ import { AdminModule } from './admin/admin.module';
     AdminModule,
   ],
   providers: [
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: CsrfGuard },
     { provide: APP_INTERCEPTOR, useClass: CsrfRefreshInterceptor },
   ],

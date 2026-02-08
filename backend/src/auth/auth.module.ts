@@ -28,6 +28,10 @@ import { NotificationsModule } from '../notifications/notifications.module';
         secret: configService.get('JWT_SECRET'),
         signOptions: {
           expiresIn: configService.get('JWT_EXPIRATION', '7d'),
+          algorithm: 'HS256' as const,
+        },
+        verifyOptions: {
+          algorithms: ['HS256' as const],
         },
       }),
     }),

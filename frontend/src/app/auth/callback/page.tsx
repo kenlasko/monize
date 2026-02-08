@@ -17,19 +17,12 @@ function CallbackContent() {
       try {
         const success = searchParams.get('success');
         const error = searchParams.get('error');
-        const token = searchParams.get('token');
 
         // Handle error from OIDC provider
         if (error) {
-          toast.error(decodeURIComponent(error));
+          toast.error('Authentication failed. Please try again.');
           router.push('/login');
           return;
-        }
-
-        // For legacy token-in-URL flow (local auth)
-        if (token) {
-          const { setToken } = useAuthStore.getState();
-          setToken(token);
         }
 
         // For OIDC flow, token is in httpOnly cookie
@@ -39,7 +32,7 @@ function CallbackContent() {
 
           // For OIDC, we don't have the token in JS (it's httpOnly)
           // Store a placeholder to indicate we're authenticated via cookie
-          login(user, token || 'httpOnly');
+          login(user, 'httpOnly');
 
           toast.success('Successfully signed in!');
           if (user.mustChangePassword && user.hasPassword) {
@@ -48,12 +41,7 @@ function CallbackContent() {
             router.push('/dashboard');
           }
         } catch (profileError: any) {
-          // If no token param and profile fetch fails, auth failed
-          if (!token && !success) {
-            toast.error('No authentication token received');
-          } else {
-            toast.error('Authentication failed');
-          }
+          toast.error(!success ? 'No authentication token received' : 'Authentication failed');
           router.push('/login');
         }
       } catch (error: any) {

@@ -29,7 +29,7 @@ export class UsersService {
     return this.usersRepository.find();
   }
 
-  async updateProfile(userId: string, dto: UpdateProfileDto): Promise<User> {
+  async updateProfile(userId: string, dto: UpdateProfileDto) {
     const user = await this.usersRepository.findOne({ where: { id: userId } });
     if (!user) {
       throw new BadRequestException('User not found');
@@ -53,7 +53,9 @@ export class UsersService {
       user.lastName = dto.lastName;
     }
 
-    return this.usersRepository.save(user);
+    const saved = await this.usersRepository.save(user);
+    const { passwordHash, resetToken, resetTokenExpiry, twoFactorSecret, ...rest } = saved;
+    return { ...rest, hasPassword: !!passwordHash };
   }
 
   async getPreferences(userId: string): Promise<UserPreference> {

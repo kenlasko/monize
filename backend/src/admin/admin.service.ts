@@ -30,11 +30,16 @@ export class AdminService {
     });
   }
 
+  private sanitizeUser(user: User) {
+    const { passwordHash, resetToken, resetTokenExpiry, twoFactorSecret, ...rest } = user;
+    return { ...rest, hasPassword: !!passwordHash };
+  }
+
   async updateUserRole(
     adminId: string,
     targetUserId: string,
     role: string,
-  ): Promise<User> {
+  ) {
     if (adminId === targetUserId) {
       throw new ForbiddenException('You cannot change your own role');
     }
@@ -59,14 +64,15 @@ export class AdminService {
     }
 
     targetUser.role = role;
-    return this.usersRepository.save(targetUser);
+    const saved = await this.usersRepository.save(targetUser);
+    return this.sanitizeUser(saved);
   }
 
   async updateUserStatus(
     adminId: string,
     targetUserId: string,
     isActive: boolean,
-  ): Promise<User> {
+  ): Promise<Omit<User, 'passwordHash' | 'resetToken' | 'resetTokenExpiry' | 'twoFactorSecret'> & { hasPassword: boolean }> {
     if (adminId === targetUserId) {
       throw new ForbiddenException('You cannot disable your own account');
     }
@@ -79,7 +85,8 @@ export class AdminService {
     }
 
     targetUser.isActive = isActive;
-    return this.usersRepository.save(targetUser);
+    const saved = await this.usersRepository.save(targetUser);
+    return this.sanitizeUser(saved);
   }
 
   async deleteUser(adminId: string, targetUserId: string): Promise<void> {

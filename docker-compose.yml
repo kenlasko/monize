@@ -15,7 +15,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./database/migrations:/docker-entrypoint-initdb.d:ro
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     networks:
       - finance-network
     healthcheck:
@@ -43,13 +43,12 @@ services:
       DATABASE_NAME: ${POSTGRES_DB:-moneymate}
       DATABASE_USER: ${POSTGRES_USER:-moneymate_user}
       DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-moneymate_password}
-      ###JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set}
-      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-this-in-production}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set in .env}
       PUBLIC_APP_URL: ${PUBLIC_APP_URL:-http://localhost:3001}
       # SMTP Configuration for Email Notifications
-      SMTP_HOST: mail.smtp2go.com
-      SMTP_PORT: 587
-      SMTP_SECURE: false
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
       SMTP_USER: ${SMTP_USER}
       SMTP_PASSWORD: ${SMTP_PASSWORD}
       EMAIL_FROM: ${EMAIL_FROM}

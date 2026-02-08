@@ -57,6 +57,22 @@ export class AuthController {
     this.isProduction = this.configService.get<string>('NODE_ENV') === 'production';
   }
 
+  private getAuthCookieOptions() {
+    return {
+      httpOnly: true,
+      secure: this.isProduction,
+      sameSite: 'lax' as const,
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      path: '/',
+    };
+  }
+
+  private clearAuthCookies(res: Response) {
+    const clearOptions = { httpOnly: true, secure: this.isProduction, sameSite: 'lax' as const, path: '/' };
+    res.clearCookie('auth_token', clearOptions);
+    res.clearCookie('csrf_token', { secure: this.isProduction, sameSite: 'lax' as const, path: '/' });
+  }
+
   @Post('register')
   @SkipCsrf()
   @UseGuards(ThrottlerGuard)
@@ -73,13 +89,7 @@ export class AuthController {
     }
     const result = await this.authService.register(registerDto);
 
-    // Set token as httpOnly cookie (SECURE - not accessible to JavaScript)
-    res.cookie('auth_token', result.token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    });
+    res.cookie('auth_token', result.token, this.getAuthCookieOptions());
     res.cookie('csrf_token', generateCsrfToken(), getCsrfCookieOptions(this.isProduction));
 
     // Return user without token (token is in httpOnly cookie)
@@ -105,13 +115,7 @@ export class AuthController {
       return res.json({ requires2FA: true, tempToken: result.tempToken });
     }
 
-    // Set token as httpOnly cookie (SECURE - not accessible to JavaScript)
-    res.cookie('auth_token', result.token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    });
+    res.cookie('auth_token', result.token, this.getAuthCookieOptions());
     res.cookie('csrf_token', generateCsrfToken(), getCsrfCookieOptions(this.isProduction));
 
     // Return user without token (token is in httpOnly cookie)
@@ -183,12 +187,7 @@ export class AuthController {
       const token = this.authService.generateToken(user);
 
       // Set token as httpOnly cookie (SECURE - not in URL)
-      res.cookie('auth_token', token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      });
+      res.cookie('auth_token', token, this.getAuthCookieOptions());
       res.cookie('csrf_token', generateCsrfToken(), getCsrfCookieOptions(this.isProduction));
 
       res.redirect(`${frontendUrl}/auth/callback?success=true`);
@@ -305,12 +304,7 @@ export class AuthController {
       ipAddress,
     );
 
-    res.cookie('auth_token', result.token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
+    res.cookie('auth_token', result.token, this.getAuthCookieOptions());
     res.cookie('csrf_token', generateCsrfToken(), getCsrfCookieOptions(this.isProduction));
 
     if (result.trustedDeviceToken) {
@@ -408,8 +402,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Logout current user' })
   async logout(@Res() res: Response) {
     // Clear auth and CSRF cookies - no auth guard needed so logout works even with invalid/expired tokens
-    res.clearCookie('auth_token');
-    res.clearCookie('csrf_token');
+    this.clearAuthCookies(res);
     res.json({ message: 'Logged out successfully' });
   }
 }

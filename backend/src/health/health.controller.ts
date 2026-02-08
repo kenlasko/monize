@@ -1,9 +1,11 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { SkipThrottle } from '@nestjs/throttler';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 
 @ApiTags('Health')
+@SkipThrottle()
 @Controller('health')
 export class HealthController {
   constructor(
