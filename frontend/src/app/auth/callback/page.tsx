@@ -42,7 +42,11 @@ function CallbackContent() {
           login(user, token || 'httpOnly');
 
           toast.success('Successfully signed in!');
-          router.push('/dashboard');
+          if (user.mustChangePassword && user.authProvider === 'local') {
+            router.push('/change-password');
+          } else {
+            router.push('/dashboard');
+          }
         } catch (profileError: any) {
           // If no token param and profile fetch fails, auth failed
           if (!token && !success) {

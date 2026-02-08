@@ -4,10 +4,26 @@ export interface User {
   firstName?: string;
   lastName?: string;
   authProvider: 'local' | 'oidc';
+  role: 'admin' | 'user';
   isActive: boolean;
+  mustChangePassword: boolean;
   createdAt: string;
   updatedAt: string;
   lastLogin?: string;
+}
+
+export interface AdminUser {
+  id: string;
+  email: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  authProvider: 'local' | 'oidc';
+  role: 'admin' | 'user';
+  isActive: boolean;
+  mustChangePassword: boolean;
+  createdAt: string;
+  updatedAt: string;
+  lastLogin: string | null;
 }
 
 export interface LoginCredentials {

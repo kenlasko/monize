@@ -59,7 +59,11 @@ export default function LoginPage() {
       // Token is now in httpOnly cookie, not in response body
       login(response.user, 'httpOnly');
       toast.success('Welcome back!');
-      router.push('/dashboard');
+      if (response.user.mustChangePassword && response.user.authProvider === 'local') {
+        router.push('/change-password');
+      } else {
+        router.push('/dashboard');
+      }
     } catch (error: any) {
       // SECURITY: Use generic error message to prevent account enumeration
       toast.error('Invalid email or password');

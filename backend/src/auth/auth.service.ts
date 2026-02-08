@@ -43,6 +43,12 @@ export class AuthService {
       authProvider: 'local',
     });
 
+    // First registered user automatically becomes admin
+    const userCount = await this.usersRepository.count();
+    if (userCount === 0) {
+      user.role = 'admin';
+    }
+
     await this.usersRepository.save(user);
 
     // Generate JWT token
@@ -160,6 +166,13 @@ export class AuthService {
           oidcSubject: sub,
           authProvider: 'oidc',
         };
+
+        // First registered user automatically becomes admin
+        const userCount = await this.usersRepository.count();
+        if (userCount === 0) {
+          userData.role = 'admin';
+        }
+
         user = this.usersRepository.create(userData);
 
         try {
@@ -222,6 +235,7 @@ export class AuthService {
       sub: user.id,
       email: user.email,
       authProvider: user.authProvider,
+      role: user.role,
     };
     return this.jwtService.sign(payload);
   }

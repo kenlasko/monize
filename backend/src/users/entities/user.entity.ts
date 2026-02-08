@@ -53,6 +53,12 @@ export class User {
   @Exclude()
   resetTokenExpiry: Date | null;
 
+  @Column({ type: 'varchar', default: 'user' })
+  role: string;
+
+  @Column({ name: 'must_change_password', default: false })
+  mustChangePassword: boolean;
+
   @OneToOne(() => UserPreference, (preference) => preference.user)
   preferences: UserPreference;
 }

@@ -141,6 +141,26 @@ export function AppHeader() {
                       </button>
                     ))}
 
+                    {/* Admin section - only for admins */}
+                    {user?.role === 'admin' && (
+                      <>
+                        <div className="border-t border-gray-200 dark:border-gray-700 my-1" />
+                        <div className="px-4 py-1 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                          Admin
+                        </div>
+                        <button
+                          onClick={() => router.push('/admin/users')}
+                          className={`block w-full text-left px-4 py-2 text-sm transition-colors ${
+                            pathname.startsWith('/admin')
+                              ? 'bg-blue-50 dark:bg-blue-900/50 text-blue-700 dark:text-blue-200'
+                              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                          }`}
+                        >
+                          User Management
+                        </button>
+                      </>
+                    )}
+
                     {/* Divider */}
                     <div className="border-t border-gray-200 dark:border-gray-700 my-1" />
 
@@ -180,6 +200,20 @@ export function AppHeader() {
                   {link.label}
                 </button>
               ))}
+
+              {/* Admin link - only visible to admins */}
+              {user?.role === 'admin' && (
+                <button
+                  onClick={() => router.push('/admin/users')}
+                  className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                    pathname.startsWith('/admin')
+                      ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200'
+                      : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  Admin
+                </button>
+              )}
 
               {/* Tools Dropdown */}
               <div className="relative" ref={toolsRef}>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 
 interface ProtectedRouteProps {
@@ -10,13 +10,25 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const router = useRouter();
-  const { isAuthenticated, isLoading, _hasHydrated } = useAuthStore();
+  const pathname = usePathname();
+  const { user, isAuthenticated, isLoading, _hasHydrated } = useAuthStore();
 
   useEffect(() => {
     if (_hasHydrated && !isLoading && !isAuthenticated) {
       router.push('/login');
     }
   }, [isAuthenticated, isLoading, _hasHydrated, router]);
+
+  // Force password change for local auth users
+  useEffect(() => {
+    if (
+      user?.mustChangePassword &&
+      user.authProvider === 'local' &&
+      pathname !== '/change-password'
+    ) {
+      router.push('/change-password');
+    }
+  }, [user, pathname, router]);
 
   if (!_hasHydrated || isLoading) {
     return (

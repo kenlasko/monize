@@ -19,7 +19,9 @@ CREATE TABLE users (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     last_login TIMESTAMP,
     reset_token VARCHAR(255),
-    reset_token_expiry TIMESTAMP
+    reset_token_expiry TIMESTAMP,
+    role VARCHAR(20) NOT NULL DEFAULT 'user', -- 'admin', 'user'
+    must_change_password BOOLEAN NOT NULL DEFAULT false
 );
 
 CREATE INDEX IF NOT EXISTS idx_users_reset_token ON users(reset_token) WHERE reset_token IS NOT NULL;
