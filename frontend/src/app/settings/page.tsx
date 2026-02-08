@@ -551,6 +551,13 @@ export default function SettingsPage() {
               <h3 className="text-md font-medium text-gray-900 dark:text-gray-100 mb-3">
                 Two-Factor Authentication
               </h3>
+              {user.authProvider === 'oidc' && (
+                <div className="mb-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                  <p className="text-sm text-blue-700 dark:text-blue-300">
+                    Two-factor authentication only applies to password-based logins. When using Single Sign-On (SSO), authentication security is managed by your identity provider.
+                  </p>
+                </div>
+              )}
               {twoFactorEnabled ? (
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
