@@ -10,6 +10,7 @@ import {
   Request,
   Query,
   ParseBoolPipe,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -133,7 +134,7 @@ export class CategoriesController {
     description: 'Forbidden - category does not belong to user',
   })
   @ApiResponse({ status: 404, description: 'Category not found' })
-  findOne(@Request() req, @Param('id') id: string) {
+  findOne(@Request() req, @Param('id', ParseUUIDPipe) id: string) {
     return this.categoriesService.findOne(req.user.id, id);
   }
 
@@ -153,7 +154,7 @@ export class CategoriesController {
   @ApiResponse({ status: 404, description: 'Category not found' })
   update(
     @Request() req,
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() updateCategoryDto: UpdateCategoryDto,
   ) {
     return this.categoriesService.update(req.user.id, id, updateCategoryDto);
@@ -170,7 +171,7 @@ export class CategoriesController {
     description: 'Forbidden - category does not belong to user',
   })
   @ApiResponse({ status: 404, description: 'Category not found' })
-  remove(@Request() req, @Param('id') id: string) {
+  remove(@Request() req, @Param('id', ParseUUIDPipe) id: string) {
     return this.categoriesService.remove(req.user.id, id);
   }
 
@@ -183,7 +184,7 @@ export class CategoriesController {
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 404, description: 'Category not found' })
-  getTransactionCount(@Request() req, @Param('id') id: string) {
+  getTransactionCount(@Request() req, @Param('id', ParseUUIDPipe) id: string) {
     return this.categoriesService.getTransactionCount(req.user.id, id);
   }
 
@@ -198,7 +199,7 @@ export class CategoriesController {
   @ApiResponse({ status: 404, description: 'Category not found' })
   reassignTransactions(
     @Request() req,
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() body: { toCategoryId: string | null },
   ) {
     return this.categoriesService.reassignTransactions(

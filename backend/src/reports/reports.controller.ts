@@ -8,6 +8,7 @@ import {
   Delete,
   UseGuards,
   Request,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import {
@@ -57,7 +58,7 @@ export class ReportsController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
   @ApiResponse({ status: 404, description: 'Report not found' })
-  findOne(@Request() req, @Param('id') id: string): Promise<CustomReport> {
+  findOne(@Request() req, @Param('id', ParseUUIDPipe) id: string): Promise<CustomReport> {
     return this.reportsService.findOne(req.user.id, id);
   }
 
@@ -71,7 +72,7 @@ export class ReportsController {
   @ApiResponse({ status: 404, description: 'Report not found' })
   update(
     @Request() req,
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() updateCustomReportDto: UpdateCustomReportDto,
   ): Promise<CustomReport> {
     return this.reportsService.update(req.user.id, id, updateCustomReportDto);
@@ -84,7 +85,7 @@ export class ReportsController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
   @ApiResponse({ status: 404, description: 'Report not found' })
-  remove(@Request() req, @Param('id') id: string): Promise<void> {
+  remove(@Request() req, @Param('id', ParseUUIDPipe) id: string): Promise<void> {
     return this.reportsService.remove(req.user.id, id);
   }
 
@@ -97,7 +98,7 @@ export class ReportsController {
   @ApiResponse({ status: 404, description: 'Report not found' })
   execute(
     @Request() req,
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() executeReportDto: ExecuteReportDto,
   ) {
     return this.reportsService.execute(req.user.id, id, executeReportDto);

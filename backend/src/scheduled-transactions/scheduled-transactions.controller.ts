@@ -9,6 +9,7 @@ import {
   UseGuards,
   Request,
   Query,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -101,7 +102,7 @@ export class ScheduledTransactionsController {
     description: 'Forbidden - scheduled transaction does not belong to user',
   })
   @ApiResponse({ status: 404, description: 'Scheduled transaction not found' })
-  findOne(@Request() req, @Param('id') id: string) {
+  findOne(@Request() req, @Param('id', ParseUUIDPipe) id: string) {
     return this.scheduledTransactionsService.findOne(req.user.id, id);
   }
 
@@ -121,7 +122,7 @@ export class ScheduledTransactionsController {
   @ApiResponse({ status: 404, description: 'Scheduled transaction not found' })
   update(
     @Request() req,
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() updateDto: UpdateScheduledTransactionDto,
   ) {
     return this.scheduledTransactionsService.update(req.user.id, id, updateDto);
@@ -137,7 +138,7 @@ export class ScheduledTransactionsController {
     description: 'Forbidden - scheduled transaction does not belong to user',
   })
   @ApiResponse({ status: 404, description: 'Scheduled transaction not found' })
-  remove(@Request() req, @Param('id') id: string) {
+  remove(@Request() req, @Param('id', ParseUUIDPipe) id: string) {
     return this.scheduledTransactionsService.remove(req.user.id, id);
   }
 
@@ -149,7 +150,7 @@ export class ScheduledTransactionsController {
   @ApiResponse({ status: 404, description: 'Scheduled transaction not found' })
   post(
     @Request() req,
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() postDto: PostScheduledTransactionDto,
   ) {
     return this.scheduledTransactionsService.post(req.user.id, id, postDto);
@@ -161,7 +162,7 @@ export class ScheduledTransactionsController {
   @ApiResponse({ status: 200, description: 'Occurrence skipped successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 404, description: 'Scheduled transaction not found' })
-  skip(@Request() req, @Param('id') id: string) {
+  skip(@Request() req, @Param('id', ParseUUIDPipe) id: string) {
     return this.scheduledTransactionsService.skip(req.user.id, id);
   }
 
@@ -173,7 +174,7 @@ export class ScheduledTransactionsController {
   @ApiResponse({ status: 200, description: 'List of overrides retrieved successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 404, description: 'Scheduled transaction not found' })
-  findOverrides(@Request() req, @Param('id') id: string) {
+  findOverrides(@Request() req, @Param('id', ParseUUIDPipe) id: string) {
     return this.scheduledTransactionsService.findOverrides(req.user.id, id);
   }
 
@@ -183,7 +184,7 @@ export class ScheduledTransactionsController {
   @ApiResponse({ status: 200, description: 'Override check completed' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 404, description: 'Scheduled transaction not found' })
-  hasOverrides(@Request() req, @Param('id') id: string) {
+  hasOverrides(@Request() req, @Param('id', ParseUUIDPipe) id: string) {
     return this.scheduledTransactionsService.hasOverrides(req.user.id, id);
   }
 
@@ -196,7 +197,7 @@ export class ScheduledTransactionsController {
   @ApiResponse({ status: 404, description: 'Scheduled transaction not found' })
   findOverrideByDate(
     @Request() req,
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Param('date') date: string,
   ) {
     return this.scheduledTransactionsService.findOverrideByDate(req.user.id, id, date);
@@ -211,7 +212,7 @@ export class ScheduledTransactionsController {
   @ApiResponse({ status: 404, description: 'Scheduled transaction not found' })
   createOverride(
     @Request() req,
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() createDto: CreateScheduledTransactionOverrideDto,
   ) {
     return this.scheduledTransactionsService.createOverride(req.user.id, id, createDto);
@@ -226,8 +227,8 @@ export class ScheduledTransactionsController {
   @ApiResponse({ status: 404, description: 'Override not found' })
   findOverride(
     @Request() req,
-    @Param('id') id: string,
-    @Param('overrideId') overrideId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('overrideId', ParseUUIDPipe) overrideId: string,
   ) {
     return this.scheduledTransactionsService.findOverride(req.user.id, id, overrideId);
   }
@@ -241,8 +242,8 @@ export class ScheduledTransactionsController {
   @ApiResponse({ status: 404, description: 'Override not found' })
   updateOverride(
     @Request() req,
-    @Param('id') id: string,
-    @Param('overrideId') overrideId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('overrideId', ParseUUIDPipe) overrideId: string,
     @Body() updateDto: UpdateScheduledTransactionOverrideDto,
   ) {
     return this.scheduledTransactionsService.updateOverride(req.user.id, id, overrideId, updateDto);
@@ -257,8 +258,8 @@ export class ScheduledTransactionsController {
   @ApiResponse({ status: 404, description: 'Override not found' })
   removeOverride(
     @Request() req,
-    @Param('id') id: string,
-    @Param('overrideId') overrideId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('overrideId', ParseUUIDPipe) overrideId: string,
   ) {
     return this.scheduledTransactionsService.removeOverride(req.user.id, id, overrideId);
   }
@@ -269,7 +270,7 @@ export class ScheduledTransactionsController {
   @ApiResponse({ status: 200, description: 'All overrides deleted successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 404, description: 'Scheduled transaction not found' })
-  removeAllOverrides(@Request() req, @Param('id') id: string) {
+  removeAllOverrides(@Request() req, @Param('id', ParseUUIDPipe) id: string) {
     return this.scheduledTransactionsService.removeAllOverrides(req.user.id, id);
   }
 }

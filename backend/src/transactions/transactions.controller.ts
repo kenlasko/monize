@@ -10,6 +10,7 @@ import {
   UseGuards,
   Request,
   Query,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -249,7 +250,7 @@ export class TransactionsController {
     description: 'Forbidden - transaction does not belong to user',
   })
   @ApiResponse({ status: 404, description: 'Transaction not found' })
-  findOne(@Request() req, @Param('id') id: string) {
+  findOne(@Request() req, @Param('id', ParseUUIDPipe) id: string) {
     return this.transactionsService.findOne(req.user.id, id);
   }
 
@@ -269,7 +270,7 @@ export class TransactionsController {
   @ApiResponse({ status: 404, description: 'Transaction not found' })
   update(
     @Request() req,
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() updateTransactionDto: UpdateTransactionDto,
   ) {
     return this.transactionsService.update(req.user.id, id, updateTransactionDto);
@@ -285,7 +286,7 @@ export class TransactionsController {
     description: 'Forbidden - transaction does not belong to user',
   })
   @ApiResponse({ status: 404, description: 'Transaction not found' })
-  remove(@Request() req, @Param('id') id: string) {
+  remove(@Request() req, @Param('id', ParseUUIDPipe) id: string) {
     return this.transactionsService.remove(req.user.id, id);
   }
 
@@ -297,7 +298,7 @@ export class TransactionsController {
   @ApiResponse({ status: 404, description: 'Transaction not found' })
   markCleared(
     @Request() req,
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body('isCleared') isCleared: boolean,
   ) {
     return this.transactionsService.markCleared(req.user.id, id, isCleared);
@@ -310,7 +311,7 @@ export class TransactionsController {
   @ApiResponse({ status: 400, description: 'Transaction already reconciled' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 404, description: 'Transaction not found' })
-  reconcile(@Request() req, @Param('id') id: string) {
+  reconcile(@Request() req, @Param('id', ParseUUIDPipe) id: string) {
     return this.transactionsService.reconcile(req.user.id, id);
   }
 
@@ -324,7 +325,7 @@ export class TransactionsController {
   @ApiResponse({ status: 400, description: 'Transaction is not reconciled' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 404, description: 'Transaction not found' })
-  unreconcile(@Request() req, @Param('id') id: string) {
+  unreconcile(@Request() req, @Param('id', ParseUUIDPipe) id: string) {
     return this.transactionsService.unreconcile(req.user.id, id);
   }
 
@@ -337,7 +338,7 @@ export class TransactionsController {
   @ApiResponse({ status: 404, description: 'Transaction not found' })
   updateStatus(
     @Request() req,
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body('status') status: TransactionStatus,
   ) {
     return this.transactionsService.updateStatus(req.user.id, id, status);
@@ -355,7 +356,7 @@ export class TransactionsController {
   @ApiResponse({ status: 404, description: 'Account not found' })
   getReconciliationData(
     @Request() req,
-    @Param('accountId') accountId: string,
+    @Param('accountId', ParseUUIDPipe) accountId: string,
     @Query('statementDate') statementDate: string,
     @Query('statementBalance') statementBalance: string,
   ) {
@@ -376,7 +377,7 @@ export class TransactionsController {
   @ApiResponse({ status: 404, description: 'Account not found' })
   bulkReconcile(
     @Request() req,
-    @Param('accountId') accountId: string,
+    @Param('accountId', ParseUUIDPipe) accountId: string,
     @Body() body: { transactionIds: string[]; reconciledDate: string },
   ) {
     return this.transactionsService.bulkReconcile(
@@ -395,7 +396,7 @@ export class TransactionsController {
   @ApiResponse({ status: 200, description: 'Splits retrieved successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 404, description: 'Transaction not found' })
-  getSplits(@Request() req, @Param('id') id: string) {
+  getSplits(@Request() req, @Param('id', ParseUUIDPipe) id: string) {
     return this.transactionsService.getSplits(req.user.id, id);
   }
 
@@ -408,7 +409,7 @@ export class TransactionsController {
   @ApiResponse({ status: 404, description: 'Transaction not found' })
   updateSplits(
     @Request() req,
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() splits: CreateTransactionSplitDto[],
   ) {
     return this.transactionsService.updateSplits(req.user.id, id, splits);
@@ -423,7 +424,7 @@ export class TransactionsController {
   @ApiResponse({ status: 404, description: 'Transaction not found' })
   addSplit(
     @Request() req,
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() splitDto: CreateTransactionSplitDto,
   ) {
     return this.transactionsService.addSplit(req.user.id, id, splitDto);
@@ -438,8 +439,8 @@ export class TransactionsController {
   @ApiResponse({ status: 404, description: 'Transaction or split not found' })
   removeSplit(
     @Request() req,
-    @Param('id') id: string,
-    @Param('splitId') splitId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('splitId', ParseUUIDPipe) splitId: string,
   ) {
     return this.transactionsService.removeSplit(req.user.id, id, splitId);
   }
@@ -462,7 +463,7 @@ export class TransactionsController {
   @ApiResponse({ status: 200, description: 'Linked transaction retrieved successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 404, description: 'Transaction not found' })
-  getLinkedTransaction(@Request() req, @Param('id') id: string) {
+  getLinkedTransaction(@Request() req, @Param('id', ParseUUIDPipe) id: string) {
     return this.transactionsService.getLinkedTransaction(req.user.id, id);
   }
 
@@ -473,7 +474,7 @@ export class TransactionsController {
   @ApiResponse({ status: 400, description: 'Transaction is not a transfer' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 404, description: 'Transaction not found' })
-  removeTransfer(@Request() req, @Param('id') id: string) {
+  removeTransfer(@Request() req, @Param('id', ParseUUIDPipe) id: string) {
     return this.transactionsService.removeTransfer(req.user.id, id);
   }
 
@@ -486,7 +487,7 @@ export class TransactionsController {
   @ApiResponse({ status: 404, description: 'Transaction not found' })
   updateTransfer(
     @Request() req,
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() updateTransferDto: Partial<CreateTransferDto>,
   ) {
     return this.transactionsService.updateTransfer(req.user.id, id, updateTransferDto);

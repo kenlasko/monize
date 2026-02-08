@@ -10,6 +10,7 @@ import {
   Request,
   Query,
   ParseBoolPipe,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -144,7 +145,7 @@ export class AccountsController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden - account does not belong to user' })
   @ApiResponse({ status: 404, description: 'Account not found' })
-  findOne(@Request() req, @Param('id') id: string) {
+  findOne(@Request() req, @Param('id', ParseUUIDPipe) id: string) {
     return this.accountsService.findOne(req.user.id, id);
   }
 
@@ -161,7 +162,7 @@ export class AccountsController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden - account does not belong to user' })
   @ApiResponse({ status: 404, description: 'Account not found' })
-  getBalance(@Request() req, @Param('id') id: string) {
+  getBalance(@Request() req, @Param('id', ParseUUIDPipe) id: string) {
     return this.accountsService.getBalance(req.user.id, id);
   }
 
@@ -187,7 +188,7 @@ export class AccountsController {
     description: 'Forbidden - account does not belong to user',
   })
   @ApiResponse({ status: 404, description: 'Account not found' })
-  getInvestmentPair(@Request() req, @Param('id') id: string) {
+  getInvestmentPair(@Request() req, @Param('id', ParseUUIDPipe) id: string) {
     return this.accountsService.getInvestmentAccountPair(req.user.id, id);
   }
 
@@ -207,7 +208,7 @@ export class AccountsController {
   @ApiResponse({ status: 404, description: 'Account not found' })
   update(
     @Request() req,
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() updateAccountDto: UpdateAccountDto,
   ) {
     return this.accountsService.update(req.user.id, id, updateAccountDto);
@@ -234,7 +235,7 @@ export class AccountsController {
   @ApiResponse({ status: 404, description: 'Account not found' })
   updateMortgageRate(
     @Request() req,
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() updateMortgageRateDto: UpdateMortgageRateDto,
   ): Promise<UpdateMortgageRateResponseDto> {
     return this.accountsService.updateMortgageRate(
@@ -260,7 +261,7 @@ export class AccountsController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden - account does not belong to user' })
   @ApiResponse({ status: 404, description: 'Account not found' })
-  close(@Request() req, @Param('id') id: string) {
+  close(@Request() req, @Param('id', ParseUUIDPipe) id: string) {
     return this.accountsService.close(req.user.id, id);
   }
 
@@ -278,7 +279,7 @@ export class AccountsController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden - account does not belong to user' })
   @ApiResponse({ status: 404, description: 'Account not found' })
-  reopen(@Request() req, @Param('id') id: string) {
+  reopen(@Request() req, @Param('id', ParseUUIDPipe) id: string) {
     return this.accountsService.reopen(req.user.id, id);
   }
 
@@ -295,7 +296,7 @@ export class AccountsController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden - account does not belong to user' })
   @ApiResponse({ status: 404, description: 'Account not found' })
-  canDelete(@Request() req, @Param('id') id: string) {
+  canDelete(@Request() req, @Param('id', ParseUUIDPipe) id: string) {
     return this.accountsService.getTransactionCount(req.user.id, id);
   }
 
@@ -313,7 +314,7 @@ export class AccountsController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden - account does not belong to user' })
   @ApiResponse({ status: 404, description: 'Account not found' })
-  delete(@Request() req, @Param('id') id: string) {
+  delete(@Request() req, @Param('id', ParseUUIDPipe) id: string) {
     return this.accountsService.delete(req.user.id, id);
   }
 }

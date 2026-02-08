@@ -13,6 +13,7 @@ import {
   ForbiddenException,
   UnauthorizedException,
   Logger,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ConfigService } from '@nestjs/config';
@@ -374,7 +375,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Revoke a specific trusted device' })
   async revokeTrustedDevice(
     @Request() req: ExpressRequest & { user: any },
-    @Param('id') deviceId: string,
+    @Param('id', ParseUUIDPipe) deviceId: string,
     @Res() res: Response,
   ) {
     await this.authService.revokeTrustedDevice(req.user.id, deviceId);
