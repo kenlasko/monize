@@ -18,6 +18,7 @@ import { DatabaseModule } from './database/database.module';
 import { ImportModule } from './import/import.module';
 import { NetWorthModule } from './net-worth/net-worth.module';
 import { BuiltInReportsModule } from './built-in-reports/built-in-reports.module';
+import { NotificationsModule } from './notifications/notifications.module';
 import { HealthModule } from './health/health.module';
 
 @Module({
@@ -79,6 +80,7 @@ import { HealthModule } from './health/health.module';
     ImportModule,
     NetWorthModule,
     BuiltInReportsModule,
+    NotificationsModule,
   ],
 })
 export class AppModule {}

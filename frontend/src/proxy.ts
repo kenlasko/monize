@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server';
 import { createLogger } from '@/lib/logger';
 
 const logger = createLogger('Proxy');
-const publicPaths = ['/login', '/register', '/auth/callback'];
+const publicPaths = ['/login', '/register', '/auth/callback', '/forgot-password', '/reset-password'];
 let backendConnected = false;
 
 export async function proxy(request: NextRequest) {

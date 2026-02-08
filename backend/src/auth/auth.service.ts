@@ -1,8 +1,9 @@
-import { Injectable, UnauthorizedException, ForbiddenException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DeepPartial } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
+import * as crypto from 'crypto';
 
 import { User } from '../users/entities/user.entity';
 import { RegisterDto } from './dto/register.dto';
@@ -229,8 +230,47 @@ export class AuthService {
     return this.usersRepository.findOne({ where: { id } });
   }
 
+  async generateResetToken(
+    email: string,
+  ): Promise<{ user: User; token: string } | null> {
+    const user = await this.usersRepository.findOne({
+      where: { email, authProvider: 'local' },
+    });
+
+    if (!user) return null;
+
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetTokenExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+    user.resetToken = resetToken;
+    user.resetTokenExpiry = resetTokenExpiry;
+    await this.usersRepository.save(user);
+
+    return { user, token: resetToken };
+  }
+
+  async resetPassword(token: string, newPassword: string): Promise<void> {
+    const user = await this.usersRepository.findOne({
+      where: { resetToken: token },
+    });
+
+    if (
+      !user ||
+      !user.resetTokenExpiry ||
+      user.resetTokenExpiry < new Date()
+    ) {
+      throw new BadRequestException('Invalid or expired reset token');
+    }
+
+    const saltRounds = 10;
+    user.passwordHash = await bcrypt.hash(newPassword, saltRounds);
+    user.resetToken = null;
+    user.resetTokenExpiry = null;
+    await this.usersRepository.save(user);
+  }
+
   private sanitizeUser(user: User) {
-    const { passwordHash, ...sanitized } = user;
+    const { passwordHash, resetToken, resetTokenExpiry, ...sanitized } = user;
     return sanitized;
   }
 }

@@ -46,6 +46,13 @@ services:
       ###JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set}
       JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-this-in-production}
       PUBLIC_APP_URL: ${PUBLIC_APP_URL:-http://localhost:3001}
+      # SMTP Configuration for Email Notifications
+      SMTP_HOST: mail.smtp2go.com
+      SMTP_PORT: 587
+      SMTP_SECURE: false
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      EMAIL_FROM: ${EMAIL_FROM}
     volumes:
       - ./backend:/app
       - ./database/schema.sql:/app/schema.sql:ro

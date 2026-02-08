@@ -35,4 +35,14 @@ export const userSettingsApi = {
   deleteAccount: async (): Promise<void> => {
     await apiClient.delete('/users/account');
   },
+
+  getSmtpStatus: async (): Promise<{ configured: boolean }> => {
+    const response = await apiClient.get<{ configured: boolean }>('/notifications/smtp-status');
+    return response.data;
+  },
+
+  sendTestEmail: async (): Promise<{ message: string }> => {
+    const response = await apiClient.post<{ message: string }>('/notifications/test-email');
+    return response.data;
+  },
 };

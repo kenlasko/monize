@@ -101,6 +101,11 @@ export default function SettingsPage() {
   const [defaultCurrency, setDefaultCurrency] = useState('USD');
   const [isUpdatingPreferences, setIsUpdatingPreferences] = useState(false);
 
+  // Notifications state
+  const [notificationEmail, setNotificationEmail] = useState(true);
+  const [smtpConfigured, setSmtpConfigured] = useState(false);
+  const [isSendingTestEmail, setIsSendingTestEmail] = useState(false);
+
   // Delete account state
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
@@ -113,12 +118,15 @@ export default function SettingsPage() {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [userData, prefsData] = await Promise.all([
+      const [userData, prefsData, smtpStatus] = await Promise.all([
         userSettingsApi.getProfile(),
         userSettingsApi.getPreferences(),
+        userSettingsApi.getSmtpStatus().catch(() => ({ configured: false })),
       ]);
       setLocalUser(userData);
       setPreferences(prefsData);
+      setSmtpConfigured(smtpStatus.configured);
+      setNotificationEmail(prefsData.notificationEmail);
 
       // Initialize form state
       setFirstName(userData.firstName || '');
@@ -234,6 +242,32 @@ export default function SettingsPage() {
     }
   };
 
+  const handleToggleEmailNotifications = async () => {
+    const newValue = !notificationEmail;
+    setNotificationEmail(newValue);
+    try {
+      const updated = await userSettingsApi.updatePreferences({ notificationEmail: newValue });
+      setPreferences(updated);
+      updatePreferencesStore(updated);
+      toast.success(newValue ? 'Email notifications enabled' : 'Email notifications disabled');
+    } catch (error: any) {
+      setNotificationEmail(!newValue);
+      toast.error('Failed to update notification preference');
+    }
+  };
+
+  const handleSendTestEmail = async () => {
+    setIsSendingTestEmail(true);
+    try {
+      await userSettingsApi.sendTestEmail();
+      toast.success('Test email sent! Check your inbox.');
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to send test email');
+    } finally {
+      setIsSendingTestEmail(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -335,6 +369,57 @@ export default function SettingsPage() {
               {isUpdatingPreferences ? 'Saving...' : 'Save Preferences'}
             </Button>
           </div>
+        </div>
+
+        {/* Notifications Section */}
+        <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg p-6 mb-6">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Notifications</h2>
+
+          {!smtpConfigured ? (
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Email notifications are not available. SMTP has not been configured by the administrator.
+            </p>
+          ) : (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Email Notifications</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Receive email reminders for upcoming bills
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={notificationEmail}
+                  onClick={handleToggleEmailNotifications}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 ${
+                    notificationEmail ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-600'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      notificationEmail ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+                  Send a test email to verify your notifications are working.
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSendTestEmail}
+                  disabled={isSendingTestEmail || !notificationEmail}
+                >
+                  {isSendingTestEmail ? 'Sending...' : 'Send Test Email'}
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Security Section - Only for local auth users */}

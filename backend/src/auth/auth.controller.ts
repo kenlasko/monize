@@ -19,8 +19,12 @@ import { Response, Request as ExpressRequest } from 'express';
 
 import { AuthService } from './auth.service';
 import { OidcService } from './oidc/oidc.service';
+import { EmailService } from '../notifications/email.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
+import { passwordResetTemplate } from '../notifications/email-templates';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -33,6 +37,7 @@ export class AuthController {
     private authService: AuthService,
     private oidcService: OidcService,
     private configService: ConfigService,
+    private emailService: EmailService,
   ) {
     // Default to true if not explicitly set to 'false'
     const localAuthSetting = this.configService.get<string>('LOCAL_AUTH_ENABLED', 'true');
@@ -188,6 +193,7 @@ export class AuthController {
       local: this.localAuthEnabled,
       oidc: this.oidcService.enabled,
       registration: this.registrationEnabled,
+      smtp: this.emailService.getStatus().configured,
     };
   }
 
@@ -197,6 +203,55 @@ export class AuthController {
   @ApiOperation({ summary: 'Get current user profile' })
   async getProfile(@Request() req) {
     return req.user;
+  }
+
+  @Post('forgot-password')
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ auth: { ttl: 900000, limit: 3 } })
+  @ApiOperation({ summary: 'Request password reset email' })
+  async forgotPassword(@Body() dto: ForgotPasswordDto) {
+    if (!this.localAuthEnabled) {
+      throw new ForbiddenException('Local authentication is disabled.');
+    }
+
+    const result = await this.authService.generateResetToken(dto.email);
+
+    if (result && this.emailService.getStatus().configured) {
+      const frontendUrl = this.configService.get<string>(
+        'PUBLIC_APP_URL',
+        'http://localhost:3000',
+      );
+      const resetUrl = `${frontendUrl}/reset-password?token=${result.token}`;
+      const html = passwordResetTemplate(result.user.firstName || '', resetUrl);
+
+      try {
+        await this.emailService.sendMail(
+          result.user.email!,
+          'MoneyMate Password Reset',
+          html,
+        );
+      } catch (error) {
+        this.logger.error(
+          'Failed to send password reset email',
+          error instanceof Error ? error.stack : error,
+        );
+      }
+    }
+
+    // SECURITY: Always return success to prevent account enumeration
+    return {
+      message:
+        'If an account exists with that email, a password reset link has been sent.',
+    };
+  }
+
+  @Post('reset-password')
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ auth: { ttl: 900000, limit: 5 } })
+  @ApiOperation({ summary: 'Reset password using token' })
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    await this.authService.resetPassword(dto.token, dto.newPassword);
+    return { message: 'Password reset successfully. You can now log in.' };
   }
 
   @Post('logout')

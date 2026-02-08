@@ -45,6 +45,14 @@ export class User {
   @Column({ name: 'last_login', type: 'timestamp', nullable: true })
   lastLogin: Date | null;
 
+  @Column({ name: 'reset_token', type: 'varchar', nullable: true })
+  @Exclude()
+  resetToken: string | null;
+
+  @Column({ name: 'reset_token_expiry', type: 'timestamp', nullable: true })
+  @Exclude()
+  resetTokenExpiry: Date | null;
+
   @OneToOne(() => UserPreference, (preference) => preference.user)
   preferences: UserPreference;
 }

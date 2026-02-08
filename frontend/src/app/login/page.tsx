@@ -26,7 +26,7 @@ export default function LoginPage() {
   const router = useRouter();
   const { login } = useAuthStore();
   const [isLoading, setIsLoading] = useState(false);
-  const [authMethods, setAuthMethods] = useState<AuthMethods>({ local: true, oidc: false, registration: true });
+  const [authMethods, setAuthMethods] = useState<AuthMethods>({ local: true, oidc: false, registration: true, smtp: false });
   const [isLoadingMethods, setIsLoadingMethods] = useState(true);
 
   useEffect(() => {
@@ -173,14 +173,16 @@ export default function LoginPage() {
                 </label>
               </div>
 
-              <div className="text-sm">
-                <a
-                  href="#"
-                  className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
-                >
-                  Forgot your password?
-                </a>
-              </div>
+              {authMethods.smtp && (
+                <div className="text-sm">
+                  <Link
+                    href="/forgot-password"
+                    className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
+                  >
+                    Forgot your password?
+                  </Link>
+                </div>
+              )}
             </div>
 
             <div className="space-y-3">

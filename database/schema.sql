@@ -17,8 +17,12 @@ CREATE TABLE users (
     is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    last_login TIMESTAMP
+    last_login TIMESTAMP,
+    reset_token VARCHAR(255),
+    reset_token_expiry TIMESTAMP
 );
+
+CREATE INDEX IF NOT EXISTS idx_users_reset_token ON users(reset_token) WHERE reset_token IS NOT NULL;
 
 -- Currencies
 CREATE TABLE currencies (
