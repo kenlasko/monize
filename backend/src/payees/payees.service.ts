@@ -2,6 +2,8 @@ import { Injectable, NotFoundException, ConflictException } from '@nestjs/common
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like } from 'typeorm';
 import { Payee } from './entities/payee.entity';
+import { Transaction } from '../transactions/entities/transaction.entity';
+import { ScheduledTransaction } from '../scheduled-transactions/entities/scheduled-transaction.entity';
 import { CreatePayeeDto } from './dto/create-payee.dto';
 import { UpdatePayeeDto } from './dto/update-payee.dto';
 
@@ -10,6 +12,10 @@ export class PayeesService {
   constructor(
     @InjectRepository(Payee)
     private payeesRepository: Repository<Payee>,
+    @InjectRepository(Transaction)
+    private transactionsRepository: Repository<Transaction>,
+    @InjectRepository(ScheduledTransaction)
+    private scheduledTransactionsRepository: Repository<ScheduledTransaction>,
   ) {}
 
   async create(userId: string, createPayeeDto: CreatePayeeDto): Promise<Payee> {
@@ -145,11 +151,26 @@ export class PayeesService {
     }
 
     // SECURITY: Explicit property mapping instead of Object.assign to prevent mass assignment
+    const nameChanged = updatePayeeDto.name !== undefined && updatePayeeDto.name !== payee.name;
     if (updatePayeeDto.name !== undefined) payee.name = updatePayeeDto.name;
     if (updatePayeeDto.defaultCategoryId !== undefined) payee.defaultCategoryId = updatePayeeDto.defaultCategoryId;
     if (updatePayeeDto.notes !== undefined) payee.notes = updatePayeeDto.notes;
 
-    return this.payeesRepository.save(payee);
+    const saved = await this.payeesRepository.save(payee);
+
+    // Cascade name change to existing transactions and scheduled transactions
+    if (nameChanged) {
+      await this.transactionsRepository.update(
+        { payeeId: id },
+        { payeeName: updatePayeeDto.name },
+      );
+      await this.scheduledTransactionsRepository.update(
+        { payeeId: id },
+        { payeeName: updatePayeeDto.name },
+      );
+    }
+
+    return saved;
   }
 
   async remove(userId: string, id: string): Promise<void> {
