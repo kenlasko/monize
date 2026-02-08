@@ -7,9 +7,11 @@ import { Button } from '@/components/ui/Button';
 import { MultiSelect, MultiSelectOption } from '@/components/ui/MultiSelect';
 import { Input } from '@/components/ui/Input';
 import { Pagination } from '@/components/ui/Pagination';
-import { TransactionForm } from '@/components/transactions/TransactionForm';
 import { TransactionList, DensityLevel } from '@/components/transactions/TransactionList';
-import { PayeeForm } from '@/components/payees/PayeeForm';
+import dynamic from 'next/dynamic';
+
+const TransactionForm = dynamic(() => import('@/components/transactions/TransactionForm').then(m => m.TransactionForm), { ssr: false });
+const PayeeForm = dynamic(() => import('@/components/payees/PayeeForm').then(m => m.PayeeForm), { ssr: false });
 import { transactionsApi } from '@/lib/transactions';
 import { accountsApi } from '@/lib/accounts';
 import { categoriesApi } from '@/lib/categories';
@@ -368,40 +370,20 @@ export default function TransactionsPage() {
     setFiltersInitialized(true);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Persist filter changes to localStorage
-  useEffect(() => {
-    if (!filtersInitialized) return;
-    localStorage.setItem(STORAGE_KEYS.accountIds, JSON.stringify(filterAccountIds));
-  }, [filterAccountIds, filtersInitialized]);
-
+  // Persist filter changes to localStorage (single effect instead of 7 separate ones)
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.accountStatus, JSON.stringify(filterAccountStatus));
   }, [filterAccountStatus]);
 
   useEffect(() => {
     if (!filtersInitialized) return;
+    localStorage.setItem(STORAGE_KEYS.accountIds, JSON.stringify(filterAccountIds));
     localStorage.setItem(STORAGE_KEYS.categoryIds, JSON.stringify(filterCategoryIds));
-  }, [filterCategoryIds, filtersInitialized]);
-
-  useEffect(() => {
-    if (!filtersInitialized) return;
     localStorage.setItem(STORAGE_KEYS.payeeIds, JSON.stringify(filterPayeeIds));
-  }, [filterPayeeIds, filtersInitialized]);
-
-  useEffect(() => {
-    if (!filtersInitialized) return;
     localStorage.setItem(STORAGE_KEYS.startDate, filterStartDate);
-  }, [filterStartDate, filtersInitialized]);
-
-  useEffect(() => {
-    if (!filtersInitialized) return;
     localStorage.setItem(STORAGE_KEYS.endDate, filterEndDate);
-  }, [filterEndDate, filtersInitialized]);
-
-  useEffect(() => {
-    if (!filtersInitialized) return;
     localStorage.setItem(STORAGE_KEYS.search, filterSearch);
-  }, [filterSearch, filtersInitialized]);
+  }, [filterAccountIds, filterCategoryIds, filterPayeeIds, filterStartDate, filterEndDate, filterSearch, filtersInitialized]);
 
   // Track if this is a filter-triggered change (to reset page to 1)
   const isFilterChange = useRef(false);

@@ -3,7 +3,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
-import { AccountForm } from '@/components/accounts/AccountForm';
+import dynamic from 'next/dynamic';
+
+const AccountForm = dynamic(() => import('@/components/accounts/AccountForm').then(m => m.AccountForm), { ssr: false });
 import { AccountList } from '@/components/accounts/AccountList';
 import { Modal } from '@/components/ui/Modal';
 import { accountsApi } from '@/lib/accounts';

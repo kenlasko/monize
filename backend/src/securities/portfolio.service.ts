@@ -175,20 +175,27 @@ export class PortfolioService {
     // Get investment accounts
     let accounts: Account[];
     if (accountIds && accountIds.length > 0) {
-      // Resolve linked pairs for each provided account ID
-      const resolvedIds = new Set<string>();
-      for (const id of accountIds) {
-        resolvedIds.add(id);
-        const account = await this.accountsRepository.findOne({
-          where: { id, userId },
-        });
-        if (account?.linkedAccountId) {
+      // Batch fetch all requested accounts in one query (instead of N individual queries)
+      const requestedAccounts = await this.accountsRepository.find({
+        where: { id: In(accountIds), userId },
+      });
+      // Resolve linked pairs
+      const resolvedIds = new Set<string>(requestedAccounts.map(a => a.id));
+      for (const account of requestedAccounts) {
+        if (account.linkedAccountId) {
           resolvedIds.add(account.linkedAccountId);
         }
       }
-      accounts = await this.accountsRepository.find({
-        where: { id: In([...resolvedIds]), userId },
-      });
+      // Fetch any linked accounts that weren't in the original request
+      const linkedOnly = [...resolvedIds].filter(id => !requestedAccounts.some(a => a.id === id));
+      if (linkedOnly.length > 0) {
+        const linkedAccounts = await this.accountsRepository.find({
+          where: { id: In(linkedOnly), userId },
+        });
+        accounts = [...requestedAccounts, ...linkedAccounts];
+      } else {
+        accounts = requestedAccounts;
+      }
     } else {
       accounts = await this.getInvestmentAccounts(userId);
     }

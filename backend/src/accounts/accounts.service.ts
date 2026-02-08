@@ -144,7 +144,7 @@ export class AccountsService {
   /**
    * Find all accounts for a user
    */
-  async findAll(userId: string, includeInactive = false): Promise<Account[]> {
+  async findAll(userId: string, includeInactive = false): Promise<(Account & { canDelete?: boolean })[]> {
     const queryBuilder = this.accountsRepository
       .createQueryBuilder('account')
       .where('account.userId = :userId', { userId })
@@ -154,7 +154,39 @@ export class AccountsService {
       queryBuilder.andWhere('account.isClosed = :isClosed', { isClosed: false });
     }
 
-    return queryBuilder.getMany();
+    const accounts = await queryBuilder.getMany();
+
+    if (accounts.length === 0) return [];
+
+    // Batch check deletability: count transactions + investment transactions per account in 2 queries
+    const accountIds = accounts.map(a => a.id);
+
+    const [txCounts, invTxCounts] = await Promise.all([
+      this.transactionRepository
+        .createQueryBuilder('t')
+        .select('t.accountId', 'accountId')
+        .addSelect('COUNT(t.id)', 'cnt')
+        .where('t.accountId IN (:...accountIds)', { accountIds })
+        .groupBy('t.accountId')
+        .getRawMany(),
+      this.investmentTransactionRepository
+        .createQueryBuilder('it')
+        .select('it.accountId', 'accountId')
+        .addSelect('COUNT(it.id)', 'cnt')
+        .where('it.accountId IN (:...accountIds)', { accountIds })
+        .groupBy('it.accountId')
+        .getRawMany(),
+    ]);
+
+    const txCountMap = new Map<string, number>();
+    for (const row of txCounts) txCountMap.set(row.accountId, parseInt(row.cnt, 10));
+    const invTxCountMap = new Map<string, number>();
+    for (const row of invTxCounts) invTxCountMap.set(row.accountId, parseInt(row.cnt, 10));
+
+    return accounts.map(account => ({
+      ...account,
+      canDelete: !(txCountMap.get(account.id) || 0) && !(invTxCountMap.get(account.id) || 0),
+    }));
   }
 
   /**

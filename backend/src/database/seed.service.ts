@@ -76,7 +76,7 @@ export class SeedService {
       [email, hashedPassword, 'Demo', 'User', 'local', true],
     );
 
-    console.log(`   ✓ Created demo user: ${email} / ${password}`);
+    console.log(`   ✓ Created demo user: ${email}`);
     return result[0].id;
   }
 

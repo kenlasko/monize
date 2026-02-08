@@ -153,14 +153,17 @@ export class ReportsService {
       report.config,
     );
 
-    // Get category and payee maps for labeling
-    const [categories, payees] = await Promise.all([
-      this.categoriesRepository.find({ where: { userId } }),
-      this.payeesRepository.find({ where: { userId } }),
-    ]);
+    // Only fetch category/payee maps when the report groups by them (avoid over-fetching)
+    const categoryMap = new Map<string, Category>();
+    const payeeMap = new Map<string, Payee>();
 
-    const categoryMap = new Map(categories.map((c) => [c.id, c]));
-    const payeeMap = new Map(payees.map((p) => [p.id, p]));
+    if (report.groupBy === GroupByType.CATEGORY) {
+      const categories = await this.categoriesRepository.find({ where: { userId } });
+      for (const c of categories) categoryMap.set(c.id, c);
+    } else if (report.groupBy === GroupByType.PAYEE) {
+      const payees = await this.payeesRepository.find({ where: { userId } });
+      for (const p of payees) payeeMap.set(p.id, p);
+    }
 
     // Aggregate data based on groupBy type
     let data = this.aggregateData(

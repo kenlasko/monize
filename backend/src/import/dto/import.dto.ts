@@ -5,12 +5,14 @@ import {
   IsOptional,
   IsArray,
   ValidateNested,
+  MaxLength,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class ParseQifDto {
   @ApiProperty({ description: 'QIF file content as string' })
   @IsString()
+  @MaxLength(10_000_000) // ~10MB limit, matches Express body parser
   content: string;
 }
 
@@ -118,6 +120,7 @@ export class SecurityMappingDto {
 export class ImportQifDto {
   @ApiProperty({ description: 'QIF file content as string' })
   @IsString()
+  @MaxLength(10_000_000) // ~10MB limit, matches Express body parser
   content: string;
 
   @ApiProperty({ description: 'Account ID to import transactions into' })

@@ -179,45 +179,31 @@ export class PayeesService {
   }
 
   async getMostUsed(userId: string, limit: number = 10): Promise<Payee[]> {
-    // Get payees ordered by usage count (number of transactions)
-    const result = await this.payeesRepository
+    // Single query: join defaultCategory + aggregate transaction count, avoiding two-step fetch
+    return this.payeesRepository
       .createQueryBuilder('payee')
+      .leftJoinAndSelect('payee.defaultCategory', 'defaultCategory')
       .leftJoin('transactions', 'transaction', 'transaction.payee_id = payee.id')
       .where('payee.user_id = :userId', { userId })
       .groupBy('payee.id')
+      .addGroupBy('defaultCategory.id')
       .orderBy('COUNT(transaction.id)', 'DESC')
       .limit(limit)
       .getMany();
-
-    // Load relations for the results
-    const ids = result.map(p => p.id);
-    if (ids.length === 0) return [];
-
-    return this.payeesRepository.find({
-      where: { id: In(ids) },
-      relations: ['defaultCategory'],
-    });
   }
 
   async getRecentlyUsed(userId: string, limit: number = 10): Promise<Payee[]> {
-    // Get payees ordered by most recent transaction
-    const result = await this.payeesRepository
+    // Single query: join defaultCategory + aggregate most recent date, avoiding two-step fetch
+    return this.payeesRepository
       .createQueryBuilder('payee')
+      .leftJoinAndSelect('payee.defaultCategory', 'defaultCategory')
       .leftJoin('transactions', 'transaction', 'transaction.payee_id = payee.id')
       .where('payee.user_id = :userId', { userId })
       .groupBy('payee.id')
+      .addGroupBy('defaultCategory.id')
       .orderBy('MAX(transaction.transaction_date)', 'DESC')
       .limit(limit)
       .getMany();
-
-    // Load relations for the results
-    const ids = result.map(p => p.id);
-    if (ids.length === 0) return [];
-
-    return this.payeesRepository.find({
-      where: { id: In(ids) },
-      relations: ['defaultCategory'],
-    });
   }
 
   async getSummary(userId: string) {

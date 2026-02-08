@@ -58,6 +58,7 @@ export interface Account {
   termEndDate: string | null;
   amortizationMonths: number | null;
   originalPrincipal: number | null;
+  canDelete?: boolean;
   createdAt: string;
   updatedAt: string;
 }

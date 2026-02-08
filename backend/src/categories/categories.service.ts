@@ -253,27 +253,21 @@ export class CategoriesService {
   async getTransactionCount(userId: string, categoryId: string): Promise<number> {
     await this.findOne(userId, categoryId);
 
-    // Count regular transactions
-    const transactionCount = await this.transactionsRepository.count({
-      where: { userId, categoryId },
-    });
-
-    // Count transaction splits
-    const splitCount = await this.splitsRepository.count({
-      where: { categoryId },
-    });
-
-    // Count scheduled transactions (bills & deposits)
-    const scheduledCount = await this.scheduledTransactionsRepository.count({
-      where: { userId, categoryId },
-    });
-
-    // Count scheduled transaction splits
-    const userScheduledTxIds = await this.scheduledTransactionsRepository
-      .createQueryBuilder('st')
-      .select('st.id')
-      .where('st.userId = :userId', { userId })
-      .getMany();
+    // Run all counts in parallel
+    const [transactionCount, splitCount, scheduledCount, userScheduledTxIds] = await Promise.all([
+      // Count regular transactions
+      this.transactionsRepository.count({ where: { userId, categoryId } }),
+      // Count transaction splits
+      this.splitsRepository.count({ where: { categoryId } }),
+      // Count scheduled transactions (bills & deposits)
+      this.scheduledTransactionsRepository.count({ where: { userId, categoryId } }),
+      // Get user's scheduled transaction IDs for split count
+      this.scheduledTransactionsRepository
+        .createQueryBuilder('st')
+        .select('st.id')
+        .where('st.userId = :userId', { userId })
+        .getMany(),
+    ]);
 
     let scheduledSplitCount = 0;
     if (userScheduledTxIds.length > 0) {

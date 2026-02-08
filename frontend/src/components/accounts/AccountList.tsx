@@ -54,7 +54,10 @@ export function AccountList({ accounts, brokerageMarketValues, onEdit, onRefresh
   const [accountToDelete, setAccountToDelete] = useState<Account | null>(null);
   const [isClosing, setIsClosing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [deletableAccounts, setDeletableAccounts] = useState<Set<string>>(new Set());
+  const deletableAccounts = useMemo(
+    () => new Set(accounts.filter(a => a.canDelete).map(a => a.id)),
+    [accounts],
+  );
 
   // Sorting state - initialize from localStorage
   const [sortField, setSortField] = useState<SortField>(() =>
@@ -178,28 +181,6 @@ export function AccountList({ accounts, brokerageMarketValues, onEdit, onRefresh
   const cycleDensity = useCallback(() => {
     setDensity(prev => prev === 'normal' ? 'compact' : prev === 'compact' ? 'dense' : 'normal');
   }, []);
-
-  // Check which accounts can be deleted (have no transactions)
-  useEffect(() => {
-    const checkDeletableAccounts = async () => {
-      const deletable = new Set<string>();
-      for (const account of accounts) {
-        try {
-          const result = await accountsApi.canDelete(account.id);
-          if (result.canDelete) {
-            deletable.add(account.id);
-          }
-        } catch {
-          // Ignore errors, account just won't show delete button
-        }
-      }
-      setDeletableAccounts(deletable);
-    };
-
-    if (accounts.length > 0) {
-      checkDeletableAccounts();
-    }
-  }, [accounts]);
 
   // Get unique account types from the accounts
   const availableAccountTypes = useMemo(() => {

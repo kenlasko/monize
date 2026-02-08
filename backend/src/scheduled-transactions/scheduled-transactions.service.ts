@@ -202,39 +202,75 @@ export class ScheduledTransactionsService {
       .orderBy('st.nextDueDate', 'ASC')
       .getMany();
 
-    // Fetch overrides and count for each transaction (only for dates >= nextDueDate)
-    const transactionsWithOverrides = await Promise.all(
-      transactions.map(async (transaction) => {
-        const nextDueDateStr = transaction.nextDueDate instanceof Date
-          ? transaction.nextDueDate.toISOString().split('T')[0]
-          : String(transaction.nextDueDate).split('T')[0];
+    if (transactions.length === 0) {
+      return [];
+    }
 
-        // Get the next override (for the next due date specifically)
-        // Use originalDate to find the override, since overrideDate may differ
-        const nextOverride = await this.overridesRepository
-          .createQueryBuilder('override')
-          .leftJoinAndSelect('override.category', 'category')
-          .where('override.scheduledTransactionId = :id', { id: transaction.id })
-          .andWhere('override.originalDate = :date', { date: nextDueDateStr })
-          .getOne();
+    // Build a map of transaction ID -> nextDueDate string for batch queries
+    const txDueDates = new Map<string, string>();
+    const txIds = transactions.map((t) => {
+      const d = t.nextDueDate instanceof Date
+        ? t.nextDueDate.toISOString().split('T')[0]
+        : String(t.nextDueDate).split('T')[0];
+      txDueDates.set(t.id, d);
+      return t.id;
+    });
 
-        // Count only future overrides (dates >= nextDueDate)
-        // Use originalDate since that represents when the occurrence was originally scheduled
-        const overrideCount = await this.overridesRepository
-          .createQueryBuilder('o')
-          .where('o.scheduledTransactionId = :id', { id: transaction.id })
-          .andWhere('o.originalDate >= :nextDueDate', { nextDueDate: nextDueDateStr })
-          .getCount();
+    // Batch query 1: Get next overrides for all transactions in one query
+    // We build OR conditions: (scheduledTransactionId = :id1 AND originalDate = :date1) OR ...
+    const nextOverridesQuery = this.overridesRepository
+      .createQueryBuilder('override')
+      .leftJoinAndSelect('override.category', 'category');
 
-        return {
-          ...transaction,
-          overrideCount,
-          nextOverride: nextOverride || null,
-        };
-      }),
-    );
+    const orConditions: string[] = [];
+    const params: Record<string, string> = {};
+    txIds.forEach((id, i) => {
+      orConditions.push(`(override.scheduledTransactionId = :id${i} AND override.originalDate = :date${i})`);
+      params[`id${i}`] = id;
+      params[`date${i}`] = txDueDates.get(id)!;
+    });
+    nextOverridesQuery.where(orConditions.join(' OR '), params);
 
-    return transactionsWithOverrides;
+    const allNextOverrides = await nextOverridesQuery.getMany();
+    const nextOverrideMap = new Map<string, ScheduledTransactionOverride>();
+    for (const o of allNextOverrides) {
+      nextOverrideMap.set(o.scheduledTransactionId, o);
+    }
+
+    // Batch query 2: Count future overrides for all transactions in one query
+    const overrideCounts = await this.overridesRepository
+      .createQueryBuilder('o')
+      .select('o.scheduledTransactionId', 'stId')
+      .addSelect('COUNT(o.id)', 'cnt')
+      .where('o.scheduledTransactionId IN (:...txIds)', { txIds })
+      .groupBy('o.scheduledTransactionId')
+      .getRawMany();
+
+    // We need per-transaction counts that only include overrides >= nextDueDate
+    // Since each transaction has a different nextDueDate, use a single query with CASE
+    const futureOverrideCounts = await this.overridesRepository
+      .query(
+        `SELECT o.scheduled_transaction_id as "stId", COUNT(*) as cnt
+         FROM scheduled_transaction_overrides o
+         WHERE o.scheduled_transaction_id = ANY($1)
+           AND EXISTS (
+             SELECT 1 FROM (VALUES ${txIds.map((_, i) => `($${i * 2 + 2}::uuid, $${i * 2 + 3}::date)`).join(', ')}) AS v(id, due_date)
+             WHERE v.id = o.scheduled_transaction_id AND o.original_date >= v.due_date
+           )
+         GROUP BY o.scheduled_transaction_id`,
+        [txIds, ...txIds.flatMap((id) => [id, txDueDates.get(id)!])],
+      );
+
+    const countMap = new Map<string, number>();
+    for (const row of futureOverrideCounts) {
+      countMap.set(row.stId, parseInt(row.cnt, 10));
+    }
+
+    return transactions.map((transaction) => ({
+      ...transaction,
+      overrideCount: countMap.get(transaction.id) || 0,
+      nextOverride: nextOverrideMap.get(transaction.id) || null,
+    }));
   }
 
   async findOne(userId: string, id: string): Promise<ScheduledTransaction> {

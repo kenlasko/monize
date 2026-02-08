@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { AccountHoldings, HoldingWithMarketValue } from '@/types/investment';
 import { ChevronDownIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
@@ -328,7 +328,7 @@ interface HoldingRowProps {
   onSymbolClick?: (symbol: string) => void;
 }
 
-function HoldingRow({
+const HoldingRow = memo(function HoldingRow({
   holding,
   defaultCurrency,
   formatCurrency,
@@ -391,4 +391,4 @@ function HoldingRow({
       </td>
     </tr>
   );
-}
+});
