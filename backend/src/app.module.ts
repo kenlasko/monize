@@ -3,7 +3,7 @@ import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ScheduleModule } from '@nestjs/schedule';
-import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { CsrfGuard } from './common/guards/csrf.guard';
 import { CsrfRefreshInterceptor } from './common/interceptors/csrf-refresh.interceptor';
 
@@ -90,7 +90,9 @@ import { AdminModule } from './admin/admin.module';
     AdminModule,
   ],
   providers: [
-    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    // ThrottlerGuard is NOT global — auth endpoints apply it explicitly via @UseGuards(ThrottlerGuard)
+    // with @Throttle({ auth: ... }) to get the stricter 5-per-15-min limit.
+    // Making it global would apply the 'auth' throttler (5 req/15 min) to ALL endpoints.
     { provide: APP_GUARD, useClass: CsrfGuard },
     { provide: APP_INTERCEPTOR, useClass: CsrfRefreshInterceptor },
   ],

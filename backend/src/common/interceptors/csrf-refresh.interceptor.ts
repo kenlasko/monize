@@ -13,6 +13,11 @@ export class CsrfRefreshInterceptor implements NestInterceptor {
         const request = context.switchToHttp().getRequest();
         const response = context.switchToHttp().getResponse<Response>();
 
+        // Skip if response was already sent (controllers using @Res() + res.json())
+        if (response.headersSent) {
+          return;
+        }
+
         // Only refresh if user is authenticated (has auth_token cookie)
         // and currently has a CSRF token (don't set one for unauthenticated users)
         if (request.cookies?.['auth_token'] && request.cookies?.['csrf_token']) {
