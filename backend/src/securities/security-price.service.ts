@@ -165,16 +165,25 @@ export class SecurityPriceService {
     let failed = 0;
     const skipped = 0;
 
-    // Fetch prices for all securities in parallel
+    // Group securities by (symbol, exchange) to deduplicate API calls across users
+    const symbolGroups = new Map<string, Security[]>();
+    for (const security of securities) {
+      const key = `${security.symbol}|${security.exchange || ''}`;
+      const group = symbolGroups.get(key) || [];
+      group.push(security);
+      symbolGroups.set(key, group);
+    }
+
+    // Fetch prices once per unique symbol, then apply to all securities in the group
     await Promise.all(
-      securities.map(async (security) => {
-        // Get the Yahoo Finance symbol using exchange mapping
-        const yahooSymbol = this.getYahooSymbol(security.symbol, security.exchange);
+      Array.from(symbolGroups.values()).map(async (group) => {
+        const representative = group[0];
+        const yahooSymbol = this.getYahooSymbol(representative.symbol, representative.exchange);
         let quote = await this.fetchYahooQuote(yahooSymbol);
 
         // If exchange-based symbol didn't work, try alternate suffixes
-        if (!quote && yahooSymbol === security.symbol) {
-          const alternateSymbols = this.getAlternateSymbols(security.symbol);
+        if (!quote && yahooSymbol === representative.symbol) {
+          const alternateSymbols = this.getAlternateSymbols(representative.symbol);
           for (const altSymbol of alternateSymbols) {
             quote = await this.fetchYahooQuote(altSymbol);
             if (quote) break;
@@ -182,31 +191,35 @@ export class SecurityPriceService {
         }
 
         if (!quote || quote.regularMarketPrice === undefined) {
-          results.push({
-            symbol: security.symbol,
-            success: false,
-            error: 'No price data available',
-          });
-          failed++;
+          for (const security of group) {
+            results.push({
+              symbol: security.symbol,
+              success: false,
+              error: 'No price data available',
+            });
+            failed++;
+          }
           return;
         }
 
-        try {
-          const tradingDate = this.getTradingDate(quote);
-          await this.savePriceData(security.id, tradingDate, quote);
-          results.push({
-            symbol: security.symbol,
-            success: true,
-            price: quote.regularMarketPrice,
-          });
-          updated++;
-        } catch (error) {
-          results.push({
-            symbol: security.symbol,
-            success: false,
-            error: error.message,
-          });
-          failed++;
+        const tradingDate = this.getTradingDate(quote);
+        for (const security of group) {
+          try {
+            await this.savePriceData(security.id, tradingDate, quote);
+            results.push({
+              symbol: security.symbol,
+              success: true,
+              price: quote.regularMarketPrice,
+            });
+            updated++;
+          } catch (error) {
+            results.push({
+              symbol: security.symbol,
+              success: false,
+              error: error.message,
+            });
+            failed++;
+          }
         }
       }),
     );
@@ -741,95 +754,130 @@ export class SecurityPriceService {
     let failed = 0;
     let totalPricesLoaded = 0;
 
-    // Process sequentially to avoid rate limiting
+    // Group securities by (symbol, exchange) to deduplicate API calls across users
+    const symbolGroups = new Map<string, Security[]>();
     for (const security of securities) {
-      const earliest = earliestTxDate.get(security.id);
-      if (!earliest) {
-        results.push({ symbol: security.symbol, success: true, pricesLoaded: 0 });
-        successful++;
+      const groupKey = `${security.symbol}|${security.exchange || ''}`;
+      const group = symbolGroups.get(groupKey) || [];
+      group.push(security);
+      symbolGroups.set(groupKey, group);
+    }
+
+    // Process each unique symbol sequentially to avoid rate limiting
+    for (const group of symbolGroups.values()) {
+      const representative = group[0];
+
+      // Find the earliest transaction date across all securities in this group
+      const groupEarliestDates = group
+        .map((s) => earliestTxDate.get(s.id))
+        .filter(Boolean) as string[];
+
+      if (groupEarliestDates.length === 0) {
+        for (const security of group) {
+          results.push({ symbol: security.symbol, success: true, pricesLoaded: 0 });
+          successful++;
+        }
         continue;
       }
 
-      const yahooSymbol = this.getYahooSymbol(security.symbol, security.exchange);
-      let prices = await this.fetchYahooHistorical(yahooSymbol);
+      // Use the earliest date across the entire group for fetching
+      const groupEarliest = groupEarliestDates.sort()[0];
+
+      const yahooSymbol = this.getYahooSymbol(representative.symbol, representative.exchange);
+      let allPrices = await this.fetchYahooHistorical(yahooSymbol);
 
       // Fallback to alternate symbols if needed
-      if (!prices && yahooSymbol === security.symbol) {
-        const alternateSymbols = this.getAlternateSymbols(security.symbol);
+      if (!allPrices && yahooSymbol === representative.symbol) {
+        const alternateSymbols = this.getAlternateSymbols(representative.symbol);
         for (const altSymbol of alternateSymbols) {
-          prices = await this.fetchYahooHistorical(altSymbol);
-          if (prices) break;
+          allPrices = await this.fetchYahooHistorical(altSymbol);
+          if (allPrices) break;
         }
       }
 
-      if (!prices || prices.length === 0) {
-        results.push({ symbol: security.symbol, success: false, error: 'No historical data available' });
-        failed++;
+      if (!allPrices || allPrices.length === 0) {
+        for (const security of group) {
+          results.push({ symbol: security.symbol, success: false, error: 'No historical data available' });
+          failed++;
+        }
         continue;
       }
 
-      // Filter to only keep prices from the earliest transaction date onward
-      const cutoff = new Date(earliest);
-      cutoff.setHours(0, 0, 0, 0);
-      prices = prices.filter((p) => p.date >= cutoff);
+      // Filter to the group-wide earliest date and deduplicate by date
+      const groupCutoff = new Date(groupEarliest);
+      groupCutoff.setHours(0, 0, 0, 0);
+      allPrices = allPrices.filter((p) => p.date >= groupCutoff);
 
-      // Deduplicate by date (Yahoo can return duplicate timestamps)
       const seen = new Set<string>();
-      prices = prices.filter((p) => {
+      allPrices = allPrices.filter((p) => {
         const key = p.date.toISOString().substring(0, 10);
         if (seen.has(key)) return false;
         seen.add(key);
         return true;
       });
 
-      if (prices.length === 0) {
-        results.push({ symbol: security.symbol, success: true, pricesLoaded: 0 });
-        successful++;
-        continue;
-      }
-
-      try {
-        // Bulk upsert using raw SQL for performance
-        const batchSize = 500;
-        for (let i = 0; i < prices.length; i += batchSize) {
-          const batch = prices.slice(i, i + batchSize);
-          const values = batch.map(
-            (p, idx) => {
-              const offset = idx * 7;
-              return `($${offset + 1}::UUID, $${offset + 2}::DATE, $${offset + 3}, $${offset + 4}, $${offset + 5}, $${offset + 6}, $${offset + 7}, 'yahoo_finance')`;
-            },
-          ).join(', ');
-
-          const params: any[] = [];
-          for (const p of batch) {
-            params.push(security.id, p.date, p.open, p.high, p.low, p.close, p.volume);
-          }
-
-          await this.dataSource.query(
-            `INSERT INTO security_prices (security_id, price_date, open_price, high_price, low_price, close_price, volume, source)
-             VALUES ${values}
-             ON CONFLICT (security_id, price_date) DO UPDATE SET
-               close_price = EXCLUDED.close_price,
-               open_price = EXCLUDED.open_price,
-               high_price = EXCLUDED.high_price,
-               low_price = EXCLUDED.low_price,
-               volume = EXCLUDED.volume,
-               source = EXCLUDED.source`,
-            params,
-          );
+      // Save prices for each security in the group, filtered to its own earliest date
+      for (const security of group) {
+        const secEarliest = earliestTxDate.get(security.id);
+        if (!secEarliest) {
+          results.push({ symbol: security.symbol, success: true, pricesLoaded: 0 });
+          successful++;
+          continue;
         }
 
-        this.logger.log(`Backfilled ${prices.length} prices for ${security.symbol} (from ${earliest})`);
-        results.push({ symbol: security.symbol, success: true, pricesLoaded: prices.length });
-        successful++;
-        totalPricesLoaded += prices.length;
-      } catch (error) {
-        this.logger.error(`Failed to save historical prices for ${security.symbol}: ${error.message}`);
-        results.push({ symbol: security.symbol, success: false, error: error.message });
-        failed++;
+        const secCutoff = new Date(secEarliest);
+        secCutoff.setHours(0, 0, 0, 0);
+        const prices = allPrices.filter((p) => p.date >= secCutoff);
+
+        if (prices.length === 0) {
+          results.push({ symbol: security.symbol, success: true, pricesLoaded: 0 });
+          successful++;
+          continue;
+        }
+
+        try {
+          // Bulk upsert using raw SQL for performance
+          const batchSize = 500;
+          for (let i = 0; i < prices.length; i += batchSize) {
+            const batch = prices.slice(i, i + batchSize);
+            const values = batch.map(
+              (p, idx) => {
+                const offset = idx * 7;
+                return `($${offset + 1}::UUID, $${offset + 2}::DATE, $${offset + 3}, $${offset + 4}, $${offset + 5}, $${offset + 6}, $${offset + 7}, 'yahoo_finance')`;
+              },
+            ).join(', ');
+
+            const params: any[] = [];
+            for (const p of batch) {
+              params.push(security.id, p.date, p.open, p.high, p.low, p.close, p.volume);
+            }
+
+            await this.dataSource.query(
+              `INSERT INTO security_prices (security_id, price_date, open_price, high_price, low_price, close_price, volume, source)
+               VALUES ${values}
+               ON CONFLICT (security_id, price_date) DO UPDATE SET
+                 close_price = EXCLUDED.close_price,
+                 open_price = EXCLUDED.open_price,
+                 high_price = EXCLUDED.high_price,
+                 low_price = EXCLUDED.low_price,
+                 volume = EXCLUDED.volume,
+                 source = EXCLUDED.source`,
+              params,
+            );
+          }
+
+          this.logger.log(`Backfilled ${prices.length} prices for ${security.symbol} (from ${secEarliest})`);
+          results.push({ symbol: security.symbol, success: true, pricesLoaded: prices.length });
+          successful++;
+          totalPricesLoaded += prices.length;
+        } catch (error) {
+          this.logger.error(`Failed to save historical prices for ${security.symbol}: ${error.message}`);
+          results.push({ symbol: security.symbol, success: false, error: error.message });
+          failed++;
+        }
       }
 
-      // Small delay between securities to avoid rate limiting
+      // Small delay between symbols to avoid rate limiting
       await new Promise((resolve) => setTimeout(resolve, 500));
     }
 

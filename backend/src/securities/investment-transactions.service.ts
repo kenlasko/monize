@@ -131,7 +131,7 @@ export class InvestmentTransactionsService {
     // Get the security for the symbol
     let symbol: string | null = null;
     if (investmentTransaction.securityId) {
-      const security = await this.securitiesService.findOne(investmentTransaction.securityId);
+      const security = await this.securitiesService.findOne(userId, investmentTransaction.securityId);
       symbol = security.symbol;
     }
 
@@ -208,9 +208,9 @@ export class InvestmentTransactionsService {
       throw new BadRequestException(`Security ID is required for ${createDto.action} transactions`);
     }
 
-    // Verify security exists if provided
+    // Verify security exists and belongs to user if provided
     if (createDto.securityId) {
-      await this.securitiesService.findOne(createDto.securityId);
+      await this.securitiesService.findOne(userId, createDto.securityId);
     }
 
     // Calculate total amount based on action type

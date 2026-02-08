@@ -12,48 +12,54 @@ export class SecuritiesService {
     private securitiesRepository: Repository<Security>,
   ) {}
 
-  async create(createSecurityDto: CreateSecurityDto): Promise<Security> {
-    // Check if symbol already exists
+  async create(userId: string, createSecurityDto: CreateSecurityDto): Promise<Security> {
+    // Check if symbol already exists for this user
     const existing = await this.securitiesRepository.findOne({
-      where: { symbol: createSecurityDto.symbol },
+      where: { symbol: createSecurityDto.symbol, userId },
     });
 
     if (existing) {
       throw new ConflictException(`Security with symbol ${createSecurityDto.symbol} already exists`);
     }
 
-    const security = this.securitiesRepository.create(createSecurityDto);
+    const security = this.securitiesRepository.create({
+      ...createSecurityDto,
+      userId,
+    });
     return this.securitiesRepository.save(security);
   }
 
-  async findAll(includeInactive: boolean = false): Promise<Security[]> {
-    const where = includeInactive ? {} : { isActive: true };
+  async findAll(userId: string, includeInactive: boolean = false): Promise<Security[]> {
+    const where: Record<string, unknown> = { userId };
+    if (!includeInactive) {
+      where.isActive = true;
+    }
     return this.securitiesRepository.find({ where, order: { symbol: 'ASC' } });
   }
 
-  async findOne(id: string): Promise<Security> {
-    const security = await this.securitiesRepository.findOne({ where: { id } });
+  async findOne(userId: string, id: string): Promise<Security> {
+    const security = await this.securitiesRepository.findOne({ where: { id, userId } });
     if (!security) {
       throw new NotFoundException(`Security with ID ${id} not found`);
     }
     return security;
   }
 
-  async findBySymbol(symbol: string): Promise<Security> {
-    const security = await this.securitiesRepository.findOne({ where: { symbol } });
+  async findBySymbol(userId: string, symbol: string): Promise<Security> {
+    const security = await this.securitiesRepository.findOne({ where: { symbol, userId } });
     if (!security) {
       throw new NotFoundException(`Security with symbol ${symbol} not found`);
     }
     return security;
   }
 
-  async update(id: string, updateSecurityDto: UpdateSecurityDto): Promise<Security> {
-    const security = await this.findOne(id);
+  async update(userId: string, id: string, updateSecurityDto: UpdateSecurityDto): Promise<Security> {
+    const security = await this.findOne(userId, id);
 
     // Check for symbol conflicts if updating symbol
     if (updateSecurityDto.symbol && updateSecurityDto.symbol !== security.symbol) {
       const existing = await this.securitiesRepository.findOne({
-        where: { symbol: updateSecurityDto.symbol },
+        where: { symbol: updateSecurityDto.symbol, userId },
       });
       if (existing) {
         throw new ConflictException(`Security with symbol ${updateSecurityDto.symbol} already exists`);
@@ -71,22 +77,23 @@ export class SecuritiesService {
     return this.securitiesRepository.save(security);
   }
 
-  async deactivate(id: string): Promise<Security> {
-    const security = await this.findOne(id);
+  async deactivate(userId: string, id: string): Promise<Security> {
+    const security = await this.findOne(userId, id);
     security.isActive = false;
     return this.securitiesRepository.save(security);
   }
 
-  async activate(id: string): Promise<Security> {
-    const security = await this.findOne(id);
+  async activate(userId: string, id: string): Promise<Security> {
+    const security = await this.findOne(userId, id);
     security.isActive = true;
     return this.securitiesRepository.save(security);
   }
 
-  async search(query: string): Promise<Security[]> {
+  async search(userId: string, query: string): Promise<Security[]> {
     return this.securitiesRepository
       .createQueryBuilder('security')
-      .where('security.isActive = :isActive', { isActive: true })
+      .where('security.userId = :userId', { userId })
+      .andWhere('security.isActive = :isActive', { isActive: true })
       .andWhere(
         '(LOWER(security.symbol) LIKE LOWER(:query) OR LOWER(security.name) LIKE LOWER(:query))',
         { query: `%${query}%` },

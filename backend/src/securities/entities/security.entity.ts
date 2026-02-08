@@ -1,14 +1,24 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, Unique } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
+import { User } from '../../users/entities/user.entity';
 
 @Entity('securities')
+@Unique(['userId', 'symbol'])
 export class Security {
   @ApiProperty({ example: 'c5f5d5f0-1234-4567-890a-123456789abc' })
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @ApiProperty({ description: 'Owner user ID' })
+  @Column({ type: 'uuid', name: 'user_id' })
+  userId: string;
+
+  @ManyToOne(() => User)
+  @JoinColumn({ name: 'user_id' })
+  user: User;
+
   @ApiProperty({ example: 'AAPL', description: 'Stock symbol or ticker' })
-  @Column({ type: 'varchar', length: 20, unique: true })
+  @Column({ type: 'varchar', length: 20 })
   symbol: string;
 
   @ApiProperty({ example: 'Apple Inc.', description: 'Full name of the security' })

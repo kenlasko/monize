@@ -284,7 +284,8 @@ CREATE INDEX idx_sched_txn_overrides_date ON scheduled_transaction_overrides(ove
 -- Securities (stocks, bonds, mutual funds, ETFs)
 CREATE TABLE securities (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    symbol VARCHAR(20) NOT NULL UNIQUE, -- ticker symbol
+    user_id UUID NOT NULL REFERENCES users(id),
+    symbol VARCHAR(20) NOT NULL, -- ticker symbol (unique per user)
     name VARCHAR(255) NOT NULL,
     security_type VARCHAR(50), -- 'STOCK', 'ETF', 'MUTUAL_FUND', 'BOND', etc
     exchange VARCHAR(50), -- 'NYSE', 'NASDAQ', 'TSX', 'TSXV', etc
@@ -292,9 +293,11 @@ CREATE TABLE securities (
     is_active BOOLEAN DEFAULT true,
     skip_price_updates BOOLEAN DEFAULT false, -- for auto-generated symbols that can't be looked up
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, symbol)
 );
 
+CREATE INDEX idx_securities_user_id ON securities(user_id);
 CREATE INDEX idx_securities_symbol ON securities(symbol);
 CREATE INDEX idx_securities_exchange ON securities(exchange);
 

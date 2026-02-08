@@ -70,8 +70,8 @@ export class HoldingsService {
     // Verify account ownership
     await this.accountsService.findOne(userId, accountId);
 
-    // Verify security exists
-    await this.securitiesService.findOne(securityId);
+    // Verify security exists and belongs to user
+    await this.securitiesService.findOne(userId, securityId);
 
     // Find existing holding
     let holding = await this.findByAccountAndSecurity(accountId, securityId);
@@ -128,7 +128,7 @@ export class HoldingsService {
     quantityChange: number,
   ): Promise<Holding> {
     await this.accountsService.findOne(userId, accountId);
-    await this.securitiesService.findOne(securityId);
+    await this.securitiesService.findOne(userId, securityId);
 
     let holding = await this.findByAccountAndSecurity(accountId, securityId);
 

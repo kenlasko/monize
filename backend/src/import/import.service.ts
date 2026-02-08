@@ -356,9 +356,9 @@ export class ImportService {
         if (!secMapping.createNew) continue;
         const symbol = secMapping.createNew.toUpperCase();
 
-        // Check if security with this symbol already exists
+        // Check if security with this symbol already exists for this user
         const existingSecurity = await queryRunner.manager.findOne(Security, {
-          where: { symbol },
+          where: { symbol, userId },
         });
 
         if (existingSecurity) {
@@ -372,6 +372,7 @@ export class ImportService {
             account.currencyCode;
 
           const newSecurity = new Security();
+          newSecurity.userId = userId;
           newSecurity.symbol = symbol;
           newSecurity.name = secMapping.securityName || secMapping.createNew;
           newSecurity.securityType = secMapping.securityType || null;
@@ -458,16 +459,16 @@ export class ImportService {
               // Add * suffix to indicate auto-generated symbol
               generatedSymbol = `${generatedSymbol}*`;
 
-              // Check if this generated symbol already exists
+              // Check if this generated symbol already exists for this user
               let existingSecurity = await queryRunner.manager.findOne(Security, {
-                where: { symbol: generatedSymbol },
+                where: { symbol: generatedSymbol, userId },
               });
 
               // If symbol exists but for a different security, append a number
               if (existingSecurity && existingSecurity.name !== qifTx.security) {
                 let counter = 2;
                 let uniqueSymbol = `${generatedSymbol}${counter}`;
-                while (await queryRunner.manager.findOne(Security, { where: { symbol: uniqueSymbol } })) {
+                while (await queryRunner.manager.findOne(Security, { where: { symbol: uniqueSymbol, userId } })) {
                   counter++;
                   uniqueSymbol = `${generatedSymbol}${counter}`;
                 }
@@ -480,6 +481,7 @@ export class ImportService {
               } else {
                 // Create the security with skipPriceUpdates=true since it's an auto-generated symbol
                 const newSecurity = new Security();
+                newSecurity.userId = userId;
                 newSecurity.symbol = generatedSymbol;
                 newSecurity.name = qifTx.security;
                 newSecurity.securityType = null;
