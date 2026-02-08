@@ -36,9 +36,57 @@ apiClient.interceptors.request.use(
 
 // Response interceptor to handle errors
 let isLoggingOut = false;
+let isRefreshingCsrf = false;
+let csrfRefreshPromise: Promise<boolean> | null = null;
+
+async function refreshCsrfToken(): Promise<boolean> {
+  try {
+    // GET request skips CSRF guard; auth_token httpOnly cookie is sent automatically
+    await axios.get('/api/v1/auth/csrf-refresh', { withCredentials: true });
+    logger.info('CSRF token refreshed');
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
 apiClient.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
+    const originalRequest = error.config as InternalAxiosRequestConfig & { _csrfRetried?: boolean };
+
+    // Handle 403 CSRF errors — attempt transparent refresh and retry
+    if (
+      error.response?.status === 403 &&
+      !originalRequest?._csrfRetried &&
+      typeof (error.response?.data as any)?.message === 'string' &&
+      (error.response.data as any).message.includes('CSRF token')
+    ) {
+      originalRequest._csrfRetried = true;
+
+      // Deduplicate concurrent refresh attempts
+      if (!isRefreshingCsrf) {
+        isRefreshingCsrf = true;
+        csrfRefreshPromise = refreshCsrfToken();
+      }
+
+      const refreshed = await csrfRefreshPromise;
+      isRefreshingCsrf = false;
+      csrfRefreshPromise = null;
+
+      if (refreshed) {
+        // Re-read the fresh CSRF cookie and retry the original request
+        const newCsrfToken = Cookies.get('csrf_token');
+        if (newCsrfToken && originalRequest.headers) {
+          originalRequest.headers['X-CSRF-Token'] = newCsrfToken;
+        }
+        return apiClient(originalRequest);
+      }
+
+      // CSRF refresh failed (auth also expired) — fall through to logout
+      logger.warn('CSRF refresh failed, session expired');
+    }
+
     if (error.response?.status === 401 && !isLoggingOut) {
       isLoggingOut = true;
       logger.warn('401 received, logging out');

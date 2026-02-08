@@ -220,6 +220,15 @@ export class AuthController {
     };
   }
 
+  @Get('csrf-refresh')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Refresh CSRF token cookie' })
+  async csrfRefresh(@Res() res: Response) {
+    res.cookie('csrf_token', generateCsrfToken(), getCsrfCookieOptions(this.isProduction));
+    res.json({ message: 'CSRF token refreshed' });
+  }
+
   @Get('profile')
   @UseGuards(AuthGuard('jwt'))
   @ApiBearerAuth()

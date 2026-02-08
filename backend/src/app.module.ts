@@ -1,10 +1,11 @@
 import { Module } from '@nestjs/common';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { CsrfGuard } from './common/guards/csrf.guard';
+import { CsrfRefreshInterceptor } from './common/interceptors/csrf-refresh.interceptor';
 
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
@@ -88,6 +89,7 @@ import { AdminModule } from './admin/admin.module';
   ],
   providers: [
     { provide: APP_GUARD, useClass: CsrfGuard },
+    { provide: APP_INTERCEPTOR, useClass: CsrfRefreshInterceptor },
   ],
 })
 export class AppModule {}
