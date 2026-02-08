@@ -25,29 +25,29 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   // Fetch force2fa setting
   useEffect(() => {
-    if (isAuthenticated && user?.authProvider === 'local') {
+    if (isAuthenticated && user?.hasPassword) {
       authApi.getAuthMethods().then((methods) => {
         setForce2fa(methods.force2fa);
       }).catch(() => {});
     }
-  }, [isAuthenticated, user?.authProvider]);
+  }, [isAuthenticated, user?.hasPassword]);
 
-  // Force password change for local auth users
+  // Force password change for users with a local password
   useEffect(() => {
     if (
       user?.mustChangePassword &&
-      user.authProvider === 'local' &&
+      user.hasPassword &&
       pathname !== '/change-password'
     ) {
       router.push('/change-password');
     }
   }, [user, pathname, router]);
 
-  // Force 2FA setup for local auth users when FORCE_2FA is enabled
+  // Force 2FA setup for users with a local password when FORCE_2FA is enabled
   useEffect(() => {
     if (
       force2fa &&
-      user?.authProvider === 'local' &&
+      user?.hasPassword &&
       !user?.mustChangePassword &&
       preferences &&
       !preferences.twoFactorEnabled &&

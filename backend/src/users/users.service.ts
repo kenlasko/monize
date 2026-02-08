@@ -130,13 +130,6 @@ export class UsersService {
       throw new BadRequestException('User not found');
     }
 
-    // OIDC users cannot change password
-    if (user.authProvider !== 'local') {
-      throw new BadRequestException(
-        'Password cannot be changed for accounts using external authentication',
-      );
-    }
-
     if (!user.passwordHash) {
       throw new BadRequestException('No password set for this account');
     }

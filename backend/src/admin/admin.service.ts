@@ -20,9 +20,13 @@ export class AdminService {
     private preferencesRepository: Repository<UserPreference>,
   ) {}
 
-  async findAllUsers(): Promise<User[]> {
-    return this.usersRepository.find({
+  async findAllUsers() {
+    const users = await this.usersRepository.find({
       order: { createdAt: 'ASC' },
+    });
+    return users.map((user) => {
+      const { passwordHash, resetToken, resetTokenExpiry, twoFactorSecret, ...rest } = user;
+      return { ...rest, hasPassword: !!passwordHash };
     });
   }
 
@@ -117,9 +121,9 @@ export class AdminService {
       throw new NotFoundException('User not found');
     }
 
-    if (targetUser.authProvider !== 'local') {
+    if (!targetUser.passwordHash) {
       throw new BadRequestException(
-        'Cannot reset password for accounts using external authentication',
+        'Cannot reset password for accounts without a local password',
       );
     }
 

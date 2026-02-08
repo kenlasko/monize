@@ -216,7 +216,8 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get current user profile' })
   async getProfile(@Request() req) {
-    return req.user;
+    const { passwordHash, resetToken, resetTokenExpiry, twoFactorSecret, ...user } = req.user;
+    return { ...user, hasPassword: !!passwordHash };
   }
 
   @Post('forgot-password')

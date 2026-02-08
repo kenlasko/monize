@@ -133,7 +133,7 @@ export function UserManagementTable({
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm space-x-2">
                   {!isSelf && (
                     <>
-                      {user.authProvider === 'local' && (
+                      {user.hasPassword && (
                         <Button
                           variant="outline"
                           size="sm"

@@ -42,7 +42,7 @@ function CallbackContent() {
           login(user, token || 'httpOnly');
 
           toast.success('Successfully signed in!');
-          if (user.mustChangePassword && user.authProvider === 'local') {
+          if (user.mustChangePassword && user.hasPassword) {
             router.push('/change-password');
           } else {
             router.push('/dashboard');

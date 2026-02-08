@@ -312,10 +312,10 @@ export default function SettingsPage() {
   };
 
   useEffect(() => {
-    if (twoFactorEnabled && user?.authProvider === 'local') {
+    if (twoFactorEnabled && user?.hasPassword) {
       loadTrustedDevices();
     }
-  }, [twoFactorEnabled, user?.authProvider]);
+  }, [twoFactorEnabled, user?.hasPassword]);
 
   const handleRevokeDevice = async (id: string) => {
     try {
@@ -504,10 +504,17 @@ export default function SettingsPage() {
           )}
         </div>
 
-        {/* Security Section - Only for local auth users */}
-        {user?.authProvider === 'local' && (
+        {/* Security Section */}
+        {user?.hasPassword && (
           <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg p-6 mb-6">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Security</h2>
+            {user.authProvider === 'oidc' && (
+              <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                <p className="text-sm text-blue-700 dark:text-blue-300">
+                  Your account uses Single Sign-On (SSO) for authentication. The password below is not used for login but can be kept as a backup if SSO is disabled.
+                </p>
+              </div>
+            )}
             <form onSubmit={handleChangePassword}>
               <div className="space-y-4">
                 <Input

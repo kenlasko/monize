@@ -4,6 +4,7 @@ export interface User {
   firstName?: string;
   lastName?: string;
   authProvider: 'local' | 'oidc';
+  hasPassword: boolean;
   role: 'admin' | 'user';
   isActive: boolean;
   mustChangePassword: boolean;
@@ -18,6 +19,7 @@ export interface AdminUser {
   firstName: string | null;
   lastName: string | null;
   authProvider: 'local' | 'oidc';
+  hasPassword: boolean;
   role: 'admin' | 'user';
   isActive: boolean;
   mustChangePassword: boolean;

@@ -31,8 +31,11 @@ export class UsersController {
 
   @Get('me')
   @ApiOperation({ summary: 'Get current user profile' })
-  getProfile(@Request() req) {
-    return this.usersService.findById(req.user.id);
+  async getProfile(@Request() req) {
+    const user = await this.usersService.findById(req.user.id);
+    if (!user) return null;
+    const { passwordHash, resetToken, resetTokenExpiry, twoFactorSecret, ...rest } = user as any;
+    return { ...rest, hasPassword: !!passwordHash };
   }
 
   @Patch('profile')

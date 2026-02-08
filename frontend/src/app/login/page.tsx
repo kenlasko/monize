@@ -68,7 +68,7 @@ export default function LoginPage() {
       // Token is now in httpOnly cookie, not in response body
       login(response.user!, 'httpOnly');
       toast.success('Welcome back!');
-      if (response.user!.mustChangePassword && response.user!.authProvider === 'local') {
+      if (response.user!.mustChangePassword) {
         router.push('/change-password');
       } else {
         router.push('/dashboard');
@@ -84,7 +84,7 @@ export default function LoginPage() {
   const handle2FAVerified = (user: User) => {
     login(user, 'httpOnly');
     toast.success('Welcome back!');
-    if (user.mustChangePassword && user.authProvider === 'local') {
+    if (user.mustChangePassword) {
       router.push('/change-password');
     } else {
       router.push('/dashboard');

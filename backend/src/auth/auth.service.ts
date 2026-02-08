@@ -80,7 +80,7 @@ export class AuthService {
     const { email, password } = loginDto;
 
     const user = await this.usersRepository.findOne({
-      where: { email, authProvider: 'local' },
+      where: { email },
     });
 
     if (!user || !user.passwordHash) {
@@ -282,7 +282,7 @@ export class AuthService {
 
   async validateUser(email: string, password: string): Promise<any> {
     const user = await this.usersRepository.findOne({
-      where: { email, authProvider: 'local' },
+      where: { email },
     });
 
     if (user && user.passwordHash) {
@@ -333,8 +333,7 @@ export class AuthService {
         if (existingUser) {
           // Link OIDC to existing local account
           existingUser.oidcSubject = sub;
-          // Keep authProvider as 'local' if they have a password, allowing both login methods
-          // If they want OIDC-only, they can remove their password later
+          existingUser.authProvider = 'oidc';
           await this.usersRepository.save(existingUser);
           user = existingUser;
         }
@@ -372,6 +371,7 @@ export class AuthService {
             });
             if (existingUser) {
               existingUser.oidcSubject = sub;
+              existingUser.authProvider = 'oidc';
               await this.usersRepository.save(existingUser);
               user = existingUser;
             } else {
@@ -385,6 +385,12 @@ export class AuthService {
     } else {
       // Update user info if it has changed (but don't overwrite with null)
       let needsUpdate = false;
+
+      // Ensure authProvider reflects OIDC usage
+      if (user.authProvider !== 'oidc') {
+        user.authProvider = 'oidc';
+        needsUpdate = true;
+      }
 
       // SECURITY: Only update email if verified by OIDC provider
       if (trustedEmail && user.email !== trustedEmail) {
@@ -435,10 +441,10 @@ export class AuthService {
     email: string,
   ): Promise<{ user: User; token: string } | null> {
     const user = await this.usersRepository.findOne({
-      where: { email, authProvider: 'local' },
+      where: { email },
     });
 
-    if (!user) return null;
+    if (!user || !user.passwordHash) return null;
 
     const resetToken = crypto.randomBytes(32).toString('hex');
     const resetTokenExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
@@ -574,6 +580,6 @@ export class AuthService {
 
   private sanitizeUser(user: User) {
     const { passwordHash, resetToken, resetTokenExpiry, twoFactorSecret, ...sanitized } = user;
-    return sanitized;
+    return { ...sanitized, hasPassword: !!passwordHash };
   }
 }
