@@ -11,6 +11,7 @@ export interface TopMover {
   securityId: string;
   symbol: string;
   name: string;
+  currencyCode: string;
   currentPrice: number;
   previousPrice: number;
   dailyChange: number;
@@ -465,7 +466,7 @@ export class PortfolioService {
     // Get unique security IDs
     const securityIds = [...new Set(activeHoldings.map((h) => h.securityId))];
 
-    // Query the two most recent prices for each security using a lateral join
+    // Query the two most recent weekday (Mon-Fri) prices for each security
     const priceRows: Array<{
       security_id: string;
       close_price: string;
@@ -476,6 +477,7 @@ export class PortfolioService {
                 ROW_NUMBER() OVER (PARTITION BY security_id ORDER BY price_date DESC) as rn
          FROM security_prices
          WHERE security_id = ANY($1)
+           AND EXTRACT(DOW FROM price_date) BETWEEN 1 AND 5
        ) sub
        WHERE rn <= 2
        ORDER BY security_id, rn`,
@@ -517,6 +519,7 @@ export class PortfolioService {
         securityId,
         symbol: security?.symbol || 'Unknown',
         name: security?.name || 'Unknown',
+        currencyCode: security?.currencyCode || 'USD',
         currentPrice,
         previousPrice,
         dailyChange,

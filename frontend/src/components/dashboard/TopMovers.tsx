@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { TopMover } from '@/types/investment';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { usePreferencesStore } from '@/store/preferencesStore';
 
 interface TopMoversProps {
   movers: TopMover[];
@@ -12,7 +13,8 @@ interface TopMoversProps {
 
 export function TopMovers({ movers, isLoading, hasInvestmentAccounts }: TopMoversProps) {
   const router = useRouter();
-  const { formatNumber, formatPercent } = useNumberFormat();
+  const { formatCurrency, formatPercent } = useNumberFormat();
+  const defaultCurrency = usePreferencesStore((s) => s.preferences?.defaultCurrency) || 'USD';
 
   if (isLoading) {
     return (
@@ -67,6 +69,11 @@ export function TopMovers({ movers, isLoading, hasInvestmentAccounts }: TopMover
       <div className="space-y-3">
         {topMovers.map((mover) => {
           const isPositive = mover.dailyChange >= 0;
+          const isForeign = mover.currencyCode && mover.currencyCode !== defaultCurrency;
+          const fmtPrice = (value: number) => {
+            const formatted = formatCurrency(value, mover.currencyCode);
+            return isForeign ? `${formatted} ${mover.currencyCode}` : formatted;
+          };
           return (
             <div
               key={mover.securityId}
@@ -82,7 +89,7 @@ export function TopMovers({ movers, isLoading, hasInvestmentAccounts }: TopMover
               </div>
               <div className="text-right flex-shrink-0 ml-3">
                 <div className="text-sm text-gray-600 dark:text-gray-300">
-                  {formatNumber(mover.currentPrice)}
+                  {fmtPrice(mover.currentPrice)}
                 </div>
                 <div
                   className={`text-sm font-medium ${
@@ -91,7 +98,7 @@ export function TopMovers({ movers, isLoading, hasInvestmentAccounts }: TopMover
                       : 'text-red-600 dark:text-red-400'
                   }`}
                 >
-                  {isPositive ? '+' : ''}{formatNumber(mover.dailyChange)} ({isPositive ? '+' : ''}{formatPercent(mover.dailyChangePercent)})
+                  {isPositive ? '+' : ''}{formatCurrency(mover.dailyChange, mover.currencyCode)} ({isPositive ? '+' : ''}{formatPercent(mover.dailyChangePercent)})
                 </div>
               </div>
             </div>

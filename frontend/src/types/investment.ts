@@ -129,6 +129,7 @@ export interface TopMover {
   securityId: string;
   symbol: string;
   name: string;
+  currencyCode: string;
   currentPrice: number;
   previousPrice: number;
   dailyChange: number;

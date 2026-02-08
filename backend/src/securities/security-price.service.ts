@@ -165,9 +165,6 @@ export class SecurityPriceService {
     let failed = 0;
     const skipped = 0;
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
     // Fetch prices for all securities in parallel
     await Promise.all(
       securities.map(async (security) => {
@@ -195,7 +192,8 @@ export class SecurityPriceService {
         }
 
         try {
-          await this.savePriceData(security.id, today, quote);
+          const tradingDate = this.getTradingDate(quote);
+          await this.savePriceData(security.id, tradingDate, quote);
           results.push({
             symbol: security.symbol,
             success: true,
@@ -251,9 +249,6 @@ export class SecurityPriceService {
     let updated = 0;
     let failed = 0;
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
     // Fetch prices for all securities in parallel
     await Promise.all(
       securities.map(async (security) => {
@@ -280,7 +275,8 @@ export class SecurityPriceService {
         }
 
         try {
-          await this.savePriceData(security.id, today, quote);
+          const tradingDate = this.getTradingDate(quote);
+          await this.savePriceData(security.id, tradingDate, quote);
           results.push({
             symbol: security.symbol,
             success: true,
@@ -306,6 +302,27 @@ export class SecurityPriceService {
       results,
       lastUpdated: new Date(),
     };
+  }
+
+  /**
+   * Get the trading date for a Yahoo quote.
+   * Uses regularMarketTime from the response to determine the actual trading date,
+   * falling back to the most recent business day (Mon-Fri) if not available.
+   */
+  private getTradingDate(quote: YahooQuoteResult): Date {
+    if (quote.regularMarketTime) {
+      const marketDate = new Date(quote.regularMarketTime * 1000);
+      marketDate.setHours(0, 0, 0, 0);
+      return marketDate;
+    }
+
+    // Fallback: use today, but adjust to previous Friday if weekend
+    const date = new Date();
+    date.setHours(0, 0, 0, 0);
+    const day = date.getDay(); // 0=Sun, 6=Sat
+    if (day === 0) date.setDate(date.getDate() - 2); // Sunday → Friday
+    else if (day === 6) date.setDate(date.getDate() - 1); // Saturday → Friday
+    return date;
   }
 
   /**
