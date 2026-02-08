@@ -1,21 +1,37 @@
 import { Injectable, UnauthorizedException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DeepPartial } from 'typeorm';
+import { Repository, DeepPartial, LessThan } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
+import * as otplib from 'otplib';
+import * as QRCode from 'qrcode';
 
 import { User } from '../users/entities/user.entity';
+import { UserPreference } from '../users/entities/user-preference.entity';
+import { TrustedDevice } from '../users/entities/trusted-device.entity';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { encrypt, decrypt } from './crypto.util';
+import { UAParser } from 'ua-parser-js';
 
 @Injectable()
 export class AuthService {
+  private jwtSecret: string;
+
   constructor(
     @InjectRepository(User)
     private usersRepository: Repository<User>,
+    @InjectRepository(UserPreference)
+    private preferencesRepository: Repository<UserPreference>,
+    @InjectRepository(TrustedDevice)
+    private trustedDevicesRepository: Repository<TrustedDevice>,
     private jwtService: JwtService,
-  ) {}
+    private configService: ConfigService,
+  ) {
+    this.jwtSecret = this.configService.get<string>('JWT_SECRET')!;
+  }
 
   async register(registerDto: RegisterDto) {
     const { email, password, firstName, lastName } = registerDto;
@@ -60,7 +76,7 @@ export class AuthService {
     };
   }
 
-  async login(loginDto: LoginDto) {
+  async login(loginDto: LoginDto, trustedDeviceToken?: string) {
     const { email, password } = loginDto;
 
     const user = await this.usersRepository.findOne({
@@ -81,6 +97,31 @@ export class AuthService {
       throw new UnauthorizedException('Account is deactivated');
     }
 
+    // Check if 2FA is enabled
+    const preferences = await this.preferencesRepository.findOne({
+      where: { userId: user.id },
+    });
+
+    if (preferences?.twoFactorEnabled && user.twoFactorSecret) {
+      // Check for trusted device
+      if (trustedDeviceToken) {
+        const isTrusted = await this.validateTrustedDevice(user.id, trustedDeviceToken);
+        if (isTrusted) {
+          user.lastLogin = new Date();
+          await this.usersRepository.save(user);
+          const token = this.generateToken(user);
+          return { user: this.sanitizeUser(user), token };
+        }
+      }
+
+      // Return a temporary token for 2FA verification
+      const tempToken = this.jwtService.sign(
+        { sub: user.id, type: '2fa_pending' },
+        { expiresIn: '5m' },
+      );
+      return { requires2FA: true, tempToken };
+    }
+
     // Update last login
     user.lastLogin = new Date();
     await this.usersRepository.save(user);
@@ -91,6 +132,152 @@ export class AuthService {
       user: this.sanitizeUser(user),
       token,
     };
+  }
+
+  async verify2FA(
+    tempToken: string,
+    code: string,
+    rememberDevice = false,
+    userAgent?: string,
+    ipAddress?: string,
+  ) {
+    let payload: any;
+    try {
+      payload = this.jwtService.verify(tempToken);
+    } catch {
+      throw new UnauthorizedException('Invalid or expired verification token');
+    }
+
+    if (payload.type !== '2fa_pending') {
+      throw new UnauthorizedException('Invalid token type');
+    }
+
+    const user = await this.usersRepository.findOne({
+      where: { id: payload.sub },
+    });
+
+    if (!user || !user.twoFactorSecret) {
+      throw new UnauthorizedException('Invalid verification state');
+    }
+
+    const secret = decrypt(user.twoFactorSecret, this.jwtSecret);
+    const isValid = otplib.verifySync({ token: code, secret }).valid;
+
+    if (!isValid) {
+      throw new UnauthorizedException('Invalid verification code');
+    }
+
+    // Update last login
+    user.lastLogin = new Date();
+    await this.usersRepository.save(user);
+
+    const token = this.generateToken(user);
+
+    let trustedDeviceToken: string | undefined;
+    if (rememberDevice) {
+      trustedDeviceToken = await this.createTrustedDevice(
+        user.id,
+        userAgent || 'Unknown Device',
+        ipAddress,
+      );
+    }
+
+    return {
+      user: this.sanitizeUser(user),
+      token,
+      trustedDeviceToken,
+    };
+  }
+
+  async setup2FA(userId: string) {
+    const user = await this.usersRepository.findOne({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    const secret = otplib.generateSecret();
+    const otpauthUrl = otplib.generateURI({ secret, issuer: 'MoneyMate', label: user.email || userId });
+    const qrCodeDataUrl = await QRCode.toDataURL(otpauthUrl);
+
+    // Store encrypted secret (pending confirmation)
+    user.twoFactorSecret = encrypt(secret, this.jwtSecret);
+    await this.usersRepository.save(user);
+
+    return { secret, qrCodeDataUrl, otpauthUrl };
+  }
+
+  async confirmSetup2FA(userId: string, code: string) {
+    const user = await this.usersRepository.findOne({
+      where: { id: userId },
+    });
+
+    if (!user || !user.twoFactorSecret) {
+      throw new BadRequestException('2FA setup not initiated');
+    }
+
+    const secret = decrypt(user.twoFactorSecret, this.jwtSecret);
+    const isValid = otplib.verifySync({ token: code, secret }).valid;
+
+    if (!isValid) {
+      throw new BadRequestException('Invalid verification code');
+    }
+
+    // Enable 2FA in preferences
+    let preferences = await this.preferencesRepository.findOne({
+      where: { userId },
+    });
+
+    if (!preferences) {
+      preferences = this.preferencesRepository.create({ userId });
+    }
+
+    preferences.twoFactorEnabled = true;
+    await this.preferencesRepository.save(preferences);
+
+    return { message: 'Two-factor authentication enabled successfully' };
+  }
+
+  async disable2FA(userId: string, code: string) {
+    const force2fa = this.configService.get<string>('FORCE_2FA', 'false').toLowerCase() === 'true';
+    if (force2fa) {
+      throw new ForbiddenException('Two-factor authentication is required by the administrator');
+    }
+
+    const user = await this.usersRepository.findOne({
+      where: { id: userId },
+    });
+
+    if (!user || !user.twoFactorSecret) {
+      throw new BadRequestException('2FA is not enabled');
+    }
+
+    const secret = decrypt(user.twoFactorSecret, this.jwtSecret);
+    const isValid = otplib.verifySync({ token: code, secret }).valid;
+
+    if (!isValid) {
+      throw new BadRequestException('Invalid verification code');
+    }
+
+    // Clear secret and disable
+    user.twoFactorSecret = null;
+    await this.usersRepository.save(user);
+
+    const preferences = await this.preferencesRepository.findOne({
+      where: { userId },
+    });
+
+    if (preferences) {
+      preferences.twoFactorEnabled = false;
+      await this.preferencesRepository.save(preferences);
+    }
+
+    // Revoke all trusted devices
+    await this.trustedDevicesRepository.delete({ userId });
+
+    return { message: 'Two-factor authentication disabled successfully' };
   }
 
   async validateUser(email: string, password: string): Promise<any> {
@@ -283,8 +470,110 @@ export class AuthService {
     await this.usersRepository.save(user);
   }
 
+  // Trusted device methods
+
+  private hashDeviceToken(token: string): string {
+    return crypto.createHash('sha256').update(token).digest('hex');
+  }
+
+  private parseDeviceName(userAgent: string): string {
+    if (!userAgent || userAgent === 'Unknown Device') {
+      return 'Unknown Device';
+    }
+    const parser = new UAParser(userAgent);
+    const browser = parser.getBrowser();
+    const os = parser.getOS();
+    const parts: string[] = [];
+    if (browser.name) parts.push(browser.name);
+    if (os.name) {
+      let osStr = os.name;
+      if (os.version) osStr += ' ' + os.version;
+      parts.push('on ' + osStr);
+    }
+    return parts.length > 0 ? parts.join(' ') : 'Unknown Device';
+  }
+
+  async createTrustedDevice(
+    userId: string,
+    userAgent: string,
+    ipAddress?: string,
+  ): Promise<string> {
+    const deviceToken = crypto.randomBytes(64).toString('hex');
+    const tokenHash = this.hashDeviceToken(deviceToken);
+    const deviceName = this.parseDeviceName(userAgent);
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+    const trustedDevice = this.trustedDevicesRepository.create({
+      userId,
+      tokenHash,
+      deviceName,
+      ipAddress: ipAddress || null,
+      lastUsedAt: new Date(),
+      expiresAt,
+    });
+
+    await this.trustedDevicesRepository.save(trustedDevice);
+    return deviceToken;
+  }
+
+  async validateTrustedDevice(userId: string, deviceToken: string): Promise<boolean> {
+    const tokenHash = this.hashDeviceToken(deviceToken);
+
+    const device = await this.trustedDevicesRepository.findOne({
+      where: { userId, tokenHash },
+    });
+
+    if (!device) return false;
+
+    if (device.expiresAt < new Date()) {
+      await this.trustedDevicesRepository.remove(device);
+      return false;
+    }
+
+    device.lastUsedAt = new Date();
+    await this.trustedDevicesRepository.save(device);
+    return true;
+  }
+
+  async getTrustedDevices(userId: string): Promise<TrustedDevice[]> {
+    await this.trustedDevicesRepository.delete({
+      userId,
+      expiresAt: LessThan(new Date()),
+    });
+
+    return this.trustedDevicesRepository.find({
+      where: { userId },
+      order: { lastUsedAt: 'DESC' },
+    });
+  }
+
+  async revokeTrustedDevice(userId: string, deviceId: string): Promise<void> {
+    const device = await this.trustedDevicesRepository.findOne({
+      where: { id: deviceId, userId },
+    });
+
+    if (!device) {
+      throw new BadRequestException('Device not found');
+    }
+
+    await this.trustedDevicesRepository.remove(device);
+  }
+
+  async revokeAllTrustedDevices(userId: string): Promise<number> {
+    const result = await this.trustedDevicesRepository.delete({ userId });
+    return result.affected || 0;
+  }
+
+  async findTrustedDeviceByToken(userId: string, deviceToken: string): Promise<string | null> {
+    const tokenHash = this.hashDeviceToken(deviceToken);
+    const device = await this.trustedDevicesRepository.findOne({
+      where: { userId, tokenHash },
+    });
+    return device?.id || null;
+  }
+
   private sanitizeUser(user: User) {
-    const { passwordHash, resetToken, resetTokenExpiry, ...sanitized } = user;
+    const { passwordHash, resetToken, resetTokenExpiry, twoFactorSecret, ...sanitized } = user;
     return sanitized;
   }
 }

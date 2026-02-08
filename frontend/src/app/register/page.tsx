@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/store/authStore';
 import { authApi, AuthMethods } from '@/lib/auth';
+import { TwoFactorSetup } from '@/components/auth/TwoFactorSetup';
 import { createLogger } from '@/lib/logger';
 
 const logger = createLogger('Register');
@@ -35,7 +36,8 @@ export default function RegisterPage() {
   const router = useRouter();
   const { login } = useAuthStore();
   const [isLoading, setIsLoading] = useState(false);
-  const [authMethods, setAuthMethods] = useState<AuthMethods>({ local: true, oidc: false, registration: true, smtp: false });
+  const [showTwoFactorSetup, setShowTwoFactorSetup] = useState(false);
+  const [authMethods, setAuthMethods] = useState<AuthMethods>({ local: true, oidc: false, registration: true, smtp: false, force2fa: false });
   const [isLoadingMethods, setIsLoadingMethods] = useState(true);
 
   useEffect(() => {
@@ -70,9 +72,10 @@ export default function RegisterPage() {
       const { confirmPassword, ...registerData } = data;
       const response = await authApi.register(registerData);
       // Token is now in httpOnly cookie, not in response body
-      login(response.user, 'httpOnly');
+      login(response.user!, 'httpOnly');
       toast.success('Account created successfully!');
-      router.push('/dashboard');
+      // Show 2FA setup after registration
+      setShowTwoFactorSetup(true);
     } catch (error: any) {
       // SECURITY: Use generic error message to prevent account enumeration
       toast.error('Unable to create account. Please try again.');
@@ -89,6 +92,30 @@ export default function RegisterPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
         <div className="text-gray-500 dark:text-gray-400">Loading...</div>
+      </div>
+    );
+  }
+
+  if (showTwoFactorSetup) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-md w-full space-y-8">
+          <div className="text-center">
+            <h2 className="text-3xl font-extrabold text-gray-900 dark:text-gray-100">
+              Secure Your Account
+            </h2>
+            <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+              {authMethods.force2fa
+                ? 'Two-factor authentication is required by the administrator.'
+                : 'Add an extra layer of security to your account.'}
+            </p>
+          </div>
+          <TwoFactorSetup
+            onComplete={() => router.push('/dashboard')}
+            onSkip={authMethods.force2fa ? undefined : () => router.push('/dashboard')}
+            isForced={authMethods.force2fa}
+          />
+        </div>
       </div>
     );
   }

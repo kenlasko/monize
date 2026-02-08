@@ -1,8 +1,10 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
+import { usePreferencesStore } from '@/store/preferencesStore';
+import { authApi } from '@/lib/auth';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -12,12 +14,23 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const router = useRouter();
   const pathname = usePathname();
   const { user, isAuthenticated, isLoading, _hasHydrated } = useAuthStore();
+  const { preferences } = usePreferencesStore();
+  const [force2fa, setForce2fa] = useState(false);
 
   useEffect(() => {
     if (_hasHydrated && !isLoading && !isAuthenticated) {
       router.push('/login');
     }
   }, [isAuthenticated, isLoading, _hasHydrated, router]);
+
+  // Fetch force2fa setting
+  useEffect(() => {
+    if (isAuthenticated && user?.authProvider === 'local') {
+      authApi.getAuthMethods().then((methods) => {
+        setForce2fa(methods.force2fa);
+      }).catch(() => {});
+    }
+  }, [isAuthenticated, user?.authProvider]);
 
   // Force password change for local auth users
   useEffect(() => {
@@ -29,6 +42,21 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
       router.push('/change-password');
     }
   }, [user, pathname, router]);
+
+  // Force 2FA setup for local auth users when FORCE_2FA is enabled
+  useEffect(() => {
+    if (
+      force2fa &&
+      user?.authProvider === 'local' &&
+      !user?.mustChangePassword &&
+      preferences &&
+      !preferences.twoFactorEnabled &&
+      pathname !== '/setup-2fa' &&
+      pathname !== '/change-password'
+    ) {
+      router.push('/setup-2fa');
+    }
+  }, [force2fa, user, preferences, pathname, router]);
 
   if (!_hasHydrated || isLoading) {
     return (

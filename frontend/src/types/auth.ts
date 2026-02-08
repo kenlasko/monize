@@ -39,8 +39,26 @@ export interface RegisterData {
 }
 
 export interface AuthResponse {
-  user: User;
-  token: string;
+  user?: User;
+  token?: string;
+  requires2FA?: boolean;
+  tempToken?: string;
+}
+
+export interface TwoFactorSetupResponse {
+  secret: string;
+  qrCodeDataUrl: string;
+  otpauthUrl: string;
+}
+
+export interface TrustedDevice {
+  id: string;
+  deviceName: string;
+  ipAddress: string | null;
+  lastUsedAt: string;
+  expiresAt: string;
+  createdAt: string;
+  isCurrent?: boolean;
 }
 
 export interface AuthState {

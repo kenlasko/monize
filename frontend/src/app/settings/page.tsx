@@ -7,7 +7,10 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { AppHeader } from '@/components/layout/AppHeader';
+import { Modal } from '@/components/ui/Modal';
+import { TwoFactorSetup } from '@/components/auth/TwoFactorSetup';
 import { userSettingsApi } from '@/lib/user-settings';
+import { authApi } from '@/lib/auth';
 import { useAuthStore } from '@/store/authStore';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -17,6 +20,7 @@ import {
   UpdateProfileData,
   UpdatePreferencesData,
   ChangePasswordData,
+  TrustedDevice,
 } from '@/types/auth';
 import { createLogger } from '@/lib/logger';
 
@@ -106,6 +110,19 @@ export default function SettingsPage() {
   const [smtpConfigured, setSmtpConfigured] = useState(false);
   const [isSendingTestEmail, setIsSendingTestEmail] = useState(false);
 
+  // 2FA state
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
+  const [showTwoFactorSetup, setShowTwoFactorSetup] = useState(false);
+  const [showTwoFactorDisable, setShowTwoFactorDisable] = useState(false);
+  const [disableCode, setDisableCode] = useState('');
+  const [isDisabling2FA, setIsDisabling2FA] = useState(false);
+  const [force2fa, setForce2fa] = useState(false);
+
+  // Trusted devices state
+  const [trustedDevices, setTrustedDevices] = useState<TrustedDevice[]>([]);
+  const [isLoadingDevices, setIsLoadingDevices] = useState(false);
+  const [showRevokeAllConfirm, setShowRevokeAllConfirm] = useState(false);
+
   // Delete account state
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
@@ -118,15 +135,18 @@ export default function SettingsPage() {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [userData, prefsData, smtpStatus] = await Promise.all([
+      const [userData, prefsData, smtpStatus, authMethods] = await Promise.all([
         userSettingsApi.getProfile(),
         userSettingsApi.getPreferences(),
         userSettingsApi.getSmtpStatus().catch(() => ({ configured: false })),
+        authApi.getAuthMethods().catch(() => ({ local: true, oidc: false, registration: true, smtp: false, force2fa: false })),
       ]);
       setLocalUser(userData);
       setPreferences(prefsData);
       setSmtpConfigured(smtpStatus.configured);
       setNotificationEmail(prefsData.notificationEmail);
+      setTwoFactorEnabled(prefsData.twoFactorEnabled);
+      setForce2fa(authMethods.force2fa);
 
       // Initialize form state
       setFirstName(userData.firstName || '');
@@ -253,6 +273,68 @@ export default function SettingsPage() {
     } catch (error: any) {
       setNotificationEmail(!newValue);
       toast.error('Failed to update notification preference');
+    }
+  };
+
+  const handleDisable2FA = async () => {
+    if (disableCode.length !== 6) return;
+    setIsDisabling2FA(true);
+    try {
+      await authApi.disable2FA(disableCode);
+      setTwoFactorEnabled(false);
+      setShowTwoFactorDisable(false);
+      setDisableCode('');
+      setTrustedDevices([]);
+      // Update preferences store
+      if (preferences) {
+        const updated = { ...preferences, twoFactorEnabled: false };
+        setPreferences(updated);
+        updatePreferencesStore(updated);
+      }
+      toast.success('Two-factor authentication disabled');
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to disable 2FA');
+    } finally {
+      setIsDisabling2FA(false);
+    }
+  };
+
+  const loadTrustedDevices = async () => {
+    setIsLoadingDevices(true);
+    try {
+      const devices = await authApi.getTrustedDevices();
+      setTrustedDevices(devices);
+    } catch {
+      // silently fail - devices section just won't show data
+    } finally {
+      setIsLoadingDevices(false);
+    }
+  };
+
+  useEffect(() => {
+    if (twoFactorEnabled && user?.authProvider === 'local') {
+      loadTrustedDevices();
+    }
+  }, [twoFactorEnabled, user?.authProvider]);
+
+  const handleRevokeDevice = async (id: string) => {
+    try {
+      await authApi.revokeTrustedDevice(id);
+      setTrustedDevices((prev) => prev.filter((d) => d.id !== id));
+      toast.success('Device revoked');
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to revoke device');
+    }
+  };
+
+  const handleRevokeAllDevices = async () => {
+    try {
+      const result = await authApi.revokeAllTrustedDevices();
+      setTrustedDevices([]);
+      setShowRevokeAllConfirm(false);
+      toast.success(`${result.count} device(s) revoked`);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to revoke devices');
     }
   };
 
@@ -456,6 +538,196 @@ export default function SettingsPage() {
                 </Button>
               </div>
             </form>
+
+            {/* Two-Factor Authentication */}
+            <div className="border-t border-gray-200 dark:border-gray-700 mt-6 pt-6">
+              <h3 className="text-md font-medium text-gray-900 dark:text-gray-100 mb-3">
+                Two-Factor Authentication
+              </h3>
+              {twoFactorEnabled ? (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                      Enabled
+                    </span>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      Your account is protected with TOTP verification.
+                    </p>
+                  </div>
+                  {force2fa ? (
+                    <p className="text-xs text-gray-500 dark:text-gray-400 italic">
+                      Required by administrator
+                    </p>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowTwoFactorDisable(true)}
+                    >
+                      Disable 2FA
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Add an extra layer of security to your account.
+                  </p>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => setShowTwoFactorSetup(true)}
+                  >
+                    Enable 2FA
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            {/* 2FA Setup Modal */}
+            <Modal isOpen={showTwoFactorSetup} onClose={() => setShowTwoFactorSetup(false)}>
+              <div className="p-6">
+                <TwoFactorSetup
+                  onComplete={() => {
+                    setShowTwoFactorSetup(false);
+                    setTwoFactorEnabled(true);
+                    if (preferences) {
+                      const updated = { ...preferences, twoFactorEnabled: true };
+                      setPreferences(updated);
+                      updatePreferencesStore(updated);
+                    }
+                  }}
+                  onSkip={() => setShowTwoFactorSetup(false)}
+                />
+              </div>
+            </Modal>
+
+            {/* 2FA Disable Modal */}
+            <Modal isOpen={showTwoFactorDisable} onClose={() => { setShowTwoFactorDisable(false); setDisableCode(''); }}>
+              <div className="p-6 space-y-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  Disable Two-Factor Authentication
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Enter your current 6-digit code to confirm disabling 2FA.
+                </p>
+                <Input
+                  label="Verification Code"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={6}
+                  value={disableCode}
+                  onChange={(e) => setDisableCode(e.target.value.replace(/\D/g, ''))}
+                  placeholder="000000"
+                />
+                <div className="flex gap-2 justify-end">
+                  <Button
+                    variant="outline"
+                    onClick={() => { setShowTwoFactorDisable(false); setDisableCode(''); }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="danger"
+                    onClick={handleDisable2FA}
+                    disabled={disableCode.length !== 6 || isDisabling2FA}
+                  >
+                    {isDisabling2FA ? 'Disabling...' : 'Disable 2FA'}
+                  </Button>
+                </div>
+              </div>
+            </Modal>
+
+            {/* Trusted Devices */}
+            {twoFactorEnabled && (
+              <div className="border-t border-gray-200 dark:border-gray-700 mt-6 pt-6">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-md font-medium text-gray-900 dark:text-gray-100">
+                    Trusted Devices
+                  </h3>
+                  {trustedDevices.length > 0 && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowRevokeAllConfirm(true)}
+                    >
+                      Revoke All
+                    </Button>
+                  )}
+                </div>
+
+                {isLoadingDevices ? (
+                  <div className="flex justify-center py-4">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 dark:border-blue-400"></div>
+                  </div>
+                ) : trustedDevices.length === 0 ? (
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    No trusted devices. When you check &quot;Don&apos;t ask again on this browser&quot; during 2FA login, the device will appear here.
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    {trustedDevices.map((device) => (
+                      <div
+                        key={device.id}
+                        className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                              {device.deviceName}
+                            </p>
+                            {device.isCurrent && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
+                                Current
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 space-y-0.5">
+                            {device.ipAddress && <p>IP: {device.ipAddress}</p>}
+                            <p>
+                              Added {new Date(device.createdAt).toLocaleDateString()}
+                              {' \u00B7 '}
+                              Last used {new Date(device.lastUsedAt).toLocaleDateString()}
+                              {' \u00B7 '}
+                              Expires {new Date(device.expiresAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleRevokeDevice(device.id)}
+                          className="ml-3 flex-shrink-0"
+                        >
+                          Revoke
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Revoke All Confirmation Modal */}
+                <Modal isOpen={showRevokeAllConfirm} onClose={() => setShowRevokeAllConfirm(false)}>
+                  <div className="p-6 space-y-4">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                      Revoke All Trusted Devices
+                    </h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      This will remove all trusted devices. You will need to enter your 2FA code on your next login from any device.
+                    </p>
+                    <div className="flex gap-2 justify-end">
+                      <Button variant="outline" onClick={() => setShowRevokeAllConfirm(false)}>
+                        Cancel
+                      </Button>
+                      <Button variant="danger" onClick={handleRevokeAllDevices}>
+                        Revoke All
+                      </Button>
+                    </div>
+                  </div>
+                </Modal>
+              </div>
+            )}
           </div>
         )}
 

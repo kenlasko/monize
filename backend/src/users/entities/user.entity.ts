@@ -59,6 +59,10 @@ export class User {
   @Column({ name: 'must_change_password', default: false })
   mustChangePassword: boolean;
 
+  @Column({ name: 'two_factor_secret', type: 'varchar', nullable: true })
+  @Exclude()
+  twoFactorSecret: string | null;
+
   @OneToOne(() => UserPreference, (preference) => preference.user)
   preferences: UserPreference;
 }

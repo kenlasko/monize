@@ -21,7 +21,8 @@ CREATE TABLE users (
     reset_token VARCHAR(255),
     reset_token_expiry TIMESTAMP,
     role VARCHAR(20) NOT NULL DEFAULT 'user', -- 'admin', 'user'
-    must_change_password BOOLEAN NOT NULL DEFAULT false
+    must_change_password BOOLEAN NOT NULL DEFAULT false,
+    two_factor_secret VARCHAR(255) -- encrypted TOTP secret for 2FA
 );
 
 CREATE INDEX IF NOT EXISTS idx_users_reset_token ON users(reset_token) WHERE reset_token IS NOT NULL;
@@ -384,6 +385,22 @@ CREATE TABLE user_preferences (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Trusted Devices (for 2FA "remember this device" feature)
+CREATE TABLE trusted_devices (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    token_hash VARCHAR(64) NOT NULL,
+    device_name VARCHAR(255) NOT NULL,
+    ip_address INET,
+    last_used_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_trusted_devices_user ON trusted_devices(user_id);
+CREATE INDEX idx_trusted_devices_token ON trusted_devices(token_hash);
+
 -- Custom Reports (user-defined configurable reports)
 -- view_type: TABLE, LINE_CHART, BAR_CHART, PIE_CHART
 -- timeframe_type: LAST_7_DAYS, LAST_30_DAYS, LAST_MONTH, LAST_3_MONTHS, LAST_6_MONTHS, LAST_12_MONTHS, LAST_YEAR, YEAR_TO_DATE, CUSTOM
@@ -439,6 +456,7 @@ CREATE TRIGGER update_securities_updated_at BEFORE UPDATE ON securities FOR EACH
 CREATE TRIGGER update_holdings_updated_at BEFORE UPDATE ON holdings FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_investment_transactions_updated_at BEFORE UPDATE ON investment_transactions FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_user_preferences_updated_at BEFORE UPDATE ON user_preferences FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_trusted_devices_updated_at BEFORE UPDATE ON trusted_devices FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_custom_reports_updated_at BEFORE UPDATE ON custom_reports FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- NOTE: Account balances (current_balance) are managed by application code

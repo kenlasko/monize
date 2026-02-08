@@ -4,6 +4,8 @@ import {
   Body,
   UseGuards,
   Get,
+  Delete,
+  Param,
   Request,
   Res,
   Query,
@@ -24,6 +26,8 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { VerifyTotpDto } from './dto/verify-totp.dto';
+import { Setup2faDto } from './dto/setup-2fa.dto';
 import { passwordResetTemplate } from '../notifications/email-templates';
 
 @ApiTags('Authentication')
@@ -32,6 +36,7 @@ export class AuthController {
   private readonly logger = new Logger(AuthController.name);
   private localAuthEnabled: boolean;
   private registrationEnabled: boolean;
+  private force2fa: boolean;
 
   constructor(
     private authService: AuthService,
@@ -44,6 +49,8 @@ export class AuthController {
     this.localAuthEnabled = localAuthSetting.toLowerCase() !== 'false';
     const registrationSetting = this.configService.get<string>('REGISTRATION_ENABLED', 'true');
     this.registrationEnabled = registrationSetting.toLowerCase() !== 'false';
+    const force2faSetting = this.configService.get<string>('FORCE_2FA', 'false');
+    this.force2fa = force2faSetting.toLowerCase() === 'true';
   }
 
   @Post('register')
@@ -79,11 +86,17 @@ export class AuthController {
   @ApiOperation({ summary: 'Login with local credentials' })
   @ApiResponse({ status: 403, description: 'Local authentication is disabled' })
   @ApiResponse({ status: 429, description: 'Too many requests' })
-  async login(@Body() loginDto: LoginDto, @Res() res: Response) {
+  async login(@Body() loginDto: LoginDto, @Request() req: ExpressRequest, @Res() res: Response) {
     if (!this.localAuthEnabled) {
       throw new ForbiddenException('Local authentication is disabled. Please use OIDC to sign in.');
     }
-    const result = await this.authService.login(loginDto);
+    const trustedDeviceToken = req.cookies?.['trusted_device'];
+    const result = await this.authService.login(loginDto, trustedDeviceToken);
+
+    // If 2FA is required, return temp token without setting cookie
+    if (result.requires2FA) {
+      return res.json({ requires2FA: true, tempToken: result.tempToken });
+    }
 
     // Set token as httpOnly cookie (SECURE - not accessible to JavaScript)
     res.cookie('auth_token', result.token, {
@@ -194,6 +207,7 @@ export class AuthController {
       oidc: this.oidcService.enabled,
       registration: this.registrationEnabled,
       smtp: this.emailService.getStatus().configured,
+      force2fa: this.force2fa,
     };
   }
 
@@ -252,6 +266,118 @@ export class AuthController {
   async resetPassword(@Body() dto: ResetPasswordDto) {
     await this.authService.resetPassword(dto.token, dto.newPassword);
     return { message: 'Password reset successfully. You can now log in.' };
+  }
+
+  @Post('2fa/verify')
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ auth: { ttl: 900000, limit: 5 } })
+  @ApiOperation({ summary: 'Verify TOTP code to complete 2FA login' })
+  async verify2FA(@Body() dto: VerifyTotpDto, @Request() req: ExpressRequest, @Res() res: Response) {
+    const userAgent = req.headers['user-agent'] || 'Unknown Device';
+    const ipAddress = req.ip || req.socket?.remoteAddress;
+    const result = await this.authService.verify2FA(
+      dto.tempToken,
+      dto.code,
+      dto.rememberDevice || false,
+      userAgent,
+      ipAddress,
+    );
+
+    res.cookie('auth_token', result.token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    if (result.trustedDeviceToken) {
+      res.cookie('trusted_device', result.trustedDeviceToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      });
+    }
+
+    res.json({ user: result.user });
+  }
+
+  @Post('2fa/setup')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Generate QR code and secret for 2FA setup' })
+  async setup2FA(@Request() req) {
+    return this.authService.setup2FA(req.user.id);
+  }
+
+  @Post('2fa/confirm-setup')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Confirm 2FA setup with verification code' })
+  async confirmSetup2FA(@Request() req, @Body() dto: Setup2faDto) {
+    return this.authService.confirmSetup2FA(req.user.id, dto.code);
+  }
+
+  @Post('2fa/disable')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Disable 2FA with verification code' })
+  async disable2FA(@Request() req, @Body() dto: Setup2faDto) {
+    return this.authService.disable2FA(req.user.id, dto.code);
+  }
+
+  @Get('2fa/trusted-devices')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'List trusted devices for the current user' })
+  async getTrustedDevices(@Request() req: ExpressRequest & { user: any }, @Res() res: Response) {
+    const devices = await this.authService.getTrustedDevices(req.user.id);
+    const currentToken = req.cookies?.['trusted_device'];
+    let currentDeviceId: string | null = null;
+    if (currentToken) {
+      currentDeviceId = await this.authService.findTrustedDeviceByToken(req.user.id, currentToken);
+    }
+    const result = devices.map((d) => ({
+      id: d.id,
+      deviceName: d.deviceName,
+      ipAddress: d.ipAddress,
+      lastUsedAt: d.lastUsedAt,
+      expiresAt: d.expiresAt,
+      createdAt: d.createdAt,
+      isCurrent: d.id === currentDeviceId,
+    }));
+    res.json(result);
+  }
+
+  @Delete('2fa/trusted-devices/:id')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Revoke a specific trusted device' })
+  async revokeTrustedDevice(
+    @Request() req: ExpressRequest & { user: any },
+    @Param('id') deviceId: string,
+    @Res() res: Response,
+  ) {
+    await this.authService.revokeTrustedDevice(req.user.id, deviceId);
+    // If revoking the current device, clear the cookie
+    const currentToken = req.cookies?.['trusted_device'];
+    if (currentToken) {
+      const currentDeviceId = await this.authService.findTrustedDeviceByToken(req.user.id, currentToken);
+      if (!currentDeviceId || currentDeviceId === deviceId) {
+        res.clearCookie('trusted_device');
+      }
+    }
+    res.json({ message: 'Device revoked successfully' });
+  }
+
+  @Delete('2fa/trusted-devices')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Revoke all trusted devices' })
+  async revokeAllTrustedDevices(@Request() req: ExpressRequest & { user: any }, @Res() res: Response) {
+    const count = await this.authService.revokeAllTrustedDevices(req.user.id);
+    res.clearCookie('trusted_device');
+    res.json({ message: `${count} device(s) revoked`, count });
   }
 
   @Post('logout')

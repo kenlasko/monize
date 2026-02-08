@@ -7,6 +7,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { User } from '../users/entities/user.entity';
+import { UserPreference } from '../users/entities/user-preference.entity';
+import { TrustedDevice } from '../users/entities/trusted-device.entity';
 import { LocalStrategy } from './strategies/local.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { OidcService } from './oidc/oidc.service';
@@ -15,7 +17,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User]),
+    TypeOrmModule.forFeature([User, UserPreference, TrustedDevice]),
     PassportModule,
     UsersModule,
     NotificationsModule,

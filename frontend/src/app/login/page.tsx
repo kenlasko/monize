@@ -11,6 +11,8 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/store/authStore';
 import { authApi, AuthMethods } from '@/lib/auth';
+import { TwoFactorVerify } from '@/components/auth/TwoFactorVerify';
+import { User } from '@/types/auth';
 import { createLogger } from '@/lib/logger';
 
 const logger = createLogger('Login');
@@ -26,7 +28,8 @@ export default function LoginPage() {
   const router = useRouter();
   const { login } = useAuthStore();
   const [isLoading, setIsLoading] = useState(false);
-  const [authMethods, setAuthMethods] = useState<AuthMethods>({ local: true, oidc: false, registration: true, smtp: false });
+  const [twoFactorState, setTwoFactorState] = useState<{ tempToken: string } | null>(null);
+  const [authMethods, setAuthMethods] = useState<AuthMethods>({ local: true, oidc: false, registration: true, smtp: false, force2fa: false });
   const [isLoadingMethods, setIsLoadingMethods] = useState(true);
 
   useEffect(() => {
@@ -56,10 +59,16 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
       const response = await authApi.login(data);
+
+      if (response.requires2FA && response.tempToken) {
+        setTwoFactorState({ tempToken: response.tempToken });
+        return;
+      }
+
       // Token is now in httpOnly cookie, not in response body
-      login(response.user, 'httpOnly');
+      login(response.user!, 'httpOnly');
       toast.success('Welcome back!');
-      if (response.user.mustChangePassword && response.user.authProvider === 'local') {
+      if (response.user!.mustChangePassword && response.user!.authProvider === 'local') {
         router.push('/change-password');
       } else {
         router.push('/dashboard');
@@ -69,6 +78,16 @@ export default function LoginPage() {
       toast.error('Invalid email or password');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handle2FAVerified = (user: User) => {
+    login(user, 'httpOnly');
+    toast.success('Welcome back!');
+    if (user.mustChangePassword && user.authProvider === 'local') {
+      router.push('/change-password');
+    } else {
+      router.push('/dashboard');
     }
   };
 
@@ -116,6 +135,20 @@ export default function LoginPage() {
             </svg>
             Sign in with SSO
           </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (twoFactorState) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-md w-full space-y-8">
+          <TwoFactorVerify
+            tempToken={twoFactorState.tempToken}
+            onVerified={handle2FAVerified}
+            onCancel={() => setTwoFactorState(null)}
+          />
         </div>
       </div>
     );
