@@ -2,7 +2,7 @@ import { Injectable, UnauthorizedException, ForbiddenException, BadRequestExcept
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DeepPartial, LessThan } from 'typeorm';
+import { Repository, DeepPartial, LessThan, DataSource } from 'typeorm';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
@@ -36,6 +36,7 @@ export class AuthService {
     private refreshTokensRepository: Repository<RefreshToken>,
     private jwtService: JwtService,
     private configService: ConfigService,
+    private dataSource: DataSource,
   ) {
     this.jwtSecret = this.configService.get<string>('JWT_SECRET')!;
   }
@@ -374,9 +375,10 @@ export class AuthService {
           await this.usersRepository.save(user);
         } catch (err: any) {
           // Handle duplicate email: link OIDC to the existing account
-          if (err.code === '23505' && email) {
+          // SECURITY: Only link accounts when the OIDC provider has verified the email
+          if (err.code === '23505' && trustedEmail) {
             const existingUser = await this.usersRepository.findOne({
-              where: { email },
+              where: { email: trustedEmail },
             });
             if (existingUser) {
               existingUser.oidcSubject = sub;
@@ -473,64 +475,69 @@ export class AuthService {
   async refreshTokens(rawRefreshToken: string): Promise<{ accessToken: string; refreshToken: string }> {
     const tokenHash = this.hashToken(rawRefreshToken);
 
-    const existingToken = await this.refreshTokensRepository.findOne({
-      where: { tokenHash },
-    });
+    return this.dataSource.transaction(async (manager) => {
+      // SECURITY: Pessimistic lock prevents race condition when two requests
+      // try to rotate the same refresh token concurrently
+      const existingToken = await manager.findOne(RefreshToken, {
+        where: { tokenHash },
+        lock: { mode: 'pessimistic_write' },
+      });
 
-    if (!existingToken) {
-      throw new UnauthorizedException('Invalid refresh token');
-    }
+      if (!existingToken) {
+        throw new UnauthorizedException('Invalid refresh token');
+      }
 
-    // Replay detection: if token is revoked, a previously-rotated token was reused
-    if (existingToken.isRevoked) {
-      await this.revokeTokenFamily(existingToken.familyId);
-      throw new UnauthorizedException('Refresh token reuse detected');
-    }
+      // Replay detection: if token is revoked, a previously-rotated token was reused
+      if (existingToken.isRevoked) {
+        await manager.update(RefreshToken, { familyId: existingToken.familyId }, { isRevoked: true });
+        throw new UnauthorizedException('Refresh token reuse detected');
+      }
 
-    if (existingToken.expiresAt < new Date()) {
+      if (existingToken.expiresAt < new Date()) {
+        existingToken.isRevoked = true;
+        await manager.save(existingToken);
+        throw new UnauthorizedException('Refresh token expired');
+      }
+
+      const user = await manager.findOne(User, {
+        where: { id: existingToken.userId },
+      });
+
+      if (!user || !user.isActive) {
+        await manager.update(RefreshToken, { familyId: existingToken.familyId }, { isRevoked: true });
+        throw new UnauthorizedException('User not found or inactive');
+      }
+
+      // Rotate: generate new refresh token in the same family
+      const newRawRefreshToken = crypto.randomBytes(64).toString('hex');
+      const newTokenHash = this.hashToken(newRawRefreshToken);
+
       existingToken.isRevoked = true;
-      await this.refreshTokensRepository.save(existingToken);
-      throw new UnauthorizedException('Refresh token expired');
-    }
+      existingToken.replacedByHash = newTokenHash;
+      await manager.save(existingToken);
 
-    const user = await this.usersRepository.findOne({
-      where: { id: existingToken.userId },
+      const newRefreshTokenEntity = manager.create(RefreshToken, {
+        userId: user.id,
+        tokenHash: newTokenHash,
+        familyId: existingToken.familyId,
+        isRevoked: false,
+        expiresAt: new Date(Date.now() + this.REFRESH_TOKEN_EXPIRY_MS),
+        replacedByHash: null,
+      });
+      await manager.save(newRefreshTokenEntity);
+
+      const payload = {
+        sub: user.id,
+        email: user.email,
+        authProvider: user.authProvider,
+        role: user.role,
+      };
+      const accessToken = this.jwtService.sign(payload, {
+        expiresIn: this.ACCESS_TOKEN_EXPIRY,
+      });
+
+      return { accessToken, refreshToken: newRawRefreshToken };
     });
-
-    if (!user || !user.isActive) {
-      await this.revokeTokenFamily(existingToken.familyId);
-      throw new UnauthorizedException('User not found or inactive');
-    }
-
-    // Rotate: generate new refresh token in the same family
-    const newRawRefreshToken = crypto.randomBytes(64).toString('hex');
-    const newTokenHash = this.hashToken(newRawRefreshToken);
-
-    existingToken.isRevoked = true;
-    existingToken.replacedByHash = newTokenHash;
-    await this.refreshTokensRepository.save(existingToken);
-
-    const newRefreshTokenEntity = this.refreshTokensRepository.create({
-      userId: user.id,
-      tokenHash: newTokenHash,
-      familyId: existingToken.familyId,
-      isRevoked: false,
-      expiresAt: new Date(Date.now() + this.REFRESH_TOKEN_EXPIRY_MS),
-      replacedByHash: null,
-    });
-    await this.refreshTokensRepository.save(newRefreshTokenEntity);
-
-    const payload = {
-      sub: user.id,
-      email: user.email,
-      authProvider: user.authProvider,
-      role: user.role,
-    };
-    const accessToken = this.jwtService.sign(payload, {
-      expiresIn: this.ACCESS_TOKEN_EXPIRY,
-    });
-
-    return { accessToken, refreshToken: newRawRefreshToken };
   }
 
   async revokeTokenFamily(familyId: string): Promise<void> {
@@ -581,19 +588,22 @@ export class AuthService {
 
     if (!user || !user.passwordHash) return null;
 
-    const resetToken = crypto.randomBytes(32).toString('hex');
+    const rawResetToken = crypto.randomBytes(32).toString('hex');
     const resetTokenExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
-    user.resetToken = resetToken;
+    // SECURITY: Store hashed token — matches pattern used for refresh tokens and trusted devices
+    user.resetToken = this.hashToken(rawResetToken);
     user.resetTokenExpiry = resetTokenExpiry;
     await this.usersRepository.save(user);
 
-    return { user, token: resetToken };
+    return { user, token: rawResetToken };
   }
 
   async resetPassword(token: string, newPassword: string): Promise<void> {
+    // SECURITY: Hash the incoming token to compare against stored hash
+    const hashedToken = this.hashToken(token);
     const user = await this.usersRepository.findOne({
-      where: { resetToken: token },
+      where: { resetToken: hashedToken },
     });
 
     if (

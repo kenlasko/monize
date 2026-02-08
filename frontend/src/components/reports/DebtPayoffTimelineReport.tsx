@@ -114,7 +114,7 @@ export function DebtPayoffTimelineReport() {
   const [selectedAccountId, setSelectedAccountId] = useState<string>('');
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [viewType, setViewType] = useState<'balance' | 'breakdown'>('balance');
+  const [viewType, setViewType] = useState<'balance' | 'breakdown' | 'distribution'>('balance');
 
   useEffect(() => {
     const loadAccounts = async () => {
@@ -364,6 +364,25 @@ export function DebtPayoffTimelineReport() {
     };
   }, [payoffSchedule, selectedAccount]);
 
+  const distributionData = useMemo(() => {
+    return payoffSchedule
+      .filter((item) => {
+        const total = item.principalPaid + item.interestPaid;
+        return total > 0;
+      })
+      .map((item) => {
+        const total = item.principalPaid + item.interestPaid;
+        return {
+          label: item.label,
+          principalPercent: (item.principalPaid / total) * 100,
+          interestPercent: (item.interestPaid / total) * 100,
+          principalPaid: item.principalPaid,
+          interestPaid: item.interestPaid,
+          isProjected: item.isProjected,
+        };
+      });
+  }, [payoffSchedule]);
+
   const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ name: string; value: number; color: string; dataKey: string }>; label?: string }) => {
     if (active && payload && payload.length) {
       // Check if this point is projected
@@ -460,6 +479,16 @@ export function DebtPayoffTimelineReport() {
             >
               Payment Breakdown
             </button>
+            <button
+              onClick={() => setViewType('distribution')}
+              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                viewType === 'distribution'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+              }`}
+            >
+              Principal vs Interest
+            </button>
           </div>
         </div>
       </div>
@@ -512,7 +541,7 @@ export function DebtPayoffTimelineReport() {
           </p>
         ) : (
           <>
-            {viewType === 'balance' ? (
+            {viewType === 'balance' && (
               <div className="h-80">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={payoffSchedule}>
@@ -567,7 +596,8 @@ export function DebtPayoffTimelineReport() {
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
-            ) : (
+            )}
+            {viewType === 'breakdown' && (
               <div className="h-80">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={payoffSchedule}>
@@ -594,6 +624,77 @@ export function DebtPayoffTimelineReport() {
                       stackId="a"
                       fill="#f97316"
                       name="Interest Paid"
+                    />
+                    {projectionStartLabel && (
+                      <ReferenceLine
+                        x={projectionStartLabel}
+                        stroke="#6b7280"
+                        strokeDasharray="4 4"
+                        strokeWidth={2}
+                        label={{
+                          value: 'Today',
+                          position: 'top',
+                          fill: '#6b7280',
+                          fontSize: 12,
+                          fontWeight: 600,
+                        }}
+                      />
+                    )}
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+            {viewType === 'distribution' && (
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={distributionData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                    <XAxis
+                      dataKey="label"
+                      tick={{ fontSize: 11 }}
+                      interval="preserveStartEnd"
+                    />
+                    <YAxis
+                      tickFormatter={(value: number) => `${value}%`}
+                      tick={{ fontSize: 12 }}
+                      domain={[0, 100]}
+                    />
+                    <Tooltip
+                      content={({ active, payload, label: tooltipLabel }) => {
+                        if (active && payload && payload.length) {
+                          const data = distributionData.find((d) => d.label === tooltipLabel);
+                          return (
+                            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
+                              <p className="font-medium text-gray-900 dark:text-gray-100 mb-1">
+                                {tooltipLabel}{' '}
+                                {data?.isProjected && (
+                                  <span className="text-xs text-blue-500 dark:text-blue-400">(Projected)</span>
+                                )}
+                              </p>
+                              <p className="text-sm text-green-600 dark:text-green-400">
+                                Principal: {data?.principalPercent.toFixed(1)}% ({formatCurrency(data?.principalPaid ?? 0)})
+                              </p>
+                              <p className="text-sm text-orange-500 dark:text-orange-400">
+                                Interest: {data?.interestPercent.toFixed(1)}% ({formatCurrency(data?.interestPaid ?? 0)})
+                              </p>
+                            </div>
+                          );
+                        }
+                        return null;
+                      }}
+                    />
+                    <Legend />
+                    <Bar
+                      dataKey="principalPercent"
+                      stackId="a"
+                      fill="#22c55e"
+                      name="Principal"
+                    />
+                    <Bar
+                      dataKey="interestPercent"
+                      stackId="a"
+                      fill="#f97316"
+                      name="Interest"
                     />
                     {projectionStartLabel && (
                       <ReferenceLine

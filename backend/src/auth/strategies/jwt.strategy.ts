@@ -47,6 +47,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: any) {
+    // SECURITY: Reject 2FA pending tokens — they should only be used at /auth/2fa/verify
+    if (payload.type === '2fa_pending') {
+      throw new UnauthorizedException('2FA verification required');
+    }
     const user = await this.authService.getUserById(payload.sub);
     if (!user || !user.isActive) {
       throw new UnauthorizedException('User not found or inactive');
