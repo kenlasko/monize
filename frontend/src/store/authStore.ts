@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import Cookies from 'js-cookie';
 import { User } from '@/types/auth';
 
 interface AuthState {
@@ -32,35 +31,15 @@ export const useAuthStore = create<AuthState>()(
 
       setUser: (user) => set({ user, isAuthenticated: !!user }),
 
-      setToken: (token) => {
-        if (token) {
-          // Note: httpOnly cannot be set from JS - backend should manage auth cookies
-          // Adding secure flag for HTTPS in production
-          Cookies.set('auth_token', token, {
-            expires: 7,
-            sameSite: 'strict',
-            secure: process.env.NODE_ENV === 'production',
-          });
-        } else {
-          Cookies.remove('auth_token');
-        }
-        set({ token });
-      },
+      // auth_token is httpOnly — backend manages the cookie, not JS
+      setToken: (token) => set({ token }),
 
       setError: (error) => set({ error }),
 
       setLoading: (loading) => set({ isLoading: loading }),
 
       login: (user, token) => {
-        // Note: httpOnly cannot be set from JS - backend should manage auth cookies
-        // For OIDC flow, backend sets httpOnly cookie; this is for local auth fallback
-        if (token && token !== 'httpOnly') {
-          Cookies.set('auth_token', token, {
-            expires: 7,
-            sameSite: 'strict',
-            secure: process.env.NODE_ENV === 'production',
-          });
-        }
+        // Backend sets httpOnly cookies; we only track auth state in Zustand
         set({
           user,
           token,
@@ -71,7 +50,7 @@ export const useAuthStore = create<AuthState>()(
       },
 
       logout: () => {
-        Cookies.remove('auth_token');
+        // Backend clears httpOnly cookies via /auth/logout; we only clear Zustand state
         set({
           user: null,
           token: null,

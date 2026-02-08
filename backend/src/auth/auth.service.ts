@@ -1,8 +1,9 @@
-import { Injectable, UnauthorizedException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ForbiddenException, BadRequestException, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DeepPartial, LessThan } from 'typeorm';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
 import * as otplib from 'otplib';
@@ -11,6 +12,7 @@ import * as QRCode from 'qrcode';
 import { User } from '../users/entities/user.entity';
 import { UserPreference } from '../users/entities/user-preference.entity';
 import { TrustedDevice } from '../users/entities/trusted-device.entity';
+import { RefreshToken } from './entities/refresh-token.entity';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { encrypt, decrypt } from './crypto.util';
@@ -18,7 +20,10 @@ import { UAParser } from 'ua-parser-js';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
   private jwtSecret: string;
+  private readonly ACCESS_TOKEN_EXPIRY = '15m';
+  private readonly REFRESH_TOKEN_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
   constructor(
     @InjectRepository(User)
@@ -27,6 +32,8 @@ export class AuthService {
     private preferencesRepository: Repository<UserPreference>,
     @InjectRepository(TrustedDevice)
     private trustedDevicesRepository: Repository<TrustedDevice>,
+    @InjectRepository(RefreshToken)
+    private refreshTokensRepository: Repository<RefreshToken>,
     private jwtService: JwtService,
     private configService: ConfigService,
   ) {
@@ -67,12 +74,12 @@ export class AuthService {
 
     await this.usersRepository.save(user);
 
-    // Generate JWT token
-    const token = this.generateToken(user);
+    const { accessToken, refreshToken } = await this.generateTokenPair(user);
 
     return {
       user: this.sanitizeUser(user),
-      token,
+      accessToken,
+      refreshToken,
     };
   }
 
@@ -109,8 +116,8 @@ export class AuthService {
         if (isTrusted) {
           user.lastLogin = new Date();
           await this.usersRepository.save(user);
-          const token = this.generateToken(user);
-          return { user: this.sanitizeUser(user), token };
+          const { accessToken, refreshToken } = await this.generateTokenPair(user);
+          return { user: this.sanitizeUser(user), accessToken, refreshToken };
         }
       }
 
@@ -126,11 +133,12 @@ export class AuthService {
     user.lastLogin = new Date();
     await this.usersRepository.save(user);
 
-    const token = this.generateToken(user);
+    const { accessToken, refreshToken } = await this.generateTokenPair(user);
 
     return {
       user: this.sanitizeUser(user),
-      token,
+      accessToken,
+      refreshToken,
     };
   }
 
@@ -171,7 +179,7 @@ export class AuthService {
     user.lastLogin = new Date();
     await this.usersRepository.save(user);
 
-    const token = this.generateToken(user);
+    const { accessToken, refreshToken } = await this.generateTokenPair(user);
 
     let trustedDeviceToken: string | undefined;
     if (rememberDevice) {
@@ -184,7 +192,8 @@ export class AuthService {
 
     return {
       user: this.sanitizeUser(user),
-      token,
+      accessToken,
+      refreshToken,
       trustedDeviceToken,
     };
   }
@@ -433,6 +442,132 @@ export class AuthService {
     return this.jwtService.sign(payload);
   }
 
+  async generateTokenPair(user: User): Promise<{ accessToken: string; refreshToken: string }> {
+    const payload = {
+      sub: user.id,
+      email: user.email,
+      authProvider: user.authProvider,
+      role: user.role,
+    };
+    const accessToken = this.jwtService.sign(payload, {
+      expiresIn: this.ACCESS_TOKEN_EXPIRY,
+    });
+
+    const rawRefreshToken = crypto.randomBytes(64).toString('hex');
+    const tokenHash = this.hashToken(rawRefreshToken);
+    const familyId = crypto.randomUUID();
+
+    const refreshTokenEntity = this.refreshTokensRepository.create({
+      userId: user.id,
+      tokenHash,
+      familyId,
+      isRevoked: false,
+      expiresAt: new Date(Date.now() + this.REFRESH_TOKEN_EXPIRY_MS),
+      replacedByHash: null,
+    });
+    await this.refreshTokensRepository.save(refreshTokenEntity);
+
+    return { accessToken, refreshToken: rawRefreshToken };
+  }
+
+  async refreshTokens(rawRefreshToken: string): Promise<{ accessToken: string; refreshToken: string }> {
+    const tokenHash = this.hashToken(rawRefreshToken);
+
+    const existingToken = await this.refreshTokensRepository.findOne({
+      where: { tokenHash },
+    });
+
+    if (!existingToken) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+
+    // Replay detection: if token is revoked, a previously-rotated token was reused
+    if (existingToken.isRevoked) {
+      await this.revokeTokenFamily(existingToken.familyId);
+      throw new UnauthorizedException('Refresh token reuse detected');
+    }
+
+    if (existingToken.expiresAt < new Date()) {
+      existingToken.isRevoked = true;
+      await this.refreshTokensRepository.save(existingToken);
+      throw new UnauthorizedException('Refresh token expired');
+    }
+
+    const user = await this.usersRepository.findOne({
+      where: { id: existingToken.userId },
+    });
+
+    if (!user || !user.isActive) {
+      await this.revokeTokenFamily(existingToken.familyId);
+      throw new UnauthorizedException('User not found or inactive');
+    }
+
+    // Rotate: generate new refresh token in the same family
+    const newRawRefreshToken = crypto.randomBytes(64).toString('hex');
+    const newTokenHash = this.hashToken(newRawRefreshToken);
+
+    existingToken.isRevoked = true;
+    existingToken.replacedByHash = newTokenHash;
+    await this.refreshTokensRepository.save(existingToken);
+
+    const newRefreshTokenEntity = this.refreshTokensRepository.create({
+      userId: user.id,
+      tokenHash: newTokenHash,
+      familyId: existingToken.familyId,
+      isRevoked: false,
+      expiresAt: new Date(Date.now() + this.REFRESH_TOKEN_EXPIRY_MS),
+      replacedByHash: null,
+    });
+    await this.refreshTokensRepository.save(newRefreshTokenEntity);
+
+    const payload = {
+      sub: user.id,
+      email: user.email,
+      authProvider: user.authProvider,
+      role: user.role,
+    };
+    const accessToken = this.jwtService.sign(payload, {
+      expiresIn: this.ACCESS_TOKEN_EXPIRY,
+    });
+
+    return { accessToken, refreshToken: newRawRefreshToken };
+  }
+
+  async revokeTokenFamily(familyId: string): Promise<void> {
+    await this.refreshTokensRepository.update(
+      { familyId },
+      { isRevoked: true },
+    );
+  }
+
+  async revokeRefreshToken(rawRefreshToken: string): Promise<void> {
+    if (!rawRefreshToken) return;
+    const tokenHash = this.hashToken(rawRefreshToken);
+    const token = await this.refreshTokensRepository.findOne({
+      where: { tokenHash },
+    });
+    if (token) {
+      await this.revokeTokenFamily(token.familyId);
+    }
+  }
+
+  async revokeAllUserRefreshTokens(userId: string): Promise<void> {
+    await this.refreshTokensRepository.update(
+      { userId, isRevoked: false },
+      { isRevoked: true },
+    );
+  }
+
+  @Cron(CronExpression.EVERY_DAY_AT_3AM)
+  async purgeExpiredRefreshTokens(): Promise<void> {
+    const result = await this.refreshTokensRepository.delete({
+      expiresAt: LessThan(new Date()),
+    });
+    if (result.affected && result.affected > 0) {
+      this.logger.log(`Purged ${result.affected} expired refresh tokens`);
+    }
+  }
+
   async getUserById(id: string): Promise<User | null> {
     return this.usersRepository.findOne({ where: { id } });
   }
@@ -474,11 +609,14 @@ export class AuthService {
     user.resetToken = null;
     user.resetTokenExpiry = null;
     await this.usersRepository.save(user);
+
+    // Revoke all refresh tokens to force re-login on all devices
+    await this.revokeAllUserRefreshTokens(user.id);
   }
 
   // Trusted device methods
 
-  private hashDeviceToken(token: string): string {
+  private hashToken(token: string): string {
     return crypto.createHash('sha256').update(token).digest('hex');
   }
 
@@ -505,7 +643,7 @@ export class AuthService {
     ipAddress?: string,
   ): Promise<string> {
     const deviceToken = crypto.randomBytes(64).toString('hex');
-    const tokenHash = this.hashDeviceToken(deviceToken);
+    const tokenHash = this.hashToken(deviceToken);
     const deviceName = this.parseDeviceName(userAgent);
     const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
@@ -523,7 +661,7 @@ export class AuthService {
   }
 
   async validateTrustedDevice(userId: string, deviceToken: string): Promise<boolean> {
-    const tokenHash = this.hashDeviceToken(deviceToken);
+    const tokenHash = this.hashToken(deviceToken);
 
     const device = await this.trustedDevicesRepository.findOne({
       where: { userId, tokenHash },
@@ -571,7 +709,7 @@ export class AuthService {
   }
 
   async findTrustedDeviceByToken(userId: string, deviceToken: string): Promise<string | null> {
-    const tokenHash = this.hashDeviceToken(deviceToken);
+    const tokenHash = this.hashToken(deviceToken);
     const device = await this.trustedDevicesRepository.findOne({
       where: { userId, tokenHash },
     });

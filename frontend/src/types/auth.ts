@@ -42,7 +42,6 @@ export interface RegisterData {
 
 export interface AuthResponse {
   user?: User;
-  token?: string;
   requires2FA?: boolean;
   tempToken?: string;
 }

@@ -11,6 +11,7 @@ import {
   Query,
   BadRequestException,
   ForbiddenException,
+  UnauthorizedException,
   Logger,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
@@ -57,19 +58,35 @@ export class AuthController {
     this.isProduction = this.configService.get<string>('NODE_ENV') === 'production';
   }
 
-  private getAuthCookieOptions() {
+  private getAccessCookieOptions() {
     return {
       httpOnly: true,
       secure: this.isProduction,
       sameSite: 'lax' as const,
+      maxAge: 15 * 60 * 1000, // 15 minutes (matches JWT expiry)
+      path: '/',
+    };
+  }
+
+  private getRefreshCookieOptions() {
+    return {
+      httpOnly: true,
+      secure: this.isProduction,
+      sameSite: 'strict' as const,
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       path: '/',
     };
   }
 
+  private setAuthCookies(res: Response, accessToken: string, refreshToken: string) {
+    res.cookie('auth_token', accessToken, this.getAccessCookieOptions());
+    res.cookie('refresh_token', refreshToken, this.getRefreshCookieOptions());
+    res.cookie('csrf_token', generateCsrfToken(), getCsrfCookieOptions(this.isProduction));
+  }
+
   private clearAuthCookies(res: Response) {
-    const clearOptions = { httpOnly: true, secure: this.isProduction, sameSite: 'lax' as const, path: '/' };
-    res.clearCookie('auth_token', clearOptions);
+    res.clearCookie('auth_token', { httpOnly: true, secure: this.isProduction, sameSite: 'lax' as const, path: '/' });
+    res.clearCookie('refresh_token', { httpOnly: true, secure: this.isProduction, sameSite: 'strict' as const, path: '/' });
     res.clearCookie('csrf_token', { secure: this.isProduction, sameSite: 'lax' as const, path: '/' });
   }
 
@@ -89,10 +106,7 @@ export class AuthController {
     }
     const result = await this.authService.register(registerDto);
 
-    res.cookie('auth_token', result.token, this.getAuthCookieOptions());
-    res.cookie('csrf_token', generateCsrfToken(), getCsrfCookieOptions(this.isProduction));
-
-    // Return user without token (token is in httpOnly cookie)
+    this.setAuthCookies(res, result.accessToken, result.refreshToken);
     res.json({ user: result.user });
   }
 
@@ -115,10 +129,7 @@ export class AuthController {
       return res.json({ requires2FA: true, tempToken: result.tempToken });
     }
 
-    res.cookie('auth_token', result.token, this.getAuthCookieOptions());
-    res.cookie('csrf_token', generateCsrfToken(), getCsrfCookieOptions(this.isProduction));
-
-    // Return user without token (token is in httpOnly cookie)
+    this.setAuthCookies(res, result.accessToken!, result.refreshToken!);
     res.json({ user: result.user });
   }
 
@@ -183,13 +194,10 @@ export class AuthController {
       // Find or create user
       const user = await this.authService.findOrCreateOidcUser(userInfo, this.registrationEnabled);
 
-      // Generate our JWT token
-      const token = this.authService.generateToken(user);
+      // Generate token pair
+      const { accessToken, refreshToken } = await this.authService.generateTokenPair(user);
 
-      // Set token as httpOnly cookie (SECURE - not in URL)
-      res.cookie('auth_token', token, this.getAuthCookieOptions());
-      res.cookie('csrf_token', generateCsrfToken(), getCsrfCookieOptions(this.isProduction));
-
+      this.setAuthCookies(res, accessToken, refreshToken);
       res.redirect(`${frontendUrl}/auth/callback?success=true`);
     } catch (error) {
       // SECURITY: Log detailed error server-side only, don't expose to client
@@ -304,8 +312,7 @@ export class AuthController {
       ipAddress,
     );
 
-    res.cookie('auth_token', result.token, this.getAuthCookieOptions());
-    res.cookie('csrf_token', generateCsrfToken(), getCsrfCookieOptions(this.isProduction));
+    this.setAuthCookies(res, result.accessToken, result.refreshToken);
 
     if (result.trustedDeviceToken) {
       res.cookie('trusted_device', result.trustedDeviceToken, {
@@ -397,11 +404,35 @@ export class AuthController {
     res.json({ message: `${count} device(s) revoked`, count });
   }
 
+  @Post('refresh')
+  @SkipCsrf()
+  @ApiOperation({ summary: 'Refresh access token using refresh token cookie' })
+  async refresh(@Request() req: ExpressRequest, @Res() res: Response) {
+    const refreshToken = req.cookies?.['refresh_token'];
+    if (!refreshToken) {
+      throw new UnauthorizedException('No refresh token provided');
+    }
+
+    try {
+      const result = await this.authService.refreshTokens(refreshToken);
+      this.setAuthCookies(res, result.accessToken, result.refreshToken);
+      res.json({ message: 'Token refreshed' });
+    } catch (error) {
+      this.clearAuthCookies(res);
+      throw error;
+    }
+  }
+
   @Post('logout')
   @SkipCsrf()
   @ApiOperation({ summary: 'Logout current user' })
-  async logout(@Res() res: Response) {
-    // Clear auth and CSRF cookies - no auth guard needed so logout works even with invalid/expired tokens
+  async logout(@Request() req: ExpressRequest, @Res() res: Response) {
+    // Revoke the refresh token family in the database
+    const refreshToken = req.cookies?.['refresh_token'];
+    if (refreshToken) {
+      await this.authService.revokeRefreshToken(refreshToken);
+    }
+
     this.clearAuthCookies(res);
     res.json({ message: 'Logged out successfully' });
   }

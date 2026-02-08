@@ -48,7 +48,9 @@ export async function proxy(request: NextRequest) {
   }
 
   // Handle auth redirects for non-API routes
-  const token = request.cookies.get('auth_token')?.value;
+  // Check for either access token or refresh token (access token expires in 15m,
+  // but refresh token lasts 7 days — if present, the frontend will refresh transparently)
+  const token = request.cookies.get('auth_token')?.value || request.cookies.get('refresh_token')?.value;
 
   // Allow public paths - don't redirect auth pages to dashboard based on cookie alone,
   // as the cookie may reference a deleted/inactive user. Let the client handle redirects.

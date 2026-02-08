@@ -9,6 +9,7 @@ import { AuthController } from './auth.controller';
 import { User } from '../users/entities/user.entity';
 import { UserPreference } from '../users/entities/user-preference.entity';
 import { TrustedDevice } from '../users/entities/trusted-device.entity';
+import { RefreshToken } from './entities/refresh-token.entity';
 import { LocalStrategy } from './strategies/local.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { OidcService } from './oidc/oidc.service';
@@ -17,7 +18,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, UserPreference, TrustedDevice]),
+    TypeOrmModule.forFeature([User, UserPreference, TrustedDevice, RefreshToken]),
     PassportModule,
     UsersModule,
     NotificationsModule,
@@ -27,7 +28,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
       useFactory: (configService: ConfigService) => ({
         secret: configService.get('JWT_SECRET'),
         signOptions: {
-          expiresIn: configService.get('JWT_EXPIRATION', '7d'),
+          expiresIn: configService.get('JWT_EXPIRATION', '15m'),
           algorithm: 'HS256' as const,
         },
         verifyOptions: {
