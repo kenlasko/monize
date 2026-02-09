@@ -13,10 +13,19 @@ export async function registerUser(
 
   await page.goto('/register');
   await page.getByLabel(/email/i).fill(email);
-  await page.getByLabel(/^password$/i).fill(password);
   await page.getByLabel(/first name/i).fill(firstName);
   await page.getByLabel(/last name/i).fill(lastName);
+  await page.getByLabel(/^password$/i).fill(password);
+  await page.getByLabel(/confirm password/i).fill(password);
   await page.getByRole('button', { name: /create account|register|sign up/i }).click();
+
+  // After registration, a 2FA setup screen may appear — skip it
+  const skipButton = page.getByRole('button', { name: /skip for now/i });
+  await skipButton.waitFor({ state: 'visible', timeout: 15000 }).catch(() => {});
+  if (await skipButton.isVisible()) {
+    await skipButton.click();
+  }
+
   await page.waitForURL(/\/dashboard/, { timeout: 15000 });
 
   return { email, password, firstName, lastName };
