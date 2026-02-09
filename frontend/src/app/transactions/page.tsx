@@ -96,7 +96,7 @@ export default function TransactionsPage() {
   const searchParams = useSearchParams();
   const { formatDate } = useDateFormat();
   const { formatCurrency } = useNumberFormat();
-  const { convertToDefault, defaultCurrency } = useExchangeRates();
+  const { convertToDefault } = useExchangeRates();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);

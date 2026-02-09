@@ -254,7 +254,6 @@ export function buildForecast(
   const dataPoints: ForecastDataPoint[] = [];
   let currentBalance = startingBalance;
   let lastAddedTime: number | null = null;
-  const endTime = endDate.getTime();
 
   // Iterate through each day in the forecast period
   for (let dayOffset = 0; dayOffset <= days; dayOffset++) {

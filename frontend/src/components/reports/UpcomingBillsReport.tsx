@@ -13,13 +13,12 @@ import {
   subMonths,
   getDay,
   isSameDay,
-  parseISO,
   addWeeks,
   addDays,
   addYears,
 } from 'date-fns';
 import { scheduledTransactionsApi } from '@/lib/scheduled-transactions';
-import { ScheduledTransaction, FrequencyType } from '@/types/scheduled-transaction';
+import { ScheduledTransaction } from '@/types/scheduled-transaction';
 import { parseLocalDate } from '@/lib/utils';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { createLogger } from '@/lib/logger';
@@ -185,7 +184,7 @@ export function UpcomingBillsReport() {
     };
   }, [upcomingBills, currentMonth]);
 
-  const handleBillClick = (st: ScheduledTransaction) => {
+  const handleBillClick = (_st: ScheduledTransaction) => {
     router.push('/bills');
   };
 

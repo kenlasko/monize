@@ -11,7 +11,7 @@ import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
 import { Combobox } from '@/components/ui/Combobox';
 import toast from 'react-hot-toast';
-import { Account, AccountType, AmortizationPreview, PaymentFrequency, MortgagePaymentFrequency, MortgageAmortizationPreview } from '@/types/account';
+import { Account, AmortizationPreview, PaymentFrequency, MortgageAmortizationPreview } from '@/types/account';
 import { Category } from '@/types/category';
 import { accountsApi } from '@/lib/accounts';
 import { categoriesApi } from '@/lib/categories';
@@ -145,7 +145,7 @@ export function AccountForm({ account, onSubmit, onCancel }: AccountFormProps) {
   const [amortizationPreview, setAmortizationPreview] = useState<AmortizationPreview | null>(null);
   const [mortgagePreview, setMortgagePreview] = useState<MortgageAmortizationPreview | null>(null);
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
-  const [defaultLoanCategories, setDefaultLoanCategories] = useState<{
+  const [_defaultLoanCategories, setDefaultLoanCategories] = useState<{
     principalId: string | null;
     interestId: string | null;
   }>({ principalId: null, interestId: null });
@@ -198,7 +198,6 @@ export function AccountForm({ account, onSubmit, onCancel }: AccountFormProps) {
   const watchedCurrency = watch('currencyCode');
   const watchedIsFavourite = watch('isFavourite');
   const watchedAccountType = watch('accountType');
-  const watchedCreateInvestmentPair = watch('createInvestmentPair');
   const watchedOpeningBalance = watch('openingBalance');
   const watchedCreditLimit = watch('creditLimit');
   const watchedInterestRate = watch('interestRate');
@@ -221,7 +220,6 @@ export function AccountForm({ account, onSubmit, onCancel }: AccountFormProps) {
   const isMortgageAccount = watchedAccountType === 'MORTGAGE';
   const watchedIsCanadianMortgage = watch('isCanadianMortgage');
   const watchedIsVariableRate = watch('isVariableRate');
-  const watchedTermMonths = watch('termMonths');
   const watchedAmortizationMonths = watch('amortizationMonths');
   const watchedMortgagePaymentFrequency = watch('mortgagePaymentFrequency');
 

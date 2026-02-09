@@ -2,13 +2,11 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuthStore } from '@/store/authStore';
 import { TwoFactorSetup } from '@/components/auth/TwoFactorSetup';
 import { usePreferencesStore } from '@/store/preferencesStore';
 
 export default function Setup2FAPage() {
   const router = useRouter();
-  const { user } = useAuthStore();
   const { preferences } = usePreferencesStore();
 
   // If 2FA is already enabled, redirect to dashboard

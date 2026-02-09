@@ -15,7 +15,7 @@ import { transactionsApi } from '@/lib/transactions';
 import { payeesApi } from '@/lib/payees';
 import { categoriesApi } from '@/lib/categories';
 import { accountsApi } from '@/lib/accounts';
-import { Transaction, CreateSplitData, TransactionStatus } from '@/types/transaction';
+import { Transaction, TransactionStatus } from '@/types/transaction';
 import { Payee } from '@/types/payee';
 import { Category } from '@/types/category';
 import { Account } from '@/types/account';
@@ -70,7 +70,7 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
   const [payees, setPayees] = useState<Payee[]>([]); // Full list of payees
   const [selectedPayeeId, setSelectedPayeeId] = useState<string>(transaction?.payeeId || '');
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>(transaction?.categoryId || '');
-  const [categoryName, setCategoryName] = useState<string>('');
+  const [, setCategoryName] = useState<string>('');
 
   // Determine initial mode based on transaction
   const getInitialMode = (): TransactionMode => {

@@ -71,15 +71,6 @@ const formatCategoryPath = (path: string): string => {
   return path.replace(/:/g, ': ').replace(/:  /g, ': ');
 };
 
-// Check if an account is an investment account (any type)
-const isInvestmentAccount = (account: Account): boolean => {
-  return (
-    account.accountType === 'INVESTMENT' ||
-    account.accountSubType === 'INVESTMENT_CASH' ||
-    account.accountSubType === 'INVESTMENT_BROKERAGE'
-  );
-};
-
 // Check if an account is specifically an investment brokerage account
 const isInvestmentBrokerageAccount = (account: Account): boolean => {
   return account.accountSubType === 'INVESTMENT_BROKERAGE';
@@ -157,7 +148,7 @@ function ImportContent() {
             setSelectedAccountId(preselectedAccountId);
           }
         }
-      } catch (error) {
+      } catch {
         toast.error('Failed to load data');
       }
     };
@@ -496,32 +487,6 @@ function ImportContent() {
     }
   }, [accounts, securities, findMatchingCategory, findMatchingLoanAccount, matchFilenameToAccount]);
 
-  const handleCategoryMappingChange = (index: number, field: keyof CategoryMapping, value: string) => {
-    setCategoryMappings((prev) => {
-      const updated = [...prev];
-      if (field === 'categoryId') {
-        updated[index] = {
-          ...updated[index],
-          categoryId: value || undefined,
-          createNew: undefined,
-          parentCategoryId: undefined,
-        };
-      } else if (field === 'createNew') {
-        updated[index] = {
-          ...updated[index],
-          categoryId: undefined,
-          createNew: value || undefined,
-        };
-      } else if (field === 'parentCategoryId') {
-        updated[index] = {
-          ...updated[index],
-          parentCategoryId: value || undefined,
-        };
-      }
-      return updated;
-    });
-  };
-
   const handleAccountMappingChange = (index: number, field: keyof AccountMapping, value: string) => {
     setAccountMappings((prev) => {
       const updated = [...prev];
@@ -623,9 +588,6 @@ function ImportContent() {
       if (result) {
         // Check if the looked up symbol already exists in our securities
         const existingSecurity = findMatchingSecurityBySymbol(result.symbol);
-
-        // Get current values to show what changed
-        const currentMapping = securityMappings[index];
 
         // Always fill in the Create New fields with lookup result
         // This allows user to review before import
@@ -1101,12 +1063,6 @@ function ImportContent() {
         const loanAccounts = accounts
           .filter((a) => a.accountType === 'LOAN' || a.accountType === 'MORTGAGE')
           .sort((a, b) => a.name.localeCompare(b.name));
-
-        // Helper to get loan account name by ID
-        const getLoanAccountName = (loanId: string) => {
-          const loan = loanAccounts.find((a) => a.id === loanId);
-          return loan?.name || 'Unknown';
-        };
 
         return (
           <div className="max-w-4xl mx-auto">

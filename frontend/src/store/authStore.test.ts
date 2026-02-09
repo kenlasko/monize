@@ -110,7 +110,6 @@ describe('authStore', () => {
     it('only persists user and isAuthenticated (not token)', () => {
       // The partialize function should exclude token
       const store = useAuthStore;
-      const state = store.getState();
       // Access the persist API to check partialize config
       const persistOptions = (store as any).persist;
       expect(persistOptions).toBeDefined();

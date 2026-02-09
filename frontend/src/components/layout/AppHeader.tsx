@@ -58,7 +58,7 @@ export function AppHeader() {
       logout();
       toast.success('Logged out successfully');
       router.push('/login');
-    } catch (error) {
+    } catch {
       logout();
       router.push('/login');
     }

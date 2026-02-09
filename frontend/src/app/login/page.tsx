@@ -73,7 +73,7 @@ export default function LoginPage() {
       } else {
         router.push('/dashboard');
       }
-    } catch (error: any) {
+    } catch {
       // SECURITY: Use generic error message to prevent account enumeration
       toast.error('Invalid email or password');
     } finally {

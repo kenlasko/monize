@@ -76,7 +76,7 @@ export default function RegisterPage() {
       toast.success('Account created successfully!');
       // Show 2FA setup after registration
       setShowTwoFactorSetup(true);
-    } catch (error: any) {
+    } catch {
       // SECURITY: Use generic error message to prevent account enumeration
       toast.error('Unable to create account. Please try again.');
     } finally {

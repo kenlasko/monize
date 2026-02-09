@@ -68,7 +68,7 @@ export function AccountList({ accounts, brokerageMarketValues, onEdit, onRefresh
   );
 
   // Filter state - initialize from localStorage
-  const [showFilters, setShowFilters] = useState(() =>
+  const [showFilters, _setShowFilters] = useState(() =>
     getStoredValue<boolean>(STORAGE_KEYS.showFilters, false)
   );
   const [filterAccountType, setFilterAccountType] = useState<AccountType | ''>(() =>

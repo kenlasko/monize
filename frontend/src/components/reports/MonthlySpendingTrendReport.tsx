@@ -76,7 +76,7 @@ export function MonthlySpendingTrendReport() {
     return { totalExpenses, totalIncome, avgExpenses, avgIncome };
   }, [chartData]);
 
-  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ name: string; value: number; color: string; payload?: { fullName?: string } }>; label?: string }) => {
+  const CustomTooltip = ({ active, payload, label: _label }: { active?: boolean; payload?: Array<{ name: string; value: number; color: string; payload?: { fullName?: string } }>; label?: string }) => {
     if (active && payload && payload.length) {
       const data = payload[0]?.payload;
       return (

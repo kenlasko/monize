@@ -32,7 +32,6 @@ import { Category } from '@/types/category';
 import { Account } from '@/types/account';
 import { parseLocalDate } from '@/lib/utils';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
-import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Modal } from '@/components/ui/Modal';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { createLogger } from '@/lib/logger';
@@ -336,7 +335,7 @@ export default function BillsPage() {
   };
 
   // Generate upcoming occurrences for calendar view
-  const getNextOccurrences = (st: ScheduledTransaction, monthsAhead: number = 3): Date[] => {
+  const getNextOccurrences = (st: ScheduledTransaction, _monthsAhead: number = 3): Date[] => {
     if (!st.nextDueDate) return [];
     const occurrences: Date[] = [];
     const startDate = subMonths(startOfMonth(calendarMonth), 1);

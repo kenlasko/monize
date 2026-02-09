@@ -19,7 +19,6 @@ import {
   UserPreferences,
   UpdateProfileData,
   UpdatePreferencesData,
-  ChangePasswordData,
   TrustedDevice,
 } from '@/types/auth';
 import { createLogger } from '@/lib/logger';
@@ -78,7 +77,7 @@ const CURRENCY_OPTIONS = [
 
 export default function SettingsPage() {
   const router = useRouter();
-  const { user: authUser, setUser, logout } = useAuthStore();
+  const { setUser, logout } = useAuthStore();
   const updatePreferencesStore = usePreferencesStore((state) => state.updatePreferences);
   const { setTheme: setAppTheme } = useTheme();
   const [isLoading, setIsLoading] = useState(true);
@@ -270,7 +269,7 @@ export default function SettingsPage() {
       setPreferences(updated);
       updatePreferencesStore(updated);
       toast.success(newValue ? 'Email notifications enabled' : 'Email notifications disabled');
-    } catch (error: any) {
+    } catch {
       setNotificationEmail(!newValue);
       toast.error('Failed to update notification preference');
     }

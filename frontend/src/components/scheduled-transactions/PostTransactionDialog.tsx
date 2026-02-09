@@ -14,8 +14,6 @@ import { Account } from '@/types/account';
 import { scheduledTransactionsApi } from '@/lib/scheduled-transactions';
 import { buildCategoryTree } from '@/lib/categoryUtils';
 import { roundToCents, getCurrencySymbol } from '@/lib/format';
-import { useDateFormat } from '@/hooks/useDateFormat';
-
 interface PostTransactionDialogProps {
   isOpen: boolean;
   scheduledTransaction: ScheduledTransaction;
@@ -33,7 +31,6 @@ export function PostTransactionDialog({
   onClose,
   onPosted,
 }: PostTransactionDialogProps) {
-  const { formatDate } = useDateFormat();
   const [isLoading, setIsLoading] = useState(false);
   const [amount, setAmount] = useState<number>(0);
   const [categoryId, setCategoryId] = useState<string>('');

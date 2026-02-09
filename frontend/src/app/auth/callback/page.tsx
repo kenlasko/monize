@@ -40,7 +40,7 @@ function CallbackContent() {
           } else {
             router.push('/dashboard');
           }
-        } catch (profileError: any) {
+        } catch {
           toast.error(!success ? 'No authentication token received' : 'Authentication failed');
           router.push('/login');
         }

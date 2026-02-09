@@ -40,7 +40,7 @@ function EditCustomReportContent({ reportId }: { reportId: string }) {
       try {
         const data = await customReportsApi.getById(reportId);
         setReport(data);
-      } catch (error) {
+      } catch {
         toast.error('Failed to load report');
         router.push('/reports');
       } finally {

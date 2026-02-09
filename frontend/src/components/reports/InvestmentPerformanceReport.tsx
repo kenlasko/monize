@@ -2,19 +2,12 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Legend,
   PieChart,
   Pie,
   Cell,
 } from 'recharts';
-import { format, subMonths, subYears, startOfMonth } from 'date-fns';
 import { investmentsApi } from '@/lib/investments';
 import { PortfolioSummary, HoldingWithMarketValue } from '@/types/investment';
 import { Account } from '@/types/account';
@@ -25,16 +18,13 @@ import { createLogger } from '@/lib/logger';
 
 const logger = createLogger('InvestmentPerformanceReport');
 
-type DateRange = '1m' | '3m' | '6m' | '1y' | 'all';
-
 export function InvestmentPerformanceReport() {
-  const { formatCurrencyCompact: formatCurrency, formatCurrency: formatCurrencyFull, formatPercent: formatPercentHook } = useNumberFormat();
+  const { formatCurrencyCompact: formatCurrency, formatCurrency: formatCurrencyFull } = useNumberFormat();
   const { defaultCurrency } = useExchangeRates();
   const [portfolio, setPortfolio] = useState<PortfolioSummary | null>(null);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [selectedAccountId, setSelectedAccountId] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
-  const [dateRange, setDateRange] = useState<DateRange>('1y');
   const [viewType, setViewType] = useState<'performance' | 'allocation'>('performance');
 
   useEffect(() => {

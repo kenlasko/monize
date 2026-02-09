@@ -15,7 +15,7 @@ import { scheduledTransactionsApi } from '@/lib/scheduled-transactions';
 import { payeesApi } from '@/lib/payees';
 import { categoriesApi } from '@/lib/categories';
 import { accountsApi } from '@/lib/accounts';
-import { ScheduledTransaction, FrequencyType, FREQUENCY_LABELS, CreateScheduledTransactionSplitData } from '@/types/scheduled-transaction';
+import { ScheduledTransaction, FrequencyType, FREQUENCY_LABELS } from '@/types/scheduled-transaction';
 import { Payee } from '@/types/payee';
 import { Category } from '@/types/category';
 import { Account } from '@/types/account';
@@ -259,7 +259,7 @@ export function ScheduledTransactionForm({
     }
   };
 
-  const handleCategoryChange = (categoryId: string, name: string) => {
+  const handleCategoryChange = (categoryId: string, _name: string) => {
     if (categoryId) {
       setSelectedCategoryId(categoryId);
       setValue('categoryId', categoryId, { shouldDirty: true, shouldValidate: true });

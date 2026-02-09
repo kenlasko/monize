@@ -42,11 +42,6 @@ export function FilterBuilder({ value, onChange, accounts, categories, payees }:
     }
   };
 
-  const getValueLabel = (field: FilterField, val: string) => {
-    const options = getValueOptions(field);
-    return options.find((o) => o.value === val)?.label || val;
-  };
-
   const addGroup = () => {
     onChange([...value, { conditions: [{ field: 'category', value: '' }] }]);
   };

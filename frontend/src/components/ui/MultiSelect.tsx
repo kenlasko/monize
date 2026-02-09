@@ -195,8 +195,6 @@ export function MultiSelect({
     return `${value.length} selected`;
   }, [value, flatOptions, placeholder]);
 
-  const allSelected = value.length === flatOptions.length && flatOptions.length > 0;
-
   return (
     <div ref={wrapperRef} className="w-full relative">
       {label && (

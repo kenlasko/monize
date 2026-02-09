@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
@@ -13,7 +13,7 @@ import { Select } from '@/components/ui/Select';
 import { transactionsApi } from '@/lib/transactions';
 import { accountsApi } from '@/lib/accounts';
 import { Account } from '@/types/account';
-import { Transaction, ReconciliationData, TransactionStatus } from '@/types/transaction';
+import { ReconciliationData, TransactionStatus } from '@/types/transaction';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { getCurrencySymbol } from '@/lib/format';
 
@@ -57,7 +57,7 @@ function ReconcileContent() {
           (a) => a.accountSubType !== 'INVESTMENT_BROKERAGE' && !a.isClosed
         );
         setAccounts(filteredAccounts);
-      } catch (error) {
+      } catch {
         toast.error('Failed to load accounts');
       }
     };

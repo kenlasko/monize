@@ -8,14 +8,12 @@ import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { Combobox } from '@/components/ui/Combobox';
 import { Modal } from '@/components/ui/Modal';
 import { SplitEditor, SplitRow, createEmptySplits, toSplitRows } from '@/components/transactions/SplitEditor';
-import { ScheduledTransaction, ScheduledTransactionOverride, CreateScheduledTransactionOverrideData } from '@/types/scheduled-transaction';
+import { ScheduledTransaction, ScheduledTransactionOverride } from '@/types/scheduled-transaction';
 import { Category } from '@/types/category';
 import { Account } from '@/types/account';
 import { scheduledTransactionsApi } from '@/lib/scheduled-transactions';
 import { buildCategoryTree } from '@/lib/categoryUtils';
 import { roundToCents, getCurrencySymbol } from '@/lib/format';
-import { useDateFormat } from '@/hooks/useDateFormat';
-
 interface OverrideEditorDialogProps {
   isOpen: boolean;
   scheduledTransaction: ScheduledTransaction;
@@ -37,7 +35,6 @@ export function OverrideEditorDialog({
   onClose,
   onSave,
 }: OverrideEditorDialogProps) {
-  const { formatDate } = useDateFormat();
   const [isLoading, setIsLoading] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>(overrideDate);
   const [amount, setAmount] = useState<number>(0);
@@ -124,7 +121,6 @@ export function OverrideEditorDialog({
 
       // originalDate = the calculated occurrence date from the picker (overrideDate prop)
       // selectedDate = the actual date the user wants this occurrence to be (may differ)
-      const originalDate = existingOverride?.originalDate || overrideDate;
       const dateChanged = existingOverride && selectedDate !== existingOverride.overrideDate;
 
       if (existingOverride && !dateChanged) {

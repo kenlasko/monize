@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   BarChart,
@@ -94,7 +94,7 @@ export function IncomeVsExpensesReport() {
     }
   };
 
-  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ name: string; value: number; color: string; payload: { fullName: string; SavingsRate: number } }>; label?: string }) => {
+  const CustomTooltip = ({ active, payload, label: _label }: { active?: boolean; payload?: Array<{ name: string; value: number; color: string; payload: { fullName: string; SavingsRate: number } }>; label?: string }) => {
     if (active && payload && payload.length) {
       const data = payload[0]?.payload;
       return (

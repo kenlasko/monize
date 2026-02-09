@@ -4,7 +4,6 @@ import { useState, useMemo, useCallback, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { Transaction, TransactionStatus } from '@/types/transaction';
 import { transactionsApi } from '@/lib/transactions';
-import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Pagination } from '@/components/ui/Pagination';
 import { useDateFormat } from '@/hooks/useDateFormat';
