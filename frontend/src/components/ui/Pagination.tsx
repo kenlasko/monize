@@ -73,21 +73,20 @@ export function Pagination({
   return (
     <div className={`flex flex-col sm:flex-row items-center justify-between gap-3 ${minimal ? 'bg-transparent' : 'bg-white dark:bg-gray-800 px-4 py-3 shadow dark:shadow-gray-700/50 rounded-lg'}`}>
       {/* Showing X-Y of Z */}
-      <div className={`flex items-center ${infoRight ? 'justify-between w-full sm:w-auto' : ''} gap-2`}>
-        <div className="text-sm text-gray-700 dark:text-gray-300">
-          Showing{' '}
-          <span className="font-medium">{startItem}</span>
-          {' '}-{' '}
-          <span className="font-medium">{endItem}</span>
-          {' '}of{' '}
-          <span className="font-medium">{totalItems}</span>
-          {' '}{itemName}
-        </div>
-        {infoRight}
+      <div className="text-sm text-gray-700 dark:text-gray-300">
+        Showing{' '}
+        <span className="font-medium">{startItem}</span>
+        {' '}-{' '}
+        <span className="font-medium">{endItem}</span>
+        {' '}of{' '}
+        <span className="font-medium">{totalItems}</span>
+        {' '}{itemName}
       </div>
 
-      {/* Navigation controls */}
-      <div className="flex items-center space-x-1">
+      {/* Navigation controls + optional right content */}
+      <div className="flex items-center gap-2">
+        {infoRight}
+        <div className="flex items-center space-x-1">
         {/* First page */}
         <button
           onClick={() => goToPage(1)}
@@ -170,6 +169,7 @@ export function Pagination({
         >
           »»
         </button>
+        </div>
       </div>
     </div>
   );

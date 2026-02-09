@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 import { authApi } from '@/lib/auth';
+import Image from 'next/image';
 import { Button } from '@/components/ui/Button';
 import toast from 'react-hot-toast';
 
@@ -182,8 +183,9 @@ export function AppHeader() {
 
             <button
               onClick={() => router.push('/dashboard')}
-              className="text-2xl font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+              className="flex items-center gap-2 text-2xl font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
             >
+              <Image src="/icons/monize-logo.svg" alt="Monize" width={32} height={32} className="rounded" priority />
               Monize
             </button>
             <nav className="hidden md:ml-8 md:flex md:space-x-4">

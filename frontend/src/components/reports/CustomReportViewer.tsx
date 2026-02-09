@@ -146,11 +146,11 @@ export function CustomReportViewer({ reportId }: CustomReportViewerProps) {
     <div className="space-y-6">
       {/* Header */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex items-center gap-4 min-w-0">
             <button
               onClick={() => router.push('/reports')}
-              className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+              className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 shrink-0"
               title="Back to Reports"
             >
               <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -159,14 +159,14 @@ export function CustomReportViewer({ reportId }: CustomReportViewerProps) {
             </button>
             {report.icon && (
               <div
-                className="w-12 h-12 rounded-lg flex items-center justify-center text-white"
+                className="w-12 h-12 rounded-lg flex items-center justify-center text-white shrink-0"
                 style={{ backgroundColor: report.backgroundColor || '#3b82f6' }}
               >
                 {getIconComponent(report.icon)}
               </div>
             )}
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+            <div className="min-w-0">
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 truncate">
                 {report.name}
               </h1>
               {report.description && (
@@ -178,6 +178,7 @@ export function CustomReportViewer({ reportId }: CustomReportViewerProps) {
           </div>
           <Button
             variant="outline"
+            className="shrink-0"
             onClick={() => router.push(`/reports/custom/${reportId}/edit`)}
           >
             Edit

@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@/lib/zodResolver';
 import { z } from 'zod';
 import Link from 'next/link';
+import Image from 'next/image';
 import toast from 'react-hot-toast';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
@@ -108,9 +109,12 @@ export default function LoginPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-md w-full space-y-8 text-center">
-          <h2 className="text-3xl font-extrabold text-gray-900 dark:text-gray-100">
-            Sign in to Monize
-          </h2>
+          <div>
+            <Image src="/icons/monize-logo.svg" alt="Monize" width={96} height={96} className="mx-auto rounded-xl" priority />
+            <h2 className="mt-4 text-3xl font-extrabold text-gray-900 dark:text-gray-100">
+              Sign in to Monize
+            </h2>
+          </div>
           <p className="text-gray-600 dark:text-gray-400">
             This application uses Single Sign-On for authentication.
           </p>
@@ -144,6 +148,9 @@ export default function LoginPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-md w-full space-y-8">
+          <div className="text-center">
+            <Image src="/icons/monize-logo.svg" alt="Monize" width={96} height={96} className="mx-auto rounded-xl" priority />
+          </div>
           <TwoFactorVerify
             tempToken={twoFactorState.tempToken}
             onVerified={handle2FAVerified}
@@ -158,7 +165,8 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-gray-100">
+          <Image src="/icons/monize-logo.svg" alt="Monize" width={96} height={96} className="mx-auto rounded-xl" priority />
+          <h2 className="mt-4 text-center text-3xl font-extrabold text-gray-900 dark:text-gray-100">
             Sign in to Monize
           </h2>
           {authMethods.local && authMethods.registration && (

@@ -20,6 +20,15 @@ export const accountsApi = {
     return response.data;
   },
 
+  // Create investment account pair (cash + brokerage)
+  createInvestmentPair: async (data: CreateAccountData): Promise<InvestmentAccountPair> => {
+    const response = await apiClient.post<InvestmentAccountPair>('/accounts', {
+      ...data,
+      createInvestmentPair: true,
+    });
+    return response.data;
+  },
+
   // Get all accounts
   getAll: async (includeInactive: boolean = false): Promise<Account[]> => {
     const response = await apiClient.get<Account[]>('/accounts', {

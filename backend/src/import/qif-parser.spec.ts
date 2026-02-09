@@ -70,9 +70,9 @@ describe("QIF Parser", () => {
       expect(result.accountType).toBe("ASSET");
     });
 
-    it("detects Oth L type as LIABILITY", () => {
+    it("detects Oth L type as LINE_OF_CREDIT", () => {
       const result = parseQif("!Type:Oth L\nD01/15/2026\nT-1000.00\n^");
-      expect(result.accountType).toBe("LIABILITY");
+      expect(result.accountType).toBe("LINE_OF_CREDIT");
     });
 
     it("defaults unknown types to OTHER", () => {

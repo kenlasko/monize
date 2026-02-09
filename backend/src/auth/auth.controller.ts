@@ -373,7 +373,8 @@ export class AuthController {
     @Res() res: Response,
   ) {
     const userAgent = req.headers["user-agent"] || "Unknown Device";
-    const ipAddress = req.ip || req.socket?.remoteAddress;
+    const rawIp = req.ip || req.socket?.remoteAddress;
+    const ipAddress = rawIp?.replace(/^::ffff:/, "");
     const result = await this.authService.verify2FA(
       dto.tempToken,
       dto.code,

@@ -13,22 +13,40 @@ import { importApi, ParsedQifResponse, CategoryMapping, AccountMapping, Security
 import { accountsApi } from '@/lib/accounts';
 import { categoriesApi } from '@/lib/categories';
 import { investmentsApi } from '@/lib/investments';
+import { exchangeRatesApi, CurrencyInfo } from '@/lib/exchange-rates';
 import { buildCategoryTree } from '@/lib/categoryUtils';
 import { Account, AccountType } from '@/types/account';
 import { Category } from '@/types/category';
 import { Security } from '@/types/investment';
+import { usePreferencesStore } from '@/store/preferencesStore';
 import { createLogger } from '@/lib/logger';
 
 const logger = createLogger('Import');
 
 type ImportStep = 'upload' | 'selectAccount' | 'mapCategories' | 'mapSecurities' | 'mapAccounts' | 'review' | 'complete';
 
+function suggestAccountType(name: string): string {
+  const n = name.toLowerCase();
+  if (/visa|mastercard|amex|credit\s*card|credit/.test(n)) return 'CREDIT_CARD';
+  if (/savings?/.test(n)) return 'SAVINGS';
+  if (/mortgage/.test(n)) return 'MORTGAGE';
+  if (/line\s*of\s*credit|\bloc\b/.test(n)) return 'LINE_OF_CREDIT';
+  if (/loan/.test(n)) return 'LOAN';
+  if (/invest|brokerage|rrsp|tfsa|401k|ira/.test(n)) return 'INVESTMENT';
+  if (/\bcash\b/.test(n)) return 'CASH';
+  if (/\basset\b/.test(n)) return 'ASSET';
+  return 'CHEQUING';
+}
+
 // Data for each file in bulk import
+type MatchConfidence = 'exact' | 'partial' | 'type' | 'none';
+
 interface ImportFileData {
   fileName: string;
   fileContent: string;
   parsedData: ParsedQifResponse;
   selectedAccountId: string;
+  matchConfidence: MatchConfidence;
 }
 
 // Combined import result for bulk imports
@@ -88,6 +106,7 @@ function ImportContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const preselectedAccountId = searchParams.get('accountId');
+  const defaultCurrency = usePreferencesStore((s) => s.preferences?.defaultCurrency) || 'USD';
 
   const [step, setStep] = useState<ImportStep>('upload');
   // Bulk import: array of files with their data
@@ -100,6 +119,7 @@ function ImportContent() {
 
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [currencies, setCurrencies] = useState<CurrencyInfo[]>([]);
   const [categoryMappings, setCategoryMappings] = useState<CategoryMapping[]>([]);
   const [accountMappings, setAccountMappings] = useState<AccountMapping[]>([]);
   const [securityMappings, setSecurityMappings] = useState<SecurityMapping[]>([]);
@@ -111,19 +131,65 @@ function ImportContent() {
   const [lookupLoadingIndex, setLookupLoadingIndex] = useState<number | null>(null);
   const [initialLookupDone, setInitialLookupDone] = useState(false);
   const [bulkLookupInProgress, setBulkLookupInProgress] = useState(false);
+  const [showCreateAccount, setShowCreateAccount] = useState(false);
+  const [newAccountName, setNewAccountName] = useState('');
+  const [newAccountType, setNewAccountType] = useState<string>('CHEQUING');
+  const [newAccountCurrency, setNewAccountCurrency] = useState(defaultCurrency);
+  const [isCreatingAccount, setIsCreatingAccount] = useState(false);
+  // For bulk: which file index is creating an account (-1 = none)
+  const [creatingForFileIndex, setCreatingForFileIndex] = useState(-1);
 
   // Helper to check if this is a bulk import (multiple files)
   const isBulkImport = importFiles.length > 1;
 
   // Helper to update a specific file's account selection
-  const setFileAccountId = (fileIndex: number, accountId: string) => {
+  const setFileAccountId = (fileIndex: number, accountId: string, confidence: MatchConfidence = 'exact') => {
     setImportFiles(prev => prev.map((f, i) =>
-      i === fileIndex ? { ...f, selectedAccountId: accountId } : f
+      i === fileIndex ? { ...f, selectedAccountId: accountId, matchConfidence: confidence } : f
     ));
   };
 
   // Legacy setter for single file (updates first file)
-  const setSelectedAccountId = (accountId: string) => setFileAccountId(0, accountId);
+  const setSelectedAccountId = (accountId: string, confidence: MatchConfidence = 'exact') => setFileAccountId(0, accountId, confidence);
+
+  // Create a new account inline and select it for the given file index
+  const handleCreateAccount = async (fileIndex: number) => {
+    if (!newAccountName.trim()) {
+      toast.error('Account name is required');
+      return;
+    }
+    setIsCreatingAccount(true);
+    try {
+      const accountData = {
+        name: newAccountName.trim(),
+        accountType: newAccountType as AccountType,
+        currencyCode: newAccountCurrency,
+        openingBalance: 0,
+      };
+
+      if (newAccountType === 'INVESTMENT') {
+        // Create investment pair (cash + brokerage)
+        const pair = await accountsApi.createInvestmentPair(accountData);
+        setAccounts(prev => [...prev, pair.cashAccount, pair.brokerageAccount]);
+        // Select the brokerage account for import (investment transactions go there)
+        setFileAccountId(fileIndex, pair.brokerageAccount.id);
+        toast.success(`Investment accounts "${pair.cashAccount.name}" and "${pair.brokerageAccount.name}" created`);
+      } else {
+        const created = await accountsApi.create(accountData);
+        setAccounts(prev => [...prev, created]);
+        setFileAccountId(fileIndex, created.id);
+        toast.success(`Account "${created.name}" created`);
+      }
+
+      setShowCreateAccount(false);
+      setCreatingForFileIndex(-1);
+      setNewAccountName('');
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to create account');
+    } finally {
+      setIsCreatingAccount(false);
+    }
+  };
 
   // Refs for scrollable containers
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -132,14 +198,16 @@ function ImportContent() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [accountsData, categoriesData, securitiesData] = await Promise.all([
+        const [accountsData, categoriesData, securitiesData, currenciesData] = await Promise.all([
           accountsApi.getAll(),
           categoriesApi.getAll(),
           investmentsApi.getSecurities(true), // Include inactive securities
+          exchangeRatesApi.getCurrencies(),
         ]);
         setAccounts(accountsData);
         setCategories(categoriesData);
         setSecurities(securitiesData);
+        setCurrencies(currenciesData);
 
         // If preselected account ID is provided, validate it exists
         if (preselectedAccountId) {
@@ -164,13 +232,14 @@ function ImportContent() {
     }
   }, [step]);
 
-  // Auto-select first compatible account when on selectAccount step with no selection
+  // Auto-select best matching account when on selectAccount step with no selection
   useEffect(() => {
     if (step !== 'selectAccount' || selectedAccountId || accounts.length === 0) {
       return;
     }
 
-    const isQifInvestment = parsedData?.accountType === 'INVESTMENT';
+    const qifType = parsedData?.accountType;
+    const isQifInvestment = qifType === 'INVESTMENT';
     const compatibleAccounts = accounts.filter((a) => {
       if (isQifInvestment) {
         return isInvestmentBrokerageAccount(a);
@@ -180,9 +249,52 @@ function ImportContent() {
     });
 
     if (compatibleAccounts.length > 0) {
-      setSelectedAccountId(compatibleAccounts[0].id);
+      // Prefer account matching the QIF detected type
+      const typeMatch = qifType
+        ? compatibleAccounts.find((a) => a.accountType === qifType)
+        : undefined;
+      if (typeMatch) {
+        setSelectedAccountId(typeMatch.id, 'type');
+      } else {
+        setSelectedAccountId(compatibleAccounts[0].id, 'none');
+      }
     }
   }, [step, selectedAccountId, accounts, parsedData]);
+
+  // Re-match account mappings when entering mapAccounts step
+  // This picks up accounts created inline during the selectAccount step
+  useEffect(() => {
+    if (step !== 'mapAccounts' || accountMappings.length === 0) return;
+
+    setAccountMappings(prev => prev.map(mapping => {
+      // Skip already matched to existing account
+      if (mapping.accountId) return mapping;
+
+      const accLower = mapping.originalName.toLowerCase();
+      const accWithSlash = accLower.replace(/-/g, '/');
+      const existingAcc = accounts.find((a) => {
+        const aName = a.name.toLowerCase();
+        return aName === accLower || aName === accWithSlash;
+      });
+      if (existingAcc) {
+        // If matched account is a brokerage, use its linked cash account for transfers
+        const targetId = existingAcc.accountSubType === 'INVESTMENT_BROKERAGE' && existingAcc.linkedAccountId
+          ? existingAcc.linkedAccountId
+          : existingAcc.id;
+        return { originalName: mapping.originalName, accountId: targetId };
+      }
+      // Also check for investment cash account naming pattern (e.g., "RRSP" matches "RRSP - Cash")
+      const investmentCashAcc = accounts.find((a) => {
+        const aName = a.name.toLowerCase();
+        return (aName === `${accLower} - cash` || aName === `${accWithSlash} - cash`)
+          && a.accountSubType === 'INVESTMENT_CASH';
+      });
+      if (investmentCashAcc) {
+        return { originalName: mapping.originalName, accountId: investmentCashAcc.id };
+      }
+      return mapping;
+    }));
+  }, [step, accounts]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Run bulk security lookup when entering mapSecurities step
   useEffect(() => {
@@ -335,7 +447,7 @@ function ImportContent() {
 
   // Helper to match filename to account
   // QIF files replace / with - in account names, so also try matching with - replaced by /
-  const matchFilenameToAccount = useCallback((fileName: string, isInvestmentType: boolean): string => {
+  const matchFilenameToAccount = useCallback((fileName: string, isInvestmentType: boolean, qifAccountType?: string): { id: string; confidence: MatchConfidence } => {
     const baseName = fileName.replace(/\.[^/.]+$/, '').trim().toLowerCase();
     const baseNameWithSlash = baseName.replace(/-/g, '/');
 
@@ -348,18 +460,27 @@ function ImportContent() {
     });
 
     // Try exact match first (with both - and / variants)
-    const matchedAccount = compatibleAccounts.find((a) => {
+    const exactMatch = compatibleAccounts.find((a) => {
       const accountName = a.name.toLowerCase();
       return accountName === baseName || accountName === baseNameWithSlash;
-    })
-      // Then try partial matches
-      || compatibleAccounts.find((a) => {
-        const accountName = a.name.toLowerCase();
-        return accountName.includes(baseName) || baseName.includes(accountName)
-          || accountName.includes(baseNameWithSlash) || baseNameWithSlash.includes(accountName);
-      });
+    });
+    if (exactMatch) return { id: exactMatch.id, confidence: 'exact' };
 
-    return matchedAccount?.id || '';
+    // Then try partial matches
+    const partialMatch = compatibleAccounts.find((a) => {
+      const accountName = a.name.toLowerCase();
+      return accountName.includes(baseName) || baseName.includes(accountName)
+        || accountName.includes(baseNameWithSlash) || baseNameWithSlash.includes(accountName);
+    });
+    if (partialMatch) return { id: partialMatch.id, confidence: 'partial' };
+
+    // Then try matching by QIF account type
+    const typeMatch = qifAccountType
+      ? compatibleAccounts.find((a) => a.accountType === qifAccountType)
+      : undefined;
+    if (typeMatch) return { id: typeMatch.id, confidence: 'type' };
+
+    return { id: '', confidence: 'none' };
   }, [accounts]);
 
   const handleFileSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -393,13 +514,14 @@ function ImportContent() {
 
         // Match filename to account
         const isInvestmentType = parsed.accountType === 'INVESTMENT';
-        const matchedAccountId = matchFilenameToAccount(file.name, isInvestmentType);
+        const match = matchFilenameToAccount(file.name, isInvestmentType, parsed.accountType);
 
         fileDataArray.push({
           fileName: file.name,
           fileContent: content,
           parsedData: parsed,
-          selectedAccountId: matchedAccountId,
+          selectedAccountId: match.id,
+          matchConfidence: match.confidence,
         });
       }
 
@@ -444,6 +566,7 @@ function ImportContent() {
 
       // Initialize combined account mappings
       // QIF files replace / with - in account names, so also try matching with - replaced by /
+      // Also match investment cash accounts by base name (e.g., "RRSP" matches "RRSP - Cash")
       const accMappings: AccountMapping[] = Array.from(allTransferAccounts).map((acc) => {
         const accLower = acc.toLowerCase();
         const accWithSlash = accLower.replace(/-/g, '/');
@@ -451,9 +574,27 @@ function ImportContent() {
           const aName = a.name.toLowerCase();
           return aName === accLower || aName === accWithSlash;
         });
+        if (existingAcc) {
+          // If matched account is a brokerage, use its linked cash account for transfers
+          const targetId = existingAcc.accountSubType === 'INVESTMENT_BROKERAGE' && existingAcc.linkedAccountId
+            ? existingAcc.linkedAccountId
+            : existingAcc.id;
+          return { originalName: acc, accountId: targetId };
+        }
+        // Check for investment cash account naming pattern
+        const investmentCashAcc = accounts.find((a) => {
+          const aName = a.name.toLowerCase();
+          return (aName === `${accLower} - cash` || aName === `${accWithSlash} - cash`)
+            && a.accountSubType === 'INVESTMENT_CASH';
+        });
+        if (investmentCashAcc) {
+          return { originalName: acc, accountId: investmentCashAcc.id };
+        }
         return {
           originalName: acc,
-          accountId: existingAcc?.id,
+          createNew: acc,
+          accountType: suggestAccountType(acc),
+          currencyCode: defaultCurrency,
         };
       });
       setAccountMappings(accMappings);
@@ -496,6 +637,7 @@ function ImportContent() {
           accountId: value || undefined,
           createNew: undefined,
           accountType: undefined,
+          currencyCode: undefined,
         };
       } else if (field === 'createNew') {
         updated[index] = {
@@ -507,6 +649,11 @@ function ImportContent() {
         updated[index] = {
           ...updated[index],
           accountType: value || undefined,
+        };
+      } else if (field === 'currencyCode') {
+        updated[index] = {
+          ...updated[index],
+          currencyCode: value || undefined,
         };
       }
       return updated;
@@ -653,14 +800,19 @@ function ImportContent() {
         let payeesCreated = 0;
         let securitiesCreated = 0;
 
+        // Use mutable copies so we can replace createNew with actual IDs after the first file
+        let currentCategoryMappings = [...categoryMappings];
+        let currentAccountMappings = [...accountMappings];
+        let currentSecurityMappings = [...securityMappings];
+
         for (const fileData of importFiles) {
           try {
             const result = await importApi.importQif({
               content: fileData.fileContent,
               accountId: fileData.selectedAccountId,
-              categoryMappings,
-              accountMappings,
-              securityMappings,
+              categoryMappings: currentCategoryMappings,
+              accountMappings: currentAccountMappings,
+              securityMappings: currentSecurityMappings,
               dateFormat,
             });
 
@@ -683,6 +835,41 @@ function ImportContent() {
               accountsCreated = result.accountsCreated;
               payeesCreated = result.payeesCreated;
               securitiesCreated = result.securitiesCreated;
+            }
+
+            // Replace createNew entries with actual IDs so subsequent files reuse them
+            if (result.createdMappings) {
+              const { categories, accounts: accts, loans, securities: secs } = result.createdMappings;
+
+              if (Object.keys(categories).length > 0 || Object.keys(loans).length > 0) {
+                currentCategoryMappings = currentCategoryMappings.map((m) => {
+                  if (m.createNew && categories[m.originalName]) {
+                    return { originalName: m.originalName, categoryId: categories[m.originalName] };
+                  }
+                  if (m.createNewLoan && loans[m.originalName]) {
+                    return { originalName: m.originalName, isLoanCategory: true, loanAccountId: loans[m.originalName] };
+                  }
+                  return m;
+                });
+              }
+
+              if (Object.keys(accts).length > 0) {
+                currentAccountMappings = currentAccountMappings.map((m) => {
+                  if (m.createNew && accts[m.originalName]) {
+                    return { originalName: m.originalName, accountId: accts[m.originalName] };
+                  }
+                  return m;
+                });
+              }
+
+              if (Object.keys(secs).length > 0) {
+                currentSecurityMappings = currentSecurityMappings.map((m) => {
+                  if (m.createNew && secs[m.originalName]) {
+                    return { originalName: m.originalName, securityId: secs[m.originalName] };
+                  }
+                  return m;
+                });
+              }
             }
           } catch (error: any) {
             const targetAccount = accounts.find((a) => a.id === fileData.selectedAccountId);
@@ -797,8 +984,19 @@ function ImportContent() {
     { value: 'LINE_OF_CREDIT', label: 'Line of Credit' },
     { value: 'MORTGAGE', label: 'Mortgage' },
     { value: 'CASH', label: 'Cash' },
+    { value: 'ASSET', label: 'Asset' },
     { value: 'OTHER', label: 'Other' },
   ];
+
+  // Build currency options: default currency first, then alphabetical
+  const currencyOptions = useMemo(() => {
+    const sorted = [...currencies].sort((a, b) => {
+      if (a.code === defaultCurrency) return -1;
+      if (b.code === defaultCurrency) return 1;
+      return a.code.localeCompare(b.code);
+    });
+    return sorted.map((c) => ({ value: c.code, label: `${c.code} - ${c.name}` }));
+  }, [currencies, defaultCurrency]);
 
   const getSecurityOptions = () => {
     return [
@@ -923,15 +1121,7 @@ function ImportContent() {
                   </div>
                 )}
 
-                {compatibleAccounts.length === 0 ? (
-                  <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
-                    <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                      No compatible accounts found. {isQifInvestment
-                        ? 'Please create an investment brokerage account first.'
-                        : 'Please create an account first.'}
-                    </p>
-                  </div>
-                ) : (
+                {compatibleAccounts.length > 0 && (
                   <Select
                     label="Import into account"
                     options={compatibleAccounts.map((a) => ({
@@ -942,6 +1132,60 @@ function ImportContent() {
                     onChange={(e) => setSelectedAccountId(e.target.value)}
                   />
                 )}
+
+                {!showCreateAccount ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowCreateAccount(true);
+                      setCreatingForFileIndex(0);
+                      setNewAccountName(fileName.replace(/\.[^/.]+$/, '').trim());
+                      setNewAccountType(parsedData.accountType || 'CHEQUING');
+                    }}
+                    className="mt-3 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+                  >
+                    + Create new account
+                  </button>
+                ) : creatingForFileIndex === 0 && (
+                  <div className="mt-4 border border-blue-200 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 space-y-3">
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Create New Account</p>
+                    <Input
+                      label="Account name"
+                      value={newAccountName}
+                      onChange={(e) => setNewAccountName(e.target.value)}
+                      placeholder="e.g. My Chequing"
+                    />
+                    <Select
+                      label="Account type"
+                      options={accountTypeOptions}
+                      value={newAccountType}
+                      onChange={(e) => setNewAccountType(e.target.value)}
+                    />
+                    <Select
+                      label="Currency"
+                      options={currencyOptions}
+                      value={newAccountCurrency}
+                      onChange={(e) => setNewAccountCurrency(e.target.value)}
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        onClick={() => handleCreateAccount(0)}
+                        disabled={isCreatingAccount || !newAccountName.trim()}
+                      >
+                        {isCreatingAccount ? 'Creating...' : 'Create'}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => { setShowCreateAccount(false); setCreatingForFileIndex(-1); setNewAccountName(''); }}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex justify-between mt-6">
                   <Button variant="outline" onClick={() => setStep('upload')}>
                     Back
@@ -958,7 +1202,7 @@ function ImportContent() {
                         setStep('review');
                       }
                     }}
-                    disabled={!selectedAccountId || compatibleAccounts.length === 0}
+                    disabled={!selectedAccountId}
                   >
                     Next
                   </Button>
@@ -983,13 +1227,13 @@ function ImportContent() {
                 {importFiles.map((fileData, index) => {
                   const isInvestment = fileData.parsedData.accountType === 'INVESTMENT';
                   const compatibleAccounts = getCompatibleAccountsForType(isInvestment);
-                  const hasValidAccount = !!fileData.selectedAccountId;
+                  const isHighConfidence = fileData.selectedAccountId && fileData.matchConfidence === 'exact';
 
                   return (
                     <div
                       key={index}
                       className={`border rounded-lg p-4 ${
-                        hasValidAccount
+                        isHighConfidence
                           ? 'border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20'
                           : 'border-amber-300 dark:border-amber-600 bg-amber-50 dark:bg-amber-900/20'
                       }`}
@@ -1013,6 +1257,49 @@ function ImportContent() {
                             value={fileData.selectedAccountId}
                             onChange={(e) => setFileAccountId(index, e.target.value)}
                           />
+                          {creatingForFileIndex !== index ? (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setCreatingForFileIndex(index);
+                                setShowCreateAccount(true);
+                                setNewAccountType(fileData.parsedData.accountType || 'CHEQUING');
+                                setNewAccountName(fileData.fileName.replace(/\.[^/.]+$/, '').trim());
+                              }}
+                              className="mt-1 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+                            >
+                              + Create new
+                            </button>
+                          ) : (
+                            <div className="mt-2 border border-blue-200 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 space-y-2">
+                              <Input
+                                label="Account name"
+                                value={newAccountName}
+                                onChange={(e) => setNewAccountName(e.target.value)}
+                                placeholder="e.g. My Chequing"
+                              />
+                              <Select
+                                label="Account type"
+                                options={accountTypeOptions}
+                                value={newAccountType}
+                                onChange={(e) => setNewAccountType(e.target.value)}
+                              />
+                              <Select
+                                label="Currency"
+                                options={currencyOptions}
+                                value={newAccountCurrency}
+                                onChange={(e) => setNewAccountCurrency(e.target.value)}
+                              />
+                              <div className="flex gap-2">
+                                <Button size="sm" onClick={() => handleCreateAccount(index)} disabled={isCreatingAccount || !newAccountName.trim()}>
+                                  {isCreatingAccount ? 'Creating...' : 'Create'}
+                                </Button>
+                                <Button size="sm" variant="outline" onClick={() => { setCreatingForFileIndex(-1); setShowCreateAccount(false); setNewAccountName(''); }}>
+                                  Cancel
+                                </Button>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -1058,7 +1345,7 @@ function ImportContent() {
         const unmatchedCategories = categoryMappings.filter((m) => !isFullyMapped(m));
         // Separate matched categories from matched loans
         const matchedCategoriesOnly = categoryMappings.filter((m) => m.categoryId);
-        const matchedLoansOnly = categoryMappings.filter((m) => m.isLoanCategory && m.loanAccountId);
+        const matchedLoansOnly = categoryMappings.filter((m) => m.isLoanCategory && (m.loanAccountId || (m.createNewLoan && m.newLoanAmount !== undefined)));
         // Filter loan accounts for the loan category mapping feature
         const loanAccounts = accounts
           .filter((a) => a.accountType === 'LOAN' || a.accountType === 'MORTGAGE')
@@ -1383,13 +1670,21 @@ function ImportContent() {
                           }
                         />
                         {mapping.createNew && (
-                          <div className="mt-2">
+                          <div className="mt-2 grid grid-cols-2 gap-2">
                             <Select
                               label="Account type"
                               options={accountTypeOptions}
                               value={mapping.accountType || 'CHEQUING'}
                               onChange={(e) =>
                                 handleAccountMappingChange(index, 'accountType', e.target.value)
+                              }
+                            />
+                            <Select
+                              label="Currency"
+                              options={currencyOptions}
+                              value={mapping.currencyCode || defaultCurrency}
+                              onChange={(e) =>
+                                handleAccountMappingChange(index, 'currencyCode', e.target.value)
                               }
                             />
                           </div>

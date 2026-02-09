@@ -79,8 +79,9 @@ export function CategoryMappingRow({
     setLocalNewLoanInstitution('');
   };
 
-  const handleCreateNewBlur = () => {
-    const value = localCreateNew.trim();
+  const handleCreateNewBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const value = (e.target.value ?? localCreateNew).trim();
+    setLocalCreateNew(value);
     if (value !== (mapping.createNew || '')) {
       onMappingChange({
         categoryId: undefined,
@@ -101,20 +102,24 @@ export function CategoryMappingRow({
   };
 
   const handleIsLoanChange = (checked: boolean) => {
+    // Use the category name (last segment if nested) as default loan name
+    const parts = mapping.originalName.split(':');
+    const suggestedName = parts[parts.length - 1].trim();
     onMappingChange({
       isLoanCategory: checked,
       // Clear category fields when switching to loan
       categoryId: checked ? undefined : mapping.categoryId,
       createNew: checked ? undefined : mapping.createNew,
       parentCategoryId: checked ? undefined : mapping.parentCategoryId,
-      // Clear loan fields when switching from loan
+      // Pre-fill or clear loan fields
       loanAccountId: undefined,
-      createNewLoan: undefined,
+      createNewLoan: checked ? suggestedName : undefined,
       newLoanAmount: undefined,
       newLoanInstitution: undefined,
     });
     if (checked) {
       setLocalCreateNew('');
+      setLocalNewLoanName(suggestedName);
     } else {
       setLocalNewLoanName('');
       setLocalNewLoanAmount('');
@@ -134,8 +139,9 @@ export function CategoryMappingRow({
     setLocalNewLoanInstitution('');
   };
 
-  const handleNewLoanNameBlur = () => {
-    const value = localNewLoanName.trim();
+  const handleNewLoanNameBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const value = (e.target.value ?? localNewLoanName).trim();
+    setLocalNewLoanName(value);
     if (value !== (mapping.createNewLoan || '')) {
       onMappingChange({
         loanAccountId: undefined,
@@ -144,9 +150,12 @@ export function CategoryMappingRow({
     }
   };
 
-  const handleNewLoanAmountBlur = () => {
-    const value = localNewLoanAmount.trim();
-    const numValue = value ? parseFloat(value) : undefined;
+  const handleNewLoanAmountBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const raw = (e.target.value ?? localNewLoanAmount).trim();
+    // Strip currency symbols, commas, and whitespace so pasted values like "$25,000" work
+    const cleaned = raw.replace(/[$€£¥,\s]/g, '');
+    setLocalNewLoanAmount(cleaned);
+    const numValue = cleaned ? parseFloat(cleaned) : undefined;
     if (numValue !== mapping.newLoanAmount) {
       onMappingChange({
         newLoanAmount: numValue,
@@ -154,8 +163,9 @@ export function CategoryMappingRow({
     }
   };
 
-  const handleNewLoanInstitutionBlur = () => {
-    const value = localNewLoanInstitution.trim();
+  const handleNewLoanInstitutionBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const value = (e.target.value ?? localNewLoanInstitution).trim();
+    setLocalNewLoanInstitution(value);
     if (value !== (mapping.newLoanInstitution || '')) {
       onMappingChange({
         newLoanInstitution: value || undefined,
@@ -243,7 +253,7 @@ export function CategoryMappingRow({
                     />
                     <Input
                       label="Initial loan amount"
-                      type="number"
+                      inputMode="decimal"
                       placeholder="e.g., 25000"
                       value={localNewLoanAmount}
                       onChange={(e) => setLocalNewLoanAmount(e.target.value)}

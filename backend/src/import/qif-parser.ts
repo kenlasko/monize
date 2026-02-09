@@ -119,7 +119,7 @@ export function parseQif(
           accountType = "ASSET";
           break;
         case "oth l":
-          accountType = "LIABILITY";
+          accountType = "LINE_OF_CREDIT";
           break;
         default:
           accountType = "OTHER";

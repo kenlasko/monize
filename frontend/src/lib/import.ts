@@ -34,6 +34,7 @@ export interface AccountMapping {
   accountId?: string;
   createNew?: string;
   accountType?: string;
+  currencyCode?: string;
 }
 
 export interface SecurityMapping {
@@ -64,6 +65,12 @@ export interface ImportResult {
   accountsCreated: number;
   payeesCreated: number;
   securitiesCreated: number;
+  createdMappings?: {
+    categories: Record<string, string>;
+    accounts: Record<string, string>;
+    loans: Record<string, string>;
+    securities: Record<string, string>;
+  };
 }
 
 export const importApi = {
