@@ -1,12 +1,12 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsOptional, IsDateString, IsNumber, Min, Max } from 'class-validator';
-import { Type } from 'class-transformer';
+import { ApiProperty } from "@nestjs/swagger";
+import { IsOptional, IsDateString, IsNumber, Min, Max } from "class-validator";
+import { Type } from "class-transformer";
 
 export class UncategorizedTransactionsQueryDto {
   @ApiProperty({
     required: false,
-    description: 'Start date for the report (YYYY-MM-DD)',
-    example: '2024-01-01',
+    description: "Start date for the report (YYYY-MM-DD)",
+    example: "2024-01-01",
   })
   @IsOptional()
   @IsDateString()
@@ -14,15 +14,15 @@ export class UncategorizedTransactionsQueryDto {
 
   @ApiProperty({
     required: true,
-    description: 'End date for the report (YYYY-MM-DD)',
-    example: '2024-12-31',
+    description: "End date for the report (YYYY-MM-DD)",
+    example: "2024-12-31",
   })
   @IsDateString()
   endDate: string;
 
   @ApiProperty({
     required: false,
-    description: 'Maximum number of transactions to return',
+    description: "Maximum number of transactions to return",
     example: 500,
     default: 500,
   })

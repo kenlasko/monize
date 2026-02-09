@@ -2,7 +2,7 @@ export function testEmailTemplate(firstName: string): string {
   return `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
       <h2 style="color: #1f2937;">MoneyMate Test Email</h2>
-      <p style="color: #374151;">Hi ${firstName || 'there'},</p>
+      <p style="color: #374151;">Hi ${firstName || "there"},</p>
       <p style="color: #374151;">This is a test email from MoneyMate. If you received this, your email notifications are working correctly.</p>
       <p style="color: #6b7280; font-size: 14px; margin-top: 24px;">-- MoneyMate</p>
     </div>
@@ -30,13 +30,13 @@ export function billReminderTemplate(
           <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: right;">${b.currencyCode} ${Math.abs(b.amount).toFixed(2)}</td>
         </tr>`,
     )
-    .join('');
+    .join("");
 
   return `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
       <h2 style="color: #1f2937;">Upcoming Bill Reminder</h2>
-      <p style="color: #374151;">Hi ${firstName || 'there'},</p>
-      <p style="color: #374151;">You have ${bills.length} upcoming bill${bills.length === 1 ? '' : 's'} that need${bills.length === 1 ? 's' : ''} attention:</p>
+      <p style="color: #374151;">Hi ${firstName || "there"},</p>
+      <p style="color: #374151;">You have ${bills.length} upcoming bill${bills.length === 1 ? "" : "s"} that need${bills.length === 1 ? "s" : ""} attention:</p>
       <table style="width: 100%; border-collapse: collapse; margin: 16px 0; border: 1px solid #e5e7eb; border-radius: 8px;">
         <thead>
           <tr style="background: #f3f4f6;">
@@ -62,7 +62,7 @@ export function passwordResetTemplate(
   return `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
       <h2 style="color: #1f2937;">Password Reset Request</h2>
-      <p style="color: #374151;">Hi ${firstName || 'there'},</p>
+      <p style="color: #374151;">Hi ${firstName || "there"},</p>
       <p style="color: #374151;">We received a request to reset your password. Click the button below to set a new password:</p>
       <p style="margin: 24px 0;">
         <a href="${resetUrl}" style="display: inline-block; padding: 12px 24px; background: #2563eb; color: #ffffff; border-radius: 6px; text-decoration: none; font-weight: 500;">Reset Password</a>

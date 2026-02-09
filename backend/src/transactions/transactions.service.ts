@@ -6,20 +6,20 @@ import {
   Inject,
   forwardRef,
   Logger,
-} from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
-import { Transaction, TransactionStatus } from './entities/transaction.entity';
-import { TransactionSplit } from './entities/transaction-split.entity';
-import { Category } from '../categories/entities/category.entity';
-import { InvestmentTransaction } from '../securities/entities/investment-transaction.entity';
-import { CreateTransactionDto } from './dto/create-transaction.dto';
-import { UpdateTransactionDto } from './dto/update-transaction.dto';
-import { CreateTransactionSplitDto } from './dto/create-transaction-split.dto';
-import { CreateTransferDto } from './dto/create-transfer.dto';
-import { AccountsService } from '../accounts/accounts.service';
-import { PayeesService } from '../payees/payees.service';
-import { NetWorthService } from '../net-worth/net-worth.service';
+} from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository, In } from "typeorm";
+import { Transaction, TransactionStatus } from "./entities/transaction.entity";
+import { TransactionSplit } from "./entities/transaction-split.entity";
+import { Category } from "../categories/entities/category.entity";
+import { InvestmentTransaction } from "../securities/entities/investment-transaction.entity";
+import { CreateTransactionDto } from "./dto/create-transaction.dto";
+import { UpdateTransactionDto } from "./dto/update-transaction.dto";
+import { CreateTransactionSplitDto } from "./dto/create-transaction-split.dto";
+import { CreateTransferDto } from "./dto/create-transfer.dto";
+import { AccountsService } from "../accounts/accounts.service";
+import { PayeesService } from "../payees/payees.service";
+import { NetWorthService } from "../net-worth/net-worth.service";
 
 export interface TransactionWithInvestmentLink extends Transaction {
   /** ID of the linked investment transaction (if this is a cash transaction for an investment) */
@@ -47,7 +47,10 @@ export interface TransferResult {
 @Injectable()
 export class TransactionsService {
   private readonly logger = new Logger(TransactionsService.name);
-  private readonly recalcTimers = new Map<string, ReturnType<typeof setTimeout>>();
+  private readonly recalcTimers = new Map<
+    string,
+    ReturnType<typeof setTimeout>
+  >();
   private static readonly RECALC_DEBOUNCE_MS = 2000;
 
   constructor(
@@ -75,11 +78,13 @@ export class TransactionsService {
       key,
       setTimeout(() => {
         this.recalcTimers.delete(key);
-        this.netWorthService.recalculateAccount(userId, accountId).catch((err) =>
-          this.logger.warn(
-            `Net worth recalc failed for account ${accountId}: ${err.message}`,
-          ),
-        );
+        this.netWorthService
+          .recalculateAccount(userId, accountId)
+          .catch((err) =>
+            this.logger.warn(
+              `Net worth recalc failed for account ${accountId}: ${err.message}`,
+            ),
+          );
       }, TransactionsService.RECALC_DEBOUNCE_MS),
     );
   }
@@ -93,7 +98,7 @@ export class TransactionsService {
   ): Promise<string[]> {
     const categories = await this.categoriesRepository.find({
       where: { userId },
-      select: ['id', 'parentId'],
+      select: ["id", "parentId"],
     });
 
     const result: string[] = [categoryId];
@@ -132,11 +137,14 @@ export class TransactionsService {
     let categoryId = transactionData.categoryId;
     if (!hasSplits && !categoryId && transactionData.payeeId) {
       try {
-        const payee = await this.payeesService.findOne(userId, transactionData.payeeId);
+        const payee = await this.payeesService.findOne(
+          userId,
+          transactionData.payeeId,
+        );
         if (payee.defaultCategoryId) {
           categoryId = payee.defaultCategoryId;
         }
-      } catch (error) {
+      } catch {
         // If payee not found or error, continue without category
       }
     }
@@ -149,7 +157,8 @@ export class TransactionsService {
       exchangeRate: transactionData.exchangeRate || 1,
     });
 
-    const savedTransaction = await this.transactionsRepository.save(transaction);
+    const savedTransaction =
+      await this.transactionsRepository.save(transaction);
 
     // Create splits if provided
     if (hasSplits) {
@@ -180,11 +189,13 @@ export class TransactionsService {
   /**
    * Delete transfer splits' linked transactions and revert their balances
    */
-  private async deleteTransferSplitLinkedTransactions(transactionId: string): Promise<void> {
+  private async deleteTransferSplitLinkedTransactions(
+    transactionId: string,
+  ): Promise<void> {
     // Find all splits for this transaction that have linked transactions
     const transferSplits = await this.splitsRepository.find({
       where: { transactionId },
-      relations: ['linkedTransaction'],
+      relations: ["linkedTransaction"],
     });
 
     for (const split of transferSplits) {
@@ -209,15 +220,23 @@ export class TransactionsService {
   /**
    * Validate that splits sum to the transaction amount
    */
-  private validateSplits(splits: CreateTransactionSplitDto[], transactionAmount: number): void {
+  private validateSplits(
+    splits: CreateTransactionSplitDto[],
+    transactionAmount: number,
+  ): void {
     // Allow single split for transfers (has transferAccountId)
     const isTransfer = splits.length === 1 && splits[0].transferAccountId;
 
     if (splits.length < 2 && !isTransfer) {
-      throw new BadRequestException('Split transactions must have at least 2 splits');
+      throw new BadRequestException(
+        "Split transactions must have at least 2 splits",
+      );
     }
 
-    const splitsSum = splits.reduce((sum, split) => sum + Number(split.amount), 0);
+    const splitsSum = splits.reduce(
+      (sum, split) => sum + Number(split.amount),
+      0,
+    );
     const roundedSum = Math.round(splitsSum * 10000) / 10000;
     const roundedAmount = Math.round(Number(transactionAmount) * 10000) / 10000;
 
@@ -230,7 +249,7 @@ export class TransactionsService {
     // Validate each split has non-zero amount
     for (const split of splits) {
       if (split.amount === 0) {
-        throw new BadRequestException('Split amounts cannot be zero');
+        throw new BadRequestException("Split amounts cannot be zero");
       }
     }
   }
@@ -262,8 +281,14 @@ export class TransactionsService {
 
       // For transfer splits, create linked transaction in target account
       if (split.transferAccountId && userId && sourceAccountId) {
-        const targetAccount = await this.accountsService.findOne(userId, split.transferAccountId);
-        const sourceAccount = await this.accountsService.findOne(userId, sourceAccountId);
+        const targetAccount = await this.accountsService.findOne(
+          userId,
+          split.transferAccountId,
+        );
+        const sourceAccount = await this.accountsService.findOne(
+          userId,
+          sourceAccountId,
+        );
 
         // Create the linked transaction in the target account (inverse amount)
         const linkedTransaction = this.transactionsRepository.create({
@@ -278,7 +303,8 @@ export class TransactionsService {
           payeeName: parentPayeeName || `Transfer from ${sourceAccount.name}`,
         });
 
-        const savedLinkedTransaction = await this.transactionsRepository.save(linkedTransaction);
+        const savedLinkedTransaction =
+          await this.transactionsRepository.save(linkedTransaction);
 
         // Update the split with the linked transaction ID
         await this.splitsRepository.update(savedSplit.id, {
@@ -292,7 +318,10 @@ export class TransactionsService {
         });
 
         // Update target account balance
-        await this.accountsService.updateBalance(split.transferAccountId, -split.amount);
+        await this.accountsService.updateBalance(
+          split.transferAccountId,
+          -split.amount,
+        );
 
         savedSplit.linkedTransactionId = savedLinkedTransaction.id;
       }
@@ -325,22 +354,25 @@ export class TransactionsService {
     const safeLimit = Math.min(100000, Math.max(1, limit));
 
     const queryBuilder = this.transactionsRepository
-      .createQueryBuilder('transaction')
-      .leftJoinAndSelect('transaction.account', 'account')
-      .leftJoinAndSelect('transaction.payee', 'payee')
-      .leftJoinAndSelect('transaction.category', 'category')
-      .leftJoinAndSelect('transaction.splits', 'splits')
-      .leftJoinAndSelect('splits.category', 'splitCategory')
-      .leftJoinAndSelect('splits.transferAccount', 'splitTransferAccount')
-      .leftJoinAndSelect('transaction.linkedTransaction', 'linkedTransaction')
-      .leftJoinAndSelect('linkedTransaction.account', 'linkedAccount')
-      .leftJoinAndSelect('linkedTransaction.splits', 'linkedSplits')
-      .leftJoinAndSelect('linkedSplits.category', 'linkedSplitCategory')
-      .leftJoinAndSelect('linkedSplits.transferAccount', 'linkedSplitTransferAccount')
-      .where('transaction.userId = :userId', { userId })
-      .orderBy('transaction.transactionDate', 'DESC')
-      .addOrderBy('transaction.createdAt', 'DESC')
-      .addOrderBy('transaction.id', 'DESC');
+      .createQueryBuilder("transaction")
+      .leftJoinAndSelect("transaction.account", "account")
+      .leftJoinAndSelect("transaction.payee", "payee")
+      .leftJoinAndSelect("transaction.category", "category")
+      .leftJoinAndSelect("transaction.splits", "splits")
+      .leftJoinAndSelect("splits.category", "splitCategory")
+      .leftJoinAndSelect("splits.transferAccount", "splitTransferAccount")
+      .leftJoinAndSelect("transaction.linkedTransaction", "linkedTransaction")
+      .leftJoinAndSelect("linkedTransaction.account", "linkedAccount")
+      .leftJoinAndSelect("linkedTransaction.splits", "linkedSplits")
+      .leftJoinAndSelect("linkedSplits.category", "linkedSplitCategory")
+      .leftJoinAndSelect(
+        "linkedSplits.transferAccount",
+        "linkedSplitTransferAccount",
+      )
+      .where("transaction.userId = :userId", { userId })
+      .orderBy("transaction.transactionDate", "DESC")
+      .addOrderBy("transaction.createdAt", "DESC")
+      .addOrderBy("transaction.id", "DESC");
 
     // Exclude investment brokerage accounts unless explicitly requested
     if (!includeInvestmentBrokerage) {
@@ -350,67 +382,78 @@ export class TransactionsService {
     }
 
     if (accountIds && accountIds.length > 0) {
-      queryBuilder.andWhere('transaction.accountId IN (:...accountIds)', { accountIds });
+      queryBuilder.andWhere("transaction.accountId IN (:...accountIds)", {
+        accountIds,
+      });
     }
 
     if (startDate) {
-      queryBuilder.andWhere('transaction.transactionDate >= :startDate', { startDate });
+      queryBuilder.andWhere("transaction.transactionDate >= :startDate", {
+        startDate,
+      });
     }
 
     if (endDate) {
-      queryBuilder.andWhere('transaction.transactionDate <= :endDate', { endDate });
+      queryBuilder.andWhere("transaction.transactionDate <= :endDate", {
+        endDate,
+      });
     }
 
     if (categoryIds && categoryIds.length > 0) {
       // Check for special category filters
-      const hasUncategorized = categoryIds.includes('uncategorized');
-      const hasTransfer = categoryIds.includes('transfer');
+      const hasUncategorized = categoryIds.includes("uncategorized");
+      const hasTransfer = categoryIds.includes("transfer");
       const regularCategoryIds = categoryIds.filter(
-        (id) => id !== 'uncategorized' && id !== 'transfer',
+        (id) => id !== "uncategorized" && id !== "transfer",
       );
 
       const conditions: string[] = [];
 
       if (hasUncategorized) {
         conditions.push(
-          '(transaction.categoryId IS NULL AND transaction.isSplit = false AND transaction.isTransfer = false AND account.accountType != \'INVESTMENT\')',
+          "(transaction.categoryId IS NULL AND transaction.isSplit = false AND transaction.isTransfer = false AND account.accountType != 'INVESTMENT')",
         );
       }
 
       if (hasTransfer) {
-        conditions.push('transaction.isTransfer = true');
+        conditions.push("transaction.isTransfer = true");
       }
 
       if (regularCategoryIds.length > 0) {
         // Get all category IDs including subcategories for each selected category
         const allCategoryIds: string[] = [];
         for (const catId of regularCategoryIds) {
-          const idsWithChildren = await this.getCategoryIdsWithChildren(userId, catId);
+          const idsWithChildren = await this.getCategoryIdsWithChildren(
+            userId,
+            catId,
+          );
           allCategoryIds.push(...idsWithChildren);
         }
         const uniqueCategoryIds = [...new Set(allCategoryIds)];
 
         if (uniqueCategoryIds.length > 0) {
           conditions.push(
-            '(transaction.categoryId IN (:...filterCategoryIds) OR splits.categoryId IN (:...filterCategoryIds))',
+            "(transaction.categoryId IN (:...filterCategoryIds) OR splits.categoryId IN (:...filterCategoryIds))",
           );
-          queryBuilder.setParameter('filterCategoryIds', uniqueCategoryIds);
+          queryBuilder.setParameter("filterCategoryIds", uniqueCategoryIds);
         }
       }
 
       if (conditions.length > 0) {
-        queryBuilder.andWhere(`(${conditions.join(' OR ')})`);
+        queryBuilder.andWhere(`(${conditions.join(" OR ")})`);
       }
     }
 
     if (payeeIds && payeeIds.length > 0) {
-      queryBuilder.andWhere('transaction.payeeId IN (:...payeeIds)', { payeeIds });
+      queryBuilder.andWhere("transaction.payeeId IN (:...payeeIds)", {
+        payeeIds,
+      });
     }
 
     if (search && search.trim()) {
       const searchPattern = `%${search.trim()}%`;
       queryBuilder.andWhere(
-        '(transaction.description ILIKE :search OR transaction.payeeName ILIKE :search OR splits.memo ILIKE :search)',
+        "(transaction.description ILIKE :search OR transaction.payeeName ILIKE :search OR splits.memo ILIKE :search)",
         { search: searchPattern },
       );
     }
@@ -421,17 +464,17 @@ export class TransactionsService {
         // First, get the target transaction's date and createdAt for comparison
         const targetTx = await this.transactionsRepository.findOne({
           where: { id: targetTransactionId, userId },
-          select: ['id', 'transactionDate', 'createdAt'],
+          select: ["id", "transactionDate", "createdAt"],
         });
 
         if (targetTx) {
           // Count how many transactions come before this one in the sorted order
           // Sorted by: transactionDate DESC, createdAt DESC, id DESC
           const countQuery = this.transactionsRepository
-            .createQueryBuilder('t')
-            .leftJoin('t.account', 'a')
-            .leftJoin('t.splits', 's')
-            .where('t.userId = :userId', { userId });
+            .createQueryBuilder("t")
+            .leftJoin("t.account", "a")
+            .leftJoin("t.splits", "s")
+            .where("t.userId = :userId", { userId });
 
           // Apply the same filters as the main query
           if (!includeInvestmentBrokerage) {
@@ -440,21 +483,25 @@ export class TransactionsService {
             );
           }
           if (accountIds && accountIds.length > 0) {
-            countQuery.andWhere('t.accountId IN (:...accountIds)', { accountIds });
+            countQuery.andWhere("t.accountId IN (:...accountIds)", {
+              accountIds,
+            });
           }
           if (startDate) {
-            countQuery.andWhere('t.transactionDate >= :startDate', { startDate });
+            countQuery.andWhere("t.transactionDate >= :startDate", {
+              startDate,
+            });
           }
           if (endDate) {
-            countQuery.andWhere('t.transactionDate <= :endDate', { endDate });
+            countQuery.andWhere("t.transactionDate <= :endDate", { endDate });
           }
           if (payeeIds && payeeIds.length > 0) {
-            countQuery.andWhere('t.payeeId IN (:...payeeIds)', { payeeIds });
+            countQuery.andWhere("t.payeeId IN (:...payeeIds)", { payeeIds });
           }
           if (search && search.trim()) {
             const searchPattern = `%${search.trim()}%`;
             countQuery.andWhere(
-              '(t.description ILIKE :search OR t.payeeName ILIKE :search OR s.memo ILIKE :search)',
+              "(t.description ILIKE :search OR t.payeeName ILIKE :search OR s.memo ILIKE :search)",
               { search: searchPattern },
             );
           }
@@ -481,7 +528,7 @@ export class TransactionsService {
         }
       } catch (error) {
         // If target transaction lookup fails, fall back to the requested page
-        console.error('Failed to find target transaction page:', error);
+        console.error("Failed to find target transaction page:", error);
       }
     }
 
@@ -498,9 +545,13 @@ export class TransactionsService {
     // Calculate starting balance for running balance column when viewing a single account
     // startingBalance = balance AFTER the first (newest) transaction on this page
     let startingBalance: number | undefined;
-    const singleAccountId = accountIds?.length === 1 ? accountIds[0] : undefined;
+    const singleAccountId =
+      accountIds?.length === 1 ? accountIds[0] : undefined;
     if (singleAccountId && data.length > 0) {
-      const account = await this.accountsService.findOne(userId, singleAccountId);
+      const account = await this.accountsService.findOne(
+        userId,
+        singleAccountId,
+      );
       const currentBalance = Number(account.currentBalance) || 0;
 
       if (safePage === 1) {
@@ -511,18 +562,18 @@ export class TransactionsService {
         // skip = (page - 1) * limit = number of transactions on previous pages
         // Get the IDs of those transactions, then sum their amounts.
         const previousPagesQuery = this.transactionsRepository
-          .createQueryBuilder('t')
-          .select('t.id')
-          .where('t.userId = :userId', { userId })
-          .andWhere('t.accountId = :singleAccountId', { singleAccountId })
-          .orderBy('t.transactionDate', 'DESC')
-          .addOrderBy('t.createdAt', 'DESC')
-          .addOrderBy('t.id', 'DESC')
+          .createQueryBuilder("t")
+          .select("t.id")
+          .where("t.userId = :userId", { userId })
+          .andWhere("t.accountId = :singleAccountId", { singleAccountId })
+          .orderBy("t.transactionDate", "DESC")
+          .addOrderBy("t.createdAt", "DESC")
+          .addOrderBy("t.id", "DESC")
           .limit(skip);
 
         const sumResult = await this.transactionsRepository
-          .createQueryBuilder('transaction')
-          .select('SUM(transaction.amount)', 'sum')
+          .createQueryBuilder("transaction")
+          .select("SUM(transaction.amount)", "sum")
           .where(`transaction.id IN (${previousPagesQuery.getQuery()})`)
           .setParameters(previousPagesQuery.getParameters())
           .getRawOne();
@@ -535,13 +586,14 @@ export class TransactionsService {
     // Enrich transactions with linked investment transaction IDs
     // This allows the frontend to know if a transaction is linked to an investment transaction
     const transactionIds = data.map((tx) => tx.id);
-    let investmentLinkMap = new Map<string, string>();
+    const investmentLinkMap = new Map<string, string>();
 
     if (transactionIds.length > 0) {
-      const linkedInvestmentTxs = await this.investmentTransactionsRepository.find({
-        where: { transactionId: In(transactionIds) },
-        select: ['id', 'transactionId'],
-      });
+      const linkedInvestmentTxs =
+        await this.investmentTransactionsRepository.find({
+          where: { transactionId: In(transactionIds) },
+          select: ["id", "transactionId"],
+        });
 
       for (const invTx of linkedInvestmentTxs) {
         if (invTx.transactionId) {
@@ -579,7 +631,16 @@ export class TransactionsService {
   async findOne(userId: string, id: string): Promise<Transaction> {
     const transaction = await this.transactionsRepository.findOne({
       where: { id },
-      relations: ['account', 'payee', 'category', 'splits', 'splits.category', 'splits.transferAccount', 'linkedTransaction', 'linkedTransaction.account'],
+      relations: [
+        "account",
+        "payee",
+        "category",
+        "splits",
+        "splits.category",
+        "splits.transferAccount",
+        "linkedTransaction",
+        "linkedTransaction.account",
+      ],
     });
 
     if (!transaction) {
@@ -587,7 +648,9 @@ export class TransactionsService {
     }
 
     if (transaction.userId !== userId) {
-      throw new ForbiddenException('You do not have access to this transaction');
+      throw new ForbiddenException(
+        "You do not have access to this transaction",
+      );
     }
 
     return transaction;
@@ -628,7 +691,8 @@ export class TransactionsService {
         await this.splitsRepository.delete({ transactionId: id });
 
         const accountId = updateData.accountId ?? transaction.accountId;
-        const txDate = updateData.transactionDate ?? transaction.transactionDate;
+        const txDate =
+          updateData.transactionDate ?? transaction.transactionDate;
         await this.createSplits(
           id,
           splits,
@@ -651,18 +715,31 @@ export class TransactionsService {
     // Build the update object, only including fields that were provided
     const transactionUpdateData: Partial<Transaction> = {};
 
-    if ('accountId' in updateData) transactionUpdateData.accountId = updateData.accountId;
-    if ('transactionDate' in updateData) transactionUpdateData.transactionDate = updateData.transactionDate as any;
-    if ('payeeId' in updateData) transactionUpdateData.payeeId = updateData.payeeId ?? null;
-    if ('payeeName' in updateData) transactionUpdateData.payeeName = updateData.payeeName ?? null;
-    if ('categoryId' in updateData) transactionUpdateData.categoryId = updateData.categoryId ?? null;
-    if ('amount' in updateData) transactionUpdateData.amount = updateData.amount;
-    if ('currencyCode' in updateData) transactionUpdateData.currencyCode = updateData.currencyCode;
-    if ('exchangeRate' in updateData) transactionUpdateData.exchangeRate = updateData.exchangeRate;
-    if ('description' in updateData) transactionUpdateData.description = updateData.description ?? null;
-    if ('referenceNumber' in updateData) transactionUpdateData.referenceNumber = updateData.referenceNumber ?? null;
-    if ('status' in updateData) transactionUpdateData.status = updateData.status;
-    if ('reconciledDate' in updateData) transactionUpdateData.reconciledDate = updateData.reconciledDate as any;
+    if ("accountId" in updateData)
+      transactionUpdateData.accountId = updateData.accountId;
+    if ("transactionDate" in updateData)
+      transactionUpdateData.transactionDate = updateData.transactionDate as any;
+    if ("payeeId" in updateData)
+      transactionUpdateData.payeeId = updateData.payeeId ?? null;
+    if ("payeeName" in updateData)
+      transactionUpdateData.payeeName = updateData.payeeName ?? null;
+    if ("categoryId" in updateData)
+      transactionUpdateData.categoryId = updateData.categoryId ?? null;
+    if ("amount" in updateData)
+      transactionUpdateData.amount = updateData.amount;
+    if ("currencyCode" in updateData)
+      transactionUpdateData.currencyCode = updateData.currencyCode;
+    if ("exchangeRate" in updateData)
+      transactionUpdateData.exchangeRate = updateData.exchangeRate;
+    if ("description" in updateData)
+      transactionUpdateData.description = updateData.description ?? null;
+    if ("referenceNumber" in updateData)
+      transactionUpdateData.referenceNumber =
+        updateData.referenceNumber ?? null;
+    if ("status" in updateData)
+      transactionUpdateData.status = updateData.status;
+    if ("reconciledDate" in updateData)
+      transactionUpdateData.reconciledDate = updateData.reconciledDate as any;
 
     // If we have splits, ensure categoryId is null on parent
     if (splits && splits.length > 0) {
@@ -789,7 +866,11 @@ export class TransactionsService {
   /**
    * Update transaction status
    */
-  async updateStatus(userId: string, id: string, status: TransactionStatus): Promise<Transaction> {
+  async updateStatus(
+    userId: string,
+    id: string,
+    status: TransactionStatus,
+  ): Promise<Transaction> {
     const transaction = await this.findOne(userId, id);
     const oldStatus = transaction.status;
     const wasVoid = oldStatus === TransactionStatus.VOID;
@@ -798,10 +879,16 @@ export class TransactionsService {
     // Handle balance changes when transitioning to/from VOID
     if (wasVoid && !isVoid) {
       // Was VOID, now not VOID - add the amount
-      await this.accountsService.updateBalance(transaction.accountId, Number(transaction.amount));
+      await this.accountsService.updateBalance(
+        transaction.accountId,
+        Number(transaction.amount),
+      );
     } else if (!wasVoid && isVoid) {
       // Was not VOID, now VOID - remove the amount
-      await this.accountsService.updateBalance(transaction.accountId, -Number(transaction.amount));
+      await this.accountsService.updateBalance(
+        transaction.accountId,
+        -Number(transaction.amount),
+      );
     }
 
     // Update the status
@@ -812,9 +899,12 @@ export class TransactionsService {
     }
 
     // Set reconciled date when marking as reconciled
-    if (status === TransactionStatus.RECONCILED && oldStatus !== TransactionStatus.RECONCILED) {
+    if (
+      status === TransactionStatus.RECONCILED &&
+      oldStatus !== TransactionStatus.RECONCILED
+    ) {
       const now = new Date();
-      const reconciledDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      const reconciledDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
       await this.transactionsRepository.update(id, { reconciledDate });
     }
 
@@ -824,15 +914,26 @@ export class TransactionsService {
   /**
    * Mark transaction as cleared (legacy method - uses status)
    */
-  async markCleared(userId: string, id: string, isCleared: boolean): Promise<Transaction> {
+  async markCleared(
+    userId: string,
+    id: string,
+    isCleared: boolean,
+  ): Promise<Transaction> {
     const transaction = await this.findOne(userId, id);
 
     // Don't change if already reconciled or void
-    if (transaction.status === TransactionStatus.RECONCILED || transaction.status === TransactionStatus.VOID) {
-      throw new BadRequestException('Cannot change cleared status of reconciled or void transactions');
+    if (
+      transaction.status === TransactionStatus.RECONCILED ||
+      transaction.status === TransactionStatus.VOID
+    ) {
+      throw new BadRequestException(
+        "Cannot change cleared status of reconciled or void transactions",
+      );
     }
 
-    const newStatus = isCleared ? TransactionStatus.CLEARED : TransactionStatus.UNRECONCILED;
+    const newStatus = isCleared
+      ? TransactionStatus.CLEARED
+      : TransactionStatus.UNRECONCILED;
     return this.updateStatus(userId, id, newStatus);
   }
 
@@ -843,11 +944,11 @@ export class TransactionsService {
     const transaction = await this.findOne(userId, id);
 
     if (transaction.status === TransactionStatus.RECONCILED) {
-      throw new BadRequestException('Transaction is already reconciled');
+      throw new BadRequestException("Transaction is already reconciled");
     }
 
     if (transaction.status === TransactionStatus.VOID) {
-      throw new BadRequestException('Cannot reconcile a void transaction');
+      throw new BadRequestException("Cannot reconcile a void transaction");
     }
 
     return this.updateStatus(userId, id, TransactionStatus.RECONCILED);
@@ -860,7 +961,7 @@ export class TransactionsService {
     const transaction = await this.findOne(userId, id);
 
     if (transaction.status !== TransactionStatus.RECONCILED) {
-      throw new BadRequestException('Transaction is not reconciled');
+      throw new BadRequestException("Transaction is not reconciled");
     }
 
     await this.transactionsRepository.update(id, {
@@ -892,29 +993,33 @@ export class TransactionsService {
     // Get all unreconciled/cleared transactions up to statement date (exclude VOID and RECONCILED)
     // Filter out split child transactions to avoid double-counting
     const transactions = await this.transactionsRepository
-      .createQueryBuilder('transaction')
-      .leftJoinAndSelect('transaction.payee', 'payee')
-      .leftJoinAndSelect('transaction.category', 'category')
-      .where('transaction.userId = :userId', { userId })
-      .andWhere('transaction.accountId = :accountId', { accountId })
-      .andWhere('transaction.parentTransactionId IS NULL')
-      .andWhere('transaction.status IN (:...statuses)', {
+      .createQueryBuilder("transaction")
+      .leftJoinAndSelect("transaction.payee", "payee")
+      .leftJoinAndSelect("transaction.category", "category")
+      .where("transaction.userId = :userId", { userId })
+      .andWhere("transaction.accountId = :accountId", { accountId })
+      .andWhere("transaction.parentTransactionId IS NULL")
+      .andWhere("transaction.status IN (:...statuses)", {
         statuses: [TransactionStatus.UNRECONCILED, TransactionStatus.CLEARED],
       })
-      .andWhere('transaction.transactionDate <= :statementDate', { statementDate })
-      .orderBy('transaction.transactionDate', 'ASC')
-      .addOrderBy('transaction.createdAt', 'ASC')
+      .andWhere("transaction.transactionDate <= :statementDate", {
+        statementDate,
+      })
+      .orderBy("transaction.transactionDate", "ASC")
+      .addOrderBy("transaction.createdAt", "ASC")
       .getMany();
 
     // Calculate reconciled balance (sum of all reconciled transactions + opening balance)
     // Exclude split child transactions to avoid double-counting
     const reconciledResult = await this.transactionsRepository
-      .createQueryBuilder('transaction')
-      .select('SUM(transaction.amount)', 'sum')
-      .where('transaction.userId = :userId', { userId })
-      .andWhere('transaction.accountId = :accountId', { accountId })
-      .andWhere('transaction.parentTransactionId IS NULL')
-      .andWhere('transaction.status = :status', { status: TransactionStatus.RECONCILED })
+      .createQueryBuilder("transaction")
+      .select("SUM(transaction.amount)", "sum")
+      .where("transaction.userId = :userId", { userId })
+      .andWhere("transaction.accountId = :accountId", { accountId })
+      .andWhere("transaction.parentTransactionId IS NULL")
+      .andWhere("transaction.status = :status", {
+        status: TransactionStatus.RECONCILED,
+      })
       .getRawOne();
 
     const reconciledSum = Number(reconciledResult?.sum) || 0;
@@ -923,13 +1028,17 @@ export class TransactionsService {
     // Calculate cleared balance (reconciled + cleared but not reconciled)
     // Exclude split child transactions to avoid double-counting
     const clearedResult = await this.transactionsRepository
-      .createQueryBuilder('transaction')
-      .select('SUM(transaction.amount)', 'sum')
-      .where('transaction.userId = :userId', { userId })
-      .andWhere('transaction.accountId = :accountId', { accountId })
-      .andWhere('transaction.parentTransactionId IS NULL')
-      .andWhere('transaction.status = :status', { status: TransactionStatus.CLEARED })
-      .andWhere('transaction.transactionDate <= :statementDate', { statementDate })
+      .createQueryBuilder("transaction")
+      .select("SUM(transaction.amount)", "sum")
+      .where("transaction.userId = :userId", { userId })
+      .andWhere("transaction.accountId = :accountId", { accountId })
+      .andWhere("transaction.parentTransactionId IS NULL")
+      .andWhere("transaction.status = :status", {
+        status: TransactionStatus.CLEARED,
+      })
+      .andWhere("transaction.transactionDate <= :statementDate", {
+        statementDate,
+      })
       .getRawOne();
 
     const clearedSum = Number(clearedResult?.sum) || 0;
@@ -965,15 +1074,15 @@ export class TransactionsService {
 
     // Verify all transactions belong to the user and account
     const transactions = await this.transactionsRepository
-      .createQueryBuilder('transaction')
-      .where('transaction.id IN (:...ids)', { ids: transactionIds })
-      .andWhere('transaction.userId = :userId', { userId })
-      .andWhere('transaction.accountId = :accountId', { accountId })
+      .createQueryBuilder("transaction")
+      .where("transaction.id IN (:...ids)", { ids: transactionIds })
+      .andWhere("transaction.userId = :userId", { userId })
+      .andWhere("transaction.accountId = :accountId", { accountId })
       .getMany();
 
     if (transactions.length !== transactionIds.length) {
       throw new BadRequestException(
-        'Some transactions were not found or do not belong to the specified account',
+        "Some transactions were not found or do not belong to the specified account",
       );
     }
 
@@ -985,8 +1094,8 @@ export class TransactionsService {
         status: TransactionStatus.RECONCILED,
         reconciledDate: reconciledDate,
       })
-      .where('id IN (:...ids)', { ids: transactionIds })
-      .andWhere('userId = :userId', { userId })
+      .where("id IN (:...ids)", { ids: transactionIds })
+      .andWhere("userId = :userId", { userId })
       .execute();
 
     return { reconciled: transactions.length };
@@ -1008,97 +1117,130 @@ export class TransactionsService {
     totalExpenses: number;
     netCashFlow: number;
     transactionCount: number;
-    byCurrency: Record<string, { totalIncome: number; totalExpenses: number; netCashFlow: number; transactionCount: number }>;
+    byCurrency: Record<
+      string,
+      {
+        totalIncome: number;
+        totalExpenses: number;
+        netCashFlow: number;
+        transactionCount: number;
+      }
+    >;
   }> {
     const queryBuilder = this.transactionsRepository
-      .createQueryBuilder('transaction')
-      .select('transaction.currencyCode', 'currencyCode')
-      .addSelect('SUM(CASE WHEN transaction.amount > 0 THEN transaction.amount ELSE 0 END)', 'totalIncome')
-      .addSelect('SUM(CASE WHEN transaction.amount < 0 THEN ABS(transaction.amount) ELSE 0 END)', 'totalExpenses')
-      .addSelect('COUNT(*)', 'transactionCount')
-      .where('transaction.userId = :userId', { userId });
+      .createQueryBuilder("transaction")
+      .select("transaction.currencyCode", "currencyCode")
+      .addSelect(
+        "SUM(CASE WHEN transaction.amount > 0 THEN transaction.amount ELSE 0 END)",
+        "totalIncome",
+      )
+      .addSelect(
+        "SUM(CASE WHEN transaction.amount < 0 THEN ABS(transaction.amount) ELSE 0 END)",
+        "totalExpenses",
+      )
+      .addSelect("COUNT(*)", "transactionCount")
+      .where("transaction.userId = :userId", { userId });
 
     if (accountIds && accountIds.length > 0) {
-      queryBuilder.andWhere('transaction.accountId IN (:...accountIds)', { accountIds });
+      queryBuilder.andWhere("transaction.accountId IN (:...accountIds)", {
+        accountIds,
+      });
     }
 
     if (startDate) {
-      queryBuilder.andWhere('transaction.transactionDate >= :startDate', { startDate });
+      queryBuilder.andWhere("transaction.transactionDate >= :startDate", {
+        startDate,
+      });
     }
 
     if (endDate) {
-      queryBuilder.andWhere('transaction.transactionDate <= :endDate', { endDate });
+      queryBuilder.andWhere("transaction.transactionDate <= :endDate", {
+        endDate,
+      });
     }
 
     if (categoryIds && categoryIds.length > 0) {
       // Check for special category filters
-      const hasUncategorized = categoryIds.includes('uncategorized');
-      const hasTransfer = categoryIds.includes('transfer');
+      const hasUncategorized = categoryIds.includes("uncategorized");
+      const hasTransfer = categoryIds.includes("transfer");
       const regularCategoryIds = categoryIds.filter(
-        (id) => id !== 'uncategorized' && id !== 'transfer',
+        (id) => id !== "uncategorized" && id !== "transfer",
       );
 
       const conditions: string[] = [];
 
       if (hasUncategorized) {
-        queryBuilder.leftJoin('transaction.account', 'summaryAccount');
+        queryBuilder.leftJoin("transaction.account", "summaryAccount");
         conditions.push(
-          '(transaction.categoryId IS NULL AND transaction.isSplit = false AND transaction.isTransfer = false AND summaryAccount.accountType != \'INVESTMENT\')',
+          "(transaction.categoryId IS NULL AND transaction.isSplit = false AND transaction.isTransfer = false AND summaryAccount.accountType != 'INVESTMENT')",
         );
       }
 
       if (hasTransfer) {
-        conditions.push('transaction.isTransfer = true');
+        conditions.push("transaction.isTransfer = true");
       }
 
       if (regularCategoryIds.length > 0) {
         // Get all category IDs including subcategories for each selected category
         const allCategoryIds: string[] = [];
         for (const catId of regularCategoryIds) {
-          const idsWithChildren = await this.getCategoryIdsWithChildren(userId, catId);
+          const idsWithChildren = await this.getCategoryIdsWithChildren(
+            userId,
+            catId,
+          );
           allCategoryIds.push(...idsWithChildren);
         }
         const uniqueCategoryIds = [...new Set(allCategoryIds)];
 
         if (uniqueCategoryIds.length > 0) {
           // Need to join splits to match split transactions with this category
-          queryBuilder.leftJoin('transaction.splits', 'splits');
+          queryBuilder.leftJoin("transaction.splits", "splits");
           conditions.push(
-            '(transaction.categoryId IN (:...summaryCategoryIds) OR splits.categoryId IN (:...summaryCategoryIds))',
+            "(transaction.categoryId IN (:...summaryCategoryIds) OR splits.categoryId IN (:...summaryCategoryIds))",
           );
-          queryBuilder.setParameter('summaryCategoryIds', uniqueCategoryIds);
+          queryBuilder.setParameter("summaryCategoryIds", uniqueCategoryIds);
         }
       }
 
       if (conditions.length > 0) {
-        queryBuilder.andWhere(`(${conditions.join(' OR ')})`);
+        queryBuilder.andWhere(`(${conditions.join(" OR ")})`);
       }
     }
 
     if (payeeIds && payeeIds.length > 0) {
-      queryBuilder.andWhere('transaction.payeeId IN (:...payeeIds)', { payeeIds });
+      queryBuilder.andWhere("transaction.payeeId IN (:...payeeIds)", {
+        payeeIds,
+      });
     }
 
     if (search && search.trim()) {
       const searchPattern = `%${search.trim()}%`;
       // Need to join splits if not already joined for search
       if (!categoryIds || categoryIds.length === 0) {
-        queryBuilder.leftJoin('transaction.splits', 'splits');
+        queryBuilder.leftJoin("transaction.splits", "splits");
       }
       queryBuilder.andWhere(
-        '(transaction.description ILIKE :search OR transaction.payeeName ILIKE :search OR splits.memo ILIKE :search)',
+        "(transaction.description ILIKE :search OR transaction.payeeName ILIKE :search OR splits.memo ILIKE :search)",
         { search: searchPattern },
       );
     }
 
-    queryBuilder.groupBy('transaction.currencyCode');
+    queryBuilder.groupBy("transaction.currencyCode");
 
     const rows = await queryBuilder.getRawMany();
 
     let totalIncome = 0;
     let totalExpenses = 0;
     let transactionCount = 0;
-    const byCurrency: Record<string, { totalIncome: number; totalExpenses: number; netCashFlow: number; transactionCount: number }> = {};
+    const byCurrency: Record<
+      string,
+      {
+        totalIncome: number;
+        totalExpenses: number;
+        netCashFlow: number;
+        transactionCount: number;
+      }
+    > = {};
 
     for (const row of rows) {
       const income = Number(row.totalIncome) || 0;
@@ -1129,14 +1271,17 @@ export class TransactionsService {
   /**
    * Get splits for a transaction
    */
-  async getSplits(userId: string, transactionId: string): Promise<TransactionSplit[]> {
+  async getSplits(
+    userId: string,
+    transactionId: string,
+  ): Promise<TransactionSplit[]> {
     // Verify user has access to the transaction
     await this.findOne(userId, transactionId);
 
     return this.splitsRepository.find({
       where: { transactionId },
-      relations: ['category', 'transferAccount'],
-      order: { createdAt: 'ASC' },
+      relations: ["category", "transferAccount"],
+      order: { createdAt: "ASC" },
     });
   }
 
@@ -1190,18 +1335,22 @@ export class TransactionsService {
 
     // Get existing splits
     const existingSplits = await this.getSplits(userId, transactionId);
-    const existingTotal = existingSplits.reduce((sum, s) => sum + Number(s.amount), 0);
+    const existingTotal = existingSplits.reduce(
+      (sum, s) => sum + Number(s.amount),
+      0,
+    );
     const newTotal = existingTotal + Number(splitDto.amount);
 
     // Check if new split would exceed transaction amount
     const roundedNewTotal = Math.round(newTotal * 10000) / 10000;
-    const roundedTransactionAmount = Math.round(Number(transaction.amount) * 10000) / 10000;
+    const roundedTransactionAmount =
+      Math.round(Number(transaction.amount) * 10000) / 10000;
 
     if (Math.abs(roundedNewTotal) > Math.abs(roundedTransactionAmount)) {
       throw new BadRequestException(
         `Adding this split would exceed the transaction amount. ` +
-        `Current total: ${existingTotal}, New split: ${splitDto.amount}, ` +
-        `Transaction amount: ${transaction.amount}`,
+          `Current total: ${existingTotal}, New split: ${splitDto.amount}, ` +
+          `Transaction amount: ${transaction.amount}`,
       );
     }
 
@@ -1217,8 +1366,14 @@ export class TransactionsService {
 
     // For transfer splits, create linked transaction in target account
     if (splitDto.transferAccountId) {
-      const targetAccount = await this.accountsService.findOne(userId, splitDto.transferAccountId);
-      const sourceAccount = await this.accountsService.findOne(userId, transaction.accountId);
+      const targetAccount = await this.accountsService.findOne(
+        userId,
+        splitDto.transferAccountId,
+      );
+      const sourceAccount = await this.accountsService.findOne(
+        userId,
+        transaction.accountId,
+      );
 
       // Create the linked transaction in the target account (inverse amount)
       const linkedTransaction = this.transactionsRepository.create({
@@ -1230,10 +1385,12 @@ export class TransactionsService {
         exchangeRate: 1,
         description: splitDto.memo || null,
         isTransfer: true,
-        payeeName: transaction.payeeName || `Transfer from ${sourceAccount.name}`,
+        payeeName:
+          transaction.payeeName || `Transfer from ${sourceAccount.name}`,
       });
 
-      const savedLinkedTransaction = await this.transactionsRepository.save(linkedTransaction);
+      const savedLinkedTransaction =
+        await this.transactionsRepository.save(linkedTransaction);
 
       // Update the split with the linked transaction ID
       await this.splitsRepository.update(savedSplit.id, {
@@ -1241,7 +1398,10 @@ export class TransactionsService {
       });
 
       // Update target account balance
-      await this.accountsService.updateBalance(splitDto.transferAccountId, -splitDto.amount);
+      await this.accountsService.updateBalance(
+        splitDto.transferAccountId,
+        -splitDto.amount,
+      );
 
       savedSplit.linkedTransactionId = savedLinkedTransaction.id;
     }
@@ -1257,7 +1417,7 @@ export class TransactionsService {
 
     const splitWithRelations = await this.splitsRepository.findOne({
       where: { id: savedSplit.id },
-      relations: ['category', 'transferAccount'],
+      relations: ["category", "transferAccount"],
     });
 
     if (!splitWithRelations) {
@@ -1368,22 +1528,28 @@ export class TransactionsService {
 
     // Validate that accounts are different
     if (fromAccountId === toAccountId) {
-      throw new BadRequestException('Source and destination accounts must be different');
+      throw new BadRequestException(
+        "Source and destination accounts must be different",
+      );
     }
 
     // Validate amount is positive
     if (amount <= 0) {
-      throw new BadRequestException('Transfer amount must be positive');
+      throw new BadRequestException("Transfer amount must be positive");
     }
 
     // Verify both accounts belong to user
-    const fromAccount = await this.accountsService.findOne(userId, fromAccountId);
+    const fromAccount = await this.accountsService.findOne(
+      userId,
+      fromAccountId,
+    );
     const toAccount = await this.accountsService.findOne(userId, toAccountId);
 
     // Use explicit toAmount if provided (for cross-currency transfers), otherwise calculate from exchange rate
-    const toAmount = explicitToAmount !== undefined
-      ? Math.round(explicitToAmount * 10000) / 10000
-      : Math.round(amount * exchangeRate * 10000) / 10000;
+    const toAmount =
+      explicitToAmount !== undefined
+        ? Math.round(explicitToAmount * 10000) / 10000
+        : Math.round(amount * exchangeRate * 10000) / 10000;
     const destinationCurrency = toCurrencyCode || fromCurrencyCode;
 
     // Payee name: use custom name if provided, otherwise default to transfer description
@@ -1423,8 +1589,10 @@ export class TransactionsService {
     });
 
     // Save both transactions
-    const savedFromTransaction = await this.transactionsRepository.save(fromTransaction);
-    const savedToTransaction = await this.transactionsRepository.save(toTransaction);
+    const savedFromTransaction =
+      await this.transactionsRepository.save(fromTransaction);
+    const savedToTransaction =
+      await this.transactionsRepository.save(toTransaction);
 
     // Link the transactions to each other
     await this.transactionsRepository.update(savedFromTransaction.id, {
@@ -1451,7 +1619,10 @@ export class TransactionsService {
   /**
    * Get the linked transfer transaction
    */
-  async getLinkedTransaction(userId: string, transactionId: string): Promise<Transaction | null> {
+  async getLinkedTransaction(
+    userId: string,
+    transactionId: string,
+  ): Promise<Transaction | null> {
     const transaction = await this.findOne(userId, transactionId);
 
     if (!transaction.isTransfer || !transaction.linkedTransactionId) {
@@ -1460,7 +1631,7 @@ export class TransactionsService {
 
     try {
       return await this.findOne(userId, transaction.linkedTransactionId);
-    } catch (error) {
+    } catch {
       // Linked transaction not found or not accessible
       return null;
     }
@@ -1473,7 +1644,7 @@ export class TransactionsService {
     const transaction = await this.findOne(userId, transactionId);
 
     if (!transaction.isTransfer) {
-      throw new BadRequestException('Transaction is not a transfer');
+      throw new BadRequestException("Transaction is not a transfer");
     }
 
     // Check if this transaction is a linked transaction from a split
@@ -1497,7 +1668,10 @@ export class TransactionsService {
 
         // Clean up all linked transactions from other transfer splits
         for (const split of allSplits) {
-          if (split.linkedTransactionId && split.linkedTransactionId !== transactionId) {
+          if (
+            split.linkedTransactionId &&
+            split.linkedTransactionId !== transactionId
+          ) {
             const linkedTx = await this.transactionsRepository.findOne({
               where: { id: split.linkedTransactionId },
             });
@@ -1573,10 +1747,13 @@ export class TransactionsService {
     const transaction = await this.findOne(userId, transactionId);
 
     if (!transaction.isTransfer || !transaction.linkedTransactionId) {
-      throw new BadRequestException('Transaction is not a transfer');
+      throw new BadRequestException("Transaction is not a transfer");
     }
 
-    const linkedTransaction = await this.findOne(userId, transaction.linkedTransactionId);
+    const linkedTransaction = await this.findOne(
+      userId,
+      transaction.linkedTransactionId,
+    );
 
     // Determine which is the "from" (negative amount) and "to" (positive amount) transaction
     const isFromTransaction = Number(transaction.amount) < 0;
@@ -1593,27 +1770,40 @@ export class TransactionsService {
     const newToAccountId = updateDto.toAccountId ?? oldToAccountId;
 
     if (newFromAccountId === newToAccountId) {
-      throw new BadRequestException('Source and destination accounts must be different');
+      throw new BadRequestException(
+        "Source and destination accounts must be different",
+      );
     }
 
     // Verify new accounts belong to user if they changed
     let newFromAccount = fromTransaction.account;
     let newToAccount = toTransaction.account;
 
-    if (updateDto.fromAccountId && updateDto.fromAccountId !== oldFromAccountId) {
-      newFromAccount = await this.accountsService.findOne(userId, updateDto.fromAccountId);
+    if (
+      updateDto.fromAccountId &&
+      updateDto.fromAccountId !== oldFromAccountId
+    ) {
+      newFromAccount = await this.accountsService.findOne(
+        userId,
+        updateDto.fromAccountId,
+      );
     }
     if (updateDto.toAccountId && updateDto.toAccountId !== oldToAccountId) {
-      newToAccount = await this.accountsService.findOne(userId, updateDto.toAccountId);
+      newToAccount = await this.accountsService.findOne(
+        userId,
+        updateDto.toAccountId,
+      );
     }
 
     // Update values
     const newAmount = updateDto.amount ?? oldFromAmount;
-    const newExchangeRate = updateDto.exchangeRate ?? toTransaction.exchangeRate;
+    const newExchangeRate =
+      updateDto.exchangeRate ?? toTransaction.exchangeRate;
     // Use explicit toAmount if provided, otherwise calculate from exchange rate
-    const newToAmount = updateDto.toAmount !== undefined
-      ? Math.round(updateDto.toAmount * 10000) / 10000
-      : Math.round(newAmount * newExchangeRate * 10000) / 10000;
+    const newToAmount =
+      updateDto.toAmount !== undefined
+        ? Math.round(updateDto.toAmount * 10000) / 10000
+        : Math.round(newAmount * newExchangeRate * 10000) / 10000;
 
     // Check if accounts or amounts changed - need to update balances
     const accountsOrAmountsChanged =
@@ -1631,22 +1821,36 @@ export class TransactionsService {
 
     // Update from transaction
     const fromUpdateData: Partial<Transaction> = {};
-    if (updateDto.transactionDate) fromUpdateData.transactionDate = updateDto.transactionDate as any;
+    if (updateDto.transactionDate)
+      fromUpdateData.transactionDate = updateDto.transactionDate as any;
     if (updateDto.amount !== undefined) fromUpdateData.amount = -newAmount;
-    if (updateDto.description !== undefined) fromUpdateData.description = updateDto.description ?? null;
-    if (updateDto.referenceNumber !== undefined) fromUpdateData.referenceNumber = updateDto.referenceNumber ?? null;
-    if (updateDto.status !== undefined) fromUpdateData.status = updateDto.status;
-    if (updateDto.fromCurrencyCode) fromUpdateData.currencyCode = updateDto.fromCurrencyCode;
-    if (updateDto.payeeId !== undefined) fromUpdateData.payeeId = updateDto.payeeId || null;
-    if (updateDto.payeeName !== undefined) fromUpdateData.payeeName = updateDto.payeeName || null;
+    if (updateDto.description !== undefined)
+      fromUpdateData.description = updateDto.description ?? null;
+    if (updateDto.referenceNumber !== undefined)
+      fromUpdateData.referenceNumber = updateDto.referenceNumber ?? null;
+    if (updateDto.status !== undefined)
+      fromUpdateData.status = updateDto.status;
+    if (updateDto.fromCurrencyCode)
+      fromUpdateData.currencyCode = updateDto.fromCurrencyCode;
+    if (updateDto.payeeId !== undefined)
+      fromUpdateData.payeeId = updateDto.payeeId || null;
+    if (updateDto.payeeName !== undefined)
+      fromUpdateData.payeeName = updateDto.payeeName || null;
 
     // Handle account change for from transaction
-    if (updateDto.fromAccountId && updateDto.fromAccountId !== oldFromAccountId) {
+    if (
+      updateDto.fromAccountId &&
+      updateDto.fromAccountId !== oldFromAccountId
+    ) {
       fromUpdateData.accountId = updateDto.fromAccountId;
     }
 
     // Update payeeName if toAccount changed (only if no custom payee provided)
-    if (updateDto.toAccountId && updateDto.toAccountId !== oldToAccountId && updateDto.payeeName === undefined) {
+    if (
+      updateDto.toAccountId &&
+      updateDto.toAccountId !== oldToAccountId &&
+      updateDto.payeeName === undefined
+    ) {
       fromUpdateData.payeeName = `Transfer to ${newToAccount.name}`;
       if (updateDto.description === undefined) {
         fromUpdateData.description = `Transfer to ${newToAccount.name}`;
@@ -1654,20 +1858,35 @@ export class TransactionsService {
     }
 
     if (Object.keys(fromUpdateData).length > 0) {
-      await this.transactionsRepository.update(fromTransaction.id, fromUpdateData);
+      await this.transactionsRepository.update(
+        fromTransaction.id,
+        fromUpdateData,
+      );
     }
 
     // Update to transaction
     const toUpdateData: Partial<Transaction> = {};
-    if (updateDto.transactionDate) toUpdateData.transactionDate = updateDto.transactionDate as any;
-    if (updateDto.amount !== undefined || updateDto.exchangeRate !== undefined || updateDto.toAmount !== undefined) toUpdateData.amount = newToAmount;
-    if (updateDto.description !== undefined) toUpdateData.description = updateDto.description ?? null;
-    if (updateDto.referenceNumber !== undefined) toUpdateData.referenceNumber = updateDto.referenceNumber ?? null;
+    if (updateDto.transactionDate)
+      toUpdateData.transactionDate = updateDto.transactionDate as any;
+    if (
+      updateDto.amount !== undefined ||
+      updateDto.exchangeRate !== undefined ||
+      updateDto.toAmount !== undefined
+    )
+      toUpdateData.amount = newToAmount;
+    if (updateDto.description !== undefined)
+      toUpdateData.description = updateDto.description ?? null;
+    if (updateDto.referenceNumber !== undefined)
+      toUpdateData.referenceNumber = updateDto.referenceNumber ?? null;
     if (updateDto.status !== undefined) toUpdateData.status = updateDto.status;
-    if (updateDto.toCurrencyCode) toUpdateData.currencyCode = updateDto.toCurrencyCode;
-    if (updateDto.exchangeRate) toUpdateData.exchangeRate = updateDto.exchangeRate;
-    if (updateDto.payeeId !== undefined) toUpdateData.payeeId = updateDto.payeeId || null;
-    if (updateDto.payeeName !== undefined) toUpdateData.payeeName = updateDto.payeeName || null;
+    if (updateDto.toCurrencyCode)
+      toUpdateData.currencyCode = updateDto.toCurrencyCode;
+    if (updateDto.exchangeRate)
+      toUpdateData.exchangeRate = updateDto.exchangeRate;
+    if (updateDto.payeeId !== undefined)
+      toUpdateData.payeeId = updateDto.payeeId || null;
+    if (updateDto.payeeName !== undefined)
+      toUpdateData.payeeName = updateDto.payeeName || null;
 
     // Handle account change for to transaction
     if (updateDto.toAccountId && updateDto.toAccountId !== oldToAccountId) {
@@ -1675,7 +1894,11 @@ export class TransactionsService {
     }
 
     // Update payeeName if fromAccount changed (only if no custom payee provided)
-    if (updateDto.fromAccountId && updateDto.fromAccountId !== oldFromAccountId && updateDto.payeeName === undefined) {
+    if (
+      updateDto.fromAccountId &&
+      updateDto.fromAccountId !== oldFromAccountId &&
+      updateDto.payeeName === undefined
+    ) {
       toUpdateData.payeeName = `Transfer from ${newFromAccount.name}`;
       if (updateDto.description === undefined) {
         toUpdateData.description = `Transfer from ${newFromAccount.name}`;
@@ -1693,7 +1916,12 @@ export class TransactionsService {
     }
 
     // Trigger net worth recalc for all affected accounts
-    const affectedAccounts = new Set([oldFromAccountId, oldToAccountId, newFromAccountId, newToAccountId]);
+    const affectedAccounts = new Set([
+      oldFromAccountId,
+      oldToAccountId,
+      newFromAccountId,
+      newToAccountId,
+    ]);
     for (const accId of affectedAccounts) {
       this.triggerNetWorthRecalc(accId, userId);
     }

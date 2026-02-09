@@ -1,23 +1,34 @@
-import { Injectable, BadRequestException, Logger, Inject, forwardRef } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, IsNull } from 'typeorm';
-import { NetWorthService } from '../net-worth/net-worth.service';
-import { SecurityPriceService } from '../securities/security-price.service';
-import { ExchangeRateService } from '../currencies/exchange-rate.service';
-import { Transaction, TransactionStatus } from '../transactions/entities/transaction.entity';
-import { TransactionSplit } from '../transactions/entities/transaction-split.entity';
-import { Account, AccountType, AccountSubType } from '../accounts/entities/account.entity';
-import { Category } from '../categories/entities/category.entity';
-import { Payee } from '../payees/entities/payee.entity';
-import { Security } from '../securities/entities/security.entity';
-import { InvestmentTransaction, InvestmentAction } from '../securities/entities/investment-transaction.entity';
-import { Holding } from '../securities/entities/holding.entity';
 import {
-  parseQif,
-  validateQifContent,
-  QifParseResult,
-  QifTransaction,
-} from './qif-parser';
+  Injectable,
+  BadRequestException,
+  Logger,
+  Inject,
+  forwardRef,
+} from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository, DataSource, IsNull } from "typeorm";
+import { NetWorthService } from "../net-worth/net-worth.service";
+import { SecurityPriceService } from "../securities/security-price.service";
+import { ExchangeRateService } from "../currencies/exchange-rate.service";
+import {
+  Transaction,
+  TransactionStatus,
+} from "../transactions/entities/transaction.entity";
+import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
+import {
+  Account,
+  AccountType,
+  AccountSubType,
+} from "../accounts/entities/account.entity";
+import { Category } from "../categories/entities/category.entity";
+import { Payee } from "../payees/entities/payee.entity";
+import { Security } from "../securities/entities/security.entity";
+import {
+  InvestmentTransaction,
+  InvestmentAction,
+} from "../securities/entities/investment-transaction.entity";
+import { Holding } from "../securities/entities/holding.entity";
+import { parseQif, validateQifContent } from "./qif-parser";
 import {
   ImportQifDto,
   ParsedQifResponseDto,
@@ -25,7 +36,7 @@ import {
   CategoryMappingDto,
   AccountMappingDto,
   SecurityMappingDto,
-} from './dto/import.dto';
+} from "./dto/import.dto";
 
 /**
  * Map stock exchanges to their primary currency.
@@ -33,41 +44,43 @@ import {
  */
 const EXCHANGE_CURRENCY_MAP: Record<string, string> = {
   // US exchanges
-  NYSE: 'USD',
-  NASDAQ: 'USD',
-  AMEX: 'USD',
-  NYSEARCA: 'USD',
-  BATS: 'USD',
+  NYSE: "USD",
+  NASDAQ: "USD",
+  AMEX: "USD",
+  NYSEARCA: "USD",
+  BATS: "USD",
   // Canadian exchanges
-  TSX: 'CAD',
-  'TSX-V': 'CAD',
-  TSXV: 'CAD',
-  NEO: 'CAD',
-  CSE: 'CAD',
+  TSX: "CAD",
+  "TSX-V": "CAD",
+  TSXV: "CAD",
+  NEO: "CAD",
+  CSE: "CAD",
   // UK exchanges
-  LSE: 'GBP',
-  LON: 'GBP',
+  LSE: "GBP",
+  LON: "GBP",
   // European exchanges
-  XETRA: 'EUR',
-  FRA: 'EUR',
-  EPA: 'EUR',
-  AMS: 'EUR',
+  XETRA: "EUR",
+  FRA: "EUR",
+  EPA: "EUR",
+  AMS: "EUR",
   // Asian exchanges
-  TYO: 'JPY',
-  HKG: 'HKD',
-  SHA: 'CNY',
-  SHE: 'CNY',
+  TYO: "JPY",
+  HKG: "HKD",
+  SHA: "CNY",
+  SHE: "CNY",
   // Australian exchanges
-  ASX: 'AUD',
+  ASX: "AUD",
 };
 
 /**
  * Get currency code from exchange name.
  * Returns the mapped currency or null if exchange is unknown.
  */
-function getCurrencyFromExchange(exchange: string | null | undefined): string | null {
+function getCurrencyFromExchange(
+  exchange: string | null | undefined,
+): string | null {
   if (!exchange) return null;
-  const normalized = exchange.toUpperCase().replace(/[^A-Z0-9-]/g, '');
+  const normalized = exchange.toUpperCase().replace(/[^A-Z0-9-]/g, "");
   return EXCHANGE_CURRENCY_MAP[normalized] || null;
 }
 
@@ -117,14 +130,18 @@ export class ImportService {
       // Handle null/undefined currentBalance (treat as 0)
       const currentBalance = Number(account.currentBalance) || 0;
       // Round to 2 decimal places to avoid floating-point precision errors
-      const newBalance = Math.round((currentBalance + Number(amount)) * 100) / 100;
+      const newBalance =
+        Math.round((currentBalance + Number(amount)) * 100) / 100;
       await queryRunner.manager.update(Account, accountId, {
         currentBalance: newBalance,
       });
     }
   }
 
-  async parseQifFile(userId: string, content: string): Promise<ParsedQifResponseDto> {
+  async parseQifFile(
+    userId: string,
+    content: string,
+  ): Promise<ParsedQifResponseDto> {
     const validation = validateQifContent(content);
     if (!validation.valid) {
       throw new BadRequestException(validation.error);
@@ -133,15 +150,15 @@ export class ImportService {
     const result = parseQif(content);
 
     // Calculate date range
-    let startDate = '';
-    let endDate = '';
+    let startDate = "";
+    let endDate = "";
     if (result.transactions.length > 0) {
       const dates = result.transactions
         .map((t) => t.date)
         .filter((d) => d)
         .sort();
-      startDate = dates[0] || '';
-      endDate = dates[dates.length - 1] || '';
+      startDate = dates[0] || "";
+      endDate = dates[dates.length - 1] || "";
     }
 
     return {
@@ -161,7 +178,10 @@ export class ImportService {
     };
   }
 
-  async importQifFile(userId: string, dto: ImportQifDto): Promise<ImportResultDto> {
+  async importQifFile(
+    userId: string,
+    dto: ImportQifDto,
+  ): Promise<ImportResultDto> {
     const validation = validateQifContent(dto.content);
     if (!validation.valid) {
       throw new BadRequestException(validation.error);
@@ -172,7 +192,7 @@ export class ImportService {
       where: { id: dto.accountId, userId },
     });
     if (!account) {
-      throw new BadRequestException('Account not found');
+      throw new BadRequestException("Account not found");
     }
 
     const result = parseQif(dto.content, dto.dateFormat as any);
@@ -180,20 +200,21 @@ export class ImportService {
     // Validate QIF type matches destination account type
     // Investment QIF files should only go to brokerage accounts
     // Regular QIF files should not go to brokerage accounts, but CAN go to investment cash accounts
-    const isQifInvestment = result.accountType === 'INVESTMENT';
-    const isAccountBrokerage = account.accountSubType === AccountSubType.INVESTMENT_BROKERAGE;
+    const isQifInvestment = result.accountType === "INVESTMENT";
+    const isAccountBrokerage =
+      account.accountSubType === AccountSubType.INVESTMENT_BROKERAGE;
 
     if (isQifInvestment && !isAccountBrokerage) {
       throw new BadRequestException(
-        'This QIF file contains investment transactions but the selected account is not an investment brokerage account. ' +
-        'Please select a brokerage account for this import.',
+        "This QIF file contains investment transactions but the selected account is not an investment brokerage account. " +
+          "Please select a brokerage account for this import.",
       );
     }
 
     if (!isQifInvestment && isAccountBrokerage) {
       throw new BadRequestException(
-        'This QIF file contains regular banking transactions but the selected account is an investment brokerage account. ' +
-        'Please select a cash account (including investment cash accounts) for this import.',
+        "This QIF file contains regular banking transactions but the selected account is an investment brokerage account. " +
+          "Please select a cash account (including investment cash accounts) for this import.",
       );
     }
 
@@ -252,27 +273,46 @@ export class ImportService {
     }
 
     // Validate that all mapped entity IDs belong to the authenticated user
-    const mappedAccountIds = [...accountMap.values(), ...Array.from(loanCategoryMap.values())].filter(Boolean) as string[];
+    const mappedAccountIds = [
+      ...accountMap.values(),
+      ...Array.from(loanCategoryMap.values()),
+    ].filter(Boolean) as string[];
     for (const accId of mappedAccountIds) {
-      const acc = await this.accountsRepository.findOne({ where: { id: accId, userId } });
+      const acc = await this.accountsRepository.findOne({
+        where: { id: accId, userId },
+      });
       if (!acc) {
-        throw new BadRequestException(`Account mapping references an invalid account: ${accId}`);
+        throw new BadRequestException(
+          `Account mapping references an invalid account: ${accId}`,
+        );
       }
     }
 
-    const mappedCategoryIds = [...categoryMap.values()].filter(Boolean) as string[];
+    const mappedCategoryIds = [...categoryMap.values()].filter(
+      Boolean,
+    ) as string[];
     for (const catId of mappedCategoryIds) {
-      const cat = await this.dataSource.getRepository('Category').findOne({ where: { id: catId, userId } });
+      const cat = await this.dataSource
+        .getRepository("Category")
+        .findOne({ where: { id: catId, userId } });
       if (!cat) {
-        throw new BadRequestException(`Category mapping references an invalid category: ${catId}`);
+        throw new BadRequestException(
+          `Category mapping references an invalid category: ${catId}`,
+        );
       }
     }
 
-    const mappedSecurityIds = [...securityMap.values()].filter(Boolean) as string[];
+    const mappedSecurityIds = [...securityMap.values()].filter(
+      Boolean,
+    ) as string[];
     for (const secId of mappedSecurityIds) {
-      const sec = await this.dataSource.getRepository('Security').findOne({ where: { id: secId, userId } });
+      const sec = await this.dataSource
+        .getRepository("Security")
+        .findOne({ where: { id: secId, userId } });
       if (!sec) {
-        throw new BadRequestException(`Security mapping references an invalid security: ${secId}`);
+        throw new BadRequestException(
+          `Security mapping references an invalid security: ${secId}`,
+        );
       }
     }
 
@@ -306,11 +346,14 @@ export class ImportService {
       for (const catMapping of categoriesToCreate) {
         const categoryName = catMapping.createNew;
         const parentId = catMapping.parentCategoryId || null;
-        const cacheKey = `${categoryName}|${parentId || 'null'}`;
+        const cacheKey = `${categoryName}|${parentId || "null"}`;
 
         // Check if we already processed this category in this import
         if (processedCategories.has(cacheKey)) {
-          categoryMap.set(catMapping.originalName, processedCategories.get(cacheKey)!);
+          categoryMap.set(
+            catMapping.originalName,
+            processedCategories.get(cacheKey)!,
+          );
           continue;
         }
 
@@ -347,7 +390,7 @@ export class ImportService {
         const newAccount = queryRunner.manager.create(Account, {
           userId,
           name: accMapping.createNew,
-          accountType: (accMapping.accountType as any) || 'CHEQUING',
+          accountType: (accMapping.accountType as any) || "CHEQUING",
           currencyCode: account.currencyCode,
           openingBalance: 0,
           currentBalance: 0,
@@ -419,9 +462,13 @@ export class ImportService {
         // Calculate new current balance by adjusting for the opening balance change
         // currentBalance = openingBalance + sum(transactions)
         // So: new currentBalance = old currentBalance - old openingBalance + new openingBalance
-        const newCurrentBalance = Math.round(
-          (existingCurrentBalance - existingOpeningBalance + newOpeningBalance) * 100,
-        ) / 100;
+        const newCurrentBalance =
+          Math.round(
+            (existingCurrentBalance -
+              existingOpeningBalance +
+              newOpeningBalance) *
+              100,
+          ) / 100;
 
         await queryRunner.manager.update(Account, dto.accountId, {
           openingBalance: newOpeningBalance,
@@ -443,41 +490,49 @@ export class ImportService {
           if (isQifInvestment) {
             // Map QIF action to InvestmentAction enum
             const actionMap: Record<string, InvestmentAction> = {
-              'buy': InvestmentAction.BUY,
-              'sell': InvestmentAction.SELL,
-              'div': InvestmentAction.DIVIDEND,
-              'intinc': InvestmentAction.INTEREST,
-              'cglong': InvestmentAction.CAPITAL_GAIN,
-              'cgshort': InvestmentAction.CAPITAL_GAIN,
-              'stksplit': InvestmentAction.SPLIT,
-              'shrsin': InvestmentAction.TRANSFER_IN,
-              'shrsout': InvestmentAction.TRANSFER_OUT,
-              'reinvdiv': InvestmentAction.REINVEST,
-              'reinvint': InvestmentAction.REINVEST,
-              'reinvlg': InvestmentAction.REINVEST,
-              'reinvsh': InvestmentAction.REINVEST,
+              buy: InvestmentAction.BUY,
+              sell: InvestmentAction.SELL,
+              div: InvestmentAction.DIVIDEND,
+              intinc: InvestmentAction.INTEREST,
+              cglong: InvestmentAction.CAPITAL_GAIN,
+              cgshort: InvestmentAction.CAPITAL_GAIN,
+              stksplit: InvestmentAction.SPLIT,
+              shrsin: InvestmentAction.TRANSFER_IN,
+              shrsout: InvestmentAction.TRANSFER_OUT,
+              reinvdiv: InvestmentAction.REINVEST,
+              reinvint: InvestmentAction.REINVEST,
+              reinvlg: InvestmentAction.REINVEST,
+              reinvsh: InvestmentAction.REINVEST,
             };
 
-            const qifAction = (qifTx.action || '').toLowerCase();
+            const qifAction = (qifTx.action || "").toLowerCase();
             // Handle "X" suffix actions (e.g., BuyX, SellX, DivX) - these indicate transfer from/to another account
             // Strip the 'x' suffix for action mapping
-            const baseAction = qifAction.replace(/x$/, '');
-            const action = actionMap[baseAction] || actionMap[qifAction] || InvestmentAction.BUY;
+            const baseAction = qifAction.replace(/x$/, "");
+            const action =
+              actionMap[baseAction] ||
+              actionMap[qifAction] ||
+              InvestmentAction.BUY;
 
             // Get security ID from mapping, or auto-create if not mapped
-            let securityId = qifTx.security ? securityMap.get(qifTx.security) || null : null;
+            let securityId = qifTx.security
+              ? securityMap.get(qifTx.security) || null
+              : null;
 
             // If no security mapping exists but we have a security name, auto-create one
             if (!securityId && qifTx.security) {
               // Generate symbol from first letter of each word (e.g., "Vanguard Total Stock Market" -> "VTSM")
               const words = qifTx.security.trim().split(/\s+/);
               let generatedSymbol = words
-                .map(word => word.charAt(0).toUpperCase())
-                .join('');
+                .map((word) => word.charAt(0).toUpperCase())
+                .join("");
 
               // Ensure symbol is at least 2 characters
               if (generatedSymbol.length < 2) {
-                generatedSymbol = qifTx.security.substring(0, 4).toUpperCase().replace(/[^A-Z]/g, '');
+                generatedSymbol = qifTx.security
+                  .substring(0, 4)
+                  .toUpperCase()
+                  .replace(/[^A-Z]/g, "");
               }
               // Limit to 9 characters max (leaving room for * suffix)
               generatedSymbol = generatedSymbol.substring(0, 9);
@@ -485,15 +540,25 @@ export class ImportService {
               generatedSymbol = `${generatedSymbol}*`;
 
               // Check if this generated symbol already exists for this user
-              let existingSecurity = await queryRunner.manager.findOne(Security, {
-                where: { symbol: generatedSymbol, userId },
-              });
+              let existingSecurity = await queryRunner.manager.findOne(
+                Security,
+                {
+                  where: { symbol: generatedSymbol, userId },
+                },
+              );
 
               // If symbol exists but for a different security, append a number
-              if (existingSecurity && existingSecurity.name !== qifTx.security) {
+              if (
+                existingSecurity &&
+                existingSecurity.name !== qifTx.security
+              ) {
                 let counter = 2;
                 let uniqueSymbol = `${generatedSymbol}${counter}`;
-                while (await queryRunner.manager.findOne(Security, { where: { symbol: uniqueSymbol, userId } })) {
+                while (
+                  await queryRunner.manager.findOne(Security, {
+                    where: { symbol: uniqueSymbol, userId },
+                  })
+                ) {
                   counter++;
                   uniqueSymbol = `${generatedSymbol}${counter}`;
                 }
@@ -514,10 +579,13 @@ export class ImportService {
                 newSecurity.currencyCode = account.currencyCode;
                 newSecurity.isActive = true;
                 newSecurity.skipPriceUpdates = true; // Auto-generated symbols can't be looked up
-                const savedSecurity = await queryRunner.manager.save(newSecurity);
+                const savedSecurity =
+                  await queryRunner.manager.save(newSecurity);
                 securityId = savedSecurity.id;
                 importResult.securitiesCreated++;
-                this.logger.log(`Auto-created security: ${generatedSymbol} for "${qifTx.security}" (price updates disabled)`);
+                this.logger.log(
+                  `Auto-created security: ${generatedSymbol} for "${qifTx.security}" (price updates disabled)`,
+                );
               }
 
               // Cache the mapping for subsequent transactions with the same security name
@@ -532,16 +600,18 @@ export class ImportService {
             // Round to 2 decimal places to avoid floating-point precision errors
             let totalAmount = qifTx.amount
               ? Math.round(qifTx.amount * 100) / 100
-              : Math.round(((quantity * price) + commission) * 100) / 100;
+              : Math.round((quantity * price + commission) * 100) / 100;
 
             // Adjust totalAmount based on action type
             // For BUY: total = quantity * price + commission
             // For SELL: total = quantity * price - commission
             // Round to 2 decimal places to avoid floating-point precision errors
             if (action === InvestmentAction.BUY) {
-              totalAmount = Math.round(((quantity * price) + commission) * 100) / 100;
+              totalAmount =
+                Math.round((quantity * price + commission) * 100) / 100;
             } else if (action === InvestmentAction.SELL) {
-              totalAmount = Math.round(((quantity * price) - commission) * 100) / 100;
+              totalAmount =
+                Math.round((quantity * price - commission) * 100) / 100;
             }
 
             // Create investment transaction
@@ -565,7 +635,10 @@ export class ImportService {
             let cashAccountId = dto.accountId;
             let cashAccountCurrency = account.currencyCode;
 
-            if (account.accountSubType === AccountSubType.INVESTMENT_BROKERAGE && account.linkedAccountId) {
+            if (
+              account.accountSubType === AccountSubType.INVESTMENT_BROKERAGE &&
+              account.linkedAccountId
+            ) {
               cashAccountId = account.linkedAccountId;
               affectedAccountIds.add(cashAccountId);
               // Get the linked account's currency
@@ -588,10 +661,11 @@ export class ImportService {
 
             if (cashAffectingActions.includes(action)) {
               // Determine the cash amount (negative for outflows like BUY, positive for inflows like SELL/DIVIDEND)
-              const cashAmount = action === InvestmentAction.BUY ? -totalAmount : totalAmount;
+              const cashAmount =
+                action === InvestmentAction.BUY ? -totalAmount : totalAmount;
 
               // Get the security symbol from the database (not the raw QIF name)
-              let securitySymbol = 'Unknown';
+              let securitySymbol = "Unknown";
               if (securityId) {
                 const security = await queryRunner.manager.findOne(Security, {
                   where: { id: securityId },
@@ -604,15 +678,22 @@ export class ImportService {
               // Convert action to title case (e.g., "BUY" -> "Buy", "CAPITAL_GAIN" -> "Capital Gain")
               const formatAction = (act: string) => {
                 return act
-                  .split('_')
-                  .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-                  .join(' ');
+                  .split("_")
+                  .map(
+                    (word) =>
+                      word.charAt(0).toUpperCase() +
+                      word.slice(1).toLowerCase(),
+                  )
+                  .join(" ");
               };
               const actionLabel = formatAction(action);
 
               // Format payee name for the cash transaction
               let payeeName: string;
-              if (action === InvestmentAction.BUY || action === InvestmentAction.SELL) {
+              if (
+                action === InvestmentAction.BUY ||
+                action === InvestmentAction.SELL
+              ) {
                 payeeName = `${actionLabel}: ${securitySymbol} ${quantity} @ $${price.toFixed(2)}`;
               } else if (action === InvestmentAction.INTEREST) {
                 payeeName = `${actionLabel}: $${totalAmount.toFixed(2)}`;
@@ -642,7 +723,11 @@ export class ImportService {
               await queryRunner.manager.save(investmentTx);
 
               // Update cash account balance
-              await this.updateAccountBalance(queryRunner, cashAccountId, cashAmount);
+              await this.updateAccountBalance(
+                queryRunner,
+                cashAccountId,
+                cashAmount,
+              );
             }
 
             // Update holdings for actions that affect share counts
@@ -656,7 +741,10 @@ export class ImportService {
 
             if (holdingsActions.includes(action) && securityId && quantity) {
               // Determine quantity change (negative for sells/transfers out)
-              const quantityChange = [InvestmentAction.SELL, InvestmentAction.TRANSFER_OUT].includes(action)
+              const quantityChange = [
+                InvestmentAction.SELL,
+                InvestmentAction.TRANSFER_OUT,
+              ].includes(action)
                 ? -quantity
                 : quantity;
 
@@ -682,9 +770,10 @@ export class ImportService {
                   // Buying shares - calculate new average cost
                   const totalCostBefore = currentQuantity * currentAvgCost;
                   const totalCostAdded = quantityChange * price;
-                  holding.averageCost = newQuantity > 0
-                    ? (totalCostBefore + totalCostAdded) / newQuantity
-                    : 0;
+                  holding.averageCost =
+                    newQuantity > 0
+                      ? (totalCostBefore + totalCostAdded) / newQuantity
+                      : 0;
                 }
                 // For sells, average cost doesn't change
 
@@ -702,26 +791,32 @@ export class ImportService {
           // We only skip transfers that already exist in the database from a previous import,
           // NOT transfers within the same QIF file (those are legitimate duplicates)
           if (qifTx.isTransfer && qifTx.transferAccount) {
-            const mappedTransferAccountId = accountMap.get(qifTx.transferAccount);
+            const mappedTransferAccountId = accountMap.get(
+              qifTx.transferAccount,
+            );
             if (mappedTransferAccountId) {
               // Find transfers in the current account that link to transactions in the transfer account
               // Only check transactions created BEFORE this import started
               const existingLinkedTransfers = await queryRunner.manager
-                .createQueryBuilder(Transaction, 't')
+                .createQueryBuilder(Transaction, "t")
                 .innerJoin(
                   Transaction,
-                  'linked',
-                  't.linked_transaction_id = linked.id',
+                  "linked",
+                  "t.linked_transaction_id = linked.id",
                 )
-                .where('t.user_id = :userId', { userId })
-                .andWhere('t.account_id = :accountId', { accountId: dto.accountId })
-                .andWhere('t.is_transfer = true')
-                .andWhere('t.transaction_date = :date', { date: qifTx.date })
-                .andWhere('t.amount = :amount', { amount: qifTx.amount })
-                .andWhere('linked.account_id = :linkedAccountId', {
+                .where("t.user_id = :userId", { userId })
+                .andWhere("t.account_id = :accountId", {
+                  accountId: dto.accountId,
+                })
+                .andWhere("t.is_transfer = true")
+                .andWhere("t.transaction_date = :date", { date: qifTx.date })
+                .andWhere("t.amount = :amount", { amount: qifTx.amount })
+                .andWhere("linked.account_id = :linkedAccountId", {
                   linkedAccountId: mappedTransferAccountId,
                 })
-                .andWhere('t.created_at < :importStartTime', { importStartTime })
+                .andWhere("t.created_at < :importStartTime", {
+                  importStartTime,
+                })
                 .getOne();
 
               if (existingLinkedTransfers) {
@@ -739,18 +834,20 @@ export class ImportService {
           // Only check transactions created BEFORE this import started
           if (qifTx.isTransfer) {
             const existingSplitLinkedTx = await queryRunner.manager
-              .createQueryBuilder(Transaction, 't')
+              .createQueryBuilder(Transaction, "t")
               .innerJoin(
                 TransactionSplit,
-                'split',
-                'split.linked_transaction_id = t.id',
+                "split",
+                "split.linked_transaction_id = t.id",
               )
-              .where('t.user_id = :userId', { userId })
-              .andWhere('t.account_id = :accountId', { accountId: dto.accountId })
-              .andWhere('t.is_transfer = true')
-              .andWhere('t.transaction_date = :date', { date: qifTx.date })
-              .andWhere('t.amount = :amount', { amount: qifTx.amount })
-              .andWhere('t.created_at < :importStartTime', { importStartTime })
+              .where("t.user_id = :userId", { userId })
+              .andWhere("t.account_id = :accountId", {
+                accountId: dto.accountId,
+              })
+              .andWhere("t.is_transfer = true")
+              .andWhere("t.transaction_date = :date", { date: qifTx.date })
+              .andWhere("t.amount = :amount", { amount: qifTx.amount })
+              .andWhere("t.created_at < :importStartTime", { importStartTime })
               .getOne();
 
             if (existingSplitLinkedTx) {
@@ -762,21 +859,29 @@ export class ImportService {
           // For transfers: Check if there's a pending cross-currency transfer waiting to be updated
           // This happens when the other account was imported first and created a placeholder
           if (qifTx.isTransfer && qifTx.transferAccount) {
-            const mappedTransferAccountId = accountMap.get(qifTx.transferAccount);
+            const mappedTransferAccountId = accountMap.get(
+              qifTx.transferAccount,
+            );
             if (mappedTransferAccountId) {
               // Look for a pending transfer in THIS account that was created by importing the other account
               // It should have the pending note and be linked to a transaction in the transfer account
               const expectedSign = qifTx.amount >= 0 ? 1 : -1;
               const pendingTransfer = await queryRunner.manager
-                .createQueryBuilder(Transaction, 't')
-                .leftJoinAndSelect('t.linkedTransaction', 'linked')
-                .where('t.user_id = :userId', { userId })
-                .andWhere('t.account_id = :accountId', { accountId: dto.accountId })
-                .andWhere('t.transaction_date = :date', { date: qifTx.date })
-                .andWhere('t.is_transfer = true')
-                .andWhere('t.description LIKE :note', { note: '%PENDING IMPORT%' })
-                .andWhere(expectedSign > 0 ? 't.amount > 0' : 't.amount < 0')
-                .andWhere('linked.account_id = :linkedAccountId', { linkedAccountId: mappedTransferAccountId })
+                .createQueryBuilder(Transaction, "t")
+                .leftJoinAndSelect("t.linkedTransaction", "linked")
+                .where("t.user_id = :userId", { userId })
+                .andWhere("t.account_id = :accountId", {
+                  accountId: dto.accountId,
+                })
+                .andWhere("t.transaction_date = :date", { date: qifTx.date })
+                .andWhere("t.is_transfer = true")
+                .andWhere("t.description LIKE :note", {
+                  note: "%PENDING IMPORT%",
+                })
+                .andWhere(expectedSign > 0 ? "t.amount > 0" : "t.amount < 0")
+                .andWhere("linked.account_id = :linkedAccountId", {
+                  linkedAccountId: mappedTransferAccountId,
+                })
                 .getOne();
 
               if (pendingTransfer) {
@@ -785,16 +890,25 @@ export class ImportService {
                 const newAmount = qifTx.amount;
                 const balanceDiff = newAmount - oldAmount;
 
-                await queryRunner.manager.update(Transaction, pendingTransfer.id, {
-                  amount: newAmount,
-                  description: qifTx.memo || null, // Clear the pending note, use QIF memo
-                  payeeName: qifTx.payee || pendingTransfer.payeeName,
-                  referenceNumber: qifTx.number || pendingTransfer.referenceNumber,
-                });
+                await queryRunner.manager.update(
+                  Transaction,
+                  pendingTransfer.id,
+                  {
+                    amount: newAmount,
+                    description: qifTx.memo || null, // Clear the pending note, use QIF memo
+                    payeeName: qifTx.payee || pendingTransfer.payeeName,
+                    referenceNumber:
+                      qifTx.number || pendingTransfer.referenceNumber,
+                  },
+                );
 
                 // Adjust the balance difference
                 if (balanceDiff !== 0) {
-                  await this.updateAccountBalance(queryRunner, dto.accountId, balanceDiff);
+                  await this.updateAccountBalance(
+                    queryRunner,
+                    dto.accountId,
+                    balanceDiff,
+                  );
                 }
 
                 importResult.imported++;
@@ -832,7 +946,10 @@ export class ImportService {
           if (qifTx.isTransfer) {
             // For transfers, we don't set a category
             categoryId = null;
-          } else if (account.accountType === AccountType.ASSET && account.assetCategoryId) {
+          } else if (
+            account.accountType === AccountType.ASSET &&
+            account.assetCategoryId
+          ) {
             // For asset accounts, use the account's configured asset category
             categoryId = account.assetCategoryId;
           } else if (qifTx.category) {
@@ -905,26 +1022,32 @@ export class ImportService {
               let isLoanPayment = false;
 
               if (split.isTransfer && split.transferAccount) {
-                splitTransferAccountId = accountMap.get(split.transferAccount) || null;
+                splitTransferAccountId =
+                  accountMap.get(split.transferAccount) || null;
               } else if (split.category) {
                 // Check if this category is mapped as a loan payment
                 if (loanCategoryMap.has(split.category)) {
-                  splitTransferAccountId = loanCategoryMap.get(split.category) || null;
+                  splitTransferAccountId =
+                    loanCategoryMap.get(split.category) || null;
                   isLoanPayment = true;
                 } else {
                   splitCategoryId = categoryMap.get(split.category) || null;
                 }
               }
 
-              const transactionSplit = queryRunner.manager.create(TransactionSplit, {
-                transactionId: savedTx.id,
-                categoryId: splitCategoryId,
-                transferAccountId: splitTransferAccountId,
-                amount: split.amount,
-                memo: split.memo,
-              });
+              const transactionSplit = queryRunner.manager.create(
+                TransactionSplit,
+                {
+                  transactionId: savedTx.id,
+                  categoryId: splitCategoryId,
+                  transferAccountId: splitTransferAccountId,
+                  amount: split.amount,
+                  memo: split.memo,
+                },
+              );
 
-              const savedSplit = await queryRunner.manager.save(transactionSplit);
+              const savedSplit =
+                await queryRunner.manager.save(transactionSplit);
 
               // For transfer splits (including loan payments), create linked transaction in target account
               if (splitTransferAccountId) {
@@ -936,38 +1059,53 @@ export class ImportService {
                 // The existing transaction may already have a linkedTransactionId (pointing back to
                 // a placeholder in this account that we'll need to clean up)
                 const existingLinkedTx = await queryRunner.manager
-                  .createQueryBuilder(Transaction, 't')
-                  .where('t.user_id = :userId', { userId })
-                  .andWhere('t.account_id = :accountId', { accountId: splitTransferAccountId })
-                  .andWhere('t.transaction_date = :date', { date: qifTx.date })
-                  .andWhere('t.amount = :amount', { amount: linkedAmount })
-                  .andWhere('t.is_transfer = true')
-                  .andWhere('t.created_at < :importStartTime', { importStartTime })
+                  .createQueryBuilder(Transaction, "t")
+                  .where("t.user_id = :userId", { userId })
+                  .andWhere("t.account_id = :accountId", {
+                    accountId: splitTransferAccountId,
+                  })
+                  .andWhere("t.transaction_date = :date", { date: qifTx.date })
+                  .andWhere("t.amount = :amount", { amount: linkedAmount })
+                  .andWhere("t.is_transfer = true")
+                  .andWhere("t.created_at < :importStartTime", {
+                    importStartTime,
+                  })
                   .getOne();
 
                 if (existingLinkedTx) {
                   // Found existing transaction from previous import - link to it
-                  await queryRunner.manager.update(TransactionSplit, savedSplit.id, {
-                    linkedTransactionId: existingLinkedTx.id,
-                  });
+                  await queryRunner.manager.update(
+                    TransactionSplit,
+                    savedSplit.id,
+                    {
+                      linkedTransactionId: existingLinkedTx.id,
+                    },
+                  );
 
                   // Also set linkedTransactionId on the existing transaction to point back to the parent
                   // This allows traversing from the target account transaction back to the source splits
                   if (!existingLinkedTx.linkedTransactionId) {
-                    await queryRunner.manager.update(Transaction, existingLinkedTx.id, {
-                      linkedTransactionId: savedTx.id,
-                    });
+                    await queryRunner.manager.update(
+                      Transaction,
+                      existingLinkedTx.id,
+                      {
+                        linkedTransactionId: savedTx.id,
+                      },
+                    );
                   }
 
                   // Check if there's a placeholder transaction in the CURRENT account that was
                   // created when the other side was imported - if so, delete it and reverse balance
                   if (existingLinkedTx.linkedTransactionId) {
-                    const placeholderTx = await queryRunner.manager.findOne(Transaction, {
-                      where: {
-                        id: existingLinkedTx.linkedTransactionId,
-                        accountId: dto.accountId, // In current account
+                    const placeholderTx = await queryRunner.manager.findOne(
+                      Transaction,
+                      {
+                        where: {
+                          id: existingLinkedTx.linkedTransactionId,
+                          accountId: dto.accountId, // In current account
+                        },
                       },
-                    });
+                    );
                     if (placeholderTx) {
                       // Reverse the balance impact of the placeholder
                       await this.updateAccountBalance(
@@ -976,11 +1114,18 @@ export class ImportService {
                         -Number(placeholderTx.amount),
                       );
                       // Delete the placeholder
-                      await queryRunner.manager.delete(Transaction, placeholderTx.id);
+                      await queryRunner.manager.delete(
+                        Transaction,
+                        placeholderTx.id,
+                      );
                       // Clear the linkedTransactionId on the existing transaction
-                      await queryRunner.manager.update(Transaction, existingLinkedTx.id, {
-                        linkedTransactionId: null,
-                      });
+                      await queryRunner.manager.update(
+                        Transaction,
+                        existingLinkedTx.id,
+                        {
+                          linkedTransactionId: null,
+                        },
+                      );
                     }
                   }
                   // No balance update needed for target account - it was already applied
@@ -988,14 +1133,22 @@ export class ImportService {
                   // Also check for pending transfers (cross-currency case)
                   const expectedSign = linkedAmount >= 0 ? 1 : -1;
                   const pendingTransfer = await queryRunner.manager
-                    .createQueryBuilder(Transaction, 't')
-                    .where('t.user_id = :userId', { userId })
-                    .andWhere('t.account_id = :accountId', { accountId: splitTransferAccountId })
-                    .andWhere('t.transaction_date = :date', { date: qifTx.date })
-                    .andWhere('t.is_transfer = true')
-                    .andWhere('t.linked_transaction_id IS NULL')
-                    .andWhere('t.description LIKE :note', { note: '%PENDING IMPORT%' })
-                    .andWhere(expectedSign > 0 ? 't.amount > 0' : 't.amount < 0')
+                    .createQueryBuilder(Transaction, "t")
+                    .where("t.user_id = :userId", { userId })
+                    .andWhere("t.account_id = :accountId", {
+                      accountId: splitTransferAccountId,
+                    })
+                    .andWhere("t.transaction_date = :date", {
+                      date: qifTx.date,
+                    })
+                    .andWhere("t.is_transfer = true")
+                    .andWhere("t.linked_transaction_id IS NULL")
+                    .andWhere("t.description LIKE :note", {
+                      note: "%PENDING IMPORT%",
+                    })
+                    .andWhere(
+                      expectedSign > 0 ? "t.amount > 0" : "t.amount < 0",
+                    )
                     .getOne();
 
                   if (pendingTransfer) {
@@ -1003,49 +1156,73 @@ export class ImportService {
                     const oldAmount = Number(pendingTransfer.amount);
                     const balanceDiff = linkedAmount - oldAmount;
 
-                    await queryRunner.manager.update(Transaction, pendingTransfer.id, {
-                      amount: linkedAmount,
-                      description: split.memo || qifTx.memo || null,
-                      linkedTransactionId: savedTx.id, // Point back to the parent transaction
-                    });
+                    await queryRunner.manager.update(
+                      Transaction,
+                      pendingTransfer.id,
+                      {
+                        amount: linkedAmount,
+                        description: split.memo || qifTx.memo || null,
+                        linkedTransactionId: savedTx.id, // Point back to the parent transaction
+                      },
+                    );
 
-                    await queryRunner.manager.update(TransactionSplit, savedSplit.id, {
-                      linkedTransactionId: pendingTransfer.id,
-                    });
+                    await queryRunner.manager.update(
+                      TransactionSplit,
+                      savedSplit.id,
+                      {
+                        linkedTransactionId: pendingTransfer.id,
+                      },
+                    );
 
                     // Adjust balance for any difference
                     if (balanceDiff !== 0) {
-                      await this.updateAccountBalance(queryRunner, splitTransferAccountId, balanceDiff);
+                      await this.updateAccountBalance(
+                        queryRunner,
+                        splitTransferAccountId,
+                        balanceDiff,
+                      );
                     }
                   } else {
                     // No existing transaction - create new linked transaction
-                    const linkedSplitTx = queryRunner.manager.create(Transaction, {
-                      userId,
-                      accountId: splitTransferAccountId,
-                      transactionDate: qifTx.date,
-                      amount: linkedAmount,
-                      payeeName: isLoanPayment
-                        ? qifTx.payee || `Loan Payment from ${account.name}`
-                        : qifTx.payee || `Transfer from ${account.name}`,
-                      description: split.memo || qifTx.memo,
-                      status,
-                      currencyCode: account.currencyCode,
-                      isTransfer: true,
-                      createdAt: new Date(baseTime.getTime() + 0.1), // Slightly offset
-                    });
+                    const linkedSplitTx = queryRunner.manager.create(
+                      Transaction,
+                      {
+                        userId,
+                        accountId: splitTransferAccountId,
+                        transactionDate: qifTx.date,
+                        amount: linkedAmount,
+                        payeeName: isLoanPayment
+                          ? qifTx.payee || `Loan Payment from ${account.name}`
+                          : qifTx.payee || `Transfer from ${account.name}`,
+                        description: split.memo || qifTx.memo,
+                        status,
+                        currencyCode: account.currencyCode,
+                        isTransfer: true,
+                        createdAt: new Date(baseTime.getTime() + 0.1), // Slightly offset
+                      },
+                    );
 
-                    const savedLinkedSplitTx = await queryRunner.manager.save(linkedSplitTx);
+                    const savedLinkedSplitTx =
+                      await queryRunner.manager.save(linkedSplitTx);
 
                     // Update the split with the linked transaction ID
-                    await queryRunner.manager.update(TransactionSplit, savedSplit.id, {
-                      linkedTransactionId: savedLinkedSplitTx.id,
-                    });
+                    await queryRunner.manager.update(
+                      TransactionSplit,
+                      savedSplit.id,
+                      {
+                        linkedTransactionId: savedLinkedSplitTx.id,
+                      },
+                    );
 
                     // Also set linkedTransactionId on the created transaction pointing back to the parent
                     // This allows traversing from the target account transaction back to the source splits
-                    await queryRunner.manager.update(Transaction, savedLinkedSplitTx.id, {
-                      linkedTransactionId: savedTx.id,
-                    });
+                    await queryRunner.manager.update(
+                      Transaction,
+                      savedLinkedSplitTx.id,
+                      {
+                        linkedTransactionId: savedTx.id,
+                      },
+                    );
 
                     // Update target account balance
                     await this.updateAccountBalance(
@@ -1060,7 +1237,11 @@ export class ImportService {
           }
 
           // Update account balance
-          await this.updateAccountBalance(queryRunner, dto.accountId, qifTx.amount);
+          await this.updateAccountBalance(
+            queryRunner,
+            dto.accountId,
+            qifTx.amount,
+          );
 
           // If it's a transfer (including loan payments) and we have a linked account, create the opposite transaction
           if (isTransfer && transferAccountId) {
@@ -1070,8 +1251,11 @@ export class ImportService {
               where: { id: transferAccountId },
             });
 
-            const isCrossCurrency = targetAccount && targetAccount.currencyCode !== account.currencyCode;
-            const PENDING_IMPORT_NOTE = '⚠️ PENDING IMPORT: Amount may need adjustment when importing the other account.';
+            const isCrossCurrency =
+              targetAccount &&
+              targetAccount.currencyCode !== account.currencyCode;
+            const PENDING_IMPORT_NOTE =
+              "⚠️ PENDING IMPORT: Amount may need adjustment when importing the other account.";
 
             // For cross-currency transfers, check if there's already a pending transfer waiting to be matched
             let existingPendingTransfer: Transaction | null = null;
@@ -1083,14 +1267,18 @@ export class ImportService {
               // 4. Amount sign matches what we expect (we're depositing, so target should be positive if our amount is negative)
               const expectedSign = qifTx.amount < 0 ? 1 : -1; // If we're withdrawing (negative), target should be positive
               existingPendingTransfer = await queryRunner.manager
-                .createQueryBuilder(Transaction, 't')
-                .where('t.user_id = :userId', { userId })
-                .andWhere('t.account_id = :accountId', { accountId: transferAccountId })
-                .andWhere('t.transaction_date = :date', { date: qifTx.date })
-                .andWhere('t.is_transfer = true')
-                .andWhere('t.linked_transaction_id IS NULL')
-                .andWhere('t.description LIKE :note', { note: '%PENDING IMPORT%' })
-                .andWhere(expectedSign > 0 ? 't.amount > 0' : 't.amount < 0')
+                .createQueryBuilder(Transaction, "t")
+                .where("t.user_id = :userId", { userId })
+                .andWhere("t.account_id = :accountId", {
+                  accountId: transferAccountId,
+                })
+                .andWhere("t.transaction_date = :date", { date: qifTx.date })
+                .andWhere("t.is_transfer = true")
+                .andWhere("t.linked_transaction_id IS NULL")
+                .andWhere("t.description LIKE :note", {
+                  note: "%PENDING IMPORT%",
+                })
+                .andWhere(expectedSign > 0 ? "t.amount > 0" : "t.amount < 0")
                 .getOne();
             }
 
@@ -1099,11 +1287,15 @@ export class ImportService {
               const linkedPayeeName = isLoanPaymentTx
                 ? qifTx.payee || `Loan Payment from ${account.name}`
                 : qifTx.payee || `Transfer from ${account.name}`;
-              await queryRunner.manager.update(Transaction, existingPendingTransfer.id, {
-                linkedTransactionId: savedTx.id,
-                payeeName: linkedPayeeName,
-                description: qifTx.memo || null, // Clear the pending note
-              });
+              await queryRunner.manager.update(
+                Transaction,
+                existingPendingTransfer.id,
+                {
+                  linkedTransactionId: savedTx.id,
+                  payeeName: linkedPayeeName,
+                  description: qifTx.memo || null, // Clear the pending note
+                },
+              );
 
               await queryRunner.manager.update(Transaction, savedTx.id, {
                 linkedTransactionId: existingPendingTransfer.id,
@@ -1117,7 +1309,7 @@ export class ImportService {
               // For cross-currency, use the source amount but mark as pending
               const linkedAmount = -qifTx.amount;
               const linkedDescription = isCrossCurrency
-                ? `${qifTx.memo || ''} ${PENDING_IMPORT_NOTE}`.trim()
+                ? `${qifTx.memo || ""} ${PENDING_IMPORT_NOTE}`.trim()
                 : qifTx.memo;
 
               const linkedPayeeName = isLoanPaymentTx
@@ -1132,7 +1324,8 @@ export class ImportService {
                 description: linkedDescription,
                 referenceNumber: qifTx.number,
                 status, // Use same status as the main transaction
-                currencyCode: targetAccount?.currencyCode || account.currencyCode,
+                currencyCode:
+                  targetAccount?.currencyCode || account.currencyCode,
                 isTransfer: true,
                 linkedTransactionId: savedTx.id,
                 createdAt: linkedTime,
@@ -1146,7 +1339,11 @@ export class ImportService {
               });
 
               // Update linked account balance
-              await this.updateAccountBalance(queryRunner, transferAccountId, linkedAmount);
+              await this.updateAccountBalance(
+                queryRunner,
+                transferAccountId,
+                linkedAmount,
+              );
             }
           }
 
@@ -1157,14 +1354,19 @@ export class ImportService {
             `Error importing transaction ${txIndex}/${totalTransactions} on ${qifTx.date}: ${error.message}`,
           );
           // SECURITY: Log error details server-side only, don't expose stack traces
-          this.logger.warn(`Error importing transaction ${txIndex}/${totalTransactions}: ${error.message}`);
+          this.logger.warn(
+            `Error importing transaction ${txIndex}/${totalTransactions}: ${error.message}`,
+          );
         }
       }
 
       await queryRunner.commitTransaction();
     } catch (error) {
       // SECURITY: Log detailed error server-side only, return generic message to client
-      this.logger.error(`Import failed after ${importResult.imported} transactions`, error.stack);
+      this.logger.error(
+        `Import failed after ${importResult.imported} transactions`,
+        error.stack,
+      );
       await queryRunner.rollbackTransaction();
       throw new BadRequestException(
         `Import failed after ${importResult.imported} transactions: ${error.message}`,
@@ -1176,31 +1378,39 @@ export class ImportService {
     // For investment imports, backfill historical security prices before recalculating net worth
     if (isQifInvestment) {
       try {
-        this.logger.log('Post-import: backfilling historical security prices');
+        this.logger.log("Post-import: backfilling historical security prices");
         await this.securityPriceService.backfillHistoricalPrices();
-        this.logger.log('Post-import: historical price backfill complete');
+        this.logger.log("Post-import: historical price backfill complete");
       } catch (err) {
-        this.logger.warn(`Post-import historical price backfill failed: ${err.message}`);
+        this.logger.warn(
+          `Post-import historical price backfill failed: ${err.message}`,
+        );
       }
     }
 
     // Backfill historical exchange rates for any affected accounts with non-default currencies
     try {
-      this.logger.log('Post-import: backfilling historical exchange rates');
+      this.logger.log("Post-import: backfilling historical exchange rates");
       await this.exchangeRateService.backfillHistoricalRates(
         userId,
         Array.from(affectedAccountIds),
       );
-      this.logger.log('Post-import: historical rate backfill complete');
+      this.logger.log("Post-import: historical rate backfill complete");
     } catch (err) {
-      this.logger.warn(`Post-import historical rate backfill failed: ${err.message}`);
+      this.logger.warn(
+        `Post-import historical rate backfill failed: ${err.message}`,
+      );
     }
 
     // Trigger net worth recalculation for all affected accounts (fire-and-forget)
     for (const accountId of affectedAccountIds) {
-      this.netWorthService.recalculateAccount(userId, accountId).catch((err) =>
-        this.logger.warn(`Post-import net worth recalc failed for account ${accountId}: ${err.message}`),
-      );
+      this.netWorthService
+        .recalculateAccount(userId, accountId)
+        .catch((err) =>
+          this.logger.warn(
+            `Post-import net worth recalc failed for account ${accountId}: ${err.message}`,
+          ),
+        );
     }
 
     return importResult;
@@ -1209,14 +1419,14 @@ export class ImportService {
   async getExistingCategories(userId: string): Promise<Category[]> {
     return this.categoriesRepository.find({
       where: { userId },
-      order: { name: 'ASC' },
+      order: { name: "ASC" },
     });
   }
 
   async getExistingAccounts(userId: string): Promise<Account[]> {
     return this.accountsRepository.find({
       where: { userId },
-      order: { name: 'ASC' },
+      order: { name: "ASC" },
     });
   }
 }

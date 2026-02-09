@@ -1,28 +1,34 @@
-import { Injectable, UnauthorizedException, ForbiddenException, BadRequestException, Logger } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DeepPartial, LessThan, DataSource } from 'typeorm';
-import { Cron, CronExpression } from '@nestjs/schedule';
-import * as bcrypt from 'bcryptjs';
-import * as crypto from 'crypto';
-import * as otplib from 'otplib';
-import * as QRCode from 'qrcode';
+import {
+  Injectable,
+  UnauthorizedException,
+  ForbiddenException,
+  BadRequestException,
+  Logger,
+} from "@nestjs/common";
+import { JwtService } from "@nestjs/jwt";
+import { ConfigService } from "@nestjs/config";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository, DeepPartial, LessThan, DataSource } from "typeorm";
+import { Cron, CronExpression } from "@nestjs/schedule";
+import * as bcrypt from "bcryptjs";
+import * as crypto from "crypto";
+import * as otplib from "otplib";
+import * as QRCode from "qrcode";
 
-import { User } from '../users/entities/user.entity';
-import { UserPreference } from '../users/entities/user-preference.entity';
-import { TrustedDevice } from '../users/entities/trusted-device.entity';
-import { RefreshToken } from './entities/refresh-token.entity';
-import { RegisterDto } from './dto/register.dto';
-import { LoginDto } from './dto/login.dto';
-import { encrypt, decrypt } from './crypto.util';
-import { UAParser } from 'ua-parser-js';
+import { User } from "../users/entities/user.entity";
+import { UserPreference } from "../users/entities/user-preference.entity";
+import { TrustedDevice } from "../users/entities/trusted-device.entity";
+import { RefreshToken } from "./entities/refresh-token.entity";
+import { RegisterDto } from "./dto/register.dto";
+import { LoginDto } from "./dto/login.dto";
+import { encrypt, decrypt } from "./crypto.util";
+import { UAParser } from "ua-parser-js";
 
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
   private jwtSecret: string;
-  private readonly ACCESS_TOKEN_EXPIRY = '15m';
+  private readonly ACCESS_TOKEN_EXPIRY = "15m";
   private readonly REFRESH_TOKEN_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
   constructor(
@@ -38,7 +44,7 @@ export class AuthService {
     private configService: ConfigService,
     private dataSource: DataSource,
   ) {
-    this.jwtSecret = this.configService.get<string>('JWT_SECRET')!;
+    this.jwtSecret = this.configService.get<string>("JWT_SECRET")!;
   }
 
   async register(registerDto: RegisterDto) {
@@ -51,7 +57,7 @@ export class AuthService {
 
     if (existingUser) {
       // SECURITY: Generic message to prevent account enumeration
-      throw new UnauthorizedException('Unable to complete registration');
+      throw new UnauthorizedException("Unable to complete registration");
     }
 
     // Hash password
@@ -64,13 +70,13 @@ export class AuthService {
       passwordHash,
       firstName,
       lastName,
-      authProvider: 'local',
+      authProvider: "local",
     });
 
     // First registered user automatically becomes admin
     const userCount = await this.usersRepository.count();
     if (userCount === 0) {
-      user.role = 'admin';
+      user.role = "admin";
     }
 
     await this.usersRepository.save(user);
@@ -92,17 +98,17 @@ export class AuthService {
     });
 
     if (!user || !user.passwordHash) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException("Invalid credentials");
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
 
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException("Invalid credentials");
     }
 
     if (!user.isActive) {
-      throw new UnauthorizedException('Account is deactivated');
+      throw new UnauthorizedException("Account is deactivated");
     }
 
     // Check if 2FA is enabled
@@ -113,19 +119,23 @@ export class AuthService {
     if (preferences?.twoFactorEnabled && user.twoFactorSecret) {
       // Check for trusted device
       if (trustedDeviceToken) {
-        const isTrusted = await this.validateTrustedDevice(user.id, trustedDeviceToken);
+        const isTrusted = await this.validateTrustedDevice(
+          user.id,
+          trustedDeviceToken,
+        );
         if (isTrusted) {
           user.lastLogin = new Date();
           await this.usersRepository.save(user);
-          const { accessToken, refreshToken } = await this.generateTokenPair(user);
+          const { accessToken, refreshToken } =
+            await this.generateTokenPair(user);
           return { user: this.sanitizeUser(user), accessToken, refreshToken };
         }
       }
 
       // Return a temporary token for 2FA verification
       const tempToken = this.jwtService.sign(
-        { sub: user.id, type: '2fa_pending' },
-        { expiresIn: '5m' },
+        { sub: user.id, type: "2fa_pending" },
+        { expiresIn: "5m" },
       );
       return { requires2FA: true, tempToken };
     }
@@ -154,11 +164,11 @@ export class AuthService {
     try {
       payload = this.jwtService.verify(tempToken);
     } catch {
-      throw new UnauthorizedException('Invalid or expired verification token');
+      throw new UnauthorizedException("Invalid or expired verification token");
     }
 
-    if (payload.type !== '2fa_pending') {
-      throw new UnauthorizedException('Invalid token type');
+    if (payload.type !== "2fa_pending") {
+      throw new UnauthorizedException("Invalid token type");
     }
 
     const user = await this.usersRepository.findOne({
@@ -166,14 +176,14 @@ export class AuthService {
     });
 
     if (!user || !user.twoFactorSecret) {
-      throw new UnauthorizedException('Invalid verification state');
+      throw new UnauthorizedException("Invalid verification state");
     }
 
     const secret = decrypt(user.twoFactorSecret, this.jwtSecret);
     const isValid = otplib.verifySync({ token: code, secret }).valid;
 
     if (!isValid) {
-      throw new UnauthorizedException('Invalid verification code');
+      throw new UnauthorizedException("Invalid verification code");
     }
 
     // Update last login
@@ -186,7 +196,7 @@ export class AuthService {
     if (rememberDevice) {
       trustedDeviceToken = await this.createTrustedDevice(
         user.id,
-        userAgent || 'Unknown Device',
+        userAgent || "Unknown Device",
         ipAddress,
       );
     }
@@ -205,11 +215,15 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new BadRequestException('User not found');
+      throw new BadRequestException("User not found");
     }
 
     const secret = otplib.generateSecret();
-    const otpauthUrl = otplib.generateURI({ secret, issuer: 'MoneyMate', label: user.email || userId });
+    const otpauthUrl = otplib.generateURI({
+      secret,
+      issuer: "MoneyMate",
+      label: user.email || userId,
+    });
     const qrCodeDataUrl = await QRCode.toDataURL(otpauthUrl);
 
     // Store encrypted secret (pending confirmation)
@@ -225,14 +239,14 @@ export class AuthService {
     });
 
     if (!user || !user.twoFactorSecret) {
-      throw new BadRequestException('2FA setup not initiated');
+      throw new BadRequestException("2FA setup not initiated");
     }
 
     const secret = decrypt(user.twoFactorSecret, this.jwtSecret);
     const isValid = otplib.verifySync({ token: code, secret }).valid;
 
     if (!isValid) {
-      throw new BadRequestException('Invalid verification code');
+      throw new BadRequestException("Invalid verification code");
     }
 
     // Enable 2FA in preferences
@@ -247,13 +261,17 @@ export class AuthService {
     preferences.twoFactorEnabled = true;
     await this.preferencesRepository.save(preferences);
 
-    return { message: 'Two-factor authentication enabled successfully' };
+    return { message: "Two-factor authentication enabled successfully" };
   }
 
   async disable2FA(userId: string, code: string) {
-    const force2fa = this.configService.get<string>('FORCE_2FA', 'false').toLowerCase() === 'true';
+    const force2fa =
+      this.configService.get<string>("FORCE_2FA", "false").toLowerCase() ===
+      "true";
     if (force2fa) {
-      throw new ForbiddenException('Two-factor authentication is required by the administrator');
+      throw new ForbiddenException(
+        "Two-factor authentication is required by the administrator",
+      );
     }
 
     const user = await this.usersRepository.findOne({
@@ -261,14 +279,14 @@ export class AuthService {
     });
 
     if (!user || !user.twoFactorSecret) {
-      throw new BadRequestException('2FA is not enabled');
+      throw new BadRequestException("2FA is not enabled");
     }
 
     const secret = decrypt(user.twoFactorSecret, this.jwtSecret);
     const isValid = otplib.verifySync({ token: code, secret }).valid;
 
     if (!isValid) {
-      throw new BadRequestException('Invalid verification code');
+      throw new BadRequestException("Invalid verification code");
     }
 
     // Clear secret and disable
@@ -287,7 +305,7 @@ export class AuthService {
     // Revoke all trusted devices
     await this.trustedDevicesRepository.delete({ userId });
 
-    return { message: 'Two-factor authentication disabled successfully' };
+    return { message: "Two-factor authentication disabled successfully" };
   }
 
   async validateUser(email: string, password: string): Promise<any> {
@@ -304,7 +322,10 @@ export class AuthService {
     return null;
   }
 
-  async findOrCreateOidcUser(userInfo: Record<string, unknown>, registrationEnabled = true) {
+  async findOrCreateOidcUser(
+    userInfo: Record<string, unknown>,
+    registrationEnabled = true,
+  ) {
     // Standard OIDC claims
     const sub = userInfo.sub as string;
     const email = userInfo.email as string | undefined;
@@ -317,15 +338,17 @@ export class AuthService {
     const firstName =
       (userInfo.given_name as string) ||
       (userInfo.preferred_username as string) ||
-      fullName?.split(' ')[0] ||
+      fullName?.split(" ")[0] ||
       undefined;
     const lastName =
       (userInfo.family_name as string) ||
-      fullName?.split(' ').slice(1).join(' ') ||
+      fullName?.split(" ").slice(1).join(" ") ||
       undefined;
 
     if (!sub) {
-      throw new UnauthorizedException('OIDC provider did not return a subject identifier');
+      throw new UnauthorizedException(
+        "OIDC provider did not return a subject identifier",
+      );
     }
 
     let user = await this.usersRepository.findOne({
@@ -343,7 +366,7 @@ export class AuthService {
         if (existingUser) {
           // Link OIDC to existing local account
           existingUser.oidcSubject = sub;
-          existingUser.authProvider = 'oidc';
+          existingUser.authProvider = "oidc";
           await this.usersRepository.save(existingUser);
           user = existingUser;
         }
@@ -351,7 +374,7 @@ export class AuthService {
 
       if (!user) {
         if (!registrationEnabled) {
-          throw new ForbiddenException('New account registration is disabled.');
+          throw new ForbiddenException("New account registration is disabled.");
         }
         // Create new user (no existing account found)
         // Use trusted email if verified, otherwise store raw email but don't link accounts
@@ -360,13 +383,13 @@ export class AuthService {
           firstName: firstName ?? null,
           lastName: lastName ?? null,
           oidcSubject: sub,
-          authProvider: 'oidc',
+          authProvider: "oidc",
         };
 
         // First registered user automatically becomes admin
         const userCount = await this.usersRepository.count();
         if (userCount === 0) {
-          userData.role = 'admin';
+          userData.role = "admin";
         }
 
         user = this.usersRepository.create(userData);
@@ -376,13 +399,13 @@ export class AuthService {
         } catch (err: any) {
           // Handle duplicate email: link OIDC to the existing account
           // SECURITY: Only link accounts when the OIDC provider has verified the email
-          if (err.code === '23505' && trustedEmail) {
+          if (err.code === "23505" && trustedEmail) {
             const existingUser = await this.usersRepository.findOne({
               where: { email: trustedEmail },
             });
             if (existingUser) {
               existingUser.oidcSubject = sub;
-              existingUser.authProvider = 'oidc';
+              existingUser.authProvider = "oidc";
               await this.usersRepository.save(existingUser);
               user = existingUser;
             } else {
@@ -398,8 +421,8 @@ export class AuthService {
       let needsUpdate = false;
 
       // Ensure authProvider reflects OIDC usage
-      if (user.authProvider !== 'oidc') {
-        user.authProvider = 'oidc';
+      if (user.authProvider !== "oidc") {
+        user.authProvider = "oidc";
         needsUpdate = true;
       }
 
@@ -444,7 +467,9 @@ export class AuthService {
     return this.jwtService.sign(payload);
   }
 
-  async generateTokenPair(user: User): Promise<{ accessToken: string; refreshToken: string }> {
+  async generateTokenPair(
+    user: User,
+  ): Promise<{ accessToken: string; refreshToken: string }> {
     const payload = {
       sub: user.id,
       email: user.email,
@@ -455,7 +480,7 @@ export class AuthService {
       expiresIn: this.ACCESS_TOKEN_EXPIRY,
     });
 
-    const rawRefreshToken = crypto.randomBytes(64).toString('hex');
+    const rawRefreshToken = crypto.randomBytes(64).toString("hex");
     const tokenHash = this.hashToken(rawRefreshToken);
     const familyId = crypto.randomUUID();
 
@@ -472,7 +497,9 @@ export class AuthService {
     return { accessToken, refreshToken: rawRefreshToken };
   }
 
-  async refreshTokens(rawRefreshToken: string): Promise<{ accessToken: string; refreshToken: string }> {
+  async refreshTokens(
+    rawRefreshToken: string,
+  ): Promise<{ accessToken: string; refreshToken: string }> {
     const tokenHash = this.hashToken(rawRefreshToken);
 
     return this.dataSource.transaction(async (manager) => {
@@ -480,23 +507,27 @@ export class AuthService {
       // try to rotate the same refresh token concurrently
       const existingToken = await manager.findOne(RefreshToken, {
         where: { tokenHash },
-        lock: { mode: 'pessimistic_write' },
+        lock: { mode: "pessimistic_write" },
       });
 
       if (!existingToken) {
-        throw new UnauthorizedException('Invalid refresh token');
+        throw new UnauthorizedException("Invalid refresh token");
       }
 
       // Replay detection: if token is revoked, a previously-rotated token was reused
       if (existingToken.isRevoked) {
-        await manager.update(RefreshToken, { familyId: existingToken.familyId }, { isRevoked: true });
-        throw new UnauthorizedException('Refresh token reuse detected');
+        await manager.update(
+          RefreshToken,
+          { familyId: existingToken.familyId },
+          { isRevoked: true },
+        );
+        throw new UnauthorizedException("Refresh token reuse detected");
       }
 
       if (existingToken.expiresAt < new Date()) {
         existingToken.isRevoked = true;
         await manager.save(existingToken);
-        throw new UnauthorizedException('Refresh token expired');
+        throw new UnauthorizedException("Refresh token expired");
       }
 
       const user = await manager.findOne(User, {
@@ -504,12 +535,16 @@ export class AuthService {
       });
 
       if (!user || !user.isActive) {
-        await manager.update(RefreshToken, { familyId: existingToken.familyId }, { isRevoked: true });
-        throw new UnauthorizedException('User not found or inactive');
+        await manager.update(
+          RefreshToken,
+          { familyId: existingToken.familyId },
+          { isRevoked: true },
+        );
+        throw new UnauthorizedException("User not found or inactive");
       }
 
       // Rotate: generate new refresh token in the same family
-      const newRawRefreshToken = crypto.randomBytes(64).toString('hex');
+      const newRawRefreshToken = crypto.randomBytes(64).toString("hex");
       const newTokenHash = this.hashToken(newRawRefreshToken);
 
       existingToken.isRevoked = true;
@@ -588,7 +623,7 @@ export class AuthService {
 
     if (!user || !user.passwordHash) return null;
 
-    const rawResetToken = crypto.randomBytes(32).toString('hex');
+    const rawResetToken = crypto.randomBytes(32).toString("hex");
     const resetTokenExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
     // SECURITY: Store hashed token — matches pattern used for refresh tokens and trusted devices
@@ -606,12 +641,8 @@ export class AuthService {
       where: { resetToken: hashedToken },
     });
 
-    if (
-      !user ||
-      !user.resetTokenExpiry ||
-      user.resetTokenExpiry < new Date()
-    ) {
-      throw new BadRequestException('Invalid or expired reset token');
+    if (!user || !user.resetTokenExpiry || user.resetTokenExpiry < new Date()) {
+      throw new BadRequestException("Invalid or expired reset token");
     }
 
     const saltRounds = 10;
@@ -627,12 +658,12 @@ export class AuthService {
   // Trusted device methods
 
   private hashToken(token: string): string {
-    return crypto.createHash('sha256').update(token).digest('hex');
+    return crypto.createHash("sha256").update(token).digest("hex");
   }
 
   private parseDeviceName(userAgent: string): string {
-    if (!userAgent || userAgent === 'Unknown Device') {
-      return 'Unknown Device';
+    if (!userAgent || userAgent === "Unknown Device") {
+      return "Unknown Device";
     }
     const parser = new UAParser(userAgent);
     const browser = parser.getBrowser();
@@ -641,10 +672,10 @@ export class AuthService {
     if (browser.name) parts.push(browser.name);
     if (os.name) {
       let osStr = os.name;
-      if (os.version) osStr += ' ' + os.version;
-      parts.push('on ' + osStr);
+      if (os.version) osStr += " " + os.version;
+      parts.push("on " + osStr);
     }
-    return parts.length > 0 ? parts.join(' ') : 'Unknown Device';
+    return parts.length > 0 ? parts.join(" ") : "Unknown Device";
   }
 
   async createTrustedDevice(
@@ -652,7 +683,7 @@ export class AuthService {
     userAgent: string,
     ipAddress?: string,
   ): Promise<string> {
-    const deviceToken = crypto.randomBytes(64).toString('hex');
+    const deviceToken = crypto.randomBytes(64).toString("hex");
     const tokenHash = this.hashToken(deviceToken);
     const deviceName = this.parseDeviceName(userAgent);
     const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
@@ -670,7 +701,10 @@ export class AuthService {
     return deviceToken;
   }
 
-  async validateTrustedDevice(userId: string, deviceToken: string): Promise<boolean> {
+  async validateTrustedDevice(
+    userId: string,
+    deviceToken: string,
+  ): Promise<boolean> {
     const tokenHash = this.hashToken(deviceToken);
 
     const device = await this.trustedDevicesRepository.findOne({
@@ -697,7 +731,7 @@ export class AuthService {
 
     return this.trustedDevicesRepository.find({
       where: { userId },
-      order: { lastUsedAt: 'DESC' },
+      order: { lastUsedAt: "DESC" },
     });
   }
 
@@ -707,7 +741,7 @@ export class AuthService {
     });
 
     if (!device) {
-      throw new BadRequestException('Device not found');
+      throw new BadRequestException("Device not found");
     }
 
     await this.trustedDevicesRepository.remove(device);
@@ -718,7 +752,10 @@ export class AuthService {
     return result.affected || 0;
   }
 
-  async findTrustedDeviceByToken(userId: string, deviceToken: string): Promise<string | null> {
+  async findTrustedDeviceByToken(
+    userId: string,
+    deviceToken: string,
+  ): Promise<string | null> {
     const tokenHash = this.hashToken(deviceToken);
     const device = await this.trustedDevicesRepository.findOne({
       where: { userId, tokenHash },
@@ -727,7 +764,13 @@ export class AuthService {
   }
 
   private sanitizeUser(user: User) {
-    const { passwordHash, resetToken, resetTokenExpiry, twoFactorSecret, ...sanitized } = user;
+    const {
+      passwordHash,
+      resetToken,
+      resetTokenExpiry,
+      twoFactorSecret,
+      ...sanitized
+    } = user;
     return { ...sanitized, hasPassword: !!passwordHash };
   }
 }

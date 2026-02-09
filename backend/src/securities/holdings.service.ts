@@ -1,11 +1,22 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
-import { Holding } from './entities/holding.entity';
-import { InvestmentTransaction, InvestmentAction } from './entities/investment-transaction.entity';
-import { Account, AccountType, AccountSubType } from '../accounts/entities/account.entity';
-import { AccountsService } from '../accounts/accounts.service';
-import { SecuritiesService } from './securities.service';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository, In } from "typeorm";
+import { Holding } from "./entities/holding.entity";
+import {
+  InvestmentTransaction,
+  InvestmentAction,
+} from "./entities/investment-transaction.entity";
+import {
+  Account,
+  AccountType,
+  AccountSubType,
+} from "../accounts/entities/account.entity";
+import { AccountsService } from "../accounts/accounts.service";
+import { SecuritiesService } from "./securities.service";
 
 @Injectable()
 export class HoldingsService {
@@ -22,13 +33,13 @@ export class HoldingsService {
 
   async findAll(userId: string, accountId?: string): Promise<Holding[]> {
     const query = this.holdingsRepository
-      .createQueryBuilder('holding')
-      .leftJoinAndSelect('holding.account', 'account')
-      .leftJoinAndSelect('holding.security', 'security')
-      .where('account.userId = :userId', { userId });
+      .createQueryBuilder("holding")
+      .leftJoinAndSelect("holding.account", "account")
+      .leftJoinAndSelect("holding.security", "security")
+      .where("account.userId = :userId", { userId });
 
     if (accountId) {
-      query.andWhere('holding.accountId = :accountId', { accountId });
+      query.andWhere("holding.accountId = :accountId", { accountId });
     }
 
     return query.getMany();
@@ -36,11 +47,11 @@ export class HoldingsService {
 
   async findOne(userId: string, id: string): Promise<Holding> {
     const holding = await this.holdingsRepository
-      .createQueryBuilder('holding')
-      .leftJoinAndSelect('holding.account', 'account')
-      .leftJoinAndSelect('holding.security', 'security')
-      .where('holding.id = :id', { id })
-      .andWhere('account.userId = :userId', { userId })
+      .createQueryBuilder("holding")
+      .leftJoinAndSelect("holding.account", "account")
+      .leftJoinAndSelect("holding.security", "security")
+      .where("holding.id = :id", { id })
+      .andWhere("account.userId = :userId", { userId })
       .getOne();
 
     if (!holding) {
@@ -56,7 +67,7 @@ export class HoldingsService {
   ): Promise<Holding | null> {
     return this.holdingsRepository.findOne({
       where: { accountId, securityId },
-      relations: ['account', 'security'],
+      relations: ["account", "security"],
     });
   }
 
@@ -114,7 +125,13 @@ export class HoldingsService {
     quantityDelta: number,
     price: number,
   ): Promise<Holding> {
-    return this.createOrUpdate(userId, accountId, securityId, quantityDelta, price);
+    return this.createOrUpdate(
+      userId,
+      accountId,
+      securityId,
+      quantityDelta,
+      price,
+    );
   }
 
   /**
@@ -134,7 +151,9 @@ export class HoldingsService {
 
     if (!holding) {
       if (quantityChange < 0) {
-        throw new NotFoundException('Cannot remove shares from a non-existent holding');
+        throw new NotFoundException(
+          "Cannot remove shares from a non-existent holding",
+        );
       }
       holding = this.holdingsRepository.create({
         accountId,
@@ -177,7 +196,9 @@ export class HoldingsService {
 
     // Only allow deletion if quantity is zero
     if (Number(holding.quantity) !== 0) {
-      throw new ForbiddenException('Cannot delete holding with non-zero quantity');
+      throw new ForbiddenException(
+        "Cannot delete holding with non-zero quantity",
+      );
     }
 
     await this.holdingsRepository.remove(holding);
@@ -215,8 +236,8 @@ export class HoldingsService {
         accountId: In(brokerageAccountIds),
       },
       order: {
-        transactionDate: 'ASC',
-        createdAt: 'ASC',
+        transactionDate: "ASC",
+        createdAt: "ASC",
       },
     });
 
@@ -248,7 +269,10 @@ export class HoldingsService {
 
     // Rebuild holdings from transactions
     // Map: accountId -> securityId -> { quantity, totalCost }
-    const holdingsMap = new Map<string, Map<string, { quantity: number; totalCost: number }>>();
+    const holdingsMap = new Map<
+      string,
+      Map<string, { quantity: number; totalCost: number }>
+    >();
 
     for (const tx of transactions) {
       if (!holdingsActions.includes(tx.action) || !tx.securityId) {
@@ -259,7 +283,11 @@ export class HoldingsService {
       const price = Number(tx.price) || 0;
 
       // Determine quantity change
-      const quantityChange = [InvestmentAction.SELL, InvestmentAction.TRANSFER_OUT, InvestmentAction.REMOVE_SHARES].includes(tx.action)
+      const quantityChange = [
+        InvestmentAction.SELL,
+        InvestmentAction.TRANSFER_OUT,
+        InvestmentAction.REMOVE_SHARES,
+      ].includes(tx.action)
         ? -quantity
         : quantity;
 
@@ -299,7 +327,8 @@ export class HoldingsService {
       for (const [securityId, data] of securities) {
         // Only create holding if there's a non-zero quantity
         if (Math.abs(data.quantity) > 0.00000001) {
-          const avgCost = data.quantity > 0 ? data.totalCost / data.quantity : 0;
+          const avgCost =
+            data.quantity > 0 ? data.totalCost / data.quantity : 0;
           const holding = this.holdingsRepository.create({
             accountId,
             securityId,

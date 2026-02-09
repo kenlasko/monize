@@ -1,37 +1,31 @@
-import {
-  Controller,
-  Post,
-  Body,
-  UseGuards,
-  Request,
-} from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Request } from "@nestjs/common";
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
-} from '@nestjs/swagger';
-import { AuthGuard } from '@nestjs/passport';
-import { ImportService } from './import.service';
+} from "@nestjs/swagger";
+import { AuthGuard } from "@nestjs/passport";
+import { ImportService } from "./import.service";
 import {
   ParseQifDto,
   ImportQifDto,
   ParsedQifResponseDto,
   ImportResultDto,
-} from './dto/import.dto';
+} from "./dto/import.dto";
 
-@ApiTags('Import')
+@ApiTags("Import")
 @ApiBearerAuth()
-@UseGuards(AuthGuard('jwt'))
-@Controller('import')
+@UseGuards(AuthGuard("jwt"))
+@Controller("import")
 export class ImportController {
   constructor(private readonly importService: ImportService) {}
 
-  @Post('qif/parse')
-  @ApiOperation({ summary: 'Parse a QIF file and return metadata for mapping' })
+  @Post("qif/parse")
+  @ApiOperation({ summary: "Parse a QIF file and return metadata for mapping" })
   @ApiResponse({
     status: 200,
-    description: 'QIF file parsed successfully',
+    description: "QIF file parsed successfully",
     type: ParsedQifResponseDto,
   })
   async parseQif(
@@ -41,11 +35,11 @@ export class ImportController {
     return this.importService.parseQifFile(req.user.id, dto.content);
   }
 
-  @Post('qif')
-  @ApiOperation({ summary: 'Import transactions from a QIF file' })
+  @Post("qif")
+  @ApiOperation({ summary: "Import transactions from a QIF file" })
   @ApiResponse({
     status: 201,
-    description: 'Transactions imported successfully',
+    description: "Transactions imported successfully",
     type: ImportResultDto,
   })
   async importQif(

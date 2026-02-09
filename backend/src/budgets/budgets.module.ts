@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module } from "@nestjs/common";
 
 // Stub BudgetsModule - full implementation will be added later
 @Module({

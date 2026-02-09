@@ -3,13 +3,13 @@ import {
   BadRequestException,
   ForbiddenException,
   NotFoundException,
-} from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import * as bcrypt from 'bcryptjs';
-import { User } from '../users/entities/user.entity';
-import { UserPreference } from '../users/entities/user-preference.entity';
-import { generateReadablePassword } from './utils/password-generator';
+} from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import * as bcrypt from "bcryptjs";
+import { User } from "../users/entities/user.entity";
+import { UserPreference } from "../users/entities/user-preference.entity";
+import { generateReadablePassword } from "./utils/password-generator";
 
 @Injectable()
 export class AdminService {
@@ -22,43 +22,51 @@ export class AdminService {
 
   async findAllUsers() {
     const users = await this.usersRepository.find({
-      order: { createdAt: 'ASC' },
+      order: { createdAt: "ASC" },
     });
     return users.map((user) => {
-      const { passwordHash, resetToken, resetTokenExpiry, twoFactorSecret, ...rest } = user;
+      const {
+        passwordHash,
+        resetToken,
+        resetTokenExpiry,
+        twoFactorSecret,
+        ...rest
+      } = user;
       return { ...rest, hasPassword: !!passwordHash };
     });
   }
 
   private sanitizeUser(user: User) {
-    const { passwordHash, resetToken, resetTokenExpiry, twoFactorSecret, ...rest } = user;
+    const {
+      passwordHash,
+      resetToken,
+      resetTokenExpiry,
+      twoFactorSecret,
+      ...rest
+    } = user;
     return { ...rest, hasPassword: !!passwordHash };
   }
 
-  async updateUserRole(
-    adminId: string,
-    targetUserId: string,
-    role: string,
-  ) {
+  async updateUserRole(adminId: string, targetUserId: string, role: string) {
     if (adminId === targetUserId) {
-      throw new ForbiddenException('You cannot change your own role');
+      throw new ForbiddenException("You cannot change your own role");
     }
 
     const targetUser = await this.usersRepository.findOne({
       where: { id: targetUserId },
     });
     if (!targetUser) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException("User not found");
     }
 
     // Prevent removing the last admin
-    if (targetUser.role === 'admin' && role === 'user') {
+    if (targetUser.role === "admin" && role === "user") {
       const adminCount = await this.usersRepository.count({
-        where: { role: 'admin' },
+        where: { role: "admin" },
       });
       if (adminCount <= 1) {
         throw new BadRequestException(
-          'Cannot remove the last admin. Promote another user first.',
+          "Cannot remove the last admin. Promote another user first.",
         );
       }
     }
@@ -72,16 +80,21 @@ export class AdminService {
     adminId: string,
     targetUserId: string,
     isActive: boolean,
-  ): Promise<Omit<User, 'passwordHash' | 'resetToken' | 'resetTokenExpiry' | 'twoFactorSecret'> & { hasPassword: boolean }> {
+  ): Promise<
+    Omit<
+      User,
+      "passwordHash" | "resetToken" | "resetTokenExpiry" | "twoFactorSecret"
+    > & { hasPassword: boolean }
+  > {
     if (adminId === targetUserId) {
-      throw new ForbiddenException('You cannot disable your own account');
+      throw new ForbiddenException("You cannot disable your own account");
     }
 
     const targetUser = await this.usersRepository.findOne({
       where: { id: targetUserId },
     });
     if (!targetUser) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException("User not found");
     }
 
     targetUser.isActive = isActive;
@@ -91,25 +104,23 @@ export class AdminService {
 
   async deleteUser(adminId: string, targetUserId: string): Promise<void> {
     if (adminId === targetUserId) {
-      throw new ForbiddenException('You cannot delete your own account');
+      throw new ForbiddenException("You cannot delete your own account");
     }
 
     const targetUser = await this.usersRepository.findOne({
       where: { id: targetUserId },
     });
     if (!targetUser) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException("User not found");
     }
 
     // Prevent deleting the last admin
-    if (targetUser.role === 'admin') {
+    if (targetUser.role === "admin") {
       const adminCount = await this.usersRepository.count({
-        where: { role: 'admin' },
+        where: { role: "admin" },
       });
       if (adminCount <= 1) {
-        throw new BadRequestException(
-          'Cannot delete the last admin account.',
-        );
+        throw new BadRequestException("Cannot delete the last admin account.");
       }
     }
 
@@ -125,12 +136,12 @@ export class AdminService {
       where: { id: targetUserId },
     });
     if (!targetUser) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException("User not found");
     }
 
     if (!targetUser.passwordHash) {
       throw new BadRequestException(
-        'Cannot reset password for accounts without a local password',
+        "Cannot reset password for accounts without a local password",
       );
     }
 

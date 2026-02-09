@@ -1,5 +1,5 @@
-import * as bcrypt from 'bcryptjs';
-import { Repository } from 'typeorm';
+import * as bcrypt from "bcryptjs";
+import { Repository } from "typeorm";
 
 interface UserData {
   email: string;
@@ -43,11 +43,11 @@ interface CategoryData {
 export function buildUser(overrides: Partial<UserData> = {}): UserData {
   return {
     email: `test-${Date.now()}-${Math.random().toString(36).slice(2)}@example.com`,
-    firstName: 'Test',
-    lastName: 'User',
-    passwordHash: '',
-    authProvider: 'local',
-    role: 'user',
+    firstName: "Test",
+    lastName: "User",
+    passwordHash: "",
+    authProvider: "local",
+    role: "user",
     isActive: true,
     ...overrides,
   };
@@ -60,8 +60,8 @@ export function buildAccount(
   return {
     userId,
     name: `Test Account ${Date.now()}`,
-    accountType: 'CHEQUING',
-    currencyCode: 'USD',
+    accountType: "CHEQUING",
+    currencyCode: "USD",
     openingBalance: 0,
     currentBalance: 0,
     isClosed: false,
@@ -77,12 +77,12 @@ export function buildTransaction(
   return {
     userId,
     accountId,
-    transactionDate: '2026-01-15',
+    transactionDate: "2026-01-15",
     amount: -50.0,
-    currencyCode: 'USD',
+    currencyCode: "USD",
     exchangeRate: 1,
-    description: 'Test transaction',
-    status: 'UNRECONCILED',
+    description: "Test transaction",
+    status: "UNRECONCILED",
     ...overrides,
   };
 }
@@ -94,9 +94,9 @@ export function buildCategory(
   return {
     userId,
     name: `Test Category ${Date.now()}`,
-    type: 'expense',
-    icon: 'tag',
-    color: '#3b82f6',
+    type: "expense",
+    icon: "tag",
+    color: "#3b82f6",
     ...overrides,
   };
 }
@@ -105,7 +105,7 @@ export async function createTestUser(
   repo: Repository<any>,
   overrides: Partial<UserData> = {},
 ): Promise<any> {
-  const passwordHash = await bcrypt.hash('TestPassword123!', 10);
+  const passwordHash = await bcrypt.hash("TestPassword123!", 10);
   const userData = buildUser({ passwordHash, ...overrides });
   const user = repo.create(userData);
   return repo.save(user);

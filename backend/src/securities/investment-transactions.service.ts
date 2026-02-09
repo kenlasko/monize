@@ -1,21 +1,35 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
-import { InvestmentTransaction, InvestmentAction } from './entities/investment-transaction.entity';
-import { CreateInvestmentTransactionDto } from './dto/create-investment-transaction.dto';
-import { UpdateInvestmentTransactionDto } from './dto/update-investment-transaction.dto';
-import { AccountsService } from '../accounts/accounts.service';
-import { TransactionsService } from '../transactions/transactions.service';
-import { HoldingsService } from './holdings.service';
-import { SecuritiesService } from './securities.service';
-import { NetWorthService } from '../net-worth/net-worth.service';
-import { Transaction, TransactionStatus } from '../transactions/entities/transaction.entity';
-import { Account, AccountSubType } from '../accounts/entities/account.entity';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  Logger,
+} from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository, DataSource } from "typeorm";
+import {
+  InvestmentTransaction,
+  InvestmentAction,
+} from "./entities/investment-transaction.entity";
+import { CreateInvestmentTransactionDto } from "./dto/create-investment-transaction.dto";
+import { UpdateInvestmentTransactionDto } from "./dto/update-investment-transaction.dto";
+import { AccountsService } from "../accounts/accounts.service";
+import { TransactionsService } from "../transactions/transactions.service";
+import { HoldingsService } from "./holdings.service";
+import { SecuritiesService } from "./securities.service";
+import { NetWorthService } from "../net-worth/net-worth.service";
+import {
+  Transaction,
+  TransactionStatus,
+} from "../transactions/entities/transaction.entity";
+import { Account, AccountSubType } from "../accounts/entities/account.entity";
 
 @Injectable()
 export class InvestmentTransactionsService {
   private readonly logger = new Logger(InvestmentTransactionsService.name);
-  private readonly recalcTimers = new Map<string, ReturnType<typeof setTimeout>>();
+  private readonly recalcTimers = new Map<
+    string,
+    ReturnType<typeof setTimeout>
+  >();
   private static readonly RECALC_DEBOUNCE_MS = 2000;
 
   constructor(
@@ -40,11 +54,13 @@ export class InvestmentTransactionsService {
       key,
       setTimeout(() => {
         this.recalcTimers.delete(key);
-        this.netWorthService.recalculateAccount(userId, accountId).catch((err) =>
-          this.logger.warn(
-            `Net worth recalc failed for account ${accountId}: ${err.message}`,
-          ),
-        );
+        this.netWorthService
+          .recalculateAccount(userId, accountId)
+          .catch((err) =>
+            this.logger.warn(
+              `Net worth recalc failed for account ${accountId}: ${err.message}`,
+            ),
+          );
       }, InvestmentTransactionsService.RECALC_DEBOUNCE_MS),
     );
   }
@@ -54,11 +70,17 @@ export class InvestmentTransactionsService {
    * For paired accounts (cash + brokerage), returns the linked cash account.
    * For standalone accounts, returns the same account.
    */
-  private async findCashAccount(userId: string, accountId: string): Promise<Account> {
+  private async findCashAccount(
+    userId: string,
+    accountId: string,
+  ): Promise<Account> {
     const account = await this.accountsService.findOne(userId, accountId);
 
     // If this is a brokerage account with a linked cash account, return the cash account
-    if (account.accountSubType === AccountSubType.INVESTMENT_BROKERAGE && account.linkedAccountId) {
+    if (
+      account.accountSubType === AccountSubType.INVESTMENT_BROKERAGE &&
+      account.linkedAccountId
+    ) {
       return this.accountsService.findOne(userId, account.linkedAccountId);
     }
 
@@ -78,9 +100,9 @@ export class InvestmentTransactionsService {
     totalAmount: number,
   ): string {
     const formatPrice = (value: number) => {
-      return value.toLocaleString('en-US', {
-        style: 'currency',
-        currency: 'USD',
+      return value.toLocaleString("en-US", {
+        style: "currency",
+        currency: "USD",
         minimumFractionDigits: 2,
         maximumFractionDigits: 4,
       });
@@ -94,9 +116,11 @@ export class InvestmentTransactionsService {
     // Convert action to title case (e.g., "BUY" -> "Buy", "CAPITAL_GAIN" -> "Capital Gain")
     const formatAction = (act: string) => {
       return act
-        .split('_')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-        .join(' ');
+        .split("_")
+        .map(
+          (word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase(),
+        )
+        .join(" ");
     };
 
     const actionLabel = formatAction(action);
@@ -104,17 +128,17 @@ export class InvestmentTransactionsService {
     switch (action) {
       case InvestmentAction.BUY:
       case InvestmentAction.SELL:
-        return `${actionLabel}: ${symbol || 'Unknown'} ${formatQuantity(quantity || 0)} @ ${formatPrice(price || 0)}`;
+        return `${actionLabel}: ${symbol || "Unknown"} ${formatQuantity(quantity || 0)} @ ${formatPrice(price || 0)}`;
 
       case InvestmentAction.DIVIDEND:
       case InvestmentAction.CAPITAL_GAIN:
-        return `${actionLabel}: ${symbol || 'Unknown'} ${formatPrice(totalAmount)}`;
+        return `${actionLabel}: ${symbol || "Unknown"} ${formatPrice(totalAmount)}`;
 
       case InvestmentAction.INTEREST:
         return `${actionLabel}: ${formatPrice(totalAmount)}`;
 
       default:
-        return `${actionLabel}: ${symbol || ''} ${formatPrice(totalAmount)}`;
+        return `${actionLabel}: ${symbol || ""} ${formatPrice(totalAmount)}`;
     }
   }
 
@@ -131,7 +155,10 @@ export class InvestmentTransactionsService {
     // Get the security for the symbol
     let symbol: string | null = null;
     if (investmentTransaction.securityId) {
-      const security = await this.securitiesService.findOne(userId, investmentTransaction.securityId);
+      const security = await this.securitiesService.findOne(
+        userId,
+        investmentTransaction.securityId,
+      );
       symbol = security.symbol;
     }
 
@@ -192,20 +219,30 @@ export class InvestmentTransactionsService {
     createDto: CreateInvestmentTransactionDto,
   ): Promise<InvestmentTransaction> {
     // Verify account ownership and that it's an investment account
-    const account = await this.accountsService.findOne(userId, createDto.accountId);
+    const account = await this.accountsService.findOne(
+      userId,
+      createDto.accountId,
+    );
 
-    if (account.accountType !== 'INVESTMENT') {
-      throw new BadRequestException('Account must be of type INVESTMENT');
+    if (account.accountType !== "INVESTMENT") {
+      throw new BadRequestException("Account must be of type INVESTMENT");
     }
 
     // Validate that security is provided for buy/sell transactions
     if (
-      [InvestmentAction.BUY, InvestmentAction.SELL, InvestmentAction.SPLIT, InvestmentAction.REINVEST, InvestmentAction.ADD_SHARES, InvestmentAction.REMOVE_SHARES].includes(
-        createDto.action,
-      ) &&
+      [
+        InvestmentAction.BUY,
+        InvestmentAction.SELL,
+        InvestmentAction.SPLIT,
+        InvestmentAction.REINVEST,
+        InvestmentAction.ADD_SHARES,
+        InvestmentAction.REMOVE_SHARES,
+      ].includes(createDto.action) &&
       !createDto.securityId
     ) {
-      throw new BadRequestException(`Security ID is required for ${createDto.action} transactions`);
+      throw new BadRequestException(
+        `Security ID is required for ${createDto.action} transactions`,
+      );
     }
 
     // Verify security exists and belongs to user if provided
@@ -231,7 +268,9 @@ export class InvestmentTransactionsService {
       description: createDto.description,
     });
 
-    const saved = await this.investmentTransactionsRepository.save(investmentTransaction);
+    const saved = await this.investmentTransactionsRepository.save(
+      investmentTransaction,
+    );
 
     // Process the transaction effects
     await this.processTransactionEffects(userId, saved);
@@ -274,13 +313,24 @@ export class InvestmentTransactionsService {
     userId: string,
     transaction: InvestmentTransaction,
   ): Promise<void> {
-    const { action, accountId, securityId, quantity, price, totalAmount, fundingAccountId } = transaction;
+    const {
+      action,
+      accountId,
+      securityId,
+      quantity,
+      price,
+      totalAmount,
+      fundingAccountId,
+    } = transaction;
 
     // Find the appropriate cash account for cash-affecting transactions
     // If fundingAccountId is specified, use that; otherwise use the default linked cash account
     let cashAccount: Account;
     if (fundingAccountId) {
-      cashAccount = await this.accountsService.findOne(userId, fundingAccountId);
+      cashAccount = await this.accountsService.findOne(
+        userId,
+        fundingAccountId,
+      );
     } else {
       cashAccount = await this.findCashAccount(userId, accountId);
     }
@@ -437,11 +487,11 @@ export class InvestmentTransactionsService {
     const pageSize = limit && limit > 0 ? Math.min(limit, 200) : 50;
 
     const query = this.investmentTransactionsRepository
-      .createQueryBuilder('it')
-      .leftJoinAndSelect('it.account', 'account')
-      .leftJoinAndSelect('it.security', 'security')
-      .leftJoinAndSelect('it.fundingAccount', 'fundingAccount')
-      .where('it.userId = :userId', { userId });
+      .createQueryBuilder("it")
+      .leftJoinAndSelect("it.account", "account")
+      .leftJoinAndSelect("it.security", "security")
+      .leftJoinAndSelect("it.fundingAccount", "fundingAccount")
+      .where("it.userId = :userId", { userId });
 
     if (accountIds && accountIds.length > 0) {
       // Resolve linked accounts for each provided ID
@@ -457,23 +507,23 @@ export class InvestmentTransactionsService {
         }
       }
       const allIds = [...resolvedIds];
-      query.andWhere('it.accountId IN (:...allIds)', { allIds });
+      query.andWhere("it.accountId IN (:...allIds)", { allIds });
     }
 
     if (startDate) {
-      query.andWhere('it.transactionDate >= :startDate', { startDate });
+      query.andWhere("it.transactionDate >= :startDate", { startDate });
     }
 
     if (endDate) {
-      query.andWhere('it.transactionDate <= :endDate', { endDate });
+      query.andWhere("it.transactionDate <= :endDate", { endDate });
     }
 
     if (symbol) {
-      query.andWhere('LOWER(security.symbol) = LOWER(:symbol)', { symbol });
+      query.andWhere("LOWER(security.symbol) = LOWER(:symbol)", { symbol });
     }
 
     if (action) {
-      query.andWhere('it.action = :action', { action });
+      query.andWhere("it.action = :action", { action });
     }
 
     // Get total count for pagination
@@ -481,7 +531,7 @@ export class InvestmentTransactionsService {
 
     // Apply pagination
     const data = await query
-      .orderBy('it.transactionDate', 'DESC')
+      .orderBy("it.transactionDate", "DESC")
       .skip((pageNum - 1) * pageSize)
       .take(pageSize)
       .getMany();
@@ -502,16 +552,18 @@ export class InvestmentTransactionsService {
 
   async findOne(userId: string, id: string): Promise<InvestmentTransaction> {
     const transaction = await this.investmentTransactionsRepository
-      .createQueryBuilder('it')
-      .leftJoinAndSelect('it.account', 'account')
-      .leftJoinAndSelect('it.security', 'security')
-      .leftJoinAndSelect('it.fundingAccount', 'fundingAccount')
-      .where('it.id = :id', { id })
-      .andWhere('it.userId = :userId', { userId })
+      .createQueryBuilder("it")
+      .leftJoinAndSelect("it.account", "account")
+      .leftJoinAndSelect("it.security", "security")
+      .leftJoinAndSelect("it.fundingAccount", "fundingAccount")
+      .where("it.id = :id", { id })
+      .andWhere("it.userId = :userId", { userId })
       .getOne();
 
     if (!transaction) {
-      throw new NotFoundException(`Investment transaction with ID ${id} not found`);
+      throw new NotFoundException(
+        `Investment transaction with ID ${id} not found`,
+      );
     }
 
     return transaction;
@@ -528,17 +580,28 @@ export class InvestmentTransactionsService {
     await this.reverseTransactionEffects(userId, transaction);
 
     // Update entity properties directly
-    if (updateDto.accountId !== undefined) transaction.accountId = updateDto.accountId;
+    if (updateDto.accountId !== undefined)
+      transaction.accountId = updateDto.accountId;
     if (updateDto.action !== undefined) transaction.action = updateDto.action;
-    if (updateDto.transactionDate !== undefined) transaction.transactionDate = updateDto.transactionDate;
-    if (updateDto.securityId !== undefined) transaction.securityId = updateDto.securityId;
-    if (updateDto.fundingAccountId !== undefined) transaction.fundingAccountId = updateDto.fundingAccountId || null;
-    if (updateDto.quantity !== undefined) transaction.quantity = updateDto.quantity;
+    if (updateDto.transactionDate !== undefined)
+      transaction.transactionDate = updateDto.transactionDate;
+    if (updateDto.securityId !== undefined)
+      transaction.securityId = updateDto.securityId;
+    if (updateDto.fundingAccountId !== undefined)
+      transaction.fundingAccountId = updateDto.fundingAccountId || null;
+    if (updateDto.quantity !== undefined)
+      transaction.quantity = updateDto.quantity;
     if (updateDto.price !== undefined) transaction.price = updateDto.price;
-    if (updateDto.commission !== undefined) transaction.commission = updateDto.commission;
-    if (updateDto.description !== undefined) transaction.description = updateDto.description;
+    if (updateDto.commission !== undefined)
+      transaction.commission = updateDto.commission;
+    if (updateDto.description !== undefined)
+      transaction.description = updateDto.description;
 
-    if (updateDto.quantity !== undefined || updateDto.price !== undefined || updateDto.commission !== undefined) {
+    if (
+      updateDto.quantity !== undefined ||
+      updateDto.price !== undefined ||
+      updateDto.commission !== undefined
+    ) {
       transaction.totalAmount = this.calculateTotalAmount({
         action: transaction.action,
         quantity: transaction.quantity,
@@ -562,13 +625,16 @@ export class InvestmentTransactionsService {
     userId: string,
     transaction: InvestmentTransaction,
   ): Promise<void> {
-    const { action, accountId, securityId, quantity, price, transactionId } = transaction;
+    const { action, accountId, securityId, quantity, price, transactionId } =
+      transaction;
 
     // Delete the linked cash transaction if it exists (this also reverses the balance)
     if (transactionId) {
       // Clear the FK reference in the database BEFORE deleting the cash transaction
       // to avoid TypeORM entity tracking conflicts from ON DELETE SET NULL
-      await this.investmentTransactionsRepository.update(transaction.id, { transactionId: null });
+      await this.investmentTransactionsRepository.update(transaction.id, {
+        transactionId: null,
+      });
       transaction.transactionId = null;
       await this.deleteCashTransaction(userId, transactionId);
     }
@@ -687,13 +753,22 @@ export class InvestmentTransactionsService {
 
   async getSummary(userId: string, accountIds?: string[]) {
     // Get all transactions (no pagination for summary)
-    const result = await this.findAll(userId, accountIds, undefined, undefined, 1, 10000);
+    const result = await this.findAll(
+      userId,
+      accountIds,
+      undefined,
+      undefined,
+      1,
+      10000,
+    );
     const transactions = result.data;
 
     const summary = {
       totalTransactions: transactions.length,
-      totalBuys: transactions.filter((t) => t.action === InvestmentAction.BUY).length,
-      totalSells: transactions.filter((t) => t.action === InvestmentAction.SELL).length,
+      totalBuys: transactions.filter((t) => t.action === InvestmentAction.BUY)
+        .length,
+      totalSells: transactions.filter((t) => t.action === InvestmentAction.SELL)
+        .length,
       totalDividends: transactions
         .filter((t) => t.action === InvestmentAction.DIVIDEND)
         .reduce((sum, t) => sum + Number(t.totalAmount), 0),
@@ -703,7 +778,10 @@ export class InvestmentTransactionsService {
       totalCapitalGains: transactions
         .filter((t) => t.action === InvestmentAction.CAPITAL_GAIN)
         .reduce((sum, t) => sum + Number(t.totalAmount), 0),
-      totalCommissions: transactions.reduce((sum, t) => sum + Number(t.commission || 0), 0),
+      totalCommissions: transactions.reduce(
+        (sum, t) => sum + Number(t.commission || 0),
+        0,
+      ),
     };
 
     return summary;
@@ -734,7 +812,8 @@ export class InvestmentTransactionsService {
     const holdingsResult = await this.holdingsService.removeAllForUser(userId);
 
     // Reset brokerage account balances to 0
-    const accountsReset = await this.accountsService.resetBrokerageBalances(userId);
+    const accountsReset =
+      await this.accountsService.resetBrokerageBalances(userId);
 
     return {
       transactionsDeleted,

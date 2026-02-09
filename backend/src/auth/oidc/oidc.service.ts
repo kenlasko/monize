@@ -1,6 +1,6 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { Issuer, Client, generators, TokenSet } from 'openid-client';
+import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { Issuer, Client, generators, TokenSet } from "openid-client";
 
 @Injectable()
 export class OidcService implements OnModuleInit {
@@ -12,8 +12,8 @@ export class OidcService implements OnModuleInit {
 
   constructor(private configService: ConfigService) {
     this.callbackUrl =
-      this.configService.get<string>('OIDC_CALLBACK_URL') ||
-      'http://localhost:3001/api/v1/auth/oidc/callback';
+      this.configService.get<string>("OIDC_CALLBACK_URL") ||
+      "http://localhost:3001/api/v1/auth/oidc/callback";
   }
 
   async onModuleInit() {
@@ -25,12 +25,12 @@ export class OidcService implements OnModuleInit {
   }
 
   async initialize(): Promise<boolean> {
-    const issuerUrl = this.configService.get<string>('OIDC_ISSUER_URL');
-    const clientId = this.configService.get<string>('OIDC_CLIENT_ID');
-    const clientSecret = this.configService.get<string>('OIDC_CLIENT_SECRET');
+    const issuerUrl = this.configService.get<string>("OIDC_ISSUER_URL");
+    const clientId = this.configService.get<string>("OIDC_CLIENT_ID");
+    const clientSecret = this.configService.get<string>("OIDC_CLIENT_SECRET");
 
     if (!issuerUrl || !clientId || !clientSecret) {
-      this.logger.log('OIDC not configured - OIDC login disabled');
+      this.logger.log("OIDC not configured - OIDC login disabled");
       return false;
     }
 
@@ -43,11 +43,11 @@ export class OidcService implements OnModuleInit {
         client_id: clientId,
         client_secret: clientSecret,
         redirect_uris: [this.callbackUrl],
-        response_types: ['code'],
+        response_types: ["code"],
       });
 
       this._enabled = true;
-      this.logger.log('OIDC initialized successfully');
+      this.logger.log("OIDC initialized successfully");
       return true;
     } catch (error) {
       this.logger.error(`Failed to initialize OIDC: ${error.message}`);
@@ -60,11 +60,11 @@ export class OidcService implements OnModuleInit {
    */
   getAuthorizationUrl(state: string, nonce: string): string {
     if (!this.client) {
-      throw new Error('OIDC client not initialized');
+      throw new Error("OIDC client not initialized");
     }
 
     return this.client.authorizationUrl({
-      scope: 'openid profile email',
+      scope: "openid profile email",
       state,
       nonce,
     });
@@ -79,7 +79,7 @@ export class OidcService implements OnModuleInit {
     nonce: string,
   ): Promise<TokenSet> {
     if (!this.client) {
-      throw new Error('OIDC client not initialized');
+      throw new Error("OIDC client not initialized");
     }
 
     const tokenSet = await this.client.callback(this.callbackUrl, params, {
@@ -95,7 +95,7 @@ export class OidcService implements OnModuleInit {
    */
   async getUserInfo(accessToken: string): Promise<Record<string, unknown>> {
     if (!this.client) {
-      throw new Error('OIDC client not initialized');
+      throw new Error("OIDC client not initialized");
     }
 
     return this.client.userinfo(accessToken);

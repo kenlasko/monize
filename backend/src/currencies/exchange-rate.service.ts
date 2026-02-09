@@ -1,11 +1,17 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, MoreThanOrEqual, LessThanOrEqual, And } from 'typeorm';
-import { Cron } from '@nestjs/schedule';
-import { ExchangeRate } from './entities/exchange-rate.entity';
-import { Currency } from './entities/currency.entity';
-import { Account } from '../accounts/entities/account.entity';
-import { UserPreference } from '../users/entities/user-preference.entity';
+import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import {
+  Repository,
+  DataSource,
+  MoreThanOrEqual,
+  LessThanOrEqual,
+  And,
+} from "typeorm";
+import { Cron } from "@nestjs/schedule";
+import { ExchangeRate } from "./entities/exchange-rate.entity";
+import { Currency } from "./entities/currency.entity";
+import { Account } from "../accounts/entities/account.entity";
+import { UserPreference } from "../users/entities/user-preference.entity";
 
 export interface RateUpdateResult {
   pair: string;
@@ -72,14 +78,14 @@ export class ExchangeRateService implements OnModuleInit {
 
       if (!recentRate) {
         this.logger.log(
-          'No recent exchange rates found — fetching rates on startup',
+          "No recent exchange rates found — fetching rates on startup",
         );
         const summary = await this.refreshAllRates();
         this.logger.log(
           `Startup rate refresh: ${summary.updated} updated, ${summary.failed} failed`,
         );
       } else {
-        this.logger.log('Exchange rates are up to date');
+        this.logger.log("Exchange rates are up to date");
       }
       // Check if historical rates need backfilling for any user's accounts or securities
       const usersWithForeignAccounts: Array<{ user_id: string }> =
@@ -120,7 +126,10 @@ export class ExchangeRateService implements OnModuleInit {
    * Fetch exchange rate from Yahoo Finance for a currency pair
    * Uses the same v8 chart API as SecurityPriceService
    */
-  private async fetchYahooRate(from: string, to: string): Promise<number | null> {
+  private async fetchYahooRate(
+    from: string,
+    to: string,
+  ): Promise<number | null> {
     if (from === to) return 1.0;
 
     try {
@@ -129,8 +138,8 @@ export class ExchangeRateService implements OnModuleInit {
 
       const response = await fetch(url, {
         headers: {
-          'User-Agent':
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
         },
       });
 
@@ -172,8 +181,8 @@ export class ExchangeRateService implements OnModuleInit {
 
       const response = await fetch(url, {
         headers: {
-          'User-Agent':
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
         },
       });
 
@@ -232,7 +241,7 @@ export class ExchangeRateService implements OnModuleInit {
 
     if (existing) {
       existing.rate = rate;
-      existing.source = 'yahoo_finance';
+      existing.source = "yahoo_finance";
       return this.exchangeRateRepository.save(existing);
     }
 
@@ -241,7 +250,7 @@ export class ExchangeRateService implements OnModuleInit {
       toCurrency: to,
       rate,
       rateDate: date,
-      source: 'yahoo_finance',
+      source: "yahoo_finance",
     });
     return this.exchangeRateRepository.save(newRate);
   }
@@ -251,7 +260,7 @@ export class ExchangeRateService implements OnModuleInit {
    */
   async refreshAllRates(): Promise<RateRefreshSummary> {
     const startTime = Date.now();
-    this.logger.log('Starting exchange rate refresh');
+    this.logger.log("Starting exchange rate refresh");
 
     // Fetch rates for currencies used in accounts AND in securities held in active accounts
     const usedCurrencies: { code: string }[] = await this.dataSource.query(
@@ -267,7 +276,7 @@ export class ExchangeRateService implements OnModuleInit {
     );
 
     const codes = usedCurrencies.map((c) => c.code);
-    this.logger.log(`Currencies in use: ${codes.join(', ')}`);
+    this.logger.log(`Currencies in use: ${codes.join(", ")}`);
 
     if (codes.length < 2) {
       return {
@@ -304,7 +313,11 @@ export class ExchangeRateService implements OnModuleInit {
         const rate = await this.fetchYahooRate(from, to);
 
         if (rate === null) {
-          results.push({ pair: pairLabel, success: false, error: 'No rate data available' });
+          results.push({
+            pair: pairLabel,
+            success: false,
+            error: "No rate data available",
+          });
           failed++;
           return;
         }
@@ -314,7 +327,11 @@ export class ExchangeRateService implements OnModuleInit {
           results.push({ pair: pairLabel, success: true, rate });
           updated++;
         } catch (error) {
-          results.push({ pair: pairLabel, success: false, error: error.message });
+          results.push({
+            pair: pairLabel,
+            success: false,
+            error: error.message,
+          });
           failed++;
         }
       }),
@@ -346,17 +363,17 @@ export class ExchangeRateService implements OnModuleInit {
     accountIds?: string[],
   ): Promise<HistoricalRateBackfillSummary> {
     const startTime = Date.now();
-    this.logger.log('Starting historical exchange rate backfill');
+    this.logger.log("Starting historical exchange rate backfill");
 
     // 1. Get user's default currency
     const pref = await this.userPreferenceRepository.findOne({
       where: { userId },
     });
-    const defaultCurrency = pref?.defaultCurrency || 'USD';
+    const defaultCurrency = pref?.defaultCurrency || "USD";
 
     // 2. Find non-default currencies and their earliest transaction dates
     //    Includes both account currencies AND security currencies held in those accounts
-    let accountFilter = '';
+    let accountFilter = "";
     const params: any[] = [defaultCurrency];
 
     if (accountIds && accountIds.length > 0) {
@@ -396,7 +413,7 @@ export class ExchangeRateService implements OnModuleInit {
        WHERE s.currency_code != $1
          AND s.is_active = true
          AND h.quantity > 0
-         ${accountFilter ? `AND h.account_id = ANY($2::UUID[])` : ''}`,
+         ${accountFilter ? `AND h.account_id = ANY($2::UUID[])` : ""}`,
       params,
     );
 
@@ -415,7 +432,7 @@ export class ExchangeRateService implements OnModuleInit {
     }
 
     if (pairEarliest.size === 0) {
-      this.logger.log('No currency pairs require historical backfill');
+      this.logger.log("No currency pairs require historical backfill");
       return {
         totalPairs: 0,
         successful: 0,
@@ -426,7 +443,7 @@ export class ExchangeRateService implements OnModuleInit {
     }
 
     this.logger.log(
-      `Currency pairs to backfill: ${Array.from(pairEarliest.keys()).join(', ')}`,
+      `Currency pairs to backfill: ${Array.from(pairEarliest.keys()).join(", ")}`,
     );
 
     // 4. Fetch and store historical rates for each pair
@@ -436,7 +453,7 @@ export class ExchangeRateService implements OnModuleInit {
     let totalRatesLoaded = 0;
 
     for (const [pairKey, cutoffDate] of pairEarliest.entries()) {
-      const [from, to] = pairKey.split('->');
+      const [from, to] = pairKey.split("->");
 
       // Skip if we already have historical rates for this pair
       const existingRates = await this.dataSource.query(
@@ -458,7 +475,7 @@ export class ExchangeRateService implements OnModuleInit {
           pair: `${from}/${to}`,
           success: false,
           ratesLoaded: 0,
-          error: 'No historical data available',
+          error: "No historical data available",
         });
         failed++;
         await new Promise((resolve) => setTimeout(resolve, 500));
@@ -494,7 +511,7 @@ export class ExchangeRateService implements OnModuleInit {
               const offset = idx * 4;
               return `($${offset + 1}, $${offset + 2}, $${offset + 3}::DATE, $${offset + 4}, 'yahoo_finance')`;
             })
-            .join(', ');
+            .join(", ");
 
           const batchParams: any[] = [];
           for (const r of batch) {
@@ -543,7 +560,13 @@ export class ExchangeRateService implements OnModuleInit {
       `Historical rate backfill completed in ${duration}ms: ${successful} successful, ${failed} failed, ${totalRatesLoaded} total rates`,
     );
 
-    return { totalPairs: pairEarliest.size, successful, failed, totalRatesLoaded, results };
+    return {
+      totalPairs: pairEarliest.size,
+      successful,
+      failed,
+      totalRatesLoaded,
+      results,
+    };
   }
 
   /**
@@ -551,11 +574,11 @@ export class ExchangeRateService implements OnModuleInit {
    */
   async getLatestRates(): Promise<ExchangeRate[]> {
     return this.exchangeRateRepository
-      .createQueryBuilder('er')
-      .distinctOn(['er.from_currency', 'er.to_currency'])
-      .orderBy('er.from_currency')
-      .addOrderBy('er.to_currency')
-      .addOrderBy('er.rate_date', 'DESC')
+      .createQueryBuilder("er")
+      .distinctOn(["er.from_currency", "er.to_currency"])
+      .orderBy("er.from_currency")
+      .addOrderBy("er.to_currency")
+      .addOrderBy("er.rate_date", "DESC")
       .getMany();
   }
 
@@ -566,7 +589,7 @@ export class ExchangeRateService implements OnModuleInit {
     if (from === to) return 1;
     const rate = await this.exchangeRateRepository.findOne({
       where: { fromCurrency: from, toCurrency: to },
-      order: { rateDate: 'DESC' },
+      order: { rateDate: "DESC" },
     });
     return rate ? Number(rate.rate) : null;
   }
@@ -574,7 +597,10 @@ export class ExchangeRateService implements OnModuleInit {
   /**
    * Get exchange rates within a date range (for historical net worth)
    */
-  async getRateHistory(startDate?: string, endDate?: string): Promise<ExchangeRate[]> {
+  async getRateHistory(
+    startDate?: string,
+    endDate?: string,
+  ): Promise<ExchangeRate[]> {
     const where: any = {};
     if (startDate) {
       where.rateDate = MoreThanOrEqual(startDate);
@@ -587,7 +613,7 @@ export class ExchangeRateService implements OnModuleInit {
 
     return this.exchangeRateRepository.find({
       where,
-      order: { rateDate: 'ASC', fromCurrency: 'ASC', toCurrency: 'ASC' },
+      order: { rateDate: "ASC", fromCurrency: "ASC", toCurrency: "ASC" },
     });
   }
 
@@ -597,7 +623,7 @@ export class ExchangeRateService implements OnModuleInit {
   async getCurrencies(): Promise<Currency[]> {
     return this.currencyRepository.find({
       where: { isActive: true },
-      order: { code: 'ASC' },
+      order: { code: "ASC" },
     });
   }
 
@@ -607,7 +633,7 @@ export class ExchangeRateService implements OnModuleInit {
   async getLastUpdateTime(): Promise<Date | null> {
     const latest = await this.exchangeRateRepository.findOne({
       where: {},
-      order: { createdAt: 'DESC' },
+      order: { createdAt: "DESC" },
     });
     return latest?.createdAt ?? null;
   }
@@ -616,9 +642,9 @@ export class ExchangeRateService implements OnModuleInit {
    * Scheduled job to refresh exchange rates daily at 5 PM EST (after market close)
    * Runs Monday-Friday only
    */
-  @Cron('0 17 * * 1-5', { timeZone: 'America/New_York' })
+  @Cron("0 17 * * 1-5", { timeZone: "America/New_York" })
   async scheduledRateRefresh(): Promise<void> {
-    this.logger.log('Running scheduled exchange rate refresh');
+    this.logger.log("Running scheduled exchange rate refresh");
     try {
       await this.refreshAllRates();
     } catch (error) {

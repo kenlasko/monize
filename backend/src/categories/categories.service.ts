@@ -3,17 +3,17 @@ import {
   NotFoundException,
   BadRequestException,
   ForbiddenException,
-} from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull } from 'typeorm';
-import { Category } from './entities/category.entity';
-import { Transaction } from '../transactions/entities/transaction.entity';
-import { TransactionSplit } from '../transactions/entities/transaction-split.entity';
-import { Payee } from '../payees/entities/payee.entity';
-import { ScheduledTransaction } from '../scheduled-transactions/entities/scheduled-transaction.entity';
-import { ScheduledTransactionSplit } from '../scheduled-transactions/entities/scheduled-transaction-split.entity';
-import { CreateCategoryDto } from './dto/create-category.dto';
-import { UpdateCategoryDto } from './dto/update-category.dto';
+} from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository, IsNull } from "typeorm";
+import { Category } from "./entities/category.entity";
+import { Transaction } from "../transactions/entities/transaction.entity";
+import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
+import { Payee } from "../payees/entities/payee.entity";
+import { ScheduledTransaction } from "../scheduled-transactions/entities/scheduled-transaction.entity";
+import { ScheduledTransactionSplit } from "../scheduled-transactions/entities/scheduled-transaction-split.entity";
+import { CreateCategoryDto } from "./dto/create-category.dto";
+import { UpdateCategoryDto } from "./dto/update-category.dto";
 
 @Injectable()
 export class CategoriesService {
@@ -55,14 +55,19 @@ export class CategoriesService {
   /**
    * Find all categories for a user
    */
-  async findAll(userId: string, includeSystem = false): Promise<(Category & { transactionCount: number })[]> {
+  async findAll(
+    userId: string,
+    includeSystem = false,
+  ): Promise<(Category & { transactionCount: number })[]> {
     const queryBuilder = this.categoriesRepository
-      .createQueryBuilder('category')
-      .where('category.userId = :userId', { userId })
-      .orderBy('category.name', 'ASC');
+      .createQueryBuilder("category")
+      .where("category.userId = :userId", { userId })
+      .orderBy("category.name", "ASC");
 
     if (!includeSystem) {
-      queryBuilder.andWhere('category.isSystem = :isSystem', { isSystem: false });
+      queryBuilder.andWhere("category.isSystem = :isSystem", {
+        isSystem: false,
+      });
     }
 
     const categories = await queryBuilder.getMany();
@@ -73,37 +78,37 @@ export class CategoriesService {
 
     // Get transaction counts for all categories in one query
     // Count direct transactions + transaction splits for each category
-    const categoryIds = categories.map(c => c.id);
+    const categoryIds = categories.map((c) => c.id);
 
     // Count direct transactions per category
     const directCounts = await this.transactionsRepository
-      .createQueryBuilder('t')
-      .select('t.category_id', 'categoryId')
-      .addSelect('COUNT(t.id)', 'count')
-      .where('t.user_id = :userId', { userId })
-      .andWhere('t.category_id IN (:...categoryIds)', { categoryIds })
-      .groupBy('t.category_id')
+      .createQueryBuilder("t")
+      .select("t.category_id", "categoryId")
+      .addSelect("COUNT(t.id)", "count")
+      .where("t.user_id = :userId", { userId })
+      .andWhere("t.category_id IN (:...categoryIds)", { categoryIds })
+      .groupBy("t.category_id")
       .getRawMany();
 
     // Count split transactions per category
     const splitCounts = await this.splitsRepository
-      .createQueryBuilder('s')
-      .innerJoin('s.transaction', 't')
-      .select('s.category_id', 'categoryId')
-      .addSelect('COUNT(s.id)', 'count')
-      .where('t.user_id = :userId', { userId })
-      .andWhere('s.category_id IN (:...categoryIds)', { categoryIds })
-      .groupBy('s.category_id')
+      .createQueryBuilder("s")
+      .innerJoin("s.transaction", "t")
+      .select("s.category_id", "categoryId")
+      .addSelect("COUNT(s.id)", "count")
+      .where("t.user_id = :userId", { userId })
+      .andWhere("s.category_id IN (:...categoryIds)", { categoryIds })
+      .groupBy("s.category_id")
       .getRawMany();
 
     // Create a map of category ID to total transaction count
     const countMap = new Map<string, number>();
     for (const row of directCounts) {
-      countMap.set(row.categoryId, parseInt(row.count || '0', 10));
+      countMap.set(row.categoryId, parseInt(row.count || "0", 10));
     }
     for (const row of splitCounts) {
       const existing = countMap.get(row.categoryId) || 0;
-      countMap.set(row.categoryId, existing + parseInt(row.count || '0', 10));
+      countMap.set(row.categoryId, existing + parseInt(row.count || "0", 10));
     }
 
     // Merge counts with categories
@@ -116,12 +121,20 @@ export class CategoriesService {
   /**
    * Get category tree structure (hierarchical)
    */
-  async getTree(userId: string): Promise<(Category & { transactionCount: number })[]> {
+  async getTree(
+    userId: string,
+  ): Promise<(Category & { transactionCount: number })[]> {
     const allCategories = await this.findAll(userId, false);
 
     // Build a map for quick lookup
-    const categoryMap = new Map<string, Category & { children: Category[]; transactionCount: number }>();
-    const rootCategories: (Category & { children: Category[]; transactionCount: number })[] = [];
+    const categoryMap = new Map<
+      string,
+      Category & { children: Category[]; transactionCount: number }
+    >();
+    const rootCategories: (Category & {
+      children: Category[];
+      transactionCount: number;
+    })[] = [];
 
     // First pass: create map and initialize children arrays
     allCategories.forEach((cat) => {
@@ -157,7 +170,7 @@ export class CategoriesService {
         isIncome,
       },
       order: {
-        name: 'ASC',
+        name: "ASC",
       },
     });
   }
@@ -168,7 +181,7 @@ export class CategoriesService {
   async findOne(userId: string, id: string): Promise<Category> {
     const category = await this.categoriesRepository.findOne({
       where: { id },
-      relations: ['children'],
+      relations: ["children"],
     });
 
     if (!category) {
@@ -176,7 +189,7 @@ export class CategoriesService {
     }
 
     if (category.userId !== userId) {
-      throw new ForbiddenException('You do not have access to this category');
+      throw new ForbiddenException("You do not have access to this category");
     }
 
     return category;
@@ -193,26 +206,32 @@ export class CategoriesService {
     const category = await this.findOne(userId, id);
 
     if (category.isSystem) {
-      throw new BadRequestException('Cannot modify system categories');
+      throw new BadRequestException("Cannot modify system categories");
     }
 
     // If changing parent, verify new parent exists and belongs to user
     if (updateCategoryDto.parentId) {
       // Prevent circular reference
       if (updateCategoryDto.parentId === id) {
-        throw new BadRequestException('Category cannot be its own parent');
+        throw new BadRequestException("Category cannot be its own parent");
       }
 
       await this.findOne(userId, updateCategoryDto.parentId);
     }
 
     // SECURITY: Explicit property mapping instead of Object.assign to prevent mass assignment
-    if (updateCategoryDto.name !== undefined) category.name = updateCategoryDto.name;
-    if (updateCategoryDto.description !== undefined) category.description = updateCategoryDto.description;
-    if (updateCategoryDto.icon !== undefined) category.icon = updateCategoryDto.icon;
-    if (updateCategoryDto.color !== undefined) category.color = updateCategoryDto.color;
-    if (updateCategoryDto.isIncome !== undefined) category.isIncome = updateCategoryDto.isIncome;
-    if (updateCategoryDto.parentId !== undefined) category.parentId = updateCategoryDto.parentId;
+    if (updateCategoryDto.name !== undefined)
+      category.name = updateCategoryDto.name;
+    if (updateCategoryDto.description !== undefined)
+      category.description = updateCategoryDto.description;
+    if (updateCategoryDto.icon !== undefined)
+      category.icon = updateCategoryDto.icon;
+    if (updateCategoryDto.color !== undefined)
+      category.color = updateCategoryDto.color;
+    if (updateCategoryDto.isIncome !== undefined)
+      category.isIncome = updateCategoryDto.isIncome;
+    if (updateCategoryDto.parentId !== undefined)
+      category.parentId = updateCategoryDto.parentId;
 
     return this.categoriesRepository.save(category);
   }
@@ -224,7 +243,7 @@ export class CategoriesService {
     const category = await this.findOne(userId, id);
 
     if (category.isSystem) {
-      throw new BadRequestException('Cannot delete system categories');
+      throw new BadRequestException("Cannot delete system categories");
     }
 
     // Check if category has children
@@ -234,7 +253,7 @@ export class CategoriesService {
 
     if (childCount > 0) {
       throw new BadRequestException(
-        'Cannot delete category with subcategories. Delete or reassign subcategories first.',
+        "Cannot delete category with subcategories. Delete or reassign subcategories first.",
       );
     }
 
@@ -250,32 +269,40 @@ export class CategoriesService {
   /**
    * Get the count of transactions and scheduled items using a category
    */
-  async getTransactionCount(userId: string, categoryId: string): Promise<number> {
+  async getTransactionCount(
+    userId: string,
+    categoryId: string,
+  ): Promise<number> {
     await this.findOne(userId, categoryId);
 
     // Run all counts in parallel
-    const [transactionCount, splitCount, scheduledCount, userScheduledTxIds] = await Promise.all([
-      // Count regular transactions
-      this.transactionsRepository.count({ where: { userId, categoryId } }),
-      // Count transaction splits
-      this.splitsRepository.count({ where: { categoryId } }),
-      // Count scheduled transactions (bills & deposits)
-      this.scheduledTransactionsRepository.count({ where: { userId, categoryId } }),
-      // Get user's scheduled transaction IDs for split count
-      this.scheduledTransactionsRepository
-        .createQueryBuilder('st')
-        .select('st.id')
-        .where('st.userId = :userId', { userId })
-        .getMany(),
-    ]);
+    const [transactionCount, splitCount, scheduledCount, userScheduledTxIds] =
+      await Promise.all([
+        // Count regular transactions
+        this.transactionsRepository.count({ where: { userId, categoryId } }),
+        // Count transaction splits
+        this.splitsRepository.count({ where: { categoryId } }),
+        // Count scheduled transactions (bills & deposits)
+        this.scheduledTransactionsRepository.count({
+          where: { userId, categoryId },
+        }),
+        // Get user's scheduled transaction IDs for split count
+        this.scheduledTransactionsRepository
+          .createQueryBuilder("st")
+          .select("st.id")
+          .where("st.userId = :userId", { userId })
+          .getMany(),
+      ]);
 
     let scheduledSplitCount = 0;
     if (userScheduledTxIds.length > 0) {
       const scheduledTxIds = userScheduledTxIds.map((st) => st.id);
       scheduledSplitCount = await this.scheduledSplitsRepository
-        .createQueryBuilder('ss')
-        .where('ss.categoryId = :categoryId', { categoryId })
-        .andWhere('ss.scheduledTransactionId IN (:...scheduledTxIds)', { scheduledTxIds })
+        .createQueryBuilder("ss")
+        .where("ss.categoryId = :categoryId", { categoryId })
+        .andWhere("ss.scheduledTransactionId IN (:...scheduledTxIds)", {
+          scheduledTxIds,
+        })
         .getCount();
     }
 
@@ -289,7 +316,11 @@ export class CategoriesService {
     userId: string,
     fromCategoryId: string,
     toCategoryId: string | null,
-  ): Promise<{ transactionsUpdated: number; splitsUpdated: number; scheduledUpdated: number }> {
+  ): Promise<{
+    transactionsUpdated: number;
+    splitsUpdated: number;
+    scheduledUpdated: number;
+  }> {
     // Verify the source category exists and belongs to user
     await this.findOne(userId, fromCategoryId);
 
@@ -306,9 +337,9 @@ export class CategoriesService {
 
     // Update splits - need to verify splits belong to user's transactions
     const userTransactionIds = await this.transactionsRepository
-      .createQueryBuilder('t')
-      .select('t.id')
-      .where('t.userId = :userId', { userId })
+      .createQueryBuilder("t")
+      .select("t.id")
+      .where("t.userId = :userId", { userId })
       .getMany();
 
     const transactionIds = userTransactionIds.map((t) => t.id);
@@ -319,8 +350,8 @@ export class CategoriesService {
         .createQueryBuilder()
         .update(TransactionSplit)
         .set({ categoryId: toCategoryId })
-        .where('categoryId = :fromCategoryId', { fromCategoryId })
-        .andWhere('transactionId IN (:...transactionIds)', { transactionIds })
+        .where("categoryId = :fromCategoryId", { fromCategoryId })
+        .andWhere("transactionId IN (:...transactionIds)", { transactionIds })
         .execute();
 
       splitsUpdated = splitResult.affected || 0;
@@ -334,9 +365,9 @@ export class CategoriesService {
 
     // Update scheduled transaction splits
     const userScheduledTxIds = await this.scheduledTransactionsRepository
-      .createQueryBuilder('st')
-      .select('st.id')
-      .where('st.userId = :userId', { userId })
+      .createQueryBuilder("st")
+      .select("st.id")
+      .where("st.userId = :userId", { userId })
       .getMany();
 
     if (userScheduledTxIds.length > 0) {
@@ -345,8 +376,10 @@ export class CategoriesService {
         .createQueryBuilder()
         .update(ScheduledTransactionSplit)
         .set({ categoryId: toCategoryId })
-        .where('categoryId = :fromCategoryId', { fromCategoryId })
-        .andWhere('scheduledTransactionId IN (:...scheduledTxIds)', { scheduledTxIds })
+        .where("categoryId = :fromCategoryId", { fromCategoryId })
+        .andWhere("scheduledTransactionId IN (:...scheduledTxIds)", {
+          scheduledTxIds,
+        })
         .execute();
     }
 
@@ -420,7 +453,7 @@ export class CategoriesService {
   }> {
     // Find the Loan parent category
     const loanParent = await this.categoriesRepository.findOne({
-      where: { userId, name: 'Loan', parentId: IsNull() },
+      where: { userId, name: "Loan", parentId: IsNull() },
     });
 
     if (!loanParent) {
@@ -432,11 +465,11 @@ export class CategoriesService {
 
     // Find Loan Principal and Loan Interest under the Loan parent
     const principalCategory = await this.categoriesRepository.findOne({
-      where: { userId, name: 'Loan Principal', parentId: loanParent.id },
+      where: { userId, name: "Loan Principal", parentId: loanParent.id },
     });
 
     const interestCategory = await this.categoriesRepository.findOne({
-      where: { userId, name: 'Loan Interest', parentId: loanParent.id },
+      where: { userId, name: "Loan Interest", parentId: loanParent.id },
     });
 
     return {
@@ -457,47 +490,47 @@ export class CategoriesService {
 
     if (existingCount > 0) {
       throw new BadRequestException(
-        'Cannot import defaults: user already has categories. Delete existing categories first or start fresh.',
+        "Cannot import defaults: user already has categories. Delete existing categories first or start fresh.",
       );
     }
 
     // Income categories with subcategories
     const incomeCategories = [
       {
-        name: 'Investment Income',
-        subcategories: ['Capital Gains', 'Interest', 'RESP Grant'],
+        name: "Investment Income",
+        subcategories: ["Capital Gains", "Interest", "RESP Grant"],
       },
       {
-        name: 'Other Income',
+        name: "Other Income",
         subcategories: [
-          'Blogging',
-          'Business Reimbursement',
-          'Cashback',
-          'Consulting',
-          'Credit Card Reward',
-          'Employee Stock Option',
-          'Gifts Received',
-          'Income Tax Refund',
-          'Rental Income',
-          'State & Local Tax Refund',
-          'Transfer Bonus',
-          'Tutoring',
+          "Blogging",
+          "Business Reimbursement",
+          "Cashback",
+          "Consulting",
+          "Credit Card Reward",
+          "Employee Stock Option",
+          "Gifts Received",
+          "Income Tax Refund",
+          "Rental Income",
+          "State & Local Tax Refund",
+          "Transfer Bonus",
+          "Tutoring",
         ],
       },
       {
-        name: 'Retirement Income',
-        subcategories: ['CPP/QPP Benefits'],
+        name: "Retirement Income",
+        subcategories: ["CPP/QPP Benefits"],
       },
       {
-        name: 'Wages & Salary',
+        name: "Wages & Salary",
         subcategories: [
-          'Bonus',
-          'Commission',
-          'Employer Matching',
-          'Gross Pay',
-          'Net Pay',
-          'Overtime',
-          'Vacation Pay',
+          "Bonus",
+          "Commission",
+          "Employer Matching",
+          "Gross Pay",
+          "Net Pay",
+          "Overtime",
+          "Vacation Pay",
         ],
       },
     ];
@@ -505,278 +538,285 @@ export class CategoriesService {
     // Expense categories with subcategories
     const expenseCategories = [
       {
-        name: 'Automobile',
+        name: "Automobile",
         subcategories: [
-          'Accessories',
-          'Car Payment',
-          'Cleaning',
-          'Fines',
-          'Gasoline',
-          'Licencing',
-          'Maintenance',
-          'Parking',
-          'Parts',
-          'Toll Charges',
+          "Accessories",
+          "Car Payment",
+          "Cleaning",
+          "Fines",
+          "Gasoline",
+          "Licencing",
+          "Maintenance",
+          "Parking",
+          "Parts",
+          "Toll Charges",
         ],
       },
       {
-        name: 'Bank Fees',
-        subcategories: ['ATM', 'Annual', 'NSF', 'Other', 'Overdraft', 'Service'],
-      },
-      {
-        name: 'Bills',
+        name: "Bank Fees",
         subcategories: [
-          'Accounting',
-          'Cable TV',
-          'Cell Phone',
-          'Electricity',
-          'Internet',
-          'Lawyer',
-          'Natural Gas',
-          'Satellite Radio',
-          'Streaming',
-          'Telephone',
-          'Water & Sewer',
-          'Water Heater',
+          "ATM",
+          "Annual",
+          "NSF",
+          "Other",
+          "Overdraft",
+          "Service",
         ],
       },
       {
-        name: 'Business',
+        name: "Bills",
         subcategories: [
-          'Airfare',
-          'Alcohol',
-          'Bank Fees',
-          'Car Rental',
-          'Cell Phone',
-          'Computer Hardware',
-          'Computer Software',
-          'Dining Out',
-          'Education',
-          'Gasoline',
-          'Internet',
-          'Lodging',
-          'Mileage',
-          'Miscellaneous',
-          'Parking',
-          'Recreation',
-          'Toll Charges',
-          'Transit',
+          "Accounting",
+          "Cable TV",
+          "Cell Phone",
+          "Electricity",
+          "Internet",
+          "Lawyer",
+          "Natural Gas",
+          "Satellite Radio",
+          "Streaming",
+          "Telephone",
+          "Water & Sewer",
+          "Water Heater",
         ],
       },
       {
-        name: 'Cash Withdrawal',
+        name: "Business",
         subcategories: [
-          'Barbadian Dollars',
-          'Bermudian Dollars',
-          'Canadian Dollars',
-          'Costa Rican Colones',
-          'Croatian Kunas',
-          'Dominican Republic Pesos',
-          'Eastern Caribbean Dollars',
-          'Euros',
-          'Forints',
-          'Honduran Lempiras',
-          'Hong Kong Dollars',
-          'Indonesian Rupiah',
-          'Malaysian Ringgits',
-          'Mexican Pesos',
-          'Peruvian Soles',
-          'Singapore Dollars',
-          'Thai Baht',
-          'US Dollars',
-        ],
-      },
-      { name: 'Charitable Donations', subcategories: [] },
-      {
-        name: 'Childcare',
-        subcategories: [
-          'Activities',
-          'Allowance',
-          'Babysitting',
-          'Books',
-          'Clothing',
-          'Counselling',
-          'Daycare',
-          'Entertainment',
-          'Fees',
-          'Furnishings',
-          'Gifts',
-          'Haircut',
-          'Medication',
-          'Shoes',
-          'Sporting Goods',
-          'Sports',
-          'Supplies',
-          'Toiletries',
-          'Toys & Games',
+          "Airfare",
+          "Alcohol",
+          "Bank Fees",
+          "Car Rental",
+          "Cell Phone",
+          "Computer Hardware",
+          "Computer Software",
+          "Dining Out",
+          "Education",
+          "Gasoline",
+          "Internet",
+          "Lodging",
+          "Mileage",
+          "Miscellaneous",
+          "Parking",
+          "Recreation",
+          "Toll Charges",
+          "Transit",
         ],
       },
       {
-        name: 'Clothing',
-        subcategories: ['Accessories', 'Clothes', 'Coats', 'Shoes'],
-      },
-      {
-        name: 'Computer',
-        subcategories: ['Hardware', 'Software', 'Web Hosting'],
-      },
-      {
-        name: 'Education',
-        subcategories: ['Books', 'Fees', 'Tuition'],
-      },
-      {
-        name: 'Food',
-        subcategories: ['Alcohol', 'Cannabis', 'Dining Out', 'Groceries'],
-      },
-      {
-        name: 'Furnishings',
+        name: "Cash Withdrawal",
         subcategories: [
-          'Accessories',
-          'Appliances',
-          'Basement',
-          'Bathroom',
-          'Bedroom',
-          'Dining Room',
-          'Dishes',
-          'Kitchen',
-          'Living Room',
-          'Office',
-          'Outdoor',
-          'Plants',
+          "Barbadian Dollars",
+          "Bermudian Dollars",
+          "Canadian Dollars",
+          "Costa Rican Colones",
+          "Croatian Kunas",
+          "Dominican Republic Pesos",
+          "Eastern Caribbean Dollars",
+          "Euros",
+          "Forints",
+          "Honduran Lempiras",
+          "Hong Kong Dollars",
+          "Indonesian Rupiah",
+          "Malaysian Ringgits",
+          "Mexican Pesos",
+          "Peruvian Soles",
+          "Singapore Dollars",
+          "Thai Baht",
+          "US Dollars",
+        ],
+      },
+      { name: "Charitable Donations", subcategories: [] },
+      {
+        name: "Childcare",
+        subcategories: [
+          "Activities",
+          "Allowance",
+          "Babysitting",
+          "Books",
+          "Clothing",
+          "Counselling",
+          "Daycare",
+          "Entertainment",
+          "Fees",
+          "Furnishings",
+          "Gifts",
+          "Haircut",
+          "Medication",
+          "Shoes",
+          "Sporting Goods",
+          "Sports",
+          "Supplies",
+          "Toiletries",
+          "Toys & Games",
         ],
       },
       {
-        name: 'Gifts',
+        name: "Clothing",
+        subcategories: ["Accessories", "Clothes", "Coats", "Shoes"],
+      },
+      {
+        name: "Computer",
+        subcategories: ["Hardware", "Software", "Web Hosting"],
+      },
+      {
+        name: "Education",
+        subcategories: ["Books", "Fees", "Tuition"],
+      },
+      {
+        name: "Food",
+        subcategories: ["Alcohol", "Cannabis", "Dining Out", "Groceries"],
+      },
+      {
+        name: "Furnishings",
         subcategories: [
-          'Anniversary',
-          'Birthday',
-          'Cards',
-          'Christmas',
-          'Flowers',
+          "Accessories",
+          "Appliances",
+          "Basement",
+          "Bathroom",
+          "Bedroom",
+          "Dining Room",
+          "Dishes",
+          "Kitchen",
+          "Living Room",
+          "Office",
+          "Outdoor",
+          "Plants",
+        ],
+      },
+      {
+        name: "Gifts",
+        subcategories: [
+          "Anniversary",
+          "Birthday",
+          "Cards",
+          "Christmas",
+          "Flowers",
           "Mother's Day",
-          'RESP Contribution',
-          'Valentines',
-          'Wedding',
+          "RESP Contribution",
+          "Valentines",
+          "Wedding",
         ],
       },
       {
-        name: 'Healthcare',
+        name: "Healthcare",
         subcategories: [
-          'Counselling',
-          'Dental',
-          'Eyecare',
-          'Fertility',
-          'Fitness',
-          'Hospital',
-          'Massage',
-          'Medication',
-          'Physician',
-          'Physiotherapy',
-          'Prescriptions',
-          'Supplies',
+          "Counselling",
+          "Dental",
+          "Eyecare",
+          "Fertility",
+          "Fitness",
+          "Hospital",
+          "Massage",
+          "Medication",
+          "Physician",
+          "Physiotherapy",
+          "Prescriptions",
+          "Supplies",
         ],
       },
       {
-        name: 'Housing',
+        name: "Housing",
         subcategories: [
-          'Fees',
-          'Garden Supplies',
-          'Home Improvement',
-          'Maintenance',
-          'Mortgage Interest',
-          'Mortgage Principal',
-          'Rent',
-          'Supplies',
-          'Tools',
+          "Fees",
+          "Garden Supplies",
+          "Home Improvement",
+          "Maintenance",
+          "Mortgage Interest",
+          "Mortgage Principal",
+          "Rent",
+          "Supplies",
+          "Tools",
         ],
       },
       {
-        name: 'Insurance',
+        name: "Insurance",
         subcategories: [
-          'Automobile',
-          'Disability',
-          'Health',
-          'Homeowner/Renter',
-          'Life',
-          'Travel',
+          "Automobile",
+          "Disability",
+          "Health",
+          "Homeowner/Renter",
+          "Life",
+          "Travel",
         ],
       },
-      { name: 'Interest Expense', subcategories: [] },
+      { name: "Interest Expense", subcategories: [] },
       {
-        name: 'Leisure',
+        name: "Leisure",
         subcategories: [
-          'Books & Magazines',
-          'CD',
-          'Camera/Film',
-          'Camping',
-          'Cover Charge',
-          'Cultural Events',
-          'DVD',
-          'Electronics',
-          'Entertaining',
-          'Entertainment',
-          'Fees',
-          'Gambling',
-          'LPs',
-          'Movies',
-          'Newspaper',
-          'Sporting Events',
-          'Sporting Goods',
-          'Sports',
-          'Toys & Games',
-          'Transit',
-          'VHS',
-          'Video Rentals',
+          "Books & Magazines",
+          "CD",
+          "Camera/Film",
+          "Camping",
+          "Cover Charge",
+          "Cultural Events",
+          "DVD",
+          "Electronics",
+          "Entertaining",
+          "Entertainment",
+          "Fees",
+          "Gambling",
+          "LPs",
+          "Movies",
+          "Newspaper",
+          "Sporting Events",
+          "Sporting Goods",
+          "Sports",
+          "Toys & Games",
+          "Transit",
+          "VHS",
+          "Video Rentals",
         ],
       },
-      { name: 'Licencing Fees', subcategories: [] },
+      { name: "Licencing Fees", subcategories: [] },
       {
-        name: 'Loan',
-        subcategories: ['Loan Interest', 'Loan Principal', 'Mortgage Interest'],
+        name: "Loan",
+        subcategories: ["Loan Interest", "Loan Principal", "Mortgage Interest"],
       },
       {
-        name: 'Miscellaneous',
-        subcategories: ['Postage', 'Postcards', 'Tools', 'Transit'],
+        name: "Miscellaneous",
+        subcategories: ["Postage", "Postcards", "Tools", "Transit"],
       },
       {
-        name: 'Personal Care',
+        name: "Personal Care",
         subcategories: [
-          'Dry Cleaning',
-          'Haircut',
-          'Laundry',
-          'Pedicure',
-          'Toiletries',
-        ],
-      },
-      {
-        name: 'Pet Care',
-        subcategories: ['Food', 'Supplies', 'Veterinarian'],
-      },
-      {
-        name: 'Taxes',
-        subcategories: [
-          'CPP/QPP Contributions',
-          'EI Premiums',
-          'Federal Income',
-          'Goods & Services',
-          'Other',
-          'Property',
-          'Real Estate',
-          'State/Provincial',
-          'Union Dues',
+          "Dry Cleaning",
+          "Haircut",
+          "Laundry",
+          "Pedicure",
+          "Toiletries",
         ],
       },
       {
-        name: 'Vacation',
+        name: "Pet Care",
+        subcategories: ["Food", "Supplies", "Veterinarian"],
+      },
+      {
+        name: "Taxes",
         subcategories: [
-          'Airfare',
-          'Car Rental',
-          'Entertainment',
-          'Gasoline',
-          'Lodging',
-          'Miscellaneous',
-          'Parking',
-          'Transit',
-          'Travel',
+          "CPP/QPP Contributions",
+          "EI Premiums",
+          "Federal Income",
+          "Goods & Services",
+          "Other",
+          "Property",
+          "Real Estate",
+          "State/Provincial",
+          "Union Dues",
+        ],
+      },
+      {
+        name: "Vacation",
+        subcategories: [
+          "Airfare",
+          "Car Rental",
+          "Entertainment",
+          "Gasoline",
+          "Lodging",
+          "Miscellaneous",
+          "Parking",
+          "Transit",
+          "Travel",
         ],
       },
     ];

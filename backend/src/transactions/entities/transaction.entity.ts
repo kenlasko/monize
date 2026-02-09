@@ -7,46 +7,46 @@ import {
   ManyToOne,
   OneToMany,
   JoinColumn,
-} from 'typeorm';
-import { Account } from '../../accounts/entities/account.entity';
-import { Payee } from '../../payees/entities/payee.entity';
-import { Category } from '../../categories/entities/category.entity';
-import { TransactionSplit } from './transaction-split.entity';
+} from "typeorm";
+import { Account } from "../../accounts/entities/account.entity";
+import { Payee } from "../../payees/entities/payee.entity";
+import { Category } from "../../categories/entities/category.entity";
+import { TransactionSplit } from "./transaction-split.entity";
 
 export enum TransactionStatus {
-  UNRECONCILED = 'UNRECONCILED',
-  CLEARED = 'CLEARED',
-  RECONCILED = 'RECONCILED',
-  VOID = 'VOID',
+  UNRECONCILED = "UNRECONCILED",
+  CLEARED = "CLEARED",
+  RECONCILED = "RECONCILED",
+  VOID = "VOID",
 }
 
-@Entity('transactions')
+@Entity("transactions")
 export class Transaction {
-  @PrimaryGeneratedColumn('uuid')
+  @PrimaryGeneratedColumn("uuid")
   id: string;
 
-  @Column({ type: 'uuid', name: 'user_id' })
+  @Column({ type: "uuid", name: "user_id" })
   userId: string;
 
-  @Column({ type: 'uuid', name: 'account_id' })
+  @Column({ type: "uuid", name: "account_id" })
   accountId: string;
 
   @ManyToOne(() => Account, (account) => account.transactions)
-  @JoinColumn({ name: 'account_id' })
+  @JoinColumn({ name: "account_id" })
   account: Account;
 
   @Column({
-    type: 'date',
-    name: 'transaction_date',
+    type: "date",
+    name: "transaction_date",
     transformer: {
       // When reading from DB, keep as string to avoid timezone issues
       from: (value: string | Date): string => {
         if (!value) return value as string;
-        if (typeof value === 'string') return value;
+        if (typeof value === "string") return value;
         // If it's a Date, format as YYYY-MM-DD using local date components
         const year = value.getFullYear();
-        const month = String(value.getMonth() + 1).padStart(2, '0');
-        const day = String(value.getDate()).padStart(2, '0');
+        const month = String(value.getMonth() + 1).padStart(2, "0");
+        const day = String(value.getDate()).padStart(2, "0");
         return `${year}-${month}-${day}`;
       },
       // When writing to DB, accept string or Date
@@ -57,62 +57,67 @@ export class Transaction {
   })
   transactionDate: string;
 
-  @Column({ type: 'uuid', name: 'payee_id', nullable: true })
+  @Column({ type: "uuid", name: "payee_id", nullable: true })
   payeeId: string | null;
 
   @ManyToOne(() => Payee, { nullable: true })
-  @JoinColumn({ name: 'payee_id' })
+  @JoinColumn({ name: "payee_id" })
   payee: Payee | null;
 
-  @Column({ type: 'varchar', name: 'payee_name', length: 255, nullable: true })
+  @Column({ type: "varchar", name: "payee_name", length: 255, nullable: true })
   payeeName: string | null;
 
-  @Column({ type: 'uuid', name: 'category_id', nullable: true })
+  @Column({ type: "uuid", name: "category_id", nullable: true })
   categoryId: string | null;
 
   @ManyToOne(() => Category, { nullable: true })
-  @JoinColumn({ name: 'category_id' })
+  @JoinColumn({ name: "category_id" })
   category: Category | null;
 
-  @Column({ type: 'decimal', precision: 20, scale: 4 })
+  @Column({ type: "decimal", precision: 20, scale: 4 })
   amount: number;
 
-  @Column({ type: 'varchar', name: 'currency_code', length: 3 })
+  @Column({ type: "varchar", name: "currency_code", length: 3 })
   currencyCode: string;
 
   @Column({
-    type: 'decimal',
+    type: "decimal",
     precision: 20,
     scale: 10,
-    name: 'exchange_rate',
+    name: "exchange_rate",
     default: 1,
   })
   exchangeRate: number;
 
-  @Column({ type: 'text', nullable: true })
+  @Column({ type: "text", nullable: true })
   description: string | null;
 
-  @Column({ type: 'varchar', name: 'reference_number', length: 100, nullable: true })
+  @Column({
+    type: "varchar",
+    name: "reference_number",
+    length: 100,
+    nullable: true,
+  })
   referenceNumber: string | null;
 
   @Column({
-    type: 'varchar',
+    type: "varchar",
     length: 20,
     default: TransactionStatus.UNRECONCILED,
   })
   status: TransactionStatus;
 
   @Column({
-    type: 'date',
-    name: 'reconciled_date',
+    type: "date",
+    name: "reconciled_date",
     nullable: true,
     transformer: {
       from: (value: string | Date | null): string | null => {
         if (!value) return null;
-        if (typeof value === 'string') return value;
+        if (typeof value === "string") return value;
         const year = value.getFullYear();
-        const month = String(value.getMonth() + 1).padStart(2, '0');
-        const day = String(value.getDate()).padStart(2, '0');
+        const month = String(value.getMonth() + 1).padStart(2, "0");
+        const day = String(value.getDate()).padStart(2, "0");
         return `${year}-${month}-${day}`;
       },
       to: (value: string | Date | null): string | Date | null => value,
@@ -122,8 +127,10 @@ export class Transaction {
 
   // Computed properties for backwards compatibility
   get isCleared(): boolean {
-    return this.status === TransactionStatus.CLEARED ||
-           this.status === TransactionStatus.RECONCILED;
+    return (
+      this.status === TransactionStatus.CLEARED ||
+      this.status === TransactionStatus.RECONCILED
+    );
   }
 
   get isReconciled(): boolean {
@@ -134,28 +141,28 @@ export class Transaction {
     return this.status === TransactionStatus.VOID;
   }
 
-  @Column({ name: 'is_split', default: false })
+  @Column({ name: "is_split", default: false })
   isSplit: boolean;
 
-  @Column({ type: 'uuid', name: 'parent_transaction_id', nullable: true })
+  @Column({ type: "uuid", name: "parent_transaction_id", nullable: true })
   parentTransactionId: string | null;
 
-  @Column({ name: 'is_transfer', default: false })
+  @Column({ name: "is_transfer", default: false })
   isTransfer: boolean;
 
-  @Column({ type: 'uuid', name: 'linked_transaction_id', nullable: true })
+  @Column({ type: "uuid", name: "linked_transaction_id", nullable: true })
   linkedTransactionId: string | null;
 
   @ManyToOne(() => Transaction, { nullable: true })
-  @JoinColumn({ name: 'linked_transaction_id' })
+  @JoinColumn({ name: "linked_transaction_id" })
   linkedTransaction: Transaction | null;
 
   @OneToMany(() => TransactionSplit, (split) => split.transaction)
   splits: TransactionSplit[];
 
-  @CreateDateColumn({ name: 'created_at' })
+  @CreateDateColumn({ name: "created_at" })
   createdAt: Date;
 
-  @UpdateDateColumn({ name: 'updated_at' })
+  @UpdateDateColumn({ name: "updated_at" })
   updatedAt: Date;
 }

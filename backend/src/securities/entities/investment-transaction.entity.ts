@@ -1,64 +1,75 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
-import { ApiProperty } from '@nestjs/swagger';
-import { Account } from '../../accounts/entities/account.entity';
-import { Transaction } from '../../transactions/entities/transaction.entity';
-import { Security } from './security.entity';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  JoinColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from "typeorm";
+import { ApiProperty } from "@nestjs/swagger";
+import { Account } from "../../accounts/entities/account.entity";
+import { Transaction } from "../../transactions/entities/transaction.entity";
+import { Security } from "./security.entity";
 
 export enum InvestmentAction {
-  BUY = 'BUY',
-  SELL = 'SELL',
-  DIVIDEND = 'DIVIDEND',
-  INTEREST = 'INTEREST',
-  CAPITAL_GAIN = 'CAPITAL_GAIN',
-  SPLIT = 'SPLIT',
-  TRANSFER_IN = 'TRANSFER_IN',
-  TRANSFER_OUT = 'TRANSFER_OUT',
-  REINVEST = 'REINVEST',
-  ADD_SHARES = 'ADD_SHARES',
-  REMOVE_SHARES = 'REMOVE_SHARES',
+  BUY = "BUY",
+  SELL = "SELL",
+  DIVIDEND = "DIVIDEND",
+  INTEREST = "INTEREST",
+  CAPITAL_GAIN = "CAPITAL_GAIN",
+  SPLIT = "SPLIT",
+  TRANSFER_IN = "TRANSFER_IN",
+  TRANSFER_OUT = "TRANSFER_OUT",
+  REINVEST = "REINVEST",
+  ADD_SHARES = "ADD_SHARES",
+  REMOVE_SHARES = "REMOVE_SHARES",
 }
 
-@Entity('investment_transactions')
+@Entity("investment_transactions")
 export class InvestmentTransaction {
   @ApiProperty()
-  @PrimaryGeneratedColumn('uuid')
+  @PrimaryGeneratedColumn("uuid")
   id: string;
 
   @ApiProperty()
-  @Column({ type: 'uuid', name: 'user_id' })
+  @Column({ type: "uuid", name: "user_id" })
   userId: string;
 
   @ApiProperty()
-  @Column({ type: 'uuid', name: 'account_id' })
+  @Column({ type: "uuid", name: "account_id" })
   accountId: string;
 
   @ApiProperty({ required: false })
-  @Column({ type: 'uuid', name: 'transaction_id', nullable: true })
+  @Column({ type: "uuid", name: "transaction_id", nullable: true })
   transactionId: string | null;
 
   @ApiProperty({ required: false })
-  @Column({ type: 'uuid', name: 'security_id', nullable: true })
+  @Column({ type: "uuid", name: "security_id", nullable: true })
   securityId: string | null;
 
-  @ApiProperty({ required: false, description: 'Account where funds come from (BUY) or go to (SELL)' })
-  @Column({ type: 'uuid', name: 'funding_account_id', nullable: true })
+  @ApiProperty({
+    required: false,
+    description: "Account where funds come from (BUY) or go to (SELL)",
+  })
+  @Column({ type: "uuid", name: "funding_account_id", nullable: true })
   fundingAccountId: string | null;
 
   @ApiProperty({ enum: InvestmentAction })
-  @Column({ type: 'varchar', length: 50 })
+  @Column({ type: "varchar", length: 50 })
   action: InvestmentAction;
 
   @ApiProperty()
   @Column({
-    type: 'date',
-    name: 'transaction_date',
+    type: "date",
+    name: "transaction_date",
     transformer: {
       from: (value: string | Date): string => {
         if (!value) return value as string;
-        if (typeof value === 'string') return value;
+        if (typeof value === "string") return value;
         const year = value.getFullYear();
-        const month = String(value.getMonth() + 1).padStart(2, '0');
-        const day = String(value.getDate()).padStart(2, '0');
+        const month = String(value.getMonth() + 1).padStart(2, "0");
+        const day = String(value.getDate()).padStart(2, "0");
         return `${year}-${month}-${day}`;
       },
       to: (value: string | Date): string | Date => value,
@@ -66,47 +77,50 @@ export class InvestmentTransaction {
   })
   transactionDate: string;
 
-  @ApiProperty({ example: 100, description: 'Number of shares' })
-  @Column({ type: 'decimal', precision: 20, scale: 8, nullable: true })
+  @ApiProperty({ example: 100, description: "Number of shares" })
+  @Column({ type: "decimal", precision: 20, scale: 8, nullable: true })
   quantity: number | null;
 
-  @ApiProperty({ example: 150.25, description: 'Price per share' })
-  @Column({ type: 'decimal', precision: 20, scale: 4, nullable: true })
+  @ApiProperty({ example: 150.25, description: "Price per share" })
+  @Column({ type: "decimal", precision: 20, scale: 4, nullable: true })
   price: number | null;
 
-  @ApiProperty({ example: 9.99, description: 'Commission or fee' })
-  @Column({ type: 'decimal', precision: 20, scale: 4, default: 0 })
+  @ApiProperty({ example: 9.99, description: "Commission or fee" })
+  @Column({ type: "decimal", precision: 20, scale: 4, default: 0 })
   commission: number;
 
-  @ApiProperty({ example: 15035.99, description: 'Total amount of transaction' })
-  @Column({ type: 'decimal', precision: 20, scale: 4, name: 'total_amount' })
+  @ApiProperty({
+    example: 15035.99,
+    description: "Total amount of transaction",
+  })
+  @Column({ type: "decimal", precision: 20, scale: 4, name: "total_amount" })
   totalAmount: number;
 
   @ApiProperty({ required: false })
-  @Column({ type: 'text', nullable: true })
+  @Column({ type: "text", nullable: true })
   description: string | null;
 
   @ManyToOne(() => Account)
-  @JoinColumn({ name: 'account_id' })
+  @JoinColumn({ name: "account_id" })
   account: Account;
 
   @ManyToOne(() => Transaction, { nullable: true })
-  @JoinColumn({ name: 'transaction_id' })
+  @JoinColumn({ name: "transaction_id" })
   transaction: Transaction;
 
   @ManyToOne(() => Security, { nullable: true })
-  @JoinColumn({ name: 'security_id' })
+  @JoinColumn({ name: "security_id" })
   security: Security;
 
   @ManyToOne(() => Account, { nullable: true })
-  @JoinColumn({ name: 'funding_account_id' })
+  @JoinColumn({ name: "funding_account_id" })
   fundingAccount: Account | null;
 
   @ApiProperty()
-  @CreateDateColumn({ name: 'created_at' })
+  @CreateDateColumn({ name: "created_at" })
   createdAt: Date;
 
   @ApiProperty()
-  @UpdateDateColumn({ name: 'updated_at' })
+  @UpdateDateColumn({ name: "updated_at" })
   updatedAt: Date;
 }

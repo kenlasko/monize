@@ -1,11 +1,11 @@
-import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Transaction } from '../transactions/entities/transaction.entity';
-import { Category } from '../categories/entities/category.entity';
-import { Payee } from '../payees/entities/payee.entity';
-import { UserPreference } from '../users/entities/user-preference.entity';
-import { ExchangeRateService } from '../currencies/exchange-rate.service';
+import { Injectable } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { Transaction } from "../transactions/entities/transaction.entity";
+import { Category } from "../categories/entities/category.entity";
+import { Payee } from "../payees/entities/payee.entity";
+import { UserPreference } from "../users/entities/user-preference.entity";
+import { ExchangeRateService } from "../currencies/exchange-rate.service";
 import {
   SpendingByCategoryResponse,
   CategorySpendingItem,
@@ -37,7 +37,7 @@ import {
   DuplicateTransactionsResponse,
   DuplicateGroup,
   DuplicateTransactionItem,
-} from './dto';
+} from "./dto";
 
 interface RawCategoryAggregate {
   category_id: string | null;
@@ -83,15 +83,20 @@ export class BuiltInReportsService {
   ) {}
 
   private async getDefaultCurrency(userId: string): Promise<string> {
-    const pref = await this.userPreferenceRepository.findOne({ where: { userId } });
-    return pref?.defaultCurrency || 'USD';
+    const pref = await this.userPreferenceRepository.findOne({
+      where: { userId },
+    });
+    return pref?.defaultCurrency || "USD";
   }
 
-  private async buildRateMap(defaultCurrency: string): Promise<RateMap> {
+  private async buildRateMap(_defaultCurrency: string): Promise<RateMap> {
     const rates = await this.exchangeRateService.getLatestRates();
     const rateMap: RateMap = new Map();
     for (const rate of rates) {
-      rateMap.set(`${rate.fromCurrency}->${rate.toCurrency}`, Number(rate.rate));
+      rateMap.set(
+        `${rate.fromCurrency}->${rate.toCurrency}`,
+        Number(rate.rate),
+      );
     }
     return rateMap;
   }
@@ -168,16 +173,21 @@ export class BuiltInReportsService {
     >();
 
     for (const row of rawResults) {
-      const total = this.convertAmount(parseFloat(row.total) || 0, row.currency_code, defaultCurrency, rateMap);
+      const total = this.convertAmount(
+        parseFloat(row.total) || 0,
+        row.currency_code,
+        defaultCurrency,
+        rateMap,
+      );
       const categoryId = row.category_id;
 
       if (!categoryId) {
         // Uncategorized
-        const existing = parentTotals.get('uncategorized');
+        const existing = parentTotals.get("uncategorized");
         if (existing) {
           existing.total += total;
         } else {
-          parentTotals.set('uncategorized', { total, category: null });
+          parentTotals.set("uncategorized", { total, category: null });
         }
         continue;
       }
@@ -185,11 +195,11 @@ export class BuiltInReportsService {
       const category = categoryMap.get(categoryId);
       if (!category) {
         // Category not found, treat as uncategorized
-        const existing = parentTotals.get('uncategorized');
+        const existing = parentTotals.get("uncategorized");
         if (existing) {
           existing.total += total;
         } else {
-          parentTotals.set('uncategorized', { total, category: null });
+          parentTotals.set("uncategorized", { total, category: null });
         }
         continue;
       }
@@ -212,8 +222,8 @@ export class BuiltInReportsService {
     // Convert to response format, sort by total descending, limit to top 15
     const data: CategorySpendingItem[] = Array.from(parentTotals.entries())
       .map(([id, { total, category }]) => ({
-        categoryId: id === 'uncategorized' ? null : id,
-        categoryName: category?.name || 'Uncategorized',
+        categoryId: id === "uncategorized" ? null : id,
+        categoryName: category?.name || "Uncategorized",
         color: category?.color || null,
         total: Math.round(total * 100) / 100,
       }))
@@ -280,10 +290,18 @@ export class BuiltInReportsService {
     const payeeMap = new Map(payees.map((p) => [p.id, p]));
 
     // Merge rows by payee (multiple currencies per payee), converting amounts
-    const payeeTotals = new Map<string, { payeeId: string | null; payeeName: string; total: number }>();
+    const payeeTotals = new Map<
+      string,
+      { payeeId: string | null; payeeName: string; total: number }
+    >();
     for (const row of rawResults) {
-      const total = this.convertAmount(parseFloat(row.total) || 0, row.currency_code, defaultCurrency, rateMap);
-      const key = row.payee_id || row.payee_name || 'unknown';
+      const total = this.convertAmount(
+        parseFloat(row.total) || 0,
+        row.currency_code,
+        defaultCurrency,
+        rateMap,
+      );
+      const key = row.payee_id || row.payee_name || "unknown";
       const payee = row.payee_id ? payeeMap.get(row.payee_id) : null;
       const existing = payeeTotals.get(key);
       if (existing) {
@@ -291,7 +309,7 @@ export class BuiltInReportsService {
       } else {
         payeeTotals.set(key, {
           payeeId: row.payee_id,
-          payeeName: payee?.name || row.payee_name || 'Unknown',
+          payeeName: payee?.name || row.payee_name || "Unknown",
           total,
         });
       }
@@ -368,26 +386,31 @@ export class BuiltInReportsService {
     >();
 
     for (const row of rawResults) {
-      const total = this.convertAmount(parseFloat(row.total) || 0, row.currency_code, defaultCurrency, rateMap);
+      const total = this.convertAmount(
+        parseFloat(row.total) || 0,
+        row.currency_code,
+        defaultCurrency,
+        rateMap,
+      );
       const categoryId = row.category_id;
 
       if (!categoryId) {
-        const existing = parentTotals.get('uncategorized');
+        const existing = parentTotals.get("uncategorized");
         if (existing) {
           existing.total += total;
         } else {
-          parentTotals.set('uncategorized', { total, category: null });
+          parentTotals.set("uncategorized", { total, category: null });
         }
         continue;
       }
 
       const category = categoryMap.get(categoryId);
       if (!category) {
-        const existing = parentTotals.get('uncategorized');
+        const existing = parentTotals.get("uncategorized");
         if (existing) {
           existing.total += total;
         } else {
-          parentTotals.set('uncategorized', { total, category: null });
+          parentTotals.set("uncategorized", { total, category: null });
         }
         continue;
       }
@@ -408,8 +431,8 @@ export class BuiltInReportsService {
 
     const data: IncomeSourceItem[] = Array.from(parentTotals.entries())
       .map(([id, { total, category }]) => ({
-        categoryId: id === 'uncategorized' ? null : id,
-        categoryName: category?.name || 'Uncategorized',
+        categoryId: id === "uncategorized" ? null : id,
+        categoryName: category?.name || "Uncategorized",
         color: category?.color || null,
         total: Math.round(total * 100) / 100,
       }))
@@ -483,7 +506,12 @@ export class BuiltInReportsService {
 
     for (const row of rawResults) {
       const month = row.month;
-      const total = this.convertAmount(parseFloat(row.total) || 0, row.currency_code, defaultCurrency, rateMap);
+      const total = this.convertAmount(
+        parseFloat(row.total) || 0,
+        row.currency_code,
+        defaultCurrency,
+        rateMap,
+      );
       const categoryId = row.category_id;
 
       if (!monthlyData.has(month)) {
@@ -491,7 +519,7 @@ export class BuiltInReportsService {
       }
       const monthMap = monthlyData.get(month)!;
 
-      let displayId = 'uncategorized';
+      let displayId = "uncategorized";
       let displayCategory: Category | null = null;
 
       if (categoryId) {
@@ -536,10 +564,10 @@ export class BuiltInReportsService {
           (catId) => {
             const catData = catMap.get(catId);
             const category =
-              catId === 'uncategorized' ? null : categoryMap.get(catId);
+              catId === "uncategorized" ? null : categoryMap.get(catId);
             return {
-              categoryId: catId === 'uncategorized' ? null : catId,
-              categoryName: category?.name || 'Uncategorized',
+              categoryId: catId === "uncategorized" ? null : catId,
+              categoryName: category?.name || "Uncategorized",
               color: category?.color || null,
               total: Math.round((catData?.total || 0) * 100) / 100,
             };
@@ -608,8 +636,18 @@ export class BuiltInReportsService {
     // Merge rows by month (multiple currencies per month)
     const monthlyMap = new Map<string, { income: number; expenses: number }>();
     for (const row of rawResults) {
-      const income = this.convertAmount(parseFloat(row.income) || 0, row.currency_code, defaultCurrency, rateMap);
-      const expenses = this.convertAmount(parseFloat(row.expenses) || 0, row.currency_code, defaultCurrency, rateMap);
+      const income = this.convertAmount(
+        parseFloat(row.income) || 0,
+        row.currency_code,
+        defaultCurrency,
+        rateMap,
+      );
+      const expenses = this.convertAmount(
+        parseFloat(row.expenses) || 0,
+        row.currency_code,
+        defaultCurrency,
+        rateMap,
+      );
       const existing = monthlyMap.get(row.month);
       if (existing) {
         existing.income += income;
@@ -714,11 +752,22 @@ export class BuiltInReportsService {
       const yearData = yearMap.get(row.year);
       if (yearData) {
         const monthData = yearData.months[row.month - 1];
-        const income = this.convertAmount(parseFloat(row.income) || 0, row.currency_code, defaultCurrency, rateMap);
-        const expenses = this.convertAmount(parseFloat(row.expenses) || 0, row.currency_code, defaultCurrency, rateMap);
+        const income = this.convertAmount(
+          parseFloat(row.income) || 0,
+          row.currency_code,
+          defaultCurrency,
+          rateMap,
+        );
+        const expenses = this.convertAmount(
+          parseFloat(row.expenses) || 0,
+          row.currency_code,
+          defaultCurrency,
+          rateMap,
+        );
         monthData.income += Math.round(income * 100) / 100;
         monthData.expenses += Math.round(expenses * 100) / 100;
-        monthData.savings = Math.round((monthData.income - monthData.expenses) * 100) / 100;
+        monthData.savings =
+          Math.round((monthData.income - monthData.expenses) * 100) / 100;
 
         yearData.totals.income += income;
         yearData.totals.expenses += expenses;
@@ -811,7 +860,12 @@ export class BuiltInReportsService {
     >();
 
     rawResults.forEach((row) => {
-      const total = this.convertAmount(parseFloat(row.total) || 0, row.currency_code, defaultCurrency, rateMap);
+      const total = this.convertAmount(
+        parseFloat(row.total) || 0,
+        row.currency_code,
+        defaultCurrency,
+        rateMap,
+      );
       const count = row.tx_count;
       const isWeekend = row.day_of_week === 0 || row.day_of_week === 6;
 
@@ -819,8 +873,8 @@ export class BuiltInReportsService {
       dayCounts[row.day_of_week] += count;
 
       // Category rollup
-      let displayId = 'uncategorized';
-      let displayName = 'Uncategorized';
+      let displayId = "uncategorized";
+      let displayName = "Uncategorized";
       if (row.category_id) {
         const category = categoryMap.get(row.category_id);
         if (category) {
@@ -843,8 +897,7 @@ export class BuiltInReportsService {
     });
 
     // Build summary
-    const weekendTotal =
-      Math.round((dayTotals[0] + dayTotals[6]) * 100) / 100;
+    const weekendTotal = Math.round((dayTotals[0] + dayTotals[6]) * 100) / 100;
     const weekdayTotal =
       Math.round(
         (dayTotals[1] +
@@ -875,8 +928,8 @@ export class BuiltInReportsService {
         const weekend = weekendByCategory.get(catId);
         const weekday = weekdayByCategory.get(catId);
         return {
-          categoryId: catId === 'uncategorized' ? null : catId,
-          categoryName: weekend?.name || weekday?.name || 'Unknown',
+          categoryId: catId === "uncategorized" ? null : catId,
+          categoryName: weekend?.name || weekday?.name || "Unknown",
           weekendTotal: Math.round((weekend?.total || 0) * 100) / 100,
           weekdayTotal: Math.round((weekday?.total || 0) * 100) / 100,
         };
@@ -913,8 +966,8 @@ export class BuiltInReportsService {
     const now = new Date();
     const sixMonthsAgo = new Date(now);
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-    const startDate = sixMonthsAgo.toISOString().split('T')[0];
-    const endDate = now.toISOString().split('T')[0];
+    const startDate = sixMonthsAgo.toISOString().split("T")[0];
+    const endDate = now.toISOString().split("T")[0];
 
     // Query all expense transactions
     const query = `
@@ -971,7 +1024,14 @@ export class BuiltInReportsService {
     const categoryMap = new Map(categories.map((c) => [c.id, c]));
 
     // Calculate statistics with converted amounts
-    const amounts = rawResults.map((r) => this.convertAmount(parseFloat(r.amount) || 0, r.currency_code, defaultCurrency, rateMap));
+    const amounts = rawResults.map((r) =>
+      this.convertAmount(
+        parseFloat(r.amount) || 0,
+        r.currency_code,
+        defaultCurrency,
+        rateMap,
+      ),
+    );
     const mean = amounts.reduce((sum, a) => sum + a, 0) / amounts.length;
     const variance =
       amounts.reduce((sum, a) => sum + Math.pow(a - mean, 2), 0) /
@@ -982,25 +1042,30 @@ export class BuiltInReportsService {
 
     // 1. Large single transactions
     rawResults.forEach((row) => {
-      const amount = this.convertAmount(parseFloat(row.amount) || 0, row.currency_code, defaultCurrency, rateMap);
+      const amount = this.convertAmount(
+        parseFloat(row.amount) || 0,
+        row.currency_code,
+        defaultCurrency,
+        rateMap,
+      );
       const zScore = (amount - mean) / stdDev;
 
       if (zScore > threshold) {
         const severity: AnomalySeverity =
           zScore > threshold * 2
-            ? 'high'
+            ? "high"
             : zScore > threshold * 1.5
-              ? 'medium'
-              : 'low';
+              ? "medium"
+              : "low";
         const txDate = new Date(row.transaction_date);
         anomalies.push({
-          type: 'large_transaction',
+          type: "large_transaction",
           severity,
-          title: 'Unusually large transaction',
-          description: `${row.payee_name || 'Unknown payee'} - ${txDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`,
+          title: "Unusually large transaction",
+          description: `${row.payee_name || "Unknown payee"} - ${txDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`,
           amount: Math.round(amount * 100) / 100,
           transactionId: row.id,
-          transactionDate: row.transaction_date.toString().split('T')[0],
+          transactionDate: row.transaction_date.toString().split("T")[0],
           payeeName: row.payee_name || undefined,
         });
       }
@@ -1016,8 +1081,13 @@ export class BuiltInReportsService {
 
     rawResults.forEach((row) => {
       const txDate = new Date(row.transaction_date);
-      const amount = this.convertAmount(parseFloat(row.amount) || 0, row.currency_code, defaultCurrency, rateMap);
-      const categoryId = row.category_id || 'uncategorized';
+      const amount = this.convertAmount(
+        parseFloat(row.amount) || 0,
+        row.currency_code,
+        defaultCurrency,
+        rateMap,
+      );
+      const categoryId = row.category_id || "uncategorized";
 
       if (txDate >= currentMonthStart) {
         currentMonthByCategory.set(
@@ -1041,20 +1111,16 @@ export class BuiltInReportsService {
 
       if (percentChange > 100) {
         const category =
-          categoryId === 'uncategorized' ? null : categoryMap.get(categoryId);
+          categoryId === "uncategorized" ? null : categoryMap.get(categoryId);
         const severity: AnomalySeverity =
-          percentChange > 300
-            ? 'high'
-            : percentChange > 200
-              ? 'medium'
-              : 'low';
+          percentChange > 300 ? "high" : percentChange > 200 ? "medium" : "low";
         anomalies.push({
-          type: 'category_spike',
+          type: "category_spike",
           severity,
-          title: `Spending spike in ${category?.name || 'Uncategorized'}`,
+          title: `Spending spike in ${category?.name || "Uncategorized"}`,
           description: `${Math.round(percentChange)}% increase from last month`,
-          categoryId: categoryId === 'uncategorized' ? undefined : categoryId,
-          categoryName: category?.name || 'Uncategorized',
+          categoryId: categoryId === "uncategorized" ? undefined : categoryId,
+          categoryName: category?.name || "Uncategorized",
           currentPeriodAmount: Math.round(currentAmount * 100) / 100,
           previousPeriodAmount: Math.round(previousAmount * 100) / 100,
           percentChange: Math.round(percentChange),
@@ -1073,24 +1139,37 @@ export class BuiltInReportsService {
     >();
 
     rawResults.forEach((row) => {
-      const payeeName = (row.payee_name || '').toLowerCase().trim();
+      const payeeName = (row.payee_name || "").toLowerCase().trim();
       if (!payeeName) return;
 
       const txDate = new Date(row.transaction_date);
 
-      if (!payeeFirstSeen.has(payeeName) || txDate < payeeFirstSeen.get(payeeName)!) {
+      if (
+        !payeeFirstSeen.has(payeeName) ||
+        txDate < payeeFirstSeen.get(payeeName)!
+      ) {
         payeeFirstSeen.set(payeeName, txDate);
       }
 
       if (txDate >= oneMonthAgo) {
         const existing = payeeRecentSpending.get(payeeName);
         if (existing) {
-          existing.total += this.convertAmount(parseFloat(row.amount) || 0, row.currency_code, defaultCurrency, rateMap);
+          existing.total += this.convertAmount(
+            parseFloat(row.amount) || 0,
+            row.currency_code,
+            defaultCurrency,
+            rateMap,
+          );
           existing.count++;
         } else {
           payeeRecentSpending.set(payeeName, {
-            name: row.payee_name || 'Unknown',
-            total: this.convertAmount(parseFloat(row.amount) || 0, row.currency_code, defaultCurrency, rateMap),
+            name: row.payee_name || "Unknown",
+            total: this.convertAmount(
+              parseFloat(row.amount) || 0,
+              row.currency_code,
+              defaultCurrency,
+              rateMap,
+            ),
             count: 1,
             txId: row.id,
           });
@@ -1103,11 +1182,11 @@ export class BuiltInReportsService {
         const recent = payeeRecentSpending.get(payeeName);
         if (recent && recent.total > 100) {
           const severity: AnomalySeverity =
-            recent.total > 500 ? 'high' : recent.total > 200 ? 'medium' : 'low';
+            recent.total > 500 ? "high" : recent.total > 200 ? "medium" : "low";
           anomalies.push({
-            type: 'unusual_payee',
+            type: "unusual_payee",
             severity,
-            title: 'New payee detected',
+            title: "New payee detected",
             description: `${recent.name} - ${recent.count} transaction(s)`,
             amount: Math.round(recent.total * 100) / 100,
             transactionId: recent.txId,
@@ -1124,7 +1203,8 @@ export class BuiltInReportsService {
       low: 2,
     };
     anomalies.sort((a, b) => {
-      const severityDiff = severityOrder[a.severity] - severityOrder[b.severity];
+      const severityDiff =
+        severityOrder[a.severity] - severityOrder[b.severity];
       if (severityDiff !== 0) return severityDiff;
       return (b.amount || 0) - (a.amount || 0);
     });
@@ -1136,9 +1216,9 @@ export class BuiltInReportsService {
       },
       anomalies,
       counts: {
-        high: anomalies.filter((a) => a.severity === 'high').length,
-        medium: anomalies.filter((a) => a.severity === 'medium').length,
-        low: anomalies.filter((a) => a.severity === 'low').length,
+        high: anomalies.filter((a) => a.severity === "high").length,
+        medium: anomalies.filter((a) => a.severity === "medium").length,
+        low: anomalies.filter((a) => a.severity === "low").length,
       },
     };
   }
@@ -1146,7 +1226,10 @@ export class BuiltInReportsService {
   /**
    * Get tax summary for a given year
    */
-  async getTaxSummary(userId: string, year: number): Promise<TaxSummaryResponse> {
+  async getTaxSummary(
+    userId: string,
+    year: number,
+  ): Promise<TaxSummaryResponse> {
     const defaultCurrency = await this.getDefaultCurrency(userId);
     const rateMap = await this.buildRateMap(defaultCurrency);
 
@@ -1190,27 +1273,27 @@ export class BuiltInReportsService {
 
     // Tax-deductible keywords
     const taxDeductibleKeywords = [
-      'medical',
-      'health',
-      'dental',
-      'vision',
-      'prescription',
-      'pharmacy',
-      'donation',
-      'charity',
-      'charitable',
-      'education',
-      'tuition',
-      'school',
-      'course',
-      'training',
-      'childcare',
-      'daycare',
-      'moving',
-      'union',
-      'professional dues',
-      'rrsp',
-      'retirement',
+      "medical",
+      "health",
+      "dental",
+      "vision",
+      "prescription",
+      "pharmacy",
+      "donation",
+      "charity",
+      "charitable",
+      "education",
+      "tuition",
+      "school",
+      "course",
+      "training",
+      "childcare",
+      "daycare",
+      "moving",
+      "union",
+      "professional dues",
+      "rrsp",
+      "retirement",
     ];
 
     const matchesKeywords = (name: string): boolean => {
@@ -1227,16 +1310,26 @@ export class BuiltInReportsService {
     let totalExpenses = 0;
 
     rawResults.forEach((row) => {
-      const amount = this.convertAmount(parseFloat(row.amount) || 0, row.currency_code, defaultCurrency, rateMap);
-      const category = row.category_id ? categoryMap.get(row.category_id) : null;
+      const amount = this.convertAmount(
+        parseFloat(row.amount) || 0,
+        row.currency_code,
+        defaultCurrency,
+        rateMap,
+      );
+      const category = row.category_id
+        ? categoryMap.get(row.category_id)
+        : null;
       const parentCategory = category?.parentId
         ? categoryMap.get(category.parentId)
         : null;
-      const catName = parentCategory?.name || category?.name || 'Uncategorized';
+      const catName = parentCategory?.name || category?.name || "Uncategorized";
 
       if (amount > 0) {
         totalIncome += amount;
-        incomeBySource.set(catName, (incomeBySource.get(catName) || 0) + amount);
+        incomeBySource.set(
+          catName,
+          (incomeBySource.get(catName) || 0) + amount,
+        );
       } else {
         const expenseAmt = Math.abs(amount);
         totalExpenses += expenseAmt;
@@ -1300,8 +1393,8 @@ export class BuiltInReportsService {
     const now = new Date();
     const sixMonthsAgo = new Date(now);
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-    const startDate = sixMonthsAgo.toISOString().split('T')[0];
-    const endDate = now.toISOString().split('T')[0];
+    const startDate = sixMonthsAgo.toISOString().split("T")[0];
+    const endDate = now.toISOString().split("T")[0];
 
     const query = `
       SELECT
@@ -1348,23 +1441,33 @@ export class BuiltInReportsService {
     );
 
     // Merge rows by payee (multiple currencies per payee)
-    const payeeMerged = new Map<string, {
-      payeeName: string;
-      payeeId: string | null;
-      occurrences: number;
-      totalAmount: number;
-      lastTransactionDate: Date;
-      categoryName: string | null;
-    }>();
+    const payeeMerged = new Map<
+      string,
+      {
+        payeeName: string;
+        payeeId: string | null;
+        occurrences: number;
+        totalAmount: number;
+        lastTransactionDate: Date;
+        categoryName: string | null;
+      }
+    >();
 
     for (const row of rawResults) {
-      const totalAmount = this.convertAmount(parseFloat(row.total_amount) || 0, row.currency_code, defaultCurrency, rateMap);
+      const totalAmount = this.convertAmount(
+        parseFloat(row.total_amount) || 0,
+        row.currency_code,
+        defaultCurrency,
+        rateMap,
+      );
       const key = row.payee_name_normalized;
       const existing = payeeMerged.get(key);
       if (existing) {
         existing.occurrences += row.occurrences;
         existing.totalAmount += totalAmount;
-        if (new Date(row.last_transaction_date) > existing.lastTransactionDate) {
+        if (
+          new Date(row.last_transaction_date) > existing.lastTransactionDate
+        ) {
           existing.lastTransactionDate = new Date(row.last_transaction_date);
         }
       } else {
@@ -1379,32 +1482,37 @@ export class BuiltInReportsService {
       }
     }
 
-    const data: RecurringExpenseItem[] = Array.from(payeeMerged.values()).map((row) => {
-      const totalAmount = row.totalAmount;
-      const occurrences = row.occurrences;
+    const data: RecurringExpenseItem[] = Array.from(payeeMerged.values()).map(
+      (row) => {
+        const totalAmount = row.totalAmount;
+        const occurrences = row.occurrences;
 
-      // Estimate frequency based on occurrences over 6 months
-      let frequency = 'Irregular';
-      if (occurrences >= 24) frequency = 'Weekly';
-      else if (occurrences >= 12) frequency = 'Bi-weekly';
-      else if (occurrences >= 5) frequency = 'Monthly';
-      else if (occurrences >= 3) frequency = 'Occasional';
+        // Estimate frequency based on occurrences over 6 months
+        let frequency = "Irregular";
+        if (occurrences >= 24) frequency = "Weekly";
+        else if (occurrences >= 12) frequency = "Bi-weekly";
+        else if (occurrences >= 5) frequency = "Monthly";
+        else if (occurrences >= 3) frequency = "Occasional";
 
-      return {
-        payeeName: row.payeeName,
-        payeeId: row.payeeId,
-        occurrences,
-        totalAmount: Math.round(totalAmount * 100) / 100,
-        averageAmount: Math.round((totalAmount / occurrences) * 100) / 100,
-        lastTransactionDate: row.lastTransactionDate
-          .toISOString()
-          .split('T')[0],
-        frequency,
-        categoryName: row.categoryName || 'Uncategorized',
-      };
-    });
+        return {
+          payeeName: row.payeeName,
+          payeeId: row.payeeId,
+          occurrences,
+          totalAmount: Math.round(totalAmount * 100) / 100,
+          averageAmount: Math.round((totalAmount / occurrences) * 100) / 100,
+          lastTransactionDate: row.lastTransactionDate
+            .toISOString()
+            .split("T")[0],
+          frequency,
+          categoryName: row.categoryName || "Uncategorized",
+        };
+      },
+    );
 
-    const totalRecurring = data.reduce((sum, item) => sum + item.totalAmount, 0);
+    const totalRecurring = data.reduce(
+      (sum, item) => sum + item.totalAmount,
+      0,
+    );
 
     return {
       data,
@@ -1535,7 +1643,12 @@ export class BuiltInReportsService {
       const scheduled = payeeToScheduled.get(tx.payee_name_normalized);
       if (!scheduled) return;
 
-      const txAmount = this.convertAmount(parseFloat(tx.amount) || 0, tx.currency_code, defaultCurrency, rateMap);
+      const txAmount = this.convertAmount(
+        parseFloat(tx.amount) || 0,
+        tx.currency_code,
+        defaultCurrency,
+        rateMap,
+      );
       // Match within 20% tolerance
       if (
         txAmount >= scheduled.amount * 0.8 &&
@@ -1574,7 +1687,8 @@ export class BuiltInReportsService {
           paymentCount: bp.payments.length,
           averagePayment:
             Math.round((totalPaid / bp.payments.length) * 100) / 100,
-          lastPaymentDate: sortedPayments[0]?.date.toISOString().split('T')[0] || null,
+          lastPaymentDate:
+            sortedPayments[0]?.date.toISOString().split("T")[0] || null,
         };
       })
       .sort((a, b) => b.totalPaid - a.totalPaid);
@@ -1591,9 +1705,9 @@ export class BuiltInReportsService {
           const d = new Date(payment.date);
           monthlyMap.set(monthKey, {
             total: payment.amount,
-            label: d.toLocaleDateString('en-US', {
-              month: 'short',
-              year: '2-digit',
+            label: d.toLocaleDateString("en-US", {
+              month: "short",
+              year: "2-digit",
             }),
           });
         }
@@ -1692,13 +1806,22 @@ export class BuiltInReportsService {
       account_name: string | null;
     }
 
-    const rows: RawUncategorizedTx[] =
-      await this.transactionsRepository.query(query, params);
+    const rows: RawUncategorizedTx[] = await this.transactionsRepository.query(
+      query,
+      params,
+    );
 
     const transactions: UncategorizedTransactionItem[] = rows.map((row) => ({
       id: row.id,
-      transactionDate: new Date(row.transaction_date).toISOString().split('T')[0],
-      amount: this.convertAmount(parseFloat(row.amount) || 0, row.currency_code, defaultCurrency, rateMap),
+      transactionDate: new Date(row.transaction_date)
+        .toISOString()
+        .split("T")[0],
+      amount: this.convertAmount(
+        parseFloat(row.amount) || 0,
+        row.currency_code,
+        defaultCurrency,
+        rateMap,
+      ),
       payeeName: row.payee_name,
       description: row.description,
       accountName: row.account_name,
@@ -1746,8 +1869,10 @@ export class BuiltInReportsService {
       income_total: string;
     }
 
-    const summaryRows: RawSummary[] =
-      await this.transactionsRepository.query(summaryQuery, summaryParams);
+    const summaryRows: RawSummary[] = await this.transactionsRepository.query(
+      summaryQuery,
+      summaryParams,
+    );
 
     let totalCount = 0;
     let expenseCount = 0;
@@ -1757,9 +1882,19 @@ export class BuiltInReportsService {
     for (const row of summaryRows) {
       totalCount += parseInt(row.total_count, 10);
       expenseCount += parseInt(row.expense_count, 10);
-      expenseTotal += this.convertAmount(parseFloat(row.expense_total) || 0, row.currency_code, defaultCurrency, rateMap);
+      expenseTotal += this.convertAmount(
+        parseFloat(row.expense_total) || 0,
+        row.currency_code,
+        defaultCurrency,
+        rateMap,
+      );
       incomeCount += parseInt(row.income_count, 10);
-      incomeTotal += this.convertAmount(parseFloat(row.income_total) || 0, row.currency_code, defaultCurrency, rateMap);
+      incomeTotal += this.convertAmount(
+        parseFloat(row.income_total) || 0,
+        row.currency_code,
+        defaultCurrency,
+        rateMap,
+      );
     }
 
     return {
@@ -1781,11 +1916,12 @@ export class BuiltInReportsService {
     userId: string,
     startDate: string | undefined,
     endDate: string,
-    sensitivity: 'high' | 'medium' | 'low' = 'medium',
+    sensitivity: "high" | "medium" | "low" = "medium",
   ): Promise<DuplicateTransactionsResponse> {
     // Configure sensitivity
-    const maxDaysDiff = sensitivity === 'high' ? 3 : sensitivity === 'medium' ? 1 : 0;
-    const checkPayee = sensitivity !== 'low';
+    const maxDaysDiff =
+      sensitivity === "high" ? 3 : sensitivity === "medium" ? 1 : 0;
+    const checkPayee = sensitivity !== "low";
 
     // Fetch transactions with relevant fields
     let query = `
@@ -1810,8 +1946,8 @@ export class BuiltInReportsService {
     const params: string[] = [userId, endDate];
     if (startDate) {
       query = query.replace(
-        'AND t.transaction_date <= $2',
-        'AND t.transaction_date >= $3 AND t.transaction_date <= $2',
+        "AND t.transaction_date <= $2",
+        "AND t.transaction_date >= $3 AND t.transaction_date <= $2",
       );
       params.push(startDate);
     }
@@ -1825,12 +1961,17 @@ export class BuiltInReportsService {
       account_name: string | null;
     }
 
-    const rows: RawTx[] = await this.transactionsRepository.query(query, params);
+    const rows: RawTx[] = await this.transactionsRepository.query(
+      query,
+      params,
+    );
 
     // Process into transactions
     const transactions: DuplicateTransactionItem[] = rows.map((row) => ({
       id: row.id,
-      transactionDate: new Date(row.transaction_date).toISOString().split('T')[0],
+      transactionDate: new Date(row.transaction_date)
+        .toISOString()
+        .split("T")[0],
       amount: parseFloat(row.amount),
       payeeName: row.payee_name,
       description: row.description,
@@ -1846,7 +1987,7 @@ export class BuiltInReportsService {
       if (processed.has(tx1.id)) continue;
 
       const date1 = new Date(tx1.transactionDate);
-      const payee1 = (tx1.payeeName || '').toLowerCase().trim();
+      const payee1 = (tx1.payeeName || "").toLowerCase().trim();
 
       const matches: DuplicateTransactionItem[] = [tx1];
 
@@ -1855,11 +1996,13 @@ export class BuiltInReportsService {
         if (processed.has(tx2.id)) continue;
 
         const date2 = new Date(tx2.transactionDate);
-        const payee2 = (tx2.payeeName || '').toLowerCase().trim();
+        const payee2 = (tx2.payeeName || "").toLowerCase().trim();
 
         // Check if dates are within range
         const daysDiff = Math.abs(
-          Math.floor((date1.getTime() - date2.getTime()) / (1000 * 60 * 60 * 24)),
+          Math.floor(
+            (date1.getTime() - date2.getTime()) / (1000 * 60 * 60 * 24),
+          ),
         );
         if (daysDiff > maxDaysDiff) {
           // Since transactions are sorted by date, break if too far apart
@@ -1889,21 +2032,21 @@ export class BuiltInReportsService {
         );
         const allSamePayee = matches.every(
           (m) =>
-            (m.payeeName || '').toLowerCase().trim() ===
-            (matches[0].payeeName || '').toLowerCase().trim(),
+            (m.payeeName || "").toLowerCase().trim() ===
+            (matches[0].payeeName || "").toLowerCase().trim(),
         );
 
-        let confidence: 'high' | 'medium' | 'low' = 'low';
-        let reason = 'Same amount';
+        let confidence: "high" | "medium" | "low" = "low";
+        let reason = "Same amount";
 
         if (allSameDate && allSamePayee) {
-          confidence = 'high';
-          reason = 'Same date, amount, and payee';
+          confidence = "high";
+          reason = "Same date, amount, and payee";
         } else if (allSameDate) {
-          confidence = 'medium';
-          reason = 'Same date and amount';
+          confidence = "medium";
+          reason = "Same date and amount";
         } else if (allSamePayee) {
-          confidence = 'medium';
+          confidence = "medium";
           reason = `Same payee and amount within ${maxDaysDiff} day(s)`;
         } else {
           reason = `Same amount within ${maxDaysDiff} day(s)`;
@@ -1919,18 +2062,24 @@ export class BuiltInReportsService {
     }
 
     // Sort by confidence then by amount
-    const confidenceOrder: Record<string, number> = { high: 0, medium: 1, low: 2 };
+    const confidenceOrder: Record<string, number> = {
+      high: 0,
+      medium: 1,
+      low: 2,
+    };
     groups.sort((a, b) => {
       const confDiff =
         confidenceOrder[a.confidence] - confidenceOrder[b.confidence];
       if (confDiff !== 0) return confDiff;
-      return Math.abs(b.transactions[0].amount) - Math.abs(a.transactions[0].amount);
+      return (
+        Math.abs(b.transactions[0].amount) - Math.abs(a.transactions[0].amount)
+      );
     });
 
     // Calculate summary
-    const high = groups.filter((g) => g.confidence === 'high');
-    const medium = groups.filter((g) => g.confidence === 'medium');
-    const low = groups.filter((g) => g.confidence === 'low');
+    const high = groups.filter((g) => g.confidence === "high");
+    const medium = groups.filter((g) => g.confidence === "medium");
+    const low = groups.filter((g) => g.confidence === "low");
 
     const potentialSavings = groups.reduce((sum, group) => {
       const duplicateCount = group.transactions.length - 1;

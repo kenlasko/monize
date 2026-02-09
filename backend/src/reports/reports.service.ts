@@ -1,9 +1,12 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Brackets } from 'typeorm';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository, Brackets } from "typeorm";
 import {
   CustomReport,
-  ReportViewType,
   TimeframeType,
   GroupByType,
   MetricType,
@@ -12,18 +15,18 @@ import {
   ReportFilters,
   TableColumn,
   SortDirection,
-} from './entities/custom-report.entity';
-import { Transaction } from '../transactions/entities/transaction.entity';
-import { Category } from '../categories/entities/category.entity';
-import { Payee } from '../payees/entities/payee.entity';
-import { CreateCustomReportDto } from './dto/create-custom-report.dto';
-import { UpdateCustomReportDto } from './dto/update-custom-report.dto';
+} from "./entities/custom-report.entity";
+import { Transaction } from "../transactions/entities/transaction.entity";
+import { Category } from "../categories/entities/category.entity";
+import { Payee } from "../payees/entities/payee.entity";
+import { CreateCustomReportDto } from "./dto/create-custom-report.dto";
+import { UpdateCustomReportDto } from "./dto/update-custom-report.dto";
 import {
   ExecuteReportDto,
   ReportResult,
   AggregatedDataPoint,
   ReportSummary,
-} from './dto/execute-report.dto';
+} from "./dto/execute-report.dto";
 import {
   subDays,
   subMonths,
@@ -36,7 +39,7 @@ import {
   startOfDay,
   format,
   parseISO,
-} from 'date-fns';
+} from "date-fns";
 
 @Injectable()
 export class ReportsService {
@@ -51,7 +54,10 @@ export class ReportsService {
     private payeesRepository: Repository<Payee>,
   ) {}
 
-  async create(userId: string, dto: CreateCustomReportDto): Promise<CustomReport> {
+  async create(
+    userId: string,
+    dto: CreateCustomReportDto,
+  ): Promise<CustomReport> {
     // Set default config values if not provided
     const config: ReportConfig = {
       metric: dto.config?.metric || MetricType.TOTAL_AMOUNT,
@@ -77,7 +83,7 @@ export class ReportsService {
   async findAll(userId: string): Promise<CustomReport[]> {
     return this.reportsRepository.find({
       where: { userId },
-      order: { sortOrder: 'ASC', createdAt: 'DESC' },
+      order: { sortOrder: "ASC", createdAt: "DESC" },
     });
   }
 
@@ -89,22 +95,28 @@ export class ReportsService {
     }
 
     if (report.userId !== userId) {
-      throw new ForbiddenException('You do not have access to this report');
+      throw new ForbiddenException("You do not have access to this report");
     }
 
     return report;
   }
 
-  async update(userId: string, id: string, dto: UpdateCustomReportDto): Promise<CustomReport> {
+  async update(
+    userId: string,
+    id: string,
+    dto: UpdateCustomReportDto,
+  ): Promise<CustomReport> {
     const report = await this.findOne(userId, id);
 
     // SECURITY: Explicit property mapping instead of Object.assign to prevent mass assignment
     if (dto.name !== undefined) report.name = dto.name;
     if (dto.description !== undefined) report.description = dto.description;
     if (dto.icon !== undefined) report.icon = dto.icon;
-    if (dto.backgroundColor !== undefined) report.backgroundColor = dto.backgroundColor;
+    if (dto.backgroundColor !== undefined)
+      report.backgroundColor = dto.backgroundColor;
     if (dto.viewType !== undefined) report.viewType = dto.viewType;
-    if (dto.timeframeType !== undefined) report.timeframeType = dto.timeframeType;
+    if (dto.timeframeType !== undefined)
+      report.timeframeType = dto.timeframeType;
     if (dto.groupBy !== undefined) report.groupBy = dto.groupBy;
     if (dto.isFavourite !== undefined) report.isFavourite = dto.isFavourite;
     if (dto.sortOrder !== undefined) report.sortOrder = dto.sortOrder;
@@ -138,7 +150,11 @@ export class ReportsService {
     const effectiveTimeframe = overrides?.timeframeType || report.timeframeType;
 
     // Calculate date range
-    const { startDate, endDate, label: timeframeLabel } = this.getDateRange(
+    const {
+      startDate,
+      endDate,
+      label: timeframeLabel,
+    } = this.getDateRange(
       effectiveTimeframe,
       overrides?.startDate || report.config.customStartDate,
       overrides?.endDate || report.config.customEndDate,
@@ -158,7 +174,9 @@ export class ReportsService {
     const payeeMap = new Map<string, Payee>();
 
     if (report.groupBy === GroupByType.CATEGORY) {
-      const categories = await this.categoriesRepository.find({ where: { userId } });
+      const categories = await this.categoriesRepository.find({
+        where: { userId },
+      });
       for (const c of categories) categoryMap.set(c.id, c);
     } else if (report.groupBy === GroupByType.PAYEE) {
       const payees = await this.payeesRepository.find({ where: { userId } });
@@ -176,7 +194,11 @@ export class ReportsService {
 
     // Apply custom sorting if configured
     if (report.config.sortBy) {
-      data = this.sortData(data, report.config.sortBy, report.config.sortDirection || SortDirection.DESC);
+      data = this.sortData(
+        data,
+        report.config.sortBy,
+        report.config.sortDirection || SortDirection.DESC,
+      );
     }
 
     // Calculate summary
@@ -204,59 +226,59 @@ export class ReportsService {
     customEnd?: string,
   ): { startDate: string; endDate: string; label: string } {
     const today = new Date();
-    const endDate = format(today, 'yyyy-MM-dd');
+    const endDate = format(today, "yyyy-MM-dd");
     let startDate: string;
     let label: string;
 
     switch (timeframeType) {
       case TimeframeType.LAST_7_DAYS:
-        startDate = format(subDays(today, 7), 'yyyy-MM-dd');
-        label = 'Last 7 Days';
+        startDate = format(subDays(today, 7), "yyyy-MM-dd");
+        label = "Last 7 Days";
         break;
       case TimeframeType.LAST_30_DAYS:
-        startDate = format(subDays(today, 30), 'yyyy-MM-dd');
-        label = 'Last 30 Days';
+        startDate = format(subDays(today, 30), "yyyy-MM-dd");
+        label = "Last 30 Days";
         break;
       case TimeframeType.LAST_MONTH: {
         const lastMonth = subMonths(today, 1);
-        startDate = format(startOfMonth(lastMonth), 'yyyy-MM-dd');
-        const lastMonthEnd = format(endOfMonth(lastMonth), 'yyyy-MM-dd');
-        label = format(lastMonth, 'MMMM yyyy');
+        startDate = format(startOfMonth(lastMonth), "yyyy-MM-dd");
+        const lastMonthEnd = format(endOfMonth(lastMonth), "yyyy-MM-dd");
+        label = format(lastMonth, "MMMM yyyy");
         return { startDate, endDate: lastMonthEnd, label };
       }
       case TimeframeType.LAST_3_MONTHS:
-        startDate = format(subMonths(today, 3), 'yyyy-MM-dd');
-        label = 'Last 3 Months';
+        startDate = format(subMonths(today, 3), "yyyy-MM-dd");
+        label = "Last 3 Months";
         break;
       case TimeframeType.LAST_6_MONTHS:
-        startDate = format(subMonths(today, 6), 'yyyy-MM-dd');
-        label = 'Last 6 Months';
+        startDate = format(subMonths(today, 6), "yyyy-MM-dd");
+        label = "Last 6 Months";
         break;
       case TimeframeType.LAST_12_MONTHS:
-        startDate = format(subMonths(today, 12), 'yyyy-MM-dd');
-        label = 'Last 12 Months';
+        startDate = format(subMonths(today, 12), "yyyy-MM-dd");
+        label = "Last 12 Months";
         break;
       case TimeframeType.LAST_YEAR: {
         const lastYear = subYears(today, 1);
-        startDate = format(startOfYear(lastYear), 'yyyy-MM-dd');
-        const lastYearEnd = format(endOfYear(lastYear), 'yyyy-MM-dd');
-        label = format(lastYear, 'yyyy');
+        startDate = format(startOfYear(lastYear), "yyyy-MM-dd");
+        const lastYearEnd = format(endOfYear(lastYear), "yyyy-MM-dd");
+        label = format(lastYear, "yyyy");
         return { startDate, endDate: lastYearEnd, label };
       }
       case TimeframeType.YEAR_TO_DATE:
-        startDate = format(startOfYear(today), 'yyyy-MM-dd');
-        label = 'Year to Date';
+        startDate = format(startOfYear(today), "yyyy-MM-dd");
+        label = "Year to Date";
         break;
       case TimeframeType.CUSTOM:
         if (!customStart || !customEnd) {
-          throw new Error('Custom timeframe requires start and end dates');
+          throw new Error("Custom timeframe requires start and end dates");
         }
         startDate = customStart;
-        label = 'Custom Range';
+        label = "Custom Range";
         return { startDate, endDate: customEnd, label };
       default:
-        startDate = format(subMonths(today, 3), 'yyyy-MM-dd');
-        label = 'Last 3 Months';
+        startDate = format(subMonths(today, 3), "yyyy-MM-dd");
+        label = "Last 3 Months";
     }
 
     return { startDate, endDate, label };
@@ -266,19 +288,19 @@ export class ReportsService {
     userId: string,
     startDate: string,
     endDate: string,
-    filters: CustomReport['filters'],
+    filters: CustomReport["filters"],
     config: ReportConfig,
   ): Promise<Transaction[]> {
     const queryBuilder = this.transactionsRepository
-      .createQueryBuilder('transaction')
-      .leftJoinAndSelect('transaction.account', 'account')
-      .leftJoinAndSelect('transaction.category', 'category')
-      .leftJoinAndSelect('transaction.payee', 'payee')
-      .leftJoinAndSelect('transaction.splits', 'splits')
-      .leftJoinAndSelect('splits.category', 'splitCategory')
-      .where('transaction.userId = :userId', { userId })
-      .andWhere('transaction.transactionDate >= :startDate', { startDate })
-      .andWhere('transaction.transactionDate <= :endDate', { endDate })
+      .createQueryBuilder("transaction")
+      .leftJoinAndSelect("transaction.account", "account")
+      .leftJoinAndSelect("transaction.category", "category")
+      .leftJoinAndSelect("transaction.payee", "payee")
+      .leftJoinAndSelect("transaction.splits", "splits")
+      .leftJoinAndSelect("splits.category", "splitCategory")
+      .where("transaction.userId = :userId", { userId })
+      .andWhere("transaction.transactionDate >= :startDate", { startDate })
+      .andWhere("transaction.transactionDate <= :endDate", { endDate })
       .andWhere("transaction.status != 'VOID'");
 
     // Advanced filter groups take precedence over legacy filters
@@ -287,20 +309,20 @@ export class ReportsService {
     } else {
       // Legacy simple filters (backward compat)
       if (filters.accountIds && filters.accountIds.length > 0) {
-        queryBuilder.andWhere('transaction.accountId IN (:...accountIds)', {
+        queryBuilder.andWhere("transaction.accountId IN (:...accountIds)", {
           accountIds: filters.accountIds,
         });
       }
 
       if (filters.categoryIds && filters.categoryIds.length > 0) {
         queryBuilder.andWhere(
-          '(transaction.categoryId IN (:...categoryIds) OR splits.categoryId IN (:...categoryIds))',
+          "(transaction.categoryId IN (:...categoryIds) OR splits.categoryId IN (:...categoryIds))",
           { categoryIds: filters.categoryIds },
         );
       }
 
       if (filters.payeeIds && filters.payeeIds.length > 0) {
-        queryBuilder.andWhere('transaction.payeeId IN (:...payeeIds)', {
+        queryBuilder.andWhere("transaction.payeeId IN (:...payeeIds)", {
           payeeIds: filters.payeeIds,
         });
       }
@@ -308,7 +330,7 @@ export class ReportsService {
       if (filters.searchText && filters.searchText.trim()) {
         const searchTerm = `%${filters.searchText.trim().toLowerCase()}%`;
         queryBuilder.andWhere(
-          '(LOWER(transaction.payeeName) LIKE :searchTerm OR LOWER(transaction.description) LIKE :searchTerm)',
+          "(LOWER(transaction.payeeName) LIKE :searchTerm OR LOWER(transaction.description) LIKE :searchTerm)",
           { searchTerm },
         );
       }
@@ -316,22 +338,24 @@ export class ReportsService {
 
     // Filter by direction
     if (config.direction === DirectionFilter.INCOME_ONLY) {
-      queryBuilder.andWhere('transaction.amount > 0');
+      queryBuilder.andWhere("transaction.amount > 0");
     } else if (config.direction === DirectionFilter.EXPENSES_ONLY) {
-      queryBuilder.andWhere('transaction.amount < 0');
+      queryBuilder.andWhere("transaction.amount < 0");
     }
 
     // Filter transfers
     if (!config.includeTransfers) {
-      queryBuilder.andWhere('transaction.isTransfer = false');
+      queryBuilder.andWhere("transaction.isTransfer = false");
     }
 
-    return queryBuilder.orderBy('transaction.transactionDate', 'ASC').getMany();
+    return queryBuilder.orderBy("transaction.transactionDate", "ASC").getMany();
   }
 
   private applyFilterGroups(
-    queryBuilder: ReturnType<Repository<Transaction>['createQueryBuilder']>,
-    filterGroups: Array<{ conditions: Array<{ field: string; value: string }> }>,
+    queryBuilder: ReturnType<Repository<Transaction>["createQueryBuilder"]>,
+    filterGroups: Array<{
+      conditions: Array<{ field: string; value: string }>;
+    }>,
   ): void {
     for (let gi = 0; gi < filterGroups.length; gi++) {
       const group = filterGroups[gi];
@@ -342,15 +366,15 @@ export class ReportsService {
           for (let ci = 0; ci < group.conditions.length; ci++) {
             const condition = group.conditions[ci];
             const param = `p_g${gi}_c${ci}`;
-            const method = ci === 0 ? 'where' : 'orWhere';
+            const method = ci === 0 ? "where" : "orWhere";
 
             switch (condition.field) {
-              case 'account':
+              case "account":
                 qb[method](`transaction.accountId = :${param}`, {
                   [param]: condition.value,
                 });
                 break;
-              case 'category':
+              case "category":
                 qb[method](
                   new Brackets((inner) => {
                     inner
@@ -363,12 +387,12 @@ export class ReportsService {
                   }),
                 );
                 break;
-              case 'payee':
+              case "payee":
                 qb[method](`transaction.payeeId = :${param}`, {
                   [param]: condition.value,
                 });
                 break;
-              case 'text': {
+              case "text": {
                 const textParam = `%${condition.value.trim().toLowerCase()}%`;
                 qb[method](
                   new Brackets((inner) => {
@@ -376,9 +400,12 @@ export class ReportsService {
                       .where(`LOWER(transaction.payeeName) LIKE :${param}`, {
                         [param]: textParam,
                       })
-                      .orWhere(`LOWER(transaction.description) LIKE :${param}`, {
-                        [param]: textParam,
-                      });
+                      .orWhere(
+                        `LOWER(transaction.description) LIKE :${param}`,
+                        {
+                          [param]: textParam,
+                        },
+                      );
                   }),
                 );
                 break;
@@ -405,13 +432,13 @@ export class ReportsService {
       case GroupByType.PAYEE:
         return this.aggregateByPayee(transactions, metric, payeeMap);
       case GroupByType.YEAR:
-        return this.aggregateByTime(transactions, metric, 'year');
+        return this.aggregateByTime(transactions, metric, "year");
       case GroupByType.MONTH:
-        return this.aggregateByTime(transactions, metric, 'month');
+        return this.aggregateByTime(transactions, metric, "month");
       case GroupByType.WEEK:
-        return this.aggregateByTime(transactions, metric, 'week');
+        return this.aggregateByTime(transactions, metric, "week");
       case GroupByType.DAY:
-        return this.aggregateByTime(transactions, metric, 'day');
+        return this.aggregateByTime(transactions, metric, "day");
       default:
         return this.aggregateNoGrouping(transactions, metric);
     }
@@ -430,7 +457,8 @@ export class ReportsService {
           for (const split of tx.splits) {
             result.push({
               id: tx.id,
-              label: split.memo || tx.payeeName || tx.description || 'Transaction',
+              label:
+                split.memo || tx.payeeName || tx.description || "Transaction",
               value: Math.abs(Number(split.amount)),
               count: 1,
               // Transaction-specific fields
@@ -445,7 +473,7 @@ export class ReportsService {
         } else {
           result.push({
             id: tx.id,
-            label: tx.payeeName || tx.description || 'Transaction',
+            label: tx.payeeName || tx.description || "Transaction",
             value: Math.abs(Number(tx.amount)),
             count: 1,
             // Transaction-specific fields
@@ -482,13 +510,15 @@ export class ReportsService {
       return [];
     }
 
-    return [{
-      id: 'total',
-      label: 'Total',
-      value: this.calculateMetricValue(sum, count, metric),
-      percentage: 100,
-      count,
-    }];
+    return [
+      {
+        id: "total",
+        label: "Total",
+        value: this.calculateMetricValue(sum, count, metric),
+        percentage: 100,
+        count,
+      },
+    ];
   }
 
   private aggregateByCategory(
@@ -502,7 +532,7 @@ export class ReportsService {
       if (tx.isSplit && tx.splits && tx.splits.length > 0) {
         // Handle split transactions
         for (const split of tx.splits) {
-          const categoryId = split.categoryId || 'uncategorized';
+          const categoryId = split.categoryId || "uncategorized";
           const existing = dataMap.get(categoryId) || { sum: 0, count: 0 };
           existing.sum += Math.abs(Number(split.amount));
           existing.count += 1;
@@ -510,7 +540,7 @@ export class ReportsService {
         }
       } else {
         // Regular transaction
-        const categoryId = tx.categoryId || 'uncategorized';
+        const categoryId = tx.categoryId || "uncategorized";
         const existing = dataMap.get(categoryId) || { sum: 0, count: 0 };
         existing.sum += Math.abs(Number(tx.amount));
         existing.count += 1;
@@ -518,14 +548,17 @@ export class ReportsService {
       }
     }
 
-    const totalSum = Array.from(dataMap.values()).reduce((acc, v) => acc + v.sum, 0);
+    const totalSum = Array.from(dataMap.values()).reduce(
+      (acc, v) => acc + v.sum,
+      0,
+    );
 
     const result: AggregatedDataPoint[] = [];
     for (const [categoryId, data] of dataMap) {
       const category = categoryMap.get(categoryId);
       result.push({
         id: categoryId,
-        label: category?.name || 'Uncategorized',
+        label: category?.name || "Uncategorized",
         value: this.calculateMetricValue(data.sum, data.count, metric),
         color: category?.color || undefined,
         percentage: totalSum > 0 ? (data.sum / totalSum) * 100 : 0,
@@ -541,11 +574,18 @@ export class ReportsService {
     metric: MetricType,
     payeeMap: Map<string, Payee>,
   ): AggregatedDataPoint[] {
-    const dataMap = new Map<string, { sum: number; count: number; payeeName?: string }>();
+    const dataMap = new Map<
+      string,
+      { sum: number; count: number; payeeName?: string }
+    >();
 
     for (const tx of transactions) {
-      const payeeId = tx.payeeId || 'unknown';
-      const existing = dataMap.get(payeeId) || { sum: 0, count: 0, payeeName: tx.payeeName ?? undefined };
+      const payeeId = tx.payeeId || "unknown";
+      const existing = dataMap.get(payeeId) || {
+        sum: 0,
+        count: 0,
+        payeeName: tx.payeeName ?? undefined,
+      };
       existing.sum += Math.abs(Number(tx.amount));
       existing.count += 1;
       if (!existing.payeeName && tx.payeeName) {
@@ -554,14 +594,17 @@ export class ReportsService {
       dataMap.set(payeeId, existing);
     }
 
-    const totalSum = Array.from(dataMap.values()).reduce((acc, v) => acc + v.sum, 0);
+    const totalSum = Array.from(dataMap.values()).reduce(
+      (acc, v) => acc + v.sum,
+      0,
+    );
 
     const result: AggregatedDataPoint[] = [];
     for (const [payeeId, data] of dataMap) {
       const payee = payeeMap.get(payeeId);
       result.push({
         id: payeeId,
-        label: payee?.name || data.payeeName || 'Unknown',
+        label: payee?.name || data.payeeName || "Unknown",
         value: this.calculateMetricValue(data.sum, data.count, metric),
         percentage: totalSum > 0 ? (data.sum / totalSum) * 100 : 0,
         count: data.count,
@@ -574,9 +617,12 @@ export class ReportsService {
   private aggregateByTime(
     transactions: Transaction[],
     metric: MetricType,
-    period: 'year' | 'month' | 'week' | 'day',
+    period: "year" | "month" | "week" | "day",
   ): AggregatedDataPoint[] {
-    const dataMap = new Map<string, { sum: number; count: number; label: string }>();
+    const dataMap = new Map<
+      string,
+      { sum: number; count: number; label: string }
+    >();
 
     for (const tx of transactions) {
       const date = parseISO(tx.transactionDate);
@@ -584,21 +630,21 @@ export class ReportsService {
       let label: string;
 
       switch (period) {
-        case 'year':
-          key = format(startOfYear(date), 'yyyy');
-          label = format(date, 'yyyy');
+        case "year":
+          key = format(startOfYear(date), "yyyy");
+          label = format(date, "yyyy");
           break;
-        case 'month':
-          key = format(startOfMonth(date), 'yyyy-MM');
-          label = format(date, 'MMM yyyy');
+        case "month":
+          key = format(startOfMonth(date), "yyyy-MM");
+          label = format(date, "MMM yyyy");
           break;
-        case 'week':
-          key = format(startOfWeek(date), 'yyyy-MM-dd');
-          label = `Week of ${format(startOfWeek(date), 'MMM d')}`;
+        case "week":
+          key = format(startOfWeek(date), "yyyy-MM-dd");
+          label = `Week of ${format(startOfWeek(date), "MMM d")}`;
           break;
-        case 'day':
-          key = format(startOfDay(date), 'yyyy-MM-dd');
-          label = format(date, 'MMM d, yyyy');
+        case "day":
+          key = format(startOfDay(date), "yyyy-MM-dd");
+          label = format(date, "MMM d, yyyy");
           break;
       }
 
@@ -622,7 +668,11 @@ export class ReportsService {
     return result.sort((a, b) => a.id!.localeCompare(b.id!));
   }
 
-  private calculateMetricValue(sum: number, count: number, metric: MetricType): number {
+  private calculateMetricValue(
+    sum: number,
+    count: number,
+    metric: MetricType,
+  ): number {
     switch (metric) {
       case MetricType.NONE:
         return Math.round(sum * 100) / 100;
@@ -668,17 +718,22 @@ export class ReportsService {
           return multiplier * ((a.percentage || 0) - (b.percentage || 0));
         // Transaction-specific columns
         case TableColumn.DATE:
-          return multiplier * (a.date || '').localeCompare(b.date || '');
+          return multiplier * (a.date || "").localeCompare(b.date || "");
         case TableColumn.PAYEE:
-          return multiplier * (a.payee || '').localeCompare(b.payee || '');
+          return multiplier * (a.payee || "").localeCompare(b.payee || "");
         case TableColumn.DESCRIPTION:
-          return multiplier * (a.description || '').localeCompare(b.description || '');
+          return (
+            multiplier *
+            (a.description || "").localeCompare(b.description || "")
+          );
         case TableColumn.MEMO:
-          return multiplier * (a.memo || '').localeCompare(b.memo || '');
+          return multiplier * (a.memo || "").localeCompare(b.memo || "");
         case TableColumn.CATEGORY:
-          return multiplier * (a.category || '').localeCompare(b.category || '');
+          return (
+            multiplier * (a.category || "").localeCompare(b.category || "")
+          );
         case TableColumn.ACCOUNT:
-          return multiplier * (a.account || '').localeCompare(b.account || '');
+          return multiplier * (a.account || "").localeCompare(b.account || "");
         default:
           return 0;
       }

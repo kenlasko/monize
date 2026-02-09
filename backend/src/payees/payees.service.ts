@@ -1,11 +1,15 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like } from 'typeorm';
-import { Payee } from './entities/payee.entity';
-import { Transaction } from '../transactions/entities/transaction.entity';
-import { ScheduledTransaction } from '../scheduled-transactions/entities/scheduled-transaction.entity';
-import { CreatePayeeDto } from './dto/create-payee.dto';
-import { UpdatePayeeDto } from './dto/update-payee.dto';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository, Like } from "typeorm";
+import { Payee } from "./entities/payee.entity";
+import { Transaction } from "../transactions/entities/transaction.entity";
+import { ScheduledTransaction } from "../scheduled-transactions/entities/scheduled-transaction.entity";
+import { CreatePayeeDto } from "./dto/create-payee.dto";
+import { UpdatePayeeDto } from "./dto/update-payee.dto";
 
 @Injectable()
 export class PayeesService {
@@ -28,7 +32,9 @@ export class PayeesService {
     });
 
     if (existing) {
-      throw new ConflictException(`Payee with name "${createPayeeDto.name}" already exists`);
+      throw new ConflictException(
+        `Payee with name "${createPayeeDto.name}" already exists`,
+      );
     }
 
     const payee = this.payeesRepository.create({
@@ -39,12 +45,14 @@ export class PayeesService {
     return this.payeesRepository.save(payee);
   }
 
-  async findAll(userId: string): Promise<(Payee & { transactionCount: number })[]> {
+  async findAll(
+    userId: string,
+  ): Promise<(Payee & { transactionCount: number })[]> {
     // Get all payees with their default category
     const payees = await this.payeesRepository.find({
       where: { userId },
-      relations: ['defaultCategory'],
-      order: { name: 'ASC' },
+      relations: ["defaultCategory"],
+      order: { name: "ASC" },
     });
 
     if (payees.length === 0) {
@@ -53,17 +61,21 @@ export class PayeesService {
 
     // Get transaction counts for all payees in one query
     const counts = await this.payeesRepository
-      .createQueryBuilder('payee')
-      .leftJoin('transactions', 'transaction', 'transaction.payee_id = payee.id')
-      .where('payee.user_id = :userId', { userId })
-      .groupBy('payee.id')
-      .select(['payee.id as id', 'COUNT(transaction.id) as count'])
+      .createQueryBuilder("payee")
+      .leftJoin(
+        "transactions",
+        "transaction",
+        "transaction.payee_id = payee.id",
+      )
+      .where("payee.user_id = :userId", { userId })
+      .groupBy("payee.id")
+      .select(["payee.id as id", "COUNT(transaction.id) as count"])
       .getRawMany();
 
     // Create a map of payee ID to transaction count
     const countMap = new Map<string, number>();
     for (const row of counts) {
-      countMap.set(row.id, parseInt(row.count || '0', 10));
+      countMap.set(row.id, parseInt(row.count || "0", 10));
     }
 
     // Merge counts with payees
@@ -76,7 +88,7 @@ export class PayeesService {
   async findOne(userId: string, id: string): Promise<Payee> {
     const payee = await this.payeesRepository.findOne({
       where: { id, userId },
-      relations: ['defaultCategory'],
+      relations: ["defaultCategory"],
     });
 
     if (!payee) {
@@ -86,14 +98,18 @@ export class PayeesService {
     return payee;
   }
 
-  async search(userId: string, query: string, limit: number = 10): Promise<Payee[]> {
+  async search(
+    userId: string,
+    query: string,
+    limit: number = 10,
+  ): Promise<Payee[]> {
     return this.payeesRepository.find({
       where: {
         userId,
         name: Like(`%${query}%`),
       },
-      relations: ['defaultCategory'],
-      order: { name: 'ASC' },
+      relations: ["defaultCategory"],
+      order: { name: "ASC" },
       take: limit,
     });
   }
@@ -105,8 +121,8 @@ export class PayeesService {
         userId,
         name: Like(`${query}%`),
       },
-      relations: ['defaultCategory'],
-      order: { name: 'ASC' },
+      relations: ["defaultCategory"],
+      order: { name: "ASC" },
       take: 10,
     });
   }
@@ -114,11 +130,15 @@ export class PayeesService {
   async findByName(userId: string, name: string): Promise<Payee | null> {
     return this.payeesRepository.findOne({
       where: { userId, name },
-      relations: ['defaultCategory'],
+      relations: ["defaultCategory"],
     });
   }
 
-  async findOrCreate(userId: string, name: string, defaultCategoryId?: string): Promise<Payee> {
+  async findOrCreate(
+    userId: string,
+    name: string,
+    defaultCategoryId?: string,
+  ): Promise<Payee> {
     // Try to find existing payee by name
     let payee = await this.findByName(userId, name);
 
@@ -133,7 +153,11 @@ export class PayeesService {
     return payee;
   }
 
-  async update(userId: string, id: string, updatePayeeDto: UpdatePayeeDto): Promise<Payee> {
+  async update(
+    userId: string,
+    id: string,
+    updatePayeeDto: UpdatePayeeDto,
+  ): Promise<Payee> {
     const payee = await this.findOne(userId, id);
 
     // Check for name conflicts if name is being updated
@@ -146,14 +170,18 @@ export class PayeesService {
       });
 
       if (existing) {
-        throw new ConflictException(`Payee with name "${updatePayeeDto.name}" already exists`);
+        throw new ConflictException(
+          `Payee with name "${updatePayeeDto.name}" already exists`,
+        );
       }
     }
 
     // SECURITY: Explicit property mapping instead of Object.assign to prevent mass assignment
-    const nameChanged = updatePayeeDto.name !== undefined && updatePayeeDto.name !== payee.name;
+    const nameChanged =
+      updatePayeeDto.name !== undefined && updatePayeeDto.name !== payee.name;
     if (updatePayeeDto.name !== undefined) payee.name = updatePayeeDto.name;
-    if (updatePayeeDto.defaultCategoryId !== undefined) payee.defaultCategoryId = updatePayeeDto.defaultCategoryId;
+    if (updatePayeeDto.defaultCategoryId !== undefined)
+      payee.defaultCategoryId = updatePayeeDto.defaultCategoryId;
     if (updatePayeeDto.notes !== undefined) payee.notes = updatePayeeDto.notes;
 
     const saved = await this.payeesRepository.save(payee);
@@ -181,13 +209,17 @@ export class PayeesService {
   async getMostUsed(userId: string, limit: number = 10): Promise<Payee[]> {
     // Single query: join defaultCategory + aggregate transaction count, avoiding two-step fetch
     return this.payeesRepository
-      .createQueryBuilder('payee')
-      .leftJoinAndSelect('payee.defaultCategory', 'defaultCategory')
-      .leftJoin('transactions', 'transaction', 'transaction.payee_id = payee.id')
-      .where('payee.user_id = :userId', { userId })
-      .groupBy('payee.id')
-      .addGroupBy('defaultCategory.id')
-      .orderBy('COUNT(transaction.id)', 'DESC')
+      .createQueryBuilder("payee")
+      .leftJoinAndSelect("payee.defaultCategory", "defaultCategory")
+      .leftJoin(
+        "transactions",
+        "transaction",
+        "transaction.payee_id = payee.id",
+      )
+      .where("payee.user_id = :userId", { userId })
+      .groupBy("payee.id")
+      .addGroupBy("defaultCategory.id")
+      .orderBy("COUNT(transaction.id)", "DESC")
       .limit(limit)
       .getMany();
   }
@@ -195,13 +227,17 @@ export class PayeesService {
   async getRecentlyUsed(userId: string, limit: number = 10): Promise<Payee[]> {
     // Single query: join defaultCategory + aggregate most recent date, avoiding two-step fetch
     return this.payeesRepository
-      .createQueryBuilder('payee')
-      .leftJoinAndSelect('payee.defaultCategory', 'defaultCategory')
-      .leftJoin('transactions', 'transaction', 'transaction.payee_id = payee.id')
-      .where('payee.user_id = :userId', { userId })
-      .groupBy('payee.id')
-      .addGroupBy('defaultCategory.id')
-      .orderBy('MAX(transaction.transaction_date)', 'DESC')
+      .createQueryBuilder("payee")
+      .leftJoinAndSelect("payee.defaultCategory", "defaultCategory")
+      .leftJoin(
+        "transactions",
+        "transaction",
+        "transaction.payee_id = payee.id",
+      )
+      .where("payee.user_id = :userId", { userId })
+      .groupBy("payee.id")
+      .addGroupBy("defaultCategory.id")
+      .orderBy("MAX(transaction.transaction_date)", "DESC")
       .limit(limit)
       .getMany();
   }
@@ -231,8 +267,8 @@ export class PayeesService {
         userId,
         defaultCategoryId: categoryId,
       },
-      relations: ['defaultCategory'],
-      order: { name: 'ASC' },
+      relations: ["defaultCategory"],
+      order: { name: "ASC" },
     });
   }
 
@@ -248,61 +284,68 @@ export class PayeesService {
     minTransactions: number,
     minPercentage: number,
     onlyWithoutCategory: boolean = true,
-  ): Promise<Array<{
-    payeeId: string;
-    payeeName: string;
-    currentCategoryId: string | null;
-    currentCategoryName: string | null;
-    suggestedCategoryId: string;
-    suggestedCategoryName: string;
-    transactionCount: number;
-    categoryCount: number;
-    percentage: number;
-  }>> {
+  ): Promise<
+    Array<{
+      payeeId: string;
+      payeeName: string;
+      currentCategoryId: string | null;
+      currentCategoryName: string | null;
+      suggestedCategoryId: string;
+      suggestedCategoryName: string;
+      transactionCount: number;
+      categoryCount: number;
+      percentage: number;
+    }>
+  > {
     // Get category usage statistics per payee
     // This query counts how many times each category is used for each payee
     const query = this.payeesRepository
-      .createQueryBuilder('payee')
-      .leftJoin('transactions', 't', 't.payee_id = payee.id AND t.is_transfer = false')
-      .leftJoin('categories', 'c', 'c.id = t.category_id')
-      .where('payee.user_id = :userId', { userId })
-      .andWhere('t.category_id IS NOT NULL')
-      .groupBy('payee.id')
-      .addGroupBy('payee.name')
-      .addGroupBy('payee.default_category_id')
-      .addGroupBy('t.category_id')
-      .addGroupBy('c.name')
+      .createQueryBuilder("payee")
+      .leftJoin(
+        "transactions",
+        "t",
+        "t.payee_id = payee.id AND t.is_transfer = false",
+      )
+      .leftJoin("categories", "c", "c.id = t.category_id")
+      .where("payee.user_id = :userId", { userId })
+      .andWhere("t.category_id IS NOT NULL")
+      .groupBy("payee.id")
+      .addGroupBy("payee.name")
+      .addGroupBy("payee.default_category_id")
+      .addGroupBy("t.category_id")
+      .addGroupBy("c.name")
       .select([
-        'payee.id as payee_id',
-        'payee.name as payee_name',
-        'payee.default_category_id as current_category_id',
-        't.category_id as category_id',
-        'c.name as category_name',
-        'COUNT(t.id) as category_count',
+        "payee.id as payee_id",
+        "payee.name as payee_name",
+        "payee.default_category_id as current_category_id",
+        "t.category_id as category_id",
+        "c.name as category_name",
+        "COUNT(t.id) as category_count",
       ])
-      .having('COUNT(t.id) > 0');
+      .having("COUNT(t.id) > 0");
 
     if (onlyWithoutCategory) {
-      query.andWhere('payee.default_category_id IS NULL');
+      query.andWhere("payee.default_category_id IS NULL");
     }
 
     const categoryUsage = await query.getRawMany();
 
     // Get total transaction count per payee
     const totalCountsQuery = this.payeesRepository
-      .createQueryBuilder('payee')
-      .leftJoin('transactions', 't', 't.payee_id = payee.id AND t.is_transfer = false')
-      .where('payee.user_id = :userId', { userId })
-      .andWhere('t.category_id IS NOT NULL')
-      .groupBy('payee.id')
-      .select([
-        'payee.id as payee_id',
-        'COUNT(t.id) as total_count',
-      ])
-      .having('COUNT(t.id) >= :minTransactions', { minTransactions });
+      .createQueryBuilder("payee")
+      .leftJoin(
+        "transactions",
+        "t",
+        "t.payee_id = payee.id AND t.is_transfer = false",
+      )
+      .where("payee.user_id = :userId", { userId })
+      .andWhere("t.category_id IS NOT NULL")
+      .groupBy("payee.id")
+      .select(["payee.id as payee_id", "COUNT(t.id) as total_count"])
+      .having("COUNT(t.id) >= :minTransactions", { minTransactions });
 
     if (onlyWithoutCategory) {
-      totalCountsQuery.andWhere('payee.default_category_id IS NULL');
+      totalCountsQuery.andWhere("payee.default_category_id IS NULL");
     }
 
     const totalCounts = await totalCountsQuery.getRawMany();
@@ -314,9 +357,12 @@ export class PayeesService {
     // Get current category names for payees that have one
     const payeesWithCategories = await this.payeesRepository.find({
       where: { userId },
-      relations: ['defaultCategory'],
+      relations: ["defaultCategory"],
     });
-    const currentCategoryMap = new Map<string, { id: string | null; name: string | null }>();
+    const currentCategoryMap = new Map<
+      string,
+      { id: string | null; name: string | null }
+    >();
     for (const payee of payeesWithCategories) {
       currentCategoryMap.set(payee.id, {
         id: payee.defaultCategoryId,
@@ -338,12 +384,15 @@ export class PayeesService {
     }> = [];
 
     // Group category usage by payee
-    const payeeCategories = new Map<string, Array<{
-      payeeName: string;
-      categoryId: string;
-      categoryName: string;
-      count: number;
-    }>>();
+    const payeeCategories = new Map<
+      string,
+      Array<{
+        payeeName: string;
+        categoryId: string;
+        categoryName: string;
+        count: number;
+      }>
+    >();
 
     for (const row of categoryUsage) {
       const payeeId = row.payee_id;
@@ -421,4 +470,4 @@ export class PayeesService {
 }
 
 // Import these at the top with other imports
-import { In, Not, IsNull } from 'typeorm';
+import { Not, IsNull } from "typeorm";

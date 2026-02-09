@@ -1,4 +1,4 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import {
   IsString,
   IsNumber,
@@ -8,60 +8,71 @@ import {
   IsArray,
   ValidateNested,
   IsDateString,
-} from 'class-validator';
-import { Type } from 'class-transformer';
+} from "class-validator";
+import { Type } from "class-transformer";
 
 export class OverrideSplitDto {
-  @ApiPropertyOptional({ description: 'Category ID for this split' })
+  @ApiPropertyOptional({ description: "Category ID for this split" })
   @IsOptional()
   @IsUUID()
   categoryId?: string | null;
 
-  @ApiPropertyOptional({ description: 'Transfer account ID for this split' })
+  @ApiPropertyOptional({ description: "Transfer account ID for this split" })
   @IsOptional()
   @IsUUID()
   transferAccountId?: string | null;
 
-  @ApiProperty({ description: 'Amount for this split' })
+  @ApiProperty({ description: "Amount for this split" })
   @IsNumber()
   amount: number;
 
-  @ApiPropertyOptional({ description: 'Memo for this split' })
+  @ApiPropertyOptional({ description: "Memo for this split" })
   @IsOptional()
   @IsString()
   memo?: string | null;
 }
 
 export class CreateScheduledTransactionOverrideDto {
-  @ApiProperty({ description: 'The original calculated occurrence date being overridden (YYYY-MM-DD)' })
+  @ApiProperty({
+    description:
+      "The original calculated occurrence date being overridden (YYYY-MM-DD)",
+  })
   @IsDateString()
   originalDate: string;
 
-  @ApiProperty({ description: 'The actual date for this occurrence (YYYY-MM-DD), may be same as originalDate or different if date was changed' })
+  @ApiProperty({
+    description:
+      "The actual date for this occurrence (YYYY-MM-DD), may be same as originalDate or different if date was changed",
+  })
   @IsDateString()
   overrideDate: string;
 
-  @ApiPropertyOptional({ description: 'Overridden amount' })
+  @ApiPropertyOptional({ description: "Overridden amount" })
   @IsOptional()
   @IsNumber()
   amount?: number | null;
 
-  @ApiPropertyOptional({ description: 'Overridden category ID' })
+  @ApiPropertyOptional({ description: "Overridden category ID" })
   @IsOptional()
   @IsUUID()
   categoryId?: string | null;
 
-  @ApiPropertyOptional({ description: 'Overridden description' })
+  @ApiPropertyOptional({ description: "Overridden description" })
   @IsOptional()
   @IsString()
   description?: string | null;
 
-  @ApiPropertyOptional({ description: 'Whether to use splits for this override' })
+  @ApiPropertyOptional({
+    description: "Whether to use splits for this override",
+  })
   @IsOptional()
   @IsBoolean()
   isSplit?: boolean | null;
 
-  @ApiPropertyOptional({ description: 'Split overrides', type: [OverrideSplitDto] })
+  @ApiPropertyOptional({
+    description: "Split overrides",
+    type: [OverrideSplitDto],
+  })
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
@@ -70,27 +81,32 @@ export class CreateScheduledTransactionOverrideDto {
 }
 
 export class UpdateScheduledTransactionOverrideDto {
-  @ApiPropertyOptional({ description: 'Overridden amount' })
+  @ApiPropertyOptional({ description: "Overridden amount" })
   @IsOptional()
   @IsNumber()
   amount?: number | null;
 
-  @ApiPropertyOptional({ description: 'Overridden category ID' })
+  @ApiPropertyOptional({ description: "Overridden category ID" })
   @IsOptional()
   @IsUUID()
   categoryId?: string | null;
 
-  @ApiPropertyOptional({ description: 'Overridden description' })
+  @ApiPropertyOptional({ description: "Overridden description" })
   @IsOptional()
   @IsString()
   description?: string | null;
 
-  @ApiPropertyOptional({ description: 'Whether to use splits for this override' })
+  @ApiPropertyOptional({
+    description: "Whether to use splits for this override",
+  })
   @IsOptional()
   @IsBoolean()
   isSplit?: boolean | null;
 
-  @ApiPropertyOptional({ description: 'Split overrides', type: [OverrideSplitDto] })
+  @ApiPropertyOptional({
+    description: "Split overrides",
+    type: [OverrideSplitDto],
+  })
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })

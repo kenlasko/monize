@@ -1,7 +1,7 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import * as nodemailer from 'nodemailer';
-import { Transporter } from 'nodemailer';
+import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import * as nodemailer from "nodemailer";
+import { Transporter } from "nodemailer";
 
 @Injectable()
 export class EmailService implements OnModuleInit {
@@ -12,17 +12,21 @@ export class EmailService implements OnModuleInit {
   constructor(private configService: ConfigService) {}
 
   onModuleInit() {
-    const host = this.configService.get<string>('SMTP_HOST');
-    const user = this.configService.get<string>('SMTP_USER');
-    const password = this.configService.get<string>('SMTP_PASSWORD');
+    const host = this.configService.get<string>("SMTP_HOST");
+    const user = this.configService.get<string>("SMTP_USER");
+    const password = this.configService.get<string>("SMTP_PASSWORD");
 
     if (!host || !user || !password) {
-      this.logger.warn('SMTP not configured - email features disabled');
+      this.logger.warn("SMTP not configured - email features disabled");
       return;
     }
 
-    const secure = this.configService.get<string>('SMTP_SECURE', 'false') === 'true';
-    const port = this.configService.get<number>('SMTP_PORT', secure ? 465 : 587);
+    const secure =
+      this.configService.get<string>("SMTP_SECURE", "false") === "true";
+    const port = this.configService.get<number>(
+      "SMTP_PORT",
+      secure ? 465 : 587,
+    );
 
     this.transporter = nodemailer.createTransport({
       host,
@@ -32,7 +36,7 @@ export class EmailService implements OnModuleInit {
     });
 
     this.configured = true;
-    this.logger.log('SMTP email transport configured');
+    this.logger.log("SMTP email transport configured");
   }
 
   getStatus(): { configured: boolean } {
@@ -41,10 +45,13 @@ export class EmailService implements OnModuleInit {
 
   async sendMail(to: string, subject: string, html: string): Promise<void> {
     if (!this.transporter || !this.configured) {
-      throw new Error('SMTP is not configured');
+      throw new Error("SMTP is not configured");
     }
 
-    const from = this.configService.get<string>('EMAIL_FROM', 'noreply@moneymate.app');
+    const from = this.configService.get<string>(
+      "EMAIL_FROM",
+      "noreply@moneymate.app",
+    );
     await this.transporter.sendMail({ from, to, subject, html });
     this.logger.log(`Email sent to ${to}: ${subject}`);
   }

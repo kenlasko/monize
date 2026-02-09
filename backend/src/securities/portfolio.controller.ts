@@ -1,89 +1,83 @@
-import {
-  Controller,
-  Get,
-  UseGuards,
-  Request,
-  Query,
-} from '@nestjs/common';
+import { Controller, Get, UseGuards, Request, Query } from "@nestjs/common";
 import {
   ApiTags,
   ApiOperation,
   ApiBearerAuth,
   ApiResponse,
   ApiQuery,
-} from '@nestjs/swagger';
-import { AuthGuard } from '@nestjs/passport';
-import { PortfolioService } from './portfolio.service';
+} from "@nestjs/swagger";
+import { AuthGuard } from "@nestjs/passport";
+import { PortfolioService } from "./portfolio.service";
 
-@ApiTags('Portfolio')
-@Controller('portfolio')
-@UseGuards(AuthGuard('jwt'))
+@ApiTags("Portfolio")
+@Controller("portfolio")
+@UseGuards(AuthGuard("jwt"))
 @ApiBearerAuth()
 export class PortfolioController {
   constructor(private readonly portfolioService: PortfolioService) {}
 
-  @Get('summary')
+  @Get("summary")
   @ApiOperation({
-    summary: 'Get portfolio summary with holdings and market values',
+    summary: "Get portfolio summary with holdings and market values",
   })
   @ApiQuery({
-    name: 'accountIds',
+    name: "accountIds",
     required: false,
     description:
-      'Comma-separated account IDs to filter by (will include linked pairs)',
+      "Comma-separated account IDs to filter by (will include linked pairs)",
   })
   @ApiResponse({
     status: 200,
-    description: 'Portfolio summary retrieved successfully',
+    description: "Portfolio summary retrieved successfully",
   })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  getSummary(@Request() req, @Query('accountIds') accountIds?: string) {
-    const ids = accountIds ? accountIds.split(',').filter(Boolean) : undefined;
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  getSummary(@Request() req, @Query("accountIds") accountIds?: string) {
+    const ids = accountIds ? accountIds.split(",").filter(Boolean) : undefined;
     return this.portfolioService.getPortfolioSummary(req.user.id, ids);
   }
 
-  @Get('allocation')
+  @Get("allocation")
   @ApiOperation({
-    summary: 'Get asset allocation breakdown',
+    summary: "Get asset allocation breakdown",
   })
   @ApiQuery({
-    name: 'accountIds',
+    name: "accountIds",
     required: false,
     description:
-      'Comma-separated account IDs to filter by (will include linked pairs)',
+      "Comma-separated account IDs to filter by (will include linked pairs)",
   })
   @ApiResponse({
     status: 200,
-    description: 'Asset allocation retrieved successfully',
+    description: "Asset allocation retrieved successfully",
   })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  getAllocation(@Request() req, @Query('accountIds') accountIds?: string) {
-    const ids = accountIds ? accountIds.split(',').filter(Boolean) : undefined;
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  getAllocation(@Request() req, @Query("accountIds") accountIds?: string) {
+    const ids = accountIds ? accountIds.split(",").filter(Boolean) : undefined;
     return this.portfolioService.getAssetAllocation(req.user.id, ids);
   }
 
-  @Get('top-movers')
+  @Get("top-movers")
   @ApiOperation({
-    summary: 'Get top daily movers among held securities',
+    summary: "Get top daily movers among held securities",
   })
   @ApiResponse({
     status: 200,
-    description: 'Top movers retrieved successfully',
+    description: "Top movers retrieved successfully",
   })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
   getTopMovers(@Request() req) {
     return this.portfolioService.getTopMovers(req.user.id);
   }
 
-  @Get('accounts')
+  @Get("accounts")
   @ApiOperation({
-    summary: 'Get all investment accounts for the user',
+    summary: "Get all investment accounts for the user",
   })
   @ApiResponse({
     status: 200,
-    description: 'Investment accounts retrieved successfully',
+    description: "Investment accounts retrieved successfully",
   })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
   getInvestmentAccounts(@Request() req) {
     return this.portfolioService.getInvestmentAccounts(req.user.id);
   }

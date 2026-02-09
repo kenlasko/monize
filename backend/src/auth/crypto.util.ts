@@ -1,6 +1,6 @@
-import * as crypto from 'crypto';
+import * as crypto from "crypto";
 
-const ALGORITHM = 'aes-256-gcm';
+const ALGORITHM = "aes-256-gcm";
 const IV_LENGTH = 16;
 const SALT_LENGTH = 16;
 
@@ -13,7 +13,7 @@ function deriveKey(secret: string, salt: Buffer): Buffer {
  * New encryptions use a random per-encryption salt instead.
  */
 function deriveLegacyKey(secret: string): Buffer {
-  return crypto.scryptSync(secret, 'totp-encryption-salt', 32);
+  return crypto.scryptSync(secret, "totp-encryption-salt", 32);
 }
 
 export function encrypt(text: string, jwtSecret: string): string {
@@ -23,17 +23,17 @@ export function encrypt(text: string, jwtSecret: string): string {
   const iv = crypto.randomBytes(IV_LENGTH);
   const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
 
-  let encrypted = cipher.update(text, 'utf8', 'hex');
-  encrypted += cipher.final('hex');
+  let encrypted = cipher.update(text, "utf8", "hex");
+  encrypted += cipher.final("hex");
 
   const authTag = cipher.getAuthTag();
 
   // Format: salt:iv:authTag:ciphertext (4 parts = new format)
-  return `${salt.toString('hex')}:${iv.toString('hex')}:${authTag.toString('hex')}:${encrypted}`;
+  return `${salt.toString("hex")}:${iv.toString("hex")}:${authTag.toString("hex")}:${encrypted}`;
 }
 
 export function decrypt(encryptedText: string, jwtSecret: string): string {
-  const parts = encryptedText.split(':');
+  const parts = encryptedText.split(":");
 
   let key: Buffer;
   let ivHex: string;
@@ -42,7 +42,7 @@ export function decrypt(encryptedText: string, jwtSecret: string): string {
 
   if (parts.length === 4) {
     // New format: salt:iv:authTag:ciphertext
-    const salt = Buffer.from(parts[0], 'hex');
+    const salt = Buffer.from(parts[0], "hex");
     key = deriveKey(jwtSecret, salt);
     ivHex = parts[1];
     authTagHex = parts[2];
@@ -54,16 +54,16 @@ export function decrypt(encryptedText: string, jwtSecret: string): string {
     authTagHex = parts[1];
     ciphertext = parts[2];
   } else {
-    throw new Error('Invalid encrypted text format');
+    throw new Error("Invalid encrypted text format");
   }
 
-  const iv = Buffer.from(ivHex, 'hex');
-  const authTag = Buffer.from(authTagHex, 'hex');
+  const iv = Buffer.from(ivHex, "hex");
+  const authTag = Buffer.from(authTagHex, "hex");
   const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
   decipher.setAuthTag(authTag);
 
-  let decrypted = decipher.update(ciphertext, 'hex', 'utf8');
-  decrypted += decipher.final('utf8');
+  let decrypted = decipher.update(ciphertext, "hex", "utf8");
+  decrypted += decipher.final("utf8");
 
   return decrypted;
 }

@@ -1,5 +1,8 @@
-export type AnomalyType = 'large_transaction' | 'category_spike' | 'unusual_payee';
-export type AnomalySeverity = 'high' | 'medium' | 'low';
+export type AnomalyType =
+  | "large_transaction"
+  | "category_spike"
+  | "unusual_payee";
+export type AnomalySeverity = "high" | "medium" | "low";
 
 export class SpendingAnomaly {
   type: AnomalyType;

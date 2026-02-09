@@ -11,15 +11,15 @@ import {
   IsUUID,
   IsDateString,
   IsIn,
-} from 'class-validator';
-import { ApiPropertyOptional } from '@nestjs/swagger';
-import { AccountType } from '../entities/account.entity';
-import { PAYMENT_FREQUENCIES, PaymentFrequency } from './create-account.dto';
+} from "class-validator";
+import { ApiPropertyOptional } from "@nestjs/swagger";
+import { AccountType } from "../entities/account.entity";
+import { PAYMENT_FREQUENCIES, PaymentFrequency } from "./create-account.dto";
 
 export class UpdateAccountDto {
   @ApiPropertyOptional({
-    example: 'Updated Account Name',
-    description: 'Display name for the account',
+    example: "Updated Account Name",
+    description: "Display name for the account",
   })
   @IsOptional()
   @IsString()
@@ -29,15 +29,15 @@ export class UpdateAccountDto {
   @ApiPropertyOptional({
     enum: AccountType,
     example: AccountType.CHEQUING,
-    description: 'Type of account',
+    description: "Type of account",
   })
   @IsOptional()
   @IsEnum(AccountType)
   accountType?: AccountType;
 
   @ApiPropertyOptional({
-    example: 'CAD',
-    description: 'ISO 4217 currency code (USD, CAD, EUR, etc.)',
+    example: "CAD",
+    description: "ISO 4217 currency code (USD, CAD, EUR, etc.)",
     maxLength: 3,
   })
   @IsOptional()
@@ -47,23 +47,23 @@ export class UpdateAccountDto {
 
   @ApiPropertyOptional({
     example: 1000.0,
-    description: 'Opening balance for the account',
+    description: "Opening balance for the account",
   })
   @IsOptional()
   @IsNumber({ maxDecimalPlaces: 4 })
   openingBalance?: number;
 
   @ApiPropertyOptional({
-    example: 'Updated account description',
-    description: 'Optional description of the account',
+    example: "Updated account description",
+    description: "Optional description of the account",
   })
   @IsOptional()
   @IsString()
   description?: string;
 
   @ApiPropertyOptional({
-    example: '****5678',
-    description: 'Account number (masked or encrypted)',
+    example: "****5678",
+    description: "Account number (masked or encrypted)",
   })
   @IsOptional()
   @IsString()
@@ -71,8 +71,8 @@ export class UpdateAccountDto {
   accountNumber?: string;
 
   @ApiPropertyOptional({
-    example: 'BMO Bank of Montreal',
-    description: 'Financial institution name',
+    example: "BMO Bank of Montreal",
+    description: "Financial institution name",
   })
   @IsOptional()
   @IsString()
@@ -80,8 +80,8 @@ export class UpdateAccountDto {
   institution?: string;
 
   @ApiPropertyOptional({
-    example: 10000.00,
-    description: 'Credit limit (for credit cards)',
+    example: 10000.0,
+    description: "Credit limit (for credit cards)",
   })
   @IsOptional()
   @IsNumber({ maxDecimalPlaces: 4 })
@@ -90,7 +90,7 @@ export class UpdateAccountDto {
 
   @ApiPropertyOptional({
     example: 4.25,
-    description: 'Interest rate percentage (for loans, mortgages, savings)',
+    description: "Interest rate percentage (for loans, mortgages, savings)",
   })
   @IsOptional()
   @IsNumber({ maxDecimalPlaces: 4 })
@@ -100,7 +100,7 @@ export class UpdateAccountDto {
 
   @ApiPropertyOptional({
     example: true,
-    description: 'Whether this account is a favourite (shown in dashboard)',
+    description: "Whether this account is a favourite (shown in dashboard)",
   })
   @IsOptional()
   @IsBoolean()
@@ -109,7 +109,7 @@ export class UpdateAccountDto {
   // Loan-specific fields
   @ApiPropertyOptional({
     example: 500.0,
-    description: 'Monthly payment amount for loans',
+    description: "Monthly payment amount for loans",
   })
   @IsOptional()
   @IsNumber({ maxDecimalPlaces: 4 })
@@ -117,8 +117,9 @@ export class UpdateAccountDto {
   paymentAmount?: number;
 
   @ApiPropertyOptional({
-    example: 'MONTHLY',
-    description: 'Payment frequency for loans (WEEKLY, BIWEEKLY, MONTHLY, QUARTERLY, YEARLY)',
+    example: "MONTHLY",
+    description:
+      "Payment frequency for loans (WEEKLY, BIWEEKLY, MONTHLY, QUARTERLY, YEARLY)",
   })
   @IsOptional()
   @IsString()
@@ -126,29 +127,30 @@ export class UpdateAccountDto {
   paymentFrequency?: PaymentFrequency;
 
   @ApiPropertyOptional({
-    example: '2024-02-01',
-    description: 'Start date for loan payments (YYYY-MM-DD)',
+    example: "2024-02-01",
+    description: "Start date for loan payments (YYYY-MM-DD)",
   })
   @IsOptional()
   @IsDateString()
   paymentStartDate?: string;
 
   @ApiPropertyOptional({
-    description: 'Source account ID for loan payments (where payments come from)',
+    description:
+      "Source account ID for loan payments (where payments come from)",
   })
   @IsOptional()
   @IsUUID()
   sourceAccountId?: string;
 
   @ApiPropertyOptional({
-    description: 'Category ID for principal portion of payments',
+    description: "Category ID for principal portion of payments",
   })
   @IsOptional()
   @IsUUID()
   principalCategoryId?: string;
 
   @ApiPropertyOptional({
-    description: 'Category ID for interest portion of payments',
+    description: "Category ID for interest portion of payments",
   })
   @IsOptional()
   @IsUUID()
@@ -156,15 +158,15 @@ export class UpdateAccountDto {
 
   // Asset-specific fields
   @ApiPropertyOptional({
-    description: 'Category ID for tracking value changes on asset accounts',
+    description: "Category ID for tracking value changes on asset accounts",
   })
   @IsOptional()
   @IsUUID()
   assetCategoryId?: string;
 
   @ApiPropertyOptional({
-    example: '2020-06-15',
-    description: 'Date the asset was acquired (YYYY-MM-DD)',
+    example: "2020-06-15",
+    description: "Date the asset was acquired (YYYY-MM-DD)",
   })
   @IsOptional()
   @IsDateString()
@@ -173,7 +175,7 @@ export class UpdateAccountDto {
   // Mortgage-specific fields
   @ApiPropertyOptional({
     example: true,
-    description: 'Whether this is a Canadian mortgage',
+    description: "Whether this is a Canadian mortgage",
   })
   @IsOptional()
   @IsBoolean()
@@ -181,7 +183,7 @@ export class UpdateAccountDto {
 
   @ApiPropertyOptional({
     example: false,
-    description: 'Whether this is a variable rate mortgage',
+    description: "Whether this is a variable rate mortgage",
   })
   @IsOptional()
   @IsBoolean()
@@ -189,7 +191,7 @@ export class UpdateAccountDto {
 
   @ApiPropertyOptional({
     example: 60,
-    description: 'Mortgage term length in months',
+    description: "Mortgage term length in months",
   })
   @IsOptional()
   @IsNumber()
@@ -198,7 +200,7 @@ export class UpdateAccountDto {
 
   @ApiPropertyOptional({
     example: 300,
-    description: 'Total amortization period in months',
+    description: "Total amortization period in months",
   })
   @IsOptional()
   @IsNumber()

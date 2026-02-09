@@ -1,18 +1,12 @@
-import {
-  Controller,
-  Get,
-  Query,
-  UseGuards,
-  Request,
-} from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
+import { Controller, Get, Query, UseGuards, Request } from "@nestjs/common";
+import { AuthGuard } from "@nestjs/passport";
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
-} from '@nestjs/swagger';
-import { BuiltInReportsService } from './built-in-reports.service';
+} from "@nestjs/swagger";
+import { BuiltInReportsService } from "./built-in-reports.service";
 import {
   ReportQueryDto,
   SpendingByCategoryResponse,
@@ -30,17 +24,17 @@ import {
   UncategorizedTransactionsQueryDto,
   DuplicateTransactionsResponse,
   DuplicateTransactionsQueryDto,
-} from './dto';
+} from "./dto";
 
-@ApiTags('Built-in Reports')
-@Controller('built-in-reports')
-@UseGuards(AuthGuard('jwt'))
+@ApiTags("Built-in Reports")
+@Controller("built-in-reports")
+@UseGuards(AuthGuard("jwt"))
 @ApiBearerAuth()
 export class BuiltInReportsController {
   constructor(private readonly reportsService: BuiltInReportsService) {}
 
-  @Get('spending-by-category')
-  @ApiOperation({ summary: 'Get spending aggregated by category' })
+  @Get("spending-by-category")
+  @ApiOperation({ summary: "Get spending aggregated by category" })
   @ApiResponse({ status: 200, type: SpendingByCategoryResponse })
   getSpendingByCategory(
     @Request() req,
@@ -53,8 +47,8 @@ export class BuiltInReportsController {
     );
   }
 
-  @Get('spending-by-payee')
-  @ApiOperation({ summary: 'Get spending aggregated by payee' })
+  @Get("spending-by-payee")
+  @ApiOperation({ summary: "Get spending aggregated by payee" })
   @ApiResponse({ status: 200, type: SpendingByPayeeResponse })
   getSpendingByPayee(
     @Request() req,
@@ -67,8 +61,8 @@ export class BuiltInReportsController {
     );
   }
 
-  @Get('income-by-source')
-  @ApiOperation({ summary: 'Get income aggregated by category' })
+  @Get("income-by-source")
+  @ApiOperation({ summary: "Get income aggregated by category" })
   @ApiResponse({ status: 200, type: IncomeBySourceResponse })
   getIncomeBySource(
     @Request() req,
@@ -81,8 +75,8 @@ export class BuiltInReportsController {
     );
   }
 
-  @Get('monthly-spending-trend')
-  @ApiOperation({ summary: 'Get monthly spending trend by category' })
+  @Get("monthly-spending-trend")
+  @ApiOperation({ summary: "Get monthly spending trend by category" })
   @ApiResponse({ status: 200, type: MonthlySpendingTrendResponse })
   getMonthlySpendingTrend(
     @Request() req,
@@ -95,8 +89,8 @@ export class BuiltInReportsController {
     );
   }
 
-  @Get('income-vs-expenses')
-  @ApiOperation({ summary: 'Get monthly income vs expenses comparison' })
+  @Get("income-vs-expenses")
+  @ApiOperation({ summary: "Get monthly income vs expenses comparison" })
   @ApiResponse({ status: 200, type: IncomeVsExpensesResponse })
   getIncomeVsExpenses(
     @Request() req,
@@ -109,8 +103,8 @@ export class BuiltInReportsController {
     );
   }
 
-  @Get('cash-flow')
-  @ApiOperation({ summary: 'Get monthly cash flow (income, expenses, net)' })
+  @Get("cash-flow")
+  @ApiOperation({ summary: "Get monthly cash flow (income, expenses, net)" })
   @ApiResponse({ status: 200, type: IncomeVsExpensesResponse })
   getCashFlow(
     @Request() req,
@@ -124,12 +118,12 @@ export class BuiltInReportsController {
     );
   }
 
-  @Get('year-over-year')
-  @ApiOperation({ summary: 'Get year-over-year comparison data' })
+  @Get("year-over-year")
+  @ApiOperation({ summary: "Get year-over-year comparison data" })
   @ApiResponse({ status: 200, type: YearOverYearResponse })
   getYearOverYear(
     @Request() req,
-    @Query('yearsToCompare') yearsToCompare: string = '2',
+    @Query("yearsToCompare") yearsToCompare: string = "2",
   ): Promise<YearOverYearResponse> {
     return this.reportsService.getYearOverYear(
       req.user.id,
@@ -137,8 +131,8 @@ export class BuiltInReportsController {
     );
   }
 
-  @Get('weekend-vs-weekday')
-  @ApiOperation({ summary: 'Get weekend vs weekday spending analysis' })
+  @Get("weekend-vs-weekday")
+  @ApiOperation({ summary: "Get weekend vs weekday spending analysis" })
   @ApiResponse({ status: 200, type: WeekendVsWeekdayResponse })
   getWeekendVsWeekday(
     @Request() req,
@@ -151,12 +145,12 @@ export class BuiltInReportsController {
     );
   }
 
-  @Get('spending-anomalies')
-  @ApiOperation({ summary: 'Get spending anomalies' })
+  @Get("spending-anomalies")
+  @ApiOperation({ summary: "Get spending anomalies" })
   @ApiResponse({ status: 200, type: SpendingAnomaliesResponse })
   getSpendingAnomalies(
     @Request() req,
-    @Query('threshold') threshold: string = '2',
+    @Query("threshold") threshold: string = "2",
   ): Promise<SpendingAnomaliesResponse> {
     return this.reportsService.getSpendingAnomalies(
       req.user.id,
@@ -164,12 +158,12 @@ export class BuiltInReportsController {
     );
   }
 
-  @Get('tax-summary')
-  @ApiOperation({ summary: 'Get tax summary for a year' })
+  @Get("tax-summary")
+  @ApiOperation({ summary: "Get tax summary for a year" })
   @ApiResponse({ status: 200, type: TaxSummaryResponse })
   getTaxSummary(
     @Request() req,
-    @Query('year') year: string,
+    @Query("year") year: string,
   ): Promise<TaxSummaryResponse> {
     return this.reportsService.getTaxSummary(
       req.user.id,
@@ -177,12 +171,12 @@ export class BuiltInReportsController {
     );
   }
 
-  @Get('recurring-expenses')
-  @ApiOperation({ summary: 'Get recurring expenses analysis' })
+  @Get("recurring-expenses")
+  @ApiOperation({ summary: "Get recurring expenses analysis" })
   @ApiResponse({ status: 200, type: RecurringExpensesResponse })
   getRecurringExpenses(
     @Request() req,
-    @Query('minOccurrences') minOccurrences: string = '3',
+    @Query("minOccurrences") minOccurrences: string = "3",
   ): Promise<RecurringExpensesResponse> {
     return this.reportsService.getRecurringExpenses(
       req.user.id,
@@ -190,8 +184,8 @@ export class BuiltInReportsController {
     );
   }
 
-  @Get('bill-payment-history')
-  @ApiOperation({ summary: 'Get bill payment history' })
+  @Get("bill-payment-history")
+  @ApiOperation({ summary: "Get bill payment history" })
   @ApiResponse({ status: 200, type: BillPaymentHistoryResponse })
   getBillPaymentHistory(
     @Request() req,
@@ -204,8 +198,8 @@ export class BuiltInReportsController {
     );
   }
 
-  @Get('uncategorized-transactions')
-  @ApiOperation({ summary: 'Get uncategorized transactions' })
+  @Get("uncategorized-transactions")
+  @ApiOperation({ summary: "Get uncategorized transactions" })
   @ApiResponse({ status: 200, type: UncategorizedTransactionsResponse })
   getUncategorizedTransactions(
     @Request() req,
@@ -219,8 +213,8 @@ export class BuiltInReportsController {
     );
   }
 
-  @Get('duplicate-transactions')
-  @ApiOperation({ summary: 'Find potential duplicate transactions' })
+  @Get("duplicate-transactions")
+  @ApiOperation({ summary: "Find potential duplicate transactions" })
   @ApiResponse({ status: 200, type: DuplicateTransactionsResponse })
   getDuplicateTransactions(
     @Request() req,
@@ -230,7 +224,7 @@ export class BuiltInReportsController {
       req.user.id,
       query.startDate,
       query.endDate,
-      query.sensitivity || 'medium',
+      query.sensitivity || "medium",
     );
   }
 }

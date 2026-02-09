@@ -11,7 +11,7 @@ import {
   Request,
   Query,
   ParseUUIDPipe,
-} from '@nestjs/common';
+} from "@nestjs/common";
 import {
   ApiTags,
   ApiOperation,
@@ -19,123 +19,135 @@ import {
   ApiResponse,
   ApiParam,
   ApiQuery,
-} from '@nestjs/swagger';
-import { AuthGuard } from '@nestjs/passport';
-import { TransactionsService } from './transactions.service';
-import { CreateTransactionDto } from './dto/create-transaction.dto';
-import { UpdateTransactionDto } from './dto/update-transaction.dto';
-import { CreateTransactionSplitDto } from './dto/create-transaction-split.dto';
-import { CreateTransferDto } from './dto/create-transfer.dto';
-import { TransactionStatus } from './entities/transaction.entity';
+} from "@nestjs/swagger";
+import { AuthGuard } from "@nestjs/passport";
+import { TransactionsService } from "./transactions.service";
+import { CreateTransactionDto } from "./dto/create-transaction.dto";
+import { UpdateTransactionDto } from "./dto/update-transaction.dto";
+import { CreateTransactionSplitDto } from "./dto/create-transaction-split.dto";
+import { CreateTransferDto } from "./dto/create-transfer.dto";
+import { TransactionStatus } from "./entities/transaction.entity";
 
-@ApiTags('Transactions')
-@Controller('transactions')
-@UseGuards(AuthGuard('jwt'))
+@ApiTags("Transactions")
+@Controller("transactions")
+@UseGuards(AuthGuard("jwt"))
 @ApiBearerAuth()
 export class TransactionsController {
   constructor(private readonly transactionsService: TransactionsService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Create a new transaction' })
-  @ApiResponse({ status: 201, description: 'Transaction created successfully' })
-  @ApiResponse({ status: 400, description: 'Bad request' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiOperation({ summary: "Create a new transaction" })
+  @ApiResponse({ status: 201, description: "Transaction created successfully" })
+  @ApiResponse({ status: 400, description: "Bad request" })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
   create(@Request() req, @Body() createTransactionDto: CreateTransactionDto) {
     return this.transactionsService.create(req.user.id, createTransactionDto);
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all transactions for the authenticated user' })
+  @ApiOperation({ summary: "Get all transactions for the authenticated user" })
   @ApiQuery({
-    name: 'accountId',
-    required: false,
-    description: 'Filter by account ID (single value, deprecated - use accountIds)',
-  })
-  @ApiQuery({
-    name: 'accountIds',
-    required: false,
-    description: 'Filter by account IDs (comma-separated)',
-  })
-  @ApiQuery({
-    name: 'startDate',
-    required: false,
-    description: 'Filter by start date (YYYY-MM-DD)',
-  })
-  @ApiQuery({
-    name: 'endDate',
-    required: false,
-    description: 'Filter by end date (YYYY-MM-DD)',
-  })
-  @ApiQuery({
-    name: 'categoryId',
-    required: false,
-    description: 'Filter by category ID (single value, deprecated - use categoryIds)',
-  })
-  @ApiQuery({
-    name: 'categoryIds',
-    required: false,
-    description: 'Filter by category IDs (comma-separated, also matches split transactions)',
-  })
-  @ApiQuery({
-    name: 'payeeId',
-    required: false,
-    description: 'Filter by payee ID (single value, deprecated - use payeeIds)',
-  })
-  @ApiQuery({
-    name: 'payeeIds',
-    required: false,
-    description: 'Filter by payee IDs (comma-separated)',
-  })
-  @ApiQuery({
-    name: 'page',
-    required: false,
-    description: 'Page number (1-indexed, default: 1)',
-  })
-  @ApiQuery({
-    name: 'limit',
-    required: false,
-    description: 'Number of transactions per page (default: 50, max: 200)',
-  })
-  @ApiQuery({
-    name: 'includeInvestmentBrokerage',
+    name: "accountId",
     required: false,
     description:
-      'Include transactions from investment brokerage accounts (default: false)',
+      "Filter by account ID (single value, deprecated - use accountIds)",
   })
   @ApiQuery({
-    name: 'search',
+    name: "accountIds",
     required: false,
-    description: 'Search text to filter by description, payee name, or split memo',
+    description: "Filter by account IDs (comma-separated)",
   })
   @ApiQuery({
-    name: 'targetTransactionId',
+    name: "startDate",
     required: false,
-    description: 'Navigate to the page containing this transaction ID (overrides page parameter)',
+    description: "Filter by start date (YYYY-MM-DD)",
+  })
+  @ApiQuery({
+    name: "endDate",
+    required: false,
+    description: "Filter by end date (YYYY-MM-DD)",
+  })
+  @ApiQuery({
+    name: "categoryId",
+    required: false,
+    description:
+      "Filter by category ID (single value, deprecated - use categoryIds)",
+  })
+  @ApiQuery({
+    name: "categoryIds",
+    required: false,
+    description:
+      "Filter by category IDs (comma-separated, also matches split transactions)",
+  })
+  @ApiQuery({
+    name: "payeeId",
+    required: false,
+    description: "Filter by payee ID (single value, deprecated - use payeeIds)",
+  })
+  @ApiQuery({
+    name: "payeeIds",
+    required: false,
+    description: "Filter by payee IDs (comma-separated)",
+  })
+  @ApiQuery({
+    name: "page",
+    required: false,
+    description: "Page number (1-indexed, default: 1)",
+  })
+  @ApiQuery({
+    name: "limit",
+    required: false,
+    description: "Number of transactions per page (default: 50, max: 200)",
+  })
+  @ApiQuery({
+    name: "includeInvestmentBrokerage",
+    required: false,
+    description:
+      "Include transactions from investment brokerage accounts (default: false)",
+  })
+  @ApiQuery({
+    name: "search",
+    required: false,
+    description:
+      "Search text to filter by description, payee name, or split memo",
+  })
+  @ApiQuery({
+    name: "targetTransactionId",
+    required: false,
+    description:
+      "Navigate to the page containing this transaction ID (overrides page parameter)",
   })
   @ApiResponse({
     status: 200,
-    description: 'List of transactions retrieved successfully',
+    description: "List of transactions retrieved successfully",
   })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
   findAll(
     @Request() req,
-    @Query('accountId') accountId?: string,
-    @Query('accountIds') accountIds?: string,
-    @Query('startDate') startDate?: string,
-    @Query('endDate') endDate?: string,
-    @Query('categoryId') categoryId?: string,
-    @Query('categoryIds') categoryIds?: string,
-    @Query('payeeId') payeeId?: string,
-    @Query('payeeIds') payeeIds?: string,
-    @Query('page') page?: string,
-    @Query('limit') limit?: string,
-    @Query('includeInvestmentBrokerage') includeInvestmentBrokerage?: string,
-    @Query('search') search?: string,
-    @Query('targetTransactionId') targetTransactionId?: string,
+    @Query("accountId") accountId?: string,
+    @Query("accountIds") accountIds?: string,
+    @Query("startDate") startDate?: string,
+    @Query("endDate") endDate?: string,
+    @Query("categoryId") categoryId?: string,
+    @Query("categoryIds") categoryIds?: string,
+    @Query("payeeId") payeeId?: string,
+    @Query("payeeIds") payeeIds?: string,
+    @Query("page") page?: string,
+    @Query("limit") limit?: string,
+    @Query("includeInvestmentBrokerage") includeInvestmentBrokerage?: string,
+    @Query("search") search?: string,
+    @Query("targetTransactionId") targetTransactionId?: string,
   ) {
     // Parse comma-separated IDs into arrays, with backward compatibility for singular params
-    const parseIds = (plural?: string, singular?: string): string[] | undefined => {
-      if (plural) return plural.split(',').map(id => id.trim()).filter(id => id);
+    const parseIds = (
+      plural?: string,
+      singular?: string,
+    ): string[] | undefined => {
+      if (plural)
+        return plural
+          .split(",")
+          .map((id) => id.trim())
+          .filter((id) => id);
       if (singular) return [singular];
       return undefined;
     };
@@ -149,79 +161,87 @@ export class TransactionsController {
       parseIds(payeeIds, payeeId),
       page ? parseInt(page, 10) : undefined,
       limit ? parseInt(limit, 10) : undefined,
-      includeInvestmentBrokerage === 'true',
+      includeInvestmentBrokerage === "true",
       search,
       targetTransactionId,
     );
   }
 
-  @Get('summary')
-  @ApiOperation({ summary: 'Get transaction summary statistics' })
+  @Get("summary")
+  @ApiOperation({ summary: "Get transaction summary statistics" })
   @ApiQuery({
-    name: 'accountId',
+    name: "accountId",
     required: false,
-    description: 'Filter by account ID (deprecated - use accountIds)',
+    description: "Filter by account ID (deprecated - use accountIds)",
   })
   @ApiQuery({
-    name: 'accountIds',
+    name: "accountIds",
     required: false,
-    description: 'Filter by account IDs (comma-separated)',
+    description: "Filter by account IDs (comma-separated)",
   })
   @ApiQuery({
-    name: 'startDate',
+    name: "startDate",
     required: false,
-    description: 'Filter by start date (YYYY-MM-DD)',
+    description: "Filter by start date (YYYY-MM-DD)",
   })
   @ApiQuery({
-    name: 'endDate',
+    name: "endDate",
     required: false,
-    description: 'Filter by end date (YYYY-MM-DD)',
+    description: "Filter by end date (YYYY-MM-DD)",
   })
   @ApiQuery({
-    name: 'categoryId',
+    name: "categoryId",
     required: false,
-    description: 'Filter by category ID (deprecated - use categoryIds)',
+    description: "Filter by category ID (deprecated - use categoryIds)",
   })
   @ApiQuery({
-    name: 'categoryIds',
+    name: "categoryIds",
     required: false,
-    description: 'Filter by category IDs (comma-separated)',
+    description: "Filter by category IDs (comma-separated)",
   })
   @ApiQuery({
-    name: 'payeeId',
+    name: "payeeId",
     required: false,
-    description: 'Filter by payee ID (deprecated - use payeeIds)',
+    description: "Filter by payee ID (deprecated - use payeeIds)",
   })
   @ApiQuery({
-    name: 'payeeIds',
+    name: "payeeIds",
     required: false,
-    description: 'Filter by payee IDs (comma-separated)',
+    description: "Filter by payee IDs (comma-separated)",
   })
   @ApiQuery({
-    name: 'search',
+    name: "search",
     required: false,
-    description: 'Search text to filter by description, payee name, or split memo',
+    description:
+      "Search text to filter by description, payee name, or split memo",
   })
   @ApiResponse({
     status: 200,
-    description: 'Transaction summary retrieved successfully',
+    description: "Transaction summary retrieved successfully",
   })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
   getSummary(
     @Request() req,
-    @Query('accountId') accountId?: string,
-    @Query('accountIds') accountIds?: string,
-    @Query('startDate') startDate?: string,
-    @Query('endDate') endDate?: string,
-    @Query('categoryId') categoryId?: string,
-    @Query('categoryIds') categoryIds?: string,
-    @Query('payeeId') payeeId?: string,
-    @Query('payeeIds') payeeIds?: string,
-    @Query('search') search?: string,
+    @Query("accountId") accountId?: string,
+    @Query("accountIds") accountIds?: string,
+    @Query("startDate") startDate?: string,
+    @Query("endDate") endDate?: string,
+    @Query("categoryId") categoryId?: string,
+    @Query("categoryIds") categoryIds?: string,
+    @Query("payeeId") payeeId?: string,
+    @Query("payeeIds") payeeIds?: string,
+    @Query("search") search?: string,
   ) {
     // Parse comma-separated IDs into arrays, with backward compatibility for singular params
-    const parseIds = (plural?: string, singular?: string): string[] | undefined => {
-      if (plural) return plural.split(',').map(id => id.trim()).filter(id => id);
+    const parseIds = (
+      plural?: string,
+      singular?: string,
+    ): string[] | undefined => {
+      if (plural)
+        return plural
+          .split(",")
+          .map((id) => id.trim())
+          .filter((id) => id);
       if (singular) return [singular];
       return undefined;
     };
@@ -237,128 +257,152 @@ export class TransactionsController {
     );
   }
 
-  @Get(':id')
-  @ApiOperation({ summary: 'Get a specific transaction by ID' })
-  @ApiParam({ name: 'id', description: 'Transaction UUID' })
+  @Get(":id")
+  @ApiOperation({ summary: "Get a specific transaction by ID" })
+  @ApiParam({ name: "id", description: "Transaction UUID" })
   @ApiResponse({
     status: 200,
-    description: 'Transaction retrieved successfully',
+    description: "Transaction retrieved successfully",
   })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
   @ApiResponse({
     status: 403,
-    description: 'Forbidden - transaction does not belong to user',
+    description: "Forbidden - transaction does not belong to user",
   })
-  @ApiResponse({ status: 404, description: 'Transaction not found' })
-  findOne(@Request() req, @Param('id', ParseUUIDPipe) id: string) {
+  @ApiResponse({ status: 404, description: "Transaction not found" })
+  findOne(@Request() req, @Param("id", ParseUUIDPipe) id: string) {
     return this.transactionsService.findOne(req.user.id, id);
   }
 
-  @Patch(':id')
-  @ApiOperation({ summary: 'Update a transaction' })
-  @ApiParam({ name: 'id', description: 'Transaction UUID' })
+  @Patch(":id")
+  @ApiOperation({ summary: "Update a transaction" })
+  @ApiParam({ name: "id", description: "Transaction UUID" })
   @ApiResponse({
     status: 200,
-    description: 'Transaction updated successfully',
+    description: "Transaction updated successfully",
   })
-  @ApiResponse({ status: 400, description: 'Bad request' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 400, description: "Bad request" })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
   @ApiResponse({
     status: 403,
-    description: 'Forbidden - transaction does not belong to user',
+    description: "Forbidden - transaction does not belong to user",
   })
-  @ApiResponse({ status: 404, description: 'Transaction not found' })
+  @ApiResponse({ status: 404, description: "Transaction not found" })
   update(
     @Request() req,
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param("id", ParseUUIDPipe) id: string,
     @Body() updateTransactionDto: UpdateTransactionDto,
   ) {
-    return this.transactionsService.update(req.user.id, id, updateTransactionDto);
+    return this.transactionsService.update(
+      req.user.id,
+      id,
+      updateTransactionDto,
+    );
   }
 
-  @Delete(':id')
-  @ApiOperation({ summary: 'Delete a transaction' })
-  @ApiParam({ name: 'id', description: 'Transaction UUID' })
-  @ApiResponse({ status: 200, description: 'Transaction deleted successfully' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @Delete(":id")
+  @ApiOperation({ summary: "Delete a transaction" })
+  @ApiParam({ name: "id", description: "Transaction UUID" })
+  @ApiResponse({ status: 200, description: "Transaction deleted successfully" })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
   @ApiResponse({
     status: 403,
-    description: 'Forbidden - transaction does not belong to user',
+    description: "Forbidden - transaction does not belong to user",
   })
-  @ApiResponse({ status: 404, description: 'Transaction not found' })
-  remove(@Request() req, @Param('id', ParseUUIDPipe) id: string) {
+  @ApiResponse({ status: 404, description: "Transaction not found" })
+  remove(@Request() req, @Param("id", ParseUUIDPipe) id: string) {
     return this.transactionsService.remove(req.user.id, id);
   }
 
-  @Post(':id/clear')
-  @ApiOperation({ summary: 'Mark transaction as cleared or uncleared' })
-  @ApiParam({ name: 'id', description: 'Transaction UUID' })
-  @ApiResponse({ status: 200, description: 'Transaction cleared status updated' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 404, description: 'Transaction not found' })
+  @Post(":id/clear")
+  @ApiOperation({ summary: "Mark transaction as cleared or uncleared" })
+  @ApiParam({ name: "id", description: "Transaction UUID" })
+  @ApiResponse({
+    status: 200,
+    description: "Transaction cleared status updated",
+  })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  @ApiResponse({ status: 404, description: "Transaction not found" })
   markCleared(
     @Request() req,
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body('isCleared') isCleared: boolean,
+    @Param("id", ParseUUIDPipe) id: string,
+    @Body("isCleared") isCleared: boolean,
   ) {
     return this.transactionsService.markCleared(req.user.id, id, isCleared);
   }
 
-  @Post(':id/reconcile')
-  @ApiOperation({ summary: 'Reconcile a transaction' })
-  @ApiParam({ name: 'id', description: 'Transaction UUID' })
-  @ApiResponse({ status: 200, description: 'Transaction reconciled successfully' })
-  @ApiResponse({ status: 400, description: 'Transaction already reconciled' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 404, description: 'Transaction not found' })
-  reconcile(@Request() req, @Param('id', ParseUUIDPipe) id: string) {
+  @Post(":id/reconcile")
+  @ApiOperation({ summary: "Reconcile a transaction" })
+  @ApiParam({ name: "id", description: "Transaction UUID" })
+  @ApiResponse({
+    status: 200,
+    description: "Transaction reconciled successfully",
+  })
+  @ApiResponse({ status: 400, description: "Transaction already reconciled" })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  @ApiResponse({ status: 404, description: "Transaction not found" })
+  reconcile(@Request() req, @Param("id", ParseUUIDPipe) id: string) {
     return this.transactionsService.reconcile(req.user.id, id);
   }
 
-  @Post(':id/unreconcile')
-  @ApiOperation({ summary: 'Unreconcile a transaction' })
-  @ApiParam({ name: 'id', description: 'Transaction UUID' })
+  @Post(":id/unreconcile")
+  @ApiOperation({ summary: "Unreconcile a transaction" })
+  @ApiParam({ name: "id", description: "Transaction UUID" })
   @ApiResponse({
     status: 200,
-    description: 'Transaction unreconciled successfully',
+    description: "Transaction unreconciled successfully",
   })
-  @ApiResponse({ status: 400, description: 'Transaction is not reconciled' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 404, description: 'Transaction not found' })
-  unreconcile(@Request() req, @Param('id', ParseUUIDPipe) id: string) {
+  @ApiResponse({ status: 400, description: "Transaction is not reconciled" })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  @ApiResponse({ status: 404, description: "Transaction not found" })
+  unreconcile(@Request() req, @Param("id", ParseUUIDPipe) id: string) {
     return this.transactionsService.unreconcile(req.user.id, id);
   }
 
-  @Patch(':id/status')
-  @ApiOperation({ summary: 'Update transaction status' })
-  @ApiParam({ name: 'id', description: 'Transaction UUID' })
-  @ApiResponse({ status: 200, description: 'Transaction status updated successfully' })
-  @ApiResponse({ status: 400, description: 'Invalid status' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 404, description: 'Transaction not found' })
+  @Patch(":id/status")
+  @ApiOperation({ summary: "Update transaction status" })
+  @ApiParam({ name: "id", description: "Transaction UUID" })
+  @ApiResponse({
+    status: 200,
+    description: "Transaction status updated successfully",
+  })
+  @ApiResponse({ status: 400, description: "Invalid status" })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  @ApiResponse({ status: 404, description: "Transaction not found" })
   updateStatus(
     @Request() req,
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body('status') status: TransactionStatus,
+    @Param("id", ParseUUIDPipe) id: string,
+    @Body("status") status: TransactionStatus,
   ) {
     return this.transactionsService.updateStatus(req.user.id, id, status);
   }
 
   // ==================== Reconciliation Endpoints ====================
 
-  @Get('reconcile/:accountId')
-  @ApiOperation({ summary: 'Get reconciliation data for an account' })
-  @ApiParam({ name: 'accountId', description: 'Account UUID' })
-  @ApiQuery({ name: 'statementDate', required: true, description: 'Statement date (YYYY-MM-DD)' })
-  @ApiQuery({ name: 'statementBalance', required: true, description: 'Statement ending balance' })
-  @ApiResponse({ status: 200, description: 'Reconciliation data retrieved successfully' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 404, description: 'Account not found' })
+  @Get("reconcile/:accountId")
+  @ApiOperation({ summary: "Get reconciliation data for an account" })
+  @ApiParam({ name: "accountId", description: "Account UUID" })
+  @ApiQuery({
+    name: "statementDate",
+    required: true,
+    description: "Statement date (YYYY-MM-DD)",
+  })
+  @ApiQuery({
+    name: "statementBalance",
+    required: true,
+    description: "Statement ending balance",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Reconciliation data retrieved successfully",
+  })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  @ApiResponse({ status: 404, description: "Account not found" })
   getReconciliationData(
     @Request() req,
-    @Param('accountId', ParseUUIDPipe) accountId: string,
-    @Query('statementDate') statementDate: string,
-    @Query('statementBalance') statementBalance: string,
+    @Param("accountId", ParseUUIDPipe) accountId: string,
+    @Query("statementDate") statementDate: string,
+    @Query("statementBalance") statementBalance: string,
   ) {
     return this.transactionsService.getReconciliationData(
       req.user.id,
@@ -368,16 +412,19 @@ export class TransactionsController {
     );
   }
 
-  @Post('reconcile/:accountId')
-  @ApiOperation({ summary: 'Bulk reconcile transactions for an account' })
-  @ApiParam({ name: 'accountId', description: 'Account UUID' })
-  @ApiResponse({ status: 200, description: 'Transactions reconciled successfully' })
-  @ApiResponse({ status: 400, description: 'Invalid transaction IDs' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 404, description: 'Account not found' })
+  @Post("reconcile/:accountId")
+  @ApiOperation({ summary: "Bulk reconcile transactions for an account" })
+  @ApiParam({ name: "accountId", description: "Account UUID" })
+  @ApiResponse({
+    status: 200,
+    description: "Transactions reconciled successfully",
+  })
+  @ApiResponse({ status: 400, description: "Invalid transaction IDs" })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  @ApiResponse({ status: 404, description: "Account not found" })
   bulkReconcile(
     @Request() req,
-    @Param('accountId', ParseUUIDPipe) accountId: string,
+    @Param("accountId", ParseUUIDPipe) accountId: string,
     @Body() body: { transactionIds: string[]; reconciledDate: string },
   ) {
     return this.transactionsService.bulkReconcile(
@@ -390,106 +437,128 @@ export class TransactionsController {
 
   // ==================== Split Transaction Endpoints ====================
 
-  @Get(':id/splits')
-  @ApiOperation({ summary: 'Get all splits for a transaction' })
-  @ApiParam({ name: 'id', description: 'Transaction UUID' })
-  @ApiResponse({ status: 200, description: 'Splits retrieved successfully' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 404, description: 'Transaction not found' })
-  getSplits(@Request() req, @Param('id', ParseUUIDPipe) id: string) {
+  @Get(":id/splits")
+  @ApiOperation({ summary: "Get all splits for a transaction" })
+  @ApiParam({ name: "id", description: "Transaction UUID" })
+  @ApiResponse({ status: 200, description: "Splits retrieved successfully" })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  @ApiResponse({ status: 404, description: "Transaction not found" })
+  getSplits(@Request() req, @Param("id", ParseUUIDPipe) id: string) {
     return this.transactionsService.getSplits(req.user.id, id);
   }
 
-  @Put(':id/splits')
-  @ApiOperation({ summary: 'Replace all splits for a transaction (atomic update)' })
-  @ApiParam({ name: 'id', description: 'Transaction UUID' })
-  @ApiResponse({ status: 200, description: 'Splits updated successfully' })
-  @ApiResponse({ status: 400, description: 'Invalid splits data' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 404, description: 'Transaction not found' })
+  @Put(":id/splits")
+  @ApiOperation({
+    summary: "Replace all splits for a transaction (atomic update)",
+  })
+  @ApiParam({ name: "id", description: "Transaction UUID" })
+  @ApiResponse({ status: 200, description: "Splits updated successfully" })
+  @ApiResponse({ status: 400, description: "Invalid splits data" })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  @ApiResponse({ status: 404, description: "Transaction not found" })
   updateSplits(
     @Request() req,
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param("id", ParseUUIDPipe) id: string,
     @Body() splits: CreateTransactionSplitDto[],
   ) {
     return this.transactionsService.updateSplits(req.user.id, id, splits);
   }
 
-  @Post(':id/splits')
-  @ApiOperation({ summary: 'Add a single split to a transaction' })
-  @ApiParam({ name: 'id', description: 'Transaction UUID' })
-  @ApiResponse({ status: 201, description: 'Split added successfully' })
-  @ApiResponse({ status: 400, description: 'Invalid split data' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 404, description: 'Transaction not found' })
+  @Post(":id/splits")
+  @ApiOperation({ summary: "Add a single split to a transaction" })
+  @ApiParam({ name: "id", description: "Transaction UUID" })
+  @ApiResponse({ status: 201, description: "Split added successfully" })
+  @ApiResponse({ status: 400, description: "Invalid split data" })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  @ApiResponse({ status: 404, description: "Transaction not found" })
   addSplit(
     @Request() req,
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param("id", ParseUUIDPipe) id: string,
     @Body() splitDto: CreateTransactionSplitDto,
   ) {
     return this.transactionsService.addSplit(req.user.id, id, splitDto);
   }
 
-  @Delete(':id/splits/:splitId')
-  @ApiOperation({ summary: 'Remove a split from a transaction' })
-  @ApiParam({ name: 'id', description: 'Transaction UUID' })
-  @ApiParam({ name: 'splitId', description: 'Split UUID' })
-  @ApiResponse({ status: 200, description: 'Split removed successfully' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 404, description: 'Transaction or split not found' })
+  @Delete(":id/splits/:splitId")
+  @ApiOperation({ summary: "Remove a split from a transaction" })
+  @ApiParam({ name: "id", description: "Transaction UUID" })
+  @ApiParam({ name: "splitId", description: "Split UUID" })
+  @ApiResponse({ status: 200, description: "Split removed successfully" })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  @ApiResponse({ status: 404, description: "Transaction or split not found" })
   removeSplit(
     @Request() req,
-    @Param('id', ParseUUIDPipe) id: string,
-    @Param('splitId', ParseUUIDPipe) splitId: string,
+    @Param("id", ParseUUIDPipe) id: string,
+    @Param("splitId", ParseUUIDPipe) splitId: string,
   ) {
     return this.transactionsService.removeSplit(req.user.id, id, splitId);
   }
 
   // ==================== Transfer Endpoints ====================
 
-  @Post('transfer')
-  @ApiOperation({ summary: 'Create a transfer between two accounts' })
-  @ApiResponse({ status: 201, description: 'Transfer created successfully' })
-  @ApiResponse({ status: 400, description: 'Bad request - invalid transfer data' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 404, description: 'Account not found' })
+  @Post("transfer")
+  @ApiOperation({ summary: "Create a transfer between two accounts" })
+  @ApiResponse({ status: 201, description: "Transfer created successfully" })
+  @ApiResponse({
+    status: 400,
+    description: "Bad request - invalid transfer data",
+  })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  @ApiResponse({ status: 404, description: "Account not found" })
   createTransfer(@Request() req, @Body() createTransferDto: CreateTransferDto) {
-    return this.transactionsService.createTransfer(req.user.id, createTransferDto);
+    return this.transactionsService.createTransfer(
+      req.user.id,
+      createTransferDto,
+    );
   }
 
-  @Get(':id/linked')
-  @ApiOperation({ summary: 'Get the linked transaction for a transfer' })
-  @ApiParam({ name: 'id', description: 'Transaction UUID' })
-  @ApiResponse({ status: 200, description: 'Linked transaction retrieved successfully' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 404, description: 'Transaction not found' })
-  getLinkedTransaction(@Request() req, @Param('id', ParseUUIDPipe) id: string) {
+  @Get(":id/linked")
+  @ApiOperation({ summary: "Get the linked transaction for a transfer" })
+  @ApiParam({ name: "id", description: "Transaction UUID" })
+  @ApiResponse({
+    status: 200,
+    description: "Linked transaction retrieved successfully",
+  })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  @ApiResponse({ status: 404, description: "Transaction not found" })
+  getLinkedTransaction(@Request() req, @Param("id", ParseUUIDPipe) id: string) {
     return this.transactionsService.getLinkedTransaction(req.user.id, id);
   }
 
-  @Delete(':id/transfer')
-  @ApiOperation({ summary: 'Delete a transfer (deletes both linked transactions)' })
-  @ApiParam({ name: 'id', description: 'Transaction UUID' })
-  @ApiResponse({ status: 200, description: 'Transfer deleted successfully' })
-  @ApiResponse({ status: 400, description: 'Transaction is not a transfer' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 404, description: 'Transaction not found' })
-  removeTransfer(@Request() req, @Param('id', ParseUUIDPipe) id: string) {
+  @Delete(":id/transfer")
+  @ApiOperation({
+    summary: "Delete a transfer (deletes both linked transactions)",
+  })
+  @ApiParam({ name: "id", description: "Transaction UUID" })
+  @ApiResponse({ status: 200, description: "Transfer deleted successfully" })
+  @ApiResponse({ status: 400, description: "Transaction is not a transfer" })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  @ApiResponse({ status: 404, description: "Transaction not found" })
+  removeTransfer(@Request() req, @Param("id", ParseUUIDPipe) id: string) {
     return this.transactionsService.removeTransfer(req.user.id, id);
   }
 
-  @Patch(':id/transfer')
-  @ApiOperation({ summary: 'Update a transfer (updates both linked transactions)' })
-  @ApiParam({ name: 'id', description: 'Transaction UUID' })
-  @ApiResponse({ status: 200, description: 'Transfer updated successfully' })
-  @ApiResponse({ status: 400, description: 'Transaction is not a transfer or invalid data' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 404, description: 'Transaction not found' })
+  @Patch(":id/transfer")
+  @ApiOperation({
+    summary: "Update a transfer (updates both linked transactions)",
+  })
+  @ApiParam({ name: "id", description: "Transaction UUID" })
+  @ApiResponse({ status: 200, description: "Transfer updated successfully" })
+  @ApiResponse({
+    status: 400,
+    description: "Transaction is not a transfer or invalid data",
+  })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  @ApiResponse({ status: 404, description: "Transaction not found" })
   updateTransfer(
     @Request() req,
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param("id", ParseUUIDPipe) id: string,
     @Body() updateTransferDto: Partial<CreateTransferDto>,
   ) {
-    return this.transactionsService.updateTransfer(req.user.id, id, updateTransferDto);
+    return this.transactionsService.updateTransfer(
+      req.user.id,
+      id,
+      updateTransferDto,
+    );
   }
 }

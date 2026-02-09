@@ -1,8 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { Cron, CronExpression } from '@nestjs/schedule';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, LessThanOrEqual, MoreThan, IsNull, Not } from 'typeorm';
-import { Account, AccountType } from './entities/account.entity';
+import { Injectable, Logger } from "@nestjs/common";
+import { Cron, CronExpression } from "@nestjs/schedule";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository, IsNull, Not } from "typeorm";
+import { Account, AccountType } from "./entities/account.entity";
 
 /**
  * Service for handling mortgage term renewal reminders
@@ -25,12 +25,12 @@ export class MortgageReminderService {
    */
   @Cron(CronExpression.EVERY_DAY_AT_8AM)
   async checkMortgageRenewals() {
-    this.logger.log('Running mortgage renewal check...');
+    this.logger.log("Running mortgage renewal check...");
 
     const upcomingRenewals = await this.findUpcomingRenewals(60);
 
     if (upcomingRenewals.length === 0) {
-      this.logger.log('No upcoming mortgage renewals found');
+      this.logger.log("No upcoming mortgage renewals found");
       return;
     }
 
@@ -38,7 +38,7 @@ export class MortgageReminderService {
       const daysUntilRenewal = this.getDaysUntilDate(mortgage.termEndDate!);
       this.logger.warn(
         `Mortgage renewal reminder: ${mortgage.name} (User: ${mortgage.userId}) ` +
-          `- Term ends in ${daysUntilRenewal} days on ${mortgage.termEndDate!.toISOString().split('T')[0]}`,
+          `- Term ends in ${daysUntilRenewal} days on ${mortgage.termEndDate!.toISOString().split("T")[0]}`,
       );
 
       // TODO: When notification system is implemented, create a notification here
@@ -52,7 +52,9 @@ export class MortgageReminderService {
       // });
     }
 
-    this.logger.log(`Found ${upcomingRenewals.length} mortgage(s) with upcoming renewals`);
+    this.logger.log(
+      `Found ${upcomingRenewals.length} mortgage(s) with upcoming renewals`,
+    );
   }
 
   /**
@@ -65,20 +67,22 @@ export class MortgageReminderService {
     const futureDate = new Date(today);
     futureDate.setDate(futureDate.getDate() + daysAhead);
 
-    return this.accountsRepository.find({
-      where: {
-        accountType: AccountType.MORTGAGE,
-        isClosed: false,
-        termEndDate: Not(IsNull()),
-      },
-    }).then(accounts =>
-      accounts.filter(account => {
-        if (!account.termEndDate) return false;
-        const termEnd = new Date(account.termEndDate);
-        termEnd.setHours(0, 0, 0, 0);
-        return termEnd >= today && termEnd <= futureDate;
+    return this.accountsRepository
+      .find({
+        where: {
+          accountType: AccountType.MORTGAGE,
+          isClosed: false,
+          termEndDate: Not(IsNull()),
+        },
       })
-    );
+      .then((accounts) =>
+        accounts.filter((account) => {
+          if (!account.termEndDate) return false;
+          const termEnd = new Date(account.termEndDate);
+          termEnd.setHours(0, 0, 0, 0);
+          return termEnd >= today && termEnd <= futureDate;
+        }),
+      );
   }
 
   /**
@@ -109,10 +113,10 @@ export class MortgageReminderService {
 
     return {
       count: upcomingRenewals.length,
-      mortgages: upcomingRenewals.map(m => ({
+      mortgages: upcomingRenewals.map((m) => ({
         id: m.id,
         name: m.name,
-        termEndDate: m.termEndDate!.toISOString().split('T')[0],
+        termEndDate: m.termEndDate!.toISOString().split("T")[0],
         daysUntilRenewal: this.getDaysUntilDate(m.termEndDate!),
       })),
     };

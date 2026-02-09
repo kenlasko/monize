@@ -10,19 +10,19 @@ import {
   ValidateNested,
   Min,
   MaxLength,
-} from 'class-validator';
-import { Type } from 'class-transformer';
-import { CreateScheduledTransactionSplitDto } from './create-scheduled-transaction-split.dto';
+} from "class-validator";
+import { Type } from "class-transformer";
+import { CreateScheduledTransactionSplitDto } from "./create-scheduled-transaction-split.dto";
 
 export enum FrequencyType {
-  ONCE = 'ONCE',
-  DAILY = 'DAILY',
-  WEEKLY = 'WEEKLY',
-  BIWEEKLY = 'BIWEEKLY',
-  SEMIMONTHLY = 'SEMIMONTHLY',
-  MONTHLY = 'MONTHLY',
-  QUARTERLY = 'QUARTERLY',
-  YEARLY = 'YEARLY',
+  ONCE = "ONCE",
+  DAILY = "DAILY",
+  WEEKLY = "WEEKLY",
+  BIWEEKLY = "BIWEEKLY",
+  SEMIMONTHLY = "SEMIMONTHLY",
+  MONTHLY = "MONTHLY",
+  QUARTERLY = "QUARTERLY",
+  YEARLY = "YEARLY",
 }
 
 export class CreateScheduledTransactionDto {

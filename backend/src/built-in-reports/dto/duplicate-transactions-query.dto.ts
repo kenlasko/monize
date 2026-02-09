@@ -1,11 +1,11 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsOptional, IsDateString, IsIn } from 'class-validator';
+import { ApiProperty } from "@nestjs/swagger";
+import { IsOptional, IsDateString, IsIn } from "class-validator";
 
 export class DuplicateTransactionsQueryDto {
   @ApiProperty({
     required: false,
-    description: 'Start date for the report (YYYY-MM-DD)',
-    example: '2024-01-01',
+    description: "Start date for the report (YYYY-MM-DD)",
+    example: "2024-01-01",
   })
   @IsOptional()
   @IsDateString()
@@ -13,20 +13,20 @@ export class DuplicateTransactionsQueryDto {
 
   @ApiProperty({
     required: true,
-    description: 'End date for the report (YYYY-MM-DD)',
-    example: '2024-12-31',
+    description: "End date for the report (YYYY-MM-DD)",
+    example: "2024-12-31",
   })
   @IsDateString()
   endDate: string;
 
   @ApiProperty({
     required: false,
-    description: 'Detection sensitivity level',
-    example: 'medium',
-    enum: ['high', 'medium', 'low'],
-    default: 'medium',
+    description: "Detection sensitivity level",
+    example: "medium",
+    enum: ["high", "medium", "low"],
+    default: "medium",
   })
   @IsOptional()
-  @IsIn(['high', 'medium', 'low'])
-  sensitivity?: 'high' | 'medium' | 'low';
+  @IsIn(["high", "medium", "low"])
+  sensitivity?: "high" | "medium" | "low";
 }

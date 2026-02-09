@@ -1,9 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In, DataSource } from 'typeorm';
-import { Cron, CronExpression } from '@nestjs/schedule';
-import { SecurityPrice } from './entities/security-price.entity';
-import { Security } from './entities/security.entity';
+import { Injectable, Logger } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository, In, DataSource } from "typeorm";
+import { Cron } from "@nestjs/schedule";
+import { SecurityPrice } from "./entities/security-price.entity";
+import { Security } from "./entities/security.entity";
 
 interface YahooQuoteResult {
   symbol: string;
@@ -77,18 +77,23 @@ export class SecurityPriceService {
   /**
    * Fetch quote data from Yahoo Finance for a single symbol using v8 chart API
    */
-  private async fetchYahooQuote(symbol: string): Promise<YahooQuoteResult | null> {
+  private async fetchYahooQuote(
+    symbol: string,
+  ): Promise<YahooQuoteResult | null> {
     try {
       const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=1d`;
 
       const response = await fetch(url, {
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
         },
       });
 
       if (!response.ok) {
-        this.logger.warn(`Yahoo Finance API returned ${response.status} for ${symbol}`);
+        this.logger.warn(
+          `Yahoo Finance API returned ${response.status} for ${symbol}`,
+        );
         return null;
       }
 
@@ -109,7 +114,9 @@ export class SecurityPriceService {
 
       return null;
     } catch (error) {
-      this.logger.error(`Failed to fetch Yahoo Finance quote for ${symbol}: ${error.message}`);
+      this.logger.error(
+        `Failed to fetch Yahoo Finance quote for ${symbol}: ${error.message}`,
+      );
       return null;
     }
   }
@@ -117,7 +124,9 @@ export class SecurityPriceService {
   /**
    * Fetch quote data from Yahoo Finance for multiple symbols
    */
-  private async fetchYahooQuotes(symbols: string[]): Promise<Map<string, YahooQuoteResult>> {
+  private async fetchYahooQuotes(
+    symbols: string[],
+  ): Promise<Map<string, YahooQuoteResult>> {
     const results = new Map<string, YahooQuoteResult>();
 
     if (symbols.length === 0) {
@@ -142,7 +151,7 @@ export class SecurityPriceService {
    */
   async refreshAllPrices(): Promise<PriceRefreshSummary> {
     const startTime = Date.now();
-    this.logger.log('Starting price refresh for all securities');
+    this.logger.log("Starting price refresh for all securities");
 
     // Get all active securities that don't have price updates disabled
     const securities = await this.securitiesRepository.find({
@@ -168,7 +177,7 @@ export class SecurityPriceService {
     // Group securities by (symbol, exchange) to deduplicate API calls across users
     const symbolGroups = new Map<string, Security[]>();
     for (const security of securities) {
-      const key = `${security.symbol}|${security.exchange || ''}`;
+      const key = `${security.symbol}|${security.exchange || ""}`;
       const group = symbolGroups.get(key) || [];
       group.push(security);
       symbolGroups.set(key, group);
@@ -178,12 +187,17 @@ export class SecurityPriceService {
     await Promise.all(
       Array.from(symbolGroups.values()).map(async (group) => {
         const representative = group[0];
-        const yahooSymbol = this.getYahooSymbol(representative.symbol, representative.exchange);
+        const yahooSymbol = this.getYahooSymbol(
+          representative.symbol,
+          representative.exchange,
+        );
         let quote = await this.fetchYahooQuote(yahooSymbol);
 
         // If exchange-based symbol didn't work, try alternate suffixes
         if (!quote && yahooSymbol === representative.symbol) {
-          const alternateSymbols = this.getAlternateSymbols(representative.symbol);
+          const alternateSymbols = this.getAlternateSymbols(
+            representative.symbol,
+          );
           for (const altSymbol of alternateSymbols) {
             quote = await this.fetchYahooQuote(altSymbol);
             if (quote) break;
@@ -195,7 +209,7 @@ export class SecurityPriceService {
             results.push({
               symbol: security.symbol,
               success: false,
-              error: 'No price data available',
+              error: "No price data available",
             });
             failed++;
           }
@@ -242,7 +256,9 @@ export class SecurityPriceService {
   /**
    * Refresh prices for specific securities
    */
-  async refreshPricesForSecurities(securityIds: string[]): Promise<PriceRefreshSummary> {
+  async refreshPricesForSecurities(
+    securityIds: string[],
+  ): Promise<PriceRefreshSummary> {
     const securities = await this.securitiesRepository.find({
       where: { id: In(securityIds), isActive: true, skipPriceUpdates: false },
     });
@@ -265,7 +281,10 @@ export class SecurityPriceService {
     // Fetch prices for all securities in parallel
     await Promise.all(
       securities.map(async (security) => {
-        const yahooSymbol = this.getYahooSymbol(security.symbol, security.exchange);
+        const yahooSymbol = this.getYahooSymbol(
+          security.symbol,
+          security.exchange,
+        );
         let quote = await this.fetchYahooQuote(yahooSymbol);
 
         // If exchange-based symbol didn't work, try alternate suffixes
@@ -281,7 +300,7 @@ export class SecurityPriceService {
           results.push({
             symbol: security.symbol,
             success: false,
-            error: 'No price data available',
+            error: "No price data available",
           });
           failed++;
           return;
@@ -333,7 +352,8 @@ export class SecurityPriceService {
     const date = new Date();
     date.setHours(0, 0, 0, 0);
     const day = date.getDay(); // 0=Sun, 6=Sat
-    if (day === 0) date.setDate(date.getDate() - 2); // Sunday → Friday
+    if (day === 0)
+      date.setDate(date.getDate() - 2); // Sunday → Friday
     else if (day === 6) date.setDate(date.getDate() - 1); // Saturday → Friday
     return date;
   }
@@ -358,7 +378,7 @@ export class SecurityPriceService {
       existing.lowPrice = quote.regularMarketDayLow ?? existing.lowPrice;
       existing.closePrice = quote.regularMarketPrice!;
       existing.volume = quote.regularMarketVolume ?? existing.volume;
-      existing.source = 'yahoo_finance';
+      existing.source = "yahoo_finance";
       return this.securityPriceRepository.save(existing);
     }
 
@@ -371,7 +391,7 @@ export class SecurityPriceService {
       lowPrice: quote.regularMarketDayLow,
       closePrice: quote.regularMarketPrice!,
       volume: quote.regularMarketVolume,
-      source: 'yahoo_finance',
+      source: "yahoo_finance",
     });
 
     return this.securityPriceRepository.save(priceEntry);
@@ -382,38 +402,38 @@ export class SecurityPriceService {
    */
   private getYahooSymbol(symbol: string, exchange: string | null): string {
     // If symbol already has a suffix, use it as-is
-    if (symbol.includes('.')) {
+    if (symbol.includes(".")) {
       return symbol;
     }
 
     // Map exchanges to Yahoo Finance suffixes
     const exchangeSuffixMap: Record<string, string> = {
       // Canadian exchanges
-      'TSX': '.TO',
-      'TSE': '.TO',
-      'TORONTO': '.TO',
-      'TORONTO STOCK EXCHANGE': '.TO',
-      'TSX-V': '.V',
-      'TSX VENTURE': '.V',
-      'TSXV': '.V',
-      'CSE': '.CN',
-      'CANADIAN SECURITIES EXCHANGE': '.CN',
-      'NEO': '.NE',
+      TSX: ".TO",
+      TSE: ".TO",
+      TORONTO: ".TO",
+      "TORONTO STOCK EXCHANGE": ".TO",
+      "TSX-V": ".V",
+      "TSX VENTURE": ".V",
+      TSXV: ".V",
+      CSE: ".CN",
+      "CANADIAN SECURITIES EXCHANGE": ".CN",
+      NEO: ".NE",
       // US exchanges (no suffix needed)
-      'NYSE': '',
-      'NASDAQ': '',
-      'AMEX': '',
-      'ARCA': '',
+      NYSE: "",
+      NASDAQ: "",
+      AMEX: "",
+      ARCA: "",
       // Other international exchanges
-      'LSE': '.L',
-      'LONDON': '.L',
-      'ASX': '.AX',
-      'FRANKFURT': '.F',
-      'XETRA': '.DE',
-      'PARIS': '.PA',
-      'TOKYO': '.T',
-      'HONG KONG': '.HK',
-      'HKEX': '.HK',
+      LSE: ".L",
+      LONDON: ".L",
+      ASX: ".AX",
+      FRANKFURT: ".F",
+      XETRA: ".DE",
+      PARIS: ".PA",
+      TOKYO: ".T",
+      "HONG KONG": ".HK",
+      HKEX: ".HK",
     };
 
     if (exchange) {
@@ -435,7 +455,7 @@ export class SecurityPriceService {
     const alternates: string[] = [];
 
     // Canadian market suffixes as fallback
-    if (!symbol.includes('.')) {
+    if (!symbol.includes(".")) {
       alternates.push(`${symbol}.TO`); // Toronto Stock Exchange
       alternates.push(`${symbol}.V`); // TSX Venture
       alternates.push(`${symbol}.CN`); // Canadian Securities Exchange
@@ -450,7 +470,7 @@ export class SecurityPriceService {
   async getLatestPrice(securityId: string): Promise<SecurityPrice | null> {
     return this.securityPriceRepository.findOne({
       where: { securityId },
-      order: { priceDate: 'DESC' },
+      order: { priceDate: "DESC" },
     });
   }
 
@@ -464,17 +484,17 @@ export class SecurityPriceService {
     limit: number = 365,
   ): Promise<SecurityPrice[]> {
     const query = this.securityPriceRepository
-      .createQueryBuilder('sp')
-      .where('sp.securityId = :securityId', { securityId })
-      .orderBy('sp.priceDate', 'DESC')
+      .createQueryBuilder("sp")
+      .where("sp.securityId = :securityId", { securityId })
+      .orderBy("sp.priceDate", "DESC")
       .take(limit);
 
     if (startDate) {
-      query.andWhere('sp.priceDate >= :startDate', { startDate });
+      query.andWhere("sp.priceDate >= :startDate", { startDate });
     }
 
     if (endDate) {
-      query.andWhere('sp.priceDate <= :endDate', { endDate });
+      query.andWhere("sp.priceDate <= :endDate", { endDate });
     }
 
     return query.getMany();
@@ -485,19 +505,36 @@ export class SecurityPriceService {
    * Priority: TSX (1), US exchanges (2), Other (3)
    */
   private getExchangePriority(symbol: string, exchDisp?: string): number {
-    const suffix = symbol.includes('.') ? symbol.substring(symbol.lastIndexOf('.')).toUpperCase() : '';
-    const exchange = (exchDisp || '').toUpperCase();
+    const suffix = symbol.includes(".")
+      ? symbol.substring(symbol.lastIndexOf(".")).toUpperCase()
+      : "";
+    const exchange = (exchDisp || "").toUpperCase();
 
     // TSX and Canadian exchanges - highest priority
-    if (suffix === '.TO' || suffix === '.V' || suffix === '.CN' || suffix === '.NE' ||
-        exchange.includes('TORONTO') || exchange.includes('TSX') || exchange.includes('CANADA')) {
+    if (
+      suffix === ".TO" ||
+      suffix === ".V" ||
+      suffix === ".CN" ||
+      suffix === ".NE" ||
+      exchange.includes("TORONTO") ||
+      exchange.includes("TSX") ||
+      exchange.includes("CANADA")
+    ) {
       return 1;
     }
 
     // US exchanges - second priority (no suffix typically means US)
-    if (suffix === '' || exchange.includes('NYSE') || exchange.includes('NASDAQ') ||
-        exchange.includes('AMEX') || exchange.includes('ARCA') || exchange === 'NYQ' ||
-        exchange === 'NMS' || exchange === 'NGM' || exchange === 'PCX') {
+    if (
+      suffix === "" ||
+      exchange.includes("NYSE") ||
+      exchange.includes("NASDAQ") ||
+      exchange.includes("AMEX") ||
+      exchange.includes("ARCA") ||
+      exchange === "NYQ" ||
+      exchange === "NMS" ||
+      exchange === "NGM" ||
+      exchange === "PCX"
+    ) {
       return 2;
     }
 
@@ -514,12 +551,15 @@ export class SecurityPriceService {
 
       const response = await fetch(url, {
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
         },
       });
 
       if (!response.ok) {
-        this.logger.warn(`Yahoo Finance search API returned ${response.status} for query: ${query}`);
+        this.logger.warn(
+          `Yahoo Finance search API returned ${response.status} for query: ${query}`,
+        );
         return null;
       }
 
@@ -552,13 +592,19 @@ export class SecurityPriceService {
       const baseSymbol = this.extractBaseSymbol(bestMatch.symbol);
 
       // Extract exchange from symbol suffix
-      const exchange = this.extractExchangeFromSymbol(bestMatch.symbol) || bestMatch.exchDisp || null;
+      const exchange =
+        this.extractExchangeFromSymbol(bestMatch.symbol) ||
+        bestMatch.exchDisp ||
+        null;
 
       // Map Yahoo type to our security type
       const securityType = this.mapYahooTypeToSecurityType(bestMatch.typeDisp);
 
       // Get currency from exchange
-      const currencyCode = this.getCurrencyFromExchange(exchange, bestMatch.symbol);
+      const currencyCode = this.getCurrencyFromExchange(
+        exchange,
+        bestMatch.symbol,
+      );
 
       return {
         symbol: baseSymbol,
@@ -577,7 +623,7 @@ export class SecurityPriceService {
    * Extract base symbol without exchange suffix
    */
   private extractBaseSymbol(symbol: string): string {
-    const dotIndex = symbol.lastIndexOf('.');
+    const dotIndex = symbol.lastIndexOf(".");
     if (dotIndex > 0) {
       return symbol.substring(0, dotIndex);
     }
@@ -588,24 +634,24 @@ export class SecurityPriceService {
    * Extract exchange from Yahoo symbol suffix
    */
   private extractExchangeFromSymbol(symbol: string): string | null {
-    const dotIndex = symbol.lastIndexOf('.');
+    const dotIndex = symbol.lastIndexOf(".");
     if (dotIndex <= 0) {
       return null; // US market (no suffix)
     }
 
     const suffix = symbol.substring(dotIndex).toUpperCase();
     const suffixToExchange: Record<string, string> = {
-      '.TO': 'TSX',
-      '.V': 'TSX-V',
-      '.CN': 'CSE',
-      '.NE': 'NEO',
-      '.L': 'LSE',
-      '.AX': 'ASX',
-      '.F': 'Frankfurt',
-      '.DE': 'XETRA',
-      '.PA': 'Paris',
-      '.T': 'Tokyo',
-      '.HK': 'HKEX',
+      ".TO": "TSX",
+      ".V": "TSX-V",
+      ".CN": "CSE",
+      ".NE": "NEO",
+      ".L": "LSE",
+      ".AX": "ASX",
+      ".F": "Frankfurt",
+      ".DE": "XETRA",
+      ".PA": "Paris",
+      ".T": "Tokyo",
+      ".HK": "HKEX",
     };
 
     return suffixToExchange[suffix] || null;
@@ -614,16 +660,18 @@ export class SecurityPriceService {
   /**
    * Map Yahoo type display to our security type
    */
-  private mapYahooTypeToSecurityType(typeDisp: string | undefined): string | null {
+  private mapYahooTypeToSecurityType(
+    typeDisp: string | undefined,
+  ): string | null {
     if (!typeDisp) return null;
 
     const typeMap: Record<string, string> = {
-      'Equity': 'STOCK',
-      'ETF': 'ETF',
-      'Mutual Fund': 'MUTUAL_FUND',
-      'Bond': 'BOND',
-      'Option': 'OPTION',
-      'Cryptocurrency': 'CRYPTO',
+      Equity: "STOCK",
+      ETF: "ETF",
+      "Mutual Fund": "MUTUAL_FUND",
+      Bond: "BOND",
+      Option: "OPTION",
+      Cryptocurrency: "CRYPTO",
     };
 
     return typeMap[typeDisp] || null;
@@ -632,29 +680,32 @@ export class SecurityPriceService {
   /**
    * Get currency code from exchange name
    */
-  private getCurrencyFromExchange(exchange: string | null, symbol: string): string | null {
+  private getCurrencyFromExchange(
+    exchange: string | null,
+    symbol: string,
+  ): string | null {
     // If no exchange suffix, assume US market
-    if (!exchange || symbol.indexOf('.') === -1) {
-      return 'USD';
+    if (!exchange || symbol.indexOf(".") === -1) {
+      return "USD";
     }
 
     const exchangeToCurrency: Record<string, string> = {
       // Canadian
-      'TSX': 'CAD',
-      'TSX-V': 'CAD',
-      'CSE': 'CAD',
-      'NEO': 'CAD',
+      TSX: "CAD",
+      "TSX-V": "CAD",
+      CSE: "CAD",
+      NEO: "CAD",
       // UK
-      'LSE': 'GBP',
+      LSE: "GBP",
       // Australia
-      'ASX': 'AUD',
+      ASX: "AUD",
       // Europe
-      'Frankfurt': 'EUR',
-      'XETRA': 'EUR',
-      'Paris': 'EUR',
+      Frankfurt: "EUR",
+      XETRA: "EUR",
+      Paris: "EUR",
       // Asia
-      'Tokyo': 'JPY',
-      'HKEX': 'HKD',
+      Tokyo: "JPY",
+      HKEX: "HKD",
     };
 
     return exchangeToCurrency[exchange] || null;
@@ -666,7 +717,7 @@ export class SecurityPriceService {
   async getLastUpdateTime(): Promise<Date | null> {
     const latest = await this.securityPriceRepository.findOne({
       where: {},
-      order: { createdAt: 'DESC' },
+      order: { createdAt: "DESC" },
     });
     return latest?.createdAt ?? null;
   }
@@ -674,20 +725,28 @@ export class SecurityPriceService {
   /**
    * Fetch historical daily prices from Yahoo Finance for a single symbol
    */
-  private async fetchYahooHistorical(
-    symbol: string,
-  ): Promise<Array<{ date: Date; open: number | null; high: number | null; low: number | null; close: number; volume: number | null }> | null> {
+  private async fetchYahooHistorical(symbol: string): Promise<Array<{
+    date: Date;
+    open: number | null;
+    high: number | null;
+    low: number | null;
+    close: number;
+    volume: number | null;
+  }> | null> {
     try {
       const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=max`;
 
       const response = await fetch(url, {
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
         },
       });
 
       if (!response.ok) {
-        this.logger.warn(`Yahoo Finance API returned ${response.status} for historical ${symbol}`);
+        this.logger.warn(
+          `Yahoo Finance API returned ${response.status} for historical ${symbol}`,
+        );
         return null;
       }
 
@@ -699,7 +758,14 @@ export class SecurityPriceService {
 
       const timestamps: number[] = result.timestamp;
       const quote = result.indicators.quote[0];
-      const prices: Array<{ date: Date; open: number | null; high: number | null; low: number | null; close: number; volume: number | null }> = [];
+      const prices: Array<{
+        date: Date;
+        open: number | null;
+        high: number | null;
+        low: number | null;
+        close: number;
+        volume: number | null;
+      }> = [];
 
       for (let i = 0; i < timestamps.length; i++) {
         const close = quote.close?.[i];
@@ -720,7 +786,9 @@ export class SecurityPriceService {
 
       return prices;
     } catch (error) {
-      this.logger.error(`Failed to fetch historical prices for ${symbol}: ${error.message}`);
+      this.logger.error(
+        `Failed to fetch historical prices for ${symbol}: ${error.message}`,
+      );
       return null;
     }
   }
@@ -731,7 +799,7 @@ export class SecurityPriceService {
    */
   async backfillHistoricalPrices(): Promise<HistoricalBackfillSummary> {
     const startTime = Date.now();
-    this.logger.log('Starting historical price backfill');
+    this.logger.log("Starting historical price backfill");
 
     const securities = await this.securitiesRepository.find({
       where: { isActive: true, skipPriceUpdates: false },
@@ -757,7 +825,7 @@ export class SecurityPriceService {
     // Group securities by (symbol, exchange) to deduplicate API calls across users
     const symbolGroups = new Map<string, Security[]>();
     for (const security of securities) {
-      const groupKey = `${security.symbol}|${security.exchange || ''}`;
+      const groupKey = `${security.symbol}|${security.exchange || ""}`;
       const group = symbolGroups.get(groupKey) || [];
       group.push(security);
       symbolGroups.set(groupKey, group);
@@ -774,7 +842,11 @@ export class SecurityPriceService {
 
       if (groupEarliestDates.length === 0) {
         for (const security of group) {
-          results.push({ symbol: security.symbol, success: true, pricesLoaded: 0 });
+          results.push({
+            symbol: security.symbol,
+            success: true,
+            pricesLoaded: 0,
+          });
           successful++;
         }
         continue;
@@ -783,12 +855,17 @@ export class SecurityPriceService {
       // Use the earliest date across the entire group for fetching
       const groupEarliest = groupEarliestDates.sort()[0];
 
-      const yahooSymbol = this.getYahooSymbol(representative.symbol, representative.exchange);
+      const yahooSymbol = this.getYahooSymbol(
+        representative.symbol,
+        representative.exchange,
+      );
       let allPrices = await this.fetchYahooHistorical(yahooSymbol);
 
       // Fallback to alternate symbols if needed
       if (!allPrices && yahooSymbol === representative.symbol) {
-        const alternateSymbols = this.getAlternateSymbols(representative.symbol);
+        const alternateSymbols = this.getAlternateSymbols(
+          representative.symbol,
+        );
         for (const altSymbol of alternateSymbols) {
           allPrices = await this.fetchYahooHistorical(altSymbol);
           if (allPrices) break;
@@ -797,7 +874,11 @@ export class SecurityPriceService {
 
       if (!allPrices || allPrices.length === 0) {
         for (const security of group) {
-          results.push({ symbol: security.symbol, success: false, error: 'No historical data available' });
+          results.push({
+            symbol: security.symbol,
+            success: false,
+            error: "No historical data available",
+          });
           failed++;
         }
         continue;
@@ -820,7 +901,11 @@ export class SecurityPriceService {
       for (const security of group) {
         const secEarliest = earliestTxDate.get(security.id);
         if (!secEarliest) {
-          results.push({ symbol: security.symbol, success: true, pricesLoaded: 0 });
+          results.push({
+            symbol: security.symbol,
+            success: true,
+            pricesLoaded: 0,
+          });
           successful++;
           continue;
         }
@@ -830,7 +915,11 @@ export class SecurityPriceService {
         const prices = allPrices.filter((p) => p.date >= secCutoff);
 
         if (prices.length === 0) {
-          results.push({ symbol: security.symbol, success: true, pricesLoaded: 0 });
+          results.push({
+            symbol: security.symbol,
+            success: true,
+            pricesLoaded: 0,
+          });
           successful++;
           continue;
         }
@@ -840,16 +929,24 @@ export class SecurityPriceService {
           const batchSize = 500;
           for (let i = 0; i < prices.length; i += batchSize) {
             const batch = prices.slice(i, i + batchSize);
-            const values = batch.map(
-              (p, idx) => {
+            const values = batch
+              .map((p, idx) => {
                 const offset = idx * 7;
                 return `($${offset + 1}::UUID, $${offset + 2}::DATE, $${offset + 3}, $${offset + 4}, $${offset + 5}, $${offset + 6}, $${offset + 7}, 'yahoo_finance')`;
-              },
-            ).join(', ');
+              })
+              .join(", ");
 
             const params: any[] = [];
             for (const p of batch) {
-              params.push(security.id, p.date, p.open, p.high, p.low, p.close, p.volume);
+              params.push(
+                security.id,
+                p.date,
+                p.open,
+                p.high,
+                p.low,
+                p.close,
+                p.volume,
+              );
             }
 
             await this.dataSource.query(
@@ -866,13 +963,25 @@ export class SecurityPriceService {
             );
           }
 
-          this.logger.log(`Backfilled ${prices.length} prices for ${security.symbol} (from ${secEarliest})`);
-          results.push({ symbol: security.symbol, success: true, pricesLoaded: prices.length });
+          this.logger.log(
+            `Backfilled ${prices.length} prices for ${security.symbol} (from ${secEarliest})`,
+          );
+          results.push({
+            symbol: security.symbol,
+            success: true,
+            pricesLoaded: prices.length,
+          });
           successful++;
           totalPricesLoaded += prices.length;
         } catch (error) {
-          this.logger.error(`Failed to save historical prices for ${security.symbol}: ${error.message}`);
-          results.push({ symbol: security.symbol, success: false, error: error.message });
+          this.logger.error(
+            `Failed to save historical prices for ${security.symbol}: ${error.message}`,
+          );
+          results.push({
+            symbol: security.symbol,
+            success: false,
+            error: error.message,
+          });
           failed++;
         }
       }
@@ -899,9 +1008,9 @@ export class SecurityPriceService {
    * Scheduled job to refresh prices daily at 5 PM EST (after market close)
    * Runs Monday-Friday only
    */
-  @Cron('0 17 * * 1-5', { timeZone: 'America/New_York' })
+  @Cron("0 17 * * 1-5", { timeZone: "America/New_York" })
   async scheduledPriceRefresh(): Promise<void> {
-    this.logger.log('Running scheduled price refresh');
+    this.logger.log("Running scheduled price refresh");
     try {
       await this.refreshAllPrices();
     } catch (error) {

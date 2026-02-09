@@ -6,22 +6,26 @@ import {
   Inject,
   forwardRef,
   Logger,
-} from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Account, AccountType, AccountSubType } from './entities/account.entity';
-import { Transaction } from '../transactions/entities/transaction.entity';
-import { InvestmentTransaction } from '../securities/entities/investment-transaction.entity';
-import { CreateAccountDto } from './dto/create-account.dto';
-import { UpdateAccountDto } from './dto/update-account.dto';
-import { CategoriesService } from '../categories/categories.service';
-import { ScheduledTransactionsService } from '../scheduled-transactions/scheduled-transactions.service';
-import { NetWorthService } from '../net-worth/net-worth.service';
+} from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import {
+  Account,
+  AccountType,
+  AccountSubType,
+} from "./entities/account.entity";
+import { Transaction } from "../transactions/entities/transaction.entity";
+import { InvestmentTransaction } from "../securities/entities/investment-transaction.entity";
+import { CreateAccountDto } from "./dto/create-account.dto";
+import { UpdateAccountDto } from "./dto/update-account.dto";
+import { CategoriesService } from "../categories/categories.service";
+import { ScheduledTransactionsService } from "../scheduled-transactions/scheduled-transactions.service";
+import { NetWorthService } from "../net-worth/net-worth.service";
 import {
   calculateAmortization,
   PaymentFrequency,
   AmortizationResult,
-} from './loan-amortization.util';
+} from "./loan-amortization.util";
 import {
   calculateMortgageAmortization,
   recalculateMortgageAfterRateChange,
@@ -29,8 +33,7 @@ import {
   MortgagePaymentFrequency,
   MortgageAmortizationInput,
   MortgageAmortizationResult,
-} from './mortgage-amortization.util';
-import { MortgagePaymentFrequency as DtoMortgagePaymentFrequency } from './dto/create-account.dto';
+} from "./mortgage-amortization.util";
 
 @Injectable()
 export class AccountsService {
@@ -58,7 +61,11 @@ export class AccountsService {
     userId: string,
     createAccountDto: CreateAccountDto,
   ): Promise<Account | { cashAccount: Account; brokerageAccount: Account }> {
-    const { openingBalance = 0, createInvestmentPair, ...accountData } = createAccountDto;
+    const {
+      openingBalance = 0,
+      createInvestmentPair,
+      ...accountData
+    } = createAccountDto;
 
     // If creating an investment account pair, delegate to the pair creation method
     if (
@@ -144,14 +151,19 @@ export class AccountsService {
   /**
    * Find all accounts for a user
    */
-  async findAll(userId: string, includeInactive = false): Promise<(Account & { canDelete?: boolean })[]> {
+  async findAll(
+    userId: string,
+    includeInactive = false,
+  ): Promise<(Account & { canDelete?: boolean })[]> {
     const queryBuilder = this.accountsRepository
-      .createQueryBuilder('account')
-      .where('account.userId = :userId', { userId })
-      .orderBy('account.createdAt', 'DESC');
+      .createQueryBuilder("account")
+      .where("account.userId = :userId", { userId })
+      .orderBy("account.createdAt", "DESC");
 
     if (!includeInactive) {
-      queryBuilder.andWhere('account.isClosed = :isClosed', { isClosed: false });
+      queryBuilder.andWhere("account.isClosed = :isClosed", {
+        isClosed: false,
+      });
     }
 
     const accounts = await queryBuilder.getMany();
@@ -159,33 +171,37 @@ export class AccountsService {
     if (accounts.length === 0) return [];
 
     // Batch check deletability: count transactions + investment transactions per account in 2 queries
-    const accountIds = accounts.map(a => a.id);
+    const accountIds = accounts.map((a) => a.id);
 
     const [txCounts, invTxCounts] = await Promise.all([
       this.transactionRepository
-        .createQueryBuilder('t')
-        .select('t.accountId', 'accountId')
-        .addSelect('COUNT(t.id)', 'cnt')
-        .where('t.accountId IN (:...accountIds)', { accountIds })
-        .groupBy('t.accountId')
+        .createQueryBuilder("t")
+        .select("t.accountId", "accountId")
+        .addSelect("COUNT(t.id)", "cnt")
+        .where("t.accountId IN (:...accountIds)", { accountIds })
+        .groupBy("t.accountId")
         .getRawMany(),
       this.investmentTransactionRepository
-        .createQueryBuilder('it')
-        .select('it.accountId', 'accountId')
-        .addSelect('COUNT(it.id)', 'cnt')
-        .where('it.accountId IN (:...accountIds)', { accountIds })
-        .groupBy('it.accountId')
+        .createQueryBuilder("it")
+        .select("it.accountId", "accountId")
+        .addSelect("COUNT(it.id)", "cnt")
+        .where("it.accountId IN (:...accountIds)", { accountIds })
+        .groupBy("it.accountId")
         .getRawMany(),
     ]);
 
     const txCountMap = new Map<string, number>();
-    for (const row of txCounts) txCountMap.set(row.accountId, parseInt(row.cnt, 10));
+    for (const row of txCounts)
+      txCountMap.set(row.accountId, parseInt(row.cnt, 10));
     const invTxCountMap = new Map<string, number>();
-    for (const row of invTxCounts) invTxCountMap.set(row.accountId, parseInt(row.cnt, 10));
+    for (const row of invTxCounts)
+      invTxCountMap.set(row.accountId, parseInt(row.cnt, 10));
 
-    return accounts.map(account => ({
+    return accounts.map((account) => ({
       ...account,
-      canDelete: !(txCountMap.get(account.id) || 0) && !(invTxCountMap.get(account.id) || 0),
+      canDelete:
+        !(txCountMap.get(account.id) || 0) &&
+        !(invTxCountMap.get(account.id) || 0),
     }));
   }
 
@@ -203,7 +219,7 @@ export class AccountsService {
 
     // Ensure the account belongs to the user
     if (account.userId !== userId) {
-      throw new ForbiddenException('Access denied to this account');
+      throw new ForbiddenException("Access denied to this account");
     }
 
     return account;
@@ -224,14 +240,14 @@ export class AccountsService {
       !account.accountSubType
     ) {
       throw new BadRequestException(
-        'This account is not part of an investment account pair',
+        "This account is not part of an investment account pair",
       );
     }
 
     // Get the linked account
     if (!account.linkedAccountId) {
       throw new BadRequestException(
-        'This investment account does not have a linked account',
+        "This investment account does not have a linked account",
       );
     }
 
@@ -265,16 +281,23 @@ export class AccountsService {
     } = createAccountDto;
 
     // Validate required loan fields
-    if (!paymentAmount || !paymentFrequency || !paymentStartDate || !sourceAccountId) {
+    if (
+      !paymentAmount ||
+      !paymentFrequency ||
+      !paymentStartDate ||
+      !sourceAccountId
+    ) {
       throw new BadRequestException(
-        'Loan accounts require paymentAmount, paymentFrequency, paymentStartDate, and sourceAccountId',
+        "Loan accounts require paymentAmount, paymentFrequency, paymentStartDate, and sourceAccountId",
       );
     }
     if (interestRate === undefined || interestRate === null) {
-      throw new BadRequestException('Loan accounts require an interest rate');
+      throw new BadRequestException("Loan accounts require an interest rate");
     }
     if (!institution) {
-      throw new BadRequestException('Loan accounts require an institution name');
+      throw new BadRequestException(
+        "Loan accounts require an institution name",
+      );
     }
 
     // Verify source account belongs to user
@@ -285,7 +308,8 @@ export class AccountsService {
     let interestCatId = interestCategoryId;
 
     if (!interestCatId) {
-      const { interestCategory } = await this.categoriesService.findLoanCategories(userId);
+      const { interestCategory } =
+        await this.categoriesService.findLoanCategories(userId);
       if (interestCategory) {
         interestCatId = interestCategory.id;
       }
@@ -321,38 +345,42 @@ export class AccountsService {
 
     // Create scheduled transaction for loan payments
     // Total payment amount is negative (outflow from source account)
-    const endDateStr = amortization.totalPayments > 0 && amortization.totalPayments < 10000
-      ? amortization.endDate.toISOString().split('T')[0]
-      : undefined;
+    const endDateStr =
+      amortization.totalPayments > 0 && amortization.totalPayments < 10000
+        ? amortization.endDate.toISOString().split("T")[0]
+        : undefined;
 
-    const scheduledTransaction = await this.scheduledTransactionsService.create(userId, {
-      accountId: sourceAccountId,
-      name: `Loan Payment - ${savedAccount.name}`,
-      payeeName: institution,
-      amount: -paymentAmount, // Negative outflow from source account
-      currencyCode: accountData.currencyCode,
-      frequency: paymentFrequency as any,
-      nextDueDate: paymentStartDate,
-      startDate: paymentStartDate,
-      endDate: endDateStr,
-      isActive: true,
-      autoPost: false,
-      splits: [
-        {
-          // Transfer to loan account (reduces debt)
-          // Amount is negative as part of the total outflow
-          transferAccountId: savedAccount.id,
-          amount: -amortization.principalPayment,
-          memo: 'Principal',
-        },
-        {
-          // Interest expense
-          categoryId: interestCatId || undefined,
-          amount: -amortization.interestPayment,
-          memo: 'Interest',
-        },
-      ],
-    });
+    const scheduledTransaction = await this.scheduledTransactionsService.create(
+      userId,
+      {
+        accountId: sourceAccountId,
+        name: `Loan Payment - ${savedAccount.name}`,
+        payeeName: institution,
+        amount: -paymentAmount, // Negative outflow from source account
+        currencyCode: accountData.currencyCode,
+        frequency: paymentFrequency as any,
+        nextDueDate: paymentStartDate,
+        startDate: paymentStartDate,
+        endDate: endDateStr,
+        isActive: true,
+        autoPost: false,
+        splits: [
+          {
+            // Transfer to loan account (reduces debt)
+            // Amount is negative as part of the total outflow
+            transferAccountId: savedAccount.id,
+            amount: -amortization.principalPayment,
+            memo: "Principal",
+          },
+          {
+            // Interest expense
+            categoryId: interestCatId || undefined,
+            amount: -amortization.interestPayment,
+            memo: "Interest",
+          },
+        ],
+      },
+    );
 
     // Update account with scheduled transaction reference
     savedAccount.scheduledTransactionId = scheduledTransaction.id;
@@ -385,16 +413,25 @@ export class AccountsService {
     } = createAccountDto;
 
     // Validate required mortgage fields
-    if (!mortgagePaymentFrequency || !paymentStartDate || !sourceAccountId || !amortizationMonths) {
+    if (
+      !mortgagePaymentFrequency ||
+      !paymentStartDate ||
+      !sourceAccountId ||
+      !amortizationMonths
+    ) {
       throw new BadRequestException(
-        'Mortgage accounts require mortgagePaymentFrequency, paymentStartDate, sourceAccountId, and amortizationMonths',
+        "Mortgage accounts require mortgagePaymentFrequency, paymentStartDate, sourceAccountId, and amortizationMonths",
       );
     }
     if (interestRate === undefined || interestRate === null) {
-      throw new BadRequestException('Mortgage accounts require an interest rate');
+      throw new BadRequestException(
+        "Mortgage accounts require an interest rate",
+      );
     }
     if (!institution) {
-      throw new BadRequestException('Mortgage accounts require an institution name');
+      throw new BadRequestException(
+        "Mortgage accounts require an institution name",
+      );
     }
 
     // Verify source account belongs to user
@@ -405,7 +442,8 @@ export class AccountsService {
 
     if (!interestCatId) {
       // Try to find mortgage interest category, fall back to loan interest
-      const { interestCategory } = await this.categoriesService.findLoanCategories(userId);
+      const { interestCategory } =
+        await this.categoriesService.findLoanCategories(userId);
       if (interestCategory) {
         interestCatId = interestCategory.id;
       }
@@ -458,47 +496,52 @@ export class AccountsService {
     // Map mortgage payment frequency to scheduled transaction frequency
     // Accelerated frequencies use the base frequency for scheduling
     const frequencyMap: Record<string, string> = {
-      MONTHLY: 'MONTHLY',
-      SEMI_MONTHLY: 'SEMI_MONTHLY',
-      BIWEEKLY: 'BIWEEKLY',
-      ACCELERATED_BIWEEKLY: 'BIWEEKLY',
-      WEEKLY: 'WEEKLY',
-      ACCELERATED_WEEKLY: 'WEEKLY',
+      MONTHLY: "MONTHLY",
+      SEMI_MONTHLY: "SEMI_MONTHLY",
+      BIWEEKLY: "BIWEEKLY",
+      ACCELERATED_BIWEEKLY: "BIWEEKLY",
+      WEEKLY: "WEEKLY",
+      ACCELERATED_WEEKLY: "WEEKLY",
     };
-    const scheduledFrequency = frequencyMap[mortgagePaymentFrequency] || 'MONTHLY';
+    const scheduledFrequency =
+      frequencyMap[mortgagePaymentFrequency] || "MONTHLY";
 
     // Create scheduled transaction for mortgage payments
-    const endDateStr = amortization.totalPayments > 0 && amortization.totalPayments < 10000
-      ? amortization.endDate.toISOString().split('T')[0]
-      : undefined;
+    const endDateStr =
+      amortization.totalPayments > 0 && amortization.totalPayments < 10000
+        ? amortization.endDate.toISOString().split("T")[0]
+        : undefined;
 
-    const scheduledTransaction = await this.scheduledTransactionsService.create(userId, {
-      accountId: sourceAccountId,
-      name: `Mortgage Payment - ${savedAccount.name}`,
-      payeeName: institution,
-      amount: -amortization.paymentAmount, // Negative outflow from source account
-      currencyCode: accountData.currencyCode,
-      frequency: scheduledFrequency as any,
-      nextDueDate: paymentStartDate,
-      startDate: paymentStartDate,
-      endDate: endDateStr,
-      isActive: true,
-      autoPost: false,
-      splits: [
-        {
-          // Transfer to mortgage account (reduces debt)
-          transferAccountId: savedAccount.id,
-          amount: -amortization.principalPayment,
-          memo: 'Principal',
-        },
-        {
-          // Interest expense
-          categoryId: interestCatId || undefined,
-          amount: -amortization.interestPayment,
-          memo: 'Interest',
-        },
-      ],
-    });
+    const scheduledTransaction = await this.scheduledTransactionsService.create(
+      userId,
+      {
+        accountId: sourceAccountId,
+        name: `Mortgage Payment - ${savedAccount.name}`,
+        payeeName: institution,
+        amount: -amortization.paymentAmount, // Negative outflow from source account
+        currencyCode: accountData.currencyCode,
+        frequency: scheduledFrequency as any,
+        nextDueDate: paymentStartDate,
+        startDate: paymentStartDate,
+        endDate: endDateStr,
+        isActive: true,
+        autoPost: false,
+        splits: [
+          {
+            // Transfer to mortgage account (reduces debt)
+            transferAccountId: savedAccount.id,
+            amount: -amortization.principalPayment,
+            memo: "Principal",
+          },
+          {
+            // Interest expense
+            categoryId: interestCatId || undefined,
+            amount: -amortization.interestPayment,
+            memo: "Interest",
+          },
+        ],
+      },
+    );
 
     // Update account with scheduled transaction reference
     savedAccount.scheduledTransactionId = scheduledTransaction.id;
@@ -549,11 +592,13 @@ export class AccountsService {
     const account = await this.findOne(userId, accountId);
 
     if (account.accountType !== AccountType.MORTGAGE) {
-      throw new BadRequestException('This operation is only valid for mortgage accounts');
+      throw new BadRequestException(
+        "This operation is only valid for mortgage accounts",
+      );
     }
 
     if (account.isClosed) {
-      throw new BadRequestException('Cannot update rate on a closed account');
+      throw new BadRequestException("Cannot update rate on a closed account");
     }
 
     // Get current balance (remaining principal)
@@ -563,11 +608,12 @@ export class AccountsService {
     // Estimate based on payments made since start
     const startDate = account.paymentStartDate || new Date();
     const monthsElapsed = Math.floor(
-      (effectiveDate.getTime() - startDate.getTime()) / (30 * 24 * 60 * 60 * 1000)
+      (effectiveDate.getTime() - startDate.getTime()) /
+        (30 * 24 * 60 * 60 * 1000),
     );
     const remainingAmortizationMonths = Math.max(
       12,
-      (account.amortizationMonths || 300) - monthsElapsed
+      (account.amortizationMonths || 300) - monthsElapsed,
     );
 
     // Recalculate payment if not manually specified
@@ -581,7 +627,7 @@ export class AccountsService {
 
       // Calculate principal/interest split at new rate
       const periodsPerYear = getMortgagePeriodsPerYear(
-        (account.paymentFrequency || 'MONTHLY') as MortgagePaymentFrequency
+        (account.paymentFrequency || "MONTHLY") as MortgagePaymentFrequency,
       );
       const isCanadian = account.isCanadianMortgage || false;
       const isVariable = account.isVariableRate || false;
@@ -596,14 +642,15 @@ export class AccountsService {
       }
 
       interestPayment = Math.round(currentBalance * periodicRate * 100) / 100;
-      principalPayment = Math.round((paymentAmount - interestPayment) * 100) / 100;
+      principalPayment =
+        Math.round((paymentAmount - interestPayment) * 100) / 100;
     } else {
       // Auto-calculate new payment based on remaining amortization
       const result = recalculateMortgageAfterRateChange(
         currentBalance,
         newRate,
         remainingAmortizationMonths,
-        (account.paymentFrequency || 'MONTHLY') as MortgagePaymentFrequency,
+        (account.paymentFrequency || "MONTHLY") as MortgagePaymentFrequency,
         account.isCanadianMortgage || false,
         account.isVariableRate || false,
       );
@@ -630,18 +677,20 @@ export class AccountsService {
               {
                 transferAccountId: account.id,
                 amount: -principalPayment,
-                memo: 'Principal',
+                memo: "Principal",
               },
               {
                 categoryId: account.interestCategoryId || undefined,
                 amount: -interestPayment,
-                memo: 'Interest',
+                memo: "Interest",
               },
             ],
           },
         );
       } catch (error) {
-        this.logger.warn(`Could not update scheduled transaction: ${error.message}`);
+        this.logger.warn(
+          `Could not update scheduled transaction: ${error.message}`,
+        );
       }
     }
 
@@ -650,7 +699,7 @@ export class AccountsService {
       paymentAmount,
       principalPayment,
       interestPayment,
-      effectiveDate: effectiveDate.toISOString().split('T')[0],
+      effectiveDate: effectiveDate.toISOString().split("T")[0],
     };
   }
 
@@ -684,7 +733,7 @@ export class AccountsService {
     const account = await this.findOne(userId, id);
 
     if (account.isClosed) {
-      throw new BadRequestException('Cannot update a closed account');
+      throw new BadRequestException("Cannot update a closed account");
     }
 
     // If openingBalance is being changed, we need to recalculate currentBalance
@@ -703,29 +752,55 @@ export class AccountsService {
     }
 
     // SECURITY: Explicit property mapping instead of Object.assign to prevent mass assignment
-    if (updateAccountDto.name !== undefined) account.name = updateAccountDto.name;
-    if (updateAccountDto.accountType !== undefined) account.accountType = updateAccountDto.accountType;
-    if (updateAccountDto.currencyCode !== undefined) account.currencyCode = updateAccountDto.currencyCode;
-    if (updateAccountDto.openingBalance !== undefined) account.openingBalance = updateAccountDto.openingBalance;
-    if (updateAccountDto.description !== undefined) account.description = updateAccountDto.description;
-    if (updateAccountDto.accountNumber !== undefined) account.accountNumber = updateAccountDto.accountNumber;
-    if (updateAccountDto.institution !== undefined) account.institution = updateAccountDto.institution;
-    if (updateAccountDto.creditLimit !== undefined) account.creditLimit = updateAccountDto.creditLimit;
-    if (updateAccountDto.interestRate !== undefined) account.interestRate = updateAccountDto.interestRate;
-    if (updateAccountDto.isFavourite !== undefined) account.isFavourite = updateAccountDto.isFavourite;
-    if (updateAccountDto.paymentAmount !== undefined) account.paymentAmount = updateAccountDto.paymentAmount;
-    if (updateAccountDto.paymentFrequency !== undefined) account.paymentFrequency = updateAccountDto.paymentFrequency;
-    if (updateAccountDto.paymentStartDate !== undefined) account.paymentStartDate = updateAccountDto.paymentStartDate ? new Date(updateAccountDto.paymentStartDate) : null;
-    if (updateAccountDto.sourceAccountId !== undefined) account.sourceAccountId = updateAccountDto.sourceAccountId;
-    if (updateAccountDto.principalCategoryId !== undefined) account.principalCategoryId = updateAccountDto.principalCategoryId;
-    if (updateAccountDto.interestCategoryId !== undefined) account.interestCategoryId = updateAccountDto.interestCategoryId;
-    if (updateAccountDto.assetCategoryId !== undefined) account.assetCategoryId = updateAccountDto.assetCategoryId;
-    if (updateAccountDto.dateAcquired !== undefined) account.dateAcquired = updateAccountDto.dateAcquired ? new Date(updateAccountDto.dateAcquired) : null;
+    if (updateAccountDto.name !== undefined)
+      account.name = updateAccountDto.name;
+    if (updateAccountDto.accountType !== undefined)
+      account.accountType = updateAccountDto.accountType;
+    if (updateAccountDto.currencyCode !== undefined)
+      account.currencyCode = updateAccountDto.currencyCode;
+    if (updateAccountDto.openingBalance !== undefined)
+      account.openingBalance = updateAccountDto.openingBalance;
+    if (updateAccountDto.description !== undefined)
+      account.description = updateAccountDto.description;
+    if (updateAccountDto.accountNumber !== undefined)
+      account.accountNumber = updateAccountDto.accountNumber;
+    if (updateAccountDto.institution !== undefined)
+      account.institution = updateAccountDto.institution;
+    if (updateAccountDto.creditLimit !== undefined)
+      account.creditLimit = updateAccountDto.creditLimit;
+    if (updateAccountDto.interestRate !== undefined)
+      account.interestRate = updateAccountDto.interestRate;
+    if (updateAccountDto.isFavourite !== undefined)
+      account.isFavourite = updateAccountDto.isFavourite;
+    if (updateAccountDto.paymentAmount !== undefined)
+      account.paymentAmount = updateAccountDto.paymentAmount;
+    if (updateAccountDto.paymentFrequency !== undefined)
+      account.paymentFrequency = updateAccountDto.paymentFrequency;
+    if (updateAccountDto.paymentStartDate !== undefined)
+      account.paymentStartDate = updateAccountDto.paymentStartDate
+        ? new Date(updateAccountDto.paymentStartDate)
+        : null;
+    if (updateAccountDto.sourceAccountId !== undefined)
+      account.sourceAccountId = updateAccountDto.sourceAccountId;
+    if (updateAccountDto.principalCategoryId !== undefined)
+      account.principalCategoryId = updateAccountDto.principalCategoryId;
+    if (updateAccountDto.interestCategoryId !== undefined)
+      account.interestCategoryId = updateAccountDto.interestCategoryId;
+    if (updateAccountDto.assetCategoryId !== undefined)
+      account.assetCategoryId = updateAccountDto.assetCategoryId;
+    if (updateAccountDto.dateAcquired !== undefined)
+      account.dateAcquired = updateAccountDto.dateAcquired
+        ? new Date(updateAccountDto.dateAcquired)
+        : null;
     // Mortgage-specific fields
-    if (updateAccountDto.isCanadianMortgage !== undefined) account.isCanadianMortgage = updateAccountDto.isCanadianMortgage;
-    if (updateAccountDto.isVariableRate !== undefined) account.isVariableRate = updateAccountDto.isVariableRate;
-    if (updateAccountDto.termMonths !== undefined) account.termMonths = updateAccountDto.termMonths;
-    if (updateAccountDto.amortizationMonths !== undefined) account.amortizationMonths = updateAccountDto.amortizationMonths;
+    if (updateAccountDto.isCanadianMortgage !== undefined)
+      account.isCanadianMortgage = updateAccountDto.isCanadianMortgage;
+    if (updateAccountDto.isVariableRate !== undefined)
+      account.isVariableRate = updateAccountDto.isVariableRate;
+    if (updateAccountDto.termMonths !== undefined)
+      account.termMonths = updateAccountDto.termMonths;
+    if (updateAccountDto.amortizationMonths !== undefined)
+      account.amortizationMonths = updateAccountDto.amortizationMonths;
 
     const savedAccount = await this.accountsRepository.save(account);
 
@@ -749,11 +824,13 @@ export class AccountsService {
       updateAccountDto.openingBalance !== undefined ||
       updateAccountDto.dateAcquired !== undefined;
     if (needsRecalc) {
-      this.netWorthService.recalculateAccount(userId, id).catch((err) =>
-        this.logger.warn(
-          `Net worth recalc failed for account ${id}: ${err.message}`,
-        ),
-      );
+      this.netWorthService
+        .recalculateAccount(userId, id)
+        .catch((err) =>
+          this.logger.warn(
+            `Net worth recalc failed for account ${id}: ${err.message}`,
+          ),
+        );
     }
 
     return savedAccount;
@@ -766,13 +843,13 @@ export class AccountsService {
     const account = await this.findOne(userId, id);
 
     if (account.isClosed) {
-      throw new BadRequestException('Account is already closed');
+      throw new BadRequestException("Account is already closed");
     }
 
     // Check if balance is not zero
     if (Number(account.currentBalance) !== 0) {
       throw new BadRequestException(
-        'Cannot close account with non-zero balance. Current balance: ' +
+        "Cannot close account with non-zero balance. Current balance: " +
           account.currentBalance,
       );
     }
@@ -783,7 +860,10 @@ export class AccountsService {
     const saved = await this.accountsRepository.save(account);
 
     // If this is an investment cash account, also close the linked brokerage account
-    if (account.accountSubType === AccountSubType.INVESTMENT_CASH && account.linkedAccountId) {
+    if (
+      account.accountSubType === AccountSubType.INVESTMENT_CASH &&
+      account.linkedAccountId
+    ) {
       const brokerageAccount = await this.accountsRepository.findOne({
         where: { id: account.linkedAccountId, userId },
       });
@@ -804,7 +884,7 @@ export class AccountsService {
     const account = await this.findOne(userId, id);
 
     if (!account.isClosed) {
-      throw new BadRequestException('Account is not closed');
+      throw new BadRequestException("Account is not closed");
     }
 
     account.isClosed = false;
@@ -813,7 +893,10 @@ export class AccountsService {
     const saved = await this.accountsRepository.save(account);
 
     // If this is an investment cash account, also reopen the linked brokerage account
-    if (account.accountSubType === AccountSubType.INVESTMENT_CASH && account.linkedAccountId) {
+    if (
+      account.accountSubType === AccountSubType.INVESTMENT_CASH &&
+      account.linkedAccountId
+    ) {
       const brokerageAccount = await this.accountsRepository.findOne({
         where: { id: account.linkedAccountId, userId },
       });
@@ -838,10 +921,7 @@ export class AccountsService {
   /**
    * Update account balance (called internally by transactions)
    */
-  async updateBalance(
-    accountId: string,
-    amount: number,
-  ): Promise<Account> {
+  async updateBalance(accountId: string, amount: number): Promise<Account> {
     const account = await this.accountsRepository.findOne({
       where: { id: accountId },
     });
@@ -851,7 +931,9 @@ export class AccountsService {
     }
 
     if (account.isClosed) {
-      throw new BadRequestException('Cannot modify balance of a closed account');
+      throw new BadRequestException(
+        "Cannot modify balance of a closed account",
+      );
     }
 
     // Round to 2 decimal places to avoid floating-point precision errors
@@ -872,8 +954,13 @@ export class AccountsService {
   }> {
     const accounts = await this.findAll(userId, false);
 
-    const assetTypes = ['CHEQUING', 'SAVINGS', 'INVESTMENT', 'CASH', 'ASSET'];
-    const liabilityTypes = ['CREDIT_CARD', 'LOAN', 'MORTGAGE', 'LINE_OF_CREDIT'];
+    const assetTypes = ["CHEQUING", "SAVINGS", "INVESTMENT", "CASH", "ASSET"];
+    const liabilityTypes = [
+      "CREDIT_CARD",
+      "LOAN",
+      "MORTGAGE",
+      "LINE_OF_CREDIT",
+    ];
 
     let totalBalance = 0;
     let totalAssets = 0;
@@ -906,7 +993,11 @@ export class AccountsService {
   async getTransactionCount(
     userId: string,
     accountId: string,
-  ): Promise<{ transactionCount: number; investmentTransactionCount: number; canDelete: boolean }> {
+  ): Promise<{
+    transactionCount: number;
+    investmentTransactionCount: number;
+    canDelete: boolean;
+  }> {
     // Verify account belongs to user
     await this.findOne(userId, accountId);
 
@@ -914,9 +1005,10 @@ export class AccountsService {
       where: { accountId },
     });
 
-    const investmentTransactionCount = await this.investmentTransactionRepository.count({
-      where: { accountId },
-    });
+    const investmentTransactionCount =
+      await this.investmentTransactionRepository.count({
+        where: { accountId },
+      });
 
     return {
       transactionCount,
@@ -943,9 +1035,10 @@ export class AccountsService {
     }
 
     // Check for investment transactions
-    const investmentTransactionCount = await this.investmentTransactionRepository.count({
-      where: { accountId: id },
-    });
+    const investmentTransactionCount =
+      await this.investmentTransactionRepository.count({
+        where: { accountId: id },
+      });
 
     if (investmentTransactionCount > 0) {
       throw new BadRequestException(
@@ -966,14 +1059,20 @@ export class AccountsService {
 
     // If this is a loan or mortgage account with an associated scheduled transaction, delete it
     if (
-      (account.accountType === AccountType.LOAN || account.accountType === AccountType.MORTGAGE) &&
+      (account.accountType === AccountType.LOAN ||
+        account.accountType === AccountType.MORTGAGE) &&
       account.scheduledTransactionId
     ) {
       try {
-        await this.scheduledTransactionsService.remove(userId, account.scheduledTransactionId);
+        await this.scheduledTransactionsService.remove(
+          userId,
+          account.scheduledTransactionId,
+        );
       } catch (error) {
         // Scheduled transaction may have already been deleted, continue with account deletion
-        this.logger.warn(`Could not delete scheduled transaction ${account.scheduledTransactionId}: ${error.message}`);
+        this.logger.warn(
+          `Could not delete scheduled transaction ${account.scheduledTransactionId}: ${error.message}`,
+        );
       }
     }
 

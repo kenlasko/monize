@@ -1,12 +1,16 @@
-import { Injectable, BadRequestException, ConflictException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import * as bcrypt from 'bcryptjs';
-import { User } from './entities/user.entity';
-import { UserPreference } from './entities/user-preference.entity';
-import { UpdateProfileDto } from './dto/update-profile.dto';
-import { UpdatePreferencesDto } from './dto/update-preferences.dto';
-import { ChangePasswordDto } from './dto/change-password.dto';
+import {
+  Injectable,
+  BadRequestException,
+  ConflictException,
+} from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import * as bcrypt from "bcryptjs";
+import { User } from "./entities/user.entity";
+import { UserPreference } from "./entities/user-preference.entity";
+import { UpdateProfileDto } from "./dto/update-profile.dto";
+import { UpdatePreferencesDto } from "./dto/update-preferences.dto";
+import { ChangePasswordDto } from "./dto/change-password.dto";
 
 @Injectable()
 export class UsersService {
@@ -32,7 +36,7 @@ export class UsersService {
   async updateProfile(userId: string, dto: UpdateProfileDto) {
     const user = await this.usersRepository.findOne({ where: { id: userId } });
     if (!user) {
-      throw new BadRequestException('User not found');
+      throw new BadRequestException("User not found");
     }
 
     // Check if email is being changed and if it's already taken
@@ -41,7 +45,7 @@ export class UsersService {
         where: { email: dto.email },
       });
       if (existingUser) {
-        throw new ConflictException('Email already in use');
+        throw new ConflictException("Email already in use");
       }
       user.email = dto.email;
     }
@@ -54,7 +58,13 @@ export class UsersService {
     }
 
     const saved = await this.usersRepository.save(user);
-    const { passwordHash, resetToken, resetTokenExpiry, twoFactorSecret, ...rest } = saved;
+    const {
+      passwordHash,
+      resetToken,
+      resetTokenExpiry,
+      twoFactorSecret,
+      ...rest
+    } = saved;
     return { ...rest, hasPassword: !!passwordHash };
   }
 
@@ -69,11 +79,11 @@ export class UsersService {
       // Use direct instantiation to ensure primary key is set
       preferences = new UserPreference();
       preferences.userId = userId;
-      preferences.defaultCurrency = 'USD';
-      preferences.dateFormat = 'browser';
-      preferences.numberFormat = 'browser';
-      preferences.theme = 'system';
-      preferences.timezone = 'browser';
+      preferences.defaultCurrency = "USD";
+      preferences.dateFormat = "browser";
+      preferences.numberFormat = "browser";
+      preferences.theme = "system";
+      preferences.timezone = "browser";
       preferences.notificationEmail = true;
       preferences.notificationBrowser = true;
       preferences.twoFactorEnabled = false;
@@ -129,11 +139,11 @@ export class UsersService {
   async changePassword(userId: string, dto: ChangePasswordDto): Promise<void> {
     const user = await this.usersRepository.findOne({ where: { id: userId } });
     if (!user) {
-      throw new BadRequestException('User not found');
+      throw new BadRequestException("User not found");
     }
 
     if (!user.passwordHash) {
-      throw new BadRequestException('No password set for this account');
+      throw new BadRequestException("No password set for this account");
     }
 
     // Verify current password
@@ -142,7 +152,7 @@ export class UsersService {
       user.passwordHash,
     );
     if (!isPasswordValid) {
-      throw new BadRequestException('Current password is incorrect');
+      throw new BadRequestException("Current password is incorrect");
     }
 
     // Hash and save new password
@@ -155,7 +165,7 @@ export class UsersService {
   async deleteAccount(userId: string): Promise<void> {
     const user = await this.usersRepository.findOne({ where: { id: userId } });
     if (!user) {
-      throw new BadRequestException('User not found');
+      throw new BadRequestException("User not found");
     }
 
     // Delete preferences first (due to FK constraint)

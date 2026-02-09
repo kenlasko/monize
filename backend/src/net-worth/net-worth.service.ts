@@ -1,20 +1,20 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
-import { MonthlyAccountBalance } from './entities/monthly-account-balance.entity';
+import { Injectable, Logger } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository, DataSource } from "typeorm";
+import { MonthlyAccountBalance } from "./entities/monthly-account-balance.entity";
 import {
   Account,
   AccountType,
   AccountSubType,
-} from '../accounts/entities/account.entity';
+} from "../accounts/entities/account.entity";
 import {
   InvestmentTransaction,
   InvestmentAction,
-} from '../securities/entities/investment-transaction.entity';
-import { SecurityPrice } from '../securities/entities/security-price.entity';
-import { Security } from '../securities/entities/security.entity';
-import { ExchangeRate } from '../currencies/entities/exchange-rate.entity';
-import { UserPreference } from '../users/entities/user-preference.entity';
+} from "../securities/entities/investment-transaction.entity";
+import { SecurityPrice } from "../securities/entities/security-price.entity";
+import { Security } from "../securities/entities/security.entity";
+import { ExchangeRate } from "../currencies/entities/exchange-rate.entity";
+import { UserPreference } from "../users/entities/user-preference.entity";
 
 const LIABILITY_TYPES: AccountType[] = [
   AccountType.CREDIT_CARD,
@@ -97,9 +97,9 @@ export class NetWorthService {
     await this.ensurePopulated(userId);
 
     const pref = await this.prefRepo.findOne({ where: { userId } });
-    const defaultCurrency = pref?.defaultCurrency || 'USD';
+    const defaultCurrency = pref?.defaultCurrency || "USD";
 
-    const start = startDate || '1990-01-01';
+    const start = startDate || "1990-01-01";
     const end = endDate || new Date().toISOString().slice(0, 10);
 
     const snapshots: any[] = await this.dataSource.query(
@@ -132,10 +132,7 @@ export class NetWorthService {
     );
 
     // Aggregate by month
-    const monthMap = new Map<
-      string,
-      { assets: number; liabilities: number }
-    >();
+    const monthMap = new Map<string, { assets: number; liabilities: number }>();
 
     for (const s of snapshots) {
       const monthKey = this.toDateString(s.month);
@@ -146,7 +143,7 @@ export class NetWorthService {
       const entry = monthMap.get(monthKey)!;
 
       const rawValue =
-        s.account_sub_type === 'INVESTMENT_BROKERAGE' && s.market_value != null
+        s.account_sub_type === "INVESTMENT_BROKERAGE" && s.market_value != null
           ? Number(s.market_value)
           : Number(s.balance);
 
@@ -187,12 +184,12 @@ export class NetWorthService {
     await this.ensurePopulated(userId);
 
     const pref = await this.prefRepo.findOne({ where: { userId } });
-    const defaultCurrency = pref?.defaultCurrency || 'USD';
+    const defaultCurrency = pref?.defaultCurrency || "USD";
 
-    const start = startDate || '1990-01-01';
+    const start = startDate || "1990-01-01";
     const end = endDate || new Date().toISOString().slice(0, 10);
 
-    let accountFilter = '';
+    let accountFilter = "";
     const params: any[] = [userId, start, end];
 
     if (accountIds && accountIds.length > 0) {
@@ -209,7 +206,7 @@ export class NetWorthService {
       }
       const idArray = [...resolvedIds];
       // Build parameterized IN clause
-      const placeholders = idArray.map((_, i) => `$${i + 4}`).join(', ');
+      const placeholders = idArray.map((_, i) => `$${i + 4}`).join(", ");
       accountFilter = `AND a.id IN (${placeholders})`;
       params.push(...idArray);
     } else {
@@ -255,7 +252,7 @@ export class NetWorthService {
       }
 
       const rawValue =
-        s.account_sub_type === 'INVESTMENT_BROKERAGE' && s.market_value != null
+        s.account_sub_type === "INVESTMENT_BROKERAGE" && s.market_value != null
           ? Number(s.market_value)
           : Number(s.balance);
 
@@ -341,7 +338,7 @@ export class NetWorthService {
     await queryRunner.startTransaction();
     try {
       await queryRunner.query(
-        'DELETE FROM monthly_account_balances WHERE account_id = $1',
+        "DELETE FROM monthly_account_balances WHERE account_id = $1",
         [account.id],
       );
 
@@ -438,7 +435,7 @@ export class NetWorthService {
     // Load investment transactions for holdings replay
     const invTxs = await this.invTxRepo.find({
       where: { accountId: account.id },
-      order: { transactionDate: 'ASC' },
+      order: { transactionDate: "ASC" },
     });
 
     const securityIds = [
@@ -524,7 +521,7 @@ export class NetWorthService {
     await queryRunner.startTransaction();
     try {
       await queryRunner.query(
-        'DELETE FROM monthly_account_balances WHERE account_id = $1',
+        "DELETE FROM monthly_account_balances WHERE account_id = $1",
         [account.id],
       );
 
@@ -568,16 +565,14 @@ export class NetWorthService {
       [marketSecIds],
     );
 
-    const bySecId = new Map<
-      string,
-      Array<{ date: string; price: number }>
-    >();
+    const bySecId = new Map<string, Array<{ date: string; price: number }>>();
     for (const p of prices) {
       const secId = p.security_id;
       if (!bySecId.has(secId)) bySecId.set(secId, []);
-      bySecId
-        .get(secId)!
-        .push({ date: this.toDateString(p.price_date), price: Number(p.close_price) });
+      bySecId.get(secId)!.push({
+        date: this.toDateString(p.price_date),
+        price: Number(p.close_price),
+      });
     }
 
     for (const secId of marketSecIds) {
@@ -620,16 +615,14 @@ export class NetWorthService {
       [skipSecIds],
     );
 
-    const bySecId = new Map<
-      string,
-      Array<{ date: string; price: number }>
-    >();
+    const bySecId = new Map<string, Array<{ date: string; price: number }>>();
     for (const r of rows) {
       const secId = r.security_id;
       if (!bySecId.has(secId)) bySecId.set(secId, []);
-      bySecId
-        .get(secId)!
-        .push({ date: this.toDateString(r.transaction_date), price: Number(r.price) });
+      bySecId.get(secId)!.push({
+        date: this.toDateString(r.transaction_date),
+        price: Number(r.price),
+      });
     }
 
     for (const secId of skipSecIds) {
@@ -735,13 +728,13 @@ export class NetWorthService {
 
   private toDateString(value: string | Date): string {
     if (!value) return new Date().toISOString().substring(0, 10);
-    if (typeof value === 'string') return value.substring(0, 10);
+    if (typeof value === "string") return value.substring(0, 10);
     return value.toISOString().substring(0, 10);
   }
 
   private monthEndDate(monthFirstDay: string): string {
-    const [y, m] = monthFirstDay.split('-').map(Number);
+    const [y, m] = monthFirstDay.split("-").map(Number);
     const lastDay = new Date(y, m, 0).getDate();
-    return `${y}-${String(m).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+    return `${y}-${String(m).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
   }
 }

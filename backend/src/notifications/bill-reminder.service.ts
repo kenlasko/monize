@@ -1,13 +1,13 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { Cron, CronExpression } from '@nestjs/schedule';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { ConfigService } from '@nestjs/config';
-import { ScheduledTransaction } from '../scheduled-transactions/entities/scheduled-transaction.entity';
-import { UserPreference } from '../users/entities/user-preference.entity';
-import { User } from '../users/entities/user.entity';
-import { EmailService } from './email.service';
-import { billReminderTemplate } from './email-templates';
+import { Injectable, Logger } from "@nestjs/common";
+import { Cron, CronExpression } from "@nestjs/schedule";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { ConfigService } from "@nestjs/config";
+import { ScheduledTransaction } from "../scheduled-transactions/entities/scheduled-transaction.entity";
+import { UserPreference } from "../users/entities/user-preference.entity";
+import { User } from "../users/entities/user.entity";
+import { EmailService } from "./email.service";
+import { billReminderTemplate } from "./email-templates";
 
 @Injectable()
 export class BillReminderService {
@@ -27,20 +27,20 @@ export class BillReminderService {
   @Cron(CronExpression.EVERY_DAY_AT_8AM)
   async sendBillReminders(): Promise<void> {
     if (!this.emailService.getStatus().configured) {
-      this.logger.debug('SMTP not configured, skipping bill reminders');
+      this.logger.debug("SMTP not configured, skipping bill reminders");
       return;
     }
 
-    this.logger.log('Running bill reminder check...');
+    this.logger.log("Running bill reminder check...");
 
     // Only manual bills (autoPost = false) that are active
     const manualBills = await this.scheduledTransactionsRepo.find({
       where: { isActive: true, autoPost: false },
-      relations: ['payee'],
+      relations: ["payee"],
     });
 
     if (manualBills.length === 0) {
-      this.logger.log('No manual bills found');
+      this.logger.log("No manual bills found");
       return;
     }
 
@@ -66,13 +66,13 @@ export class BillReminderService {
     }
 
     if (billsByUser.size === 0) {
-      this.logger.log('No bills due within reminder windows');
+      this.logger.log("No bills due within reminder windows");
       return;
     }
 
     const appUrl = this.configService.get<string>(
-      'PUBLIC_APP_URL',
-      'http://localhost:3000',
+      "PUBLIC_APP_URL",
+      "http://localhost:3000",
     );
     let sentCount = 0;
     let skipCount = 0;
@@ -97,14 +97,18 @@ export class BillReminderService {
         const billData = bills.map((b) => ({
           payee: b.payee?.name || b.payeeName || b.name,
           amount: Math.abs(Number(b.amount)),
-          dueDate: String(b.nextDueDate).split('T')[0],
+          dueDate: String(b.nextDueDate).split("T")[0],
           currencyCode: b.currencyCode,
         }));
 
-        const html = billReminderTemplate(user.firstName || '', billData, appUrl);
+        const html = billReminderTemplate(
+          user.firstName || "",
+          billData,
+          appUrl,
+        );
         const subject =
           bills.length === 1
-            ? 'MoneyMate: 1 upcoming bill needs attention'
+            ? "MoneyMate: 1 upcoming bill needs attention"
             : `MoneyMate: ${bills.length} upcoming bills need attention`;
 
         await this.emailService.sendMail(user.email, subject, html);

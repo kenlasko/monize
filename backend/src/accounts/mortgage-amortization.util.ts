@@ -10,12 +10,12 @@
  */
 
 export type MortgagePaymentFrequency =
-  | 'MONTHLY'
-  | 'SEMI_MONTHLY' // 24 payments/year (1st and 15th)
-  | 'BIWEEKLY' // 26 payments/year
-  | 'ACCELERATED_BIWEEKLY' // 26 payments/year, but each = monthly/2
-  | 'WEEKLY' // 52 payments/year
-  | 'ACCELERATED_WEEKLY'; // 52 payments/year, but each = monthly/4
+  | "MONTHLY"
+  | "SEMI_MONTHLY" // 24 payments/year (1st and 15th)
+  | "BIWEEKLY" // 26 payments/year
+  | "ACCELERATED_BIWEEKLY" // 26 payments/year, but each = monthly/2
+  | "WEEKLY" // 52 payments/year
+  | "ACCELERATED_WEEKLY"; // 52 payments/year, but each = monthly/4
 
 export interface MortgageAmortizationInput {
   principal: number;
@@ -51,15 +51,15 @@ export function getMortgagePeriodsPerYear(
   frequency: MortgagePaymentFrequency,
 ): number {
   switch (frequency) {
-    case 'MONTHLY':
+    case "MONTHLY":
       return 12;
-    case 'SEMI_MONTHLY':
+    case "SEMI_MONTHLY":
       return 24;
-    case 'BIWEEKLY':
-    case 'ACCELERATED_BIWEEKLY':
+    case "BIWEEKLY":
+    case "ACCELERATED_BIWEEKLY":
       return 26;
-    case 'WEEKLY':
-    case 'ACCELERATED_WEEKLY':
+    case "WEEKLY":
+    case "ACCELERATED_WEEKLY":
       return 52;
     default:
       return 12;
@@ -137,8 +137,7 @@ export function calculatePaymentAmount(
   }
 
   const payment =
-    (principal *
-      (periodicRate * Math.pow(1 + periodicRate, totalPayments))) /
+    (principal * (periodicRate * Math.pow(1 + periodicRate, totalPayments))) /
     (Math.pow(1 + periodicRate, totalPayments) - 1);
 
   return Math.round(payment * 100) / 100;
@@ -154,7 +153,12 @@ function calculateMonthlyPayment(
   isCanadian: boolean,
   isVariableRate: boolean,
 ): number {
-  const periodicRate = getPeriodicRate(annualRate, 12, isCanadian, isVariableRate);
+  const periodicRate = getPeriodicRate(
+    annualRate,
+    12,
+    isCanadian,
+    isVariableRate,
+  );
   return calculatePaymentAmount(principal, periodicRate, amortizationMonths);
 }
 
@@ -164,10 +168,17 @@ function calculateMonthlyPayment(
 export function calculateMortgagePayment(
   input: MortgageAmortizationInput,
 ): number {
-  const { principal, annualRate, amortizationMonths, paymentFrequency, isCanadian, isVariableRate } = input;
+  const {
+    principal,
+    annualRate,
+    amortizationMonths,
+    paymentFrequency,
+    isCanadian,
+    isVariableRate,
+  } = input;
 
   // For accelerated payments, calculate based on monthly payment
-  if (paymentFrequency === 'ACCELERATED_BIWEEKLY') {
+  if (paymentFrequency === "ACCELERATED_BIWEEKLY") {
     const monthlyPayment = calculateMonthlyPayment(
       principal,
       annualRate,
@@ -178,7 +189,7 @@ export function calculateMortgagePayment(
     return Math.round((monthlyPayment / 2) * 100) / 100;
   }
 
-  if (paymentFrequency === 'ACCELERATED_WEEKLY') {
+  if (paymentFrequency === "ACCELERATED_WEEKLY") {
     const monthlyPayment = calculateMonthlyPayment(
       principal,
       annualRate,
@@ -192,7 +203,12 @@ export function calculateMortgagePayment(
   // For standard frequencies, calculate based on that frequency's periods
   const periodsPerYear = getMortgagePeriodsPerYear(paymentFrequency);
   const totalPayments = Math.round((amortizationMonths * periodsPerYear) / 12);
-  const periodicRate = getPeriodicRate(annualRate, periodsPerYear, isCanadian, isVariableRate);
+  const periodicRate = getPeriodicRate(
+    annualRate,
+    periodsPerYear,
+    isCanadian,
+    isVariableRate,
+  );
 
   return calculatePaymentAmount(principal, periodicRate, totalPayments);
 }
@@ -215,7 +231,12 @@ function calculateAcceleratedPayments(
     return Math.ceil(principal / paymentAmount);
   }
 
-  const periodicRate = getPeriodicRate(annualRate, periodsPerYear, isCanadian, isVariableRate);
+  const periodicRate = getPeriodicRate(
+    annualRate,
+    periodsPerYear,
+    isCanadian,
+    isVariableRate,
+  );
   const minPayment = principal * periodicRate;
 
   if (paymentAmount <= minPayment) {
@@ -246,21 +267,21 @@ export function calculateMortgageEndDate(
 
   // Map accelerated frequencies to their base frequency for date calculation
   const baseFrequency =
-    frequency === 'ACCELERATED_BIWEEKLY'
-      ? 'BIWEEKLY'
-      : frequency === 'ACCELERATED_WEEKLY'
-        ? 'WEEKLY'
+    frequency === "ACCELERATED_BIWEEKLY"
+      ? "BIWEEKLY"
+      : frequency === "ACCELERATED_WEEKLY"
+        ? "WEEKLY"
         : frequency;
 
   for (let i = 0; i < totalPayments; i++) {
     switch (baseFrequency) {
-      case 'WEEKLY':
+      case "WEEKLY":
         date.setDate(date.getDate() + 7);
         break;
-      case 'BIWEEKLY':
+      case "BIWEEKLY":
         date.setDate(date.getDate() + 14);
         break;
-      case 'SEMI_MONTHLY':
+      case "SEMI_MONTHLY":
         // Move to next semi-monthly date (1st or 15th)
         if (date.getDate() < 15) {
           date.setDate(15);
@@ -269,7 +290,7 @@ export function calculateMortgageEndDate(
           date.setDate(1);
         }
         break;
-      case 'MONTHLY':
+      case "MONTHLY":
       default:
         date.setMonth(date.getMonth() + 1);
         break;
@@ -324,8 +345,8 @@ export function calculateMortgageAmortization(
   let totalPayments: number;
 
   if (
-    paymentFrequency === 'ACCELERATED_BIWEEKLY' ||
-    paymentFrequency === 'ACCELERATED_WEEKLY'
+    paymentFrequency === "ACCELERATED_BIWEEKLY" ||
+    paymentFrequency === "ACCELERATED_WEEKLY"
   ) {
     // Accelerated payments pay off faster
     totalPayments = calculateAcceleratedPayments(
@@ -341,12 +362,22 @@ export function calculateMortgageAmortization(
   }
 
   // Calculate first payment split
-  const periodicRate = getPeriodicRate(annualRate, periodsPerYear, isCanadian, isVariableRate);
+  const periodicRate = getPeriodicRate(
+    annualRate,
+    periodsPerYear,
+    isCanadian,
+    isVariableRate,
+  );
   const interestPayment = Math.round(principal * periodicRate * 100) / 100;
-  const principalPayment = Math.round((paymentAmount - interestPayment) * 100) / 100;
+  const principalPayment =
+    Math.round((paymentAmount - interestPayment) * 100) / 100;
 
   // Calculate end date
-  const endDate = calculateMortgageEndDate(startDate, paymentFrequency, totalPayments);
+  const endDate = calculateMortgageEndDate(
+    startDate,
+    paymentFrequency,
+    totalPayments,
+  );
 
   // Calculate total interest
   const totalPaid = paymentAmount * totalPayments;
@@ -382,7 +413,11 @@ export function recalculateMortgageAfterRateChange(
   paymentFrequency: MortgagePaymentFrequency,
   isCanadian: boolean,
   isVariableRate: boolean,
-): { paymentAmount: number; principalPayment: number; interestPayment: number } {
+): {
+  paymentAmount: number;
+  principalPayment: number;
+  interestPayment: number;
+} {
   const input: MortgageAmortizationInput = {
     principal: currentBalance,
     annualRate: newRate,

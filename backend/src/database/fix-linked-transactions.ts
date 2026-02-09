@@ -9,24 +9,31 @@
  * Run with: npx ts-node -r tsconfig-paths/register src/database/fix-linked-transactions.ts
  */
 
-import { DataSource } from 'typeorm';
-import * as dotenv from 'dotenv';
-import * as path from 'path';
+import { DataSource } from "typeorm";
+import * as dotenv from "dotenv";
+import * as path from "path";
 
-dotenv.config({ path: path.join(__dirname, '../../../.env') });
+dotenv.config({ path: path.join(__dirname, "../../../.env") });
 
 async function fixLinkedTransactions() {
   const dataSource = new DataSource({
-    type: 'postgres',
-    host: process.env.DATABASE_HOST || 'localhost',
-    port: parseInt(process.env.DATABASE_PORT || '5432'),
-    username: process.env.DATABASE_USER || process.env.POSTGRES_USER || 'moneymate_user',
-    password: process.env.DATABASE_PASSWORD || process.env.POSTGRES_PASSWORD || 'moneymate_password',
-    database: process.env.DATABASE_NAME || process.env.POSTGRES_DB || 'moneymate',
+    type: "postgres",
+    host: process.env.DATABASE_HOST || "localhost",
+    port: parseInt(process.env.DATABASE_PORT || "5432"),
+    username:
+      process.env.DATABASE_USER ||
+      process.env.POSTGRES_USER ||
+      "moneymate_user",
+    password:
+      process.env.DATABASE_PASSWORD ||
+      process.env.POSTGRES_PASSWORD ||
+      "moneymate_password",
+    database:
+      process.env.DATABASE_NAME || process.env.POSTGRES_DB || "moneymate",
   });
 
   await dataSource.initialize();
-  console.log('Database connected');
+  console.log("Database connected");
 
   try {
     // Find all splits that have a linkedTransactionId (these are transfer splits)
@@ -40,7 +47,7 @@ async function fixLinkedTransactions() {
         AND t.is_transfer = true
     `);
 
-    console.log('Fixed linked transactions:', result);
+    console.log("Fixed linked transactions:", result);
 
     // Verify the fix
     const verification = await dataSource.query(`
@@ -51,7 +58,7 @@ async function fixLinkedTransactions() {
         AND t.is_transfer = true
     `);
 
-    console.log('Remaining unfixed transactions:', verification[0].count);
+    console.log("Remaining unfixed transactions:", verification[0].count);
   } finally {
     await dataSource.destroy();
   }

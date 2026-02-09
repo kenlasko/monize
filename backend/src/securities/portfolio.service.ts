@@ -1,11 +1,15 @@
-import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
-import { Holding } from './entities/holding.entity';
-import { SecurityPrice } from './entities/security-price.entity';
-import { Account, AccountType, AccountSubType } from '../accounts/entities/account.entity';
-import { UserPreference } from '../users/entities/user-preference.entity';
-import { ExchangeRateService } from '../currencies/exchange-rate.service';
+import { Injectable } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository, In } from "typeorm";
+import { Holding } from "./entities/holding.entity";
+import { SecurityPrice } from "./entities/security-price.entity";
+import {
+  Account,
+  AccountType,
+  AccountSubType,
+} from "../accounts/entities/account.entity";
+import { UserPreference } from "../users/entities/user-preference.entity";
+import { ExchangeRateService } from "../currencies/exchange-rate.service";
 
 export interface TopMover {
   securityId: string;
@@ -58,13 +62,13 @@ export interface PortfolioSummary {
   totalGainLossPercent: number;
   holdings: HoldingWithMarketValue[];
   holdingsByAccount: AccountHoldings[];
-  allocation: AllocationItem[];  // Include allocation to avoid duplicate API call
+  allocation: AllocationItem[]; // Include allocation to avoid duplicate API call
 }
 
 export interface AllocationItem {
   name: string;
   symbol: string | null;
-  type: 'cash' | 'security';
+  type: "cash" | "security";
   value: number;
   percentage: number;
   color?: string;
@@ -105,11 +109,17 @@ export class PortfolioService {
     const cacheKey = `${fromCurrency}->${defaultCurrency}`;
     let rate = rateCache.get(cacheKey);
     if (rate === undefined) {
-      const directRate = await this.exchangeRateService.getLatestRate(fromCurrency, defaultCurrency);
+      const directRate = await this.exchangeRateService.getLatestRate(
+        fromCurrency,
+        defaultCurrency,
+      );
       if (directRate !== null) {
         rate = directRate;
       } else {
-        const reverseRate = await this.exchangeRateService.getLatestRate(defaultCurrency, fromCurrency);
+        const reverseRate = await this.exchangeRateService.getLatestRate(
+          defaultCurrency,
+          fromCurrency,
+        );
         rate = reverseRate !== null ? 1 / reverseRate : 1;
       }
       rateCache.set(cacheKey, rate);
@@ -121,23 +131,20 @@ export class PortfolioService {
    * Get the latest prices for a list of security IDs
    * Uses DISTINCT ON for efficient single-pass query instead of correlated subquery
    */
-  async getLatestPrices(
-    securityIds: string[],
-  ): Promise<Map<string, number>> {
+  async getLatestPrices(securityIds: string[]): Promise<Map<string, number>> {
     if (securityIds.length === 0) {
       return new Map();
     }
 
     // Use DISTINCT ON (PostgreSQL) for efficient single-pass latest price lookup
     // This is much faster than correlated subquery approach
-    const latestPrices = await this.securityPriceRepository
-      .query(
-        `SELECT DISTINCT ON (security_id) security_id, close_price, price_date
+    const latestPrices = await this.securityPriceRepository.query(
+      `SELECT DISTINCT ON (security_id) security_id, close_price, price_date
          FROM security_prices
          WHERE security_id = ANY($1)
          ORDER BY security_id, price_date DESC`,
-        [securityIds],
-      );
+      [securityIds],
+    );
 
     const priceMap = new Map<string, number>();
     for (const price of latestPrices) {
@@ -169,7 +176,7 @@ export class PortfolioService {
   ): Promise<PortfolioSummary> {
     // Get user's default currency for conversion
     const pref = await this.prefRepository.findOne({ where: { userId } });
-    const defaultCurrency = pref?.defaultCurrency || 'CAD';
+    const defaultCurrency = pref?.defaultCurrency || "CAD";
     const rateCache = new Map<string, number>();
 
     // Get investment accounts
@@ -180,14 +187,16 @@ export class PortfolioService {
         where: { id: In(accountIds), userId },
       });
       // Resolve linked pairs
-      const resolvedIds = new Set<string>(requestedAccounts.map(a => a.id));
+      const resolvedIds = new Set<string>(requestedAccounts.map((a) => a.id));
       for (const account of requestedAccounts) {
         if (account.linkedAccountId) {
           resolvedIds.add(account.linkedAccountId);
         }
       }
       // Fetch any linked accounts that weren't in the original request
-      const linkedOnly = [...resolvedIds].filter(id => !requestedAccounts.some(a => a.id === id));
+      const linkedOnly = [...resolvedIds].filter(
+        (id) => !requestedAccounts.some((a) => a.id === id),
+      );
       if (linkedOnly.length > 0) {
         const linkedAccounts = await this.accountsRepository.find({
           where: { id: In(linkedOnly), userId },
@@ -217,7 +226,10 @@ export class PortfolioService {
     let totalCashValue = 0;
     for (const a of [...cashAccounts, ...standaloneAccounts]) {
       totalCashValue += await this.convertToDefault(
-        Number(a.currentBalance), a.currencyCode, defaultCurrency, rateCache,
+        Number(a.currentBalance),
+        a.currencyCode,
+        defaultCurrency,
+        rateCache,
       );
     }
 
@@ -230,7 +242,7 @@ export class PortfolioService {
     if (holdingsAccountIds.length > 0) {
       holdings = await this.holdingsRepository.find({
         where: { accountId: In(holdingsAccountIds) },
-        relations: ['security'],
+        relations: ["security"],
       });
     }
 
@@ -251,7 +263,8 @@ export class PortfolioService {
       const averageCost = Number(h.averageCost || 0);
       const costBasis = quantity * averageCost;
       const currentPrice = priceMap.get(h.securityId) ?? null;
-      const marketValue = currentPrice !== null ? quantity * currentPrice : null;
+      const marketValue =
+        currentPrice !== null ? quantity * currentPrice : null;
       const gainLoss =
         marketValue !== null && costBasis > 0 ? marketValue - costBasis : null;
       const gainLossPercent =
@@ -260,9 +273,19 @@ export class PortfolioService {
           : null;
 
       const holdingCurrency = h.security.currencyCode;
-      totalCostBasis += await this.convertToDefault(costBasis, holdingCurrency, defaultCurrency, rateCache);
+      totalCostBasis += await this.convertToDefault(
+        costBasis,
+        holdingCurrency,
+        defaultCurrency,
+        rateCache,
+      );
       if (marketValue !== null) {
-        totalHoldingsValue += await this.convertToDefault(marketValue, holdingCurrency, defaultCurrency, rateCache);
+        totalHoldingsValue += await this.convertToDefault(
+          marketValue,
+          holdingCurrency,
+          defaultCurrency,
+          rateCache,
+        );
       }
 
       holdingsWithValues.push({
@@ -271,7 +294,7 @@ export class PortfolioService {
         securityId: h.securityId,
         symbol: h.security.symbol,
         name: h.security.name,
-        securityType: h.security.securityType || 'STOCK',
+        securityType: h.security.securityType || "STOCK",
         currencyCode: holdingCurrency,
         quantity,
         averageCost,
@@ -296,15 +319,21 @@ export class PortfolioService {
 
     // Process brokerage accounts (paired with cash accounts)
     for (const brokerageAccount of brokerageAccounts) {
-      const accountHoldings = holdingsByAccountMap.get(brokerageAccount.id) || [];
+      const accountHoldings =
+        holdingsByAccountMap.get(brokerageAccount.id) || [];
 
       // Find the linked cash account
       const linkedCashAccount = cashAccounts.find(
-        (c) => c.linkedAccountId === brokerageAccount.id || brokerageAccount.linkedAccountId === c.id,
+        (c) =>
+          c.linkedAccountId === brokerageAccount.id ||
+          brokerageAccount.linkedAccountId === c.id,
       );
 
       // Calculate account totals
-      const accountCostBasis = accountHoldings.reduce((sum, h) => sum + h.costBasis, 0);
+      const accountCostBasis = accountHoldings.reduce(
+        (sum, h) => sum + h.costBasis,
+        0,
+      );
       const accountMarketValue = accountHoldings.reduce(
         (sum, h) => sum + (h.marketValue ?? 0),
         0,
@@ -314,14 +343,16 @@ export class PortfolioService {
         accountCostBasis > 0 ? (accountGainLoss / accountCostBasis) * 100 : 0;
 
       // Get display name (remove " - Brokerage" suffix if present)
-      const accountName = brokerageAccount.name.replace(' - Brokerage', '');
+      const accountName = brokerageAccount.name.replace(" - Brokerage", "");
 
       holdingsByAccount.push({
         accountId: brokerageAccount.id,
         accountName,
         currencyCode: brokerageAccount.currencyCode,
         cashAccountId: linkedCashAccount?.id ?? null,
-        cashBalance: linkedCashAccount ? Number(linkedCashAccount.currentBalance) : 0,
+        cashBalance: linkedCashAccount
+          ? Number(linkedCashAccount.currentBalance)
+          : 0,
         holdings: accountHoldings.sort((a, b) => {
           if (a.marketValue === null && b.marketValue === null) return 0;
           if (a.marketValue === null) return 1;
@@ -337,10 +368,14 @@ export class PortfolioService {
 
     // Process standalone investment accounts (not paired, cash balance is on the same account)
     for (const standaloneAccount of standaloneAccounts) {
-      const accountHoldings = holdingsByAccountMap.get(standaloneAccount.id) || [];
+      const accountHoldings =
+        holdingsByAccountMap.get(standaloneAccount.id) || [];
 
       // Calculate account totals
-      const accountCostBasis = accountHoldings.reduce((sum, h) => sum + h.costBasis, 0);
+      const accountCostBasis = accountHoldings.reduce(
+        (sum, h) => sum + h.costBasis,
+        0,
+      );
       const accountMarketValue = accountHoldings.reduce(
         (sum, h) => sum + (h.marketValue ?? 0),
         0,
@@ -387,22 +422,27 @@ export class PortfolioService {
     // Build allocation data inline (avoid duplicate getPortfolioSummary call)
     const allocation: AllocationItem[] = [];
     const colors = [
-      '#3b82f6', '#22c55e', '#f97316', '#8b5cf6',
-      '#ec4899', '#14b8a6', '#eab308', '#ef4444',
+      "#3b82f6",
+      "#22c55e",
+      "#f97316",
+      "#8b5cf6",
+      "#ec4899",
+      "#14b8a6",
+      "#eab308",
+      "#ef4444",
     ];
-
-    // Determine cash currency from the contributing accounts
-    const cashCurrencyAccounts = [...cashAccounts, ...standaloneAccounts];
-    const cashCurrencyCode = cashCurrencyAccounts.length > 0 ? cashCurrencyAccounts[0].currencyCode : undefined;
 
     if (totalCashValue > 0) {
       allocation.push({
-        name: 'Cash',
+        name: "Cash",
         symbol: null,
-        type: 'cash',
+        type: "cash",
         value: totalCashValue,
-        percentage: totalPortfolioValue > 0 ? (totalCashValue / totalPortfolioValue) * 100 : 0,
-        color: '#6b7280',
+        percentage:
+          totalPortfolioValue > 0
+            ? (totalCashValue / totalPortfolioValue) * 100
+            : 0,
+        color: "#6b7280",
         currencyCode: defaultCurrency,
       });
     }
@@ -411,16 +451,23 @@ export class PortfolioService {
     for (const holding of sortedHoldings) {
       if (holding.marketValue !== null && holding.marketValue > 0) {
         const originalHolding = holdings.find((h) => h.id === holding.id);
-        const holdingCurrency = originalHolding?.security?.currencyCode || defaultCurrency;
+        const holdingCurrency =
+          originalHolding?.security?.currencyCode || defaultCurrency;
         const convertedValue = await this.convertToDefault(
-          holding.marketValue, holdingCurrency, defaultCurrency, rateCache,
+          holding.marketValue,
+          holdingCurrency,
+          defaultCurrency,
+          rateCache,
         );
         allocation.push({
           name: holding.name,
           symbol: holding.symbol,
-          type: 'security',
+          type: "security",
           value: convertedValue,
-          percentage: totalPortfolioValue > 0 ? (convertedValue / totalPortfolioValue) * 100 : 0,
+          percentage:
+            totalPortfolioValue > 0
+              ? (convertedValue / totalPortfolioValue) * 100
+              : 0,
           color: colors[colorIndex % colors.length],
           currencyCode: holdingCurrency,
         });
@@ -465,7 +512,7 @@ export class PortfolioService {
     // Get holdings with non-zero quantity
     const holdings = await this.holdingsRepository.find({
       where: { accountId: In(holdingsAccountIds) },
-      relations: ['security'],
+      relations: ["security"],
     });
     const activeHoldings = holdings.filter((h) => Number(h.quantity) !== 0);
     if (activeHoldings.length === 0) return [];
@@ -508,7 +555,9 @@ export class PortfolioService {
 
     // Build movers list
     const movers: TopMover[] = [];
-    const securityLookup = new Map(activeHoldings.map((h) => [h.securityId, h.security]));
+    const securityLookup = new Map(
+      activeHoldings.map((h) => [h.securityId, h.security]),
+    );
 
     for (const securityId of securityIds) {
       const prices = priceMap.get(securityId);
@@ -524,9 +573,9 @@ export class PortfolioService {
 
       movers.push({
         securityId,
-        symbol: security?.symbol || 'Unknown',
-        name: security?.name || 'Unknown',
-        currencyCode: security?.currencyCode || 'USD',
+        symbol: security?.symbol || "Unknown",
+        name: security?.name || "Unknown",
+        currencyCode: security?.currencyCode || "USD",
         currentPrice,
         previousPrice,
         dailyChange,
@@ -536,7 +585,9 @@ export class PortfolioService {
     }
 
     // Sort by absolute daily change percent descending
-    movers.sort((a, b) => Math.abs(b.dailyChangePercent) - Math.abs(a.dailyChangePercent));
+    movers.sort(
+      (a, b) => Math.abs(b.dailyChangePercent) - Math.abs(a.dailyChangePercent),
+    );
 
     return movers;
   }

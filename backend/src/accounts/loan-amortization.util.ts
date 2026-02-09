@@ -8,11 +8,11 @@
  */
 
 export type PaymentFrequency =
-  | 'WEEKLY'
-  | 'BIWEEKLY'
-  | 'MONTHLY'
-  | 'QUARTERLY'
-  | 'YEARLY';
+  | "WEEKLY"
+  | "BIWEEKLY"
+  | "MONTHLY"
+  | "QUARTERLY"
+  | "YEARLY";
 
 export interface AmortizationResult {
   /** Principal portion of the current payment */
@@ -39,15 +39,15 @@ export interface PaymentSplit {
  */
 export function getPeriodsPerYear(frequency: PaymentFrequency): number {
   switch (frequency) {
-    case 'WEEKLY':
+    case "WEEKLY":
       return 52;
-    case 'BIWEEKLY':
+    case "BIWEEKLY":
       return 26;
-    case 'MONTHLY':
+    case "MONTHLY":
       return 12;
-    case 'QUARTERLY':
+    case "QUARTERLY":
       return 4;
-    case 'YEARLY':
+    case "YEARLY":
       return 1;
     default:
       return 12; // Default to monthly
@@ -167,19 +167,19 @@ export function calculateEndDate(
 
   for (let i = 0; i < totalPayments; i++) {
     switch (frequency) {
-      case 'WEEKLY':
+      case "WEEKLY":
         date.setDate(date.getDate() + 7);
         break;
-      case 'BIWEEKLY':
+      case "BIWEEKLY":
         date.setDate(date.getDate() + 14);
         break;
-      case 'MONTHLY':
+      case "MONTHLY":
         date.setMonth(date.getMonth() + 1);
         break;
-      case 'QUARTERLY':
+      case "QUARTERLY":
         date.setMonth(date.getMonth() + 3);
         break;
-      case 'YEARLY':
+      case "YEARLY":
         date.setFullYear(date.getFullYear() + 1);
         break;
     }

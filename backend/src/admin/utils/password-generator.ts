@@ -1,14 +1,49 @@
-import * as crypto from 'crypto';
+import * as crypto from "crypto";
 
 const WORDS = [
-  'Tiger', 'River', 'Stone', 'Cloud', 'Brave', 'Swift', 'Storm', 'Flame',
-  'Ocean', 'Eagle', 'Cedar', 'Steel', 'Light', 'Frost', 'Haven', 'Crown',
-  'Drift', 'Blaze', 'Grove', 'Pearl', 'Amber', 'Lunar', 'Coral', 'Maple',
-  'Raven', 'Sage', 'Crest', 'Dusk', 'Fern', 'Glen', 'Haze', 'Jade',
-  'Lake', 'Mesa', 'Nova', 'Opal', 'Pine', 'Reed', 'Silk', 'Vale',
+  "Tiger",
+  "River",
+  "Stone",
+  "Cloud",
+  "Brave",
+  "Swift",
+  "Storm",
+  "Flame",
+  "Ocean",
+  "Eagle",
+  "Cedar",
+  "Steel",
+  "Light",
+  "Frost",
+  "Haven",
+  "Crown",
+  "Drift",
+  "Blaze",
+  "Grove",
+  "Pearl",
+  "Amber",
+  "Lunar",
+  "Coral",
+  "Maple",
+  "Raven",
+  "Sage",
+  "Crest",
+  "Dusk",
+  "Fern",
+  "Glen",
+  "Haze",
+  "Jade",
+  "Lake",
+  "Mesa",
+  "Nova",
+  "Opal",
+  "Pine",
+  "Reed",
+  "Silk",
+  "Vale",
 ];
 
-const SPECIAL_CHARS = ['@', '$', '!', '%', '*', '?', '&'];
+const SPECIAL_CHARS = ["@", "$", "!", "%", "*", "?", "&"];
 
 /**
  * Generates a human-friendly password that satisfies complexity requirements:

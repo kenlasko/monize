@@ -1,19 +1,22 @@
-import { IsOptional, IsDateString, IsEnum } from 'class-validator';
-import { ApiPropertyOptional } from '@nestjs/swagger';
-import { TimeframeType, TableColumn } from '../entities/custom-report.entity';
+import { IsOptional, IsDateString, IsEnum } from "class-validator";
+import { ApiPropertyOptional } from "@nestjs/swagger";
+import { TimeframeType, TableColumn } from "../entities/custom-report.entity";
 
 export class ExecuteReportDto {
-  @ApiPropertyOptional({ description: 'Override timeframe type', enum: TimeframeType })
+  @ApiPropertyOptional({
+    description: "Override timeframe type",
+    enum: TimeframeType,
+  })
   @IsOptional()
   @IsEnum(TimeframeType)
   timeframeType?: TimeframeType;
 
-  @ApiPropertyOptional({ description: 'Override start date (YYYY-MM-DD)' })
+  @ApiPropertyOptional({ description: "Override start date (YYYY-MM-DD)" })
   @IsOptional()
   @IsDateString()
   startDate?: string;
 
-  @ApiPropertyOptional({ description: 'Override end date (YYYY-MM-DD)' })
+  @ApiPropertyOptional({ description: "Override end date (YYYY-MM-DD)" })
   @IsOptional()
   @IsDateString()
   endDate?: string;

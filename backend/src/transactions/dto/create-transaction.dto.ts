@@ -10,65 +10,75 @@ import {
   Min,
   IsArray,
   ValidateNested,
-} from 'class-validator';
-import { Type } from 'class-transformer';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { CreateTransactionSplitDto } from './create-transaction-split.dto';
-import { TransactionStatus } from '../entities/transaction.entity';
+} from "class-validator";
+import { Type } from "class-transformer";
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { CreateTransactionSplitDto } from "./create-transaction-split.dto";
+import { TransactionStatus } from "../entities/transaction.entity";
 
 export class CreateTransactionDto {
-  @ApiProperty({ description: 'Account ID where the transaction occurs' })
+  @ApiProperty({ description: "Account ID where the transaction occurs" })
   @IsUUID()
   accountId: string;
 
-  @ApiProperty({ description: 'Transaction date (YYYY-MM-DD format)' })
+  @ApiProperty({ description: "Transaction date (YYYY-MM-DD format)" })
   @IsDateString()
   transactionDate: string;
 
-  @ApiPropertyOptional({ description: 'Payee ID if using existing payee' })
+  @ApiPropertyOptional({ description: "Payee ID if using existing payee" })
   @IsOptional()
   @IsUUID()
   payeeId?: string;
 
-  @ApiPropertyOptional({ description: 'Payee name (if not using existing payee)' })
+  @ApiPropertyOptional({
+    description: "Payee name (if not using existing payee)",
+  })
   @IsOptional()
   @IsString()
   @MaxLength(255)
   payeeName?: string;
 
-  @ApiPropertyOptional({ description: 'Category ID for simple transactions (not used for split transactions)' })
+  @ApiPropertyOptional({
+    description:
+      "Category ID for simple transactions (not used for split transactions)",
+  })
   @IsOptional()
   @IsUUID()
   categoryId?: string;
 
-  @ApiProperty({ description: 'Transaction amount (positive for income, negative for expense)' })
+  @ApiProperty({
+    description:
+      "Transaction amount (positive for income, negative for expense)",
+  })
   @IsNumber({ maxDecimalPlaces: 4 })
   amount: number;
 
-  @ApiProperty({ description: 'Currency code (e.g., CAD, USD)' })
+  @ApiProperty({ description: "Currency code (e.g., CAD, USD)" })
   @IsString()
   @MaxLength(3)
   currencyCode: string;
 
-  @ApiPropertyOptional({ description: 'Exchange rate (defaults to 1.0)' })
+  @ApiPropertyOptional({ description: "Exchange rate (defaults to 1.0)" })
   @IsOptional()
   @IsNumber({ maxDecimalPlaces: 10 })
   @Min(0)
   exchangeRate?: number;
 
-  @ApiPropertyOptional({ description: 'Transaction description/notes' })
+  @ApiPropertyOptional({ description: "Transaction description/notes" })
   @IsOptional()
   @IsString()
   description?: string;
 
-  @ApiPropertyOptional({ description: 'Reference number (e.g., cheque number)' })
+  @ApiPropertyOptional({
+    description: "Reference number (e.g., cheque number)",
+  })
   @IsOptional()
   @IsString()
   @MaxLength(100)
   referenceNumber?: string;
 
   @ApiPropertyOptional({
-    description: 'Transaction status',
+    description: "Transaction status",
     enum: TransactionStatus,
     default: TransactionStatus.UNRECONCILED,
   })
@@ -76,23 +86,31 @@ export class CreateTransactionDto {
   @IsEnum(TransactionStatus)
   status?: TransactionStatus;
 
-  @ApiPropertyOptional({ description: 'Reconciliation date (YYYY-MM-DD format)' })
+  @ApiPropertyOptional({
+    description: "Reconciliation date (YYYY-MM-DD format)",
+  })
   @IsOptional()
   @IsDateString()
   reconciledDate?: string;
 
-  @ApiPropertyOptional({ description: 'Whether this is a split transaction', default: false })
+  @ApiPropertyOptional({
+    description: "Whether this is a split transaction",
+    default: false,
+  })
   @IsOptional()
   @IsBoolean()
   isSplit?: boolean;
 
-  @ApiPropertyOptional({ description: 'Parent transaction ID for split transactions' })
+  @ApiPropertyOptional({
+    description: "Parent transaction ID for split transactions",
+  })
   @IsOptional()
   @IsUUID()
   parentTransactionId?: string;
 
   @ApiPropertyOptional({
-    description: 'Splits for split transactions. When provided, isSplit is automatically set to true.',
+    description:
+      "Splits for split transactions. When provided, isSplit is automatically set to true.",
     type: [CreateTransactionSplitDto],
   })
   @IsOptional()

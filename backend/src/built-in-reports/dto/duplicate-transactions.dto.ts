@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty } from "@nestjs/swagger";
 
 export class DuplicateTransactionItem {
   @ApiProperty()
@@ -30,8 +30,8 @@ export class DuplicateGroup {
   @ApiProperty()
   reason: string;
 
-  @ApiProperty({ enum: ['high', 'medium', 'low'] })
-  confidence: 'high' | 'medium' | 'low';
+  @ApiProperty({ enum: ["high", "medium", "low"] })
+  confidence: "high" | "medium" | "low";
 }
 
 export class DuplicateTransactionsSummary {

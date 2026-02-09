@@ -12,148 +12,219 @@ import {
   ParseUUIDPipe,
   ParseIntPipe,
   DefaultValuePipe,
-} from '@nestjs/common';
+} from "@nestjs/common";
 import {
   ApiTags,
   ApiBearerAuth,
   ApiOperation,
   ApiResponse,
   ApiQuery,
-} from '@nestjs/swagger';
-import { AuthGuard } from '@nestjs/passport';
-import { PayeesService } from './payees.service';
-import { CreatePayeeDto } from './dto/create-payee.dto';
-import { UpdatePayeeDto } from './dto/update-payee.dto';
-import { Payee } from './entities/payee.entity';
+} from "@nestjs/swagger";
+import { AuthGuard } from "@nestjs/passport";
+import { PayeesService } from "./payees.service";
+import { CreatePayeeDto } from "./dto/create-payee.dto";
+import { UpdatePayeeDto } from "./dto/update-payee.dto";
+import { Payee } from "./entities/payee.entity";
 
-@ApiTags('payees')
+@ApiTags("payees")
 @ApiBearerAuth()
-@UseGuards(AuthGuard('jwt'))
-@Controller('payees')
+@UseGuards(AuthGuard("jwt"))
+@Controller("payees")
 export class PayeesController {
   constructor(private readonly payeesService: PayeesService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Create a new payee' })
-  @ApiResponse({ status: 201, description: 'Payee created successfully', type: Payee })
-  @ApiResponse({ status: 409, description: 'Payee with name already exists' })
-  create(@Request() req, @Body() createPayeeDto: CreatePayeeDto): Promise<Payee> {
+  @ApiOperation({ summary: "Create a new payee" })
+  @ApiResponse({
+    status: 201,
+    description: "Payee created successfully",
+    type: Payee,
+  })
+  @ApiResponse({ status: 409, description: "Payee with name already exists" })
+  create(
+    @Request() req,
+    @Body() createPayeeDto: CreatePayeeDto,
+  ): Promise<Payee> {
     return this.payeesService.create(req.user.id, createPayeeDto);
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all payees for the authenticated user' })
-  @ApiResponse({ status: 200, description: 'List of payees', type: [Payee] })
+  @ApiOperation({ summary: "Get all payees for the authenticated user" })
+  @ApiResponse({ status: 200, description: "List of payees", type: [Payee] })
   findAll(@Request() req): Promise<Payee[]> {
     return this.payeesService.findAll(req.user.id);
   }
 
-  @Get('search')
-  @ApiOperation({ summary: 'Search payees by name' })
-  @ApiQuery({ name: 'q', required: true, description: 'Search query' })
-  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Maximum results (default: 10)' })
-  @ApiResponse({ status: 200, description: 'Search results', type: [Payee] })
+  @Get("search")
+  @ApiOperation({ summary: "Search payees by name" })
+  @ApiQuery({ name: "q", required: true, description: "Search query" })
+  @ApiQuery({
+    name: "limit",
+    required: false,
+    type: Number,
+    description: "Maximum results (default: 10)",
+  })
+  @ApiResponse({ status: 200, description: "Search results", type: [Payee] })
   search(
     @Request() req,
-    @Query('q') query: string,
-    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
+    @Query("q") query: string,
+    @Query("limit", new DefaultValuePipe(10), ParseIntPipe) limit: number,
   ): Promise<Payee[]> {
     return this.payeesService.search(req.user.id, query, limit);
   }
 
-  @Get('autocomplete')
-  @ApiOperation({ summary: 'Autocomplete payees (for input suggestions)' })
-  @ApiQuery({ name: 'q', required: true, description: 'Query string (payees starting with this)' })
-  @ApiResponse({ status: 200, description: 'Autocomplete suggestions', type: [Payee] })
-  autocomplete(@Request() req, @Query('q') query: string): Promise<Payee[]> {
+  @Get("autocomplete")
+  @ApiOperation({ summary: "Autocomplete payees (for input suggestions)" })
+  @ApiQuery({
+    name: "q",
+    required: true,
+    description: "Query string (payees starting with this)",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Autocomplete suggestions",
+    type: [Payee],
+  })
+  autocomplete(@Request() req, @Query("q") query: string): Promise<Payee[]> {
     return this.payeesService.autocomplete(req.user.id, query);
   }
 
-  @Get('most-used')
-  @ApiOperation({ summary: 'Get most frequently used payees' })
-  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Maximum results (default: 10)' })
-  @ApiResponse({ status: 200, description: 'Most used payees', type: [Payee] })
+  @Get("most-used")
+  @ApiOperation({ summary: "Get most frequently used payees" })
+  @ApiQuery({
+    name: "limit",
+    required: false,
+    type: Number,
+    description: "Maximum results (default: 10)",
+  })
+  @ApiResponse({ status: 200, description: "Most used payees", type: [Payee] })
   getMostUsed(
     @Request() req,
-    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
+    @Query("limit", new DefaultValuePipe(10), ParseIntPipe) limit: number,
   ): Promise<Payee[]> {
     return this.payeesService.getMostUsed(req.user.id, limit);
   }
 
-  @Get('recently-used')
-  @ApiOperation({ summary: 'Get recently used payees' })
-  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Maximum results (default: 10)' })
-  @ApiResponse({ status: 200, description: 'Recently used payees', type: [Payee] })
+  @Get("recently-used")
+  @ApiOperation({ summary: "Get recently used payees" })
+  @ApiQuery({
+    name: "limit",
+    required: false,
+    type: Number,
+    description: "Maximum results (default: 10)",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Recently used payees",
+    type: [Payee],
+  })
   getRecentlyUsed(
     @Request() req,
-    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
+    @Query("limit", new DefaultValuePipe(10), ParseIntPipe) limit: number,
   ): Promise<Payee[]> {
     return this.payeesService.getRecentlyUsed(req.user.id, limit);
   }
 
-  @Get('summary')
-  @ApiOperation({ summary: 'Get payee statistics summary' })
-  @ApiResponse({ status: 200, description: 'Payee summary statistics' })
+  @Get("summary")
+  @ApiOperation({ summary: "Get payee statistics summary" })
+  @ApiResponse({ status: 200, description: "Payee summary statistics" })
   getSummary(@Request() req) {
     return this.payeesService.getSummary(req.user.id);
   }
 
-  @Get('category-suggestions/preview')
-  @ApiOperation({ summary: 'Preview category auto-assignment suggestions based on transaction history' })
-  @ApiQuery({ name: 'minTransactions', required: false, type: Number, description: 'Minimum transactions (default: 5)' })
-  @ApiQuery({ name: 'minPercentage', required: false, type: Number, description: 'Minimum percentage (default: 75)' })
-  @ApiQuery({ name: 'onlyWithoutCategory', required: false, type: Boolean, description: 'Only payees without category (default: true)' })
-  @ApiResponse({ status: 200, description: 'List of suggested category assignments' })
+  @Get("category-suggestions/preview")
+  @ApiOperation({
+    summary:
+      "Preview category auto-assignment suggestions based on transaction history",
+  })
+  @ApiQuery({
+    name: "minTransactions",
+    required: false,
+    type: Number,
+    description: "Minimum transactions (default: 5)",
+  })
+  @ApiQuery({
+    name: "minPercentage",
+    required: false,
+    type: Number,
+    description: "Minimum percentage (default: 75)",
+  })
+  @ApiQuery({
+    name: "onlyWithoutCategory",
+    required: false,
+    type: Boolean,
+    description: "Only payees without category (default: true)",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "List of suggested category assignments",
+  })
   getCategorySuggestions(
     @Request() req,
-    @Query('minTransactions', new DefaultValuePipe(5), ParseIntPipe) minTransactions: number,
-    @Query('minPercentage', new DefaultValuePipe(75), ParseIntPipe) minPercentage: number,
-    @Query('onlyWithoutCategory', new DefaultValuePipe('true')) onlyWithoutCategory: string,
+    @Query("minTransactions", new DefaultValuePipe(5), ParseIntPipe)
+    minTransactions: number,
+    @Query("minPercentage", new DefaultValuePipe(75), ParseIntPipe)
+    minPercentage: number,
+    @Query("onlyWithoutCategory", new DefaultValuePipe("true"))
+    onlyWithoutCategory: string,
   ) {
     return this.payeesService.calculateCategorySuggestions(
       req.user.id,
       minTransactions,
       minPercentage,
-      onlyWithoutCategory === 'true',
+      onlyWithoutCategory === "true",
     );
   }
 
-  @Post('category-suggestions/apply')
-  @ApiOperation({ summary: 'Apply category auto-assignments to payees' })
-  @ApiResponse({ status: 200, description: 'Assignments applied successfully' })
+  @Post("category-suggestions/apply")
+  @ApiOperation({ summary: "Apply category auto-assignments to payees" })
+  @ApiResponse({ status: 200, description: "Assignments applied successfully" })
   applyCategorySuggestions(
     @Request() req,
     @Body() assignments: Array<{ payeeId: string; categoryId: string }>,
   ) {
-    return this.payeesService.applyCategorySuggestions(req.user.id, assignments);
+    return this.payeesService.applyCategorySuggestions(
+      req.user.id,
+      assignments,
+    );
   }
 
-  @Get(':id')
-  @ApiOperation({ summary: 'Get a payee by ID' })
-  @ApiResponse({ status: 200, description: 'Payee details', type: Payee })
-  @ApiResponse({ status: 404, description: 'Payee not found' })
-  findOne(@Request() req, @Param('id', ParseUUIDPipe) id: string): Promise<Payee> {
+  @Get(":id")
+  @ApiOperation({ summary: "Get a payee by ID" })
+  @ApiResponse({ status: 200, description: "Payee details", type: Payee })
+  @ApiResponse({ status: 404, description: "Payee not found" })
+  findOne(
+    @Request() req,
+    @Param("id", ParseUUIDPipe) id: string,
+  ): Promise<Payee> {
     return this.payeesService.findOne(req.user.id, id);
   }
 
-  @Patch(':id')
-  @ApiOperation({ summary: 'Update a payee' })
-  @ApiResponse({ status: 200, description: 'Payee updated successfully', type: Payee })
-  @ApiResponse({ status: 404, description: 'Payee not found' })
-  @ApiResponse({ status: 409, description: 'Payee with name already exists' })
+  @Patch(":id")
+  @ApiOperation({ summary: "Update a payee" })
+  @ApiResponse({
+    status: 200,
+    description: "Payee updated successfully",
+    type: Payee,
+  })
+  @ApiResponse({ status: 404, description: "Payee not found" })
+  @ApiResponse({ status: 409, description: "Payee with name already exists" })
   update(
     @Request() req,
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param("id", ParseUUIDPipe) id: string,
     @Body() updatePayeeDto: UpdatePayeeDto,
   ): Promise<Payee> {
     return this.payeesService.update(req.user.id, id, updatePayeeDto);
   }
 
-  @Delete(':id')
-  @ApiOperation({ summary: 'Delete a payee' })
-  @ApiResponse({ status: 200, description: 'Payee deleted successfully' })
-  @ApiResponse({ status: 404, description: 'Payee not found' })
-  remove(@Request() req, @Param('id', ParseUUIDPipe) id: string): Promise<void> {
+  @Delete(":id")
+  @ApiOperation({ summary: "Delete a payee" })
+  @ApiResponse({ status: 200, description: "Payee deleted successfully" })
+  @ApiResponse({ status: 404, description: "Payee not found" })
+  remove(
+    @Request() req,
+    @Param("id", ParseUUIDPipe) id: string,
+  ): Promise<void> {
     return this.payeesService.remove(req.user.id, id);
   }
 }
