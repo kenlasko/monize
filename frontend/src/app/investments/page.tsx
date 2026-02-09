@@ -22,6 +22,7 @@ import {
   InvestmentTransaction,
   InvestmentTransactionPaginationInfo,
 } from '@/types/investment';
+import { usePriceRefresh, setRefreshInProgress } from '@/hooks/usePriceRefresh';
 import { createLogger } from '@/lib/logger';
 
 const logger = createLogger('Investments');
@@ -71,6 +72,7 @@ export default function InvestmentsPage() {
   } | null>(null);
   const [showRefreshDetails, setShowRefreshDetails] = useState(false);
   const [transactionFilters, setTransactionFilters] = useState<TransactionFilters>({});
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
 
   const loadInvestmentAccounts = useCallback(async () => {
     try {
@@ -99,8 +101,16 @@ export default function InvestmentsPage() {
     }
   }, []);
 
+  const { triggerAutoRefresh } = usePriceRefresh({
+    onRefreshComplete: () => {
+      loadPortfolioData(selectedAccountIds, currentPage, transactionFilters);
+      loadPriceStatus();
+    },
+  });
+
   const handleRefreshPrices = async () => {
     setIsRefreshingPrices(true);
+    setRefreshInProgress(true);
     setRefreshResult(null);
     setShowRefreshDetails(false);
     try {
@@ -145,6 +155,7 @@ export default function InvestmentsPage() {
       setRefreshResult({ updated: 0, failed: -1 }); // -1 indicates API error
       setTimeout(() => setRefreshResult(null), 5000);
     } finally {
+      setRefreshInProgress(false);
       setIsRefreshingPrices(false);
     }
   };
@@ -192,6 +203,13 @@ export default function InvestmentsPage() {
   useEffect(() => {
     loadPortfolioData(selectedAccountIds, currentPage, transactionFilters);
   }, [loadPortfolioData, selectedAccountIds, currentPage, transactionFilters]);
+
+  useEffect(() => {
+    if (!isLoading && !initialLoadComplete) {
+      setInitialLoadComplete(true);
+      triggerAutoRefresh();
+    }
+  }, [isLoading, initialLoadComplete, triggerAutoRefresh]);
 
   // Handle edit URL parameter (when redirected from transactions page)
   useEffect(() => {

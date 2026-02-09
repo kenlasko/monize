@@ -514,7 +514,7 @@ export class PortfolioService {
       where: { accountId: In(holdingsAccountIds) },
       relations: ["security"],
     });
-    const activeHoldings = holdings.filter((h) => Number(h.quantity) !== 0);
+    const activeHoldings = holdings.filter((h) => Number(h.quantity) !== 0 && h.security?.isActive !== false);
     if (activeHoldings.length === 0) return [];
 
     // Get unique security IDs

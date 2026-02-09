@@ -23,6 +23,7 @@ import { ScheduledTransaction } from '@/types/scheduled-transaction';
 import { TopMover } from '@/types/investment';
 import { MonthlyNetWorth } from '@/types/net-worth';
 import { PageLayout } from '@/components/layout/PageLayout';
+import { usePriceRefresh } from '@/hooks/usePriceRefresh';
 import { createLogger } from '@/lib/logger';
 
 const logger = createLogger('Dashboard');
@@ -38,6 +39,20 @@ export default function DashboardPage() {
   const [hasInvestments, setHasInvestments] = useState(false);
   const [netWorthData, setNetWorthData] = useState<MonthlyNetWorth[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  const reloadTopMovers = useCallback(async () => {
+    if (!hasInvestments) return;
+    try {
+      const moversData = await investmentsApi.getTopMovers();
+      setTopMovers(moversData);
+    } catch {
+      // Silently fail
+    }
+  }, [hasInvestments]);
+
+  const { isRefreshing, triggerManualRefresh, triggerAutoRefresh } = usePriceRefresh({
+    onRefreshComplete: reloadTopMovers,
+  });
 
   const loadDashboardData = useCallback(async () => {
     setIsLoading(true);
@@ -89,6 +104,12 @@ export default function DashboardPage() {
     loadDashboardData();
   }, [loadDashboardData]);
 
+  useEffect(() => {
+    if (hasInvestments && !isLoading) {
+      triggerAutoRefresh();
+    }
+  }, [hasInvestments, isLoading, triggerAutoRefresh]);
+
   return (
     <PageLayout>
       <main className="px-4 sm:px-6 lg:px-12 py-6">
@@ -116,7 +137,7 @@ export default function DashboardPage() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
             <NetWorthChart data={netWorthData} isLoading={isLoading} />
-            <TopMovers movers={topMovers} isLoading={isLoading} hasInvestmentAccounts={hasInvestments} />
+            <TopMovers movers={topMovers} isLoading={isLoading} hasInvestmentAccounts={hasInvestments} onRefresh={triggerManualRefresh} isRefreshing={isRefreshing} />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
