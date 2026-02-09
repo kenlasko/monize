@@ -1,5 +1,5 @@
 -- Composite indexes for common query patterns
--- Run: docker exec -i moneymate-postgres psql -U moneymate_user -d moneymate < backend/scripts/add-composite-indexes.sql
+-- Run: docker exec -i monize-postgres psql -U monize_user -d monize < backend/scripts/add-composite-indexes.sql
 
 -- Main transactions listing: WHERE user_id = ? ORDER BY transaction_date DESC, created_at DESC, id DESC
 -- Also covers date range filtering: WHERE user_id = ? AND transaction_date BETWEEN ? AND ?

@@ -1,10 +1,10 @@
 # Payees Management Guide
 
-This document explains how payees work in MoneyMate, including creation, management, and integration with transactions.
+This document explains how payees work in Monize, including creation, management, and integration with transactions.
 
 ## Overview
 
-Payees represent the people, businesses, or entities you transact with. The payees system in MoneyMate provides:
+Payees represent the people, businesses, or entities you transact with. The payees system in Monize provides:
 
 - **Auto-complete**: Quick payee selection when entering transactions
 - **Default Categories**: Automatically assign categories based on payee

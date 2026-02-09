@@ -1,7 +1,7 @@
 /**
  * Script to delete all transactions and securities from all accounts
  *
- * Usage: docker exec -it moneymate-backend npx ts-node scripts/delete-all-transactions.ts
+ * Usage: docker exec -it monize-backend npx ts-node scripts/delete-all-transactions.ts
  *
  * WARNING: This will permanently delete ALL transactions, investment activities,
  * holdings, securities, security prices, net worth snapshots, and reset account balances!
@@ -19,9 +19,9 @@ async function main() {
     type: 'postgres',
     host: process.env.DATABASE_HOST || 'localhost',
     port: parseInt(process.env.DATABASE_PORT || '5432'),
-    username: process.env.DATABASE_USER || 'moneymate_user',
-    password: process.env.DATABASE_PASSWORD || 'moneymate_password',
-    database: process.env.DATABASE_NAME || 'moneymate',
+    username: process.env.DATABASE_USER || 'monize_user',
+    password: process.env.DATABASE_PASSWORD || 'monize_password',
+    database: process.env.DATABASE_NAME || 'monize',
   });
 
   try {

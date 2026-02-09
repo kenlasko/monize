@@ -1,4 +1,4 @@
-# MoneyMate
+# Monize
 
 A comprehensive personal finance management application built with NestJS and Next.js.
 
@@ -97,7 +97,7 @@ A comprehensive personal finance management application built with NestJS and Ne
 ## Project Structure
 
 ```
-moneymate/
+monize/
 ├── backend/                    # NestJS backend application
 │   ├── src/
 │   │   ├── auth/              # Authentication (Local, OIDC, 2FA, trusted devices)
@@ -148,7 +148,7 @@ moneymate/
 1. Clone the repository:
 ```bash
 git clone <repository-url>
-cd moneymate
+cd monize
 ```
 
 2. Copy environment variables:
@@ -181,15 +181,15 @@ npm install
 
 2. Set up PostgreSQL database:
 ```bash
-createdb moneymate
-psql moneymate < ../database/schema.sql
+createdb monize
+psql monize < ../database/schema.sql
 ```
 
 3. Create `backend/.env`:
 ```env
 DATABASE_HOST=localhost
 DATABASE_PORT=5432
-DATABASE_NAME=moneymate
+DATABASE_NAME=monize
 DATABASE_USER=your_user
 DATABASE_PASSWORD=your_password
 JWT_SECRET=your-secret-key
@@ -215,8 +215,8 @@ npm run dev
 
 | Variable | Description | Example |
 |----------|-------------|---------|
-| `POSTGRES_DB` | Database name | `moneymate` |
-| `POSTGRES_USER` | Database user | `moneymate_user` |
+| `POSTGRES_DB` | Database name | `monize` |
+| `POSTGRES_USER` | Database user | `monize_user` |
 | `POSTGRES_PASSWORD` | Database password | `secure-password` |
 | `JWT_SECRET` | JWT signing key (min 32 chars) | `openssl rand -base64 32` |
 | `PUBLIC_APP_URL` | Public frontend URL | `https://money.example.com` |
@@ -246,8 +246,8 @@ npm run dev
 
 1. Create `.env.prod` with production values:
 ```env
-POSTGRES_DB=moneymate
-POSTGRES_USER=moneymate_user
+POSTGRES_DB=monize
+POSTGRES_USER=monize_user
 POSTGRES_PASSWORD=<strong-password>
 JWT_SECRET=<generate-with-openssl>
 PUBLIC_APP_URL=https://your-domain.com

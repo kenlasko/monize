@@ -31,7 +31,7 @@ export default function PayeesPage() {
   const [showAutoAssign, setShowAutoAssign] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [listDensity, setListDensity] = useLocalStorage<DensityLevel>('moneymate-payees-density', 'normal');
+  const [listDensity, setListDensity] = useLocalStorage<DensityLevel>('monize-payees-density', 'normal');
   const [sortField, setSortField] = useState<SortField>('name');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const { showForm, editingItem, openCreate, openEdit, close, isEditing } = useFormModal<Payee>();

@@ -53,8 +53,8 @@ jobs:
       postgres:
         image: postgres:16-alpine
         env:
-          POSTGRES_DB: moneymate_test
-          POSTGRES_USER: moneymate_test
+          POSTGRES_DB: monize_test
+          POSTGRES_USER: monize_test
           POSTGRES_PASSWORD: test_password
         ports:
           - 5432:5432
@@ -69,8 +69,8 @@ jobs:
     env:
       DATABASE_HOST: localhost
       DATABASE_PORT: 5432
-      DATABASE_NAME: moneymate_test
-      DATABASE_USER: moneymate_test
+      DATABASE_NAME: monize_test
+      DATABASE_USER: monize_test
       DATABASE_PASSWORD: test_password
       JWT_SECRET: test-jwt-secret-for-ci-minimum-32-characters-long
       NODE_ENV: test
@@ -123,9 +123,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: [backend-unit-tests, frontend-unit-tests]
     env:
-      POSTGRES_DB: moneymate
-      POSTGRES_USER: moneymate_user
-      POSTGRES_PASSWORD: moneymate_password
+      POSTGRES_DB: monize
+      POSTGRES_USER: monize_user
+      POSTGRES_PASSWORD: monize_password
       JWT_SECRET: test-jwt-secret-for-ci-minimum-32-characters-long
       NODE_ENV: development
       PUBLIC_APP_URL: http://localhost:3001
@@ -137,9 +137,9 @@ jobs:
       - name: Create .env for Docker Compose
         run: |
           cat > .env << 'EOF'
-          POSTGRES_DB=moneymate
-          POSTGRES_USER=moneymate_user
-          POSTGRES_PASSWORD=moneymate_password
+          POSTGRES_DB=monize
+          POSTGRES_USER=monize_user
+          POSTGRES_PASSWORD=monize_password
           JWT_SECRET=test-jwt-secret-for-ci-minimum-32-characters-long
           NODE_ENV=development
           PUBLIC_APP_URL=http://localhost:3001

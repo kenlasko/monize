@@ -44,7 +44,7 @@ export class NotificationsController {
     }
 
     const html = testEmailTemplate(user.firstName || "");
-    await this.emailService.sendMail(user.email, "MoneyMate Test Email", html);
+    await this.emailService.sendMail(user.email, "Monize Test Email", html);
     return { message: "Test email sent successfully" };
   }
 }

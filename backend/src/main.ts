@@ -76,8 +76,8 @@ async function bootstrap() {
   // Swagger documentation (disabled in production)
   if (process.env.NODE_ENV !== "production") {
     const config = new DocumentBuilder()
-      .setTitle("Moneymate API")
-      .setDescription("API for managing your personal finances via Moneymate")
+      .setTitle("Monize API")
+      .setDescription("API for managing your personal finances via Monize")
       .setVersion("1.0")
       .addBearerAuth()
       .build();

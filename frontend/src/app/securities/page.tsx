@@ -34,7 +34,7 @@ function SecuritiesContent() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showInactive, setShowInactive] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [listDensity, setListDensity] = useLocalStorage<DensityLevel>('moneymate-securities-density', 'normal');
+  const [listDensity, setListDensity] = useLocalStorage<DensityLevel>('monize-securities-density', 'normal');
 
   const loadData = async () => {
     setIsLoading(true);

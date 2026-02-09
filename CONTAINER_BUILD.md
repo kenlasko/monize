@@ -1,3 +1,3 @@
-REGISTRY=registry.ucdialplans.com/moneymate
+REGISTRY=registry.ucdialplans.com/monize
 docker build -t $REGISTRY/backend:latest --target production -f backend/Dockerfile . && docker push $REGISTRY/backend:latest
 docker build -t $REGISTRY/frontend:latest --target production ./frontend && docker push $REGISTRY/frontend:latest

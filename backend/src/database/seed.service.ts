@@ -55,7 +55,7 @@ export class SeedService {
   private async seedDemoUser(): Promise<string> {
     console.log("\n👤 Seeding demo user...");
 
-    const email = "demo@moneymate.com";
+    const email = "demo@monize.com";
     const password = "Demo123!";
     const hashedPassword = await bcrypt.hash(password, 10);
 

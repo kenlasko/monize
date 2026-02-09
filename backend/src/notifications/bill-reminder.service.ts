@@ -108,8 +108,8 @@ export class BillReminderService {
         );
         const subject =
           bills.length === 1
-            ? "MoneyMate: 1 upcoming bill needs attention"
-            : `MoneyMate: ${bills.length} upcoming bills need attention`;
+            ? "Monize: 1 upcoming bill needs attention"
+            : `Monize: ${bills.length} upcoming bills need attention`;
 
         await this.emailService.sendMail(user.email, subject, html);
         sentCount++;

@@ -1,6 +1,6 @@
 # Authentication Setup Guide
 
-This document describes the authentication system implementation for MoneyMate.
+This document describes the authentication system implementation for Monize.
 
 ## Overview
 

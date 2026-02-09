@@ -314,8 +314,8 @@ const categoryColors: Record<ReportCategory, string> = {
 
 export default function ReportsPage() {
   const router = useRouter();
-  const [density, setDensity] = useLocalStorage<DensityLevel>('moneymate-reports-density', 'normal');
-  const [categoryFilter, setCategoryFilter] = useLocalStorage<ReportCategory | 'all'>('moneymate-reports-category', 'all');
+  const [density, setDensity] = useLocalStorage<DensityLevel>('monize-reports-density', 'normal');
+  const [categoryFilter, setCategoryFilter] = useLocalStorage<ReportCategory | 'all'>('monize-reports-category', 'all');
   const [customReports, setCustomReports] = useState<CustomReport[]>([]);
   const [isLoadingCustom, setIsLoadingCustom] = useState(true);
 

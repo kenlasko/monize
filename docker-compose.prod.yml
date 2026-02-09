@@ -4,7 +4,7 @@ services:
   # PostgreSQL Database
   postgres:
     image: postgres:16-alpine
-    container_name: moneymate-postgres
+    container_name: monize-postgres
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
@@ -13,7 +13,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
-      - moneymate-network
+      - monize-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
@@ -26,7 +26,7 @@ services:
       context: .
       dockerfile: backend/Dockerfile
       target: production
-    container_name: moneymate-backend
+    container_name: monize-backend
     restart: unless-stopped
     depends_on:
       postgres:
@@ -47,7 +47,7 @@ services:
       LOCAL_AUTH_ENABLED: ${LOCAL_AUTH_ENABLED:-true}
       PUBLIC_APP_URL: ${PUBLIC_APP_URL}
     networks:
-      - moneymate-network
+      - monize-network
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/api/v1/health/live"]
       interval: 30s
@@ -61,7 +61,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       target: production
-    container_name: moneymate-frontend
+    container_name: monize-frontend
     restart: unless-stopped
     depends_on:
       backend:
@@ -73,7 +73,7 @@ services:
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
     networks:
-      - moneymate-network
+      - monize-network
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000"]
       interval: 30s
@@ -81,7 +81,7 @@ services:
       retries: 3
 
 networks:
-  moneymate-network:
+  monize-network:
     driver: bridge
 
 volumes:

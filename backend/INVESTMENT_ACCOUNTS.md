@@ -1,10 +1,10 @@
 # Investment Accounts Guide
 
-This document explains how investment accounts work in MoneyMate, including the dual-component structure with cash and security holdings.
+This document explains how investment accounts work in Monize, including the dual-component structure with cash and security holdings.
 
 ## Overview
 
-Investment accounts in MoneyMate have a unique two-component structure:
+Investment accounts in Monize have a unique two-component structure:
 
 1. **Cash Component**: Tracked via the regular `Account` entity with `currentBalance` representing available cash
 2. **Securities Component**: Tracked via `Holdings` which store quantities and average costs of securities
@@ -91,7 +91,7 @@ This design allows you to:
 
 ## Price Integration
 
-MoneyMate integrates with Yahoo Finance for real-time and historical security prices.
+Monize integrates with Yahoo Finance for real-time and historical security prices.
 
 ### Automatic Price Updates
 - **Schedule**: Monday–Friday at 5 PM EST via cron job (`0 17 * * 1-5`)

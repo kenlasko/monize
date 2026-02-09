@@ -50,7 +50,7 @@ export class EmailService implements OnModuleInit {
 
     const from = this.configService.get<string>(
       "EMAIL_FROM",
-      "noreply@moneymate.app",
+      "noreply@monize.app",
     );
     await this.transporter.sendMail({ from, to, subject, html });
     this.logger.log(`Email sent to ${to}: ${subject}`);

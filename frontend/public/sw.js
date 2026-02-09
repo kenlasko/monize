@@ -1,4 +1,4 @@
-const CACHE_NAME = 'moneymate-static-v1';
+const CACHE_NAME = 'monize-static-v1';
 
 const STATIC_EXTENSIONS = [
   '.js', '.css', '.png', '.jpg', '.jpeg', '.gif', '.svg',

@@ -1,4 +1,4 @@
--- MoneyMate - Database Schema
+-- Monize - Database Schema
 -- PostgreSQL Schema for Microsoft Money replacement
 
 -- Extensions

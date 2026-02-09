@@ -221,7 +221,7 @@ export class AuthService {
     const secret = otplib.generateSecret();
     const otpauthUrl = otplib.generateURI({
       secret,
-      issuer: "MoneyMate",
+      issuer: "Monize",
       label: user.email || userId,
     });
     const qrCodeDataUrl = await QRCode.toDataURL(otpauthUrl);

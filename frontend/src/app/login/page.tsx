@@ -109,7 +109,7 @@ export default function LoginPage() {
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-md w-full space-y-8 text-center">
           <h2 className="text-3xl font-extrabold text-gray-900 dark:text-gray-100">
-            Sign in to MoneyMate
+            Sign in to Monize
           </h2>
           <p className="text-gray-600 dark:text-gray-400">
             This application uses Single Sign-On for authentication.
@@ -159,7 +159,7 @@ export default function LoginPage() {
       <div className="max-w-md w-full space-y-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-gray-100">
-            Sign in to MoneyMate
+            Sign in to Monize
           </h2>
           {authMethods.local && authMethods.registration && (
             <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">

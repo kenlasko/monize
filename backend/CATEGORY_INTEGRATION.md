@@ -1,10 +1,10 @@
 # Category Integration with Payees and Transactions
 
-This document explains how categories are integrated with payees and transactions in MoneyMate, including automatic category assignment and split transaction support.
+This document explains how categories are integrated with payees and transactions in Monize, including automatic category assignment and split transaction support.
 
 ## Overview
 
-Categories in MoneyMate work on two levels:
+Categories in Monize work on two levels:
 
 1. **Simple Transactions**: Single category per transaction (via `categoryId` field)
 2. **Split Transactions**: Multiple categories per transaction (via `transaction_splits` table)
@@ -280,7 +280,7 @@ CREATE INDEX idx_transactions_category ON transactions(category_id);
 **Important**: Run this migration before using category features:
 
 ```bash
-psql -U postgres -d moneymate -f database/migrations/002_add_category_to_transactions.sql
+psql -U postgres -d monize -f database/migrations/002_add_category_to_transactions.sql
 ```
 
 ### Existing Tables

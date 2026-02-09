@@ -184,7 +184,7 @@ export function AppHeader() {
               onClick={() => router.push('/dashboard')}
               className="text-2xl font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
             >
-              MoneyMate
+              Monize
             </button>
             <nav className="hidden md:ml-8 md:flex md:space-x-4">
               {navLinks.map((link) => (

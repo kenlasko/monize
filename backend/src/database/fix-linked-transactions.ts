@@ -23,13 +23,13 @@ async function fixLinkedTransactions() {
     username:
       process.env.DATABASE_USER ||
       process.env.POSTGRES_USER ||
-      "moneymate_user",
+      "monize_user",
     password:
       process.env.DATABASE_PASSWORD ||
       process.env.POSTGRES_PASSWORD ||
-      "moneymate_password",
+      "monize_password",
     database:
-      process.env.DATABASE_NAME || process.env.POSTGRES_DB || "moneymate",
+      process.env.DATABASE_NAME || process.env.POSTGRES_DB || "monize",
   });
 
   await dataSource.initialize();

@@ -1,5 +1,5 @@
 {
-  "name": "moneymate-e2e",
+  "name": "monize-e2e",
   "private": true,
   "scripts": {
     "test": "playwright test",

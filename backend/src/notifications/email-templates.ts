@@ -1,10 +1,10 @@
 export function testEmailTemplate(firstName: string): string {
   return `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <h2 style="color: #1f2937;">MoneyMate Test Email</h2>
+      <h2 style="color: #1f2937;">Monize Test Email</h2>
       <p style="color: #374151;">Hi ${firstName || "there"},</p>
-      <p style="color: #374151;">This is a test email from MoneyMate. If you received this, your email notifications are working correctly.</p>
-      <p style="color: #6b7280; font-size: 14px; margin-top: 24px;">-- MoneyMate</p>
+      <p style="color: #374151;">This is a test email from Monize. If you received this, your email notifications are working correctly.</p>
+      <p style="color: #6b7280; font-size: 14px; margin-top: 24px;">-- Monize</p>
     </div>
   `;
 }
@@ -50,7 +50,7 @@ export function billReminderTemplate(
       <p style="margin-top: 20px;">
         <a href="${appUrl}/bills" style="display: inline-block; padding: 10px 20px; background: #2563eb; color: #ffffff; border-radius: 6px; text-decoration: none; font-weight: 500;">View Bills &amp; Deposits</a>
       </p>
-      <p style="color: #6b7280; font-size: 14px; margin-top: 24px;">-- MoneyMate</p>
+      <p style="color: #6b7280; font-size: 14px; margin-top: 24px;">-- Monize</p>
     </div>
   `;
 }
@@ -68,7 +68,7 @@ export function passwordResetTemplate(
         <a href="${resetUrl}" style="display: inline-block; padding: 12px 24px; background: #2563eb; color: #ffffff; border-radius: 6px; text-decoration: none; font-weight: 500;">Reset Password</a>
       </p>
       <p style="color: #374151;">This link will expire in 1 hour. If you did not request a password reset, you can safely ignore this email.</p>
-      <p style="color: #6b7280; font-size: 14px; margin-top: 24px;">-- MoneyMate</p>
+      <p style="color: #6b7280; font-size: 14px; margin-top: 24px;">-- Monize</p>
     </div>
   `;
 }

@@ -18,12 +18,12 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: 'MoneyMate - Personal Finance Manager',
+  title: 'Monize - Personal Finance Manager',
   description: 'Track your finances with ease',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'MoneyMate',
+    title: 'Monize',
   },
   icons: {
     icon: [

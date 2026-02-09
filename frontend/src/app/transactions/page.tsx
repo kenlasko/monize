@@ -106,7 +106,7 @@ export default function TransactionsPage() {
   const [editingTransaction, setEditingTransaction] = useState<Transaction | undefined>();
   const [showPayeeForm, setShowPayeeForm] = useState(false);
   const [editingPayee, setEditingPayee] = useState<Payee | undefined>();
-  const [listDensity, setListDensity] = useLocalStorage<DensityLevel>('moneymate-transactions-density', 'normal');
+  const [listDensity, setListDensity] = useLocalStorage<DensityLevel>('monize-transactions-density', 'normal');
 
   // Pagination state - initialize from URL
   const [pagination, setPagination] = useState<PaginationInfo | null>(null);

@@ -1,4 +1,4 @@
-# Quick Start Guide - MoneyMate Frontend
+# Quick Start Guide - Monize Frontend
 
 ## Prerequisites
 
@@ -10,10 +10,10 @@
 
 ### Option 1: Docker (Recommended)
 
-The easiest way to run MoneyMate is via Docker Compose from the project root:
+The easiest way to run Monize is via Docker Compose from the project root:
 
 ```bash
-cd /home/ken/moneymate
+cd /home/ken/monize
 cp .env.example .env  # Configure as needed
 docker compose up -d
 ```
@@ -24,7 +24,7 @@ This starts the frontend, backend, and PostgreSQL database together.
 
 1. Navigate to the frontend directory:
 ```bash
-cd /home/ken/moneymate/frontend
+cd /home/ken/monize/frontend
 ```
 
 2. Install dependencies:

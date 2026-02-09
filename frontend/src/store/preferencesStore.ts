@@ -54,7 +54,7 @@ export const usePreferencesStore = create<PreferencesState>()(
       },
     }),
     {
-      name: 'moneymate-preferences',
+      name: 'monize-preferences',
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({ preferences: state.preferences, isLoaded: state.isLoaded }),
       onRehydrateStorage: () => (state) => {

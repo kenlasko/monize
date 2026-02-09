@@ -336,7 +336,7 @@ export class AuthController {
       try {
         await this.emailService.sendMail(
           result.user.email!,
-          "MoneyMate Password Reset",
+          "Monize Password Reset",
           html,
         );
       } catch (error) {

@@ -51,7 +51,7 @@ export default function InvestmentsPage() {
   const router = useRouter();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [allAccounts, setAllAccounts] = useState<Account[]>([]);
-  const [selectedAccountIds, setSelectedAccountIds] = useLocalStorage<string[]>('moneymate-investments-accounts', []);
+  const [selectedAccountIds, setSelectedAccountIds] = useLocalStorage<string[]>('monize-investments-accounts', []);
   const [portfolioSummary, setPortfolioSummary] = useState<PortfolioSummary | null>(
     null,
   );
@@ -61,7 +61,7 @@ export default function InvestmentsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [showTransactionForm, setShowTransactionForm] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<InvestmentTransaction | undefined>();
-  const [listDensity, setListDensity] = useLocalStorage<DensityLevel>('moneymate-investments-density', 'normal');
+  const [listDensity, setListDensity] = useLocalStorage<DensityLevel>('monize-investments-density', 'normal');
   const [isRefreshingPrices, setIsRefreshingPrices] = useState(false);
   const [lastPriceUpdate, setLastPriceUpdate] = useState<string | null>(null);
   const [refreshResult, setRefreshResult] = useState<{

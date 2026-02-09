@@ -23,7 +23,7 @@ export default function CategoriesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isImporting, setIsImporting] = useState(false);
   const [filterType, setFilterType] = useState<'all' | 'income' | 'expense'>('all');
-  const [listDensity, setListDensity] = useLocalStorage<DensityLevel>('moneymate-categories-density', 'normal');
+  const [listDensity, setListDensity] = useLocalStorage<DensityLevel>('monize-categories-density', 'normal');
   const { showForm, editingItem, openCreate, openEdit, close, isEditing } = useFormModal<Category>();
 
   const loadCategories = async () => {

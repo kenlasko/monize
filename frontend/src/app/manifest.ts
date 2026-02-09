@@ -2,8 +2,8 @@ import type { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'MoneyMate - Personal Finance Manager',
-    short_name: 'MoneyMate',
+    name: 'Monize - Personal Finance Manager',
+    short_name: 'Monize',
     description: 'Track your finances, manage budgets, and monitor investments',
     start_url: '/',
     display: 'standalone',
