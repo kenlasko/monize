@@ -1,4 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import type { Account } from '@/types/account';
+import type { ScheduledTransaction } from '@/types/scheduled-transaction';
 import {
   buildForecast,
   getForecastSummary,
@@ -13,15 +15,15 @@ vi.mock('@/lib/utils', () => ({
   },
 }));
 
-const makeAccount = (overrides: Partial<any> = {}) => ({
+const makeAccount = (overrides: Partial<Account> = {}) => ({
   id: 'acc-1',
   name: 'Checking',
   currentBalance: 1000,
   isClosed: false,
   ...overrides,
-});
+}) as Account;
 
-const makeScheduled = (overrides: Partial<any> = {}) => ({
+const makeScheduled = (overrides: Partial<ScheduledTransaction> = {}) => ({
   id: 'st-1',
   name: 'Rent',
   amount: -1500,
@@ -37,7 +39,7 @@ const makeScheduled = (overrides: Partial<any> = {}) => ({
   nextOverride: null,
   accountId: 'acc-1',
   ...overrides,
-});
+}) as ScheduledTransaction;
 
 describe('FORECAST_PERIOD_DAYS', () => {
   it('has correct day counts', () => {
@@ -129,7 +131,7 @@ describe('buildForecast', () => {
       nextDueDate: '2025-01-20',
       amount: -500,
       frequency: 'ONCE',
-      nextOverride: { amount: -700 },
+      nextOverride: { amount: -700 } as any,
     })];
     const result = buildForecast(accounts, transactions, 'month', 'all');
     const afterTx = result.find(dp => dp.date === '2025-01-20');

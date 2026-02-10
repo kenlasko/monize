@@ -1,0 +1,112 @@
+import { Test, TestingModule } from "@nestjs/testing";
+import { NetWorthController } from "./net-worth.controller";
+import { NetWorthService } from "./net-worth.service";
+
+describe("NetWorthController", () => {
+  let controller: NetWorthController;
+  let mockNetWorthService: Partial<Record<keyof NetWorthService, jest.Mock>>;
+  const mockReq = { user: { id: "user-1" } };
+
+  beforeEach(async () => {
+    mockNetWorthService = {
+      getMonthlyNetWorth: jest.fn(),
+      getMonthlyInvestments: jest.fn(),
+      recalculateAllAccounts: jest.fn(),
+    };
+
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [NetWorthController],
+      providers: [
+        {
+          provide: NetWorthService,
+          useValue: mockNetWorthService,
+        },
+      ],
+    }).compile();
+
+    controller = module.get<NetWorthController>(NetWorthController);
+  });
+
+  describe("getMonthlyNetWorth()", () => {
+    it("delegates to netWorthService.getMonthlyNetWorth with userId and date range", () => {
+      mockNetWorthService.getMonthlyNetWorth!.mockReturnValue("netWorth");
+
+      const result = controller.getMonthlyNetWorth(
+        mockReq,
+        "2024-01-01",
+        "2024-12-31",
+      );
+
+      expect(result).toBe("netWorth");
+      expect(mockNetWorthService.getMonthlyNetWorth).toHaveBeenCalledWith(
+        "user-1",
+        "2024-01-01",
+        "2024-12-31",
+      );
+    });
+
+    it("passes undefined when no dates provided", () => {
+      mockNetWorthService.getMonthlyNetWorth!.mockReturnValue("netWorth");
+
+      controller.getMonthlyNetWorth(mockReq, undefined, undefined);
+
+      expect(mockNetWorthService.getMonthlyNetWorth).toHaveBeenCalledWith(
+        "user-1",
+        undefined,
+        undefined,
+      );
+    });
+  });
+
+  describe("getMonthlyInvestments()", () => {
+    it("delegates to netWorthService.getMonthlyInvestments with userId, dates, and parsed accountIds", () => {
+      mockNetWorthService.getMonthlyInvestments!.mockReturnValue("investments");
+
+      const result = controller.getMonthlyInvestments(
+        mockReq,
+        "2024-01-01",
+        "2024-12-31",
+        "acc-1,acc-2",
+      );
+
+      expect(result).toBe("investments");
+      expect(mockNetWorthService.getMonthlyInvestments).toHaveBeenCalledWith(
+        "user-1",
+        "2024-01-01",
+        "2024-12-31",
+        ["acc-1", "acc-2"],
+      );
+    });
+
+    it("passes undefined accountIds when not provided", () => {
+      mockNetWorthService.getMonthlyInvestments!.mockReturnValue("investments");
+
+      controller.getMonthlyInvestments(
+        mockReq,
+        "2024-01-01",
+        "2024-12-31",
+        undefined,
+      );
+
+      expect(mockNetWorthService.getMonthlyInvestments).toHaveBeenCalledWith(
+        "user-1",
+        "2024-01-01",
+        "2024-12-31",
+        undefined,
+      );
+    });
+  });
+
+  describe("recalculate()", () => {
+    it("delegates to netWorthService.recalculateAllAccounts and returns success", async () => {
+      mockNetWorthService.recalculateAllAccounts!.mockResolvedValue(undefined);
+
+      const result = await controller.recalculate(mockReq);
+
+      expect(result).toEqual({ success: true });
+      expect(
+        mockNetWorthService.recalculateAllAccounts,
+      ).toHaveBeenCalledWith("user-1");
+    });
+  });
+});

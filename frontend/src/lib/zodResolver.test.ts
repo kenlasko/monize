@@ -50,11 +50,11 @@ describe('zodResolver', () => {
   });
 
   it('re-throws non-Zod errors', async () => {
-    const throwingSchema = z.object({}).transform(() => {
+    const throwingSchema = z.object({ name: z.string() }).transform(() => {
       throw new Error('Custom runtime error');
     });
-    const throwingResolver = zodResolver(throwingSchema);
-    await expect(throwingResolver({}, undefined as any, {} as any)).rejects.toThrow(
+    const throwingResolver = zodResolver(throwingSchema as any);
+    await expect(throwingResolver({ name: 'test' }, undefined as any, {} as any)).rejects.toThrow(
       'Custom runtime error',
     );
   });

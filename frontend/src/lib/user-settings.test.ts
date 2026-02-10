@@ -10,10 +10,10 @@ describe('userSettingsApi', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('getProfile fetches /users/me', async () => {
-    vi.mocked(apiClient.get).mockResolvedValue({ data: { id: 'u-1', name: 'Test' } });
+    vi.mocked(apiClient.get).mockResolvedValue({ data: { id: 'u-1', firstName: 'Test' } });
     const result = await userSettingsApi.getProfile();
     expect(apiClient.get).toHaveBeenCalledWith('/users/me');
-    expect(result.name).toBe('Test');
+    expect(result.firstName).toBe('Test');
   });
 
   it('updateProfile patches /users/profile', async () => {

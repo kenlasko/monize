@@ -10,10 +10,10 @@ describe('authApi', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('login posts credentials', async () => {
-    vi.mocked(apiClient.post).mockResolvedValue({ data: { token: 'abc' } });
+    vi.mocked(apiClient.post).mockResolvedValue({ data: { tempToken: 'abc' } });
     const result = await authApi.login({ email: 'a@b.com', password: '123' } as any);
     expect(apiClient.post).toHaveBeenCalledWith('/auth/login', { email: 'a@b.com', password: '123' });
-    expect(result.token).toBe('abc');
+    expect(result.tempToken).toBe('abc');
   });
 
   it('register posts data', async () => {
@@ -67,10 +67,10 @@ describe('authApi', () => {
   });
 
   it('setup2FA posts to /auth/2fa/setup', async () => {
-    vi.mocked(apiClient.post).mockResolvedValue({ data: { qrCode: 'data:image' } });
+    vi.mocked(apiClient.post).mockResolvedValue({ data: { qrCodeDataUrl: 'data:image' } });
     const result = await authApi.setup2FA();
     expect(apiClient.post).toHaveBeenCalledWith('/auth/2fa/setup');
-    expect(result.qrCode).toBeDefined();
+    expect(result.qrCodeDataUrl).toBeDefined();
   });
 
   it('confirmSetup2FA posts code', async () => {
