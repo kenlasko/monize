@@ -151,7 +151,11 @@ describe("InvestmentTransactionsService", () => {
     skip: jest.fn().mockReturnThis(),
     take: jest.fn().mockReturnThis(),
     getOne: jest.fn().mockResolvedValue(result),
-    getMany: jest.fn().mockResolvedValue(Array.isArray(result) ? result : result ? [result] : []),
+    getMany: jest
+      .fn()
+      .mockResolvedValue(
+        Array.isArray(result) ? result : result ? [result] : [],
+      ),
     getCount: jest.fn().mockResolvedValue(count),
   });
 
@@ -159,8 +163,14 @@ describe("InvestmentTransactionsService", () => {
     jest.useFakeTimers();
 
     investmentTransactionsRepository = {
-      create: jest.fn().mockImplementation((data) => ({ ...data, id: transactionId })),
-      save: jest.fn().mockImplementation((data) => Promise.resolve({ ...data, id: data.id || transactionId })),
+      create: jest
+        .fn()
+        .mockImplementation((data) => ({ ...data, id: transactionId })),
+      save: jest
+        .fn()
+        .mockImplementation((data) =>
+          Promise.resolve({ ...data, id: data.id || transactionId }),
+        ),
       findOne: jest.fn(),
       find: jest.fn(),
       update: jest.fn().mockResolvedValue(undefined),
@@ -169,8 +179,14 @@ describe("InvestmentTransactionsService", () => {
     };
 
     transactionRepository = {
-      create: jest.fn().mockImplementation((data) => ({ ...data, id: cashTransactionId })),
-      save: jest.fn().mockImplementation((data) => Promise.resolve({ ...data, id: data.id || cashTransactionId })),
+      create: jest
+        .fn()
+        .mockImplementation((data) => ({ ...data, id: cashTransactionId })),
+      save: jest
+        .fn()
+        .mockImplementation((data) =>
+          Promise.resolve({ ...data, id: data.id || cashTransactionId }),
+        ),
       findOne: jest.fn(),
       remove: jest.fn().mockResolvedValue(undefined),
     };
@@ -263,13 +279,16 @@ describe("InvestmentTransactionsService", () => {
       accountsService.findOne.mockImplementation((uid: string, aid: string) => {
         if (aid === accountId) return Promise.resolve(mockInvestmentAccount);
         if (aid === cashAccountId) return Promise.resolve(mockCashAccount);
-        if (aid === fundingAccountId) return Promise.resolve(mockFundingAccount);
+        if (aid === fundingAccountId)
+          return Promise.resolve(mockFundingAccount);
         return Promise.reject(new NotFoundException("Account not found"));
       });
 
       // findOne after create returns the full transaction
       const findOneQB = createMockQueryBuilder(mockBuyTransaction);
-      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(findOneQB);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        findOneQB,
+      );
     });
 
     it("creates a BUY transaction with correct total amount", async () => {
@@ -344,7 +363,9 @@ describe("InvestmentTransactionsService", () => {
       };
 
       const findOneQB = createMockQueryBuilder(mockSellTransaction);
-      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(findOneQB);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        findOneQB,
+      );
 
       await service.create(userId, sellDto);
 
@@ -377,7 +398,9 @@ describe("InvestmentTransactionsService", () => {
       investmentTransactionsRepository.save.mockResolvedValue(savedTx);
 
       const findOneQB = createMockQueryBuilder(mockSellTransaction);
-      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(findOneQB);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        findOneQB,
+      );
 
       await service.create(userId, sellDto);
 
@@ -411,7 +434,9 @@ describe("InvestmentTransactionsService", () => {
       investmentTransactionsRepository.save.mockResolvedValue(savedTx);
 
       const findOneQB = createMockQueryBuilder(mockSellTransaction);
-      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(findOneQB);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        findOneQB,
+      );
 
       await service.create(userId, sellDto);
 
@@ -433,7 +458,9 @@ describe("InvestmentTransactionsService", () => {
       };
 
       const findOneQB = createMockQueryBuilder(mockDividendTransaction);
-      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(findOneQB);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        findOneQB,
+      );
 
       await service.create(userId, divDto);
 
@@ -463,7 +490,9 @@ describe("InvestmentTransactionsService", () => {
       investmentTransactionsRepository.save.mockResolvedValue(savedTx);
 
       const findOneQB = createMockQueryBuilder(mockDividendTransaction);
-      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(findOneQB);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        findOneQB,
+      );
 
       await service.create(userId, divDto);
 
@@ -500,7 +529,9 @@ describe("InvestmentTransactionsService", () => {
       investmentTransactionsRepository.save.mockResolvedValue(savedTx);
 
       const findOneQB = createMockQueryBuilder(savedTx);
-      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(findOneQB);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        findOneQB,
+      );
 
       await service.create(userId, interestDto);
 
@@ -537,7 +568,9 @@ describe("InvestmentTransactionsService", () => {
       investmentTransactionsRepository.save.mockResolvedValue(savedTx);
 
       const findOneQB = createMockQueryBuilder(savedTx);
-      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(findOneQB);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        findOneQB,
+      );
 
       await service.create(userId, cgDto);
 
@@ -575,7 +608,9 @@ describe("InvestmentTransactionsService", () => {
       investmentTransactionsRepository.save.mockResolvedValue(savedTx);
 
       const findOneQB = createMockQueryBuilder(savedTx);
-      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(findOneQB);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        findOneQB,
+      );
 
       await service.create(userId, reinvestDto);
 
@@ -618,7 +653,9 @@ describe("InvestmentTransactionsService", () => {
       investmentTransactionsRepository.save.mockResolvedValue(savedTx);
 
       const findOneQB = createMockQueryBuilder(savedTx);
-      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(findOneQB);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        findOneQB,
+      );
 
       await service.create(userId, transferInDto);
 
@@ -659,7 +696,9 @@ describe("InvestmentTransactionsService", () => {
       investmentTransactionsRepository.save.mockResolvedValue(savedTx);
 
       const findOneQB = createMockQueryBuilder(savedTx);
-      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(findOneQB);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        findOneQB,
+      );
 
       await service.create(userId, transferOutDto);
 
@@ -699,7 +738,9 @@ describe("InvestmentTransactionsService", () => {
       investmentTransactionsRepository.save.mockResolvedValue(savedTx);
 
       const findOneQB = createMockQueryBuilder(savedTx);
-      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(findOneQB);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        findOneQB,
+      );
 
       await service.create(userId, addSharesDto);
 
@@ -739,7 +780,9 @@ describe("InvestmentTransactionsService", () => {
       investmentTransactionsRepository.save.mockResolvedValue(savedTx);
 
       const findOneQB = createMockQueryBuilder(savedTx);
-      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(findOneQB);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        findOneQB,
+      );
 
       await service.create(userId, removeSharesDto);
 
@@ -900,7 +943,9 @@ describe("InvestmentTransactionsService", () => {
       investmentTransactionsRepository.save.mockResolvedValue(savedTx);
 
       const findOneQB = createMockQueryBuilder(savedTx);
-      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(findOneQB);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        findOneQB,
+      );
 
       // Should not throw
       await expect(service.create(userId, divDto)).resolves.toBeDefined();
@@ -931,7 +976,9 @@ describe("InvestmentTransactionsService", () => {
       investmentTransactionsRepository.save.mockResolvedValue(savedTx);
 
       const findOneQB = createMockQueryBuilder(savedTx);
-      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(findOneQB);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        findOneQB,
+      );
 
       await expect(service.create(userId, interestDto)).resolves.toBeDefined();
     });
@@ -939,7 +986,10 @@ describe("InvestmentTransactionsService", () => {
     it("verifies security ownership when securityId is provided", async () => {
       await service.create(userId, createBuyDto);
 
-      expect(securitiesService.findOne).toHaveBeenCalledWith(userId, securityId);
+      expect(securitiesService.findOne).toHaveBeenCalledWith(
+        userId,
+        securityId,
+      );
     });
 
     it("triggers net worth recalculation after create", async () => {
@@ -983,13 +1033,19 @@ describe("InvestmentTransactionsService", () => {
     beforeEach(() => {
       accountsService.findOne.mockImplementation((uid: string, aid: string) => {
         if (aid === accountId) return Promise.resolve(mockInvestmentAccount);
-        return Promise.resolve({ ...mockInvestmentAccount, id: aid, linkedAccountId: null });
+        return Promise.resolve({
+          ...mockInvestmentAccount,
+          id: aid,
+          linkedAccountId: null,
+        });
       });
     });
 
     it("returns paginated transactions for a user", async () => {
       const mockQB = createMockQueryBuilder(mockTransactions, 2);
-      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(mockQB);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        mockQB,
+      );
 
       const result = await service.findAll(userId);
 
@@ -1005,7 +1061,9 @@ describe("InvestmentTransactionsService", () => {
 
     it("applies accountIds filter including linked accounts", async () => {
       const mockQB = createMockQueryBuilder(mockTransactions, 2);
-      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(mockQB);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        mockQB,
+      );
 
       await service.findAll(userId, [accountId]);
 
@@ -1022,7 +1080,9 @@ describe("InvestmentTransactionsService", () => {
 
     it("applies date range filters", async () => {
       const mockQB = createMockQueryBuilder([], 0);
-      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(mockQB);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        mockQB,
+      );
 
       await service.findAll(userId, undefined, "2025-01-01", "2025-12-31");
 
@@ -1038,9 +1098,19 @@ describe("InvestmentTransactionsService", () => {
 
     it("applies symbol filter", async () => {
       const mockQB = createMockQueryBuilder([], 0);
-      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(mockQB);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        mockQB,
+      );
 
-      await service.findAll(userId, undefined, undefined, undefined, undefined, undefined, "AAPL");
+      await service.findAll(
+        userId,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        "AAPL",
+      );
 
       expect(mockQB.andWhere).toHaveBeenCalledWith(
         "LOWER(security.symbol) = LOWER(:symbol)",
@@ -1050,21 +1120,40 @@ describe("InvestmentTransactionsService", () => {
 
     it("applies action filter", async () => {
       const mockQB = createMockQueryBuilder([], 0);
-      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(mockQB);
-
-      await service.findAll(userId, undefined, undefined, undefined, undefined, undefined, undefined, "BUY");
-
-      expect(mockQB.andWhere).toHaveBeenCalledWith(
-        "it.action = :action",
-        { action: "BUY" },
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        mockQB,
       );
+
+      await service.findAll(
+        userId,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        "BUY",
+      );
+
+      expect(mockQB.andWhere).toHaveBeenCalledWith("it.action = :action", {
+        action: "BUY",
+      });
     });
 
     it("uses custom page and limit values", async () => {
       const mockQB = createMockQueryBuilder([], 100);
-      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(mockQB);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        mockQB,
+      );
 
-      const result = await service.findAll(userId, undefined, undefined, undefined, 3, 25);
+      const result = await service.findAll(
+        userId,
+        undefined,
+        undefined,
+        undefined,
+        3,
+        25,
+      );
 
       expect(mockQB.skip).toHaveBeenCalledWith(50); // (3 - 1) * 25
       expect(mockQB.take).toHaveBeenCalledWith(25);
@@ -1074,7 +1163,9 @@ describe("InvestmentTransactionsService", () => {
 
     it("defaults to page 1 and limit 50 when not provided", async () => {
       const mockQB = createMockQueryBuilder([], 0);
-      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(mockQB);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        mockQB,
+      );
 
       const result = await service.findAll(userId);
 
@@ -1086,9 +1177,18 @@ describe("InvestmentTransactionsService", () => {
 
     it("caps limit at 200", async () => {
       const mockQB = createMockQueryBuilder([], 0);
-      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(mockQB);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        mockQB,
+      );
 
-      const result = await service.findAll(userId, undefined, undefined, undefined, 1, 500);
+      const result = await service.findAll(
+        userId,
+        undefined,
+        undefined,
+        undefined,
+        1,
+        500,
+      );
 
       expect(mockQB.take).toHaveBeenCalledWith(200);
       expect(result.pagination.limit).toBe(200);
@@ -1096,19 +1196,32 @@ describe("InvestmentTransactionsService", () => {
 
     it("calculates hasMore correctly when there are more pages", async () => {
       const mockQB = createMockQueryBuilder([mockBuyTransaction], 100);
-      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(mockQB);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        mockQB,
+      );
 
-      const result = await service.findAll(userId, undefined, undefined, undefined, 1, 10);
+      const result = await service.findAll(
+        userId,
+        undefined,
+        undefined,
+        undefined,
+        1,
+        10,
+      );
 
       expect(result.pagination.hasMore).toBe(true);
       expect(result.pagination.totalPages).toBe(10);
     });
 
     it("handles account not found gracefully when resolving linked accounts", async () => {
-      accountsService.findOne.mockRejectedValue(new NotFoundException("Not found"));
+      accountsService.findOne.mockRejectedValue(
+        new NotFoundException("Not found"),
+      );
 
       const mockQB = createMockQueryBuilder([], 0);
-      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(mockQB);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        mockQB,
+      );
 
       // Should not throw even if account not found during linked account resolution
       const result = await service.findAll(userId, ["nonexistent-id"]);
@@ -1118,7 +1231,9 @@ describe("InvestmentTransactionsService", () => {
 
     it("orders transactions by date descending", async () => {
       const mockQB = createMockQueryBuilder([], 0);
-      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(mockQB);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        mockQB,
+      );
 
       await service.findAll(userId);
 
@@ -1129,18 +1244,26 @@ describe("InvestmentTransactionsService", () => {
   describe("findOne", () => {
     it("returns a transaction when found", async () => {
       const mockQB = createMockQueryBuilder(mockBuyTransaction);
-      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(mockQB);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        mockQB,
+      );
 
       const result = await service.findOne(userId, transactionId);
 
       expect(result).toEqual(mockBuyTransaction);
-      expect(mockQB.where).toHaveBeenCalledWith("it.id = :id", { id: transactionId });
-      expect(mockQB.andWhere).toHaveBeenCalledWith("it.userId = :userId", { userId });
+      expect(mockQB.where).toHaveBeenCalledWith("it.id = :id", {
+        id: transactionId,
+      });
+      expect(mockQB.andWhere).toHaveBeenCalledWith("it.userId = :userId", {
+        userId,
+      });
     });
 
     it("throws NotFoundException when transaction is not found", async () => {
       const mockQB = createMockQueryBuilder(null);
-      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(mockQB);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        mockQB,
+      );
 
       await expect(service.findOne(userId, "nonexistent")).rejects.toThrow(
         NotFoundException,
@@ -1152,13 +1275,24 @@ describe("InvestmentTransactionsService", () => {
 
     it("joins account, security, and fundingAccount relations", async () => {
       const mockQB = createMockQueryBuilder(mockBuyTransaction);
-      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(mockQB);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        mockQB,
+      );
 
       await service.findOne(userId, transactionId);
 
-      expect(mockQB.leftJoinAndSelect).toHaveBeenCalledWith("it.account", "account");
-      expect(mockQB.leftJoinAndSelect).toHaveBeenCalledWith("it.security", "security");
-      expect(mockQB.leftJoinAndSelect).toHaveBeenCalledWith("it.fundingAccount", "fundingAccount");
+      expect(mockQB.leftJoinAndSelect).toHaveBeenCalledWith(
+        "it.account",
+        "account",
+      );
+      expect(mockQB.leftJoinAndSelect).toHaveBeenCalledWith(
+        "it.security",
+        "security",
+      );
+      expect(mockQB.leftJoinAndSelect).toHaveBeenCalledWith(
+        "it.fundingAccount",
+        "fundingAccount",
+      );
     });
   });
 
@@ -1167,7 +1301,8 @@ describe("InvestmentTransactionsService", () => {
       accountsService.findOne.mockImplementation((uid: string, aid: string) => {
         if (aid === accountId) return Promise.resolve(mockInvestmentAccount);
         if (aid === cashAccountId) return Promise.resolve(mockCashAccount);
-        if (aid === fundingAccountId) return Promise.resolve(mockFundingAccount);
+        if (aid === fundingAccountId)
+          return Promise.resolve(mockFundingAccount);
         return Promise.reject(new NotFoundException("Account not found"));
       });
 
@@ -1175,18 +1310,23 @@ describe("InvestmentTransactionsService", () => {
       // Subsequent calls: findOne after save
       const existingTx = { ...mockBuyTransaction };
       const findOneQB = createMockQueryBuilder(existingTx);
-      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(findOneQB);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        findOneQB,
+      );
     });
 
     it("updates transaction fields and re-applies effects", async () => {
       // findOne returns existing BUY transaction
       const existingTx = { ...mockBuyTransaction };
       const firstFindQB = createMockQueryBuilder(existingTx);
-      const secondFindQB = createMockQueryBuilder({ ...existingTx, quantity: 20 });
+      const secondFindQB = createMockQueryBuilder({
+        ...existingTx,
+        quantity: 20,
+      });
 
       investmentTransactionsRepository.createQueryBuilder
-        .mockReturnValueOnce(firstFindQB)   // findOne in update
-        .mockReturnValueOnce(secondFindQB);  // findOne at the end
+        .mockReturnValueOnce(firstFindQB) // findOne in update
+        .mockReturnValueOnce(secondFindQB); // findOne at the end
 
       transactionRepository.findOne.mockResolvedValue({
         id: cashTransactionId,
@@ -1219,7 +1359,11 @@ describe("InvestmentTransactionsService", () => {
     it("recalculates totalAmount when quantity changes", async () => {
       const existingTx = { ...mockBuyTransaction };
       const firstFindQB = createMockQueryBuilder(existingTx);
-      const secondFindQB = createMockQueryBuilder({ ...existingTx, quantity: 20, totalAmount: 3009.99 });
+      const secondFindQB = createMockQueryBuilder({
+        ...existingTx,
+        quantity: 20,
+        totalAmount: 3009.99,
+      });
 
       investmentTransactionsRepository.createQueryBuilder
         .mockReturnValueOnce(firstFindQB)
@@ -1246,7 +1390,11 @@ describe("InvestmentTransactionsService", () => {
     it("recalculates totalAmount when price changes", async () => {
       const existingTx = { ...mockBuyTransaction };
       const firstFindQB = createMockQueryBuilder(existingTx);
-      const secondFindQB = createMockQueryBuilder({ ...existingTx, price: 200, totalAmount: 2009.99 });
+      const secondFindQB = createMockQueryBuilder({
+        ...existingTx,
+        price: 200,
+        totalAmount: 2009.99,
+      });
 
       investmentTransactionsRepository.createQueryBuilder
         .mockReturnValueOnce(firstFindQB)
@@ -1272,7 +1420,11 @@ describe("InvestmentTransactionsService", () => {
     it("recalculates totalAmount when commission changes", async () => {
       const existingTx = { ...mockBuyTransaction };
       const firstFindQB = createMockQueryBuilder(existingTx);
-      const secondFindQB = createMockQueryBuilder({ ...existingTx, commission: 0, totalAmount: 1500 });
+      const secondFindQB = createMockQueryBuilder({
+        ...existingTx,
+        commission: 0,
+        totalAmount: 1500,
+      });
 
       investmentTransactionsRepository.createQueryBuilder
         .mockReturnValueOnce(firstFindQB)
@@ -1298,7 +1450,10 @@ describe("InvestmentTransactionsService", () => {
     it("does not recalculate totalAmount when only description changes", async () => {
       const existingTx = { ...mockBuyTransaction };
       const firstFindQB = createMockQueryBuilder(existingTx);
-      const secondFindQB = createMockQueryBuilder({ ...existingTx, description: "Updated description" });
+      const secondFindQB = createMockQueryBuilder({
+        ...existingTx,
+        description: "Updated description",
+      });
 
       investmentTransactionsRepository.createQueryBuilder
         .mockReturnValueOnce(firstFindQB)
@@ -1311,7 +1466,9 @@ describe("InvestmentTransactionsService", () => {
         amount: -1509.99,
       });
 
-      await service.update(userId, transactionId, { description: "Updated description" });
+      await service.update(userId, transactionId, {
+        description: "Updated description",
+      });
 
       // totalAmount should remain unchanged (1509.99)
       expect(investmentTransactionsRepository.save).toHaveBeenCalledWith(
@@ -1352,7 +1509,10 @@ describe("InvestmentTransactionsService", () => {
     });
 
     it("deletes old cash transaction and reverses balance during reversal", async () => {
-      const existingTx = { ...mockBuyTransaction, transactionId: cashTransactionId };
+      const existingTx = {
+        ...mockBuyTransaction,
+        transactionId: cashTransactionId,
+      };
       const firstFindQB = createMockQueryBuilder(existingTx);
       const secondFindQB = createMockQueryBuilder(existingTx);
 
@@ -1406,7 +1566,9 @@ describe("InvestmentTransactionsService", () => {
 
     it("throws NotFoundException when transaction does not exist", async () => {
       const mockQB = createMockQueryBuilder(null);
-      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(mockQB);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        mockQB,
+      );
 
       await expect(
         service.update(userId, "nonexistent", { description: "Test" }),
@@ -1416,7 +1578,10 @@ describe("InvestmentTransactionsService", () => {
     it("clears fundingAccountId when set to empty string", async () => {
       const existingTx = { ...mockBuyTransaction, fundingAccountId };
       const firstFindQB = createMockQueryBuilder(existingTx);
-      const secondFindQB = createMockQueryBuilder({ ...existingTx, fundingAccountId: null });
+      const secondFindQB = createMockQueryBuilder({
+        ...existingTx,
+        fundingAccountId: null,
+      });
 
       investmentTransactionsRepository.createQueryBuilder
         .mockReturnValueOnce(firstFindQB)
@@ -1446,7 +1611,9 @@ describe("InvestmentTransactionsService", () => {
     it("reverses effects and deletes the transaction", async () => {
       const tx = { ...mockBuyTransaction, transactionId: cashTransactionId };
       const mockQB = createMockQueryBuilder(tx);
-      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(mockQB);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        mockQB,
+      );
 
       transactionRepository.findOne.mockResolvedValue({
         id: cashTransactionId,
@@ -1480,7 +1647,9 @@ describe("InvestmentTransactionsService", () => {
     it("reverses SELL transaction by adding shares back", async () => {
       const tx = { ...mockSellTransaction, transactionId: "cash-tx-2" };
       const mockQB = createMockQueryBuilder(tx);
-      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(mockQB);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        mockQB,
+      );
 
       transactionRepository.findOne.mockResolvedValue({
         id: "cash-tx-2",
@@ -1511,7 +1680,9 @@ describe("InvestmentTransactionsService", () => {
         price: 150,
       };
       const mockQB = createMockQueryBuilder(reinvestTx);
-      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(mockQB);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        mockQB,
+      );
 
       await service.remove(userId, reinvestTx.id);
 
@@ -1534,7 +1705,9 @@ describe("InvestmentTransactionsService", () => {
         price: 100,
       };
       const mockQB = createMockQueryBuilder(transferInTx);
-      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(mockQB);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        mockQB,
+      );
 
       await service.remove(userId, transferInTx.id);
 
@@ -1557,7 +1730,9 @@ describe("InvestmentTransactionsService", () => {
         price: 100,
       };
       const mockQB = createMockQueryBuilder(transferOutTx);
-      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(mockQB);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        mockQB,
+      );
 
       await service.remove(userId, transferOutTx.id);
 
@@ -1580,7 +1755,9 @@ describe("InvestmentTransactionsService", () => {
         price: 0,
       };
       const mockQB = createMockQueryBuilder(addSharesTx);
-      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(mockQB);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        mockQB,
+      );
 
       await service.remove(userId, addSharesTx.id);
 
@@ -1602,7 +1779,9 @@ describe("InvestmentTransactionsService", () => {
         price: 0,
       };
       const mockQB = createMockQueryBuilder(removeSharesTx);
-      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(mockQB);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        mockQB,
+      );
 
       await service.remove(userId, removeSharesTx.id);
 
@@ -1617,7 +1796,9 @@ describe("InvestmentTransactionsService", () => {
     it("skips cash transaction deletion when no transactionId is linked", async () => {
       const tx = { ...mockBuyTransaction, transactionId: null };
       const mockQB = createMockQueryBuilder(tx);
-      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(mockQB);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        mockQB,
+      );
 
       await service.remove(userId, transactionId);
 
@@ -1629,20 +1810,26 @@ describe("InvestmentTransactionsService", () => {
     it("handles missing cash transaction gracefully during reversal", async () => {
       const tx = { ...mockBuyTransaction, transactionId: cashTransactionId };
       const mockQB = createMockQueryBuilder(tx);
-      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(mockQB);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        mockQB,
+      );
 
       // Cash transaction not found in DB
       transactionRepository.findOne.mockResolvedValue(null);
 
       // Should not throw
-      await expect(service.remove(userId, transactionId)).resolves.toBeUndefined();
+      await expect(
+        service.remove(userId, transactionId),
+      ).resolves.toBeUndefined();
       expect(transactionRepository.remove).not.toHaveBeenCalled();
     });
 
     it("triggers net worth recalculation after remove", async () => {
       const tx = { ...mockBuyTransaction, transactionId: null };
       const mockQB = createMockQueryBuilder(tx);
-      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(mockQB);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        mockQB,
+      );
 
       await service.remove(userId, transactionId);
 
@@ -1656,7 +1843,9 @@ describe("InvestmentTransactionsService", () => {
 
     it("throws NotFoundException when transaction does not exist", async () => {
       const mockQB = createMockQueryBuilder(null);
-      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(mockQB);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        mockQB,
+      );
 
       await expect(service.remove(userId, "nonexistent")).rejects.toThrow(
         NotFoundException,
@@ -1667,9 +1856,24 @@ describe("InvestmentTransactionsService", () => {
   describe("getSummary", () => {
     it("returns correct summary statistics", async () => {
       const transactions = [
-        { ...mockBuyTransaction, action: InvestmentAction.BUY, totalAmount: 1500, commission: 9.99 },
-        { ...mockSellTransaction, action: InvestmentAction.SELL, totalAmount: 800, commission: 9.99 },
-        { ...mockDividendTransaction, action: InvestmentAction.DIVIDEND, totalAmount: 25, commission: 0 },
+        {
+          ...mockBuyTransaction,
+          action: InvestmentAction.BUY,
+          totalAmount: 1500,
+          commission: 9.99,
+        },
+        {
+          ...mockSellTransaction,
+          action: InvestmentAction.SELL,
+          totalAmount: 800,
+          commission: 9.99,
+        },
+        {
+          ...mockDividendTransaction,
+          action: InvestmentAction.DIVIDEND,
+          totalAmount: 25,
+          commission: 0,
+        },
         {
           id: "inv-tx-4",
           userId,
@@ -1687,7 +1891,9 @@ describe("InvestmentTransactionsService", () => {
       ];
 
       const mockQB = createMockQueryBuilder(transactions, transactions.length);
-      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(mockQB);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        mockQB,
+      );
 
       const result = await service.getSummary(userId);
 
@@ -1704,7 +1910,9 @@ describe("InvestmentTransactionsService", () => {
 
     it("returns zero values when no transactions exist", async () => {
       const mockQB = createMockQueryBuilder([], 0);
-      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(mockQB);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        mockQB,
+      );
 
       const result = await service.getSummary(userId);
 
@@ -1721,12 +1929,16 @@ describe("InvestmentTransactionsService", () => {
 
     it("passes accountIds to findAll", async () => {
       const mockQB = createMockQueryBuilder([], 0);
-      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(mockQB);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        mockQB,
+      );
 
       await service.getSummary(userId, [accountId]);
 
       // Should call findAll with accountIds and a large limit
-      expect(investmentTransactionsRepository.createQueryBuilder).toHaveBeenCalled();
+      expect(
+        investmentTransactionsRepository.createQueryBuilder,
+      ).toHaveBeenCalled();
     });
   });
 
@@ -1740,9 +1952,13 @@ describe("InvestmentTransactionsService", () => {
       expect(investmentTransactionsRepository.find).toHaveBeenCalledWith({
         where: { userId },
       });
-      expect(investmentTransactionsRepository.remove).toHaveBeenCalledWith(transactions);
+      expect(investmentTransactionsRepository.remove).toHaveBeenCalledWith(
+        transactions,
+      );
       expect(holdingsService.removeAllForUser).toHaveBeenCalledWith(userId);
-      expect(accountsService.resetBrokerageBalances).toHaveBeenCalledWith(userId);
+      expect(accountsService.resetBrokerageBalances).toHaveBeenCalledWith(
+        userId,
+      );
       expect(result).toEqual({
         transactionsDeleted: 2,
         holdingsDeleted: 5,
@@ -1765,7 +1981,9 @@ describe("InvestmentTransactionsService", () => {
       await service.removeAll(userId);
 
       expect(holdingsService.removeAllForUser).toHaveBeenCalledWith(userId);
-      expect(accountsService.resetBrokerageBalances).toHaveBeenCalledWith(userId);
+      expect(accountsService.resetBrokerageBalances).toHaveBeenCalledWith(
+        userId,
+      );
     });
   });
 
@@ -1784,7 +2002,9 @@ describe("InvestmentTransactionsService", () => {
       investmentTransactionsRepository.save.mockResolvedValue(savedTx);
 
       const findOneQB = createMockQueryBuilder(savedTx);
-      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(findOneQB);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        findOneQB,
+      );
 
       const createDto = {
         accountId,
@@ -1816,7 +2036,9 @@ describe("InvestmentTransactionsService", () => {
       investmentTransactionsRepository.save.mockResolvedValue(savedTx);
 
       const findOneQB = createMockQueryBuilder(savedTx);
-      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(findOneQB);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        findOneQB,
+      );
 
       const createDto = {
         accountId,
@@ -1844,7 +2066,9 @@ describe("InvestmentTransactionsService", () => {
       });
 
       const findOneQB = createMockQueryBuilder(mockBuyTransaction);
-      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(findOneQB);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        findOneQB,
+      );
     });
 
     it("BUY: totalAmount = (qty * price) + commission", async () => {
@@ -1967,7 +2191,9 @@ describe("InvestmentTransactionsService", () => {
   describe("findCashAccount (via create)", () => {
     beforeEach(() => {
       const findOneQB = createMockQueryBuilder(mockBuyTransaction);
-      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(findOneQB);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        findOneQB,
+      );
     });
 
     it("returns linked cash account for brokerage account with linkedAccountId", async () => {
@@ -2002,7 +2228,8 @@ describe("InvestmentTransactionsService", () => {
       };
 
       accountsService.findOne.mockImplementation((uid: string, aid: string) => {
-        if (aid === accountId) return Promise.resolve(standaloneInvestmentAccount);
+        if (aid === accountId)
+          return Promise.resolve(standaloneInvestmentAccount);
         return Promise.reject(new NotFoundException("Account not found"));
       });
 
@@ -2067,12 +2294,14 @@ describe("InvestmentTransactionsService", () => {
         securityId,
         quantity: 10,
         price: 150.25,
-        totalAmount: 1502.50,
+        totalAmount: 1502.5,
       };
       investmentTransactionsRepository.save.mockResolvedValue(savedTx);
 
       const findOneQB = createMockQueryBuilder(savedTx);
-      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(findOneQB);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        findOneQB,
+      );
 
       await service.create(userId, {
         accountId,
@@ -2106,7 +2335,9 @@ describe("InvestmentTransactionsService", () => {
       investmentTransactionsRepository.save.mockResolvedValue(savedTx);
 
       const findOneQB = createMockQueryBuilder(savedTx);
-      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(findOneQB);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        findOneQB,
+      );
 
       await service.create(userId, {
         accountId,
@@ -2146,7 +2377,9 @@ describe("InvestmentTransactionsService", () => {
       investmentTransactionsRepository.save.mockResolvedValue(savedTx);
 
       const findOneQB = createMockQueryBuilder(savedTx);
-      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(findOneQB);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        findOneQB,
+      );
 
       await service.create(userId, {
         accountId,
@@ -2180,7 +2413,9 @@ describe("InvestmentTransactionsService", () => {
       investmentTransactionsRepository.save.mockResolvedValue(savedTx);
 
       const findOneQB = createMockQueryBuilder(savedTx);
-      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(findOneQB);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        findOneQB,
+      );
 
       await service.create(userId, {
         accountId,
@@ -2216,7 +2451,9 @@ describe("InvestmentTransactionsService", () => {
       investmentTransactionsRepository.save.mockResolvedValue(savedTx);
 
       const findOneQB = createMockQueryBuilder(savedTx);
-      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(findOneQB);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        findOneQB,
+      );
 
       await service.create(userId, {
         accountId,
@@ -2243,7 +2480,9 @@ describe("InvestmentTransactionsService", () => {
       });
 
       const findOneQB = createMockQueryBuilder(mockBuyTransaction);
-      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(findOneQB);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        findOneQB,
+      );
     });
 
     it("sets status to CLEARED for cash transactions", async () => {

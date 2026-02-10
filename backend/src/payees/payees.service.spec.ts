@@ -58,7 +58,9 @@ describe("PayeesService", () => {
       findOne: jest.fn(),
       find: jest.fn(),
       save: jest.fn().mockImplementation((data) => data),
-      create: jest.fn().mockImplementation((data) => ({ ...data, id: "new-payee" })),
+      create: jest
+        .fn()
+        .mockImplementation((data) => ({ ...data, id: "new-payee" })),
       remove: jest.fn(),
       count: jest.fn(),
       update: jest.fn(),
@@ -489,9 +491,7 @@ describe("PayeesService", () => {
 
   describe("getSummary", () => {
     it("should return counts of total, with category, and without category", async () => {
-      payeesRepository.count
-        .mockResolvedValueOnce(10)
-        .mockResolvedValueOnce(6);
+      payeesRepository.count.mockResolvedValueOnce(10).mockResolvedValueOnce(6);
 
       const result = await service.getSummary(userId);
 
@@ -503,9 +503,7 @@ describe("PayeesService", () => {
     });
 
     it("should return all zeros when no payees exist", async () => {
-      payeesRepository.count
-        .mockResolvedValueOnce(0)
-        .mockResolvedValueOnce(0);
+      payeesRepository.count.mockResolvedValueOnce(0).mockResolvedValueOnce(0);
 
       const result = await service.getSummary(userId);
 
@@ -517,9 +515,7 @@ describe("PayeesService", () => {
     });
 
     it("should handle all payees having categories", async () => {
-      payeesRepository.count
-        .mockResolvedValueOnce(5)
-        .mockResolvedValueOnce(5);
+      payeesRepository.count.mockResolvedValueOnce(5).mockResolvedValueOnce(5);
 
       const result = await service.getSummary(userId);
 
@@ -586,9 +582,9 @@ describe("PayeesService", () => {
       // Query 2: total counts per payee
       const qb2 = {
         ...queryBuilderMock,
-        getRawMany: jest.fn().mockResolvedValue([
-          { payee_id: "payee-2", total_count: "10" },
-        ]),
+        getRawMany: jest
+          .fn()
+          .mockResolvedValue([{ payee_id: "payee-2", total_count: "10" }]),
       };
 
       payeesRepository.createQueryBuilder
@@ -668,9 +664,9 @@ describe("PayeesService", () => {
 
       const qb2 = {
         ...queryBuilderMock,
-        getRawMany: jest.fn().mockResolvedValue([
-          { payee_id: "payee-2", total_count: "10" },
-        ]),
+        getRawMany: jest
+          .fn()
+          .mockResolvedValue([{ payee_id: "payee-2", total_count: "10" }]),
       };
 
       payeesRepository.createQueryBuilder
@@ -701,19 +697,28 @@ describe("PayeesService", () => {
 
       const qb2 = {
         ...queryBuilderMock,
-        getRawMany: jest.fn().mockResolvedValue([
-          { payee_id: "payee-1", total_count: "10" },
-        ]),
+        getRawMany: jest
+          .fn()
+          .mockResolvedValue([{ payee_id: "payee-1", total_count: "10" }]),
       };
 
       payeesRepository.createQueryBuilder
         .mockReturnValueOnce(qb1)
         .mockReturnValueOnce(qb2);
       payeesRepository.find.mockResolvedValue([
-        { ...mockPayee, defaultCategoryId: "cat-1", defaultCategory: { id: "cat-1", name: "Food & Drink" } },
+        {
+          ...mockPayee,
+          defaultCategoryId: "cat-1",
+          defaultCategory: { id: "cat-1", name: "Food & Drink" },
+        },
       ]);
 
-      const result = await service.calculateCategorySuggestions(userId, 5, 50, false);
+      const result = await service.calculateCategorySuggestions(
+        userId,
+        5,
+        50,
+        false,
+      );
 
       expect(result).toHaveLength(0);
     });
@@ -735,19 +740,28 @@ describe("PayeesService", () => {
 
       const qb2 = {
         ...queryBuilderMock,
-        getRawMany: jest.fn().mockResolvedValue([
-          { payee_id: "payee-1", total_count: "15" },
-        ]),
+        getRawMany: jest
+          .fn()
+          .mockResolvedValue([{ payee_id: "payee-1", total_count: "15" }]),
       };
 
       payeesRepository.createQueryBuilder
         .mockReturnValueOnce(qb1)
         .mockReturnValueOnce(qb2);
       payeesRepository.find.mockResolvedValue([
-        { ...mockPayee, defaultCategoryId: "cat-1", defaultCategory: { id: "cat-1", name: "Food & Drink" } },
+        {
+          ...mockPayee,
+          defaultCategoryId: "cat-1",
+          defaultCategory: { id: "cat-1", name: "Food & Drink" },
+        },
       ]);
 
-      const result = await service.calculateCategorySuggestions(userId, 5, 50, false);
+      const result = await service.calculateCategorySuggestions(
+        userId,
+        5,
+        50,
+        false,
+      );
 
       expect(result).toHaveLength(1);
       expect(result[0].currentCategoryId).toBe("cat-1");
@@ -858,7 +872,10 @@ describe("PayeesService", () => {
         { payeeId: "payee-1", categoryId: "cat-coffee" },
       ];
 
-      const result = await service.applyCategorySuggestions(userId, assignments);
+      const result = await service.applyCategorySuggestions(
+        userId,
+        assignments,
+      );
 
       expect(result).toEqual({ updated: 2 });
       expect(payeesRepository.save).toHaveBeenCalledTimes(2);
@@ -874,7 +891,10 @@ describe("PayeesService", () => {
         { payeeId: "payee-1", categoryId: "cat-2" },
       ];
 
-      const result = await service.applyCategorySuggestions(userId, assignments);
+      const result = await service.applyCategorySuggestions(
+        userId,
+        assignments,
+      );
 
       expect(result).toEqual({ updated: 1 });
       expect(payeesRepository.save).toHaveBeenCalledTimes(1);

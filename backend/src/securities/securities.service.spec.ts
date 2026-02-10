@@ -25,7 +25,9 @@ describe("SecuritiesService", () => {
     securitiesRepository = {
       findOne: jest.fn(),
       find: jest.fn(),
-      create: jest.fn().mockImplementation((data) => ({ ...data, id: "new-sec" })),
+      create: jest
+        .fn()
+        .mockImplementation((data) => ({ ...data, id: "new-sec" })),
       save: jest.fn().mockImplementation((data) => data),
       createQueryBuilder: jest.fn(() => ({
         where: jest.fn().mockReturnThis(),
@@ -117,9 +119,9 @@ describe("SecuritiesService", () => {
     it("throws NotFoundException when not found", async () => {
       securitiesRepository.findOne.mockResolvedValue(null);
 
-      await expect(
-        service.findOne("user-1", "nonexistent"),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.findOne("user-1", "nonexistent")).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -138,9 +140,9 @@ describe("SecuritiesService", () => {
     it("throws NotFoundException when not found", async () => {
       securitiesRepository.findOne.mockResolvedValue(null);
 
-      await expect(
-        service.findBySymbol("user-1", "FAKE"),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.findBySymbol("user-1", "FAKE")).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 

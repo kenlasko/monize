@@ -116,9 +116,7 @@ describe("Email Templates", () => {
         "https://monize.app/reset?token=abc123",
       );
 
-      expect(html).toContain(
-        'href="https://monize.app/reset?token=abc123"',
-      );
+      expect(html).toContain('href="https://monize.app/reset?token=abc123"');
     });
 
     it("includes the name in the greeting", () => {

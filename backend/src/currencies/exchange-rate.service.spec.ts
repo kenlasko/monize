@@ -38,7 +38,9 @@ describe("ExchangeRateService", () => {
     createdAt: new Date("2025-01-01"),
   };
 
-  const createMockQueryBuilder = (overrides: Record<string, jest.Mock> = {}) => ({
+  const createMockQueryBuilder = (
+    overrides: Record<string, jest.Mock> = {},
+  ) => ({
     distinctOn: jest.fn().mockReturnThis(),
     where: jest.fn().mockReturnThis(),
     andWhere: jest.fn().mockReturnThis(),
@@ -53,7 +55,9 @@ describe("ExchangeRateService", () => {
       findOne: jest.fn(),
       find: jest.fn(),
       create: jest.fn().mockImplementation((data) => ({ ...data, id: 1 })),
-      save: jest.fn().mockImplementation((data) => ({ ...data, id: data.id || 1 })),
+      save: jest
+        .fn()
+        .mockImplementation((data) => ({ ...data, id: data.id || 1 })),
       createQueryBuilder: jest.fn(() => createMockQueryBuilder()),
     };
 
@@ -74,10 +78,16 @@ describe("ExchangeRateService", () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ExchangeRateService,
-        { provide: getRepositoryToken(ExchangeRate), useValue: exchangeRateRepository },
+        {
+          provide: getRepositoryToken(ExchangeRate),
+          useValue: exchangeRateRepository,
+        },
         { provide: getRepositoryToken(Currency), useValue: currencyRepository },
         { provide: getRepositoryToken(Account), useValue: accountRepository },
-        { provide: getRepositoryToken(UserPreference), useValue: userPreferenceRepository },
+        {
+          provide: getRepositoryToken(UserPreference),
+          useValue: userPreferenceRepository,
+        },
         { provide: DataSource, useValue: dataSource },
       ],
     }).compile();
@@ -192,7 +202,10 @@ describe("ExchangeRateService", () => {
 
       // saveRate: no existing rate found, then save
       exchangeRateRepository.findOne.mockResolvedValue(null);
-      exchangeRateRepository.save.mockImplementation((data) => ({ ...data, id: 1 }));
+      exchangeRateRepository.save.mockImplementation((data) => ({
+        ...data,
+        id: 1,
+      }));
 
       const result = await service.refreshAllRates();
 
@@ -205,10 +218,7 @@ describe("ExchangeRateService", () => {
     });
 
     it("handles failed Yahoo API calls gracefully", async () => {
-      dataSource.query.mockResolvedValue([
-        { code: "USD" },
-        { code: "CAD" },
-      ]);
+      dataSource.query.mockResolvedValue([{ code: "USD" }, { code: "CAD" }]);
 
       global.fetch = jest.fn().mockResolvedValue({
         ok: false,
@@ -225,10 +235,7 @@ describe("ExchangeRateService", () => {
     });
 
     it("handles fetch network errors gracefully", async () => {
-      dataSource.query.mockResolvedValue([
-        { code: "USD" },
-        { code: "CAD" },
-      ]);
+      dataSource.query.mockResolvedValue([{ code: "USD" }, { code: "CAD" }]);
 
       global.fetch = jest.fn().mockRejectedValue(new Error("Network error"));
 
@@ -240,10 +247,7 @@ describe("ExchangeRateService", () => {
     });
 
     it("handles missing rate data in Yahoo response", async () => {
-      dataSource.query.mockResolvedValue([
-        { code: "USD" },
-        { code: "CAD" },
-      ]);
+      dataSource.query.mockResolvedValue([{ code: "USD" }, { code: "CAD" }]);
 
       global.fetch = jest.fn().mockResolvedValue({
         ok: true,
@@ -259,16 +263,13 @@ describe("ExchangeRateService", () => {
     });
 
     it("updates existing rate when one already exists for the date", async () => {
-      dataSource.query.mockResolvedValue([
-        { code: "USD" },
-        { code: "CAD" },
-      ]);
+      dataSource.query.mockResolvedValue([{ code: "USD" }, { code: "CAD" }]);
 
       global.fetch = jest.fn().mockResolvedValue({
         ok: true,
         json: jest.fn().mockResolvedValue({
           chart: {
-            result: [{ meta: { regularMarketPrice: 1.40 } }],
+            result: [{ meta: { regularMarketPrice: 1.4 } }],
           },
         }),
       });
@@ -282,15 +283,12 @@ describe("ExchangeRateService", () => {
       expect(result.updated).toBe(1);
       // Save should be called with updated rate value
       expect(exchangeRateRepository.save).toHaveBeenCalledWith(
-        expect.objectContaining({ rate: 1.40, source: "yahoo_finance" }),
+        expect.objectContaining({ rate: 1.4, source: "yahoo_finance" }),
       );
     });
 
     it("handles saveRate failure gracefully", async () => {
-      dataSource.query.mockResolvedValue([
-        { code: "USD" },
-        { code: "CAD" },
-      ]);
+      dataSource.query.mockResolvedValue([{ code: "USD" }, { code: "CAD" }]);
 
       global.fetch = jest.fn().mockResolvedValue({
         ok: true,
@@ -302,7 +300,9 @@ describe("ExchangeRateService", () => {
       });
 
       exchangeRateRepository.findOne.mockResolvedValue(null);
-      exchangeRateRepository.save.mockRejectedValue(new Error("DB write failed"));
+      exchangeRateRepository.save.mockRejectedValue(
+        new Error("DB write failed"),
+      );
 
       const result = await service.refreshAllRates();
 
@@ -330,7 +330,10 @@ describe("ExchangeRateService", () => {
       });
 
       exchangeRateRepository.findOne.mockResolvedValue(null);
-      exchangeRateRepository.save.mockImplementation((data) => ({ ...data, id: 1 }));
+      exchangeRateRepository.save.mockImplementation((data) => ({
+        ...data,
+        id: 1,
+      }));
 
       const result = await service.refreshAllRates();
 
@@ -364,7 +367,9 @@ describe("ExchangeRateService", () => {
     it("defaults to USD when user has no preference", async () => {
       userPreferenceRepository.findOne.mockResolvedValue(null);
       dataSource.query
-        .mockResolvedValueOnce([{ currency_code: "EUR", earliest: "2025-01-01" }]) // accountCurrencyRows
+        .mockResolvedValueOnce([
+          { currency_code: "EUR", earliest: "2025-01-01" },
+        ]) // accountCurrencyRows
         .mockResolvedValueOnce([]) // securityCurrencyRows
         .mockResolvedValueOnce([{ count: 5 }]); // existingRates check (already exists, skip)
 
@@ -412,7 +417,9 @@ describe("ExchangeRateService", () => {
         defaultCurrency: "USD",
       });
       dataSource.query
-        .mockResolvedValueOnce([{ currency_code: "CAD", earliest: "2025-01-01" }])
+        .mockResolvedValueOnce([
+          { currency_code: "CAD", earliest: "2025-01-01" },
+        ])
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([{ count: 100 }]); // existing rates count > 0
 
@@ -434,7 +441,9 @@ describe("ExchangeRateService", () => {
       const ts2 = new Date("2025-06-02").getTime() / 1000;
 
       dataSource.query
-        .mockResolvedValueOnce([{ currency_code: "CAD", earliest: "2025-06-01" }])
+        .mockResolvedValueOnce([
+          { currency_code: "CAD", earliest: "2025-06-01" },
+        ])
         .mockResolvedValueOnce([]) // securityCurrencyRows
         .mockResolvedValueOnce([{ count: 0 }]) // no existing rates
         .mockResolvedValueOnce(undefined); // bulk upsert INSERT
@@ -447,7 +456,7 @@ describe("ExchangeRateService", () => {
               {
                 timestamp: [ts1, ts2],
                 indicators: {
-                  quote: [{ close: [1.365, 1.370] }],
+                  quote: [{ close: [1.365, 1.37] }],
                 },
               },
             ],
@@ -476,7 +485,9 @@ describe("ExchangeRateService", () => {
       const ts3 = new Date("2025-06-20").getTime() / 1000; // after cutoff
 
       dataSource.query
-        .mockResolvedValueOnce([{ currency_code: "EUR", earliest: "2025-06-15" }])
+        .mockResolvedValueOnce([
+          { currency_code: "EUR", earliest: "2025-06-15" },
+        ])
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([{ count: 0 }])
         .mockResolvedValueOnce(undefined); // bulk upsert
@@ -516,7 +527,9 @@ describe("ExchangeRateService", () => {
       const ts3 = new Date("2025-07-02T10:00:00Z").getTime() / 1000;
 
       dataSource.query
-        .mockResolvedValueOnce([{ currency_code: "GBP", earliest: "2025-07-01" }])
+        .mockResolvedValueOnce([
+          { currency_code: "GBP", earliest: "2025-07-01" },
+        ])
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([{ count: 0 }])
         .mockResolvedValueOnce(undefined); // bulk upsert
@@ -554,7 +567,9 @@ describe("ExchangeRateService", () => {
       const ts3 = new Date("2025-08-03").getTime() / 1000;
 
       dataSource.query
-        .mockResolvedValueOnce([{ currency_code: "JPY", earliest: "2025-08-01" }])
+        .mockResolvedValueOnce([
+          { currency_code: "JPY", earliest: "2025-08-01" },
+        ])
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([{ count: 0 }])
         .mockResolvedValueOnce(undefined); // bulk upsert
@@ -588,7 +603,9 @@ describe("ExchangeRateService", () => {
       });
 
       dataSource.query
-        .mockResolvedValueOnce([{ currency_code: "CAD", earliest: "2025-01-01" }])
+        .mockResolvedValueOnce([
+          { currency_code: "CAD", earliest: "2025-01-01" },
+        ])
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([{ count: 0 }]);
 
@@ -612,7 +629,9 @@ describe("ExchangeRateService", () => {
       });
 
       dataSource.query
-        .mockResolvedValueOnce([{ currency_code: "CAD", earliest: "2025-01-01" }])
+        .mockResolvedValueOnce([
+          { currency_code: "CAD", earliest: "2025-01-01" },
+        ])
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([{ count: 0 }]);
 
@@ -633,7 +652,9 @@ describe("ExchangeRateService", () => {
       const ts1 = new Date("2025-09-01").getTime() / 1000;
 
       dataSource.query
-        .mockResolvedValueOnce([{ currency_code: "CHF", earliest: "2025-09-01" }])
+        .mockResolvedValueOnce([
+          { currency_code: "CHF", earliest: "2025-09-01" },
+        ])
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([{ count: 0 }])
         .mockRejectedValueOnce(new Error("Constraint violation"));
@@ -690,7 +711,9 @@ describe("ExchangeRateService", () => {
       const ts2 = new Date("2025-06-01").getTime() / 1000;
 
       dataSource.query
-        .mockResolvedValueOnce([{ currency_code: "MXN", earliest: "2026-01-01" }])
+        .mockResolvedValueOnce([
+          { currency_code: "MXN", earliest: "2026-01-01" },
+        ])
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([{ count: 0 }]);
 
@@ -724,8 +747,12 @@ describe("ExchangeRateService", () => {
 
       // Same currency from both account and security, different earliest dates
       dataSource.query
-        .mockResolvedValueOnce([{ currency_code: "EUR", earliest: "2025-06-01" }]) // account
-        .mockResolvedValueOnce([{ currency_code: "EUR", earliest: "2025-03-01" }]) // security (earlier)
+        .mockResolvedValueOnce([
+          { currency_code: "EUR", earliest: "2025-06-01" },
+        ]) // account
+        .mockResolvedValueOnce([
+          { currency_code: "EUR", earliest: "2025-03-01" },
+        ]) // security (earlier)
         .mockResolvedValueOnce([{ count: 5 }]); // existing rates
 
       const result = await service.backfillHistoricalRates("user-1");
@@ -741,7 +768,9 @@ describe("ExchangeRateService", () => {
       });
 
       dataSource.query
-        .mockResolvedValueOnce([{ currency_code: "SEK", earliest: "2025-01-01" }])
+        .mockResolvedValueOnce([
+          { currency_code: "SEK", earliest: "2025-01-01" },
+        ])
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([{ count: 0 }]);
 
@@ -772,8 +801,13 @@ describe("ExchangeRateService", () => {
       const result = await service.getLatestRates();
 
       expect(result).toEqual(rates);
-      expect(exchangeRateRepository.createQueryBuilder).toHaveBeenCalledWith("er");
-      expect(qb.distinctOn).toHaveBeenCalledWith(["er.from_currency", "er.to_currency"]);
+      expect(exchangeRateRepository.createQueryBuilder).toHaveBeenCalledWith(
+        "er",
+      );
+      expect(qb.distinctOn).toHaveBeenCalledWith([
+        "er.from_currency",
+        "er.to_currency",
+      ]);
       expect(qb.orderBy).toHaveBeenCalledWith("er.from_currency");
       expect(qb.addOrderBy).toHaveBeenCalledWith("er.to_currency");
       expect(qb.addOrderBy).toHaveBeenCalledWith("er.rate_date", "DESC");

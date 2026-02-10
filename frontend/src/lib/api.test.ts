@@ -115,7 +115,9 @@ describe('apiClient', () => {
     });
 
     it('attempts CSRF refresh on 403 with CSRF message', async () => {
-      const axiosGetSpy = vi.spyOn(axios, 'get').mockResolvedValue({ data: {} });
+      // Make the refresh fail so the interceptor doesn't attempt a retry via apiClient
+      // (which would trigger a real HTTP request through jsdom)
+      const axiosGetSpy = vi.spyOn(axios, 'get').mockRejectedValue(new Error('refresh failed'));
 
       // Re-import to get fresh module
       vi.resetModules();
@@ -136,12 +138,11 @@ describe('apiClient', () => {
         },
       };
 
-      // The retry will attempt to use apiClient again, which will fail.
-      // We just verify the CSRF refresh was called.
+      // The refresh will fail, so the error is re-rejected
       try {
         await errorHandler.rejected(mockError);
       } catch {
-        // Expected to fail on retry
+        // Expected to reject
       }
 
       expect(axiosGetSpy).toHaveBeenCalledWith('/api/v1/auth/csrf-refresh', { withCredentials: true });

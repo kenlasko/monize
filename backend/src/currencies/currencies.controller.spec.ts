@@ -82,16 +82,12 @@ describe("CurrenciesController", () => {
   describe("getRateStatus()", () => {
     it("delegates to exchangeRateService.getLastUpdateTime and wraps in object", async () => {
       const lastUpdated = new Date("2024-06-15");
-      mockExchangeRateService.getLastUpdateTime!.mockResolvedValue(
-        lastUpdated,
-      );
+      mockExchangeRateService.getLastUpdateTime!.mockResolvedValue(lastUpdated);
 
       const result = await controller.getRateStatus();
 
       expect(result).toEqual({ lastUpdated });
-      expect(
-        mockExchangeRateService.getLastUpdateTime,
-      ).toHaveBeenCalledWith();
+      expect(mockExchangeRateService.getLastUpdateTime).toHaveBeenCalledWith();
     });
 
     it("returns null lastUpdated when no rates exist", async () => {
@@ -110,9 +106,7 @@ describe("CurrenciesController", () => {
       const result = controller.refreshRates();
 
       expect(result).toBe("summary");
-      expect(
-        mockExchangeRateService.refreshAllRates,
-      ).toHaveBeenCalledWith();
+      expect(mockExchangeRateService.refreshAllRates).toHaveBeenCalledWith();
     });
   });
 

@@ -65,10 +65,7 @@ describe("AccountsController", () => {
 
       controller.findAll(mockReq, undefined);
 
-      expect(mockAccountsService.findAll).toHaveBeenCalledWith(
-        "user-1",
-        false,
-      );
+      expect(mockAccountsService.findAll).toHaveBeenCalledWith("user-1", false);
     });
   });
 
@@ -97,9 +94,7 @@ describe("AccountsController", () => {
       const result = controller.previewLoanAmortization(dto as any);
 
       expect(result).toBe("preview");
-      expect(
-        mockAccountsService.previewLoanAmortization,
-      ).toHaveBeenCalledWith(
+      expect(mockAccountsService.previewLoanAmortization).toHaveBeenCalledWith(
         10000,
         5,
         500,
@@ -178,9 +173,10 @@ describe("AccountsController", () => {
       const result = controller.getInvestmentPair(mockReq, "account-1");
 
       expect(result).toBe("pair");
-      expect(
-        mockAccountsService.getInvestmentAccountPair,
-      ).toHaveBeenCalledWith("user-1", "account-1");
+      expect(mockAccountsService.getInvestmentAccountPair).toHaveBeenCalledWith(
+        "user-1",
+        "account-1",
+      );
     });
   });
 

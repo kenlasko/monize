@@ -34,9 +34,7 @@ describe("BuiltInReportsController", () => {
       ],
     }).compile();
 
-    controller = module.get<BuiltInReportsController>(
-      BuiltInReportsController,
-    );
+    controller = module.get<BuiltInReportsController>(BuiltInReportsController);
   });
 
   describe("getSpendingByCategory()", () => {
@@ -65,10 +63,7 @@ describe("BuiltInReportsController", () => {
       const expected = { payees: [], total: 0 };
       mockService.getSpendingByPayee.mockResolvedValue(expected);
 
-      const result = await controller.getSpendingByPayee(
-        mockReq,
-        query as any,
-      );
+      const result = await controller.getSpendingByPayee(mockReq, query as any);
 
       expect(result).toEqual(expected);
       expect(mockService.getSpendingByPayee).toHaveBeenCalledWith(
@@ -85,10 +80,7 @@ describe("BuiltInReportsController", () => {
       const expected = { sources: [], total: 0 };
       mockService.getIncomeBySource.mockResolvedValue(expected);
 
-      const result = await controller.getIncomeBySource(
-        mockReq,
-        query as any,
-      );
+      const result = await controller.getIncomeBySource(mockReq, query as any);
 
       expect(result).toEqual(expected);
       expect(mockService.getIncomeBySource).toHaveBeenCalledWith(

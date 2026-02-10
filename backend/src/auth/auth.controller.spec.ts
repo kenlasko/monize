@@ -65,16 +65,18 @@ describe("AuthController", () => {
     };
 
     configService = {
-      get: jest.fn().mockImplementation((key: string, defaultValue?: string) => {
-        const config: Record<string, string> = {
-          LOCAL_AUTH_ENABLED: "true",
-          REGISTRATION_ENABLED: "true",
-          FORCE_2FA: "false",
-          NODE_ENV: "test",
-          PUBLIC_APP_URL: "http://localhost:3000",
-        };
-        return config[key] ?? defaultValue;
-      }),
+      get: jest
+        .fn()
+        .mockImplementation((key: string, defaultValue?: string) => {
+          const config: Record<string, string> = {
+            LOCAL_AUTH_ENABLED: "true",
+            REGISTRATION_ENABLED: "true",
+            FORCE_2FA: "false",
+            NODE_ENV: "test",
+            PUBLIC_APP_URL: "http://localhost:3000",
+          };
+          return config[key] ?? defaultValue;
+        }),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -97,15 +99,17 @@ describe("AuthController", () => {
   describe("register", () => {
     it("throws ForbiddenException if local auth is disabled", async () => {
       // Recreate with local auth disabled
-      configService.get.mockImplementation((key: string, defaultValue?: string) => {
-        const config: Record<string, string> = {
-          LOCAL_AUTH_ENABLED: "false",
-          REGISTRATION_ENABLED: "true",
-          FORCE_2FA: "false",
-          NODE_ENV: "test",
-        };
-        return config[key] ?? defaultValue;
-      });
+      configService.get.mockImplementation(
+        (key: string, defaultValue?: string) => {
+          const config: Record<string, string> = {
+            LOCAL_AUTH_ENABLED: "false",
+            REGISTRATION_ENABLED: "true",
+            FORCE_2FA: "false",
+            NODE_ENV: "test",
+          };
+          return config[key] ?? defaultValue;
+        },
+      );
 
       const module: TestingModule = await Test.createTestingModule({
         controllers: [AuthController],
@@ -119,7 +123,11 @@ describe("AuthController", () => {
 
       const disabledController = module.get<AuthController>(AuthController);
       const res = mockRes();
-      const dto = { email: "new@example.com", password: "Password1!", firstName: "New" };
+      const dto = {
+        email: "new@example.com",
+        password: "Password1!",
+        firstName: "New",
+      };
 
       await expect(
         disabledController.register(dto as any, res as any),
@@ -127,15 +135,17 @@ describe("AuthController", () => {
     });
 
     it("throws ForbiddenException if registration is disabled", async () => {
-      configService.get.mockImplementation((key: string, defaultValue?: string) => {
-        const config: Record<string, string> = {
-          LOCAL_AUTH_ENABLED: "true",
-          REGISTRATION_ENABLED: "false",
-          FORCE_2FA: "false",
-          NODE_ENV: "test",
-        };
-        return config[key] ?? defaultValue;
-      });
+      configService.get.mockImplementation(
+        (key: string, defaultValue?: string) => {
+          const config: Record<string, string> = {
+            LOCAL_AUTH_ENABLED: "true",
+            REGISTRATION_ENABLED: "false",
+            FORCE_2FA: "false",
+            NODE_ENV: "test",
+          };
+          return config[key] ?? defaultValue;
+        },
+      );
 
       const module: TestingModule = await Test.createTestingModule({
         controllers: [AuthController],
@@ -149,7 +159,11 @@ describe("AuthController", () => {
 
       const disabledController = module.get<AuthController>(AuthController);
       const res = mockRes();
-      const dto = { email: "new@example.com", password: "Password1!", firstName: "New" };
+      const dto = {
+        email: "new@example.com",
+        password: "Password1!",
+        firstName: "New",
+      };
 
       await expect(
         disabledController.register(dto as any, res as any),
@@ -164,28 +178,42 @@ describe("AuthController", () => {
       };
       authService.register.mockResolvedValue(registerResult);
       const res = mockRes();
-      const dto = { email: "new@example.com", password: "Password1!", firstName: "New" };
+      const dto = {
+        email: "new@example.com",
+        password: "Password1!",
+        firstName: "New",
+      };
 
       await controller.register(dto as any, res as any);
 
       expect(authService.register).toHaveBeenCalledWith(dto);
-      expect(res.cookie).toHaveBeenCalledWith("auth_token", "access-token", expect.any(Object));
-      expect(res.cookie).toHaveBeenCalledWith("refresh_token", "refresh-token", expect.any(Object));
+      expect(res.cookie).toHaveBeenCalledWith(
+        "auth_token",
+        "access-token",
+        expect.any(Object),
+      );
+      expect(res.cookie).toHaveBeenCalledWith(
+        "refresh_token",
+        "refresh-token",
+        expect.any(Object),
+      );
       expect(res.json).toHaveBeenCalledWith({ user: registerResult.user });
     });
   });
 
   describe("login", () => {
     it("throws ForbiddenException if local auth is disabled", async () => {
-      configService.get.mockImplementation((key: string, defaultValue?: string) => {
-        const config: Record<string, string> = {
-          LOCAL_AUTH_ENABLED: "false",
-          REGISTRATION_ENABLED: "true",
-          FORCE_2FA: "false",
-          NODE_ENV: "test",
-        };
-        return config[key] ?? defaultValue;
-      });
+      configService.get.mockImplementation(
+        (key: string, defaultValue?: string) => {
+          const config: Record<string, string> = {
+            LOCAL_AUTH_ENABLED: "false",
+            REGISTRATION_ENABLED: "true",
+            FORCE_2FA: "false",
+            NODE_ENV: "test",
+          };
+          return config[key] ?? defaultValue;
+        },
+      );
 
       const module: TestingModule = await Test.createTestingModule({
         controllers: [AuthController],
@@ -242,8 +270,16 @@ describe("AuthController", () => {
 
       await controller.login(dto as any, expressReq, res as any);
 
-      expect(res.cookie).toHaveBeenCalledWith("auth_token", "access-token", expect.any(Object));
-      expect(res.cookie).toHaveBeenCalledWith("refresh_token", "refresh-token", expect.any(Object));
+      expect(res.cookie).toHaveBeenCalledWith(
+        "auth_token",
+        "access-token",
+        expect.any(Object),
+      );
+      expect(res.cookie).toHaveBeenCalledWith(
+        "refresh_token",
+        "refresh-token",
+        expect.any(Object),
+      );
       expect(res.json).toHaveBeenCalledWith({ user: loginResult.user });
     });
   });
@@ -306,7 +342,9 @@ describe("AuthController", () => {
     it("always returns success message to prevent enumeration", async () => {
       authService.generateResetToken.mockResolvedValue(null);
 
-      const result = await controller.forgotPassword({ email: "nonexistent@example.com" } as any);
+      const result = await controller.forgotPassword({
+        email: "nonexistent@example.com",
+      } as any);
 
       expect(result.message).toContain("If an account exists");
     });
@@ -317,7 +355,9 @@ describe("AuthController", () => {
         user: { email: "test@example.com", firstName: "Test" },
       });
 
-      const result = await controller.forgotPassword({ email: "test@example.com" } as any);
+      const result = await controller.forgotPassword({
+        email: "test@example.com",
+      } as any);
 
       expect(emailService.sendMail).toHaveBeenCalledWith(
         "test@example.com",
@@ -334,21 +374,25 @@ describe("AuthController", () => {
       });
       emailService.sendMail.mockRejectedValue(new Error("SMTP error"));
 
-      const result = await controller.forgotPassword({ email: "test@example.com" } as any);
+      const result = await controller.forgotPassword({
+        email: "test@example.com",
+      } as any);
 
       expect(result.message).toContain("If an account exists");
     });
 
     it("throws ForbiddenException if local auth is disabled", async () => {
-      configService.get.mockImplementation((key: string, defaultValue?: string) => {
-        const config: Record<string, string> = {
-          LOCAL_AUTH_ENABLED: "false",
-          REGISTRATION_ENABLED: "true",
-          FORCE_2FA: "false",
-          NODE_ENV: "test",
-        };
-        return config[key] ?? defaultValue;
-      });
+      configService.get.mockImplementation(
+        (key: string, defaultValue?: string) => {
+          const config: Record<string, string> = {
+            LOCAL_AUTH_ENABLED: "false",
+            REGISTRATION_ENABLED: "true",
+            FORCE_2FA: "false",
+            NODE_ENV: "test",
+          };
+          return config[key] ?? defaultValue;
+        },
+      );
 
       const module: TestingModule = await Test.createTestingModule({
         controllers: [AuthController],
@@ -377,7 +421,10 @@ describe("AuthController", () => {
         newPassword: "NewPassword1!",
       } as any);
 
-      expect(authService.resetPassword).toHaveBeenCalledWith("reset-token", "NewPassword1!");
+      expect(authService.resetPassword).toHaveBeenCalledWith(
+        "reset-token",
+        "NewPassword1!",
+      );
       expect(result.message).toContain("Password reset successfully");
     });
   });
@@ -391,10 +438,21 @@ describe("AuthController", () => {
       await controller.logout(expressReq, res as any);
 
       expect(authService.revokeRefreshToken).toHaveBeenCalledWith("rt-123");
-      expect(res.clearCookie).toHaveBeenCalledWith("auth_token", expect.any(Object));
-      expect(res.clearCookie).toHaveBeenCalledWith("refresh_token", expect.any(Object));
-      expect(res.clearCookie).toHaveBeenCalledWith("csrf_token", expect.any(Object));
-      expect(res.json).toHaveBeenCalledWith({ message: "Logged out successfully" });
+      expect(res.clearCookie).toHaveBeenCalledWith(
+        "auth_token",
+        expect.any(Object),
+      );
+      expect(res.clearCookie).toHaveBeenCalledWith(
+        "refresh_token",
+        expect.any(Object),
+      );
+      expect(res.clearCookie).toHaveBeenCalledWith(
+        "csrf_token",
+        expect.any(Object),
+      );
+      expect(res.json).toHaveBeenCalledWith({
+        message: "Logged out successfully",
+      });
     });
 
     it("clears cookies even when no refresh token exists", async () => {
@@ -404,8 +462,13 @@ describe("AuthController", () => {
       await controller.logout(expressReq, res as any);
 
       expect(authService.revokeRefreshToken).not.toHaveBeenCalled();
-      expect(res.clearCookie).toHaveBeenCalledWith("auth_token", expect.any(Object));
-      expect(res.json).toHaveBeenCalledWith({ message: "Logged out successfully" });
+      expect(res.clearCookie).toHaveBeenCalledWith(
+        "auth_token",
+        expect.any(Object),
+      );
+      expect(res.json).toHaveBeenCalledWith({
+        message: "Logged out successfully",
+      });
     });
   });
 

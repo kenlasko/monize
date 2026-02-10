@@ -449,11 +449,7 @@ describe("TransactionsService", () => {
           status: TransactionStatus.VOID,
         });
 
-      await service.updateStatus(
-        "user-1",
-        "tx-1",
-        TransactionStatus.VOID,
-      );
+      await service.updateStatus("user-1", "tx-1", TransactionStatus.VOID);
 
       expect(accountsService.updateBalance).toHaveBeenCalledWith(
         "account-1",
@@ -533,9 +529,9 @@ describe("TransactionsService", () => {
         splits: [],
       });
 
-      await expect(
-        service.markCleared("user-1", "tx-1", true),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.markCleared("user-1", "tx-1", true)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it("throws for void transactions", async () => {
@@ -546,9 +542,9 @@ describe("TransactionsService", () => {
         splits: [],
       });
 
-      await expect(
-        service.markCleared("user-1", "tx-1", true),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.markCleared("user-1", "tx-1", true)).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
@@ -613,7 +609,11 @@ describe("TransactionsService", () => {
 
   describe("createTransfer", () => {
     it("creates two linked transactions", async () => {
-      const mockToAccount = { ...mockAccount, id: "account-2", name: "Savings" };
+      const mockToAccount = {
+        ...mockAccount,
+        id: "account-2",
+        name: "Savings",
+      };
       accountsService.findOne
         .mockResolvedValueOnce(mockAccount)
         .mockResolvedValueOnce(mockToAccount);
@@ -701,9 +701,9 @@ describe("TransactionsService", () => {
         splits: [],
       });
 
-      await expect(
-        service.removeTransfer("user-1", "tx-1"),
-      ).rejects.toThrow("Transaction is not a transfer");
+      await expect(service.removeTransfer("user-1", "tx-1")).rejects.toThrow(
+        "Transaction is not a transfer",
+      );
     });
   });
 });

@@ -143,7 +143,9 @@ describe("NetWorthService", () => {
     mockQueryRunner.connect.mockReset().mockResolvedValue(undefined);
     mockQueryRunner.startTransaction.mockReset().mockResolvedValue(undefined);
     mockQueryRunner.commitTransaction.mockReset().mockResolvedValue(undefined);
-    mockQueryRunner.rollbackTransaction.mockReset().mockResolvedValue(undefined);
+    mockQueryRunner.rollbackTransaction
+      .mockReset()
+      .mockResolvedValue(undefined);
     mockQueryRunner.release.mockReset().mockResolvedValue(undefined);
     mockQueryRunner.query.mockReset().mockResolvedValue(undefined);
 
@@ -193,9 +195,7 @@ describe("NetWorthService", () => {
       accountRepository.findOne.mockResolvedValue({ ...mockRegularAccount });
       dataSource.query
         .mockResolvedValueOnce([{ earliest: "2024-01-15" }])
-        .mockResolvedValueOnce([
-          { month: "2024-01-01", balance: 1000 },
-        ]);
+        .mockResolvedValueOnce([{ month: "2024-01-01", balance: 1000 }]);
 
       await service.recalculateAccount("user-1", "account-1");
 
@@ -214,9 +214,7 @@ describe("NetWorthService", () => {
         // earliest inv tx
         .mockResolvedValueOnce([{ inv_earliest: "2024-02-15" }])
         // cost rows
-        .mockResolvedValueOnce([
-          { month: "2024-02-01", balance: 0 },
-        ]);
+        .mockResolvedValueOnce([{ month: "2024-02-01", balance: 0 }]);
 
       invTxRepository.find.mockResolvedValue([]);
 
@@ -258,9 +256,7 @@ describe("NetWorthService", () => {
         accountRepository.findOne.mockResolvedValue(account);
         dataSource.query
           .mockResolvedValueOnce([{ earliest: null }])
-          .mockResolvedValueOnce([
-            { month: "2024-06-01", balance: 1000 },
-          ]);
+          .mockResolvedValueOnce([{ month: "2024-06-01", balance: 1000 }]);
 
         await service.recalculateAccount("user-1", "account-1");
 
@@ -320,9 +316,7 @@ describe("NetWorthService", () => {
         accountRepository.findOne.mockResolvedValue({ ...mockRegularAccount });
         dataSource.query
           .mockResolvedValueOnce([{ earliest: "2024-01-01" }])
-          .mockResolvedValueOnce([
-            { month: "2024-01-01", balance: 1000 },
-          ]);
+          .mockResolvedValueOnce([{ month: "2024-01-01", balance: 1000 }]);
 
         mockQueryRunner.query
           .mockResolvedValueOnce(undefined) // DELETE succeeds
@@ -340,9 +334,7 @@ describe("NetWorthService", () => {
         accountRepository.findOne.mockResolvedValue({ ...mockRegularAccount });
         dataSource.query
           .mockResolvedValueOnce([{ earliest: "2024-01-01" }])
-          .mockResolvedValueOnce([
-            { month: "2024-01-01", balance: 1000 },
-          ]);
+          .mockResolvedValueOnce([{ month: "2024-01-01", balance: 1000 }]);
 
         mockQueryRunner.query.mockRejectedValue(new Error("Fatal"));
 
@@ -368,8 +360,16 @@ describe("NetWorthService", () => {
           ])
           // loadSecurityPrices query
           .mockResolvedValueOnce([
-            { security_id: "sec-1", price_date: "2024-01-20", close_price: 150 },
-            { security_id: "sec-1", price_date: "2024-02-10", close_price: 160 },
+            {
+              security_id: "sec-1",
+              price_date: "2024-01-20",
+              close_price: 150,
+            },
+            {
+              security_id: "sec-1",
+              price_date: "2024-02-10",
+              close_price: 160,
+            },
           ]);
 
         const mockSecurity: Partial<Security> = {
@@ -416,9 +416,21 @@ describe("NetWorthService", () => {
           ])
           // market prices
           .mockResolvedValueOnce([
-            { security_id: "sec-1", price_date: "2024-01-15", close_price: 100 },
-            { security_id: "sec-1", price_date: "2024-02-15", close_price: 100 },
-            { security_id: "sec-1", price_date: "2024-03-15", close_price: 100 },
+            {
+              security_id: "sec-1",
+              price_date: "2024-01-15",
+              close_price: 100,
+            },
+            {
+              security_id: "sec-1",
+              price_date: "2024-02-15",
+              close_price: 100,
+            },
+            {
+              security_id: "sec-1",
+              price_date: "2024-03-15",
+              close_price: 100,
+            },
           ]);
 
         const mockSecurity: Partial<Security> = {
@@ -428,12 +440,42 @@ describe("NetWorthService", () => {
         };
 
         invTxRepository.find.mockResolvedValue([
-          { securityId: "sec-1", action: InvestmentAction.BUY, quantity: 100, transactionDate: "2024-01-05" },
-          { securityId: "sec-1", action: InvestmentAction.REINVEST, quantity: 5, transactionDate: "2024-01-20" },
-          { securityId: "sec-1", action: InvestmentAction.SELL, quantity: 20, transactionDate: "2024-02-10" },
-          { securityId: "sec-1", action: InvestmentAction.TRANSFER_IN, quantity: 10, transactionDate: "2024-02-15" },
-          { securityId: "sec-1", action: InvestmentAction.TRANSFER_OUT, quantity: 5, transactionDate: "2024-03-01" },
-          { securityId: "sec-1", action: InvestmentAction.SPLIT, quantity: 90, transactionDate: "2024-03-05" },
+          {
+            securityId: "sec-1",
+            action: InvestmentAction.BUY,
+            quantity: 100,
+            transactionDate: "2024-01-05",
+          },
+          {
+            securityId: "sec-1",
+            action: InvestmentAction.REINVEST,
+            quantity: 5,
+            transactionDate: "2024-01-20",
+          },
+          {
+            securityId: "sec-1",
+            action: InvestmentAction.SELL,
+            quantity: 20,
+            transactionDate: "2024-02-10",
+          },
+          {
+            securityId: "sec-1",
+            action: InvestmentAction.TRANSFER_IN,
+            quantity: 10,
+            transactionDate: "2024-02-15",
+          },
+          {
+            securityId: "sec-1",
+            action: InvestmentAction.TRANSFER_OUT,
+            quantity: 5,
+            transactionDate: "2024-03-01",
+          },
+          {
+            securityId: "sec-1",
+            action: InvestmentAction.SPLIT,
+            quantity: 90,
+            transactionDate: "2024-03-05",
+          },
         ]);
         securityRepository.findByIds.mockResolvedValue([mockSecurity]);
 
@@ -458,9 +500,7 @@ describe("NetWorthService", () => {
         dataSource.query
           .mockResolvedValueOnce([{ earliest: null }])
           .mockResolvedValueOnce([{ inv_earliest: "2024-01-01" }])
-          .mockResolvedValueOnce([
-            { month: "2024-01-01", balance: 0 },
-          ])
+          .mockResolvedValueOnce([{ month: "2024-01-01", balance: 0 }])
           // loadTransactionPrices query (no market prices query since all skip)
           .mockResolvedValueOnce([
             {
@@ -503,9 +543,7 @@ describe("NetWorthService", () => {
         dataSource.query
           .mockResolvedValueOnce([{ earliest: null }])
           .mockResolvedValueOnce([{ inv_earliest: null }])
-          .mockResolvedValueOnce([
-            { month: "2024-01-01", balance: 0 },
-          ]);
+          .mockResolvedValueOnce([{ month: "2024-01-01", balance: 0 }]);
 
         invTxRepository.find.mockResolvedValue([]);
 
@@ -526,12 +564,14 @@ describe("NetWorthService", () => {
         dataSource.query
           .mockResolvedValueOnce([{ earliest: null }])
           .mockResolvedValueOnce([{ inv_earliest: "2024-01-01" }])
-          .mockResolvedValueOnce([
-            { month: "2024-01-01", balance: 0 },
-          ])
+          .mockResolvedValueOnce([{ month: "2024-01-01", balance: 0 }])
           // market prices
           .mockResolvedValueOnce([
-            { security_id: "sec-1", price_date: "2024-01-15", close_price: 100 },
+            {
+              security_id: "sec-1",
+              price_date: "2024-01-15",
+              close_price: 100,
+            },
           ]);
 
         const mockSecurity: Partial<Security> = {
@@ -542,8 +582,18 @@ describe("NetWorthService", () => {
 
         // Buy and immediately sell same quantity => qty ~ 0
         invTxRepository.find.mockResolvedValue([
-          { securityId: "sec-1", action: InvestmentAction.BUY, quantity: 10, transactionDate: "2024-01-05" },
-          { securityId: "sec-1", action: InvestmentAction.SELL, quantity: 10, transactionDate: "2024-01-10" },
+          {
+            securityId: "sec-1",
+            action: InvestmentAction.BUY,
+            quantity: 10,
+            transactionDate: "2024-01-05",
+          },
+          {
+            securityId: "sec-1",
+            action: InvestmentAction.SELL,
+            quantity: 10,
+            transactionDate: "2024-01-10",
+          },
         ]);
         securityRepository.findByIds.mockResolvedValue([mockSecurity]);
 
@@ -564,9 +614,7 @@ describe("NetWorthService", () => {
         dataSource.query
           .mockResolvedValueOnce([{ earliest: null }])
           .mockResolvedValueOnce([{ inv_earliest: null }])
-          .mockResolvedValueOnce([
-            { month: "2024-01-01", balance: 0 },
-          ]);
+          .mockResolvedValueOnce([{ month: "2024-01-01", balance: 0 }]);
 
         invTxRepository.find.mockResolvedValue([]);
 
@@ -827,9 +875,7 @@ describe("NetWorthService", () => {
       expect(queryArgs[1][0]).toBe("user-1");
       expect(queryArgs[1][1]).toBe("1990-01-01");
       // end date should be today
-      expect(queryArgs[1][2]).toBe(
-        new Date().toISOString().slice(0, 10),
-      );
+      expect(queryArgs[1][2]).toBe(new Date().toISOString().slice(0, 10));
     });
 
     it("defaults to USD when user has no preference", async () => {
@@ -1196,11 +1242,7 @@ describe("NetWorthService", () => {
       });
       dataSource.query.mockResolvedValueOnce([]);
 
-      await service.getMonthlyInvestments(
-        "user-1",
-        "2024-01-01",
-        "2024-12-31",
-      );
+      await service.getMonthlyInvestments("user-1", "2024-01-01", "2024-12-31");
 
       const queryArgs = dataSource.query.mock.calls[0];
       expect(queryArgs[1]).toContain("2024-01-01");
@@ -1321,9 +1363,7 @@ describe("NetWorthService", () => {
           { id: "inv-cash-1", linked_account_id: "inv-1" },
         ])
         // Second call resolves linked accounts for inv-2
-        .mockResolvedValueOnce([
-          { id: "inv-2", linked_account_id: null },
-        ])
+        .mockResolvedValueOnce([{ id: "inv-2", linked_account_id: null }])
         // Main snapshots query
         .mockResolvedValueOnce([
           {

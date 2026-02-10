@@ -203,9 +203,11 @@ describe("CategoriesController", () => {
       const result = controller.reassignTransactions(mockReq, "cat-1", body);
 
       expect(result).toBe("reassigned");
-      expect(
-        mockCategoriesService.reassignTransactions,
-      ).toHaveBeenCalledWith("user-1", "cat-1", "cat-2");
+      expect(mockCategoriesService.reassignTransactions).toHaveBeenCalledWith(
+        "user-1",
+        "cat-1",
+        "cat-2",
+      );
     });
 
     it("passes null toCategoryId when uncategorizing", () => {
@@ -214,9 +216,11 @@ describe("CategoriesController", () => {
 
       controller.reassignTransactions(mockReq, "cat-1", body);
 
-      expect(
-        mockCategoriesService.reassignTransactions,
-      ).toHaveBeenCalledWith("user-1", "cat-1", null);
+      expect(mockCategoriesService.reassignTransactions).toHaveBeenCalledWith(
+        "user-1",
+        "cat-1",
+        null,
+      );
     });
   });
 });

@@ -96,7 +96,11 @@ describe("Mortgage Amortization Utility", () => {
       // $300,000 at 5% monthly for 25 years (300 months)
       const periodicRate = 0.05 / 12;
       const totalPayments = 300;
-      const payment = calculatePaymentAmount(300000, periodicRate, totalPayments);
+      const payment = calculatePaymentAmount(
+        300000,
+        periodicRate,
+        totalPayments,
+      );
 
       // Expected: ~$1,753.77 (standard amortization formula)
       expect(payment).toBeCloseTo(1753.77, 0);

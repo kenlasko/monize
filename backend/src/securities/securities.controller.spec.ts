@@ -61,8 +61,17 @@ describe("SecuritiesController", () => {
 
   describe("create", () => {
     it("delegates to securitiesService.create with userId and dto", async () => {
-      const dto = { symbol: "MSFT", name: "Microsoft", securityType: "STOCK", currencyCode: "USD" };
-      securitiesService.create.mockResolvedValue({ ...mockSecurity, ...dto, id: "sec-2" });
+      const dto = {
+        symbol: "MSFT",
+        name: "Microsoft",
+        securityType: "STOCK",
+        currencyCode: "USD",
+      };
+      securitiesService.create.mockResolvedValue({
+        ...mockSecurity,
+        ...dto,
+        id: "sec-2",
+      });
 
       const result = await controller.create(req, dto as any);
 
@@ -103,7 +112,13 @@ describe("SecuritiesController", () => {
 
   describe("lookup", () => {
     it("delegates to securityPriceService.lookupSecurity", async () => {
-      const lookupResult = { symbol: "AAPL", name: "Apple Inc.", exchange: "NASDAQ", securityType: "STOCK", currencyCode: "USD" };
+      const lookupResult = {
+        symbol: "AAPL",
+        name: "Apple Inc.",
+        exchange: "NASDAQ",
+        securityType: "STOCK",
+        currencyCode: "USD",
+      };
       securityPriceService.lookupSecurity.mockResolvedValue(lookupResult);
 
       const result = await controller.lookup("AAPL");
@@ -138,7 +153,10 @@ describe("SecuritiesController", () => {
 
       const result = await controller.findBySymbol(req, "AAPL");
 
-      expect(securitiesService.findBySymbol).toHaveBeenCalledWith("user-1", "AAPL");
+      expect(securitiesService.findBySymbol).toHaveBeenCalledWith(
+        "user-1",
+        "AAPL",
+      );
       expect(result).toEqual(mockSecurity);
     });
   });
@@ -150,36 +168,59 @@ describe("SecuritiesController", () => {
 
       const result = await controller.update(req, "sec-1", dto as any);
 
-      expect(securitiesService.update).toHaveBeenCalledWith("user-1", "sec-1", dto);
+      expect(securitiesService.update).toHaveBeenCalledWith(
+        "user-1",
+        "sec-1",
+        dto,
+      );
       expect(result.name).toBe("Apple Inc. Updated");
     });
   });
 
   describe("deactivate", () => {
     it("delegates to securitiesService.deactivate", async () => {
-      securitiesService.deactivate.mockResolvedValue({ ...mockSecurity, isActive: false });
+      securitiesService.deactivate.mockResolvedValue({
+        ...mockSecurity,
+        isActive: false,
+      });
 
       const result = await controller.deactivate(req, "sec-1");
 
-      expect(securitiesService.deactivate).toHaveBeenCalledWith("user-1", "sec-1");
+      expect(securitiesService.deactivate).toHaveBeenCalledWith(
+        "user-1",
+        "sec-1",
+      );
       expect(result.isActive).toBe(false);
     });
   });
 
   describe("activate", () => {
     it("delegates to securitiesService.activate", async () => {
-      securitiesService.activate.mockResolvedValue({ ...mockSecurity, isActive: true });
+      securitiesService.activate.mockResolvedValue({
+        ...mockSecurity,
+        isActive: true,
+      });
 
       const result = await controller.activate(req, "sec-1");
 
-      expect(securitiesService.activate).toHaveBeenCalledWith("user-1", "sec-1");
+      expect(securitiesService.activate).toHaveBeenCalledWith(
+        "user-1",
+        "sec-1",
+      );
       expect(result.isActive).toBe(true);
     });
   });
 
   describe("refreshAllPrices", () => {
     it("delegates to securityPriceService.refreshAllPrices", async () => {
-      const summary = { totalSecurities: 5, updated: 4, failed: 1, skipped: 0, results: [], lastUpdated: new Date() };
+      const summary = {
+        totalSecurities: 5,
+        updated: 4,
+        failed: 1,
+        skipped: 0,
+        results: [],
+        lastUpdated: new Date(),
+      };
       securityPriceService.refreshAllPrices.mockResolvedValue(summary);
 
       const result = await controller.refreshAllPrices();
@@ -192,8 +233,17 @@ describe("SecuritiesController", () => {
   describe("refreshSelectedPrices", () => {
     it("verifies ownership of each security before refreshing", async () => {
       securitiesService.findOne.mockResolvedValue(mockSecurity);
-      const summary = { totalSecurities: 2, updated: 2, failed: 0, skipped: 0, results: [], lastUpdated: new Date() };
-      securityPriceService.refreshPricesForSecurities.mockResolvedValue(summary);
+      const summary = {
+        totalSecurities: 2,
+        updated: 2,
+        failed: 0,
+        skipped: 0,
+        results: [],
+        lastUpdated: new Date(),
+      };
+      securityPriceService.refreshPricesForSecurities.mockResolvedValue(
+        summary,
+      );
 
       const securityIds = ["sec-1", "sec-2"];
       const result = await controller.refreshSelectedPrices(req, securityIds);
@@ -201,21 +251,33 @@ describe("SecuritiesController", () => {
       expect(securitiesService.findOne).toHaveBeenCalledWith("user-1", "sec-1");
       expect(securitiesService.findOne).toHaveBeenCalledWith("user-1", "sec-2");
       expect(securitiesService.findOne).toHaveBeenCalledTimes(2);
-      expect(securityPriceService.refreshPricesForSecurities).toHaveBeenCalledWith(securityIds);
+      expect(
+        securityPriceService.refreshPricesForSecurities,
+      ).toHaveBeenCalledWith(securityIds);
       expect(result).toEqual(summary);
     });
 
     it("propagates error if findOne rejects (ownership check fails)", async () => {
       securitiesService.findOne.mockRejectedValue(new Error("Not found"));
 
-      await expect(controller.refreshSelectedPrices(req, ["bad-id"])).rejects.toThrow("Not found");
-      expect(securityPriceService.refreshPricesForSecurities).not.toHaveBeenCalled();
+      await expect(
+        controller.refreshSelectedPrices(req, ["bad-id"]),
+      ).rejects.toThrow("Not found");
+      expect(
+        securityPriceService.refreshPricesForSecurities,
+      ).not.toHaveBeenCalled();
     });
   });
 
   describe("backfillHistoricalPrices", () => {
     it("delegates to securityPriceService.backfillHistoricalPrices", async () => {
-      const summary = { totalSecurities: 3, successful: 3, failed: 0, totalPricesLoaded: 1000, results: [] };
+      const summary = {
+        totalSecurities: 3,
+        successful: 3,
+        failed: 0,
+        totalPricesLoaded: 1000,
+        results: [],
+      };
       securityPriceService.backfillHistoricalPrices.mockResolvedValue(summary);
 
       const result = await controller.backfillHistoricalPrices();
@@ -254,7 +316,12 @@ describe("SecuritiesController", () => {
       const result = await controller.getPriceHistory(req, "sec-1", 365);
 
       expect(securitiesService.findOne).toHaveBeenCalledWith("user-1", "sec-1");
-      expect(securityPriceService.getPriceHistory).toHaveBeenCalledWith("sec-1", undefined, undefined, 365);
+      expect(securityPriceService.getPriceHistory).toHaveBeenCalledWith(
+        "sec-1",
+        undefined,
+        undefined,
+        365,
+      );
       expect(result).toEqual(prices);
     });
 
@@ -264,7 +331,12 @@ describe("SecuritiesController", () => {
 
       await controller.getPriceHistory(req, "sec-1", 30);
 
-      expect(securityPriceService.getPriceHistory).toHaveBeenCalledWith("sec-1", undefined, undefined, 30);
+      expect(securityPriceService.getPriceHistory).toHaveBeenCalledWith(
+        "sec-1",
+        undefined,
+        undefined,
+        30,
+      );
     });
   });
 });

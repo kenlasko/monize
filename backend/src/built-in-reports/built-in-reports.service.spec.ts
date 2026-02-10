@@ -298,11 +298,7 @@ describe("BuiltInReportsService", () => {
       transactionsRepository.query.mockResolvedValue([]);
       categoriesRepository.find.mockResolvedValue([]);
 
-      await service.getSpendingByCategory(
-        mockUserId,
-        undefined,
-        "2025-12-31",
-      );
+      await service.getSpendingByCategory(mockUserId, undefined, "2025-12-31");
 
       const queryCall = transactionsRepository.query.mock.calls[0];
       expect(queryCall[1]).toEqual([mockUserId, "2025-12-31"]);
@@ -714,23 +710,20 @@ describe("BuiltInReportsService", () => {
 
     it("limits categories to top 10 across all months", async () => {
       // Create 12 categories so only top 10 appear in results
-      const manyCategories: Category[] = Array.from(
-        { length: 12 },
-        (_, i) => ({
-          id: `cat-${i}`,
-          userId: mockUserId,
-          parentId: null,
-          parent: null,
-          children: [],
-          name: `Category ${i}`,
-          description: null,
-          icon: null,
-          color: null,
-          isIncome: false,
-          isSystem: false,
-          createdAt: new Date(),
-        }),
-      );
+      const manyCategories: Category[] = Array.from({ length: 12 }, (_, i) => ({
+        id: `cat-${i}`,
+        userId: mockUserId,
+        parentId: null,
+        parent: null,
+        children: [],
+        name: `Category ${i}`,
+        description: null,
+        icon: null,
+        color: null,
+        isIncome: false,
+        isSystem: false,
+        createdAt: new Date(),
+      }));
 
       const rawResults = manyCategories.map((c, i) => ({
         month: "2025-01",
@@ -907,11 +900,7 @@ describe("BuiltInReportsService", () => {
       await service.getYearOverYear(mockUserId, 3);
 
       const queryCall = transactionsRepository.query.mock.calls[0];
-      expect(queryCall[1]).toEqual([
-        mockUserId,
-        currentYear - 2,
-        currentYear,
-      ]);
+      expect(queryCall[1]).toEqual([mockUserId, currentYear - 2, currentYear]);
     });
   });
 
@@ -1007,23 +996,20 @@ describe("BuiltInReportsService", () => {
     });
 
     it("builds byCategory with parent rollup and limits to top 10", async () => {
-      const manyCategories: Category[] = Array.from(
-        { length: 12 },
-        (_, i) => ({
-          id: `cat-wk-${i}`,
-          userId: mockUserId,
-          parentId: null,
-          parent: null,
-          children: [],
-          name: `Cat ${i}`,
-          description: null,
-          icon: null,
-          color: null,
-          isIncome: false,
-          isSystem: false,
-          createdAt: new Date(),
-        }),
-      );
+      const manyCategories: Category[] = Array.from({ length: 12 }, (_, i) => ({
+        id: `cat-wk-${i}`,
+        userId: mockUserId,
+        parentId: null,
+        parent: null,
+        children: [],
+        name: `Cat ${i}`,
+        description: null,
+        icon: null,
+        color: null,
+        isIncome: false,
+        isSystem: false,
+        createdAt: new Date(),
+      }));
 
       const rawResults = manyCategories.map((c, i) => ({
         day_of_week: i % 7,
@@ -2056,7 +2042,12 @@ describe("BuiltInReportsService", () => {
 // --- Helper ---
 
 function yearData(
-  result: { data: Array<{ year: number; totals: { income: number; expenses: number; savings: number } }> },
+  result: {
+    data: Array<{
+      year: number;
+      totals: { income: number; expenses: number; savings: number };
+    }>;
+  },
   year: number,
 ) {
   const found = result.data.find((d) => d.year === year);

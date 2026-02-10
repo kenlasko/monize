@@ -114,11 +114,7 @@ describe("AdminService", () => {
     it("updates role successfully", async () => {
       usersRepository.findOne.mockResolvedValue({ ...mockTargetUser });
 
-      const result = await service.updateUserRole(
-        "admin-1",
-        "user-2",
-        "admin",
-      );
+      const result = await service.updateUserRole("admin-1", "user-2", "admin");
 
       expect(result.role).toBe("admin");
       expect(result).not.toHaveProperty("passwordHash");
@@ -157,11 +153,7 @@ describe("AdminService", () => {
       });
       usersRepository.count.mockResolvedValue(3);
 
-      const result = await service.updateUserRole(
-        "admin-1",
-        "user-2",
-        "user",
-      );
+      const result = await service.updateUserRole("admin-1", "user-2", "user");
 
       expect(result.role).toBe("user");
     });
@@ -171,11 +163,7 @@ describe("AdminService", () => {
     it("deactivates a user", async () => {
       usersRepository.findOne.mockResolvedValue({ ...mockTargetUser });
 
-      const result = await service.updateUserStatus(
-        "admin-1",
-        "user-2",
-        false,
-      );
+      const result = await service.updateUserStatus("admin-1", "user-2", false);
 
       expect(result.isActive).toBe(false);
     });
@@ -186,11 +174,7 @@ describe("AdminService", () => {
         isActive: false,
       });
 
-      const result = await service.updateUserStatus(
-        "admin-1",
-        "user-2",
-        true,
-      );
+      const result = await service.updateUserStatus("admin-1", "user-2", true);
 
       expect(result.isActive).toBe(true);
     });
@@ -223,9 +207,9 @@ describe("AdminService", () => {
     });
 
     it("throws ForbiddenException when deleting own account", async () => {
-      await expect(
-        service.deleteUser("admin-1", "admin-1"),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.deleteUser("admin-1", "admin-1")).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it("throws NotFoundException when target not found", async () => {
@@ -243,9 +227,9 @@ describe("AdminService", () => {
       });
       usersRepository.count.mockResolvedValue(1);
 
-      await expect(
-        service.deleteUser("admin-1", "user-2"),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.deleteUser("admin-1", "user-2")).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it("allows deleting admin when other admins exist", async () => {
@@ -282,9 +266,9 @@ describe("AdminService", () => {
     it("throws NotFoundException when user not found", async () => {
       usersRepository.findOne.mockResolvedValue(null);
 
-      await expect(
-        service.resetUserPassword("nonexistent"),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.resetUserPassword("nonexistent")).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it("throws BadRequestException for accounts without local password", async () => {
@@ -294,9 +278,9 @@ describe("AdminService", () => {
         authProvider: "oidc",
       });
 
-      await expect(
-        service.resetUserPassword("user-2"),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.resetUserPassword("user-2")).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 });

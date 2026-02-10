@@ -180,8 +180,16 @@ describe("PortfolioService", () => {
 
     it("returns a map of securityId to close price", async () => {
       securityPriceRepository.query.mockResolvedValue([
-        { security_id: "sec-1", close_price: "175.50", price_date: "2026-02-07" },
-        { security_id: "sec-2", close_price: "95.25", price_date: "2026-02-07" },
+        {
+          security_id: "sec-1",
+          close_price: "175.50",
+          price_date: "2026-02-07",
+        },
+        {
+          security_id: "sec-2",
+          close_price: "95.25",
+          price_date: "2026-02-07",
+        },
       ]);
 
       const result = await service.getLatestPrices(["sec-1", "sec-2"]);
@@ -246,7 +254,11 @@ describe("PortfolioService", () => {
         ]);
         // Latest prices: AAPL=175, VFV=95
         securityPriceRepository.query.mockResolvedValue([
-          { security_id: "sec-1", close_price: "175", price_date: "2026-02-07" },
+          {
+            security_id: "sec-1",
+            close_price: "175",
+            price_date: "2026-02-07",
+          },
           { security_id: "sec-2", close_price: "95", price_date: "2026-02-07" },
         ]);
         // USD->CAD rate for AAPL conversion
@@ -442,7 +454,10 @@ describe("PortfolioService", () => {
     describe("when holdings have zero quantity", () => {
       it("skips holdings with zero quantity", async () => {
         prefRepository.findOne.mockResolvedValue(mockPref);
-        accountsRepository.find.mockResolvedValue([mockBrokerageAccount, mockCashAccount]);
+        accountsRepository.find.mockResolvedValue([
+          mockBrokerageAccount,
+          mockCashAccount,
+        ]);
         holdingsRepository.find.mockResolvedValue([
           { ...mockHoldingAAPL, quantity: 0 },
           mockHoldingVFV,
@@ -463,7 +478,10 @@ describe("PortfolioService", () => {
     describe("when no prices are available for a security", () => {
       it("sets marketValue, gainLoss, gainLossPercent to null", async () => {
         prefRepository.findOne.mockResolvedValue(mockPref);
-        accountsRepository.find.mockResolvedValue([mockBrokerageAccount, mockCashAccount]);
+        accountsRepository.find.mockResolvedValue([
+          mockBrokerageAccount,
+          mockCashAccount,
+        ]);
         holdingsRepository.find.mockResolvedValue([mockHoldingAAPL]);
         securityPriceRepository.query.mockResolvedValue([]); // No prices
         exchangeRateService.getLatestRate.mockResolvedValue(null);
@@ -481,12 +499,19 @@ describe("PortfolioService", () => {
     describe("when holding has zero averageCost", () => {
       it("sets gainLoss and gainLossPercent to null", async () => {
         prefRepository.findOne.mockResolvedValue(mockPref);
-        accountsRepository.find.mockResolvedValue([mockBrokerageAccount, mockCashAccount]);
+        accountsRepository.find.mockResolvedValue([
+          mockBrokerageAccount,
+          mockCashAccount,
+        ]);
         holdingsRepository.find.mockResolvedValue([
           { ...mockHoldingAAPL, averageCost: 0 },
         ]);
         securityPriceRepository.query.mockResolvedValue([
-          { security_id: "sec-1", close_price: "175", price_date: "2026-02-07" },
+          {
+            security_id: "sec-1",
+            close_price: "175",
+            price_date: "2026-02-07",
+          },
         ]);
         exchangeRateService.getLatestRate.mockImplementation(
           (from: string, to: string) => {
@@ -508,12 +533,19 @@ describe("PortfolioService", () => {
     describe("when holding has null averageCost", () => {
       it("treats averageCost as 0", async () => {
         prefRepository.findOne.mockResolvedValue(mockPref);
-        accountsRepository.find.mockResolvedValue([mockBrokerageAccount, mockCashAccount]);
+        accountsRepository.find.mockResolvedValue([
+          mockBrokerageAccount,
+          mockCashAccount,
+        ]);
         holdingsRepository.find.mockResolvedValue([
           { ...mockHoldingAAPL, averageCost: null },
         ]);
         securityPriceRepository.query.mockResolvedValue([
-          { security_id: "sec-1", close_price: "175", price_date: "2026-02-07" },
+          {
+            security_id: "sec-1",
+            close_price: "175",
+            price_date: "2026-02-07",
+          },
         ]);
         exchangeRateService.getLatestRate.mockImplementation(
           (from: string, to: string) => {
@@ -532,10 +564,17 @@ describe("PortfolioService", () => {
     describe("currency conversion", () => {
       it("uses reverse rate when direct rate is not available", async () => {
         prefRepository.findOne.mockResolvedValue(mockPref);
-        accountsRepository.find.mockResolvedValue([mockBrokerageAccount, mockCashAccount]);
+        accountsRepository.find.mockResolvedValue([
+          mockBrokerageAccount,
+          mockCashAccount,
+        ]);
         holdingsRepository.find.mockResolvedValue([mockHoldingAAPL]);
         securityPriceRepository.query.mockResolvedValue([
-          { security_id: "sec-1", close_price: "175", price_date: "2026-02-07" },
+          {
+            security_id: "sec-1",
+            close_price: "175",
+            price_date: "2026-02-07",
+          },
         ]);
         // Direct USD->CAD returns null, reverse CAD->USD returns 0.74
         exchangeRateService.getLatestRate.mockImplementation(
@@ -556,10 +595,17 @@ describe("PortfolioService", () => {
 
       it("uses rate of 1 when neither direct nor reverse rate available", async () => {
         prefRepository.findOne.mockResolvedValue(mockPref);
-        accountsRepository.find.mockResolvedValue([mockBrokerageAccount, mockCashAccount]);
+        accountsRepository.find.mockResolvedValue([
+          mockBrokerageAccount,
+          mockCashAccount,
+        ]);
         holdingsRepository.find.mockResolvedValue([mockHoldingAAPL]);
         securityPriceRepository.query.mockResolvedValue([
-          { security_id: "sec-1", close_price: "175", price_date: "2026-02-07" },
+          {
+            security_id: "sec-1",
+            close_price: "175",
+            price_date: "2026-02-07",
+          },
         ]);
         // No rates available at all
         exchangeRateService.getLatestRate.mockResolvedValue(null);
@@ -572,21 +618,37 @@ describe("PortfolioService", () => {
 
       it("caches exchange rates for repeated conversions", async () => {
         prefRepository.findOne.mockResolvedValue(mockPref);
-        accountsRepository.find.mockResolvedValue([mockBrokerageAccount, mockCashAccount]);
+        accountsRepository.find.mockResolvedValue([
+          mockBrokerageAccount,
+          mockCashAccount,
+        ]);
         // Two holdings in USD - should only look up USD->CAD once
         const secondUSDHolding = {
           ...mockHoldingVFV,
           id: "hold-usd-2",
           securityId: "sec-usd-2",
-          security: { ...mockSecurityAAPL, id: "sec-usd-2", symbol: "MSFT", name: "Microsoft" },
+          security: {
+            ...mockSecurityAAPL,
+            id: "sec-usd-2",
+            symbol: "MSFT",
+            name: "Microsoft",
+          },
         };
         holdingsRepository.find.mockResolvedValue([
           mockHoldingAAPL,
           secondUSDHolding,
         ]);
         securityPriceRepository.query.mockResolvedValue([
-          { security_id: "sec-1", close_price: "175", price_date: "2026-02-07" },
-          { security_id: "sec-usd-2", close_price: "400", price_date: "2026-02-07" },
+          {
+            security_id: "sec-1",
+            close_price: "175",
+            price_date: "2026-02-07",
+          },
+          {
+            security_id: "sec-usd-2",
+            close_price: "400",
+            price_date: "2026-02-07",
+          },
         ]);
         exchangeRateService.getLatestRate.mockImplementation(
           (from: string, to: string) => {
@@ -598,15 +660,19 @@ describe("PortfolioService", () => {
         await service.getPortfolioSummary(userId);
 
         // getLatestRate for USD->CAD should be called only once due to caching
-        const usdToCadCalls = exchangeRateService.getLatestRate.mock.calls.filter(
-          ([from, to]: [string, string]) => from === "USD" && to === "CAD",
-        );
+        const usdToCadCalls =
+          exchangeRateService.getLatestRate.mock.calls.filter(
+            ([from, to]: [string, string]) => from === "USD" && to === "CAD",
+          );
         expect(usdToCadCalls).toHaveLength(1);
       });
 
       it("does not convert when holding currency matches default", async () => {
         prefRepository.findOne.mockResolvedValue(mockPref);
-        accountsRepository.find.mockResolvedValue([mockBrokerageAccount, mockCashAccount]);
+        accountsRepository.find.mockResolvedValue([
+          mockBrokerageAccount,
+          mockCashAccount,
+        ]);
         holdingsRepository.find.mockResolvedValue([mockHoldingVFV]); // VFV is in CAD
         securityPriceRepository.query.mockResolvedValue([
           { security_id: "sec-2", close_price: "95", price_date: "2026-02-07" },
@@ -664,7 +730,11 @@ describe("PortfolioService", () => {
         ]);
         holdingsRepository.find.mockResolvedValue([mockHoldingVFV]);
         securityPriceRepository.query.mockResolvedValue([
-          { security_id: "sec-2", close_price: "100", price_date: "2026-02-07" },
+          {
+            security_id: "sec-2",
+            close_price: "100",
+            price_date: "2026-02-07",
+          },
         ]);
         exchangeRateService.getLatestRate.mockResolvedValue(null);
 
@@ -691,7 +761,11 @@ describe("PortfolioService", () => {
         accountsRepository.find.mockResolvedValue([brokerageNoCash]);
         holdingsRepository.find.mockResolvedValue([mockHoldingVFV]);
         securityPriceRepository.query.mockResolvedValue([
-          { security_id: "sec-2", close_price: "100", price_date: "2026-02-07" },
+          {
+            security_id: "sec-2",
+            close_price: "100",
+            price_date: "2026-02-07",
+          },
         ]);
         exchangeRateService.getLatestRate.mockResolvedValue(null);
 
@@ -703,7 +777,10 @@ describe("PortfolioService", () => {
 
       it("does not include securities with zero or null market value", async () => {
         prefRepository.findOne.mockResolvedValue(mockPref);
-        accountsRepository.find.mockResolvedValue([mockBrokerageAccount, mockCashAccount]);
+        accountsRepository.find.mockResolvedValue([
+          mockBrokerageAccount,
+          mockCashAccount,
+        ]);
         holdingsRepository.find.mockResolvedValue([mockHoldingAAPL]);
         // No price data
         securityPriceRepository.query.mockResolvedValue([]);
@@ -746,7 +823,10 @@ describe("PortfolioService", () => {
 
       it("sorts holdings within accounts by market value descending, nulls last", async () => {
         prefRepository.findOne.mockResolvedValue(mockPref);
-        accountsRepository.find.mockResolvedValue([mockBrokerageAccount, mockCashAccount]);
+        accountsRepository.find.mockResolvedValue([
+          mockBrokerageAccount,
+          mockCashAccount,
+        ]);
 
         const holdingNoPrice = {
           ...mockHoldingAAPL,

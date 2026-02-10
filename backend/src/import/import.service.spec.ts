@@ -3,7 +3,10 @@ import { getRepositoryToken } from "@nestjs/typeorm";
 import { BadRequestException } from "@nestjs/common";
 import { DataSource } from "typeorm";
 import { ImportService } from "./import.service";
-import { Transaction, TransactionStatus } from "../transactions/entities/transaction.entity";
+import {
+  Transaction,
+  TransactionStatus,
+} from "../transactions/entities/transaction.entity";
 import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
 import {
   Account,
@@ -104,7 +107,9 @@ describe("ImportService", () => {
     linkedAccountId: "acct-brokerage",
   };
 
-  const createMockQueryBuilder = (overrides: Record<string, jest.Mock> = {}) => ({
+  const createMockQueryBuilder = (
+    overrides: Record<string, jest.Mock> = {},
+  ) => ({
     where: jest.fn().mockReturnThis(),
     andWhere: jest.fn().mockReturnThis(),
     innerJoin: jest.fn().mockReturnThis(),
@@ -126,7 +131,11 @@ describe("ImportService", () => {
       rollbackTransaction: jest.fn(),
       release: jest.fn(),
       manager: {
-        save: jest.fn().mockImplementation((entity) => Promise.resolve({ ...entity, id: entity.id || "generated-id" })),
+        save: jest
+          .fn()
+          .mockImplementation((entity) =>
+            Promise.resolve({ ...entity, id: entity.id || "generated-id" }),
+          ),
         delete: jest.fn(),
         findOne: jest.fn().mockResolvedValue(null),
         find: jest.fn().mockResolvedValue([]),
@@ -208,13 +217,28 @@ describe("ImportService", () => {
       providers: [
         ImportService,
         { provide: DataSource, useValue: mockDataSource },
-        { provide: getRepositoryToken(Transaction), useValue: transactionsRepository },
-        { provide: getRepositoryToken(TransactionSplit), useValue: splitsRepository },
+        {
+          provide: getRepositoryToken(Transaction),
+          useValue: transactionsRepository,
+        },
+        {
+          provide: getRepositoryToken(TransactionSplit),
+          useValue: splitsRepository,
+        },
         { provide: getRepositoryToken(Account), useValue: accountsRepository },
-        { provide: getRepositoryToken(Category), useValue: categoriesRepository },
+        {
+          provide: getRepositoryToken(Category),
+          useValue: categoriesRepository,
+        },
         { provide: getRepositoryToken(Payee), useValue: payeesRepository },
-        { provide: getRepositoryToken(Security), useValue: securitiesRepository },
-        { provide: getRepositoryToken(InvestmentTransaction), useValue: investmentTransactionsRepository },
+        {
+          provide: getRepositoryToken(Security),
+          useValue: securitiesRepository,
+        },
+        {
+          provide: getRepositoryToken(InvestmentTransaction),
+          useValue: investmentTransactionsRepository,
+        },
         { provide: getRepositoryToken(Holding), useValue: holdingsRepository },
         { provide: NetWorthService, useValue: mockNetWorthService },
         { provide: SecurityPriceService, useValue: mockSecurityPriceService },
@@ -226,7 +250,8 @@ describe("ImportService", () => {
   });
 
   describe("parseQifFile", () => {
-    const validQifContent = "!Type:Bank\nD01/15/2025\nT-50.00\nPGrocery Store\n^";
+    const validQifContent =
+      "!Type:Bank\nD01/15/2025\nT-50.00\nPGrocery Store\n^";
 
     it("returns parsed QIF data with date range and metadata", async () => {
       mockedValidateQifContent.mockReturnValue({ valid: true });
@@ -293,7 +318,10 @@ describe("ImportService", () => {
     });
 
     it("throws BadRequestException for invalid QIF content", async () => {
-      mockedValidateQifContent.mockReturnValue({ valid: false, error: "File is empty" });
+      mockedValidateQifContent.mockReturnValue({
+        valid: false,
+        error: "File is empty",
+      });
 
       await expect(service.parseQifFile(userId, "")).rejects.toThrow(
         BadRequestException,
@@ -333,13 +361,13 @@ describe("ImportService", () => {
         securities: [],
         detectedDateFormat: "MM/DD/YYYY",
         sampleDates: [],
-        openingBalance: 1500.50,
+        openingBalance: 1500.5,
         openingBalanceDate: "2025-01-01",
       });
 
       const result = await service.parseQifFile(userId, validQifContent);
 
-      expect(result.openingBalance).toBe(1500.50);
+      expect(result.openingBalance).toBe(1500.5);
       expect(result.openingBalanceDate).toBe("2025-01-01");
     });
 
@@ -454,7 +482,17 @@ describe("ImportService", () => {
 
       // QueryRunner manager.findOne: return account when asked
       mockQueryRunner.manager.findOne.mockImplementation(
-        (entity: unknown, options: { where?: { id?: string; userId?: string; name?: string; symbol?: string } }) => {
+        (
+          entity: unknown,
+          options: {
+            where?: {
+              id?: string;
+              userId?: string;
+              name?: string;
+              symbol?: string;
+            };
+          },
+        ) => {
           if (entity === Account && options?.where?.id === "acct-1") {
             return Promise.resolve({ ...mockChequingAccount });
           }
@@ -464,15 +502,23 @@ describe("ImportService", () => {
 
       // save returns an object with a generated id
       let saveCounter = 0;
-      mockQueryRunner.manager.save.mockImplementation((entity: Record<string, unknown>) => {
-        saveCounter++;
-        return Promise.resolve({ ...entity, id: entity.id || `saved-${saveCounter}` });
-      });
+      mockQueryRunner.manager.save.mockImplementation(
+        (entity: Record<string, unknown>) => {
+          saveCounter++;
+          return Promise.resolve({
+            ...entity,
+            id: entity.id || `saved-${saveCounter}`,
+          });
+        },
+      );
     });
 
     describe("validation", () => {
       it("throws BadRequestException for invalid QIF content", async () => {
-        mockedValidateQifContent.mockReturnValue({ valid: false, error: "Invalid QIF format" });
+        mockedValidateQifContent.mockReturnValue({
+          valid: false,
+          error: "Invalid QIF format",
+        });
 
         await expect(
           service.importQifFile(userId, makeBaseDto()),
@@ -527,7 +573,9 @@ describe("ImportService", () => {
 
       it("throws BadRequestException when mapped account ID is invalid", async () => {
         const dto = makeBaseDto({
-          accountMappings: [{ originalName: "Savings", accountId: "bad-acct-id" }],
+          accountMappings: [
+            { originalName: "Savings", accountId: "bad-acct-id" },
+          ],
         });
 
         // First call finds the import target account, second call (for validation) returns null
@@ -543,7 +591,9 @@ describe("ImportService", () => {
 
       it("throws BadRequestException when mapped category ID is invalid", async () => {
         const dto = makeBaseDto({
-          categoryMappings: [{ originalName: "Food", categoryId: "bad-cat-id" }],
+          categoryMappings: [
+            { originalName: "Food", categoryId: "bad-cat-id" },
+          ],
         });
 
         // dataSource.getRepository("Category").findOne returns null for validation
@@ -558,7 +608,9 @@ describe("ImportService", () => {
 
       it("throws BadRequestException when mapped security ID is invalid", async () => {
         const dto = makeBaseDto({
-          securityMappings: [{ originalName: "AAPL", securityId: "bad-sec-id" }],
+          securityMappings: [
+            { originalName: "AAPL", securityId: "bad-sec-id" },
+          ],
         });
 
         mockDataSource.getRepository.mockReturnValue({
@@ -654,7 +706,9 @@ describe("ImportService", () => {
         mockedParseQif.mockReturnValue({
           accountType: "CHEQUING",
           accountName: "",
-          transactions: [makeQifTransaction({ cleared: false, reconciled: false })],
+          transactions: [
+            makeQifTransaction({ cleared: false, reconciled: false }),
+          ],
           categories: [],
           transferAccounts: [],
           securities: [],
@@ -677,7 +731,10 @@ describe("ImportService", () => {
         mockQueryRunner.manager.findOne.mockImplementation(
           (entity: unknown, options: { where?: { id?: string } }) => {
             if (entity === Account && options?.where?.id === "acct-1") {
-              return Promise.resolve({ ...mockChequingAccount, currentBalance: 1000 });
+              return Promise.resolve({
+                ...mockChequingAccount,
+                currentBalance: 1000,
+              });
             }
             return Promise.resolve(null);
           },
@@ -691,7 +748,9 @@ describe("ImportService", () => {
         );
         expect(updateCalls.length).toBeGreaterThan(0);
         const balanceUpdate = updateCalls.find(
-          (call: unknown[]) => call[1] === "acct-1" && (call[2] as Record<string, unknown>).currentBalance !== undefined,
+          (call: unknown[]) =>
+            call[1] === "acct-1" &&
+            (call[2] as Record<string, unknown>).currentBalance !== undefined,
         );
         expect(balanceUpdate).toBeDefined();
         expect(balanceUpdate[2].currentBalance).toBe(950);
@@ -703,8 +762,16 @@ describe("ImportService", () => {
           accountName: "",
           transactions: [
             makeQifTransaction({ date: "2025-01-15", amount: -50 }),
-            makeQifTransaction({ date: "2025-01-16", amount: -30, payee: "Gas Station" }),
-            makeQifTransaction({ date: "2025-01-17", amount: 2000, payee: "Employer" }),
+            makeQifTransaction({
+              date: "2025-01-16",
+              amount: -30,
+              payee: "Gas Station",
+            }),
+            makeQifTransaction({
+              date: "2025-01-17",
+              amount: 2000,
+              payee: "Employer",
+            }),
           ],
           categories: [],
           transferAccounts: [],
@@ -740,21 +807,28 @@ describe("ImportService", () => {
 
         // Make save fail on the first call, succeed on subsequent calls
         let callCount = 0;
-        mockQueryRunner.manager.save.mockImplementation((entity: Record<string, unknown>) => {
-          callCount++;
-          // The first transaction save (3rd save call after create calls)
-          if (callCount === 1) {
-            return Promise.reject(new Error("DB constraint violation"));
-          }
-          return Promise.resolve({ ...entity, id: entity.id || `saved-${callCount}` });
-        });
+        mockQueryRunner.manager.save.mockImplementation(
+          (entity: Record<string, unknown>) => {
+            callCount++;
+            // The first transaction save (3rd save call after create calls)
+            if (callCount === 1) {
+              return Promise.reject(new Error("DB constraint violation"));
+            }
+            return Promise.resolve({
+              ...entity,
+              id: entity.id || `saved-${callCount}`,
+            });
+          },
+        );
 
         const result = await service.importQifFile(userId, makeBaseDto());
 
         expect(result.errors).toBe(1);
         expect(result.imported).toBe(1);
         expect(result.errorMessages).toHaveLength(1);
-        expect(result.errorMessages[0]).toContain("Error importing transaction");
+        expect(result.errorMessages[0]).toContain(
+          "Error importing transaction",
+        );
       });
 
       it("rolls back transaction on catastrophic failure", async () => {
@@ -787,9 +861,7 @@ describe("ImportService", () => {
     describe("category handling", () => {
       it("maps existing categories by ID", async () => {
         const dto = makeBaseDto({
-          categoryMappings: [
-            { originalName: "Food", categoryId: "cat-food" },
-          ],
+          categoryMappings: [{ originalName: "Food", categoryId: "cat-food" }],
         });
 
         // Validate category ownership
@@ -816,7 +888,10 @@ describe("ImportService", () => {
         // New category creation: manager.findOne for existing check returns null
         // manager.save returns the new category
         mockQueryRunner.manager.findOne.mockImplementation(
-          (entity: unknown, options: { where?: { id?: string; name?: string } }) => {
+          (
+            entity: unknown,
+            options: { where?: { id?: string; name?: string } },
+          ) => {
             if (entity === Account && options?.where?.id === "acct-1") {
               return Promise.resolve({ ...mockChequingAccount });
             }
@@ -828,13 +903,21 @@ describe("ImportService", () => {
         );
 
         let saveCount = 0;
-        mockQueryRunner.manager.save.mockImplementation((entity: Record<string, unknown>) => {
-          saveCount++;
-          if (entity.name === "Food & Dining" || (entity as Record<string, unknown>).name === "Food & Dining") {
-            return Promise.resolve({ ...entity, id: "new-cat-1" });
-          }
-          return Promise.resolve({ ...entity, id: entity.id || `saved-${saveCount}` });
-        });
+        mockQueryRunner.manager.save.mockImplementation(
+          (entity: Record<string, unknown>) => {
+            saveCount++;
+            if (
+              entity.name === "Food & Dining" ||
+              (entity as Record<string, unknown>).name === "Food & Dining"
+            ) {
+              return Promise.resolve({ ...entity, id: "new-cat-1" });
+            }
+            return Promise.resolve({
+              ...entity,
+              id: entity.id || `saved-${saveCount}`,
+            });
+          },
+        );
 
         const result = await service.importQifFile(userId, dto);
 
@@ -876,13 +959,15 @@ describe("ImportService", () => {
         );
 
         let categoryCreateCount = 0;
-        mockQueryRunner.manager.save.mockImplementation((entity: Record<string, unknown>) => {
-          if (entity.name === "Food" && !entity.id) {
-            categoryCreateCount++;
-            return Promise.resolve({ ...entity, id: "deduped-cat" });
-          }
-          return Promise.resolve({ ...entity, id: entity.id || "some-id" });
-        });
+        mockQueryRunner.manager.save.mockImplementation(
+          (entity: Record<string, unknown>) => {
+            if (entity.name === "Food" && !entity.id) {
+              categoryCreateCount++;
+              return Promise.resolve({ ...entity, id: "deduped-cat" });
+            }
+            return Promise.resolve({ ...entity, id: entity.id || "some-id" });
+          },
+        );
 
         const result = await service.importQifFile(userId, dto);
 
@@ -898,12 +983,22 @@ describe("ImportService", () => {
         });
 
         mockQueryRunner.manager.findOne.mockImplementation(
-          (entity: unknown, options: { where?: { id?: string; name?: string } }) => {
+          (
+            entity: unknown,
+            options: { where?: { id?: string; name?: string } },
+          ) => {
             if (entity === Account && options?.where?.id === "acct-1") {
               return Promise.resolve({ ...mockChequingAccount });
             }
-            if (entity === Category && options?.where?.name === "Food & Dining") {
-              return Promise.resolve({ id: "existing-cat", userId, name: "Food & Dining" });
+            if (
+              entity === Category &&
+              options?.where?.name === "Food & Dining"
+            ) {
+              return Promise.resolve({
+                id: "existing-cat",
+                userId,
+                name: "Food & Dining",
+              });
             }
             return Promise.resolve(null);
           },
@@ -963,7 +1058,10 @@ describe("ImportService", () => {
     describe("payee handling", () => {
       it("creates new payee when it does not exist", async () => {
         mockQueryRunner.manager.findOne.mockImplementation(
-          (entity: unknown, options: { where?: { id?: string; name?: string } }) => {
+          (
+            entity: unknown,
+            options: { where?: { id?: string; name?: string } },
+          ) => {
             if (entity === Account && options?.where?.id === "acct-1") {
               return Promise.resolve({ ...mockChequingAccount });
             }
@@ -975,10 +1073,15 @@ describe("ImportService", () => {
         );
 
         let saveCount = 0;
-        mockQueryRunner.manager.save.mockImplementation((entity: Record<string, unknown>) => {
-          saveCount++;
-          return Promise.resolve({ ...entity, id: entity.id || `saved-${saveCount}` });
-        });
+        mockQueryRunner.manager.save.mockImplementation(
+          (entity: Record<string, unknown>) => {
+            saveCount++;
+            return Promise.resolve({
+              ...entity,
+              id: entity.id || `saved-${saveCount}`,
+            });
+          },
+        );
 
         const result = await service.importQifFile(userId, makeBaseDto());
 
@@ -987,12 +1090,19 @@ describe("ImportService", () => {
 
       it("reuses existing payee when found by name", async () => {
         mockQueryRunner.manager.findOne.mockImplementation(
-          (entity: unknown, options: { where?: { id?: string; name?: string } }) => {
+          (
+            entity: unknown,
+            options: { where?: { id?: string; name?: string } },
+          ) => {
             if (entity === Account && options?.where?.id === "acct-1") {
               return Promise.resolve({ ...mockChequingAccount });
             }
             if (entity === Payee && options?.where?.name === "Grocery Store") {
-              return Promise.resolve({ id: "existing-payee", userId, name: "Grocery Store" });
+              return Promise.resolve({
+                id: "existing-payee",
+                userId,
+                name: "Grocery Store",
+              });
             }
             return Promise.resolve(null);
           },
@@ -1027,14 +1137,24 @@ describe("ImportService", () => {
       it("creates new non-investment account", async () => {
         const dto = makeBaseDto({
           accountMappings: [
-            { originalName: "Savings", createNew: "Savings Account", accountType: "SAVINGS" },
+            {
+              originalName: "Savings",
+              createNew: "Savings Account",
+              accountType: "SAVINGS",
+            },
           ],
         });
 
         mockedParseQif.mockReturnValue({
           accountType: "CHEQUING",
           accountName: "",
-          transactions: [makeQifTransaction({ isTransfer: true, transferAccount: "Savings", category: "" })],
+          transactions: [
+            makeQifTransaction({
+              isTransfer: true,
+              transferAccount: "Savings",
+              category: "",
+            }),
+          ],
           categories: [],
           transferAccounts: ["Savings"],
           securities: [],
@@ -1045,11 +1165,17 @@ describe("ImportService", () => {
         });
 
         mockQueryRunner.manager.findOne.mockImplementation(
-          (entity: unknown, options: { where?: { id?: string; name?: string } }) => {
+          (
+            entity: unknown,
+            options: { where?: { id?: string; name?: string } },
+          ) => {
             if (entity === Account && options?.where?.id === "acct-1") {
               return Promise.resolve({ ...mockChequingAccount });
             }
-            if (entity === Account && options?.where?.name === "Savings Account") {
+            if (
+              entity === Account &&
+              options?.where?.name === "Savings Account"
+            ) {
               return Promise.resolve(null); // Doesn't exist yet
             }
             return Promise.resolve(null);
@@ -1057,31 +1183,48 @@ describe("ImportService", () => {
         );
 
         let saveCount = 0;
-        mockQueryRunner.manager.save.mockImplementation((entity: Record<string, unknown>) => {
-          saveCount++;
-          if (entity.name === "Savings Account") {
-            return Promise.resolve({ ...entity, id: "new-savings-acct" });
-          }
-          return Promise.resolve({ ...entity, id: entity.id || `saved-${saveCount}` });
-        });
+        mockQueryRunner.manager.save.mockImplementation(
+          (entity: Record<string, unknown>) => {
+            saveCount++;
+            if (entity.name === "Savings Account") {
+              return Promise.resolve({ ...entity, id: "new-savings-acct" });
+            }
+            return Promise.resolve({
+              ...entity,
+              id: entity.id || `saved-${saveCount}`,
+            });
+          },
+        );
 
         const result = await service.importQifFile(userId, dto);
 
         expect(result.accountsCreated).toBe(1);
-        expect(result.createdMappings!.accounts["Savings"]).toBe("new-savings-acct");
+        expect(result.createdMappings!.accounts["Savings"]).toBe(
+          "new-savings-acct",
+        );
       });
 
       it("creates investment account pair (cash + brokerage)", async () => {
         const dto = makeBaseDto({
           accountMappings: [
-            { originalName: "RRSP", createNew: "RRSP", accountType: "INVESTMENT" },
+            {
+              originalName: "RRSP",
+              createNew: "RRSP",
+              accountType: "INVESTMENT",
+            },
           ],
         });
 
         mockedParseQif.mockReturnValue({
           accountType: "CHEQUING",
           accountName: "",
-          transactions: [makeQifTransaction({ isTransfer: true, transferAccount: "RRSP", category: "" })],
+          transactions: [
+            makeQifTransaction({
+              isTransfer: true,
+              transferAccount: "RRSP",
+              category: "",
+            }),
+          ],
           categories: [],
           transferAccounts: ["RRSP"],
           securities: [],
@@ -1092,7 +1235,10 @@ describe("ImportService", () => {
         });
 
         mockQueryRunner.manager.findOne.mockImplementation(
-          (entity: unknown, options: { where?: { id?: string; name?: string } }) => {
+          (
+            entity: unknown,
+            options: { where?: { id?: string; name?: string } },
+          ) => {
             if (entity === Account && options?.where?.id === "acct-1") {
               return Promise.resolve({ ...mockChequingAccount });
             }
@@ -1101,16 +1247,21 @@ describe("ImportService", () => {
         );
 
         let saveCount = 0;
-        mockQueryRunner.manager.save.mockImplementation((entity: Record<string, unknown>) => {
-          saveCount++;
-          if (entity.name === "RRSP - Cash") {
-            return Promise.resolve({ ...entity, id: "rrsp-cash-id" });
-          }
-          if (entity.name === "RRSP - Brokerage") {
-            return Promise.resolve({ ...entity, id: "rrsp-brokerage-id" });
-          }
-          return Promise.resolve({ ...entity, id: entity.id || `saved-${saveCount}` });
-        });
+        mockQueryRunner.manager.save.mockImplementation(
+          (entity: Record<string, unknown>) => {
+            saveCount++;
+            if (entity.name === "RRSP - Cash") {
+              return Promise.resolve({ ...entity, id: "rrsp-cash-id" });
+            }
+            if (entity.name === "RRSP - Brokerage") {
+              return Promise.resolve({ ...entity, id: "rrsp-brokerage-id" });
+            }
+            return Promise.resolve({
+              ...entity,
+              id: entity.id || `saved-${saveCount}`,
+            });
+          },
+        );
 
         const result = await service.importQifFile(userId, dto);
 
@@ -1122,8 +1273,16 @@ describe("ImportService", () => {
       it("deduplicates accounts by name during creation", async () => {
         const dto = makeBaseDto({
           accountMappings: [
-            { originalName: "Savings", createNew: "Savings", accountType: "SAVINGS" },
-            { originalName: "Savings Account", createNew: "Savings", accountType: "SAVINGS" },
+            {
+              originalName: "Savings",
+              createNew: "Savings",
+              accountType: "SAVINGS",
+            },
+            {
+              originalName: "Savings Account",
+              createNew: "Savings",
+              accountType: "SAVINGS",
+            },
           ],
         });
 
@@ -1137,13 +1296,18 @@ describe("ImportService", () => {
         );
 
         let saveCount = 0;
-        mockQueryRunner.manager.save.mockImplementation((entity: Record<string, unknown>) => {
-          saveCount++;
-          if (entity.name === "Savings") {
-            return Promise.resolve({ ...entity, id: "savings-id" });
-          }
-          return Promise.resolve({ ...entity, id: entity.id || `saved-${saveCount}` });
-        });
+        mockQueryRunner.manager.save.mockImplementation(
+          (entity: Record<string, unknown>) => {
+            saveCount++;
+            if (entity.name === "Savings") {
+              return Promise.resolve({ ...entity, id: "savings-id" });
+            }
+            return Promise.resolve({
+              ...entity,
+              id: entity.id || `saved-${saveCount}`,
+            });
+          },
+        );
 
         const result = await service.importQifFile(userId, dto);
 
@@ -1155,15 +1319,21 @@ describe("ImportService", () => {
       it("treats loan-mapped categories as transfers to loan account", async () => {
         const dto = makeBaseDto({
           categoryMappings: [
-            { originalName: "Mortgage", isLoanCategory: true, loanAccountId: "loan-acct-1" },
+            {
+              originalName: "Mortgage",
+              isLoanCategory: true,
+              loanAccountId: "loan-acct-1",
+            },
           ],
         });
 
         // Validate the loan account belongs to user
         accountsRepository.findOne.mockImplementation(
           (options: { where?: { id?: string; userId?: string } }) => {
-            if (options?.where?.id === "acct-1") return Promise.resolve(mockChequingAccount);
-            if (options?.where?.id === "loan-acct-1") return Promise.resolve({ id: "loan-acct-1", userId });
+            if (options?.where?.id === "acct-1")
+              return Promise.resolve(mockChequingAccount);
+            if (options?.where?.id === "loan-acct-1")
+              return Promise.resolve({ id: "loan-acct-1", userId });
             return Promise.resolve(null);
           },
         );
@@ -1171,7 +1341,9 @@ describe("ImportService", () => {
         mockedParseQif.mockReturnValue({
           accountType: "CHEQUING",
           accountName: "",
-          transactions: [makeQifTransaction({ category: "Mortgage", isTransfer: false })],
+          transactions: [
+            makeQifTransaction({ category: "Mortgage", isTransfer: false }),
+          ],
           categories: ["Mortgage"],
           transferAccounts: [],
           securities: [],
@@ -1214,13 +1386,18 @@ describe("ImportService", () => {
         );
 
         let saveCount = 0;
-        mockQueryRunner.manager.save.mockImplementation((entity: Record<string, unknown>) => {
-          saveCount++;
-          if (entity.name === "My Mortgage") {
-            return Promise.resolve({ ...entity, id: "new-loan-acct" });
-          }
-          return Promise.resolve({ ...entity, id: entity.id || `saved-${saveCount}` });
-        });
+        mockQueryRunner.manager.save.mockImplementation(
+          (entity: Record<string, unknown>) => {
+            saveCount++;
+            if (entity.name === "My Mortgage") {
+              return Promise.resolve({ ...entity, id: "new-loan-acct" });
+            }
+            return Promise.resolve({
+              ...entity,
+              id: entity.id || `saved-${saveCount}`,
+            });
+          },
+        );
 
         const result = await service.importQifFile(userId, dto);
 
@@ -1229,7 +1406,8 @@ describe("ImportService", () => {
 
         // Verify loan account was created with negative opening balance
         const loanCreateCall = mockQueryRunner.manager.create.mock.calls.find(
-          (call: unknown[]) => call[0] === Account && (call[1] as any)?.name === "My Mortgage",
+          (call: unknown[]) =>
+            call[0] === Account && (call[1] as any)?.name === "My Mortgage",
         );
         expect(loanCreateCall[1].openingBalance).toBe(-250000);
         expect(loanCreateCall[1].currentBalance).toBe(-250000);
@@ -1270,13 +1448,15 @@ describe("ImportService", () => {
         // Validate savings account
         accountsRepository.findOne.mockImplementation(
           (options: { where?: { id?: string } }) => {
-            if (options?.where?.id === "acct-1") return Promise.resolve(mockChequingAccount);
-            if (options?.where?.id === "savings-acct") return Promise.resolve({
-              id: "savings-acct",
-              userId,
-              currencyCode: "CAD",
-              name: "Savings",
-            });
+            if (options?.where?.id === "acct-1")
+              return Promise.resolve(mockChequingAccount);
+            if (options?.where?.id === "savings-acct")
+              return Promise.resolve({
+                id: "savings-acct",
+                userId,
+                currencyCode: "CAD",
+                name: "Savings",
+              });
             return Promise.resolve(null);
           },
         );
@@ -1287,7 +1467,12 @@ describe("ImportService", () => {
               return Promise.resolve({ ...mockChequingAccount });
             }
             if (entity === Account && options?.where?.id === "savings-acct") {
-              return Promise.resolve({ id: "savings-acct", userId, currencyCode: "CAD", name: "Savings" });
+              return Promise.resolve({
+                id: "savings-acct",
+                userId,
+                currencyCode: "CAD",
+                name: "Savings",
+              });
             }
             return Promise.resolve(null);
           },
@@ -1337,8 +1522,10 @@ describe("ImportService", () => {
 
         accountsRepository.findOne.mockImplementation(
           (options: { where?: { id?: string } }) => {
-            if (options?.where?.id === "acct-1") return Promise.resolve(mockChequingAccount);
-            if (options?.where?.id === "savings-acct") return Promise.resolve({ id: "savings-acct", userId });
+            if (options?.where?.id === "acct-1")
+              return Promise.resolve(mockChequingAccount);
+            if (options?.where?.id === "savings-acct")
+              return Promise.resolve({ id: "savings-acct", userId });
             return Promise.resolve(null);
           },
         );
@@ -1378,8 +1565,20 @@ describe("ImportService", () => {
               amount: -100,
               category: "",
               splits: [
-                { category: "Food", memo: "Groceries", amount: -60, isTransfer: false, transferAccount: "" },
-                { category: "Household", memo: "Cleaning", amount: -40, isTransfer: false, transferAccount: "" },
+                {
+                  category: "Food",
+                  memo: "Groceries",
+                  amount: -60,
+                  isTransfer: false,
+                  transferAccount: "",
+                },
+                {
+                  category: "Household",
+                  memo: "Cleaning",
+                  amount: -40,
+                  isTransfer: false,
+                  transferAccount: "",
+                },
               ],
             }),
           ],
@@ -1403,9 +1602,10 @@ describe("ImportService", () => {
         expect(txCreateCall[1].isTransfer).toBe(false); // Splits: main tx is not a transfer
 
         // Two splits should be created
-        const splitCreateCalls = mockQueryRunner.manager.create.mock.calls.filter(
-          (call: unknown[]) => call[0] === TransactionSplit,
-        );
+        const splitCreateCalls =
+          mockQueryRunner.manager.create.mock.calls.filter(
+            (call: unknown[]) => call[0] === TransactionSplit,
+          );
         expect(splitCreateCalls.length).toBe(2);
         expect(splitCreateCalls[0][1].amount).toBe(-60);
         expect(splitCreateCalls[1][1].amount).toBe(-40);
@@ -1423,7 +1623,7 @@ describe("ImportService", () => {
           securities: [],
           detectedDateFormat: "MM/DD/YYYY",
           sampleDates: [],
-          openingBalance: 500.50,
+          openingBalance: 500.5,
           openingBalanceDate: "2025-01-01",
         });
 
@@ -1440,12 +1640,13 @@ describe("ImportService", () => {
           (call: unknown[]) => call[0] === Account && call[1] === "acct-1",
         );
         const openingBalanceUpdate = updateCalls.find(
-          (call: unknown[]) => (call[2] as Record<string, unknown>).openingBalance !== undefined,
+          (call: unknown[]) =>
+            (call[2] as Record<string, unknown>).openingBalance !== undefined,
         );
         expect(openingBalanceUpdate).toBeDefined();
-        expect(openingBalanceUpdate[2].openingBalance).toBe(500.50);
+        expect(openingBalanceUpdate[2].openingBalance).toBe(500.5);
         // new currentBalance = 200 - 0 + 500.50 = 700.50
-        expect(openingBalanceUpdate[2].currentBalance).toBe(700.50);
+        expect(openingBalanceUpdate[2].currentBalance).toBe(700.5);
       });
     });
 
@@ -1490,11 +1691,17 @@ describe("ImportService", () => {
         });
 
         mockQueryRunner.manager.findOne.mockImplementation(
-          (entity: unknown, options: { where?: { id?: string; symbol?: string } }) => {
+          (
+            entity: unknown,
+            options: { where?: { id?: string; symbol?: string } },
+          ) => {
             if (entity === Account && options?.where?.id === "acct-brokerage") {
               return Promise.resolve({ ...mockBrokerageAccount });
             }
-            if (entity === Account && options?.where?.id === "acct-brokerage-cash") {
+            if (
+              entity === Account &&
+              options?.where?.id === "acct-brokerage-cash"
+            ) {
               return Promise.resolve({ ...mockBrokerageCashAccount });
             }
             if (entity === Security && options?.where?.symbol === "AAPL") {
@@ -1508,13 +1715,18 @@ describe("ImportService", () => {
         );
 
         let saveCount = 0;
-        mockQueryRunner.manager.save.mockImplementation((entity: Record<string, unknown>) => {
-          saveCount++;
-          if (entity.symbol === "AAPL") {
-            return Promise.resolve({ ...entity, id: "new-sec-aapl" });
-          }
-          return Promise.resolve({ ...entity, id: entity.id || `saved-${saveCount}` });
-        });
+        mockQueryRunner.manager.save.mockImplementation(
+          (entity: Record<string, unknown>) => {
+            saveCount++;
+            if (entity.symbol === "AAPL") {
+              return Promise.resolve({ ...entity, id: "new-sec-aapl" });
+            }
+            return Promise.resolve({
+              ...entity,
+              id: entity.id || `saved-${saveCount}`,
+            });
+          },
+        );
 
         const result = await service.importQifFile(userId, dto);
 
@@ -1525,9 +1737,7 @@ describe("ImportService", () => {
       it("reuses existing security from database", async () => {
         const dto = makeBaseDto({
           accountId: "acct-brokerage",
-          securityMappings: [
-            { originalName: "AAPL", createNew: "AAPL" },
-          ],
+          securityMappings: [{ originalName: "AAPL", createNew: "AAPL" }],
         });
 
         accountsRepository.findOne.mockResolvedValue(mockBrokerageAccount);
@@ -1554,15 +1764,25 @@ describe("ImportService", () => {
         });
 
         mockQueryRunner.manager.findOne.mockImplementation(
-          (entity: unknown, options: { where?: { id?: string; symbol?: string } }) => {
+          (
+            entity: unknown,
+            options: { where?: { id?: string; symbol?: string } },
+          ) => {
             if (entity === Account && options?.where?.id === "acct-brokerage") {
               return Promise.resolve({ ...mockBrokerageAccount });
             }
-            if (entity === Account && options?.where?.id === "acct-brokerage-cash") {
+            if (
+              entity === Account &&
+              options?.where?.id === "acct-brokerage-cash"
+            ) {
               return Promise.resolve({ ...mockBrokerageCashAccount });
             }
             if (entity === Security && options?.where?.symbol === "AAPL") {
-              return Promise.resolve({ id: "existing-sec", symbol: "AAPL", userId });
+              return Promise.resolve({
+                id: "existing-sec",
+                symbol: "AAPL",
+                userId,
+              });
             }
             if (entity === Security) {
               return Promise.resolve(null);
@@ -1572,10 +1792,15 @@ describe("ImportService", () => {
         );
 
         let saveCount = 0;
-        mockQueryRunner.manager.save.mockImplementation((entity: Record<string, unknown>) => {
-          saveCount++;
-          return Promise.resolve({ ...entity, id: entity.id || `saved-${saveCount}` });
-        });
+        mockQueryRunner.manager.save.mockImplementation(
+          (entity: Record<string, unknown>) => {
+            saveCount++;
+            return Promise.resolve({
+              ...entity,
+              id: entity.id || `saved-${saveCount}`,
+            });
+          },
+        );
 
         const result = await service.importQifFile(userId, dto);
 
@@ -1625,7 +1850,10 @@ describe("ImportService", () => {
             if (entity === Account && options?.where?.id === "acct-brokerage") {
               return Promise.resolve({ ...mockBrokerageAccount });
             }
-            if (entity === Account && options?.where?.id === "acct-brokerage-cash") {
+            if (
+              entity === Account &&
+              options?.where?.id === "acct-brokerage-cash"
+            ) {
               return Promise.resolve({ ...mockBrokerageCashAccount });
             }
             return Promise.resolve(null);
@@ -1634,14 +1862,19 @@ describe("ImportService", () => {
 
         let savedSecurity: Record<string, unknown> | null = null;
         let saveCount = 0;
-        mockQueryRunner.manager.save.mockImplementation((entity: Record<string, unknown>) => {
-          saveCount++;
-          if (entity.symbol === "MSFT") {
-            savedSecurity = entity;
-            return Promise.resolve({ ...entity, id: "new-sec-msft" });
-          }
-          return Promise.resolve({ ...entity, id: entity.id || `saved-${saveCount}` });
-        });
+        mockQueryRunner.manager.save.mockImplementation(
+          (entity: Record<string, unknown>) => {
+            saveCount++;
+            if (entity.symbol === "MSFT") {
+              savedSecurity = entity;
+              return Promise.resolve({ ...entity, id: "new-sec-msft" });
+            }
+            return Promise.resolve({
+              ...entity,
+              id: entity.id || `saved-${saveCount}`,
+            });
+          },
+        );
 
         await service.importQifFile(userId, dto);
 
@@ -1653,13 +1886,12 @@ describe("ImportService", () => {
 
     describe("investment transaction import", () => {
       const makeInvestmentDto = (overrides: Record<string, unknown> = {}) => ({
-        content: "!Type:Invst\nD01/15/2025\nNBuy\nYAAPL\nI150.00\nQ10\nT1500.00\n^",
+        content:
+          "!Type:Invst\nD01/15/2025\nNBuy\nYAAPL\nI150.00\nQ10\nT1500.00\n^",
         accountId: "acct-brokerage",
         categoryMappings: [],
         accountMappings: [],
-        securityMappings: [
-          { originalName: "AAPL", securityId: "sec-aapl" },
-        ],
+        securityMappings: [{ originalName: "AAPL", securityId: "sec-aapl" }],
         ...overrides,
       });
 
@@ -1676,21 +1908,33 @@ describe("ImportService", () => {
             if (entity === Account && options?.where?.id === "acct-brokerage") {
               return Promise.resolve({ ...mockBrokerageAccount });
             }
-            if (entity === Account && options?.where?.id === "acct-brokerage-cash") {
+            if (
+              entity === Account &&
+              options?.where?.id === "acct-brokerage-cash"
+            ) {
               return Promise.resolve({ ...mockBrokerageCashAccount });
             }
             if (entity === Security && options?.where?.id === "sec-aapl") {
-              return Promise.resolve({ id: "sec-aapl", symbol: "AAPL", userId });
+              return Promise.resolve({
+                id: "sec-aapl",
+                symbol: "AAPL",
+                userId,
+              });
             }
             return Promise.resolve(null);
           },
         );
 
         let saveCount = 0;
-        mockQueryRunner.manager.save.mockImplementation((entity: Record<string, unknown>) => {
-          saveCount++;
-          return Promise.resolve({ ...entity, id: entity.id || `saved-${saveCount}` });
-        });
+        mockQueryRunner.manager.save.mockImplementation(
+          (entity: Record<string, unknown>) => {
+            saveCount++;
+            return Promise.resolve({
+              ...entity,
+              id: entity.id || `saved-${saveCount}`,
+            });
+          },
+        );
       });
 
       it("imports BUY transaction and creates investment tx + cash tx", async () => {
@@ -1775,7 +2019,7 @@ describe("ImportService", () => {
               price: 0,
               quantity: 0,
               commission: 0,
-              amount: 25.50,
+              amount: 25.5,
               date: "2025-03-15",
               payee: "",
               category: "",
@@ -1836,10 +2080,13 @@ describe("ImportService", () => {
 
           // Find the InvestmentTransaction that was saved
           const investmentTxSave = mockQueryRunner.manager.save.mock.calls.find(
-            (call: unknown[]) => (call[0] as Record<string, unknown>)?.action !== undefined,
+            (call: unknown[]) =>
+              (call[0] as Record<string, unknown>)?.action !== undefined,
           );
           expect(investmentTxSave).toBeDefined();
-          expect((investmentTxSave[0] as Record<string, unknown>).action).toBe(mapping.expected);
+          expect((investmentTxSave[0] as Record<string, unknown>).action).toBe(
+            mapping.expected,
+          );
         }
       });
 
@@ -1871,7 +2118,9 @@ describe("ImportService", () => {
 
         // Should still map to BUY action
         const investmentTxSave = mockQueryRunner.manager.save.mock.calls.find(
-          (call: unknown[]) => (call[0] as Record<string, unknown>)?.action === InvestmentAction.BUY,
+          (call: unknown[]) =>
+            (call[0] as Record<string, unknown>)?.action ===
+            InvestmentAction.BUY,
         );
         expect(investmentTxSave).toBeDefined();
       });
@@ -1904,11 +2153,17 @@ describe("ImportService", () => {
         });
 
         mockQueryRunner.manager.findOne.mockImplementation(
-          (entity: unknown, options: { where?: { id?: string; symbol?: string } }) => {
+          (
+            entity: unknown,
+            options: { where?: { id?: string; symbol?: string } },
+          ) => {
             if (entity === Account && options?.where?.id === "acct-brokerage") {
               return Promise.resolve({ ...mockBrokerageAccount });
             }
-            if (entity === Account && options?.where?.id === "acct-brokerage-cash") {
+            if (
+              entity === Account &&
+              options?.where?.id === "acct-brokerage-cash"
+            ) {
               return Promise.resolve({ ...mockBrokerageCashAccount });
             }
             // Security doesn't exist
@@ -1918,14 +2173,19 @@ describe("ImportService", () => {
 
         let savedAutoSecurity: Record<string, unknown> | null = null;
         let saveCount = 0;
-        mockQueryRunner.manager.save.mockImplementation((entity: Record<string, unknown>) => {
-          saveCount++;
-          if (entity.symbol && (entity.symbol as string).includes("*")) {
-            savedAutoSecurity = entity;
-            return Promise.resolve({ ...entity, id: "auto-sec-id" });
-          }
-          return Promise.resolve({ ...entity, id: entity.id || `saved-${saveCount}` });
-        });
+        mockQueryRunner.manager.save.mockImplementation(
+          (entity: Record<string, unknown>) => {
+            saveCount++;
+            if (entity.symbol && (entity.symbol as string).includes("*")) {
+              savedAutoSecurity = entity;
+              return Promise.resolve({ ...entity, id: "auto-sec-id" });
+            }
+            return Promise.resolve({
+              ...entity,
+              id: entity.id || `saved-${saveCount}`,
+            });
+          },
+        );
 
         const result = await service.importQifFile(userId, dto);
 
@@ -1960,15 +2220,27 @@ describe("ImportService", () => {
 
         // No existing holding
         mockQueryRunner.manager.findOne.mockImplementation(
-          (entity: unknown, options: { where?: { id?: string; accountId?: string; securityId?: string } }) => {
+          (
+            entity: unknown,
+            options: {
+              where?: { id?: string; accountId?: string; securityId?: string };
+            },
+          ) => {
             if (entity === Account && options?.where?.id === "acct-brokerage") {
               return Promise.resolve({ ...mockBrokerageAccount });
             }
-            if (entity === Account && options?.where?.id === "acct-brokerage-cash") {
+            if (
+              entity === Account &&
+              options?.where?.id === "acct-brokerage-cash"
+            ) {
               return Promise.resolve({ ...mockBrokerageCashAccount });
             }
             if (entity === Security && options?.where?.id === "sec-aapl") {
-              return Promise.resolve({ id: "sec-aapl", symbol: "AAPL", userId });
+              return Promise.resolve({
+                id: "sec-aapl",
+                symbol: "AAPL",
+                userId,
+              });
             }
             if (entity === Holding) {
               return Promise.resolve(null); // No existing holding
@@ -1981,7 +2253,9 @@ describe("ImportService", () => {
 
         // Should save a new Holding
         const holdingSave = mockQueryRunner.manager.save.mock.calls.find(
-          (call: unknown[]) => (call[0] as Record<string, unknown>)?.accountId === "acct-brokerage" &&
+          (call: unknown[]) =>
+            (call[0] as Record<string, unknown>)?.accountId ===
+              "acct-brokerage" &&
             (call[0] as Record<string, unknown>)?.securityId === "sec-aapl" &&
             (call[0] as Record<string, unknown>)?.quantity !== undefined &&
             !(call[0] as Record<string, unknown>)?.action, // Not an InvestmentTransaction
@@ -2014,17 +2288,32 @@ describe("ImportService", () => {
         });
 
         mockQueryRunner.manager.findOne.mockImplementation(
-          (entity: unknown, options: { where?: { id?: string; accountId?: string; securityId?: string } }) => {
+          (
+            entity: unknown,
+            options: {
+              where?: { id?: string; accountId?: string; securityId?: string };
+            },
+          ) => {
             if (entity === Account && options?.where?.id === "acct-brokerage") {
               return Promise.resolve({ ...mockBrokerageAccount });
             }
-            if (entity === Account && options?.where?.id === "acct-brokerage-cash") {
+            if (
+              entity === Account &&
+              options?.where?.id === "acct-brokerage-cash"
+            ) {
               return Promise.resolve({ ...mockBrokerageCashAccount });
             }
             if (entity === Security && options?.where?.id === "sec-aapl") {
-              return Promise.resolve({ id: "sec-aapl", symbol: "AAPL", userId });
+              return Promise.resolve({
+                id: "sec-aapl",
+                symbol: "AAPL",
+                userId,
+              });
             }
-            if (entity === Holding && options?.where?.accountId === "acct-brokerage") {
+            if (
+              entity === Holding &&
+              options?.where?.accountId === "acct-brokerage"
+            ) {
               return Promise.resolve({
                 accountId: "acct-brokerage",
                 securityId: "sec-aapl",
@@ -2040,7 +2329,8 @@ describe("ImportService", () => {
 
         // Should update holding: new quantity = 10+10 = 20, new avg cost = (10*150 + 10*200)/20 = 175
         const holdingSave = mockQueryRunner.manager.save.mock.calls.find(
-          (call: unknown[]) => (call[0] as Record<string, unknown>)?.securityId === "sec-aapl" &&
+          (call: unknown[]) =>
+            (call[0] as Record<string, unknown>)?.securityId === "sec-aapl" &&
             (call[0] as Record<string, unknown>)?.quantity === 20,
         );
         expect(holdingSave).toBeDefined();
@@ -2071,7 +2361,9 @@ describe("ImportService", () => {
 
         await service.importQifFile(userId, makeInvestmentDto());
 
-        expect(mockSecurityPriceService.backfillHistoricalPrices).toHaveBeenCalled();
+        expect(
+          mockSecurityPriceService.backfillHistoricalPrices,
+        ).toHaveBeenCalled();
       });
     });
 
@@ -2079,22 +2371,26 @@ describe("ImportService", () => {
       it("backfills historical exchange rates after import", async () => {
         await service.importQifFile(userId, makeBaseDto());
 
-        expect(mockExchangeRateService.backfillHistoricalRates).toHaveBeenCalledWith(
-          userId,
-          expect.arrayContaining(["acct-1"]),
-        );
+        expect(
+          mockExchangeRateService.backfillHistoricalRates,
+        ).toHaveBeenCalledWith(userId, expect.arrayContaining(["acct-1"]));
       });
 
       it("triggers net worth recalculation for affected accounts", async () => {
         await service.importQifFile(userId, makeBaseDto());
 
-        expect(mockNetWorthService.recalculateAccount).toHaveBeenCalledWith(userId, "acct-1");
+        expect(mockNetWorthService.recalculateAccount).toHaveBeenCalledWith(
+          userId,
+          "acct-1",
+        );
       });
 
       it("does not backfill security prices for non-investment imports", async () => {
         await service.importQifFile(userId, makeBaseDto());
 
-        expect(mockSecurityPriceService.backfillHistoricalPrices).not.toHaveBeenCalled();
+        expect(
+          mockSecurityPriceService.backfillHistoricalPrices,
+        ).not.toHaveBeenCalled();
       });
 
       it("does not fail when post-import exchange rate backfill fails", async () => {
@@ -2129,11 +2425,18 @@ describe("ImportService", () => {
             if (entity === Account && options?.where?.id === "acct-brokerage") {
               return Promise.resolve({ ...mockBrokerageAccount });
             }
-            if (entity === Account && options?.where?.id === "acct-brokerage-cash") {
+            if (
+              entity === Account &&
+              options?.where?.id === "acct-brokerage-cash"
+            ) {
               return Promise.resolve({ ...mockBrokerageCashAccount });
             }
             if (entity === Security && options?.where?.id === "sec-aapl") {
-              return Promise.resolve({ id: "sec-aapl", symbol: "AAPL", userId });
+              return Promise.resolve({
+                id: "sec-aapl",
+                symbol: "AAPL",
+                userId,
+              });
             }
             return Promise.resolve(null);
           },

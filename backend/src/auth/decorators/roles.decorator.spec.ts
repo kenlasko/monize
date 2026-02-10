@@ -32,7 +32,10 @@ describe("Roles decorator", () => {
       someMethod() {}
     }
 
-    const roles = Reflect.getMetadata(ROLES_KEY, TestClass.prototype.someMethod);
+    const roles = Reflect.getMetadata(
+      ROLES_KEY,
+      TestClass.prototype.someMethod,
+    );
     expect(roles).toEqual(["admin"]);
   });
 });

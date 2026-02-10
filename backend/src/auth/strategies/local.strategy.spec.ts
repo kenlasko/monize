@@ -41,7 +41,10 @@ describe("LocalStrategy", () => {
 
       const result = await strategy.validate("test@example.com", "password123");
 
-      expect(authService.validateUser).toHaveBeenCalledWith("test@example.com", "password123");
+      expect(authService.validateUser).toHaveBeenCalledWith(
+        "test@example.com",
+        "password123",
+      );
       expect(result).toEqual(mockUser);
     });
 

@@ -389,7 +389,8 @@ export class ImportService {
         categoryMap.set(catMapping.originalName, saved.id);
         processedCategories.set(cacheKey, saved.id);
         importResult.categoriesCreated++;
-        importResult.createdMappings!.categories[catMapping.originalName] = saved.id;
+        importResult.createdMappings!.categories[catMapping.originalName] =
+          saved.id;
       }
 
       // Create new accounts (deduplicating by name to avoid creating duplicates
@@ -404,7 +405,8 @@ export class ImportService {
         if (processedAccounts.has(accountName)) {
           const existingId = processedAccounts.get(accountName)!;
           accountMap.set(accMapping.originalName, existingId);
-          importResult.createdMappings!.accounts[accMapping.originalName] = existingId;
+          importResult.createdMappings!.accounts[accMapping.originalName] =
+            existingId;
           continue;
         }
 
@@ -419,12 +421,15 @@ export class ImportService {
           });
         }
         if (existingAccount) {
-          const targetId = existingAccount.accountSubType === AccountSubType.INVESTMENT_BROKERAGE
-            ? existingAccount.linkedAccountId! // Use cash account for brokerage accounts
-            : existingAccount.id;
+          const targetId =
+            existingAccount.accountSubType ===
+            AccountSubType.INVESTMENT_BROKERAGE
+              ? existingAccount.linkedAccountId! // Use cash account for brokerage accounts
+              : existingAccount.id;
           accountMap.set(accMapping.originalName, targetId);
           processedAccounts.set(accountName, targetId);
-          importResult.createdMappings!.accounts[accMapping.originalName] = targetId;
+          importResult.createdMappings!.accounts[accMapping.originalName] =
+            targetId;
           continue;
         }
 
@@ -451,7 +456,8 @@ export class ImportService {
             currentBalance: 0,
             linkedAccountId: savedCash.id,
           });
-          const savedBrokerage = await queryRunner.manager.save(brokerageAccount);
+          const savedBrokerage =
+            await queryRunner.manager.save(brokerageAccount);
 
           // Link cash back to brokerage
           savedCash.linkedAccountId = savedBrokerage.id;
@@ -461,7 +467,8 @@ export class ImportService {
           accountMap.set(accMapping.originalName, savedCash.id);
           processedAccounts.set(accountName, savedCash.id);
           importResult.accountsCreated += 2;
-          importResult.createdMappings!.accounts[accMapping.originalName] = savedCash.id;
+          importResult.createdMappings!.accounts[accMapping.originalName] =
+            savedCash.id;
         } else {
           const newAccount = queryRunner.manager.create(Account, {
             userId,
@@ -475,7 +482,8 @@ export class ImportService {
           accountMap.set(accMapping.originalName, saved.id);
           processedAccounts.set(accountName, saved.id);
           importResult.accountsCreated++;
-          importResult.createdMappings!.accounts[accMapping.originalName] = saved.id;
+          importResult.createdMappings!.accounts[accMapping.originalName] =
+            saved.id;
         }
       }
 
@@ -496,7 +504,8 @@ export class ImportService {
         const saved = await queryRunner.manager.save(newLoanAccount);
         loanCategoryMap.set(loanMapping.originalName, saved.id);
         importResult.accountsCreated++;
-        importResult.createdMappings!.loans[loanMapping.originalName] = saved.id;
+        importResult.createdMappings!.loans[loanMapping.originalName] =
+          saved.id;
       }
 
       // Create new securities (for investment transactions)
@@ -530,7 +539,8 @@ export class ImportService {
           const saved = await queryRunner.manager.save(newSecurity);
           securityMap.set(secMapping.originalName, saved.id);
           importResult.securitiesCreated++;
-          importResult.createdMappings!.securities[secMapping.originalName] = saved.id;
+          importResult.createdMappings!.securities[secMapping.originalName] =
+            saved.id;
         }
       }
 

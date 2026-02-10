@@ -4,9 +4,15 @@ import { OidcService } from "./oidc.service";
 
 // Mock the entire openid-client module
 jest.mock("openid-client", () => {
-  const mockAuthorizationUrl = jest.fn().mockReturnValue("https://issuer.example.com/auth?scope=openid");
-  const mockCallback = jest.fn().mockResolvedValue({ access_token: "at-123", id_token: "id-123" });
-  const mockUserinfo = jest.fn().mockResolvedValue({ sub: "oidc-user-1", email: "user@example.com" });
+  const mockAuthorizationUrl = jest
+    .fn()
+    .mockReturnValue("https://issuer.example.com/auth?scope=openid");
+  const mockCallback = jest
+    .fn()
+    .mockResolvedValue({ access_token: "at-123", id_token: "id-123" });
+  const mockUserinfo = jest
+    .fn()
+    .mockResolvedValue({ sub: "oidc-user-1", email: "user@example.com" });
 
   const MockClient = jest.fn().mockImplementation(() => ({
     authorizationUrl: mockAuthorizationUrl,
@@ -143,9 +149,9 @@ describe("OidcService", () => {
 
   describe("getAuthorizationUrl()", () => {
     it("throws when client is not initialized", () => {
-      expect(() =>
-        service.getAuthorizationUrl("state-1", "nonce-1"),
-      ).toThrow("OIDC client not initialized");
+      expect(() => service.getAuthorizationUrl("state-1", "nonce-1")).toThrow(
+        "OIDC client not initialized",
+      );
     });
 
     it("returns authorization URL after initialization", async () => {
@@ -153,9 +159,7 @@ describe("OidcService", () => {
 
       const url = service.getAuthorizationUrl("state-1", "nonce-1");
 
-      expect(url).toBe(
-        "https://issuer.example.com/auth?scope=openid",
-      );
+      expect(url).toBe("https://issuer.example.com/auth?scope=openid");
       expect(oidcClient.__mockAuthorizationUrl).toHaveBeenCalledWith({
         scope: "openid profile email",
         state: "state-1",

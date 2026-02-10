@@ -124,8 +124,7 @@ describe("SeedService", () => {
       // User insert should not happen
       const userInsert = calls.filter(
         (sql: string) =>
-          sql.includes("INSERT INTO users") &&
-          !sql.includes("SELECT"),
+          sql.includes("INSERT INTO users") && !sql.includes("SELECT"),
       );
       expect(userInsert.length).toBe(0);
     });

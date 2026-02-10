@@ -151,7 +151,8 @@ describe("CsrfGuard", () => {
 
   describe("matching tokens", () => {
     it("returns true when cookie and header tokens match", () => {
-      const token = "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2";
+      const token =
+        "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2";
       const context = createMockContext({
         method: "POST",
         cookies: { csrf_token: token },

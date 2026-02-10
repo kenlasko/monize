@@ -25,7 +25,9 @@ describe("ScheduledTransactionsService", () => {
   const userId = "user-1";
   const stId = "st-1";
 
-  const makeScheduled = (overrides: Partial<ScheduledTransaction> = {}): ScheduledTransaction =>
+  const makeScheduled = (
+    overrides: Partial<ScheduledTransaction> = {},
+  ): ScheduledTransaction =>
     ({
       id: stId,
       userId,
@@ -78,7 +80,9 @@ describe("ScheduledTransactionsService", () => {
   beforeEach(async () => {
     scheduledRepo = {
       create: jest.fn().mockImplementation((data) => ({ id: stId, ...data })),
-      save: jest.fn().mockImplementation((data) => Promise.resolve({ id: stId, ...data })),
+      save: jest
+        .fn()
+        .mockImplementation((data) => Promise.resolve({ id: stId, ...data })),
       findOne: jest.fn(),
       find: jest.fn().mockResolvedValue([]),
       remove: jest.fn().mockResolvedValue(undefined),
@@ -94,8 +98,14 @@ describe("ScheduledTransactionsService", () => {
     };
 
     overridesRepo = {
-      create: jest.fn().mockImplementation((data) => ({ id: "ovr-1", ...data })),
-      save: jest.fn().mockImplementation((data) => Promise.resolve({ id: "ovr-1", ...data })),
+      create: jest
+        .fn()
+        .mockImplementation((data) => ({ id: "ovr-1", ...data })),
+      save: jest
+        .fn()
+        .mockImplementation((data) =>
+          Promise.resolve({ id: "ovr-1", ...data }),
+        ),
       findOne: jest.fn(),
       find: jest.fn().mockResolvedValue([]),
       remove: jest.fn().mockResolvedValue(undefined),
@@ -115,22 +125,35 @@ describe("ScheduledTransactionsService", () => {
 
     transactionsService = {
       create: jest.fn().mockResolvedValue({ id: "tx-1" }),
-      createTransfer: jest.fn().mockResolvedValue([{ id: "tx-1" }, { id: "tx-2" }]),
+      createTransfer: jest
+        .fn()
+        .mockResolvedValue([{ id: "tx-1" }, { id: "tx-2" }]),
     };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ScheduledTransactionsService,
-        { provide: getRepositoryToken(ScheduledTransaction), useValue: scheduledRepo },
-        { provide: getRepositoryToken(ScheduledTransactionSplit), useValue: splitsRepo },
-        { provide: getRepositoryToken(ScheduledTransactionOverride), useValue: overridesRepo },
+        {
+          provide: getRepositoryToken(ScheduledTransaction),
+          useValue: scheduledRepo,
+        },
+        {
+          provide: getRepositoryToken(ScheduledTransactionSplit),
+          useValue: splitsRepo,
+        },
+        {
+          provide: getRepositoryToken(ScheduledTransactionOverride),
+          useValue: overridesRepo,
+        },
         { provide: getRepositoryToken(Account), useValue: accountsRepo },
         { provide: AccountsService, useValue: accountsService },
         { provide: TransactionsService, useValue: transactionsService },
       ],
     }).compile();
 
-    service = module.get<ScheduledTransactionsService>(ScheduledTransactionsService);
+    service = module.get<ScheduledTransactionsService>(
+      ScheduledTransactionsService,
+    );
   });
 
   // Helper: stub findOne to return a scheduled transaction for internal calls
@@ -213,7 +236,9 @@ describe("ScheduledTransactionsService", () => {
 
     it("should throw if transfer to same account", async () => {
       const dto = { ...baseDto, isTransfer: true, transferAccountId: "acc-1" };
-      await expect(service.create(userId, dto)).rejects.toThrow(BadRequestException);
+      await expect(service.create(userId, dto)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it("should verify transfer account ownership", async () => {
@@ -232,7 +257,9 @@ describe("ScheduledTransactionsService", () => {
         ...baseDto,
         splits: [{ categoryId: "cat-a", amount: -1200 }],
       };
-      await expect(service.create(userId, dto)).rejects.toThrow(BadRequestException);
+      await expect(service.create(userId, dto)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it("should reject splits whose sum != amount", async () => {
@@ -243,7 +270,9 @@ describe("ScheduledTransactionsService", () => {
           { categoryId: "cat-b", amount: -400 },
         ],
       };
-      await expect(service.create(userId, dto)).rejects.toThrow(BadRequestException);
+      await expect(service.create(userId, dto)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it("should reject splits with zero amount", async () => {
@@ -254,7 +283,9 @@ describe("ScheduledTransactionsService", () => {
           { categoryId: "cat-b", amount: -1200 },
         ],
       };
-      await expect(service.create(userId, dto)).rejects.toThrow(BadRequestException);
+      await expect(service.create(userId, dto)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it("should allow single split with transferAccountId (loan payment)", async () => {
@@ -301,12 +332,16 @@ describe("ScheduledTransactionsService", () => {
 
     it("should throw NotFoundException if not found", async () => {
       scheduledRepo.findOne.mockResolvedValue(null);
-      await expect(service.findOne(userId, stId)).rejects.toThrow(NotFoundException);
+      await expect(service.findOne(userId, stId)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it("should throw ForbiddenException if userId does not match", async () => {
       stubFindOne(makeScheduled({ userId: "other-user" }));
-      await expect(service.findOne(userId, stId)).rejects.toThrow(ForbiddenException);
+      await expect(service.findOne(userId, stId)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
   });
 
@@ -362,7 +397,9 @@ describe("ScheduledTransactionsService", () => {
       await service.findUpcoming(userId);
 
       expect(qb.where).toHaveBeenCalledWith("st.userId = :userId", { userId });
-      expect(qb.andWhere).toHaveBeenCalledWith("st.isActive = :isActive", { isActive: true });
+      expect(qb.andWhere).toHaveBeenCalledWith("st.isActive = :isActive", {
+        isActive: true,
+      });
     });
 
     it("should accept custom days parameter", async () => {
@@ -384,7 +421,10 @@ describe("ScheduledTransactionsService", () => {
       const scheduled = makeScheduled();
       stubFindOne(scheduled);
 
-      await service.update(userId, stId, { name: "Updated Rent", amount: -1500 });
+      await service.update(userId, stId, {
+        name: "Updated Rent",
+        amount: -1500,
+      });
 
       expect(scheduledRepo.update).toHaveBeenCalledWith(
         stId,
@@ -406,7 +446,10 @@ describe("ScheduledTransactionsService", () => {
       stubFindOne(scheduled);
 
       await expect(
-        service.update(userId, stId, { isTransfer: true, transferAccountId: "acc-1" }),
+        service.update(userId, stId, {
+          isTransfer: true,
+          transferAccountId: "acc-1",
+        }),
       ).rejects.toThrow(BadRequestException);
     });
 
@@ -421,7 +464,9 @@ describe("ScheduledTransactionsService", () => {
         ],
       });
 
-      expect(splitsRepo.delete).toHaveBeenCalledWith({ scheduledTransactionId: stId });
+      expect(splitsRepo.delete).toHaveBeenCalledWith({
+        scheduledTransactionId: stId,
+      });
       expect(splitsRepo.create).toHaveBeenCalledTimes(2);
     });
 
@@ -431,15 +476,23 @@ describe("ScheduledTransactionsService", () => {
 
       await service.update(userId, stId, { splits: [] });
 
-      expect(splitsRepo.delete).toHaveBeenCalledWith({ scheduledTransactionId: stId });
-      expect(scheduledRepo.update).toHaveBeenCalledWith(stId, expect.objectContaining({ isSplit: false }));
+      expect(splitsRepo.delete).toHaveBeenCalledWith({
+        scheduledTransactionId: stId,
+      });
+      expect(scheduledRepo.update).toHaveBeenCalledWith(
+        stId,
+        expect.objectContaining({ isSplit: false }),
+      );
     });
 
     it("should convert empty strings to null for nullable fields", async () => {
       const scheduled = makeScheduled();
       stubFindOne(scheduled);
 
-      await service.update(userId, stId, { description: "" as any, payeeName: "" as any });
+      await service.update(userId, stId, {
+        description: "" as any,
+        payeeName: "" as any,
+      });
 
       const updateArg = scheduledRepo.update.mock.calls[0][1];
       expect(updateArg.description).toBeNull();
@@ -450,9 +503,14 @@ describe("ScheduledTransactionsService", () => {
       const scheduled = makeScheduled({ isSplit: true });
       stubFindOne(scheduled);
 
-      await service.update(userId, stId, { isTransfer: true, transferAccountId: "acc-2" });
+      await service.update(userId, stId, {
+        isTransfer: true,
+        transferAccountId: "acc-2",
+      });
 
-      expect(splitsRepo.delete).toHaveBeenCalledWith({ scheduledTransactionId: stId });
+      expect(splitsRepo.delete).toHaveBeenCalledWith({
+        scheduledTransactionId: stId,
+      });
       const updateArg = scheduledRepo.update.mock.calls[0][1];
       expect(updateArg.isTransfer).toBe(true);
       expect(updateArg.isSplit).toBe(false);
@@ -473,7 +531,9 @@ describe("ScheduledTransactionsService", () => {
 
     it("should throw NotFoundException if not found", async () => {
       scheduledRepo.findOne.mockResolvedValue(null);
-      await expect(service.remove(userId, stId)).rejects.toThrow(NotFoundException);
+      await expect(service.remove(userId, stId)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -491,83 +551,123 @@ describe("ScheduledTransactionsService", () => {
 
   describe("skip", () => {
     it("should advance DAILY by 1 day", async () => {
-      const scheduled = makeScheduled({ frequency: "DAILY", nextDueDate: localDate(2025, 3, 1) });
+      const scheduled = makeScheduled({
+        frequency: "DAILY",
+        nextDueDate: localDate(2025, 3, 1),
+      });
       stubFindOne(scheduled);
 
       await service.skip(userId, stId);
 
       const updateArg = scheduledRepo.update.mock.calls[0][1];
-      expect(toLocalDateStr(new Date(updateArg.nextDueDate))).toBe("2025-03-02");
+      expect(toLocalDateStr(new Date(updateArg.nextDueDate))).toBe(
+        "2025-03-02",
+      );
     });
 
     it("should advance WEEKLY by 7 days", async () => {
-      const scheduled = makeScheduled({ frequency: "WEEKLY", nextDueDate: localDate(2025, 3, 1) });
+      const scheduled = makeScheduled({
+        frequency: "WEEKLY",
+        nextDueDate: localDate(2025, 3, 1),
+      });
       stubFindOne(scheduled);
 
       await service.skip(userId, stId);
 
       const updateArg = scheduledRepo.update.mock.calls[0][1];
-      expect(toLocalDateStr(new Date(updateArg.nextDueDate))).toBe("2025-03-08");
+      expect(toLocalDateStr(new Date(updateArg.nextDueDate))).toBe(
+        "2025-03-08",
+      );
     });
 
     it("should advance BIWEEKLY by 14 days", async () => {
-      const scheduled = makeScheduled({ frequency: "BIWEEKLY", nextDueDate: localDate(2025, 3, 1) });
+      const scheduled = makeScheduled({
+        frequency: "BIWEEKLY",
+        nextDueDate: localDate(2025, 3, 1),
+      });
       stubFindOne(scheduled);
 
       await service.skip(userId, stId);
 
       const updateArg = scheduledRepo.update.mock.calls[0][1];
-      expect(toLocalDateStr(new Date(updateArg.nextDueDate))).toBe("2025-03-15");
+      expect(toLocalDateStr(new Date(updateArg.nextDueDate))).toBe(
+        "2025-03-15",
+      );
     });
 
     it("should advance SEMIMONTHLY: day<=15 goes to last day of month", async () => {
-      const scheduled = makeScheduled({ frequency: "SEMIMONTHLY", nextDueDate: localDate(2025, 3, 15) });
+      const scheduled = makeScheduled({
+        frequency: "SEMIMONTHLY",
+        nextDueDate: localDate(2025, 3, 15),
+      });
       stubFindOne(scheduled);
 
       await service.skip(userId, stId);
 
       const updateArg = scheduledRepo.update.mock.calls[0][1];
-      expect(toLocalDateStr(new Date(updateArg.nextDueDate))).toBe("2025-03-31");
+      expect(toLocalDateStr(new Date(updateArg.nextDueDate))).toBe(
+        "2025-03-31",
+      );
     });
 
     it("should advance SEMIMONTHLY: day>15 goes to 15th of next month", async () => {
-      const scheduled = makeScheduled({ frequency: "SEMIMONTHLY", nextDueDate: localDate(2025, 3, 31) });
+      const scheduled = makeScheduled({
+        frequency: "SEMIMONTHLY",
+        nextDueDate: localDate(2025, 3, 31),
+      });
       stubFindOne(scheduled);
 
       await service.skip(userId, stId);
 
       const updateArg = scheduledRepo.update.mock.calls[0][1];
-      expect(toLocalDateStr(new Date(updateArg.nextDueDate))).toBe("2025-04-15");
+      expect(toLocalDateStr(new Date(updateArg.nextDueDate))).toBe(
+        "2025-04-15",
+      );
     });
 
     it("should advance MONTHLY by 1 month", async () => {
-      const scheduled = makeScheduled({ frequency: "MONTHLY", nextDueDate: localDate(2025, 1, 15) });
+      const scheduled = makeScheduled({
+        frequency: "MONTHLY",
+        nextDueDate: localDate(2025, 1, 15),
+      });
       stubFindOne(scheduled);
 
       await service.skip(userId, stId);
 
       const updateArg = scheduledRepo.update.mock.calls[0][1];
-      expect(toLocalDateStr(new Date(updateArg.nextDueDate))).toBe("2025-02-15");
+      expect(toLocalDateStr(new Date(updateArg.nextDueDate))).toBe(
+        "2025-02-15",
+      );
     });
 
     it("should advance QUARTERLY by 3 months", async () => {
-      const scheduled = makeScheduled({ frequency: "QUARTERLY", nextDueDate: localDate(2025, 1, 15) });
+      const scheduled = makeScheduled({
+        frequency: "QUARTERLY",
+        nextDueDate: localDate(2025, 1, 15),
+      });
       stubFindOne(scheduled);
 
       await service.skip(userId, stId);
 
       const updateArg = scheduledRepo.update.mock.calls[0][1];
-      expect(toLocalDateStr(new Date(updateArg.nextDueDate))).toBe("2025-04-15");
+      expect(toLocalDateStr(new Date(updateArg.nextDueDate))).toBe(
+        "2025-04-15",
+      );
     });
 
     it("should advance YEARLY by 1 year", async () => {
-      const scheduled = makeScheduled({ frequency: "YEARLY", nextDueDate: localDate(2025, 1, 15) });
+      const scheduled = makeScheduled({
+        frequency: "YEARLY",
+        nextDueDate: localDate(2025, 1, 15),
+      });
       stubFindOne(scheduled);
 
       await service.skip(userId, stId);
 
       const updateArg = scheduledRepo.update.mock.calls[0][1];
-      expect(toLocalDateStr(new Date(updateArg.nextDueDate))).toBe("2026-01-15");
+      expect(toLocalDateStr(new Date(updateArg.nextDueDate))).toBe(
+        "2026-01-15",
+      );
     });
 
     it("should delete override for the skipped date", async () => {
@@ -651,7 +751,10 @@ describe("ScheduledTransactionsService", () => {
     });
 
     it("should use createTransfer for transfer transactions", async () => {
-      const scheduled = makeScheduled({ isTransfer: true, transferAccountId: "acc-2" });
+      const scheduled = makeScheduled({
+        isTransfer: true,
+        transferAccountId: "acc-2",
+      });
       stubFindOne(scheduled);
       const overrideQb = mockQueryBuilder(null);
       overrideQb.getOne.mockResolvedValue(null);
@@ -675,11 +778,17 @@ describe("ScheduledTransactionsService", () => {
       const scheduled = makeScheduled({ amount: -1200 });
       stubFindOne(scheduled);
       const overrideQb = mockQueryBuilder(null);
-      overrideQb.getOne.mockResolvedValue({ amount: -999, description: "override desc" });
+      overrideQb.getOne.mockResolvedValue({
+        amount: -999,
+        description: "override desc",
+      });
       overridesRepo.createQueryBuilder.mockReturnValue(overrideQb);
       accountsRepo.findOne.mockResolvedValue(null);
 
-      await service.post(userId, stId, { amount: -500, description: "inline desc" });
+      await service.post(userId, stId, {
+        amount: -500,
+        description: "inline desc",
+      });
 
       expect(transactionsService.create).toHaveBeenCalledWith(
         userId,
@@ -688,10 +797,19 @@ describe("ScheduledTransactionsService", () => {
     });
 
     it("should apply stored override values when no inline values", async () => {
-      const scheduled = makeScheduled({ amount: -1200, description: "base desc" });
+      const scheduled = makeScheduled({
+        amount: -1200,
+        description: "base desc",
+      });
       stubFindOne(scheduled);
       const overrideQb = mockQueryBuilder(null);
-      overrideQb.getOne.mockResolvedValue({ amount: -999, description: "override desc", isSplit: null, categoryId: null, splits: null });
+      overrideQb.getOne.mockResolvedValue({
+        amount: -999,
+        description: "override desc",
+        isSplit: null,
+        categoryId: null,
+        splits: null,
+      });
       overridesRepo.createQueryBuilder.mockReturnValue(overrideQb);
       accountsRepo.findOne.mockResolvedValue(null);
 
@@ -706,7 +824,14 @@ describe("ScheduledTransactionsService", () => {
     it("should delete used override after posting", async () => {
       const scheduled = makeScheduled();
       stubFindOne(scheduled);
-      const storedOverride = { id: "ovr-1", amount: null, description: null, isSplit: null, categoryId: null, splits: null };
+      const storedOverride = {
+        id: "ovr-1",
+        amount: null,
+        description: null,
+        isSplit: null,
+        categoryId: null,
+        splits: null,
+      };
       const overrideQb = mockQueryBuilder(null);
       overrideQb.getOne.mockResolvedValue(storedOverride);
       overridesRepo.createQueryBuilder.mockReturnValue(overrideQb);
@@ -734,7 +859,10 @@ describe("ScheduledTransactionsService", () => {
     });
 
     it("should advance nextDueDate for recurring frequency", async () => {
-      const scheduled = makeScheduled({ frequency: "MONTHLY", nextDueDate: localDate(2025, 2, 15) });
+      const scheduled = makeScheduled({
+        frequency: "MONTHLY",
+        nextDueDate: localDate(2025, 2, 15),
+      });
       stubFindOne(scheduled);
       const overrideQb = mockQueryBuilder(null);
       overrideQb.getOne.mockResolvedValue(null);
@@ -744,7 +872,9 @@ describe("ScheduledTransactionsService", () => {
       await service.post(userId, stId);
 
       const updateArg = scheduledRepo.update.mock.calls[0][1];
-      expect(toLocalDateStr(new Date(updateArg.nextDueDate))).toBe("2025-03-15");
+      expect(toLocalDateStr(new Date(updateArg.nextDueDate))).toBe(
+        "2025-03-15",
+      );
     });
 
     it("should decrement occurrencesRemaining and deactivate at 0", async () => {
@@ -766,8 +896,22 @@ describe("ScheduledTransactionsService", () => {
       const scheduled = makeScheduled({
         isSplit: true,
         splits: [
-          { id: "s1", scheduledTransactionId: stId, categoryId: "cat-a", transferAccountId: null, amount: -700, memo: null } as any,
-          { id: "s2", scheduledTransactionId: stId, categoryId: "cat-b", transferAccountId: null, amount: -500, memo: null } as any,
+          {
+            id: "s1",
+            scheduledTransactionId: stId,
+            categoryId: "cat-a",
+            transferAccountId: null,
+            amount: -700,
+            memo: null,
+          } as any,
+          {
+            id: "s2",
+            scheduledTransactionId: stId,
+            categoryId: "cat-b",
+            transferAccountId: null,
+            amount: -500,
+            memo: null,
+          } as any,
         ],
       });
       stubFindOne(scheduled);
@@ -800,15 +944,18 @@ describe("ScheduledTransactionsService", () => {
     });
 
     it("should clean stale overrides after advancing date", async () => {
-      const scheduled = makeScheduled({ frequency: "MONTHLY", nextDueDate: new Date("2025-02-15") });
+      const scheduled = makeScheduled({
+        frequency: "MONTHLY",
+        nextDueDate: new Date("2025-02-15"),
+      });
       stubFindOne(scheduled);
       const overrideQb = mockQueryBuilder(null);
       overrideQb.getOne.mockResolvedValue(null);
       // For stale override cleanup, createQueryBuilder returns a delete chain
       const deleteQb = mockQueryBuilder(null);
       overridesRepo.createQueryBuilder
-        .mockReturnValueOnce(overrideQb)   // first call: find stored override
-        .mockReturnValueOnce(deleteQb);    // second call: delete stale
+        .mockReturnValueOnce(overrideQb) // first call: find stored override
+        .mockReturnValueOnce(deleteQb); // second call: delete stale
       accountsRepo.findOne.mockResolvedValue(null);
 
       await service.post(userId, stId);
@@ -818,12 +965,32 @@ describe("ScheduledTransactionsService", () => {
     });
 
     it("should trigger loan payment recalculation for split transactions", async () => {
-      const loanAccount = { id: "loan-1", accountType: "LOAN", currentBalance: -50000, interestRate: 5, paymentFrequency: "MONTHLY" };
+      const loanAccount = {
+        id: "loan-1",
+        accountType: "LOAN",
+        currentBalance: -50000,
+        interestRate: 5,
+        paymentFrequency: "MONTHLY",
+      };
       const scheduled = makeScheduled({
         isSplit: true,
         splits: [
-          { id: "s1", scheduledTransactionId: stId, categoryId: null, transferAccountId: "loan-1", amount: -800, memo: null } as any,
-          { id: "s2", scheduledTransactionId: stId, categoryId: "cat-interest", transferAccountId: null, amount: -400, memo: null } as any,
+          {
+            id: "s1",
+            scheduledTransactionId: stId,
+            categoryId: null,
+            transferAccountId: "loan-1",
+            amount: -800,
+            memo: null,
+          } as any,
+          {
+            id: "s2",
+            scheduledTransactionId: stId,
+            categoryId: "cat-interest",
+            transferAccountId: null,
+            amount: -400,
+            memo: null,
+          } as any,
         ],
       });
       stubFindOne(scheduled);
@@ -854,11 +1021,18 @@ describe("ScheduledTransactionsService", () => {
       existingQb.getOne.mockResolvedValue(null);
       overridesRepo.createQueryBuilder.mockReturnValue(existingQb);
 
-      const dto = { originalDate: "2025-02-15", overrideDate: "2025-02-15", amount: -999 };
+      const dto = {
+        originalDate: "2025-02-15",
+        overrideDate: "2025-02-15",
+        amount: -999,
+      };
       const result = await service.createOverride(userId, stId, dto);
 
       expect(overridesRepo.create).toHaveBeenCalledWith(
-        expect.objectContaining({ scheduledTransactionId: stId, originalDate: "2025-02-15" }),
+        expect.objectContaining({
+          scheduledTransactionId: stId,
+          originalDate: "2025-02-15",
+        }),
       );
       expect(overridesRepo.save).toHaveBeenCalled();
       expect(result).toBeDefined();
@@ -871,7 +1045,9 @@ describe("ScheduledTransactionsService", () => {
       overridesRepo.createQueryBuilder.mockReturnValue(existingQb);
 
       const dto = { originalDate: "2025-02-15", overrideDate: "2025-02-15" };
-      await expect(service.createOverride(userId, stId, dto)).rejects.toThrow(BadRequestException);
+      await expect(service.createOverride(userId, stId, dto)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it("should validate override splits", async () => {
@@ -887,7 +1063,9 @@ describe("ScheduledTransactionsService", () => {
         isSplit: true,
         splits: [{ categoryId: "cat-a", amount: -600 }], // only 1 split
       };
-      await expect(service.createOverride(userId, stId, dto)).rejects.toThrow(BadRequestException);
+      await expect(service.createOverride(userId, stId, dto)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it("should require amount when creating split override", async () => {
@@ -905,7 +1083,9 @@ describe("ScheduledTransactionsService", () => {
           { categoryId: "cat-b", amount: -400 },
         ],
       };
-      await expect(service.createOverride(userId, stId, dto)).rejects.toThrow(BadRequestException);
+      await expect(service.createOverride(userId, stId, dto)).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
@@ -938,17 +1118,27 @@ describe("ScheduledTransactionsService", () => {
       stubFindOne(makeScheduled());
       overridesRepo.findOne.mockResolvedValue(null);
 
-      await expect(service.findOverride(userId, stId, "ovr-999")).rejects.toThrow(NotFoundException);
+      await expect(
+        service.findOverride(userId, stId, "ovr-999"),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
   describe("findOverrideByDate", () => {
     it("should return override matching originalDate", async () => {
       stubFindOne(makeScheduled());
-      const override = { id: "ovr-1", originalDate: "2025-02-15", scheduledTransactionId: stId };
+      const override = {
+        id: "ovr-1",
+        originalDate: "2025-02-15",
+        scheduledTransactionId: stId,
+      };
       overridesRepo.find.mockResolvedValue([override]);
 
-      const result = await service.findOverrideByDate(userId, stId, "2025-02-15");
+      const result = await service.findOverrideByDate(
+        userId,
+        stId,
+        "2025-02-15",
+      );
       expect(result).toEqual(override);
     });
 
@@ -956,23 +1146,43 @@ describe("ScheduledTransactionsService", () => {
       stubFindOne(makeScheduled());
       overridesRepo.find.mockResolvedValue([]);
 
-      const result = await service.findOverrideByDate(userId, stId, "2025-02-15");
+      const result = await service.findOverrideByDate(
+        userId,
+        stId,
+        "2025-02-15",
+      );
       expect(result).toBeNull();
     });
 
     it("should normalize datetime strings to date-only", async () => {
       stubFindOne(makeScheduled());
-      const override = { id: "ovr-1", originalDate: "2025-02-15T00:00:00.000Z", scheduledTransactionId: stId };
+      const override = {
+        id: "ovr-1",
+        originalDate: "2025-02-15T00:00:00.000Z",
+        scheduledTransactionId: stId,
+      };
       overridesRepo.find.mockResolvedValue([override]);
 
-      const result = await service.findOverrideByDate(userId, stId, "2025-02-15T12:00:00Z");
+      const result = await service.findOverrideByDate(
+        userId,
+        stId,
+        "2025-02-15T12:00:00Z",
+      );
       expect(result).toEqual(override);
     });
   });
 
   describe("updateOverride", () => {
     it("should update override fields", async () => {
-      const existing = { id: "ovr-1", scheduledTransactionId: stId, amount: -1000, categoryId: null, description: null, isSplit: null, splits: null };
+      const existing = {
+        id: "ovr-1",
+        scheduledTransactionId: stId,
+        amount: -1000,
+        categoryId: null,
+        description: null,
+        isSplit: null,
+        splits: null,
+      };
       stubFindOne(makeScheduled());
       overridesRepo.findOne.mockResolvedValue(existing);
 
@@ -984,7 +1194,11 @@ describe("ScheduledTransactionsService", () => {
     });
 
     it("should validate splits on update", async () => {
-      const existing = { id: "ovr-1", scheduledTransactionId: stId, amount: -1000 };
+      const existing = {
+        id: "ovr-1",
+        scheduledTransactionId: stId,
+        amount: -1000,
+      };
       stubFindOne(makeScheduled());
       overridesRepo.findOne.mockResolvedValue(existing);
 
@@ -1017,7 +1231,9 @@ describe("ScheduledTransactionsService", () => {
       const result = await service.removeAllOverrides(userId, stId);
 
       expect(result).toBe(3);
-      expect(overridesRepo.delete).toHaveBeenCalledWith({ scheduledTransactionId: stId });
+      expect(overridesRepo.delete).toHaveBeenCalledWith({
+        scheduledTransactionId: stId,
+      });
     });
 
     it("should return 0 when no overrides deleted", async () => {
@@ -1107,12 +1323,19 @@ describe("ScheduledTransactionsService", () => {
   // ==================== recalculateLoanPaymentSplits ====================
   describe("recalculateLoanPaymentSplits", () => {
     it("should deactivate scheduled transaction when loan is paid off", async () => {
-      accountsRepo.findOne.mockResolvedValue({ id: "loan-1", currentBalance: 0 });
-      scheduledRepo.findOne.mockResolvedValue(makeScheduled({ isActive: true, splits: [] }));
+      accountsRepo.findOne.mockResolvedValue({
+        id: "loan-1",
+        currentBalance: 0,
+      });
+      scheduledRepo.findOne.mockResolvedValue(
+        makeScheduled({ isActive: true, splits: [] }),
+      );
 
       await service.recalculateLoanPaymentSplits(stId, "loan-1");
 
-      expect(scheduledRepo.update).toHaveBeenCalledWith(stId, { isActive: false });
+      expect(scheduledRepo.update).toHaveBeenCalledWith(stId, {
+        isActive: false,
+      });
     });
 
     it("should do nothing when loan account not found", async () => {
@@ -1124,7 +1347,11 @@ describe("ScheduledTransactionsService", () => {
     });
 
     it("should do nothing when scheduled transaction not found", async () => {
-      accountsRepo.findOne.mockResolvedValue({ id: "loan-1", currentBalance: -50000, interestRate: 5 });
+      accountsRepo.findOne.mockResolvedValue({
+        id: "loan-1",
+        currentBalance: -50000,
+        interestRate: 5,
+      });
       scheduledRepo.findOne.mockResolvedValue(null);
 
       await service.recalculateLoanPaymentSplits(stId, "loan-1");
@@ -1133,9 +1360,24 @@ describe("ScheduledTransactionsService", () => {
     });
 
     it("should update principal and interest splits", async () => {
-      const loanAccount = { id: "loan-1", currentBalance: -50000, interestRate: 6, paymentFrequency: "MONTHLY" };
-      const principalSplit = { id: "s1", transferAccountId: "loan-1", categoryId: null, amount: -800 };
-      const interestSplit = { id: "s2", transferAccountId: null, categoryId: "cat-interest", amount: -400 };
+      const loanAccount = {
+        id: "loan-1",
+        currentBalance: -50000,
+        interestRate: 6,
+        paymentFrequency: "MONTHLY",
+      };
+      const principalSplit = {
+        id: "s1",
+        transferAccountId: "loan-1",
+        categoryId: null,
+        amount: -800,
+      };
+      const interestSplit = {
+        id: "s2",
+        transferAccountId: null,
+        categoryId: "cat-interest",
+        amount: -400,
+      };
       const scheduled = makeScheduled({
         isActive: true,
         amount: -1200,

@@ -17,7 +17,10 @@ describe("CsrfRefreshInterceptor", () => {
   function createMockContext(overrides: {
     cookies?: Record<string, string>;
     headersSent?: boolean;
-  }): { context: ExecutionContext; response: { cookie: jest.Mock; headersSent: boolean } } {
+  }): {
+    context: ExecutionContext;
+    response: { cookie: jest.Mock; headersSent: boolean };
+  } {
     const response = {
       cookie: jest.fn(),
       headersSent: overrides.headersSent ?? false,

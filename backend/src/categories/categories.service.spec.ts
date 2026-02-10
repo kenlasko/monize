@@ -59,7 +59,9 @@ describe("CategoriesService", () => {
     isSystem: true,
   };
 
-  const createMockQueryBuilder = (overrides: Record<string, jest.Mock> = {}) => ({
+  const createMockQueryBuilder = (
+    overrides: Record<string, jest.Mock> = {},
+  ) => ({
     where: jest.fn().mockReturnThis(),
     andWhere: jest.fn().mockReturnThis(),
     orderBy: jest.fn().mockReturnThis(),
@@ -79,8 +81,12 @@ describe("CategoriesService", () => {
 
   beforeEach(async () => {
     categoriesRepository = {
-      create: jest.fn().mockImplementation((data) => ({ ...data, id: "new-cat" })),
-      save: jest.fn().mockImplementation((data) => ({ ...data, id: data.id || "new-cat" })),
+      create: jest
+        .fn()
+        .mockImplementation((data) => ({ ...data, id: "new-cat" })),
+      save: jest
+        .fn()
+        .mockImplementation((data) => ({ ...data, id: data.id || "new-cat" })),
       findOne: jest.fn(),
       find: jest.fn(),
       remove: jest.fn(),
@@ -117,12 +123,27 @@ describe("CategoriesService", () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         CategoriesService,
-        { provide: getRepositoryToken(Category), useValue: categoriesRepository },
-        { provide: getRepositoryToken(Transaction), useValue: transactionsRepository },
-        { provide: getRepositoryToken(TransactionSplit), useValue: splitsRepository },
+        {
+          provide: getRepositoryToken(Category),
+          useValue: categoriesRepository,
+        },
+        {
+          provide: getRepositoryToken(Transaction),
+          useValue: transactionsRepository,
+        },
+        {
+          provide: getRepositoryToken(TransactionSplit),
+          useValue: splitsRepository,
+        },
         { provide: getRepositoryToken(Payee), useValue: payeesRepository },
-        { provide: getRepositoryToken(ScheduledTransaction), useValue: scheduledTransactionsRepository },
-        { provide: getRepositoryToken(ScheduledTransactionSplit), useValue: scheduledSplitsRepository },
+        {
+          provide: getRepositoryToken(ScheduledTransaction),
+          useValue: scheduledTransactionsRepository,
+        },
+        {
+          provide: getRepositoryToken(ScheduledTransactionSplit),
+          useValue: scheduledSplitsRepository,
+        },
       ],
     }).compile();
 
@@ -132,11 +153,18 @@ describe("CategoriesService", () => {
   describe("create", () => {
     it("creates a category without parent", async () => {
       const dto = { name: "Food", isIncome: false };
-      categoriesRepository.save.mockResolvedValue({ ...dto, id: "new-cat", userId: "user-1" });
+      categoriesRepository.save.mockResolvedValue({
+        ...dto,
+        id: "new-cat",
+        userId: "user-1",
+      });
 
       const result = await service.create("user-1", dto);
 
-      expect(categoriesRepository.create).toHaveBeenCalledWith({ ...dto, userId: "user-1" });
+      expect(categoriesRepository.create).toHaveBeenCalledWith({
+        ...dto,
+        userId: "user-1",
+      });
       expect(categoriesRepository.save).toHaveBeenCalled();
       expect(result.name).toBe("Food");
     });
@@ -144,7 +172,11 @@ describe("CategoriesService", () => {
     it("creates a subcategory when parentId is specified and parent exists", async () => {
       const dto = { name: "Organic", parentId: "cat-1" };
       categoriesRepository.findOne.mockResolvedValue(mockCategory);
-      categoriesRepository.save.mockResolvedValue({ ...dto, id: "new-cat", userId: "user-1" });
+      categoriesRepository.save.mockResolvedValue({
+        ...dto,
+        id: "new-cat",
+        userId: "user-1",
+      });
 
       await service.create("user-1", dto);
 
@@ -152,27 +184,39 @@ describe("CategoriesService", () => {
         where: { id: "cat-1" },
         relations: ["children"],
       });
-      expect(categoriesRepository.create).toHaveBeenCalledWith({ ...dto, userId: "user-1" });
+      expect(categoriesRepository.create).toHaveBeenCalledWith({
+        ...dto,
+        userId: "user-1",
+      });
     });
 
     it("throws NotFoundException when parent category does not exist", async () => {
       const dto = { name: "Organic", parentId: "nonexistent" };
       categoriesRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.create("user-1", dto)).rejects.toThrow(NotFoundException);
+      await expect(service.create("user-1", dto)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it("throws ForbiddenException when parent belongs to different user", async () => {
       const dto = { name: "Organic", parentId: "cat-1" };
-      categoriesRepository.findOne.mockResolvedValue({ ...mockCategory, userId: "other-user" });
+      categoriesRepository.findOne.mockResolvedValue({
+        ...mockCategory,
+        userId: "other-user",
+      });
 
-      await expect(service.create("user-1", dto)).rejects.toThrow(ForbiddenException);
+      await expect(service.create("user-1", dto)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
   });
 
   describe("findAll", () => {
     it("returns empty array when user has no categories", async () => {
-      const qb = createMockQueryBuilder({ getMany: jest.fn().mockResolvedValue([]) });
+      const qb = createMockQueryBuilder({
+        getMany: jest.fn().mockResolvedValue([]),
+      });
       categoriesRepository.createQueryBuilder.mockReturnValue(qb);
 
       const result = await service.findAll("user-1");
@@ -185,14 +229,20 @@ describe("CategoriesService", () => {
         { ...mockCategory, id: "cat-1" },
         { ...mockChildCategory, id: "cat-2" },
       ];
-      const catQb = createMockQueryBuilder({ getMany: jest.fn().mockResolvedValue(categories) });
+      const catQb = createMockQueryBuilder({
+        getMany: jest.fn().mockResolvedValue(categories),
+      });
       categoriesRepository.createQueryBuilder.mockReturnValue(catQb);
 
       const directCountsQb = createMockQueryBuilder({
-        getRawMany: jest.fn().mockResolvedValue([{ categoryId: "cat-1", count: "3" }]),
+        getRawMany: jest
+          .fn()
+          .mockResolvedValue([{ categoryId: "cat-1", count: "3" }]),
       });
       const splitCountsQb = createMockQueryBuilder({
-        getRawMany: jest.fn().mockResolvedValue([{ categoryId: "cat-1", count: "2" }]),
+        getRawMany: jest
+          .fn()
+          .mockResolvedValue([{ categoryId: "cat-1", count: "2" }]),
       });
       transactionsRepository.createQueryBuilder.mockReturnValue(directCountsQb);
       splitsRepository.createQueryBuilder.mockReturnValue(splitCountsQb);
@@ -205,16 +255,23 @@ describe("CategoriesService", () => {
     });
 
     it("filters out system categories by default", async () => {
-      const qb = createMockQueryBuilder({ getMany: jest.fn().mockResolvedValue([]) });
+      const qb = createMockQueryBuilder({
+        getMany: jest.fn().mockResolvedValue([]),
+      });
       categoriesRepository.createQueryBuilder.mockReturnValue(qb);
 
       await service.findAll("user-1");
 
-      expect(qb.andWhere).toHaveBeenCalledWith("category.isSystem = :isSystem", { isSystem: false });
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        "category.isSystem = :isSystem",
+        { isSystem: false },
+      );
     });
 
     it("includes system categories when includeSystem is true", async () => {
-      const qb = createMockQueryBuilder({ getMany: jest.fn().mockResolvedValue([]) });
+      const qb = createMockQueryBuilder({
+        getMany: jest.fn().mockResolvedValue([]),
+      });
       categoriesRepository.createQueryBuilder.mockReturnValue(qb);
 
       await service.findAll("user-1", true);
@@ -227,10 +284,16 @@ describe("CategoriesService", () => {
     it("builds hierarchical tree from flat categories", async () => {
       const parent = { ...mockCategory, id: "p1", parentId: null };
       const child = { ...mockChildCategory, id: "c1", parentId: "p1" };
-      const catQb = createMockQueryBuilder({ getMany: jest.fn().mockResolvedValue([parent, child]) });
+      const catQb = createMockQueryBuilder({
+        getMany: jest.fn().mockResolvedValue([parent, child]),
+      });
       categoriesRepository.createQueryBuilder.mockReturnValue(catQb);
-      transactionsRepository.createQueryBuilder.mockReturnValue(createMockQueryBuilder());
-      splitsRepository.createQueryBuilder.mockReturnValue(createMockQueryBuilder());
+      transactionsRepository.createQueryBuilder.mockReturnValue(
+        createMockQueryBuilder(),
+      );
+      splitsRepository.createQueryBuilder.mockReturnValue(
+        createMockQueryBuilder(),
+      );
 
       const result = await service.getTree("user-1");
 
@@ -241,11 +304,21 @@ describe("CategoriesService", () => {
     });
 
     it("treats orphaned children as roots", async () => {
-      const orphan = { ...mockChildCategory, id: "o1", parentId: "missing-parent" };
-      const catQb = createMockQueryBuilder({ getMany: jest.fn().mockResolvedValue([orphan]) });
+      const orphan = {
+        ...mockChildCategory,
+        id: "o1",
+        parentId: "missing-parent",
+      };
+      const catQb = createMockQueryBuilder({
+        getMany: jest.fn().mockResolvedValue([orphan]),
+      });
       categoriesRepository.createQueryBuilder.mockReturnValue(catQb);
-      transactionsRepository.createQueryBuilder.mockReturnValue(createMockQueryBuilder());
-      splitsRepository.createQueryBuilder.mockReturnValue(createMockQueryBuilder());
+      transactionsRepository.createQueryBuilder.mockReturnValue(
+        createMockQueryBuilder(),
+      );
+      splitsRepository.createQueryBuilder.mockReturnValue(
+        createMockQueryBuilder(),
+      );
 
       const result = await service.getTree("user-1");
 
@@ -254,7 +327,9 @@ describe("CategoriesService", () => {
     });
 
     it("returns empty array when no categories exist", async () => {
-      const catQb = createMockQueryBuilder({ getMany: jest.fn().mockResolvedValue([]) });
+      const catQb = createMockQueryBuilder({
+        getMany: jest.fn().mockResolvedValue([]),
+      });
       categoriesRepository.createQueryBuilder.mockReturnValue(catQb);
 
       const result = await service.getTree("user-1");
@@ -265,7 +340,9 @@ describe("CategoriesService", () => {
 
   describe("findByType", () => {
     it("returns income categories", async () => {
-      const incomeCategories = [{ ...mockCategory, isIncome: true, name: "Salary" }];
+      const incomeCategories = [
+        { ...mockCategory, isIncome: true, name: "Salary" },
+      ];
       categoriesRepository.find.mockResolvedValue(incomeCategories);
 
       const result = await service.findByType("user-1", true);
@@ -306,13 +383,20 @@ describe("CategoriesService", () => {
     it("throws NotFoundException when category not found", async () => {
       categoriesRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.findOne("user-1", "nonexistent")).rejects.toThrow(NotFoundException);
+      await expect(service.findOne("user-1", "nonexistent")).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it("throws ForbiddenException when category belongs to different user", async () => {
-      categoriesRepository.findOne.mockResolvedValue({ ...mockCategory, userId: "other-user" });
+      categoriesRepository.findOne.mockResolvedValue({
+        ...mockCategory,
+        userId: "other-user",
+      });
 
-      await expect(service.findOne("user-1", "cat-1")).rejects.toThrow(ForbiddenException);
+      await expect(service.findOne("user-1", "cat-1")).rejects.toThrow(
+        ForbiddenException,
+      );
     });
   });
 
@@ -343,7 +427,9 @@ describe("CategoriesService", () => {
         .mockResolvedValueOnce(parentCat);
       categoriesRepository.save.mockImplementation((data) => data);
 
-      const result = await service.update("user-1", "cat-1", { parentId: "parent-1" });
+      const result = await service.update("user-1", "cat-1", {
+        parentId: "parent-1",
+      });
 
       expect(result.parentId).toBe("parent-1");
     });
@@ -373,11 +459,17 @@ describe("CategoriesService", () => {
     });
 
     it("does not overwrite fields that are not in the dto", async () => {
-      const original = { ...mockCategory, name: "Original", description: "Keep me" };
+      const original = {
+        ...mockCategory,
+        name: "Original",
+        description: "Keep me",
+      };
       categoriesRepository.findOne.mockResolvedValue(original);
       categoriesRepository.save.mockImplementation((data) => data);
 
-      const result = await service.update("user-1", "cat-1", { name: "Changed" });
+      const result = await service.update("user-1", "cat-1", {
+        name: "Changed",
+      });
 
       expect(result.name).toBe("Changed");
       expect(result.description).toBe("Keep me");
@@ -403,20 +495,26 @@ describe("CategoriesService", () => {
     it("throws BadRequestException for system categories", async () => {
       categoriesRepository.findOne.mockResolvedValue({ ...mockSystemCategory });
 
-      await expect(service.remove("user-1", "cat-sys")).rejects.toThrow(BadRequestException);
+      await expect(service.remove("user-1", "cat-sys")).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it("throws BadRequestException when category has children", async () => {
       categoriesRepository.findOne.mockResolvedValue({ ...mockCategory });
       categoriesRepository.count.mockResolvedValue(3);
 
-      await expect(service.remove("user-1", "cat-1")).rejects.toThrow(BadRequestException);
+      await expect(service.remove("user-1", "cat-1")).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it("throws NotFoundException when category does not exist", async () => {
       categoriesRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.remove("user-1", "nonexistent")).rejects.toThrow(NotFoundException);
+      await expect(service.remove("user-1", "nonexistent")).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -430,12 +528,16 @@ describe("CategoriesService", () => {
       const scheduledQb = createMockQueryBuilder({
         getMany: jest.fn().mockResolvedValue([{ id: "st-1" }, { id: "st-2" }]),
       });
-      scheduledTransactionsRepository.createQueryBuilder.mockReturnValue(scheduledQb);
+      scheduledTransactionsRepository.createQueryBuilder.mockReturnValue(
+        scheduledQb,
+      );
 
       const splitCountQb = createMockQueryBuilder({
         getCount: jest.fn().mockResolvedValue(1),
       });
-      scheduledSplitsRepository.createQueryBuilder.mockReturnValue(splitCountQb);
+      scheduledSplitsRepository.createQueryBuilder.mockReturnValue(
+        splitCountQb,
+      );
 
       const result = await service.getTransactionCount("user-1", "cat-1");
 
@@ -451,18 +553,24 @@ describe("CategoriesService", () => {
       const scheduledQb = createMockQueryBuilder({
         getMany: jest.fn().mockResolvedValue([]),
       });
-      scheduledTransactionsRepository.createQueryBuilder.mockReturnValue(scheduledQb);
+      scheduledTransactionsRepository.createQueryBuilder.mockReturnValue(
+        scheduledQb,
+      );
 
       const result = await service.getTransactionCount("user-1", "cat-1");
 
       expect(result).toBe(2);
-      expect(scheduledSplitsRepository.createQueryBuilder).not.toHaveBeenCalled();
+      expect(
+        scheduledSplitsRepository.createQueryBuilder,
+      ).not.toHaveBeenCalled();
     });
 
     it("throws NotFoundException for nonexistent category", async () => {
       categoriesRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.getTransactionCount("user-1", "nope")).rejects.toThrow(NotFoundException);
+      await expect(
+        service.getTransactionCount("user-1", "nope"),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -493,7 +601,11 @@ describe("CategoriesService", () => {
       const ssQb = createMockQueryBuilder();
       scheduledSplitsRepository.createQueryBuilder.mockReturnValue(ssQb);
 
-      const result = await service.reassignTransactions("user-1", "cat-1", "cat-target");
+      const result = await service.reassignTransactions(
+        "user-1",
+        "cat-1",
+        "cat-target",
+      );
 
       expect(result.transactionsUpdated).toBe(5);
       expect(result.splitsUpdated).toBe(2);
@@ -504,15 +616,23 @@ describe("CategoriesService", () => {
       categoriesRepository.findOne.mockResolvedValue(mockCategory);
       transactionsRepository.update.mockResolvedValue({ affected: 3 });
 
-      const txQb = createMockQueryBuilder({ getMany: jest.fn().mockResolvedValue([]) });
+      const txQb = createMockQueryBuilder({
+        getMany: jest.fn().mockResolvedValue([]),
+      });
       transactionsRepository.createQueryBuilder.mockReturnValue(txQb);
 
       scheduledTransactionsRepository.update.mockResolvedValue({ affected: 0 });
 
-      const stQb = createMockQueryBuilder({ getMany: jest.fn().mockResolvedValue([]) });
+      const stQb = createMockQueryBuilder({
+        getMany: jest.fn().mockResolvedValue([]),
+      });
       scheduledTransactionsRepository.createQueryBuilder.mockReturnValue(stQb);
 
-      const result = await service.reassignTransactions("user-1", "cat-1", null);
+      const result = await service.reassignTransactions(
+        "user-1",
+        "cat-1",
+        null,
+      );
 
       expect(result.transactionsUpdated).toBe(3);
       expect(result.splitsUpdated).toBe(0);
@@ -525,15 +645,23 @@ describe("CategoriesService", () => {
         .mockResolvedValueOnce({ ...mockCategory, id: "cat-target" });
       transactionsRepository.update.mockResolvedValue({ affected: 0 });
 
-      const txQb = createMockQueryBuilder({ getMany: jest.fn().mockResolvedValue([]) });
+      const txQb = createMockQueryBuilder({
+        getMany: jest.fn().mockResolvedValue([]),
+      });
       transactionsRepository.createQueryBuilder.mockReturnValue(txQb);
 
       scheduledTransactionsRepository.update.mockResolvedValue({ affected: 0 });
 
-      const stQb = createMockQueryBuilder({ getMany: jest.fn().mockResolvedValue([]) });
+      const stQb = createMockQueryBuilder({
+        getMany: jest.fn().mockResolvedValue([]),
+      });
       scheduledTransactionsRepository.createQueryBuilder.mockReturnValue(stQb);
 
-      const result = await service.reassignTransactions("user-1", "cat-1", "cat-target");
+      const result = await service.reassignTransactions(
+        "user-1",
+        "cat-1",
+        "cat-target",
+      );
 
       expect(result.splitsUpdated).toBe(0);
       expect(splitsRepository.createQueryBuilder).not.toHaveBeenCalled();
@@ -557,10 +685,16 @@ describe("CategoriesService", () => {
         { ...mockCategory, id: "c4", isIncome: true, parentId: "c2" },
         { ...mockCategory, id: "c5", isIncome: false, parentId: "c1" },
       ];
-      const catQb = createMockQueryBuilder({ getMany: jest.fn().mockResolvedValue(categories) });
+      const catQb = createMockQueryBuilder({
+        getMany: jest.fn().mockResolvedValue(categories),
+      });
       categoriesRepository.createQueryBuilder.mockReturnValue(catQb);
-      transactionsRepository.createQueryBuilder.mockReturnValue(createMockQueryBuilder());
-      splitsRepository.createQueryBuilder.mockReturnValue(createMockQueryBuilder());
+      transactionsRepository.createQueryBuilder.mockReturnValue(
+        createMockQueryBuilder(),
+      );
+      splitsRepository.createQueryBuilder.mockReturnValue(
+        createMockQueryBuilder(),
+      );
 
       const result = await service.getStats("user-1");
 
@@ -571,7 +705,9 @@ describe("CategoriesService", () => {
     });
 
     it("returns zeroes when no categories exist", async () => {
-      const catQb = createMockQueryBuilder({ getMany: jest.fn().mockResolvedValue([]) });
+      const catQb = createMockQueryBuilder({
+        getMany: jest.fn().mockResolvedValue([]),
+      });
       categoriesRepository.createQueryBuilder.mockReturnValue(catQb);
 
       const result = await service.getStats("user-1");
@@ -635,8 +771,18 @@ describe("CategoriesService", () => {
   describe("findLoanCategories", () => {
     it("returns loan principal and interest categories", async () => {
       const loanParent = { ...mockCategory, id: "loan-parent", name: "Loan" };
-      const principal = { ...mockCategory, id: "loan-p", name: "Loan Principal", parentId: "loan-parent" };
-      const interest = { ...mockCategory, id: "loan-i", name: "Loan Interest", parentId: "loan-parent" };
+      const principal = {
+        ...mockCategory,
+        id: "loan-p",
+        name: "Loan Principal",
+        parentId: "loan-parent",
+      };
+      const interest = {
+        ...mockCategory,
+        id: "loan-i",
+        name: "Loan Interest",
+        parentId: "loan-parent",
+      };
 
       categoriesRepository.findOne
         .mockResolvedValueOnce(loanParent)
@@ -680,7 +826,9 @@ describe("CategoriesService", () => {
         ...data,
         id: `gen-${++idCounter}`,
       }));
-      categoriesRepository.save.mockImplementation((data) => Promise.resolve(data));
+      categoriesRepository.save.mockImplementation((data) =>
+        Promise.resolve(data),
+      );
 
       const result = await service.importDefaults("user-1");
 
@@ -692,7 +840,9 @@ describe("CategoriesService", () => {
     it("throws BadRequestException when user already has categories", async () => {
       categoriesRepository.count.mockResolvedValue(5);
 
-      await expect(service.importDefaults("user-1")).rejects.toThrow(BadRequestException);
+      await expect(service.importDefaults("user-1")).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it("creates both income and expense parent categories", async () => {
@@ -702,11 +852,15 @@ describe("CategoriesService", () => {
         ...data,
         id: `gen-${++idCounter}`,
       }));
-      categoriesRepository.save.mockImplementation((data) => Promise.resolve(data));
+      categoriesRepository.save.mockImplementation((data) =>
+        Promise.resolve(data),
+      );
 
       await service.importDefaults("user-1");
 
-      const createCalls = categoriesRepository.create.mock.calls.map((c: unknown[]) => c[0]);
+      const createCalls = categoriesRepository.create.mock.calls.map(
+        (c: unknown[]) => c[0],
+      );
       const incomeParents = createCalls.filter(
         (c: Record<string, unknown>) => c.isIncome === true && !c.parentId,
       );
@@ -725,12 +879,18 @@ describe("CategoriesService", () => {
         ...data,
         id: `gen-${++idCounter}`,
       }));
-      categoriesRepository.save.mockImplementation((data) => Promise.resolve(data));
+      categoriesRepository.save.mockImplementation((data) =>
+        Promise.resolve(data),
+      );
 
       await service.importDefaults("user-1");
 
-      const createCalls = categoriesRepository.create.mock.calls.map((c: unknown[]) => c[0]);
-      const subcategories = createCalls.filter((c: Record<string, unknown>) => c.parentId);
+      const createCalls = categoriesRepository.create.mock.calls.map(
+        (c: unknown[]) => c[0],
+      );
+      const subcategories = createCalls.filter(
+        (c: Record<string, unknown>) => c.parentId,
+      );
 
       expect(subcategories.length).toBeGreaterThan(0);
       subcategories.forEach((sub: Record<string, unknown>) => {

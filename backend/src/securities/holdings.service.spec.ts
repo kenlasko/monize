@@ -1,9 +1,6 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
-import {
-  NotFoundException,
-  ForbiddenException,
-} from "@nestjs/common";
+import { NotFoundException, ForbiddenException } from "@nestjs/common";
 import { HoldingsService } from "./holdings.service";
 import { Holding } from "./entities/holding.entity";
 import {
@@ -95,9 +92,9 @@ describe("HoldingsService", () => {
       where: jest.fn().mockReturnThis(),
       andWhere: jest.fn().mockReturnThis(),
       getOne: jest.fn().mockResolvedValue(returnValue),
-      getMany: jest.fn().mockResolvedValue(
-        Array.isArray(returnValue) ? returnValue : [],
-      ),
+      getMany: jest
+        .fn()
+        .mockResolvedValue(Array.isArray(returnValue) ? returnValue : []),
     };
     return qb;
   };
@@ -107,7 +104,9 @@ describe("HoldingsService", () => {
       findOne: jest.fn(),
       find: jest.fn(),
       create: jest.fn().mockImplementation((data) => ({ ...data })),
-      save: jest.fn().mockImplementation((data) => ({ ...data, id: data.id || "new-hold" })),
+      save: jest
+        .fn()
+        .mockImplementation((data) => ({ ...data, id: data.id || "new-hold" })),
       remove: jest.fn().mockResolvedValue(undefined),
       createQueryBuilder: jest.fn(() => createMockQueryBuilder()),
     };
@@ -164,10 +163,20 @@ describe("HoldingsService", () => {
 
       const result = await service.findAll("user-1");
 
-      expect(holdingsRepository.createQueryBuilder).toHaveBeenCalledWith("holding");
-      expect(qb.leftJoinAndSelect).toHaveBeenCalledWith("holding.account", "account");
-      expect(qb.leftJoinAndSelect).toHaveBeenCalledWith("holding.security", "security");
-      expect(qb.where).toHaveBeenCalledWith("account.userId = :userId", { userId: "user-1" });
+      expect(holdingsRepository.createQueryBuilder).toHaveBeenCalledWith(
+        "holding",
+      );
+      expect(qb.leftJoinAndSelect).toHaveBeenCalledWith(
+        "holding.account",
+        "account",
+      );
+      expect(qb.leftJoinAndSelect).toHaveBeenCalledWith(
+        "holding.security",
+        "security",
+      );
+      expect(qb.where).toHaveBeenCalledWith("account.userId = :userId", {
+        userId: "user-1",
+      });
       expect(qb.getMany).toHaveBeenCalled();
       expect(result).toHaveLength(2);
     });
@@ -178,9 +187,12 @@ describe("HoldingsService", () => {
 
       const result = await service.findAll("user-1", "acc-1");
 
-      expect(qb.andWhere).toHaveBeenCalledWith("holding.accountId = :accountId", {
-        accountId: "acc-1",
-      });
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        "holding.accountId = :accountId",
+        {
+          accountId: "acc-1",
+        },
+      );
       expect(result).toHaveLength(1);
     });
 
@@ -210,11 +222,23 @@ describe("HoldingsService", () => {
 
       const result = await service.findOne("user-1", "hold-1");
 
-      expect(holdingsRepository.createQueryBuilder).toHaveBeenCalledWith("holding");
-      expect(qb.leftJoinAndSelect).toHaveBeenCalledWith("holding.account", "account");
-      expect(qb.leftJoinAndSelect).toHaveBeenCalledWith("holding.security", "security");
-      expect(qb.where).toHaveBeenCalledWith("holding.id = :id", { id: "hold-1" });
-      expect(qb.andWhere).toHaveBeenCalledWith("account.userId = :userId", { userId: "user-1" });
+      expect(holdingsRepository.createQueryBuilder).toHaveBeenCalledWith(
+        "holding",
+      );
+      expect(qb.leftJoinAndSelect).toHaveBeenCalledWith(
+        "holding.account",
+        "account",
+      );
+      expect(qb.leftJoinAndSelect).toHaveBeenCalledWith(
+        "holding.security",
+        "security",
+      );
+      expect(qb.where).toHaveBeenCalledWith("holding.id = :id", {
+        id: "hold-1",
+      });
+      expect(qb.andWhere).toHaveBeenCalledWith("account.userId = :userId", {
+        userId: "user-1",
+      });
       expect(result).toEqual(mockHolding);
     });
 
@@ -222,18 +246,18 @@ describe("HoldingsService", () => {
       const qb = createMockQueryBuilder(null);
       holdingsRepository.createQueryBuilder.mockReturnValue(qb);
 
-      await expect(
-        service.findOne("user-1", "nonexistent"),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.findOne("user-1", "nonexistent")).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it("throws NotFoundException with descriptive message", async () => {
       const qb = createMockQueryBuilder(null);
       holdingsRepository.createQueryBuilder.mockReturnValue(qb);
 
-      await expect(
-        service.findOne("user-1", "hold-999"),
-      ).rejects.toThrow("Holding with ID hold-999 not found");
+      await expect(service.findOne("user-1", "hold-999")).rejects.toThrow(
+        "Holding with ID hold-999 not found",
+      );
     });
   });
 
@@ -269,9 +293,18 @@ describe("HoldingsService", () => {
         averageCost: 150,
       };
       holdingsRepository.create.mockReturnValue(createdHolding);
-      holdingsRepository.save.mockResolvedValue({ ...createdHolding, id: "new-hold" });
+      holdingsRepository.save.mockResolvedValue({
+        ...createdHolding,
+        id: "new-hold",
+      });
 
-      const result = await service.createOrUpdate("user-1", "acc-1", "sec-1", 10, 150);
+      const result = await service.createOrUpdate(
+        "user-1",
+        "acc-1",
+        "sec-1",
+        10,
+        150,
+      );
 
       expect(accountsService.findOne).toHaveBeenCalledWith("user-1", "acc-1");
       expect(securitiesService.findOne).toHaveBeenCalledWith("user-1", "sec-1");
@@ -294,9 +327,17 @@ describe("HoldingsService", () => {
         averageCost: 150,
       };
       holdingsRepository.findOne.mockResolvedValue(existingHolding);
-      holdingsRepository.save.mockImplementation((data) => Promise.resolve(data));
+      holdingsRepository.save.mockImplementation((data) =>
+        Promise.resolve(data),
+      );
 
-      const result = await service.createOrUpdate("user-1", "acc-1", "sec-1", 50, 200);
+      const result = await service.createOrUpdate(
+        "user-1",
+        "acc-1",
+        "sec-1",
+        50,
+        200,
+      );
 
       // New average cost: (100*150 + 50*200) / 150 = (15000 + 10000) / 150 = 166.666...
       expect(result.quantity).toBe(150);
@@ -312,9 +353,17 @@ describe("HoldingsService", () => {
         averageCost: 150,
       };
       holdingsRepository.findOne.mockResolvedValue(existingHolding);
-      holdingsRepository.save.mockImplementation((data) => Promise.resolve(data));
+      holdingsRepository.save.mockImplementation((data) =>
+        Promise.resolve(data),
+      );
 
-      const result = await service.createOrUpdate("user-1", "acc-1", "sec-1", -30, 200);
+      const result = await service.createOrUpdate(
+        "user-1",
+        "acc-1",
+        "sec-1",
+        -30,
+        200,
+      );
 
       expect(result.quantity).toBe(70);
       // Average cost should remain 150 when selling
@@ -350,9 +399,17 @@ describe("HoldingsService", () => {
         averageCost: null,
       };
       holdingsRepository.findOne.mockResolvedValue(existingHolding);
-      holdingsRepository.save.mockImplementation((data) => Promise.resolve(data));
+      holdingsRepository.save.mockImplementation((data) =>
+        Promise.resolve(data),
+      );
 
-      const result = await service.createOrUpdate("user-1", "acc-1", "sec-1", 50, 200);
+      const result = await service.createOrUpdate(
+        "user-1",
+        "acc-1",
+        "sec-1",
+        50,
+        200,
+      );
 
       // (50*0 + 50*200) / 100 = 100
       expect(result.quantity).toBe(100);
@@ -368,9 +425,17 @@ describe("HoldingsService", () => {
         averageCost: 150,
       };
       holdingsRepository.findOne.mockResolvedValue(existingHolding);
-      holdingsRepository.save.mockImplementation((data) => Promise.resolve(data));
+      holdingsRepository.save.mockImplementation((data) =>
+        Promise.resolve(data),
+      );
 
-      const result = await service.createOrUpdate("user-1", "acc-1", "sec-1", -100, 200);
+      const result = await service.createOrUpdate(
+        "user-1",
+        "acc-1",
+        "sec-1",
+        -100,
+        200,
+      );
 
       expect(result.quantity).toBe(0);
       // Average cost remains unchanged when selling
@@ -388,9 +453,18 @@ describe("HoldingsService", () => {
         averageCost: 100,
       };
       holdingsRepository.create.mockReturnValue(createdHolding);
-      holdingsRepository.save.mockResolvedValue({ ...createdHolding, id: "new-hold" });
+      holdingsRepository.save.mockResolvedValue({
+        ...createdHolding,
+        id: "new-hold",
+      });
 
-      const result = await service.updateHolding("user-1", "acc-1", "sec-1", 10, 100);
+      const result = await service.updateHolding(
+        "user-1",
+        "acc-1",
+        "sec-1",
+        10,
+        100,
+      );
 
       expect(accountsService.findOne).toHaveBeenCalledWith("user-1", "acc-1");
       expect(securitiesService.findOne).toHaveBeenCalledWith("user-1", "sec-1");
@@ -408,9 +482,17 @@ describe("HoldingsService", () => {
         averageCost: 0,
       };
       holdingsRepository.create.mockReturnValue(createdHolding);
-      holdingsRepository.save.mockResolvedValue({ ...createdHolding, id: "new-hold" });
+      holdingsRepository.save.mockResolvedValue({
+        ...createdHolding,
+        id: "new-hold",
+      });
 
-      const result = await service.adjustQuantity("user-1", "acc-1", "sec-1", 25);
+      const result = await service.adjustQuantity(
+        "user-1",
+        "acc-1",
+        "sec-1",
+        25,
+      );
 
       expect(accountsService.findOne).toHaveBeenCalledWith("user-1", "acc-1");
       expect(securitiesService.findOne).toHaveBeenCalledWith("user-1", "sec-1");
@@ -444,9 +526,16 @@ describe("HoldingsService", () => {
         averageCost: 150,
       };
       holdingsRepository.findOne.mockResolvedValue(existingHolding);
-      holdingsRepository.save.mockImplementation((data) => Promise.resolve(data));
+      holdingsRepository.save.mockImplementation((data) =>
+        Promise.resolve(data),
+      );
 
-      const result = await service.adjustQuantity("user-1", "acc-1", "sec-1", 25);
+      const result = await service.adjustQuantity(
+        "user-1",
+        "acc-1",
+        "sec-1",
+        25,
+      );
 
       expect(result.quantity).toBe(125);
       expect(result.averageCost).toBe(150);
@@ -461,9 +550,16 @@ describe("HoldingsService", () => {
         averageCost: 150,
       };
       holdingsRepository.findOne.mockResolvedValue(existingHolding);
-      holdingsRepository.save.mockImplementation((data) => Promise.resolve(data));
+      holdingsRepository.save.mockImplementation((data) =>
+        Promise.resolve(data),
+      );
 
-      const result = await service.adjustQuantity("user-1", "acc-1", "sec-1", -30);
+      const result = await service.adjustQuantity(
+        "user-1",
+        "acc-1",
+        "sec-1",
+        -30,
+      );
 
       expect(result.quantity).toBe(70);
       expect(result.averageCost).toBe(150);
@@ -568,9 +664,9 @@ describe("HoldingsService", () => {
       const qb = createMockQueryBuilder(nonZeroHolding);
       holdingsRepository.createQueryBuilder.mockReturnValue(qb);
 
-      await expect(
-        service.remove("user-1", "hold-1"),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.remove("user-1", "hold-1")).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it("throws ForbiddenException with descriptive message for non-zero quantity", async () => {
@@ -578,18 +674,18 @@ describe("HoldingsService", () => {
       const qb = createMockQueryBuilder(nonZeroHolding);
       holdingsRepository.createQueryBuilder.mockReturnValue(qb);
 
-      await expect(
-        service.remove("user-1", "hold-1"),
-      ).rejects.toThrow("Cannot delete holding with non-zero quantity");
+      await expect(service.remove("user-1", "hold-1")).rejects.toThrow(
+        "Cannot delete holding with non-zero quantity",
+      );
     });
 
     it("throws NotFoundException when holding does not exist", async () => {
       const qb = createMockQueryBuilder(null);
       holdingsRepository.createQueryBuilder.mockReturnValue(qb);
 
-      await expect(
-        service.remove("user-1", "nonexistent"),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.remove("user-1", "nonexistent")).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it("handles string quantity '0' correctly (decimal from DB)", async () => {
@@ -620,9 +716,7 @@ describe("HoldingsService", () => {
     it("deletes existing holdings and rebuilds from buy transactions", async () => {
       accountsRepository.find.mockResolvedValue([mockAccount]);
       const existingHoldings = [{ id: "old-hold-1" }, { id: "old-hold-2" }];
-      holdingsRepository.find
-        .mockResolvedValueOnce(existingHoldings) // existing holdings to delete
-      ;
+      holdingsRepository.find.mockResolvedValueOnce(existingHoldings); // existing holdings to delete
 
       const transactions = [
         {
@@ -653,7 +747,10 @@ describe("HoldingsService", () => {
         averageCost: 166.6667,
       };
       holdingsRepository.create.mockReturnValue(createdHolding);
-      holdingsRepository.save.mockResolvedValue({ ...createdHolding, id: "new-hold" });
+      holdingsRepository.save.mockResolvedValue({
+        ...createdHolding,
+        id: "new-hold",
+      });
 
       const result = await service.rebuildFromTransactions("user-1");
 
@@ -696,7 +793,9 @@ describe("HoldingsService", () => {
       ];
       investmentTransactionsRepository.find.mockResolvedValue(transactions);
       holdingsRepository.create.mockImplementation((data) => data);
-      holdingsRepository.save.mockImplementation((data) => Promise.resolve(data));
+      holdingsRepository.save.mockImplementation((data) =>
+        Promise.resolve(data),
+      );
 
       const result = await service.rebuildFromTransactions("user-1");
 
@@ -740,7 +839,9 @@ describe("HoldingsService", () => {
       ];
       investmentTransactionsRepository.find.mockResolvedValue(transactions);
       holdingsRepository.create.mockImplementation((data) => data);
-      holdingsRepository.save.mockImplementation((data) => Promise.resolve(data));
+      holdingsRepository.save.mockImplementation((data) =>
+        Promise.resolve(data),
+      );
 
       const result = await service.rebuildFromTransactions("user-1");
 
@@ -790,7 +891,9 @@ describe("HoldingsService", () => {
       ];
       investmentTransactionsRepository.find.mockResolvedValue(transactions);
       holdingsRepository.create.mockImplementation((data) => data);
-      holdingsRepository.save.mockImplementation((data) => Promise.resolve(data));
+      holdingsRepository.save.mockImplementation((data) =>
+        Promise.resolve(data),
+      );
 
       const result = await service.rebuildFromTransactions("user-1");
 
@@ -831,7 +934,9 @@ describe("HoldingsService", () => {
       ];
       investmentTransactionsRepository.find.mockResolvedValue(transactions);
       holdingsRepository.create.mockImplementation((data) => data);
-      holdingsRepository.save.mockImplementation((data) => Promise.resolve(data));
+      holdingsRepository.save.mockImplementation((data) =>
+        Promise.resolve(data),
+      );
 
       const result = await service.rebuildFromTransactions("user-1");
 
@@ -977,7 +1082,9 @@ describe("HoldingsService", () => {
       ];
       investmentTransactionsRepository.find.mockResolvedValue(transactions);
       holdingsRepository.create.mockImplementation((data) => data);
-      holdingsRepository.save.mockImplementation((data) => Promise.resolve(data));
+      holdingsRepository.save.mockImplementation((data) =>
+        Promise.resolve(data),
+      );
 
       const result = await service.rebuildFromTransactions("user-1");
 
@@ -1061,7 +1168,9 @@ describe("HoldingsService", () => {
       ];
       investmentTransactionsRepository.find.mockResolvedValue(transactions);
       holdingsRepository.create.mockImplementation((data) => data);
-      holdingsRepository.save.mockImplementation((data) => Promise.resolve(data));
+      holdingsRepository.save.mockImplementation((data) =>
+        Promise.resolve(data),
+      );
 
       const result = await service.rebuildFromTransactions("user-1");
 

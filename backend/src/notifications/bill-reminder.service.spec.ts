@@ -383,7 +383,15 @@ describe("BillReminderService", () => {
             userId: userId1,
             nextDueDate: daysFromNow(1),
             reminderDaysBefore: 3,
-            payee: { id: "payee-1", name: "Electric Co", userId: userId1, defaultCategoryId: null, notes: "", defaultCategory: null as any, createdAt: new Date() },
+            payee: {
+              id: "payee-1",
+              name: "Electric Co",
+              userId: userId1,
+              defaultCategoryId: null,
+              notes: "",
+              defaultCategory: null as any,
+              createdAt: new Date(),
+            },
             payeeName: "Fallback Payee",
             name: "Fallback Name",
           });
@@ -598,9 +606,7 @@ describe("BillReminderService", () => {
           );
 
           // Should not throw
-          await expect(
-            service.sendBillReminders(),
-          ).resolves.toBeUndefined();
+          await expect(service.sendBillReminders()).resolves.toBeUndefined();
         });
 
         it("does not throw when preferences lookup throws", async () => {
@@ -615,9 +621,7 @@ describe("BillReminderService", () => {
             new Error("DB connection lost"),
           );
 
-          await expect(
-            service.sendBillReminders(),
-          ).resolves.toBeUndefined();
+          await expect(service.sendBillReminders()).resolves.toBeUndefined();
         });
 
         it("does not throw when user lookup throws", async () => {
@@ -631,9 +635,7 @@ describe("BillReminderService", () => {
           preferencesRepo.findOne.mockResolvedValue(mockPrefsEmailEnabled);
           usersRepo.findOne.mockRejectedValue(new Error("DB error"));
 
-          await expect(
-            service.sendBillReminders(),
-          ).resolves.toBeUndefined();
+          await expect(service.sendBillReminders()).resolves.toBeUndefined();
         });
       });
 

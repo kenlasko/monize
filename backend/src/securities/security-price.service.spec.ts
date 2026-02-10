@@ -90,7 +90,9 @@ describe("SecurityPriceService", () => {
     quotes,
   });
 
-  const makeYahooHistoricalResponse = (overrides: Record<string, any> = {}) => ({
+  const makeYahooHistoricalResponse = (
+    overrides: Record<string, any> = {},
+  ) => ({
     chart: {
       result: [
         {
@@ -200,16 +202,23 @@ describe("SecurityPriceService", () => {
         take: jest.fn().mockReturnThis(),
         getMany: jest.fn().mockResolvedValue([mockPriceEntry]),
       };
-      securityPriceRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder);
+      securityPriceRepository.createQueryBuilder.mockReturnValue(
+        mockQueryBuilder,
+      );
 
       const result = await service.getPriceHistory("sec-1");
 
-      expect(securityPriceRepository.createQueryBuilder).toHaveBeenCalledWith("sp");
+      expect(securityPriceRepository.createQueryBuilder).toHaveBeenCalledWith(
+        "sp",
+      );
       expect(mockQueryBuilder.where).toHaveBeenCalledWith(
         "sp.securityId = :securityId",
         { securityId: "sec-1" },
       );
-      expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith("sp.priceDate", "DESC");
+      expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith(
+        "sp.priceDate",
+        "DESC",
+      );
       expect(mockQueryBuilder.take).toHaveBeenCalledWith(365);
       expect(mockQueryBuilder.andWhere).not.toHaveBeenCalled();
       expect(result).toEqual([mockPriceEntry]);
@@ -223,7 +232,9 @@ describe("SecurityPriceService", () => {
         take: jest.fn().mockReturnThis(),
         getMany: jest.fn().mockResolvedValue([]),
       };
-      securityPriceRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder);
+      securityPriceRepository.createQueryBuilder.mockReturnValue(
+        mockQueryBuilder,
+      );
 
       const startDate = new Date("2025-01-01");
       await service.getPriceHistory("sec-1", startDate);
@@ -242,7 +253,9 @@ describe("SecurityPriceService", () => {
         take: jest.fn().mockReturnThis(),
         getMany: jest.fn().mockResolvedValue([]),
       };
-      securityPriceRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder);
+      securityPriceRepository.createQueryBuilder.mockReturnValue(
+        mockQueryBuilder,
+      );
 
       const endDate = new Date("2025-06-30");
       await service.getPriceHistory("sec-1", undefined, endDate);
@@ -261,7 +274,9 @@ describe("SecurityPriceService", () => {
         take: jest.fn().mockReturnThis(),
         getMany: jest.fn().mockResolvedValue([]),
       };
-      securityPriceRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder);
+      securityPriceRepository.createQueryBuilder.mockReturnValue(
+        mockQueryBuilder,
+      );
 
       const startDate = new Date("2025-01-01");
       const endDate = new Date("2025-06-30");
@@ -278,7 +293,9 @@ describe("SecurityPriceService", () => {
         take: jest.fn().mockReturnThis(),
         getMany: jest.fn().mockResolvedValue([]),
       };
-      securityPriceRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder);
+      securityPriceRepository.createQueryBuilder.mockReturnValue(
+        mockQueryBuilder,
+      );
 
       await service.getPriceHistory("sec-1", undefined, undefined, 30);
 
@@ -327,9 +344,9 @@ describe("SecurityPriceService", () => {
       securitiesRepository.find.mockResolvedValue([mockSecurity]);
 
       const yahooData = makeYahooChartResponse();
-      global.fetch = jest.fn().mockResolvedValue(
-        createMockFetchResponse(yahooData),
-      ) as jest.Mock;
+      global.fetch = jest
+        .fn()
+        .mockResolvedValue(createMockFetchResponse(yahooData)) as jest.Mock;
 
       // savePriceData: findOne returns null (new price), then create and save
       securityPriceRepository.findOne.mockResolvedValue(null);
@@ -352,9 +369,9 @@ describe("SecurityPriceService", () => {
       securitiesRepository.find.mockResolvedValue([mockSecurityTSX]);
 
       const yahooData = makeYahooChartResponse({ symbol: "RY.TO" });
-      global.fetch = jest.fn().mockResolvedValue(
-        createMockFetchResponse(yahooData),
-      ) as jest.Mock;
+      global.fetch = jest
+        .fn()
+        .mockResolvedValue(createMockFetchResponse(yahooData)) as jest.Mock;
 
       securityPriceRepository.findOne.mockResolvedValue(null);
 
@@ -370,11 +387,20 @@ describe("SecurityPriceService", () => {
       // Security with no exchange (defaults to US) but no data under plain symbol
       securitiesRepository.find.mockResolvedValue([mockSecurityNoExchange]);
 
-      const fetchMock = jest.fn()
-        .mockResolvedValueOnce(createMockFetchResponse({ chart: { result: [] } })) // plain "MSFT" fails
-        .mockResolvedValueOnce(createMockFetchResponse({ chart: { result: [] } })) // MSFT.TO fails
-        .mockResolvedValueOnce(createMockFetchResponse({ chart: { result: [] } })) // MSFT.V fails
-        .mockResolvedValueOnce(createMockFetchResponse({ chart: { result: [] } })); // MSFT.CN fails
+      const fetchMock = jest
+        .fn()
+        .mockResolvedValueOnce(
+          createMockFetchResponse({ chart: { result: [] } }),
+        ) // plain "MSFT" fails
+        .mockResolvedValueOnce(
+          createMockFetchResponse({ chart: { result: [] } }),
+        ) // MSFT.TO fails
+        .mockResolvedValueOnce(
+          createMockFetchResponse({ chart: { result: [] } }),
+        ) // MSFT.V fails
+        .mockResolvedValueOnce(
+          createMockFetchResponse({ chart: { result: [] } }),
+        ); // MSFT.CN fails
       global.fetch = fetchMock;
 
       securityPriceRepository.findOne.mockResolvedValue(null);
@@ -392,9 +418,11 @@ describe("SecurityPriceService", () => {
       securitiesRepository.find.mockResolvedValue([mockSecurityTSX]);
 
       // First call returns null data
-      global.fetch = jest.fn().mockResolvedValue(
-        createMockFetchResponse({ chart: { result: [] } }),
-      ) as jest.Mock;
+      global.fetch = jest
+        .fn()
+        .mockResolvedValue(
+          createMockFetchResponse({ chart: { result: [] } }),
+        ) as jest.Mock;
 
       securityPriceRepository.findOne.mockResolvedValue(null);
 
@@ -409,9 +437,11 @@ describe("SecurityPriceService", () => {
       securitiesRepository.find.mockResolvedValue([mockSecurity]);
 
       // All calls return 500 (primary + alternates since NASDAQ has empty suffix)
-      global.fetch = jest.fn().mockResolvedValue(
-        createMockFetchResponse({}, false, 500),
-      ) as jest.Mock;
+      global.fetch = jest
+        .fn()
+        .mockResolvedValue(
+          createMockFetchResponse({}, false, 500),
+        ) as jest.Mock;
 
       const result = await service.refreshAllPrices();
 
@@ -421,9 +451,9 @@ describe("SecurityPriceService", () => {
     it("handles fetch throwing an error", async () => {
       securitiesRepository.find.mockResolvedValue([mockSecurity]);
 
-      global.fetch = jest.fn().mockRejectedValue(
-        new Error("Network error"),
-      ) as jest.Mock;
+      global.fetch = jest
+        .fn()
+        .mockRejectedValue(new Error("Network error")) as jest.Mock;
 
       const result = await service.refreshAllPrices();
 
@@ -434,9 +464,9 @@ describe("SecurityPriceService", () => {
       securitiesRepository.find.mockResolvedValue([mockSecurity]);
 
       const yahooData = makeYahooChartResponse();
-      global.fetch = jest.fn().mockResolvedValue(
-        createMockFetchResponse(yahooData),
-      ) as jest.Mock;
+      global.fetch = jest
+        .fn()
+        .mockResolvedValue(createMockFetchResponse(yahooData)) as jest.Mock;
 
       // savePriceData: findOne returns existing entry
       const existingPrice = { ...mockPriceEntry };
@@ -458,12 +488,14 @@ describe("SecurityPriceService", () => {
       securitiesRepository.find.mockResolvedValue([mockSecurity]);
 
       const yahooData = makeYahooChartResponse();
-      global.fetch = jest.fn().mockResolvedValue(
-        createMockFetchResponse(yahooData),
-      ) as jest.Mock;
+      global.fetch = jest
+        .fn()
+        .mockResolvedValue(createMockFetchResponse(yahooData)) as jest.Mock;
 
       securityPriceRepository.findOne.mockResolvedValue(null);
-      securityPriceRepository.save.mockRejectedValue(new Error("DB write failed"));
+      securityPriceRepository.save.mockRejectedValue(
+        new Error("DB write failed"),
+      );
 
       const result = await service.refreshAllPrices();
 
@@ -491,9 +523,9 @@ describe("SecurityPriceService", () => {
       securitiesRepository.find.mockResolvedValue([sec1, sec2]);
 
       const yahooData = makeYahooChartResponse();
-      global.fetch = jest.fn().mockResolvedValue(
-        createMockFetchResponse(yahooData),
-      ) as jest.Mock;
+      global.fetch = jest
+        .fn()
+        .mockResolvedValue(createMockFetchResponse(yahooData)) as jest.Mock;
 
       securityPriceRepository.findOne.mockResolvedValue(null);
 
@@ -515,9 +547,9 @@ describe("SecurityPriceService", () => {
           result: [{ meta: { symbol: "AAPL", regularMarketTime: 1748800000 } }],
         },
       };
-      global.fetch = jest.fn().mockResolvedValue(
-        createMockFetchResponse(yahooData),
-      ) as jest.Mock;
+      global.fetch = jest
+        .fn()
+        .mockResolvedValue(createMockFetchResponse(yahooData)) as jest.Mock;
 
       const result = await service.refreshAllPrices();
 
@@ -542,9 +574,9 @@ describe("SecurityPriceService", () => {
       securitiesRepository.find.mockResolvedValue([mockSecurity]);
 
       const yahooData = makeYahooChartResponse();
-      global.fetch = jest.fn().mockResolvedValue(
-        createMockFetchResponse(yahooData),
-      ) as jest.Mock;
+      global.fetch = jest
+        .fn()
+        .mockResolvedValue(createMockFetchResponse(yahooData)) as jest.Mock;
 
       securityPriceRepository.findOne.mockResolvedValue(null);
 
@@ -557,16 +589,27 @@ describe("SecurityPriceService", () => {
     });
 
     it("handles mixed success and failure", async () => {
-      securitiesRepository.find.mockResolvedValue([mockSecurity, mockSecurityTSX]);
+      securitiesRepository.find.mockResolvedValue([
+        mockSecurity,
+        mockSecurityTSX,
+      ]);
 
-      const fetchMock = jest.fn()
-        .mockResolvedValueOnce(createMockFetchResponse(makeYahooChartResponse()))
-        .mockResolvedValueOnce(createMockFetchResponse({ chart: { result: [] } }));
+      const fetchMock = jest
+        .fn()
+        .mockResolvedValueOnce(
+          createMockFetchResponse(makeYahooChartResponse()),
+        )
+        .mockResolvedValueOnce(
+          createMockFetchResponse({ chart: { result: [] } }),
+        );
       global.fetch = fetchMock;
 
       securityPriceRepository.findOne.mockResolvedValue(null);
 
-      const result = await service.refreshPricesForSecurities(["sec-1", "sec-2"]);
+      const result = await service.refreshPricesForSecurities([
+        "sec-1",
+        "sec-2",
+      ]);
 
       expect(result.totalSecurities).toBe(2);
       // One succeeds, one fails (order may vary due to Promise.all)
@@ -576,9 +619,16 @@ describe("SecurityPriceService", () => {
     it("tries alternate symbols when primary fetch fails", async () => {
       securitiesRepository.find.mockResolvedValue([mockSecurityNoExchange]);
 
-      const fetchMock = jest.fn()
-        .mockResolvedValueOnce(createMockFetchResponse({ chart: { result: [] } })) // MSFT
-        .mockResolvedValueOnce(createMockFetchResponse(makeYahooChartResponse({ symbol: "MSFT.TO" }))); // MSFT.TO succeeds
+      const fetchMock = jest
+        .fn()
+        .mockResolvedValueOnce(
+          createMockFetchResponse({ chart: { result: [] } }),
+        ) // MSFT
+        .mockResolvedValueOnce(
+          createMockFetchResponse(
+            makeYahooChartResponse({ symbol: "MSFT.TO" }),
+          ),
+        ); // MSFT.TO succeeds
       global.fetch = fetchMock;
 
       securityPriceRepository.findOne.mockResolvedValue(null);
@@ -593,12 +643,14 @@ describe("SecurityPriceService", () => {
       securitiesRepository.find.mockResolvedValue([mockSecurity]);
 
       const yahooData = makeYahooChartResponse();
-      global.fetch = jest.fn().mockResolvedValue(
-        createMockFetchResponse(yahooData),
-      ) as jest.Mock;
+      global.fetch = jest
+        .fn()
+        .mockResolvedValue(createMockFetchResponse(yahooData)) as jest.Mock;
 
       securityPriceRepository.findOne.mockResolvedValue(null);
-      securityPriceRepository.save.mockRejectedValue(new Error("Constraint violation"));
+      securityPriceRepository.save.mockRejectedValue(
+        new Error("Constraint violation"),
+      );
 
       const result = await service.refreshPricesForSecurities(["sec-1"]);
 
@@ -618,9 +670,9 @@ describe("SecurityPriceService", () => {
           typeDisp: "Equity",
         },
       ]);
-      global.fetch = jest.fn().mockResolvedValue(
-        createMockFetchResponse(searchData),
-      ) as jest.Mock;
+      global.fetch = jest
+        .fn()
+        .mockResolvedValue(createMockFetchResponse(searchData)) as jest.Mock;
 
       const result = await service.lookupSecurity("AAPL");
 
@@ -635,9 +687,9 @@ describe("SecurityPriceService", () => {
 
     it("returns null when no quotes found", async () => {
       const searchData = makeYahooSearchResponse([]);
-      global.fetch = jest.fn().mockResolvedValue(
-        createMockFetchResponse(searchData),
-      ) as jest.Mock;
+      global.fetch = jest
+        .fn()
+        .mockResolvedValue(createMockFetchResponse(searchData)) as jest.Mock;
 
       const result = await service.lookupSecurity("ZZZZZZ");
 
@@ -645,9 +697,11 @@ describe("SecurityPriceService", () => {
     });
 
     it("returns null on API error", async () => {
-      global.fetch = jest.fn().mockResolvedValue(
-        createMockFetchResponse({}, false, 500),
-      ) as jest.Mock;
+      global.fetch = jest
+        .fn()
+        .mockResolvedValue(
+          createMockFetchResponse({}, false, 500),
+        ) as jest.Mock;
 
       const result = await service.lookupSecurity("AAPL");
 
@@ -655,9 +709,9 @@ describe("SecurityPriceService", () => {
     });
 
     it("returns null when fetch throws", async () => {
-      global.fetch = jest.fn().mockRejectedValue(
-        new Error("Network failure"),
-      ) as jest.Mock;
+      global.fetch = jest
+        .fn()
+        .mockRejectedValue(new Error("Network failure")) as jest.Mock;
 
       const result = await service.lookupSecurity("AAPL");
 
@@ -688,9 +742,9 @@ describe("SecurityPriceService", () => {
           typeDisp: "Equity",
         },
       ]);
-      global.fetch = jest.fn().mockResolvedValue(
-        createMockFetchResponse(searchData),
-      ) as jest.Mock;
+      global.fetch = jest
+        .fn()
+        .mockResolvedValue(createMockFetchResponse(searchData)) as jest.Mock;
 
       const result = await service.lookupSecurity("RY");
 
@@ -723,9 +777,9 @@ describe("SecurityPriceService", () => {
           typeDisp: "Equity",
         },
       ]);
-      global.fetch = jest.fn().mockResolvedValue(
-        createMockFetchResponse(searchData),
-      ) as jest.Mock;
+      global.fetch = jest
+        .fn()
+        .mockResolvedValue(createMockFetchResponse(searchData)) as jest.Mock;
 
       // Query "Shopify" won't match any base symbol exactly
       const result = await service.lookupSecurity("Shopify");
@@ -750,9 +804,9 @@ describe("SecurityPriceService", () => {
           typeDisp: "ETF",
         },
       ]);
-      global.fetch = jest.fn().mockResolvedValue(
-        createMockFetchResponse(searchData),
-      ) as jest.Mock;
+      global.fetch = jest
+        .fn()
+        .mockResolvedValue(createMockFetchResponse(searchData)) as jest.Mock;
 
       const result = await service.lookupSecurity("SPY");
 
@@ -771,9 +825,9 @@ describe("SecurityPriceService", () => {
           typeDisp: "Mutual Fund",
         },
       ]);
-      global.fetch = jest.fn().mockResolvedValue(
-        createMockFetchResponse(searchData),
-      ) as jest.Mock;
+      global.fetch = jest
+        .fn()
+        .mockResolvedValue(createMockFetchResponse(searchData)) as jest.Mock;
 
       const result = await service.lookupSecurity("VFIAX");
 
@@ -788,9 +842,9 @@ describe("SecurityPriceService", () => {
           typeDisp: "UnknownType",
         },
       ]);
-      global.fetch = jest.fn().mockResolvedValue(
-        createMockFetchResponse(searchData),
-      ) as jest.Mock;
+      global.fetch = jest
+        .fn()
+        .mockResolvedValue(createMockFetchResponse(searchData)) as jest.Mock;
 
       const result = await service.lookupSecurity("X");
 
@@ -804,9 +858,9 @@ describe("SecurityPriceService", () => {
           shortname: "Tesla Inc",
         },
       ]);
-      global.fetch = jest.fn().mockResolvedValue(
-        createMockFetchResponse(searchData),
-      ) as jest.Mock;
+      global.fetch = jest
+        .fn()
+        .mockResolvedValue(createMockFetchResponse(searchData)) as jest.Mock;
 
       const result = await service.lookupSecurity("TSLA");
 
@@ -819,9 +873,9 @@ describe("SecurityPriceService", () => {
           symbol: "XYZ",
         },
       ]);
-      global.fetch = jest.fn().mockResolvedValue(
-        createMockFetchResponse(searchData),
-      ) as jest.Mock;
+      global.fetch = jest
+        .fn()
+        .mockResolvedValue(createMockFetchResponse(searchData)) as jest.Mock;
 
       const result = await service.lookupSecurity("XYZ");
 
@@ -838,9 +892,9 @@ describe("SecurityPriceService", () => {
           typeDisp: "Equity",
         },
       ]);
-      global.fetch = jest.fn().mockResolvedValue(
-        createMockFetchResponse(searchData),
-      ) as jest.Mock;
+      global.fetch = jest
+        .fn()
+        .mockResolvedValue(createMockFetchResponse(searchData)) as jest.Mock;
 
       const result = await service.lookupSecurity("BHP");
 
@@ -861,9 +915,9 @@ describe("SecurityPriceService", () => {
           typeDisp: "Equity",
         },
       ]);
-      global.fetch = jest.fn().mockResolvedValue(
-        createMockFetchResponse(searchData),
-      ) as jest.Mock;
+      global.fetch = jest
+        .fn()
+        .mockResolvedValue(createMockFetchResponse(searchData)) as jest.Mock;
 
       const result = await service.lookupSecurity("0005");
 
@@ -914,18 +968,19 @@ describe("SecurityPriceService", () => {
 
     it("successfully backfills historical prices", async () => {
       securitiesRepository.find.mockResolvedValue([mockSecurity]);
-      dataSourceMock.query
-        .mockResolvedValueOnce([
-          { security_id: "sec-1", earliest: "2025-05-01" },
-        ]);
+      dataSourceMock.query.mockResolvedValueOnce([
+        { security_id: "sec-1", earliest: "2025-05-01" },
+      ]);
 
       const historicalData = makeYahooHistoricalResponse({
         timestamps: [1748700000, 1748800000],
         closes: [193.0, 194.0],
       });
-      global.fetch = jest.fn().mockResolvedValue(
-        createMockFetchResponse(historicalData),
-      ) as jest.Mock;
+      global.fetch = jest
+        .fn()
+        .mockResolvedValue(
+          createMockFetchResponse(historicalData),
+        ) as jest.Mock;
 
       // Second query call is the INSERT
       dataSourceMock.query.mockResolvedValue(undefined);
@@ -943,9 +998,11 @@ describe("SecurityPriceService", () => {
         { security_id: "sec-1", earliest: "2025-01-01" },
       ]);
 
-      global.fetch = jest.fn().mockResolvedValue(
-        createMockFetchResponse({ chart: { result: [] } }),
-      ) as jest.Mock;
+      global.fetch = jest
+        .fn()
+        .mockResolvedValue(
+          createMockFetchResponse({ chart: { result: [] } }),
+        ) as jest.Mock;
 
       const result = await service.backfillHistoricalPrices();
 
@@ -962,9 +1019,11 @@ describe("SecurityPriceService", () => {
         .mockRejectedValueOnce(new Error("INSERT failed"));
 
       const historicalData = makeYahooHistoricalResponse();
-      global.fetch = jest.fn().mockResolvedValue(
-        createMockFetchResponse(historicalData),
-      ) as jest.Mock;
+      global.fetch = jest
+        .fn()
+        .mockResolvedValue(
+          createMockFetchResponse(historicalData),
+        ) as jest.Mock;
 
       const result = await service.backfillHistoricalPrices();
 
@@ -974,14 +1033,18 @@ describe("SecurityPriceService", () => {
 
     it("tries alternate symbols when primary fails for backfill", async () => {
       securitiesRepository.find.mockResolvedValue([mockSecurityNoExchange]);
-      dataSourceMock.query
-        .mockResolvedValueOnce([
-          { security_id: "sec-3", earliest: "2025-01-01" },
-        ]);
+      dataSourceMock.query.mockResolvedValueOnce([
+        { security_id: "sec-3", earliest: "2025-01-01" },
+      ]);
 
-      const fetchMock = jest.fn()
-        .mockResolvedValueOnce(createMockFetchResponse({ chart: { result: [] } })) // MSFT fails
-        .mockResolvedValueOnce(createMockFetchResponse(makeYahooHistoricalResponse())); // MSFT.TO succeeds
+      const fetchMock = jest
+        .fn()
+        .mockResolvedValueOnce(
+          createMockFetchResponse({ chart: { result: [] } }),
+        ) // MSFT fails
+        .mockResolvedValueOnce(
+          createMockFetchResponse(makeYahooHistoricalResponse()),
+        ); // MSFT.TO succeeds
       global.fetch = fetchMock;
 
       dataSourceMock.query.mockResolvedValue(undefined);
@@ -993,22 +1056,31 @@ describe("SecurityPriceService", () => {
     });
 
     it("deduplicates API calls for same symbol/exchange group", async () => {
-      const sec1 = { ...mockSecurity, id: "sec-1", userId: "user-1" } as Security;
-      const sec2 = { ...mockSecurity, id: "sec-10", userId: "user-2" } as Security;
+      const sec1 = {
+        ...mockSecurity,
+        id: "sec-1",
+        userId: "user-1",
+      } as Security;
+      const sec2 = {
+        ...mockSecurity,
+        id: "sec-10",
+        userId: "user-2",
+      } as Security;
       securitiesRepository.find.mockResolvedValue([sec1, sec2]);
 
-      dataSourceMock.query
-        .mockResolvedValueOnce([
-          { security_id: "sec-1", earliest: "2025-01-01" },
-          { security_id: "sec-10", earliest: "2025-03-01" },
-        ]);
+      dataSourceMock.query.mockResolvedValueOnce([
+        { security_id: "sec-1", earliest: "2025-01-01" },
+        { security_id: "sec-10", earliest: "2025-03-01" },
+      ]);
 
       const historicalData = makeYahooHistoricalResponse({
         timestamps: [1748700000, 1748800000],
       });
-      global.fetch = jest.fn().mockResolvedValue(
-        createMockFetchResponse(historicalData),
-      ) as jest.Mock;
+      global.fetch = jest
+        .fn()
+        .mockResolvedValue(
+          createMockFetchResponse(historicalData),
+        ) as jest.Mock;
 
       dataSourceMock.query.mockResolvedValue(undefined);
 
@@ -1025,18 +1097,19 @@ describe("SecurityPriceService", () => {
       securitiesRepository.find.mockResolvedValue([sec1]);
 
       // Earliest transaction is far in the future relative to prices
-      dataSourceMock.query
-        .mockResolvedValueOnce([
-          { security_id: "sec-1", earliest: "2099-01-01" },
-        ]);
+      dataSourceMock.query.mockResolvedValueOnce([
+        { security_id: "sec-1", earliest: "2099-01-01" },
+      ]);
 
       const historicalData = makeYahooHistoricalResponse({
         timestamps: [1748700000, 1748800000],
         closes: [193.0, 194.0],
       });
-      global.fetch = jest.fn().mockResolvedValue(
-        createMockFetchResponse(historicalData),
-      ) as jest.Mock;
+      global.fetch = jest
+        .fn()
+        .mockResolvedValue(
+          createMockFetchResponse(historicalData),
+        ) as jest.Mock;
 
       dataSourceMock.query.mockResolvedValue(undefined);
 
@@ -1074,9 +1147,11 @@ describe("SecurityPriceService", () => {
           ],
         },
       };
-      global.fetch = jest.fn().mockResolvedValue(
-        createMockFetchResponse(historicalData),
-      ) as jest.Mock;
+      global.fetch = jest
+        .fn()
+        .mockResolvedValue(
+          createMockFetchResponse(historicalData),
+        ) as jest.Mock;
 
       dataSourceMock.query.mockResolvedValue(undefined);
 
@@ -1111,9 +1186,11 @@ describe("SecurityPriceService", () => {
       securitiesRepository.find.mockResolvedValue([
         { ...mockSecurity, symbol: "RY", exchange: "TSX" },
       ]);
-      global.fetch = jest.fn().mockResolvedValue(
-        createMockFetchResponse(makeYahooChartResponse()),
-      ) as jest.Mock;
+      global.fetch = jest
+        .fn()
+        .mockResolvedValue(
+          createMockFetchResponse(makeYahooChartResponse()),
+        ) as jest.Mock;
       securityPriceRepository.findOne.mockResolvedValue(null);
 
       await service.refreshAllPrices();
@@ -1128,9 +1205,11 @@ describe("SecurityPriceService", () => {
       securitiesRepository.find.mockResolvedValue([
         { ...mockSecurity, symbol: "VGCX", exchange: "TSX-V" },
       ]);
-      global.fetch = jest.fn().mockResolvedValue(
-        createMockFetchResponse(makeYahooChartResponse()),
-      ) as jest.Mock;
+      global.fetch = jest
+        .fn()
+        .mockResolvedValue(
+          createMockFetchResponse(makeYahooChartResponse()),
+        ) as jest.Mock;
       securityPriceRepository.findOne.mockResolvedValue(null);
 
       await service.refreshAllPrices();
@@ -1145,9 +1224,11 @@ describe("SecurityPriceService", () => {
       securitiesRepository.find.mockResolvedValue([
         { ...mockSecurity, symbol: "IBM", exchange: "NYSE" },
       ]);
-      global.fetch = jest.fn().mockResolvedValue(
-        createMockFetchResponse(makeYahooChartResponse()),
-      ) as jest.Mock;
+      global.fetch = jest
+        .fn()
+        .mockResolvedValue(
+          createMockFetchResponse(makeYahooChartResponse()),
+        ) as jest.Mock;
       securityPriceRepository.findOne.mockResolvedValue(null);
 
       await service.refreshAllPrices();
@@ -1162,9 +1243,11 @@ describe("SecurityPriceService", () => {
       securitiesRepository.find.mockResolvedValue([
         { ...mockSecurity, symbol: "AAPL", exchange: "NASDAQ" },
       ]);
-      global.fetch = jest.fn().mockResolvedValue(
-        createMockFetchResponse(makeYahooChartResponse()),
-      ) as jest.Mock;
+      global.fetch = jest
+        .fn()
+        .mockResolvedValue(
+          createMockFetchResponse(makeYahooChartResponse()),
+        ) as jest.Mock;
       securityPriceRepository.findOne.mockResolvedValue(null);
 
       await service.refreshAllPrices();
@@ -1179,9 +1262,11 @@ describe("SecurityPriceService", () => {
       securitiesRepository.find.mockResolvedValue([
         { ...mockSecurity, symbol: "BHP.AX", exchange: "ASX" },
       ]);
-      global.fetch = jest.fn().mockResolvedValue(
-        createMockFetchResponse(makeYahooChartResponse()),
-      ) as jest.Mock;
+      global.fetch = jest
+        .fn()
+        .mockResolvedValue(
+          createMockFetchResponse(makeYahooChartResponse()),
+        ) as jest.Mock;
       securityPriceRepository.findOne.mockResolvedValue(null);
 
       await service.refreshAllPrices();
@@ -1196,9 +1281,11 @@ describe("SecurityPriceService", () => {
       securitiesRepository.find.mockResolvedValue([
         { ...mockSecurity, symbol: "VOD", exchange: "LSE" },
       ]);
-      global.fetch = jest.fn().mockResolvedValue(
-        createMockFetchResponse(makeYahooChartResponse()),
-      ) as jest.Mock;
+      global.fetch = jest
+        .fn()
+        .mockResolvedValue(
+          createMockFetchResponse(makeYahooChartResponse()),
+        ) as jest.Mock;
       securityPriceRepository.findOne.mockResolvedValue(null);
 
       await service.refreshAllPrices();
@@ -1213,9 +1300,11 @@ describe("SecurityPriceService", () => {
       securitiesRepository.find.mockResolvedValue([
         { ...mockSecurity, symbol: "0005", exchange: "HKEX" },
       ]);
-      global.fetch = jest.fn().mockResolvedValue(
-        createMockFetchResponse(makeYahooChartResponse()),
-      ) as jest.Mock;
+      global.fetch = jest
+        .fn()
+        .mockResolvedValue(
+          createMockFetchResponse(makeYahooChartResponse()),
+        ) as jest.Mock;
       securityPriceRepository.findOne.mockResolvedValue(null);
 
       await service.refreshAllPrices();
@@ -1230,9 +1319,11 @@ describe("SecurityPriceService", () => {
       securitiesRepository.find.mockResolvedValue([
         { ...mockSecurity, symbol: "ABC", exchange: "UNKNOWN_EXCHANGE" },
       ]);
-      global.fetch = jest.fn().mockResolvedValue(
-        createMockFetchResponse(makeYahooChartResponse()),
-      ) as jest.Mock;
+      global.fetch = jest
+        .fn()
+        .mockResolvedValue(
+          createMockFetchResponse(makeYahooChartResponse()),
+        ) as jest.Mock;
       securityPriceRepository.findOne.mockResolvedValue(null);
 
       await service.refreshAllPrices();
@@ -1247,9 +1338,11 @@ describe("SecurityPriceService", () => {
       securitiesRepository.find.mockResolvedValue([
         { ...mockSecurity, symbol: "RY", exchange: "toronto stock exchange" },
       ]);
-      global.fetch = jest.fn().mockResolvedValue(
-        createMockFetchResponse(makeYahooChartResponse()),
-      ) as jest.Mock;
+      global.fetch = jest
+        .fn()
+        .mockResolvedValue(
+          createMockFetchResponse(makeYahooChartResponse()),
+        ) as jest.Mock;
       securityPriceRepository.findOne.mockResolvedValue(null);
 
       await service.refreshAllPrices();
@@ -1266,10 +1359,12 @@ describe("SecurityPriceService", () => {
       securitiesRepository.find.mockResolvedValue([mockSecurity]);
 
       // timestamp 1748800000 -> some date
-      const yahooData = makeYahooChartResponse({ regularMarketTime: 1748800000 });
-      global.fetch = jest.fn().mockResolvedValue(
-        createMockFetchResponse(yahooData),
-      ) as jest.Mock;
+      const yahooData = makeYahooChartResponse({
+        regularMarketTime: 1748800000,
+      });
+      global.fetch = jest
+        .fn()
+        .mockResolvedValue(createMockFetchResponse(yahooData)) as jest.Mock;
 
       securityPriceRepository.findOne.mockResolvedValue(null);
 
@@ -1289,12 +1384,14 @@ describe("SecurityPriceService", () => {
     it("falls back to current date when regularMarketTime is missing", async () => {
       securitiesRepository.find.mockResolvedValue([mockSecurity]);
 
-      const yahooData = makeYahooChartResponse({ regularMarketTime: undefined });
+      const yahooData = makeYahooChartResponse({
+        regularMarketTime: undefined,
+      });
       // Remove regularMarketTime from meta
       yahooData.chart.result[0].meta.regularMarketTime = undefined;
-      global.fetch = jest.fn().mockResolvedValue(
-        createMockFetchResponse(yahooData),
-      ) as jest.Mock;
+      global.fetch = jest
+        .fn()
+        .mockResolvedValue(createMockFetchResponse(yahooData)) as jest.Mock;
 
       securityPriceRepository.findOne.mockResolvedValue(null);
 
@@ -1319,9 +1416,9 @@ describe("SecurityPriceService", () => {
         regularMarketDayLow: 198.0,
         regularMarketVolume: 60000000,
       });
-      global.fetch = jest.fn().mockResolvedValue(
-        createMockFetchResponse(yahooData),
-      ) as jest.Mock;
+      global.fetch = jest
+        .fn()
+        .mockResolvedValue(createMockFetchResponse(yahooData)) as jest.Mock;
 
       securityPriceRepository.findOne.mockResolvedValue(null);
 
@@ -1349,9 +1446,9 @@ describe("SecurityPriceService", () => {
         regularMarketDayLow: 198.0,
         regularMarketVolume: 60000000,
       });
-      global.fetch = jest.fn().mockResolvedValue(
-        createMockFetchResponse(yahooData),
-      ) as jest.Mock;
+      global.fetch = jest
+        .fn()
+        .mockResolvedValue(createMockFetchResponse(yahooData)) as jest.Mock;
 
       const existingPrice = {
         ...mockPriceEntry,
@@ -1386,9 +1483,9 @@ describe("SecurityPriceService", () => {
       const yahooData = makeYahooChartResponse({
         regularMarketPrice: 200.0,
       });
-      global.fetch = jest.fn().mockResolvedValue(
-        createMockFetchResponse(yahooData),
-      ) as jest.Mock;
+      global.fetch = jest
+        .fn()
+        .mockResolvedValue(createMockFetchResponse(yahooData)) as jest.Mock;
 
       const existingPrice = {
         ...mockPriceEntry,
@@ -1411,11 +1508,20 @@ describe("SecurityPriceService", () => {
     it("returns .TO, .V, .CN alternates for plain symbols", async () => {
       securitiesRepository.find.mockResolvedValue([mockSecurityNoExchange]);
 
-      const fetchMock = jest.fn()
-        .mockResolvedValueOnce(createMockFetchResponse({ chart: { result: [] } })) // MSFT
-        .mockResolvedValueOnce(createMockFetchResponse({ chart: { result: [] } })) // MSFT.TO
-        .mockResolvedValueOnce(createMockFetchResponse({ chart: { result: [] } })) // MSFT.V
-        .mockResolvedValueOnce(createMockFetchResponse({ chart: { result: [] } })); // MSFT.CN
+      const fetchMock = jest
+        .fn()
+        .mockResolvedValueOnce(
+          createMockFetchResponse({ chart: { result: [] } }),
+        ) // MSFT
+        .mockResolvedValueOnce(
+          createMockFetchResponse({ chart: { result: [] } }),
+        ) // MSFT.TO
+        .mockResolvedValueOnce(
+          createMockFetchResponse({ chart: { result: [] } }),
+        ) // MSFT.V
+        .mockResolvedValueOnce(
+          createMockFetchResponse({ chart: { result: [] } }),
+        ); // MSFT.CN
       global.fetch = fetchMock;
 
       await service.refreshAllPrices();
@@ -1443,10 +1549,15 @@ describe("SecurityPriceService", () => {
     it("stops trying alternates on first success", async () => {
       securitiesRepository.find.mockResolvedValue([mockSecurityNoExchange]);
 
-      const fetchMock = jest.fn()
-        .mockResolvedValueOnce(createMockFetchResponse({ chart: { result: [] } })) // MSFT fails
+      const fetchMock = jest
+        .fn()
         .mockResolvedValueOnce(
-          createMockFetchResponse(makeYahooChartResponse({ symbol: "MSFT.TO" })),
+          createMockFetchResponse({ chart: { result: [] } }),
+        ) // MSFT fails
+        .mockResolvedValueOnce(
+          createMockFetchResponse(
+            makeYahooChartResponse({ symbol: "MSFT.TO" }),
+          ),
         ); // MSFT.TO succeeds
       global.fetch = fetchMock;
 
@@ -1463,12 +1574,22 @@ describe("SecurityPriceService", () => {
   describe("getExchangePriority (via lookupSecurity)", () => {
     it("prioritizes TSX (.TO) over US exchanges", async () => {
       const searchData = makeYahooSearchResponse([
-        { symbol: "TD", exchDisp: "NYSE", typeDisp: "Equity", longname: "TD US" },
-        { symbol: "TD.TO", exchDisp: "Toronto", typeDisp: "Equity", longname: "TD Canada" },
+        {
+          symbol: "TD",
+          exchDisp: "NYSE",
+          typeDisp: "Equity",
+          longname: "TD US",
+        },
+        {
+          symbol: "TD.TO",
+          exchDisp: "Toronto",
+          typeDisp: "Equity",
+          longname: "TD Canada",
+        },
       ]);
-      global.fetch = jest.fn().mockResolvedValue(
-        createMockFetchResponse(searchData),
-      ) as jest.Mock;
+      global.fetch = jest
+        .fn()
+        .mockResolvedValue(createMockFetchResponse(searchData)) as jest.Mock;
 
       const result = await service.lookupSecurity("TD");
 
@@ -1478,12 +1599,22 @@ describe("SecurityPriceService", () => {
 
     it("prioritizes US exchanges over international", async () => {
       const searchData = makeYahooSearchResponse([
-        { symbol: "VOD.L", exchDisp: "London", typeDisp: "Equity", longname: "Vodafone UK" },
-        { symbol: "VOD", exchDisp: "NASDAQ", typeDisp: "Equity", longname: "Vodafone US" },
+        {
+          symbol: "VOD.L",
+          exchDisp: "London",
+          typeDisp: "Equity",
+          longname: "Vodafone UK",
+        },
+        {
+          symbol: "VOD",
+          exchDisp: "NASDAQ",
+          typeDisp: "Equity",
+          longname: "Vodafone US",
+        },
       ]);
-      global.fetch = jest.fn().mockResolvedValue(
-        createMockFetchResponse(searchData),
-      ) as jest.Mock;
+      global.fetch = jest
+        .fn()
+        .mockResolvedValue(createMockFetchResponse(searchData)) as jest.Mock;
 
       const result = await service.lookupSecurity("VOD");
 
@@ -1495,11 +1626,16 @@ describe("SecurityPriceService", () => {
     it("recognizes Canada exchange keywords in exchDisp", async () => {
       const searchData = makeYahooSearchResponse([
         { symbol: "X", exchDisp: "NYSE", typeDisp: "Equity", longname: "X US" },
-        { symbol: "X", exchDisp: "Canada", typeDisp: "Equity", longname: "X Canada" },
+        {
+          symbol: "X",
+          exchDisp: "Canada",
+          typeDisp: "Equity",
+          longname: "X Canada",
+        },
       ]);
-      global.fetch = jest.fn().mockResolvedValue(
-        createMockFetchResponse(searchData),
-      ) as jest.Mock;
+      global.fetch = jest
+        .fn()
+        .mockResolvedValue(createMockFetchResponse(searchData)) as jest.Mock;
 
       const result = await service.lookupSecurity("X");
 

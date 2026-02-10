@@ -40,7 +40,9 @@ describe("InvestmentTransactionsController", () => {
       ],
     }).compile();
 
-    controller = module.get<InvestmentTransactionsController>(InvestmentTransactionsController);
+    controller = module.get<InvestmentTransactionsController>(
+      InvestmentTransactionsController,
+    );
   });
 
   it("should be defined", () => {
@@ -49,7 +51,13 @@ describe("InvestmentTransactionsController", () => {
 
   describe("create", () => {
     it("delegates to service.create with userId and dto", async () => {
-      const dto = { accountId: "acc-1", securityId: "sec-1", action: "BUY", quantity: 10, price: 150 };
+      const dto = {
+        accountId: "acc-1",
+        securityId: "sec-1",
+        action: "BUY",
+        quantity: 10,
+        price: 150,
+      };
       service.create.mockResolvedValue(mockTransaction);
 
       const result = await controller.create(req, dto as any);
@@ -61,7 +69,12 @@ describe("InvestmentTransactionsController", () => {
 
   describe("findAll", () => {
     it("returns paginated transactions with default params", async () => {
-      const response = { data: [mockTransaction], total: 1, page: 1, limit: 50 };
+      const response = {
+        data: [mockTransaction],
+        total: 1,
+        page: 1,
+        limit: 50,
+      };
       service.findAll.mockResolvedValue(response);
 
       const result = await controller.findAll(req);
@@ -99,7 +112,16 @@ describe("InvestmentTransactionsController", () => {
     it("parses page and limit as integers", async () => {
       service.findAll.mockResolvedValue({ data: [], total: 0 });
 
-      await controller.findAll(req, undefined, "2025-01-01", "2025-12-31", "2", "25", "AAPL", "BUY");
+      await controller.findAll(
+        req,
+        undefined,
+        "2025-01-01",
+        "2025-12-31",
+        "2",
+        "25",
+        "AAPL",
+        "BUY",
+      );
 
       expect(service.findAll).toHaveBeenCalledWith(
         "user-1",
@@ -130,7 +152,10 @@ describe("InvestmentTransactionsController", () => {
 
       await controller.getSummary(req, "acc-1,acc-2");
 
-      expect(service.getSummary).toHaveBeenCalledWith("user-1", ["acc-1", "acc-2"]);
+      expect(service.getSummary).toHaveBeenCalledWith("user-1", [
+        "acc-1",
+        "acc-2",
+      ]);
     });
   });
 
@@ -169,7 +194,11 @@ describe("InvestmentTransactionsController", () => {
 
   describe("removeAll", () => {
     it("delegates to service.removeAll", async () => {
-      const result = { transactionsDeleted: 10, holdingsDeleted: 5, accountsReset: 2 };
+      const result = {
+        transactionsDeleted: 10,
+        holdingsDeleted: 5,
+        accountsReset: 2,
+      };
       service.removeAll.mockResolvedValue(result);
 
       const actual = await controller.removeAll(req);

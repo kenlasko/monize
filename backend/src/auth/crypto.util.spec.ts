@@ -100,9 +100,9 @@ describe("crypto.util", () => {
     });
 
     it("throws for invalid format (5 parts)", () => {
-      expect(() =>
-        decrypt("part1:part2:part3:part4:part5", jwtSecret),
-      ).toThrow("Invalid encrypted text format");
+      expect(() => decrypt("part1:part2:part3:part4:part5", jwtSecret)).toThrow(
+        "Invalid encrypted text format",
+      );
     });
 
     it("throws for tampered ciphertext", () => {
@@ -116,7 +116,9 @@ describe("crypto.util", () => {
 
     it("throws when using wrong secret to decrypt", () => {
       const encrypted = encrypt("test", jwtSecret);
-      expect(() => decrypt(encrypted, "wrong-secret-that-is-also-32-chars")).toThrow();
+      expect(() =>
+        decrypt(encrypted, "wrong-secret-that-is-also-32-chars"),
+      ).toThrow();
     });
   });
 

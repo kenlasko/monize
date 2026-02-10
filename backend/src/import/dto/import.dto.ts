@@ -86,7 +86,9 @@ export class AccountMappingDto {
   @IsString()
   accountType?: string;
 
-  @ApiPropertyOptional({ description: "Currency code for new account (e.g., USD, CAD)" })
+  @ApiPropertyOptional({
+    description: "Currency code for new account (e.g., USD, CAD)",
+  })
   @IsOptional()
   @IsString()
   currencyCode?: string;
@@ -245,7 +247,8 @@ export class ImportResultDto {
   securitiesCreated: number;
 
   @ApiPropertyOptional({
-    description: 'Maps of created entity original names to their new IDs (for bulk import coordination)',
+    description:
+      "Maps of created entity original names to their new IDs (for bulk import coordination)",
   })
   createdMappings?: {
     categories: Record<string, string>;

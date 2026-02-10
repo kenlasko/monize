@@ -25,7 +25,8 @@ describe("JwtStrategy", () => {
 
     configService = {
       get: jest.fn().mockImplementation((key: string) => {
-        if (key === "JWT_SECRET") return "test-secret-at-least-32-characters-long";
+        if (key === "JWT_SECRET")
+          return "test-secret-at-least-32-characters-long";
         return undefined;
       }),
     };
@@ -71,7 +72,10 @@ describe("JwtStrategy", () => {
 
     it("rejects inactive users", async () => {
       const payload = { sub: "user-1" };
-      authService.getUserById.mockResolvedValue({ ...mockUser, isActive: false });
+      authService.getUserById.mockResolvedValue({
+        ...mockUser,
+        isActive: false,
+      });
 
       await expect(strategy.validate(payload)).rejects.toThrow(
         UnauthorizedException,

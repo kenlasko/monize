@@ -30,9 +30,7 @@ describe("HoldingsController", () => {
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [HoldingsController],
-      providers: [
-        { provide: HoldingsService, useValue: holdingsService },
-      ],
+      providers: [{ provide: HoldingsService, useValue: holdingsService }],
     }).compile();
 
     controller = module.get<HoldingsController>(HoldingsController);
@@ -64,12 +62,19 @@ describe("HoldingsController", () => {
 
   describe("getSummary", () => {
     it("returns holdings summary for an account", async () => {
-      const summary = { totalValue: 5000, totalCostBasis: 4000, totalGainLoss: 1000 };
+      const summary = {
+        totalValue: 5000,
+        totalCostBasis: 4000,
+        totalGainLoss: 1000,
+      };
       holdingsService.getHoldingsSummary.mockResolvedValue(summary);
 
       const result = await controller.getSummary(req, "acc-1");
 
-      expect(holdingsService.getHoldingsSummary).toHaveBeenCalledWith("user-1", "acc-1");
+      expect(holdingsService.getHoldingsSummary).toHaveBeenCalledWith(
+        "user-1",
+        "acc-1",
+      );
       expect(result).toEqual(summary);
     });
   });
@@ -97,12 +102,18 @@ describe("HoldingsController", () => {
 
   describe("rebuild", () => {
     it("delegates to holdingsService.rebuildFromTransactions", async () => {
-      const rebuildResult = { holdingsCreated: 5, holdingsUpdated: 2, holdingsDeleted: 1 };
+      const rebuildResult = {
+        holdingsCreated: 5,
+        holdingsUpdated: 2,
+        holdingsDeleted: 1,
+      };
       holdingsService.rebuildFromTransactions.mockResolvedValue(rebuildResult);
 
       const result = await controller.rebuild(req);
 
-      expect(holdingsService.rebuildFromTransactions).toHaveBeenCalledWith("user-1");
+      expect(holdingsService.rebuildFromTransactions).toHaveBeenCalledWith(
+        "user-1",
+      );
       expect(result).toEqual(rebuildResult);
     });
   });

@@ -264,7 +264,10 @@ describe("ReportsService", () => {
 
   describe("findAll", () => {
     it("returns all reports for a user", async () => {
-      const reports = [mockReport, { ...mockReport, id: "report-2", name: "Second Report" }];
+      const reports = [
+        mockReport,
+        { ...mockReport, id: "report-2", name: "Second Report" },
+      ];
       reportsRepository.find.mockResolvedValue(reports);
 
       const result = await service.findAll("user-1");
@@ -507,7 +510,10 @@ describe("ReportsService", () => {
 
       expect(result.viewType).toBe(ReportViewType.PIE_CHART);
       expect(result.groupBy).toBe(GroupByType.CATEGORY);
-      expect(result.tableColumns).toEqual([TableColumn.LABEL, TableColumn.VALUE]);
+      expect(result.tableColumns).toEqual([
+        TableColumn.LABEL,
+        TableColumn.VALUE,
+      ]);
       expect(result.timeframe).toBeDefined();
       expect(result.timeframe.startDate).toBeDefined();
       expect(result.timeframe.endDate).toBeDefined();
@@ -706,10 +712,7 @@ describe("ReportsService", () => {
             id: "tx-1",
             amount: -100,
             isSplit: true,
-            splits: [
-              { amount: -60 } as any,
-              { amount: -40 } as any,
-            ],
+            splits: [{ amount: -60 } as any, { amount: -40 } as any],
           }),
         ];
         setupExecuteMocks(
@@ -731,9 +734,21 @@ describe("ReportsService", () => {
     describe("groupBy CATEGORY", () => {
       it("aggregates transactions by category", async () => {
         const transactions = [
-          createMockTransaction({ id: "tx-1", categoryId: "cat-1", amount: -50 }),
-          createMockTransaction({ id: "tx-2", categoryId: "cat-1", amount: -30 }),
-          createMockTransaction({ id: "tx-3", categoryId: "cat-2", amount: -20 }),
+          createMockTransaction({
+            id: "tx-1",
+            categoryId: "cat-1",
+            amount: -50,
+          }),
+          createMockTransaction({
+            id: "tx-2",
+            categoryId: "cat-1",
+            amount: -30,
+          }),
+          createMockTransaction({
+            id: "tx-3",
+            categoryId: "cat-2",
+            amount: -20,
+          }),
         ];
         const categories = [
           mockCategory,
@@ -818,8 +833,16 @@ describe("ReportsService", () => {
 
       it("calculates percentages for category aggregation", async () => {
         const transactions = [
-          createMockTransaction({ id: "tx-1", categoryId: "cat-1", amount: -75 }),
-          createMockTransaction({ id: "tx-2", categoryId: "cat-2", amount: -25 }),
+          createMockTransaction({
+            id: "tx-1",
+            categoryId: "cat-1",
+            amount: -75,
+          }),
+          createMockTransaction({
+            id: "tx-2",
+            categoryId: "cat-2",
+            amount: -25,
+          }),
         ];
         const categories = [
           mockCategory,
@@ -967,9 +990,21 @@ describe("ReportsService", () => {
     describe("groupBy time periods", () => {
       it("aggregates by MONTH", async () => {
         const transactions = [
-          createMockTransaction({ id: "tx-1", transactionDate: "2025-01-15", amount: -50 }),
-          createMockTransaction({ id: "tx-2", transactionDate: "2025-01-20", amount: -30 }),
-          createMockTransaction({ id: "tx-3", transactionDate: "2025-02-10", amount: -20 }),
+          createMockTransaction({
+            id: "tx-1",
+            transactionDate: "2025-01-15",
+            amount: -50,
+          }),
+          createMockTransaction({
+            id: "tx-2",
+            transactionDate: "2025-01-20",
+            amount: -30,
+          }),
+          createMockTransaction({
+            id: "tx-3",
+            transactionDate: "2025-02-10",
+            amount: -20,
+          }),
         ];
         setupExecuteMocks(
           {
@@ -993,8 +1028,16 @@ describe("ReportsService", () => {
 
       it("aggregates by YEAR", async () => {
         const transactions = [
-          createMockTransaction({ id: "tx-1", transactionDate: "2024-06-15", amount: -100 }),
-          createMockTransaction({ id: "tx-2", transactionDate: "2025-03-10", amount: -50 }),
+          createMockTransaction({
+            id: "tx-1",
+            transactionDate: "2024-06-15",
+            amount: -100,
+          }),
+          createMockTransaction({
+            id: "tx-2",
+            transactionDate: "2025-03-10",
+            amount: -50,
+          }),
         ];
         setupExecuteMocks(
           {
@@ -1015,9 +1058,21 @@ describe("ReportsService", () => {
 
       it("aggregates by DAY", async () => {
         const transactions = [
-          createMockTransaction({ id: "tx-1", transactionDate: "2025-03-15", amount: -50 }),
-          createMockTransaction({ id: "tx-2", transactionDate: "2025-03-15", amount: -30 }),
-          createMockTransaction({ id: "tx-3", transactionDate: "2025-03-16", amount: -20 }),
+          createMockTransaction({
+            id: "tx-1",
+            transactionDate: "2025-03-15",
+            amount: -50,
+          }),
+          createMockTransaction({
+            id: "tx-2",
+            transactionDate: "2025-03-15",
+            amount: -30,
+          }),
+          createMockTransaction({
+            id: "tx-3",
+            transactionDate: "2025-03-16",
+            amount: -20,
+          }),
         ];
         setupExecuteMocks(
           {
@@ -1038,8 +1093,16 @@ describe("ReportsService", () => {
 
       it("aggregates by WEEK", async () => {
         const transactions = [
-          createMockTransaction({ id: "tx-1", transactionDate: "2025-03-10", amount: -50 }),
-          createMockTransaction({ id: "tx-2", transactionDate: "2025-03-11", amount: -30 }),
+          createMockTransaction({
+            id: "tx-1",
+            transactionDate: "2025-03-10",
+            amount: -50,
+          }),
+          createMockTransaction({
+            id: "tx-2",
+            transactionDate: "2025-03-11",
+            amount: -30,
+          }),
         ];
         setupExecuteMocks(
           {
@@ -1061,8 +1124,16 @@ describe("ReportsService", () => {
     describe("sorting", () => {
       it("applies custom sort by VALUE descending", async () => {
         const transactions = [
-          createMockTransaction({ id: "tx-1", categoryId: "cat-1", amount: -20 }),
-          createMockTransaction({ id: "tx-2", categoryId: "cat-2", amount: -80 }),
+          createMockTransaction({
+            id: "tx-1",
+            categoryId: "cat-1",
+            amount: -20,
+          }),
+          createMockTransaction({
+            id: "tx-2",
+            categoryId: "cat-2",
+            amount: -80,
+          }),
         ];
         const categories = [
           mockCategory,
@@ -1084,13 +1155,23 @@ describe("ReportsService", () => {
 
         const result = await service.execute("user-1", "report-1");
 
-        expect(result.data[0].value).toBeGreaterThanOrEqual(result.data[1].value);
+        expect(result.data[0].value).toBeGreaterThanOrEqual(
+          result.data[1].value,
+        );
       });
 
       it("applies custom sort by LABEL ascending", async () => {
         const transactions = [
-          createMockTransaction({ id: "tx-1", categoryId: "cat-1", amount: -50 }),
-          createMockTransaction({ id: "tx-2", categoryId: "cat-2", amount: -30 }),
+          createMockTransaction({
+            id: "tx-1",
+            categoryId: "cat-1",
+            amount: -50,
+          }),
+          createMockTransaction({
+            id: "tx-2",
+            categoryId: "cat-2",
+            amount: -30,
+          }),
         ];
         const categories = [
           mockCategory,
@@ -1118,8 +1199,16 @@ describe("ReportsService", () => {
 
       it("defaults sort direction to DESC when not specified", async () => {
         const transactions = [
-          createMockTransaction({ id: "tx-1", categoryId: "cat-1", amount: -20 }),
-          createMockTransaction({ id: "tx-2", categoryId: "cat-2", amount: -80 }),
+          createMockTransaction({
+            id: "tx-1",
+            categoryId: "cat-1",
+            amount: -20,
+          }),
+          createMockTransaction({
+            id: "tx-2",
+            categoryId: "cat-2",
+            amount: -80,
+          }),
         ];
         const categories = [
           mockCategory,
@@ -1141,15 +1230,33 @@ describe("ReportsService", () => {
 
         const result = await service.execute("user-1", "report-1");
 
-        expect(result.data[0].value).toBeGreaterThanOrEqual(result.data[1].value);
+        expect(result.data[0].value).toBeGreaterThanOrEqual(
+          result.data[1].value,
+        );
       });
 
       it("sorts by COUNT column", async () => {
         const transactions = [
-          createMockTransaction({ id: "tx-1", categoryId: "cat-1", amount: -10 }),
-          createMockTransaction({ id: "tx-2", categoryId: "cat-2", amount: -10 }),
-          createMockTransaction({ id: "tx-3", categoryId: "cat-2", amount: -10 }),
-          createMockTransaction({ id: "tx-4", categoryId: "cat-2", amount: -10 }),
+          createMockTransaction({
+            id: "tx-1",
+            categoryId: "cat-1",
+            amount: -10,
+          }),
+          createMockTransaction({
+            id: "tx-2",
+            categoryId: "cat-2",
+            amount: -10,
+          }),
+          createMockTransaction({
+            id: "tx-3",
+            categoryId: "cat-2",
+            amount: -10,
+          }),
+          createMockTransaction({
+            id: "tx-4",
+            categoryId: "cat-2",
+            amount: -10,
+          }),
         ];
         const categories = [
           mockCategory,
@@ -1212,8 +1319,16 @@ describe("ReportsService", () => {
     describe("summary calculation", () => {
       it("calculates correct summary for aggregated data", async () => {
         const transactions = [
-          createMockTransaction({ id: "tx-1", categoryId: "cat-1", amount: -60 }),
-          createMockTransaction({ id: "tx-2", categoryId: "cat-2", amount: -40 }),
+          createMockTransaction({
+            id: "tx-1",
+            categoryId: "cat-1",
+            amount: -60,
+          }),
+          createMockTransaction({
+            id: "tx-2",
+            categoryId: "cat-2",
+            amount: -40,
+          }),
         ];
         const categories = [
           mockCategory,
@@ -1424,9 +1539,7 @@ describe("ReportsService", () => {
       it("skips empty filterGroups", async () => {
         const { qb } = setupExecuteMocks({
           filters: {
-            filterGroups: [
-              { conditions: [] },
-            ],
+            filterGroups: [{ conditions: [] }],
           },
           config: { ...defaultConfig },
         });
@@ -1463,10 +1576,9 @@ describe("ReportsService", () => {
 
         await service.execute("user-1", "report-1");
 
-        expect(qb.where).toHaveBeenCalledWith(
-          "transaction.userId = :userId",
-          { userId: "user-1" },
-        );
+        expect(qb.where).toHaveBeenCalledWith("transaction.userId = :userId", {
+          userId: "user-1",
+        });
       });
 
       it("joins account, category, payee, and splits relations", async () => {
@@ -1629,9 +1741,7 @@ describe("ReportsService", () => {
 
     describe("edge cases", () => {
       it("handles transaction with zero amount", async () => {
-        const transactions = [
-          createMockTransaction({ id: "tx-1", amount: 0 }),
-        ];
+        const transactions = [createMockTransaction({ id: "tx-1", amount: 0 })];
         setupExecuteMocks(
           {
             groupBy: GroupByType.NONE,

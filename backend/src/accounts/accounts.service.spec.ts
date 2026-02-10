@@ -6,7 +6,11 @@ import {
   BadRequestException,
 } from "@nestjs/common";
 import { AccountsService } from "./accounts.service";
-import { Account, AccountType, AccountSubType } from "./entities/account.entity";
+import {
+  Account,
+  AccountType,
+  AccountSubType,
+} from "./entities/account.entity";
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { InvestmentTransaction } from "../securities/entities/investment-transaction.entity";
 import { CategoriesService } from "../categories/categories.service";

@@ -104,9 +104,9 @@ describe("NetWorthController", () => {
       const result = await controller.recalculate(mockReq);
 
       expect(result).toEqual({ success: true });
-      expect(
-        mockNetWorthService.recalculateAllAccounts,
-      ).toHaveBeenCalledWith("user-1");
+      expect(mockNetWorthService.recalculateAllAccounts).toHaveBeenCalledWith(
+        "user-1",
+      );
     });
   });
 });

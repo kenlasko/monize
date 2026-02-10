@@ -19,15 +19,12 @@ async function addSkipPriceUpdatesColumn() {
     host: process.env.DATABASE_HOST || "localhost",
     port: parseInt(process.env.DATABASE_PORT || "5432"),
     username:
-      process.env.DATABASE_USER ||
-      process.env.POSTGRES_USER ||
-      "monize_user",
+      process.env.DATABASE_USER || process.env.POSTGRES_USER || "monize_user",
     password:
       process.env.DATABASE_PASSWORD ||
       process.env.POSTGRES_PASSWORD ||
       "monize_password",
-    database:
-      process.env.DATABASE_NAME || process.env.POSTGRES_DB || "monize",
+    database: process.env.DATABASE_NAME || process.env.POSTGRES_DB || "monize",
   });
 
   await dataSource.initialize();
