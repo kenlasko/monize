@@ -23,6 +23,7 @@ import {
   InvestmentTransactionPaginationInfo,
 } from '@/types/investment';
 import { usePriceRefresh, setRefreshInProgress } from '@/hooks/usePriceRefresh';
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { createLogger } from '@/lib/logger';
 
 const logger = createLogger('Investments');
@@ -48,6 +49,14 @@ function formatRelativeTime(dateString: string | null): string {
 }
 
 export default function InvestmentsPage() {
+  return (
+    <ProtectedRoute>
+      <InvestmentsContent />
+    </ProtectedRoute>
+  );
+}
+
+function InvestmentsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [accounts, setAccounts] = useState<Account[]>([]);

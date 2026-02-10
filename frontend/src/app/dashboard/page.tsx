@@ -23,12 +23,21 @@ import { ScheduledTransaction } from '@/types/scheduled-transaction';
 import { TopMover } from '@/types/investment';
 import { MonthlyNetWorth } from '@/types/net-worth';
 import { PageLayout } from '@/components/layout/PageLayout';
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { usePriceRefresh } from '@/hooks/usePriceRefresh';
 import { createLogger } from '@/lib/logger';
 
 const logger = createLogger('Dashboard');
 
 export default function DashboardPage() {
+  return (
+    <ProtectedRoute>
+      <DashboardContent />
+    </ProtectedRoute>
+  );
+}
+
+function DashboardContent() {
   const { user } = useAuthStore();
 
   const [accounts, setAccounts] = useState<Account[]>([]);

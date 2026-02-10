@@ -14,11 +14,20 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { SummaryCard, SummaryIcons } from '@/components/ui/SummaryCard';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useFormModal } from '@/hooks/useFormModal';
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { createLogger } from '@/lib/logger';
 
 const logger = createLogger('Categories');
 
 export default function CategoriesPage() {
+  return (
+    <ProtectedRoute>
+      <CategoriesContent />
+    </ProtectedRoute>
+  );
+}
+
+function CategoriesContent() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isImporting, setIsImporting] = useState(false);

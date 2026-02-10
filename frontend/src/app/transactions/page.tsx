@@ -29,6 +29,7 @@ import { PageLayout } from '@/components/layout/PageLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { SummaryCard, SummaryIcons } from '@/components/ui/SummaryCard';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { createLogger } from '@/lib/logger';
 
 const logger = createLogger('Transactions');
@@ -92,6 +93,14 @@ const isInvestmentBrokerageAccount = (account: Account): boolean => {
 };
 
 export default function TransactionsPage() {
+  return (
+    <ProtectedRoute>
+      <TransactionsContent />
+    </ProtectedRoute>
+  );
+}
+
+function TransactionsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { formatDate } = useDateFormat();

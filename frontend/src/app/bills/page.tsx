@@ -34,6 +34,7 @@ import { parseLocalDate } from '@/lib/utils';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { Modal } from '@/components/ui/Modal';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { createLogger } from '@/lib/logger';
 
 const logger = createLogger('Bills');
@@ -46,6 +47,14 @@ interface OverrideEditorState {
 }
 
 export default function BillsPage() {
+  return (
+    <ProtectedRoute>
+      <BillsContent />
+    </ProtectedRoute>
+  );
+}
+
+function BillsContent() {
   const { formatCurrency } = useNumberFormat();
   const [scheduledTransactions, setScheduledTransactions] = useState<ScheduledTransaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);

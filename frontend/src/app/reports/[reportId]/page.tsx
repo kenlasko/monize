@@ -3,6 +3,7 @@
 import { Suspense, lazy } from 'react';
 import { useParams } from 'next/navigation';
 import { AppHeader } from '@/components/layout/AppHeader';
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 
 const reportComponents: Record<string, React.LazyExoticComponent<React.ComponentType>> = {
   'spending-by-category': lazy(() => import('@/components/reports/SpendingByCategoryReport').then(m => ({ default: m.SpendingByCategoryReport }))),
@@ -83,6 +84,14 @@ function ReportSkeleton() {
 }
 
 export default function ReportPage() {
+  return (
+    <ProtectedRoute>
+      <ReportContent />
+    </ProtectedRoute>
+  );
+}
+
+function ReportContent() {
   const params = useParams();
   const reportId = params.reportId as string;
 

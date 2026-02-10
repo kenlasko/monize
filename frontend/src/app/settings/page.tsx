@@ -21,6 +21,7 @@ import {
   UpdatePreferencesData,
   TrustedDevice,
 } from '@/types/auth';
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { createLogger } from '@/lib/logger';
 
 const logger = createLogger('Settings');
@@ -76,6 +77,14 @@ const CURRENCY_OPTIONS = [
 ];
 
 export default function SettingsPage() {
+  return (
+    <ProtectedRoute>
+      <SettingsContent />
+    </ProtectedRoute>
+  );
+}
+
+function SettingsContent() {
   const router = useRouter();
   const { setUser, logout } = useAuthStore();
   const updatePreferencesStore = usePreferencesStore((state) => state.updatePreferences);

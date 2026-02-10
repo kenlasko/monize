@@ -19,11 +19,20 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useFormModal } from '@/hooks/useFormModal';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { createLogger } from '@/lib/logger';
 
 const logger = createLogger('Accounts');
 
 export default function AccountsPage() {
+  return (
+    <ProtectedRoute>
+      <AccountsContent />
+    </ProtectedRoute>
+  );
+}
+
+function AccountsContent() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [portfolioSummary, setPortfolioSummary] = useState<PortfolioSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);

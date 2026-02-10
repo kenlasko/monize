@@ -18,6 +18,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { SummaryCard, SummaryIcons } from '@/components/ui/SummaryCard';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useFormModal } from '@/hooks/useFormModal';
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { createLogger } from '@/lib/logger';
 
 const logger = createLogger('Payees');
@@ -25,6 +26,14 @@ const logger = createLogger('Payees');
 const PAGE_SIZE = 50;
 
 export default function PayeesPage() {
+  return (
+    <ProtectedRoute>
+      <PayeesContent />
+    </ProtectedRoute>
+  );
+}
+
+function PayeesContent() {
   const [payees, setPayees] = useState<Payee[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);

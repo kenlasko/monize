@@ -8,6 +8,7 @@ import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { customReportsApi } from '@/lib/custom-reports';
 import { CustomReport, VIEW_TYPE_LABELS, TIMEFRAME_LABELS } from '@/types/custom-report';
 import { getIconComponent } from '@/components/ui/IconPicker';
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { createLogger } from '@/lib/logger';
 
 const logger = createLogger('Reports');
@@ -313,6 +314,14 @@ const categoryColors: Record<ReportCategory, string> = {
 };
 
 export default function ReportsPage() {
+  return (
+    <ProtectedRoute>
+      <ReportsContent />
+    </ProtectedRoute>
+  );
+}
+
+function ReportsContent() {
   const router = useRouter();
   const [density, setDensity] = useLocalStorage<DensityLevel>('monize-reports-density', 'normal');
   const [categoryFilter, setCategoryFilter] = useLocalStorage<ReportCategory | 'all'>('monize-reports-category', 'all');
