@@ -4,7 +4,7 @@ import DashboardPage from './page';
 
 // Mock next/image
 vi.mock('next/image', () => ({
-  default: (props: any) => <img {...props} />,
+  default: (props: any) => <img alt="" {...props} />,
 }));
 
 // Mock logger

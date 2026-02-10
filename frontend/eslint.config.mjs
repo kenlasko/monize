@@ -1,7 +1,7 @@
 import nextConfig from "eslint-config-next";
 import tseslint from "typescript-eslint";
 
-export default [
+const config = [
   ...nextConfig,
   {
     plugins: {
@@ -18,3 +18,4 @@ export default [
     },
   },
 ];
+export default config;

@@ -5,7 +5,7 @@ WORKDIR /app
 
 # Install dependencies
 COPY package*.json ./
-RUN npm install
+RUN npm ci
 
 # Copy source code
 COPY . .
@@ -20,13 +20,16 @@ FROM node:20-slim AS builder
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm install
+RUN npm ci
 
 COPY . .
 RUN npm run build
 
 # Production stage (uses standalone output)
 FROM node:20-alpine AS production
+
+# Install dumb-init for proper PID 1 signal handling
+RUN apk add --no-cache dumb-init
 
 WORKDIR /app
 
@@ -48,4 +51,5 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
+ENTRYPOINT ["dumb-init", "--"]
 CMD ["node", "server.js"]

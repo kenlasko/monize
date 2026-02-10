@@ -1384,12 +1384,10 @@ describe("NetWorthService", () => {
           },
         ]);
 
-      const result = await service.getMonthlyInvestments(
-        "user-1",
-        undefined,
-        undefined,
-        ["inv-1", "inv-2"],
-      );
+      await service.getMonthlyInvestments("user-1", undefined, undefined, [
+        "inv-1",
+        "inv-2",
+      ]);
 
       // The snapshot query should include all resolved IDs
       const mainQueryCall = dataSource.query.mock.calls[2];

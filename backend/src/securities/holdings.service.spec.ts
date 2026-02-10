@@ -487,12 +487,7 @@ describe("HoldingsService", () => {
         id: "new-hold",
       });
 
-      const result = await service.adjustQuantity(
-        "user-1",
-        "acc-1",
-        "sec-1",
-        25,
-      );
+      await service.adjustQuantity("user-1", "acc-1", "sec-1", 25);
 
       expect(accountsService.findOne).toHaveBeenCalledWith("user-1", "acc-1");
       expect(securitiesService.findOne).toHaveBeenCalledWith("user-1", "sec-1");

@@ -5,7 +5,7 @@ WORKDIR /app
 
 # Install dependencies
 COPY backend/package*.json ./
-RUN npm install
+RUN npm ci
 
 # Copy source code
 COPY backend/ .
@@ -23,11 +23,16 @@ CMD ["npm", "run", "start:dev"]
 # Production stage
 FROM node:20-alpine AS production
 
+# Install dumb-init for proper PID 1 signal handling
+RUN apk add --no-cache dumb-init
+
 WORKDIR /app
+
+ENV NODE_ENV=production
 
 # Install only production dependencies
 COPY backend/package*.json ./
-RUN npm install --omit=dev
+RUN npm ci --omit=dev && npm cache clean --force
 
 # Copy built application from development stage
 COPY --from=development /app/dist ./dist
@@ -48,4 +53,5 @@ USER nestjs
 
 EXPOSE 3000
 
+ENTRYPOINT ["dumb-init", "--"]
 CMD ["./docker-entrypoint.sh"]

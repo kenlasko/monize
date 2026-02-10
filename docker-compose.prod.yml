@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # PostgreSQL Database
   postgres:
@@ -28,6 +26,13 @@ services:
       target: production
     container_name: monize-backend
     restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
     depends_on:
       postgres:
         condition: service_healthy
@@ -63,6 +68,13 @@ services:
       target: production
     container_name: monize-frontend
     restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
     depends_on:
       backend:
         condition: service_healthy

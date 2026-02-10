@@ -9,3 +9,9 @@ coverage
 *.log
 .vscode
 .idea
+*.test.tsx
+*.test.ts
+*.spec.tsx
+*.spec.ts
+src/test/
+vitest.config.*

@@ -143,14 +143,14 @@ function ImportContent() {
   const isBulkImport = importFiles.length > 1;
 
   // Helper to update a specific file's account selection
-  const setFileAccountId = (fileIndex: number, accountId: string, confidence: MatchConfidence = 'exact') => {
+  const setFileAccountId = useCallback((fileIndex: number, accountId: string, confidence: MatchConfidence = 'exact') => {
     setImportFiles(prev => prev.map((f, i) =>
       i === fileIndex ? { ...f, selectedAccountId: accountId, matchConfidence: confidence } : f
     ));
-  };
+  }, []);
 
   // Legacy setter for single file (updates first file)
-  const setSelectedAccountId = (accountId: string, confidence: MatchConfidence = 'exact') => setFileAccountId(0, accountId, confidence);
+  const setSelectedAccountId = useCallback((accountId: string, confidence: MatchConfidence = 'exact') => setFileAccountId(0, accountId, confidence), [setFileAccountId]);
 
   // Create a new account inline and select it for the given file index
   const handleCreateAccount = async (fileIndex: number) => {
@@ -221,7 +221,7 @@ function ImportContent() {
       }
     };
     loadData();
-  }, [preselectedAccountId]);
+  }, [preselectedAccountId, setSelectedAccountId]);
 
   // Scroll to top whenever the step changes
   useEffect(() => {
@@ -259,7 +259,7 @@ function ImportContent() {
         setSelectedAccountId(compatibleAccounts[0].id, 'none');
       }
     }
-  }, [step, selectedAccountId, accounts, parsedData]);
+  }, [step, selectedAccountId, accounts, parsedData, setSelectedAccountId]);
 
   // Re-match account mappings when entering mapAccounts step
   // This picks up accounts created inline during the selectAccount step
@@ -350,7 +350,7 @@ function ImportContent() {
     };
 
     runBulkLookup();
-  }, [step, initialLookupDone, securityMappings.length]);
+  }, [step, initialLookupDone, securityMappings]);
 
   // Helper to get category path
   const getCategoryPath = useCallback((category: Category): string => {
@@ -626,7 +626,7 @@ function ImportContent() {
     } finally {
       setIsLoading(false);
     }
-  }, [accounts, securities, findMatchingCategory, findMatchingLoanAccount, matchFilenameToAccount]);
+  }, [accounts, securities, findMatchingCategory, findMatchingLoanAccount, matchFilenameToAccount, defaultCurrency]);
 
   const handleAccountMappingChange = (index: number, field: keyof AccountMapping, value: string) => {
     setAccountMappings((prev) => {

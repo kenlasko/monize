@@ -958,11 +958,9 @@ describe("ImportService", () => {
           },
         );
 
-        let categoryCreateCount = 0;
         mockQueryRunner.manager.save.mockImplementation(
           (entity: Record<string, unknown>) => {
             if (entity.name === "Food" && !entity.id) {
-              categoryCreateCount++;
               return Promise.resolve({ ...entity, id: "deduped-cat" });
             }
             return Promise.resolve({ ...entity, id: entity.id || "some-id" });

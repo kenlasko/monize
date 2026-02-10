@@ -305,7 +305,7 @@ describe("PayeesService", () => {
       // First call: findByName returns null; second call: duplicate check returns null
       payeesRepository.findOne.mockResolvedValue(null);
 
-      const result = await service.findOrCreate(userId, "NewPlace", "cat-2");
+      await service.findOrCreate(userId, "NewPlace", "cat-2");
 
       expect(payeesRepository.create).toHaveBeenCalledWith({
         name: "NewPlace",

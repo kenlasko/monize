@@ -10,7 +10,6 @@ import {
   DirectionFilter,
   ReportViewType,
   ReportConfig,
-  ReportFilters,
   TableColumn,
   SortDirection,
 } from "./entities/custom-report.entity";

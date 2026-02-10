@@ -436,7 +436,6 @@ describe("ExchangeRateService", () => {
         defaultCurrency: "USD",
       });
 
-      const cutoffDate = new Date("2025-06-01");
       const ts1 = new Date("2025-06-01").getTime() / 1000;
       const ts2 = new Date("2025-06-02").getTime() / 1000;
 

@@ -55,7 +55,7 @@ describe("SecuritiesService", () => {
     it("creates a new security", async () => {
       securitiesRepository.findOne.mockResolvedValue(null);
 
-      const result = await service.create("user-1", {
+      await service.create("user-1", {
         symbol: "MSFT",
         name: "Microsoft Corp",
         securityType: "STOCK",
