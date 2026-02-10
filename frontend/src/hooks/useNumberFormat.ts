@@ -93,5 +93,30 @@ export function useNumberFormat() {
     [numberFormat]
   );
 
-  return { formatCurrency, formatCurrencyCompact, formatCurrencyAxis, formatNumber, formatPercent, defaultCurrency, numberFormat };
+  /** Compact currency for chart labels: K with 1dp, M/B/T with 2dp (e.g., "$123.5K", "$1.23M"). */
+  const formatCurrencyLabel = useCallback(
+    (value: number): string => {
+      const locale = getEffectiveLocale(numberFormat);
+      const abs = Math.abs(value);
+      let divisor: number, suffix: string, decimals: number;
+      if (abs >= 1e12) { divisor = 1e12; suffix = 'T'; decimals = 2; }
+      else if (abs >= 1e9) { divisor = 1e9; suffix = 'B'; decimals = 2; }
+      else if (abs >= 1e6) { divisor = 1e6; suffix = 'M'; decimals = 2; }
+      else if (abs >= 1e3) { divisor = 1e3; suffix = 'K'; decimals = 1; }
+      else { divisor = 1; suffix = ''; decimals = 0; }
+
+      const scaled = value / divisor;
+      const formatted = new Intl.NumberFormat(locale, {
+        style: 'currency',
+        currency: defaultCurrency,
+        currencyDisplay: 'narrowSymbol',
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals,
+      }).format(scaled);
+      return formatted + suffix;
+    },
+    [numberFormat, defaultCurrency]
+  );
+
+  return { formatCurrency, formatCurrencyCompact, formatCurrencyAxis, formatCurrencyLabel, formatNumber, formatPercent, defaultCurrency, numberFormat };
 }

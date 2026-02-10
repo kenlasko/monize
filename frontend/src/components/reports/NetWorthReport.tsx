@@ -11,6 +11,7 @@ import {
   ResponsiveContainer,
   Legend,
   ReferenceLine,
+  ReferenceDot,
 } from 'recharts';
 import { format } from 'date-fns';
 import { netWorthApi } from '@/lib/net-worth';
@@ -24,7 +25,7 @@ import { createLogger } from '@/lib/logger';
 const logger = createLogger('NetWorthReport');
 
 export function NetWorthReport() {
-  const { formatCurrencyCompact: formatCurrency, formatCurrencyAxis } = useNumberFormat();
+  const { formatCurrencyCompact: formatCurrency, formatCurrencyAxis, formatCurrencyLabel } = useNumberFormat();
   const [monthlyData, setMonthlyData] = useState<MonthlyNetWorth[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRecalculating, setIsRecalculating] = useState(false);
@@ -119,6 +120,20 @@ export function NetWorthReport() {
 
     // If values cross 0 or start near 0, include 0 in the domain
     return [Math.min(0, minValue), 'auto'] as [number, 'auto'];
+  }, [chartData]);
+
+  const minMax = useMemo(() => {
+    if (chartData.length < 2) return null;
+    let minIdx = 0, maxIdx = 0;
+    for (let i = 1; i < chartData.length; i++) {
+      if (chartData[i].NetWorth < chartData[minIdx].NetWorth) minIdx = i;
+      if (chartData[i].NetWorth > chartData[maxIdx].NetWorth) maxIdx = i;
+    }
+    if (minIdx === maxIdx) return null;
+    return {
+      min: chartData[minIdx],
+      max: chartData[maxIdx],
+    };
   }, [chartData]);
 
   const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: Array<{ name: string; value: number; color: string; payload: { name: string } }> }) => {
@@ -253,6 +268,28 @@ export function NetWorthReport() {
                   fill="url(#colorNetWorth)"
                   name="Net Worth"
                 />
+                {minMax && (
+                  <ReferenceDot
+                    x={minMax.max.name}
+                    y={minMax.max.NetWorth}
+                    r={6}
+                    fill="#16a34a"
+                    stroke="#fff"
+                    strokeWidth={2}
+                    label={{ value: formatCurrencyLabel(minMax.max.NetWorth), position: 'bottom', fontSize: 12, fill: '#16a34a', fontWeight: 600, offset: 8 }}
+                  />
+                )}
+                {minMax && (
+                  <ReferenceDot
+                    x={minMax.min.name}
+                    y={minMax.min.NetWorth}
+                    r={6}
+                    fill="#dc2626"
+                    stroke="#fff"
+                    strokeWidth={2}
+                    label={{ value: formatCurrencyLabel(minMax.min.NetWorth), position: 'top', fontSize: 12, fill: '#dc2626', fontWeight: 600, offset: 8 }}
+                  />
+                )}
               </AreaChart>
             </ResponsiveContainer>
           </div>

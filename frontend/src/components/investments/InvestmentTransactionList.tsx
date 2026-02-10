@@ -150,17 +150,17 @@ export function InvestmentTransactionList({
   // Memoize padding classes based on density
   const cellPadding = useMemo(() => {
     switch (density) {
-      case 'dense': return 'px-3 py-1';
-      case 'compact': return 'px-4 py-2';
-      default: return 'px-6 py-4';
+      case 'dense': return 'px-1.5 sm:px-3 py-1';
+      case 'compact': return 'px-2 sm:px-4 py-2';
+      default: return 'px-2 sm:px-6 py-3 sm:py-4';
     }
   }, [density]);
 
   const headerPadding = useMemo(() => {
     switch (density) {
-      case 'dense': return 'px-3 py-2';
-      case 'compact': return 'px-4 py-2';
-      default: return 'px-6 py-3';
+      case 'dense': return 'px-1.5 sm:px-3 py-2';
+      case 'compact': return 'px-2 sm:px-4 py-2';
+      default: return 'px-2 sm:px-6 py-2 sm:py-3';
     }
   }, [density]);
 
@@ -183,7 +183,7 @@ export function InvestmentTransactionList({
 
   if (isLoading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
           Recent Transactions
         </h3>
@@ -201,7 +201,7 @@ export function InvestmentTransactionList({
 
   if (transactions.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
             Recent Transactions
@@ -239,7 +239,7 @@ export function InvestmentTransactionList({
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 overflow-hidden">
-      <div className="p-6 pb-0 flex flex-wrap justify-between items-center gap-2">
+      <div className="p-3 sm:p-6 pb-0 flex flex-wrap justify-between items-center gap-2">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
           Recent Transactions
           {hasActiveFilters && (
@@ -248,7 +248,7 @@ export function InvestmentTransactionList({
             </span>
           )}
         </h3>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
         {onNewTransaction && (
           <button
             onClick={onNewTransaction}
@@ -278,12 +278,22 @@ export function InvestmentTransactionList({
             )}
           </button>
         )}
+        <button
+          onClick={cycleDensity}
+          className="ml-auto inline-flex items-center px-2 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+          title="Toggle row density"
+        >
+          <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+          {density === 'normal' ? 'Normal' : density === 'compact' ? 'Compact' : 'Dense'}
+        </button>
         </div>
       </div>
 
       {/* Filter Bar */}
       {showFilters && onFiltersChange && (
-        <div className="px-6 py-3 bg-gray-50 dark:bg-gray-700/30 border-b border-gray-200 dark:border-gray-700">
+        <div className="px-3 sm:px-6 py-3 bg-gray-50 dark:bg-gray-700/30 border-b border-gray-200 dark:border-gray-700">
           <div className="flex flex-wrap items-center gap-3">
             {/* Symbol Filter */}
             <div className="flex items-center gap-2">
@@ -347,19 +357,8 @@ export function InvestmentTransactionList({
         </div>
       )}
 
-      {/* Density toggle */}
-      <div className="flex justify-end p-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-        <button
-          onClick={cycleDensity}
-          className="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-          title="Toggle row density"
-        >
-          <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
-          {density === 'normal' ? 'Normal' : density === 'compact' ? 'Compact' : 'Dense'}
-        </button>
-      </div>
+
+
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
           <thead className="bg-gray-50 dark:bg-gray-700/50">

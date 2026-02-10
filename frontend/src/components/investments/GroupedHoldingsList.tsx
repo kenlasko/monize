@@ -76,7 +76,7 @@ export function GroupedHoldingsList({
 
   if (isLoading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
           Holdings by Account
         </h3>
@@ -108,7 +108,7 @@ export function GroupedHoldingsList({
 
   if (totalHoldings === 0 && !hasCash) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
           Holdings by Account
         </h3>
@@ -121,7 +121,7 @@ export function GroupedHoldingsList({
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 overflow-hidden">
-      <div className="p-6 pb-4 border-b border-gray-200 dark:border-gray-700">
+      <div className="p-3 sm:p-6 pb-3 sm:pb-4 border-b border-gray-200 dark:border-gray-700">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
           Holdings by Account
         </h3>
@@ -153,7 +153,7 @@ export function GroupedHoldingsList({
               {/* Account Header */}
               <button
                 onClick={() => toggleAccount(account.accountId)}
-                className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors"
+                className="w-full px-3 sm:px-6 py-3 sm:py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors"
               >
                 <div className="flex items-center gap-3">
                   {isExpanded ? (
@@ -192,28 +192,28 @@ export function GroupedHoldingsList({
                   <table className="min-w-full">
                     <thead className="bg-gray-50 dark:bg-gray-700/50">
                       <tr>
-                        <th className="px-6 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        <th className="px-2 sm:px-6 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                           Symbol
                         </th>
-                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        <th className="px-1.5 sm:px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                           Shares
                         </th>
-                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        <th className="px-1.5 sm:px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                           Avg Cost
                         </th>
-                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        <th className="px-1.5 sm:px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                           Price
                         </th>
-                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        <th className="px-1.5 sm:px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                           Cost Basis
                         </th>
-                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        <th className="px-1.5 sm:px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                           Mkt Value
                         </th>
-                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        <th className="px-1.5 sm:px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                           Gain/Loss
                         </th>
-                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        <th className="px-1.5 sm:px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                           % Port
                         </th>
                       </tr>
@@ -237,7 +237,7 @@ export function GroupedHoldingsList({
                       {/* Cash Row */}
                       {account.cashBalance !== 0 && (
                         <tr className="hover:bg-gray-50 dark:hover:bg-gray-700/20">
-                          <td className="px-6 py-3 whitespace-nowrap">
+                          <td className="px-2 sm:px-6 py-3 whitespace-nowrap">
                             <button
                               onClick={() => account.cashAccountId && onCashClick?.(account.cashAccountId)}
                               className="flex items-center gap-2 text-left hover:underline focus:outline-none focus:underline"
@@ -252,25 +252,25 @@ export function GroupedHoldingsList({
                               </div>
                             </button>
                           </td>
-                          <td className="px-4 py-3 whitespace-nowrap text-right text-sm text-gray-400 dark:text-gray-500">
+                          <td className="px-1.5 sm:px-4 py-3 whitespace-nowrap text-right text-sm text-gray-400 dark:text-gray-500">
                             -
                           </td>
-                          <td className="px-4 py-3 whitespace-nowrap text-right text-sm text-gray-400 dark:text-gray-500">
+                          <td className="px-1.5 sm:px-4 py-3 whitespace-nowrap text-right text-sm text-gray-400 dark:text-gray-500">
                             -
                           </td>
-                          <td className="px-4 py-3 whitespace-nowrap text-right text-sm text-gray-400 dark:text-gray-500">
+                          <td className="px-1.5 sm:px-4 py-3 whitespace-nowrap text-right text-sm text-gray-400 dark:text-gray-500">
                             -
                           </td>
-                          <td className="px-4 py-3 whitespace-nowrap text-right text-sm text-gray-500 dark:text-gray-400">
+                          <td className="px-1.5 sm:px-4 py-3 whitespace-nowrap text-right text-sm text-gray-500 dark:text-gray-400">
                             {fmtAcct(account.cashBalance)}
                           </td>
-                          <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium text-gray-900 dark:text-gray-100">
+                          <td className="px-1.5 sm:px-4 py-3 whitespace-nowrap text-right text-sm font-medium text-gray-900 dark:text-gray-100">
                             {fmtAcct(account.cashBalance)}
                           </td>
-                          <td className="px-4 py-3 whitespace-nowrap text-right">
+                          <td className="px-1.5 sm:px-4 py-3 whitespace-nowrap text-right">
                             <div className="text-sm text-gray-400 dark:text-gray-500">-</div>
                           </td>
-                          <td className="px-4 py-3 whitespace-nowrap text-right text-sm text-gray-500 dark:text-gray-400">
+                          <td className="px-1.5 sm:px-4 py-3 whitespace-nowrap text-right text-sm text-gray-500 dark:text-gray-400">
                             {getPortfolioPercent(account.cashBalance, acctDisplayCurrency || account.currencyCode)}
                           </td>
                         </tr>
@@ -278,13 +278,13 @@ export function GroupedHoldingsList({
 
                       {/* Account Summary Row */}
                       <tr className="bg-gray-50 dark:bg-gray-700/30 font-medium">
-                        <td className="px-6 py-3 text-sm text-gray-700 dark:text-gray-300" colSpan={4}>
+                        <td className="px-2 sm:px-6 py-3 text-sm text-gray-700 dark:text-gray-300" colSpan={4}>
                           Account Total
                         </td>
-                        <td className="px-4 py-3 text-right text-sm text-gray-900 dark:text-gray-100">
+                        <td className="px-1.5 sm:px-4 py-3 text-right text-sm text-gray-900 dark:text-gray-100">
                           {fmtAcct(account.totalCostBasis + account.cashBalance)}
                         </td>
-                        <td className="px-4 py-3 text-right text-sm text-gray-900 dark:text-gray-100">
+                        <td className="px-1.5 sm:px-4 py-3 text-right text-sm text-gray-900 dark:text-gray-100">
                           <div>{fmtAcct(accountTotalValue)}</div>
                           {acctDisplayCurrency && (
                             <div className="text-xs font-normal text-gray-400 dark:text-gray-500">
@@ -292,7 +292,7 @@ export function GroupedHoldingsList({
                             </div>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-right">
+                        <td className="px-1.5 sm:px-4 py-3 text-right">
                           <div className={`text-sm ${getGainLossColor(account.totalGainLoss)}`}>
                             {fmtAcct(account.totalGainLoss)}
                           </div>
@@ -300,7 +300,7 @@ export function GroupedHoldingsList({
                             {formatPercent(account.totalGainLossPercent)}
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-right text-sm text-gray-500 dark:text-gray-400">
+                        <td className="px-1.5 sm:px-4 py-3 text-right text-sm text-gray-500 dark:text-gray-400">
                           {getPortfolioPercent(accountTotalValue, acctDisplayCurrency || account.currencyCode)}
                         </td>
                       </tr>
@@ -349,7 +349,7 @@ const HoldingRow = memo(function HoldingRow({
 
   return (
     <tr className="hover:bg-gray-50 dark:hover:bg-gray-700/20">
-      <td className="px-6 py-3 whitespace-nowrap">
+      <td className="px-2 sm:px-6 py-3 whitespace-nowrap">
         <button
           onClick={() => onSymbolClick?.(holding.symbol)}
           className="text-left hover:underline focus:outline-none focus:underline"
@@ -358,27 +358,27 @@ const HoldingRow = memo(function HoldingRow({
           <div className="font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300">
             {holding.symbol}
           </div>
-          <div className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[320px]">
+          <div className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[120px] sm:max-w-[320px]">
             {holding.name}
           </div>
         </button>
       </td>
-      <td className="px-4 py-3 whitespace-nowrap text-right text-sm text-gray-900 dark:text-gray-100">
+      <td className="px-1.5 sm:px-4 py-3 whitespace-nowrap text-right text-sm text-gray-900 dark:text-gray-100">
         {formatQuantity(holding.quantity)}
       </td>
-      <td className="px-4 py-3 whitespace-nowrap text-right text-sm text-gray-900 dark:text-gray-100">
+      <td className="px-1.5 sm:px-4 py-3 whitespace-nowrap text-right text-sm text-gray-900 dark:text-gray-100">
         {fmtVal(holding.averageCost)}
       </td>
-      <td className="px-4 py-3 whitespace-nowrap text-right text-sm text-gray-900 dark:text-gray-100">
+      <td className="px-1.5 sm:px-4 py-3 whitespace-nowrap text-right text-sm text-gray-900 dark:text-gray-100">
         {fmtVal(holding.currentPrice)}
       </td>
-      <td className="px-4 py-3 whitespace-nowrap text-right text-sm text-gray-900 dark:text-gray-100">
+      <td className="px-1.5 sm:px-4 py-3 whitespace-nowrap text-right text-sm text-gray-900 dark:text-gray-100">
         {fmtVal(holding.costBasis)}
       </td>
-      <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium text-gray-900 dark:text-gray-100">
+      <td className="px-1.5 sm:px-4 py-3 whitespace-nowrap text-right text-sm font-medium text-gray-900 dark:text-gray-100">
         {fmtVal(holding.marketValue)}
       </td>
-      <td className="px-4 py-3 whitespace-nowrap text-right">
+      <td className="px-1.5 sm:px-4 py-3 whitespace-nowrap text-right">
         <div className={`text-sm font-medium ${getGainLossColor(holding.gainLoss)}`}>
           {fmtVal(holding.gainLoss)}
         </div>
@@ -386,7 +386,7 @@ const HoldingRow = memo(function HoldingRow({
           {formatPercent(holding.gainLossPercent)}
         </div>
       </td>
-      <td className="px-4 py-3 whitespace-nowrap text-right text-sm text-gray-500 dark:text-gray-400">
+      <td className="px-1.5 sm:px-4 py-3 whitespace-nowrap text-right text-sm text-gray-500 dark:text-gray-400">
         {getPortfolioPercent(holding.marketValue, holding.currencyCode)}
       </td>
     </tr>

@@ -6,8 +6,10 @@ import {
   AreaChart,
   Area,
   XAxis,
+  YAxis,
   Tooltip,
   ResponsiveContainer,
+  ReferenceDot,
 } from 'recharts';
 import { format } from 'date-fns';
 import { MonthlyNetWorth } from '@/types/net-worth';
@@ -21,7 +23,7 @@ interface NetWorthChartProps {
 
 export function NetWorthChart({ data, isLoading }: NetWorthChartProps) {
   const router = useRouter();
-  const { formatCurrencyCompact: formatCurrency } = useNumberFormat();
+  const { formatCurrencyCompact: formatCurrency, formatCurrencyLabel } = useNumberFormat();
 
   const chartData = useMemo(() =>
     data.map((d) => ({
@@ -38,6 +40,20 @@ export function NetWorthChart({ data, isLoading }: NetWorthChartProps) {
     const change = current - initial;
     const changePercent = initial !== 0 ? (change / Math.abs(initial)) * 100 : 0;
     return { current, change, changePercent };
+  }, [chartData]);
+
+  const minMax = useMemo(() => {
+    if (chartData.length < 2) return null;
+    let minIdx = 0, maxIdx = 0;
+    for (let i = 1; i < chartData.length; i++) {
+      if (chartData[i].netWorth < chartData[minIdx].netWorth) minIdx = i;
+      if (chartData[i].netWorth > chartData[maxIdx].netWorth) maxIdx = i;
+    }
+    if (minIdx === maxIdx) return null;
+    return {
+      min: chartData[minIdx],
+      max: chartData[maxIdx],
+    };
   }, [chartData]);
 
   const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: Array<{ payload: { name: string; netWorth: number } }> }) => {
@@ -57,7 +73,7 @@ export function NetWorthChart({ data, isLoading }: NetWorthChartProps) {
 
   if (isLoading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6">
         <button
           onClick={() => router.push('/reports/net-worth')}
           className="text-lg font-semibold text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400 transition-colors mb-4"
@@ -74,7 +90,7 @@ export function NetWorthChart({ data, isLoading }: NetWorthChartProps) {
 
   if (chartData.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6">
         <button
           onClick={() => router.push('/reports/net-worth')}
           className="text-lg font-semibold text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400 transition-colors mb-4"
@@ -91,7 +107,7 @@ export function NetWorthChart({ data, isLoading }: NetWorthChartProps) {
   const isPositive = summary!.change >= 0;
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6 flex flex-col h-full">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 flex flex-col h-full">
       <div className="flex items-center justify-between mb-1">
         <button
           onClick={() => router.push('/reports/net-worth')}
@@ -115,19 +131,21 @@ export function NetWorthChart({ data, isLoading }: NetWorthChartProps) {
       </div>
       <div className="h-40 flex-grow">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={chartData} margin={{ top: 5, right: 5, left: 5, bottom: 0 }}>
+          <AreaChart data={chartData} margin={{ top: 5, right: 20, left: 20, bottom: 0 }}>
             <defs>
               <linearGradient id="dashboardNetWorthGradient" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
                 <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
               </linearGradient>
             </defs>
+            <YAxis hide domain={['auto', 'auto']} />
             <XAxis
-              dataKey="shortName"
+              dataKey="name"
               tick={{ fill: '#6b7280', fontSize: 11 }}
               tickLine={false}
               axisLine={false}
               interval="preserveStartEnd"
+              tickFormatter={(value: string) => value.split(' ')[0]}
             />
             <Tooltip content={<CustomTooltip />} />
             <Area
@@ -138,6 +156,28 @@ export function NetWorthChart({ data, isLoading }: NetWorthChartProps) {
               fillOpacity={1}
               fill="url(#dashboardNetWorthGradient)"
             />
+            {minMax && (
+              <ReferenceDot
+                x={minMax.max.name}
+                y={minMax.max.netWorth}
+                r={5}
+                fill="#16a34a"
+                stroke="#fff"
+                strokeWidth={2}
+                label={{ value: formatCurrencyLabel(minMax.max.netWorth), position: 'bottom', fontSize: 11, fill: '#16a34a', fontWeight: 600, offset: 8 }}
+              />
+            )}
+            {minMax && (
+              <ReferenceDot
+                x={minMax.min.name}
+                y={minMax.min.netWorth}
+                r={5}
+                fill="#dc2626"
+                stroke="#fff"
+                strokeWidth={2}
+                label={{ value: formatCurrencyLabel(minMax.min.netWorth), position: 'top', fontSize: 11, fill: '#dc2626', fontWeight: 600, offset: 8 }}
+              />
+            )}
           </AreaChart>
         </ResponsiveContainer>
       </div>

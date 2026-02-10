@@ -46,7 +46,7 @@ export function TopMovers({ movers, isLoading, hasInvestmentAccounts, onRefresh,
 
   if (isLoading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6">
         <div className="flex items-center justify-between mb-4">
           <button
             onClick={() => router.push('/investments')}
@@ -70,7 +70,7 @@ export function TopMovers({ movers, isLoading, hasInvestmentAccounts, onRefresh,
 
   if (movers.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6">
         <div className="flex items-center justify-between mb-4">
           <button
             onClick={() => router.push('/investments')}
@@ -93,7 +93,7 @@ export function TopMovers({ movers, isLoading, hasInvestmentAccounts, onRefresh,
   const topMovers = movers.slice(0, 5);
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6">
       <div className="flex items-center justify-between mb-4">
         <button
           onClick={() => router.push('/investments')}
@@ -106,7 +106,7 @@ export function TopMovers({ movers, isLoading, hasInvestmentAccounts, onRefresh,
           <span className="text-sm text-gray-500 dark:text-gray-400">Daily change</span>
         </div>
       </div>
-      <div className="space-y-3">
+      <div className="space-y-2 sm:space-y-3">
         {topMovers.map((mover) => {
           const isPositive = mover.dailyChange >= 0;
           const isForeign = mover.currencyCode && mover.currencyCode !== defaultCurrency;
@@ -117,7 +117,7 @@ export function TopMovers({ movers, isLoading, hasInvestmentAccounts, onRefresh,
           return (
             <div
               key={mover.securityId}
-              className="flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-gray-700"
+              className="flex items-center justify-between p-2 sm:p-3 rounded-lg border border-gray-200 dark:border-gray-700"
             >
               <div className="min-w-0">
                 <div className="font-medium text-gray-900 dark:text-gray-100">

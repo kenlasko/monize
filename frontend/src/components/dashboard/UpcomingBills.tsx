@@ -53,7 +53,7 @@ export function UpcomingBills({ scheduledTransactions, isLoading }: UpcomingBill
 
   if (isLoading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6">
         <button
           onClick={() => router.push('/bills')}
           className="text-lg font-semibold text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400 transition-colors mb-4"
@@ -71,7 +71,7 @@ export function UpcomingBills({ scheduledTransactions, isLoading }: UpcomingBill
 
   if (upcomingBills.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6">
         <button
           onClick={() => router.push('/bills')}
           className="text-lg font-semibold text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400 transition-colors mb-4"
@@ -88,7 +88,7 @@ export function UpcomingBills({ scheduledTransactions, isLoading }: UpcomingBill
   const totalDue = upcomingBills.reduce((sum, bill) => sum + Math.abs(convertToDefault(bill.amount, bill.currencyCode)), 0);
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6">
       <div className="flex items-center justify-between mb-4">
         <button
           onClick={() => router.push('/bills')}
@@ -98,13 +98,13 @@ export function UpcomingBills({ scheduledTransactions, isLoading }: UpcomingBill
         </button>
         <span className="text-sm text-gray-500 dark:text-gray-400">Next 7 days</span>
       </div>
-      <div className="space-y-3">
+      <div className="space-y-2 sm:space-y-3">
         {upcomingBills.map((bill) => (
           <div
             key={bill.id}
-            className="flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-gray-700"
+            className="flex items-center justify-between p-2 sm:p-3 rounded-lg border border-gray-200 dark:border-gray-700"
           >
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
               <span
                 className={`px-2 py-1 text-xs font-medium rounded ${getDueDateColour(
                   bill.nextDueDate
@@ -112,9 +112,9 @@ export function UpcomingBills({ scheduledTransactions, isLoading }: UpcomingBill
               >
                 {getDueDateLabel(bill.nextDueDate)}
               </span>
-              <div>
+              <div className="min-w-0">
                 <div className="flex items-center gap-1.5">
-                  <span className="font-medium text-gray-900 dark:text-gray-100">
+                  <span className="font-medium text-gray-900 dark:text-gray-100 truncate">
                     {bill.name}
                   </span>
                   {!bill.autoPost && (
@@ -130,7 +130,7 @@ export function UpcomingBills({ scheduledTransactions, isLoading }: UpcomingBill
                 )}
               </div>
             </div>
-            <div className="font-semibold text-red-600 dark:text-red-400">
+            <div className="font-semibold text-red-600 dark:text-red-400 whitespace-nowrap ml-2">
               -{formatCurrency(bill.amount, bill.currencyCode)}
             </div>
           </div>

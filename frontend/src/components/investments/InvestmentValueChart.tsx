@@ -113,7 +113,7 @@ export function InvestmentValueChart({ accountIds }: InvestmentValueChartProps) 
 
   if (isLoading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6">
         <div className="animate-pulse space-y-4">
           <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/4" />
           <div className="h-80 bg-gray-200 dark:bg-gray-700 rounded" />
@@ -123,7 +123,7 @@ export function InvestmentValueChart({ accountIds }: InvestmentValueChartProps) 
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6">
       {/* Header with title and date range buttons */}
       <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">

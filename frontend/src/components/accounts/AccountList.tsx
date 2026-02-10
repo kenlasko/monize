@@ -406,7 +406,7 @@ export function AccountList({ accounts, brokerageMarketValues, onEdit, onRefresh
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-4">
             {/* Type dropdown and Status segmented control - grouped together */}
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
               <select
                 value={filterAccountType}
                 onChange={(e) => setFilterAccountType(e.target.value as AccountType | '')}
