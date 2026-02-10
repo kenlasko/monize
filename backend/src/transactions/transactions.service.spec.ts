@@ -1,5 +1,10 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
+import {
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+} from "@nestjs/common";
 import { TransactionsService } from "./transactions.service";
 import { Transaction, TransactionStatus } from "./entities/transaction.entity";
 import { TransactionSplit } from "./entities/transaction-split.entity";
@@ -48,6 +53,7 @@ describe("TransactionsService", () => {
       save: jest
         .fn()
         .mockImplementation((data) => ({ ...data, id: "split-1" })),
+      findOne: jest.fn().mockResolvedValue(null),
       find: jest.fn().mockResolvedValue([]),
       update: jest.fn(),
       delete: jest.fn(),
@@ -270,6 +276,434 @@ describe("TransactionsService", () => {
         "user-1",
         "account-1",
       );
+    });
+  });
+
+  describe("findOne", () => {
+    it("returns transaction when found and belongs to user", async () => {
+      const mockTx = {
+        id: "tx-1",
+        userId: "user-1",
+        accountId: "account-1",
+        amount: -50,
+        splits: [],
+      };
+      transactionsRepository.findOne.mockResolvedValue(mockTx);
+
+      const result = await service.findOne("user-1", "tx-1");
+
+      expect(result).toEqual(mockTx);
+    });
+
+    it("throws NotFoundException when not found", async () => {
+      transactionsRepository.findOne.mockResolvedValue(null);
+
+      await expect(service.findOne("user-1", "nonexistent")).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it("throws ForbiddenException for wrong user", async () => {
+      transactionsRepository.findOne.mockResolvedValue({
+        id: "tx-1",
+        userId: "other-user",
+      });
+
+      await expect(service.findOne("user-1", "tx-1")).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+  });
+
+  describe("update", () => {
+    const mockTx = {
+      id: "tx-1",
+      userId: "user-1",
+      accountId: "account-1",
+      amount: -50,
+      status: TransactionStatus.UNRECONCILED,
+      isSplit: false,
+      splits: [],
+    };
+
+    it("updates transaction amount and adjusts balance", async () => {
+      transactionsRepository.findOne.mockResolvedValue({ ...mockTx });
+
+      await service.update("user-1", "tx-1", { amount: -80 } as any);
+
+      expect(transactionsRepository.update).toHaveBeenCalledWith(
+        "tx-1",
+        expect.objectContaining({ amount: -80 }),
+      );
+    });
+
+    it("handles VOID to non-VOID status change", async () => {
+      transactionsRepository.findOne
+        .mockResolvedValueOnce({
+          ...mockTx,
+          status: TransactionStatus.VOID,
+        })
+        .mockResolvedValueOnce({
+          ...mockTx,
+          status: TransactionStatus.UNRECONCILED,
+          amount: -50,
+        });
+
+      await service.update("user-1", "tx-1", {
+        status: TransactionStatus.UNRECONCILED,
+      } as any);
+
+      expect(accountsService.updateBalance).toHaveBeenCalledWith(
+        "account-1",
+        -50,
+      );
+    });
+
+    it("handles non-VOID to VOID status change", async () => {
+      transactionsRepository.findOne
+        .mockResolvedValueOnce({ ...mockTx })
+        .mockResolvedValueOnce({
+          ...mockTx,
+          status: TransactionStatus.VOID,
+        });
+
+      await service.update("user-1", "tx-1", {
+        status: TransactionStatus.VOID,
+      } as any);
+
+      expect(accountsService.updateBalance).toHaveBeenCalledWith(
+        "account-1",
+        50,
+      );
+    });
+
+    it("verifies new account when account changes", async () => {
+      transactionsRepository.findOne.mockResolvedValue({ ...mockTx });
+
+      await service.update("user-1", "tx-1", {
+        accountId: "account-2",
+      } as any);
+
+      expect(accountsService.findOne).toHaveBeenCalledWith(
+        "user-1",
+        "account-2",
+      );
+    });
+  });
+
+  describe("remove", () => {
+    it("reverts balance and removes transaction", async () => {
+      transactionsRepository.findOne.mockResolvedValue({
+        id: "tx-1",
+        userId: "user-1",
+        accountId: "account-1",
+        amount: -50,
+        status: TransactionStatus.UNRECONCILED,
+        isSplit: false,
+        splits: [],
+      });
+      splitsRepository.findOne.mockResolvedValue(null);
+
+      await service.remove("user-1", "tx-1");
+
+      expect(accountsService.updateBalance).toHaveBeenCalledWith(
+        "account-1",
+        50,
+      );
+      expect(transactionsRepository.remove).toHaveBeenCalled();
+    });
+
+    it("does not revert balance for VOID transactions", async () => {
+      transactionsRepository.findOne.mockResolvedValue({
+        id: "tx-1",
+        userId: "user-1",
+        accountId: "account-1",
+        amount: -50,
+        status: TransactionStatus.VOID,
+        isSplit: false,
+        splits: [],
+      });
+      splitsRepository.findOne.mockResolvedValue(null);
+
+      await service.remove("user-1", "tx-1");
+
+      expect(accountsService.updateBalance).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("updateStatus", () => {
+    const mockTx = {
+      id: "tx-1",
+      userId: "user-1",
+      accountId: "account-1",
+      amount: -50,
+      status: TransactionStatus.UNRECONCILED,
+      splits: [],
+    };
+
+    it("transitions from UNRECONCILED to VOID and reverts balance", async () => {
+      transactionsRepository.findOne
+        .mockResolvedValueOnce({ ...mockTx })
+        .mockResolvedValueOnce({
+          ...mockTx,
+          status: TransactionStatus.VOID,
+        });
+
+      await service.updateStatus(
+        "user-1",
+        "tx-1",
+        TransactionStatus.VOID,
+      );
+
+      expect(accountsService.updateBalance).toHaveBeenCalledWith(
+        "account-1",
+        50,
+      );
+    });
+
+    it("transitions from VOID to UNRECONCILED and adds balance", async () => {
+      transactionsRepository.findOne
+        .mockResolvedValueOnce({
+          ...mockTx,
+          status: TransactionStatus.VOID,
+        })
+        .mockResolvedValueOnce({
+          ...mockTx,
+          status: TransactionStatus.UNRECONCILED,
+        });
+
+      await service.updateStatus(
+        "user-1",
+        "tx-1",
+        TransactionStatus.UNRECONCILED,
+      );
+
+      expect(accountsService.updateBalance).toHaveBeenCalledWith(
+        "account-1",
+        -50,
+      );
+    });
+
+    it("sets reconciled date when marking RECONCILED", async () => {
+      transactionsRepository.findOne
+        .mockResolvedValueOnce({ ...mockTx })
+        .mockResolvedValueOnce({
+          ...mockTx,
+          status: TransactionStatus.RECONCILED,
+        });
+
+      await service.updateStatus(
+        "user-1",
+        "tx-1",
+        TransactionStatus.RECONCILED,
+      );
+
+      expect(transactionsRepository.update).toHaveBeenCalledWith(
+        "tx-1",
+        expect.objectContaining({ reconciledDate: expect.any(String) }),
+      );
+    });
+  });
+
+  describe("markCleared", () => {
+    it("marks unreconciled transaction as cleared", async () => {
+      const mockTx = {
+        id: "tx-1",
+        userId: "user-1",
+        accountId: "account-1",
+        amount: -50,
+        status: TransactionStatus.UNRECONCILED,
+        splits: [],
+      };
+      transactionsRepository.findOne.mockResolvedValue({ ...mockTx });
+
+      await service.markCleared("user-1", "tx-1", true);
+
+      expect(transactionsRepository.update).toHaveBeenCalledWith(
+        "tx-1",
+        expect.objectContaining({ status: TransactionStatus.CLEARED }),
+      );
+    });
+
+    it("throws for reconciled transactions", async () => {
+      transactionsRepository.findOne.mockResolvedValue({
+        id: "tx-1",
+        userId: "user-1",
+        status: TransactionStatus.RECONCILED,
+        splits: [],
+      });
+
+      await expect(
+        service.markCleared("user-1", "tx-1", true),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it("throws for void transactions", async () => {
+      transactionsRepository.findOne.mockResolvedValue({
+        id: "tx-1",
+        userId: "user-1",
+        status: TransactionStatus.VOID,
+        splits: [],
+      });
+
+      await expect(
+        service.markCleared("user-1", "tx-1", true),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe("reconcile", () => {
+    it("throws for already reconciled transactions", async () => {
+      transactionsRepository.findOne.mockResolvedValue({
+        id: "tx-1",
+        userId: "user-1",
+        status: TransactionStatus.RECONCILED,
+        splits: [],
+      });
+
+      await expect(service.reconcile("user-1", "tx-1")).rejects.toThrow(
+        "Transaction is already reconciled",
+      );
+    });
+
+    it("throws for void transactions", async () => {
+      transactionsRepository.findOne.mockResolvedValue({
+        id: "tx-1",
+        userId: "user-1",
+        status: TransactionStatus.VOID,
+        splits: [],
+      });
+
+      await expect(service.reconcile("user-1", "tx-1")).rejects.toThrow(
+        "Cannot reconcile a void transaction",
+      );
+    });
+  });
+
+  describe("unreconcile", () => {
+    it("throws for non-reconciled transactions", async () => {
+      transactionsRepository.findOne.mockResolvedValue({
+        id: "tx-1",
+        userId: "user-1",
+        status: TransactionStatus.UNRECONCILED,
+        splits: [],
+      });
+
+      await expect(service.unreconcile("user-1", "tx-1")).rejects.toThrow(
+        "Transaction is not reconciled",
+      );
+    });
+
+    it("sets status to CLEARED and clears reconciled date", async () => {
+      transactionsRepository.findOne.mockResolvedValue({
+        id: "tx-1",
+        userId: "user-1",
+        status: TransactionStatus.RECONCILED,
+        splits: [],
+      });
+
+      await service.unreconcile("user-1", "tx-1");
+
+      expect(transactionsRepository.update).toHaveBeenCalledWith("tx-1", {
+        status: TransactionStatus.CLEARED,
+        reconciledDate: null,
+      });
+    });
+  });
+
+  describe("createTransfer", () => {
+    it("creates two linked transactions", async () => {
+      const mockToAccount = { ...mockAccount, id: "account-2", name: "Savings" };
+      accountsService.findOne
+        .mockResolvedValueOnce(mockAccount)
+        .mockResolvedValueOnce(mockToAccount);
+      transactionsRepository.findOne
+        .mockResolvedValueOnce({
+          id: "tx-from",
+          userId: "user-1",
+          splits: [],
+        })
+        .mockResolvedValueOnce({
+          id: "tx-to",
+          userId: "user-1",
+          splits: [],
+        });
+      transactionsRepository.save
+        .mockResolvedValueOnce({ id: "tx-from" })
+        .mockResolvedValueOnce({ id: "tx-to" });
+
+      const result = await service.createTransfer("user-1", {
+        fromAccountId: "account-1",
+        toAccountId: "account-2",
+        transactionDate: "2026-01-15",
+        amount: 200,
+        fromCurrencyCode: "USD",
+      } as any);
+
+      expect(result).toBeDefined();
+      expect(accountsService.updateBalance).toHaveBeenCalledWith(
+        "account-1",
+        -200,
+      );
+      expect(accountsService.updateBalance).toHaveBeenCalledWith(
+        "account-2",
+        200,
+      );
+    });
+
+    it("throws when source and destination are the same", async () => {
+      await expect(
+        service.createTransfer("user-1", {
+          fromAccountId: "account-1",
+          toAccountId: "account-1",
+          transactionDate: "2026-01-15",
+          amount: 200,
+          fromCurrencyCode: "USD",
+        } as any),
+      ).rejects.toThrow("Source and destination accounts must be different");
+    });
+
+    it("throws when amount is not positive", async () => {
+      await expect(
+        service.createTransfer("user-1", {
+          fromAccountId: "account-1",
+          toAccountId: "account-2",
+          transactionDate: "2026-01-15",
+          amount: -100,
+          fromCurrencyCode: "USD",
+        } as any),
+      ).rejects.toThrow("Transfer amount must be positive");
+    });
+  });
+
+  describe("getLinkedTransaction", () => {
+    it("returns null for non-transfer transaction", async () => {
+      transactionsRepository.findOne.mockResolvedValue({
+        id: "tx-1",
+        userId: "user-1",
+        isTransfer: false,
+        linkedTransactionId: null,
+        splits: [],
+      });
+
+      const result = await service.getLinkedTransaction("user-1", "tx-1");
+
+      expect(result).toBeNull();
+    });
+  });
+
+  describe("removeTransfer", () => {
+    it("throws when transaction is not a transfer", async () => {
+      transactionsRepository.findOne.mockResolvedValue({
+        id: "tx-1",
+        userId: "user-1",
+        isTransfer: false,
+        splits: [],
+      });
+
+      await expect(
+        service.removeTransfer("user-1", "tx-1"),
+      ).rejects.toThrow("Transaction is not a transfer");
     });
   });
 });
