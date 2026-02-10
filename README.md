@@ -1,8 +1,44 @@
 # Monize
+> [!CAUTION] 
+> This project is 100% written by AI. I've done practically zero manual changes. I have spent hours prompting Claude Code for features, updates, fixes and tweaks. I have taken steps to ensure this is secure as it can be. I've performed numerous security audits and have implemented best-practice security measures as much as I can (including 2FA and OIDC support), but I can't personally guarantee the security of this code. YOU HAVE BEEN WARNED. 
 
-A comprehensive personal finance management application built with NestJS and Next.js.
+A comprehensive personal finance management application built with NestJS and Next.js. Designed as a replacement for Microsoft Money. 100% built using farm-fresh, free-range Claude Code. 
+
+## Why This Exists?
+The personal finance ecosystem is flooded with personal finance platforms. I've tried many of them, but every single one of them had deal-breakers I couldn't work with. I finally decided to try my hand at creating my own platform that met all my criteria by using  "vibe-coding", which is a dirty word in the self-hosting community. I just wanted to see what was possible with the current state of AI. It turned out to be more successful than I evern could have imagined, which is why I'm making this available for others.
+
+### A bit of background on my specific situation that brought me to create this project:
+I've been a rabid user of [Microsoft Money](https://en.wikipedia.org/wiki/Microsoft_Money) since 1995, when I had my first real job outside of university doing tech support for Microsoft. I started using it to keep track of my finances and to help get myself out of credit card debt. It allowed me to keep track of every aspect of my finances: chequing accounts, credit cards, loans, mortgages, investments, and more. Being software of the 90's, it didn't have much in the way of automation, especially for non-US customers. This forced me to meticulously enter every single transaction manually into Microsoft Money.
+
+This "feature" helped me truly understand the state of my finances. I knew where every single penny went. Nothing was ever a surprise. I could forecast my finances out a year or more with precision. I've kept that going for more than THIRTY YEARS. Yes, even though Microsoft Money hasn't had a new version since 2010, I still use it. Everything from 1995 to today is stored in Microsoft Money. I can tell you my detailed financial picture going back to 1995. It certainly isn't perfect. I can only run it on one machine. There's no mobile app or anything of the sort. When I go on a trip or something, it can take hours after I return to enter and categorize my data. I've been increasingly wanting a true replacement for Microsoft Money. 
+
+My perfect product to replace MS Money needed the following features:
+- Must support all types of banking and investment types, including:
+  - Chequing
+  - Savings
+  - Credit Cards
+  - Loans
+  - Mortgages
+  - Line of Credit
+  - Brokerage accounts
+  - Asset accounts
+- Must support importing from QIF (the only export option available for MS Money)
+- Must be self-hostable via containerization
+- Must support multiple currencies
+- Must support pulling currency exchange rates and stock prices on a regular basis
+- Must support PostgreSQL for the backend tables
+- Must have a usable mobile app or web interface
+
+Since I couldn't find anything out there to meet that criteria, I decided to create Monize! After weeks of vibe-coding and testing, I finally was able to migrate ALL of 30+ years of Microsoft Money data into Monize with no errors or discrepancies. Microsoft Money has finally been retired!
+
+Monize is running in my [Kubernetes cluster](https://github.com/kenlasko/k8s).
+
 
 ## Features
+Before you look at the list of features, you should know what it DOESN'T include:
+- automated downloading of transactions from any platform
+
+My reason for this is because I still believe in manually tracking everything. If there is interest from the community, I will add it at some point.
 
 ### Account Management
 - Multiple account types: Chequing, Savings, Credit Cards, Loans, Mortgages, Line of Credit
@@ -147,7 +183,7 @@ monize/
 
 1. Clone the repository:
 ```bash
-git clone <repository-url>
+git clone git@github.com:kenlasko/monize.git
 cd monize
 ```
 
@@ -239,6 +275,7 @@ npm run dev
 | `SMTP_USER` | SMTP username | - |
 | `SMTP_PASS` | SMTP password | - |
 | `SMTP_FROM` | Email sender address | - |
+
 
 ## Deployment
 

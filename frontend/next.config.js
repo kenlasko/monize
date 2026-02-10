@@ -1,5 +1,7 @@
 const isDev = process.env.NODE_ENV !== 'production';
 
+const packageJson = require('./package.json');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -7,6 +9,7 @@ const nextConfig = {
   poweredByHeader: false, // Remove X-Powered-By: Next.js header
   env: {
     PUBLIC_APP_URL: process.env.PUBLIC_APP_URL || 'http://localhost:3000',
+    NEXT_PUBLIC_APP_VERSION: packageJson.version,
   },
   // API proxying is handled by middleware.ts at runtime
   // This allows INTERNAL_API_URL to be set at container start, not build time

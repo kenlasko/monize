@@ -4,7 +4,7 @@
   "description": "Personal Finance Management System - Backend API",
   "author": "",
   "private": true,
-  "license": "MIT",
+  "license": "AGPL-3.0-only",
   "scripts": {
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
