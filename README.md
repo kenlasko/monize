@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="frontend/public/icons/monize-logo.svg" alt="Monize" width="128" height="128" />
+</p>
+
 # Monize
 > [!CAUTION] 
 > This project is 100% written by AI. I've done practically zero manual changes. I have spent hours prompting Claude Code for features, updates, fixes and tweaks. I have taken steps to ensure this is secure as it can be. I've performed numerous security audits and have implemented best-practice security measures as much as I can (including 2FA and OIDC support), but I can't personally guarantee the security of this code. YOU HAVE BEEN WARNED. 
@@ -37,8 +41,11 @@ Monize is running in my [Kubernetes cluster](https://github.com/kenlasko/k8s).
 ## Features
 Before you look at the list of features, you should know what it DOESN'T include:
 - automated downloading of transactions from any platform
+- importing transactions via anything other than QIF
 
 My reason for this is because I still believe in manually tracking everything. If there is interest from the community, I will add it at some point.
+
+I could easily add import capabilities for other filetypes, but I would need examples.
 
 ### Account Management
 - Multiple account types: Chequing, Savings, Credit Cards, Loans, Mortgages, Line of Credit
@@ -363,4 +370,4 @@ Main tables:
 
 ## License
 
-MIT License - See LICENSE file for details.
+AGPL-3.0 License - See LICENSE file for details.
