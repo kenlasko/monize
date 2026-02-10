@@ -118,6 +118,85 @@ jobs:
           name: frontend-coverage
           path: frontend/coverage/
 
+  build-and-push:
+    name: Build & Push Containers
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs:
+      [
+        backend-lint,
+        backend-unit-tests,
+        backend-integration-tests,
+        frontend-lint,
+        frontend-unit-tests,
+      ]
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Bump patch version
+        id: version
+        run: |
+          CURRENT=$(node -p "require('./backend/package.json').version")
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
+          NEW_VERSION="$MAJOR.$MINOR.$((PATCH + 1))"
+          echo "version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
+          echo "Bumping version: $CURRENT -> $NEW_VERSION"
+          cd backend  && npm version "$NEW_VERSION" --no-git-tag-version && cd ..
+          cd frontend && npm version "$NEW_VERSION" --no-git-tag-version && cd ..
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push backend
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: backend/Dockerfile
+          target: production
+          push: true
+          tags: |
+            ghcr.io/kenlasko/monize-backend:latest
+            ghcr.io/kenlasko/monize-backend:${{ steps.version.outputs.version }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push frontend
+        uses: docker/build-push-action@v6
+        with:
+          context: frontend
+          file: frontend/Dockerfile
+          target: production
+          push: true
+          tags: |
+            ghcr.io/kenlasko/monize-frontend:latest
+            ghcr.io/kenlasko/monize-frontend:${{ steps.version.outputs.version }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Commit version bump
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add backend/package.json backend/package-lock.json frontend/package.json frontend/package-lock.json
+          git commit -m "chore: bump version to ${{ steps.version.outputs.version }} [skip ci]"
+          git push
+
   # E2E tests temporarily disabled - re-enable once tests are stabilized
   # e2e-tests:
   #   name: E2E Tests
