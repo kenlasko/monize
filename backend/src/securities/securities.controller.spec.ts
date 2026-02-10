@@ -2,11 +2,13 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { SecuritiesController } from "./securities.controller";
 import { SecuritiesService } from "./securities.service";
 import { SecurityPriceService } from "./security-price.service";
+import { NetWorthService } from "../net-worth/net-worth.service";
 
 describe("SecuritiesController", () => {
   let controller: SecuritiesController;
   let securitiesService: Record<string, jest.Mock>;
   let securityPriceService: Record<string, jest.Mock>;
+  let netWorthService: Record<string, jest.Mock>;
 
   const req = { user: { id: "user-1" } };
 
@@ -44,11 +46,17 @@ describe("SecuritiesController", () => {
       getPriceHistory: jest.fn(),
     };
 
+    netWorthService = {
+      recalculateAllInvestmentSnapshots: jest.fn().mockResolvedValue(undefined),
+      recalculateAllAccounts: jest.fn().mockResolvedValue(undefined),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [SecuritiesController],
       providers: [
         { provide: SecuritiesService, useValue: securitiesService },
         { provide: SecurityPriceService, useValue: securityPriceService },
+        { provide: NetWorthService, useValue: netWorthService },
       ],
     }).compile();
 

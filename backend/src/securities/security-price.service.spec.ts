@@ -4,12 +4,14 @@ import { DataSource } from "typeorm";
 import { SecurityPriceService } from "./security-price.service";
 import { SecurityPrice } from "./entities/security-price.entity";
 import { Security } from "./entities/security.entity";
+import { NetWorthService } from "../net-worth/net-worth.service";
 
 describe("SecurityPriceService", () => {
   let service: SecurityPriceService;
   let securityPriceRepository: Record<string, jest.Mock>;
   let securitiesRepository: Record<string, jest.Mock>;
   let dataSourceMock: Record<string, jest.Mock>;
+  let netWorthService: Record<string, jest.Mock>;
   let originalFetch: typeof global.fetch;
 
   const mockSecurity: Security = {
@@ -146,6 +148,10 @@ describe("SecurityPriceService", () => {
       query: jest.fn(),
     };
 
+    netWorthService = {
+      recalculateAllInvestmentSnapshots: jest.fn().mockResolvedValue(undefined),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         SecurityPriceService,
@@ -160,6 +166,10 @@ describe("SecurityPriceService", () => {
         {
           provide: DataSource,
           useValue: dataSourceMock,
+        },
+        {
+          provide: NetWorthService,
+          useValue: netWorthService,
         },
       ],
     }).compile();

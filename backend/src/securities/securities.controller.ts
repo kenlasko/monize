@@ -28,6 +28,7 @@ import {
   HistoricalBackfillSummary,
   SecurityLookupResult,
 } from "./security-price.service";
+import { NetWorthService } from "../net-worth/net-worth.service";
 import { CreateSecurityDto } from "./dto/create-security.dto";
 import { UpdateSecurityDto } from "./dto/update-security.dto";
 import { Security } from "./entities/security.entity";
@@ -40,6 +41,7 @@ export class SecuritiesController {
   constructor(
     private readonly securitiesService: SecuritiesService,
     private readonly securityPriceService: SecurityPriceService,
+    private readonly netWorthService: NetWorthService,
   ) {}
 
   @Post()
@@ -205,8 +207,13 @@ export class SecuritiesController {
       },
     },
   })
-  refreshAllPrices(): Promise<PriceRefreshSummary> {
-    return this.securityPriceService.refreshAllPrices();
+  async refreshAllPrices(): Promise<PriceRefreshSummary> {
+    const result = await this.securityPriceService.refreshAllPrices();
+    if (result.updated > 0) {
+      // Fire-and-forget: recalculate investment snapshots so charts reflect new prices
+      this.netWorthService.recalculateAllInvestmentSnapshots().catch(() => {});
+    }
+    return result;
   }
 
   @Post("prices/refresh/selected")
@@ -236,7 +243,15 @@ export class SecuritiesController {
     for (const id of securityIds) {
       await this.securitiesService.findOne(req.user.id, id);
     }
-    return this.securityPriceService.refreshPricesForSecurities(securityIds);
+    const result =
+      await this.securityPriceService.refreshPricesForSecurities(securityIds);
+    if (result.updated > 0) {
+      // Fire-and-forget: recalculate this user's investment snapshots
+      this.netWorthService
+        .recalculateAllAccounts(req.user.id)
+        .catch(() => {});
+    }
+    return result;
   }
 
   @Post("prices/backfill")

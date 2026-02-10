@@ -53,7 +53,7 @@ export class NetWorthService {
     });
     if (!account) return;
 
-    if (account.accountSubType === AccountSubType.INVESTMENT_BROKERAGE) {
+    if (this.isBrokerageOrStandaloneInvestment(account)) {
       await this.recalculateBrokerageAccount(userId, account);
     } else {
       await this.recalculateRegularAccount(userId, account);
@@ -67,7 +67,7 @@ export class NetWorthService {
     });
     for (const account of accounts) {
       try {
-        if (account.accountSubType === AccountSubType.INVESTMENT_BROKERAGE) {
+        if (this.isBrokerageOrStandaloneInvestment(account)) {
           await this.recalculateBrokerageAccount(userId, account);
         } else {
           await this.recalculateRegularAccount(userId, account);
@@ -84,6 +84,43 @@ export class NetWorthService {
     const count = await this.mabRepo.count({ where: { userId } });
     if (count === 0) {
       await this.recalculateAllAccounts(userId);
+    }
+  }
+
+  /**
+   * Check if an account is a brokerage or standalone investment account
+   * (i.e. an account that can hold securities and needs market value tracking)
+   */
+  private isBrokerageOrStandaloneInvestment(account: Account): boolean {
+    return (
+      account.accountSubType === AccountSubType.INVESTMENT_BROKERAGE ||
+      (account.accountType === AccountType.INVESTMENT &&
+        !account.accountSubType)
+    );
+  }
+
+  /**
+   * Recalculate monthly snapshots for all investment accounts that have holdings.
+   * Called after security prices are refreshed to keep chart data in sync.
+   */
+  async recalculateAllInvestmentSnapshots(): Promise<void> {
+    const accounts = await this.accountRepo
+      .createQueryBuilder("a")
+      .where("a.accountType = :type", { type: AccountType.INVESTMENT })
+      .andWhere(
+        "(a.accountSubType = :brokerage OR a.accountSubType IS NULL)",
+        { brokerage: AccountSubType.INVESTMENT_BROKERAGE },
+      )
+      .getMany();
+
+    for (const account of accounts) {
+      try {
+        await this.recalculateBrokerageAccount(account.userId, account);
+      } catch (err) {
+        this.logger.warn(
+          `Failed to recalculate investment snapshot for account ${account.id}: ${err.message}`,
+        );
+      }
     }
   }
 
@@ -142,10 +179,24 @@ export class NetWorthService {
       }
       const entry = monthMap.get(monthKey)!;
 
-      const rawValue =
-        s.account_sub_type === "INVESTMENT_BROKERAGE" && s.market_value != null
-          ? Number(s.market_value)
-          : Number(s.balance);
+      // For brokerage accounts: use market_value (holdings only; cash is in linked account)
+      // For standalone investment accounts: use market_value + balance (holdings + cash)
+      // For all others: use balance
+      let rawValue: number;
+      if (
+        s.account_sub_type === "INVESTMENT_BROKERAGE" &&
+        s.market_value != null
+      ) {
+        rawValue = Number(s.market_value);
+      } else if (
+        s.account_type === "INVESTMENT" &&
+        s.account_sub_type === null &&
+        s.market_value != null
+      ) {
+        rawValue = Number(s.market_value) + Number(s.balance);
+      } else {
+        rawValue = Number(s.balance);
+      }
 
       // Compute month-end date for rate lookup
       const monthEnd = this.monthEndDate(monthKey);
@@ -210,12 +261,12 @@ export class NetWorthService {
       accountFilter = `AND a.id IN (${placeholders})`;
       params.push(...idArray);
     } else {
-      accountFilter = `AND a.account_sub_type IN ('INVESTMENT_CASH', 'INVESTMENT_BROKERAGE')`;
+      accountFilter = `AND (a.account_sub_type IN ('INVESTMENT_CASH', 'INVESTMENT_BROKERAGE') OR (a.account_type = 'INVESTMENT' AND a.account_sub_type IS NULL))`;
     }
 
     const snapshots: any[] = await this.dataSource.query(
       `SELECT mab.month, mab.balance, mab.market_value,
-              a.id as account_id, a.account_sub_type, a.currency_code
+              a.id as account_id, a.account_type, a.account_sub_type, a.currency_code
        FROM monthly_account_balances mab
        JOIN accounts a ON a.id = mab.account_id
        WHERE mab.user_id = $1
@@ -251,10 +302,21 @@ export class NetWorthService {
         monthMap.set(monthKey, 0);
       }
 
-      const rawValue =
-        s.account_sub_type === "INVESTMENT_BROKERAGE" && s.market_value != null
-          ? Number(s.market_value)
-          : Number(s.balance);
+      let rawValue: number;
+      if (
+        s.account_sub_type === "INVESTMENT_BROKERAGE" &&
+        s.market_value != null
+      ) {
+        rawValue = Number(s.market_value);
+      } else if (
+        s.account_type === "INVESTMENT" &&
+        s.account_sub_type === null &&
+        s.market_value != null
+      ) {
+        rawValue = Number(s.market_value) + Number(s.balance);
+      } else {
+        rawValue = Number(s.balance);
+      }
 
       const monthEnd = this.monthEndDate(monthKey);
       const converted = this.convertCurrency(

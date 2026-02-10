@@ -4,6 +4,7 @@ import { Repository, In, DataSource } from "typeorm";
 import { Cron } from "@nestjs/schedule";
 import { SecurityPrice } from "./entities/security-price.entity";
 import { Security } from "./entities/security.entity";
+import { NetWorthService } from "../net-worth/net-worth.service";
 
 interface YahooQuoteResult {
   symbol: string;
@@ -72,6 +73,7 @@ export class SecurityPriceService {
     @InjectRepository(Security)
     private securitiesRepository: Repository<Security>,
     private dataSource: DataSource,
+    private netWorthService: NetWorthService,
   ) {}
 
   /**
@@ -1012,7 +1014,14 @@ export class SecurityPriceService {
   async scheduledPriceRefresh(): Promise<void> {
     this.logger.log("Running scheduled price refresh");
     try {
-      await this.refreshAllPrices();
+      const result = await this.refreshAllPrices();
+      // Recalculate investment snapshots so charts reflect updated prices
+      if (result.updated > 0) {
+        this.logger.log(
+          "Recalculating investment snapshots after price refresh",
+        );
+        await this.netWorthService.recalculateAllInvestmentSnapshots();
+      }
     } catch (error) {
       this.logger.error(`Scheduled price refresh failed: ${error.message}`);
     }
