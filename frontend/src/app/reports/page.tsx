@@ -397,7 +397,7 @@ function ReportsContent() {
                 Generate insights about your financial health
               </p>
             </div>
-            <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center gap-2">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
               <Button
                 onClick={() => router.push('/reports/custom/new')}
                 className="inline-flex items-center justify-center gap-2"
@@ -405,8 +405,7 @@ function ReportsContent() {
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
-                <span className="sm:hidden">New Report</span>
-                <span className="hidden sm:inline">Create Custom Report</span>
+                New Custom Report
               </Button>
               <button
                 onClick={cycleDensity}
