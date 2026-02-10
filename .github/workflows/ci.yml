@@ -128,7 +128,7 @@ jobs:
       POSTGRES_PASSWORD: monize_password
       JWT_SECRET: test-jwt-secret-for-ci-minimum-32-characters-long
       NODE_ENV: development
-      PUBLIC_APP_URL: http://localhost:3000
+      PUBLIC_APP_URL: http://localhost:3001
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -142,12 +142,12 @@ jobs:
           POSTGRES_PASSWORD=monize_password
           JWT_SECRET=test-jwt-secret-for-ci-minimum-32-characters-long
           NODE_ENV=development
-          PUBLIC_APP_URL=http://localhost:3000
+          PUBLIC_APP_URL=http://localhost:3001
           EOF
       - name: Start services
         run: |
           docker compose up -d --build
-          timeout 120 bash -c 'until curl -sf http://localhost:3000; do sleep 5; done'
+          timeout 120 bash -c 'until curl -sf http://localhost:3001; do sleep 5; done'
       - name: Install Playwright
         working-directory: e2e
         run: |
@@ -156,7 +156,7 @@ jobs:
       - name: Run E2E tests
         working-directory: e2e
         env:
-          BASE_URL: http://localhost:3000
+          BASE_URL: http://localhost:3001
           CI: 'true'
         run: npx playwright test --project=chromium
       - name: Upload test report

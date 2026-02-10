@@ -61,7 +61,7 @@ services:
       - "${BACKEND_PORT:-3000}:3000"
     networks:
       - finance-network
-    command: npm run start:dev
+    command: sh -c "node dist/db-init.js && npm run start:dev"
 
   # Frontend (Next.js)
   frontend:
