@@ -12,7 +12,7 @@ export default defineConfig({
   timeout: 60000,
   expect: { timeout: 10000 },
   use: {
-    baseURL: process.env.BASE_URL || 'http://localhost:3001',
+    baseURL: process.env.BASE_URL || 'http://localhost:3000',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'on-first-retry',
@@ -31,7 +31,7 @@ export default defineConfig({
     ? undefined
     : {
         command: 'docker compose up -d && sleep 10',
-        url: 'http://localhost:3001',
+        url: 'http://localhost:3000',
         reuseExistingServer: true,
         timeout: 120000,
         cwd: '..',
