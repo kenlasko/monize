@@ -74,7 +74,7 @@ describe('SpendingByCategoryReport', () => {
   it('shows loading state initially', () => {
     mockGetSpendingByCategory.mockReturnValue(new Promise(() => {}));
     render(<SpendingByCategoryReport />);
-    expect(screen.getByClassName ? true : document.querySelector('.animate-pulse')).toBeTruthy();
+    expect(document.querySelector('.animate-pulse')).toBeTruthy();
   });
 
   it('renders empty state when no data returned', async () => {

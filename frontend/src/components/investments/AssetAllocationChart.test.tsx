@@ -36,8 +36,8 @@ describe('AssetAllocationChart', () => {
     const allocation = {
       totalValue: 50000,
       allocation: [
-        { symbol: 'AAPL', name: 'Apple', value: 30000, percentage: 60, color: '#3b82f6', currencyCode: 'CAD' },
-        { symbol: 'MSFT', name: 'Microsoft', value: 20000, percentage: 40, color: '#ef4444', currencyCode: 'CAD' },
+        { symbol: 'AAPL', name: 'Apple', type: 'security' as const, value: 30000, percentage: 60, color: '#3b82f6', currencyCode: 'CAD' },
+        { symbol: 'MSFT', name: 'Microsoft', type: 'security' as const, value: 20000, percentage: 40, color: '#ef4444', currencyCode: 'CAD' },
       ],
     };
 
@@ -52,7 +52,7 @@ describe('AssetAllocationChart', () => {
     const allocation = {
       totalValue: 10000,
       allocation: [
-        { symbol: 'VTI', name: 'Vanguard Total', value: 7500, percentage: 75, color: '#22c55e', currencyCode: 'CAD' },
+        { symbol: 'VTI', name: 'Vanguard Total', type: 'security' as const, value: 7500, percentage: 75, color: '#22c55e', currencyCode: 'CAD' },
       ],
     };
 

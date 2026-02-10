@@ -58,7 +58,7 @@ describe('apiClient', () => {
   describe('request interceptor', () => {
     it('attaches CSRF token from cookies to request headers', async () => {
       const { apiClient } = await import('@/lib/api');
-      vi.mocked(Cookies.get).mockReturnValue('test-csrf-token');
+      vi.mocked(Cookies.get).mockReturnValue('test-csrf-token' as any);
 
       const config: InternalAxiosRequestConfig = {
         headers: new AxiosHeaders(),
@@ -81,7 +81,7 @@ describe('apiClient', () => {
 
     it('does not set CSRF header when no cookie is present', async () => {
       const { apiClient } = await import('@/lib/api');
-      vi.mocked(Cookies.get).mockReturnValue(undefined);
+      vi.mocked(Cookies.get).mockReturnValue(undefined as any);
 
       const config: InternalAxiosRequestConfig = {
         headers: new AxiosHeaders(),
