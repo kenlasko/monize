@@ -163,6 +163,12 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Set build metadata
+        id: meta
+        run: |
+          echo "git_sha=${{ github.sha }}" >> "$GITHUB_OUTPUT"
+          echo "build_date=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_OUTPUT"
+
       - name: Build and push backend
         uses: docker/build-push-action@v6
         with:
@@ -173,6 +179,10 @@ jobs:
           tags: |
             ghcr.io/kenlasko/monize-backend:latest
             ghcr.io/kenlasko/monize-backend:${{ steps.version.outputs.version }}
+          build-args: |
+            GIT_SHA=${{ steps.meta.outputs.git_sha }}
+            BUILD_DATE=${{ steps.meta.outputs.build_date }}
+            VERSION=${{ steps.version.outputs.version }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -186,6 +196,10 @@ jobs:
           tags: |
             ghcr.io/kenlasko/monize-frontend:latest
             ghcr.io/kenlasko/monize-frontend:${{ steps.version.outputs.version }}
+          build-args: |
+            GIT_SHA=${{ steps.meta.outputs.git_sha }}
+            BUILD_DATE=${{ steps.meta.outputs.build_date }}
+            VERSION=${{ steps.version.outputs.version }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -196,6 +210,14 @@ jobs:
           git add backend/package.json backend/package-lock.json frontend/package.json frontend/package-lock.json
           git commit -m "chore: bump version to ${{ steps.version.outputs.version }} [skip ci]"
           git push
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "v${{ steps.version.outputs.version }}" \
+            --title "v${{ steps.version.outputs.version }}" \
+            --generate-notes
 
   # E2E tests temporarily disabled - re-enable once tests are stabilized
   # e2e-tests:
