@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, memo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Payee } from '@/types/payee';
 import { Button } from '@/components/ui/Button';
@@ -27,6 +27,101 @@ interface PayeeListProps {
   sortDirection?: SortDirection;
   onSort?: (field: SortField) => void;
 }
+
+interface PayeeRowProps {
+  payee: Payee;
+  density: DensityLevel;
+  cellPadding: string;
+  onEdit: (payee: Payee) => void;
+  onDelete: (payee: Payee) => void;
+  onViewTransactions: (payee: Payee) => void;
+  index: number;
+}
+
+const PayeeRow = memo(function PayeeRow({
+  payee,
+  density,
+  cellPadding,
+  onEdit,
+  onDelete,
+  onViewTransactions,
+  index,
+}: PayeeRowProps) {
+  const handleEdit = useCallback(() => {
+    onEdit(payee);
+  }, [onEdit, payee]);
+
+  const handleDelete = useCallback(() => {
+    onDelete(payee);
+  }, [onDelete, payee]);
+
+  const handleViewTransactions = useCallback(() => {
+    onViewTransactions(payee);
+  }, [onViewTransactions, payee]);
+
+  return (
+    <tr
+      className={`hover:bg-gray-50 dark:hover:bg-gray-800 ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-gray-800/50' : ''}`}
+    >
+      <td className={`${cellPadding} whitespace-nowrap`}>
+        <button
+          onClick={handleViewTransactions}
+          className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline text-left"
+          title="View transactions with this payee"
+        >
+          {payee.name}
+        </button>
+      </td>
+      <td className={`${cellPadding} whitespace-nowrap hidden sm:table-cell`}>
+        {payee.defaultCategory ? (
+          <span
+            className={`inline-flex text-xs leading-5 font-semibold rounded-full ${density === 'dense' ? 'px-1.5 py-0.5' : 'px-2 py-1'}`}
+            style={{
+              backgroundColor: payee.defaultCategory.color
+                ? `color-mix(in srgb, ${payee.defaultCategory.color} 15%, var(--category-bg-base, #e5e7eb))`
+                : 'var(--category-bg-base, #e5e7eb)',
+              color: payee.defaultCategory.color
+                ? `color-mix(in srgb, ${payee.defaultCategory.color} 85%, var(--category-text-mix, #000))`
+                : 'var(--category-text-base, #6b7280)',
+            }}
+          >
+            {payee.defaultCategory.name}
+          </span>
+        ) : (
+          <span className="text-sm text-gray-400 dark:text-gray-500">None</span>
+        )}
+      </td>
+      <td className={`${cellPadding} whitespace-nowrap text-right text-sm text-gray-600 dark:text-gray-400 hidden md:table-cell`}>
+        {payee.transactionCount ?? 0}
+      </td>
+      {density === 'normal' && (
+        <td className={`${cellPadding}`}>
+          <div className="text-sm text-gray-500 dark:text-gray-400 max-w-xs truncate">
+            {payee.notes || '-'}
+          </div>
+        </td>
+      )}
+      <td className={`${cellPadding} whitespace-nowrap text-right text-sm font-medium`}>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleEdit}
+          className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300 mr-2"
+        >
+          {density === 'dense' ? '✎' : 'Edit'}
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleDelete}
+          className="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300"
+        >
+          {density === 'dense' ? '✕' : 'Delete'}
+        </Button>
+      </td>
+    </tr>
+  );
+});
 
 export function PayeeList({
   payees,
@@ -121,9 +216,9 @@ export function PayeeList({
     return <span className="ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>;
   };
 
-  const handleViewTransactions = (payee: Payee) => {
+  const handleViewTransactions = useCallback((payee: Payee) => {
     router.push(`/transactions?payeeId=${payee.id}`);
-  };
+  }, [router]);
 
   const handleConfirmDelete = async () => {
     if (!deletePayee) return;
@@ -211,67 +306,16 @@ export function PayeeList({
           </thead>
           <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
             {displayPayees.map((payee, index) => (
-              <tr
+              <PayeeRow
                 key={payee.id}
-                className={`hover:bg-gray-50 dark:hover:bg-gray-800 ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-gray-800/50' : ''}`}
-              >
-                <td className={`${cellPadding} whitespace-nowrap`}>
-                  <button
-                    onClick={() => handleViewTransactions(payee)}
-                    className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline text-left"
-                    title="View transactions with this payee"
-                  >
-                    {payee.name}
-                  </button>
-                </td>
-                <td className={`${cellPadding} whitespace-nowrap hidden sm:table-cell`}>
-                  {payee.defaultCategory ? (
-                    <span
-                      className={`inline-flex text-xs leading-5 font-semibold rounded-full ${density === 'dense' ? 'px-1.5 py-0.5' : 'px-2 py-1'}`}
-                      style={{
-                        backgroundColor: payee.defaultCategory.color
-                          ? `color-mix(in srgb, ${payee.defaultCategory.color} 15%, var(--category-bg-base, #e5e7eb))`
-                          : 'var(--category-bg-base, #e5e7eb)',
-                        color: payee.defaultCategory.color
-                          ? `color-mix(in srgb, ${payee.defaultCategory.color} 85%, var(--category-text-mix, #000))`
-                          : 'var(--category-text-base, #6b7280)',
-                      }}
-                    >
-                      {payee.defaultCategory.name}
-                    </span>
-                  ) : (
-                    <span className="text-sm text-gray-400 dark:text-gray-500">None</span>
-                  )}
-                </td>
-                <td className={`${cellPadding} whitespace-nowrap text-right text-sm text-gray-600 dark:text-gray-400 hidden md:table-cell`}>
-                  {payee.transactionCount ?? 0}
-                </td>
-                {density === 'normal' && (
-                  <td className={`${cellPadding}`}>
-                    <div className="text-sm text-gray-500 dark:text-gray-400 max-w-xs truncate">
-                      {payee.notes || '-'}
-                    </div>
-                  </td>
-                )}
-                <td className={`${cellPadding} whitespace-nowrap text-right text-sm font-medium`}>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onEdit(payee)}
-                    className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300 mr-2"
-                  >
-                    {density === 'dense' ? '✎' : 'Edit'}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setDeletePayee(payee)}
-                    className="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300"
-                  >
-                    {density === 'dense' ? '✕' : 'Delete'}
-                  </Button>
-                </td>
-              </tr>
+                payee={payee}
+                density={density}
+                cellPadding={cellPadding}
+                onEdit={onEdit}
+                onDelete={setDeletePayee}
+                onViewTransactions={handleViewTransactions}
+                index={index}
+              />
             ))}
           </tbody>
         </table>

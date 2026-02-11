@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@/lib/zodResolver';
 import { z } from 'zod';
+import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
@@ -51,14 +52,15 @@ const currencyOptions = [
 export function SecurityForm({ security, onSubmit, onCancel }: SecurityFormProps) {
   const { defaultCurrency } = useNumberFormat();
   const [isLookingUp, setIsLookingUp] = useState(false);
-  const lookupTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [hasLookupResult, setHasLookupResult] = useState(false);
 
   const {
     register,
     handleSubmit,
     setValue,
     getValues,
-    formState: { errors, isSubmitting },
+    reset,
+    formState: { errors, isSubmitting, defaultValues },
   } = useForm<SecurityFormData>({
     resolver: zodResolver(securitySchema),
     defaultValues: {
@@ -70,60 +72,56 @@ export function SecurityForm({ security, onSubmit, onCancel }: SecurityFormProps
     },
   });
 
-  const performLookup = useCallback(async (query: string, source: 'symbol' | 'name') => {
-    if (!query || query.length < 2) return;
-
-    // Clear any pending lookup
-    if (lookupTimeoutRef.current) {
-      clearTimeout(lookupTimeoutRef.current);
+  // Manual lookup - prioritize symbol, fall back to name
+  const handleLookup = useCallback(async () => {
+    const { symbol, name } = getValues();
+    const query = (symbol?.trim() || name?.trim() || '');
+    if (query.length < 2) {
+      toast.error('Enter a symbol or name (at least 2 characters) to lookup');
+      return;
     }
 
-    // Debounce the lookup
-    lookupTimeoutRef.current = setTimeout(async () => {
-      setIsLookingUp(true);
-      try {
-        const result = await investmentsApi.lookupSecurity(query);
-        if (result) {
-          const currentValues = getValues();
-
-          // Fill in missing values based on what was searched
-          if (source === 'symbol' && !currentValues.name) {
-            setValue('name', result.name);
-          } else if (source === 'name' && !currentValues.symbol) {
-            setValue('symbol', result.symbol);
-          }
-
-          // Fill in exchange if not already set
-          if (!currentValues.exchange && result.exchange) {
-            setValue('exchange', result.exchange);
-          }
-
-          // Fill in security type if not already set
-          if (!currentValues.securityType && result.securityType) {
-            setValue('securityType', result.securityType);
-          }
+    setIsLookingUp(true);
+    try {
+      const result = await investmentsApi.lookupSecurity(query);
+      if (result) {
+        // Fill in all fields from the lookup result
+        setValue('symbol', result.symbol);
+        setValue('name', result.name);
+        setValue('exchange', result.exchange || '');
+        setValue('securityType', result.securityType || '');
+        if (result.currencyCode) {
+          setValue('currencyCode', result.currencyCode);
         }
-      } catch (error) {
-        logger.error('Security lookup failed:', error);
-      } finally {
-        setIsLookingUp(false);
+        setHasLookupResult(true);
+
+        const details = [`Symbol: ${result.symbol}`, `Name: ${result.name}`];
+        if (result.exchange) details.push(`Exchange: ${result.exchange}`);
+        if (result.securityType) details.push(`Type: ${result.securityType}`);
+        if (result.currencyCode) details.push(`Currency: ${result.currencyCode}`);
+        toast.success(`Found: ${details.join(', ')}`);
+      } else {
+        toast.error(`No security found for "${query}"`);
       }
-    }, 500);
+    } catch (error) {
+      logger.error('Security lookup failed:', error);
+      toast.error('Lookup failed - please try again');
+    } finally {
+      setIsLookingUp(false);
+    }
   }, [getValues, setValue]);
 
-  const handleSymbolBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-    const value = e.target.value.trim();
-    if (value && !security) {
-      performLookup(value, 'symbol');
-    }
-  };
-
-  const handleNameBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-    const value = e.target.value.trim();
-    if (value && !security && !getValues('symbol')) {
-      performLookup(value, 'name');
-    }
-  };
+  // Clear all looked-up values back to defaults
+  const handleClear = useCallback(() => {
+    reset({
+      symbol: '',
+      name: '',
+      securityType: '',
+      exchange: '',
+      currencyCode: defaultValues?.currencyCode || defaultCurrency,
+    });
+    setHasLookupResult(false);
+  }, [reset, defaultValues, defaultCurrency]);
 
   const onFormSubmit = async (data: CreateSecurityData) => {
     // Clean up empty strings
@@ -137,37 +135,48 @@ export function SecurityForm({ security, onSubmit, onCancel }: SecurityFormProps
     await onSubmit(cleanedData);
   };
 
-  const symbolRegister = register('symbol');
-  const nameRegister = register('name');
-
   return (
     <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
-      <div className="relative">
-        <Input
-          label="Symbol"
-          {...symbolRegister}
-          onBlur={(e) => {
-            symbolRegister.onBlur(e);
-            handleSymbolBlur(e);
-          }}
-          error={errors.symbol?.message}
-          placeholder="e.g., AAPL, XEQT, BTC"
-          className="uppercase"
-        />
-        {isLookingUp && (
-          <div className="absolute right-3 top-8 text-xs text-gray-400">
-            Looking up...
+      {/* Symbol + Lookup / Clear buttons */}
+      <div className="flex gap-2 items-end">
+        <div className="flex-1">
+          <Input
+            label="Symbol"
+            {...register('symbol')}
+            error={errors.symbol?.message}
+            placeholder="e.g., AAPL, XEQT, BTC"
+            className="uppercase"
+          />
+        </div>
+        {!security && (
+          <div className="flex gap-1.5">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleLookup}
+              disabled={isLookingUp}
+              className="mb-[1px]"
+            >
+              {isLookingUp ? 'Looking up...' : 'Lookup'}
+            </Button>
+            {hasLookupResult && (
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={handleClear}
+                className="mb-[1px] text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                title="Clear all fields"
+              >
+                Clear
+              </Button>
+            )}
           </div>
         )}
       </div>
 
       <Input
         label="Name"
-        {...nameRegister}
-        onBlur={(e) => {
-          nameRegister.onBlur(e);
-          handleNameBlur(e);
-        }}
+        {...register('name')}
         error={errors.name?.message}
         placeholder="e.g., Apple Inc., iShares Core Equity ETF"
       />

@@ -2,14 +2,16 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { subDays, subMonths, format } from 'date-fns';
+import dynamic from 'next/dynamic';
 import { useAuthStore } from '@/store/authStore';
 import { FavouriteAccounts } from '@/components/dashboard/FavouriteAccounts';
 import { UpcomingBills } from '@/components/dashboard/UpcomingBills';
-import { ExpensesPieChart } from '@/components/dashboard/ExpensesPieChart';
-import { IncomeExpensesBarChart } from '@/components/dashboard/IncomeExpensesBarChart';
 import { GettingStarted } from '@/components/dashboard/GettingStarted';
 import { TopMovers } from '@/components/dashboard/TopMovers';
-import { NetWorthChart } from '@/components/dashboard/NetWorthChart';
+
+const ExpensesPieChart = dynamic(() => import('@/components/dashboard/ExpensesPieChart').then(m => m.ExpensesPieChart), { ssr: false });
+const IncomeExpensesBarChart = dynamic(() => import('@/components/dashboard/IncomeExpensesBarChart').then(m => m.IncomeExpensesBarChart), { ssr: false });
+const NetWorthChart = dynamic(() => import('@/components/dashboard/NetWorthChart').then(m => m.NetWorthChart), { ssr: false });
 import { accountsApi } from '@/lib/accounts';
 import { transactionsApi } from '@/lib/transactions';
 import { categoriesApi } from '@/lib/categories';

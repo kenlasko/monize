@@ -64,14 +64,16 @@ function CategoriesContent() {
       };
 
       if (editingItem) {
-        await categoriesApi.update(editingItem.id, cleanedData);
+        const updated = await categoriesApi.update(editingItem.id, cleanedData);
         toast.success('Category updated successfully');
+        close();
+        setCategories(prev => prev.map(c => c.id === updated.id ? updated : c));
       } else {
-        await categoriesApi.create(cleanedData);
+        const created = await categoriesApi.create(cleanedData);
         toast.success('Category created successfully');
+        close();
+        setCategories(prev => [...prev, created]);
       }
-      close();
-      loadCategories();
     } catch (error) {
       toast.error(getErrorMessage(error, `Failed to ${editingItem ? 'update' : 'create'} category`));
       throw error;

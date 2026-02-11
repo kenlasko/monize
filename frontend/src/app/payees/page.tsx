@@ -76,14 +76,18 @@ function PayeesContent() {
       };
 
       if (editingItem) {
-        await payeesApi.update(editingItem.id, cleanedData);
+        const updated = await payeesApi.update(editingItem.id, cleanedData);
         toast.success('Payee updated successfully');
+        close();
+        // Update in-place instead of refetching all payees
+        setPayees(prev => prev.map(p => p.id === updated.id ? updated : p));
       } else {
-        await payeesApi.create(cleanedData);
+        const created = await payeesApi.create(cleanedData);
         toast.success('Payee created successfully');
+        close();
+        // Prepend new payee instead of refetching all
+        setPayees(prev => [created, ...prev]);
       }
-      close();
-      loadData();
     } catch (error) {
       toast.error(getErrorMessage(error, `Failed to ${editingItem ? 'update' : 'create'} payee`));
       throw error;

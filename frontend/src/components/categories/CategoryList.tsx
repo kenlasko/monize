@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, memo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Category } from '@/types/category';
 import { Button } from '@/components/ui/Button';
@@ -17,6 +17,109 @@ export type DensityLevel = 'normal' | 'compact' | 'dense';
 
 type SortField = 'name' | 'type' | 'count';
 type SortDirection = 'asc' | 'desc';
+
+interface CategoryRowProps {
+  category: Category & { _level?: number };
+  density: DensityLevel;
+  cellPadding: string;
+  onEdit: (category: Category) => void;
+  onDeleteClick: (category: Category) => void;
+  onViewTransactions: (category: Category) => void;
+  index: number;
+}
+
+const CategoryRow = memo(function CategoryRow({
+  category,
+  density,
+  cellPadding,
+  onEdit,
+  onDeleteClick,
+  onViewTransactions,
+  index,
+}: CategoryRowProps) {
+  const handleEdit = useCallback(() => {
+    onEdit(category);
+  }, [onEdit, category]);
+
+  const handleDelete = useCallback(() => {
+    onDeleteClick(category);
+  }, [onDeleteClick, category]);
+
+  const handleView = useCallback(() => {
+    onViewTransactions(category);
+  }, [onViewTransactions, category]);
+
+  return (
+    <tr
+      className={`hover:bg-gray-50 dark:hover:bg-gray-800 ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-gray-800/50' : ''}`}
+    >
+      <td className={`${cellPadding} whitespace-nowrap`}>
+        <div
+          className="flex items-center"
+          style={{ paddingLeft: `${(category._level || 0) * (density === 'dense' ? 0.75 : 1.5)}rem` }}
+        >
+          {category.color && (
+            <span
+              className={`rounded-full mr-2 flex-shrink-0 ${density === 'dense' ? 'w-2 h-2' : 'w-3 h-3'}`}
+              style={{ backgroundColor: category.color }}
+            />
+          )}
+          <button
+            onClick={handleView}
+            className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline text-left"
+            title="View transactions in this category"
+          >
+            {category.name}
+          </button>
+          {category.isSystem && density !== 'dense' && (
+            <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">(System)</span>
+          )}
+        </div>
+      </td>
+      <td className={`${cellPadding} whitespace-nowrap hidden sm:table-cell`}>
+        <span
+          className={`inline-flex text-xs leading-5 font-semibold rounded-full ${
+            category.isIncome
+              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+              : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+          } ${density === 'dense' ? 'px-1.5 py-0.5' : 'px-2 py-1'}`}
+        >
+          {category.isIncome ? 'Income' : 'Expense'}
+        </span>
+      </td>
+      <td className={`${cellPadding} whitespace-nowrap text-right text-sm text-gray-600 dark:text-gray-400 hidden md:table-cell`}>
+        {category.transactionCount ?? 0}
+      </td>
+      {density === 'normal' && (
+        <td className={`${cellPadding}`}>
+          <div className="text-sm text-gray-500 dark:text-gray-400 max-w-xs truncate">
+            {category.description || '-'}
+          </div>
+        </td>
+      )}
+      <td className={`${cellPadding} whitespace-nowrap text-right text-sm font-medium`}>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleEdit}
+          className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300 mr-2"
+        >
+          {density === 'dense' ? '✎' : 'Edit'}
+        </Button>
+        {!category.isSystem && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleDelete}
+            className="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300"
+          >
+            {density === 'dense' ? '✕' : 'Delete'}
+          </Button>
+        )}
+      </td>
+    </tr>
+  );
+});
 
 interface CategoryListProps {
   categories: Category[];
@@ -84,17 +187,17 @@ export function CategoryList({
     return <span className="ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>;
   };
 
-  const handleViewTransactions = (category: Category) => {
+  const handleViewTransactions = useCallback((category: Category) => {
     router.push(`/transactions?categoryId=${category.id}`);
-  };
+  }, [router]);
 
-  const handleDeleteClick = (category: Category) => {
+  const handleDeleteClick = useCallback((category: Category) => {
     if (category.isSystem) {
       toast.error('System categories cannot be deleted');
       return;
     }
     setDeleteCategory(category);
-  };
+  }, []);
 
   const handleConfirmDelete = async (reassignToCategoryId: string | null) => {
     if (!deleteCategory) return;
@@ -217,75 +320,16 @@ export function CategoryList({
           </thead>
           <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
             {treeCategories.map((category: Category & { _level?: number }, index) => (
-              <tr
+              <CategoryRow
                 key={category.id}
-                className={`hover:bg-gray-50 dark:hover:bg-gray-800 ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-gray-800/50' : ''}`}
-              >
-                <td className={`${cellPadding} whitespace-nowrap`}>
-                  <div
-                    className="flex items-center"
-                    style={{ paddingLeft: `${(category._level || 0) * (density === 'dense' ? 0.75 : 1.5)}rem` }}
-                  >
-                    {category.color && (
-                      <span
-                        className={`rounded-full mr-2 flex-shrink-0 ${density === 'dense' ? 'w-2 h-2' : 'w-3 h-3'}`}
-                        style={{ backgroundColor: category.color }}
-                      />
-                    )}
-                    <button
-                      onClick={() => handleViewTransactions(category)}
-                      className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline text-left"
-                      title="View transactions in this category"
-                    >
-                      {category.name}
-                    </button>
-                    {category.isSystem && density !== 'dense' && (
-                      <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">(System)</span>
-                    )}
-                  </div>
-                </td>
-                <td className={`${cellPadding} whitespace-nowrap hidden sm:table-cell`}>
-                  <span
-                    className={`inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      category.isIncome
-                        ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                        : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                    } ${density === 'dense' ? 'px-1.5 py-0.5' : 'px-2 py-1'}`}
-                  >
-                    {category.isIncome ? 'Income' : 'Expense'}
-                  </span>
-                </td>
-                <td className={`${cellPadding} whitespace-nowrap text-right text-sm text-gray-600 dark:text-gray-400 hidden md:table-cell`}>
-                  {category.transactionCount ?? 0}
-                </td>
-                {density === 'normal' && (
-                  <td className={`${cellPadding}`}>
-                    <div className="text-sm text-gray-500 dark:text-gray-400 max-w-xs truncate">
-                      {category.description || '-'}
-                    </div>
-                  </td>
-                )}
-                <td className={`${cellPadding} whitespace-nowrap text-right text-sm font-medium`}>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onEdit(category)}
-                    className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300 mr-2"
-                  >
-                    {density === 'dense' ? '✎' : 'Edit'}
-                  </Button>
-                  {!category.isSystem && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDeleteClick(category)}
-                      className="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300"
-                    >
-                      {density === 'dense' ? '✕' : 'Delete'}
-                    </Button>
-                  )}
-                </td>
-              </tr>
+                category={category}
+                density={density}
+                cellPadding={cellPadding}
+                onEdit={onEdit}
+                onDeleteClick={handleDeleteClick}
+                onViewTransactions={handleViewTransactions}
+                index={index}
+              />
             ))}
           </tbody>
         </table>

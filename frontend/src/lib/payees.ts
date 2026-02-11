@@ -8,17 +8,22 @@ import {
   CategorySuggestionsParams,
   CategoryAssignment,
 } from '@/types/payee';
+import { getCached, setCache, invalidateCache } from './apiCache';
 
 export const payeesApi = {
   // Create payee
   create: async (data: CreatePayeeData): Promise<Payee> => {
     const response = await apiClient.post<Payee>('/payees', data);
+    invalidateCache('payees:');
     return response.data;
   },
 
   // Get all payees
   getAll: async (): Promise<Payee[]> => {
+    const cached = getCached<Payee[]>('payees:all');
+    if (cached) return cached;
     const response = await apiClient.get<Payee[]>('/payees');
+    setCache('payees:all', response.data);
     return response.data;
   },
 
@@ -31,12 +36,14 @@ export const payeesApi = {
   // Update payee
   update: async (id: string, data: UpdatePayeeData): Promise<Payee> => {
     const response = await apiClient.patch<Payee>(`/payees/${id}`, data);
+    invalidateCache('payees:');
     return response.data;
   },
 
   // Delete payee
   delete: async (id: string): Promise<void> => {
     await apiClient.delete(`/payees/${id}`);
+    invalidateCache('payees:');
   },
 
   // Search payees
@@ -98,6 +105,7 @@ export const payeesApi = {
   // Apply category auto-assignments
   applyCategorySuggestions: async (assignments: CategoryAssignment[]): Promise<{ updated: number }> => {
     const response = await apiClient.post<{ updated: number }>('/payees/category-suggestions/apply', assignments);
+    invalidateCache('payees:');
     return response.data;
   },
 };

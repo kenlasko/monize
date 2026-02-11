@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, memo } from 'react';
 import { Security } from '@/types/investment';
 import { Button } from '@/components/ui/Button';
 
@@ -13,6 +13,15 @@ interface SecurityListProps {
   onToggleActive: (security: Security) => void;
   density?: DensityLevel;
   onDensityChange?: (density: DensityLevel) => void;
+}
+
+interface SecurityRowProps {
+  security: Security;
+  density: DensityLevel;
+  cellPadding: string;
+  onEdit: (security: Security) => void;
+  onToggleActive: (security: Security) => void;
+  index: number;
 }
 
 const formatSecurityType = (type: string | null, dense: boolean = false): string => {
@@ -30,6 +39,92 @@ const formatSecurityType = (type: string | null, dense: boolean = false): string
   if (!label) return type;
   return dense ? label.short : label.full;
 };
+
+const SecurityRow = memo(function SecurityRow({
+  security,
+  density,
+  cellPadding,
+  onEdit,
+  onToggleActive,
+  index,
+}: SecurityRowProps) {
+  const handleEdit = useCallback(() => {
+    onEdit(security);
+  }, [onEdit, security]);
+
+  const handleToggleActive = useCallback(() => {
+    onToggleActive(security);
+  }, [onToggleActive, security]);
+
+  return (
+    <tr
+      className={`hover:bg-gray-50 dark:hover:bg-gray-700 ${
+        !security.isActive ? 'opacity-60' : ''
+      } ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-gray-800/50' : ''}`}
+    >
+      <td className={`${cellPadding} whitespace-nowrap`}>
+        <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+          {security.symbol}
+        </span>
+      </td>
+      <td className={`${cellPadding}`}>
+        <span className="text-sm text-gray-900 dark:text-gray-100">
+          {security.name}
+        </span>
+      </td>
+      <td className={`${cellPadding} whitespace-nowrap`}>
+        <span className="text-sm text-gray-500 dark:text-gray-400">
+          {formatSecurityType(security.securityType, density === 'dense')}
+        </span>
+      </td>
+      {density === 'normal' && (
+        <>
+          <td className={`${cellPadding} whitespace-nowrap`}>
+            <span className="text-sm text-gray-500 dark:text-gray-400">
+              {security.exchange || '-'}
+            </span>
+          </td>
+          <td className={`${cellPadding} whitespace-nowrap`}>
+            <span className="text-sm text-gray-500 dark:text-gray-400">
+              {security.currencyCode}
+            </span>
+          </td>
+        </>
+      )}
+      <td className={`${cellPadding} whitespace-nowrap`}>
+        {security.isActive ? (
+          <span className={`inline-flex items-center rounded-full text-xs font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 ${density === 'dense' ? 'px-1.5 py-0.5' : 'px-2.5 py-0.5'}`}>
+            {density === 'dense' ? 'Act' : 'Active'}
+          </span>
+        ) : (
+          <span className={`inline-flex items-center rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300 ${density === 'dense' ? 'px-1.5 py-0.5' : 'px-2.5 py-0.5'}`}>
+            {density === 'dense' ? 'Ina' : 'Inactive'}
+          </span>
+        )}
+      </td>
+      <td className={`${cellPadding} whitespace-nowrap text-right text-sm font-medium`}>
+        <div className="flex justify-end gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleEdit}
+          >
+            {density === 'dense' ? '✎' : 'Edit'}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleToggleActive}
+          >
+            {density === 'dense'
+              ? (security.isActive ? '⊘' : '✓')
+              : (security.isActive ? 'Deactivate' : 'Activate')}
+          </Button>
+        </div>
+      </td>
+    </tr>
+  );
+});
 
 export function SecurityList({
   securities,
@@ -143,73 +238,15 @@ export function SecurityList({
           </thead>
           <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
             {securities.map((security, index) => (
-              <tr
+              <SecurityRow
                 key={security.id}
-                className={`hover:bg-gray-50 dark:hover:bg-gray-700 ${
-                  !security.isActive ? 'opacity-60' : ''
-                } ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-gray-800/50' : ''}`}
-              >
-                <td className={`${cellPadding} whitespace-nowrap`}>
-                  <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                    {security.symbol}
-                  </span>
-                </td>
-                <td className={`${cellPadding}`}>
-                  <span className="text-sm text-gray-900 dark:text-gray-100">
-                    {security.name}
-                  </span>
-                </td>
-                <td className={`${cellPadding} whitespace-nowrap`}>
-                  <span className="text-sm text-gray-500 dark:text-gray-400">
-                    {formatSecurityType(security.securityType, density === 'dense')}
-                  </span>
-                </td>
-                {density === 'normal' && (
-                  <>
-                    <td className={`${cellPadding} whitespace-nowrap`}>
-                      <span className="text-sm text-gray-500 dark:text-gray-400">
-                        {security.exchange || '-'}
-                      </span>
-                    </td>
-                    <td className={`${cellPadding} whitespace-nowrap`}>
-                      <span className="text-sm text-gray-500 dark:text-gray-400">
-                        {security.currencyCode}
-                      </span>
-                    </td>
-                  </>
-                )}
-                <td className={`${cellPadding} whitespace-nowrap`}>
-                  {security.isActive ? (
-                    <span className={`inline-flex items-center rounded-full text-xs font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 ${density === 'dense' ? 'px-1.5 py-0.5' : 'px-2.5 py-0.5'}`}>
-                      {density === 'dense' ? 'Act' : 'Active'}
-                    </span>
-                  ) : (
-                    <span className={`inline-flex items-center rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300 ${density === 'dense' ? 'px-1.5 py-0.5' : 'px-2.5 py-0.5'}`}>
-                      {density === 'dense' ? 'Ina' : 'Inactive'}
-                    </span>
-                  )}
-                </td>
-                <td className={`${cellPadding} whitespace-nowrap text-right text-sm font-medium`}>
-                  <div className="flex justify-end gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onEdit(security)}
-                    >
-                      {density === 'dense' ? '✎' : 'Edit'}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onToggleActive(security)}
-                    >
-                      {density === 'dense'
-                        ? (security.isActive ? '⊘' : '✓')
-                        : (security.isActive ? 'Deactivate' : 'Activate')}
-                    </Button>
-                  </div>
-                </td>
-              </tr>
+                security={security}
+                density={density}
+                cellPadding={cellPadding}
+                onEdit={onEdit}
+                onToggleActive={onToggleActive}
+                index={index}
+              />
             ))}
           </tbody>
         </table>

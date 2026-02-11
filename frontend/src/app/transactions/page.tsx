@@ -160,6 +160,8 @@ function TransactionsContent() {
   const [filterStartDate, setFilterStartDate] = useState<string>('');
   const [filterEndDate, setFilterEndDate] = useState<string>('');
   const [filterSearch, setFilterSearch] = useState<string>('');
+  const [searchInput, setSearchInput] = useState<string>('');
+  const searchDebounceRef = useRef<NodeJS.Timeout | null>(null);
   const [filtersInitialized, setFiltersInitialized] = useState(false);
   const [filtersExpanded, setFiltersExpanded] = useState(true);
 
@@ -213,6 +215,47 @@ function TransactionsContent() {
       return true; // 'all' - show all non-investment accounts
     });
   }, [accounts, filterAccountStatus]);
+
+  // Memoize filter option arrays to avoid rebuilding on every render
+  const categoryFilterOptions = useMemo(() => {
+    const specialOptions: MultiSelectOption[] = [
+      { value: 'uncategorized', label: 'Uncategorized' },
+      { value: 'transfer', label: 'Transfers' },
+    ];
+    const buildOptions = (parentId: string | null = null): MultiSelectOption[] => {
+      return categories
+        .filter(c => c.parentId === parentId)
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .flatMap(cat => {
+          const children = buildOptions(cat.id);
+          return [{
+            value: cat.id,
+            label: cat.name,
+            parentId: cat.parentId,
+            children: children.length > 0 ? children : undefined,
+          }];
+        });
+    };
+    return [...specialOptions, ...buildOptions()];
+  }, [categories]);
+
+  const accountFilterOptions = useMemo(() => {
+    return filteredAccounts
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map(account => ({
+        value: account.id,
+        label: account.name,
+      }));
+  }, [filteredAccounts]);
+
+  const payeeFilterOptions = useMemo(() => {
+    return payees
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map(payee => ({
+        value: payee.id,
+        label: payee.name,
+      }));
+  }, [payees]);
 
   // When account status filter changes, remove any selected accounts that no longer match
   // But only after accounts have loaded - otherwise we'd clear selections before we can validate them
@@ -376,7 +419,9 @@ function TransactionsContent() {
     setFilterPayeeIds(getPayeeIds());
     setFilterStartDate(getFilterValue(STORAGE_KEYS.startDate, searchParams.get('startDate'), hasAnyUrlParams));
     setFilterEndDate(getFilterValue(STORAGE_KEYS.endDate, searchParams.get('endDate'), hasAnyUrlParams));
-    setFilterSearch(getFilterValue(STORAGE_KEYS.search, searchParams.get('search'), hasAnyUrlParams));
+    const initialSearch = getFilterValue(STORAGE_KEYS.search, searchParams.get('search'), hasAnyUrlParams);
+    setFilterSearch(initialSearch);
+    setSearchInput(initialSearch);
     setFiltersInitialized(true);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -399,6 +444,8 @@ function TransactionsContent() {
   const isFilterChange = useRef(false);
   // Target transaction ID for navigating to a specific transaction (e.g., from transfer click)
   const targetTransactionIdRef = useRef<string | null>(null);
+  // Debounce timer for filter-triggered loads (prevents rapid consecutive API calls)
+  const filterDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
   // Update URL and load transactions when page or filters change
   useEffect(() => {
@@ -406,6 +453,7 @@ function TransactionsContent() {
     if (!filtersInitialized) return;
 
     const page = isFilterChange.current ? 1 : currentPage;
+    const wasFilterChange = isFilterChange.current;
     if (isFilterChange.current) {
       setCurrentPage(1);
       isFilterChange.current = false;
@@ -418,7 +466,17 @@ function TransactionsContent() {
       endDate: filterEndDate,
       search: filterSearch,
     });
-    loadTransactions(page);
+
+    // Debounce filter changes to prevent rapid consecutive API calls
+    // (e.g., quickly changing category then payee). Page changes load immediately.
+    if (filterDebounceRef.current) clearTimeout(filterDebounceRef.current);
+    if (wasFilterChange) {
+      filterDebounceRef.current = setTimeout(() => {
+        loadTransactions(page);
+      }, 150);
+    } else {
+      loadTransactions(page);
+    }
   }, [currentPage, filterAccountIds, filterCategoryIds, filterPayeeIds, filterStartDate, filterEndDate, filterSearch, updateUrl, loadTransactions, filtersInitialized]);
 
   // Helper to update array filter and mark as filter change
@@ -431,6 +489,24 @@ function TransactionsContent() {
   const handleFilterChange = useCallback((setter: (value: string) => void, value: string) => {
     isFilterChange.current = true;
     setter(value);
+  }, []);
+
+  // Debounced search handler - updates input immediately, delays API call
+  const handleSearchChange = useCallback((value: string) => {
+    setSearchInput(value);
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    searchDebounceRef.current = setTimeout(() => {
+      isFilterChange.current = true;
+      setFilterSearch(value);
+    }, 300);
+  }, []);
+
+  // Cleanup debounce timers on unmount
+  useEffect(() => {
+    return () => {
+      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+      if (filterDebounceRef.current) clearTimeout(filterDebounceRef.current);
+    };
   }, []);
 
   const handleCreateNew = () => {
@@ -508,13 +584,12 @@ function TransactionsContent() {
         defaultCategoryId: data.defaultCategoryId || undefined,
         notes: data.notes || undefined,
       };
-      await payeesApi.update(editingPayee.id, cleanedData);
+      const updated = await payeesApi.update(editingPayee.id, cleanedData);
       toast.success('Payee updated successfully');
       setShowPayeeForm(false);
       setEditingPayee(undefined);
-      // Reload payees list and transactions to reflect any changes
-      const payeesData = await payeesApi.getAll();
-      setPayees(payeesData);
+      // Update payee in-place instead of refetching all payees
+      setPayees(prev => prev.map(p => p.id === updated.id ? updated : p));
     } catch (error) {
       toast.error(getErrorMessage(error, 'Failed to update payee'));
     }
@@ -841,12 +916,7 @@ function TransactionsContent() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
                   <MultiSelect
                     label="Accounts"
-                    options={filteredAccounts
-                      .sort((a, b) => a.name.localeCompare(b.name))
-                      .map(account => ({
-                        value: account.id,
-                        label: account.name,
-                      }))}
+                    options={accountFilterOptions}
                     value={filterAccountIds}
                     onChange={(values) => handleArrayFilterChange(setFilterAccountIds, values)}
                     placeholder="All accounts"
@@ -854,27 +924,7 @@ function TransactionsContent() {
 
                   <MultiSelect
                     label="Categories"
-                    options={(() => {
-                      const specialOptions: MultiSelectOption[] = [
-                        { value: 'uncategorized', label: 'Uncategorized' },
-                        { value: 'transfer', label: 'Transfers' },
-                      ];
-                      const buildOptions = (parentId: string | null = null): MultiSelectOption[] => {
-                        return categories
-                          .filter(c => c.parentId === parentId)
-                          .sort((a, b) => a.name.localeCompare(b.name))
-                          .flatMap(cat => {
-                            const children = buildOptions(cat.id);
-                            return [{
-                              value: cat.id,
-                              label: cat.name,
-                              parentId: cat.parentId,
-                              children: children.length > 0 ? children : undefined,
-                            }];
-                          });
-                      };
-                      return [...specialOptions, ...buildOptions()];
-                    })()}
+                    options={categoryFilterOptions}
                     value={filterCategoryIds}
                     onChange={(values) => handleArrayFilterChange(setFilterCategoryIds, values)}
                     placeholder="All categories"
@@ -882,12 +932,7 @@ function TransactionsContent() {
 
                   <MultiSelect
                     label="Payees"
-                    options={payees
-                      .sort((a, b) => a.name.localeCompare(b.name))
-                      .map(payee => ({
-                        value: payee.id,
-                        label: payee.name,
-                      }))}
+                    options={payeeFilterOptions}
                     value={filterPayeeIds}
                     onChange={(values) => handleArrayFilterChange(setFilterPayeeIds, values)}
                     placeholder="All payees"
@@ -913,8 +958,8 @@ function TransactionsContent() {
                   <Input
                     label="Search"
                     type="text"
-                    value={filterSearch}
-                    onChange={(e) => handleFilterChange(setFilterSearch, e.target.value)}
+                    value={searchInput}
+                    onChange={(e) => handleSearchChange(e.target.value)}
                     placeholder="Search descriptions..."
                   />
                 </div>

@@ -12,11 +12,13 @@ import {
   UpdateMortgageRateData,
   UpdateMortgageRateResponse,
 } from '@/types/account';
+import { getCached, setCache, invalidateCache } from './apiCache';
 
 export const accountsApi = {
   // Create account
   create: async (data: CreateAccountData): Promise<Account> => {
     const response = await apiClient.post<Account>('/accounts', data);
+    invalidateCache('accounts:');
     return response.data;
   },
 
@@ -26,14 +28,19 @@ export const accountsApi = {
       ...data,
       createInvestmentPair: true,
     });
+    invalidateCache('accounts:');
     return response.data;
   },
 
   // Get all accounts
   getAll: async (includeInactive: boolean = false): Promise<Account[]> => {
+    const cacheKey = `accounts:all:${includeInactive}`;
+    const cached = getCached<Account[]>(cacheKey);
+    if (cached) return cached;
     const response = await apiClient.get<Account[]>('/accounts', {
       params: { includeInactive },
     });
+    setCache(cacheKey, response.data);
     return response.data;
   },
 
@@ -46,18 +53,21 @@ export const accountsApi = {
   // Update account
   update: async (id: string, data: UpdateAccountData): Promise<Account> => {
     const response = await apiClient.patch<Account>(`/accounts/${id}`, data);
+    invalidateCache('accounts:');
     return response.data;
   },
 
   // Close account
   close: async (id: string): Promise<Account> => {
     const response = await apiClient.post<Account>(`/accounts/${id}/close`);
+    invalidateCache('accounts:');
     return response.data;
   },
 
   // Reopen account
   reopen: async (id: string): Promise<Account> => {
     const response = await apiClient.post<Account>(`/accounts/${id}/reopen`);
+    invalidateCache('accounts:');
     return response.data;
   },
 
@@ -92,6 +102,7 @@ export const accountsApi = {
   // Delete account (only if no transactions)
   delete: async (id: string): Promise<void> => {
     await apiClient.delete(`/accounts/${id}`);
+    invalidateCache('accounts:');
   },
 
   // Preview loan amortization
@@ -109,6 +120,7 @@ export const accountsApi = {
   // Update mortgage interest rate
   updateMortgageRate: async (id: string, data: UpdateMortgageRateData): Promise<UpdateMortgageRateResponse> => {
     const response = await apiClient.patch<UpdateMortgageRateResponse>(`/accounts/${id}/mortgage-rate`, data);
+    invalidateCache('accounts:');
     return response.data;
   },
 };

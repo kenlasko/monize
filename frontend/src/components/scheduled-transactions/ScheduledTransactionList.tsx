@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, memo, useMemo, type JSX } from 'react';
 import { isPast, isToday, addDays, isBefore } from 'date-fns';
 import toast from 'react-hot-toast';
 import { ScheduledTransaction, FREQUENCY_LABELS } from '@/types/scheduled-transaction';
@@ -19,6 +19,255 @@ interface ConfirmState {
   action: ConfirmAction | null;
   transaction: ScheduledTransaction | null;
 }
+
+interface ScheduledTransactionRowProps {
+  transaction: ScheduledTransaction;
+  isProcessing: boolean;
+  formatDate: (date: string) => string;
+  formatAmount: (amount: number | null | undefined, currencyCode?: string) => JSX.Element;
+  getDueDateStatus: (nextDueDate: string | undefined | null) => { label: string; className: string } | null;
+  onRowClick: (transaction: ScheduledTransaction) => void;
+  onLongPressStart: (transaction: ScheduledTransaction) => void;
+  onLongPressStartTouch: (transaction: ScheduledTransaction, e: React.TouchEvent) => void;
+  onLongPressEnd: () => void;
+  onTouchMove: (e: React.TouchEvent) => void;
+  onPost?: (transaction: ScheduledTransaction) => void;
+  onOpenConfirm: (action: 'post' | 'skip' | 'delete', transaction: ScheduledTransaction) => void;
+  onEdit?: (transaction: ScheduledTransaction) => void;
+  onEditOccurrence?: (transaction: ScheduledTransaction) => void;
+}
+
+const ScheduledTransactionRow = memo(function ScheduledTransactionRow({
+  transaction,
+  isProcessing,
+  formatDate,
+  formatAmount,
+  getDueDateStatus,
+  onRowClick,
+  onLongPressStart,
+  onLongPressStartTouch,
+  onLongPressEnd,
+  onTouchMove,
+  onPost,
+  onOpenConfirm,
+  onEdit,
+  onEditOccurrence,
+}: ScheduledTransactionRowProps) {
+  const effectiveDueDate = transaction.nextOverride?.overrideDate || transaction.nextDueDate || '';
+  const dueDateStatus = effectiveDueDate ? getDueDateStatus(effectiveDueDate) : null;
+  const payee = transaction.payeeName || transaction.payee?.name;
+
+  return (
+    <tr
+      className={`hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer select-none ${!transaction.isActive ? 'opacity-50' : ''}`}
+      onClick={() => onRowClick(transaction)}
+      onMouseDown={() => onLongPressStart(transaction)}
+      onMouseUp={onLongPressEnd}
+      onMouseLeave={onLongPressEnd}
+      onTouchStart={(e) => onLongPressStartTouch(transaction, e)}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onLongPressEnd}
+      onTouchCancel={onLongPressEnd}
+    >
+      {/* Name / Payee */}
+      <td className="px-4 py-3">
+        <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{transaction.name}</div>
+        {payee && payee !== transaction.name && (
+          <div className="text-xs text-gray-500 dark:text-gray-400">{payee}</div>
+        )}
+        {/* Mobile-only: show schedule info under name */}
+        <div className="sm:hidden mt-0.5">
+          <div className="text-xs text-gray-500 dark:text-gray-400">
+            {effectiveDueDate ? formatDate(effectiveDueDate) : '\u2014'}
+            {' \u00b7 '}{FREQUENCY_LABELS[transaction.frequency]}
+          </div>
+          {dueDateStatus && (
+            <span className={`inline-flex text-xs font-medium rounded-full px-1.5 py-0.5 mt-0.5 ${dueDateStatus.className}`}>
+              {dueDateStatus.label}
+            </span>
+          )}
+        </div>
+      </td>
+
+      {/* Account */}
+      <td className="px-4 py-3 hidden sm:table-cell">
+        <div className="text-sm text-gray-900 dark:text-gray-100">{transaction.account?.name}</div>
+      </td>
+
+      {/* Category */}
+      <td className="px-4 py-3 hidden md:table-cell">
+        {transaction.isTransfer ? (
+          <span
+            className="inline-flex text-xs font-medium rounded-full px-2 py-0.5 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+            title={`Transfer to ${transaction.transferAccount?.name || 'account'}`}
+          >
+            Transfer
+          </span>
+        ) : transaction.isSplit ? (
+          <span
+            className="inline-flex text-xs font-medium rounded-full px-2 py-0.5 bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200"
+            title={transaction.splits?.map(s => s.category?.name || 'Uncategorized').join(', ')}
+          >
+            Split ({transaction.splits?.length || 0})
+          </span>
+        ) : transaction.category ? (
+          <span
+            className="inline-flex text-xs font-medium rounded-full px-2 py-0.5"
+            style={{
+              backgroundColor: transaction.category.color
+                ? `color-mix(in srgb, ${transaction.category.color} 15%, var(--category-bg-base, #e5e7eb))`
+                : 'var(--category-bg-base, #e5e7eb)',
+              color: transaction.category.color
+                ? `color-mix(in srgb, ${transaction.category.color} 85%, var(--category-text-mix, #000))`
+                : 'var(--category-text-base, #6b7280)',
+            }}
+          >
+            {transaction.category.name}
+          </span>
+        ) : (
+          <span className="text-xs text-gray-400 dark:text-gray-500">{'\u2014'}</span>
+        )}
+      </td>
+
+      {/* Amount */}
+      <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-right">
+        {transaction.nextOverride?.amount != null &&
+         Number(transaction.nextOverride.amount) !== Number(transaction.amount) ? (
+          <div className="flex flex-col items-end">
+            <span className="text-xs text-gray-400 dark:text-gray-500 line-through">
+              {formatAmount(transaction.amount, transaction.currencyCode)}
+            </span>
+            <span title="Modified for next occurrence">
+              {formatAmount(transaction.nextOverride.amount, transaction.currencyCode)}
+            </span>
+          </div>
+        ) : (
+          formatAmount(transaction.amount, transaction.currencyCode)
+        )}
+      </td>
+
+      {/* Schedule (Frequency + Next Due + Remaining) */}
+      <td className="px-4 py-3 hidden sm:table-cell">
+        <div className="text-sm text-gray-900 dark:text-gray-100">
+          {/* Show override date if it differs from the original next due date */}
+          {transaction.nextOverride?.overrideDate &&
+           transaction.nextDueDate &&
+           transaction.nextOverride.overrideDate !== String(transaction.nextDueDate).split('T')[0] ? (
+            <span className="flex flex-col">
+              <span className="text-xs text-gray-400 dark:text-gray-500 line-through">
+                {formatDate(transaction.nextDueDate)}
+              </span>
+              <span title="Date modified for this occurrence">
+                {formatDate(transaction.nextOverride.overrideDate)}
+              </span>
+            </span>
+          ) : (
+            transaction.nextDueDate ? formatDate(transaction.nextDueDate) : '\u2014'
+          )}
+          {dueDateStatus && (
+            <span
+              className={`ml-1.5 inline-flex text-xs font-medium rounded-full px-1.5 py-0.5 ${dueDateStatus.className}`}
+            >
+              {dueDateStatus.label}
+            </span>
+          )}
+        </div>
+        <div className="text-xs text-gray-500 dark:text-gray-400">
+          {FREQUENCY_LABELS[transaction.frequency]}
+          {transaction.occurrencesRemaining !== null && (
+            <span className="ml-1">{'\u00b7'} {transaction.occurrencesRemaining} left</span>
+          )}
+          {transaction.overrideCount !== undefined && transaction.overrideCount > 0 && (
+            <span
+              className="ml-1.5 inline-flex text-xs font-medium rounded-full px-1.5 py-0.5 bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200"
+              title={`${transaction.overrideCount} upcoming occurrence${transaction.overrideCount !== 1 ? 's' : ''} modified`}
+            >
+              {transaction.overrideCount} modified
+            </span>
+          )}
+        </div>
+      </td>
+
+      {/* Auto-post */}
+      <td className="px-4 py-3 text-center hidden md:table-cell">
+        {transaction.autoPost ? (
+          <span
+            className="inline-flex items-center text-xs font-medium rounded-full px-2 py-0.5 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+            title="Auto-posts when due"
+          >
+            On
+          </span>
+        ) : (
+          <span className="text-xs text-gray-400 dark:text-gray-500">{'\u2014'}</span>
+        )}
+      </td>
+
+      {/* Actions */}
+      <td className="px-4 py-3 whitespace-nowrap text-right hidden min-[480px]:table-cell" onClick={(e) => e.stopPropagation()}>
+        <div className="flex justify-end items-center space-x-1">
+          {transaction.isActive && (
+            <>
+              <button
+                onClick={() => onPost ? onPost(transaction) : onOpenConfirm('post', transaction)}
+                disabled={isProcessing}
+                className="p-1 text-green-600 dark:text-green-400 hover:text-green-900 dark:hover:text-green-300 hover:bg-green-50 dark:hover:bg-green-900/50 rounded disabled:opacity-50"
+                title="Post transaction"
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </button>
+              {transaction.frequency !== 'ONCE' && (
+                <button
+                  onClick={() => onOpenConfirm('skip', transaction)}
+                  disabled={isProcessing}
+                  className="p-1 text-yellow-600 dark:text-yellow-400 hover:text-yellow-900 dark:hover:text-yellow-300 hover:bg-yellow-50 dark:hover:bg-yellow-900/50 rounded disabled:opacity-50"
+                  title="Skip this occurrence"
+                >
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                  </svg>
+                </button>
+              )}
+            </>
+          )}
+          {onEditOccurrence && transaction.isActive && (
+            <button
+              onClick={() => onEditOccurrence(transaction)}
+              className="p-1 text-purple-600 dark:text-purple-400 hover:text-purple-900 dark:hover:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/50 rounded"
+              title="Edit occurrence"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </button>
+          )}
+          {onEdit && (
+            <button
+              onClick={() => onEdit(transaction)}
+              className="p-1 text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/50 rounded"
+              title="Edit schedule"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+            </button>
+          )}
+          <button
+            onClick={() => onOpenConfirm('delete', transaction)}
+            disabled={isProcessing}
+            className="p-1 text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/50 rounded disabled:opacity-50"
+            title="Delete"
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          </button>
+        </div>
+      </td>
+    </tr>
+  );
+});
 
 interface ScheduledTransactionListProps {
   transactions: ScheduledTransaction[];
@@ -261,225 +510,25 @@ export function ScheduledTransactionList({
           </tr>
         </thead>
         <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-          {transactions.map((transaction) => {
-            // Use override date for due status if it exists, fallback to nextDueDate
-            const effectiveDueDate = transaction.nextOverride?.overrideDate || transaction.nextDueDate || '';
-            const dueDateStatus = effectiveDueDate ? getDueDateStatus(effectiveDueDate) : null;
-            const isProcessing = actionInProgress === transaction.id;
-            const payee = transaction.payeeName || transaction.payee?.name;
-
-            return (
-              <tr
-                key={transaction.id}
-                className={`hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer select-none ${!transaction.isActive ? 'opacity-50' : ''}`}
-                onClick={() => handleRowClick(transaction)}
-                onMouseDown={() => handleLongPressStart(transaction)}
-                onMouseUp={handleLongPressEnd}
-                onMouseLeave={handleLongPressEnd}
-                onTouchStart={(e) => handleLongPressStart(transaction, e)}
-                onTouchMove={handleTouchMove}
-                onTouchEnd={handleLongPressEnd}
-                onTouchCancel={handleLongPressEnd}
-              >
-                {/* Name / Payee */}
-                <td className="px-4 py-3">
-                  <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{transaction.name}</div>
-                  {payee && payee !== transaction.name && (
-                    <div className="text-xs text-gray-500 dark:text-gray-400">{payee}</div>
-                  )}
-                  {/* Mobile-only: show schedule info under name */}
-                  <div className="sm:hidden mt-0.5">
-                    <div className="text-xs text-gray-500 dark:text-gray-400">
-                      {effectiveDueDate ? formatDate(effectiveDueDate) : '—'}
-                      {' · '}{FREQUENCY_LABELS[transaction.frequency]}
-                    </div>
-                    {dueDateStatus && (
-                      <span className={`inline-flex text-xs font-medium rounded-full px-1.5 py-0.5 mt-0.5 ${dueDateStatus.className}`}>
-                        {dueDateStatus.label}
-                      </span>
-                    )}
-                  </div>
-                </td>
-
-                {/* Account */}
-                <td className="px-4 py-3 hidden sm:table-cell">
-                  <div className="text-sm text-gray-900 dark:text-gray-100">{transaction.account?.name}</div>
-                </td>
-
-                {/* Category */}
-                <td className="px-4 py-3 hidden md:table-cell">
-                  {transaction.isTransfer ? (
-                    <span
-                      className="inline-flex text-xs font-medium rounded-full px-2 py-0.5 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
-                      title={`Transfer to ${transaction.transferAccount?.name || 'account'}`}
-                    >
-                      Transfer
-                    </span>
-                  ) : transaction.isSplit ? (
-                    <span
-                      className="inline-flex text-xs font-medium rounded-full px-2 py-0.5 bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200"
-                      title={transaction.splits?.map(s => s.category?.name || 'Uncategorized').join(', ')}
-                    >
-                      Split ({transaction.splits?.length || 0})
-                    </span>
-                  ) : transaction.category ? (
-                    <span
-                      className="inline-flex text-xs font-medium rounded-full px-2 py-0.5"
-                      style={{
-                        backgroundColor: transaction.category.color
-                          ? `color-mix(in srgb, ${transaction.category.color} 15%, var(--category-bg-base, #e5e7eb))`
-                          : 'var(--category-bg-base, #e5e7eb)',
-                        color: transaction.category.color
-                          ? `color-mix(in srgb, ${transaction.category.color} 85%, var(--category-text-mix, #000))`
-                          : 'var(--category-text-base, #6b7280)',
-                      }}
-                    >
-                      {transaction.category.name}
-                    </span>
-                  ) : (
-                    <span className="text-xs text-gray-400 dark:text-gray-500">—</span>
-                  )}
-                </td>
-
-                {/* Amount */}
-                <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-right">
-                  {transaction.nextOverride?.amount != null &&
-                   Number(transaction.nextOverride.amount) !== Number(transaction.amount) ? (
-                    <div className="flex flex-col items-end">
-                      <span className="text-xs text-gray-400 dark:text-gray-500 line-through">
-                        {formatAmount(transaction.amount, transaction.currencyCode)}
-                      </span>
-                      <span title="Modified for next occurrence">
-                        {formatAmount(transaction.nextOverride.amount, transaction.currencyCode)}
-                      </span>
-                    </div>
-                  ) : (
-                    formatAmount(transaction.amount, transaction.currencyCode)
-                  )}
-                </td>
-
-                {/* Schedule (Frequency + Next Due + Remaining) */}
-                <td className="px-4 py-3 hidden sm:table-cell">
-                  <div className="text-sm text-gray-900 dark:text-gray-100">
-                    {/* Show override date if it differs from the original next due date */}
-                    {transaction.nextOverride?.overrideDate &&
-                     transaction.nextDueDate &&
-                     transaction.nextOverride.overrideDate !== String(transaction.nextDueDate).split('T')[0] ? (
-                      <span className="flex flex-col">
-                        <span className="text-xs text-gray-400 dark:text-gray-500 line-through">
-                          {formatDate(transaction.nextDueDate)}
-                        </span>
-                        <span title="Date modified for this occurrence">
-                          {formatDate(transaction.nextOverride.overrideDate)}
-                        </span>
-                      </span>
-                    ) : (
-                      transaction.nextDueDate ? formatDate(transaction.nextDueDate) : '—'
-                    )}
-                    {dueDateStatus && (
-                      <span
-                        className={`ml-1.5 inline-flex text-xs font-medium rounded-full px-1.5 py-0.5 ${dueDateStatus.className}`}
-                      >
-                        {dueDateStatus.label}
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">
-                    {FREQUENCY_LABELS[transaction.frequency]}
-                    {transaction.occurrencesRemaining !== null && (
-                      <span className="ml-1">· {transaction.occurrencesRemaining} left</span>
-                    )}
-                    {transaction.overrideCount !== undefined && transaction.overrideCount > 0 && (
-                      <span
-                        className="ml-1.5 inline-flex text-xs font-medium rounded-full px-1.5 py-0.5 bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200"
-                        title={`${transaction.overrideCount} upcoming occurrence${transaction.overrideCount !== 1 ? 's' : ''} modified`}
-                      >
-                        {transaction.overrideCount} modified
-                      </span>
-                    )}
-                  </div>
-                </td>
-
-                {/* Auto-post */}
-                <td className="px-4 py-3 text-center hidden md:table-cell">
-                  {transaction.autoPost ? (
-                    <span
-                      className="inline-flex items-center text-xs font-medium rounded-full px-2 py-0.5 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                      title="Auto-posts when due"
-                    >
-                      On
-                    </span>
-                  ) : (
-                    <span className="text-xs text-gray-400 dark:text-gray-500">—</span>
-                  )}
-                </td>
-
-                {/* Actions */}
-                <td className="px-4 py-3 whitespace-nowrap text-right hidden min-[480px]:table-cell" onClick={(e) => e.stopPropagation()}>
-                  <div className="flex justify-end items-center space-x-1">
-                    {transaction.isActive && (
-                      <>
-                        <button
-                          onClick={() => onPost ? onPost(transaction) : openConfirm('post', transaction)}
-                          disabled={isProcessing}
-                          className="p-1 text-green-600 dark:text-green-400 hover:text-green-900 dark:hover:text-green-300 hover:bg-green-50 dark:hover:bg-green-900/50 rounded disabled:opacity-50"
-                          title="Post transaction"
-                        >
-                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
-                        </button>
-                        {transaction.frequency !== 'ONCE' && (
-                          <button
-                            onClick={() => openConfirm('skip', transaction)}
-                            disabled={isProcessing}
-                            className="p-1 text-yellow-600 dark:text-yellow-400 hover:text-yellow-900 dark:hover:text-yellow-300 hover:bg-yellow-50 dark:hover:bg-yellow-900/50 rounded disabled:opacity-50"
-                            title="Skip this occurrence"
-                          >
-                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
-                            </svg>
-                          </button>
-                        )}
-                      </>
-                    )}
-                    {onEditOccurrence && transaction.isActive && (
-                      <button
-                        onClick={() => onEditOccurrence(transaction)}
-                        className="p-1 text-purple-600 dark:text-purple-400 hover:text-purple-900 dark:hover:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/50 rounded"
-                        title="Edit occurrence"
-                      >
-                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                      </button>
-                    )}
-                    {onEdit && (
-                      <button
-                        onClick={() => onEdit(transaction)}
-                        className="p-1 text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/50 rounded"
-                        title="Edit schedule"
-                      >
-                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
-                      </button>
-                    )}
-                    <button
-                      onClick={() => openConfirm('delete', transaction)}
-                      disabled={isProcessing}
-                      className="p-1 text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/50 rounded disabled:opacity-50"
-                      title="Delete"
-                    >
-                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            );
-          })}
+          {transactions.map((transaction) => (
+            <ScheduledTransactionRow
+              key={transaction.id}
+              transaction={transaction}
+              isProcessing={actionInProgress === transaction.id}
+              formatDate={formatDate}
+              formatAmount={formatAmount}
+              getDueDateStatus={getDueDateStatus}
+              onRowClick={handleRowClick}
+              onLongPressStart={handleLongPressStart}
+              onLongPressStartTouch={handleLongPressStart}
+              onLongPressEnd={handleLongPressEnd}
+              onTouchMove={handleTouchMove}
+              onPost={onPost}
+              onOpenConfirm={openConfirm}
+              onEdit={onEdit}
+              onEditOccurrence={onEditOccurrence}
+            />
+          ))}
         </tbody>
       </table>
 
