@@ -4,7 +4,8 @@ import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
-import { AppHeader } from '@/components/layout/AppHeader';
+import { PageLayout } from '@/components/layout/PageLayout';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { CustomReportForm } from '@/components/reports/CustomReportForm';
@@ -79,14 +80,13 @@ function EditCustomReportContent({ reportId }: { reportId: string }) {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <AppHeader />
-        <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <PageLayout>
+        <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-12 py-8">
           <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <LoadingSpinner />
           </div>
         </main>
-      </div>
+      </PageLayout>
     );
   }
 
@@ -95,10 +95,9 @@ function EditCustomReportContent({ reportId }: { reportId: string }) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <AppHeader />
+    <PageLayout>
 
-      <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-12 py-8">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
@@ -149,6 +148,6 @@ function EditCustomReportContent({ reportId }: { reportId: string }) {
           </Button>
         </div>
       </Modal>
-    </div>
+    </PageLayout>
   );
 }

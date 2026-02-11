@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
-import { AppHeader } from '@/components/layout/AppHeader';
+import { PageLayout } from '@/components/layout/PageLayout';
 import { CustomReportForm } from '@/components/reports/CustomReportForm';
 import { customReportsApi } from '@/lib/custom-reports';
 import { getErrorMessage } from '@/lib/errors';
@@ -32,10 +32,9 @@ function NewCustomReportContent() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <AppHeader />
+    <PageLayout>
 
-      <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-12 py-8">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
             Create Custom Report
@@ -50,6 +49,6 @@ function NewCustomReportContent() {
           onCancel={() => router.push('/reports/custom')}
         />
       </main>
-    </div>
+    </PageLayout>
   );
 }

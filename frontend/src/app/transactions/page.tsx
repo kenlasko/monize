@@ -544,15 +544,12 @@ function TransactionsContent() {
 
   return (
     <PageLayout>
-      <PageHeader
-        title="Transactions"
-        subtitle="Manage your income and expenses"
-        actions={<Button onClick={handleCreateNew}>+ New Transaction</Button>}
-        borderStyle="border"
-        paddingClass="px-4 sm:px-6 lg:px-12 py-4"
-      />
-
-      <div className="px-4 sm:px-6 lg:px-12 py-8">
+      <main className="px-4 sm:px-6 lg:px-12 py-8">
+        <PageHeader
+          title="Transactions"
+          subtitle="Manage your income and expenses"
+          actions={<Button onClick={handleCreateNew}>+ New Transaction</Button>}
+        />
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           <SummaryCard
@@ -971,7 +968,7 @@ function TransactionsContent() {
             {pagination.total} transaction{pagination.total !== 1 ? 's' : ''}
           </div>
         )}
-      </div>
+      </main>
     </PageLayout>
   );
 }

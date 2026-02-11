@@ -132,13 +132,12 @@ function AccountsContent() {
 
   return (
     <PageLayout>
-      <PageHeader
-        title="Accounts"
-        subtitle="Manage your bank accounts, credit cards, and investments"
-        actions={<Button onClick={openCreate}>+ New Account</Button>}
-      />
-
-      <div className="px-4 sm:px-6 lg:px-12 py-8">
+      <main className="px-4 sm:px-6 lg:px-12 py-8">
+        <PageHeader
+          title="Accounts"
+          subtitle="Manage your bank accounts, credit cards, and investments"
+          actions={<Button onClick={openCreate}>+ New Account</Button>}
+        />
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
           <SummaryCard
@@ -186,7 +185,7 @@ function AccountsContent() {
             <AccountList accounts={accounts} brokerageMarketValues={brokerageMarketValues} onEdit={openEdit} onRefresh={loadAccounts} />
           )}
         </div>
-      </div>
+      </main>
     </PageLayout>
   );
 }

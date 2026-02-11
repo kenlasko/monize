@@ -24,6 +24,9 @@ import { OverrideEditorDialog } from '@/components/scheduled-transactions/Overri
 import { OccurrenceDatePicker } from '@/components/scheduled-transactions/OccurrenceDatePicker';
 import { PostTransactionDialog } from '@/components/scheduled-transactions/PostTransactionDialog';
 import { PageLayout } from '@/components/layout/PageLayout';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { SummaryCard, SummaryIcons } from '@/components/ui/SummaryCard';
 import { scheduledTransactionsApi } from '@/lib/scheduled-transactions';
 import { categoriesApi } from '@/lib/categories';
 import { accountsApi } from '@/lib/accounts';
@@ -403,149 +406,28 @@ function BillsContent() {
   return (
     <PageLayout>
 
-      {/* Page Header */}
-      <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50">
-        <div className="px-4 sm:px-6 lg:px-12 py-6">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Bills & Deposits</h1>
-              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                Manage your recurring transactions and scheduled payments
-              </p>
-            </div>
-            <Button onClick={handleCreateNew}>+ New Schedule</Button>
-          </div>
-        </div>
-      </div>
-
-      <div className="px-4 sm:px-6 lg:px-12 py-8">
+      <main className="px-4 sm:px-6 lg:px-12 py-8">
+        <PageHeader
+          title="Bills & Deposits"
+          subtitle="Manage your recurring transactions and scheduled payments"
+          actions={<Button onClick={handleCreateNew}>+ New Schedule</Button>}
+        />
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-          <div className="bg-white dark:bg-gray-800 overflow-hidden shadow dark:shadow-gray-700/50 rounded-lg">
-            <div className="p-5">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <svg
-                    className="h-6 w-6 text-red-400"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                    />
-                  </svg>
-                </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">Active Bills</dt>
-                    <dd className="text-lg font-semibold text-gray-900 dark:text-gray-100">{summary.totalBills}</dd>
-                  </dl>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-gray-800 overflow-hidden shadow dark:shadow-gray-700/50 rounded-lg">
-            <div className="p-5">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <svg
-                    className="h-6 w-6 text-green-400"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 4v16m8-8H4"
-                    />
-                  </svg>
-                </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">Active Deposits</dt>
-                    <dd className="text-lg font-semibold text-gray-900 dark:text-gray-100">{summary.totalDeposits}</dd>
-                  </dl>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-gray-800 overflow-hidden shadow dark:shadow-gray-700/50 rounded-lg">
-            <div className="p-5">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <svg
-                    className="h-6 w-6 text-blue-400"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">Monthly Net</dt>
-                    <dd
-                      className={`text-lg font-semibold ${
-                        summary.monthlyDeposits - summary.monthlyBills >= 0
-                          ? 'text-green-600 dark:text-green-400'
-                          : 'text-red-600 dark:text-red-400'
-                      }`}
-                    >
-                      {formatCurrency(summary.monthlyDeposits - summary.monthlyBills)}
-                    </dd>
-                  </dl>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-gray-800 overflow-hidden shadow dark:shadow-gray-700/50 rounded-lg">
-            <div className="p-5">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <svg
-                    className="h-6 w-6 text-yellow-400"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">Due Now</dt>
-                    <dd
-                      className={`text-lg font-semibold ${
-                        summary.dueCount > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-gray-100'
-                      }`}
-                    >
-                      {summary.dueCount}
-                    </dd>
-                  </dl>
-                </div>
-              </div>
-            </div>
-          </div>
+          <SummaryCard label="Active Bills" value={summary.totalBills} icon={SummaryIcons.clipboard} />
+          <SummaryCard label="Active Deposits" value={summary.totalDeposits} icon={SummaryIcons.plus} />
+          <SummaryCard
+            label="Monthly Net"
+            value={formatCurrency(summary.monthlyDeposits - summary.monthlyBills)}
+            icon={SummaryIcons.money}
+            valueColor={summary.monthlyDeposits - summary.monthlyBills >= 0 ? 'green' : 'red'}
+          />
+          <SummaryCard
+            label="Due Now"
+            value={summary.dueCount}
+            icon={SummaryIcons.clock}
+            valueColor={summary.dueCount > 0 ? 'red' : 'default'}
+          />
         </div>
 
         {/* Cash Flow Forecast Chart */}
@@ -654,10 +536,7 @@ function BillsContent() {
           /* Scheduled Transactions List */
           <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg overflow-hidden">
             {isLoading ? (
-              <div className="p-12 text-center">
-                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-blue-400"></div>
-                <p className="mt-2 text-gray-500 dark:text-gray-400">Loading scheduled transactions...</p>
-              </div>
+              <LoadingSpinner text="Loading scheduled transactions..." />
             ) : (
               <ScheduledTransactionList
                 transactions={filteredTransactions}
@@ -730,7 +609,7 @@ function BillsContent() {
             </div>
           </div>
         )}
-      </div>
+      </main>
 
       {/* Occurrence Date Picker */}
       {datePicker.transaction && (

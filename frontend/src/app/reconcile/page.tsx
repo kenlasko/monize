@@ -5,7 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
-import { AppHeader } from '@/components/layout/AppHeader';
+import { PageLayout } from '@/components/layout/PageLayout';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { CurrencyInput } from '@/components/ui/CurrencyInput';
@@ -455,27 +456,19 @@ function ReconcileContent() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
-      <AppHeader />
+    <PageLayout>
 
-      <main className="px-4 sm:px-6 lg:px-12 py-6">
-        <div className="px-4 sm:px-0">
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-              Reconcile Account
-            </h1>
-            <p className="text-gray-500 dark:text-gray-400">
-              {selectedAccount
-                ? `Reconciling: ${selectedAccount.name}`
-                : 'Match your records against your bank statement'}
-            </p>
-          </div>
-
-          {step === 'setup' && renderSetupStep()}
-          {step === 'reconcile' && renderReconcileStep()}
-          {step === 'complete' && renderCompleteStep()}
-        </div>
+      <main className="px-4 sm:px-6 lg:px-12 py-8">
+        <PageHeader
+          title="Reconcile Account"
+          subtitle={selectedAccount
+            ? `Reconciling: ${selectedAccount.name}`
+            : 'Match your records against your bank statement'}
+        />
+        {step === 'setup' && renderSetupStep()}
+        {step === 'reconcile' && renderReconcileStep()}
+        {step === 'complete' && renderCompleteStep()}
       </main>
-    </div>
+    </PageLayout>
   );
 }

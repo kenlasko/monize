@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { PageLayout } from '@/components/layout/PageLayout';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { customReportsApi } from '@/lib/custom-reports';
@@ -386,17 +387,12 @@ function ReportsContent() {
   return (
     <PageLayout>
 
-      {/* Page Header */}
-      <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50">
-        <div className="px-4 sm:px-6 lg:px-12 py-6">
-          <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Reports</h1>
-              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                Generate insights about your financial health
-              </p>
-            </div>
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+      <main className="px-4 sm:px-6 lg:px-12 py-8">
+        <PageHeader
+          title="Reports"
+          subtitle="Generate insights about your financial health"
+          actions={
+            <>
               <Button
                 onClick={() => router.push('/reports/custom/new')}
                 className="inline-flex items-center justify-center gap-2"
@@ -416,12 +412,9 @@ function ReportsContent() {
                 </svg>
                 {densityLabels[density]}
               </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="px-4 sm:px-6 lg:px-12 py-8">
+            </>
+          }
+        />
         {/* Category Filter */}
         <div className="mb-6 flex flex-wrap gap-2">
           <button
@@ -599,7 +592,7 @@ function ReportsContent() {
           {filteredReports.length} report{filteredReports.length !== 1 ? 's' : ''} available
           {isLoadingCustom && ' (loading custom reports...)'}
         </div>
-      </div>
+      </main>
     </PageLayout>
   );
 }

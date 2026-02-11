@@ -3,9 +3,8 @@ import { PageHeaderSkeleton, Skeleton } from '@/components/ui/LoadingSkeleton';
 export default function SettingsLoading() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <PageHeaderSkeleton />
-
       <div className="px-4 sm:px-6 lg:px-12 py-8">
+        <PageHeaderSkeleton />
         <div className="max-w-2xl mx-auto">
           {/* Settings Sections */}
           <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg p-6 mb-6">

@@ -3,7 +3,10 @@
 import { useState, useEffect, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
-import { AppHeader } from '@/components/layout/AppHeader';
+import { PageLayout } from '@/components/layout/PageLayout';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { SummaryCard, SummaryIcons } from '@/components/ui/SummaryCard';
 import { Modal } from '@/components/ui/Modal';
 import { Pagination } from '@/components/ui/Pagination';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
@@ -134,122 +137,18 @@ function SecuritiesContent() {
   const inactiveCount = securities.filter((s) => !s.isActive).length;
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <AppHeader />
-
-      {/* Page Header */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-        <div className="px-4 sm:px-6 lg:px-12 py-4">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Securities</h1>
-              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                Manage your stocks, ETFs, mutual funds, and other securities
-              </p>
-            </div>
-            <Button onClick={handleCreateNew}>+ New Security</Button>
-          </div>
-        </div>
-      </div>
-
-      <div className="px-4 sm:px-6 lg:px-12 py-8">
+    <PageLayout>
+      <main className="px-4 sm:px-6 lg:px-12 py-8">
+        <PageHeader
+          title="Securities"
+          subtitle="Manage your stocks, ETFs, mutual funds, and other securities"
+          actions={<Button onClick={handleCreateNew}>+ New Security</Button>}
+        />
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          <div className="bg-white dark:bg-gray-800 overflow-hidden shadow dark:shadow-gray-700/50 rounded-lg">
-            <div className="p-5">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <svg
-                    className="h-6 w-6 text-gray-400 dark:text-gray-500"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                    />
-                  </svg>
-                </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
-                      Total Securities
-                    </dt>
-                    <dd className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                      {securities.length}
-                    </dd>
-                  </dl>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-gray-800 overflow-hidden shadow dark:shadow-gray-700/50 rounded-lg">
-            <div className="p-5">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <svg
-                    className="h-6 w-6 text-green-400"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
-                      Active
-                    </dt>
-                    <dd className="text-lg font-semibold text-green-600 dark:text-green-400">
-                      {activeCount}
-                    </dd>
-                  </dl>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-gray-800 overflow-hidden shadow dark:shadow-gray-700/50 rounded-lg">
-            <div className="p-5">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <svg
-                    className="h-6 w-6 text-gray-400"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"
-                    />
-                  </svg>
-                </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
-                      Inactive
-                    </dt>
-                    <dd className="text-lg font-semibold text-gray-600 dark:text-gray-400">
-                      {inactiveCount}
-                    </dd>
-                  </dl>
-                </div>
-              </div>
-            </div>
-          </div>
+          <SummaryCard label="Total Securities" value={securities.length} icon={SummaryIcons.barChart} />
+          <SummaryCard label="Active" value={activeCount} icon={SummaryIcons.checkCircle} valueColor="green" />
+          <SummaryCard label="Inactive" value={inactiveCount} icon={SummaryIcons.ban} />
         </div>
 
         {/* Search and Filters */}
@@ -287,10 +186,7 @@ function SecuritiesContent() {
         {/* Securities List */}
         <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg overflow-hidden">
           {isLoading ? (
-            <div className="p-12 text-center">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-blue-400"></div>
-              <p className="mt-2 text-gray-500 dark:text-gray-400">Loading securities...</p>
-            </div>
+            <LoadingSpinner text="Loading securities..." />
           ) : (
             <SecurityList
               securities={paginatedSecurities}
@@ -322,7 +218,7 @@ function SecuritiesContent() {
             {filteredSecurities.length} securit{filteredSecurities.length !== 1 ? 'ies' : 'y'}
           </div>
         )}
-      </div>
-    </div>
+      </main>
+    </PageLayout>
   );
 }

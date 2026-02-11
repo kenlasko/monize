@@ -61,16 +61,12 @@ export function TableSkeleton({ rows = 5, columns = 5 }: { rows?: number; column
 
 export function PageHeaderSkeleton() {
   return (
-    <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-      <div className="px-4 sm:px-6 lg:px-12 py-4">
-        <div className="flex justify-between items-center">
-          <div>
-            <Skeleton className="h-8 w-48 mb-2" />
-            <Skeleton className="h-4 w-64" />
-          </div>
-          <Skeleton className="h-10 w-32 rounded-md" />
-        </div>
+    <div className="flex justify-between items-center mb-6">
+      <div>
+        <Skeleton className="h-8 w-48 mb-2" />
+        <Skeleton className="h-4 w-64" />
       </div>
+      <Skeleton className="h-10 w-32 rounded-md" />
     </div>
   );
 }

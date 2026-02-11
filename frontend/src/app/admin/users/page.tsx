@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { UserManagementTable } from '@/components/admin/UserManagementTable';
 import { ResetPasswordModal } from '@/components/admin/ResetPasswordModal';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -188,16 +189,15 @@ export default function AdminUsersPage() {
   return (
     <ProtectedRoute>
       <PageLayout>
-        <PageHeader
-          title="User Management"
-          subtitle={`${users.length} user${users.length !== 1 ? 's' : ''}`}
-        />
+        <main className="px-4 sm:px-6 lg:px-12 py-8">
+          <PageHeader
+            title="User Management"
+            subtitle={`${users.length} user${users.length !== 1 ? 's' : ''}`}
+          />
 
-        <div className="bg-white dark:bg-gray-900 shadow rounded-lg overflow-hidden">
+          <div className="bg-white dark:bg-gray-900 shadow rounded-lg overflow-hidden">
           {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
-            </div>
+            <LoadingSpinner text="Loading users..." />
           ) : (
             <UserManagementTable
               users={users}
@@ -209,6 +209,7 @@ export default function AdminUsersPage() {
             />
           )}
         </div>
+        </main>
 
         <ConfirmDialog
           isOpen={confirmDialog.isOpen}

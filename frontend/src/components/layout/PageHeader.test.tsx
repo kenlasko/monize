@@ -30,9 +30,8 @@ describe('PageHeader', () => {
 
   it('does not render actions container when no actions provided', () => {
     const { container } = render(<PageHeader title="My Page" />);
-    // Only the title div should be inside the flex container
-    const flexContainer = container.querySelector('.flex.justify-between');
-    // Should have exactly one child div (the title area)
-    expect(flexContainer?.children.length).toBe(1);
+    // No flex-wrap actions container should exist
+    const actionsContainer = container.querySelector('.flex.flex-wrap');
+    expect(actionsContainer).toBeNull();
   });
 });

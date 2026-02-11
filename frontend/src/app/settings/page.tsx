@@ -6,7 +6,9 @@ import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
-import { AppHeader } from '@/components/layout/AppHeader';
+import { PageLayout } from '@/components/layout/PageLayout';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Modal } from '@/components/ui/Modal';
 import { TwoFactorSetup } from '@/components/auth/TwoFactorSetup';
 import { userSettingsApi } from '@/lib/user-settings';
@@ -361,23 +363,21 @@ function SettingsContent() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <AppHeader />
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <PageLayout>
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-12 py-8">
           <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-blue-400"></div>
+            <LoadingSpinner />
           </div>
         </div>
-      </div>
+      </PageLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <AppHeader />
+    <PageLayout>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-8">Settings</h1>
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-12 py-8">
+        <PageHeader title="Settings" />
 
         {/* Profile Section */}
         <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg p-6 mb-6">
@@ -682,7 +682,7 @@ function SettingsContent() {
 
                 {isLoadingDevices ? (
                   <div className="flex justify-center py-4">
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 dark:border-blue-400"></div>
+                    <LoadingSpinner size="sm" fullContainer={false} />
                   </div>
                 ) : trustedDevices.length === 0 ? (
                   <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -799,11 +799,11 @@ function SettingsContent() {
             </div>
           )}
         </div>
-      </div>
+      </main>
 
       <p className="text-center text-xs text-gray-400 dark:text-gray-500 mt-8 mb-4">
         v{process.env.NEXT_PUBLIC_APP_VERSION}
       </p>
-    </div>
+    </PageLayout>
   );
 }

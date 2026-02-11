@@ -121,7 +121,7 @@ function DashboardContent() {
 
   return (
     <PageLayout>
-      <main className="px-4 sm:px-6 lg:px-12 py-6">
+      <main className="px-4 sm:px-6 lg:px-12 py-8">
         <div className="sm:px-0">
           {/* Welcome section */}
           <div className="mb-6">

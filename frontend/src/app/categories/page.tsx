@@ -102,13 +102,12 @@ function CategoriesContent() {
 
   return (
     <PageLayout>
-      <PageHeader
-        title="Categories"
-        subtitle="Organize your transactions with custom categories"
-        actions={<Button onClick={openCreate}>+ New Category</Button>}
-      />
-
-      <div className="px-4 sm:px-6 lg:px-12 py-8">
+      <main className="px-4 sm:px-6 lg:px-12 py-8">
+        <PageHeader
+          title="Categories"
+          subtitle="Organize your transactions with custom categories"
+          actions={<Button onClick={openCreate}>+ New Category</Button>}
+        />
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
           <SummaryCard
@@ -250,7 +249,7 @@ function CategoriesContent() {
             {filteredCategories.length} categor{filteredCategories.length !== 1 ? 'ies' : 'y'}
           </div>
         )}
-      </div>
+      </main>
     </PageLayout>
   );
 }

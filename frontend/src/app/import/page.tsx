@@ -4,7 +4,8 @@ import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
-import { AppHeader } from '@/components/layout/AppHeader';
+import { PageLayout } from '@/components/layout/PageLayout';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { Input } from '@/components/ui/Input';
@@ -2022,22 +2023,12 @@ function ImportContent() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
-      <AppHeader />
-
-      {/* Page Header */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-        <div className="px-4 sm:px-6 lg:px-12 py-4">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Import Transactions</h1>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              Import transactions from a QIF file
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div className="px-4 sm:px-6 lg:px-12 py-8">
+    <PageLayout>
+      <main className="px-4 sm:px-6 lg:px-12 py-8">
+        <PageHeader
+          title="Import Transactions"
+          subtitle="Import transactions from a QIF file"
+        />
         {/* Progress indicator */}
         <div className="mb-8">
           <div className="flex items-center justify-center space-x-4">
@@ -2092,7 +2083,7 @@ function ImportContent() {
         </div>
 
         {renderStep()}
-      </div>
-    </div>
+      </main>
+    </PageLayout>
   );
 }
