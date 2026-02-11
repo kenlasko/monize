@@ -13,6 +13,7 @@ import { useAuthStore } from '@/store/authStore';
 import { adminApi } from '@/lib/admin';
 import { AdminUser } from '@/types/auth';
 import { createLogger } from '@/lib/logger';
+import { getErrorMessage } from '@/lib/errors';
 
 const logger = createLogger('AdminUsers');
 
@@ -86,9 +87,8 @@ export default function AdminUsersPage() {
           const updated = await adminApi.updateUserRole(user.id, role);
           setUsers((prev) => prev.map((u) => (u.id === user.id ? updated : u)));
           toast.success(`${userName} is now ${role === 'admin' ? 'an admin' : 'a user'}`);
-        } catch (error: any) {
-          const message = error.response?.data?.message || `Failed to ${action} user`;
-          toast.error(message);
+        } catch (error) {
+          toast.error(getErrorMessage(error, `Failed to ${action} user`));
           // Reload to reset the select back to the actual value
           loadUsers();
         }
@@ -115,9 +115,8 @@ export default function AdminUsersPage() {
             const updated = await adminApi.updateUserStatus(user.id, false);
             setUsers((prev) => prev.map((u) => (u.id === user.id ? updated : u)));
             toast.success(`${userName} has been disabled`);
-          } catch (error: any) {
-            const message = error.response?.data?.message || 'Failed to disable user';
-            toast.error(message);
+          } catch (error) {
+            toast.error(getErrorMessage(error, 'Failed to disable user'));
           }
           setConfirmDialog((prev) => ({ ...prev, isOpen: false }));
         },
@@ -128,9 +127,8 @@ export default function AdminUsersPage() {
         const updated = await adminApi.updateUserStatus(user.id, true);
         setUsers((prev) => prev.map((u) => (u.id === user.id ? updated : u)));
         toast.success(`${userName} has been enabled`);
-      } catch (error: any) {
-        const message = error.response?.data?.message || `Failed to ${action} user`;
-        toast.error(message);
+      } catch (error) {
+        toast.error(getErrorMessage(error, `Failed to ${action} user`));
       }
     }
   };
@@ -153,9 +151,8 @@ export default function AdminUsersPage() {
             temporaryPassword: result.temporaryPassword,
             userName: userName,
           });
-        } catch (error: any) {
-          const message = error.response?.data?.message || 'Failed to reset password';
-          toast.error(message);
+        } catch (error) {
+          toast.error(getErrorMessage(error, 'Failed to reset password'));
           setConfirmDialog((prev) => ({ ...prev, isOpen: false }));
         }
       },
@@ -176,9 +173,8 @@ export default function AdminUsersPage() {
           await adminApi.deleteUser(user.id);
           setUsers((prev) => prev.filter((u) => u.id !== user.id));
           toast.success(`${userName} has been deleted`);
-        } catch (error: any) {
-          const message = error.response?.data?.message || 'Failed to delete user';
-          toast.error(message);
+        } catch (error) {
+          toast.error(getErrorMessage(error, 'Failed to delete user'));
         }
         setConfirmDialog((prev) => ({ ...prev, isOpen: false }));
       },

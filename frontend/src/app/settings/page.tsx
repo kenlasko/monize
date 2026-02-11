@@ -23,6 +23,7 @@ import {
 } from '@/types/auth';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { createLogger } from '@/lib/logger';
+import { getErrorMessage } from '@/lib/errors';
 
 const logger = createLogger('Settings');
 
@@ -192,8 +193,8 @@ function SettingsContent() {
       setLocalUser(updatedUser);
       setUser(updatedUser); // Update auth store
       toast.success('Profile updated successfully');
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to update profile');
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Failed to update profile'));
     } finally {
       setIsUpdatingProfile(false);
     }
@@ -222,8 +223,8 @@ function SettingsContent() {
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to change password');
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Failed to change password'));
     } finally {
       setIsChangingPassword(false);
     }
@@ -245,8 +246,8 @@ function SettingsContent() {
       updatePreferencesStore(updated); // Update the global store
       setAppTheme(theme as 'light' | 'dark' | 'system'); // Update the theme context
       toast.success('Preferences saved');
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to save preferences');
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Failed to save preferences'));
     } finally {
       setIsUpdatingPreferences(false);
     }
@@ -264,8 +265,8 @@ function SettingsContent() {
       toast.success('Account deleted');
       logout();
       router.push('/login');
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to delete account');
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Failed to delete account'));
       setIsDeleting(false);
     }
   };
@@ -300,8 +301,8 @@ function SettingsContent() {
         updatePreferencesStore(updated);
       }
       toast.success('Two-factor authentication disabled');
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to disable 2FA');
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Failed to disable 2FA'));
     } finally {
       setIsDisabling2FA(false);
     }
@@ -330,8 +331,8 @@ function SettingsContent() {
       await authApi.revokeTrustedDevice(id);
       setTrustedDevices((prev) => prev.filter((d) => d.id !== id));
       toast.success('Device revoked');
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to revoke device');
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Failed to revoke device'));
     }
   };
 
@@ -341,8 +342,8 @@ function SettingsContent() {
       setTrustedDevices([]);
       setShowRevokeAllConfirm(false);
       toast.success(`${result.count} device(s) revoked`);
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to revoke devices');
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Failed to revoke devices'));
     }
   };
 
@@ -351,8 +352,8 @@ function SettingsContent() {
     try {
       await userSettingsApi.sendTestEmail();
       toast.success('Test email sent! Check your inbox.');
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to send test email');
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Failed to send test email'));
     } finally {
       setIsSendingTestEmail(false);
     }

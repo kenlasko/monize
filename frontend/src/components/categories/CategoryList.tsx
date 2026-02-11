@@ -8,6 +8,7 @@ import { DeleteCategoryDialog } from './DeleteCategoryDialog';
 import { categoriesApi } from '@/lib/categories';
 import toast from 'react-hot-toast';
 import { createLogger } from '@/lib/logger';
+import { getErrorMessage } from '@/lib/errors';
 
 const logger = createLogger('CategoryList');
 
@@ -108,9 +109,8 @@ export function CategoryList({
       await categoriesApi.delete(deleteCategory.id);
       toast.success('Category deleted successfully');
       onRefresh();
-    } catch (error: any) {
-      const message = error.response?.data?.message || 'Failed to delete category';
-      toast.error(message);
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Failed to delete category'));
       logger.error(error);
     } finally {
       setDeleteCategory(null);

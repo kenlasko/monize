@@ -4,6 +4,7 @@ import { useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 import { authApi } from '@/lib/auth';
+import { getErrorMessage } from '@/lib/errors';
 import toast from 'react-hot-toast';
 
 function CallbackContent() {
@@ -44,8 +45,8 @@ function CallbackContent() {
           toast.error(!success ? 'No authentication token received' : 'Authentication failed');
           router.push('/login');
         }
-      } catch (error: any) {
-        const message = error.response?.data?.message || 'Authentication failed';
+      } catch (error) {
+        const message = getErrorMessage(error, 'Authentication failed');
         setError(message);
         toast.error(message);
         router.push('/login');

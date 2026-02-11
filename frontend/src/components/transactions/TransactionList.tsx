@@ -4,6 +4,7 @@ import { useState, useMemo, useCallback, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { Transaction, TransactionStatus } from '@/types/transaction';
 import { transactionsApi } from '@/lib/transactions';
+import { getErrorMessage } from '@/lib/errors';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Pagination } from '@/components/ui/Pagination';
 import { useDateFormat } from '@/hooks/useDateFormat';
@@ -168,9 +169,8 @@ export function TransactionList({
       }
       onDelete?.(transaction.id);
       onRefresh?.();
-    } catch (error: any) {
-      const message = error.response?.data?.message || 'Failed to delete transaction';
-      toast.error(message);
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Failed to delete transaction'));
     } finally {
       setDeletingId(null);
     }
@@ -211,9 +211,8 @@ export function TransactionList({
       } else {
         onRefresh?.();
       }
-    } catch (error: any) {
-      const message = error.response?.data?.message || 'Failed to update status';
-      toast.error(message);
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Failed to update status'));
     }
   }, [onRefresh, onTransactionUpdate]);
 

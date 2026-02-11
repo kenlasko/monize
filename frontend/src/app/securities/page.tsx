@@ -13,6 +13,7 @@ import { SecurityForm } from '@/components/securities/SecurityForm';
 import { SecurityList, DensityLevel } from '@/components/securities/SecurityList';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { createLogger } from '@/lib/logger';
+import { getErrorMessage } from '@/lib/errors';
 
 const logger = createLogger('Securities');
 
@@ -75,10 +76,8 @@ function SecuritiesContent() {
       setShowForm(false);
       setEditingSecurity(undefined);
       loadData();
-    } catch (error: any) {
-      const message =
-        error.response?.data?.message || `Failed to ${editingSecurity ? 'update' : 'create'} security`;
-      toast.error(message);
+    } catch (error) {
+      toast.error(getErrorMessage(error, `Failed to ${editingSecurity ? 'update' : 'create'} security`));
       throw error;
     }
   };
@@ -98,8 +97,8 @@ function SecuritiesContent() {
         toast.success('Security activated');
       }
       loadData();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to update security status');
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Failed to update security status'));
     }
   };
 

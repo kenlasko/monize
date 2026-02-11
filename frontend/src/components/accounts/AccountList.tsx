@@ -10,6 +10,7 @@ import { accountsApi } from '@/lib/accounts';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
 import toast from 'react-hot-toast';
+import { getErrorMessage } from '@/lib/errors';
 
 type SortField = 'name' | 'type' | 'balance' | 'status';
 type SortDirection = 'asc' | 'desc';
@@ -292,9 +293,8 @@ export function AccountList({ accounts, brokerageMarketValues, onEdit, onRefresh
       setDeleteDialogOpen(false);
       setAccountToDelete(null);
       onRefresh();
-    } catch (error: any) {
-      const message = error.response?.data?.message || 'Failed to delete account';
-      toast.error(message);
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Failed to delete account'));
     } finally {
       setIsDeleting(false);
     }
@@ -315,9 +315,8 @@ export function AccountList({ accounts, brokerageMarketValues, onEdit, onRefresh
       setCloseDialogOpen(false);
       setAccountToClose(null);
       onRefresh();
-    } catch (error: any) {
-      const message = error.response?.data?.message || 'Failed to close account';
-      toast.error(message);
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Failed to close account'));
     } finally {
       setIsClosing(false);
     }
@@ -333,9 +332,8 @@ export function AccountList({ accounts, brokerageMarketValues, onEdit, onRefresh
       await accountsApi.reopen(account.id);
       toast.success('Account reopened successfully');
       onRefresh();
-    } catch (error: any) {
-      const message = error.response?.data?.message || 'Failed to reopen account';
-      toast.error(message);
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Failed to reopen account'));
     }
   };
 

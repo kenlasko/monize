@@ -11,6 +11,7 @@ import toast from 'react-hot-toast';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { authApi } from '@/lib/auth';
+import { getErrorMessage } from '@/lib/errors';
 
 const schema = z
   .object({
@@ -68,10 +69,9 @@ function ResetPasswordForm() {
       await authApi.resetPassword(token, data.newPassword);
       toast.success('Password reset successfully!');
       router.push('/login');
-    } catch (error: any) {
+    } catch (error) {
       toast.error(
-        error.response?.data?.message ||
-          'Failed to reset password. The link may have expired.',
+        getErrorMessage(error, 'Failed to reset password. The link may have expired.'),
       );
     } finally {
       setIsLoading(false);

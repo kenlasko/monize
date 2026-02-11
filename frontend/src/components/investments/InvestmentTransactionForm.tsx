@@ -19,6 +19,7 @@ import {
   CreateSecurityData,
 } from '@/types/investment';
 import { getCurrencySymbol } from '@/lib/format';
+import { getErrorMessage } from '@/lib/errors';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { createLogger } from '@/lib/logger';
 
@@ -222,8 +223,8 @@ export function InvestmentTransactionForm({
         currencyCode: defaultCurrency,
       });
       toast.success('Security created');
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to create security');
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Failed to create security'));
     } finally {
       setIsLoading(false);
     }
@@ -262,8 +263,8 @@ export function InvestmentTransactionForm({
         toast.success('Transaction created');
       }
       onSuccess?.();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to save transaction');
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Failed to save transaction'));
     } finally {
       setIsLoading(false);
     }

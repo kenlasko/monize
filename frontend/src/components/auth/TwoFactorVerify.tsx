@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { authApi } from '@/lib/auth';
+import { getErrorMessage } from '@/lib/errors';
 import { User } from '@/types/auth';
 
 interface TwoFactorVerifyProps {
@@ -28,9 +29,8 @@ export function TwoFactorVerify({ tempToken, onVerified, onCancel }: TwoFactorVe
       if (response.user) {
         onVerified(response.user);
       }
-    } catch (error: any) {
-      const message = error.response?.data?.message || 'Invalid verification code';
-      toast.error(message);
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Invalid verification code'));
       setCode('');
     } finally {
       setIsLoading(false);

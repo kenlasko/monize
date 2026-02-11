@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/store/authStore';
 import { userSettingsApi } from '@/lib/user-settings';
 import { authApi } from '@/lib/auth';
+import { getErrorMessage } from '@/lib/errors';
 
 const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d\s])/;
 
@@ -62,9 +63,8 @@ export default function ChangePasswordPage() {
 
       toast.success('Password changed successfully');
       router.push('/dashboard');
-    } catch (error: any) {
-      const message = error.response?.data?.message || 'Failed to change password';
-      toast.error(message);
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Failed to change password'));
     } finally {
       setIsLoading(false);
     }

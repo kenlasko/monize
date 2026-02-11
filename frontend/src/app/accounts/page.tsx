@@ -21,6 +21,7 @@ import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { createLogger } from '@/lib/logger';
+import { getErrorMessage } from '@/lib/errors';
 
 const logger = createLogger('Accounts');
 
@@ -96,9 +97,8 @@ function AccountsContent() {
       }
       close();
       loadAccounts();
-    } catch (error: any) {
-      const message = error.response?.data?.message || `Failed to ${editingItem ? 'update' : 'create'} account`;
-      toast.error(message);
+    } catch (error) {
+      toast.error(getErrorMessage(error, `Failed to ${editingItem ? 'update' : 'create'} account`));
       throw error;
     }
   };

@@ -15,6 +15,7 @@ import { categoriesApi } from '@/lib/categories';
 import { investmentsApi } from '@/lib/investments';
 import { exchangeRatesApi, CurrencyInfo } from '@/lib/exchange-rates';
 import { buildCategoryTree } from '@/lib/categoryUtils';
+import { getErrorMessage } from '@/lib/errors';
 import { Account, AccountType } from '@/types/account';
 import { Category } from '@/types/category';
 import { Security } from '@/types/investment';
@@ -184,8 +185,8 @@ function ImportContent() {
       setShowCreateAccount(false);
       setCreatingForFileIndex(-1);
       setNewAccountName('');
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to create account');
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Failed to create account'));
     } finally {
       setIsCreatingAccount(false);
     }
@@ -621,8 +622,8 @@ function ImportContent() {
       if (fileDataArray.length > 1) {
         toast.success(`Loaded ${fileDataArray.length} files for import`);
       }
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to parse QIF file(s)');
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Failed to parse QIF file(s)'));
     } finally {
       setIsLoading(false);
     }
@@ -871,7 +872,7 @@ function ImportContent() {
                 });
               }
             }
-          } catch (error: any) {
+          } catch (error) {
             const targetAccount = accounts.find((a) => a.id === fileData.selectedAccountId);
             fileResults.push({
               fileName: fileData.fileName,
@@ -879,7 +880,7 @@ function ImportContent() {
               imported: 0,
               skipped: 0,
               errors: 1,
-              errorMessages: [error.response?.data?.message || 'Import failed'],
+              errorMessages: [getErrorMessage(error, 'Import failed')],
             });
             totalErrors += 1;
           }
@@ -923,8 +924,8 @@ function ImportContent() {
           toast.success(`Imported ${result.imported} transactions with ${result.errors} errors`);
         }
       }
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Import failed');
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Import failed'));
     } finally {
       setIsLoading(false);
     }

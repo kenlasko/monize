@@ -16,6 +16,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useFormModal } from '@/hooks/useFormModal';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { createLogger } from '@/lib/logger';
+import { getErrorMessage } from '@/lib/errors';
 
 const logger = createLogger('Categories');
 
@@ -71,9 +72,8 @@ function CategoriesContent() {
       }
       close();
       loadCategories();
-    } catch (error: any) {
-      const message = error.response?.data?.message || `Failed to ${editingItem ? 'update' : 'create'} category`;
-      toast.error(message);
+    } catch (error) {
+      toast.error(getErrorMessage(error, `Failed to ${editingItem ? 'update' : 'create'} category`));
       throw error;
     }
   };
@@ -84,9 +84,8 @@ function CategoriesContent() {
       const result = await categoriesApi.importDefaults();
       toast.success(`Successfully imported ${result.categoriesCreated} categories`);
       loadCategories();
-    } catch (error: any) {
-      const message = error.response?.data?.message || 'Failed to import default categories';
-      toast.error(message);
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Failed to import default categories'));
     } finally {
       setIsImporting(false);
     }

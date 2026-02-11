@@ -11,6 +11,7 @@ import { CustomReportForm } from '@/components/reports/CustomReportForm';
 import { customReportsApi } from '@/lib/custom-reports';
 import { CustomReport, CreateCustomReportData } from '@/types/custom-report';
 import { createLogger } from '@/lib/logger';
+import { getErrorMessage } from '@/lib/errors';
 
 const logger = createLogger('ReportEdit');
 
@@ -55,9 +56,8 @@ function EditCustomReportContent({ reportId }: { reportId: string }) {
       await customReportsApi.update(reportId, data);
       toast.success('Report updated');
       router.push(`/reports/custom/${reportId}`);
-    } catch (error: any) {
-      const message = error.response?.data?.message || 'Failed to update report';
-      toast.error(message);
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Failed to update report'));
       throw error;
     }
   };

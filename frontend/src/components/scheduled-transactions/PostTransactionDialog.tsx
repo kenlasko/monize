@@ -14,6 +14,7 @@ import { Account } from '@/types/account';
 import { scheduledTransactionsApi } from '@/lib/scheduled-transactions';
 import { buildCategoryTree } from '@/lib/categoryUtils';
 import { roundToCents, getCurrencySymbol } from '@/lib/format';
+import { getErrorMessage } from '@/lib/errors';
 interface PostTransactionDialogProps {
   isOpen: boolean;
   scheduledTransaction: ScheduledTransaction;
@@ -122,9 +123,8 @@ export function PostTransactionDialog({
       toast.success('Transaction posted');
       onPosted();
       onClose();
-    } catch (error: any) {
-      const message = error.response?.data?.message || 'Failed to post transaction';
-      toast.error(message);
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Failed to post transaction'));
     } finally {
       setIsLoading(false);
     }

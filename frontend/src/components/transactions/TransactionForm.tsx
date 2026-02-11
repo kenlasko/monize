@@ -23,6 +23,7 @@ import { buildCategoryTree } from '@/lib/categoryUtils';
 import { getCurrencySymbol } from '@/lib/format';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { createLogger } from '@/lib/logger';
+import { getErrorMessage } from '@/lib/errors';
 
 const logger = createLogger('TransactionForm');
 
@@ -532,10 +533,9 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
         toast.success('Transaction created');
       }
       onSuccess?.();
-    } catch (error: any) {
+    } catch (error) {
       logger.error('Submit error:', error);
-      const message = error.response?.data?.message || 'Failed to save transaction';
-      toast.error(message);
+      toast.error(getErrorMessage(error, 'Failed to save transaction'));
     } finally {
       setIsLoading(false);
     }

@@ -14,6 +14,7 @@ import { Account } from '@/types/account';
 import { scheduledTransactionsApi } from '@/lib/scheduled-transactions';
 import { buildCategoryTree } from '@/lib/categoryUtils';
 import { roundToCents, getCurrencySymbol } from '@/lib/format';
+import { getErrorMessage } from '@/lib/errors';
 interface OverrideEditorDialogProps {
   isOpen: boolean;
   scheduledTransaction: ScheduledTransaction;
@@ -151,9 +152,8 @@ export function OverrideEditorDialog({
       }
       onSave();
       onClose();
-    } catch (error: any) {
-      const message = error.response?.data?.message || 'Failed to save override';
-      toast.error(message);
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Failed to save override'));
     } finally {
       setIsLoading(false);
     }
@@ -168,9 +168,8 @@ export function OverrideEditorDialog({
       toast.success('Override deleted - will use base values');
       onSave();
       onClose();
-    } catch (error: any) {
-      const message = error.response?.data?.message || 'Failed to delete override';
-      toast.error(message);
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Failed to delete override'));
     } finally {
       setIsLoading(false);
     }

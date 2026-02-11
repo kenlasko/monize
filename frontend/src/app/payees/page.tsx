@@ -20,6 +20,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useFormModal } from '@/hooks/useFormModal';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { createLogger } from '@/lib/logger';
+import { getErrorMessage } from '@/lib/errors';
 
 const logger = createLogger('Payees');
 
@@ -83,9 +84,8 @@ function PayeesContent() {
       }
       close();
       loadData();
-    } catch (error: any) {
-      const message = error.response?.data?.message || `Failed to ${editingItem ? 'update' : 'create'} payee`;
-      toast.error(message);
+    } catch (error) {
+      toast.error(getErrorMessage(error, `Failed to ${editingItem ? 'update' : 'create'} payee`));
       throw error;
     }
   };

@@ -31,6 +31,7 @@ import { SummaryCard, SummaryIcons } from '@/components/ui/SummaryCard';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { createLogger } from '@/lib/logger';
+import { getErrorMessage } from '@/lib/errors';
 
 const logger = createLogger('Transactions');
 
@@ -514,9 +515,8 @@ function TransactionsContent() {
       // Reload payees list and transactions to reflect any changes
       const payeesData = await payeesApi.getAll();
       setPayees(payeesData);
-    } catch (error: any) {
-      const message = error.response?.data?.message || 'Failed to update payee';
-      toast.error(message);
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Failed to update payee'));
     }
   };
 
@@ -709,7 +709,7 @@ function TransactionsContent() {
 
             {/* Active Filter Chips - Show when collapsed and filters are active */}
             {!filtersExpanded && activeFilterCount > 0 && (
-              <div className="flex gap-2 mt-3 overflow-x-auto pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap sm:overflow-visible" onClick={(e) => e.stopPropagation()}>
+              <div role="presentation" className="flex gap-2 mt-3 overflow-x-auto pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap sm:overflow-visible" onClick={(e) => e.stopPropagation()}>
                 {/* Account chips - Emerald */}
                 {selectedAccounts.map(account => (
                   <span

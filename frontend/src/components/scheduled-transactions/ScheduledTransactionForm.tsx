@@ -21,6 +21,7 @@ import { Category } from '@/types/category';
 import { Account } from '@/types/account';
 import { buildCategoryTree } from '@/lib/categoryUtils';
 import { roundToCents, getCurrencySymbol } from '@/lib/format';
+import { getErrorMessage } from '@/lib/errors';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { createLogger } from '@/lib/logger';
 
@@ -398,10 +399,9 @@ export function ScheduledTransactionForm({
         toast.success('Scheduled transaction created');
       }
       onSuccess?.();
-    } catch (error: any) {
+    } catch (error) {
       logger.error('Submit error:', error);
-      const message = error.response?.data?.message || 'Failed to save scheduled transaction';
-      toast.error(message);
+      toast.error(getErrorMessage(error, 'Failed to save scheduled transaction'));
     } finally {
       setIsLoading(false);
     }

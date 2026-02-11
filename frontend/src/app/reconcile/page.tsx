@@ -16,6 +16,7 @@ import { Account } from '@/types/account';
 import { ReconciliationData, TransactionStatus } from '@/types/transaction';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { getCurrencySymbol } from '@/lib/format';
+import { getErrorMessage } from '@/lib/errors';
 
 const LIABILITY_TYPES = new Set(['CREDIT_CARD', 'LOAN', 'MORTGAGE', 'LINE_OF_CREDIT']);
 
@@ -95,8 +96,8 @@ function ReconcileContent() {
       setSelectedTransactionIds(clearedIds);
 
       setStep('reconcile');
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to load reconciliation data');
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Failed to load reconciliation data'));
     } finally {
       setIsLoading(false);
     }
@@ -157,8 +158,8 @@ function ReconcileContent() {
       );
       toast.success(`Successfully reconciled ${result.reconciled} transactions`);
       setStep('complete');
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to reconcile transactions');
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Failed to reconcile transactions'));
     } finally {
       setIsReconciling(false);
     }

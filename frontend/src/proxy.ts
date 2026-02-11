@@ -30,7 +30,7 @@ export async function proxy(request: NextRequest) {
 
       if (!backendConnected) {
         backendConnected = true;
-        console.info(`[Proxy] Backend connected at ${apiUrl}`);
+        logger.info(`Backend connected at ${apiUrl}`);
       }
 
       const responseHeaders = new Headers(response.headers);

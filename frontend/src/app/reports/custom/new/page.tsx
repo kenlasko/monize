@@ -6,6 +6,7 @@ import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { CustomReportForm } from '@/components/reports/CustomReportForm';
 import { customReportsApi } from '@/lib/custom-reports';
+import { getErrorMessage } from '@/lib/errors';
 import { CreateCustomReportData } from '@/types/custom-report';
 
 export default function NewCustomReportPage() {
@@ -24,9 +25,8 @@ function NewCustomReportContent() {
       const report = await customReportsApi.create(data);
       toast.success('Report created');
       router.push(`/reports/custom/${report.id}`);
-    } catch (error: any) {
-      const message = error.response?.data?.message || 'Failed to create report';
-      toast.error(message);
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Failed to create report'));
       throw error;
     }
   };

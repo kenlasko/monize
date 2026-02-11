@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import { ScheduledTransaction, FREQUENCY_LABELS } from '@/types/scheduled-transaction';
 import { scheduledTransactionsApi } from '@/lib/scheduled-transactions';
 import { parseLocalDate } from '@/lib/utils';
+import { getErrorMessage } from '@/lib/errors';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -122,14 +123,13 @@ export function ScheduledTransactionList({
           break;
       }
       onRefresh?.();
-    } catch (error: any) {
+    } catch (error) {
       const messages = {
         post: 'Failed to post transaction',
         skip: 'Failed to skip occurrence',
         delete: 'Failed to delete',
       };
-      const message = error.response?.data?.message || messages[action];
-      toast.error(message);
+      toast.error(getErrorMessage(error, messages[action]));
     } finally {
       setActionInProgress(null);
     }

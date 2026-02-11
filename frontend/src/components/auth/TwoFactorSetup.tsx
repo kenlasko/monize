@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { authApi } from '@/lib/auth';
+import { getErrorMessage } from '@/lib/errors';
 import { TwoFactorSetupResponse } from '@/types/auth';
 
 interface TwoFactorSetupProps {
@@ -25,8 +26,8 @@ export function TwoFactorSetup({ onComplete, onSkip, isForced }: TwoFactorSetupP
       try {
         const data = await authApi.setup2FA();
         setSetupData(data);
-      } catch (error: any) {
-        toast.error(error.response?.data?.message || 'Failed to initialize 2FA setup');
+      } catch (error) {
+        toast.error(getErrorMessage(error, 'Failed to initialize 2FA setup'));
       } finally {
         setIsSettingUp(false);
       }
@@ -43,9 +44,8 @@ export function TwoFactorSetup({ onComplete, onSkip, isForced }: TwoFactorSetupP
       await authApi.confirmSetup2FA(code);
       toast.success('Two-factor authentication enabled!');
       onComplete();
-    } catch (error: any) {
-      const message = error.response?.data?.message || 'Invalid verification code';
-      toast.error(message);
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Invalid verification code'));
       setCode('');
     } finally {
       setIsLoading(false);
