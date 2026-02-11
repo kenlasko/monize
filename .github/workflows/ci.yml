@@ -180,6 +180,7 @@ jobs:
           target: production
           push: true
           platforms: linux/amd64,linux/arm64
+          provenance: false
           tags: |
             ghcr.io/kenlasko/monize-backend:latest
             ghcr.io/kenlasko/monize-backend:${{ steps.version.outputs.version }}
@@ -198,6 +199,7 @@ jobs:
           target: production
           push: true
           platforms: linux/amd64,linux/arm64
+          provenance: false
           tags: |
             ghcr.io/kenlasko/monize-frontend:latest
             ghcr.io/kenlasko/monize-frontend:${{ steps.version.outputs.version }}
