@@ -111,6 +111,17 @@ vi.mock('@/lib/user-settings', () => ({
   },
 }));
 
+// Mock exchange-rates API (settings page loads currencies dynamically)
+vi.mock('@/lib/exchange-rates', () => ({
+  exchangeRatesApi: {
+    getCurrencies: vi.fn().mockResolvedValue([
+      { code: 'USD', name: 'US Dollar', symbol: '$', decimalPlaces: 2, isActive: true },
+      { code: 'CAD', name: 'Canadian Dollar', symbol: 'CA$', decimalPlaces: 2, isActive: true },
+      { code: 'EUR', name: 'Euro', symbol: '€', decimalPlaces: 2, isActive: true },
+    ]),
+  },
+}));
+
 // Mock AppHeader
 vi.mock('@/components/layout/AppHeader', () => ({
   AppHeader: () => <div data-testid="app-header">AppHeader</div>,

@@ -4,14 +4,13 @@ import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
 import { zodResolver } from '@/lib/zodResolver';
 import { z } from 'zod';
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Input } from '@/components/ui/Input';
 import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
-import { Combobox } from '@/components/ui/Combobox';
 import toast from 'react-hot-toast';
-import { Account, AmortizationPreview, PaymentFrequency, MortgageAmortizationPreview } from '@/types/account';
+import { Account, PaymentFrequency } from '@/types/account';
 import { Category } from '@/types/category';
 import { accountsApi } from '@/lib/accounts';
 import { categoriesApi } from '@/lib/categories';
@@ -20,6 +19,10 @@ import { getCurrencySymbol } from '@/lib/format';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { createLogger } from '@/lib/logger';
+import { getErrorMessage } from '@/lib/errors';
+import { LoanFields } from './LoanFields';
+import { MortgageFields } from './MortgageFields';
+import { AssetFields } from './AssetFields';
 
 const logger = createLogger('AccountForm');
 
@@ -100,41 +103,6 @@ const accountTypeOptions = [
 ];
 
 
-const paymentFrequencyOptions = [
-  { value: 'WEEKLY', label: 'Weekly' },
-  { value: 'BIWEEKLY', label: 'Every 2 Weeks' },
-  { value: 'MONTHLY', label: 'Monthly' },
-  { value: 'QUARTERLY', label: 'Quarterly' },
-  { value: 'YEARLY', label: 'Yearly' },
-];
-
-const mortgagePaymentFrequencyOptions = [
-  { value: 'MONTHLY', label: 'Monthly' },
-  { value: 'SEMI_MONTHLY', label: 'Semi-Monthly (1st & 15th)' },
-  { value: 'BIWEEKLY', label: 'Bi-Weekly' },
-  { value: 'ACCELERATED_BIWEEKLY', label: 'Accelerated Bi-Weekly' },
-  { value: 'WEEKLY', label: 'Weekly' },
-  { value: 'ACCELERATED_WEEKLY', label: 'Accelerated Weekly' },
-];
-
-const termOptions = [
-  { value: '6', label: '6 months' },
-  { value: '12', label: '1 year' },
-  { value: '24', label: '2 years' },
-  { value: '36', label: '3 years' },
-  { value: '48', label: '4 years' },
-  { value: '60', label: '5 years' },
-  { value: '84', label: '7 years' },
-  { value: '120', label: '10 years' },
-];
-
-const amortizationOptions = [
-  { value: '180', label: '15 years' },
-  { value: '240', label: '20 years' },
-  { value: '300', label: '25 years' },
-  { value: '360', label: '30 years' },
-];
-
 export function AccountForm({ account, onSubmit, onCancel }: AccountFormProps) {
   const router = useRouter();
   const { formatCurrency } = useNumberFormat();
@@ -142,9 +110,6 @@ export function AccountForm({ account, onSubmit, onCancel }: AccountFormProps) {
   const [currencies, setCurrencies] = useState<CurrencyInfo[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [amortizationPreview, setAmortizationPreview] = useState<AmortizationPreview | null>(null);
-  const [mortgagePreview, setMortgagePreview] = useState<MortgageAmortizationPreview | null>(null);
-  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
   const [_defaultLoanCategories, setDefaultLoanCategories] = useState<{
     principalId: string | null;
     interestId: string | null;
@@ -313,76 +278,6 @@ export function AccountForm({ account, onSubmit, onCancel }: AccountFormProps) {
     }
   }, [isLoanAccount, isMortgageAccount, isAssetAccount, account, setValue, getValues]);
 
-  // Calculate amortization preview when loan fields change
-  const calculatePreview = useCallback(async () => {
-    if (!isLoanAccount || !watchedOpeningBalance || !watchedInterestRate ||
-        !watchedPaymentAmount || !watchedPaymentFrequency || !watchedPaymentStartDate) {
-      setAmortizationPreview(null);
-      return;
-    }
-
-    setIsLoadingPreview(true);
-    try {
-      const preview = await accountsApi.previewLoanAmortization({
-        loanAmount: watchedOpeningBalance,
-        interestRate: watchedInterestRate,
-        paymentAmount: watchedPaymentAmount,
-        paymentFrequency: watchedPaymentFrequency,
-        paymentStartDate: watchedPaymentStartDate,
-      });
-      setAmortizationPreview(preview);
-    } catch (error) {
-      logger.error('Failed to calculate preview:', error);
-      setAmortizationPreview(null);
-    } finally {
-      setIsLoadingPreview(false);
-    }
-  }, [isLoanAccount, watchedOpeningBalance, watchedInterestRate, watchedPaymentAmount, watchedPaymentFrequency, watchedPaymentStartDate]);
-
-  // Calculate mortgage amortization preview when mortgage fields change
-  const calculateMortgagePreview = useCallback(async () => {
-    if (!isMortgageAccount || !watchedOpeningBalance || !watchedInterestRate ||
-        !watchedAmortizationMonths || !watchedMortgagePaymentFrequency || !watchedPaymentStartDate) {
-      setMortgagePreview(null);
-      return;
-    }
-
-    setIsLoadingPreview(true);
-    try {
-      const preview = await accountsApi.previewMortgageAmortization({
-        mortgageAmount: watchedOpeningBalance,
-        interestRate: watchedInterestRate,
-        amortizationMonths: watchedAmortizationMonths,
-        paymentFrequency: watchedMortgagePaymentFrequency,
-        paymentStartDate: watchedPaymentStartDate,
-        isCanadian: watchedIsCanadianMortgage || false,
-        isVariableRate: watchedIsVariableRate || false,
-      });
-      setMortgagePreview(preview);
-    } catch (error) {
-      logger.error('Failed to calculate mortgage preview:', error);
-      setMortgagePreview(null);
-    } finally {
-      setIsLoadingPreview(false);
-    }
-  }, [isMortgageAccount, watchedOpeningBalance, watchedInterestRate, watchedAmortizationMonths, watchedMortgagePaymentFrequency, watchedPaymentStartDate, watchedIsCanadianMortgage, watchedIsVariableRate]);
-
-  // Debounced preview calculation
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      calculatePreview();
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [calculatePreview]);
-
-  // Debounced mortgage preview calculation
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      calculateMortgagePreview();
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [calculateMortgagePreview]);
-
   const toggleFavourite = () => {
     setValue('isFavourite', !watchedIsFavourite, { shouldDirty: true });
   };
@@ -462,7 +357,7 @@ export function AccountForm({ account, onSubmit, onCancel }: AccountFormProps) {
       }
     } catch (error) {
       logger.error('Failed to create category:', error);
-      toast.error('Failed to create category');
+      toast.error(getErrorMessage(error, 'Failed to create category'));
     }
   };
 
@@ -561,325 +456,55 @@ export function AccountForm({ account, onSubmit, onCancel }: AccountFormProps) {
         </div>
       )}
 
-      {/* Loan-specific fields */}
       {isLoanAccount && !account && (
-        <div className="space-y-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-          <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
-            Loan Payment Details
-          </h3>
-
-          <div className="grid grid-cols-2 gap-4">
-            <CurrencyInput
-              label="Payment Amount (required)"
-              prefix={currencySymbol}
-              value={watchedPaymentAmount}
-              onChange={(value) => setValue('paymentAmount', value, { shouldValidate: true })}
-              error={errors.paymentAmount?.message}
-              allowNegative={false}
-            />
-
-            <Select
-              label="Payment Frequency (required)"
-              options={[
-                { value: '', label: 'Select frequency...' },
-                ...paymentFrequencyOptions,
-              ]}
-              error={errors.paymentFrequency?.message}
-              {...register('paymentFrequency')}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="First Payment Date (required)"
-              type="date"
-              error={errors.paymentStartDate?.message}
-              {...register('paymentStartDate')}
-            />
-
-            <Select
-              label="Payment From Account (required)"
-              options={[
-                { value: '', label: 'Select account...' },
-                ...accounts
-                  .slice()
-                  .sort((a, b) => a.name.localeCompare(b.name))
-                  .map(a => ({
-                    value: a.id,
-                    label: `${a.name} (${a.currencyCode})`,
-                  })),
-              ]}
-              error={errors.sourceAccountId?.message}
-              {...register('sourceAccountId')}
-            />
-          </div>
-
-          <Select
-            label="Interest Category"
-            options={[
-              { value: '', label: 'Select category...' },
-              ...categories
-                .map(c => ({
-                  value: c.id,
-                  label: c.parentId
-                    ? `${categories.find(p => p.id === c.parentId)?.name || ''}: ${c.name}`
-                    : c.name,
-                }))
-                .sort((a, b) => a.label.localeCompare(b.label)),
-            ]}
-            error={errors.interestCategoryId?.message}
-            {...register('interestCategoryId')}
-          />
-
-          {/* Amortization Preview */}
-          {amortizationPreview && (
-            <div className="p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-              <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">
-                Payment Preview (First Payment)
-              </h4>
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                <div>
-                  <span className="text-gray-500 dark:text-gray-400">Principal:</span>{' '}
-                  <span className="font-medium">{formatCurrency(amortizationPreview.principalPayment, watchedCurrency)}</span>
-                </div>
-                <div>
-                  <span className="text-gray-500 dark:text-gray-400">Interest:</span>{' '}
-                  <span className="font-medium">{formatCurrency(amortizationPreview.interestPayment, watchedCurrency)}</span>
-                </div>
-                <div>
-                  <span className="text-gray-500 dark:text-gray-400">Total Payments:</span>{' '}
-                  <span className="font-medium">
-                    {amortizationPreview.totalPayments > 0 ? amortizationPreview.totalPayments : 'N/A'}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-gray-500 dark:text-gray-400">Est. Payoff:</span>{' '}
-                  <span className="font-medium">
-                    {amortizationPreview.totalPayments > 0
-                      ? new Date(amortizationPreview.endDate).toLocaleDateString()
-                      : 'N/A'}
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
-          {isLoadingPreview && (
-            <div className="text-sm text-gray-500 dark:text-gray-400">
-              Calculating preview...
-            </div>
-          )}
-        </div>
+        <LoanFields
+          currencySymbol={currencySymbol}
+          watchedCurrency={watchedCurrency}
+          paymentAmount={watchedPaymentAmount}
+          interestRate={watchedInterestRate}
+          paymentFrequency={watchedPaymentFrequency}
+          paymentStartDate={watchedPaymentStartDate}
+          openingBalance={watchedOpeningBalance}
+          setValue={setValue}
+          register={register}
+          errors={errors}
+          accounts={accounts}
+          categories={categories}
+          formatCurrency={formatCurrency}
+        />
       )}
 
-      {/* Mortgage-specific fields */}
       {isMortgageAccount && !account && (
-        <div className="space-y-4 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
-          <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
-            Mortgage Details
-          </h3>
-
-          {/* Canadian Mortgage and Variable Rate checkboxes */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex items-start gap-3">
-              <input
-                type="checkbox"
-                id="isCanadianMortgage"
-                className="mt-1 h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                {...register('isCanadianMortgage')}
-              />
-              <label htmlFor="isCanadianMortgage" className="flex-1">
-                <span className="block text-sm font-medium text-gray-900 dark:text-gray-100">
-                  Canadian Mortgage
-                </span>
-                <span className="block text-xs text-gray-500 dark:text-gray-400">
-                  Uses semi-annual compounding for fixed rates (required by law in Canada)
-                </span>
-              </label>
-            </div>
-
-            <div className="flex items-start gap-3">
-              <input
-                type="checkbox"
-                id="isVariableRate"
-                className="mt-1 h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                {...register('isVariableRate')}
-              />
-              <label htmlFor="isVariableRate" className="flex-1">
-                <span className="block text-sm font-medium text-gray-900 dark:text-gray-100">
-                  Variable Rate
-                </span>
-                <span className="block text-xs text-gray-500 dark:text-gray-400">
-                  Rate may change during the term (uses monthly compounding)
-                </span>
-              </label>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <Select
-              label="Term Length"
-              options={[
-                { value: '', label: 'Select term...' },
-                ...termOptions,
-              ]}
-              error={errors.termMonths?.message}
-              {...register('termMonths', { valueAsNumber: true })}
-            />
-
-            <Select
-              label="Amortization Period (required)"
-              options={[
-                { value: '', label: 'Select period...' },
-                ...amortizationOptions,
-              ]}
-              error={errors.amortizationMonths?.message}
-              {...register('amortizationMonths', { valueAsNumber: true })}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <Select
-              label="Payment Frequency (required)"
-              options={[
-                { value: '', label: 'Select frequency...' },
-                ...mortgagePaymentFrequencyOptions,
-              ]}
-              error={errors.mortgagePaymentFrequency?.message}
-              {...register('mortgagePaymentFrequency')}
-            />
-
-            <Input
-              label="First Payment Date (required)"
-              type="date"
-              error={errors.paymentStartDate?.message}
-              {...register('paymentStartDate')}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <Select
-              label="Payment From Account (required)"
-              options={[
-                { value: '', label: 'Select account...' },
-                ...accounts
-                  .slice()
-                  .sort((a, b) => a.name.localeCompare(b.name))
-                  .map(a => ({
-                    value: a.id,
-                    label: `${a.name} (${a.currencyCode})`,
-                  })),
-              ]}
-              error={errors.sourceAccountId?.message}
-              {...register('sourceAccountId')}
-            />
-
-            <Select
-              label="Interest Category"
-              options={[
-                { value: '', label: 'Select category...' },
-                ...categories
-                  .map(c => ({
-                    value: c.id,
-                    label: c.parentId
-                      ? `${categories.find(p => p.id === c.parentId)?.name || ''}: ${c.name}`
-                      : c.name,
-                  }))
-                  .sort((a, b) => a.label.localeCompare(b.label)),
-              ]}
-              error={errors.interestCategoryId?.message}
-              {...register('interestCategoryId')}
-            />
-          </div>
-
-          {/* Mortgage Amortization Preview */}
-          {mortgagePreview && (
-            <div className="p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-              <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">
-                Amortization Preview
-              </h4>
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                <div>
-                  <span className="text-gray-500 dark:text-gray-400">Payment Amount:</span>{' '}
-                  <span className="font-medium">{formatCurrency(mortgagePreview.paymentAmount, watchedCurrency)}</span>
-                </div>
-                <div>
-                  <span className="text-gray-500 dark:text-gray-400">Effective Rate:</span>{' '}
-                  <span className="font-medium">{mortgagePreview.effectiveAnnualRate.toFixed(2)}%</span>
-                </div>
-                <div>
-                  <span className="text-gray-500 dark:text-gray-400">First Payment Principal:</span>{' '}
-                  <span className="font-medium">{formatCurrency(mortgagePreview.principalPayment, watchedCurrency)}</span>
-                </div>
-                <div>
-                  <span className="text-gray-500 dark:text-gray-400">First Payment Interest:</span>{' '}
-                  <span className="font-medium">{formatCurrency(mortgagePreview.interestPayment, watchedCurrency)}</span>
-                </div>
-                <div>
-                  <span className="text-gray-500 dark:text-gray-400">Total Payments:</span>{' '}
-                  <span className="font-medium">
-                    {mortgagePreview.totalPayments > 0 ? mortgagePreview.totalPayments : 'N/A'}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-gray-500 dark:text-gray-400">Total Interest:</span>{' '}
-                  <span className="font-medium">
-                    {mortgagePreview.totalInterest > 0 ? formatCurrency(mortgagePreview.totalInterest, watchedCurrency) : 'N/A'}
-                  </span>
-                </div>
-                <div className="col-span-2">
-                  <span className="text-gray-500 dark:text-gray-400">Est. Payoff Date:</span>{' '}
-                  <span className="font-medium">
-                    {mortgagePreview.totalPayments > 0
-                      ? new Date(mortgagePreview.endDate).toLocaleDateString()
-                      : 'N/A'}
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
-          {isLoadingPreview && isMortgageAccount && (
-            <div className="text-sm text-gray-500 dark:text-gray-400">
-              Calculating preview...
-            </div>
-          )}
-        </div>
+        <MortgageFields
+          watchedCurrency={watchedCurrency}
+          openingBalance={watchedOpeningBalance}
+          interestRate={watchedInterestRate}
+          paymentStartDate={watchedPaymentStartDate}
+          isCanadianMortgage={watchedIsCanadianMortgage}
+          isVariableRate={watchedIsVariableRate}
+          amortizationMonths={watchedAmortizationMonths}
+          mortgagePaymentFrequency={watchedMortgagePaymentFrequency}
+          setValue={setValue}
+          register={register}
+          errors={errors}
+          accounts={accounts}
+          categories={categories}
+          formatCurrency={formatCurrency}
+        />
       )}
 
-      {/* Asset-specific fields */}
       {isAssetAccount && (
-        <div className="space-y-4 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
-          <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
-            Asset Value Change Settings
-          </h3>
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            Select a category that will be used to track value changes for this asset (e.g., "Home Value Change", "Vehicle Depreciation").
-          </p>
-          <Combobox
-            label="Value Change Category"
-            placeholder="Select or create category..."
-            options={categories.map(c => ({
-              value: c.id,
-              label: c.parentId
-                ? `${categories.find(p => p.id === c.parentId)?.name || ''}: ${c.name}`
-                : c.name,
-            })).sort((a, b) => a.label.localeCompare(b.label))}
-            value={selectedAssetCategoryId}
-            initialDisplayValue={assetCategoryName || account?.assetCategoryId ? categories.find(c => c.id === (selectedAssetCategoryId || account?.assetCategoryId))?.name : ''}
-            onChange={handleAssetCategoryChange}
-            onCreateNew={handleAssetCategoryCreate}
-            allowCustomValue={true}
-          />
-          <Input
-            label="Date Acquired"
-            type="date"
-            className={watchedDateAcquired ? '' : 'date-empty'}
-            error={errors.dateAcquired?.message}
-            {...register('dateAcquired')}
-          />
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            The asset will be excluded from net worth calculations before this date.
-          </p>
-        </div>
+        <AssetFields
+          categories={categories}
+          selectedAssetCategoryId={selectedAssetCategoryId}
+          assetCategoryName={assetCategoryName}
+          accountAssetCategoryId={account?.assetCategoryId}
+          handleAssetCategoryChange={handleAssetCategoryChange}
+          handleAssetCategoryCreate={handleAssetCategoryCreate}
+          register={register}
+          errors={errors}
+          watchedDateAcquired={watchedDateAcquired}
+        />
       )}
 
       <Input

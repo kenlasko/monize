@@ -16,6 +16,15 @@ vi.mock('@/lib/investments', () => ({
   },
 }));
 
+vi.mock('@/lib/exchange-rates', () => ({
+  exchangeRatesApi: {
+    getCurrencies: vi.fn().mockResolvedValue([
+      { code: 'CAD', name: 'Canadian Dollar', symbol: 'CA$', decimalPlaces: 2, isActive: true },
+      { code: 'USD', name: 'US Dollar', symbol: '$', decimalPlaces: 2, isActive: true },
+    ]),
+  },
+}));
+
 vi.mock('@/lib/logger', () => ({
   createLogger: () => ({ error: vi.fn(), info: vi.fn(), warn: vi.fn(), debug: vi.fn() }),
 }));

@@ -51,7 +51,7 @@ function AccountsContent() {
       setAccounts(data);
       setPortfolioSummary(portfolio);
     } catch (error) {
-      toast.error('Failed to load accounts');
+      toast.error(getErrorMessage(error, 'Failed to load accounts'));
       logger.error(error);
     } finally {
       setIsLoading(false);

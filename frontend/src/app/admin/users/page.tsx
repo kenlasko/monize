@@ -61,7 +61,7 @@ export default function AdminUsersPage() {
       setUsers(data);
     } catch (error) {
       logger.error('Failed to load users:', error);
-      toast.error('Failed to load users');
+      toast.error(getErrorMessage(error, 'Failed to load users'));
     } finally {
       setIsLoading(false);
     }

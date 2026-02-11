@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useCallback, useRef } from 'react';
+import { useState, useMemo, useCallback, useRef, memo } from 'react';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { InvestmentTransaction } from '@/types/investment';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
@@ -58,6 +58,114 @@ const ACTION_OPTIONS = [
   { value: 'ADD_SHARES', label: 'Add Shares' },
   { value: 'REMOVE_SHARES', label: 'Remove Shares' },
 ];
+
+interface InvestmentTransactionRowProps {
+  tx: InvestmentTransaction;
+  index: number;
+  density: DensityLevel;
+  cellPadding: string;
+  defaultCurrency: string;
+  formatDate: (date: string) => string;
+  formatCurrency: (amount: number, currencyCode?: string) => string;
+  formatQuantity: (value: number) => string;
+  onRowClick: (tx: InvestmentTransaction) => void;
+  onLongPressStart: (tx: InvestmentTransaction, e?: React.TouchEvent) => void;
+  onLongPressEnd: () => void;
+  onTouchMove: (e: React.TouchEvent) => void;
+  onEdit?: (tx: InvestmentTransaction) => void;
+  onDeleteClick: (tx: InvestmentTransaction) => void;
+  hasActions: boolean;
+}
+
+const InvestmentTransactionRow = memo(function InvestmentTransactionRow({
+  tx,
+  index,
+  density,
+  cellPadding,
+  defaultCurrency,
+  formatDate,
+  formatCurrency,
+  formatQuantity,
+  onRowClick,
+  onLongPressStart,
+  onLongPressEnd,
+  onTouchMove,
+  onEdit,
+  onDeleteClick,
+  hasActions,
+}: InvestmentTransactionRowProps) {
+  const actionInfo = ACTION_LABELS[tx.action] || {
+    label: tx.action,
+    shortLabel: tx.action,
+    color: 'text-gray-600 dark:text-gray-400',
+  };
+
+  return (
+    <tr
+      onClick={() => onRowClick(tx)}
+      onMouseDown={() => onLongPressStart(tx)}
+      onMouseUp={onLongPressEnd}
+      onMouseLeave={onLongPressEnd}
+      onTouchStart={(e) => onLongPressStart(tx, e)}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onLongPressEnd}
+      onTouchCancel={onLongPressEnd}
+      className={`hover:bg-gray-50 dark:hover:bg-gray-700/30 ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-gray-800/50' : ''} ${onEdit ? 'cursor-pointer' : ''}`}
+    >
+      <td className={`${cellPadding} whitespace-nowrap text-sm text-gray-900 dark:text-gray-100`}>
+        {formatDate(tx.transactionDate)}
+      </td>
+      <td className={`${cellPadding} whitespace-nowrap`}>
+        <span className={`text-sm font-medium ${actionInfo.color}`}>
+          {density === 'dense' ? actionInfo.shortLabel : actionInfo.label}
+        </span>
+      </td>
+      <td className={`${cellPadding}`}>
+        <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+          {tx.security?.symbol || '-'}
+        </div>
+        {density === 'normal' && (
+          <div className="text-xs text-gray-500 dark:text-gray-400">
+            {tx.security?.name || ''}
+          </div>
+        )}
+      </td>
+      <td className={`${cellPadding} whitespace-nowrap text-right text-sm text-gray-900 dark:text-gray-100 hidden sm:table-cell`}>
+        {formatQuantity(tx.quantity ?? 0)}
+      </td>
+      <td className={`${cellPadding} whitespace-nowrap text-right text-sm text-gray-900 dark:text-gray-100 hidden md:table-cell`}>
+        {formatCurrency(tx.price ?? 0, tx.security?.currencyCode)}
+        {tx.security?.currencyCode && tx.security.currencyCode !== defaultCurrency && (
+          <span className="ml-1">{tx.security.currencyCode}</span>
+        )}
+      </td>
+      <td className={`${cellPadding} whitespace-nowrap text-right text-sm font-medium text-gray-900 dark:text-gray-100`}>
+        {formatCurrency(tx.totalAmount, tx.security?.currencyCode)}
+        {tx.security?.currencyCode && tx.security.currencyCode !== defaultCurrency && (
+          <span className="ml-1 font-normal">{tx.security.currencyCode}</span>
+        )}
+      </td>
+      {hasActions && (
+        <td className={`${cellPadding} whitespace-nowrap text-right text-sm space-x-3 hidden min-[480px]:table-cell`}>
+          {onEdit && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onEdit(tx); }}
+              className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+            >
+              {density === 'dense' ? '✎' : 'Edit'}
+            </button>
+          )}
+          <button
+            onClick={(e) => { e.stopPropagation(); onDeleteClick(tx); }}
+            className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
+          >
+            {density === 'dense' ? '✕' : 'Delete'}
+          </button>
+        </td>
+      )}
+    </tr>
+  );
+});
 
 export function InvestmentTransactionList({
   transactions,
@@ -130,6 +238,10 @@ export function InvestmentTransactionList({
     }
   }, [onEdit]);
 
+  const handleDeleteClick = useCallback((tx: InvestmentTransaction) => {
+    setDeleteConfirm({ isOpen: true, transaction: tx });
+  }, []);
+
   const handleDeleteConfirm = useCallback(() => {
     if (deleteConfirm.transaction && onDelete) {
       onDelete(deleteConfirm.transaction.id);
@@ -173,13 +285,13 @@ export function InvestmentTransactionList({
     }
   }, [density, onDensityChange]);
 
-  const formatQuantity = (value: number) => {
+  const formatQuantity = useCallback((value: number) => {
     const locale = numberFormat === 'browser' ? undefined : numberFormat;
     return new Intl.NumberFormat(locale, {
       minimumFractionDigits: 0,
       maximumFractionDigits: 4,
     }).format(value);
-  };
+  }, [numberFormat]);
 
   if (isLoading) {
     return (
@@ -389,81 +501,26 @@ export function InvestmentTransactionList({
             </tr>
           </thead>
           <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-            {transactions.map((tx, index) => {
-              const actionInfo = ACTION_LABELS[tx.action] || {
-                label: tx.action,
-                shortLabel: tx.action,
-                color: 'text-gray-600 dark:text-gray-400',
-              };
-              return (
-                <tr
-                  key={tx.id}
-                  onClick={() => handleRowClick(tx)}
-                  onMouseDown={() => handleLongPressStart(tx)}
-                  onMouseUp={handleLongPressEnd}
-                  onMouseLeave={handleLongPressEnd}
-                  onTouchStart={(e) => handleLongPressStart(tx, e)}
-                  onTouchMove={handleTouchMove}
-                  onTouchEnd={handleLongPressEnd}
-                  onTouchCancel={handleLongPressEnd}
-                  className={`hover:bg-gray-50 dark:hover:bg-gray-700/30 ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-gray-800/50' : ''} ${onEdit ? 'cursor-pointer' : ''}`}
-                >
-                  <td className={`${cellPadding} whitespace-nowrap text-sm text-gray-900 dark:text-gray-100`}>
-                    {formatDate(tx.transactionDate)}
-                  </td>
-                  <td className={`${cellPadding} whitespace-nowrap`}>
-                    <span className={`text-sm font-medium ${actionInfo.color}`}>
-                      {density === 'dense' ? actionInfo.shortLabel : actionInfo.label}
-                    </span>
-                  </td>
-                  <td className={`${cellPadding}`}>
-                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                      {tx.security?.symbol || '-'}
-                    </div>
-                    {density === 'normal' && (
-                      <div className="text-xs text-gray-500 dark:text-gray-400">
-                        {tx.security?.name || ''}
-                      </div>
-                    )}
-                  </td>
-                  <td className={`${cellPadding} whitespace-nowrap text-right text-sm text-gray-900 dark:text-gray-100 hidden sm:table-cell`}>
-                    {formatQuantity(tx.quantity ?? 0)}
-                  </td>
-                  <td className={`${cellPadding} whitespace-nowrap text-right text-sm text-gray-900 dark:text-gray-100 hidden md:table-cell`}>
-                    {formatCurrency(tx.price ?? 0, tx.security?.currencyCode)}
-                    {tx.security?.currencyCode && tx.security.currencyCode !== defaultCurrency && (
-                      <span className="ml-1">{tx.security.currencyCode}</span>
-                    )}
-                  </td>
-                  <td className={`${cellPadding} whitespace-nowrap text-right text-sm font-medium text-gray-900 dark:text-gray-100`}>
-                    {formatCurrency(tx.totalAmount, tx.security?.currencyCode)}
-                    {tx.security?.currencyCode && tx.security.currencyCode !== defaultCurrency && (
-                      <span className="ml-1 font-normal">{tx.security.currencyCode}</span>
-                    )}
-                  </td>
-                  {(onDelete || onEdit) && (
-                    <td className={`${cellPadding} whitespace-nowrap text-right text-sm space-x-3 hidden min-[480px]:table-cell`}>
-                      {onEdit && (
-                        <button
-                          onClick={(e) => { e.stopPropagation(); onEdit(tx); }}
-                          className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
-                        >
-                          {density === 'dense' ? '✎' : 'Edit'}
-                        </button>
-                      )}
-                      {onDelete && (
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setDeleteConfirm({ isOpen: true, transaction: tx }); }}
-                          className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
-                        >
-                          {density === 'dense' ? '✕' : 'Delete'}
-                        </button>
-                      )}
-                    </td>
-                  )}
-                </tr>
-              );
-            })}
+            {transactions.map((tx, index) => (
+              <InvestmentTransactionRow
+                key={tx.id}
+                tx={tx}
+                index={index}
+                density={density}
+                cellPadding={cellPadding}
+                defaultCurrency={defaultCurrency}
+                formatDate={formatDate}
+                formatCurrency={formatCurrency}
+                formatQuantity={formatQuantity}
+                onRowClick={handleRowClick}
+                onLongPressStart={handleLongPressStart}
+                onLongPressEnd={handleLongPressEnd}
+                onTouchMove={handleTouchMove}
+                onEdit={onEdit}
+                onDeleteClick={handleDeleteClick}
+                hasActions={!!(onDelete || onEdit)}
+              />
+            ))}
           </tbody>
         </table>
       </div>

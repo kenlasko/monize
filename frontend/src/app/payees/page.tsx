@@ -56,7 +56,7 @@ function PayeesContent() {
       setPayees(payeesData);
       setCategories(categoriesData);
     } catch (error) {
-      toast.error('Failed to load data');
+      toast.error(getErrorMessage(error, 'Failed to load data'));
       logger.error(error);
     } finally {
       setIsLoading(false);

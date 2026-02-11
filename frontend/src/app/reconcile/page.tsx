@@ -59,8 +59,8 @@ function ReconcileContent() {
           (a) => a.accountSubType !== 'INVESTMENT_BROKERAGE' && !a.isClosed
         );
         setAccounts(filteredAccounts);
-      } catch {
-        toast.error('Failed to load accounts');
+      } catch (error) {
+        toast.error(getErrorMessage(error, 'Failed to load accounts'));
       }
     };
     loadAccounts();

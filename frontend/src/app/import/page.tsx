@@ -1,15 +1,18 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { Button } from '@/components/ui/Button';
-import { Select } from '@/components/ui/Select';
-import { Input } from '@/components/ui/Input';
-import { CategoryMappingRow } from '@/components/import/CategoryMappingRow';
+import { UploadStep } from '@/components/import/UploadStep';
+import { SelectAccountStep } from '@/components/import/SelectAccountStep';
+import { MapCategoriesStep } from '@/components/import/MapCategoriesStep';
+import { MapSecuritiesStep } from '@/components/import/MapSecuritiesStep';
+import { MapAccountsStep } from '@/components/import/MapAccountsStep';
+import { ReviewStep } from '@/components/import/ReviewStep';
+import { CompleteStep } from '@/components/import/CompleteStep';
 import { importApi, ParsedQifResponse, CategoryMapping, AccountMapping, SecurityMapping, ImportResult, DateFormat } from '@/lib/import';
 import { accountsApi } from '@/lib/accounts';
 import { categoriesApi } from '@/lib/categories';
@@ -105,7 +108,6 @@ export default function ImportPage() {
 }
 
 function ImportContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const preselectedAccountId = searchParams.get('accountId');
   const defaultCurrency = usePreferencesStore((s) => s.preferences?.defaultCurrency) || 'USD';
@@ -218,8 +220,8 @@ function ImportContent() {
             setSelectedAccountId(preselectedAccountId);
           }
         }
-      } catch {
-        toast.error('Failed to load data');
+      } catch (error) {
+        toast.error(getErrorMessage(error, 'Failed to load data'));
       }
     };
     loadData();
@@ -1017,1007 +1019,139 @@ function ImportContent() {
     { value: 'OTHER', label: 'Other' },
   ];
 
+  const preselectedAccount = accounts.find((a) => a.id === preselectedAccountId);
+
   const renderStep = () => {
     switch (step) {
       case 'upload':
-        const preselectedAccount = accounts.find((a) => a.id === preselectedAccountId);
         return (
-          <div className="max-w-xl mx-auto">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
-                Upload QIF Files
-              </h2>
-              {preselectedAccount && (
-                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-4">
-                  <p className="text-sm text-blue-700 dark:text-blue-300">
-                    Importing to: <strong>{preselectedAccount.name}</strong> ({formatAccountType(preselectedAccount.accountType)})
-                  </p>
-                </div>
-              )}
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
-                Select one or more QIF files to import. You can select multiple files at once for bulk import.
-                Files will be automatically matched to accounts based on filename.
-              </p>
-              <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center">
-                <input
-                  type="file"
-                  accept=".qif"
-                  multiple
-                  onChange={handleFileSelect}
-                  className="hidden"
-                  id="qif-file"
-                  disabled={isLoading}
-                />
-                <label
-                  htmlFor="qif-file"
-                  className="cursor-pointer inline-flex flex-col items-center"
-                >
-                  <svg
-                    className="w-12 h-12 text-gray-400 mb-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                    />
-                  </svg>
-                  <span className="text-gray-600 dark:text-gray-400">
-                    {isLoading ? 'Processing...' : 'Click to select QIF file(s)'}
-                  </span>
-                </label>
-              </div>
-            </div>
-          </div>
+          <UploadStep
+            preselectedAccount={preselectedAccount}
+            isLoading={isLoading}
+            onFileSelect={handleFileSelect}
+          />
         );
 
       case 'selectAccount':
-        // Helper to get compatible accounts for a file type
-        const getCompatibleAccountsForType = (isInvestment: boolean) => {
-          return accounts.filter((a) => {
-            if (isInvestment) {
-              return isInvestmentBrokerageAccount(a);
-            } else {
-              return !isInvestmentBrokerageAccount(a);
-            }
-          }).sort((a, b) => a.name.localeCompare(b.name));
-        };
-
-        // Check if all files have valid account selections
-        const allFilesHaveAccounts = importFiles.every((f) => f.selectedAccountId);
-
-        // For single file, use the old display
-        if (!isBulkImport && parsedData) {
-          const isQifInvestment = parsedData.accountType === 'INVESTMENT';
-          const compatibleAccounts = getCompatibleAccountsForType(isQifInvestment);
-
-          return (
-            <div className="max-w-xl mx-auto">
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
-                  Select Destination Account
-                </h2>
-                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-6">
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    <strong>File:</strong> {fileName}
-                  </p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    <strong>Transactions:</strong> {parsedData.transactionCount}
-                  </p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    <strong>Date Range:</strong> {parsedData.dateRange.start} to {parsedData.dateRange.end}
-                  </p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    <strong>Detected Type:</strong> {parsedData.accountType}
-                  </p>
-                </div>
-
-                {isQifInvestment && (
-                  <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4">
-                    <p className="text-sm text-blue-700 dark:text-blue-300">
-                      This file contains investment transactions. Only brokerage accounts are shown.
-                    </p>
-                  </div>
-                )}
-
-                {compatibleAccounts.length > 0 && (
-                  <Select
-                    label="Import into account"
-                    options={compatibleAccounts.map((a) => ({
-                      value: a.id,
-                      label: `${a.name} (${formatAccountType(a.accountType)})`,
-                    }))}
-                    value={selectedAccountId}
-                    onChange={(e) => setSelectedAccountId(e.target.value)}
-                  />
-                )}
-
-                {!showCreateAccount ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowCreateAccount(true);
-                      setCreatingForFileIndex(0);
-                      setNewAccountName(fileName.replace(/\.[^/.]+$/, '').trim());
-                      setNewAccountType(parsedData.accountType || 'CHEQUING');
-                    }}
-                    className="mt-3 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
-                  >
-                    + Create new account
-                  </button>
-                ) : creatingForFileIndex === 0 && (
-                  <div className="mt-4 border border-blue-200 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 space-y-3">
-                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Create New Account</p>
-                    <Input
-                      label="Account name"
-                      value={newAccountName}
-                      onChange={(e) => setNewAccountName(e.target.value)}
-                      placeholder="e.g. My Chequing"
-                    />
-                    <Select
-                      label="Account type"
-                      options={accountTypeOptions}
-                      value={newAccountType}
-                      onChange={(e) => setNewAccountType(e.target.value)}
-                    />
-                    <Select
-                      label="Currency"
-                      options={currencyOptions}
-                      value={newAccountCurrency}
-                      onChange={(e) => setNewAccountCurrency(e.target.value)}
-                    />
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        onClick={() => handleCreateAccount(0)}
-                        disabled={isCreatingAccount || !newAccountName.trim()}
-                      >
-                        {isCreatingAccount ? 'Creating...' : 'Create'}
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => { setShowCreateAccount(false); setCreatingForFileIndex(-1); setNewAccountName(''); }}
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex justify-between mt-6">
-                  <Button variant="outline" onClick={() => setStep('upload')}>
-                    Back
-                  </Button>
-                  <Button
-                    onClick={() => {
-                      if (categoryMappings.length > 0) {
-                        setStep('mapCategories');
-                      } else if (securityMappings.length > 0) {
-                        setStep('mapSecurities');
-                      } else if (shouldShowMapAccounts) {
-                        setStep('mapAccounts');
-                      } else {
-                        setStep('review');
-                      }
-                    }}
-                    disabled={!selectedAccountId}
-                  >
-                    Next
-                  </Button>
-                </div>
-              </div>
-            </div>
-          );
-        }
-
-        // Bulk import: show all files with their account selections
         return (
-          <div className="max-w-4xl mx-auto">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
-                Select Destination Accounts
-              </h2>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
-                Verify or change the destination account for each file. Files have been automatically matched based on filename.
-              </p>
-
-              <div className="space-y-4 max-h-[32rem] overflow-y-auto">
-                {importFiles.map((fileData, index) => {
-                  const isInvestment = fileData.parsedData.accountType === 'INVESTMENT';
-                  const compatibleAccounts = getCompatibleAccountsForType(isInvestment);
-                  const isHighConfidence = fileData.selectedAccountId && fileData.matchConfidence === 'exact';
-
-                  return (
-                    <div
-                      key={index}
-                      className={`border rounded-lg p-4 ${
-                        isHighConfidence
-                          ? 'border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20'
-                          : 'border-amber-300 dark:border-amber-600 bg-amber-50 dark:bg-amber-900/20'
-                      }`}
-                    >
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-gray-900 dark:text-gray-100 truncate">
-                            {fileData.fileName}
-                          </p>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">
-                            {fileData.parsedData.transactionCount} transactions
-                            {isInvestment && ' (Investment)'}
-                          </p>
-                        </div>
-                        <div className="sm:w-80">
-                          <Select
-                            options={compatibleAccounts.map((a) => ({
-                              value: a.id,
-                              label: `${a.name} (${formatAccountType(a.accountType)})`,
-                            }))}
-                            value={fileData.selectedAccountId}
-                            onChange={(e) => setFileAccountId(index, e.target.value)}
-                          />
-                          {creatingForFileIndex !== index ? (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setCreatingForFileIndex(index);
-                                setShowCreateAccount(true);
-                                setNewAccountType(fileData.parsedData.accountType || 'CHEQUING');
-                                setNewAccountName(fileData.fileName.replace(/\.[^/.]+$/, '').trim());
-                              }}
-                              className="mt-1 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
-                            >
-                              + Create new
-                            </button>
-                          ) : (
-                            <div className="mt-2 border border-blue-200 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 space-y-2">
-                              <Input
-                                label="Account name"
-                                value={newAccountName}
-                                onChange={(e) => setNewAccountName(e.target.value)}
-                                placeholder="e.g. My Chequing"
-                              />
-                              <Select
-                                label="Account type"
-                                options={accountTypeOptions}
-                                value={newAccountType}
-                                onChange={(e) => setNewAccountType(e.target.value)}
-                              />
-                              <Select
-                                label="Currency"
-                                options={currencyOptions}
-                                value={newAccountCurrency}
-                                onChange={(e) => setNewAccountCurrency(e.target.value)}
-                              />
-                              <div className="flex gap-2">
-                                <Button size="sm" onClick={() => handleCreateAccount(index)} disabled={isCreatingAccount || !newAccountName.trim()}>
-                                  {isCreatingAccount ? 'Creating...' : 'Create'}
-                                </Button>
-                                <Button size="sm" variant="outline" onClick={() => { setCreatingForFileIndex(-1); setShowCreateAccount(false); setNewAccountName(''); }}>
-                                  Cancel
-                                </Button>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div className="mt-4 text-sm text-gray-600 dark:text-gray-400">
-                <strong>Total:</strong> {importFiles.length} files,{' '}
-                {importFiles.reduce((sum, f) => sum + f.parsedData.transactionCount, 0)} transactions
-              </div>
-
-              <div className="flex justify-between mt-6">
-                <Button variant="outline" onClick={() => setStep('upload')}>
-                  Back
-                </Button>
-                <Button
-                  onClick={() => {
-                    if (categoryMappings.length > 0) {
-                      setStep('mapCategories');
-                    } else if (securityMappings.length > 0) {
-                      setStep('mapSecurities');
-                    } else if (shouldShowMapAccounts) {
-                      setStep('mapAccounts');
-                    } else {
-                      setStep('review');
-                    }
-                  }}
-                  disabled={!allFilesHaveAccounts}
-                >
-                  Next
-                </Button>
-              </div>
-            </div>
-          </div>
+          <SelectAccountStep
+            accounts={accounts}
+            importFiles={importFiles}
+            isBulkImport={isBulkImport}
+            fileName={fileName}
+            parsedData={parsedData}
+            selectedAccountId={selectedAccountId}
+            setSelectedAccountId={(id) => setSelectedAccountId(id)}
+            setFileAccountId={setFileAccountId}
+            showCreateAccount={showCreateAccount}
+            setShowCreateAccount={setShowCreateAccount}
+            creatingForFileIndex={creatingForFileIndex}
+            setCreatingForFileIndex={setCreatingForFileIndex}
+            newAccountName={newAccountName}
+            setNewAccountName={setNewAccountName}
+            newAccountType={newAccountType}
+            setNewAccountType={setNewAccountType}
+            newAccountCurrency={newAccountCurrency}
+            setNewAccountCurrency={setNewAccountCurrency}
+            isCreatingAccount={isCreatingAccount}
+            handleCreateAccount={handleCreateAccount}
+            accountTypeOptions={accountTypeOptions}
+            currencyOptions={currencyOptions}
+            categoryMappings={categoryMappings}
+            securityMappings={securityMappings}
+            shouldShowMapAccounts={shouldShowMapAccounts}
+            setStep={setStep}
+          />
         );
 
       case 'mapCategories':
-        // A category is "matched" only if it has a category mapped OR is a loan with an account selected/created
-        // For new loans, require both the name AND the initial amount before considering it fully mapped
-        const isFullyMapped = (m: CategoryMapping) =>
-          m.categoryId || (m.isLoanCategory && (m.loanAccountId || (m.createNewLoan && m.newLoanAmount !== undefined)));
-        const unmatchedCategories = categoryMappings.filter((m) => !isFullyMapped(m));
-        // Separate matched categories from matched loans
-        const matchedCategoriesOnly = categoryMappings.filter((m) => m.categoryId);
-        const matchedLoansOnly = categoryMappings.filter((m) => m.isLoanCategory && (m.loanAccountId || (m.createNewLoan && m.newLoanAmount !== undefined)));
-        // Filter loan accounts for the loan category mapping feature
-        const loanAccounts = accounts
-          .filter((a) => a.accountType === 'LOAN' || a.accountType === 'MORTGAGE')
-          .sort((a, b) => a.name.localeCompare(b.name));
-
         return (
-          <div className="max-w-4xl mx-auto">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
-                Map Categories
-              </h2>
-              <p className="text-gray-600 dark:text-gray-400 mb-4">
-                The following categories were found in your QIF file. Map them to existing
-                categories or create new ones.
-              </p>
-
-              {/* Summary */}
-              <div className="flex flex-wrap gap-4 mb-4 text-sm">
-                <span className="text-amber-600 dark:text-amber-400">
-                  {unmatchedCategories.length} need attention
-                </span>
-                <span className="text-green-600 dark:text-green-400">
-                  {matchedCategoriesOnly.length} matched to categories
-                </span>
-                {matchedLoansOnly.length > 0 && (
-                  <span className="text-blue-600 dark:text-blue-400">
-                    {matchedLoansOnly.length} matched to loans
-                  </span>
-                )}
-              </div>
-
-              <div ref={scrollContainerRef} className="space-y-3 max-h-[32rem] overflow-y-auto">
-                {/* Unmatched categories first - highlighted */}
-                {unmatchedCategories.map((mapping) => {
-                  const index = categoryMappings.findIndex((m) => m.originalName === mapping.originalName);
-                  return (
-                    <CategoryMappingRow
-                      key={mapping.originalName}
-                      mapping={mapping}
-                      categoryOptions={categoryOptions}
-                      parentCategoryOptions={parentCategoryOptions}
-                      loanAccounts={loanAccounts}
-                      onMappingChange={(update) => {
-                        setCategoryMappings((prev) => {
-                          const updated = [...prev];
-                          updated[index] = { ...updated[index], ...update };
-                          return updated;
-                        });
-                      }}
-                      formatCategoryPath={formatCategoryPath}
-                      isHighlighted={true}
-                    />
-                  );
-                })}
-
-                {/* Matched loans - shown separately with blue styling */}
-                {matchedLoansOnly.length > 0 && (
-                  <details className="group" open>
-                    <summary className="cursor-pointer text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 py-2">
-                      <span className="ml-1">Show {matchedLoansOnly.length} auto-matched to loan accounts</span>
-                    </summary>
-                    <div className="space-y-2 mt-2">
-                      {matchedLoansOnly.map((mapping) => {
-                        const index = categoryMappings.findIndex((m) => m.originalName === mapping.originalName);
-                        return (
-                          <CategoryMappingRow
-                            key={mapping.originalName}
-                            mapping={mapping}
-                            categoryOptions={categoryOptions}
-                            parentCategoryOptions={parentCategoryOptions}
-                            loanAccounts={loanAccounts}
-                            onMappingChange={(update) => {
-                              setCategoryMappings((prev) => {
-                                const updated = [...prev];
-                                updated[index] = { ...updated[index], ...update };
-                                return updated;
-                              });
-                            }}
-                            formatCategoryPath={formatCategoryPath}
-                            isHighlighted={false}
-                          />
-                        );
-                      })}
-                    </div>
-                  </details>
-                )}
-
-                {/* Matched categories - minimized */}
-                {matchedCategoriesOnly.length > 0 && (
-                  <details className="group">
-                    <summary className="cursor-pointer text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 py-2">
-                      <span className="ml-1">Show {matchedCategoriesOnly.length} auto-matched to categories</span>
-                    </summary>
-                    <div className="space-y-2 mt-2">
-                      {matchedCategoriesOnly.map((mapping) => {
-                        const index = categoryMappings.findIndex((m) => m.originalName === mapping.originalName);
-                        return (
-                          <CategoryMappingRow
-                            key={mapping.originalName}
-                            mapping={mapping}
-                            categoryOptions={categoryOptions}
-                            parentCategoryOptions={parentCategoryOptions}
-                            loanAccounts={loanAccounts}
-                            onMappingChange={(update) => {
-                              setCategoryMappings((prev) => {
-                                const updated = [...prev];
-                                updated[index] = { ...updated[index], ...update };
-                                return updated;
-                              });
-                            }}
-                            formatCategoryPath={formatCategoryPath}
-                            isHighlighted={false}
-                          />
-                        );
-                      })}
-                    </div>
-                  </details>
-                )}
-              </div>
-              <div className="flex justify-between mt-6">
-                <Button
-                  variant="outline"
-                  onClick={() => setStep('selectAccount')}
-                >
-                  Back
-                </Button>
-                <Button
-                  onClick={() => {
-                    if (securityMappings.length > 0) {
-                      setStep('mapSecurities');
-                    } else if (shouldShowMapAccounts) {
-                      setStep('mapAccounts');
-                    } else {
-                      setStep('review');
-                    }
-                  }}
-                >
-                  Next
-                </Button>
-              </div>
-            </div>
-          </div>
+          <MapCategoriesStep
+            categoryMappings={categoryMappings}
+            setCategoryMappings={setCategoryMappings}
+            categoryOptions={categoryOptions}
+            parentCategoryOptions={parentCategoryOptions}
+            accounts={accounts}
+            scrollContainerRef={scrollContainerRef}
+            formatCategoryPath={formatCategoryPath}
+            securityMappings={securityMappings}
+            shouldShowMapAccounts={shouldShowMapAccounts}
+            setStep={setStep}
+          />
         );
 
       case 'mapSecurities':
-        // Count securities that have been looked up (have symbol and name filled in) or mapped to existing
-        const readyCount = securityMappings.filter((m) => m.securityId || (m.createNew && m.securityName)).length;
-        const needsAttentionCount = securityMappings.length - readyCount;
-
         return (
-          <div className="max-w-4xl mx-auto">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
-                Map Securities
-              </h2>
-              <p className="text-gray-600 dark:text-gray-400 mb-4">
-                The following securities were found in your QIF file. Map them to existing
-                securities or create new ones.
-              </p>
-
-              {/* Summary */}
-              <div className="flex gap-4 mb-4 text-sm">
-                <span className="text-amber-600 dark:text-amber-400">
-                  {needsAttentionCount} need attention
-                </span>
-                <span className="text-green-600 dark:text-green-400">
-                  {readyCount} ready
-                </span>
-                {bulkLookupInProgress && (
-                  <span className="text-blue-600 dark:text-blue-400">
-                    Looking up securities...
-                  </span>
-                )}
-              </div>
-
-              <div className="space-y-3 max-h-[32rem] overflow-y-auto">
-                {securityMappings.map((mapping, index) => {
-                  // Green if mapped to existing OR has symbol and name filled in
-                  const isReady = mapping.securityId || (mapping.createNew && mapping.securityName);
-                  return (
-                    <div
-                      key={mapping.originalName}
-                      className={isReady
-                        ? "border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20 rounded-lg p-4"
-                        : "border-2 border-amber-300 dark:border-amber-600 bg-amber-50 dark:bg-amber-900/20 rounded-lg p-4"
-                      }
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <p className="font-medium text-gray-900 dark:text-gray-100">
-                          {mapping.originalName}
-                        </p>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleSecurityLookup(index, mapping.createNew || mapping.originalName)}
-                          disabled={lookupLoadingIndex === index}
-                        >
-                          {lookupLoadingIndex === index ? 'Looking up...' : 'Lookup'}
-                        </Button>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <Select
-                          label="Map to existing"
-                          options={getSecurityOptions()}
-                          value={mapping.securityId || ''}
-                          onChange={(e) =>
-                            handleSecurityMappingChange(index, 'securityId', e.target.value)
-                          }
-                        />
-                        <div className="space-y-2">
-                          <Input
-                            label="Or create new (symbol)"
-                            placeholder="e.g., AAPL"
-                            value={mapping.createNew || ''}
-                            onChange={(e) =>
-                              handleSecurityMappingChange(index, 'createNew', e.target.value)
-                            }
-                          />
-                          <Input
-                            label="Security name"
-                            placeholder="e.g., Apple Inc."
-                            value={mapping.securityName || ''}
-                            onChange={(e) =>
-                              handleSecurityMappingChange(index, 'securityName', e.target.value)
-                            }
-                          />
-                          <div className="grid grid-cols-2 gap-2">
-                            <Select
-                              label="Security type"
-                              options={securityTypeOptions}
-                              value={mapping.securityType || 'STOCK'}
-                              onChange={(e) =>
-                                handleSecurityMappingChange(index, 'securityType', e.target.value)
-                              }
-                            />
-                            <Input
-                              label="Exchange"
-                              placeholder="e.g., TSX, NYSE"
-                              value={mapping.exchange || ''}
-                              onChange={(e) =>
-                                handleSecurityMappingChange(index, 'exchange', e.target.value)
-                              }
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-              <div className="flex justify-between mt-6">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    if (categoryMappings.length > 0) {
-                      setStep('mapCategories');
-                    } else {
-                      setStep('selectAccount');
-                    }
-                  }}
-                >
-                  Back
-                </Button>
-                <Button
-                  onClick={() => {
-                    if (shouldShowMapAccounts) {
-                      setStep('mapAccounts');
-                    } else {
-                      setStep('review');
-                    }
-                  }}
-                >
-                  Next
-                </Button>
-              </div>
-            </div>
-          </div>
+          <MapSecuritiesStep
+            securityMappings={securityMappings}
+            handleSecurityMappingChange={handleSecurityMappingChange}
+            handleSecurityLookup={handleSecurityLookup}
+            lookupLoadingIndex={lookupLoadingIndex}
+            bulkLookupInProgress={bulkLookupInProgress}
+            securityOptions={getSecurityOptions()}
+            securityTypeOptions={securityTypeOptions}
+            categoryMappings={categoryMappings}
+            shouldShowMapAccounts={shouldShowMapAccounts}
+            setStep={setStep}
+          />
         );
 
       case 'mapAccounts':
         return (
-          <div className="max-w-4xl mx-auto">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
-                Map Transfer Accounts
-              </h2>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
-                The following transfer accounts were found in your QIF file. Map them to existing
-                accounts or create new ones.
-              </p>
-              <div ref={scrollContainerRef} className="space-y-4 max-h-96 overflow-y-auto">
-                {accountMappings.map((mapping, index) => {
-                  const isReady = !!(mapping.accountId || mapping.createNew);
-                  return (
-                  <div
-                    key={mapping.originalName}
-                    className={isReady
-                      ? "border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20 rounded-lg p-4"
-                      : "border-2 border-amber-300 dark:border-amber-600 bg-amber-50 dark:bg-amber-900/20 rounded-lg p-4"
-                    }
-                  >
-                    <p className="font-medium text-gray-900 dark:text-gray-100 mb-2">
-                      {mapping.originalName}
-                    </p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <Select
-                        label="Map to existing"
-                        options={getAccountOptions()}
-                        value={mapping.accountId || ''}
-                        onChange={(e) =>
-                          handleAccountMappingChange(index, 'accountId', e.target.value)
-                        }
-                      />
-                      <div>
-                        <Input
-                          label="Or create new"
-                          placeholder="New account name"
-                          value={mapping.createNew || ''}
-                          onChange={(e) =>
-                            handleAccountMappingChange(index, 'createNew', e.target.value)
-                          }
-                        />
-                        {mapping.createNew && (
-                          <div className="mt-2 grid grid-cols-2 gap-2">
-                            <Select
-                              label="Account type"
-                              options={accountTypeOptions}
-                              value={mapping.accountType || 'CHEQUING'}
-                              onChange={(e) =>
-                                handleAccountMappingChange(index, 'accountType', e.target.value)
-                              }
-                            />
-                            <Select
-                              label="Currency"
-                              options={currencyOptions}
-                              value={mapping.currencyCode || defaultCurrency}
-                              onChange={(e) =>
-                                handleAccountMappingChange(index, 'currencyCode', e.target.value)
-                              }
-                            />
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  );
-                })}
-              </div>
-              <div className="flex justify-between mt-6">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    if (securityMappings.length > 0) {
-                      setStep('mapSecurities');
-                    } else if (categoryMappings.length > 0) {
-                      setStep('mapCategories');
-                    } else {
-                      setStep('selectAccount');
-                    }
-                  }}
-                >
-                  Back
-                </Button>
-                <Button onClick={() => setStep('review')}>Next</Button>
-              </div>
-            </div>
-          </div>
+          <MapAccountsStep
+            accountMappings={accountMappings}
+            handleAccountMappingChange={handleAccountMappingChange}
+            accountOptions={getAccountOptions()}
+            accountTypeOptions={accountTypeOptions}
+            currencyOptions={currencyOptions}
+            defaultCurrency={defaultCurrency}
+            scrollContainerRef={scrollContainerRef}
+            categoryMappings={categoryMappings}
+            securityMappings={securityMappings}
+            setStep={setStep}
+          />
         );
 
       case 'review':
-        const mappedCategories = categoryMappings.filter((m) => m.categoryId || m.createNew).length;
-        const newCategories = categoryMappings.filter((m) => m.createNew).length;
-        const loanCategories = categoryMappings.filter((m) => m.isLoanCategory).length;
-        const newLoanAccounts = categoryMappings.filter((m) => m.isLoanCategory && m.createNewLoan).length;
-        const mappedAccounts = accountMappings.filter((m) => m.accountId || m.createNew).length;
-        const newAccounts = accountMappings.filter((m) => m.createNew).length;
-        const mappedSecuritiesCount = securityMappings.filter((m) => m.securityId || m.createNew).length;
-        const newSecuritiesCount = securityMappings.filter((m) => m.createNew).length;
-        const totalTransactions = importFiles.reduce((sum, f) => sum + f.parsedData.transactionCount, 0);
-
         return (
-          <div className="max-w-xl mx-auto">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
-                Review Import
-              </h2>
-              <div className="space-y-4">
-                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                  <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-2">
-                    {isBulkImport ? 'Files to Import' : 'Summary'}
-                  </h3>
-                  {isBulkImport ? (
-                    <div className="space-y-2">
-                      {importFiles.map((fileData, index) => {
-                        const targetAcc = accounts.find((a) => a.id === fileData.selectedAccountId);
-                        return (
-                          <div key={index} className="text-sm text-gray-600 dark:text-gray-400 border-b border-gray-200 dark:border-gray-600 pb-2 last:border-0">
-                            <p><strong>{fileData.fileName}</strong></p>
-                            <p className="ml-4">
-                              {fileData.parsedData.transactionCount} transactions → {targetAcc?.name}
-                            </p>
-                          </div>
-                        );
-                      })}
-                      <div className="pt-2 text-sm text-gray-600 dark:text-gray-400">
-                        <strong>Total:</strong> {importFiles.length} files, {totalTransactions} transactions
-                      </div>
-                    </div>
-                  ) : (
-                    <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                      <li>
-                        <strong>File:</strong> {fileName}
-                      </li>
-                      <li>
-                        <strong>Transactions to import:</strong> {parsedData?.transactionCount}
-                      </li>
-                      <li>
-                        <strong>Target account:</strong> {accounts.find((a) => a.id === selectedAccountId)?.name}
-                      </li>
-                    </ul>
-                  )}
-                </div>
-
-                {categoryMappings.length > 0 && (
-                  <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                    <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-2">
-                      Categories
-                    </h3>
-                    <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                      <li>
-                        <strong>Total:</strong> {categoryMappings.length}
-                      </li>
-                      <li>
-                        <strong>Mapped to categories:</strong> {mappedCategories}
-                      </li>
-                      <li>
-                        <strong>New categories to create:</strong> {newCategories}
-                      </li>
-                      {loanCategories > 0 && (
-                        <>
-                          <li>
-                            <strong>Mapped to loan accounts:</strong> {loanCategories}
-                          </li>
-                          {newLoanAccounts > 0 && (
-                            <li>
-                              <strong>New loan accounts to create:</strong> {newLoanAccounts}
-                            </li>
-                          )}
-                        </>
-                      )}
-                    </ul>
-                  </div>
-                )}
-
-                {accountMappings.length > 0 && (
-                  <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                    <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-2">
-                      Transfer Accounts
-                    </h3>
-                    <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                      <li>
-                        <strong>Total:</strong> {accountMappings.length}
-                      </li>
-                      <li>
-                        <strong>Mapped:</strong> {mappedAccounts}
-                      </li>
-                      <li>
-                        <strong>New to create:</strong> {newAccounts}
-                      </li>
-                    </ul>
-                  </div>
-                )}
-
-                {securityMappings.length > 0 && (
-                  <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                    <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-2">
-                      Securities
-                    </h3>
-                    <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                      <li>
-                        <strong>Total:</strong> {securityMappings.length}
-                      </li>
-                      <li>
-                        <strong>Mapped:</strong> {mappedSecuritiesCount}
-                      </li>
-                      <li>
-                        <strong>New to create:</strong> {newSecuritiesCount}
-                      </li>
-                    </ul>
-                  </div>
-                )}
-              </div>
-              <div className="flex justify-between mt-6">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    if (shouldShowMapAccounts) {
-                      setStep('mapAccounts');
-                    } else if (securityMappings.length > 0) {
-                      setStep('mapSecurities');
-                    } else if (categoryMappings.length > 0) {
-                      setStep('mapCategories');
-                    } else {
-                      setStep('selectAccount');
-                    }
-                  }}
-                >
-                  Back
-                </Button>
-                <Button onClick={handleImport} isLoading={isLoading}>
-                  Import Transactions
-                </Button>
-              </div>
-            </div>
-          </div>
+          <ReviewStep
+            importFiles={importFiles}
+            isBulkImport={isBulkImport}
+            fileName={fileName}
+            parsedData={parsedData}
+            selectedAccountId={selectedAccountId}
+            accounts={accounts}
+            categoryMappings={categoryMappings}
+            accountMappings={accountMappings}
+            securityMappings={securityMappings}
+            shouldShowMapAccounts={shouldShowMapAccounts}
+            isLoading={isLoading}
+            handleImport={handleImport}
+            setStep={setStep}
+          />
         );
 
       case 'complete':
-        // Check if any file was an investment type
-        const hasInvestmentFile = importFiles.some((f) => f.parsedData.accountType === 'INVESTMENT');
-
         return (
-          <div className={isBulkImport ? "max-w-4xl mx-auto" : "max-w-xl mx-auto"}>
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-              <div className="text-center mb-6">
-                <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 dark:bg-green-900 mb-4">
-                  <svg
-                    className="h-6 w-6 text-green-600 dark:text-green-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                </div>
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                  Import Complete
-                </h2>
-              </div>
-
-              {/* Bulk import results */}
-              {bulkImportResult && (
-                <div className="space-y-4 mb-6">
-                  {/* Overall summary */}
-                  <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                    <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-2">Overall Summary</h3>
-                    <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                      <li><strong>Files imported:</strong> {bulkImportResult.fileResults.length}</li>
-                      <li><strong>Total imported:</strong> {bulkImportResult.totalImported} transactions</li>
-                      <li><strong>Total skipped:</strong> {bulkImportResult.totalSkipped} duplicate transfers</li>
-                      <li><strong>Total errors:</strong> {bulkImportResult.totalErrors}</li>
-                      <li><strong>Categories created:</strong> {bulkImportResult.categoriesCreated}</li>
-                      <li><strong>Accounts created:</strong> {bulkImportResult.accountsCreated}</li>
-                      <li><strong>Payees created:</strong> {bulkImportResult.payeesCreated}</li>
-                      <li><strong>Securities created:</strong> {bulkImportResult.securitiesCreated}</li>
-                    </ul>
-                  </div>
-
-                  {/* Per-file results */}
-                  <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                    <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-2">Per-File Results</h3>
-                    <div className="space-y-2 max-h-64 overflow-y-auto">
-                      {bulkImportResult.fileResults.map((result, index) => (
-                        <div
-                          key={index}
-                          className={`text-sm p-2 rounded ${
-                            result.errors > 0
-                              ? 'bg-red-50 dark:bg-red-900/20'
-                              : 'bg-green-50 dark:bg-green-900/20'
-                          }`}
-                        >
-                          <p className="font-medium text-gray-900 dark:text-gray-100">{result.fileName}</p>
-                          <p className="text-gray-600 dark:text-gray-400">
-                            → {result.accountName}: {result.imported} imported, {result.skipped} skipped
-                            {result.errors > 0 && <span className="text-red-600 dark:text-red-400">, {result.errors} errors</span>}
-                          </p>
-                          {result.errorMessages.length > 0 && (
-                            <ul className="text-xs text-red-500 dark:text-red-400 mt-1">
-                              {result.errorMessages.slice(0, 3).map((msg, i) => (
-                                <li key={i}>{msg}</li>
-                              ))}
-                              {result.errorMessages.length > 3 && (
-                                <li>...and {result.errorMessages.length - 3} more errors</li>
-                              )}
-                            </ul>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Single file import result */}
-              {importResult && !bulkImportResult && (
-                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-6">
-                  <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                    <li>
-                      <strong>File:</strong> {fileName}
-                    </li>
-                    <li>
-                      <strong>Target Account:</strong> {accounts.find(a => a.id === selectedAccountId)?.name || 'Unknown'}
-                    </li>
-                    <li>
-                      <strong>Imported:</strong> {importResult.imported} transactions
-                    </li>
-                    <li>
-                      <strong>Skipped:</strong> {importResult.skipped} duplicate transfers
-                    </li>
-                    <li>
-                      <strong>Errors:</strong> {importResult.errors}
-                    </li>
-                    <li>
-                      <strong>Categories created:</strong> {importResult.categoriesCreated}
-                    </li>
-                    <li>
-                      <strong>Accounts created:</strong> {importResult.accountsCreated}
-                    </li>
-                    <li>
-                      <strong>Payees created:</strong> {importResult.payeesCreated}
-                    </li>
-                    <li>
-                      <strong>Securities created:</strong> {importResult.securitiesCreated}
-                    </li>
-                  </ul>
-                  {importResult.errorMessages.length > 0 && (
-                    <div className="mt-4">
-                      <p className="text-sm font-medium text-red-600 dark:text-red-400 mb-2">
-                        Errors:
-                      </p>
-                      <ul className="text-xs text-red-500 dark:text-red-400 space-y-1 max-h-32 overflow-y-auto">
-                        {importResult.errorMessages.map((msg, i) => (
-                          <li key={i}>{msg}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              <div className="flex justify-center space-x-4">
-                <Button
-                  variant="outline"
-                  onClick={() => router.push(hasInvestmentFile ? '/investments' : '/transactions')}
-                >
-                  {hasInvestmentFile ? 'View Investments' : 'View Transactions'}
-                </Button>
-                <Button
-                  onClick={() => {
-                    setStep('upload');
-                    setImportFiles([]);
-                    setImportResult(null);
-                    setBulkImportResult(null);
-                    setCategoryMappings([]);
-                    setAccountMappings([]);
-                    setSecurityMappings([]);
-                    setInitialLookupDone(false);
-                  }}
-                >
-                  Import More Files
-                </Button>
-              </div>
-            </div>
-          </div>
+          <CompleteStep
+            importFiles={importFiles}
+            isBulkImport={isBulkImport}
+            fileName={fileName}
+            selectedAccountId={selectedAccountId}
+            accounts={accounts}
+            importResult={importResult}
+            bulkImportResult={bulkImportResult}
+            onImportMore={() => {
+              setStep('upload');
+              setImportFiles([]);
+              setImportResult(null);
+              setBulkImportResult(null);
+              setCategoryMappings([]);
+              setAccountMappings([]);
+              setSecurityMappings([]);
+              setInitialLookupDone(false);
+            }}
+          />
         );
     }
   };

@@ -7,6 +7,7 @@ import { payeesApi } from '@/lib/payees';
 import { CategorySuggestion } from '@/types/payee';
 import toast from 'react-hot-toast';
 import { createLogger } from '@/lib/logger';
+import { getErrorMessage } from '@/lib/errors';
 
 const logger = createLogger('CategoryAutoAssign');
 
@@ -44,7 +45,7 @@ export function CategoryAutoAssignDialog({
       setSelectedIds(new Set(results.map(s => s.payeeId)));
       setHasPreviewLoaded(true);
     } catch (error) {
-      toast.error('Failed to load suggestions');
+      toast.error(getErrorMessage(error, 'Failed to load suggestions'));
       logger.error(error);
     } finally {
       setIsLoading(false);
@@ -80,7 +81,7 @@ export function CategoryAutoAssignDialog({
       onSuccess();
       onClose();
     } catch (error) {
-      toast.error('Failed to apply category assignments');
+      toast.error(getErrorMessage(error, 'Failed to apply category assignments'));
       logger.error(error);
     } finally {
       setIsApplying(false);

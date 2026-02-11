@@ -5,12 +5,12 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@/lib/zodResolver';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
-import { Input } from '@/components/ui/Input';
-import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
-import { Combobox } from '@/components/ui/Combobox';
 import { SplitEditor, SplitRow, createEmptySplits, toSplitRows, toCreateSplitData } from './SplitEditor';
+import { NormalTransactionFields } from './NormalTransactionFields';
+import { SplitTransactionFields } from './SplitTransactionFields';
+import { TransferTransactionFields } from './TransferTransactionFields';
 import { transactionsApi } from '@/lib/transactions';
 import { payeesApi } from '@/lib/payees';
 import { categoriesApi } from '@/lib/categories';
@@ -20,7 +20,6 @@ import { Payee } from '@/types/payee';
 import { Category } from '@/types/category';
 import { Account } from '@/types/account';
 import { buildCategoryTree } from '@/lib/categoryUtils';
-import { getCurrencySymbol } from '@/lib/format';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { createLogger } from '@/lib/logger';
 import { getErrorMessage } from '@/lib/errors';
@@ -271,7 +270,7 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
         setPayees(payeesData);
       })
       .catch((error) => {
-        toast.error('Failed to load form data');
+        toast.error(getErrorMessage(error, 'Failed to load form data'));
         logger.error(error);
       });
   }, []);
@@ -321,7 +320,7 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
       toast.success(`Payee "${name}" created`);
     } catch (error) {
       logger.error('Failed to create payee:', error);
-      toast.error('Failed to create payee');
+      toast.error(getErrorMessage(error, 'Failed to create payee'));
     }
   };
 
@@ -444,7 +443,7 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
       }
     } catch (error) {
       logger.error('Failed to create category:', error);
-      toast.error('Failed to create category');
+      toast.error(getErrorMessage(error, 'Failed to create category'));
     }
   };
 
@@ -594,303 +593,66 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
         </div>
       )}
 
-      {/* TRANSACTION MODE LAYOUT */}
       {mode === 'normal' && (
-        <div className="space-y-4">
-          {/* Row 1: Account and Date */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Select
-              label="Account"
-              error={errors.accountId?.message}
-              value={watchedAccountId || ''}
-              options={[
-                { value: '', label: 'Select account...' },
-                ...accounts
-                  .filter(account =>
-                    !account.isClosed &&
-                    account.accountSubType !== 'INVESTMENT_BROKERAGE'
-                  )
-                  .sort((a, b) => a.name.localeCompare(b.name))
-                  .map(account => ({
-                    value: account.id,
-                    label: `${account.name} (${account.currencyCode})`,
-                  })
-                ),
-              ]}
-              {...register('accountId')}
-            />
-            <Input
-              label="Date"
-              type="date"
-              error={errors.transactionDate?.message}
-              {...register('transactionDate')}
-            />
-          </div>
-
-          {/* Row 2: Payee and Category */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Combobox
-              label="Payee"
-              placeholder="Select or type payee name..."
-              options={payees.map(payee => ({
-                value: payee.id,
-                label: payee.name,
-                subtitle: payee.defaultCategory?.name,
-              }))}
-              value={selectedPayeeId}
-              initialDisplayValue={transaction?.payeeName || ''}
-              onChange={handlePayeeChange}
-              onCreateNew={handlePayeeCreate}
-              allowCustomValue={true}
-              error={errors.payeeName?.message}
-            />
-            <div>
-              <div className="flex items-end sm:space-x-2">
-                <div className="flex-1">
-                  <Combobox
-                    label="Category"
-                    placeholder="Select or create category..."
-                    options={categoryOptions}
-                    value={selectedCategoryId}
-                    initialDisplayValue={transaction?.category?.name || ''}
-                    onChange={handleCategoryChange}
-                    onCreateNew={handleCategoryCreate}
-                    allowCustomValue={true}
-                    error={errors.categoryId?.message}
-                  />
-                </div>
-                <button
-                  type="button"
-                  onClick={() => handleModeChange('split')}
-                  className="hidden sm:block px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 whitespace-nowrap"
-                >
-                  Split Transaction
-                </button>
-              </div>
-              <button
-                type="button"
-                onClick={() => handleModeChange('split')}
-                className="sm:hidden mt-2 w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
-              >
-                Split Transaction
-              </button>
-            </div>
-          </div>
-
-          {/* Row 3: Amount and Reference Number */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <CurrencyInput
-              label="Amount"
-              prefix={getCurrencySymbol(watchedCurrencyCode)}
-              value={watchedAmount}
-              onChange={handleAmountChange}
-              error={errors.amount?.message}
-            />
-            <Input
-              label="Reference Number"
-              type="text"
-              placeholder="Cheque #, confirmation #..."
-              error={errors.referenceNumber?.message}
-              {...register('referenceNumber')}
-            />
-          </div>
-        </div>
+        <NormalTransactionFields
+          register={register}
+          errors={errors}
+          watchedAccountId={watchedAccountId}
+          watchedAmount={watchedAmount}
+          watchedCurrencyCode={watchedCurrencyCode}
+          accounts={accounts}
+          selectedPayeeId={selectedPayeeId}
+          selectedCategoryId={selectedCategoryId}
+          payees={payees}
+          categoryOptions={categoryOptions}
+          handlePayeeChange={handlePayeeChange}
+          handlePayeeCreate={handlePayeeCreate}
+          handleCategoryChange={handleCategoryChange}
+          handleCategoryCreate={handleCategoryCreate}
+          handleAmountChange={handleAmountChange}
+          handleModeChange={handleModeChange}
+          transaction={transaction}
+        />
       )}
 
-      {/* SPLIT MODE LAYOUT */}
       {mode === 'split' && (
-        <div className="space-y-4">
-          {/* Row 1: Account and Date */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Select
-              label="Account"
-              error={errors.accountId?.message}
-              value={watchedAccountId || ''}
-              options={[
-                { value: '', label: 'Select account...' },
-                ...accounts
-                  .filter(account =>
-                    !account.isClosed &&
-                    account.accountSubType !== 'INVESTMENT_BROKERAGE'
-                  )
-                  .sort((a, b) => a.name.localeCompare(b.name))
-                  .map(account => ({
-                    value: account.id,
-                    label: `${account.name} (${account.currencyCode})`,
-                  })
-                ),
-              ]}
-              {...register('accountId')}
-            />
-            <Input
-              label="Date"
-              type="date"
-              error={errors.transactionDate?.message}
-              {...register('transactionDate')}
-            />
-          </div>
-
-          {/* Row 2: Payee and Total Amount */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Combobox
-              label="Payee"
-              placeholder="Select or type payee name..."
-              options={payees.map(payee => ({
-                value: payee.id,
-                label: payee.name,
-                subtitle: payee.defaultCategory?.name,
-              }))}
-              value={selectedPayeeId}
-              initialDisplayValue={transaction?.payeeName || ''}
-              onChange={handlePayeeChange}
-              onCreateNew={handlePayeeCreate}
-              allowCustomValue={true}
-              error={errors.payeeName?.message}
-            />
-            <CurrencyInput
-              label="Total Amount"
-              prefix={getCurrencySymbol(watchedCurrencyCode)}
-              value={watchedAmount}
-              onChange={(value) => setValue('amount', value ?? 0, { shouldValidate: true })}
-              error={errors.amount?.message}
-            />
-          </div>
-
-          {/* Row 3: Reference Number */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Input
-              label="Reference Number"
-              type="text"
-              placeholder="Cheque #, confirmation #..."
-              error={errors.referenceNumber?.message}
-              {...register('referenceNumber')}
-            />
-          </div>
-        </div>
+        <SplitTransactionFields
+          register={register}
+          errors={errors}
+          watchedAccountId={watchedAccountId}
+          watchedAmount={watchedAmount}
+          watchedCurrencyCode={watchedCurrencyCode}
+          accounts={accounts}
+          selectedPayeeId={selectedPayeeId}
+          payees={payees}
+          handlePayeeChange={handlePayeeChange}
+          handlePayeeCreate={handlePayeeCreate}
+          setValue={setValue}
+          transaction={transaction}
+        />
       )}
 
-      {/* TRANSFER MODE LAYOUT */}
       {mode === 'transfer' && (
-        <div className="space-y-4">
-          {/* Row 1: Date */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Input
-              label="Date"
-              type="date"
-              error={errors.transactionDate?.message}
-              {...register('transactionDate')}
-            />
-          </div>
-
-          {/* Row 2: From and To Accounts side by side */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Select
-              label="From Account"
-              error={errors.accountId?.message}
-              value={watchedAccountId || ''}
-              options={[
-                { value: '', label: 'Select account...' },
-                ...accounts
-                  .filter(account =>
-                    account.accountSubType !== 'INVESTMENT_BROKERAGE' &&
-                    (!account.isClosed || account.id === watchedAccountId)
-                  )
-                  .sort((a, b) => a.name.localeCompare(b.name))
-                  .map(account => ({
-                    value: account.id,
-                    label: `${account.name} (${account.currencyCode})${account.isClosed ? ' (Closed)' : ''}`,
-                    disabled: account.isClosed && account.id !== watchedAccountId,
-                  })
-                ),
-              ]}
-              {...register('accountId')}
-            />
-            <Select
-              label="To Account"
-              value={transferToAccountId}
-              onChange={(e) => {
-                setTransferToAccountId(e.target.value);
-                setTransferTargetAmount(undefined);
-              }}
-              options={[
-                { value: '', label: 'Select destination account...' },
-                ...accounts
-                  .filter(account =>
-                    account.id !== watchedAccountId &&
-                    account.accountSubType !== 'INVESTMENT_BROKERAGE' &&
-                    (!account.isClosed || account.id === transferToAccountId)
-                  )
-                  .sort((a, b) => a.name.localeCompare(b.name))
-                  .map(account => ({
-                    value: account.id,
-                    label: `${account.name} (${account.currencyCode})${account.isClosed ? ' (Closed)' : ''}`,
-                    disabled: account.isClosed && account.id !== transferToAccountId,
-                  })),
-              ]}
-            />
-          </div>
-
-          {/* Row 3: Transfer Amount under From, Received Amount under To (for cross-currency) */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <CurrencyInput
-                label={`Transfer Amount${crossCurrencyInfo ? ` (${crossCurrencyInfo.fromCurrency})` : ''}`}
-                prefix={getCurrencySymbol(watchedCurrencyCode)}
-                value={watchedAmount}
-                onChange={(value) => setValue('amount', value !== undefined ? Math.abs(value) : 0, { shouldValidate: true })}
-                allowNegative={false}
-                error={errors.amount?.message}
-              />
-              {!crossCurrencyInfo && (
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  Amount must be positive for transfers
-                </p>
-              )}
-            </div>
-
-            {/* Received Amount - only for cross-currency transfers */}
-            {crossCurrencyInfo && (
-              <div>
-                <CurrencyInput
-                  label={`Amount Received (${crossCurrencyInfo.toCurrency})`}
-                  prefix={getCurrencySymbol(crossCurrencyInfo.toCurrency)}
-                  value={transferTargetAmount}
-                  onChange={(value) => setTransferTargetAmount(value !== undefined ? Math.abs(value) : undefined)}
-                  allowNegative={false}
-                />
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  Amount received after currency conversion
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* Row 4: Payee and Reference Number */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Combobox
-              label="Payee (Optional)"
-              placeholder="Select or type payee name..."
-              options={payees.map(payee => ({
-                value: payee.id,
-                label: payee.name,
-              }))}
-              value={transferPayeeId}
-              initialDisplayValue={transferPayeeName}
-              onChange={(payeeId: string, payeeName: string) => {
-                setTransferPayeeId(payeeId);
-                setTransferPayeeName(payeeName);
-              }}
-              allowCustomValue={true}
-            />
-            <Input
-              label="Reference Number"
-              type="text"
-              placeholder="Cheque #, confirmation #..."
-              error={errors.referenceNumber?.message}
-              {...register('referenceNumber')}
-            />
-          </div>
-        </div>
+        <TransferTransactionFields
+          register={register}
+          errors={errors}
+          watchedAccountId={watchedAccountId}
+          watchedAmount={watchedAmount}
+          watchedCurrencyCode={watchedCurrencyCode}
+          accounts={accounts}
+          setValue={setValue}
+          transferToAccountId={transferToAccountId}
+          setTransferToAccountId={setTransferToAccountId}
+          transferTargetAmount={transferTargetAmount}
+          setTransferTargetAmount={setTransferTargetAmount}
+          transferPayeeId={transferPayeeId}
+          transferPayeeName={transferPayeeName}
+          setTransferPayeeId={setTransferPayeeId}
+          setTransferPayeeName={setTransferPayeeName}
+          crossCurrencyInfo={crossCurrencyInfo}
+          payees={payees}
+          transaction={transaction}
+        />
       )}
 
       {/* Split Editor - shown when in split mode */}

@@ -191,7 +191,7 @@ export function ScheduledTransactionForm({
         setAllPayees(payeesData);
       })
       .catch((error) => {
-        toast.error('Failed to load form data');
+        toast.error(getErrorMessage(error, 'Failed to load form data'));
         logger.error(error);
       });
   }, []);
@@ -256,7 +256,7 @@ export function ScheduledTransactionForm({
       toast.success(`Payee "${name}" created`);
     } catch (error) {
       logger.error('Failed to create payee:', error);
-      toast.error('Failed to create payee');
+      toast.error(getErrorMessage(error, 'Failed to create payee'));
     }
   };
 
@@ -293,7 +293,7 @@ export function ScheduledTransactionForm({
       toast.success(`Category "${name}" created`);
     } catch (error) {
       logger.error('Failed to create category:', error);
-      toast.error('Failed to create category');
+      toast.error(getErrorMessage(error, 'Failed to create category'));
     }
   };
 

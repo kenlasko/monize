@@ -39,6 +39,7 @@ import { Modal } from '@/components/ui/Modal';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { createLogger } from '@/lib/logger';
+import { getErrorMessage } from '@/lib/errors';
 
 const logger = createLogger('Bills');
 
@@ -101,7 +102,7 @@ function BillsContent() {
       setCategories(categoriesData);
       setAccounts(accountsData);
     } catch (error) {
-      toast.error('Failed to load scheduled transactions');
+      toast.error(getErrorMessage(error, 'Failed to load scheduled transactions'));
       logger.error(error);
     } finally {
       setIsLoading(false);
@@ -159,7 +160,7 @@ function BillsContent() {
         setEditingTransaction(overrideConfirm.transaction);
         setShowForm(true);
       } catch (error) {
-        toast.error('Failed to delete overrides');
+        toast.error(getErrorMessage(error, 'Failed to delete overrides'));
         logger.error(error);
       }
     }

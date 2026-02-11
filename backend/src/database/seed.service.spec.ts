@@ -71,7 +71,7 @@ describe("SeedService", () => {
       const currencyInserts = calls.filter((sql: string) =>
         sql.includes("INSERT INTO currencies"),
       );
-      expect(currencyInserts.length).toBe(10);
+      expect(currencyInserts.length).toBe(30);
 
       // Verify demo user check
       const userSelect = calls.filter((sql: string) =>
@@ -129,18 +129,18 @@ describe("SeedService", () => {
       expect(userInsert.length).toBe(0);
     });
 
-    it("seeds 10 currencies with ON CONFLICT DO NOTHING", async () => {
+    it("seeds 30 currencies with ON CONFLICT DO NOTHING", async () => {
       await service.seedAll();
 
       const currencyCalls = dataSource.query.mock.calls.filter(
         (call: string[]) => call[0].includes("INSERT INTO currencies"),
       );
 
-      expect(currencyCalls.length).toBe(10);
+      expect(currencyCalls.length).toBe(30);
 
       // Verify ON CONFLICT clause
       for (const call of currencyCalls) {
-        expect(call[0]).toContain("ON CONFLICT (code) DO NOTHING");
+        expect(call[0]).toContain("ON CONFLICT (code) DO UPDATE SET");
       }
 
       // Verify specific currencies

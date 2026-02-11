@@ -42,8 +42,8 @@ function EditCustomReportContent({ reportId }: { reportId: string }) {
       try {
         const data = await customReportsApi.getById(reportId);
         setReport(data);
-      } catch {
-        toast.error('Failed to load report');
+      } catch (error) {
+        toast.error(getErrorMessage(error, 'Failed to load report'));
         router.push('/reports');
       } finally {
         setIsLoading(false);
@@ -70,7 +70,7 @@ function EditCustomReportContent({ reportId }: { reportId: string }) {
       toast.success('Report deleted successfully');
       router.push('/reports');
     } catch (error) {
-      toast.error('Failed to delete report');
+      toast.error(getErrorMessage(error, 'Failed to delete report'));
       logger.error(error);
     } finally {
       setIsDeleting(false);

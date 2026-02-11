@@ -8,6 +8,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { payeesApi } from '@/lib/payees';
 import toast from 'react-hot-toast';
 import { createLogger } from '@/lib/logger';
+import { getErrorMessage } from '@/lib/errors';
 
 const logger = createLogger('PayeeList');
 
@@ -228,7 +229,7 @@ export function PayeeList({
       toast.success('Payee deleted successfully');
       onRefresh();
     } catch (error) {
-      toast.error('Failed to delete payee');
+      toast.error(getErrorMessage(error, 'Failed to delete payee'));
       logger.error(error);
     } finally {
       setDeletePayee(null);

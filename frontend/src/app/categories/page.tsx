@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import toast from 'react-hot-toast';
+import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/Button';
-import { CategoryForm } from '@/components/categories/CategoryForm';
+const CategoryForm = dynamic(() => import('@/components/categories/CategoryForm').then(m => m.CategoryForm), { ssr: false });
 import { CategoryList, DensityLevel } from '@/components/categories/CategoryList';
 import { Modal } from '@/components/ui/Modal';
 import { categoriesApi } from '@/lib/categories';
@@ -42,7 +43,7 @@ function CategoriesContent() {
       const data = await categoriesApi.getAll();
       setCategories(data);
     } catch (error) {
-      toast.error('Failed to load categories');
+      toast.error(getErrorMessage(error, 'Failed to load categories'));
       logger.error(error);
     } finally {
       setIsLoading(false);

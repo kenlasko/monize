@@ -10,9 +10,10 @@ import { SummaryCard, SummaryIcons } from '@/components/ui/SummaryCard';
 import { Modal } from '@/components/ui/Modal';
 import { Pagination } from '@/components/ui/Pagination';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import dynamic from 'next/dynamic';
 import { investmentsApi } from '@/lib/investments';
 import { Security, CreateSecurityData } from '@/types/investment';
-import { SecurityForm } from '@/components/securities/SecurityForm';
+const SecurityForm = dynamic(() => import('@/components/securities/SecurityForm').then(m => m.SecurityForm), { ssr: false });
 import { SecurityList, DensityLevel } from '@/components/securities/SecurityList';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { createLogger } from '@/lib/logger';
@@ -46,7 +47,7 @@ function SecuritiesContent() {
       const data = await investmentsApi.getSecurities(showInactive);
       setSecurities(data);
     } catch (error) {
-      toast.error('Failed to load securities');
+      toast.error(getErrorMessage(error, 'Failed to load securities'));
       logger.error(error);
     } finally {
       setIsLoading(false);

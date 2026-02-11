@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import { investmentsApi } from '@/lib/investments';
 import { createLogger } from '@/lib/logger';
+import { getErrorMessage } from '@/lib/errors';
 
 const logger = createLogger('PriceRefresh');
 const REFRESH_COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes
@@ -83,7 +84,7 @@ export function usePriceRefresh({ onRefreshComplete }: UsePriceRefreshOptions = 
       onRefreshComplete?.();
     } catch (error) {
       logger.error('Failed to refresh prices:', error);
-      if (!silent) toast.error('Failed to refresh prices');
+      if (!silent) toast.error(getErrorMessage(error, 'Failed to refresh prices'));
     } finally {
       refreshInProgress = false;
       setIsRefreshing(false);
