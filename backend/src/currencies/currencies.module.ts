@@ -5,14 +5,15 @@ import { ExchangeRate } from "./entities/exchange-rate.entity";
 import { Account } from "../accounts/entities/account.entity";
 import { UserPreference } from "../users/entities/user-preference.entity";
 import { ExchangeRateService } from "./exchange-rate.service";
+import { CurrenciesService } from "./currencies.service";
 import { CurrenciesController } from "./currencies.controller";
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Currency, ExchangeRate, Account, UserPreference]),
   ],
-  providers: [ExchangeRateService],
+  providers: [ExchangeRateService, CurrenciesService],
   controllers: [CurrenciesController],
-  exports: [ExchangeRateService],
+  exports: [ExchangeRateService, CurrenciesService],
 })
 export class CurrenciesModule {}

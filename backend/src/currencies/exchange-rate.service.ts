@@ -256,13 +256,13 @@ export class ExchangeRateService implements OnModuleInit {
   }
 
   /**
-   * Refresh exchange rates only for currencies actively used in accounts
+   * Refresh exchange rates for all currencies in use
    */
   async refreshAllRates(): Promise<RateRefreshSummary> {
     const startTime = Date.now();
     this.logger.log("Starting exchange rate refresh");
 
-    // Fetch rates for currencies used in accounts AND in securities held in active accounts
+    // Fetch all currencies used in accounts/securities
     const usedCurrencies: { code: string }[] = await this.dataSource.query(
       `SELECT DISTINCT code FROM (
          SELECT currency_code AS code FROM accounts WHERE is_closed = false

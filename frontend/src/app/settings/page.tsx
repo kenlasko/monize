@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
@@ -26,6 +26,7 @@ import {
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { createLogger } from '@/lib/logger';
 import { getErrorMessage } from '@/lib/errors';
+import { exchangeRatesApi, CurrencyInfo } from '@/lib/exchange-rates';
 
 const logger = createLogger('Settings');
 
@@ -68,17 +69,6 @@ const THEME_OPTIONS = [
   { value: 'dark', label: 'Dark' },
 ];
 
-const CURRENCY_OPTIONS = [
-  { value: 'USD', label: 'USD - US Dollar' },
-  { value: 'EUR', label: 'EUR - Euro' },
-  { value: 'GBP', label: 'GBP - British Pound' },
-  { value: 'CAD', label: 'CAD - Canadian Dollar' },
-  { value: 'AUD', label: 'AUD - Australian Dollar' },
-  { value: 'JPY', label: 'JPY - Japanese Yen' },
-  { value: 'CHF', label: 'CHF - Swiss Franc' },
-  { value: 'CNY', label: 'CNY - Chinese Yuan' },
-];
-
 export default function SettingsPage() {
   return (
     <ProtectedRoute>
@@ -115,6 +105,20 @@ function SettingsContent() {
   const [theme, setTheme] = useState('system');
   const [defaultCurrency, setDefaultCurrency] = useState('USD');
   const [isUpdatingPreferences, setIsUpdatingPreferences] = useState(false);
+
+  // Currencies (loaded from API)
+  const [availableCurrencies, setAvailableCurrencies] = useState<CurrencyInfo[]>([]);
+
+  useEffect(() => {
+    exchangeRatesApi.getCurrencies().then(setAvailableCurrencies).catch(() => {});
+  }, []);
+
+  const currencyOptions = useMemo(() => {
+    return availableCurrencies.map((c) => ({
+      value: c.code,
+      label: `${c.code} - ${c.name}`,
+    }));
+  }, [availableCurrencies]);
 
   // Notifications state
   const [notificationEmail, setNotificationEmail] = useState(true);
@@ -428,7 +432,7 @@ function SettingsContent() {
 
             <Select
               label="Default Currency"
-              options={CURRENCY_OPTIONS}
+              options={currencyOptions}
               value={defaultCurrency}
               onChange={(e) => setDefaultCurrency(e.target.value)}
             />

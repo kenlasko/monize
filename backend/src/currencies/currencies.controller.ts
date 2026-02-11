@@ -2,9 +2,15 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
+  Delete,
+  Body,
+  Param,
   Query,
   Request,
   UseGuards,
+  DefaultValuePipe,
+  ParseBoolPipe,
 } from "@nestjs/common";
 import {
   ApiTags,
@@ -19,25 +25,70 @@ import {
   RateRefreshSummary,
   HistoricalRateBackfillSummary,
 } from "./exchange-rate.service";
+import {
+  CurrenciesService,
+  CurrencyLookupResult,
+  CurrencyUsageMap,
+} from "./currencies.service";
 import { ExchangeRate } from "./entities/exchange-rate.entity";
 import { Currency } from "./entities/currency.entity";
+import { CreateCurrencyDto } from "./dto/create-currency.dto";
+import { UpdateCurrencyDto } from "./dto/update-currency.dto";
 
 @ApiTags("currencies")
 @ApiBearerAuth()
 @UseGuards(AuthGuard("jwt"))
 @Controller("currencies")
 export class CurrenciesController {
-  constructor(private readonly exchangeRateService: ExchangeRateService) {}
+  constructor(
+    private readonly exchangeRateService: ExchangeRateService,
+    private readonly currenciesService: CurrenciesService,
+  ) {}
+
+  // ── Currency list ───────────────────────────────────────────────
 
   @Get()
-  @ApiOperation({ summary: "Get all active currencies" })
+  @ApiOperation({ summary: "Get all currencies" })
+  @ApiQuery({
+    name: "includeInactive",
+    required: false,
+    type: Boolean,
+    description: "Include inactive currencies (default: false)",
+  })
   @ApiResponse({
     status: 200,
-    description: "List of active currencies",
+    description: "List of currencies",
     type: [Currency],
   })
-  getCurrencies(): Promise<Currency[]> {
-    return this.exchangeRateService.getCurrencies();
+  getCurrencies(
+    @Query("includeInactive", new DefaultValuePipe(false), ParseBoolPipe)
+    includeInactive: boolean,
+  ): Promise<Currency[]> {
+    return this.currenciesService.findAll(includeInactive);
+  }
+
+  // ── Static-segment routes (must be BEFORE :code param route) ────
+
+  @Get("lookup")
+  @ApiOperation({ summary: "Lookup currency on Yahoo Finance" })
+  @ApiQuery({ name: "q", required: true, type: String })
+  @ApiResponse({ status: 200, description: "Currency lookup result" })
+  lookupCurrency(
+    @Query("q") query: string,
+  ): Promise<CurrencyLookupResult | null> {
+    return this.currenciesService.lookupCurrency(query);
+  }
+
+  @Get("usage")
+  @ApiOperation({
+    summary: "Get usage counts for all currencies",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Map of currency code to account/security counts",
+  })
+  getUsage(): Promise<CurrencyUsageMap> {
+    return this.currenciesService.getUsage();
   }
 
   @Get("exchange-rates")
@@ -91,5 +142,68 @@ export class CurrenciesController {
     @Request() req,
   ): Promise<HistoricalRateBackfillSummary> {
     return this.exchangeRateService.backfillHistoricalRates(req.user.id);
+  }
+
+  // ── Param routes (:code) ────────────────────────────────────────
+
+  @Get(":code")
+  @ApiOperation({ summary: "Get a single currency by code" })
+  @ApiResponse({ status: 200, description: "Currency details", type: Currency })
+  findOne(@Param("code") code: string): Promise<Currency> {
+    return this.currenciesService.findOne(code);
+  }
+
+  @Post()
+  @ApiOperation({ summary: "Create a new currency" })
+  @ApiResponse({
+    status: 201,
+    description: "Currency created",
+    type: Currency,
+  })
+  create(@Body() dto: CreateCurrencyDto): Promise<Currency> {
+    return this.currenciesService.create(dto);
+  }
+
+  @Patch(":code")
+  @ApiOperation({ summary: "Update a currency" })
+  @ApiResponse({ status: 200, description: "Currency updated", type: Currency })
+  update(
+    @Param("code") code: string,
+    @Body() dto: UpdateCurrencyDto,
+  ): Promise<Currency> {
+    return this.currenciesService.update(code, dto);
+  }
+
+  @Post(":code/deactivate")
+  @ApiOperation({ summary: "Deactivate a currency" })
+  @ApiResponse({
+    status: 201,
+    description: "Currency deactivated",
+    type: Currency,
+  })
+  deactivate(@Param("code") code: string): Promise<Currency> {
+    return this.currenciesService.deactivate(code);
+  }
+
+  @Post(":code/activate")
+  @ApiOperation({ summary: "Activate a currency" })
+  @ApiResponse({
+    status: 201,
+    description: "Currency activated",
+    type: Currency,
+  })
+  activate(@Param("code") code: string): Promise<Currency> {
+    return this.currenciesService.activate(code);
+  }
+
+  @Delete(":code")
+  @ApiOperation({ summary: "Delete a currency (only if not in use)" })
+  @ApiResponse({ status: 200, description: "Currency deleted" })
+  @ApiResponse({
+    status: 409,
+    description: "Currency is in use and cannot be deleted",
+  })
+  remove(@Param("code") code: string): Promise<void> {
+    return this.currenciesService.remove(code);
   }
 }

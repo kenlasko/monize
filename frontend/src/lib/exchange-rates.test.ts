@@ -34,7 +34,13 @@ describe('exchangeRatesApi', () => {
   it('getCurrencies fetches /currencies', async () => {
     vi.mocked(apiClient.get).mockResolvedValue({ data: [{ code: 'USD' }] });
     const result = await exchangeRatesApi.getCurrencies();
-    expect(apiClient.get).toHaveBeenCalledWith('/currencies');
+    expect(apiClient.get).toHaveBeenCalledWith('/currencies', { params: undefined });
     expect(result).toHaveLength(1);
+  });
+
+  it('getCurrencies passes includeInactive when true', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: [{ code: 'USD' }] });
+    await exchangeRatesApi.getCurrencies(true);
+    expect(apiClient.get).toHaveBeenCalledWith('/currencies', { params: { includeInactive: true } });
   });
 });

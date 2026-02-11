@@ -11,19 +11,20 @@ export function useExchangeRates() {
   const defaultCurrency =
     usePreferencesStore((state) => state.preferences?.defaultCurrency) || 'CAD';
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const data = await exchangeRatesApi.getLatestRates();
-        setRates(data);
-      } catch (error) {
-        logger.error('Failed to load exchange rates:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    load();
+  const refresh = useCallback(async () => {
+    try {
+      const data = await exchangeRatesApi.getLatestRates();
+      setRates(data);
+    } catch (error) {
+      logger.error('Failed to load exchange rates:', error);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
 
   // Build a lookup map: "USD->CAD" => 1.365
   const rateMap = useMemo(() => {
@@ -80,6 +81,7 @@ export function useExchangeRates() {
     convert,
     convertToDefault,
     getRate,
+    refresh,
     defaultCurrency,
   };
 }

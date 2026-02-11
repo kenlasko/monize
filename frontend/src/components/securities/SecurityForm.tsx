@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@/lib/zodResolver';
 import { z } from 'zod';
@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Security, CreateSecurityData } from '@/types/investment';
 import { investmentsApi } from '@/lib/investments';
+import { exchangeRatesApi, CurrencyInfo } from '@/lib/exchange-rates';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { createLogger } from '@/lib/logger';
 
@@ -42,17 +43,27 @@ const securityTypeOptions = [
   { value: 'OTHER', label: 'Other' },
 ];
 
-const currencyOptions = [
-  { value: 'CAD', label: 'CAD - Canadian Dollar' },
-  { value: 'USD', label: 'USD - US Dollar' },
-  { value: 'EUR', label: 'EUR - Euro' },
-  { value: 'GBP', label: 'GBP - British Pound' },
-];
-
 export function SecurityForm({ security, onSubmit, onCancel }: SecurityFormProps) {
   const { defaultCurrency } = useNumberFormat();
   const [isLookingUp, setIsLookingUp] = useState(false);
   const [hasLookupResult, setHasLookupResult] = useState(false);
+  const [currencies, setCurrencies] = useState<CurrencyInfo[]>([]);
+
+  useEffect(() => {
+    exchangeRatesApi.getCurrencies().then(setCurrencies).catch(() => {});
+  }, []);
+
+  const currencyOptions = useMemo(() => {
+    const sorted = [...currencies].sort((a, b) => {
+      if (a.code === defaultCurrency) return -1;
+      if (b.code === defaultCurrency) return 1;
+      return a.code.localeCompare(b.code);
+    });
+    return sorted.map((c) => ({
+      value: c.code,
+      label: `${c.code} - ${c.name} (${c.symbol})`,
+    }));
+  }, [currencies, defaultCurrency]);
 
   const {
     register,

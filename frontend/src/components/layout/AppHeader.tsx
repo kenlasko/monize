@@ -20,6 +20,7 @@ const toolsLinks = [
   { href: '/categories', label: 'Categories' },
   { href: '/payees', label: 'Payees' },
   { href: '/securities', label: 'Securities' },
+  { href: '/currencies', label: 'Currencies' },
   { href: '/import', label: 'Import Transactions' },
 ];
 
