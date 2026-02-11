@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { AppHeader } from '@/components/layout/AppHeader';
+import { PageLayout } from '@/components/layout/PageLayout';
 import { Button } from '@/components/ui/Button';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { customReportsApi } from '@/lib/custom-reports';
@@ -384,8 +384,7 @@ function ReportsContent() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <AppHeader />
+    <PageLayout>
 
       {/* Page Header */}
       <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50">
@@ -601,6 +600,6 @@ function ReportsContent() {
           {isLoadingCustom && ' (loading custom reports...)'}
         </div>
       </div>
-    </div>
+    </PageLayout>
   );
 }

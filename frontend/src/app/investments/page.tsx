@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { AppHeader } from '@/components/layout/AppHeader';
+import { PageLayout } from '@/components/layout/PageLayout';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { MultiSelect } from '@/components/ui/MultiSelect';
@@ -320,8 +320,7 @@ function InvestmentsContent() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <AppHeader />
+    <PageLayout>
 
       <main className="px-4 sm:px-6 lg:px-12 py-6">
         <div className="sm:px-0">
@@ -524,6 +523,6 @@ function InvestmentsContent() {
           onCancel={handleFormCancel}
         />
       </Modal>
-    </div>
+    </PageLayout>
   );
 }

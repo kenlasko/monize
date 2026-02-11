@@ -4,6 +4,7 @@ import { Toaster } from 'react-hot-toast';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { PreferencesLoader } from '@/components/providers/PreferencesLoader';
 import { ServiceWorkerRegistrar } from '@/components/providers/ServiceWorkerRegistrar';
+import { SwipeShell } from '@/components/layout/SwipeShell';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -47,7 +48,9 @@ export default function RootLayout({
         <ServiceWorkerRegistrar />
         <ThemeProvider>
           <PreferencesLoader>
-            {children}
+            <SwipeShell>
+              {children}
+            </SwipeShell>
           </PreferencesLoader>
           <Toaster
             position="top-right"
