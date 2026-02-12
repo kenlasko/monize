@@ -21,17 +21,10 @@ import { UpdateAccountDto } from "./dto/update-account.dto";
 import { CategoriesService } from "../categories/categories.service";
 import { ScheduledTransactionsService } from "../scheduled-transactions/scheduled-transactions.service";
 import { NetWorthService } from "../net-worth/net-worth.service";
+import { LoanMortgageAccountService } from "./loan-mortgage-account.service";
+import { PaymentFrequency, AmortizationResult } from "./loan-amortization.util";
 import {
-  calculateAmortization,
-  PaymentFrequency,
-  AmortizationResult,
-} from "./loan-amortization.util";
-import {
-  calculateMortgageAmortization,
-  recalculateMortgageAfterRateChange,
-  getMortgagePeriodsPerYear,
   MortgagePaymentFrequency,
-  MortgageAmortizationInput,
   MortgageAmortizationResult,
 } from "./mortgage-amortization.util";
 
@@ -52,6 +45,7 @@ export class AccountsService {
     private scheduledTransactionsService: ScheduledTransactionsService,
     @Inject(forwardRef(() => NetWorthService))
     private netWorthService: NetWorthService,
+    private loanMortgageService: LoanMortgageAccountService,
   ) {}
 
   /**
@@ -261,298 +255,25 @@ export class AccountsService {
     }
   }
 
-  /**
-   * Create a loan account with automatic scheduled payment setup
-   */
   async createLoanAccount(
     userId: string,
     createAccountDto: CreateAccountDto,
   ): Promise<Account> {
-    const {
-      openingBalance = 0,
-      paymentAmount,
-      paymentFrequency,
-      paymentStartDate,
-      sourceAccountId,
-      interestCategoryId,
-      interestRate,
-      institution,
-      ...accountData
-    } = createAccountDto;
-
-    // Validate required loan fields
-    if (
-      !paymentAmount ||
-      !paymentFrequency ||
-      !paymentStartDate ||
-      !sourceAccountId
-    ) {
-      throw new BadRequestException(
-        "Loan accounts require paymentAmount, paymentFrequency, paymentStartDate, and sourceAccountId",
-      );
-    }
-    if (interestRate === undefined || interestRate === null) {
-      throw new BadRequestException("Loan accounts require an interest rate");
-    }
-    if (!institution) {
-      throw new BadRequestException(
-        "Loan accounts require an institution name",
-      );
-    }
-
-    // Verify source account belongs to user
-    await this.findOne(userId, sourceAccountId);
-
-    // Get loan categories (Loan Interest for interest portion)
-    // Principal portion will be a transfer to the loan account
-    let interestCatId = interestCategoryId;
-
-    if (!interestCatId) {
-      const { interestCategory } =
-        await this.categoriesService.findLoanCategories(userId);
-      if (interestCategory) {
-        interestCatId = interestCategory.id;
-      }
-    }
-
-    // Calculate amortization for end date and first payment split
-    // User enters loan amount as positive, we store as negative (liability)
-    const loanAmount = Math.abs(openingBalance);
-    const amortization = calculateAmortization(
-      loanAmount,
-      interestRate,
-      paymentAmount,
-      paymentFrequency as PaymentFrequency,
-      new Date(paymentStartDate),
-    );
-
-    // Create the loan account with negative balance (liability)
-    const account = this.accountsRepository.create({
-      ...accountData,
-      userId,
-      openingBalance: -loanAmount, // Store as negative
-      currentBalance: -loanAmount,
-      interestRate,
-      institution,
-      paymentAmount,
-      paymentFrequency,
-      paymentStartDate: new Date(paymentStartDate),
-      sourceAccountId,
-      interestCategoryId: interestCatId || null,
-    });
-
-    const savedAccount = await this.accountsRepository.save(account);
-
-    // Create scheduled transaction for loan payments
-    // Total payment amount is negative (outflow from source account)
-    const endDateStr =
-      amortization.totalPayments > 0 && amortization.totalPayments < 10000
-        ? amortization.endDate.toISOString().split("T")[0]
-        : undefined;
-
-    const scheduledTransaction = await this.scheduledTransactionsService.create(
-      userId,
-      {
-        accountId: sourceAccountId,
-        name: `Loan Payment - ${savedAccount.name}`,
-        payeeName: institution,
-        amount: -paymentAmount, // Negative outflow from source account
-        currencyCode: accountData.currencyCode,
-        frequency: paymentFrequency as any,
-        nextDueDate: paymentStartDate,
-        startDate: paymentStartDate,
-        endDate: endDateStr,
-        isActive: true,
-        autoPost: false,
-        splits: [
-          {
-            // Transfer to loan account (reduces debt)
-            // Amount is negative as part of the total outflow
-            transferAccountId: savedAccount.id,
-            amount: -amortization.principalPayment,
-            memo: "Principal",
-          },
-          {
-            // Interest expense
-            categoryId: interestCatId || undefined,
-            amount: -amortization.interestPayment,
-            memo: "Interest",
-          },
-        ],
-      },
-    );
-
-    // Update account with scheduled transaction reference
-    savedAccount.scheduledTransactionId = scheduledTransaction.id;
-    await this.accountsRepository.save(savedAccount);
-
-    return savedAccount;
+    await this.findOne(userId, createAccountDto.sourceAccountId!);
+    return this.loanMortgageService.createLoanAccount(userId, createAccountDto);
   }
 
-  /**
-   * Create a mortgage account with automatic scheduled payment setup
-   * Supports Canadian mortgages with semi-annual compounding and accelerated payments
-   */
   async createMortgageAccount(
     userId: string,
     createAccountDto: CreateAccountDto,
   ): Promise<Account> {
-    const {
-      openingBalance = 0,
-      mortgagePaymentFrequency,
-      paymentStartDate,
-      sourceAccountId,
-      interestCategoryId,
-      interestRate,
-      institution,
-      isCanadianMortgage = false,
-      isVariableRate = false,
-      termMonths,
-      amortizationMonths,
-      ...accountData
-    } = createAccountDto;
-
-    // Validate required mortgage fields
-    if (
-      !mortgagePaymentFrequency ||
-      !paymentStartDate ||
-      !sourceAccountId ||
-      !amortizationMonths
-    ) {
-      throw new BadRequestException(
-        "Mortgage accounts require mortgagePaymentFrequency, paymentStartDate, sourceAccountId, and amortizationMonths",
-      );
-    }
-    if (interestRate === undefined || interestRate === null) {
-      throw new BadRequestException(
-        "Mortgage accounts require an interest rate",
-      );
-    }
-    if (!institution) {
-      throw new BadRequestException(
-        "Mortgage accounts require an institution name",
-      );
-    }
-
-    // Verify source account belongs to user
-    await this.findOne(userId, sourceAccountId);
-
-    // Get mortgage interest category
-    let interestCatId = interestCategoryId;
-
-    if (!interestCatId) {
-      // Try to find mortgage interest category, fall back to loan interest
-      const { interestCategory } =
-        await this.categoriesService.findLoanCategories(userId);
-      if (interestCategory) {
-        interestCatId = interestCategory.id;
-      }
-    }
-
-    // Calculate mortgage amortization
-    // User enters mortgage amount as positive, we store as negative (liability)
-    const mortgageAmount = Math.abs(openingBalance);
-    const amortizationInput: MortgageAmortizationInput = {
-      principal: mortgageAmount,
-      annualRate: interestRate,
-      amortizationMonths,
-      paymentFrequency: mortgagePaymentFrequency as MortgagePaymentFrequency,
-      isCanadian: isCanadianMortgage,
-      isVariableRate,
-      startDate: new Date(paymentStartDate),
-    };
-    const amortization = calculateMortgageAmortization(amortizationInput);
-
-    // Calculate term end date if term is specified
-    let termEndDate: Date | null = null;
-    if (termMonths) {
-      termEndDate = new Date(paymentStartDate);
-      termEndDate.setMonth(termEndDate.getMonth() + termMonths);
-    }
-
-    // Create the mortgage account with negative balance (liability)
-    const account = this.accountsRepository.create({
-      ...accountData,
+    await this.findOne(userId, createAccountDto.sourceAccountId!);
+    return this.loanMortgageService.createMortgageAccount(
       userId,
-      openingBalance: -mortgageAmount, // Store as negative
-      currentBalance: -mortgageAmount,
-      interestRate,
-      institution,
-      paymentAmount: amortization.paymentAmount,
-      paymentFrequency: mortgagePaymentFrequency,
-      paymentStartDate: new Date(paymentStartDate),
-      sourceAccountId,
-      interestCategoryId: interestCatId || null,
-      isCanadianMortgage,
-      isVariableRate,
-      termMonths: termMonths || null,
-      termEndDate,
-      amortizationMonths,
-      originalPrincipal: mortgageAmount,
-    });
-
-    const savedAccount = await this.accountsRepository.save(account);
-
-    // Map mortgage payment frequency to scheduled transaction frequency
-    // Accelerated frequencies use the base frequency for scheduling
-    const frequencyMap: Record<string, string> = {
-      MONTHLY: "MONTHLY",
-      SEMI_MONTHLY: "SEMI_MONTHLY",
-      BIWEEKLY: "BIWEEKLY",
-      ACCELERATED_BIWEEKLY: "BIWEEKLY",
-      WEEKLY: "WEEKLY",
-      ACCELERATED_WEEKLY: "WEEKLY",
-    };
-    const scheduledFrequency =
-      frequencyMap[mortgagePaymentFrequency] || "MONTHLY";
-
-    // Create scheduled transaction for mortgage payments
-    const endDateStr =
-      amortization.totalPayments > 0 && amortization.totalPayments < 10000
-        ? amortization.endDate.toISOString().split("T")[0]
-        : undefined;
-
-    const scheduledTransaction = await this.scheduledTransactionsService.create(
-      userId,
-      {
-        accountId: sourceAccountId,
-        name: `Mortgage Payment - ${savedAccount.name}`,
-        payeeName: institution,
-        amount: -amortization.paymentAmount, // Negative outflow from source account
-        currencyCode: accountData.currencyCode,
-        frequency: scheduledFrequency as any,
-        nextDueDate: paymentStartDate,
-        startDate: paymentStartDate,
-        endDate: endDateStr,
-        isActive: true,
-        autoPost: false,
-        splits: [
-          {
-            // Transfer to mortgage account (reduces debt)
-            transferAccountId: savedAccount.id,
-            amount: -amortization.principalPayment,
-            memo: "Principal",
-          },
-          {
-            // Interest expense
-            categoryId: interestCatId || undefined,
-            amount: -amortization.interestPayment,
-            memo: "Interest",
-          },
-        ],
-      },
+      createAccountDto,
     );
-
-    // Update account with scheduled transaction reference
-    savedAccount.scheduledTransactionId = scheduledTransaction.id;
-    await this.accountsRepository.save(savedAccount);
-
-    return savedAccount;
   }
 
-  /**
-   * Preview mortgage amortization without creating an account
-   */
   previewMortgageAmortization(
     mortgageAmount: number,
     interestRate: number,
@@ -562,150 +283,34 @@ export class AccountsService {
     isCanadian: boolean,
     isVariableRate: boolean,
   ): MortgageAmortizationResult {
-    return calculateMortgageAmortization({
-      principal: Math.abs(mortgageAmount),
-      annualRate: interestRate,
+    return this.loanMortgageService.previewMortgageAmortization(
+      mortgageAmount,
+      interestRate,
       amortizationMonths,
       paymentFrequency,
+      paymentStartDate,
       isCanadian,
       isVariableRate,
-      startDate: paymentStartDate,
-    });
+    );
   }
 
-  /**
-   * Update mortgage interest rate and optionally payment amount
-   */
   async updateMortgageRate(
     userId: string,
     accountId: string,
     newRate: number,
     effectiveDate: Date,
     newPaymentAmount?: number,
-  ): Promise<{
-    newRate: number;
-    paymentAmount: number;
-    principalPayment: number;
-    interestPayment: number;
-    effectiveDate: string;
-  }> {
+  ) {
     const account = await this.findOne(userId, accountId);
-
-    if (account.accountType !== AccountType.MORTGAGE) {
-      throw new BadRequestException(
-        "This operation is only valid for mortgage accounts",
-      );
-    }
-
-    if (account.isClosed) {
-      throw new BadRequestException("Cannot update rate on a closed account");
-    }
-
-    // Get current balance (remaining principal)
-    const currentBalance = Math.abs(Number(account.currentBalance));
-
-    // Calculate remaining amortization months
-    // Estimate based on payments made since start
-    const startDate = account.paymentStartDate || new Date();
-    const monthsElapsed = Math.floor(
-      (effectiveDate.getTime() - startDate.getTime()) /
-        (30 * 24 * 60 * 60 * 1000),
-    );
-    const remainingAmortizationMonths = Math.max(
-      12,
-      (account.amortizationMonths || 300) - monthsElapsed,
-    );
-
-    // Recalculate payment if not manually specified
-    let paymentAmount: number;
-    let principalPayment: number;
-    let interestPayment: number;
-
-    if (newPaymentAmount) {
-      // User specified new payment amount
-      paymentAmount = newPaymentAmount;
-
-      // Calculate principal/interest split at new rate
-      const periodsPerYear = getMortgagePeriodsPerYear(
-        (account.paymentFrequency || "MONTHLY") as MortgagePaymentFrequency,
-      );
-      const isCanadian = account.isCanadianMortgage || false;
-      const isVariable = account.isVariableRate || false;
-
-      // Simple calculation for first payment split
-      let periodicRate: number;
-      if (isCanadian && !isVariable) {
-        const semiAnnualRate = newRate / 100 / 2;
-        periodicRate = Math.pow(1 + semiAnnualRate, 2 / periodsPerYear) - 1;
-      } else {
-        periodicRate = newRate / 100 / periodsPerYear;
-      }
-
-      interestPayment = Math.round(currentBalance * periodicRate * 100) / 100;
-      principalPayment =
-        Math.round((paymentAmount - interestPayment) * 100) / 100;
-    } else {
-      // Auto-calculate new payment based on remaining amortization
-      const result = recalculateMortgageAfterRateChange(
-        currentBalance,
-        newRate,
-        remainingAmortizationMonths,
-        (account.paymentFrequency || "MONTHLY") as MortgagePaymentFrequency,
-        account.isCanadianMortgage || false,
-        account.isVariableRate || false,
-      );
-
-      paymentAmount = result.paymentAmount;
-      principalPayment = result.principalPayment;
-      interestPayment = result.interestPayment;
-    }
-
-    // Update account
-    account.interestRate = newRate;
-    account.paymentAmount = paymentAmount;
-    await this.accountsRepository.save(account);
-
-    // Update scheduled transaction if exists
-    if (account.scheduledTransactionId) {
-      try {
-        await this.scheduledTransactionsService.update(
-          userId,
-          account.scheduledTransactionId,
-          {
-            amount: -paymentAmount,
-            splits: [
-              {
-                transferAccountId: account.id,
-                amount: -principalPayment,
-                memo: "Principal",
-              },
-              {
-                categoryId: account.interestCategoryId || undefined,
-                amount: -interestPayment,
-                memo: "Interest",
-              },
-            ],
-          },
-        );
-      } catch (error) {
-        this.logger.warn(
-          `Could not update scheduled transaction: ${error.message}`,
-        );
-      }
-    }
-
-    return {
+    return this.loanMortgageService.updateMortgageRate(
+      account,
+      userId,
       newRate,
-      paymentAmount,
-      principalPayment,
-      interestPayment,
-      effectiveDate: effectiveDate.toISOString().split("T")[0],
-    };
+      effectiveDate,
+      newPaymentAmount,
+    );
   }
 
-  /**
-   * Preview loan amortization without creating an account
-   */
   previewLoanAmortization(
     loanAmount: number,
     interestRate: number,
@@ -713,8 +318,8 @@ export class AccountsService {
     paymentFrequency: PaymentFrequency,
     paymentStartDate: Date,
   ): AmortizationResult {
-    return calculateAmortization(
-      Math.abs(loanAmount),
+    return this.loanMortgageService.previewLoanAmortization(
+      loanAmount,
       interestRate,
       paymentAmount,
       paymentFrequency,

@@ -26,11 +26,8 @@ import {
 import { PostScheduledTransactionDto } from "./dto/post-scheduled-transaction.dto";
 import { AccountsService } from "../accounts/accounts.service";
 import { TransactionsService } from "../transactions/transactions.service";
-import { Account } from "../accounts/entities/account.entity";
-import {
-  calculatePaymentSplit,
-  PaymentFrequency,
-} from "../accounts/loan-amortization.util";
+import { ScheduledTransactionOverrideService } from "./scheduled-transaction-override.service";
+import { ScheduledTransactionLoanService } from "./scheduled-transaction-loan.service";
 
 @Injectable()
 export class ScheduledTransactionsService {
@@ -43,17 +40,13 @@ export class ScheduledTransactionsService {
     private splitsRepository: Repository<ScheduledTransactionSplit>,
     @InjectRepository(ScheduledTransactionOverride)
     private overridesRepository: Repository<ScheduledTransactionOverride>,
-    @InjectRepository(Account)
-    private accountsRepository: Repository<Account>,
     @Inject(forwardRef(() => AccountsService))
     private accountsService: AccountsService,
     private transactionsService: TransactionsService,
+    private overrideService: ScheduledTransactionOverrideService,
+    private loanService: ScheduledTransactionLoanService,
   ) {}
 
-  /**
-   * Cron job to automatically post scheduled transactions that are due and have autoPost enabled.
-   * Runs every hour at minute 5 (e.g., 8:05, 9:05, etc.)
-   */
   @Cron("5 * * * *")
   async processAutoPostTransactions(): Promise<void> {
     this.logger.log("Starting auto-post processing for scheduled transactions");
@@ -62,7 +55,6 @@ export class ScheduledTransactionsService {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
-      // Find all due scheduled transactions with autoPost enabled
       const dueTransactions = await this.scheduledTransactionsRepository.find({
         where: {
           isActive: true,
@@ -121,10 +113,8 @@ export class ScheduledTransactionsService {
     userId: string,
     createDto: CreateScheduledTransactionDto,
   ): Promise<ScheduledTransaction> {
-    // Verify account belongs to user
     await this.accountsService.findOne(userId, createDto.accountId);
 
-    // Verify transfer account if this is a transfer
     if (createDto.isTransfer && createDto.transferAccountId) {
       await this.accountsService.findOne(userId, createDto.transferAccountId);
       if (createDto.transferAccountId === createDto.accountId) {
@@ -138,7 +128,6 @@ export class ScheduledTransactionsService {
       createDto;
     const hasSplits = splits && splits.length > 0;
 
-    // Validate splits if provided (and not a simple transfer)
     if (hasSplits && !isTransfer) {
       this.validateSplits(splits, createDto.amount);
     }
@@ -157,7 +146,6 @@ export class ScheduledTransactionsService {
     const saved =
       await this.scheduledTransactionsRepository.save(scheduledTransaction);
 
-    // Create splits if provided (and not a simple transfer)
     if (hasSplits && !isTransfer) {
       await this.createSplits(saved.id, splits);
     }
@@ -169,7 +157,6 @@ export class ScheduledTransactionsService {
     splits: CreateScheduledTransactionSplitDto[],
     transactionAmount: number,
   ): void {
-    // Allow single split for transfers (has transferAccountId)
     const isTransfer = splits.length === 1 && splits[0].transferAccountId;
 
     if (splits.length < 2 && !isTransfer) {
@@ -238,7 +225,6 @@ export class ScheduledTransactionsService {
       return [];
     }
 
-    // Build a map of transaction ID -> nextDueDate string for batch queries
     const txDueDates = new Map<string, string>();
     const txIds = transactions.map((t) => {
       const d =
@@ -249,8 +235,6 @@ export class ScheduledTransactionsService {
       return t.id;
     });
 
-    // Batch query 1: Get next overrides for all transactions in one query
-    // We build OR conditions: (scheduledTransactionId = :id1 AND originalDate = :date1) OR ...
     const nextOverridesQuery = this.overridesRepository
       .createQueryBuilder("override")
       .leftJoinAndSelect("override.category", "category");
@@ -272,8 +256,6 @@ export class ScheduledTransactionsService {
       nextOverrideMap.set(o.scheduledTransactionId, o);
     }
 
-    // We need per-transaction counts that only include overrides >= nextDueDate
-    // Since each transaction has a different nextDueDate, use a single query with CASE
     const futureOverrideCounts = await this.overridesRepository.query(
       `SELECT o.scheduled_transaction_id as "stId", COUNT(*) as cnt
          FROM scheduled_transaction_overrides o
@@ -380,12 +362,10 @@ export class ScheduledTransactionsService {
   ): Promise<ScheduledTransaction> {
     const scheduled = await this.findOne(userId, id);
 
-    // If account is being changed, verify new account belongs to user
     if (updateDto.accountId && updateDto.accountId !== scheduled.accountId) {
       await this.accountsService.findOne(userId, updateDto.accountId);
     }
 
-    // Verify transfer account if this is being changed to a transfer
     if (updateDto.isTransfer && updateDto.transferAccountId) {
       await this.accountsService.findOne(userId, updateDto.transferAccountId);
       const accountId = updateDto.accountId || scheduled.accountId;
@@ -398,23 +378,19 @@ export class ScheduledTransactionsService {
 
     const { splits, isTransfer, transferAccountId, ...updateData } = updateDto;
 
-    // Handle splits if provided
     if (splits !== undefined) {
       if (Array.isArray(splits) && splits.length > 0) {
         const amount = updateData.amount ?? scheduled.amount;
         this.validateSplits(splits, amount);
 
-        // Delete existing splits and create new ones
         await this.splitsRepository.delete({ scheduledTransactionId: id });
         await this.createSplits(id, splits);
 
-        // Update to split mode
         await this.scheduledTransactionsRepository.update(id, {
           isSplit: true,
           categoryId: null,
         });
       } else if (Array.isArray(splits) && splits.length === 0) {
-        // Convert back to simple transaction
         await this.splitsRepository.delete({ scheduledTransactionId: id });
         await this.scheduledTransactionsRepository.update(id, {
           isSplit: false,
@@ -422,7 +398,6 @@ export class ScheduledTransactionsService {
       }
     }
 
-    // Build update object - only include defined fields, convert empty strings to null for nullable fields
     const fieldsToUpdate: Record<string, any> = {};
 
     if (updateData.accountId !== undefined)
@@ -458,11 +433,9 @@ export class ScheduledTransactionsService {
     if (updateData.reminderDaysBefore !== undefined)
       fieldsToUpdate.reminderDaysBefore = updateData.reminderDaysBefore;
 
-    // Handle transfer fields
     if (isTransfer !== undefined) {
       fieldsToUpdate.isTransfer = isTransfer;
       if (isTransfer) {
-        // When switching to transfer mode, clear splits and category
         fieldsToUpdate.isSplit = false;
         fieldsToUpdate.categoryId = null;
         await this.splitsRepository.delete({ scheduledTransactionId: id });
@@ -472,7 +445,6 @@ export class ScheduledTransactionsService {
       fieldsToUpdate.transferAccountId = transferAccountId || null;
     }
 
-    // Update using repository.update() to avoid issues with loaded relations
     if (Object.keys(fieldsToUpdate).length > 0) {
       await this.scheduledTransactionsRepository.update(id, fieldsToUpdate);
     }
@@ -488,25 +460,21 @@ export class ScheduledTransactionsService {
   async skip(userId: string, id: string): Promise<ScheduledTransaction> {
     const scheduled = await this.findOne(userId, id);
 
-    // Convert nextDueDate to string format
     const nextDueDateStr =
       scheduled.nextDueDate instanceof Date
         ? scheduled.nextDueDate.toISOString().split("T")[0]
         : String(scheduled.nextDueDate).split("T")[0];
 
-    // Delete any override for the skipped date
     await this.overridesRepository.delete({
       scheduledTransactionId: id,
       overrideDate: nextDueDateStr,
     });
 
-    // Advance to next occurrence without posting
     const nextDate = this.calculateNextDueDate(
       new Date(scheduled.nextDueDate),
       scheduled.frequency,
     );
 
-    // Build update object
     const updateFields: Record<string, any> = {
       nextDueDate: nextDate,
     };
@@ -526,7 +494,6 @@ export class ScheduledTransactionsService {
       updateFields.isActive = false;
     }
 
-    // Use repository.update() to avoid issues with loaded relations
     await this.scheduledTransactionsRepository.update(id, updateFields);
     return this.findOne(userId, id);
   }
@@ -538,7 +505,6 @@ export class ScheduledTransactionsService {
   ): Promise<ScheduledTransaction> {
     const scheduled = await this.findOne(userId, id);
 
-    // Convert nextDueDate to string format for transaction
     const nextDueDateStr =
       scheduled.nextDueDate instanceof Date
         ? scheduled.nextDueDate.toISOString().split("T")[0]
@@ -546,15 +512,12 @@ export class ScheduledTransactionsService {
 
     const postDate = postDto?.transactionDate || nextDueDateStr;
 
-    // Check for stored override for this specific date
     const storedOverride = await this.overridesRepository
       .createQueryBuilder("override")
       .where("override.scheduledTransactionId = :id", { id })
       .andWhere("override.overrideDate = :postDate", { postDate })
       .getOne();
 
-    // Priority: inline values > stored override > base scheduled transaction
-    // Determine final values to use
     const hasInlineAmount =
       postDto?.amount !== undefined && postDto?.amount !== null;
     const hasInlineCategoryId = postDto?.categoryId !== undefined;
@@ -576,7 +539,6 @@ export class ScheduledTransactionsService {
         ? storedOverride.description
         : scheduled.description || undefined;
 
-    // Build transaction payload
     const transactionPayload: any = {
       accountId: scheduled.accountId,
       transactionDate: postDate,
@@ -588,7 +550,6 @@ export class ScheduledTransactionsService {
       isCleared: false,
     };
 
-    // Determine if this should be a split transaction
     const useSplits = hasInlineIsSplit
       ? postDto.isSplit
       : storedOverride?.isSplit !== null &&
@@ -597,7 +558,6 @@ export class ScheduledTransactionsService {
         : scheduled.isSplit;
 
     if (useSplits) {
-      // Use inline splits > stored override splits > base splits
       if (hasInlineSplits && postDto?.splits) {
         transactionPayload.splits = postDto.splits.map((split) => ({
           categoryId: split.categoryId || undefined,
@@ -621,7 +581,6 @@ export class ScheduledTransactionsService {
         }));
       }
     } else {
-      // Use inline category > stored override category > base category
       const finalCategoryId = hasInlineCategoryId
         ? postDto.categoryId
         : storedOverride?.categoryId !== null &&
@@ -631,28 +590,23 @@ export class ScheduledTransactionsService {
       transactionPayload.categoryId = finalCategoryId || undefined;
     }
 
-    // Create the actual transaction(s)
     if (scheduled.isTransfer && scheduled.transferAccountId) {
-      // For direct transfers, use createTransfer to create linked transactions
       await this.transactionsService.createTransfer(userId, {
         fromAccountId: scheduled.accountId,
         toAccountId: scheduled.transferAccountId,
-        amount: Math.abs(finalAmount), // createTransfer expects positive amount
+        amount: Math.abs(finalAmount),
         transactionDate: postDate,
         fromCurrencyCode: scheduled.currencyCode,
         description: finalDescription || undefined,
       });
     } else {
-      // For regular transactions or split transactions
       await this.transactionsService.create(userId, transactionPayload);
     }
 
-    // Delete the stored override if it was used (it's now been posted)
     if (storedOverride) {
       await this.overridesRepository.remove(storedOverride);
     }
 
-    // Calculate the new next due date to know which overrides are now stale
     const newNextDueDate =
       scheduled.frequency === "ONCE"
         ? null
@@ -661,7 +615,6 @@ export class ScheduledTransactionsService {
             scheduled.frequency,
           );
 
-    // Clean up any overrides for dates before the new nextDueDate (stale overrides)
     if (newNextDueDate) {
       const newNextDueDateStr = newNextDueDate.toISOString().split("T")[0];
       await this.overridesRepository
@@ -674,7 +627,6 @@ export class ScheduledTransactionsService {
         .execute();
     }
 
-    // Build update object for scheduled transaction
     const updateFields: Record<string, any> = {
       lastPostedDate: new Date(),
     };
@@ -704,16 +656,14 @@ export class ScheduledTransactionsService {
       }
     }
 
-    // Use repository.update() to avoid issues with loaded relations
     await this.scheduledTransactionsRepository.update(id, updateFields);
 
-    // If this was a loan payment, recalculate the splits for the next payment
     if (scheduled.splits && scheduled.splits.length > 0) {
-      const loanAccountId = await this.findLoanAccountFromSplits(
+      const loanAccountId = await this.loanService.findLoanAccountFromSplits(
         scheduled.splits,
       );
       if (loanAccountId) {
-        await this.recalculateLoanPaymentSplits(id, loanAccountId);
+        await this.loanService.recalculateLoanPaymentSplits(id, loanAccountId);
       }
     }
 
@@ -737,12 +687,9 @@ export class ScheduledTransactionsService {
         date.setDate(date.getDate() + 14);
         break;
       case "SEMIMONTHLY":
-        // Twice a month: 15th and last day of month
         if (date.getDate() <= 15) {
-          // Go to end of current month
-          date.setMonth(date.getMonth() + 1, 0); // Day 0 of next month = last day of current month
+          date.setMonth(date.getMonth() + 1, 0);
         } else {
-          // Go to 15th of next month
           date.setMonth(date.getMonth() + 1, 15);
         }
         break;
@@ -757,387 +704,101 @@ export class ScheduledTransactionsService {
         break;
       case "ONCE":
       default:
-        // No change for one-time transactions
         break;
     }
 
     return date;
   }
 
-  // ==================== Override Methods ====================
+  // Delegated override methods
 
-  /**
-   * Create an override for a specific occurrence of a scheduled transaction
-   */
   async createOverride(
     userId: string,
     scheduledTransactionId: string,
     createDto: CreateScheduledTransactionOverrideDto,
   ): Promise<ScheduledTransactionOverride> {
-    // Verify user has access to the scheduled transaction
     await this.findOne(userId, scheduledTransactionId);
-
-    // Check if override already exists for this original date
-    const existing = await this.overridesRepository
-      .createQueryBuilder("override")
-      .where("override.scheduledTransactionId = :scheduledTransactionId", {
-        scheduledTransactionId,
-      })
-      .andWhere("override.originalDate = :date", {
-        date: createDto.originalDate,
-      })
-      .getOne();
-
-    if (existing) {
-      throw new BadRequestException(
-        `An override already exists for the ${createDto.originalDate} occurrence. Use update instead.`,
-      );
-    }
-
-    // Validate splits if provided
-    if (createDto.isSplit && createDto.splits && createDto.splits.length > 0) {
-      if (createDto.amount === undefined || createDto.amount === null) {
-        throw new BadRequestException(
-          "Amount is required when creating split override",
-        );
-      }
-      this.validateOverrideSplits(createDto.splits, createDto.amount);
-    }
-
-    const override = this.overridesRepository.create({
-      scheduledTransactionId,
-      originalDate: createDto.originalDate,
-      overrideDate: createDto.overrideDate,
-      amount: createDto.amount ?? null,
-      categoryId: createDto.categoryId ?? null,
-      description: createDto.description ?? null,
-      isSplit: createDto.isSplit ?? null,
-      splits:
-        createDto.splits?.map((s) => ({
-          categoryId: s.categoryId ?? null,
-          amount: s.amount,
-          memo: s.memo ?? null,
-        })) ?? null,
-    });
-
-    return this.overridesRepository.save(override);
+    return this.overrideService.createOverride(scheduledTransactionId, createDto);
   }
 
-  /**
-   * Get all overrides for a scheduled transaction
-   */
   async findOverrides(
     userId: string,
     scheduledTransactionId: string,
   ): Promise<ScheduledTransactionOverride[]> {
-    // Verify user has access
     await this.findOne(userId, scheduledTransactionId);
-
-    return this.overridesRepository.find({
-      where: { scheduledTransactionId },
-      relations: ["category"],
-      order: { overrideDate: "ASC" },
-    });
+    return this.overrideService.findOverrides(scheduledTransactionId);
   }
 
-  /**
-   * Get a specific override by ID
-   */
   async findOverride(
     userId: string,
     scheduledTransactionId: string,
     overrideId: string,
   ): Promise<ScheduledTransactionOverride> {
-    // Verify user has access
     await this.findOne(userId, scheduledTransactionId);
-
-    const override = await this.overridesRepository.findOne({
-      where: { id: overrideId, scheduledTransactionId },
-      relations: ["category"],
-    });
-
-    if (!override) {
-      throw new NotFoundException(`Override with ID ${overrideId} not found`);
-    }
-
-    return override;
+    return this.overrideService.findOverride(scheduledTransactionId, overrideId);
   }
 
-  /**
-   * Get override for a specific date (if exists)
-   */
   async findOverrideByDate(
     userId: string,
     scheduledTransactionId: string,
     date: string,
   ): Promise<ScheduledTransactionOverride | null> {
-    // Verify user has access
     await this.findOne(userId, scheduledTransactionId);
-
-    // Normalize the date to YYYY-MM-DD format
-    const normalizedDate = date.split("T")[0];
-
-    this.logger.debug(
-      `findOverrideByDate: Looking for override with scheduledTransactionId=${scheduledTransactionId}, date=${normalizedDate}`,
+    return this.overrideService.findOverrideByDate(
+      scheduledTransactionId,
+      date,
     );
-
-    // Get all overrides for this transaction and find matching date in code
-    // This avoids any potential date comparison issues in PostgreSQL
-    const allOverrides = await this.overridesRepository.find({
-      where: { scheduledTransactionId },
-      relations: ["category"],
-    });
-
-    this.logger.debug(
-      `findOverrideByDate: Found ${allOverrides.length} total overrides for transaction`,
-    );
-
-    // Find the override matching the original date (compare as strings in YYYY-MM-DD format)
-    // We match on originalDate because that identifies which occurrence was overridden
-    const override = allOverrides.find((o) => {
-      const originalDate = String(o.originalDate).split("T")[0];
-      this.logger.debug(
-        `findOverrideByDate: Comparing originalDate ${originalDate} with ${normalizedDate}`,
-      );
-      return originalDate === normalizedDate;
-    });
-
-    this.logger.debug(
-      `findOverrideByDate: Result = ${override ? `found id=${override.id}` : "null"}`,
-    );
-
-    return override || null;
   }
 
-  /**
-   * Update an override
-   */
   async updateOverride(
     userId: string,
     scheduledTransactionId: string,
     overrideId: string,
     updateDto: UpdateScheduledTransactionOverrideDto,
   ): Promise<ScheduledTransactionOverride> {
-    const override = await this.findOverride(
-      userId,
+    await this.findOne(userId, scheduledTransactionId);
+    return this.overrideService.updateOverride(
       scheduledTransactionId,
       overrideId,
+      updateDto,
     );
-
-    // Validate splits if provided
-    if (updateDto.isSplit && updateDto.splits && updateDto.splits.length > 0) {
-      const amount = updateDto.amount ?? override.amount;
-      if (amount === null) {
-        throw new BadRequestException("Amount is required for split override");
-      }
-      this.validateOverrideSplits(updateDto.splits, amount);
-    }
-
-    // Update fields
-    if (updateDto.amount !== undefined) override.amount = updateDto.amount;
-    if (updateDto.categoryId !== undefined)
-      override.categoryId = updateDto.categoryId ?? null;
-    if (updateDto.description !== undefined)
-      override.description = updateDto.description;
-    if (updateDto.isSplit !== undefined) override.isSplit = updateDto.isSplit;
-    if (updateDto.splits !== undefined) {
-      override.splits =
-        updateDto.splits?.map((s) => ({
-          categoryId: s.categoryId ?? null,
-          amount: s.amount,
-          memo: s.memo ?? null,
-        })) ?? null;
-    }
-
-    return this.overridesRepository.save(override);
   }
 
-  /**
-   * Delete an override
-   */
   async removeOverride(
     userId: string,
     scheduledTransactionId: string,
     overrideId: string,
   ): Promise<void> {
-    const override = await this.findOverride(
-      userId,
+    await this.findOne(userId, scheduledTransactionId);
+    return this.overrideService.removeOverride(
       scheduledTransactionId,
       overrideId,
     );
-    await this.overridesRepository.remove(override);
   }
 
-  /**
-   * Delete all overrides for a scheduled transaction
-   */
   async removeAllOverrides(
     userId: string,
     scheduledTransactionId: string,
   ): Promise<number> {
-    // Verify user has access
     await this.findOne(userId, scheduledTransactionId);
-
-    const result = await this.overridesRepository.delete({
-      scheduledTransactionId,
-    });
-    return result.affected || 0;
+    return this.overrideService.removeAllOverrides(scheduledTransactionId);
   }
 
-  /**
-   * Check if a scheduled transaction has any overrides
-   */
   async hasOverrides(
     userId: string,
     scheduledTransactionId: string,
   ): Promise<{ hasOverrides: boolean; count: number }> {
-    // Verify user has access
     await this.findOne(userId, scheduledTransactionId);
-
-    const count = await this.overridesRepository.count({
-      where: { scheduledTransactionId },
-    });
-
-    return { hasOverrides: count > 0, count };
+    return this.overrideService.hasOverrides(scheduledTransactionId);
   }
 
-  /**
-   * Validate override splits
-   */
-  private validateOverrideSplits(
-    splits: {
-      categoryId?: string | null;
-      amount: number;
-      memo?: string | null;
-    }[],
-    transactionAmount: number,
-  ): void {
-    if (splits.length < 2) {
-      throw new BadRequestException(
-        "Split overrides must have at least 2 splits",
-      );
-    }
-
-    const splitsSum = splits.reduce(
-      (sum, split) => sum + Number(split.amount),
-      0,
-    );
-    const roundedSum = Math.round(splitsSum * 10000) / 10000;
-    const roundedAmount = Math.round(Number(transactionAmount) * 10000) / 10000;
-
-    if (roundedSum !== roundedAmount) {
-      throw new BadRequestException(
-        `Split amounts (${roundedSum}) must equal transaction amount (${roundedAmount})`,
-      );
-    }
-
-    for (const split of splits) {
-      if (split.amount === 0) {
-        throw new BadRequestException("Split amounts cannot be zero");
-      }
-    }
-  }
-
-  // ==================== Loan Payment Recalculation ====================
-
-  /**
-   * Recalculate the principal/interest split for a loan payment scheduled transaction
-   * based on the current loan balance. Called after posting a loan payment.
-   *
-   * @param scheduledTransactionId - The scheduled transaction ID
-   * @param loanAccountId - The loan account ID
-   */
   async recalculateLoanPaymentSplits(
     scheduledTransactionId: string,
     loanAccountId: string,
   ): Promise<void> {
-    // Get the loan account to check current balance and interest rate
-    const loanAccount = await this.accountsRepository.findOne({
-      where: { id: loanAccountId },
-    });
-
-    if (!loanAccount) {
-      return; // Loan account not found, nothing to do
-    }
-
-    // Get the scheduled transaction
-    const scheduledTransaction =
-      await this.scheduledTransactionsRepository.findOne({
-        where: { id: scheduledTransactionId },
-        relations: ["splits"],
-      });
-
-    if (!scheduledTransaction || !scheduledTransaction.isActive) {
-      return; // Scheduled transaction not found or inactive
-    }
-
-    // Get current loan balance (stored as negative for liability)
-    const currentBalance = Math.abs(Number(loanAccount.currentBalance));
-
-    // If loan is paid off (balance is 0 or positive), deactivate the scheduled transaction
-    if (currentBalance <= 0.01) {
-      await this.scheduledTransactionsRepository.update(
-        scheduledTransactionId,
-        {
-          isActive: false,
-        },
-      );
-      return;
-    }
-
-    // Calculate new payment split based on remaining balance
-    const paymentAmount = Math.abs(Number(scheduledTransaction.amount));
-    const interestRate = Number(loanAccount.interestRate) || 0;
-    const frequency = (loanAccount.paymentFrequency ||
-      scheduledTransaction.frequency) as PaymentFrequency;
-
-    const newSplit = calculatePaymentSplit(
-      currentBalance,
-      interestRate,
-      paymentAmount,
-      frequency,
+    return this.loanService.recalculateLoanPaymentSplits(
+      scheduledTransactionId,
+      loanAccountId,
     );
-
-    // Find the principal and interest splits
-    const splits = scheduledTransaction.splits || [];
-    const principalSplit = splits.find(
-      (s) => s.transferAccountId === loanAccountId,
-    );
-    const interestSplit = splits.find(
-      (s) => s.categoryId && !s.transferAccountId,
-    );
-
-    // Update the splits with new amounts
-    if (principalSplit) {
-      // Principal amount is negative (part of outflow)
-      principalSplit.amount = -newSplit.principal;
-      await this.splitsRepository.save(principalSplit);
-    }
-
-    if (interestSplit) {
-      // Interest amount is negative (part of outflow)
-      interestSplit.amount = -newSplit.interest;
-      await this.splitsRepository.save(interestSplit);
-    }
-  }
-
-  /**
-   * Check if a scheduled transaction is a loan payment
-   * (has a split with transferAccountId pointing to a loan account)
-   */
-  private async findLoanAccountFromSplits(
-    splits: ScheduledTransactionSplit[],
-  ): Promise<string | null> {
-    for (const split of splits) {
-      if (split.transferAccountId) {
-        const account = await this.accountsRepository.findOne({
-          where: { id: split.transferAccountId },
-        });
-        if (account && account.accountType === "LOAN") {
-          return account.id;
-        }
-      }
-    }
-    return null;
   }
 }
