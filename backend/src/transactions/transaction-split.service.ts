@@ -281,7 +281,7 @@ export class TransactionSplitService {
   async removeSplit(
     transaction: Transaction,
     splitId: string,
-    userId: string,
+    _userId: string,
   ): Promise<void> {
     const split = await this.splitsRepository.findOne({
       where: { id: splitId, transactionId: transaction.id },
