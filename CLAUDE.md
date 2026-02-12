@@ -96,3 +96,27 @@ This is a comprehensive web-based personal finance management application design
 - [x] Added Cross-Origin-Resource-Policy: same-origin
 - [ ] CSP unsafe-inline: Required by Next.js for hydration (nonce-based CSP is the only fix, complex)
 - [ ] Proxy disclosure: Infrastructure-level fix (reverse proxy config, not app code)
+
+### Security Audit Round 2 (Feb 2026)
+
+#### Fixed
+- [x] HTML injection in email templates: User-controlled data (firstName, payee, currencyCode) now escaped via escapeHtml() before interpolation into HTML email bodies
+- [x] JWT_SECRET minimum length enforced: Startup now rejects secrets shorter than 32 characters (previously only checked for existence)
+- [x] Replaced `new Function()` calculator eval with recursive-descent parser: Eliminates code execution primitive from frontend, CSP-compatible
+
+#### Verified Secure (no action needed)
+- SQL injection: All queries use parameterized TypeORM QueryBuilder or parameterized raw queries
+- IDOR: All service methods verify userId ownership before returning/modifying data
+- Mass assignment: Explicit property mapping used (not Object.assign), forbidNonWhitelisted DTO validation
+- Error leakage: Internal errors logged server-side, generic messages returned to clients
+- SSRF: External HTTP requests use hardcoded base URLs with encodeURIComponent() on parameters
+- XSS: No dangerouslySetInnerHTML usage found in React components
+- Authorization: All controllers use @UseGuards(AuthGuard("jwt")), admin routes use @Roles("admin")
+- Rate limiting: Global 100 req/min default, stricter limits on auth endpoints (3-5 per 15 min)
+- CORS: Properly restricts origins, localhost only allowed in non-production
+
+#### Informational (acceptable risk or design notes)
+- [ ] Demo user (demo@monize.com / Demo123!) in seed.service.ts: Known credential in source, seed-only
+- [ ] console.log in db-init.ts and seed.service.ts: Logs file paths during startup
+- [ ] Refresh token cookie uses path "/": Needed by frontend proxy auth check, restricting would break SSR auth detection
+- [ ] Swagger docs exposed in non-production: Intentional for development

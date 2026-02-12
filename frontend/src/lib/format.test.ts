@@ -236,4 +236,34 @@ describe('evaluateExpression', () => {
   it('strips commas before evaluation', () => {
     expect(evaluateExpression('1,000+500')).toBe(1500);
   });
+
+  it('handles negative numbers', () => {
+    expect(evaluateExpression('-50')).toBe(-50);
+    expect(evaluateExpression('-10+20')).toBe(10);
+  });
+
+  it('handles nested parentheses', () => {
+    expect(evaluateExpression('((2+3)*4)')).toBe(20);
+  });
+
+  it('handles unary minus in parentheses', () => {
+    expect(evaluateExpression('(-5)*2')).toBe(-10);
+  });
+
+  it('returns undefined for code injection attempts', () => {
+    expect(evaluateExpression('alert(1)')).toBeUndefined();
+    expect(evaluateExpression('process.exit()')).toBeUndefined();
+    expect(evaluateExpression('require("fs")')).toBeUndefined();
+    expect(evaluateExpression('constructor.constructor("return this")()')).toBeUndefined();
+  });
+
+  it('returns undefined for property access attempts', () => {
+    expect(evaluateExpression('this.constructor')).toBeUndefined();
+    expect(evaluateExpression('[].constructor')).toBeUndefined();
+  });
+
+  it('respects operator precedence', () => {
+    expect(evaluateExpression('2+3*4')).toBe(14);
+    expect(evaluateExpression('10-2*3')).toBe(4);
+  });
 });

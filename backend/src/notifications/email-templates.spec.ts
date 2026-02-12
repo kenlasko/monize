@@ -109,6 +109,70 @@ describe("Email Templates", () => {
     });
   });
 
+  describe("HTML injection prevention", () => {
+    it("escapes HTML in firstName for bill reminder", () => {
+      const maliciousName = '<script>alert("xss")</script>';
+      const html = billReminderTemplate(maliciousName, [], "https://app.com");
+
+      expect(html).not.toContain("<script>");
+      expect(html).toContain("&lt;script&gt;");
+    });
+
+    it("escapes HTML in payee names for bill reminder", () => {
+      const bills = [
+        {
+          payee: '<img src=x onerror="alert(1)">',
+          amount: -100,
+          dueDate: "2024-01-01",
+          currencyCode: "USD",
+        },
+      ];
+      const html = billReminderTemplate("Alice", bills, "https://app.com");
+
+      expect(html).not.toContain("<img");
+      expect(html).toContain("&lt;img");
+    });
+
+    it("escapes HTML in firstName for password reset", () => {
+      const maliciousName = '"><a href="https://evil.com">Click</a>';
+      const html = passwordResetTemplate(
+        maliciousName,
+        "https://app.com/reset?token=abc",
+      );
+
+      expect(html).not.toContain('href="https://evil.com"');
+      expect(html).toContain("&quot;&gt;&lt;a");
+    });
+
+    it("escapes HTML in firstName for test email", () => {
+      const html = testEmailTemplate("<b>Bold</b>");
+
+      expect(html).not.toContain("<b>Bold</b>");
+      expect(html).toContain("&lt;b&gt;Bold&lt;/b&gt;");
+    });
+
+    it("escapes ampersands in user data", () => {
+      const html = testEmailTemplate("Tom & Jerry");
+
+      expect(html).toContain("Tom &amp; Jerry");
+    });
+
+    it("escapes quotes in payee currency codes", () => {
+      const bills = [
+        {
+          payee: "Normal",
+          amount: -50,
+          dueDate: "2024-01-01",
+          currencyCode: '"onmouseover="alert(1)',
+        },
+      ];
+      const html = billReminderTemplate("Alice", bills, "https://app.com");
+
+      expect(html).not.toContain('"onmouseover=');
+      expect(html).toContain("&quot;onmouseover=");
+    });
+  });
+
   describe("passwordResetTemplate()", () => {
     it("includes the resetUrl in the reset button link", () => {
       const html = passwordResetTemplate(
