@@ -5,6 +5,7 @@ import { SecurityPriceService } from "./security-price.service";
 import { SecurityPrice } from "./entities/security-price.entity";
 import { Security } from "./entities/security.entity";
 import { NetWorthService } from "../net-worth/net-worth.service";
+import { YahooFinanceService } from "./yahoo-finance.service";
 
 describe("SecurityPriceService", () => {
   let service: SecurityPriceService;
@@ -171,6 +172,7 @@ describe("SecurityPriceService", () => {
           provide: NetWorthService,
           useValue: netWorthService,
         },
+        YahooFinanceService,
       ],
     }).compile();
 

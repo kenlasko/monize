@@ -24,6 +24,9 @@ import { Holding } from "../securities/entities/holding.entity";
 import { NetWorthService } from "../net-worth/net-worth.service";
 import { SecurityPriceService } from "../securities/security-price.service";
 import { ExchangeRateService } from "../currencies/exchange-rate.service";
+import { ImportEntityCreatorService } from "./import-entity-creator.service";
+import { ImportInvestmentProcessorService } from "./import-investment-processor.service";
+import { ImportRegularProcessorService } from "./import-regular-processor.service";
 
 // Mock the qif-parser module so we can control its return values
 jest.mock("./qif-parser", () => ({
@@ -243,6 +246,9 @@ describe("ImportService", () => {
         { provide: NetWorthService, useValue: mockNetWorthService },
         { provide: SecurityPriceService, useValue: mockSecurityPriceService },
         { provide: ExchangeRateService, useValue: mockExchangeRateService },
+        ImportEntityCreatorService,
+        ImportInvestmentProcessorService,
+        ImportRegularProcessorService,
       ],
     }).compile();
 

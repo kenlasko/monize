@@ -16,6 +16,7 @@ import { InvestmentTransaction } from "../securities/entities/investment-transac
 import { CategoriesService } from "../categories/categories.service";
 import { ScheduledTransactionsService } from "../scheduled-transactions/scheduled-transactions.service";
 import { NetWorthService } from "../net-worth/net-worth.service";
+import { LoanMortgageAccountService } from "./loan-mortgage-account.service";
 
 describe("AccountsService", () => {
   let service: AccountsService;
@@ -114,6 +115,7 @@ describe("AccountsService", () => {
           useValue: scheduledTransactionsService,
         },
         { provide: NetWorthService, useValue: netWorthService },
+        LoanMortgageAccountService,
       ],
     }).compile();
 

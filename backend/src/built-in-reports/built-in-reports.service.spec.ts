@@ -6,6 +6,13 @@ import { Category } from "../categories/entities/category.entity";
 import { Payee } from "../payees/entities/payee.entity";
 import { UserPreference } from "../users/entities/user-preference.entity";
 import { ExchangeRateService } from "../currencies/exchange-rate.service";
+import { ReportCurrencyService } from "./report-currency.service";
+import { SpendingReportsService } from "./spending-reports.service";
+import { IncomeReportsService } from "./income-reports.service";
+import { ComparisonReportsService } from "./comparison-reports.service";
+import { AnomalyReportsService } from "./anomaly-reports.service";
+import { TaxRecurringReportsService } from "./tax-recurring-reports.service";
+import { DataQualityReportsService } from "./data-quality-reports.service";
 
 describe("BuiltInReportsService", () => {
   let service: BuiltInReportsService;
@@ -132,6 +139,13 @@ describe("BuiltInReportsService", () => {
           provide: ExchangeRateService,
           useValue: exchangeRateService,
         },
+        ReportCurrencyService,
+        SpendingReportsService,
+        IncomeReportsService,
+        ComparisonReportsService,
+        AnomalyReportsService,
+        TaxRecurringReportsService,
+        DataQualityReportsService,
       ],
     }).compile();
 
