@@ -565,6 +565,14 @@ function TransactionsContent() {
     }
   };
 
+  const handleCategoryClick = useCallback((categoryId: string) => {
+    // Clear account filter to show across all accounts, then set category filter
+    isFilterChange.current = true;
+    setFilterAccountIds([]);
+    setFilterAccountStatus('');
+    setFilterCategoryIds([categoryId]);
+  }, []);
+
   const handleTransferClick = useCallback((linkedAccountId: string, linkedTransactionId: string) => {
     // Navigate to the linked account and jump to the page containing the linked transaction
     // Store the target transaction ID so loadTransactions can request the correct page
@@ -738,6 +746,7 @@ function TransactionsContent() {
               onTransactionUpdate={handleTransactionUpdate}
               onPayeeClick={handlePayeeClick}
               onTransferClick={handleTransferClick}
+              onCategoryClick={handleCategoryClick}
               density={listDensity}
               onDensityChange={setListDensity}
               isSingleAccountView={filterAccountIds.length === 1}

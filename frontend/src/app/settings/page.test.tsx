@@ -4,6 +4,7 @@ import SettingsPage from './page';
 
 // Mock next/image
 vi.mock('next/image', () => ({
+  // eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text
   default: (props: any) => <img {...props} />,
 }));
 

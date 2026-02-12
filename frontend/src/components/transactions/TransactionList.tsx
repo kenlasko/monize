@@ -6,6 +6,7 @@ import { Transaction, TransactionStatus } from '@/types/transaction';
 import { transactionsApi } from '@/lib/transactions';
 import { getErrorMessage } from '@/lib/errors';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { Modal } from '@/components/ui/Modal';
 import { Pagination } from '@/components/ui/Pagination';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
@@ -31,6 +32,7 @@ interface TransactionRowProps {
   onTouchMove: (e: React.TouchEvent) => void;
   onPayeeClick?: (payeeId: string) => void;
   onTransferClick?: (linkedAccountId: string, linkedTransactionId: string) => void;
+  onCategoryClick?: (categoryId: string) => void;
   onCycleStatus: (transaction: Transaction) => void;
   onEdit?: (transaction: Transaction) => void;
   onDeleteClick: (transaction: Transaction) => void;
@@ -54,6 +56,7 @@ const TransactionRow = memo(function TransactionRow({
   onTouchMove,
   onPayeeClick,
   onTransferClick,
+  onCategoryClick,
   onCycleStatus,
   onEdit,
   onDeleteClick,
@@ -167,20 +170,38 @@ const TransactionRow = memo(function TransactionRow({
             )}
           </div>
         ) : transaction.category ? (
-          <span
-            className={`inline-flex text-xs leading-5 font-semibold rounded-full truncate max-w-[160px] ${density === 'dense' ? 'px-1.5 py-0.5' : 'px-2 py-1'}`}
-            style={{
-              backgroundColor: transaction.category.color
-                ? `color-mix(in srgb, ${transaction.category.color} 15%, var(--category-bg-base, #e5e7eb))`
-                : 'var(--category-bg-base, #e5e7eb)',
-              color: transaction.category.color
-                ? `color-mix(in srgb, ${transaction.category.color} 85%, var(--category-text-mix, #000))`
-                : 'var(--category-text-base, #6b7280)',
-            }}
-            title={transaction.category.name}
-          >
-            {transaction.category.name}
-          </span>
+          onCategoryClick ? (
+            <button
+              onClick={(e) => { e.stopPropagation(); onCategoryClick(transaction.category!.id); }}
+              className={`inline-flex text-xs leading-5 font-semibold rounded-full truncate max-w-[160px] hover:opacity-80 transition-opacity ${density === 'dense' ? 'px-1.5 py-0.5' : 'px-2 py-1'}`}
+              style={{
+                backgroundColor: transaction.category.color
+                  ? `color-mix(in srgb, ${transaction.category.color} 15%, var(--category-bg-base, #e5e7eb))`
+                  : 'var(--category-bg-base, #e5e7eb)',
+                color: transaction.category.color
+                  ? `color-mix(in srgb, ${transaction.category.color} 85%, var(--category-text-mix, #000))`
+                  : 'var(--category-text-base, #6b7280)',
+              }}
+              title={`Filter by ${transaction.category.name}`}
+            >
+              {transaction.category.name}
+            </button>
+          ) : (
+            <span
+              className={`inline-flex text-xs leading-5 font-semibold rounded-full truncate max-w-[160px] ${density === 'dense' ? 'px-1.5 py-0.5' : 'px-2 py-1'}`}
+              style={{
+                backgroundColor: transaction.category.color
+                  ? `color-mix(in srgb, ${transaction.category.color} 15%, var(--category-bg-base, #e5e7eb))`
+                  : 'var(--category-bg-base, #e5e7eb)',
+                color: transaction.category.color
+                  ? `color-mix(in srgb, ${transaction.category.color} 85%, var(--category-text-mix, #000))`
+                  : 'var(--category-text-base, #6b7280)',
+              }}
+              title={transaction.category.name}
+            >
+              {transaction.category.name}
+            </span>
+          )
         ) : (
           <span className="text-sm text-gray-400 dark:text-gray-500">-</span>
         )}
@@ -260,6 +281,8 @@ interface TransactionListProps {
   onPayeeClick?: (payeeId: string) => void;
   /** Callback when clicking on a transfer badge to navigate to linked account */
   onTransferClick?: (linkedAccountId: string, linkedTransactionId: string) => void;
+  /** Callback when clicking on a category badge to filter by that category */
+  onCategoryClick?: (categoryId: string) => void;
   density?: DensityLevel;
   onDensityChange?: (density: DensityLevel) => void;
   /** Starting balance for running balance calculation (balance after first tx on page) */
@@ -282,6 +305,7 @@ export function TransactionList({
   onTransactionUpdate,
   onPayeeClick,
   onTransferClick,
+  onCategoryClick,
   density: propDensity,
   onDensityChange,
   startingBalance,
@@ -301,29 +325,29 @@ export function TransactionList({
     transaction: null,
   });
 
-  // Long-press handling for delete on mobile
+  // Action sheet state for mobile long-press (shows filter + delete options)
+  const [actionSheet, setActionSheet] = useState<{ isOpen: boolean; transaction: Transaction | null }>({
+    isOpen: false,
+    transaction: null,
+  });
+
+  // Long-press handling for context menu on mobile
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
   const longPressTriggered = useRef(false);
   const touchStartPos = useRef<{ x: number; y: number } | null>(null);
   const LONG_PRESS_MOVE_THRESHOLD = 10; // pixels - cancel long-press if user moves finger this much
 
   const handleLongPressStart = useCallback((transaction: Transaction) => {
-    // Don't allow delete for investment-linked transactions
-    if (transaction.linkedInvestmentTransactionId) return;
-
     touchStartPos.current = null;
 
     longPressTriggered.current = false;
     longPressTimer.current = setTimeout(() => {
       longPressTriggered.current = true;
-      setDeleteConfirm({ isOpen: true, transaction });
+      setActionSheet({ isOpen: true, transaction });
     }, 750); // 750ms long-press threshold
   }, []);
 
   const handleLongPressStartTouch = useCallback((transaction: Transaction, e: React.TouchEvent) => {
-    // Don't allow delete for investment-linked transactions
-    if (transaction.linkedInvestmentTransactionId) return;
-
     // Track initial touch position for scroll detection
     if (e?.touches?.[0]) {
       touchStartPos.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
@@ -334,7 +358,7 @@ export function TransactionList({
     longPressTriggered.current = false;
     longPressTimer.current = setTimeout(() => {
       longPressTriggered.current = true;
-      setDeleteConfirm({ isOpen: true, transaction });
+      setActionSheet({ isOpen: true, transaction });
     }, 750); // 750ms long-press threshold
   }, []);
 
@@ -396,6 +420,26 @@ export function TransactionList({
       setLocalDensity(nextDensity);
     }
   }, [density, onDensityChange]);
+
+  const handleActionSheetClose = useCallback(() => {
+    setActionSheet({ isOpen: false, transaction: null });
+  }, []);
+
+  const handleActionSheetFilterCategory = useCallback(() => {
+    const tx = actionSheet.transaction;
+    if (!tx) return;
+    setActionSheet({ isOpen: false, transaction: null });
+    if (tx.category?.id && onCategoryClick) {
+      onCategoryClick(tx.category.id);
+    }
+  }, [actionSheet.transaction, onCategoryClick]);
+
+  const handleActionSheetDelete = useCallback(() => {
+    const tx = actionSheet.transaction;
+    if (!tx) return;
+    setActionSheet({ isOpen: false, transaction: null });
+    setDeleteConfirm({ isOpen: true, transaction: tx });
+  }, [actionSheet.transaction]);
 
   const handleDeleteClick = useCallback((transaction: Transaction) => {
     setDeleteConfirm({ isOpen: true, transaction });
@@ -623,6 +667,7 @@ export function TransactionList({
                 onTouchMove={handleTouchMove}
                 onPayeeClick={onPayeeClick}
                 onTransferClick={onTransferClick}
+                onCategoryClick={onCategoryClick}
                 onCycleStatus={handleCycleStatus}
                 onEdit={onEdit}
                 onDeleteClick={handleDeleteClick}
@@ -631,6 +676,53 @@ export function TransactionList({
           </tbody>
         </table>
       </div>
+
+      {/* Long-press Action Sheet */}
+      <Modal isOpen={actionSheet.isOpen} onClose={handleActionSheetClose} maxWidth="sm" className="p-0">
+        <div className="py-2">
+          <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
+            <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+              {actionSheet.transaction?.payeeName || 'Transaction'}
+            </p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              {actionSheet.transaction && formatDate(actionSheet.transaction.transactionDate)}
+            </p>
+          </div>
+          {onCategoryClick && actionSheet.transaction?.category && (
+            <button
+              onClick={handleActionSheetFilterCategory}
+              className="w-full px-4 py-3 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3"
+            >
+              <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+              </svg>
+              Filter by &ldquo;{actionSheet.transaction.category.name}&rdquo;
+            </button>
+          )}
+          {onEdit && (
+            <button
+              onClick={() => { handleActionSheetClose(); onEdit!(actionSheet.transaction!); }}
+              className="w-full px-4 py-3 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3"
+            >
+              <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+              Edit
+            </button>
+          )}
+          {!actionSheet.transaction?.linkedInvestmentTransactionId && (
+            <button
+              onClick={handleActionSheetDelete}
+              className="w-full px-4 py-3 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-3"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              Delete
+            </button>
+          )}
+        </div>
+      </Modal>
 
       {/* Delete Confirmation Dialog */}
       <ConfirmDialog

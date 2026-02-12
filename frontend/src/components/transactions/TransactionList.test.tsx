@@ -277,6 +277,76 @@ describe('TransactionList', () => {
     expect(screen.getByText(/Savings/)).toBeInTheDocument();
   });
 
+  it('calls onCategoryClick when category badge is clicked', () => {
+    const mockOnCategoryClick = vi.fn();
+    const transaction = createTransaction();
+
+    render(
+      <TransactionList
+        transactions={[transaction]}
+        onEdit={mockOnEdit}
+        onRefresh={mockOnRefresh}
+        onCategoryClick={mockOnCategoryClick}
+      />
+    );
+
+    const categoryButton = screen.getByTitle('Filter by Groceries');
+    fireEvent.click(categoryButton);
+
+    expect(mockOnCategoryClick).toHaveBeenCalledWith('cat-1');
+  });
+
+  it('renders category as non-clickable span when onCategoryClick is not provided', () => {
+    const transaction = createTransaction();
+
+    render(
+      <TransactionList
+        transactions={[transaction]}
+        onEdit={mockOnEdit}
+        onRefresh={mockOnRefresh}
+      />
+    );
+
+    // Should show category name but as a span (with plain title, not "Filter by")
+    const categorySpan = screen.getByTitle('Groceries');
+    expect(categorySpan.tagName).toBe('SPAN');
+  });
+
+  it('shows action sheet with filter and delete options on long-press', async () => {
+    const mockOnCategoryClick = vi.fn();
+    const transaction = createTransaction();
+
+    vi.useFakeTimers();
+
+    render(
+      <TransactionList
+        transactions={[transaction]}
+        onEdit={mockOnEdit}
+        onRefresh={mockOnRefresh}
+        onCategoryClick={mockOnCategoryClick}
+      />
+    );
+
+    const row = screen.getByText('Grocery Store').closest('tr')!;
+    fireEvent.mouseDown(row);
+
+    // Advance past 750ms long-press threshold
+    vi.advanceTimersByTime(800);
+
+    vi.useRealTimers();
+
+    // Action sheet should appear with filter and delete options
+    await waitFor(() => {
+      expect(screen.getByText(/Filter by.*Groceries/)).toBeInTheDocument();
+    });
+
+    // Should also have Edit and Delete options in the action sheet
+    const editButtons = screen.getAllByText('Edit');
+    expect(editButtons.length).toBeGreaterThanOrEqual(2); // row Edit + action sheet Edit
+    const deleteButtons = screen.getAllByText('Delete');
+    expect(deleteButtons.length).toBeGreaterThanOrEqual(2); // row Delete + action sheet Delete
+  });
+
   it('shows Split badge for split transactions', () => {
     const splitTransaction = createTransaction({
       isSplit: true,
