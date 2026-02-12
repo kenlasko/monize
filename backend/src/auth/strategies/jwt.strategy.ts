@@ -31,11 +31,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   ) {
     const jwtSecret = configService.get<string>("JWT_SECRET");
 
-    // SECURITY: Fail startup if JWT_SECRET is not configured
-    if (!jwtSecret) {
+    // SECURITY: Fail startup if JWT_SECRET is missing or too short.
+    // A weak secret undermines all JWT signature verification.
+    if (!jwtSecret || jwtSecret.length < 32) {
       throw new Error(
-        "JWT_SECRET environment variable must be configured. " +
-          "Please set a secure secret (minimum 32 characters) in your environment.",
+        "JWT_SECRET environment variable must be at least 32 characters. " +
+          "Generate one with: openssl rand -base64 32",
       );
     }
 

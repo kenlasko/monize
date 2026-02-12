@@ -111,12 +111,97 @@ export function hasCalculatorOperators(input: string): boolean {
 }
 
 /**
- * Safely evaluate a mathematical expression
- * Only allows basic arithmetic: +, -, *, /, and parentheses
- * Returns undefined if the expression is invalid
+ * Recursive-descent parser for basic arithmetic expressions.
+ * Supports +, -, *, /, unary minus, and parentheses.
+ * Eliminates the need for new Function() / eval().
+ */
+class ExpressionParser {
+  private pos = 0;
+  private readonly expr: string;
+
+  constructor(expr: string) {
+    this.expr = expr;
+  }
+
+  parse(): number | undefined {
+    try {
+      const result = this.parseAddSub();
+      if (this.pos < this.expr.length) return undefined;
+      if (!isFinite(result)) return undefined;
+      return result;
+    } catch {
+      return undefined;
+    }
+  }
+
+  private parseAddSub(): number {
+    let left = this.parseMulDiv();
+    while (this.pos < this.expr.length) {
+      const ch = this.expr[this.pos];
+      if (ch === '+') { this.pos++; left = left + this.parseMulDiv(); }
+      else if (ch === '-') { this.pos++; left = left - this.parseMulDiv(); }
+      else break;
+    }
+    return left;
+  }
+
+  private parseMulDiv(): number {
+    let left = this.parseUnary();
+    while (this.pos < this.expr.length) {
+      const ch = this.expr[this.pos];
+      if (ch === '*') { this.pos++; left = left * this.parseUnary(); }
+      else if (ch === '/') {
+        this.pos++;
+        const right = this.parseUnary();
+        if (right === 0) throw new Error('Division by zero');
+        left = left / right;
+      }
+      else break;
+    }
+    return left;
+  }
+
+  private parseUnary(): number {
+    if (this.pos < this.expr.length && this.expr[this.pos] === '-') {
+      this.pos++;
+      return -this.parseUnary();
+    }
+    if (this.pos < this.expr.length && this.expr[this.pos] === '+') {
+      this.pos++;
+      return this.parseUnary();
+    }
+    return this.parsePrimary();
+  }
+
+  private parsePrimary(): number {
+    if (this.pos < this.expr.length && this.expr[this.pos] === '(') {
+      this.pos++; // skip '('
+      const result = this.parseAddSub();
+      if (this.pos >= this.expr.length || this.expr[this.pos] !== ')') {
+        throw new Error('Unmatched parenthesis');
+      }
+      this.pos++; // skip ')'
+      return result;
+    }
+    return this.parseNumber();
+  }
+
+  private parseNumber(): number {
+    const start = this.pos;
+    while (this.pos < this.expr.length && (this.expr[this.pos] >= '0' && this.expr[this.pos] <= '9' || this.expr[this.pos] === '.')) {
+      this.pos++;
+    }
+    if (this.pos === start) throw new Error('Expected number');
+    return parseFloat(this.expr.substring(start, this.pos));
+  }
+}
+
+/**
+ * Safely evaluate a mathematical expression using a recursive-descent parser.
+ * Only allows basic arithmetic: +, -, *, /, and parentheses.
+ * Returns undefined if the expression is invalid.
  */
 export function evaluateExpression(input: string): number | undefined {
-  // Normalize and clean the input
   const cleaned = input
     .replace(/,/g, '')
     .replace(/[x×]/gi, '*')
@@ -131,32 +216,9 @@ export function evaluateExpression(input: string): number | undefined {
     return undefined;
   }
 
-  // Check for balanced parentheses
-  let parenCount = 0;
-  for (const char of cleaned) {
-    if (char === '(') parenCount++;
-    if (char === ')') parenCount--;
-    if (parenCount < 0) return undefined;
-  }
-  if (parenCount !== 0) return undefined;
+  const parser = new ExpressionParser(cleaned);
+  const result = parser.parse();
+  if (result === undefined) return undefined;
 
-  // Check for invalid patterns
-  if (/[+\-*/]{2,}/.test(cleaned.replace(/\(-/g, '(0-'))) {
-    // Allow negative after open paren, but not consecutive operators
-    return undefined;
-  }
-
-  try {
-    // Use Function constructor for safe evaluation (no access to global scope)
-    // This is safer than eval() as it creates an isolated scope
-    const result = new Function(`"use strict"; return (${cleaned})`)();
-
-    if (typeof result !== 'number' || !isFinite(result)) {
-      return undefined;
-    }
-
-    return roundToCents(result);
-  } catch {
-    return undefined;
-  }
+  return roundToCents(result);
 }

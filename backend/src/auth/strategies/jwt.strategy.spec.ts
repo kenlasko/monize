@@ -54,7 +54,17 @@ describe("JwtStrategy", () => {
 
       expect(() => {
         new JwtStrategy(noSecretConfig as any, authService as any);
-      }).toThrow("JWT_SECRET environment variable must be configured");
+      }).toThrow("JWT_SECRET environment variable must be at least 32 characters");
+    });
+
+    it("throws an error if JWT_SECRET is too short", () => {
+      const shortSecretConfig = {
+        get: jest.fn().mockReturnValue("short-secret"),
+      };
+
+      expect(() => {
+        new JwtStrategy(shortSecretConfig as any, authService as any);
+      }).toThrow("JWT_SECRET environment variable must be at least 32 characters");
     });
   });
 
