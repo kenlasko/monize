@@ -90,10 +90,7 @@ describe("ScheduledTransactionOverrideService", () => {
         description: "Adjusted payment",
       };
 
-      const result = await service.createOverride(
-        scheduledTransactionId,
-        dto,
-      );
+      await service.createOverride(scheduledTransactionId, dto);
 
       expect(overridesRepository.create).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -161,10 +158,7 @@ describe("ScheduledTransactionOverrideService", () => {
         ],
       };
 
-      const result = await service.createOverride(
-        scheduledTransactionId,
-        dto,
-      );
+      await service.createOverride(scheduledTransactionId, dto);
 
       expect(overridesRepository.save).toHaveBeenCalled();
     });

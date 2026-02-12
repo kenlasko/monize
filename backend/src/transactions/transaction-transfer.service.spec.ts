@@ -1,10 +1,7 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { BadRequestException } from "@nestjs/common";
-import {
-  TransactionTransferService,
-  TransferResult,
-} from "./transaction-transfer.service";
+import { TransactionTransferService } from "./transaction-transfer.service";
 import { Transaction, TransactionStatus } from "./entities/transaction.entity";
 import { TransactionSplit } from "./entities/transaction-split.entity";
 import { AccountsService } from "../accounts/accounts.service";
