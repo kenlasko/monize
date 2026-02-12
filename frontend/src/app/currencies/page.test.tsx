@@ -224,12 +224,28 @@ describe('CurrenciesPage', () => {
     expect(screen.getByTestId('currency-row-USD')).toBeInTheDocument();
   });
 
-  it('calls getCurrencies and getCurrencyUsage on mount', async () => {
+  it('calls getCurrencies with true to fetch all currencies', async () => {
     render(<CurrenciesPage />);
     await waitFor(() => {
-      expect(mockGetCurrencies).toHaveBeenCalled();
+      expect(mockGetCurrencies).toHaveBeenCalledWith(true);
+    });
+  });
+
+  it('calls getCurrencyUsage on mount', async () => {
+    render(<CurrenciesPage />);
+    await waitFor(() => {
       expect(mockGetCurrencyUsage).toHaveBeenCalled();
     });
+  });
+
+  it('filters out inactive currencies by default', async () => {
+    render(<CurrenciesPage />);
+    await waitFor(() => {
+      expect(screen.getByTestId('currency-list')).toBeInTheDocument();
+    });
+    expect(screen.getByTestId('currency-row-CAD')).toBeInTheDocument();
+    expect(screen.getByTestId('currency-row-USD')).toBeInTheDocument();
+    expect(screen.queryByTestId('currency-row-EUR')).not.toBeInTheDocument();
   });
 
   it('renders + New Currency button', async () => {
@@ -289,6 +305,19 @@ describe('CurrenciesPage', () => {
     fireEvent.click(screen.getByText('Refresh Rates'));
     await waitFor(() => {
       expect(mockRefreshRates).toHaveBeenCalled();
+    });
+  });
+
+  it('summary counts always show totals including inactive', async () => {
+    // Even though showInactive defaults to false, summary cards use allCurrencies
+    render(<CurrenciesPage />);
+    await waitFor(() => {
+      // Total should be 3 (all currencies including inactive EUR)
+      expect(screen.getByTestId('summary-Total Currencies')).toHaveTextContent('3');
+      // Active should be 2
+      expect(screen.getByTestId('summary-Active')).toHaveTextContent('2');
+      // Inactive should be 1
+      expect(screen.getByTestId('summary-Inactive')).toHaveTextContent('1');
     });
   });
 
