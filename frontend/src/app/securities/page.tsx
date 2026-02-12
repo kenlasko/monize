@@ -12,9 +12,9 @@ import { Pagination } from '@/components/ui/Pagination';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import dynamic from 'next/dynamic';
 import { investmentsApi } from '@/lib/investments';
-import { Security, CreateSecurityData } from '@/types/investment';
+import { Security, CreateSecurityData, Holding } from '@/types/investment';
 const SecurityForm = dynamic(() => import('@/components/securities/SecurityForm').then(m => m.SecurityForm), { ssr: false });
-import { SecurityList, DensityLevel } from '@/components/securities/SecurityList';
+import { SecurityList, DensityLevel, SecurityHoldings } from '@/components/securities/SecurityList';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { createLogger } from '@/lib/logger';
 import { getErrorMessage } from '@/lib/errors';
@@ -32,7 +32,8 @@ export default function SecuritiesPage() {
 }
 
 function SecuritiesContent() {
-  const [securities, setSecurities] = useState<Security[]>([]);
+  const [allSecurities, setAllSecurities] = useState<Security[]>([]);
+  const [holdings, setHoldings] = useState<SecurityHoldings>({});
   const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingSecurity, setEditingSecurity] = useState<Security | undefined>();
@@ -44,8 +45,17 @@ function SecuritiesContent() {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const data = await investmentsApi.getSecurities(showInactive);
-      setSecurities(data);
+      const [data, holdingsData] = await Promise.all([
+        investmentsApi.getSecurities(true),
+        investmentsApi.getHoldings(),
+      ]);
+      setAllSecurities(data);
+      // Aggregate holdings by securityId
+      const holdingsMap: SecurityHoldings = {};
+      holdingsData.forEach((h: Holding) => {
+        holdingsMap[h.securityId] = (holdingsMap[h.securityId] || 0) + h.quantity;
+      });
+      setHoldings(holdingsMap);
     } catch (error) {
       toast.error(getErrorMessage(error, 'Failed to load securities'));
       logger.error(error);
@@ -54,9 +64,14 @@ function SecuritiesContent() {
     }
   };
 
+  // Filter based on showInactive locally
+  const securities = useMemo(() => {
+    return showInactive ? allSecurities : allSecurities.filter((s) => s.isActive);
+  }, [allSecurities, showInactive]);
+
   useEffect(() => {
     loadData();
-  }, [showInactive]);
+  }, []);
 
   const handleCreateNew = () => {
     setEditingSecurity(undefined);
@@ -134,8 +149,8 @@ function SecuritiesContent() {
     }
   };
 
-  const activeCount = securities.filter((s) => s.isActive).length;
-  const inactiveCount = securities.filter((s) => !s.isActive).length;
+  const activeCount = allSecurities.filter((s) => s.isActive).length;
+  const inactiveCount = allSecurities.filter((s) => !s.isActive).length;
 
   return (
     <PageLayout>
@@ -147,7 +162,7 @@ function SecuritiesContent() {
         />
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          <SummaryCard label="Total Securities" value={securities.length} icon={SummaryIcons.barChart} />
+          <SummaryCard label="Total Securities" value={allSecurities.length} icon={SummaryIcons.barChart} />
           <SummaryCard label="Active" value={activeCount} icon={SummaryIcons.checkCircle} valueColor="green" />
           <SummaryCard label="Inactive" value={inactiveCount} icon={SummaryIcons.ban} />
         </div>
@@ -191,6 +206,7 @@ function SecuritiesContent() {
           ) : (
             <SecurityList
               securities={paginatedSecurities}
+              holdings={holdings}
               onEdit={handleEdit}
               onToggleActive={handleToggleActive}
               density={listDensity}

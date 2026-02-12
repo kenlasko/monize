@@ -269,7 +269,8 @@ describe('CurrenciesPage', () => {
   it('displays total count text', async () => {
     render(<CurrenciesPage />);
     await waitFor(() => {
-      expect(screen.getByText(/3 currencies/i)).toBeInTheDocument();
+      // Only active currencies are shown by default (2 out of 3)
+      expect(screen.getByText(/2 currencies/i)).toBeInTheDocument();
     });
   });
 

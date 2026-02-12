@@ -32,7 +32,7 @@ export default function CurrenciesPage() {
 }
 
 function CurrenciesContent() {
-  const [currencies, setCurrencies] = useState<CurrencyInfo[]>([]);
+  const [allCurrencies, setAllCurrencies] = useState<CurrencyInfo[]>([]);
   const [usage, setUsage] = useState<CurrencyUsage>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshingRates, setIsRefreshingRates] = useState(false);
@@ -45,14 +45,15 @@ function CurrenciesContent() {
 
   const { defaultCurrency, getRate, refresh: refreshRates } = useExchangeRates();
 
+  // Always fetch all currencies so summary cards show correct totals
   const loadData = async () => {
     setIsLoading(true);
     try {
       const [currenciesData, usageData] = await Promise.all([
-        exchangeRatesApi.getCurrencies(showInactive),
+        exchangeRatesApi.getCurrencies(true),
         exchangeRatesApi.getCurrencyUsage(),
       ]);
-      setCurrencies(currenciesData);
+      setAllCurrencies(currenciesData);
       setUsage(usageData);
     } catch (error) {
       toast.error('Failed to load currencies');
@@ -64,7 +65,7 @@ function CurrenciesContent() {
 
   useEffect(() => {
     loadData();
-  }, [showInactive]);
+  }, []);
 
   const handleCreateNew = () => {
     setEditingCurrency(undefined);
@@ -134,25 +135,26 @@ function CurrenciesContent() {
     }
   };
 
-  // Sort: default currency first, then alphabetical
-  const sortedCurrencies = useMemo(() => {
-    return [...currencies].sort((a, b) => {
+  // Filter by active/inactive, then sort: default currency first, then alphabetical
+  const currencies = useMemo(() => {
+    const filtered = showInactive ? allCurrencies : allCurrencies.filter((c) => c.isActive);
+    return [...filtered].sort((a, b) => {
       if (a.code === defaultCurrency) return -1;
       if (b.code === defaultCurrency) return 1;
       return a.code.localeCompare(b.code);
     });
-  }, [currencies, defaultCurrency]);
+  }, [allCurrencies, showInactive, defaultCurrency]);
 
   // Filter by search
   const filteredCurrencies = useMemo(() => {
-    if (!searchQuery) return sortedCurrencies;
+    if (!searchQuery) return currencies;
     const q = searchQuery.toLowerCase();
-    return sortedCurrencies.filter(
+    return currencies.filter(
       (c) =>
         c.code.toLowerCase().includes(q) ||
         c.name.toLowerCase().includes(q)
     );
-  }, [sortedCurrencies, searchQuery]);
+  }, [currencies, searchQuery]);
 
   // Pagination
   const totalPages = Math.ceil(filteredCurrencies.length / PAGE_SIZE);
@@ -171,8 +173,9 @@ function CurrenciesContent() {
     }
   };
 
-  const activeCount = currencies.filter((c) => c.isActive).length;
-  const inactiveCount = currencies.filter((c) => !c.isActive).length;
+  // Summary counts always reflect all currencies, not just visible ones
+  const activeCount = allCurrencies.filter((c) => c.isActive).length;
+  const inactiveCount = allCurrencies.filter((c) => !c.isActive).length;
 
   return (
     <PageLayout>
@@ -196,7 +199,7 @@ function CurrenciesContent() {
 
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          <SummaryCard label="Total Currencies" value={currencies.length} icon={SummaryIcons.barChart} />
+          <SummaryCard label="Total Currencies" value={allCurrencies.length} icon={SummaryIcons.barChart} />
           <SummaryCard label="Active" value={activeCount} icon={SummaryIcons.checkCircle} valueColor="green" />
           <SummaryCard label="Inactive" value={inactiveCount} icon={SummaryIcons.ban} />
         </div>

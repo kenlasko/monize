@@ -1,14 +1,19 @@
 'use client';
 
-import { useState, useMemo, useCallback, memo } from 'react';
+import { useState, useMemo, useCallback, useRef, memo } from 'react';
 import { Security } from '@/types/investment';
 import { Button } from '@/components/ui/Button';
+import { Modal } from '@/components/ui/Modal';
 
 // Density levels: 'normal' | 'compact' | 'dense'
 export type DensityLevel = 'normal' | 'compact' | 'dense';
 
+// Map of securityId -> total quantity across all accounts
+export type SecurityHoldings = Record<string, number>;
+
 interface SecurityListProps {
   securities: Security[];
+  holdings?: SecurityHoldings;
   onEdit: (security: Security) => void;
   onToggleActive: (security: Security) => void;
   density?: DensityLevel;
@@ -17,10 +22,15 @@ interface SecurityListProps {
 
 interface SecurityRowProps {
   security: Security;
+  hasHoldings: boolean;
   density: DensityLevel;
   cellPadding: string;
   onEdit: (security: Security) => void;
   onToggleActive: (security: Security) => void;
+  onLongPressStart: (security: Security) => void;
+  onLongPressStartTouch: (security: Security, e: React.TouchEvent) => void;
+  onLongPressEnd: () => void;
+  onTouchMove: (e: React.TouchEvent) => void;
   index: number;
 }
 
@@ -42,10 +52,15 @@ const formatSecurityType = (type: string | null, dense: boolean = false): string
 
 const SecurityRow = memo(function SecurityRow({
   security,
+  hasHoldings,
   density,
   cellPadding,
   onEdit,
   onToggleActive,
+  onLongPressStart,
+  onLongPressStartTouch,
+  onLongPressEnd,
+  onTouchMove,
   index,
 }: SecurityRowProps) {
   const handleEdit = useCallback(() => {
@@ -58,9 +73,16 @@ const SecurityRow = memo(function SecurityRow({
 
   return (
     <tr
-      className={`hover:bg-gray-50 dark:hover:bg-gray-700 ${
+      className={`hover:bg-gray-50 dark:hover:bg-gray-700 select-none ${
         !security.isActive ? 'opacity-60' : ''
       } ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-gray-800/50' : ''}`}
+      onMouseDown={() => onLongPressStart(security)}
+      onMouseUp={onLongPressEnd}
+      onMouseLeave={onLongPressEnd}
+      onTouchStart={(e) => onLongPressStartTouch(security, e)}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onLongPressEnd}
+      onTouchCancel={onLongPressEnd}
     >
       <td className={`${cellPadding} whitespace-nowrap`}>
         <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
@@ -79,19 +101,20 @@ const SecurityRow = memo(function SecurityRow({
       </td>
       {density === 'normal' && (
         <>
-          <td className={`${cellPadding} whitespace-nowrap`}>
+          <td className={`${cellPadding} whitespace-nowrap hidden sm:table-cell`}>
             <span className="text-sm text-gray-500 dark:text-gray-400">
               {security.exchange || '-'}
             </span>
           </td>
-          <td className={`${cellPadding} whitespace-nowrap`}>
+          <td className={`${cellPadding} whitespace-nowrap hidden sm:table-cell`}>
             <span className="text-sm text-gray-500 dark:text-gray-400">
               {security.currencyCode}
             </span>
           </td>
         </>
       )}
-      <td className={`${cellPadding} whitespace-nowrap`}>
+      {/* Status - hidden on mobile */}
+      <td className={`${cellPadding} whitespace-nowrap hidden sm:table-cell`}>
         {security.isActive ? (
           <span className={`inline-flex items-center rounded-full text-xs font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 ${density === 'dense' ? 'px-1.5 py-0.5' : 'px-2.5 py-0.5'}`}>
             {density === 'dense' ? 'Act' : 'Active'}
@@ -102,7 +125,8 @@ const SecurityRow = memo(function SecurityRow({
           </span>
         )}
       </td>
-      <td className={`${cellPadding} whitespace-nowrap text-right text-sm font-medium`}>
+      {/* Actions - hidden on mobile */}
+      <td className={`${cellPadding} whitespace-nowrap text-right text-sm font-medium hidden sm:table-cell`}>
         <div className="flex justify-end gap-2">
           <Button
             variant="ghost"
@@ -111,15 +135,17 @@ const SecurityRow = memo(function SecurityRow({
           >
             {density === 'dense' ? '✎' : 'Edit'}
           </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleToggleActive}
-          >
-            {density === 'dense'
-              ? (security.isActive ? '⊘' : '✓')
-              : (security.isActive ? 'Deactivate' : 'Activate')}
-          </Button>
+          {!hasHoldings && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleToggleActive}
+            >
+              {density === 'dense'
+                ? (security.isActive ? '⊘' : '✓')
+                : (security.isActive ? 'Deactivate' : 'Activate')}
+            </Button>
+          )}
         </div>
       </td>
     </tr>
@@ -128,6 +154,7 @@ const SecurityRow = memo(function SecurityRow({
 
 export function SecurityList({
   securities,
+  holdings = {},
   onEdit,
   onToggleActive,
   density: propDensity,
@@ -137,6 +164,55 @@ export function SecurityList({
 
   // Use prop density if provided, otherwise use local state
   const density = propDensity ?? localDensity;
+
+  // Long-press handling for context menu on mobile
+  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+  const longPressTriggered = useRef(false);
+  const touchStartPos = useRef<{ x: number; y: number } | null>(null);
+  const LONG_PRESS_MOVE_THRESHOLD = 10;
+  const [contextSecurity, setContextSecurity] = useState<Security | null>(null);
+
+  const handleLongPressStart = useCallback((security: Security) => {
+    touchStartPos.current = null;
+    longPressTriggered.current = false;
+    longPressTimer.current = setTimeout(() => {
+      longPressTriggered.current = true;
+      setContextSecurity(security);
+    }, 750);
+  }, []);
+
+  const handleLongPressStartTouch = useCallback((security: Security, e: React.TouchEvent) => {
+    if (e?.touches?.[0]) {
+      touchStartPos.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    } else {
+      touchStartPos.current = null;
+    }
+    longPressTriggered.current = false;
+    longPressTimer.current = setTimeout(() => {
+      longPressTriggered.current = true;
+      setContextSecurity(security);
+    }, 750);
+  }, []);
+
+  const handleLongPressEnd = useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+    touchStartPos.current = null;
+  }, []);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (touchStartPos.current && longPressTimer.current && e.touches?.[0]) {
+      const deltaX = Math.abs(e.touches[0].clientX - touchStartPos.current.x);
+      const deltaY = Math.abs(e.touches[0].clientY - touchStartPos.current.y);
+      if (deltaX > LONG_PRESS_MOVE_THRESHOLD || deltaY > LONG_PRESS_MOVE_THRESHOLD) {
+        clearTimeout(longPressTimer.current);
+        longPressTimer.current = null;
+        touchStartPos.current = null;
+      }
+    }
+  }, []);
 
   // Memoize padding classes based on density
   const cellPadding = useMemo(() => {
@@ -220,18 +296,18 @@ export function SecurityList({
               </th>
               {density === 'normal' && (
                 <>
-                  <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>
+                  <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden sm:table-cell`}>
                     Exchange
                   </th>
-                  <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>
+                  <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden sm:table-cell`}>
                     Currency
                   </th>
                 </>
               )}
-              <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>
+              <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden sm:table-cell`}>
                 Status
               </th>
-              <th className={`${headerPadding} text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>
+              <th className={`${headerPadding} text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden sm:table-cell`}>
                 Actions
               </th>
             </tr>
@@ -241,16 +317,68 @@ export function SecurityList({
               <SecurityRow
                 key={security.id}
                 security={security}
+                hasHoldings={(holdings[security.id] || 0) > 0}
                 density={density}
                 cellPadding={cellPadding}
                 onEdit={onEdit}
                 onToggleActive={onToggleActive}
+                onLongPressStart={handleLongPressStart}
+                onLongPressStartTouch={handleLongPressStartTouch}
+                onLongPressEnd={handleLongPressEnd}
+                onTouchMove={handleTouchMove}
                 index={index}
               />
             ))}
           </tbody>
         </table>
       </div>
+
+      {/* Long-press Context Menu */}
+      <Modal isOpen={!!contextSecurity} onClose={() => setContextSecurity(null)} maxWidth="sm" className="p-0">
+        {contextSecurity && (() => {
+          const contextHasHoldings = (holdings[contextSecurity.id] || 0) > 0;
+          return (
+          <div>
+            <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 truncate">{contextSecurity.symbol}</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{contextSecurity.name}</p>
+            </div>
+            <div className="py-2">
+              <button
+                onClick={() => { setContextSecurity(null); onEdit(contextSecurity); }}
+                className="w-full text-left px-5 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3"
+              >
+                <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                Edit Security
+              </button>
+              {!contextHasHoldings && (
+                <button
+                  onClick={() => { setContextSecurity(null); onToggleActive(contextSecurity); }}
+                  className={`w-full text-left px-5 py-3 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3 ${
+                    contextSecurity.isActive
+                      ? 'text-yellow-600 dark:text-yellow-400'
+                      : 'text-green-600 dark:text-green-400'
+                  }`}
+                >
+                  {contextSecurity.isActive ? (
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                    </svg>
+                  ) : (
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  )}
+                  {contextSecurity.isActive ? 'Deactivate' : 'Activate'}
+                </button>
+              )}
+            </div>
+          </div>
+          );
+        })()}
+      </Modal>
     </div>
   );
 }
