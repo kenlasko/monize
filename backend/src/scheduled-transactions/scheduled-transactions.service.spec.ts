@@ -12,6 +12,8 @@ import { ScheduledTransactionOverride } from "./entities/scheduled-transaction-o
 import { Account } from "../accounts/entities/account.entity";
 import { AccountsService } from "../accounts/accounts.service";
 import { TransactionsService } from "../transactions/transactions.service";
+import { ScheduledTransactionOverrideService } from "./scheduled-transaction-override.service";
+import { ScheduledTransactionLoanService } from "./scheduled-transaction-loan.service";
 
 describe("ScheduledTransactionsService", () => {
   let service: ScheduledTransactionsService;
@@ -148,6 +150,8 @@ describe("ScheduledTransactionsService", () => {
         { provide: getRepositoryToken(Account), useValue: accountsRepo },
         { provide: AccountsService, useValue: accountsService },
         { provide: TransactionsService, useValue: transactionsService },
+        ScheduledTransactionOverrideService,
+        ScheduledTransactionLoanService,
       ],
     }).compile();
 

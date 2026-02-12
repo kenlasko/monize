@@ -13,9 +13,14 @@ import { InvestmentTransaction } from "../securities/entities/investment-transac
 import { AccountsService } from "../accounts/accounts.service";
 import { PayeesService } from "../payees/payees.service";
 import { NetWorthService } from "../net-worth/net-worth.service";
+import { TransactionSplitService } from "./transaction-split.service";
+import { TransactionTransferService } from "./transaction-transfer.service";
+import { TransactionReconciliationService } from "./transaction-reconciliation.service";
+import { TransactionAnalyticsService } from "./transaction-analytics.service";
 
 describe("TransactionsService", () => {
   let service: TransactionsService;
+  let splitService: TransactionSplitService;
   let transactionsRepository: Record<string, jest.Mock>;
   let splitsRepository: Record<string, jest.Mock>;
   let categoriesRepository: Record<string, jest.Mock>;
@@ -103,10 +108,15 @@ describe("TransactionsService", () => {
         { provide: AccountsService, useValue: accountsService },
         { provide: PayeesService, useValue: payeesService },
         { provide: NetWorthService, useValue: netWorthService },
+        TransactionSplitService,
+        TransactionTransferService,
+        TransactionReconciliationService,
+        TransactionAnalyticsService,
       ],
     }).compile();
 
     service = module.get<TransactionsService>(TransactionsService);
+    splitService = module.get<TransactionSplitService>(TransactionSplitService);
   });
 
   afterEach(() => {
@@ -2202,11 +2212,9 @@ describe("TransactionsService", () => {
 
       // transactionsRepository.findOne is called:
       // 1. findOne for access check (removeSplit -> findOne)
-      // 2. findOne for access check again (getSplits -> findOne for remaining splits)
-      // 3. findOne for linked tx of last split
+      // 2. findOne for linked tx of last split
       transactionsRepository.findOne
         .mockResolvedValueOnce(mockTx)           // removeSplit -> findOne
-        .mockResolvedValueOnce(mockTx)           // getSplits -> findOne
         .mockResolvedValueOnce(lastSplitLinkedTx); // linked tx of last split
 
       await service.removeSplit("user-1", "tx-1", "split-1");
@@ -3012,7 +3020,7 @@ describe("TransactionsService", () => {
         .mockResolvedValueOnce(linkedTx1)
         .mockResolvedValueOnce(linkedTx2);
 
-      await (service as any).deleteTransferSplitLinkedTransactions("tx-1");
+      await (splitService as any).deleteTransferSplitLinkedTransactions("tx-1");
 
       expect(accountsService.updateBalance).toHaveBeenCalledWith("account-2", -60);
       expect(accountsService.updateBalance).toHaveBeenCalledWith("account-3", -40);
@@ -3030,7 +3038,7 @@ describe("TransactionsService", () => {
         },
       ]);
 
-      await (service as any).deleteTransferSplitLinkedTransactions("tx-1");
+      await (splitService as any).deleteTransferSplitLinkedTransactions("tx-1");
 
       expect(transactionsRepository.findOne).not.toHaveBeenCalled();
       expect(accountsService.updateBalance).not.toHaveBeenCalled();
@@ -3048,7 +3056,7 @@ describe("TransactionsService", () => {
 
       transactionsRepository.findOne.mockResolvedValue(null);
 
-      await (service as any).deleteTransferSplitLinkedTransactions("tx-1");
+      await (splitService as any).deleteTransferSplitLinkedTransactions("tx-1");
 
       expect(accountsService.updateBalance).not.toHaveBeenCalled();
       expect(transactionsRepository.remove).not.toHaveBeenCalled();

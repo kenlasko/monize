@@ -16,6 +16,7 @@ import { InvestmentTransaction } from "../securities/entities/investment-transac
 import { CategoriesService } from "../categories/categories.service";
 import { ScheduledTransactionsService } from "../scheduled-transactions/scheduled-transactions.service";
 import { NetWorthService } from "../net-worth/net-worth.service";
+import { LoanMortgageAccountService } from "./loan-mortgage-account.service";
 
 describe("AccountsService", () => {
   let service: AccountsService;
@@ -25,6 +26,7 @@ describe("AccountsService", () => {
   let scheduledTransactionsService: Record<string, jest.Mock>;
   let categoriesService: Record<string, jest.Mock>;
   let netWorthService: Record<string, jest.Mock>;
+  // loanMortgageService uses the real class with mocked repositories
 
   const mockAccount = {
     id: "account-1",
@@ -99,6 +101,7 @@ describe("AccountsService", () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AccountsService,
+        LoanMortgageAccountService,
         { provide: getRepositoryToken(Account), useValue: accountsRepository },
         {
           provide: getRepositoryToken(Transaction),
