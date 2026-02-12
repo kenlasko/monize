@@ -20,6 +20,14 @@ EXPOSE 3000
 
 CMD ["npm", "run", "start:dev"]
 
+# Production deps stage (uses slim/glibc to avoid Alpine musl SIGILL under QEMU)
+FROM node:20-slim AS deps
+
+WORKDIR /app
+
+COPY backend/package*.json ./
+RUN npm ci --omit=dev && npm cache clean --force
+
 # Production stage
 FROM node:20-alpine AS production
 ARG GIT_SHA
@@ -33,7 +41,7 @@ LABEL org.opencontainers.image.title="Monize Backend" \
       org.opencontainers.image.vendor="Ken Lasko" \
       org.opencontainers.image.revision="${GIT_SHA}" \
       org.opencontainers.image.created="${BUILD_DATE}" \
-      org.opencontainers.image.version="${VERSION}" 
+      org.opencontainers.image.version="${VERSION}"
 
 # Install dumb-init for proper PID 1 signal handling
 RUN apk add --no-cache dumb-init
@@ -42,9 +50,9 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-# Install only production dependencies
+# Copy production dependencies from deps stage
+COPY --from=deps /app/node_modules ./node_modules
 COPY backend/package*.json ./
-RUN npm ci --omit=dev && npm cache clean --force
 
 # Copy built application from development stage
 COPY --from=development /app/dist ./dist
