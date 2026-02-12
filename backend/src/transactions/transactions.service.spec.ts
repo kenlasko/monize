@@ -2211,10 +2211,10 @@ describe("TransactionsService", () => {
       splitsRepository.find.mockResolvedValue([lastSplit]);
 
       // transactionsRepository.findOne is called:
-      // 1. findOne for access check (parent removeSplit -> findOne)
-      // 2. findOne for linked tx of last split (splitService.removeSplit)
+      // 1. findOne for access check (removeSplit -> findOne)
+      // 2. findOne for linked tx of last split
       transactionsRepository.findOne
-        .mockResolvedValueOnce(mockTx)           // parent removeSplit -> findOne
+        .mockResolvedValueOnce(mockTx)           // removeSplit -> findOne
         .mockResolvedValueOnce(lastSplitLinkedTx); // linked tx of last split
 
       await service.removeSplit("user-1", "tx-1", "split-1");

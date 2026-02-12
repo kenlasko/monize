@@ -16,7 +16,7 @@ import { User } from "../users/entities/user.entity";
 import { UserPreference } from "../users/entities/user-preference.entity";
 import { TrustedDevice } from "../users/entities/trusted-device.entity";
 import { RefreshToken } from "./entities/refresh-token.entity";
-import { encrypt, decrypt } from "./crypto.util";
+import { encrypt } from "./crypto.util";
 
 jest.mock("otplib", () => ({
   verifySync: jest.fn(),
@@ -1329,7 +1329,7 @@ describe("AuthService", () => {
   describe("resetPassword - success path", () => {
     it("updates password hash, clears token, revokes all refresh tokens", async () => {
       // Generate a known raw token and its hash
-      const crypto = require("crypto");
+      const crypto = await import("crypto");
       const rawToken = "test-reset-token-hex-value";
       const hashedToken = crypto
         .createHash("sha256")

@@ -26,6 +26,7 @@ describe("AccountsService", () => {
   let scheduledTransactionsService: Record<string, jest.Mock>;
   let categoriesService: Record<string, jest.Mock>;
   let netWorthService: Record<string, jest.Mock>;
+  // loanMortgageService uses the real class with mocked repositories
 
   const mockAccount = {
     id: "account-1",
@@ -100,6 +101,7 @@ describe("AccountsService", () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AccountsService,
+        LoanMortgageAccountService,
         { provide: getRepositoryToken(Account), useValue: accountsRepository },
         {
           provide: getRepositoryToken(Transaction),
