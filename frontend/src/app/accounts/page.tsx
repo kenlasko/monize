@@ -8,6 +8,7 @@ import dynamic from 'next/dynamic';
 const AccountForm = dynamic(() => import('@/components/accounts/AccountForm').then(m => m.AccountForm), { ssr: false });
 import { AccountList } from '@/components/accounts/AccountList';
 import { Modal } from '@/components/ui/Modal';
+import { UnsavedChangesDialog } from '@/components/ui/UnsavedChangesDialog';
 import { accountsApi } from '@/lib/accounts';
 import { investmentsApi } from '@/lib/investments';
 import { Account } from '@/types/account';
@@ -37,7 +38,7 @@ function AccountsContent() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [portfolioSummary, setPortfolioSummary] = useState<PortfolioSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const { showForm, editingItem, openCreate, openEdit, close, isEditing } = useFormModal<Account>();
+  const { showForm, editingItem, openCreate, openEdit, close, isEditing, modalProps, setFormDirty, unsavedChangesDialog, formSubmitRef } = useFormModal<Account>();
   const { convertToDefault, defaultCurrency } = useExchangeRates();
   const { formatCurrency } = useNumberFormat();
 
@@ -166,7 +167,7 @@ function AccountsContent() {
         </div>
 
         {/* Form Modal */}
-        <Modal isOpen={showForm} onClose={close} maxWidth="2xl" className="p-6">
+        <Modal isOpen={showForm} onClose={close} {...modalProps} maxWidth="2xl" className="p-6">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
             {isEditing ? 'Edit Account' : 'New Account'}
           </h2>
@@ -174,8 +175,11 @@ function AccountsContent() {
             account={editingItem}
             onSubmit={handleFormSubmit}
             onCancel={close}
+            onDirtyChange={setFormDirty}
+            submitRef={formSubmitRef}
           />
         </Modal>
+        <UnsavedChangesDialog {...unsavedChangesDialog} />
 
         {/* Accounts List */}
         <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg overflow-hidden">

@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
 import { zodResolver } from '@/lib/zodResolver';
 import { z } from 'zod';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, MutableRefObject } from 'react';
 import { Input } from '@/components/ui/Input';
 import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { Select } from '@/components/ui/Select';
@@ -87,6 +87,8 @@ interface AccountFormProps {
   account?: Account;
   onSubmit: (data: AccountFormData) => Promise<void>;
   onCancel: () => void;
+  onDirtyChange?: (isDirty: boolean) => void;
+  submitRef?: MutableRefObject<(() => void) | null>;
 }
 
 const accountTypeOptions = [
@@ -103,7 +105,7 @@ const accountTypeOptions = [
 ];
 
 
-export function AccountForm({ account, onSubmit, onCancel }: AccountFormProps) {
+export function AccountForm({ account, onSubmit, onCancel, onDirtyChange, submitRef }: AccountFormProps) {
   const router = useRouter();
   const { formatCurrency } = useNumberFormat();
   const { defaultCurrency } = useExchangeRates();
@@ -123,7 +125,7 @@ export function AccountForm({ account, onSubmit, onCancel }: AccountFormProps) {
     watch,
     setValue,
     getValues,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isDirty },
   } = useForm<AccountFormData>({
     resolver: zodResolver(accountSchema),
     defaultValues: account
@@ -159,6 +161,13 @@ export function AccountForm({ account, onSubmit, onCancel }: AccountFormProps) {
           paymentFrequency: 'MONTHLY' as PaymentFrequency,
         },
   });
+
+  useEffect(() => { onDirtyChange?.(isDirty); }, [isDirty, onDirtyChange]);
+
+  useEffect(() => {
+    if (submitRef) submitRef.current = handleSubmit(onSubmit);
+    return () => { if (submitRef) submitRef.current = null; };
+  }, [submitRef, handleSubmit, onSubmit]);
 
   const watchedCurrency = watch('currencyCode');
   const watchedIsFavourite = watch('isFavourite');

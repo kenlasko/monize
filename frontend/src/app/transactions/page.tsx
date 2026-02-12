@@ -25,6 +25,7 @@ import { useDateFormat } from '@/hooks/useDateFormat';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { Modal } from '@/components/ui/Modal';
+import { UnsavedChangesDialog } from '@/components/ui/UnsavedChangesDialog';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { SummaryCard, SummaryIcons } from '@/components/ui/SummaryCard';
@@ -118,6 +119,23 @@ function TransactionsContent() {
   const [editingPayee, setEditingPayee] = useState<Payee | undefined>();
   const [listDensity, setListDensity] = useLocalStorage<DensityLevel>('monize-transactions-density', 'normal');
 
+  // Unsaved changes tracking for TransactionForm (ref avoids stale closures in onBeforeClose)
+  const isFormDirtyRef = useRef(false);
+  const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
+  const formSubmitRef = useRef<(() => void) | null>(null);
+
+  const setIsFormDirty = useCallback((dirty: boolean) => {
+    isFormDirtyRef.current = dirty;
+  }, []);
+
+  const handleBeforeClose = useCallback(() => {
+    if (isFormDirtyRef.current) { setShowUnsavedDialog(true); return false; }
+  }, []);
+
+  // Ref to track whether any modal is open (used by popstate handler to avoid conflicts)
+  const modalOpenRef = useRef(false);
+  modalOpenRef.current = showForm || showPayeeForm;
+
   // Pagination state - initialize from URL
   const [pagination, setPagination] = useState<PaginationInfo | null>(null);
   const [currentPage, setCurrentPage] = useState(() => {
@@ -165,6 +183,9 @@ function TransactionsContent() {
   const [filtersInitialized, setFiltersInitialized] = useState(false);
   const [filtersExpanded, setFiltersExpanded] = useState(true);
 
+  // Track when we're syncing state from browser back/forward navigation
+  const syncingFromPopstateRef = useRef(false);
+
   // Update URL when filters or page change
   const updateUrl = useCallback((page: number, filters: {
     accountIds: string[];
@@ -173,7 +194,7 @@ function TransactionsContent() {
     startDate: string;
     endDate: string;
     search: string;
-  }) => {
+  }, push: boolean = false) => {
     const params = new URLSearchParams();
     if (page > 1) params.set('page', page.toString());
     if (filters.accountIds.length) params.set('accountIds', filters.accountIds.join(','));
@@ -185,7 +206,11 @@ function TransactionsContent() {
 
     const queryString = params.toString();
     const newUrl = queryString ? `/transactions?${queryString}` : '/transactions';
-    router.replace(newUrl, { scroll: false });
+    if (push) {
+      router.push(newUrl, { scroll: false });
+    } else {
+      router.replace(newUrl, { scroll: false });
+    }
   }, [router]);
 
   // Get display info for selected filters
@@ -458,14 +483,20 @@ function TransactionsContent() {
       setCurrentPage(1);
       isFilterChange.current = false;
     }
-    updateUrl(page, {
-      accountIds: filterAccountIds,
-      categoryIds: filterCategoryIds,
-      payeeIds: filterPayeeIds,
-      startDate: filterStartDate,
-      endDate: filterEndDate,
-      search: filterSearch,
-    });
+
+    // Skip URL update when syncing from browser back/forward (URL is already correct)
+    if (syncingFromPopstateRef.current) {
+      syncingFromPopstateRef.current = false;
+    } else {
+      updateUrl(page, {
+        accountIds: filterAccountIds,
+        categoryIds: filterCategoryIds,
+        payeeIds: filterPayeeIds,
+        startDate: filterStartDate,
+        endDate: filterEndDate,
+        search: filterSearch,
+      }, wasFilterChange);
+    }
 
     // Debounce filter changes to prevent rapid consecutive API calls
     // (e.g., quickly changing category then payee). Page changes load immediately.
@@ -509,8 +540,34 @@ function TransactionsContent() {
     };
   }, []);
 
+  // Re-sync filter state when browser back/forward is pressed
+  // Skip when a modal is open — the Modal component handles its own history entries
+  useEffect(() => {
+    const handlePopstate = () => {
+      if (modalOpenRef.current) return;
+
+      const params = new URLSearchParams(window.location.search);
+      syncingFromPopstateRef.current = true;
+
+      setFilterAccountIds(params.get('accountIds')?.split(',').filter(Boolean) || []);
+      setFilterCategoryIds(params.get('categoryIds')?.split(',').filter(Boolean) || []);
+      setFilterPayeeIds(params.get('payeeIds')?.split(',').filter(Boolean) || []);
+      setFilterStartDate(params.get('startDate') || '');
+      setFilterEndDate(params.get('endDate') || '');
+      const search = params.get('search') || '';
+      setFilterSearch(search);
+      setSearchInput(search);
+      const pageParam = params.get('page');
+      setCurrentPage(pageParam ? parseInt(pageParam, 10) : 1);
+    };
+
+    window.addEventListener('popstate', handlePopstate);
+    return () => window.removeEventListener('popstate', handlePopstate);
+  }, []);
+
   const handleCreateNew = () => {
     setEditingTransaction(undefined);
+    isFormDirtyRef.current = false;
     setShowForm(true);
   };
 
@@ -537,12 +594,14 @@ function TransactionsContent() {
     } else {
       setEditingTransaction(transaction);
     }
+    isFormDirtyRef.current = false;
     setShowForm(true);
   };
 
   const [formKey, setFormKey] = useState(0);
 
   const handleFormSuccess = () => {
+    isFormDirtyRef.current = false;
     setShowForm(false);
     setEditingTransaction(undefined);
     setFormKey(prev => prev + 1); // Force form re-creation on next open
@@ -656,7 +715,7 @@ function TransactionsContent() {
         </div>
 
         {/* Form Modal */}
-        <Modal isOpen={showForm} onClose={handleFormCancel} maxWidth="6xl" className="p-6">
+        <Modal isOpen={showForm} onClose={handleFormCancel} maxWidth="6xl" className="p-6" pushHistory onBeforeClose={handleBeforeClose}>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
             {editingTransaction ? 'Edit Transaction' : 'New Transaction'}
           </h2>
@@ -666,12 +725,20 @@ function TransactionsContent() {
             defaultAccountId={filterAccountIds.length === 1 ? filterAccountIds[0] : undefined}
             onSuccess={handleFormSuccess}
             onCancel={handleFormCancel}
+            onDirtyChange={setIsFormDirty}
+            submitRef={formSubmitRef}
           />
         </Modal>
+        <UnsavedChangesDialog
+          isOpen={showUnsavedDialog}
+          onSave={() => { setShowUnsavedDialog(false); formSubmitRef.current?.(); }}
+          onDiscard={() => { setShowUnsavedDialog(false); isFormDirtyRef.current = false; handleFormCancel(); }}
+          onCancel={() => setShowUnsavedDialog(false)}
+        />
 
         {/* Payee Edit Modal */}
         {editingPayee && (
-          <Modal isOpen={showPayeeForm} onClose={handlePayeeFormCancel} maxWidth="lg" className="p-6">
+          <Modal isOpen={showPayeeForm} onClose={handlePayeeFormCancel} maxWidth="lg" className="p-6" pushHistory>
             <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
               Edit Payee
             </h2>

@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
+import { UnsavedChangesDialog } from '@/components/ui/UnsavedChangesDialog';
 import { MultiSelect } from '@/components/ui/MultiSelect';
 import { Pagination } from '@/components/ui/Pagination';
 import { PortfolioSummaryCard } from '@/components/investments/PortfolioSummaryCard';
@@ -82,6 +83,17 @@ function InvestmentsContent() {
   const [showRefreshDetails, setShowRefreshDetails] = useState(false);
   const [transactionFilters, setTransactionFilters] = useState<TransactionFilters>({});
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+
+  // Unsaved changes tracking for InvestmentTransactionForm
+  const isFormDirtyRef = useRef(false);
+  const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
+  const formSubmitRef = useRef<(() => void) | null>(null);
+
+  const setIsFormDirty = useCallback((dirty: boolean) => { isFormDirtyRef.current = dirty; }, []);
+
+  const handleBeforeClose = useCallback(() => {
+    if (isFormDirtyRef.current) { setShowUnsavedDialog(true); return false; }
+  }, []);
 
   const loadInvestmentAccounts = useCallback(async () => {
     try {
@@ -228,6 +240,7 @@ function InvestmentsContent() {
       investmentsApi.getTransaction(editId)
         .then((transaction) => {
           setEditingTransaction(transaction);
+          isFormDirtyRef.current = false;
           setShowTransactionForm(true);
           // Clear the URL parameter
           router.replace('/investments', { scroll: false });
@@ -257,15 +270,18 @@ function InvestmentsContent() {
 
   const handleNewTransaction = () => {
     setEditingTransaction(undefined);
+    isFormDirtyRef.current = false;
     setShowTransactionForm(true);
   };
 
   const handleEditTransaction = (transaction: InvestmentTransaction) => {
     setEditingTransaction(transaction);
+    isFormDirtyRef.current = false;
     setShowTransactionForm(true);
   };
 
   const handleFormSuccess = () => {
+    isFormDirtyRef.current = false;
     setShowTransactionForm(false);
     setEditingTransaction(undefined);
     loadPortfolioData(selectedAccountIds, currentPage, transactionFilters);
@@ -510,7 +526,7 @@ function InvestmentsContent() {
       </main>
 
       {/* Transaction Form Modal */}
-      <Modal isOpen={showTransactionForm} onClose={handleFormCancel} maxWidth="xl" className="p-6">
+      <Modal isOpen={showTransactionForm} onClose={handleFormCancel} maxWidth="xl" className="p-6" pushHistory onBeforeClose={handleBeforeClose}>
         <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
           {editingTransaction ? 'Edit Transaction' : 'New Investment Transaction'}
         </h2>
@@ -521,8 +537,16 @@ function InvestmentsContent() {
           defaultAccountId={getSelectedBrokerageAccountId()}
           onSuccess={handleFormSuccess}
           onCancel={handleFormCancel}
+          onDirtyChange={setIsFormDirty}
+          submitRef={formSubmitRef}
         />
       </Modal>
+      <UnsavedChangesDialog
+        isOpen={showUnsavedDialog}
+        onSave={() => { setShowUnsavedDialog(false); formSubmitRef.current?.(); }}
+        onDiscard={() => { setShowUnsavedDialog(false); isFormDirtyRef.current = false; handleFormCancel(); }}
+        onCancel={() => setShowUnsavedDialog(false)}
+      />
     </PageLayout>
   );
 }

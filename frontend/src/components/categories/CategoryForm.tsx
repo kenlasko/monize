@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, MutableRefObject } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@/lib/zodResolver';
 import { z } from 'zod';
@@ -25,6 +25,8 @@ interface CategoryFormProps {
   categories: Category[];
   onSubmit: (data: CategoryFormData) => Promise<void>;
   onCancel: () => void;
+  onDirtyChange?: (isDirty: boolean) => void;
+  submitRef?: MutableRefObject<(() => void) | null>;
 }
 
 const colourOptions = [
@@ -40,13 +42,13 @@ const colourOptions = [
   { value: '#6b7280', label: 'Grey' },
 ];
 
-export function CategoryForm({ category, categories, onSubmit, onCancel }: CategoryFormProps) {
+export function CategoryForm({ category, categories, onSubmit, onCancel, onDirtyChange, submitRef }: CategoryFormProps) {
   const {
     register,
     handleSubmit,
     watch,
     setValue,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isDirty },
   } = useForm<CategoryFormData>({
     resolver: zodResolver(categorySchema),
     defaultValues: category
@@ -63,6 +65,13 @@ export function CategoryForm({ category, categories, onSubmit, onCancel }: Categ
           isIncome: false,
         },
   });
+
+  useEffect(() => { onDirtyChange?.(isDirty); }, [isDirty, onDirtyChange]);
+
+  useEffect(() => {
+    if (submitRef) submitRef.current = handleSubmit(onSubmit);
+    return () => { if (submitRef) submitRef.current = null; };
+  }, [submitRef, handleSubmit, onSubmit]);
 
   const watchedColor = watch('color');
   const watchedParentId = watch('parentId');

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, MutableRefObject } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@/lib/zodResolver';
 import { z } from 'zod';
@@ -66,6 +66,8 @@ interface ScheduledTransactionFormProps {
   scheduledTransaction?: ScheduledTransaction;
   onSuccess?: () => void;
   onCancel?: () => void;
+  onDirtyChange?: (isDirty: boolean) => void;
+  submitRef?: MutableRefObject<(() => void) | null>;
 }
 
 // Determine if an existing scheduled transaction is a transfer
@@ -83,6 +85,8 @@ export function ScheduledTransactionForm({
   scheduledTransaction,
   onSuccess,
   onCancel,
+  onDirtyChange,
+  submitRef,
 }: ScheduledTransactionFormProps) {
   const { defaultCurrency } = useNumberFormat();
   const [isLoading, setIsLoading] = useState(false);
@@ -127,7 +131,7 @@ export function ScheduledTransactionForm({
     handleSubmit,
     setValue,
     watch,
-    formState: { errors },
+    formState: { errors, isDirty },
   } = useForm<ScheduledTransactionFormData>({
     resolver: zodResolver(scheduledTransactionSchema),
     defaultValues: scheduledTransaction
@@ -159,6 +163,8 @@ export function ScheduledTransactionForm({
           reminderDaysBefore: 3,
         },
   });
+
+  useEffect(() => { onDirtyChange?.(isDirty); }, [isDirty, onDirtyChange]);
 
   const watchedAccountId = watch('accountId');
   const watchedAmount = watch('amount');
@@ -406,6 +412,11 @@ export function ScheduledTransactionForm({
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (submitRef) submitRef.current = handleSubmit(onSubmit);
+    return () => { if (submitRef) submitRef.current = null; };
+  }, [submitRef, handleSubmit, onSubmit]);
 
   const frequencyOptions = Object.entries(FREQUENCY_LABELS).map(([value, label]) => ({
     value,

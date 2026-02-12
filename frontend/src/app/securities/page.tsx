@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
 import { PageLayout } from '@/components/layout/PageLayout';
@@ -8,6 +8,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { SummaryCard, SummaryIcons } from '@/components/ui/SummaryCard';
 import { Modal } from '@/components/ui/Modal';
+import { UnsavedChangesDialog } from '@/components/ui/UnsavedChangesDialog';
 import { Pagination } from '@/components/ui/Pagination';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import dynamic from 'next/dynamic';
@@ -42,6 +43,16 @@ function SecuritiesContent() {
   const [currentPage, setCurrentPage] = useState(1);
   const [listDensity, setListDensity] = useLocalStorage<DensityLevel>('monize-securities-density', 'normal');
 
+  // Unsaved changes tracking for SecurityForm
+  const isFormDirtyRef = useRef(false);
+  const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
+  const formSubmitRef = useRef<(() => void) | null>(null);
+  const setIsFormDirty = useCallback((dirty: boolean) => { isFormDirtyRef.current = dirty; }, []);
+
+  const handleBeforeClose = useCallback(() => {
+    if (isFormDirtyRef.current) { setShowUnsavedDialog(true); return false; }
+  }, []);
+
   const loadData = async () => {
     setIsLoading(true);
     try {
@@ -75,11 +86,13 @@ function SecuritiesContent() {
 
   const handleCreateNew = () => {
     setEditingSecurity(undefined);
+    isFormDirtyRef.current = false;
     setShowForm(true);
   };
 
   const handleEdit = (security: Security) => {
     setEditingSecurity(security);
+    isFormDirtyRef.current = false;
     setShowForm(true);
   };
 
@@ -92,6 +105,7 @@ function SecuritiesContent() {
         await investmentsApi.createSecurity(data);
         toast.success('Security created successfully');
       }
+      isFormDirtyRef.current = false;
       setShowForm(false);
       setEditingSecurity(undefined);
       loadData();
@@ -188,7 +202,7 @@ function SecuritiesContent() {
         </div>
 
         {/* Form Modal */}
-        <Modal isOpen={showForm} onClose={handleFormCancel} maxWidth="lg" className="p-6">
+        <Modal isOpen={showForm} onClose={handleFormCancel} maxWidth="lg" className="p-6" pushHistory onBeforeClose={handleBeforeClose}>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
             {editingSecurity ? 'Edit Security' : 'New Security'}
           </h2>
@@ -196,8 +210,16 @@ function SecuritiesContent() {
             security={editingSecurity}
             onSubmit={handleFormSubmit}
             onCancel={handleFormCancel}
+            onDirtyChange={setIsFormDirty}
+            submitRef={formSubmitRef}
           />
         </Modal>
+        <UnsavedChangesDialog
+          isOpen={showUnsavedDialog}
+          onSave={() => { setShowUnsavedDialog(false); formSubmitRef.current?.(); }}
+          onDiscard={() => { setShowUnsavedDialog(false); isFormDirtyRef.current = false; handleFormCancel(); }}
+          onCancel={() => setShowUnsavedDialog(false)}
+        />
 
         {/* Securities List */}
         <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg overflow-hidden">

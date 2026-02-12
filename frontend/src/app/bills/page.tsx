@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import toast from 'react-hot-toast';
 import {
   format,
@@ -36,6 +36,7 @@ import { Account } from '@/types/account';
 import { parseLocalDate } from '@/lib/utils';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { Modal } from '@/components/ui/Modal';
+import { UnsavedChangesDialog } from '@/components/ui/UnsavedChangesDialog';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { createLogger } from '@/lib/logger';
@@ -90,6 +91,16 @@ function BillsContent() {
     transaction: ScheduledTransaction | null;
   }>({ isOpen: false, transaction: null });
 
+  // Unsaved changes tracking for ScheduledTransactionForm
+  const isFormDirtyRef = useRef(false);
+  const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
+  const formSubmitRef = useRef<(() => void) | null>(null);
+  const setIsFormDirty = useCallback((dirty: boolean) => { isFormDirtyRef.current = dirty; }, []);
+
+  const handleBeforeClose = useCallback(() => {
+    if (isFormDirtyRef.current) { setShowUnsavedDialog(true); return false; }
+  }, []);
+
   const loadData = async () => {
     setIsLoading(true);
     try {
@@ -115,6 +126,7 @@ function BillsContent() {
 
   const handleCreateNew = () => {
     setEditingTransaction(undefined);
+    isFormDirtyRef.current = false;
     setShowForm(true);
   };
 
@@ -132,12 +144,14 @@ function BillsContent() {
       } else {
         // No overrides, proceed directly to edit
         setEditingTransaction(transaction);
+        isFormDirtyRef.current = false;
         setShowForm(true);
       }
     } catch (error) {
       // If check fails, proceed anyway
       logger.error('Failed to check overrides:', error);
       setEditingTransaction(transaction);
+      isFormDirtyRef.current = false;
       setShowForm(true);
     }
   };
@@ -146,6 +160,7 @@ function BillsContent() {
     // Keep overrides and edit the base template
     if (overrideConfirm.transaction) {
       setEditingTransaction(overrideConfirm.transaction);
+      isFormDirtyRef.current = false;
       setShowForm(true);
     }
     setOverrideConfirm({ isOpen: false, transaction: null, overrideCount: 0 });
@@ -158,6 +173,7 @@ function BillsContent() {
         await scheduledTransactionsApi.deleteAllOverrides(overrideConfirm.transaction.id);
         toast.success('Overrides deleted');
         setEditingTransaction(overrideConfirm.transaction);
+        isFormDirtyRef.current = false;
         setShowForm(true);
       } catch (error) {
         toast.error(getErrorMessage(error, 'Failed to delete overrides'));
@@ -172,6 +188,7 @@ function BillsContent() {
   };
 
   const handleFormSuccess = () => {
+    isFormDirtyRef.current = false;
     setShowForm(false);
     setEditingTransaction(undefined);
     loadData();
@@ -445,7 +462,7 @@ function BillsContent() {
         </ErrorBoundary>
 
         {/* Form Modal */}
-        <Modal isOpen={showForm} onClose={handleFormCancel} maxWidth="5xl" className="p-6">
+        <Modal isOpen={showForm} onClose={handleFormCancel} maxWidth="5xl" className="p-6" pushHistory onBeforeClose={handleBeforeClose}>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
             {editingTransaction ? 'Edit Scheduled Transaction' : 'New Scheduled Transaction'}
           </h2>
@@ -454,8 +471,16 @@ function BillsContent() {
             scheduledTransaction={editingTransaction}
             onSuccess={handleFormSuccess}
             onCancel={handleFormCancel}
+            onDirtyChange={setIsFormDirty}
+            submitRef={formSubmitRef}
           />
         </Modal>
+        <UnsavedChangesDialog
+          isOpen={showUnsavedDialog}
+          onSave={() => { setShowUnsavedDialog(false); formSubmitRef.current?.(); }}
+          onDiscard={() => { setShowUnsavedDialog(false); isFormDirtyRef.current = false; handleFormCancel(); }}
+          onCancel={() => setShowUnsavedDialog(false)}
+        />
 
         {/* View Toggle + Filter Tabs */}
         <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg mb-6">

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, MutableRefObject } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@/lib/zodResolver';
 import { z } from 'zod';
@@ -57,12 +57,14 @@ interface TransactionFormProps {
   defaultAccountId?: string;
   onSuccess?: () => void;
   onCancel?: () => void;
+  onDirtyChange?: (isDirty: boolean) => void;
+  submitRef?: MutableRefObject<(() => void) | null>;
 }
 
 // Transaction mode type
 type TransactionMode = 'normal' | 'split' | 'transfer';
 
-export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCancel }: TransactionFormProps) {
+export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCancel, onDirtyChange, submitRef }: TransactionFormProps) {
   const { defaultCurrency } = useNumberFormat();
   const [isLoading, setIsLoading] = useState(false);
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -145,7 +147,7 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
     handleSubmit,
     setValue,
     watch,
-    formState: { errors },
+    formState: { errors, isDirty },
   } = useForm<TransactionFormData>({
     resolver: zodResolver(transactionSchema),
     defaultValues: transaction
@@ -174,6 +176,8 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
           status: TransactionStatus.UNRECONCILED,
         },
   });
+
+  useEffect(() => { onDirtyChange?.(isDirty); }, [isDirty, onDirtyChange]);
 
   const watchedAccountId = watch('accountId');
   const watchedAmount = watch('amount');
@@ -539,6 +543,11 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (submitRef) submitRef.current = handleSubmit(onSubmit);
+    return () => { if (submitRef) submitRef.current = null; };
+  }, [submitRef, handleSubmit, onSubmit]);
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, MutableRefObject } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@/lib/zodResolver';
 import { z } from 'zod';
@@ -30,6 +30,8 @@ interface SecurityFormProps {
   security?: Security;
   onSubmit: (data: CreateSecurityData) => Promise<void>;
   onCancel: () => void;
+  onDirtyChange?: (isDirty: boolean) => void;
+  submitRef?: MutableRefObject<(() => void) | null>;
 }
 
 const securityTypeOptions = [
@@ -43,7 +45,7 @@ const securityTypeOptions = [
   { value: 'OTHER', label: 'Other' },
 ];
 
-export function SecurityForm({ security, onSubmit, onCancel }: SecurityFormProps) {
+export function SecurityForm({ security, onSubmit, onCancel, onDirtyChange, submitRef }: SecurityFormProps) {
   const { defaultCurrency } = useNumberFormat();
   const [isLookingUp, setIsLookingUp] = useState(false);
   const [hasLookupResult, setHasLookupResult] = useState(false);
@@ -71,7 +73,7 @@ export function SecurityForm({ security, onSubmit, onCancel }: SecurityFormProps
     setValue,
     getValues,
     reset,
-    formState: { errors, isSubmitting, defaultValues },
+    formState: { errors, isSubmitting, isDirty, defaultValues },
   } = useForm<SecurityFormData>({
     resolver: zodResolver(securitySchema),
     defaultValues: {
@@ -145,6 +147,13 @@ export function SecurityForm({ security, onSubmit, onCancel }: SecurityFormProps
     };
     await onSubmit(cleanedData);
   };
+
+  useEffect(() => { onDirtyChange?.(isDirty); }, [isDirty, onDirtyChange]);
+
+  useEffect(() => {
+    if (submitRef) submitRef.current = handleSubmit(onFormSubmit);
+    return () => { if (submitRef) submitRef.current = null; };
+  }, [submitRef, handleSubmit, onFormSubmit]);
 
   return (
     <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">

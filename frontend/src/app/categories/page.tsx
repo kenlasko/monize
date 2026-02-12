@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 const CategoryForm = dynamic(() => import('@/components/categories/CategoryForm').then(m => m.CategoryForm), { ssr: false });
 import { CategoryList, DensityLevel } from '@/components/categories/CategoryList';
 import { Modal } from '@/components/ui/Modal';
+import { UnsavedChangesDialog } from '@/components/ui/UnsavedChangesDialog';
 import { categoriesApi } from '@/lib/categories';
 import { Category } from '@/types/category';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
@@ -35,7 +36,7 @@ function CategoriesContent() {
   const [isImporting, setIsImporting] = useState(false);
   const [filterType, setFilterType] = useState<'all' | 'income' | 'expense'>('all');
   const [listDensity, setListDensity] = useLocalStorage<DensityLevel>('monize-categories-density', 'normal');
-  const { showForm, editingItem, openCreate, openEdit, close, isEditing } = useFormModal<Category>();
+  const { showForm, editingItem, openCreate, openEdit, close, isEditing, modalProps, setFormDirty, unsavedChangesDialog, formSubmitRef } = useFormModal<Category>();
 
   const loadCategories = async () => {
     setIsLoading(true);
@@ -177,7 +178,7 @@ function CategoriesContent() {
         </div>
 
         {/* Form Modal */}
-        <Modal isOpen={showForm} onClose={close} maxWidth="lg" className="p-6">
+        <Modal isOpen={showForm} onClose={close} {...modalProps} maxWidth="lg" className="p-6">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
             {isEditing ? 'Edit Category' : 'New Category'}
           </h2>
@@ -186,8 +187,11 @@ function CategoriesContent() {
             categories={categories}
             onSubmit={handleFormSubmit}
             onCancel={close}
+            onDirtyChange={setFormDirty}
+            submitRef={formSubmitRef}
           />
         </Modal>
+        <UnsavedChangesDialog {...unsavedChangesDialog} />
 
         {/* Categories List */}
         <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg overflow-hidden">

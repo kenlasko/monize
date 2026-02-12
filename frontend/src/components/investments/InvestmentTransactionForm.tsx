@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, MutableRefObject } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@/lib/zodResolver';
 import { z } from 'zod';
@@ -46,6 +46,8 @@ interface InvestmentTransactionFormProps {
   defaultAccountId?: string;
   onSuccess?: () => void;
   onCancel?: () => void;
+  onDirtyChange?: (isDirty: boolean) => void;
+  submitRef?: MutableRefObject<(() => void) | null>;
 }
 
 const actionLabels: Record<InvestmentAction, string> = {
@@ -84,6 +86,8 @@ export function InvestmentTransactionForm({
   defaultAccountId,
   onSuccess,
   onCancel,
+  onDirtyChange,
+  submitRef,
 }: InvestmentTransactionFormProps) {
   const { defaultCurrency } = useNumberFormat();
   const [isLoading, setIsLoading] = useState(false);
@@ -122,7 +126,7 @@ export function InvestmentTransactionForm({
     handleSubmit,
     watch,
     setValue,
-    formState: { errors },
+    formState: { errors, isDirty },
   } = useForm<InvestmentTransactionFormData>({
     resolver: zodResolver(investmentTransactionSchema),
     defaultValues: transaction
@@ -151,6 +155,8 @@ export function InvestmentTransactionForm({
           description: '',
         },
   });
+
+  useEffect(() => { onDirtyChange?.(isDirty); }, [isDirty, onDirtyChange]);
 
   const watchedAccountId = watch('accountId');
   const watchedAction = watch('action') as InvestmentAction;
@@ -269,6 +275,11 @@ export function InvestmentTransactionForm({
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (submitRef) submitRef.current = handleSubmit(onSubmit);
+    return () => { if (submitRef) submitRef.current = null; };
+  }, [submitRef, handleSubmit, onSubmit]);
 
   const needsSecurity = securityRequiredActions.includes(watchedAction);
   const needsQuantityPrice = quantityPriceActions.includes(watchedAction);

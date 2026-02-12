@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { Modal } from './Modal';
 
@@ -43,5 +43,76 @@ describe('Modal', () => {
     expect(document.body.style.overflow).toBe('hidden');
     unmount();
     expect(document.body.style.overflow).toBe('');
+  });
+
+  describe('pushHistory', () => {
+    let pushStateSpy: ReturnType<typeof vi.spyOn>;
+    let backSpy: ReturnType<typeof vi.spyOn>;
+
+    beforeEach(() => {
+      pushStateSpy = vi.spyOn(window.history, 'pushState').mockImplementation(() => {});
+      backSpy = vi.spyOn(window.history, 'back').mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+      pushStateSpy.mockRestore();
+      backSpy.mockRestore();
+    });
+
+    it('pushes history entry when modal opens with pushHistory', () => {
+      render(<Modal isOpen={true} pushHistory>Content</Modal>);
+      expect(pushStateSpy).toHaveBeenCalledWith({ modal: true }, '');
+    });
+
+    it('does not push history entry without pushHistory', () => {
+      render(<Modal isOpen={true}>Content</Modal>);
+      expect(pushStateSpy).not.toHaveBeenCalled();
+    });
+
+    it('calls history.back() when modal closes programmatically', () => {
+      const { rerender } = render(<Modal isOpen={true} pushHistory>Content</Modal>);
+      expect(pushStateSpy).toHaveBeenCalledTimes(1);
+
+      rerender(<Modal isOpen={false} pushHistory>Content</Modal>);
+      expect(backSpy).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('onBeforeClose', () => {
+    it('prevents close when onBeforeClose returns false (escape)', () => {
+      const onClose = vi.fn();
+      const onBeforeClose = vi.fn(() => false);
+      render(<Modal isOpen={true} onClose={onClose} onBeforeClose={onBeforeClose}>Content</Modal>);
+
+      fireEvent.keyDown(document, { key: 'Escape' });
+
+      expect(onBeforeClose).toHaveBeenCalled();
+      expect(onClose).not.toHaveBeenCalled();
+    });
+
+    it('prevents close when onBeforeClose returns false (backdrop)', () => {
+      const onClose = vi.fn();
+      const onBeforeClose = vi.fn(() => false);
+      const { container } = render(
+        <Modal isOpen={true} onClose={onClose} onBeforeClose={onBeforeClose}>Content</Modal>
+      );
+
+      const backdrop = container.firstChild as HTMLElement;
+      fireEvent.click(backdrop);
+
+      expect(onBeforeClose).toHaveBeenCalled();
+      expect(onClose).not.toHaveBeenCalled();
+    });
+
+    it('allows close when onBeforeClose returns undefined', () => {
+      const onClose = vi.fn();
+      const onBeforeClose = vi.fn(() => undefined);
+      render(<Modal isOpen={true} onClose={onClose} onBeforeClose={onBeforeClose}>Content</Modal>);
+
+      fireEvent.keyDown(document, { key: 'Escape' });
+
+      expect(onBeforeClose).toHaveBeenCalled();
+      expect(onClose).toHaveBeenCalled();
+    });
   });
 });

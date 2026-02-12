@@ -8,6 +8,7 @@ import { PayeeForm } from '@/components/payees/PayeeForm';
 import { PayeeList, DensityLevel, SortField, SortDirection } from '@/components/payees/PayeeList';
 import { CategoryAutoAssignDialog } from '@/components/payees/CategoryAutoAssignDialog';
 import { Modal } from '@/components/ui/Modal';
+import { UnsavedChangesDialog } from '@/components/ui/UnsavedChangesDialog';
 import { payeesApi } from '@/lib/payees';
 import { categoriesApi } from '@/lib/categories';
 import { Payee } from '@/types/payee';
@@ -44,7 +45,7 @@ function PayeesContent() {
   const [listDensity, setListDensity] = useLocalStorage<DensityLevel>('monize-payees-density', 'normal');
   const [sortField, setSortField] = useState<SortField>('name');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
-  const { showForm, editingItem, openCreate, openEdit, close, isEditing } = useFormModal<Payee>();
+  const { showForm, editingItem, openCreate, openEdit, close, isEditing, modalProps, setFormDirty, unsavedChangesDialog, formSubmitRef } = useFormModal<Payee>();
 
   const loadData = async () => {
     setIsLoading(true);
@@ -194,7 +195,7 @@ function PayeesContent() {
         </div>
 
         {/* Form Modal */}
-        <Modal isOpen={showForm} onClose={close} maxWidth="lg" className="p-6">
+        <Modal isOpen={showForm} onClose={close} {...modalProps} maxWidth="lg" className="p-6">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
             {isEditing ? 'Edit Payee' : 'New Payee'}
           </h2>
@@ -203,8 +204,11 @@ function PayeesContent() {
             categories={categories}
             onSubmit={handleFormSubmit}
             onCancel={close}
+            onDirtyChange={setFormDirty}
+            submitRef={formSubmitRef}
           />
         </Modal>
+        <UnsavedChangesDialog {...unsavedChangesDialog} />
 
         {/* Payees List */}
         <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg overflow-hidden">

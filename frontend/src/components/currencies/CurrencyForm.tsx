@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, MutableRefObject } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@/lib/zodResolver';
 import { z } from 'zod';
@@ -26,9 +26,11 @@ interface CurrencyFormProps {
   currency?: CurrencyInfo;
   onSubmit: (data: CreateCurrencyData) => Promise<void>;
   onCancel: () => void;
+  onDirtyChange?: (isDirty: boolean) => void;
+  submitRef?: MutableRefObject<(() => void) | null>;
 }
 
-export function CurrencyForm({ currency, onSubmit, onCancel }: CurrencyFormProps) {
+export function CurrencyForm({ currency, onSubmit, onCancel, onDirtyChange, submitRef }: CurrencyFormProps) {
   const [isLookingUp, setIsLookingUp] = useState(false);
   const [hasLookupResult, setHasLookupResult] = useState(false);
 
@@ -38,7 +40,7 @@ export function CurrencyForm({ currency, onSubmit, onCancel }: CurrencyFormProps
     setValue,
     getValues,
     reset,
-    formState: { errors, isSubmitting, defaultValues },
+    formState: { errors, isSubmitting, isDirty, defaultValues },
   } = useForm<CurrencyFormData>({
     resolver: zodResolver(currencySchema),
     defaultValues: {
@@ -103,6 +105,13 @@ export function CurrencyForm({ currency, onSubmit, onCancel }: CurrencyFormProps
     };
     await onSubmit(cleanedData);
   };
+
+  useEffect(() => { onDirtyChange?.(isDirty); }, [isDirty, onDirtyChange]);
+
+  useEffect(() => {
+    if (submitRef) submitRef.current = handleSubmit(onFormSubmit);
+    return () => { if (submitRef) submitRef.current = null; };
+  }, [submitRef, handleSubmit, onFormSubmit]);
 
   return (
     <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">

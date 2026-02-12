@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, MutableRefObject } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@/lib/zodResolver';
 import { z } from 'zod';
@@ -100,9 +100,11 @@ interface CustomReportFormProps {
   report?: CustomReport;
   onSubmit: (data: CreateCustomReportData) => Promise<void>;
   onCancel: () => void;
+  onDirtyChange?: (isDirty: boolean) => void;
+  submitRef?: MutableRefObject<(() => void) | null>;
 }
 
-export function CustomReportForm({ report, onSubmit, onCancel }: CustomReportFormProps) {
+export function CustomReportForm({ report, onSubmit, onCancel, onDirtyChange, submitRef }: CustomReportFormProps) {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [payees, setPayees] = useState<Payee[]>([]);
@@ -116,7 +118,7 @@ export function CustomReportForm({ report, onSubmit, onCancel }: CustomReportFor
     handleSubmit,
     control,
     watch,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isDirty },
   } = useForm<FormData>({
     resolver: zodResolver(customReportSchema),
     defaultValues: report
@@ -157,6 +159,8 @@ export function CustomReportForm({ report, onSubmit, onCancel }: CustomReportFor
           sortDirection: SortDirection.DESC,
         },
   });
+
+  useEffect(() => { onDirtyChange?.(isDirty); }, [isDirty, onDirtyChange]);
 
   const watchTimeframeType = watch('timeframeType');
   const watchViewType = watch('viewType');
@@ -208,6 +212,11 @@ export function CustomReportForm({ report, onSubmit, onCancel }: CustomReportFor
 
     await onSubmit(submitData);
   };
+
+  useEffect(() => {
+    if (submitRef) submitRef.current = handleSubmit(handleFormSubmit);
+    return () => { if (submitRef) submitRef.current = null; };
+  }, [submitRef, handleSubmit, handleFormSubmit]);
 
   const viewTypeOptions = Object.entries(VIEW_TYPE_LABELS).map(([value, label]) => ({
     value,

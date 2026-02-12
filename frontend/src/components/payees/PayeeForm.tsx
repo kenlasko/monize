@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useEffect, MutableRefObject } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@/lib/zodResolver';
 import { z } from 'zod';
@@ -24,13 +24,15 @@ interface PayeeFormProps {
   categories: Category[];
   onSubmit: (data: PayeeFormData) => Promise<void>;
   onCancel: () => void;
+  onDirtyChange?: (isDirty: boolean) => void;
+  submitRef?: MutableRefObject<(() => void) | null>;
 }
 
-export function PayeeForm({ payee, categories, onSubmit, onCancel }: PayeeFormProps) {
+export function PayeeForm({ payee, categories, onSubmit, onCancel, onDirtyChange, submitRef }: PayeeFormProps) {
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isDirty },
   } = useForm<PayeeFormData>({
     resolver: zodResolver(payeeSchema),
     defaultValues: payee
@@ -43,6 +45,13 @@ export function PayeeForm({ payee, categories, onSubmit, onCancel }: PayeeFormPr
           defaultCategoryId: '',
         },
   });
+
+  useEffect(() => { onDirtyChange?.(isDirty); }, [isDirty, onDirtyChange]);
+
+  useEffect(() => {
+    if (submitRef) submitRef.current = handleSubmit(onSubmit);
+    return () => { if (submitRef) submitRef.current = null; };
+  }, [submitRef, handleSubmit, onSubmit]);
 
   const categoryOptions = useMemo(() => [
     { value: '', label: 'No default category' },
