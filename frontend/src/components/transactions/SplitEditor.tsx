@@ -175,20 +175,43 @@ export function SplitEditor({
     onChange(newSplits);
   };
 
-  // Distribute remaining amount equally across all splits
-  const distributeRemaining = () => {
+  // Distribute remaining amount proportionally across all splits based on their current amounts
+  const distributeProportionally = () => {
     if (localSplits.length === 0 || Math.abs(remaining) < 0.01) return;
 
-    const perSplit = Math.round((remaining / localSplits.length) * 100) / 100;
+    const absTotal = localSplits.reduce((sum, s) => sum + Math.abs(Number(s.amount) || 0), 0);
+
+    // If all splits are zero, fall back to equal distribution
+    if (absTotal < 0.01) {
+      const perSplit = Math.round((remaining / localSplits.length) * 100) / 100;
+      const newSplits = localSplits.map((split, index) => {
+        const currentAmount = Number(split.amount) || 0;
+        if (index === localSplits.length - 1) {
+          const distributed = Math.round(perSplit * (localSplits.length - 1) * 100) / 100;
+          const lastPortion = Math.round((remaining - distributed) * 100) / 100;
+          return { ...split, amount: Math.round((currentAmount + lastPortion) * 100) / 100 };
+        }
+        return { ...split, amount: Math.round((currentAmount + perSplit) * 100) / 100 };
+      });
+      setLocalSplits(newSplits);
+      onChange(newSplits);
+      return;
+    }
+
+    let distributedSoFar = 0;
     const newSplits = localSplits.map((split, index) => {
       const currentAmount = Number(split.amount) || 0;
+      const proportion = Math.abs(currentAmount) / absTotal;
+
       if (index === localSplits.length - 1) {
         // Last split absorbs rounding remainder
-        const distributed = Math.round(perSplit * (localSplits.length - 1) * 100) / 100;
-        const lastPortion = Math.round((remaining - distributed) * 100) / 100;
+        const lastPortion = Math.round((remaining - distributedSoFar) * 100) / 100;
         return { ...split, amount: Math.round((currentAmount + lastPortion) * 100) / 100 };
       }
-      return { ...split, amount: Math.round((currentAmount + perSplit) * 100) / 100 };
+
+      const portion = Math.round(remaining * proportion * 100) / 100;
+      distributedSoFar += portion;
+      return { ...split, amount: Math.round((currentAmount + portion) * 100) / 100 };
     });
 
     setLocalSplits(newSplits);
@@ -211,11 +234,11 @@ export function SplitEditor({
             type="button"
             variant="outline"
             size="sm"
-            onClick={distributeRemaining}
+            onClick={distributeProportionally}
             disabled={disabled || localSplits.length === 0 || Math.abs(remaining) < 0.01}
-            title="Add the remaining amount equally to each split"
+            title="Distribute the remaining amount proportionally based on each split's amount"
           >
-            Distribute Remaining
+            Distribute Proportionally
           </Button>
           <Button
             type="button"

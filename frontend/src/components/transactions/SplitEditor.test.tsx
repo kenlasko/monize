@@ -150,7 +150,7 @@ describe('SplitEditor', () => {
     });
   });
 
-  it('renders Distribute Evenly and Distribute Remaining buttons', () => {
+  it('renders Distribute Evenly and Distribute Proportionally buttons', () => {
     const splits: SplitRow[] = [
       createSplitRow({ id: 'split-1', amount: -30 }),
       createSplitRow({ id: 'split-2', amount: -20 }),
@@ -166,7 +166,7 @@ describe('SplitEditor', () => {
     );
 
     expect(screen.getByText('Distribute Evenly')).toBeInTheDocument();
-    expect(screen.getByText('Distribute Remaining')).toBeInTheDocument();
+    expect(screen.getByText('Distribute Proportionally')).toBeInTheDocument();
   });
 
   it('calls onChange when Distribute Evenly is clicked', () => {
