@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cat:*)",
+      "Bash(grep:*)",
+      "Bash(for dir in ./backend/src/*/)",
+      "Bash(do ls \"$dir\"*.controller.ts)",
+      "Bash(done)",
+      "Bash(npm outdated:*)",
+      "Bash(head:*)",
+      "Bash(wsl -d NixOS -- bash -c \"cd /home/ken/monize/backend && npx jest --testPathPattern='\\(currencies\\\\.controller|securities\\\\.controller|transactions\\\\.controller|admin\\\\.controller|admin\\\\.service\\)\\\\.spec\\\\.ts' --no-coverage 2>&1\":*)",
+      "Bash(wsl -d NixOS -- bash -c \"cd /home/ken/monize/backend && npx jest --testPathPatterns='\\(currencies\\\\.controller|securities\\\\.controller|transactions\\\\.controller|admin\\\\.controller|admin\\\\.service\\)\\\\.spec\\\\.ts' --no-coverage 2>&1\":*)",
+      "Bash(wsl -d NixOS -- bash -c \"cd /home/ken/monize/frontend && npx tsc --noEmit --pretty 2>&1 | head -30\":*)"
+    ]
+  }
+}
