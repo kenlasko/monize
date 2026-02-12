@@ -5,8 +5,8 @@ import { MapSecuritiesStep } from './MapSecuritiesStep';
 describe('MapSecuritiesStep', () => {
   const defaultProps = {
     securityMappings: [
-      { originalName: 'AAPL', securityId: '', createNew: false, securityName: '', ticker: '', securityType: '' },
-      { originalName: 'GOOG', securityId: 'sec-1', createNew: false, securityName: '', ticker: '', securityType: '' },
+      { originalName: 'AAPL', securityId: '', createNew: '', securityName: '', securityType: '' },
+      { originalName: 'GOOG', securityId: 'sec-1', createNew: '', securityName: '', securityType: '' },
     ],
     handleSecurityMappingChange: vi.fn(),
     handleSecurityLookup: vi.fn(),

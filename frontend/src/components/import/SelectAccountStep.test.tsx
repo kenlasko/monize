@@ -18,6 +18,8 @@ describe('SelectAccountStep', () => {
       categories: [],
       securities: [],
       transferAccounts: [],
+      detectedDateFormat: 'YYYY-MM-DD' as const,
+      sampleDates: [],
     },
     accounts: [],
     selectedAccountId: '',

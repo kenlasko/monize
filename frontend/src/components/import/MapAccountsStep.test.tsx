@@ -6,7 +6,7 @@ import { createRef } from 'react';
 describe('MapAccountsStep', () => {
   const defaultProps = {
     accountMappings: [
-      { originalName: 'Brokerage Cash', accountId: '', createNew: false, newAccountName: '', accountType: 'CHEQUING', currencyCode: 'CAD' },
+      { originalName: 'Brokerage Cash', accountId: '', createNew: '', accountType: 'CHEQUING', currencyCode: 'CAD' },
     ],
     handleAccountMappingChange: vi.fn(),
     accountOptions: [{ value: 'acc-1', label: 'Main Chequing' }],

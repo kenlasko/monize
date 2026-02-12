@@ -5,15 +5,15 @@ import { createRef } from 'react';
 
 vi.mock('@/components/import/CategoryMappingRow', () => ({
   CategoryMappingRow: ({ mapping }: any) => (
-    <div data-testid="category-mapping-row">{mapping.originalCategory}</div>
+    <div data-testid="category-mapping-row">{mapping.originalName}</div>
   ),
 }));
 
 describe('MapCategoriesStep', () => {
   const defaultProps = {
     categoryMappings: [
-      { originalCategory: 'Groceries', categoryId: '', isLoanCategory: false, loanAccountId: '', createNewLoan: false, newLoanAmount: undefined, newLoanName: '' },
-      { originalCategory: 'Utilities', categoryId: 'cat-1', isLoanCategory: false, loanAccountId: '', createNewLoan: false, newLoanAmount: undefined, newLoanName: '' },
+      { originalName: 'Groceries', categoryId: '', isLoanCategory: false, loanAccountId: '', createNewLoan: '', newLoanAmount: undefined, newLoanInstitution: '' },
+      { originalName: 'Utilities', categoryId: 'cat-1', isLoanCategory: false, loanAccountId: '', createNewLoan: '', newLoanAmount: undefined, newLoanInstitution: '' },
     ],
     setCategoryMappings: vi.fn(),
     categoryOptions: [{ value: 'cat-1', label: 'Utilities' }],

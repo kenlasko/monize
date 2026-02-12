@@ -66,6 +66,7 @@ describe('MortgageFields', () => {
     isVariableRate: false,
     interestRate: undefined as number | undefined,
     paymentFrequency: undefined as any,
+    mortgagePaymentFrequency: undefined as any,
     paymentStartDate: undefined as string | undefined,
     openingBalance: undefined as number | undefined,
     originalPrincipal: undefined as number | undefined,

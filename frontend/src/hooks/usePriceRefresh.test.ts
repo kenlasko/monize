@@ -24,6 +24,10 @@ vi.mock('@/lib/logger', () => ({
   }),
 }));
 
+vi.mock('@/lib/errors', () => ({
+  getErrorMessage: vi.fn((_error: unknown, fallback: string) => fallback),
+}));
+
 import { investmentsApi } from '@/lib/investments';
 import toast from 'react-hot-toast';
 

@@ -22,13 +22,18 @@ import { userSettingsApi } from '@/lib/user-settings';
 import toast from 'react-hot-toast';
 
 const mockPreferences: UserPreferences = {
+  userId: 'user-1',
   dateFormat: 'YYYY-MM-DD',
   numberFormat: 'en-US',
   timezone: 'UTC',
   theme: 'system',
   defaultCurrency: 'CAD',
   notificationEmail: false,
+  notificationBrowser: false,
   twoFactorEnabled: false,
+  gettingStartedDismissed: false,
+  createdAt: '2024-01-01T00:00:00Z',
+  updatedAt: '2024-01-01T00:00:00Z',
 };
 
 describe('NotificationsSection', () => {

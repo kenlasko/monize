@@ -36,6 +36,8 @@ describe('ReviewStep', () => {
       categories: [],
       securities: [],
       transferAccounts: [],
+      detectedDateFormat: 'YYYY-MM-DD' as const,
+      sampleDates: [],
     },
     selectedAccountId: 'acc-1',
     accounts: [account],
