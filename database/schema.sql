@@ -402,7 +402,7 @@ CREATE TABLE trusted_devices (
 );
 
 CREATE INDEX idx_trusted_devices_user ON trusted_devices(user_id);
-CREATE INDEX idx_trusted_devices_token ON trusted_devices(token_hash);
+CREATE UNIQUE INDEX idx_trusted_devices_token ON trusted_devices(token_hash);
 
 -- Refresh Tokens (for JWT refresh token rotation with family-based replay detection)
 CREATE TABLE refresh_tokens (
@@ -417,7 +417,7 @@ CREATE TABLE refresh_tokens (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_refresh_tokens_token_hash ON refresh_tokens(token_hash);
+CREATE UNIQUE INDEX idx_refresh_tokens_token_hash ON refresh_tokens(token_hash);
 CREATE INDEX idx_refresh_tokens_family ON refresh_tokens(family_id);
 CREATE INDEX idx_refresh_tokens_expires ON refresh_tokens(expires_at);
 

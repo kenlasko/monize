@@ -21,6 +21,8 @@ import {
   ApiBody,
 } from "@nestjs/swagger";
 import { AuthGuard } from "@nestjs/passport";
+import { RolesGuard } from "../auth/guards/roles.guard";
+import { Roles } from "../auth/decorators/roles.decorator";
 import { SecuritiesService } from "./securities.service";
 import {
   SecurityPriceService,
@@ -176,8 +178,10 @@ export class SecuritiesController {
   }
 
   @Post("prices/refresh")
+  @UseGuards(RolesGuard)
+  @Roles("admin")
   @ApiOperation({
-    summary: "Refresh prices for all active securities",
+    summary: "Refresh prices for all active securities (admin only)",
     description:
       "Fetches latest prices from Yahoo Finance for all active securities",
   })
@@ -255,8 +259,10 @@ export class SecuritiesController {
   }
 
   @Post("prices/backfill")
+  @UseGuards(RolesGuard)
+  @Roles("admin")
   @ApiOperation({
-    summary: "Backfill historical prices for all active securities",
+    summary: "Backfill historical prices for all active securities (admin only)",
     description:
       "Fetches full price history from Yahoo Finance for all active securities",
   })

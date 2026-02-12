@@ -257,6 +257,88 @@ export class TransactionsController {
     );
   }
 
+  // ==================== Reconciliation Endpoints ====================
+  // NOTE: These static-segment routes MUST be declared before the generic
+  // :id param route below, otherwise NestJS matches "reconcile" as an :id
+  // value and returns a 400 (ParseUUIDPipe rejects non-UUID strings).
+
+  @Get("reconcile/:accountId")
+  @ApiOperation({ summary: "Get reconciliation data for an account" })
+  @ApiParam({ name: "accountId", description: "Account UUID" })
+  @ApiQuery({
+    name: "statementDate",
+    required: true,
+    description: "Statement date (YYYY-MM-DD)",
+  })
+  @ApiQuery({
+    name: "statementBalance",
+    required: true,
+    description: "Statement ending balance",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Reconciliation data retrieved successfully",
+  })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  @ApiResponse({ status: 404, description: "Account not found" })
+  getReconciliationData(
+    @Request() req,
+    @Param("accountId", ParseUUIDPipe) accountId: string,
+    @Query("statementDate") statementDate: string,
+    @Query("statementBalance") statementBalance: string,
+  ) {
+    return this.transactionsService.getReconciliationData(
+      req.user.id,
+      accountId,
+      statementDate,
+      parseFloat(statementBalance),
+    );
+  }
+
+  @Post("reconcile/:accountId")
+  @ApiOperation({ summary: "Bulk reconcile transactions for an account" })
+  @ApiParam({ name: "accountId", description: "Account UUID" })
+  @ApiResponse({
+    status: 200,
+    description: "Transactions reconciled successfully",
+  })
+  @ApiResponse({ status: 400, description: "Invalid transaction IDs" })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  @ApiResponse({ status: 404, description: "Account not found" })
+  bulkReconcile(
+    @Request() req,
+    @Param("accountId", ParseUUIDPipe) accountId: string,
+    @Body() body: { transactionIds: string[]; reconciledDate: string },
+  ) {
+    return this.transactionsService.bulkReconcile(
+      req.user.id,
+      accountId,
+      body.transactionIds,
+      body.reconciledDate,
+    );
+  }
+
+  // ==================== Transfer Endpoints ====================
+  // NOTE: Static "transfer" route must be before :id param route.
+
+  @Post("transfer")
+  @ApiOperation({ summary: "Create a transfer between two accounts" })
+  @ApiResponse({ status: 201, description: "Transfer created successfully" })
+  @ApiResponse({
+    status: 400,
+    description: "Bad request - invalid transfer data",
+  })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  @ApiResponse({ status: 404, description: "Account not found" })
+  createTransfer(@Request() req, @Body() createTransferDto: CreateTransferDto) {
+    return this.transactionsService.createTransfer(
+      req.user.id,
+      createTransferDto,
+    );
+  }
+
+  // ==================== Single Transaction CRUD (:id param routes) ====================
+
   @Get(":id")
   @ApiOperation({ summary: "Get a specific transaction by ID" })
   @ApiParam({ name: "id", description: "Transaction UUID" })
@@ -377,64 +459,6 @@ export class TransactionsController {
     return this.transactionsService.updateStatus(req.user.id, id, status);
   }
 
-  // ==================== Reconciliation Endpoints ====================
-
-  @Get("reconcile/:accountId")
-  @ApiOperation({ summary: "Get reconciliation data for an account" })
-  @ApiParam({ name: "accountId", description: "Account UUID" })
-  @ApiQuery({
-    name: "statementDate",
-    required: true,
-    description: "Statement date (YYYY-MM-DD)",
-  })
-  @ApiQuery({
-    name: "statementBalance",
-    required: true,
-    description: "Statement ending balance",
-  })
-  @ApiResponse({
-    status: 200,
-    description: "Reconciliation data retrieved successfully",
-  })
-  @ApiResponse({ status: 401, description: "Unauthorized" })
-  @ApiResponse({ status: 404, description: "Account not found" })
-  getReconciliationData(
-    @Request() req,
-    @Param("accountId", ParseUUIDPipe) accountId: string,
-    @Query("statementDate") statementDate: string,
-    @Query("statementBalance") statementBalance: string,
-  ) {
-    return this.transactionsService.getReconciliationData(
-      req.user.id,
-      accountId,
-      statementDate,
-      parseFloat(statementBalance),
-    );
-  }
-
-  @Post("reconcile/:accountId")
-  @ApiOperation({ summary: "Bulk reconcile transactions for an account" })
-  @ApiParam({ name: "accountId", description: "Account UUID" })
-  @ApiResponse({
-    status: 200,
-    description: "Transactions reconciled successfully",
-  })
-  @ApiResponse({ status: 400, description: "Invalid transaction IDs" })
-  @ApiResponse({ status: 401, description: "Unauthorized" })
-  @ApiResponse({ status: 404, description: "Account not found" })
-  bulkReconcile(
-    @Request() req,
-    @Param("accountId", ParseUUIDPipe) accountId: string,
-    @Body() body: { transactionIds: string[]; reconciledDate: string },
-  ) {
-    return this.transactionsService.bulkReconcile(
-      req.user.id,
-      accountId,
-      body.transactionIds,
-      body.reconciledDate,
-    );
-  }
-
   // ==================== Split Transaction Endpoints ====================
 
   @Get(":id/splits")
@@ -492,24 +516,6 @@ export class TransactionsController {
     @Param("splitId", ParseUUIDPipe) splitId: string,
   ) {
     return this.transactionsService.removeSplit(req.user.id, id, splitId);
-  }
-
-  // ==================== Transfer Endpoints ====================
-
-  @Post("transfer")
-  @ApiOperation({ summary: "Create a transfer between two accounts" })
-  @ApiResponse({ status: 201, description: "Transfer created successfully" })
-  @ApiResponse({
-    status: 400,
-    description: "Bad request - invalid transfer data",
-  })
-  @ApiResponse({ status: 401, description: "Unauthorized" })
-  @ApiResponse({ status: 404, description: "Account not found" })
-  createTransfer(@Request() req, @Body() createTransferDto: CreateTransferDto) {
-    return this.transactionsService.createTransfer(
-      req.user.id,
-      createTransferDto,
-    );
   }
 
   @Get(":id/linked")

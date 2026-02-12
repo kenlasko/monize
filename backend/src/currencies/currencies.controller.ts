@@ -20,6 +20,8 @@ import {
   ApiQuery,
 } from "@nestjs/swagger";
 import { AuthGuard } from "@nestjs/passport";
+import { RolesGuard } from "../auth/guards/roles.guard";
+import { Roles } from "../auth/decorators/roles.decorator";
 import {
   ExchangeRateService,
   RateRefreshSummary,
@@ -127,15 +129,19 @@ export class CurrenciesController {
   }
 
   @Post("exchange-rates/refresh")
-  @ApiOperation({ summary: "Manually trigger exchange rate refresh" })
+  @UseGuards(RolesGuard)
+  @Roles("admin")
+  @ApiOperation({ summary: "Manually trigger exchange rate refresh (admin only)" })
   @ApiResponse({ status: 201, description: "Refresh summary" })
   refreshRates(): Promise<RateRefreshSummary> {
     return this.exchangeRateService.refreshAllRates();
   }
 
   @Post("exchange-rates/backfill")
+  @UseGuards(RolesGuard)
+  @Roles("admin")
   @ApiOperation({
-    summary: "Manually trigger historical exchange rate backfill",
+    summary: "Manually trigger historical exchange rate backfill (admin only)",
   })
   @ApiResponse({ status: 201, description: "Backfill summary" })
   backfillHistoricalRates(

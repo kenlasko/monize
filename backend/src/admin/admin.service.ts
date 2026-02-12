@@ -130,8 +130,15 @@ export class AdminService {
   }
 
   async resetUserPassword(
+    adminId: string,
     targetUserId: string,
   ): Promise<{ temporaryPassword: string }> {
+    if (adminId === targetUserId) {
+      throw new ForbiddenException(
+        "You cannot reset your own password through the admin panel",
+      );
+    }
+
     const targetUser = await this.usersRepository.findOne({
       where: { id: targetUserId },
     });

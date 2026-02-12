@@ -249,7 +249,7 @@ describe("AdminService", () => {
     it("generates a temporary password and sets mustChangePassword", async () => {
       usersRepository.findOne.mockResolvedValue({ ...mockTargetUser });
 
-      const result = await service.resetUserPassword("user-2");
+      const result = await service.resetUserPassword("admin-1", "user-2");
 
       expect(result.temporaryPassword).toBeDefined();
       expect(typeof result.temporaryPassword).toBe("string");
@@ -263,12 +263,18 @@ describe("AdminService", () => {
       expect(savedUser.passwordHash).not.toBe(result.temporaryPassword);
     });
 
+    it("throws ForbiddenException when resetting own password", async () => {
+      await expect(
+        service.resetUserPassword("admin-1", "admin-1"),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
     it("throws NotFoundException when user not found", async () => {
       usersRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.resetUserPassword("nonexistent")).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.resetUserPassword("admin-1", "nonexistent"),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it("throws BadRequestException for accounts without local password", async () => {
@@ -278,9 +284,9 @@ describe("AdminService", () => {
         authProvider: "oidc",
       });
 
-      await expect(service.resetUserPassword("user-2")).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(
+        service.resetUserPassword("admin-1", "user-2"),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 });

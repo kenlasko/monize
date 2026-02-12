@@ -87,13 +87,14 @@ describe("AdminController", () => {
   });
 
   describe("resetPassword()", () => {
-    it("delegates to adminService.resetUserPassword with userId only", () => {
+    it("delegates to adminService.resetUserPassword with adminId and userId", () => {
       mockAdminService.resetUserPassword!.mockReturnValue("reset");
 
-      const result = controller.resetPassword("target-user-1");
+      const result = controller.resetPassword(mockReq, "target-user-1");
 
       expect(result).toBe("reset");
       expect(mockAdminService.resetUserPassword).toHaveBeenCalledWith(
+        "user-1",
         "target-user-1",
       );
     });

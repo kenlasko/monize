@@ -76,7 +76,10 @@ export class AdminController {
     status: 200,
     description: "Password reset, returns temporary password",
   })
-  resetPassword(@Param("id", ParseUUIDPipe) id: string) {
-    return this.adminService.resetUserPassword(id);
+  resetPassword(
+    @Request() req,
+    @Param("id", ParseUUIDPipe) id: string,
+  ) {
+    return this.adminService.resetUserPassword(req.user.id, id);
   }
 }
