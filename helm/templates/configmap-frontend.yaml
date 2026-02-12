@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: env-vars-frontend
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "monize.frontend.labels" . | nindent 4 }}
+data:
+  NODE_ENV: {{ .Values.frontend.app.NODE_ENV | quote }}
+  INTERNAL_API_URL: {{ include "monize.internalApiUrl" . | quote }}
+  PUBLIC_APP_URL: {{ .Values.frontend.app.PUBLIC_APP_URL | default (include "monize.publicAppUrl" .) | quote }}

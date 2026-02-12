@@ -1,0 +1,12 @@
+apiVersion: v2
+name: monize
+description: Helm chart for the Monize personal finance application (backend + frontend)
+type: application
+version: 1.0.0
+appVersion: "latest"
+keywords:
+  - monize
+  - finance
+  - budget
+maintainers:
+  - name: Ken Lasko

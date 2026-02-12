@@ -1,0 +1,236 @@
+# -- Global settings
+global:
+  # -- Namespace for all resources
+  namespace: monize
+  # -- Application domain name
+  domain: yourdomain.com
+  # -- Full application hostname (defaults to monize.<domain>)
+  hostname: ""
+  # -- Timezone for all containers
+  timezone: ""
+
+# -- Namespace configuration
+namespace:
+  # -- Create the namespace
+  create: true
+  # -- Pod Security Standards enforcement level (privileged, baseline, restricted)
+  podSecurityEnforce: restricted
+
+# -- Backend configuration
+backend:
+  # -- Image settings
+  image:
+    registry: ghcr.io
+    repository: kenlasko/monize/backend
+    tag: latest
+    pullPolicy: IfNotPresent
+
+  # -- Number of replicas
+  replicas: 1
+
+  # -- Extra labels to add to the StatefulSet and pod template
+  extraLabels: {}
+  # -- Extra annotations to add to the StatefulSet
+  extraAnnotations: {}
+
+  # -- Service port
+  service:
+    port: 3001
+    type: ClusterIP
+
+  # -- Resource requests and limits
+  resources:
+    requests:
+      cpu: 10m
+      memory: 60Mi
+    limits:
+      memory: 150Mi
+
+  # -- Security context for the backend container
+  securityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+    runAsUser: 1001
+    runAsGroup: 0
+    seccompProfile:
+      type: RuntimeDefault
+    capabilities:
+      drop:
+        - ALL
+
+  # -- Liveness probe configuration
+  livenessProbe:
+    httpGet:
+      path: /api/v1/health/live
+      port: http
+    initialDelaySeconds: 10
+    periodSeconds: 60
+    timeoutSeconds: 5
+
+  # -- Readiness probe configuration
+  readinessProbe:
+    httpGet:
+      path: /api/v1/health/ready
+      port: http
+    initialDelaySeconds: 3
+    periodSeconds: 5
+    timeoutSeconds: 3
+
+  # -- General application settings
+  # NOTE: JWT_SECRET must be provided via a Secret.
+  # Use extraEnvFrom with a secretRef, or extraEnv with valueFrom.secretKeyRef.
+  app:
+    NODE_ENV: production
+    # -- PUBLIC_APP_URL (defaults to https://<hostname>)
+    PUBLIC_APP_URL: ""
+
+  # -- Database connection settings
+  # NOTE: DATABASE_USER and DATABASE_PASSWORD must be provided via a Secret.
+  # Use extraEnvFrom with a secretRef, or extraEnv with valueFrom.secretKeyRef.
+  database:
+    DATABASE_HOST: ""
+    DATABASE_NAME: ""
+
+  # -- Authentication settings
+  auth:
+    LOCAL_AUTH_ENABLED: "true"
+    REGISTRATION_ENABLED: "true"
+
+  # -- OIDC settings (only included in ConfigMap when explicitly set)
+  # NOTE: OIDC_CLIENT_ID and OIDC_CLIENT_SECRET must be provided via a Secret.
+  # Use extraEnvFrom with a secretRef, or extraEnv with valueFrom.secretKeyRef.
+  oidc:
+    OIDC_ISSUER_URL: ""
+    OIDC_CALLBACK_URL: ""
+
+  # -- SMTP / email settings
+  # NOTE: SMTP_USER and SMTP_PASSWORD must be provided via a Secret.
+  # Use extraEnvFrom with a secretRef, or extraEnv with valueFrom.secretKeyRef.
+  smtp:
+    SMTP_HOST: ""
+    SMTP_PORT: "587"
+    SMTP_SECURE: "false"
+    EMAIL_FROM: ""
+
+  # -- Additional environment variables for the backend container
+  extraEnv: []
+  #   - name: MY_VAR
+  #     value: "my-value"
+  #   - name: MY_SECRET
+  #     valueFrom:
+  #       secretKeyRef:
+  #         name: my-secret
+  #         key: password
+
+  # -- Additional envFrom references (secretRef, configMapRef) for the backend container
+  extraEnvFrom: []
+  #   - secretRef:
+  #       name: my-backend-secrets
+  #   - configMapRef:
+  #       name: my-backend-config
+
+# -- Frontend configuration
+frontend:
+  # -- Image settings
+  image:
+    registry: ghcr.io
+    repository: kenlasko/monize/frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+
+  # -- Number of replicas
+  replicas: 1
+
+  # -- Extra labels to add to the StatefulSet and pod template
+  extraLabels: {}
+  # -- Extra annotations to add to the StatefulSet
+  extraAnnotations: {}
+
+  # -- Service port
+  service:
+    port: 3000
+    type: ClusterIP
+
+  # -- Resource requests and limits
+  resources:
+    requests:
+      cpu: 10m
+      memory: 37Mi
+    limits:
+      memory: 100Mi
+
+  # -- Security context for the frontend container
+  securityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+    runAsUser: 1001
+    runAsGroup: 0
+    seccompProfile:
+      type: RuntimeDefault
+    capabilities:
+      drop:
+        - ALL
+
+  # -- Liveness probe configuration
+  livenessProbe:
+    httpGet:
+      path: /api/v1/health/live
+      port: http
+    initialDelaySeconds: 5
+    periodSeconds: 60
+    timeoutSeconds: 5
+
+  # -- Readiness probe configuration
+  readinessProbe:
+    httpGet:
+      path: /api/v1/health/ready
+      port: http
+    initialDelaySeconds: 2
+    periodSeconds: 5
+    timeoutSeconds: 3
+
+  # -- General application settings
+  app:
+    NODE_ENV: production
+    # -- INTERNAL_API_URL (defaults to http://monize-backend-service:<backend.service.port>)
+    INTERNAL_API_URL: ""
+    # -- PUBLIC_APP_URL (defaults to https://<hostname>)
+    PUBLIC_APP_URL: ""
+
+  # -- Additional environment variables for the frontend container
+  extraEnv: []
+  #   - name: MY_VAR
+  #     value: "my-value"
+
+  # -- Additional envFrom references (secretRef, configMapRef) for the frontend container
+  extraEnvFrom: []
+  #   - secretRef:
+  #       name: my-frontend-secrets
+  #   - configMapRef:
+  #       name: my-frontend-config
+
+# -- Ingress configuration (traditional Kubernetes Ingress)
+ingress:
+  # -- Enable Ingress resource creation
+  enabled: false
+  # -- Ingress class name (e.g., nginx, traefik)
+  className: ""
+  # -- Ingress annotations
+  annotations: {}
+  # -- TLS configuration
+  tls: []
+  #   - secretName: monize-tls
+  #     hosts:
+  #       - monize.yourdomain.com
+
+# -- HTTPRoute configuration (Gateway API)
+httpRoute:
+  # -- Enable HTTPRoute resource creation
+  enabled: true
+  # -- Gateway parent reference
+  parentRefs:
+    - name: tls
+      namespace: cilium
+      sectionName: https

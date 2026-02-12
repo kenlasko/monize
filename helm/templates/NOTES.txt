@@ -1,0 +1,23 @@
+Monize has been deployed successfully!
+
+Components:
+  - Backend:  monize-backend  (port {{ .Values.backend.service.port }})
+  - Frontend: monize-frontend (port {{ .Values.frontend.service.port }})
+
+{{- if .Values.httpRoute.enabled }}
+
+Access via HTTPRoute (Gateway API):
+  Hostname: {{ include "monize.hostname" . }}
+  Gateway:  {{ (index .Values.httpRoute.parentRefs 0).namespace }}/{{ (index .Values.httpRoute.parentRefs 0).name }}
+{{- end }}
+
+{{- if .Values.ingress.enabled }}
+
+Access via Ingress:
+  Hostname: {{ include "monize.hostname" . }}
+  {{- if .Values.ingress.className }}
+  Class:    {{ .Values.ingress.className }}
+  {{- end }}
+{{- end }}
+
+Public URL: {{ include "monize.publicAppUrl" . }}

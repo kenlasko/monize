@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: env-vars-backend
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "monize.backend.labels" . | nindent 4 }}
+data:
+  # App
+  NODE_ENV: {{ .Values.backend.app.NODE_ENV | quote }}
+  PUBLIC_APP_URL: {{ .Values.backend.app.PUBLIC_APP_URL | default (include "monize.publicAppUrl" .) | quote }}
+  # Database
+  DATABASE_HOST: {{ .Values.backend.database.DATABASE_HOST | quote }}
+  DATABASE_NAME: {{ .Values.backend.database.DATABASE_NAME | quote }}
+  # Auth
+  LOCAL_AUTH_ENABLED: {{ .Values.backend.auth.LOCAL_AUTH_ENABLED | quote }}
+  REGISTRATION_ENABLED: {{ .Values.backend.auth.REGISTRATION_ENABLED | quote }}
+  {{- if or .Values.backend.oidc.OIDC_ISSUER_URL .Values.backend.oidc.OIDC_CALLBACK_URL }}
+  # OIDC
+  {{- if .Values.backend.oidc.OIDC_ISSUER_URL }}
+  OIDC_ISSUER_URL: {{ .Values.backend.oidc.OIDC_ISSUER_URL | quote }}
+  {{- end }}
+  {{- if .Values.backend.oidc.OIDC_CALLBACK_URL }}
+  OIDC_CALLBACK_URL: {{ .Values.backend.oidc.OIDC_CALLBACK_URL | quote }}
+  {{- end }}
+  {{- end }}
+  # SMTP
+  SMTP_HOST: {{ .Values.backend.smtp.SMTP_HOST | quote }}
+  SMTP_PORT: {{ .Values.backend.smtp.SMTP_PORT | quote }}
+  SMTP_SECURE: {{ .Values.backend.smtp.SMTP_SECURE | quote }}
+  EMAIL_FROM: {{ .Values.backend.smtp.EMAIL_FROM | quote }}
