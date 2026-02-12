@@ -32,10 +32,10 @@ export interface BulkImportResult {
 
 export function suggestAccountType(name: string): string {
   const n = name.toLowerCase();
+  if (/line\s*of\s*credit|\bloc\b/.test(n)) return 'LINE_OF_CREDIT';
   if (/visa|mastercard|amex|credit\s*card|credit/.test(n)) return 'CREDIT_CARD';
   if (/savings?/.test(n)) return 'SAVINGS';
   if (/mortgage/.test(n)) return 'MORTGAGE';
-  if (/line\s*of\s*credit|\bloc\b/.test(n)) return 'LINE_OF_CREDIT';
   if (/loan/.test(n)) return 'LOAN';
   if (/invest|brokerage|rrsp|tfsa|401k|ira/.test(n)) return 'INVESTMENT';
   if (/\bcash\b/.test(n)) return 'CASH';
