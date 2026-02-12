@@ -5,7 +5,7 @@ import {
   InvestmentTransaction,
 } from "../securities/entities/investment-transaction.entity";
 import { AccountSubType } from "../accounts/entities/account.entity";
-import { TransactionStatus } from "../transactions/entities/transaction.entity";
+
 import { Security } from "../securities/entities/security.entity";
 import { Holding } from "../securities/entities/holding.entity";
 import { ImportResultDto } from "./dto/import.dto";
@@ -367,7 +367,7 @@ describe("ImportInvestmentProcessorService", () => {
       const ctx = makeContext();
 
       ctx.queryRunner.manager.findOne.mockImplementation(
-        (entity: any, opts: any) => {
+        (entity: any, _opts: any) => {
           if (entity === Security) {
             return Promise.resolve(null);
           }
@@ -713,8 +713,7 @@ describe("ImportInvestmentProcessorService", () => {
 
       const saveCalls = ctx.queryRunner.manager.save.mock.calls;
       const cashTx = saveCalls.find(
-        (call: any) =>
-          call[0]?.payeeName && call[0]?.payeeName.includes("Buy"),
+        (call: any) => call[0]?.payeeName && call[0]?.payeeName.includes("Buy"),
       );
       expect(cashTx).toBeDefined();
       expect(cashTx[0].payeeName).toContain("TST");
@@ -883,7 +882,7 @@ describe("ImportInvestmentProcessorService", () => {
       const ctx = makeContext({ securityMap });
 
       ctx.queryRunner.manager.findOne.mockImplementation(
-        (entity: any, opts: any) => {
+        (entity: any, _opts: any) => {
           if (entity === Holding) {
             return Promise.resolve({
               accountId,
@@ -919,7 +918,7 @@ describe("ImportInvestmentProcessorService", () => {
       const ctx = makeContext({ securityMap });
 
       ctx.queryRunner.manager.findOne.mockImplementation(
-        (entity: any, opts: any) => {
+        (entity: any, _opts: any) => {
           if (entity === Holding) {
             return Promise.resolve({
               accountId,

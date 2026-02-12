@@ -13,7 +13,7 @@ import { MapSecuritiesStep } from '@/components/import/MapSecuritiesStep';
 import { MapAccountsStep } from '@/components/import/MapAccountsStep';
 import { ReviewStep } from '@/components/import/ReviewStep';
 import { CompleteStep } from '@/components/import/CompleteStep';
-import { importApi, ParsedQifResponse, CategoryMapping, AccountMapping, SecurityMapping, ImportResult, DateFormat } from '@/lib/import';
+import { importApi, CategoryMapping, AccountMapping, SecurityMapping, ImportResult, DateFormat } from '@/lib/import';
 import { accountsApi } from '@/lib/accounts';
 import { categoriesApi } from '@/lib/categories';
 import { investmentsApi } from '@/lib/investments';

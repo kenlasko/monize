@@ -83,7 +83,7 @@ describe("LoanMortgageAccountService", () => {
 
     it("should create a loan account with correct fields", async () => {
       const dto = makeValidLoanDto();
-      const result = await service.createLoanAccount(userId, dto);
+      await service.createLoanAccount(userId, dto);
 
       expect(accountsRepository.create).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -299,7 +299,7 @@ describe("LoanMortgageAccountService", () => {
 
     it("should create a mortgage account with correct fields", async () => {
       const dto = makeValidMortgageDto();
-      const result = await service.createMortgageAccount(userId, dto);
+      await service.createMortgageAccount(userId, dto);
 
       expect(accountsRepository.create).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -368,54 +368,54 @@ describe("LoanMortgageAccountService", () => {
       const dto = makeValidMortgageDto();
       delete (dto as any).mortgagePaymentFrequency;
 
-      await expect(
-        service.createMortgageAccount(userId, dto),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.createMortgageAccount(userId, dto)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it("should throw BadRequestException when amortizationMonths is missing", async () => {
       const dto = makeValidMortgageDto();
       delete dto.amortizationMonths;
 
-      await expect(
-        service.createMortgageAccount(userId, dto),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.createMortgageAccount(userId, dto)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it("should throw BadRequestException when interestRate is undefined", async () => {
       const dto = makeValidMortgageDto();
       delete dto.interestRate;
 
-      await expect(
-        service.createMortgageAccount(userId, dto),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.createMortgageAccount(userId, dto)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it("should throw BadRequestException when institution is missing", async () => {
       const dto = makeValidMortgageDto();
       delete dto.institution;
 
-      await expect(
-        service.createMortgageAccount(userId, dto),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.createMortgageAccount(userId, dto)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it("should throw BadRequestException when paymentStartDate is missing", async () => {
       const dto = makeValidMortgageDto();
       delete (dto as any).paymentStartDate;
 
-      await expect(
-        service.createMortgageAccount(userId, dto),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.createMortgageAccount(userId, dto)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it("should throw BadRequestException when sourceAccountId is missing", async () => {
       const dto = makeValidMortgageDto();
       delete (dto as any).sourceAccountId;
 
-      await expect(
-        service.createMortgageAccount(userId, dto),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.createMortgageAccount(userId, dto)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it("should map ACCELERATED_BIWEEKLY to BIWEEKLY for scheduled frequency", async () => {
@@ -539,9 +539,7 @@ describe("LoanMortgageAccountService", () => {
   });
 
   describe("updateMortgageRate", () => {
-    const makeMortgageAccount = (
-      overrides: Partial<Account> = {},
-    ): Account =>
+    const makeMortgageAccount = (overrides: Partial<Account> = {}): Account =>
       ({
         id: "acc-mortgage",
         userId,

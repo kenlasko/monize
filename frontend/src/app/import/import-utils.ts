@@ -1,4 +1,4 @@
-import { ParsedQifResponse, CategoryMapping, AccountMapping, SecurityMapping, ImportResult, DateFormat } from '@/lib/import';
+import { ParsedQifResponse } from '@/lib/import';
 import { Account, AccountType } from '@/types/account';
 
 export type ImportStep = 'upload' | 'selectAccount' | 'mapCategories' | 'mapSecurities' | 'mapAccounts' | 'review' | 'complete';

@@ -1,10 +1,6 @@
 import { ImportRegularProcessorService } from "./import-regular-processor.service";
 import { ImportContext } from "./import-context";
-import {
-  TransactionStatus,
-  Transaction,
-} from "../transactions/entities/transaction.entity";
-import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
+import { TransactionStatus } from "../transactions/entities/transaction.entity";
 import { AccountType } from "../accounts/entities/account.entity";
 import { Payee } from "../payees/entities/payee.entity";
 import { ImportResultDto } from "./dto/import.dto";
@@ -412,7 +408,7 @@ describe("ImportRegularProcessorService", () => {
       const ctx = makeContext();
 
       ctx.queryRunner.manager.findOne.mockImplementation(
-        (entity: any, opts: any) => {
+        (entity: any, _opts: any) => {
           if (entity === Payee) return Promise.resolve(null);
           // For account balance update
           return Promise.resolve({ id: accountId, currentBalance: 500 });
@@ -474,7 +470,7 @@ describe("ImportRegularProcessorService", () => {
       const ctx = makeContext({ loanCategoryMap });
 
       ctx.queryRunner.manager.findOne.mockImplementation(
-        (entity: any, opts: any) => {
+        (_entity: any, opts: any) => {
           if (opts?.where?.id === "acc-loan") {
             return Promise.resolve({
               id: "acc-loan",
@@ -528,7 +524,7 @@ describe("ImportRegularProcessorService", () => {
       );
 
       ctx.queryRunner.manager.findOne.mockImplementation(
-        (entity: any, opts: any) => {
+        (_entity: any, opts: any) => {
           if (opts?.where?.id === "acc-savings") {
             return Promise.resolve({
               id: "acc-savings",
@@ -578,7 +574,7 @@ describe("ImportRegularProcessorService", () => {
       );
 
       ctx.queryRunner.manager.findOne.mockImplementation(
-        (entity: any, opts: any) => {
+        (_entity: any, opts: any) => {
           if (opts?.where?.id === "acc-usd") {
             return Promise.resolve({
               id: "acc-usd",
@@ -622,7 +618,7 @@ describe("ImportRegularProcessorService", () => {
       );
 
       ctx.queryRunner.manager.findOne.mockImplementation(
-        (entity: any, opts: any) => {
+        (_entity: any, opts: any) => {
           if (opts?.where?.id === "acc-loan") {
             return Promise.resolve({
               id: "acc-loan",
@@ -669,7 +665,7 @@ describe("ImportRegularProcessorService", () => {
       );
 
       ctx.queryRunner.manager.findOne.mockImplementation(
-        (entity: any, opts: any) => {
+        (_entity: any, opts: any) => {
           if (opts?.where?.id === accountId) {
             return Promise.resolve({
               id: accountId,
@@ -712,7 +708,7 @@ describe("ImportRegularProcessorService", () => {
       );
 
       ctx.queryRunner.manager.findOne.mockImplementation(
-        (entity: any, opts: any) => {
+        (_entity: any, opts: any) => {
           if (opts?.where?.id === accountId) {
             return Promise.resolve({
               id: accountId,

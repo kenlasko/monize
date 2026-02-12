@@ -28,21 +28,6 @@ describe("AnomalyReportsService", () => {
     createdAt: new Date("2025-01-01"),
   };
 
-  const mockChildCategory: Category = {
-    id: "cat-groceries",
-    userId: mockUserId,
-    parentId: "cat-food",
-    parent: null,
-    children: [],
-    name: "Groceries",
-    description: null,
-    icon: null,
-    color: "#33FF57",
-    isIncome: false,
-    isSystem: false,
-    createdAt: new Date("2025-01-02"),
-  };
-
   interface MockExpenseRow {
     id: string;
     transaction_date: Date;
@@ -139,9 +124,7 @@ describe("AnomalyReportsService", () => {
   // ---------------------------------------------------------------------------
   describe("getSpendingAnomalies", () => {
     it("returns empty result when fewer than 10 transactions exist", async () => {
-      transactionsRepository.query.mockResolvedValue(
-        buildRawExpenses(5, 20),
-      );
+      transactionsRepository.query.mockResolvedValue(buildRawExpenses(5, 20));
 
       const result = await service.getSpendingAnomalies(mockUserId);
 
@@ -152,9 +135,7 @@ describe("AnomalyReportsService", () => {
     });
 
     it("returns empty anomalies when exactly 10 uniform transactions exist", async () => {
-      transactionsRepository.query.mockResolvedValue(
-        buildRawExpenses(10, 50),
-      );
+      transactionsRepository.query.mockResolvedValue(buildRawExpenses(10, 50));
       categoriesRepository.find.mockResolvedValue([]);
 
       const result = await service.getSpendingAnomalies(mockUserId);
@@ -221,9 +202,7 @@ describe("AnomalyReportsService", () => {
       // At least one anomaly should be detected
       expect(result.anomalies.length).toBeGreaterThan(0);
       // The 5000 transaction should be high severity (z-score will be very large)
-      const huge = result.anomalies.find(
-        (a) => a.transactionId === "tx-huge",
-      );
+      const huge = result.anomalies.find((a) => a.transactionId === "tx-huge");
       expect(huge).toBeDefined();
       expect(huge!.severity).toBe("high");
     });
@@ -242,9 +221,7 @@ describe("AnomalyReportsService", () => {
 
     it("uses custom threshold parameter", async () => {
       // With a very high threshold (e.g., 100), even outliers won't be anomalies
-      const raw = buildRawExpenses(20, 50, [
-        { id: "tx-big", amount: 200 },
-      ]);
+      const raw = buildRawExpenses(20, 50, [{ id: "tx-big", amount: 200 }]);
       transactionsRepository.query.mockResolvedValue(raw);
       categoriesRepository.find.mockResolvedValue([]);
 
@@ -259,11 +236,7 @@ describe("AnomalyReportsService", () => {
     it("detects category spending spikes", async () => {
       const now = new Date();
       const currentMonthDate = new Date(now.getFullYear(), now.getMonth(), 5);
-      const prevMonthDate = new Date(
-        now.getFullYear(),
-        now.getMonth() - 1,
-        15,
-      );
+      const prevMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 15);
 
       // Build enough transactions for the minimum 10 check
       const raw: MockExpenseRow[] = [];
@@ -308,9 +281,7 @@ describe("AnomalyReportsService", () => {
 
       const result = await service.getSpendingAnomalies(mockUserId);
 
-      const spike = result.anomalies.find(
-        (a) => a.type === "category_spike",
-      );
+      const spike = result.anomalies.find((a) => a.type === "category_spike");
       expect(spike).toBeDefined();
       expect(spike!.categoryName).toBe("Food & Dining");
       expect(spike!.percentChange).toBeGreaterThan(100);
@@ -319,11 +290,7 @@ describe("AnomalyReportsService", () => {
     it("skips category spike when previous month spending is below 50", async () => {
       const now = new Date();
       const currentMonthDate = new Date(now.getFullYear(), now.getMonth(), 5);
-      const prevMonthDate = new Date(
-        now.getFullYear(),
-        now.getMonth() - 1,
-        15,
-      );
+      const prevMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 15);
 
       const raw = buildRawExpenses(15, 20);
 
@@ -385,9 +352,7 @@ describe("AnomalyReportsService", () => {
 
       const result = await service.getSpendingAnomalies(mockUserId);
 
-      const newPayee = result.anomalies.find(
-        (a) => a.type === "unusual_payee",
-      );
+      const newPayee = result.anomalies.find((a) => a.type === "unusual_payee");
       expect(newPayee).toBeDefined();
       expect(newPayee!.payeeName).toBe("New Shop");
       expect(newPayee!.amount).toBe(150);
@@ -761,11 +726,7 @@ describe("AnomalyReportsService", () => {
     it("assigns correct severity for category spike percentages", async () => {
       const now = new Date();
       const currentMonthDate = new Date(now.getFullYear(), now.getMonth(), 5);
-      const prevMonthDate = new Date(
-        now.getFullYear(),
-        now.getMonth() - 1,
-        15,
-      );
+      const prevMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 15);
 
       const raw = buildRawExpenses(15, 20);
 
@@ -796,9 +757,7 @@ describe("AnomalyReportsService", () => {
 
       const result = await service.getSpendingAnomalies(mockUserId);
 
-      const spike = result.anomalies.find(
-        (a) => a.type === "category_spike",
-      );
+      const spike = result.anomalies.find((a) => a.type === "category_spike");
       expect(spike).toBeDefined();
       expect(spike!.severity).toBe("high");
       expect(spike!.percentChange).toBe(400);
