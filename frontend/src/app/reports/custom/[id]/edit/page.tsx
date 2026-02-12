@@ -81,7 +81,7 @@ function EditCustomReportContent({ reportId }: { reportId: string }) {
   if (isLoading) {
     return (
       <PageLayout>
-        <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-12 py-8">
+        <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-12 pt-6 pb-8">
           <div className="flex items-center justify-center py-12">
             <LoadingSpinner />
           </div>
@@ -97,7 +97,7 @@ function EditCustomReportContent({ reportId }: { reportId: string }) {
   return (
     <PageLayout>
 
-      <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-12 py-8">
+      <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-12 pt-6 pb-8">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">

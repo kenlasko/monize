@@ -2,7 +2,7 @@
 
 import { use } from 'react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
-import { AppHeader } from '@/components/layout/AppHeader';
+import { PageLayout } from '@/components/layout/PageLayout';
 import { CustomReportViewer } from '@/components/reports/CustomReportViewer';
 
 interface PageProps {
@@ -14,13 +14,11 @@ export default function ViewCustomReportPage({ params }: PageProps) {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <AppHeader />
-
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <PageLayout>
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-8">
           <CustomReportViewer reportId={id} />
         </main>
-      </div>
+      </PageLayout>
     </ProtectedRoute>
   );
 }

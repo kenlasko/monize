@@ -148,7 +148,7 @@ function PayeesContent() {
 
   return (
     <PageLayout>
-      <main className="px-4 sm:px-6 lg:px-12 py-8">
+      <main className="px-4 sm:px-6 lg:px-12 pt-6 pb-8">
         <PageHeader
           title="Payees"
           subtitle="Manage your payees and their default categories"

@@ -322,7 +322,7 @@ function InvestmentsContent() {
   return (
     <PageLayout>
 
-      <main className="px-4 sm:px-6 lg:px-12 py-8">
+      <main className="px-4 sm:px-6 lg:px-12 pt-6 pb-8">
         <div className="sm:px-0">
           {/* Header */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">

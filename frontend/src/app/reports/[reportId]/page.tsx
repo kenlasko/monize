@@ -2,7 +2,10 @@
 
 import { Suspense, lazy } from 'react';
 import { useParams } from 'next/navigation';
-import { AppHeader } from '@/components/layout/AppHeader';
+import Link from 'next/link';
+import { PageLayout } from '@/components/layout/PageLayout';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { Button } from '@/components/ui/Button';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 
 const reportComponents: Record<string, React.LazyExoticComponent<React.ComponentType>> = {
@@ -63,6 +66,30 @@ const reportNames: Record<string, string> = {
   'bill-payment-history': 'Bill Payment History',
 };
 
+const reportDescriptions: Record<string, string> = {
+  'spending-by-category': 'See where your money goes with a breakdown of expenses by category over time.',
+  'spending-by-payee': 'Track how much you spend with each merchant or vendor over time.',
+  'monthly-spending-trend': 'View your spending patterns month over month to identify trends.',
+  'income-vs-expenses': 'Compare your income to expenses and track your savings rate over time.',
+  'income-by-source': 'Break down your income streams to understand where your money comes from.',
+  'net-worth': 'Track your total net worth including all accounts, assets, and liabilities.',
+  'account-balances': 'View balance history for all your accounts over a selected time period.',
+  'cash-flow': 'Detailed view of money coming in and going out across all accounts.',
+  'tax-summary': 'Annual summary of tax-deductible expenses and taxable income.',
+  'year-over-year': 'Compare this year to previous years to track financial progress.',
+  'debt-payoff-timeline': 'Visualize your debt reduction progress with projections for payoff dates.',
+  'loan-amortization': 'Detailed payment schedules for mortgages and loans with principal vs interest breakdown.',
+  'investment-performance': 'Track portfolio returns, gains/losses, and asset allocation over time.',
+  'dividend-income': 'Track passive income from dividends, interest, and other investment returns.',
+  'recurring-expenses': 'Identify and monitor subscriptions, memberships, and recurring charges.',
+  'spending-anomalies': 'Detect unusually large transactions and spending spikes that need attention.',
+  'weekend-weekday-spending': 'Analyze your spending patterns based on day of week to understand habits.',
+  'uncategorized-transactions': 'Find and categorize transactions that are missing categories.',
+  'duplicate-transactions': 'Identify potential duplicate entries that may need review or deletion.',
+  'upcoming-bills': 'Visual calendar of scheduled transactions and upcoming bill due dates.',
+  'bill-payment-history': 'Track payment patterns and history for recurring bills and scheduled transactions.',
+};
+
 function ReportSkeleton() {
   return (
     <div className="space-y-6">
@@ -97,12 +124,12 @@ function ReportContent() {
 
   const ReportComponent = reportComponents[reportId];
   const reportName = reportNames[reportId];
+  const reportDescription = reportDescriptions[reportId];
 
   if (!ReportComponent) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <AppHeader />
-        <div className="px-4 sm:px-6 lg:px-12 py-8">
+      <PageLayout>
+        <div className="px-4 sm:px-6 lg:px-12 pt-6 pb-8">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-8 text-center">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
               Report Not Found
@@ -112,38 +139,26 @@ function ReportContent() {
             </p>
           </div>
         </div>
-      </div>
+      </PageLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <AppHeader />
-
-      {/* Page Header */}
-      <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50">
-        <div className="px-4 sm:px-6 lg:px-12 py-6">
-          <div className="flex items-center gap-4">
-            <a
-              href="/reports"
-              className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-            >
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </a>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{reportName}</h1>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="px-4 sm:px-6 lg:px-12 py-8">
+    <PageLayout>
+      <main className="px-4 sm:px-6 lg:px-12 pt-6 pb-8">
+        <PageHeader
+          title={reportName}
+          subtitle={reportDescription}
+          actions={
+            <Link href="/reports">
+              <Button variant="outline">Back to Reports</Button>
+            </Link>
+          }
+        />
         <Suspense fallback={<ReportSkeleton />}>
           <ReportComponent />
         </Suspense>
-      </div>
-    </div>
+      </main>
+    </PageLayout>
   );
 }

@@ -34,7 +34,7 @@ function NewCustomReportContent() {
   return (
     <PageLayout>
 
-      <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-12 py-8">
+      <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-12 pt-6 pb-8">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
             Create Custom Report

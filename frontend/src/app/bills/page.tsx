@@ -407,7 +407,7 @@ function BillsContent() {
   return (
     <PageLayout>
 
-      <main className="px-4 sm:px-6 lg:px-12 py-8">
+      <main className="px-4 sm:px-6 lg:px-12 pt-6 pb-8">
         <PageHeader
           title="Bills & Deposits"
           subtitle="Manage your recurring transactions and scheduled payments"
