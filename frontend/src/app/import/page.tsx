@@ -25,79 +25,20 @@ import { Category } from '@/types/category';
 import { Security } from '@/types/investment';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { createLogger } from '@/lib/logger';
+import {
+  ImportStep,
+  MatchConfidence,
+  ImportFileData,
+  BulkImportResult,
+  suggestAccountType,
+  formatAccountType,
+  formatCategoryPath,
+  isInvestmentBrokerageAccount,
+  ACCOUNT_TYPE_OPTIONS,
+  SECURITY_TYPE_OPTIONS,
+} from './import-utils';
 
 const logger = createLogger('Import');
-
-type ImportStep = 'upload' | 'selectAccount' | 'mapCategories' | 'mapSecurities' | 'mapAccounts' | 'review' | 'complete';
-
-function suggestAccountType(name: string): string {
-  const n = name.toLowerCase();
-  if (/visa|mastercard|amex|credit\s*card|credit/.test(n)) return 'CREDIT_CARD';
-  if (/savings?/.test(n)) return 'SAVINGS';
-  if (/mortgage/.test(n)) return 'MORTGAGE';
-  if (/line\s*of\s*credit|\bloc\b/.test(n)) return 'LINE_OF_CREDIT';
-  if (/loan/.test(n)) return 'LOAN';
-  if (/invest|brokerage|rrsp|tfsa|401k|ira/.test(n)) return 'INVESTMENT';
-  if (/\bcash\b/.test(n)) return 'CASH';
-  if (/\basset\b/.test(n)) return 'ASSET';
-  return 'CHEQUING';
-}
-
-// Data for each file in bulk import
-type MatchConfidence = 'exact' | 'partial' | 'type' | 'none';
-
-interface ImportFileData {
-  fileName: string;
-  fileContent: string;
-  parsedData: ParsedQifResponse;
-  selectedAccountId: string;
-  matchConfidence: MatchConfidence;
-}
-
-// Combined import result for bulk imports
-interface BulkImportResult {
-  totalImported: number;
-  totalSkipped: number;
-  totalErrors: number;
-  categoriesCreated: number;
-  accountsCreated: number;
-  payeesCreated: number;
-  securitiesCreated: number;
-  fileResults: Array<{
-    fileName: string;
-    accountName: string;
-    imported: number;
-    skipped: number;
-    errors: number;
-    errorMessages: string[];
-  }>;
-}
-
-const formatAccountType = (type: AccountType): string => {
-  const labels: Record<AccountType, string> = {
-    CHEQUING: 'Chequing',
-    SAVINGS: 'Savings',
-    CREDIT_CARD: 'Credit Card',
-    INVESTMENT: 'Investment',
-    LOAN: 'Loan',
-    MORTGAGE: 'Mortgage',
-    CASH: 'Cash',
-    LINE_OF_CREDIT: 'Line of Credit',
-    ASSET: 'Asset',
-    OTHER: 'Other',
-  };
-  return labels[type] || type;
-};
-
-// Format QIF category path to have spaces after colons (e.g., "Bills:Cell Phone" -> "Bills: Cell Phone")
-const formatCategoryPath = (path: string): string => {
-  return path.replace(/:/g, ': ').replace(/:  /g, ': ');
-};
-
-// Check if an account is specifically an investment brokerage account
-const isInvestmentBrokerageAccount = (account: Account): boolean => {
-  return account.accountSubType === 'INVESTMENT_BROKERAGE';
-};
 
 export default function ImportPage() {
   return (
@@ -979,18 +920,7 @@ function ImportContent() {
     (isBulkImport && importFiles.some((f) => f.parsedData.accountType === 'INVESTMENT'));
   const shouldShowMapAccounts = accountMappings.length > 0 && !isInvestmentImport;
 
-  const accountTypeOptions = [
-    { value: 'CHEQUING', label: 'Chequing' },
-    { value: 'SAVINGS', label: 'Savings' },
-    { value: 'CREDIT_CARD', label: 'Credit Card' },
-    { value: 'INVESTMENT', label: 'Investment' },
-    { value: 'LOAN', label: 'Loan' },
-    { value: 'LINE_OF_CREDIT', label: 'Line of Credit' },
-    { value: 'MORTGAGE', label: 'Mortgage' },
-    { value: 'CASH', label: 'Cash' },
-    { value: 'ASSET', label: 'Asset' },
-    { value: 'OTHER', label: 'Other' },
-  ];
+  const accountTypeOptions = ACCOUNT_TYPE_OPTIONS;
 
   // Build currency options: default currency first, then alphabetical
   const currencyOptions = useMemo(() => {
@@ -1009,15 +939,7 @@ function ImportContent() {
     ];
   };
 
-  const securityTypeOptions = [
-    { value: 'STOCK', label: 'Stock' },
-    { value: 'ETF', label: 'ETF' },
-    { value: 'MUTUAL_FUND', label: 'Mutual Fund' },
-    { value: 'BOND', label: 'Bond' },
-    { value: 'GIC', label: 'GIC' },
-    { value: 'CASH', label: 'Cash/Money Market' },
-    { value: 'OTHER', label: 'Other' },
-  ];
+  const securityTypeOptions = SECURITY_TYPE_OPTIONS;
 
   const preselectedAccount = accounts.find((a) => a.id === preselectedAccountId);
 

@@ -5,6 +5,8 @@ import { ScheduledTransactionSplit } from "./entities/scheduled-transaction-spli
 import { ScheduledTransactionOverride } from "./entities/scheduled-transaction-override.entity";
 import { Account } from "../accounts/entities/account.entity";
 import { ScheduledTransactionsService } from "./scheduled-transactions.service";
+import { ScheduledTransactionOverrideService } from "./scheduled-transaction-override.service";
+import { ScheduledTransactionLoanService } from "./scheduled-transaction-loan.service";
 import { ScheduledTransactionsController } from "./scheduled-transactions.controller";
 import { AccountsModule } from "../accounts/accounts.module";
 import { TransactionsModule } from "../transactions/transactions.module";
@@ -20,7 +22,11 @@ import { TransactionsModule } from "../transactions/transactions.module";
     forwardRef(() => AccountsModule),
     TransactionsModule,
   ],
-  providers: [ScheduledTransactionsService],
+  providers: [
+    ScheduledTransactionsService,
+    ScheduledTransactionOverrideService,
+    ScheduledTransactionLoanService,
+  ],
   controllers: [ScheduledTransactionsController],
   exports: [ScheduledTransactionsService],
 })

@@ -9,6 +9,7 @@ import { Transaction } from "../transactions/entities/transaction.entity";
 import { UserPreference } from "../users/entities/user-preference.entity";
 import { SecuritiesService } from "./securities.service";
 import { SecurityPriceService } from "./security-price.service";
+import { YahooFinanceService } from "./yahoo-finance.service";
 import { HoldingsService } from "./holdings.service";
 import { InvestmentTransactionsService } from "./investment-transactions.service";
 import { PortfolioService } from "./portfolio.service";
@@ -40,6 +41,7 @@ import { NetWorthModule } from "../net-worth/net-worth.module";
   providers: [
     SecuritiesService,
     SecurityPriceService,
+    YahooFinanceService,
     HoldingsService,
     InvestmentTransactionsService,
     PortfolioService,

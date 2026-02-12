@@ -5,6 +5,10 @@ import { TransactionSplit } from "./entities/transaction-split.entity";
 import { Category } from "../categories/entities/category.entity";
 import { InvestmentTransaction } from "../securities/entities/investment-transaction.entity";
 import { TransactionsService } from "./transactions.service";
+import { TransactionSplitService } from "./transaction-split.service";
+import { TransactionTransferService } from "./transaction-transfer.service";
+import { TransactionReconciliationService } from "./transaction-reconciliation.service";
+import { TransactionAnalyticsService } from "./transaction-analytics.service";
 import { TransactionsController } from "./transactions.controller";
 import { AccountsModule } from "../accounts/accounts.module";
 import { PayeesModule } from "../payees/payees.module";
@@ -22,7 +26,13 @@ import { NetWorthModule } from "../net-worth/net-worth.module";
     forwardRef(() => NetWorthModule),
     PayeesModule,
   ],
-  providers: [TransactionsService],
+  providers: [
+    TransactionsService,
+    TransactionSplitService,
+    TransactionTransferService,
+    TransactionReconciliationService,
+    TransactionAnalyticsService,
+  ],
   controllers: [TransactionsController],
   exports: [TransactionsService],
 })

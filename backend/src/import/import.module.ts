@@ -2,6 +2,9 @@ import { Module, forwardRef } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { ImportController } from "./import.controller";
 import { ImportService } from "./import.service";
+import { ImportEntityCreatorService } from "./import-entity-creator.service";
+import { ImportInvestmentProcessorService } from "./import-investment-processor.service";
+import { ImportRegularProcessorService } from "./import-regular-processor.service";
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
 import { Account } from "../accounts/entities/account.entity";
@@ -31,7 +34,12 @@ import { CurrenciesModule } from "../currencies/currencies.module";
     forwardRef(() => CurrenciesModule),
   ],
   controllers: [ImportController],
-  providers: [ImportService],
+  providers: [
+    ImportService,
+    ImportEntityCreatorService,
+    ImportInvestmentProcessorService,
+    ImportRegularProcessorService,
+  ],
   exports: [ImportService],
 })
 export class ImportModule {}
