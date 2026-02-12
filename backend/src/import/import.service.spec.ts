@@ -29,6 +29,7 @@ import { ImportInvestmentProcessorService } from "./import-investment-processor.
 import { ImportRegularProcessorService } from "./import-regular-processor.service";
 
 
+
 // Mock the qif-parser module so we can control its return values
 jest.mock("./qif-parser", () => ({
   parseQif: jest.fn(),

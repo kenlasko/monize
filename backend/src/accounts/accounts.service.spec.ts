@@ -117,6 +117,7 @@ describe("AccountsService", () => {
           useValue: scheduledTransactionsService,
         },
         { provide: NetWorthService, useValue: netWorthService },
+        LoanMortgageAccountService,
       ],
     }).compile();
 
