@@ -172,9 +172,6 @@ function BillsContent() {
     loadData();
   };
 
-  const handleFormCancel = () => {
-    close();
-  };
 
   const handleEditOccurrence = async (transaction: ScheduledTransaction) => {
     // Fetch existing overrides to show which dates are modified

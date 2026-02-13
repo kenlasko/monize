@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { cn, inputBaseClasses, inputErrorClasses } from '@/lib/utils';
 
 interface ComboboxOption {
@@ -49,6 +49,17 @@ export function Combobox({
   const isDeleteRef = useRef(false);
   const isNavigatingRef = useRef(false);
   const prevFilterTextRef = useRef('');
+  const pendingSelectionRef = useRef<{ start: number; end: number } | null>(null);
+
+  // Apply autocomplete selection synchronously after DOM update,
+  // before the browser processes any new keystrokes
+  useLayoutEffect(() => {
+    if (pendingSelectionRef.current && inputRef.current) {
+      const { start, end } = pendingSelectionRef.current;
+      inputRef.current.setSelectionRange(start, end);
+      pendingSelectionRef.current = null;
+    }
+  });
 
   // Find selected option label when value changes (only if not currently typing)
   useEffect(() => {
@@ -146,9 +157,7 @@ export function Combobox({
       );
       if (prefixMatch) {
         setInputValue(prefixMatch.label);
-        requestAnimationFrame(() => {
-          inputRef.current?.setSelectionRange(newValue.length, prefixMatch.label.length);
-        });
+        pendingSelectionRef.current = { start: newValue.length, end: prefixMatch.label.length };
         isDeleteRef.current = false;
         return;
       }

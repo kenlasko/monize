@@ -27,29 +27,6 @@ vi.mock('@/lib/logger', () => ({
   }),
 }));
 
-const mockUsers = [
-  {
-    id: 'user-1',
-    email: 'admin@example.com',
-    firstName: 'Admin',
-    lastName: 'User',
-    role: 'admin',
-    isActive: true,
-    hasPassword: true,
-    createdAt: '2024-01-01T00:00:00Z',
-  },
-  {
-    id: 'user-2',
-    email: 'regular@example.com',
-    firstName: 'Regular',
-    lastName: 'User',
-    role: 'user',
-    isActive: true,
-    hasPassword: true,
-    createdAt: '2024-02-01T00:00:00Z',
-  },
-];
-
 // Mock admin API
 vi.mock('@/lib/admin', () => ({
   adminApi: {
