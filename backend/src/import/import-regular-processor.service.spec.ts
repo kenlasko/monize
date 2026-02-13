@@ -890,15 +890,10 @@ describe("ImportRegularProcessorService", () => {
         description: "PENDING IMPORT",
       };
 
-      let qbCallCount = 0;
-      ctx.queryRunner.manager.createQueryBuilder.mockImplementation(() => {
-        qbCallCount++;
-        if (qbCallCount <= 2) {
-          return makeMockQueryBuilder(null);
-        }
-        // processTransfer cross-currency pending check
-        return makeMockQueryBuilder(existingPending);
-      });
+      // The first QB call is from processTransfer checking for existing pending transfer
+      ctx.queryRunner.manager.createQueryBuilder.mockReturnValue(
+        makeMockQueryBuilder(existingPending),
+      );
 
       ctx.queryRunner.manager.findOne.mockImplementation(
         (_entity: any, opts: any) => {
@@ -943,16 +938,11 @@ describe("ImportRegularProcessorService", () => {
         linkedTransactionId: null,
       };
 
-      let qbCallCount = 0;
-      ctx.queryRunner.manager.createQueryBuilder.mockImplementation(() => {
-        qbCallCount++;
-        if (qbCallCount <= 2) {
-          // isDuplicateTransfer checks
-          return makeMockQueryBuilder(null);
-        }
-        // processSplitTransfer existing linked check
-        return makeMockQueryBuilder(existingLinkedTx);
-      });
+      // The first QB call will be from processSplitTransfer (not isDuplicateTransfer
+      // since qifTx.isTransfer is not set), so return existingLinkedTx immediately
+      ctx.queryRunner.manager.createQueryBuilder.mockReturnValue(
+        makeMockQueryBuilder(existingLinkedTx),
+      );
 
       ctx.queryRunner.manager.findOne.mockImplementation(
         (_entity: any, opts: any) => {
@@ -1002,14 +992,10 @@ describe("ImportRegularProcessorService", () => {
         linkedTransactionId: null,
       };
 
-      let qbCallCount = 0;
-      ctx.queryRunner.manager.createQueryBuilder.mockImplementation(() => {
-        qbCallCount++;
-        if (qbCallCount <= 2) {
-          return makeMockQueryBuilder(null);
-        }
-        return makeMockQueryBuilder(existingLinkedTx);
-      });
+      // The first QB call will be from processSplitTransfer, so return existingLinkedTx immediately
+      ctx.queryRunner.manager.createQueryBuilder.mockReturnValue(
+        makeMockQueryBuilder(existingLinkedTx),
+      );
 
       ctx.queryRunner.manager.findOne.mockResolvedValue(null);
 
@@ -1055,14 +1041,10 @@ describe("ImportRegularProcessorService", () => {
         linkedTransactionId: "tx-placeholder",
       };
 
-      let qbCallCount = 0;
-      ctx.queryRunner.manager.createQueryBuilder.mockImplementation(() => {
-        qbCallCount++;
-        if (qbCallCount <= 2) {
-          return makeMockQueryBuilder(null);
-        }
-        return makeMockQueryBuilder(existingLinkedTx);
-      });
+      // The first QB call will be from processSplitTransfer, so return existingLinkedTx immediately
+      ctx.queryRunner.manager.createQueryBuilder.mockReturnValue(
+        makeMockQueryBuilder(existingLinkedTx),
+      );
 
       ctx.queryRunner.manager.findOne.mockImplementation(
         (_entity: any, opts: any) => {
@@ -1262,17 +1244,17 @@ describe("ImportRegularProcessorService", () => {
         description: "PENDING IMPORT note",
       };
 
+      // Two QB calls from the transfer split:
+      // 1st: check for existing linked (returns null)
+      // 2nd: check for pending transfer (returns pendingSplitTransfer)
       let qbCallCount = 0;
       ctx.queryRunner.manager.createQueryBuilder.mockImplementation(() => {
         qbCallCount++;
-        if (qbCallCount <= 2) {
+        if (qbCallCount === 1) {
+          // First QB call: existing linked check returns null
           return makeMockQueryBuilder(null);
         }
-        if (qbCallCount === 3) {
-          // First split: existing linked check returns null
-          return makeMockQueryBuilder(null);
-        }
-        // Second call for split: pending transfer check
+        // Second QB call: pending transfer check
         return makeMockQueryBuilder(pendingSplitTransfer);
       });
 
