@@ -12,7 +12,7 @@ export class CreateSecurityDto {
     description: "Full name of the security",
   })
   @IsString()
-  @MaxLength(255)
+  @MaxLength(100)
   name: string;
 
   @ApiProperty({

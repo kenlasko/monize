@@ -17,7 +17,7 @@ export class CreateCategoryDto {
   @ApiPropertyOptional({ description: "Category description" })
   @IsOptional()
   @IsString()
-  @MaxLength(255)
+  @MaxLength(500)
   description?: string;
 
   @ApiPropertyOptional({ description: "Icon name or emoji" })
