@@ -25,13 +25,13 @@ vi.mock('@/lib/utils', () => ({
 describe('UpcomingBills', () => {
   it('renders loading state', () => {
     render(<UpcomingBills scheduledTransactions={[]} isLoading={true} />);
-    expect(screen.getByText('Upcoming Bills')).toBeInTheDocument();
+    expect(screen.getByText('Upcoming Bills & Deposits')).toBeInTheDocument();
     expect(document.querySelector('.animate-pulse')).toBeInTheDocument();
   });
 
   it('renders empty state', () => {
     render(<UpcomingBills scheduledTransactions={[]} isLoading={false} />);
-    expect(screen.getByText('No bills due in the next 7 days.')).toBeInTheDocument();
+    expect(screen.getByText('No bills, deposits, or transfers due in the next 7 days.')).toBeInTheDocument();
   });
 
   it('renders upcoming bills within 7 days', () => {
@@ -54,7 +54,7 @@ describe('UpcomingBills', () => {
     render(<UpcomingBills scheduledTransactions={transactions} isLoading={false} />);
     expect(screen.getByText('Netflix')).toBeInTheDocument();
     expect(screen.getByText('Tomorrow')).toBeInTheDocument();
-    expect(screen.getByText('View all bills')).toBeInTheDocument();
+    expect(screen.getByText('View all bills & deposits')).toBeInTheDocument();
   });
 
   it('shows total due amount', () => {
