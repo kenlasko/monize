@@ -36,9 +36,7 @@ export class ImportInvestmentProcessorService {
     const qifAction = (qifTx.action || "").toLowerCase();
     const baseAction = qifAction.replace(/x$/, "");
     const action =
-      actionMap[baseAction] ||
-      actionMap[qifAction] ||
-      InvestmentAction.BUY;
+      actionMap[baseAction] || actionMap[qifAction] || InvestmentAction.BUY;
 
     // Resolve security
     let securityId = qifTx.security
@@ -46,10 +44,7 @@ export class ImportInvestmentProcessorService {
       : null;
 
     if (!securityId && qifTx.security) {
-      securityId = await this.autoCreateSecurity(
-        ctx,
-        qifTx.security,
-      );
+      securityId = await this.autoCreateSecurity(ctx, qifTx.security);
     }
 
     // Calculate amounts
@@ -61,11 +56,9 @@ export class ImportInvestmentProcessorService {
       : Math.round((quantity * price + commission) * 100) / 100;
 
     if (action === InvestmentAction.BUY) {
-      totalAmount =
-        Math.round((quantity * price + commission) * 100) / 100;
+      totalAmount = Math.round((quantity * price + commission) * 100) / 100;
     } else if (action === InvestmentAction.SELL) {
-      totalAmount =
-        Math.round((quantity * price - commission) * 100) / 100;
+      totalAmount = Math.round((quantity * price - commission) * 100) / 100;
     }
 
     // Create investment transaction
@@ -95,13 +88,7 @@ export class ImportInvestmentProcessorService {
     );
 
     // Update holdings
-    await this.processHoldings(
-      ctx,
-      action,
-      securityId,
-      quantity,
-      price,
-    );
+    await this.processHoldings(ctx, action, securityId, quantity, price);
 
     ctx.importResult.imported++;
   }
@@ -224,19 +211,14 @@ export class ImportInvestmentProcessorService {
       return act
         .split("_")
         .map(
-          (word) =>
-            word.charAt(0).toUpperCase() +
-            word.slice(1).toLowerCase(),
+          (word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase(),
         )
         .join(" ");
     };
     const actionLabel = formatAction(action);
 
     let payeeName: string;
-    if (
-      action === InvestmentAction.BUY ||
-      action === InvestmentAction.SELL
-    ) {
+    if (action === InvestmentAction.BUY || action === InvestmentAction.SELL) {
       payeeName = `${actionLabel}: ${securitySymbol} ${quantity} @ $${price.toFixed(2)}`;
     } else if (action === InvestmentAction.INTEREST) {
       payeeName = `${actionLabel}: $${totalAmount.toFixed(2)}`;

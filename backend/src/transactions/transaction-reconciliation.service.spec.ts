@@ -568,7 +568,11 @@ describe("TransactionReconciliationService", () => {
       });
       mockFindOne.mockResolvedValue(updatedTx);
 
-      const result = await service.unreconcile(transaction, userId, mockFindOne);
+      const result = await service.unreconcile(
+        transaction,
+        userId,
+        mockFindOne,
+      );
 
       expect(transactionsRepository.update).toHaveBeenCalledWith("tx-1", {
         status: TransactionStatus.CLEARED,
@@ -722,15 +726,12 @@ describe("TransactionReconciliationService", () => {
     it("filters transactions by userId, accountId, statuses, and date", async () => {
       mockQueryBuilder.getRawOne.mockResolvedValue({ sum: "0" });
 
-      await service.getReconciliationData(
-        userId,
-        accountId,
-        "2026-02-28",
-        500,
-      );
+      await service.getReconciliationData(userId, accountId, "2026-02-28", 500);
 
       // Verify createQueryBuilder was called 3 times (transactions, reconciled sum, cleared sum)
-      expect(transactionsRepository.createQueryBuilder).toHaveBeenCalledTimes(3);
+      expect(transactionsRepository.createQueryBuilder).toHaveBeenCalledTimes(
+        3,
+      );
 
       // Verify the main transactions query has proper filters
       expect(mockQueryBuilder.where).toHaveBeenCalledWith(
@@ -832,9 +833,7 @@ describe("TransactionReconciliationService", () => {
     });
 
     it("validates account ownership before proceeding", async () => {
-      accountsService.findOne.mockRejectedValue(
-        new Error("Account not found"),
-      );
+      accountsService.findOne.mockRejectedValue(new Error("Account not found"));
 
       await expect(
         service.bulkReconcile(userId, accountId, ["tx-1"], "2026-01-31"),
@@ -871,12 +870,7 @@ describe("TransactionReconciliationService", () => {
         makeTransaction({ id: "tx-1" }),
       ]);
 
-      await service.bulkReconcile(
-        userId,
-        accountId,
-        ["tx-1"],
-        "2026-02-15",
-      );
+      await service.bulkReconcile(userId, accountId, ["tx-1"], "2026-02-15");
 
       expect(mockQueryBuilder.where).toHaveBeenCalledWith(
         "transaction.id IN (:...ids)",
@@ -897,12 +891,7 @@ describe("TransactionReconciliationService", () => {
         makeTransaction({ id: "tx-1" }),
       ]);
 
-      await service.bulkReconcile(
-        userId,
-        accountId,
-        ["tx-1"],
-        "2026-03-15",
-      );
+      await service.bulkReconcile(userId, accountId, ["tx-1"], "2026-03-15");
 
       expect(mockQueryBuilder.set).toHaveBeenCalledWith({
         status: TransactionStatus.RECONCILED,

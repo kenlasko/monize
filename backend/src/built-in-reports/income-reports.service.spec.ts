@@ -170,7 +170,11 @@ describe("IncomeReportsService", () => {
 
     it("treats unknown category_id as uncategorized", async () => {
       transactionsRepository.query.mockResolvedValue([
-        { category_id: "nonexistent-id", currency_code: "USD", total: "300.00" },
+        {
+          category_id: "nonexistent-id",
+          currency_code: "USD",
+          total: "300.00",
+        },
       ]);
       categoriesRepository.find.mockResolvedValue([mockIncomeCategory]);
 
@@ -461,11 +465,7 @@ describe("IncomeReportsService", () => {
     it("passes startDate parameter when provided", async () => {
       transactionsRepository.query.mockResolvedValue([]);
 
-      await service.getIncomeVsExpenses(
-        mockUserId,
-        "2025-06-01",
-        "2025-12-31",
-      );
+      await service.getIncomeVsExpenses(mockUserId, "2025-06-01", "2025-12-31");
 
       const queryCall = transactionsRepository.query.mock.calls[0];
       expect(queryCall[1]).toEqual([mockUserId, "2025-12-31", "2025-06-01"]);

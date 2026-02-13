@@ -745,7 +745,9 @@ describe("DataQualityReportsService", () => {
       // Both are high confidence; sorted by amount descending within same confidence
       expect(result.groups[0].confidence).toBe("high");
       expect(result.groups[1].confidence).toBe("high");
-      expect(Math.abs(result.groups[0].transactions[0].amount)).toBeGreaterThanOrEqual(
+      expect(
+        Math.abs(result.groups[0].transactions[0].amount),
+      ).toBeGreaterThanOrEqual(
         Math.abs(result.groups[1].transactions[0].amount),
       );
     });

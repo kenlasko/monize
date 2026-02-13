@@ -18,7 +18,11 @@ import { NetWorthModule } from "../net-worth/net-worth.module";
     forwardRef(() => ScheduledTransactionsModule),
     forwardRef(() => NetWorthModule),
   ],
-  providers: [AccountsService, LoanMortgageAccountService, MortgageReminderService],
+  providers: [
+    AccountsService,
+    LoanMortgageAccountService,
+    MortgageReminderService,
+  ],
   controllers: [AccountsController],
   exports: [AccountsService],
 })

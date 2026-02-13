@@ -785,7 +785,16 @@ describe("TransactionsService", () => {
       transactionsRepository.createQueryBuilder.mockReturnValue(mockQb);
       investmentTxRepository.find.mockResolvedValue([]);
 
-      await service.findAll("user-1", undefined, undefined, undefined, undefined, undefined, 3, 25);
+      await service.findAll(
+        "user-1",
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        3,
+        25,
+      );
 
       expect(mockQb.skip).toHaveBeenCalledWith(50); // (3-1) * 25
       expect(mockQb.take).toHaveBeenCalledWith(25);
@@ -797,7 +806,16 @@ describe("TransactionsService", () => {
       transactionsRepository.createQueryBuilder.mockReturnValue(mockQb);
       investmentTxRepository.find.mockResolvedValue([]);
 
-      await service.findAll("user-1", undefined, undefined, undefined, undefined, undefined, -5, -10);
+      await service.findAll(
+        "user-1",
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        -5,
+        -10,
+      );
 
       expect(mockQb.skip).toHaveBeenCalledWith(0); // (max(1,-5) - 1) * max(1,-10) = 0
       expect(mockQb.take).toHaveBeenCalledWith(1);
@@ -809,7 +827,16 @@ describe("TransactionsService", () => {
       transactionsRepository.createQueryBuilder.mockReturnValue(mockQb);
       investmentTxRepository.find.mockResolvedValue([]);
 
-      await service.findAll("user-1", undefined, undefined, undefined, undefined, undefined, 1, 999999);
+      await service.findAll(
+        "user-1",
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        1,
+        999999,
+      );
 
       expect(mockQb.take).toHaveBeenCalledWith(100000);
     });
@@ -856,7 +883,9 @@ describe("TransactionsService", () => {
         { id: "cat-1-child", parentId: "cat-1" },
       ]);
 
-      await service.findAll("user-1", undefined, undefined, undefined, ["cat-1"]);
+      await service.findAll("user-1", undefined, undefined, undefined, [
+        "cat-1",
+      ]);
 
       expect(categoriesRepository.find).toHaveBeenCalled();
       expect(mockQb.setParameter).toHaveBeenCalledWith(
@@ -871,7 +900,9 @@ describe("TransactionsService", () => {
       transactionsRepository.createQueryBuilder.mockReturnValue(mockQb);
       investmentTxRepository.find.mockResolvedValue([]);
 
-      await service.findAll("user-1", undefined, undefined, undefined, ["uncategorized"]);
+      await service.findAll("user-1", undefined, undefined, undefined, [
+        "uncategorized",
+      ]);
 
       expect(mockQb.andWhere).toHaveBeenCalledWith(
         expect.stringContaining("transaction.categoryId IS NULL"),
@@ -884,7 +915,9 @@ describe("TransactionsService", () => {
       transactionsRepository.createQueryBuilder.mockReturnValue(mockQb);
       investmentTxRepository.find.mockResolvedValue([]);
 
-      await service.findAll("user-1", undefined, undefined, undefined, ["transfer"]);
+      await service.findAll("user-1", undefined, undefined, undefined, [
+        "transfer",
+      ]);
 
       expect(mockQb.andWhere).toHaveBeenCalledWith(
         expect.stringContaining("transaction.isTransfer = true"),
@@ -918,7 +951,14 @@ describe("TransactionsService", () => {
       transactionsRepository.createQueryBuilder.mockReturnValue(mockQb);
       investmentTxRepository.find.mockResolvedValue([]);
 
-      await service.findAll("user-1", undefined, undefined, undefined, undefined, ["payee-1"]);
+      await service.findAll(
+        "user-1",
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        ["payee-1"],
+      );
 
       expect(mockQb.andWhere).toHaveBeenCalledWith(
         "transaction.payeeId IN (:...payeeIds)",
@@ -933,8 +973,16 @@ describe("TransactionsService", () => {
       investmentTxRepository.find.mockResolvedValue([]);
 
       await service.findAll(
-        "user-1", undefined, undefined, undefined, undefined, undefined,
-        1, 50, false, "groceries",
+        "user-1",
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        1,
+        50,
+        false,
+        "groceries",
       );
 
       expect(mockQb.andWhere).toHaveBeenCalledWith(
@@ -950,13 +998,22 @@ describe("TransactionsService", () => {
       investmentTxRepository.find.mockResolvedValue([]);
 
       await service.findAll(
-        "user-1", undefined, undefined, undefined, undefined, undefined,
-        1, 50, false, "   ",
+        "user-1",
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        1,
+        50,
+        false,
+        "   ",
       );
 
       // search ILIKE should not be called for whitespace-only
       const searchCalls = mockQb.andWhere.mock.calls.filter(
-        (call: any[]) => typeof call[0] === "string" && call[0].includes("ILIKE"),
+        (call: any[]) =>
+          typeof call[0] === "string" && call[0].includes("ILIKE"),
       );
       expect(searchCalls.length).toBe(0);
     });
@@ -981,8 +1038,15 @@ describe("TransactionsService", () => {
       investmentTxRepository.find.mockResolvedValue([]);
 
       await service.findAll(
-        "user-1", undefined, undefined, undefined, undefined, undefined,
-        1, 50, true,
+        "user-1",
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        1,
+        50,
+        true,
       );
 
       const investmentCalls = mockQb.andWhere.mock.calls.filter(
@@ -1098,8 +1162,14 @@ describe("TransactionsService", () => {
       });
 
       const result = await service.findAll(
-        "user-1", ["account-1"], undefined, undefined, undefined, undefined,
-        2, 50,
+        "user-1",
+        ["account-1"],
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        2,
+        50,
       );
 
       // startingBalance = currentBalance - sumBefore = 800 - (-200) = 1000
@@ -1132,8 +1202,20 @@ describe("TransactionsService", () => {
       const mockQb = createMockQueryBuilder();
       mockQb.getManyAndCount.mockResolvedValue([
         [
-          { id: "tx-1", isCleared: false, isReconciled: false, isVoid: false, splits: [] },
-          { id: "tx-2", isCleared: false, isReconciled: false, isVoid: false, splits: [] },
+          {
+            id: "tx-1",
+            isCleared: false,
+            isReconciled: false,
+            isVoid: false,
+            splits: [],
+          },
+          {
+            id: "tx-2",
+            isCleared: false,
+            isReconciled: false,
+            isVoid: false,
+            splits: [],
+          },
         ],
         100,
       ]);
@@ -1141,8 +1223,14 @@ describe("TransactionsService", () => {
       investmentTxRepository.find.mockResolvedValue([]);
 
       const result = await service.findAll(
-        "user-1", undefined, undefined, undefined, undefined, undefined,
-        2, 10,
+        "user-1",
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        2,
+        10,
       );
 
       expect(result.pagination).toEqual({
@@ -1157,15 +1245,29 @@ describe("TransactionsService", () => {
     it("sets hasMore to false on last page", async () => {
       const mockQb = createMockQueryBuilder();
       mockQb.getManyAndCount.mockResolvedValue([
-        [{ id: "tx-1", isCleared: false, isReconciled: false, isVoid: false, splits: [] }],
+        [
+          {
+            id: "tx-1",
+            isCleared: false,
+            isReconciled: false,
+            isVoid: false,
+            splits: [],
+          },
+        ],
         5,
       ]);
       transactionsRepository.createQueryBuilder.mockReturnValue(mockQb);
       investmentTxRepository.find.mockResolvedValue([]);
 
       const result = await service.findAll(
-        "user-1", undefined, undefined, undefined, undefined, undefined,
-        1, 10,
+        "user-1",
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        1,
+        10,
       );
 
       expect(result.pagination.hasMore).toBe(false);
@@ -1181,8 +1283,8 @@ describe("TransactionsService", () => {
       countQb.getCount.mockResolvedValue(75); // 75 transactions come before
 
       transactionsRepository.createQueryBuilder
-        .mockReturnValueOnce(mockQb)     // main query
-        .mockReturnValueOnce(countQb);   // count query
+        .mockReturnValueOnce(mockQb) // main query
+        .mockReturnValueOnce(countQb); // count query
 
       transactionsRepository.findOne.mockResolvedValue({
         id: "target-tx",
@@ -1194,8 +1296,17 @@ describe("TransactionsService", () => {
       investmentTxRepository.find.mockResolvedValue([]);
 
       const result = await service.findAll(
-        "user-1", undefined, undefined, undefined, undefined, undefined,
-        1, 50, false, undefined, "target-tx",
+        "user-1",
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        1,
+        50,
+        false,
+        undefined,
+        "target-tx",
       );
 
       // 75 transactions before / 50 per page + 1 = page 2
@@ -1210,8 +1321,17 @@ describe("TransactionsService", () => {
       investmentTxRepository.find.mockResolvedValue([]);
 
       const result = await service.findAll(
-        "user-1", undefined, undefined, undefined, undefined, undefined,
-        3, 50, false, undefined, "nonexistent-tx",
+        "user-1",
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        3,
+        50,
+        false,
+        undefined,
+        "nonexistent-tx",
       );
 
       expect(result.pagination.page).toBe(3);
@@ -1238,8 +1358,17 @@ describe("TransactionsService", () => {
       investmentTxRepository.find.mockResolvedValue([]);
 
       await service.findAll(
-        "user-1", ["acc-1"], "2026-01-01", "2026-12-31", undefined,
-        ["payee-1"], 1, 50, false, "term", "target-tx",
+        "user-1",
+        ["acc-1"],
+        "2026-01-01",
+        "2026-12-31",
+        undefined,
+        ["payee-1"],
+        1,
+        50,
+        false,
+        "term",
+        "target-tx",
       );
 
       // Count query should have the same filters
@@ -1315,9 +1444,9 @@ describe("TransactionsService", () => {
       clearedQb.getRawOne.mockResolvedValue({ sum: -50 });
 
       transactionsRepository.createQueryBuilder
-        .mockReturnValueOnce(txQb)       // unreconciled transactions query
+        .mockReturnValueOnce(txQb) // unreconciled transactions query
         .mockReturnValueOnce(reconciledQb) // reconciled sum query
-        .mockReturnValueOnce(clearedQb);   // cleared sum query
+        .mockReturnValueOnce(clearedQb); // cleared sum query
 
       const result = await service.getReconciliationData(
         "user-1",
@@ -1381,9 +1510,17 @@ describe("TransactionsService", () => {
         .mockReturnValueOnce(reconciledQb)
         .mockReturnValueOnce(clearedQb);
 
-      await service.getReconciliationData("user-1", "account-1", "2026-01-31", 0);
+      await service.getReconciliationData(
+        "user-1",
+        "account-1",
+        "2026-01-31",
+        0,
+      );
 
-      expect(accountsService.findOne).toHaveBeenCalledWith("user-1", "account-1");
+      expect(accountsService.findOne).toHaveBeenCalledWith(
+        "user-1",
+        "account-1",
+      );
     });
 
     it("filters transactions up to statement date", async () => {
@@ -1400,7 +1537,12 @@ describe("TransactionsService", () => {
         .mockReturnValueOnce(reconciledQb)
         .mockReturnValueOnce(clearedQb);
 
-      await service.getReconciliationData("user-1", "account-1", "2026-02-15", 0);
+      await service.getReconciliationData(
+        "user-1",
+        "account-1",
+        "2026-02-15",
+        0,
+      );
 
       expect(txQb.andWhere).toHaveBeenCalledWith(
         "transaction.transactionDate <= :statementDate",
@@ -1460,7 +1602,12 @@ describe("TransactionsService", () => {
       transactionsRepository.createQueryBuilder.mockReturnValue(verifyQb);
 
       await expect(
-        service.bulkReconcile("user-1", "account-1", ["tx-1", "tx-2"], "2026-01-31"),
+        service.bulkReconcile(
+          "user-1",
+          "account-1",
+          ["tx-1", "tx-2"],
+          "2026-01-31",
+        ),
       ).rejects.toThrow(BadRequestException);
     });
 
@@ -1475,7 +1622,7 @@ describe("TransactionsService", () => {
       updateQb.execute.mockResolvedValue({ affected: 2 });
 
       transactionsRepository.createQueryBuilder
-        .mockReturnValueOnce(verifyQb)  // verification query
+        .mockReturnValueOnce(verifyQb) // verification query
         .mockReturnValueOnce(updateQb); // update query
 
       const result = await service.bulkReconcile(
@@ -1486,7 +1633,10 @@ describe("TransactionsService", () => {
       );
 
       expect(result).toEqual({ reconciled: 2 });
-      expect(accountsService.findOne).toHaveBeenCalledWith("user-1", "account-1");
+      expect(accountsService.findOne).toHaveBeenCalledWith(
+        "user-1",
+        "account-1",
+      );
     });
   });
 
@@ -1608,7 +1758,9 @@ describe("TransactionsService", () => {
       mockQb.getRawMany.mockResolvedValue([]);
       transactionsRepository.createQueryBuilder.mockReturnValue(mockQb);
 
-      await service.getSummary("user-1", undefined, undefined, undefined, ["uncategorized"]);
+      await service.getSummary("user-1", undefined, undefined, undefined, [
+        "uncategorized",
+      ]);
 
       expect(mockQb.leftJoin).toHaveBeenCalledWith(
         "transaction.account",
@@ -1624,7 +1776,9 @@ describe("TransactionsService", () => {
       mockQb.getRawMany.mockResolvedValue([]);
       transactionsRepository.createQueryBuilder.mockReturnValue(mockQb);
 
-      await service.getSummary("user-1", undefined, undefined, undefined, ["transfer"]);
+      await service.getSummary("user-1", undefined, undefined, undefined, [
+        "transfer",
+      ]);
 
       expect(mockQb.andWhere).toHaveBeenCalledWith(
         expect.stringContaining("transaction.isTransfer = true"),
@@ -1640,7 +1794,9 @@ describe("TransactionsService", () => {
         { id: "cat-child", parentId: "cat-1" },
       ]);
 
-      await service.getSummary("user-1", undefined, undefined, undefined, ["cat-1"]);
+      await service.getSummary("user-1", undefined, undefined, undefined, [
+        "cat-1",
+      ]);
 
       expect(mockQb.leftJoin).toHaveBeenCalledWith(
         "transaction.splits",
@@ -1657,7 +1813,14 @@ describe("TransactionsService", () => {
       mockQb.getRawMany.mockResolvedValue([]);
       transactionsRepository.createQueryBuilder.mockReturnValue(mockQb);
 
-      await service.getSummary("user-1", undefined, undefined, undefined, undefined, ["payee-1"]);
+      await service.getSummary(
+        "user-1",
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        ["payee-1"],
+      );
 
       expect(mockQb.andWhere).toHaveBeenCalledWith(
         "transaction.payeeId IN (:...payeeIds)",
@@ -1671,7 +1834,12 @@ describe("TransactionsService", () => {
       transactionsRepository.createQueryBuilder.mockReturnValue(mockQb);
 
       await service.getSummary(
-        "user-1", undefined, undefined, undefined, undefined, undefined,
+        "user-1",
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
         "test search",
       );
 
@@ -1715,8 +1883,18 @@ describe("TransactionsService", () => {
       transactionsRepository.findOne.mockResolvedValue(mockTx);
 
       const mockSplits = [
-        { id: "split-1", transactionId: "tx-1", amount: -60, categoryId: "cat-1" },
-        { id: "split-2", transactionId: "tx-1", amount: -40, categoryId: "cat-2" },
+        {
+          id: "split-1",
+          transactionId: "tx-1",
+          amount: -60,
+          categoryId: "cat-1",
+        },
+        {
+          id: "split-2",
+          transactionId: "tx-1",
+          amount: -40,
+          categoryId: "cat-2",
+        },
       ];
       splitsRepository.find.mockResolvedValue(mockSplits);
 
@@ -1764,7 +1942,9 @@ describe("TransactionsService", () => {
 
       await service.updateSplits("user-1", "tx-1", newSplits as any);
 
-      expect(splitsRepository.delete).toHaveBeenCalledWith({ transactionId: "tx-1" });
+      expect(splitsRepository.delete).toHaveBeenCalledWith({
+        transactionId: "tx-1",
+      });
       expect(splitsRepository.create).toHaveBeenCalledTimes(2);
       expect(transactionsRepository.update).toHaveBeenCalledWith("tx-1", {
         isSplit: true,
@@ -1829,7 +2009,10 @@ describe("TransactionsService", () => {
         { amount: -40, categoryId: "cat-2" },
       ] as any);
 
-      expect(accountsService.updateBalance).toHaveBeenCalledWith("account-2", -60);
+      expect(accountsService.updateBalance).toHaveBeenCalledWith(
+        "account-2",
+        -60,
+      );
       expect(transactionsRepository.remove).toHaveBeenCalledWith(oldLinkedTx);
     });
   });
@@ -1893,7 +2076,9 @@ describe("TransactionsService", () => {
           amount: -20,
           categoryId: "cat-1",
         } as any),
-      ).rejects.toThrow("Adding this split would exceed the transaction amount");
+      ).rejects.toThrow(
+        "Adding this split would exceed the transaction amount",
+      );
     });
 
     it("creates linked transaction for transfer splits", async () => {
@@ -1914,15 +2099,28 @@ describe("TransactionsService", () => {
       ];
       splitsRepository.find.mockResolvedValue(existingSplits);
 
-      const savedSplit = { id: "split-new", transactionId: "tx-1", amount: -40 };
+      const savedSplit = {
+        id: "split-new",
+        transactionId: "tx-1",
+        amount: -40,
+      };
       splitsRepository.save.mockResolvedValue(savedSplit);
 
       const linkedTx = { id: "linked-tx-1" };
       transactionsRepository.save.mockResolvedValue(linkedTx);
       transactionsRepository.create.mockReturnValue(linkedTx);
 
-      const targetAccount = { ...mockAccount, id: "account-2", name: "Savings", currencyCode: "USD" };
-      const sourceAccount = { ...mockAccount, id: "account-1", name: "Checking" };
+      const targetAccount = {
+        ...mockAccount,
+        id: "account-2",
+        name: "Savings",
+        currencyCode: "USD",
+      };
+      const sourceAccount = {
+        ...mockAccount,
+        id: "account-1",
+        name: "Checking",
+      };
       accountsService.findOne
         .mockResolvedValueOnce(mockTx) // findOne for the main tx
         .mockResolvedValueOnce(targetAccount)
@@ -1946,7 +2144,10 @@ describe("TransactionsService", () => {
           isTransfer: true,
         }),
       );
-      expect(accountsService.updateBalance).toHaveBeenCalledWith("account-2", 40);
+      expect(accountsService.updateBalance).toHaveBeenCalledWith(
+        "account-2",
+        40,
+      );
       expect(splitsRepository.update).toHaveBeenCalledWith("split-new", {
         linkedTransactionId: "linked-tx-1",
       });
@@ -1968,7 +2169,11 @@ describe("TransactionsService", () => {
         { id: "split-1", amount: -60, transactionId: "tx-1" },
       ]);
 
-      const savedSplit = { id: "split-new", transactionId: "tx-1", amount: -40 };
+      const savedSplit = {
+        id: "split-new",
+        transactionId: "tx-1",
+        amount: -40,
+      };
       splitsRepository.save.mockResolvedValue(savedSplit);
       splitsRepository.findOne.mockResolvedValue({
         ...savedSplit,
@@ -2003,7 +2208,11 @@ describe("TransactionsService", () => {
         { id: "split-2", amount: -30, transactionId: "tx-1" },
       ]);
 
-      const savedSplit = { id: "split-new", transactionId: "tx-1", amount: -30 };
+      const savedSplit = {
+        id: "split-new",
+        transactionId: "tx-1",
+        amount: -30,
+      };
       splitsRepository.save.mockResolvedValue(savedSplit);
       splitsRepository.findOne.mockResolvedValue({
         ...savedSplit,
@@ -2091,12 +2300,11 @@ describe("TransactionsService", () => {
         linkedTransactionId: "linked-tx-1",
         transferAccountId: "account-2",
       };
-      splitsRepository.findOne
-        .mockResolvedValueOnce(splitToRemove);
+      splitsRepository.findOne.mockResolvedValueOnce(splitToRemove);
 
       transactionsRepository.findOne
-        .mockResolvedValueOnce(mockTx)     // findOne for access check
-        .mockResolvedValueOnce(linkedTx);  // findOne for linked tx cleanup
+        .mockResolvedValueOnce(mockTx) // findOne for access check
+        .mockResolvedValueOnce(linkedTx); // findOne for linked tx cleanup
 
       // After removal, still 2 remaining
       splitsRepository.find.mockResolvedValue([
@@ -2106,7 +2314,10 @@ describe("TransactionsService", () => {
 
       await service.removeSplit("user-1", "tx-1", "split-1");
 
-      expect(accountsService.updateBalance).toHaveBeenCalledWith("account-2", -40);
+      expect(accountsService.updateBalance).toHaveBeenCalledWith(
+        "account-2",
+        -40,
+      );
       expect(transactionsRepository.remove).toHaveBeenCalledWith(linkedTx);
     });
 
@@ -2214,14 +2425,19 @@ describe("TransactionsService", () => {
       // 1. findOne for access check (removeSplit -> findOne)
       // 2. findOne for linked tx of last split
       transactionsRepository.findOne
-        .mockResolvedValueOnce(mockTx)           // removeSplit -> findOne
+        .mockResolvedValueOnce(mockTx) // removeSplit -> findOne
         .mockResolvedValueOnce(lastSplitLinkedTx); // linked tx of last split
 
       await service.removeSplit("user-1", "tx-1", "split-1");
 
       // Should clean up the linked transaction of the last remaining transfer split
-      expect(accountsService.updateBalance).toHaveBeenCalledWith("account-2", -50);
-      expect(transactionsRepository.remove).toHaveBeenCalledWith(lastSplitLinkedTx);
+      expect(accountsService.updateBalance).toHaveBeenCalledWith(
+        "account-2",
+        -50,
+      );
+      expect(transactionsRepository.remove).toHaveBeenCalledWith(
+        lastSplitLinkedTx,
+      );
       expect(transactionsRepository.update).toHaveBeenCalledWith("tx-1", {
         isSplit: false,
         categoryId: null, // Will be null since it was a transfer split
@@ -2257,7 +2473,9 @@ describe("TransactionsService", () => {
         ],
       } as any);
 
-      expect(splitsRepository.delete).toHaveBeenCalledWith({ transactionId: "tx-1" });
+      expect(splitsRepository.delete).toHaveBeenCalledWith({
+        transactionId: "tx-1",
+      });
       expect(splitsRepository.create).toHaveBeenCalledTimes(2);
       expect(transactionsRepository.update).toHaveBeenCalledWith(
         "tx-1",
@@ -2279,7 +2497,9 @@ describe("TransactionsService", () => {
         splits: [],
       } as any);
 
-      expect(splitsRepository.delete).toHaveBeenCalledWith({ transactionId: "tx-1" });
+      expect(splitsRepository.delete).toHaveBeenCalledWith({
+        transactionId: "tx-1",
+      });
       expect(transactionsRepository.update).toHaveBeenCalledWith(
         "tx-1",
         expect.objectContaining({ isSplit: false }),
@@ -2311,16 +2531,22 @@ describe("TransactionsService", () => {
 
       const newAccount = { ...mockAccount, id: "account-2", name: "Savings" };
       accountsService.findOne
-        .mockResolvedValueOnce(mockAccount)   // verify old account
-        .mockResolvedValueOnce(newAccount);   // verify new account
+        .mockResolvedValueOnce(mockAccount) // verify old account
+        .mockResolvedValueOnce(newAccount); // verify new account
 
       await service.update("user-1", "tx-1", {
         accountId: "account-2",
       } as any);
 
       // Should remove amount from old account and add to new account
-      expect(accountsService.updateBalance).toHaveBeenCalledWith("account-1", 50);  // remove from old
-      expect(accountsService.updateBalance).toHaveBeenCalledWith("account-2", -50); // add to new
+      expect(accountsService.updateBalance).toHaveBeenCalledWith(
+        "account-1",
+        50,
+      ); // remove from old
+      expect(accountsService.updateBalance).toHaveBeenCalledWith(
+        "account-2",
+        -50,
+      ); // add to new
     });
   });
 
@@ -2389,11 +2615,23 @@ describe("TransactionsService", () => {
       await service.updateTransfer("user-1", "tx-from", { amount: 300 });
 
       // Revert old balances
-      expect(accountsService.updateBalance).toHaveBeenCalledWith("account-1", 200); // revert -200
-      expect(accountsService.updateBalance).toHaveBeenCalledWith("account-2", -200); // revert +200
+      expect(accountsService.updateBalance).toHaveBeenCalledWith(
+        "account-1",
+        200,
+      ); // revert -200
+      expect(accountsService.updateBalance).toHaveBeenCalledWith(
+        "account-2",
+        -200,
+      ); // revert +200
       // Apply new balances
-      expect(accountsService.updateBalance).toHaveBeenCalledWith("account-1", -300);
-      expect(accountsService.updateBalance).toHaveBeenCalledWith("account-2", 300);
+      expect(accountsService.updateBalance).toHaveBeenCalledWith(
+        "account-1",
+        -300,
+      );
+      expect(accountsService.updateBalance).toHaveBeenCalledWith(
+        "account-2",
+        300,
+      );
     });
 
     it("updates accounts and auto-updates payee names", async () => {
@@ -2605,18 +2843,29 @@ describe("TransactionsService", () => {
       await service.removeTransfer("user-1", "linked-tx-1");
 
       // Should revert balance for the other linked transaction
-      expect(accountsService.updateBalance).toHaveBeenCalledWith("account-3", -60);
-      expect(transactionsRepository.remove).toHaveBeenCalledWith(anotherLinkedTx);
+      expect(accountsService.updateBalance).toHaveBeenCalledWith(
+        "account-3",
+        -60,
+      );
+      expect(transactionsRepository.remove).toHaveBeenCalledWith(
+        anotherLinkedTx,
+      );
 
       // Should remove all splits
       expect(splitsRepository.remove).toHaveBeenCalledWith(allSplits);
 
       // Should revert parent transaction balance and remove
-      expect(accountsService.updateBalance).toHaveBeenCalledWith("account-1", 100);
+      expect(accountsService.updateBalance).toHaveBeenCalledWith(
+        "account-1",
+        100,
+      );
       expect(transactionsRepository.remove).toHaveBeenCalledWith(parentTx);
 
       // Should revert the linked transaction's own balance and remove it
-      expect(accountsService.updateBalance).toHaveBeenCalledWith("account-2", -40);
+      expect(accountsService.updateBalance).toHaveBeenCalledWith(
+        "account-2",
+        -40,
+      );
       expect(transactionsRepository.remove).toHaveBeenCalledWith(linkedTx);
     });
   });
@@ -2631,11 +2880,14 @@ describe("TransactionsService", () => {
         status: TransactionStatus.UNRECONCILED,
         isSplit: true,
         splits: [
-          { id: "split-1", linkedTransactionId: "linked-1", transferAccountId: "account-2" },
+          {
+            id: "split-1",
+            linkedTransactionId: "linked-1",
+            transferAccountId: "account-2",
+          },
         ],
       };
-      transactionsRepository.findOne
-        .mockResolvedValueOnce(mockTx);
+      transactionsRepository.findOne.mockResolvedValueOnce(mockTx);
 
       // deleteTransferSplitLinkedTransactions
       const transferSplits = [
@@ -2653,8 +2905,7 @@ describe("TransactionsService", () => {
         accountId: "account-2",
         amount: 40,
       };
-      transactionsRepository.findOne
-        .mockResolvedValueOnce(linkedTx);  // linked tx lookup
+      transactionsRepository.findOne.mockResolvedValueOnce(linkedTx); // linked tx lookup
 
       // No parent split (this is the parent itself)
       splitsRepository.findOne.mockResolvedValue(null);
@@ -2662,11 +2913,17 @@ describe("TransactionsService", () => {
       await service.remove("user-1", "tx-1");
 
       // Should revert linked tx balance
-      expect(accountsService.updateBalance).toHaveBeenCalledWith("account-2", -40);
+      expect(accountsService.updateBalance).toHaveBeenCalledWith(
+        "account-2",
+        -40,
+      );
       expect(transactionsRepository.remove).toHaveBeenCalledWith(linkedTx);
 
       // Should revert parent balance
-      expect(accountsService.updateBalance).toHaveBeenCalledWith("account-1", 100);
+      expect(accountsService.updateBalance).toHaveBeenCalledWith(
+        "account-1",
+        100,
+      );
     });
   });
 
@@ -2721,7 +2978,7 @@ describe("TransactionsService", () => {
       };
 
       transactionsRepository.findOne
-        .mockResolvedValueOnce(parentTx)      // parent transaction
+        .mockResolvedValueOnce(parentTx) // parent transaction
         .mockResolvedValueOnce(anotherChildTx); // other linked child
 
       splitsRepository.find.mockResolvedValue(allSplits);
@@ -2729,18 +2986,29 @@ describe("TransactionsService", () => {
       await service.remove("user-1", "child-tx");
 
       // Should clean up other linked transactions
-      expect(accountsService.updateBalance).toHaveBeenCalledWith("account-3", -60);
-      expect(transactionsRepository.remove).toHaveBeenCalledWith(anotherChildTx);
+      expect(accountsService.updateBalance).toHaveBeenCalledWith(
+        "account-3",
+        -60,
+      );
+      expect(transactionsRepository.remove).toHaveBeenCalledWith(
+        anotherChildTx,
+      );
 
       // Should remove all splits
       expect(splitsRepository.remove).toHaveBeenCalledWith(allSplits);
 
       // Should revert parent balance and remove
-      expect(accountsService.updateBalance).toHaveBeenCalledWith("account-1", 100);
+      expect(accountsService.updateBalance).toHaveBeenCalledWith(
+        "account-1",
+        100,
+      );
       expect(transactionsRepository.remove).toHaveBeenCalledWith(parentTx);
 
       // Should also revert the child tx balance and remove it
-      expect(accountsService.updateBalance).toHaveBeenCalledWith("account-2", -40);
+      expect(accountsService.updateBalance).toHaveBeenCalledWith(
+        "account-2",
+        -40,
+      );
       expect(transactionsRepository.remove).toHaveBeenCalledWith(childTx);
     });
 
@@ -2773,7 +3041,11 @@ describe("TransactionsService", () => {
       transactionsRepository.findOne.mockResolvedValueOnce(parentTx);
 
       splitsRepository.find.mockResolvedValue([
-        { id: "split-a", transactionId: "tx-parent", linkedTransactionId: "child-tx" },
+        {
+          id: "split-a",
+          transactionId: "tx-parent",
+          linkedTransactionId: "child-tx",
+        },
       ]);
 
       await service.remove("user-1", "child-tx");
@@ -2846,7 +3118,7 @@ describe("TransactionsService", () => {
         .mockResolvedValueOnce(sourceAccount); // for transfer split: source account
 
       transactionsRepository.save
-        .mockResolvedValueOnce({ id: "tx-1" })     // main transaction save
+        .mockResolvedValueOnce({ id: "tx-1" }) // main transaction save
         .mockResolvedValueOnce({ id: "linked-1" }); // linked transaction save
 
       transactionsRepository.findOne.mockResolvedValue({
@@ -2857,7 +3129,12 @@ describe("TransactionsService", () => {
         isSplit: true,
         status: TransactionStatus.UNRECONCILED,
         splits: [
-          { id: "split-1", amount: -100, transferAccountId: "account-2", linkedTransactionId: "linked-1" },
+          {
+            id: "split-1",
+            amount: -100,
+            transferAccountId: "account-2",
+            linkedTransactionId: "linked-1",
+          },
         ],
       });
 
@@ -2884,7 +3161,10 @@ describe("TransactionsService", () => {
         }),
       );
       // Should update target account balance
-      expect(accountsService.updateBalance).toHaveBeenCalledWith("account-2", 100);
+      expect(accountsService.updateBalance).toHaveBeenCalledWith(
+        "account-2",
+        100,
+      );
     });
   });
 
@@ -3022,8 +3302,14 @@ describe("TransactionsService", () => {
 
       await (splitService as any).deleteTransferSplitLinkedTransactions("tx-1");
 
-      expect(accountsService.updateBalance).toHaveBeenCalledWith("account-2", -60);
-      expect(accountsService.updateBalance).toHaveBeenCalledWith("account-3", -40);
+      expect(accountsService.updateBalance).toHaveBeenCalledWith(
+        "account-2",
+        -60,
+      );
+      expect(accountsService.updateBalance).toHaveBeenCalledWith(
+        "account-3",
+        -40,
+      );
       expect(transactionsRepository.remove).toHaveBeenCalledWith(linkedTx1);
       expect(transactionsRepository.remove).toHaveBeenCalledWith(linkedTx2);
     });
@@ -3163,16 +3449,22 @@ describe("TransactionsService", () => {
       };
 
       transactionsRepository.findOne
-        .mockResolvedValueOnce(fromTx)  // findOne for the transaction
-        .mockResolvedValueOnce(toTx);   // findOne for linked transaction
+        .mockResolvedValueOnce(fromTx) // findOne for the transaction
+        .mockResolvedValueOnce(toTx); // findOne for linked transaction
 
       // Not a parent split child
       splitsRepository.findOne.mockResolvedValue(null);
 
       await service.removeTransfer("user-1", "tx-from");
 
-      expect(accountsService.updateBalance).toHaveBeenCalledWith("account-1", 200);
-      expect(accountsService.updateBalance).toHaveBeenCalledWith("account-2", -200);
+      expect(accountsService.updateBalance).toHaveBeenCalledWith(
+        "account-1",
+        200,
+      );
+      expect(accountsService.updateBalance).toHaveBeenCalledWith(
+        "account-2",
+        -200,
+      );
       expect(transactionsRepository.remove).toHaveBeenCalledWith(toTx);
       expect(transactionsRepository.remove).toHaveBeenCalledWith(fromTx);
     });
@@ -3190,14 +3482,17 @@ describe("TransactionsService", () => {
 
       transactionsRepository.findOne
         .mockResolvedValueOnce(fromTx) // findOne for the transaction
-        .mockResolvedValueOnce(null);  // linked transaction not found
+        .mockResolvedValueOnce(null); // linked transaction not found
 
       splitsRepository.findOne.mockResolvedValue(null);
 
       await service.removeTransfer("user-1", "tx-from");
 
       // Should still revert the main transaction balance
-      expect(accountsService.updateBalance).toHaveBeenCalledWith("account-1", 200);
+      expect(accountsService.updateBalance).toHaveBeenCalledWith(
+        "account-1",
+        200,
+      );
       expect(transactionsRepository.remove).toHaveBeenCalledWith(fromTx);
     });
 
@@ -3217,7 +3512,10 @@ describe("TransactionsService", () => {
 
       await service.removeTransfer("user-1", "tx-1");
 
-      expect(accountsService.updateBalance).toHaveBeenCalledWith("account-1", 200);
+      expect(accountsService.updateBalance).toHaveBeenCalledWith(
+        "account-1",
+        200,
+      );
       expect(transactionsRepository.remove).toHaveBeenCalledWith(tx);
     });
   });

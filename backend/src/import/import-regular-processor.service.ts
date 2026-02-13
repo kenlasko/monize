@@ -1,8 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
-import {
-  Account,
-  AccountType,
-} from "../accounts/entities/account.entity";
+import { Account, AccountType } from "../accounts/entities/account.entity";
 import {
   Transaction,
   TransactionStatus,
@@ -102,9 +99,7 @@ export class ImportRegularProcessorService {
   ): Promise<boolean> {
     // Check for duplicate linked transfers from prior imports
     if (qifTx.isTransfer && qifTx.transferAccount) {
-      const mappedTransferAccountId = ctx.accountMap.get(
-        qifTx.transferAccount,
-      );
+      const mappedTransferAccountId = ctx.accountMap.get(qifTx.transferAccount);
       if (mappedTransferAccountId) {
         const existingLinkedTransfers = await ctx.queryRunner.manager
           .createQueryBuilder(Transaction, "t")
@@ -197,16 +192,12 @@ export class ImportRegularProcessorService {
     const newAmount = qifTx.amount;
     const balanceDiff = newAmount - oldAmount;
 
-    await ctx.queryRunner.manager.update(
-      Transaction,
-      pendingTransfer.id,
-      {
-        amount: newAmount,
-        description: qifTx.memo || null,
-        payeeName: qifTx.payee || pendingTransfer.payeeName,
-        referenceNumber: qifTx.number || pendingTransfer.referenceNumber,
-      },
-    );
+    await ctx.queryRunner.manager.update(Transaction, pendingTransfer.id, {
+      amount: newAmount,
+      description: qifTx.memo || null,
+      payeeName: qifTx.payee || pendingTransfer.payeeName,
+      referenceNumber: qifTx.number || pendingTransfer.referenceNumber,
+    });
 
     if (balanceDiff !== 0) {
       await updateAccountBalance(ctx.queryRunner, ctx.accountId, balanceDiff);
@@ -313,8 +304,7 @@ export class ImportRegularProcessorService {
         },
       );
 
-      const savedSplit =
-        await ctx.queryRunner.manager.save(transactionSplit);
+      const savedSplit = await ctx.queryRunner.manager.save(transactionSplit);
 
       if (splitTransferAccountId) {
         await this.processSplitTransfer(
@@ -392,21 +382,15 @@ export class ImportRegularProcessorService {
       const oldAmount = Number(pendingTransfer.amount);
       const balanceDiff = linkedAmount - oldAmount;
 
-      await ctx.queryRunner.manager.update(
-        Transaction,
-        pendingTransfer.id,
-        {
-          amount: linkedAmount,
-          description: split.memo || qifTx.memo || null,
-          linkedTransactionId: savedTx.id,
-        },
-      );
+      await ctx.queryRunner.manager.update(Transaction, pendingTransfer.id, {
+        amount: linkedAmount,
+        description: split.memo || qifTx.memo || null,
+        linkedTransactionId: savedTx.id,
+      });
 
-      await ctx.queryRunner.manager.update(
-        TransactionSplit,
-        savedSplit.id,
-        { linkedTransactionId: pendingTransfer.id },
-      );
+      await ctx.queryRunner.manager.update(TransactionSplit, savedSplit.id, {
+        linkedTransactionId: pendingTransfer.id,
+      });
 
       if (balanceDiff !== 0) {
         await updateAccountBalance(
@@ -437,17 +421,13 @@ export class ImportRegularProcessorService {
     const savedLinkedSplitTx =
       await ctx.queryRunner.manager.save(linkedSplitTx);
 
-    await ctx.queryRunner.manager.update(
-      TransactionSplit,
-      savedSplit.id,
-      { linkedTransactionId: savedLinkedSplitTx.id },
-    );
+    await ctx.queryRunner.manager.update(TransactionSplit, savedSplit.id, {
+      linkedTransactionId: savedLinkedSplitTx.id,
+    });
 
-    await ctx.queryRunner.manager.update(
-      Transaction,
-      savedLinkedSplitTx.id,
-      { linkedTransactionId: savedTx.id },
-    );
+    await ctx.queryRunner.manager.update(Transaction, savedLinkedSplitTx.id, {
+      linkedTransactionId: savedTx.id,
+    });
 
     await updateAccountBalance(
       ctx.queryRunner,
@@ -462,46 +442,34 @@ export class ImportRegularProcessorService {
     savedSplit: TransactionSplit,
     existingLinkedTx: Transaction,
   ): Promise<void> {
-    await ctx.queryRunner.manager.update(
-      TransactionSplit,
-      savedSplit.id,
-      { linkedTransactionId: existingLinkedTx.id },
-    );
+    await ctx.queryRunner.manager.update(TransactionSplit, savedSplit.id, {
+      linkedTransactionId: existingLinkedTx.id,
+    });
 
     if (!existingLinkedTx.linkedTransactionId) {
-      await ctx.queryRunner.manager.update(
-        Transaction,
-        existingLinkedTx.id,
-        { linkedTransactionId: savedTx.id },
-      );
+      await ctx.queryRunner.manager.update(Transaction, existingLinkedTx.id, {
+        linkedTransactionId: savedTx.id,
+      });
     }
 
     // Clean up placeholder transactions
     if (existingLinkedTx.linkedTransactionId) {
-      const placeholderTx = await ctx.queryRunner.manager.findOne(
-        Transaction,
-        {
-          where: {
-            id: existingLinkedTx.linkedTransactionId,
-            accountId: ctx.accountId,
-          },
+      const placeholderTx = await ctx.queryRunner.manager.findOne(Transaction, {
+        where: {
+          id: existingLinkedTx.linkedTransactionId,
+          accountId: ctx.accountId,
         },
-      );
+      });
       if (placeholderTx) {
         await updateAccountBalance(
           ctx.queryRunner,
           ctx.accountId,
           -Number(placeholderTx.amount),
         );
-        await ctx.queryRunner.manager.delete(
-          Transaction,
-          placeholderTx.id,
-        );
-        await ctx.queryRunner.manager.update(
-          Transaction,
-          existingLinkedTx.id,
-          { linkedTransactionId: null },
-        );
+        await ctx.queryRunner.manager.delete(Transaction, placeholderTx.id);
+        await ctx.queryRunner.manager.update(Transaction, existingLinkedTx.id, {
+          linkedTransactionId: null,
+        });
       }
     }
   }
@@ -524,8 +492,7 @@ export class ImportRegularProcessorService {
     });
 
     const isCrossCurrency =
-      targetAccount &&
-      targetAccount.currencyCode !== ctx.account.currencyCode;
+      targetAccount && targetAccount.currencyCode !== ctx.account.currencyCode;
 
     // Check for existing pending transfer (cross-currency)
     let existingPendingTransfer: Transaction | null = null;

@@ -168,10 +168,9 @@ describe("PayeesController", () => {
       const expected = { applied: 1 };
       mockPayeesService.applyCategorySuggestions.mockResolvedValue(expected);
 
-      const result = await controller.applyCategorySuggestions(
-        mockReq,
-        { assignments },
-      );
+      const result = await controller.applyCategorySuggestions(mockReq, {
+        assignments,
+      });
 
       expect(result).toEqual(expected);
       expect(mockPayeesService.applyCategorySuggestions).toHaveBeenCalledWith(

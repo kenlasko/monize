@@ -718,7 +718,10 @@ export class ScheduledTransactionsService {
     createDto: CreateScheduledTransactionOverrideDto,
   ): Promise<ScheduledTransactionOverride> {
     await this.findOne(userId, scheduledTransactionId);
-    return this.overrideService.createOverride(scheduledTransactionId, createDto);
+    return this.overrideService.createOverride(
+      scheduledTransactionId,
+      createDto,
+    );
   }
 
   async findOverrides(
@@ -735,7 +738,10 @@ export class ScheduledTransactionsService {
     overrideId: string,
   ): Promise<ScheduledTransactionOverride> {
     await this.findOne(userId, scheduledTransactionId);
-    return this.overrideService.findOverride(scheduledTransactionId, overrideId);
+    return this.overrideService.findOverride(
+      scheduledTransactionId,
+      overrideId,
+    );
   }
 
   async findOverrideByDate(

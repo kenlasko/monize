@@ -87,9 +87,7 @@ export class YahooFinanceService {
   /**
    * Fetch quote data from Yahoo Finance for multiple symbols
    */
-  async fetchQuotes(
-    symbols: string[],
-  ): Promise<Map<string, YahooQuoteResult>> {
+  async fetchQuotes(symbols: string[]): Promise<Map<string, YahooQuoteResult>> {
     const results = new Map<string, YahooQuoteResult>();
 
     if (symbols.length === 0) {
@@ -307,8 +305,7 @@ export class YahooFinanceService {
     const date = new Date();
     date.setHours(0, 0, 0, 0);
     const day = date.getDay();
-    if (day === 0)
-      date.setDate(date.getDate() - 2);
+    if (day === 0) date.setDate(date.getDate() - 2);
     else if (day === 6) date.setDate(date.getDate() - 1);
     return date;
   }

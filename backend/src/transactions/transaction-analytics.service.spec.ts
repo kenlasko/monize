@@ -240,12 +240,7 @@ describe("TransactionAnalyticsService", () => {
       });
 
       it("applies both startDate and endDate when provided", async () => {
-        await service.getSummary(
-          userId,
-          undefined,
-          "2026-01-01",
-          "2026-06-30",
-        );
+        await service.getSummary(userId, undefined, "2026-01-01", "2026-06-30");
 
         expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
           "transaction.transactionDate >= :startDate",
@@ -280,13 +275,9 @@ describe("TransactionAnalyticsService", () => {
           { id: "cat-2", parentId: null },
         ]);
 
-        await service.getSummary(
-          userId,
-          undefined,
-          undefined,
-          undefined,
-          ["cat-1"],
-        );
+        await service.getSummary(userId, undefined, undefined, undefined, [
+          "cat-1",
+        ]);
 
         expect(categoriesRepository.find).toHaveBeenCalledWith({
           where: { userId },
@@ -307,13 +298,9 @@ describe("TransactionAnalyticsService", () => {
       });
 
       it("handles uncategorized filter", async () => {
-        await service.getSummary(
-          userId,
-          undefined,
-          undefined,
-          undefined,
-          ["uncategorized"],
-        );
+        await service.getSummary(userId, undefined, undefined, undefined, [
+          "uncategorized",
+        ]);
 
         expect(mockQueryBuilder.leftJoin).toHaveBeenCalledWith(
           "transaction.account",
@@ -326,13 +313,9 @@ describe("TransactionAnalyticsService", () => {
       });
 
       it("handles transfer filter", async () => {
-        await service.getSummary(
-          userId,
-          undefined,
-          undefined,
-          undefined,
-          ["transfer"],
-        );
+        await service.getSummary(userId, undefined, undefined, undefined, [
+          "transfer",
+        ]);
 
         expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
           expect.stringContaining("transaction.isTransfer = true"),
@@ -344,13 +327,11 @@ describe("TransactionAnalyticsService", () => {
           { id: "cat-1", parentId: null },
         ]);
 
-        await service.getSummary(
-          userId,
-          undefined,
-          undefined,
-          undefined,
-          ["uncategorized", "transfer", "cat-1"],
-        );
+        await service.getSummary(userId, undefined, undefined, undefined, [
+          "uncategorized",
+          "transfer",
+          "cat-1",
+        ]);
 
         // All three conditions should be OR-ed together
         expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
@@ -371,13 +352,7 @@ describe("TransactionAnalyticsService", () => {
       });
 
       it("does not apply category filter when array is empty", async () => {
-        await service.getSummary(
-          userId,
-          undefined,
-          undefined,
-          undefined,
-          [],
-        );
+        await service.getSummary(userId, undefined, undefined, undefined, []);
 
         expect(categoriesRepository.find).not.toHaveBeenCalled();
       });
@@ -396,13 +371,10 @@ describe("TransactionAnalyticsService", () => {
 
         // Pass cat-1 and cat-child separately -- cat-child is a child of cat-1
         // so it should appear in the resolved set from cat-1 already
-        await service.getSummary(
-          userId,
-          undefined,
-          undefined,
-          undefined,
-          ["cat-1", "cat-child"],
-        );
+        await service.getSummary(userId, undefined, undefined, undefined, [
+          "cat-1",
+          "cat-child",
+        ]);
 
         const setParameterCall = mockQueryBuilder.setParameter.mock.calls.find(
           (call: unknown[]) => call[0] === "summaryCategoryIds",
@@ -633,13 +605,9 @@ describe("TransactionAnalyticsService", () => {
           { id: "cat-2", parentId: null },
         ]);
 
-        await service.getSummary(
-          userId,
-          undefined,
-          undefined,
-          undefined,
-          ["cat-1"],
-        );
+        await service.getSummary(userId, undefined, undefined, undefined, [
+          "cat-1",
+        ]);
 
         expect(mockQueryBuilder.setParameter).toHaveBeenCalledWith(
           "summaryCategoryIds",
@@ -656,13 +624,9 @@ describe("TransactionAnalyticsService", () => {
           { id: "great-grandchild", parentId: "grandchild-1" },
         ]);
 
-        await service.getSummary(
-          userId,
-          undefined,
-          undefined,
-          undefined,
-          ["root"],
-        );
+        await service.getSummary(userId, undefined, undefined, undefined, [
+          "root",
+        ]);
 
         expect(mockQueryBuilder.setParameter).toHaveBeenCalledWith(
           "summaryCategoryIds",
@@ -684,13 +648,10 @@ describe("TransactionAnalyticsService", () => {
           { id: "cat-b-child", parentId: "cat-b" },
         ]);
 
-        await service.getSummary(
-          userId,
-          undefined,
-          undefined,
-          undefined,
-          ["cat-a", "cat-b"],
-        );
+        await service.getSummary(userId, undefined, undefined, undefined, [
+          "cat-a",
+          "cat-b",
+        ]);
 
         expect(mockQueryBuilder.setParameter).toHaveBeenCalledWith(
           "summaryCategoryIds",
@@ -711,13 +672,9 @@ describe("TransactionAnalyticsService", () => {
           { id: "cat-2-child", parentId: "cat-2" },
         ]);
 
-        await service.getSummary(
-          userId,
-          undefined,
-          undefined,
-          undefined,
-          ["cat-1"],
-        );
+        await service.getSummary(userId, undefined, undefined, undefined, [
+          "cat-1",
+        ]);
 
         const setParameterCall = mockQueryBuilder.setParameter.mock.calls.find(
           (call: unknown[]) => call[0] === "summaryCategoryIds",

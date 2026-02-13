@@ -113,8 +113,7 @@ export class ComparisonReportsService {
       yearData.totals.income = Math.round(yearData.totals.income * 100) / 100;
       yearData.totals.expenses =
         Math.round(yearData.totals.expenses * 100) / 100;
-      yearData.totals.savings =
-        Math.round(yearData.totals.savings * 100) / 100;
+      yearData.totals.savings = Math.round(yearData.totals.savings * 100) / 100;
     });
 
     return {

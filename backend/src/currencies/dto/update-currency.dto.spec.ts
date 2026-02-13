@@ -1,7 +1,9 @@
 import { validate } from "class-validator";
 import { UpdateCurrencyDto } from "./update-currency.dto";
 
-function buildDto(overrides: Partial<UpdateCurrencyDto> = {}): UpdateCurrencyDto {
+function buildDto(
+  overrides: Partial<UpdateCurrencyDto> = {},
+): UpdateCurrencyDto {
   const dto = new UpdateCurrencyDto();
   Object.assign(dto, overrides);
   return dto;
@@ -78,5 +80,4 @@ describe("UpdateCurrencyDto", () => {
     expect(errors.length).toBeGreaterThan(0);
     expect(errors[0].property).toBe("isActive");
   });
-
 });

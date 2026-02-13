@@ -1,9 +1,6 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
-import {
-  NotFoundException,
-  BadRequestException,
-} from "@nestjs/common";
+import { NotFoundException, BadRequestException } from "@nestjs/common";
 import { ScheduledTransactionOverrideService } from "./scheduled-transaction-override.service";
 import { ScheduledTransactionOverride } from "./entities/scheduled-transaction-override.entity";
 import {
@@ -51,9 +48,9 @@ describe("ScheduledTransactionOverrideService", () => {
         id: "new-override-id",
         ...data,
       })),
-      save: jest.fn().mockImplementation((entity: any) =>
-        Promise.resolve(entity),
-      ),
+      save: jest
+        .fn()
+        .mockImplementation((entity: any) => Promise.resolve(entity)),
       find: jest.fn().mockResolvedValue([]),
       findOne: jest.fn().mockResolvedValue(null),
       remove: jest.fn().mockResolvedValue(undefined),
@@ -253,10 +250,7 @@ describe("ScheduledTransactionOverrideService", () => {
         overrideDate: "2025-02-15",
         amount: -100,
         isSplit: true,
-        splits: [
-          { amount: -60 },
-          { amount: -40 },
-        ],
+        splits: [{ amount: -60 }, { amount: -40 }],
       };
 
       await service.createOverride(scheduledTransactionId, dto);
@@ -384,11 +378,7 @@ describe("ScheduledTransactionOverrideService", () => {
         amount: -200,
       };
 
-      await service.updateOverride(
-        scheduledTransactionId,
-        overrideId,
-        dto,
-      );
+      await service.updateOverride(scheduledTransactionId, overrideId, dto);
 
       expect(overridesRepository.save).toHaveBeenCalledWith(
         expect.objectContaining({ amount: -200 }),
@@ -403,11 +393,7 @@ describe("ScheduledTransactionOverrideService", () => {
         description: "New description",
       };
 
-      await service.updateOverride(
-        scheduledTransactionId,
-        overrideId,
-        dto,
-      );
+      await service.updateOverride(scheduledTransactionId, overrideId, dto);
 
       expect(overridesRepository.save).toHaveBeenCalledWith(
         expect.objectContaining({ description: "New description" }),
@@ -422,11 +408,7 @@ describe("ScheduledTransactionOverrideService", () => {
         categoryId: null,
       };
 
-      await service.updateOverride(
-        scheduledTransactionId,
-        overrideId,
-        dto,
-      );
+      await service.updateOverride(scheduledTransactionId, overrideId, dto);
 
       expect(overridesRepository.save).toHaveBeenCalledWith(
         expect.objectContaining({ categoryId: null }),
@@ -445,11 +427,7 @@ describe("ScheduledTransactionOverrideService", () => {
         ],
       };
 
-      await service.updateOverride(
-        scheduledTransactionId,
-        overrideId,
-        dto,
-      );
+      await service.updateOverride(scheduledTransactionId, overrideId, dto);
 
       expect(overridesRepository.save).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -518,11 +496,7 @@ describe("ScheduledTransactionOverrideService", () => {
 
       const dto: UpdateScheduledTransactionOverrideDto = {};
 
-      await service.updateOverride(
-        scheduledTransactionId,
-        overrideId,
-        dto,
-      );
+      await service.updateOverride(scheduledTransactionId, overrideId, dto);
 
       expect(overridesRepository.save).toHaveBeenCalledWith(
         expect.objectContaining({

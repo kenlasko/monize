@@ -14,7 +14,9 @@ import {
 
 @Injectable()
 export class ScheduledTransactionOverrideService {
-  private readonly logger = new Logger(ScheduledTransactionOverrideService.name);
+  private readonly logger = new Logger(
+    ScheduledTransactionOverrideService.name,
+  );
 
   constructor(
     @InjectRepository(ScheduledTransactionOverride)
@@ -176,9 +178,7 @@ export class ScheduledTransactionOverrideService {
     await this.overridesRepository.remove(override);
   }
 
-  async removeAllOverrides(
-    scheduledTransactionId: string,
-  ): Promise<number> {
+  async removeAllOverrides(scheduledTransactionId: string): Promise<number> {
     const result = await this.overridesRepository.delete({
       scheduledTransactionId,
     });
@@ -214,8 +214,7 @@ export class ScheduledTransactionOverrideService {
       0,
     );
     const roundedSum = Math.round(splitsSum * 10000) / 10000;
-    const roundedAmount =
-      Math.round(Number(transactionAmount) * 10000) / 10000;
+    const roundedAmount = Math.round(Number(transactionAmount) * 10000) / 10000;
 
     if (roundedSum !== roundedAmount) {
       throw new BadRequestException(

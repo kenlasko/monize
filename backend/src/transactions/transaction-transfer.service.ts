@@ -467,8 +467,7 @@ export class TransactionTransferService {
     if (updateDto.referenceNumber !== undefined)
       data.referenceNumber = updateDto.referenceNumber ?? null;
     if (updateDto.status !== undefined) data.status = updateDto.status;
-    if (updateDto.toCurrencyCode)
-      data.currencyCode = updateDto.toCurrencyCode;
+    if (updateDto.toCurrencyCode) data.currencyCode = updateDto.toCurrencyCode;
     if (updateDto.exchangeRate) data.exchangeRate = updateDto.exchangeRate;
     if (updateDto.payeeId !== undefined)
       data.payeeId = updateDto.payeeId || null;

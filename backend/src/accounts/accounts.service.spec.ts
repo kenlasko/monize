@@ -953,10 +953,7 @@ describe("AccountsService", () => {
     });
 
     it("fetches loan categories when interestCategoryId not provided", async () => {
-      await service.createMortgageAccount(
-        "user-1",
-        baseMortgageDto as any,
-      );
+      await service.createMortgageAccount("user-1", baseMortgageDto as any);
 
       expect(categoriesService.findLoanCategories).toHaveBeenCalledWith(
         "user-1",
@@ -973,10 +970,7 @@ describe("AccountsService", () => {
     });
 
     it("stores mortgage balance as negative (liability)", async () => {
-      await service.createMortgageAccount(
-        "user-1",
-        baseMortgageDto as any,
-      );
+      await service.createMortgageAccount("user-1", baseMortgageDto as any);
 
       const createCall = accountsRepository.create.mock.calls[0][0];
       expect(createCall.openingBalance).toBe(-400000);
@@ -1011,20 +1005,14 @@ describe("AccountsService", () => {
     });
 
     it("sets termEndDate to null when termMonths not provided", async () => {
-      await service.createMortgageAccount(
-        "user-1",
-        baseMortgageDto as any,
-      );
+      await service.createMortgageAccount("user-1", baseMortgageDto as any);
 
       const createCall = accountsRepository.create.mock.calls[0][0];
       expect(createCall.termEndDate).toBeNull();
     });
 
     it("creates scheduled transaction for mortgage payments", async () => {
-      await service.createMortgageAccount(
-        "user-1",
-        baseMortgageDto as any,
-      );
+      await service.createMortgageAccount("user-1", baseMortgageDto as any);
 
       expect(scheduledTransactionsService.create).toHaveBeenCalledWith(
         "user-1",
@@ -1403,10 +1391,7 @@ describe("AccountsService", () => {
         .mockResolvedValueOnce(cashAccount)
         .mockResolvedValueOnce(brokerageAccount);
 
-      const result = await service.getInvestmentAccountPair(
-        "user-1",
-        "cash-1",
-      );
+      const result = await service.getInvestmentAccountPair("user-1", "cash-1");
 
       expect(result.cashAccount.id).toBe("cash-1");
       expect(result.brokerageAccount.id).toBe("brokerage-1");

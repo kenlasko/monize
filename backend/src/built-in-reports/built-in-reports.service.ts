@@ -49,11 +49,7 @@ export class BuiltInReportsService {
     startDate: string | undefined,
     endDate: string,
   ): Promise<SpendingByPayeeResponse> {
-    return this.spendingReports.getSpendingByPayee(
-      userId,
-      startDate,
-      endDate,
-    );
+    return this.spendingReports.getSpendingByPayee(userId, startDate, endDate);
   }
 
   getIncomeBySource(
@@ -110,10 +106,7 @@ export class BuiltInReportsService {
     return this.anomalyReports.getSpendingAnomalies(userId, threshold);
   }
 
-  getTaxSummary(
-    userId: string,
-    year: number,
-  ): Promise<TaxSummaryResponse> {
+  getTaxSummary(userId: string, year: number): Promise<TaxSummaryResponse> {
     return this.taxRecurringReports.getTaxSummary(userId, year);
   }
 

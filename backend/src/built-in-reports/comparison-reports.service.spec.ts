@@ -253,11 +253,7 @@ describe("ComparisonReportsService", () => {
       await service.getYearOverYear(mockUserId, 3);
 
       const queryCall = transactionsRepository.query.mock.calls[0];
-      expect(queryCall[1]).toEqual([
-        mockUserId,
-        currentYear - 2,
-        currentYear,
-      ]);
+      expect(queryCall[1]).toEqual([mockUserId, currentYear - 2, currentYear]);
     });
 
     it("rounds monetary values to 2 decimal places", async () => {
@@ -646,11 +642,7 @@ describe("ComparisonReportsService", () => {
       transactionsRepository.query.mockResolvedValue([]);
       categoriesRepository.find.mockResolvedValue([]);
 
-      await service.getWeekendVsWeekday(
-        mockUserId,
-        "2025-06-01",
-        "2025-12-31",
-      );
+      await service.getWeekendVsWeekday(mockUserId, "2025-06-01", "2025-12-31");
 
       const queryCall = transactionsRepository.query.mock.calls[0];
       expect(queryCall[1]).toEqual([mockUserId, "2025-12-31", "2025-06-01"]);
@@ -730,11 +722,7 @@ describe("ComparisonReportsService", () => {
       transactionsRepository.query.mockResolvedValue([]);
       categoriesRepository.find.mockResolvedValue([]);
 
-      await service.getWeekendVsWeekday(
-        mockUserId,
-        "2025-01-01",
-        "2025-12-31",
-      );
+      await service.getWeekendVsWeekday(mockUserId, "2025-01-01", "2025-12-31");
 
       expect(currencyService.getDefaultCurrency).toHaveBeenCalledWith(
         mockUserId,

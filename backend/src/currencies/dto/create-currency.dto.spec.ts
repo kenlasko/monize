@@ -1,7 +1,9 @@
 import { validate } from "class-validator";
 import { CreateCurrencyDto } from "./create-currency.dto";
 
-function buildDto(overrides: Partial<CreateCurrencyDto> = {}): CreateCurrencyDto {
+function buildDto(
+  overrides: Partial<CreateCurrencyDto> = {},
+): CreateCurrencyDto {
   const dto = new CreateCurrencyDto();
   dto.code = "CAD";
   dto.name = "Canadian Dollar";

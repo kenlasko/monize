@@ -54,7 +54,9 @@ describe("JwtStrategy", () => {
 
       expect(() => {
         new JwtStrategy(noSecretConfig as any, authService as any);
-      }).toThrow("JWT_SECRET environment variable must be at least 32 characters");
+      }).toThrow(
+        "JWT_SECRET environment variable must be at least 32 characters",
+      );
     });
 
     it("throws an error if JWT_SECRET is too short", () => {
@@ -64,7 +66,9 @@ describe("JwtStrategy", () => {
 
       expect(() => {
         new JwtStrategy(shortSecretConfig as any, authService as any);
-      }).toThrow("JWT_SECRET environment variable must be at least 32 characters");
+      }).toThrow(
+        "JWT_SECRET environment variable must be at least 32 characters",
+      );
     });
   });
 

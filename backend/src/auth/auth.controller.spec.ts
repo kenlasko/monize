@@ -1059,9 +1059,9 @@ describe("AuthController", () => {
       const res = mockRes();
       const expressReq = { cookies: {} } as any;
 
-      await expect(
-        controller.refresh(expressReq, res as any),
-      ).rejects.toThrow(UnauthorizedException);
+      await expect(controller.refresh(expressReq, res as any)).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
 
     it("sets new auth cookies on successful refresh", async () => {
@@ -1094,9 +1094,9 @@ describe("AuthController", () => {
       const res = mockRes();
       const expressReq = { cookies: { refresh_token: "bad-refresh" } } as any;
 
-      await expect(
-        controller.refresh(expressReq, res as any),
-      ).rejects.toThrow(UnauthorizedException);
+      await expect(controller.refresh(expressReq, res as any)).rejects.toThrow(
+        UnauthorizedException,
+      );
 
       expect(res.clearCookie).toHaveBeenCalledWith(
         "auth_token",

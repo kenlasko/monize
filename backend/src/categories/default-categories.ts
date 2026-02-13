@@ -61,14 +61,7 @@ export const DEFAULT_EXPENSE_CATEGORIES: DefaultCategoryDefinition[] = [
   },
   {
     name: "Bank Fees",
-    subcategories: [
-      "ATM",
-      "Annual",
-      "NSF",
-      "Other",
-      "Overdraft",
-      "Service",
-    ],
+    subcategories: ["ATM", "Annual", "NSF", "Other", "Overdraft", "Service"],
   },
   {
     name: "Bills",

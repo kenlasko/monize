@@ -89,7 +89,9 @@ export class CurrenciesService {
       where: { code },
     });
     if (existing) {
-      throw new ConflictException(`Currency with code "${code}" already exists`);
+      throw new ConflictException(
+        `Currency with code "${code}" already exists`,
+      );
     }
 
     const currency = this.currencyRepository.create({
@@ -195,9 +197,7 @@ export class CurrenciesService {
     return usage;
   }
 
-  async lookupCurrency(
-    query: string,
-  ): Promise<CurrencyLookupResult | null> {
+  async lookupCurrency(query: string): Promise<CurrencyLookupResult | null> {
     const trimmed = query.trim();
     if (trimmed.length < 2) return null;
 
@@ -240,8 +240,7 @@ export class CurrenciesService {
       // Find currency-type results (forex pairs like EURUSD=X)
       const currencyQuotes = quotes.filter(
         (q: any) =>
-          q.quoteType === "CURRENCY" ||
-          (q.symbol && q.symbol.includes("=X")),
+          q.quoteType === "CURRENCY" || (q.symbol && q.symbol.includes("=X")),
       );
 
       if (currencyQuotes.length === 0) {
@@ -355,5 +354,4 @@ export class CurrenciesService {
     }
     return originalQuery.toUpperCase();
   }
-
 }

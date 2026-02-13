@@ -61,7 +61,9 @@ describe("YahooFinanceService", () => {
       await service.fetchQuote("AAPL");
 
       expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining("query1.finance.yahoo.com/v8/finance/chart/AAPL"),
+        expect.stringContaining(
+          "query1.finance.yahoo.com/v8/finance/chart/AAPL",
+        ),
         expect.objectContaining({
           headers: expect.objectContaining({
             "User-Agent": expect.any(String),
@@ -226,7 +228,14 @@ describe("YahooFinanceService", () => {
 
     it("should use range=max for historical data", async () => {
       mockFetchResponse({
-        chart: { result: [{ timestamp: [1700000000], indicators: { quote: [{ close: [100] }] } }] },
+        chart: {
+          result: [
+            {
+              timestamp: [1700000000],
+              indicators: { quote: [{ close: [100] }] },
+            },
+          ],
+        },
       });
 
       await service.fetchHistorical("AAPL");
@@ -338,7 +347,15 @@ describe("YahooFinanceService", () => {
             {
               timestamp: [1700000000],
               indicators: {
-                quote: [{ close: [100], open: [99], high: [101], low: [98], volume: [1000] }],
+                quote: [
+                  {
+                    close: [100],
+                    open: [99],
+                    high: [101],
+                    low: [98],
+                    volume: [1000],
+                  },
+                ],
               },
             },
           ],

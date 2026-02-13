@@ -251,9 +251,7 @@ export class SecuritiesController {
       await this.securityPriceService.refreshPricesForSecurities(securityIds);
     if (result.updated > 0) {
       // Fire-and-forget: recalculate this user's investment snapshots
-      this.netWorthService
-        .recalculateAllAccounts(req.user.id)
-        .catch(() => {});
+      this.netWorthService.recalculateAllAccounts(req.user.id).catch(() => {});
     }
     return result;
   }
@@ -262,7 +260,8 @@ export class SecuritiesController {
   @UseGuards(RolesGuard)
   @Roles("admin")
   @ApiOperation({
-    summary: "Backfill historical prices for all active securities (admin only)",
+    summary:
+      "Backfill historical prices for all active securities (admin only)",
     description:
       "Fetches full price history from Yahoo Finance for all active securities",
   })

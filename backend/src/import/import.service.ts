@@ -127,12 +127,18 @@ export class ImportService {
     }
 
     // Build mapping lookups
-    const { categoryMap, categoriesToCreate, loanCategoryMap, loanAccountsToCreate } =
-      this.buildCategoryMappings(dto.categoryMappings);
-    const { accountMap, accountsToCreate } =
-      this.buildAccountMappings(dto.accountMappings);
-    const { securityMap, securitiesToCreate } =
-      this.buildSecurityMappings(dto.securityMappings);
+    const {
+      categoryMap,
+      categoriesToCreate,
+      loanCategoryMap,
+      loanAccountsToCreate,
+    } = this.buildCategoryMappings(dto.categoryMappings);
+    const { accountMap, accountsToCreate } = this.buildAccountMappings(
+      dto.accountMappings,
+    );
+    const { securityMap, securitiesToCreate } = this.buildSecurityMappings(
+      dto.securityMappings,
+    );
 
     // Validate mapped entity IDs belong to user
     await this.validateMappedEntities(
@@ -187,22 +193,44 @@ export class ImportService {
     try {
       // Create new entities
       await this.entityCreator.createCategories(
-        queryRunner, userId, categoriesToCreate, categoryMap, importResult,
+        queryRunner,
+        userId,
+        categoriesToCreate,
+        categoryMap,
+        importResult,
       );
       await this.entityCreator.createAccounts(
-        queryRunner, userId, accountsToCreate, accountMap, account, importResult,
+        queryRunner,
+        userId,
+        accountsToCreate,
+        accountMap,
+        account,
+        importResult,
       );
       await this.entityCreator.createLoanAccounts(
-        queryRunner, userId, loanAccountsToCreate, loanCategoryMap, account, importResult,
+        queryRunner,
+        userId,
+        loanAccountsToCreate,
+        loanCategoryMap,
+        account,
+        importResult,
       );
       await this.entityCreator.createSecurities(
-        queryRunner, userId, securitiesToCreate, securityMap, account, importResult,
+        queryRunner,
+        userId,
+        securitiesToCreate,
+        securityMap,
+        account,
+        importResult,
       );
 
       // Apply opening balance
       if (result.openingBalance !== null) {
         await this.entityCreator.applyOpeningBalance(
-          queryRunner, dto.accountId, account, result.openingBalance,
+          queryRunner,
+          dto.accountId,
+          account,
+          result.openingBalance,
         );
       }
 
@@ -243,7 +271,11 @@ export class ImportService {
     }
 
     // Post-import processing
-    await this.postImportProcessing(userId, isQifInvestment, affectedAccountIds);
+    await this.postImportProcessing(
+      userId,
+      isQifInvestment,
+      affectedAccountIds,
+    );
 
     return importResult;
   }
@@ -275,7 +307,12 @@ export class ImportService {
       }
     }
 
-    return { categoryMap, categoriesToCreate, loanCategoryMap, loanAccountsToCreate };
+    return {
+      categoryMap,
+      categoriesToCreate,
+      loanCategoryMap,
+      loanAccountsToCreate,
+    };
   }
 
   private buildAccountMappings(mappings: AccountMappingDto[]): {

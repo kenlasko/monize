@@ -65,9 +65,9 @@ describe("ScheduledTransactionLoanService", () => {
     };
 
     splitsRepository = {
-      save: jest.fn().mockImplementation((entity: any) =>
-        Promise.resolve(entity),
-      ),
+      save: jest
+        .fn()
+        .mockImplementation((entity: any) => Promise.resolve(entity)),
     };
 
     accountsRepository = {
@@ -426,24 +426,22 @@ describe("ScheduledTransactionLoanService", () => {
         } as ScheduledTransactionSplit,
       ];
 
-      accountsRepository.findOne.mockImplementation(
-        (opts: any) => {
-          const id = opts?.where?.id;
-          if (id === "acc-savings") {
-            return Promise.resolve({
-              id: "acc-savings",
-              accountType: "SAVINGS",
-            });
-          }
-          if (id === "acc-loan-1") {
-            return Promise.resolve({
-              id: "acc-loan-1",
-              accountType: "LOAN",
-            });
-          }
-          return Promise.resolve(null);
-        },
-      );
+      accountsRepository.findOne.mockImplementation((opts: any) => {
+        const id = opts?.where?.id;
+        if (id === "acc-savings") {
+          return Promise.resolve({
+            id: "acc-savings",
+            accountType: "SAVINGS",
+          });
+        }
+        if (id === "acc-loan-1") {
+          return Promise.resolve({
+            id: "acc-loan-1",
+            accountType: "LOAN",
+          });
+        }
+        return Promise.resolve(null);
+      });
 
       const result = await service.findLoanAccountFromSplits(splits);
 

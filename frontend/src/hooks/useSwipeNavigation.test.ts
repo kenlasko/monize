@@ -209,8 +209,8 @@ describe('useSwipeNavigation', () => {
       // Dispatch touch events targeting the scrollable child
       const touchStart = new TouchEvent('touchstart', {
         bubbles: true,
-        touches: [{ clientX: 200, clientY: 300, identifier: 0, target: scrollableChild } as Touch],
-        changedTouches: [{ clientX: 200, clientY: 300, identifier: 0, target: scrollableChild } as Touch],
+        touches: [{ clientX: 200, clientY: 300, identifier: 0, target: scrollableChild } as unknown as Touch],
+        changedTouches: [{ clientX: 200, clientY: 300, identifier: 0, target: scrollableChild } as unknown as Touch],
       });
       Object.defineProperty(touchStart, 'target', { value: scrollableChild });
 

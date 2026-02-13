@@ -133,8 +133,7 @@ export class ImportEntityCreatorService {
       }
       if (existingAccount) {
         const targetId =
-          existingAccount.accountSubType ===
-          AccountSubType.INVESTMENT_BROKERAGE
+          existingAccount.accountSubType === AccountSubType.INVESTMENT_BROKERAGE
             ? existingAccount.linkedAccountId!
             : existingAccount.id;
         accountMap.set(accMapping.originalName, targetId);
@@ -166,8 +165,7 @@ export class ImportEntityCreatorService {
           currentBalance: 0,
           linkedAccountId: savedCash.id,
         });
-        const savedBrokerage =
-          await queryRunner.manager.save(brokerageAccount);
+        const savedBrokerage = await queryRunner.manager.save(brokerageAccount);
 
         savedCash.linkedAccountId = savedBrokerage.id;
         await queryRunner.manager.save(savedCash);
@@ -218,8 +216,7 @@ export class ImportEntityCreatorService {
       const saved = await queryRunner.manager.save(newLoanAccount);
       loanCategoryMap.set(loanMapping.originalName, saved.id);
       importResult.accountsCreated++;
-      importResult.createdMappings!.loans[loanMapping.originalName] =
-        saved.id;
+      importResult.createdMappings!.loans[loanMapping.originalName] = saved.id;
     }
   }
 
@@ -276,9 +273,7 @@ export class ImportEntityCreatorService {
 
     const newCurrentBalance =
       Math.round(
-        (existingCurrentBalance -
-          existingOpeningBalance +
-          newOpeningBalance) *
+        (existingCurrentBalance - existingOpeningBalance + newOpeningBalance) *
           100,
       ) / 100;
 

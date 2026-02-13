@@ -333,8 +333,16 @@ describe("ImportEntityCreatorService", () => {
 
       const accountMap = new Map<string, string | null>();
       const accountsToCreate = [
-        { originalName: "Joint-1", createNew: "Joint", accountType: "CHEQUING" },
-        { originalName: "Joint-2", createNew: "Joint", accountType: "CHEQUING" },
+        {
+          originalName: "Joint-1",
+          createNew: "Joint",
+          accountType: "CHEQUING",
+        },
+        {
+          originalName: "Joint-2",
+          createNew: "Joint",
+          accountType: "CHEQUING",
+        },
       ];
 
       await service.createAccounts(
@@ -597,9 +605,7 @@ describe("ImportEntityCreatorService", () => {
       }));
 
       const securityMap = new Map<string, string | null>();
-      const securitiesToCreate = [
-        { originalName: "test", createNew: "msft" },
-      ];
+      const securitiesToCreate = [{ originalName: "test", createNew: "msft" }];
 
       await service.createSecurities(
         queryRunner,
@@ -640,9 +646,7 @@ describe("ImportEntityCreatorService", () => {
 
     it("should skip when createNew is falsy", async () => {
       const securityMap = new Map<string, string | null>();
-      const securitiesToCreate = [
-        { originalName: "Nothing", createNew: "" },
-      ];
+      const securitiesToCreate = [{ originalName: "Nothing", createNew: "" }];
 
       await service.createSecurities(
         queryRunner,
@@ -805,12 +809,7 @@ describe("ImportEntityCreatorService", () => {
         currentBalance: 0,
       } as any);
 
-      await service.applyOpeningBalance(
-        queryRunner,
-        "acc-1",
-        account,
-        100.555,
-      );
+      await service.applyOpeningBalance(queryRunner, "acc-1", account, 100.555);
 
       expect(queryRunner.manager.update).toHaveBeenCalledWith(
         Account,

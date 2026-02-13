@@ -148,9 +148,7 @@ export class TransactionSplitService {
     }
   }
 
-  async getSplits(
-    transactionId: string,
-  ): Promise<TransactionSplit[]> {
+  async getSplits(transactionId: string): Promise<TransactionSplit[]> {
     return this.splitsRepository.find({
       where: { transactionId },
       relations: ["category", "transferAccount"],

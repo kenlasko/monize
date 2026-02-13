@@ -40,10 +40,21 @@ describe("TransactionTransferService", () => {
     jest.useFakeTimers();
 
     transactionsRepository = {
-      create: jest.fn().mockImplementation((data) => ({ ...data, id: `tx-${Date.now()}` })),
-      save: jest.fn()
-        .mockResolvedValueOnce({ id: "from-tx-id", ...baseTransferDto, amount: -500 })
-        .mockResolvedValueOnce({ id: "to-tx-id", ...baseTransferDto, amount: 500 }),
+      create: jest
+        .fn()
+        .mockImplementation((data) => ({ ...data, id: `tx-${Date.now()}` })),
+      save: jest
+        .fn()
+        .mockResolvedValueOnce({
+          id: "from-tx-id",
+          ...baseTransferDto,
+          amount: -500,
+        })
+        .mockResolvedValueOnce({
+          id: "to-tx-id",
+          ...baseTransferDto,
+          amount: 500,
+        }),
       update: jest.fn().mockResolvedValue(undefined),
       findOne: jest.fn(),
       remove: jest.fn().mockResolvedValue(undefined),
@@ -56,11 +67,18 @@ describe("TransactionTransferService", () => {
     };
 
     accountsService = {
-      findOne: jest.fn().mockImplementation((_userId: string, accountId: string) => {
-        if (accountId === "from-account") return Promise.resolve(mockFromAccount);
-        if (accountId === "to-account") return Promise.resolve(mockToAccount);
-        return Promise.resolve({ id: accountId, name: "Unknown", currencyCode: "USD" });
-      }),
+      findOne: jest
+        .fn()
+        .mockImplementation((_userId: string, accountId: string) => {
+          if (accountId === "from-account")
+            return Promise.resolve(mockFromAccount);
+          if (accountId === "to-account") return Promise.resolve(mockToAccount);
+          return Promise.resolve({
+            id: accountId,
+            name: "Unknown",
+            currencyCode: "USD",
+          });
+        }),
       updateBalance: jest.fn().mockResolvedValue(undefined),
     };
 
@@ -86,7 +104,9 @@ describe("TransactionTransferService", () => {
       ],
     }).compile();
 
-    service = module.get<TransactionTransferService>(TransactionTransferService);
+    service = module.get<TransactionTransferService>(
+      TransactionTransferService,
+    );
   });
 
   afterEach(() => {
@@ -130,8 +150,14 @@ describe("TransactionTransferService", () => {
       });
 
       // balances updated
-      expect(accountsService.updateBalance).toHaveBeenCalledWith("from-account", -500);
-      expect(accountsService.updateBalance).toHaveBeenCalledWith("to-account", 500);
+      expect(accountsService.updateBalance).toHaveBeenCalledWith(
+        "from-account",
+        -500,
+      );
+      expect(accountsService.updateBalance).toHaveBeenCalledWith(
+        "to-account",
+        500,
+      );
 
       expect(result.fromTransaction.id).toBe("from-tx-id");
       expect(result.toTransaction.id).toBe("to-tx-id");
@@ -181,7 +207,10 @@ describe("TransactionTransferService", () => {
 
       const toCreateCall = transactionsRepository.create.mock.calls[1][0];
       expect(toCreateCall.amount).toBe(680);
-      expect(accountsService.updateBalance).toHaveBeenCalledWith("to-account", 680);
+      expect(accountsService.updateBalance).toHaveBeenCalledWith(
+        "to-account",
+        680,
+      );
     });
 
     it("calculates toAmount from exchangeRate when toAmount not provided", async () => {
@@ -383,9 +412,15 @@ describe("TransactionTransferService", () => {
       await service.removeTransfer("user-1", "from-tx", mockFindOne);
 
       // Reverse from transaction balance
-      expect(accountsService.updateBalance).toHaveBeenCalledWith("from-account", 500);
+      expect(accountsService.updateBalance).toHaveBeenCalledWith(
+        "from-account",
+        500,
+      );
       // Reverse to transaction balance
-      expect(accountsService.updateBalance).toHaveBeenCalledWith("to-account", -500);
+      expect(accountsService.updateBalance).toHaveBeenCalledWith(
+        "to-account",
+        -500,
+      );
       // Both transactions removed
       expect(transactionsRepository.remove).toHaveBeenCalledWith(toTx);
       expect(transactionsRepository.remove).toHaveBeenCalledWith(fromTx);
@@ -419,7 +454,10 @@ describe("TransactionTransferService", () => {
 
       await service.removeTransfer("user-1", "tx-1", mockFindOne);
 
-      expect(accountsService.updateBalance).toHaveBeenCalledWith("from-account", 500);
+      expect(accountsService.updateBalance).toHaveBeenCalledWith(
+        "from-account",
+        500,
+      );
       expect(transactionsRepository.remove).toHaveBeenCalledTimes(1);
       expect(transactionsRepository.remove).toHaveBeenCalledWith(tx);
     });
@@ -557,11 +595,23 @@ describe("TransactionTransferService", () => {
       );
 
       // Old balances reversed
-      expect(accountsService.updateBalance).toHaveBeenCalledWith("from-account", 500);
-      expect(accountsService.updateBalance).toHaveBeenCalledWith("to-account", -500);
+      expect(accountsService.updateBalance).toHaveBeenCalledWith(
+        "from-account",
+        500,
+      );
+      expect(accountsService.updateBalance).toHaveBeenCalledWith(
+        "to-account",
+        -500,
+      );
       // New balances applied
-      expect(accountsService.updateBalance).toHaveBeenCalledWith("from-account", -750);
-      expect(accountsService.updateBalance).toHaveBeenCalledWith("to-account", 750);
+      expect(accountsService.updateBalance).toHaveBeenCalledWith(
+        "from-account",
+        -750,
+      );
+      expect(accountsService.updateBalance).toHaveBeenCalledWith(
+        "to-account",
+        750,
+      );
 
       expect(transactionsRepository.update).toHaveBeenCalledWith(
         "from-tx",
@@ -603,18 +653,29 @@ describe("TransactionTransferService", () => {
     });
 
     it("updates account IDs and adjusts payee names", async () => {
-      const newToAccount = { id: "new-to-account", name: "Investment", currencyCode: "USD" };
-      accountsService.findOne.mockImplementation((_userId: string, accountId: string) => {
-        if (accountId === "new-to-account") return Promise.resolve(newToAccount);
-        if (accountId === "from-account") return Promise.resolve(mockFromAccount);
-        return Promise.resolve(mockToAccount);
-      });
+      const newToAccount = {
+        id: "new-to-account",
+        name: "Investment",
+        currencyCode: "USD",
+      };
+      accountsService.findOne.mockImplementation(
+        (_userId: string, accountId: string) => {
+          if (accountId === "new-to-account")
+            return Promise.resolve(newToAccount);
+          if (accountId === "from-account")
+            return Promise.resolve(mockFromAccount);
+          return Promise.resolve(mockToAccount);
+        },
+      );
 
       mockFindOne
         .mockResolvedValueOnce(fromTransaction)
         .mockResolvedValueOnce(toTransaction)
         .mockResolvedValueOnce({ ...fromTransaction })
-        .mockResolvedValueOnce({ ...toTransaction, accountId: "new-to-account" });
+        .mockResolvedValueOnce({
+          ...toTransaction,
+          accountId: "new-to-account",
+        });
 
       await service.updateTransfer(
         "user-1",
@@ -660,7 +721,10 @@ describe("TransactionTransferService", () => {
         expect.objectContaining({ amount: 675 }),
       );
 
-      expect(accountsService.updateBalance).toHaveBeenCalledWith("to-account", 675);
+      expect(accountsService.updateBalance).toHaveBeenCalledWith(
+        "to-account",
+        675,
+      );
     });
 
     it("uses explicit toAmount over calculated amount", async () => {
@@ -706,11 +770,17 @@ describe("TransactionTransferService", () => {
     });
 
     it("does not update payeeName when custom payeeName is set", async () => {
-      accountsService.findOne.mockImplementation((_userId: string, accountId: string) => {
-        if (accountId === "new-to-account")
-          return Promise.resolve({ id: "new-to-account", name: "Investment", currencyCode: "USD" });
-        return Promise.resolve(mockFromAccount);
-      });
+      accountsService.findOne.mockImplementation(
+        (_userId: string, accountId: string) => {
+          if (accountId === "new-to-account")
+            return Promise.resolve({
+              id: "new-to-account",
+              name: "Investment",
+              currencyCode: "USD",
+            });
+          return Promise.resolve(mockFromAccount);
+        },
+      );
 
       mockFindOne
         .mockResolvedValueOnce(fromTransaction)
@@ -732,11 +802,18 @@ describe("TransactionTransferService", () => {
     });
 
     it("triggers net worth recalc for all affected accounts", async () => {
-      const newToAccount = { id: "new-to-account", name: "Investment", currencyCode: "USD" };
-      accountsService.findOne.mockImplementation((_userId: string, accountId: string) => {
-        if (accountId === "new-to-account") return Promise.resolve(newToAccount);
-        return Promise.resolve(mockFromAccount);
-      });
+      const newToAccount = {
+        id: "new-to-account",
+        name: "Investment",
+        currencyCode: "USD",
+      };
+      accountsService.findOne.mockImplementation(
+        (_userId: string, accountId: string) => {
+          if (accountId === "new-to-account")
+            return Promise.resolve(newToAccount);
+          return Promise.resolve(mockFromAccount);
+        },
+      );
 
       mockFindOne
         .mockResolvedValueOnce(fromTransaction)

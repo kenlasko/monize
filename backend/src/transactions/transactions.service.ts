@@ -432,10 +432,7 @@ export class TransactionsService {
     safePage: number,
     skip: number,
   ): Promise<number> {
-    const account = await this.accountsService.findOne(
-      userId,
-      singleAccountId,
-    );
+    const account = await this.accountsService.findOne(userId, singleAccountId);
     const currentBalance = Number(account.currentBalance) || 0;
 
     if (safePage === 1) {
@@ -800,10 +797,7 @@ export class TransactionsService {
     );
   }
 
-  async getSplits(
-    userId: string,
-    transactionId: string,
-  ) {
+  async getSplits(userId: string, transactionId: string) {
     await this.findOne(userId, transactionId);
     return this.splitService.getSplits(transactionId);
   }
@@ -826,11 +820,7 @@ export class TransactionsService {
     return this.splitService.addSplit(transaction, splitDto, userId);
   }
 
-  async removeSplit(
-    userId: string,
-    transactionId: string,
-    splitId: string,
-  ) {
+  async removeSplit(userId: string, transactionId: string, splitId: string) {
     const transaction = await this.findOne(userId, transactionId);
     return this.splitService.removeSplit(transaction, splitId, userId);
   }

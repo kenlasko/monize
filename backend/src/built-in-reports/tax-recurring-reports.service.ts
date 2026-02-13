@@ -455,9 +455,7 @@ export class TaxRecurringReportsService {
       }
     });
 
-    const billPayments: BillPaymentItem[] = Array.from(
-      billPaymentMap.values(),
-    )
+    const billPayments: BillPaymentItem[] = Array.from(billPaymentMap.values())
       .filter((bp) => bp.payments.length > 0)
       .map((bp) => {
         const totalPaid = bp.payments.reduce((sum, p) => sum + p.amount, 0);

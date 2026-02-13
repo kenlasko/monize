@@ -245,10 +245,9 @@ describe("CurrenciesService", () => {
 
       await service.isInUse("cad");
 
-      expect(mockDataSource.query).toHaveBeenCalledWith(
-        expect.any(String),
-        ["CAD"],
-      );
+      expect(mockDataSource.query).toHaveBeenCalledWith(expect.any(String), [
+        "CAD",
+      ]);
     });
 
     it("returns false when query returns unexpected shape", async () => {
@@ -465,9 +464,7 @@ describe("CurrenciesService", () => {
           ok: true,
           json: () =>
             Promise.resolve({
-              quotes: [
-                { symbol: "MYRUSD=X", quoteType: "CURRENCY" },
-              ],
+              quotes: [{ symbol: "MYRUSD=X", quoteType: "CURRENCY" }],
             }),
         });
 
@@ -488,9 +485,7 @@ describe("CurrenciesService", () => {
           ok: true,
           json: () =>
             Promise.resolve({
-              quotes: [
-                { symbol: "EURUSD=X", quoteType: "CURRENCY" },
-              ],
+              quotes: [{ symbol: "EURUSD=X", quoteType: "CURRENCY" }],
             }),
         });
 
@@ -513,9 +508,7 @@ describe("CurrenciesService", () => {
           ok: true,
           json: () =>
             Promise.resolve({
-              quotes: [
-                { symbol: "JPYUSD=X", quoteType: "CURRENCY" },
-              ],
+              quotes: [{ symbol: "JPYUSD=X", quoteType: "CURRENCY" }],
             }),
         });
 
@@ -537,9 +530,7 @@ describe("CurrenciesService", () => {
           ok: true,
           json: () =>
             Promise.resolve({
-              quotes: [
-                { symbol: "GBPJPY=X", quoteType: "CURRENCY" },
-              ],
+              quotes: [{ symbol: "GBPJPY=X", quoteType: "CURRENCY" }],
             }),
         });
 
@@ -562,9 +553,7 @@ describe("CurrenciesService", () => {
           ok: true,
           json: () =>
             Promise.resolve({
-              quotes: [
-                { symbol: "BTC=X", quoteType: "CURRENCY" },
-              ],
+              quotes: [{ symbol: "BTC=X", quoteType: "CURRENCY" }],
             }),
         });
 
@@ -587,9 +576,7 @@ describe("CurrenciesService", () => {
           ok: true,
           json: () =>
             Promise.resolve({
-              quotes: [
-                { symbol: "ZARUSD=X", quoteType: "OTHER" },
-              ],
+              quotes: [{ symbol: "ZARUSD=X", quoteType: "OTHER" }],
             }),
         });
 
@@ -610,9 +597,7 @@ describe("CurrenciesService", () => {
           ok: true,
           json: () =>
             Promise.resolve({
-              quotes: [
-                { symbol: "AAPL", quoteType: "EQUITY" },
-              ],
+              quotes: [{ symbol: "AAPL", quoteType: "EQUITY" }],
             }),
         });
 
@@ -648,9 +633,7 @@ describe("CurrenciesService", () => {
           ok: true,
           json: () =>
             Promise.resolve({
-              quotes: [
-                { symbol: "ABCDEF=X", quoteType: "CURRENCY" },
-              ],
+              quotes: [{ symbol: "ABCDEF=X", quoteType: "CURRENCY" }],
             }),
         });
 

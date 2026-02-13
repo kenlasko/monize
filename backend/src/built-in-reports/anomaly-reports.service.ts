@@ -144,13 +144,7 @@ export class AnomalyReportsService {
     );
 
     // 3. New payees with significant spending
-    this.detectNewPayees(
-      rawResults,
-      now,
-      defaultCurrency,
-      rateMap,
-      anomalies,
-    );
+    this.detectNewPayees(rawResults, now, defaultCurrency, rateMap, anomalies);
 
     // Sort by severity and amount
     const severityOrder: Record<AnomalySeverity, number> = {

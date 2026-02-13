@@ -21,7 +21,11 @@ import { encrypt } from "./crypto.util";
 jest.mock("otplib", () => ({
   verifySync: jest.fn(),
   generateSecret: jest.fn().mockReturnValue("TESTSECRET"),
-  generateURI: jest.fn().mockReturnValue("otpauth://totp/Monize:test@example.com?secret=TESTSECRET&issuer=Monize"),
+  generateURI: jest
+    .fn()
+    .mockReturnValue(
+      "otpauth://totp/Monize:test@example.com?secret=TESTSECRET&issuer=Monize",
+    ),
 }));
 
 jest.mock("qrcode", () => ({
@@ -116,12 +120,14 @@ describe("AuthService", () => {
         {
           provide: ConfigService,
           useValue: {
-            get: jest.fn().mockImplementation((key: string, defaultValue?: string) => {
-              if (key === "JWT_SECRET")
-                return "test-jwt-secret-minimum-32-chars-long";
-              if (key === "FORCE_2FA") return defaultValue || "false";
-              return defaultValue || undefined;
-            }),
+            get: jest
+              .fn()
+              .mockImplementation((key: string, defaultValue?: string) => {
+                if (key === "JWT_SECRET")
+                  return "test-jwt-secret-minimum-32-chars-long";
+                if (key === "FORCE_2FA") return defaultValue || "false";
+                return defaultValue || undefined;
+              }),
           },
         },
         { provide: DataSource, useValue: dataSource },
@@ -522,20 +528,20 @@ describe("AuthService", () => {
       });
       (otplib.verifySync as jest.Mock).mockReturnValue({ valid: false });
 
-      await expect(
-        service.confirmSetup2FA("user-1", "000000"),
-      ).rejects.toThrow(BadRequestException);
-      await expect(
-        service.confirmSetup2FA("user-1", "000000"),
-      ).rejects.toThrow("Invalid verification code");
+      await expect(service.confirmSetup2FA("user-1", "000000")).rejects.toThrow(
+        BadRequestException,
+      );
+      await expect(service.confirmSetup2FA("user-1", "000000")).rejects.toThrow(
+        "Invalid verification code",
+      );
     });
 
     it("throws when 2FA setup not initiated (no user)", async () => {
       usersRepository.findOne.mockResolvedValue(null);
 
-      await expect(
-        service.confirmSetup2FA("user-1", "123456"),
-      ).rejects.toThrow("2FA setup not initiated");
+      await expect(service.confirmSetup2FA("user-1", "123456")).rejects.toThrow(
+        "2FA setup not initiated",
+      );
     });
 
     it("throws when 2FA setup not initiated (no secret)", async () => {
@@ -544,9 +550,9 @@ describe("AuthService", () => {
         twoFactorSecret: null,
       });
 
-      await expect(
-        service.confirmSetup2FA("user-1", "123456"),
-      ).rejects.toThrow("2FA setup not initiated");
+      await expect(service.confirmSetup2FA("user-1", "123456")).rejects.toThrow(
+        "2FA setup not initiated",
+      );
     });
   });
 
@@ -591,12 +597,14 @@ describe("AuthService", () => {
     });
 
     it("throws ForbiddenException when FORCE_2FA is enabled", async () => {
-      configService.get.mockImplementation((key: string, defaultValue?: string) => {
-        if (key === "JWT_SECRET")
-          return "test-jwt-secret-minimum-32-chars-long";
-        if (key === "FORCE_2FA") return "true";
-        return defaultValue || undefined;
-      });
+      configService.get.mockImplementation(
+        (key: string, defaultValue?: string) => {
+          if (key === "JWT_SECRET")
+            return "test-jwt-secret-minimum-32-chars-long";
+          if (key === "FORCE_2FA") return "true";
+          return defaultValue || undefined;
+        },
+      );
 
       await expect(service.disable2FA("user-1", "123456")).rejects.toThrow(
         ForbiddenException,
@@ -1216,9 +1224,9 @@ describe("AuthService", () => {
         .mockResolvedValueOnce(validToken)
         .mockResolvedValueOnce(null); // user not found
 
-      await expect(
-        service.refreshTokens("token-no-user"),
-      ).rejects.toThrow("User not found or inactive");
+      await expect(service.refreshTokens("token-no-user")).rejects.toThrow(
+        "User not found or inactive",
+      );
 
       expect(manager.update).toHaveBeenCalledWith(
         RefreshToken,

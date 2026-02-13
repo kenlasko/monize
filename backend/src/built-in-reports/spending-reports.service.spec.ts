@@ -457,11 +457,7 @@ describe("SpendingReportsService", () => {
     it("passes startDate when provided", async () => {
       transactionsRepository.query.mockResolvedValue([]);
 
-      await service.getSpendingByPayee(
-        mockUserId,
-        "2025-06-01",
-        "2025-12-31",
-      );
+      await service.getSpendingByPayee(mockUserId, "2025-06-01", "2025-12-31");
 
       const queryCall = transactionsRepository.query.mock.calls[0];
       expect(queryCall[1]).toEqual([mockUserId, "2025-12-31", "2025-06-01"]);

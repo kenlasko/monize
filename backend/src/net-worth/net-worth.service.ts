@@ -107,10 +107,9 @@ export class NetWorthService {
     const accounts = await this.accountRepo
       .createQueryBuilder("a")
       .where("a.accountType = :type", { type: AccountType.INVESTMENT })
-      .andWhere(
-        "(a.accountSubType = :brokerage OR a.accountSubType IS NULL)",
-        { brokerage: AccountSubType.INVESTMENT_BROKERAGE },
-      )
+      .andWhere("(a.accountSubType = :brokerage OR a.accountSubType IS NULL)", {
+        brokerage: AccountSubType.INVESTMENT_BROKERAGE,
+      })
       .getMany();
 
     for (const account of accounts) {

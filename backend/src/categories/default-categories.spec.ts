@@ -93,9 +93,7 @@ describe("default-categories", () => {
     });
 
     it("should contain Food category", () => {
-      const found = DEFAULT_EXPENSE_CATEGORIES.find(
-        (c) => c.name === "Food",
-      );
+      const found = DEFAULT_EXPENSE_CATEGORIES.find((c) => c.name === "Food");
       expect(found).toBeDefined();
       expect(found!.subcategories).toContain("Groceries");
       expect(found!.subcategories).toContain("Dining Out");
@@ -132,18 +130,14 @@ describe("default-categories", () => {
     });
 
     it("should contain Taxes category", () => {
-      const found = DEFAULT_EXPENSE_CATEGORIES.find(
-        (c) => c.name === "Taxes",
-      );
+      const found = DEFAULT_EXPENSE_CATEGORIES.find((c) => c.name === "Taxes");
       expect(found).toBeDefined();
       expect(found!.subcategories).toContain("Federal Income");
       expect(found!.subcategories).toContain("Property");
     });
 
     it("should contain Bills category", () => {
-      const found = DEFAULT_EXPENSE_CATEGORIES.find(
-        (c) => c.name === "Bills",
-      );
+      const found = DEFAULT_EXPENSE_CATEGORIES.find((c) => c.name === "Bills");
       expect(found).toBeDefined();
       expect(found!.subcategories).toContain("Electricity");
       expect(found!.subcategories).toContain("Internet");
@@ -151,9 +145,7 @@ describe("default-categories", () => {
     });
 
     it("should contain Loan category", () => {
-      const found = DEFAULT_EXPENSE_CATEGORIES.find(
-        (c) => c.name === "Loan",
-      );
+      const found = DEFAULT_EXPENSE_CATEGORIES.find((c) => c.name === "Loan");
       expect(found).toBeDefined();
       expect(found!.subcategories).toContain("Loan Interest");
       expect(found!.subcategories).toContain("Loan Principal");
@@ -213,9 +205,7 @@ describe("default-categories", () => {
 
   describe("combined validation", () => {
     it("should have no overlapping category names between income and expense", () => {
-      const incomeNames = new Set(
-        DEFAULT_INCOME_CATEGORIES.map((c) => c.name),
-      );
+      const incomeNames = new Set(DEFAULT_INCOME_CATEGORIES.map((c) => c.name));
       const expenseNames = DEFAULT_EXPENSE_CATEGORIES.map((c) => c.name);
 
       for (const name of expenseNames) {
@@ -249,9 +239,7 @@ describe("default-categories", () => {
     it("should export DefaultCategoryDefinition interface-compatible objects", () => {
       // Type check: each entry should satisfy the interface
       const typeCheck = (cat: DefaultCategoryDefinition): boolean => {
-        return (
-          typeof cat.name === "string" && Array.isArray(cat.subcategories)
-        );
+        return typeof cat.name === "string" && Array.isArray(cat.subcategories);
       };
 
       for (const cat of DEFAULT_INCOME_CATEGORIES) {
