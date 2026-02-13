@@ -2,6 +2,15 @@
 
 import { ReactNode, useEffect, useRef, useCallback } from 'react';
 
+const FOCUSABLE_SELECTOR = [
+  'a[href]',
+  'button:not([disabled])',
+  'textarea:not([disabled])',
+  'input:not([disabled])',
+  'select:not([disabled])',
+  '[tabindex]:not([tabindex="-1"])',
+].join(', ');
+
 interface ModalProps {
   isOpen: boolean;
   onClose?: () => void;
@@ -41,6 +50,9 @@ export function Modal({
   const historyPushedRef = useRef(false);
   // Track whether the close was triggered by the browser back button (popstate)
   const closedByPopstateRef = useRef(false);
+  // Focus trap refs
+  const modalRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
 
   // Attempt to close — checks onBeforeClose before proceeding
   const attemptClose = useCallback((source: 'popstate' | 'escape' | 'backdrop') => {
@@ -121,18 +133,80 @@ export function Modal({
     };
   }, [isOpen]);
 
-  // Handle escape key — route through attemptClose
+  // Auto-focus first focusable element on open; restore focus on close
   useEffect(() => {
-    if (!isOpen || !onClose) return;
+    if (!isOpen) return;
 
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+    previousFocusRef.current = document.activeElement as HTMLElement;
+
+    const frameId = requestAnimationFrame(() => {
+      if (!modalRef.current) return;
+      const focusable = modalRef.current.querySelectorAll(FOCUSABLE_SELECTOR);
+      if (focusable.length > 0) {
+        (focusable[0] as HTMLElement).focus();
+      } else {
+        modalRef.current.focus();
+      }
+    });
+
+    return () => {
+      cancelAnimationFrame(frameId);
+      previousFocusRef.current?.focus();
+    };
+  }, [isOpen]);
+
+  // Handle keyboard: Escape to close, Tab/Shift+Tab to trap focus
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Skip if focus is in a different modal (stacked modals scenario).
+      // This prevents a background modal from stealing focus when a dialog is on top.
+      if (modalRef.current) {
+        const active = document.activeElement as HTMLElement | null;
+        if (active && !modalRef.current.contains(active)) {
+          const closestDialog = active.closest?.('[role="dialog"]');
+          if (closestDialog && closestDialog !== modalRef.current) {
+            return;
+          }
+        }
+      }
+
+      if (e.key === 'Escape' && onClose) {
         attemptClose('escape');
+        return;
+      }
+
+      if (e.key === 'Tab' && modalRef.current) {
+        const focusableElements = Array.from(
+          modalRef.current.querySelectorAll(FOCUSABLE_SELECTOR),
+        ) as HTMLElement[];
+
+        if (focusableElements.length === 0) {
+          e.preventDefault();
+          return;
+        }
+
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+        const activeEl = document.activeElement;
+
+        if (e.shiftKey) {
+          if (activeEl === firstElement || !modalRef.current.contains(activeEl)) {
+            e.preventDefault();
+            lastElement.focus();
+          }
+        } else {
+          if (activeEl === lastElement || !modalRef.current.contains(activeEl)) {
+            e.preventDefault();
+            firstElement.focus();
+          }
+        }
       }
     };
 
-    document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose, attemptClose]);
 
   if (!isOpen) return null;
@@ -143,7 +217,11 @@ export function Modal({
       onClick={() => attemptClose('backdrop')}
     >
       <div
-        className={`bg-white dark:bg-gray-800 rounded-lg shadow-xl dark:shadow-gray-700/50 ${maxWidthClasses[maxWidth]} w-full max-h-[90vh] overflow-y-auto ${className}`}
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        tabIndex={-1}
+        className={`bg-white dark:bg-gray-800 rounded-lg shadow-xl dark:shadow-gray-700/50 ${maxWidthClasses[maxWidth]} w-full max-h-[90vh] overflow-y-auto outline-none ${className}`}
         onClick={(e) => e.stopPropagation()}
       >
         {children}

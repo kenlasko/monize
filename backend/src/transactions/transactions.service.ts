@@ -26,6 +26,11 @@ import {
 } from "./transaction-transfer.service";
 import { TransactionReconciliationService } from "./transaction-reconciliation.service";
 import { TransactionAnalyticsService } from "./transaction-analytics.service";
+import {
+  TransactionBulkUpdateService,
+  BulkUpdateResult,
+} from "./transaction-bulk-update.service";
+import { BulkUpdateDto } from "./dto/bulk-update.dto";
 
 export interface TransactionWithInvestmentLink extends Transaction {
   linkedInvestmentTransactionId?: string | null;
@@ -72,6 +77,7 @@ export class TransactionsService {
     private transferService: TransactionTransferService,
     private reconciliationService: TransactionReconciliationService,
     private analyticsService: TransactionAnalyticsService,
+    private bulkUpdateService: TransactionBulkUpdateService,
   ) {}
 
   private triggerNetWorthRecalc(accountId: string, userId: string): void {
@@ -866,5 +872,12 @@ export class TransactionsService {
       updateDto,
       this.findOne.bind(this),
     );
+  }
+
+  async bulkUpdate(
+    userId: string,
+    bulkUpdateDto: BulkUpdateDto,
+  ): Promise<BulkUpdateResult> {
+    return this.bulkUpdateService.bulkUpdate(userId, bulkUpdateDto);
   }
 }

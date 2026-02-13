@@ -368,4 +368,106 @@ describe('TransactionList', () => {
 
     expect(screen.getByText('Split (2)')).toBeInTheDocument();
   });
+
+  describe('selection mode', () => {
+    it('renders checkboxes when selectionMode is true', () => {
+      const transactions = [createTransaction()];
+
+      render(
+        <TransactionList
+          transactions={transactions}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+          selectionMode
+          selectedIds={new Set()}
+          onToggleSelection={vi.fn()}
+          onToggleAllOnPage={vi.fn()}
+          isAllOnPageSelected={false}
+        />
+      );
+
+      const checkboxes = screen.getAllByRole('checkbox');
+      // 1 header checkbox + 1 row checkbox
+      expect(checkboxes).toHaveLength(2);
+    });
+
+    it('does not render checkboxes when selectionMode is false', () => {
+      const transactions = [createTransaction()];
+
+      render(
+        <TransactionList
+          transactions={transactions}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+        />
+      );
+
+      expect(screen.queryAllByRole('checkbox')).toHaveLength(0);
+    });
+
+    it('shows selected row with highlight', () => {
+      const transaction = createTransaction();
+
+      render(
+        <TransactionList
+          transactions={[transaction]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+          selectionMode
+          selectedIds={new Set([transaction.id])}
+          onToggleSelection={vi.fn()}
+          onToggleAllOnPage={vi.fn()}
+          isAllOnPageSelected={true}
+        />
+      );
+
+      const row = screen.getByText('Grocery Store').closest('tr');
+      expect(row).toHaveClass('bg-blue-50');
+    });
+
+    it('calls onToggleSelection when row checkbox is clicked', () => {
+      const mockToggle = vi.fn();
+      const transaction = createTransaction();
+
+      render(
+        <TransactionList
+          transactions={[transaction]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+          selectionMode
+          selectedIds={new Set()}
+          onToggleSelection={mockToggle}
+          onToggleAllOnPage={vi.fn()}
+          isAllOnPageSelected={false}
+        />
+      );
+
+      const checkboxes = screen.getAllByRole('checkbox');
+      // checkboxes[0] is header, checkboxes[1] is the row
+      fireEvent.click(checkboxes[1]);
+      expect(mockToggle).toHaveBeenCalledWith(transaction.id);
+    });
+
+    it('calls onToggleAllOnPage when header checkbox is clicked', () => {
+      const mockToggleAll = vi.fn();
+      const transactions = [createTransaction()];
+
+      render(
+        <TransactionList
+          transactions={transactions}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+          selectionMode
+          selectedIds={new Set()}
+          onToggleSelection={vi.fn()}
+          onToggleAllOnPage={mockToggleAll}
+          isAllOnPageSelected={false}
+        />
+      );
+
+      const checkboxes = screen.getAllByRole('checkbox');
+      fireEvent.click(checkboxes[0]);
+      expect(mockToggleAll).toHaveBeenCalled();
+    });
+  });
 });

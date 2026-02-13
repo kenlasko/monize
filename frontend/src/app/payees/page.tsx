@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
 import { Pagination } from '@/components/ui/Pagination';
 import { PayeeForm } from '@/components/payees/PayeeForm';
-import { PayeeList, DensityLevel, SortField, SortDirection } from '@/components/payees/PayeeList';
+import { PayeeList, type DensityLevel, type SortField, type SortDirection } from '@/components/payees/PayeeList';
 import { CategoryAutoAssignDialog } from '@/components/payees/CategoryAutoAssignDialog';
 import { Modal } from '@/components/ui/Modal';
 import { UnsavedChangesDialog } from '@/components/ui/UnsavedChangesDialog';
@@ -22,10 +22,9 @@ import { useFormModal } from '@/hooks/useFormModal';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { createLogger } from '@/lib/logger';
 import { getErrorMessage } from '@/lib/errors';
+import { PAGE_SIZE } from '@/lib/constants';
 
 const logger = createLogger('Payees');
-
-const PAGE_SIZE = 50;
 
 export default function PayeesPage() {
   return (

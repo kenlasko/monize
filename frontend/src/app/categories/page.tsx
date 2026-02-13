@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/Button';
 const CategoryForm = dynamic(() => import('@/components/categories/CategoryForm').then(m => m.CategoryForm), { ssr: false });
-import { CategoryList, DensityLevel } from '@/components/categories/CategoryList';
+import { CategoryList, type DensityLevel } from '@/components/categories/CategoryList';
 import { Modal } from '@/components/ui/Modal';
 import { UnsavedChangesDialog } from '@/components/ui/UnsavedChangesDialog';
 import { categoriesApi } from '@/lib/categories';

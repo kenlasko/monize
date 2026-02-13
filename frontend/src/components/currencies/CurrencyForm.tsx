@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect, MutableRefObject } from 'react';
+import { useState, useCallback, MutableRefObject } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@/lib/zodResolver';
 import { z } from 'zod';
@@ -10,6 +10,9 @@ import { Input } from '@/components/ui/Input';
 import { CurrencyInfo, CreateCurrencyData } from '@/lib/exchange-rates';
 import { exchangeRatesApi } from '@/lib/exchange-rates';
 import { createLogger } from '@/lib/logger';
+import { useFormSubmitRef } from '@/hooks/useFormSubmitRef';
+import { useFormDirtyNotify } from '@/hooks/useFormDirtyNotify';
+import { FormActions } from '@/components/ui/FormActions';
 
 const logger = createLogger('CurrencyForm');
 
@@ -106,12 +109,9 @@ export function CurrencyForm({ currency, onSubmit, onCancel, onDirtyChange, subm
     await onSubmit(cleanedData);
   };
 
-  useEffect(() => { onDirtyChange?.(isDirty); }, [isDirty, onDirtyChange]);
+  useFormDirtyNotify(isDirty, onDirtyChange);
 
-  useEffect(() => {
-    if (submitRef) submitRef.current = handleSubmit(onFormSubmit);
-    return () => { if (submitRef) submitRef.current = null; };
-  }, [submitRef, handleSubmit, onFormSubmit]);
+  useFormSubmitRef(submitRef, handleSubmit, onFormSubmit);
 
   return (
     <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
@@ -176,14 +176,7 @@ export function CurrencyForm({ currency, onSubmit, onCancel, onDirtyChange, subm
         max={4}
       />
 
-      <div className="flex justify-end gap-3 pt-4">
-        <Button type="button" variant="outline" onClick={onCancel}>
-          Cancel
-        </Button>
-        <Button type="submit" isLoading={isSubmitting}>
-          {currency ? 'Update' : 'Create'} Currency
-        </Button>
-      </div>
+      <FormActions onCancel={onCancel} submitLabel={currency ? 'Update Currency' : 'Create Currency'} isSubmitting={isSubmitting} />
     </form>
   );
 }

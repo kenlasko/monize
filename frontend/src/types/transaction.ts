@@ -72,8 +72,8 @@ export interface CreateTransactionData {
   amount: number;
   currencyCode: string;
   exchangeRate?: number;
-  description?: string;
-  referenceNumber?: string;
+  description?: string | null;
+  referenceNumber?: string | null;
   status?: TransactionStatus;
   reconciledDate?: string;
   isSplit?: boolean;
@@ -151,4 +151,30 @@ export interface ReconciliationData {
 
 export interface BulkReconcileResult {
   reconciled: number;
+}
+
+export interface BulkUpdateFilters {
+  accountIds?: string[];
+  startDate?: string;
+  endDate?: string;
+  categoryIds?: string[];
+  payeeIds?: string[];
+  search?: string;
+}
+
+export interface BulkUpdateData {
+  mode: 'ids' | 'filter';
+  transactionIds?: string[];
+  filters?: BulkUpdateFilters;
+  payeeId?: string | null;
+  payeeName?: string | null;
+  categoryId?: string | null;
+  description?: string | null;
+  status?: TransactionStatus;
+}
+
+export interface BulkUpdateResult {
+  updated: number;
+  skipped: number;
+  skippedReasons: string[];
 }

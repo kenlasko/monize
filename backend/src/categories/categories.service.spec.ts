@@ -176,6 +176,7 @@ describe("CategoriesService", () => {
         ...dto,
         id: "new-cat",
         userId: "user-1",
+        isIncome: false,
       });
 
       await service.create("user-1", dto);
@@ -186,8 +187,25 @@ describe("CategoriesService", () => {
       });
       expect(categoriesRepository.create).toHaveBeenCalledWith({
         ...dto,
+        isIncome: false,
         userId: "user-1",
       });
+    });
+
+    it("inherits isIncome from parent category, ignoring provided value", async () => {
+      const incomeParent = { ...mockCategory, id: "income-parent", isIncome: true };
+      categoriesRepository.findOne.mockResolvedValue(incomeParent);
+      categoriesRepository.save.mockImplementation((data) => data);
+
+      await service.create("user-1", {
+        name: "Bonus",
+        parentId: "income-parent",
+        isIncome: false,
+      });
+
+      expect(categoriesRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({ isIncome: true }),
+      );
     });
 
     it("throws NotFoundException when parent category does not exist", async () => {
@@ -421,9 +439,10 @@ describe("CategoriesService", () => {
     });
 
     it("updates parentId when provided", async () => {
-      const parentCat = { ...mockCategory, id: "parent-1" };
+      const parentCat = { ...mockCategory, id: "parent-1", isIncome: false };
       categoriesRepository.findOne
         .mockResolvedValueOnce({ ...mockCategory })
+        .mockResolvedValueOnce(parentCat)
         .mockResolvedValueOnce(parentCat);
       categoriesRepository.save.mockImplementation((data) => data);
 
@@ -432,6 +451,36 @@ describe("CategoriesService", () => {
       });
 
       expect(result.parentId).toBe("parent-1");
+    });
+
+    it("inherits isIncome from parent when parentId is set on update", async () => {
+      const incomeParent = { ...mockCategory, id: "income-parent", isIncome: true };
+      categoriesRepository.findOne
+        .mockResolvedValueOnce({ ...mockCategory, isIncome: false })
+        .mockResolvedValueOnce(incomeParent)
+        .mockResolvedValueOnce(incomeParent);
+      categoriesRepository.save.mockImplementation((data) => data);
+
+      const result = await service.update("user-1", "cat-1", {
+        parentId: "income-parent",
+        isIncome: false,
+      });
+
+      expect(result.isIncome).toBe(true);
+    });
+
+    it("ignores isIncome in dto for existing child category", async () => {
+      const parentCat = { ...mockCategory, id: "parent-1", isIncome: false };
+      categoriesRepository.findOne
+        .mockResolvedValueOnce({ ...mockChildCategory, isIncome: false })
+        .mockResolvedValueOnce(parentCat);
+      categoriesRepository.save.mockImplementation((data) => data);
+
+      const result = await service.update("user-1", "cat-2", {
+        isIncome: true,
+      });
+
+      expect(result.isIncome).toBe(false);
     });
 
     it("throws BadRequestException for system categories", async () => {

@@ -11,10 +11,11 @@ import { useExchangeRates } from '@/hooks/useExchangeRates';
 import toast from 'react-hot-toast';
 import { getErrorMessage } from '@/lib/errors';
 import { AccountRow } from './AccountRow';
+import { useTableDensity, nextDensity, type DensityLevel } from '@/hooks/useTableDensity';
+import { SortIcon } from '@/components/ui/SortIcon';
 
 type SortField = 'name' | 'type' | 'balance' | 'status';
 type SortDirection = 'asc' | 'desc';
-type DensityLevel = 'normal' | 'compact' | 'dense';
 
 // LocalStorage keys for filter persistence
 const STORAGE_KEYS = {
@@ -203,26 +204,10 @@ export function AccountList({ accounts, brokerageMarketValues, onEdit, onRefresh
       router.push(`/transactions?accountId=${account.id}`);
     }
   }, [router]);
-
-  // Memoize padding classes based on density
-  const cellPadding = useMemo(() => {
-    switch (density) {
-      case 'dense': return 'px-3 py-1';
-      case 'compact': return 'px-4 py-2';
-      default: return 'px-6 py-4';
-    }
-  }, [density]);
-
-  const headerPadding = useMemo(() => {
-    switch (density) {
-      case 'dense': return 'px-3 py-2';
-      case 'compact': return 'px-4 py-2';
-      default: return 'px-6 py-3';
-    }
-  }, [density]);
+  const { cellPadding, headerPadding } = useTableDensity(density);
 
   const cycleDensity = useCallback(() => {
-    setDensity(prev => prev === 'normal' ? 'compact' : prev === 'compact' ? 'dense' : 'normal');
+    setDensity(prev => nextDensity(prev));
   }, []);
 
   // Get unique account types from the accounts
@@ -296,12 +281,6 @@ export function AccountList({ accounts, brokerageMarketValues, onEdit, onRefresh
     localStorage.removeItem(STORAGE_KEYS.status);
   };
 
-  const SortIcon = ({ field }: { field: SortField }) => {
-    if (sortField !== field) {
-      return <span className="ml-1 text-gray-300 dark:text-gray-600">↕</span>;
-    }
-    return <span className="ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>;
-  };
 
   const handleViewTransactions = useCallback((account: Account) => {
     if (account.accountSubType === 'INVESTMENT_BROKERAGE') {
@@ -499,7 +478,7 @@ export function AccountList({ accounts, brokerageMarketValues, onEdit, onRefresh
               >
                 <div className="flex items-center">
                   Account Name
-                  <SortIcon field="name" />
+                  <SortIcon field="name" sortField={sortField} sortDirection={sortDirection} />
                 </div>
               </th>
               <th
@@ -508,7 +487,7 @@ export function AccountList({ accounts, brokerageMarketValues, onEdit, onRefresh
               >
                 <div className="flex items-center">
                   Type
-                  <SortIcon field="type" />
+                  <SortIcon field="type" sortField={sortField} sortDirection={sortDirection} />
                 </div>
               </th>
               <th
@@ -517,7 +496,7 @@ export function AccountList({ accounts, brokerageMarketValues, onEdit, onRefresh
               >
                 <div className="flex items-center justify-end">
                   Balance
-                  <SortIcon field="balance" />
+                  <SortIcon field="balance" sortField={sortField} sortDirection={sortDirection} />
                 </div>
               </th>
               <th
@@ -526,7 +505,7 @@ export function AccountList({ accounts, brokerageMarketValues, onEdit, onRefresh
               >
                 <div className="flex items-center">
                   Status
-                  <SortIcon field="status" />
+                  <SortIcon field="status" sortField={sortField} sortDirection={sortDirection} />
                 </div>
               </th>
               <th className={`${headerPadding} text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden min-[480px]:table-cell`}>

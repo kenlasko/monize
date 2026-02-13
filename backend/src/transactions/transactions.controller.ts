@@ -27,6 +27,7 @@ import { UpdateTransactionDto } from "./dto/update-transaction.dto";
 import { CreateTransactionSplitDto } from "./dto/create-transaction-split.dto";
 import { CreateTransferDto } from "./dto/create-transfer.dto";
 import { BulkReconcileDto } from "./dto/bulk-reconcile.dto";
+import { BulkUpdateDto } from "./dto/bulk-update.dto";
 import { MarkClearedDto } from "./dto/mark-cleared.dto";
 import { UpdateTransactionStatusDto } from "./dto/update-transaction-status.dto";
 
@@ -337,6 +338,18 @@ export class TransactionsController {
       req.user.id,
       createTransferDto,
     );
+  }
+
+  @Post("bulk-update")
+  @ApiOperation({ summary: "Bulk update transactions by IDs or filters" })
+  @ApiResponse({
+    status: 200,
+    description: "Transactions updated successfully",
+  })
+  @ApiResponse({ status: 400, description: "Bad request" })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  bulkUpdate(@Request() req, @Body() bulkUpdateDto: BulkUpdateDto) {
+    return this.transactionsService.bulkUpdate(req.user.id, bulkUpdateDto);
   }
 
   // ==================== Single Transaction CRUD (:id param routes) ====================

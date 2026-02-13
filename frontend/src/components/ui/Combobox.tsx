@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { cn } from '@/lib/utils';
+import { cn, inputBaseClasses, inputErrorClasses } from '@/lib/utils';
 
 interface ComboboxOption {
   value: string;
@@ -46,6 +46,9 @@ export function Combobox({
   const wrapperRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const isDeleteRef = useRef(false);
+  const isNavigatingRef = useRef(false);
+  const prevFilterTextRef = useRef('');
 
   // Find selected option label when value changes (only if not currently typing)
   useEffect(() => {
@@ -126,17 +129,33 @@ export function Combobox({
     }
 
     const newValue = e.target.value;
-    setInputValue(newValue);
     setFilterText(newValue); // Track what user typed for filtering
     setIsOpen(true);
     setIsTyping(true);
+    isNavigatingRef.current = false; // User is typing, not navigating
 
     if (onInputChange) {
       onInputChange(newValue);
     }
 
-    // Don't call onChange on every keystroke - wait for explicit selection
-    // This prevents clearing the form value while the user is typing
+    // Inline autocomplete: find best prefix match and show completion
+    if (!isDeleteRef.current && newValue.trim()) {
+      const lowerValue = newValue.toLowerCase();
+      const prefixMatch = options.find(opt =>
+        opt.label.toLowerCase().startsWith(lowerValue)
+      );
+      if (prefixMatch) {
+        setInputValue(prefixMatch.label);
+        requestAnimationFrame(() => {
+          inputRef.current?.setSelectionRange(newValue.length, prefixMatch.label.length);
+        });
+        isDeleteRef.current = false;
+        return;
+      }
+    }
+
+    setInputValue(newValue);
+    isDeleteRef.current = false;
   };
 
   const handleSelectOption = (option: ComboboxOption) => {
@@ -155,6 +174,7 @@ export function Combobox({
     setFilterText('');
     setIsTyping(false);
     setIsOpen(true);
+    isNavigatingRef.current = false;
     // Mark that we just opened - this prevents select() from triggering filter
     justOpenedRef.current = true;
     setTimeout(() => {
@@ -179,12 +199,21 @@ export function Combobox({
   };
 
   // When dropdown is open and user is typing, filter by what they typed
-  // Otherwise show all options
+  // Otherwise show all options. Prefix matches are sorted first for relevance.
   const filteredOptions = (isTyping && filterText)
-    ? options.filter(option =>
-        option.label.toLowerCase().includes(filterText.toLowerCase()) ||
-        (option.subtitle && option.subtitle.toLowerCase().includes(filterText.toLowerCase()))
-      )
+    ? options
+        .filter(option =>
+          option.label.toLowerCase().includes(filterText.toLowerCase()) ||
+          (option.subtitle && option.subtitle.toLowerCase().includes(filterText.toLowerCase()))
+        )
+        .sort((a, b) => {
+          const lowerFilter = filterText.toLowerCase();
+          const aPrefix = a.label.toLowerCase().startsWith(lowerFilter);
+          const bPrefix = b.label.toLowerCase().startsWith(lowerFilter);
+          if (aPrefix && !bPrefix) return -1;
+          if (!aPrefix && bPrefix) return 1;
+          return a.label.localeCompare(b.label);
+        })
     : options;
 
   // Check if input matches an existing option exactly
@@ -201,17 +230,23 @@ export function Combobox({
   // Find index of currently selected option to highlight it
   const selectedOptionIndex = filteredOptions.findIndex(opt => opt.value === value);
 
-  // Reset highlighted index when dropdown opens or options change
+  // Reset highlighted index when dropdown opens or filter results change
   useEffect(() => {
     if (isOpen) {
-      // If there's a selected value and we're not typing, highlight it
-      if (!isTyping && selectedOptionIndex >= 0) {
+      if (isTyping && filteredOptions.length > 0) {
+        // Only auto-highlight on new filter text, not during arrow key navigation
+        if (!isNavigatingRef.current && filterText !== prevFilterTextRef.current) {
+          setHighlightedIndex(showCreateOption ? 1 : 0);
+        }
+      } else if (!isTyping && selectedOptionIndex >= 0) {
+        // If there's a selected value and we're not typing, highlight it
         setHighlightedIndex(showCreateOption ? selectedOptionIndex + 1 : selectedOptionIndex);
       } else {
         setHighlightedIndex(-1);
       }
     }
-  }, [isOpen, isTyping, selectedOptionIndex, showCreateOption]);
+    prevFilterTextRef.current = filterText;
+  }, [isOpen, isTyping, selectedOptionIndex, showCreateOption, filteredOptions.length, filterText]);
 
   // Scroll highlighted/selected item into view when dropdown opens
   useEffect(() => {
@@ -240,6 +275,11 @@ export function Combobox({
   }, [highlightedIndex]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Track deletion keys to suppress inline autocomplete on backspace/delete
+    if (e.key === 'Backspace' || e.key === 'Delete') {
+      isDeleteRef.current = true;
+    }
+
     if (!isOpen) {
       if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
         e.preventDefault();
@@ -252,12 +292,14 @@ export function Combobox({
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault();
+        isNavigatingRef.current = true;
         setHighlightedIndex(prev =>
           prev < totalItems - 1 ? prev + 1 : prev
         );
         break;
       case 'ArrowUp':
         e.preventDefault();
+        isNavigatingRef.current = true;
         setHighlightedIndex(prev =>
           prev > 0 ? prev - 1 : prev
         );
@@ -284,6 +326,22 @@ export function Combobox({
           setInputValue(selectedLabel);
         }
         setIsTyping(false);
+        break;
+      case 'Tab':
+        // Accept the highlighted/autocompleted option on Tab, then let focus move naturally
+        if (isTyping && highlightedIndex >= 0) {
+          if (showCreateOption && highlightedIndex === 0) {
+            handleCreateNew();
+          } else {
+            const optionIndex = showCreateOption ? highlightedIndex - 1 : highlightedIndex;
+            if (optionIndex >= 0 && optionIndex < filteredOptions.length) {
+              handleSelectOption(filteredOptions[optionIndex]);
+            }
+          }
+        }
+        setIsOpen(false);
+        setIsTyping(false);
+        // Don't prevent default - allow normal Tab navigation to next field
         break;
     }
   };
@@ -321,13 +379,8 @@ export function Combobox({
           placeholder={placeholder}
           disabled={disabled}
           className={cn(
-            'block w-full rounded-md border-gray-300 shadow-sm',
-            'focus:border-blue-500 focus:ring-blue-500',
-            'disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500',
-            'dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-400',
-            'dark:focus:border-blue-400 dark:focus:ring-blue-400',
-            'dark:disabled:bg-gray-700 dark:disabled:text-gray-400',
-            error && 'border-red-300 focus:border-red-500 focus:ring-red-500 dark:border-red-500'
+            inputBaseClasses,
+            error && inputErrorClasses
           )}
         />
         {isOpen && (filteredOptions.length > 0 || showCreateOption) && (

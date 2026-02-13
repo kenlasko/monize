@@ -9,6 +9,7 @@ import { TransactionSplitService } from "./transaction-split.service";
 import { TransactionTransferService } from "./transaction-transfer.service";
 import { TransactionReconciliationService } from "./transaction-reconciliation.service";
 import { TransactionAnalyticsService } from "./transaction-analytics.service";
+import { TransactionBulkUpdateService } from "./transaction-bulk-update.service";
 import { TransactionsController } from "./transactions.controller";
 import { AccountsModule } from "../accounts/accounts.module";
 import { PayeesModule } from "../payees/payees.module";
@@ -32,6 +33,7 @@ import { NetWorthModule } from "../net-worth/net-worth.module";
     TransactionTransferService,
     TransactionReconciliationService,
     TransactionAnalyticsService,
+    TransactionBulkUpdateService,
   ],
   controllers: [TransactionsController],
   exports: [TransactionsService],

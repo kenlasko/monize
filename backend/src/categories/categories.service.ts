@@ -40,12 +40,16 @@ export class CategoriesService {
     userId: string,
     createCategoryDto: CreateCategoryDto,
   ): Promise<Category> {
+    let isIncome = createCategoryDto.isIncome ?? false;
+
     if (createCategoryDto.parentId) {
-      await this.findOne(userId, createCategoryDto.parentId);
+      const parent = await this.findOne(userId, createCategoryDto.parentId);
+      isIncome = parent.isIncome;
     }
 
     const category = this.categoriesRepository.create({
       ...createCategoryDto,
+      isIncome,
       userId,
     });
 
@@ -196,10 +200,16 @@ export class CategoriesService {
       category.icon = updateCategoryDto.icon;
     if (updateCategoryDto.color !== undefined)
       category.color = updateCategoryDto.color;
-    if (updateCategoryDto.isIncome !== undefined)
-      category.isIncome = updateCategoryDto.isIncome;
     if (updateCategoryDto.parentId !== undefined)
       category.parentId = updateCategoryDto.parentId;
+
+    // Inherit type from parent - child categories must match parent type
+    if (category.parentId) {
+      const parent = await this.findOne(userId, category.parentId);
+      category.isIncome = parent.isIncome;
+    } else if (updateCategoryDto.isIncome !== undefined) {
+      category.isIncome = updateCategoryDto.isIncome;
+    }
 
     return this.categoriesRepository.save(category);
   }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
 import { PageLayout } from '@/components/layout/PageLayout';
@@ -14,15 +14,15 @@ import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import dynamic from 'next/dynamic';
 import { exchangeRatesApi, CurrencyInfo, CreateCurrencyData, CurrencyUsage } from '@/lib/exchange-rates';
 const CurrencyForm = dynamic(() => import('@/components/currencies/CurrencyForm').then(m => m.CurrencyForm), { ssr: false });
-import { CurrencyList, DensityLevel } from '@/components/currencies/CurrencyList';
+import { CurrencyList, type DensityLevel } from '@/components/currencies/CurrencyList';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { createLogger } from '@/lib/logger';
 import { getErrorMessage } from '@/lib/errors';
+import { useFormModal } from '@/hooks/useFormModal';
+import { PAGE_SIZE } from '@/lib/constants';
 
 const logger = createLogger('Currencies');
-
-const PAGE_SIZE = 50;
 
 export default function CurrenciesPage() {
   return (
@@ -37,22 +37,11 @@ function CurrenciesContent() {
   const [usage, setUsage] = useState<CurrencyUsage>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshingRates, setIsRefreshingRates] = useState(false);
-  const [showForm, setShowForm] = useState(false);
-  const [editingCurrency, setEditingCurrency] = useState<CurrencyInfo | undefined>();
+  const { showForm, editingItem: editingCurrency, openCreate, openEdit, close, isEditing, modalProps, setFormDirty, unsavedChangesDialog, formSubmitRef } = useFormModal<CurrencyInfo>();
   const [searchQuery, setSearchQuery] = useState('');
   const [showInactive, setShowInactive] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [listDensity, setListDensity] = useLocalStorage<DensityLevel>('monize-currencies-density', 'normal');
-
-  // Unsaved changes tracking for CurrencyForm
-  const isFormDirtyRef = useRef(false);
-  const setIsFormDirty = useCallback((dirty: boolean) => { isFormDirtyRef.current = dirty; }, []);
-  const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
-  const formSubmitRef = useRef<(() => void) | null>(null);
-
-  const handleBeforeClose = useCallback(() => {
-    if (isFormDirtyRef.current) { setShowUnsavedDialog(true); return false; }
-  }, []);
 
   const { defaultCurrency, getRate, refresh: refreshRates } = useExchangeRates();
 
@@ -79,15 +68,11 @@ function CurrenciesContent() {
   }, []);
 
   const handleCreateNew = () => {
-    setEditingCurrency(undefined);
-    isFormDirtyRef.current = false;
-    setShowForm(true);
+    openCreate();
   };
 
   const handleEdit = (currency: CurrencyInfo) => {
-    setEditingCurrency(currency);
-    isFormDirtyRef.current = false;
-    setShowForm(true);
+    openEdit(currency);
   };
 
   const handleFormSubmit = async (data: CreateCurrencyData) => {
@@ -99,9 +84,7 @@ function CurrenciesContent() {
         await exchangeRatesApi.createCurrency(data);
         toast.success('Currency created successfully');
       }
-      isFormDirtyRef.current = false;
-      setShowForm(false);
-      setEditingCurrency(undefined);
+      close();
       loadData();
     } catch (error) {
       toast.error(getErrorMessage(error, `Failed to ${editingCurrency ? 'update' : 'create'} currency`));
@@ -110,8 +93,7 @@ function CurrenciesContent() {
   };
 
   const handleFormCancel = () => {
-    setShowForm(false);
-    setEditingCurrency(undefined);
+    close();
   };
 
   const handleToggleActive = async (currency: CurrencyInfo) => {
@@ -239,24 +221,19 @@ function CurrenciesContent() {
         </div>
 
         {/* Form Modal */}
-        <Modal isOpen={showForm} onClose={handleFormCancel} maxWidth="lg" className="p-6" pushHistory onBeforeClose={handleBeforeClose}>
+        <Modal isOpen={showForm} onClose={close} {...modalProps} maxWidth="lg" className="p-6">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
-            {editingCurrency ? 'Edit Currency' : 'New Currency'}
+            {isEditing ? 'Edit Currency' : 'New Currency'}
           </h2>
           <CurrencyForm
             currency={editingCurrency}
             onSubmit={handleFormSubmit}
-            onCancel={handleFormCancel}
-            onDirtyChange={setIsFormDirty}
+            onCancel={close}
+            onDirtyChange={setFormDirty}
             submitRef={formSubmitRef}
           />
         </Modal>
-        <UnsavedChangesDialog
-          isOpen={showUnsavedDialog}
-          onSave={() => { setShowUnsavedDialog(false); formSubmitRef.current?.(); }}
-          onDiscard={() => { setShowUnsavedDialog(false); isFormDirtyRef.current = false; handleFormCancel(); }}
-          onCancel={() => setShowUnsavedDialog(false)}
-        />
+        <UnsavedChangesDialog {...unsavedChangesDialog} />
 
         {/* Currencies List */}
         <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg overflow-hidden">

@@ -22,6 +22,9 @@ import { getCurrencySymbol } from '@/lib/format';
 import { getErrorMessage } from '@/lib/errors';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { createLogger } from '@/lib/logger';
+import { useFormSubmitRef } from '@/hooks/useFormSubmitRef';
+import { useFormDirtyNotify } from '@/hooks/useFormDirtyNotify';
+import { FormActions } from '@/components/ui/FormActions';
 
 const logger = createLogger('InvestmentTxForm');
 
@@ -156,7 +159,7 @@ export function InvestmentTransactionForm({
         },
   });
 
-  useEffect(() => { onDirtyChange?.(isDirty); }, [isDirty, onDirtyChange]);
+  useFormDirtyNotify(isDirty, onDirtyChange);
 
   const watchedAccountId = watch('accountId');
   const watchedAction = watch('action') as InvestmentAction;
@@ -276,10 +279,7 @@ export function InvestmentTransactionForm({
     }
   };
 
-  useEffect(() => {
-    if (submitRef) submitRef.current = handleSubmit(onSubmit);
-    return () => { if (submitRef) submitRef.current = null; };
-  }, [submitRef, handleSubmit, onSubmit]);
+  useFormSubmitRef(submitRef, handleSubmit, onSubmit);
 
   const needsSecurity = securityRequiredActions.includes(watchedAction);
   const needsQuantityPrice = quantityPriceActions.includes(watchedAction);
@@ -510,16 +510,7 @@ export function InvestmentTransactionForm({
       )}
 
       {/* Form Actions */}
-      <div className="flex justify-end space-x-3 pt-4">
-        {onCancel && (
-          <Button type="button" variant="outline" onClick={onCancel}>
-            Cancel
-          </Button>
-        )}
-        <Button type="submit" isLoading={isLoading}>
-          {transaction ? 'Update' : 'Create'} Transaction
-        </Button>
-      </div>
+      <FormActions onCancel={onCancel} submitLabel={transaction ? 'Update Transaction' : 'Create Transaction'} isSubmitting={isLoading} />
     </form>
   );
 }

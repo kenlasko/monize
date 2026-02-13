@@ -12,6 +12,8 @@ import {
   TransferResult,
   ReconciliationData,
   BulkReconcileResult,
+  BulkUpdateData,
+  BulkUpdateResult,
 } from '@/types/transaction';
 
 export const transactionsApi = {
@@ -266,6 +268,15 @@ export const transactionsApi = {
     const response = await apiClient.post<BulkReconcileResult>(
       `/transactions/reconcile/${accountId}`,
       { transactionIds, reconciledDate },
+    );
+    return response.data;
+  },
+
+  // Bulk update transactions
+  bulkUpdate: async (data: BulkUpdateData): Promise<BulkUpdateResult> => {
+    const response = await apiClient.post<BulkUpdateResult>(
+      '/transactions/bulk-update',
+      data,
     );
     return response.data;
   },

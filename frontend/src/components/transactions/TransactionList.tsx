@@ -36,6 +36,9 @@ interface TransactionRowProps {
   onCycleStatus: (transaction: Transaction) => void;
   onEdit?: (transaction: Transaction) => void;
   onDeleteClick: (transaction: Transaction) => void;
+  isSelected?: boolean;
+  selectionMode?: boolean;
+  onToggleSelection?: () => void;
 }
 
 const TransactionRow = memo(function TransactionRow({
@@ -60,6 +63,9 @@ const TransactionRow = memo(function TransactionRow({
   onCycleStatus,
   onEdit,
   onDeleteClick,
+  isSelected,
+  selectionMode,
+  onToggleSelection,
 }: TransactionRowProps) {
   const isVoid = transaction.status === TransactionStatus.VOID;
 
@@ -73,8 +79,18 @@ const TransactionRow = memo(function TransactionRow({
       onTouchMove={onTouchMove}
       onTouchEnd={onLongPressEnd}
       onTouchCancel={onLongPressEnd}
-      className={`hover:bg-gray-100 dark:hover:bg-gray-800 ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-gray-800/50' : ''} ${isVoid ? 'opacity-50' : ''} ${onEdit ? 'cursor-pointer' : ''}`}
+      className={`hover:bg-gray-100 dark:hover:bg-gray-800 ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-gray-800/50' : ''} ${isVoid ? 'opacity-50' : ''} ${onEdit ? 'cursor-pointer' : ''} ${isSelected ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}
     >
+      {selectionMode && (
+        <td className={`${cellPadding} whitespace-nowrap w-10`} onClick={e => e.stopPropagation()}>
+          <input
+            type="checkbox"
+            checked={isSelected || false}
+            onChange={() => onToggleSelection?.()}
+            className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 h-4 w-4 cursor-pointer"
+          />
+        </td>
+      )}
       <td className={`${cellPadding} whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 ${isVoid ? 'line-through' : ''}`}>
         {formatDate(transaction.transactionDate)}
       </td>
@@ -295,6 +311,12 @@ interface TransactionListProps {
   totalItems?: number;
   pageSize?: number;
   onPageChange?: (page: number) => void;
+  /** Selection mode props */
+  selectionMode?: boolean;
+  selectedIds?: Set<string>;
+  onToggleSelection?: (id: string) => void;
+  onToggleAllOnPage?: () => void;
+  isAllOnPageSelected?: boolean;
 }
 
 export function TransactionList({
@@ -315,6 +337,11 @@ export function TransactionList({
   totalItems,
   pageSize,
   onPageChange,
+  selectionMode,
+  selectedIds,
+  onToggleSelection,
+  onToggleAllOnPage,
+  isAllOnPageSelected,
 }: TransactionListProps) {
   const { formatDate } = useDateFormat();
   const { formatCurrency } = useNumberFormat();
@@ -615,6 +642,16 @@ export function TransactionList({
         <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
           <thead className="bg-gray-50 dark:bg-gray-800">
             <tr>
+              {selectionMode && (
+                <th className={`${headerPadding} w-10`}>
+                  <input
+                    type="checkbox"
+                    checked={isAllOnPageSelected || false}
+                    onChange={() => onToggleAllOnPage?.()}
+                    className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 h-4 w-4 cursor-pointer"
+                  />
+                </th>
+              )}
               <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>
                 Date
               </th>
@@ -671,6 +708,9 @@ export function TransactionList({
                 onCycleStatus={handleCycleStatus}
                 onEdit={onEdit}
                 onDeleteClick={handleDeleteClick}
+                selectionMode={selectionMode}
+                isSelected={selectionMode ? selectedIds?.has(transaction.id) : undefined}
+                onToggleSelection={selectionMode ? () => onToggleSelection?.(transaction.id) : undefined}
               />
             ))}
           </tbody>

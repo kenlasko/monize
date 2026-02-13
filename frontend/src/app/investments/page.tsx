@@ -1,17 +1,18 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { UnsavedChangesDialog } from '@/components/ui/UnsavedChangesDialog';
+import { useFormModal } from '@/hooks/useFormModal';
 import { MultiSelect } from '@/components/ui/MultiSelect';
 import { Pagination } from '@/components/ui/Pagination';
 import { PortfolioSummaryCard } from '@/components/investments/PortfolioSummaryCard';
 import { GroupedHoldingsList } from '@/components/investments/GroupedHoldingsList';
 import { AssetAllocationChart } from '@/components/investments/AssetAllocationChart';
-import { InvestmentTransactionList, DensityLevel, TransactionFilters } from '@/components/investments/InvestmentTransactionList';
+import { InvestmentTransactionList, type DensityLevel, type TransactionFilters } from '@/components/investments/InvestmentTransactionList';
 import { InvestmentTransactionForm } from '@/components/investments/InvestmentTransactionForm';
 import { InvestmentValueChart } from '@/components/investments/InvestmentValueChart';
 import { investmentsApi } from '@/lib/investments';
@@ -26,10 +27,9 @@ import {
 import { usePriceRefresh, setRefreshInProgress } from '@/hooks/usePriceRefresh';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { createLogger } from '@/lib/logger';
+import { PAGE_SIZE } from '@/lib/constants';
 
 const logger = createLogger('Investments');
-
-const PAGE_SIZE = 50;
 
 // Helper to format relative time
 function formatRelativeTime(dateString: string | null): string {
@@ -70,8 +70,7 @@ function InvestmentsContent() {
   const [pagination, setPagination] = useState<InvestmentTransactionPaginationInfo | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
-  const [showTransactionForm, setShowTransactionForm] = useState(false);
-  const [editingTransaction, setEditingTransaction] = useState<InvestmentTransaction | undefined>();
+  const { showForm: showTransactionForm, editingItem: editingTransaction, openCreate, openEdit, close, isEditing, modalProps, setFormDirty, unsavedChangesDialog, formSubmitRef } = useFormModal<InvestmentTransaction>();
   const [listDensity, setListDensity] = useLocalStorage<DensityLevel>('monize-investments-density', 'normal');
   const [isRefreshingPrices, setIsRefreshingPrices] = useState(false);
   const [lastPriceUpdate, setLastPriceUpdate] = useState<string | null>(null);
@@ -83,17 +82,6 @@ function InvestmentsContent() {
   const [showRefreshDetails, setShowRefreshDetails] = useState(false);
   const [transactionFilters, setTransactionFilters] = useState<TransactionFilters>({});
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
-
-  // Unsaved changes tracking for InvestmentTransactionForm
-  const isFormDirtyRef = useRef(false);
-  const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
-  const formSubmitRef = useRef<(() => void) | null>(null);
-
-  const setIsFormDirty = useCallback((dirty: boolean) => { isFormDirtyRef.current = dirty; }, []);
-
-  const handleBeforeClose = useCallback(() => {
-    if (isFormDirtyRef.current) { setShowUnsavedDialog(true); return false; }
-  }, []);
 
   const loadInvestmentAccounts = useCallback(async () => {
     try {
@@ -124,7 +112,7 @@ function InvestmentsContent() {
 
   const { triggerAutoRefresh } = usePriceRefresh({
     onRefreshComplete: () => {
-      loadPortfolioData(selectedAccountIds, currentPage, transactionFilters);
+      loadAllPortfolioData(selectedAccountIds, currentPage, transactionFilters);
       loadPriceStatus();
     },
   });
@@ -161,7 +149,7 @@ function InvestmentsContent() {
       });
       setLastPriceUpdate(result.lastUpdated);
       // Reload portfolio data to show updated prices
-      loadPortfolioData(selectedAccountIds, currentPage, transactionFilters);
+      loadAllPortfolioData(selectedAccountIds, currentPage, transactionFilters);
       // Auto-show details if there are failures
       if (result.failed > 0) {
         setShowRefreshDetails(true);
@@ -181,7 +169,46 @@ function InvestmentsContent() {
     }
   };
 
-  const loadPortfolioData = useCallback(async (
+  const loadPortfolioSummary = useCallback(async (accountIds: string[]) => {
+    try {
+      const ids = accountIds.length > 0 ? accountIds : undefined;
+      const summaryData = await investmentsApi.getPortfolioSummary(ids);
+      setPortfolioSummary(summaryData);
+    } catch (error) {
+      logger.error('Failed to load portfolio summary:', error);
+      setPortfolioSummary(null);
+    }
+  }, []);
+
+  const loadTransactions = useCallback(async (
+    accountIds: string[],
+    page: number = 1,
+    filters: TransactionFilters = {},
+  ) => {
+    setIsLoading(true);
+    try {
+      const ids = accountIds.length > 0 ? accountIds : undefined;
+      const txResponse = await investmentsApi.getTransactions({
+        accountIds: ids ? ids.join(',') : undefined,
+        page,
+        limit: PAGE_SIZE,
+        symbol: filters.symbol,
+        action: filters.action,
+        startDate: filters.startDate,
+        endDate: filters.endDate,
+      });
+      setTransactions(txResponse.data || []);
+      setPagination(txResponse.pagination);
+    } catch (error) {
+      logger.error('Failed to load transactions:', error);
+      setTransactions([]);
+      setPagination(null);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const loadAllPortfolioData = useCallback(async (
     accountIds: string[],
     page: number = 1,
     filters: TransactionFilters = {},
@@ -201,7 +228,6 @@ function InvestmentsContent() {
           endDate: filters.endDate,
         }),
       ]);
-
       setPortfolioSummary(summaryData);
       setTransactions(txResponse.data || []);
       setPagination(txResponse.pagination);
@@ -221,9 +247,15 @@ function InvestmentsContent() {
     loadPriceStatus();
   }, [loadInvestmentAccounts, loadAllAccounts, loadPriceStatus]);
 
+  // Load summary when account selection changes
   useEffect(() => {
-    loadPortfolioData(selectedAccountIds, currentPage, transactionFilters);
-  }, [loadPortfolioData, selectedAccountIds, currentPage, transactionFilters]);
+    loadPortfolioSummary(selectedAccountIds);
+  }, [loadPortfolioSummary, selectedAccountIds]);
+
+  // Load transactions when page, filters, or account selection changes
+  useEffect(() => {
+    loadTransactions(selectedAccountIds, currentPage, transactionFilters);
+  }, [loadTransactions, selectedAccountIds, currentPage, transactionFilters]);
 
   useEffect(() => {
     if (!isLoading && !initialLoadComplete) {
@@ -239,9 +271,7 @@ function InvestmentsContent() {
       // Load the transaction and open the edit form
       investmentsApi.getTransaction(editId)
         .then((transaction) => {
-          setEditingTransaction(transaction);
-          isFormDirtyRef.current = false;
-          setShowTransactionForm(true);
+          openEdit(transaction);
           // Clear the URL parameter
           router.replace('/investments', { scroll: false });
         })
@@ -250,7 +280,7 @@ function InvestmentsContent() {
           router.replace('/investments', { scroll: false });
         });
     }
-  }, [searchParams, router]);
+  }, [searchParams, router, openEdit]);
 
   const handleAccountChange = (values: string[]) => {
     setSelectedAccountIds(values);
@@ -261,7 +291,7 @@ function InvestmentsContent() {
     if (!confirm('Are you sure you want to delete this transaction?')) return;
     try {
       await investmentsApi.deleteTransaction(id);
-      loadPortfolioData(selectedAccountIds, currentPage, transactionFilters);
+      loadAllPortfolioData(selectedAccountIds, currentPage, transactionFilters);
     } catch (error) {
       logger.error('Failed to delete transaction:', error);
       alert('Failed to delete transaction');
@@ -269,22 +299,16 @@ function InvestmentsContent() {
   };
 
   const handleNewTransaction = () => {
-    setEditingTransaction(undefined);
-    isFormDirtyRef.current = false;
-    setShowTransactionForm(true);
+    openCreate();
   };
 
   const handleEditTransaction = (transaction: InvestmentTransaction) => {
-    setEditingTransaction(transaction);
-    isFormDirtyRef.current = false;
-    setShowTransactionForm(true);
+    openEdit(transaction);
   };
 
   const handleFormSuccess = () => {
-    isFormDirtyRef.current = false;
-    setShowTransactionForm(false);
-    setEditingTransaction(undefined);
-    loadPortfolioData(selectedAccountIds, currentPage, transactionFilters);
+    close();
+    loadAllPortfolioData(selectedAccountIds, currentPage, transactionFilters);
   };
 
   const handleFiltersChange = (newFilters: TransactionFilters) => {
@@ -299,11 +323,6 @@ function InvestmentsContent() {
 
   const handleCashClick = (cashAccountId: string) => {
     router.push(`/transactions?accountId=${cashAccountId}`);
-  };
-
-  const handleFormCancel = () => {
-    setShowTransactionForm(false);
-    setEditingTransaction(undefined);
   };
 
   const goToPage = (page: number) => {
@@ -526,7 +545,7 @@ function InvestmentsContent() {
       </main>
 
       {/* Transaction Form Modal */}
-      <Modal isOpen={showTransactionForm} onClose={handleFormCancel} maxWidth="xl" className="p-6" pushHistory onBeforeClose={handleBeforeClose}>
+      <Modal isOpen={showTransactionForm} onClose={close} maxWidth="xl" className="p-6" {...modalProps}>
         <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
           {editingTransaction ? 'Edit Transaction' : 'New Investment Transaction'}
         </h2>
@@ -536,17 +555,12 @@ function InvestmentsContent() {
           transaction={editingTransaction}
           defaultAccountId={getSelectedBrokerageAccountId()}
           onSuccess={handleFormSuccess}
-          onCancel={handleFormCancel}
-          onDirtyChange={setIsFormDirty}
+          onCancel={close}
+          onDirtyChange={setFormDirty}
           submitRef={formSubmitRef}
         />
       </Modal>
-      <UnsavedChangesDialog
-        isOpen={showUnsavedDialog}
-        onSave={() => { setShowUnsavedDialog(false); formSubmitRef.current?.(); }}
-        onDiscard={() => { setShowUnsavedDialog(false); isFormDirtyRef.current = false; handleFormCancel(); }}
-        onCancel={() => setShowUnsavedDialog(false)}
-      />
+      <UnsavedChangesDialog {...unsavedChangesDialog} />
     </PageLayout>
   );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
 import { PageLayout } from '@/components/layout/PageLayout';
@@ -15,14 +15,14 @@ import dynamic from 'next/dynamic';
 import { investmentsApi } from '@/lib/investments';
 import { Security, CreateSecurityData, Holding } from '@/types/investment';
 const SecurityForm = dynamic(() => import('@/components/securities/SecurityForm').then(m => m.SecurityForm), { ssr: false });
-import { SecurityList, DensityLevel, SecurityHoldings } from '@/components/securities/SecurityList';
+import { SecurityList, type DensityLevel, type SecurityHoldings } from '@/components/securities/SecurityList';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { createLogger } from '@/lib/logger';
 import { getErrorMessage } from '@/lib/errors';
+import { useFormModal } from '@/hooks/useFormModal';
+import { PAGE_SIZE } from '@/lib/constants';
 
 const logger = createLogger('Securities');
-
-const PAGE_SIZE = 50;
 
 export default function SecuritiesPage() {
   return (
@@ -36,22 +36,11 @@ function SecuritiesContent() {
   const [allSecurities, setAllSecurities] = useState<Security[]>([]);
   const [holdings, setHoldings] = useState<SecurityHoldings>({});
   const [isLoading, setIsLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [editingSecurity, setEditingSecurity] = useState<Security | undefined>();
+  const { showForm, editingItem: editingSecurity, openCreate, openEdit, close, isEditing, modalProps, setFormDirty, unsavedChangesDialog, formSubmitRef } = useFormModal<Security>();
   const [searchQuery, setSearchQuery] = useState('');
   const [showInactive, setShowInactive] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [listDensity, setListDensity] = useLocalStorage<DensityLevel>('monize-securities-density', 'normal');
-
-  // Unsaved changes tracking for SecurityForm
-  const isFormDirtyRef = useRef(false);
-  const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
-  const formSubmitRef = useRef<(() => void) | null>(null);
-  const setIsFormDirty = useCallback((dirty: boolean) => { isFormDirtyRef.current = dirty; }, []);
-
-  const handleBeforeClose = useCallback(() => {
-    if (isFormDirtyRef.current) { setShowUnsavedDialog(true); return false; }
-  }, []);
 
   const loadData = async () => {
     setIsLoading(true);
@@ -97,15 +86,11 @@ function SecuritiesContent() {
   }, []);
 
   const handleCreateNew = () => {
-    setEditingSecurity(undefined);
-    isFormDirtyRef.current = false;
-    setShowForm(true);
+    openCreate();
   };
 
   const handleEdit = (security: Security) => {
-    setEditingSecurity(security);
-    isFormDirtyRef.current = false;
-    setShowForm(true);
+    openEdit(security);
   };
 
   const handleFormSubmit = async (data: CreateSecurityData) => {
@@ -117,9 +102,7 @@ function SecuritiesContent() {
         await investmentsApi.createSecurity(data);
         toast.success('Security created successfully');
       }
-      isFormDirtyRef.current = false;
-      setShowForm(false);
-      setEditingSecurity(undefined);
+      close();
       loadData();
     } catch (error) {
       toast.error(getErrorMessage(error, `Failed to ${editingSecurity ? 'update' : 'create'} security`));
@@ -128,8 +111,7 @@ function SecuritiesContent() {
   };
 
   const handleFormCancel = () => {
-    setShowForm(false);
-    setEditingSecurity(undefined);
+    close();
   };
 
   const handleToggleActive = async (security: Security) => {
@@ -214,24 +196,19 @@ function SecuritiesContent() {
         </div>
 
         {/* Form Modal */}
-        <Modal isOpen={showForm} onClose={handleFormCancel} maxWidth="lg" className="p-6" pushHistory onBeforeClose={handleBeforeClose}>
+        <Modal isOpen={showForm} onClose={close} {...modalProps} maxWidth="lg" className="p-6">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
-            {editingSecurity ? 'Edit Security' : 'New Security'}
+            {isEditing ? 'Edit Security' : 'New Security'}
           </h2>
           <SecurityForm
             security={editingSecurity}
             onSubmit={handleFormSubmit}
-            onCancel={handleFormCancel}
-            onDirtyChange={setIsFormDirty}
+            onCancel={close}
+            onDirtyChange={setFormDirty}
             submitRef={formSubmitRef}
           />
         </Modal>
-        <UnsavedChangesDialog
-          isOpen={showUnsavedDialog}
-          onSave={() => { setShowUnsavedDialog(false); formSubmitRef.current?.(); }}
-          onDiscard={() => { setShowUnsavedDialog(false); isFormDirtyRef.current = false; handleFormCancel(); }}
-          onCancel={() => setShowUnsavedDialog(false)}
-        />
+        <UnsavedChangesDialog {...unsavedChangesDialog} />
 
         {/* Securities List */}
         <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg overflow-hidden">

@@ -13,6 +13,9 @@ import { investmentsApi } from '@/lib/investments';
 import { exchangeRatesApi, CurrencyInfo } from '@/lib/exchange-rates';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { createLogger } from '@/lib/logger';
+import { useFormSubmitRef } from '@/hooks/useFormSubmitRef';
+import { useFormDirtyNotify } from '@/hooks/useFormDirtyNotify';
+import { FormActions } from '@/components/ui/FormActions';
 
 const logger = createLogger('SecurityForm');
 
@@ -148,12 +151,9 @@ export function SecurityForm({ security, onSubmit, onCancel, onDirtyChange, subm
     await onSubmit(cleanedData);
   };
 
-  useEffect(() => { onDirtyChange?.(isDirty); }, [isDirty, onDirtyChange]);
+  useFormDirtyNotify(isDirty, onDirtyChange);
 
-  useEffect(() => {
-    if (submitRef) submitRef.current = handleSubmit(onFormSubmit);
-    return () => { if (submitRef) submitRef.current = null; };
-  }, [submitRef, handleSubmit, onFormSubmit]);
+  useFormSubmitRef(submitRef, handleSubmit, onFormSubmit);
 
   return (
     <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
@@ -222,14 +222,7 @@ export function SecurityForm({ security, onSubmit, onCancel, onDirtyChange, subm
         error={errors.currencyCode?.message}
       />
 
-      <div className="flex justify-end gap-3 pt-4">
-        <Button type="button" variant="outline" onClick={onCancel}>
-          Cancel
-        </Button>
-        <Button type="submit" isLoading={isSubmitting}>
-          {security ? 'Update' : 'Create'} Security
-        </Button>
-      </div>
+      <FormActions onCancel={onCancel} submitLabel={security ? 'Update Security' : 'Create Security'} isSubmitting={isSubmitting} />
     </form>
   );
 }

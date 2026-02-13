@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import {
   format,
@@ -37,6 +37,7 @@ import { parseLocalDate } from '@/lib/utils';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { Modal } from '@/components/ui/Modal';
 import { UnsavedChangesDialog } from '@/components/ui/UnsavedChangesDialog';
+import { useFormModal } from '@/hooks/useFormModal';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { createLogger } from '@/lib/logger';
@@ -65,8 +66,7 @@ function BillsContent() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [editingTransaction, setEditingTransaction] = useState<ScheduledTransaction | undefined>();
+  const { showForm, editingItem: editingTransaction, openCreate, openEdit, close, isEditing, modalProps, setFormDirty, unsavedChangesDialog, formSubmitRef } = useFormModal<ScheduledTransaction>();
   const [filterType, setFilterType] = useState<'all' | 'bills' | 'deposits'>('all');
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [calendarMonth, setCalendarMonth] = useState(new Date());
@@ -90,16 +90,6 @@ function BillsContent() {
     isOpen: boolean;
     transaction: ScheduledTransaction | null;
   }>({ isOpen: false, transaction: null });
-
-  // Unsaved changes tracking for ScheduledTransactionForm
-  const isFormDirtyRef = useRef(false);
-  const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
-  const formSubmitRef = useRef<(() => void) | null>(null);
-  const setIsFormDirty = useCallback((dirty: boolean) => { isFormDirtyRef.current = dirty; }, []);
-
-  const handleBeforeClose = useCallback(() => {
-    if (isFormDirtyRef.current) { setShowUnsavedDialog(true); return false; }
-  }, []);
 
   const loadData = async () => {
     setIsLoading(true);
@@ -125,9 +115,7 @@ function BillsContent() {
   }, []);
 
   const handleCreateNew = () => {
-    setEditingTransaction(undefined);
-    isFormDirtyRef.current = false;
-    setShowForm(true);
+    openCreate();
   };
 
   const handleEdit = async (transaction: ScheduledTransaction) => {
@@ -143,25 +131,19 @@ function BillsContent() {
         });
       } else {
         // No overrides, proceed directly to edit
-        setEditingTransaction(transaction);
-        isFormDirtyRef.current = false;
-        setShowForm(true);
+        openEdit(transaction);
       }
     } catch (error) {
       // If check fails, proceed anyway
       logger.error('Failed to check overrides:', error);
-      setEditingTransaction(transaction);
-      isFormDirtyRef.current = false;
-      setShowForm(true);
+      openEdit(transaction);
     }
   };
 
   const handleOverrideConfirmKeep = () => {
     // Keep overrides and edit the base template
     if (overrideConfirm.transaction) {
-      setEditingTransaction(overrideConfirm.transaction);
-      isFormDirtyRef.current = false;
-      setShowForm(true);
+      openEdit(overrideConfirm.transaction);
     }
     setOverrideConfirm({ isOpen: false, transaction: null, overrideCount: 0 });
   };
@@ -172,9 +154,7 @@ function BillsContent() {
       try {
         await scheduledTransactionsApi.deleteAllOverrides(overrideConfirm.transaction.id);
         toast.success('Overrides deleted');
-        setEditingTransaction(overrideConfirm.transaction);
-        isFormDirtyRef.current = false;
-        setShowForm(true);
+        openEdit(overrideConfirm.transaction);
       } catch (error) {
         toast.error(getErrorMessage(error, 'Failed to delete overrides'));
         logger.error(error);
@@ -188,15 +168,12 @@ function BillsContent() {
   };
 
   const handleFormSuccess = () => {
-    isFormDirtyRef.current = false;
-    setShowForm(false);
-    setEditingTransaction(undefined);
+    close();
     loadData();
   };
 
   const handleFormCancel = () => {
-    setShowForm(false);
-    setEditingTransaction(undefined);
+    close();
   };
 
   const handleEditOccurrence = async (transaction: ScheduledTransaction) => {
@@ -303,66 +280,55 @@ function BillsContent() {
     return true;
   });
 
-  // Calculate summary stats (exclude transfers from bills/deposits)
-  const summary = {
-    totalBills: scheduledTransactions.filter((t) => Number(t.amount) < 0 && t.isActive && !t.isTransfer).length,
-    totalDeposits: scheduledTransactions.filter((t) => Number(t.amount) > 0 && t.isActive && !t.isTransfer).length,
-    monthlyBills: scheduledTransactions
-      .filter((t) => Number(t.amount) < 0 && t.isActive && !t.isTransfer)
-      .reduce((sum, t) => {
-        // Normalize to monthly amount
-        const amount = Math.abs(Number(t.amount));
-        switch (t.frequency) {
-          case 'DAILY':
-            return sum + amount * 30;
-          case 'WEEKLY':
-            return sum + amount * 4.33;
-          case 'BIWEEKLY':
-            return sum + amount * 2.17;
-          case 'MONTHLY':
-            return sum + amount;
-          case 'QUARTERLY':
-            return sum + amount / 3;
-          case 'YEARLY':
-            return sum + amount / 12;
-          default:
-            return sum;
-        }
-      }, 0),
-    monthlyDeposits: scheduledTransactions
-      .filter((t) => Number(t.amount) > 0 && t.isActive && !t.isTransfer)
-      .reduce((sum, t) => {
-        const amount = Number(t.amount);
-        switch (t.frequency) {
-          case 'DAILY':
-            return sum + amount * 30;
-          case 'WEEKLY':
-            return sum + amount * 4.33;
-          case 'BIWEEKLY':
-            return sum + amount * 2.17;
-          case 'MONTHLY':
-            return sum + amount;
-          case 'QUARTERLY':
-            return sum + amount / 3;
-          case 'YEARLY':
-            return sum + amount / 12;
-          default:
-            return sum;
-        }
-      }, 0),
-    dueCount: scheduledTransactions.filter((t) => {
-      if (!t.isActive || !t.nextDueDate) return false;
-      try {
-        const dueDate = parseLocalDate(t.nextDueDate);
-        if (!dueDate || isNaN(dueDate.getTime())) return false;
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        return dueDate <= today;
-      } catch {
-        return false;
+  // Calculate summary stats in a single pass (exclude transfers from bills/deposits)
+  const summary = useMemo(() => {
+    const normalizeToMonthly = (amount: number, frequency: string): number => {
+      switch (frequency) {
+        case 'DAILY': return amount * 30;
+        case 'WEEKLY': return amount * 4.33;
+        case 'BIWEEKLY': return amount * 2.17;
+        case 'MONTHLY': return amount;
+        case 'QUARTERLY': return amount / 3;
+        case 'YEARLY': return amount / 12;
+        default: return 0;
       }
-    }).length,
-  };
+    };
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    let totalBills = 0;
+    let totalDeposits = 0;
+    let monthlyBills = 0;
+    let monthlyDeposits = 0;
+    let dueCount = 0;
+
+    for (const t of scheduledTransactions) {
+      const amount = Number(t.amount);
+      const isActiveNonTransfer = t.isActive && !t.isTransfer;
+
+      if (isActiveNonTransfer) {
+        if (amount < 0) {
+          totalBills++;
+          monthlyBills += normalizeToMonthly(Math.abs(amount), t.frequency);
+        } else if (amount > 0) {
+          totalDeposits++;
+          monthlyDeposits += normalizeToMonthly(amount, t.frequency);
+        }
+      }
+
+      if (t.isActive && t.nextDueDate) {
+        try {
+          const dueDate = parseLocalDate(t.nextDueDate);
+          if (dueDate && !isNaN(dueDate.getTime()) && dueDate <= today) {
+            dueCount++;
+          }
+        } catch { /* skip invalid dates */ }
+      }
+    }
+
+    return { totalBills, totalDeposits, monthlyBills, monthlyDeposits, dueCount };
+  }, [scheduledTransactions]);
 
   // Generate upcoming occurrences for calendar view
   const getNextOccurrences = (st: ScheduledTransaction, _monthsAhead: number = 3): Date[] => {
@@ -462,25 +428,20 @@ function BillsContent() {
         </ErrorBoundary>
 
         {/* Form Modal */}
-        <Modal isOpen={showForm} onClose={handleFormCancel} maxWidth="5xl" className="p-6" pushHistory onBeforeClose={handleBeforeClose}>
+        <Modal isOpen={showForm} onClose={close} {...modalProps} maxWidth="5xl" className="p-6">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
-            {editingTransaction ? 'Edit Scheduled Transaction' : 'New Scheduled Transaction'}
+            {isEditing ? 'Edit Scheduled Transaction' : 'New Scheduled Transaction'}
           </h2>
           <ScheduledTransactionForm
             key={editingTransaction?.id || 'new'}
             scheduledTransaction={editingTransaction}
             onSuccess={handleFormSuccess}
-            onCancel={handleFormCancel}
-            onDirtyChange={setIsFormDirty}
+            onCancel={close}
+            onDirtyChange={setFormDirty}
             submitRef={formSubmitRef}
           />
         </Modal>
-        <UnsavedChangesDialog
-          isOpen={showUnsavedDialog}
-          onSave={() => { setShowUnsavedDialog(false); formSubmitRef.current?.(); }}
-          onDiscard={() => { setShowUnsavedDialog(false); isFormDirtyRef.current = false; handleFormCancel(); }}
-          onCancel={() => setShowUnsavedDialog(false)}
-        />
+        <UnsavedChangesDialog {...unsavedChangesDialog} />
 
         {/* View Toggle + Filter Tabs */}
         <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg mb-6">

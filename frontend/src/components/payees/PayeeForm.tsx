@@ -1,15 +1,17 @@
 'use client';
 
-import { useMemo, useEffect, MutableRefObject } from 'react';
+import { useMemo, MutableRefObject } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@/lib/zodResolver';
 import { z } from 'zod';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
-import { Button } from '@/components/ui/Button';
 import { Payee } from '@/types/payee';
 import { Category } from '@/types/category';
 import { buildCategoryTree } from '@/lib/categoryUtils';
+import { useFormSubmitRef } from '@/hooks/useFormSubmitRef';
+import { useFormDirtyNotify } from '@/hooks/useFormDirtyNotify';
+import { FormActions } from '@/components/ui/FormActions';
 
 const payeeSchema = z.object({
   name: z.string().min(1, 'Payee name is required').max(255),
@@ -46,12 +48,9 @@ export function PayeeForm({ payee, categories, onSubmit, onCancel, onDirtyChange
         },
   });
 
-  useEffect(() => { onDirtyChange?.(isDirty); }, [isDirty, onDirtyChange]);
+  useFormDirtyNotify(isDirty, onDirtyChange);
 
-  useEffect(() => {
-    if (submitRef) submitRef.current = handleSubmit(onSubmit);
-    return () => { if (submitRef) submitRef.current = null; };
-  }, [submitRef, handleSubmit, onSubmit]);
+  useFormSubmitRef(submitRef, handleSubmit, onSubmit);
 
   const categoryOptions = useMemo(() => [
     { value: '', label: 'No default category' },
@@ -87,19 +86,7 @@ export function PayeeForm({ payee, categories, onSubmit, onCancel, onDirtyChange
         {...register('notes')}
       />
 
-      <div className="flex justify-end space-x-3 pt-4">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onCancel}
-          disabled={isSubmitting}
-        >
-          Cancel
-        </Button>
-        <Button type="submit" isLoading={isSubmitting}>
-          {payee ? 'Update Payee' : 'Create Payee'}
-        </Button>
-      </div>
+      <FormActions onCancel={onCancel} submitLabel={payee ? 'Update Payee' : 'Create Payee'} isSubmitting={isSubmitting} />
     </form>
   );
 }

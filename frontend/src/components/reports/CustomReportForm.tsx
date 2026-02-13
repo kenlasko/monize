@@ -6,7 +6,6 @@ import { zodResolver } from '@/lib/zodResolver';
 import { z } from 'zod';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
-import { Button } from '@/components/ui/Button';
 import { IconPicker } from '@/components/ui/IconPicker';
 import { ColorPicker } from '@/components/ui/ColorPicker';
 import { MultiSelect } from '@/components/ui/MultiSelect';
@@ -37,6 +36,10 @@ import { accountsApi } from '@/lib/accounts';
 import { categoriesApi } from '@/lib/categories';
 import { payeesApi } from '@/lib/payees';
 import { createLogger } from '@/lib/logger';
+
+import { useFormSubmitRef } from '@/hooks/useFormSubmitRef';
+import { useFormDirtyNotify } from '@/hooks/useFormDirtyNotify';
+import { FormActions } from '@/components/ui/FormActions';
 
 const logger = createLogger('CustomReportForm');
 
@@ -160,7 +163,7 @@ export function CustomReportForm({ report, onSubmit, onCancel, onDirtyChange, su
         },
   });
 
-  useEffect(() => { onDirtyChange?.(isDirty); }, [isDirty, onDirtyChange]);
+  useFormDirtyNotify(isDirty, onDirtyChange);
 
   const watchTimeframeType = watch('timeframeType');
   const watchViewType = watch('viewType');
@@ -213,10 +216,7 @@ export function CustomReportForm({ report, onSubmit, onCancel, onDirtyChange, su
     await onSubmit(submitData);
   };
 
-  useEffect(() => {
-    if (submitRef) submitRef.current = handleSubmit(handleFormSubmit);
-    return () => { if (submitRef) submitRef.current = null; };
-  }, [submitRef, handleSubmit, handleFormSubmit]);
+  useFormSubmitRef(submitRef, handleSubmit, handleFormSubmit);
 
   const viewTypeOptions = Object.entries(VIEW_TYPE_LABELS).map(([value, label]) => ({
     value,
@@ -463,16 +463,8 @@ export function CustomReportForm({ report, onSubmit, onCancel, onDirtyChange, su
           </div>
         </div>
       </div>
-
       {/* Actions */}
-      <div className="flex justify-end gap-3">
-        <Button type="button" variant="outline" onClick={onCancel}>
-          Cancel
-        </Button>
-        <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? 'Saving...' : report ? 'Update Report' : 'Create Report'}
-        </Button>
-      </div>
+      <FormActions onCancel={onCancel} submitLabel={report ? 'Update Report' : 'Create Report'} isSubmitting={isSubmitting} />
     </form>
   );
 }

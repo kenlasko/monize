@@ -7,16 +7,19 @@ import { Button } from '@/components/ui/Button';
 import { MultiSelectOption } from '@/components/ui/MultiSelect';
 import { TransactionFilterPanel } from '@/components/transactions/TransactionFilterPanel';
 import { Pagination } from '@/components/ui/Pagination';
-import { TransactionList, DensityLevel } from '@/components/transactions/TransactionList';
+import { TransactionList, type DensityLevel } from '@/components/transactions/TransactionList';
 import dynamic from 'next/dynamic';
 
 const TransactionForm = dynamic(() => import('@/components/transactions/TransactionForm').then(m => m.TransactionForm), { ssr: false });
 const PayeeForm = dynamic(() => import('@/components/payees/PayeeForm').then(m => m.PayeeForm), { ssr: false });
+const BulkUpdateModal = dynamic(() => import('@/components/transactions/BulkUpdateModal').then(m => m.BulkUpdateModal), { ssr: false });
 import { transactionsApi } from '@/lib/transactions';
 import { accountsApi } from '@/lib/accounts';
 import { categoriesApi } from '@/lib/categories';
 import { payeesApi } from '@/lib/payees';
-import { Transaction, PaginationInfo, TransactionSummary } from '@/types/transaction';
+import { Transaction, PaginationInfo, TransactionSummary, BulkUpdateData, BulkUpdateFilters } from '@/types/transaction';
+import { useTransactionSelection } from '@/hooks/useTransactionSelection';
+import { BulkSelectionBanner } from '@/components/transactions/BulkSelectionBanner';
 import { Account } from '@/types/account';
 import { Category } from '@/types/category';
 import { Payee } from '@/types/payee';
@@ -24,6 +27,7 @@ import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
+import { useFormModal } from '@/hooks/useFormModal';
 import { Modal } from '@/components/ui/Modal';
 import { UnsavedChangesDialog } from '@/components/ui/UnsavedChangesDialog';
 import { PageLayout } from '@/components/layout/PageLayout';
@@ -33,10 +37,9 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { createLogger } from '@/lib/logger';
 import { getErrorMessage } from '@/lib/errors';
+import { PAGE_SIZE } from '@/lib/constants';
 
 const logger = createLogger('Transactions');
-
-const PAGE_SIZE = 50;
 
 // LocalStorage keys for filter persistence
 const STORAGE_KEYS = {
@@ -113,28 +116,15 @@ function TransactionsContent() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [payees, setPayees] = useState<Payee[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [editingTransaction, setEditingTransaction] = useState<Transaction | undefined>();
+  const { showForm, editingItem: editingTransaction, openCreate, openEdit, close, isEditing, modalProps, setFormDirty, unsavedChangesDialog, formSubmitRef } = useFormModal<Transaction>();
   const [showPayeeForm, setShowPayeeForm] = useState(false);
   const [editingPayee, setEditingPayee] = useState<Payee | undefined>();
   const [listDensity, setListDensity] = useLocalStorage<DensityLevel>('monize-transactions-density', 'normal');
-
-  // Unsaved changes tracking for TransactionForm (ref avoids stale closures in onBeforeClose)
-  const isFormDirtyRef = useRef(false);
-  const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
-  const formSubmitRef = useRef<(() => void) | null>(null);
-
-  const setIsFormDirty = useCallback((dirty: boolean) => {
-    isFormDirtyRef.current = dirty;
-  }, []);
-
-  const handleBeforeClose = useCallback(() => {
-    if (isFormDirtyRef.current) { setShowUnsavedDialog(true); return false; }
-  }, []);
+  const [showBulkUpdate, setShowBulkUpdate] = useState(false);
 
   // Ref to track whether any modal is open (used by popstate handler to avoid conflicts)
   const modalOpenRef = useRef(false);
-  modalOpenRef.current = showForm || showPayeeForm;
+  modalOpenRef.current = showForm || showPayeeForm || showBulkUpdate;
 
   // Pagination state - initialize from URL
   const [pagination, setPagination] = useState<PaginationInfo | null>(null);
@@ -393,9 +383,14 @@ function TransactionsContent() {
     }
   }, [filterAccountIds, filterAccountStatus, filteredAccounts, filterCategoryIds, filterPayeeIds, filterStartDate, filterEndDate, filterSearch]);
 
-  // Refresh all data (called after form submission)
+  // Refresh transaction data only (called after form submission - static data created
+  // in the form is already in apiCache so will be picked up on next full load)
   const loadData = useCallback(async (page: number = currentPage) => {
-    // Refresh static data in case user created new payee/category in form
+    await loadTransactions(page);
+  }, [currentPage, loadTransactions]);
+
+  // Full refresh including static data (called after bulk operations like inline edits)
+  const loadAllData = useCallback(async (page: number = currentPage) => {
     staticDataLoaded.current = false;
     loadStaticData();
     await loadTransactions(page);
@@ -566,9 +561,7 @@ function TransactionsContent() {
   }, []);
 
   const handleCreateNew = () => {
-    setEditingTransaction(undefined);
-    isFormDirtyRef.current = false;
-    setShowForm(true);
+    openCreate();
   };
 
   const handleEdit = async (transaction: Transaction) => {
@@ -585,33 +578,25 @@ function TransactionsContent() {
     if (transaction.isTransfer) {
       try {
         const fullTransaction = await transactionsApi.getById(transaction.id);
-        setEditingTransaction(fullTransaction);
+        openEdit(fullTransaction);
       } catch (error) {
         logger.error('Failed to load transaction details:', error);
         // Fall back to using the list transaction
-        setEditingTransaction(transaction);
+        openEdit(transaction);
       }
     } else {
-      setEditingTransaction(transaction);
+      openEdit(transaction);
     }
-    isFormDirtyRef.current = false;
-    setShowForm(true);
   };
 
   const [formKey, setFormKey] = useState(0);
 
   const handleFormSuccess = () => {
-    isFormDirtyRef.current = false;
-    setShowForm(false);
-    setEditingTransaction(undefined);
+    close();
     setFormKey(prev => prev + 1); // Force form re-creation on next open
     loadData();
   };
 
-  const handleFormCancel = () => {
-    setShowForm(false);
-    setEditingTransaction(undefined);
-  };
 
   const handlePayeeClick = async (payeeId: string) => {
     try {
@@ -684,6 +669,51 @@ function TransactionsContent() {
     );
   }, []);
 
+  // Build current filters for bulk update selection
+  const bulkUpdateFilters = useMemo((): BulkUpdateFilters => {
+    const filters: BulkUpdateFilters = {};
+    if (filterAccountIds.length > 0) {
+      filters.accountIds = filterAccountIds;
+    } else if (filterAccountStatus && filteredAccounts.length > 0) {
+      filters.accountIds = filteredAccounts.map(a => a.id);
+    }
+    if (filterCategoryIds.length > 0) filters.categoryIds = filterCategoryIds;
+    if (filterPayeeIds.length > 0) filters.payeeIds = filterPayeeIds;
+    if (filterStartDate) filters.startDate = filterStartDate;
+    if (filterEndDate) filters.endDate = filterEndDate;
+    if (filterSearch) filters.search = filterSearch;
+    return filters;
+  }, [filterAccountIds, filterAccountStatus, filteredAccounts, filterCategoryIds, filterPayeeIds, filterStartDate, filterEndDate, filterSearch]);
+
+  // Transaction selection for bulk operations
+  const selection = useTransactionSelection(
+    transactions,
+    pagination?.total ?? 0,
+    bulkUpdateFilters,
+  );
+
+  const handleBulkUpdate = useCallback(async (updateFields: Partial<Pick<BulkUpdateData, 'payeeId' | 'payeeName' | 'categoryId' | 'description' | 'status'>>) => {
+    const payload = selection.buildSelectionPayload();
+    const result = await transactionsApi.bulkUpdate({
+      ...payload,
+      ...updateFields,
+    } as BulkUpdateData);
+
+    const parts = [`${result.updated} transaction${result.updated !== 1 ? 's' : ''} updated`];
+    if (result.skipped > 0) {
+      parts.push(`${result.skipped} skipped`);
+    }
+    toast.success(parts.join(', '));
+    if (result.skippedReasons.length > 0) {
+      result.skippedReasons.forEach(reason => toast(reason, { icon: 'ℹ️' }));
+    }
+
+    setShowBulkUpdate(false);
+    selection.clearSelection();
+    loadAllData();
+    return result;
+  }, [selection, loadAllData]);
+
   return (
     <PageLayout>
       <main className="px-4 sm:px-6 lg:px-12 pt-6 pb-8">
@@ -715,7 +745,7 @@ function TransactionsContent() {
         </div>
 
         {/* Form Modal */}
-        <Modal isOpen={showForm} onClose={handleFormCancel} maxWidth="6xl" className="p-6" pushHistory onBeforeClose={handleBeforeClose}>
+        <Modal isOpen={showForm} onClose={close} {...modalProps} maxWidth="6xl" className="p-6">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
             {editingTransaction ? 'Edit Transaction' : 'New Transaction'}
           </h2>
@@ -724,17 +754,12 @@ function TransactionsContent() {
             transaction={editingTransaction}
             defaultAccountId={filterAccountIds.length === 1 ? filterAccountIds[0] : undefined}
             onSuccess={handleFormSuccess}
-            onCancel={handleFormCancel}
-            onDirtyChange={setIsFormDirty}
+            onCancel={close}
+            onDirtyChange={setFormDirty}
             submitRef={formSubmitRef}
           />
         </Modal>
-        <UnsavedChangesDialog
-          isOpen={showUnsavedDialog}
-          onSave={() => { setShowUnsavedDialog(false); formSubmitRef.current?.(); }}
-          onDiscard={() => { setShowUnsavedDialog(false); isFormDirtyRef.current = false; handleFormCancel(); }}
-          onCancel={() => setShowUnsavedDialog(false)}
-        />
+        <UnsavedChangesDialog {...unsavedChangesDialog} />
 
         {/* Payee Edit Modal */}
         {editingPayee && (
@@ -801,6 +826,27 @@ function TransactionsContent() {
           }}
         />
 
+        {/* Bulk Selection Banner */}
+        {selection.hasSelection && (
+          <BulkSelectionBanner
+            selectionCount={selection.selectionCount}
+            isAllOnPageSelected={selection.isAllOnPageSelected}
+            selectAllMatching={selection.selectAllMatching}
+            totalMatching={pagination?.total ?? 0}
+            onSelectAllMatching={selection.selectAllMatchingTransactions}
+            onClearSelection={selection.clearSelection}
+            onBulkUpdate={() => setShowBulkUpdate(true)}
+          />
+        )}
+
+        {/* Bulk Update Modal */}
+        <BulkUpdateModal
+          isOpen={showBulkUpdate}
+          onClose={() => setShowBulkUpdate(false)}
+          onSubmit={handleBulkUpdate}
+          selectionCount={selection.selectionCount}
+        />
+
         {/* Transactions List */}
         <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg overflow-hidden">
           {isLoading ? (
@@ -809,7 +855,7 @@ function TransactionsContent() {
             <TransactionList
               transactions={transactions}
               onEdit={handleEdit}
-              onRefresh={loadData}
+              onRefresh={loadAllData}
               onTransactionUpdate={handleTransactionUpdate}
               onPayeeClick={handlePayeeClick}
               onTransferClick={handleTransferClick}
@@ -817,6 +863,11 @@ function TransactionsContent() {
               density={listDensity}
               onDensityChange={setListDensity}
               isSingleAccountView={filterAccountIds.length === 1}
+              selectionMode
+              selectedIds={selection.selectedIds}
+              onToggleSelection={selection.toggleTransaction}
+              onToggleAllOnPage={selection.toggleAllOnPage}
+              isAllOnPageSelected={selection.isAllOnPageSelected}
               startingBalance={startingBalance}
               currentPage={currentPage}
               totalPages={pagination?.totalPages ?? 1}

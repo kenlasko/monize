@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, forwardRef, InputHTMLAttributes, FocusEvent } from 'react';
-import { cn } from '@/lib/utils';
+import { cn, inputBaseClasses, inputErrorClasses } from '@/lib/utils';
 import { formatAmountWithCommas, parseAmount, filterCurrencyInput, filterCalculatorInput, hasCalculatorOperators, evaluateExpression } from '@/lib/format';
 
 interface CurrencyInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'onChange' | 'value' | 'type'> {
@@ -174,13 +174,8 @@ export const CurrencyInput = forwardRef<HTMLInputElement, CurrencyInputProps>(
             onFocus={handleFocus}
             style={prefix ? { paddingLeft: '1.75rem' } : undefined}
             className={cn(
-              'block w-full rounded-md border-gray-300 shadow-sm',
-              'focus:border-blue-500 focus:ring-blue-500',
-              'disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500',
-              'dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-400',
-              'dark:focus:border-blue-400 dark:focus:ring-blue-400',
-              'dark:disabled:bg-gray-700 dark:disabled:text-gray-400',
-              error && 'border-red-300 focus:border-red-500 focus:ring-red-500 dark:border-red-500',
+              inputBaseClasses,
+              error && inputErrorClasses,
               className
             )}
             {...props}

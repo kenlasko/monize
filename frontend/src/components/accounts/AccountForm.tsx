@@ -8,7 +8,6 @@ import { useState, useEffect, useMemo, MutableRefObject } from 'react';
 import { Input } from '@/components/ui/Input';
 import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { Select } from '@/components/ui/Select';
-import { Button } from '@/components/ui/Button';
 import toast from 'react-hot-toast';
 import { Account, PaymentFrequency } from '@/types/account';
 import { Category } from '@/types/category';
@@ -23,6 +22,10 @@ import { getErrorMessage } from '@/lib/errors';
 import { LoanFields } from './LoanFields';
 import { MortgageFields } from './MortgageFields';
 import { AssetFields } from './AssetFields';
+
+import { useFormSubmitRef } from '@/hooks/useFormSubmitRef';
+import { useFormDirtyNotify } from '@/hooks/useFormDirtyNotify';
+import { FormActions } from '@/components/ui/FormActions';
 
 const logger = createLogger('AccountForm');
 
@@ -162,12 +165,9 @@ export function AccountForm({ account, onSubmit, onCancel, onDirtyChange, submit
         },
   });
 
-  useEffect(() => { onDirtyChange?.(isDirty); }, [isDirty, onDirtyChange]);
+  useFormDirtyNotify(isDirty, onDirtyChange);
 
-  useEffect(() => {
-    if (submitRef) submitRef.current = handleSubmit(onSubmit);
-    return () => { if (submitRef) submitRef.current = null; };
-  }, [submitRef, handleSubmit, onSubmit]);
+  useFormSubmitRef(submitRef, handleSubmit, onSubmit);
 
   const watchedCurrency = watch('currencyCode');
   const watchedIsFavourite = watch('isFavourite');
@@ -580,19 +580,7 @@ export function AccountForm({ account, onSubmit, onCancel, onDirtyChange, submit
         )}
       </div>
 
-      <div className="flex justify-end space-x-3 pt-4">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onCancel}
-          disabled={isSubmitting}
-        >
-          Cancel
-        </Button>
-        <Button type="submit" isLoading={isSubmitting}>
-          {account ? 'Update Account' : 'Create Account'}
-        </Button>
-      </div>
+      <FormActions onCancel={onCancel} submitLabel={account ? 'Update Account' : 'Create Account'} isSubmitting={isSubmitting} />
     </form>
   );
 }

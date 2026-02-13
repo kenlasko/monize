@@ -778,6 +778,59 @@ describe("ScheduledTransactionsService", () => {
       expect(transactionsService.create).not.toHaveBeenCalled();
     });
 
+    it("should pass payee fields to createTransfer for transfer transactions", async () => {
+      const scheduled = makeScheduled({
+        isTransfer: true,
+        transferAccountId: "acc-2",
+        payeeId: "payee-1",
+        payeeName: "Landlord",
+      });
+      stubFindOne(scheduled);
+      const overrideQb = mockQueryBuilder(null);
+      overrideQb.getOne.mockResolvedValue(null);
+      overridesRepo.createQueryBuilder.mockReturnValue(overrideQb);
+      accountsRepo.findOne.mockResolvedValue(null);
+
+      await service.post(userId, stId);
+
+      expect(transactionsService.createTransfer).toHaveBeenCalledWith(
+        userId,
+        expect.objectContaining({
+          fromAccountId: "acc-1",
+          toAccountId: "acc-2",
+          amount: 1200,
+          payeeId: "payee-1",
+          payeeName: "Landlord",
+        }),
+      );
+    });
+
+    it("should pass undefined payee fields when scheduled transaction has no payee", async () => {
+      const scheduled = makeScheduled({
+        isTransfer: true,
+        transferAccountId: "acc-2",
+        payeeId: null as any,
+        payeeName: null as any,
+      });
+      stubFindOne(scheduled);
+      const overrideQb = mockQueryBuilder(null);
+      overrideQb.getOne.mockResolvedValue(null);
+      overridesRepo.createQueryBuilder.mockReturnValue(overrideQb);
+      accountsRepo.findOne.mockResolvedValue(null);
+
+      await service.post(userId, stId);
+
+      expect(transactionsService.createTransfer).toHaveBeenCalledWith(
+        userId,
+        expect.objectContaining({
+          fromAccountId: "acc-1",
+          toAccountId: "acc-2",
+          payeeId: undefined,
+          payeeName: undefined,
+        }),
+      );
+    });
+
     it("should apply inline values with highest priority", async () => {
       const scheduled = makeScheduled({ amount: -1200 });
       stubFindOne(scheduled);

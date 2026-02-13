@@ -1,5 +1,9 @@
 import { FieldErrors, FieldValues, Resolver } from 'react-hook-form';
-import { ZodError, ZodType } from 'zod';
+import { z, ZodError, ZodType } from 'zod';
+
+// Disable Zod v4 JIT compilation to avoid Function() constructor usage
+// which violates Content-Security-Policy (script-src without 'unsafe-eval').
+z.config({ jitless: true });
 
 /**
  * Custom Zod resolver for react-hook-form that properly handles Zod v4 errors.

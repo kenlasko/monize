@@ -6,7 +6,9 @@ import { zodResolver } from '@/lib/zodResolver';
 import { z } from 'zod';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
-import { Button } from '@/components/ui/Button';
+import { useFormSubmitRef } from '@/hooks/useFormSubmitRef';
+import { useFormDirtyNotify } from '@/hooks/useFormDirtyNotify';
+import { FormActions } from '@/components/ui/FormActions';
 import { Category } from '@/types/category';
 
 const categorySchema = z.object({
@@ -66,12 +68,9 @@ export function CategoryForm({ category, categories, onSubmit, onCancel, onDirty
         },
   });
 
-  useEffect(() => { onDirtyChange?.(isDirty); }, [isDirty, onDirtyChange]);
+  useFormDirtyNotify(isDirty, onDirtyChange);
 
-  useEffect(() => {
-    if (submitRef) submitRef.current = handleSubmit(onSubmit);
-    return () => { if (submitRef) submitRef.current = null; };
-  }, [submitRef, handleSubmit, onSubmit]);
+  useFormSubmitRef(submitRef, handleSubmit, onSubmit);
 
   const watchedColor = watch('color');
   const watchedParentId = watch('parentId');
@@ -162,13 +161,11 @@ export function CategoryForm({ category, categories, onSubmit, onCancel, onDirty
             error={errors.isIncome?.message}
             disabled={hasParent}
             value={watchedIsIncome ? 'true' : 'false'}
-            {...register('isIncome', {
-              setValueAs: (v) => v === 'true',
-            })}
+            onChange={(e) => setValue('isIncome', e.target.value === 'true', { shouldDirty: true })}
           />
           {hasParent && parentCategory && (
             <p className="mt-1 text-xs text-gray-500">
-              Type inherited from parent ({parentCategory.isIncome ? 'Income' : 'Expense'})
+              Type inherited from parent
             </p>
           )}
         </div>
@@ -209,19 +206,7 @@ export function CategoryForm({ category, categories, onSubmit, onCancel, onDirty
         {...register('description')}
       />
 
-      <div className="flex justify-end space-x-3 pt-4">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onCancel}
-          disabled={isSubmitting}
-        >
-          Cancel
-        </Button>
-        <Button type="submit" isLoading={isSubmitting}>
-          {category ? 'Update Category' : 'Create Category'}
-        </Button>
-      </div>
+      <FormActions onCancel={onCancel} submitLabel={category ? 'Update Category' : 'Create Category'} isSubmitting={isSubmitting} />
     </form>
   );
 }

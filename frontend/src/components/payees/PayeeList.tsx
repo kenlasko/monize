@@ -9,11 +9,13 @@ import { payeesApi } from '@/lib/payees';
 import toast from 'react-hot-toast';
 import { createLogger } from '@/lib/logger';
 import { getErrorMessage } from '@/lib/errors';
+import { useTableDensity, nextDensity, type DensityLevel } from '@/hooks/useTableDensity';
+import { SortIcon } from '@/components/ui/SortIcon';
 
 const logger = createLogger('PayeeList');
 
-// Density levels: 'normal' | 'compact' | 'dense'
-export type DensityLevel = 'normal' | 'compact' | 'dense';
+// Re-export DensityLevel from shared hook
+export type { DensityLevel };
 
 export type SortField = 'name' | 'category' | 'count';
 export type SortDirection = 'asc' | 'desc';
@@ -147,29 +149,14 @@ export function PayeeList({
   // Use prop density if provided, otherwise use local state
   const density = propDensity ?? localDensity;
 
-  // Memoize padding classes based on density
-  const cellPadding = useMemo(() => {
-    switch (density) {
-      case 'dense': return 'px-3 py-1';
-      case 'compact': return 'px-4 py-2';
-      default: return 'px-6 py-4';
-    }
-  }, [density]);
-
-  const headerPadding = useMemo(() => {
-    switch (density) {
-      case 'dense': return 'px-3 py-2';
-      case 'compact': return 'px-4 py-2';
-      default: return 'px-6 py-3';
-    }
-  }, [density]);
+  const { cellPadding, headerPadding } = useTableDensity(density);
 
   const cycleDensity = useCallback(() => {
-    const nextDensity = density === 'normal' ? 'compact' : density === 'compact' ? 'dense' : 'normal';
+    const next = nextDensity(density);
     if (onDensityChange) {
-      onDensityChange(nextDensity);
+      onDensityChange(next);
     } else {
-      setLocalDensity(nextDensity);
+      setLocalDensity(next);
     }
   }, [density, onDensityChange]);
 
@@ -209,13 +196,6 @@ export function PayeeList({
       return sortDirection === 'asc' ? comparison : -comparison;
     });
   }, [payees, sortField, sortDirection, onSort]);
-
-  const SortIcon = ({ field }: { field: SortField }) => {
-    if (sortField !== field) {
-      return <span className="ml-1 text-gray-300 dark:text-gray-600">↕</span>;
-    }
-    return <span className="ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>;
-  };
 
   const handleViewTransactions = useCallback((payee: Payee) => {
     router.push(`/transactions?payeeId=${payee.id}`);
@@ -281,19 +261,19 @@ export function PayeeList({
                 className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:text-gray-700 dark:hover:text-gray-200`}
                 onClick={() => handleSort('name')}
               >
-                Name<SortIcon field="name" />
+                Name<SortIcon field="name" sortField={sortField} sortDirection={sortDirection} />
               </th>
               <th
                 className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:text-gray-700 dark:hover:text-gray-200 hidden sm:table-cell`}
                 onClick={() => handleSort('category')}
               >
-                Default Category<SortIcon field="category" />
+                Default Category<SortIcon field="category" sortField={sortField} sortDirection={sortDirection} />
               </th>
               <th
                 className={`${headerPadding} text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:text-gray-700 dark:hover:text-gray-200 hidden md:table-cell`}
                 onClick={() => handleSort('count')}
               >
-                Count<SortIcon field="count" />
+                Count<SortIcon field="count" sortField={sortField} sortDirection={sortDirection} />
               </th>
               {density === 'normal' && (
                 <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>

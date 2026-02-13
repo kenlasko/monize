@@ -17,6 +17,7 @@ import { TransactionSplitService } from "./transaction-split.service";
 import { TransactionTransferService } from "./transaction-transfer.service";
 import { TransactionReconciliationService } from "./transaction-reconciliation.service";
 import { TransactionAnalyticsService } from "./transaction-analytics.service";
+import { TransactionBulkUpdateService } from "./transaction-bulk-update.service";
 
 describe("TransactionsService", () => {
   let service: TransactionsService;
@@ -112,6 +113,7 @@ describe("TransactionsService", () => {
         TransactionTransferService,
         TransactionReconciliationService,
         TransactionAnalyticsService,
+        TransactionBulkUpdateService,
       ],
     }).compile();
 

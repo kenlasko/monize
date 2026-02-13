@@ -5,7 +5,6 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@/lib/zodResolver';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
-import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { SplitEditor, SplitRow, createEmptySplits, toSplitRows, toCreateSplitData } from './SplitEditor';
 import { NormalTransactionFields } from './NormalTransactionFields';
@@ -23,19 +22,12 @@ import { buildCategoryTree } from '@/lib/categoryUtils';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { createLogger } from '@/lib/logger';
 import { getErrorMessage } from '@/lib/errors';
+import { optionalUuid, optionalString } from '@/lib/zod-helpers';
+import { useFormSubmitRef } from '@/hooks/useFormSubmitRef';
+import { useFormDirtyNotify } from '@/hooks/useFormDirtyNotify';
+import { FormActions } from '@/components/ui/FormActions';
 
 const logger = createLogger('TransactionForm');
-
-// Helper to convert empty strings to undefined for optional UUID fields
-const optionalUuid = z.preprocess(
-  (val) => (val === '' ? undefined : val),
-  z.string().uuid().optional()
-);
-
-const optionalString = z.preprocess(
-  (val) => (val === '' ? undefined : val),
-  z.string().optional()
-);
 
 const transactionSchema = z.object({
   accountId: z.string().uuid('Please select an account'),
@@ -177,7 +169,7 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
         },
   });
 
-  useEffect(() => { onDirtyChange?.(isDirty); }, [isDirty, onDirtyChange]);
+  useFormDirtyNotify(isDirty, onDirtyChange);
 
   const watchedAccountId = watch('accountId');
   const watchedAmount = watch('amount');
@@ -483,8 +475,8 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
           amount: Math.abs(data.amount),
           fromCurrencyCode: data.currencyCode,
           toCurrencyCode: toCurrencyCode,
-          description: data.description,
-          referenceNumber: data.referenceNumber,
+          description: data.description ?? null,
+          referenceNumber: data.referenceNumber ?? null,
           status: data.status,
           payeeId: transferPayeeId || undefined,
           payeeName: transferPayeeName || undefined,
@@ -526,6 +518,10 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
         splits: splitsData,
         // Clear categoryId for split transactions
         categoryId: isSplitMode ? undefined : data.categoryId,
+        // Ensure cleared optional fields are sent as null (not undefined)
+        // so the backend knows to clear them rather than ignoring the field
+        description: data.description ?? null,
+        referenceNumber: data.referenceNumber ?? null,
       };
 
       if (transaction) {
@@ -544,10 +540,7 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
     }
   };
 
-  useEffect(() => {
-    if (submitRef) submitRef.current = handleSubmit(onSubmit);
-    return () => { if (submitRef) submitRef.current = null; };
-  }, [submitRef, handleSubmit, onSubmit]);
+  useFormSubmitRef(submitRef, handleSubmit, onSubmit);
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -717,18 +710,8 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
         ]}
         {...register('status')}
       />
-
       {/* Actions */}
-      <div className="flex justify-end space-x-3 pt-4">
-        {onCancel && (
-          <Button type="button" variant="outline" onClick={onCancel}>
-            Cancel
-          </Button>
-        )}
-        <Button type="submit" isLoading={isLoading}>
-          {transaction ? 'Update' : 'Create'} {mode === 'transfer' ? 'Transfer' : 'Transaction'}
-        </Button>
-      </div>
+      <FormActions onCancel={onCancel} submitLabel={`${transaction ? 'Update' : 'Create'} ${mode === 'transfer' ? 'Transfer' : 'Transaction'}`} isSubmitting={isLoading} />
     </form>
   );
 }

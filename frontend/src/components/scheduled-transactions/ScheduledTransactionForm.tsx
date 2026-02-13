@@ -7,7 +7,6 @@ import { z } from 'zod';
 import toast from 'react-hot-toast';
 import { Input } from '@/components/ui/Input';
 import { CurrencyInput } from '@/components/ui/CurrencyInput';
-import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { Combobox } from '@/components/ui/Combobox';
 import { SplitEditor, SplitRow, createEmptySplits, toSplitRows, toCreateSplitData } from '@/components/transactions/SplitEditor';
@@ -25,22 +24,12 @@ import { getErrorMessage } from '@/lib/errors';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { createLogger } from '@/lib/logger';
 
+import { optionalUuid, optionalString, optionalNumber } from '@/lib/zod-helpers';
+import { useFormSubmitRef } from '@/hooks/useFormSubmitRef';
+import { useFormDirtyNotify } from '@/hooks/useFormDirtyNotify';
+import { FormActions } from '@/components/ui/FormActions';
+
 const logger = createLogger('ScheduledTxForm');
-
-const optionalUuid = z.preprocess(
-  (val) => (val === '' ? undefined : val),
-  z.string().uuid().optional()
-);
-
-const optionalString = z.preprocess(
-  (val) => (val === '' ? undefined : val),
-  z.string().optional()
-);
-
-const optionalNumber = z.preprocess(
-  (val) => (val === '' || val === undefined || val === null ? undefined : val),
-  z.number().optional()
-);
 
 const scheduledTransactionSchema = z.object({
   accountId: z.string().uuid('Please select an account'),
@@ -164,7 +153,7 @@ export function ScheduledTransactionForm({
         },
   });
 
-  useEffect(() => { onDirtyChange?.(isDirty); }, [isDirty, onDirtyChange]);
+  useFormDirtyNotify(isDirty, onDirtyChange);
 
   const watchedAccountId = watch('accountId');
   const watchedAmount = watch('amount');
@@ -412,11 +401,7 @@ export function ScheduledTransactionForm({
       setIsLoading(false);
     }
   };
-
-  useEffect(() => {
-    if (submitRef) submitRef.current = handleSubmit(onSubmit);
-    return () => { if (submitRef) submitRef.current = null; };
-  }, [submitRef, handleSubmit, onSubmit]);
+  useFormSubmitRef(submitRef, handleSubmit, onSubmit);
 
   const frequencyOptions = Object.entries(FREQUENCY_LABELS).map(([value, label]) => ({
     value,
@@ -724,16 +709,7 @@ export function ScheduledTransactionForm({
       </div>
 
       {/* Actions */}
-      <div className="flex justify-end space-x-3 pt-4">
-        {onCancel && (
-          <Button type="button" variant="outline" onClick={onCancel}>
-            Cancel
-          </Button>
-        )}
-        <Button type="submit" isLoading={isLoading}>
-          {scheduledTransaction ? 'Update' : 'Create'}
-        </Button>
-      </div>
+      <FormActions onCancel={onCancel} submitLabel={scheduledTransaction ? 'Update' : 'Create'} isSubmitting={isLoading} />
     </form>
   );
 }

@@ -1,4 +1,5 @@
 import apiClient from './api';
+import { getCached, setCache, invalidateCache } from './apiCache';
 
 export interface ExchangeRate {
   id: number;
@@ -47,7 +48,10 @@ export interface CurrencyUsage {
 export const exchangeRatesApi = {
   // Exchange rates
   getLatestRates: async (): Promise<ExchangeRate[]> => {
+    const cached = getCached<ExchangeRate[]>('exchange-rates:latest');
+    if (cached) return cached;
     const response = await apiClient.get<ExchangeRate[]>('/currencies/exchange-rates');
+    setCache('exchange-rates:latest', response.data, 300_000); // 5 min - rates change at most daily
     return response.data;
   },
 
@@ -59,6 +63,7 @@ export const exchangeRatesApi = {
   },
 
   refreshRates: async () => {
+    invalidateCache('exchange-rates:');
     const response = await apiClient.post('/currencies/exchange-rates/refresh');
     return response.data;
   },

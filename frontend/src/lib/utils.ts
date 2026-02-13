@@ -5,6 +5,19 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+/** Shared base classes for text inputs, selects, and comboboxes */
+export const inputBaseClasses = [
+  'block w-full rounded-md border-gray-300 shadow-sm',
+  'focus:border-blue-500 focus:ring-blue-500',
+  'disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500',
+  'dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-400',
+  'dark:focus:border-blue-400 dark:focus:ring-blue-400',
+  'dark:disabled:bg-gray-700 dark:disabled:text-gray-400',
+].join(' ');
+
+/** Shared error-state classes for inputs */
+export const inputErrorClasses = 'border-red-300 focus:border-red-500 focus:ring-red-500 dark:border-red-500';
+
 /**
  * Parse a date string (YYYY-MM-DD) into a Date object without timezone conversion.
  * This prevents the date from shifting when displayed in local time.

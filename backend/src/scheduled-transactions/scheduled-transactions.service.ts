@@ -598,6 +598,8 @@ export class ScheduledTransactionsService {
         transactionDate: postDate,
         fromCurrencyCode: scheduled.currencyCode,
         description: finalDescription || undefined,
+        payeeId: scheduled.payeeId || undefined,
+        payeeName: scheduled.payeeName || undefined,
       });
     } else {
       await this.transactionsService.create(userId, transactionPayload);
