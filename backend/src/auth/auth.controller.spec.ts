@@ -1,5 +1,9 @@
 import { Test, TestingModule } from "@nestjs/testing";
-import { ForbiddenException } from "@nestjs/common";
+import {
+  BadRequestException,
+  ForbiddenException,
+  UnauthorizedException,
+} from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { AuthController } from "./auth.controller";
 import { AuthService } from "./auth.service";
@@ -487,6 +491,661 @@ describe("AuthController", () => {
       const result = await controller.oidcStatus();
 
       expect(result).toEqual({ enabled: true });
+    });
+  });
+
+  describe("oidcLogin", () => {
+    it("throws BadRequestException when OIDC is not configured", async () => {
+      oidcService.enabled = false;
+      const res = mockRes();
+
+      await expect(controller.oidcLogin(res as any)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it("sets state/nonce cookies and redirects to auth URL", async () => {
+      oidcService.enabled = true;
+      (oidcService as any).generateState = jest
+        .fn()
+        .mockReturnValue("mock-state");
+      (oidcService as any).generateNonce = jest
+        .fn()
+        .mockReturnValue("mock-nonce");
+      (oidcService as any).getAuthorizationUrl = jest
+        .fn()
+        .mockReturnValue("https://provider.example.com/auth?state=mock-state");
+      const res = mockRes();
+
+      await controller.oidcLogin(res as any);
+
+      expect(oidcService.generateState).toHaveBeenCalled();
+      expect(oidcService.generateNonce).toHaveBeenCalled();
+      expect(res.cookie).toHaveBeenCalledWith(
+        "oidc_state",
+        "mock-state",
+        expect.objectContaining({
+          httpOnly: true,
+          maxAge: 600000,
+        }),
+      );
+      expect(res.cookie).toHaveBeenCalledWith(
+        "oidc_nonce",
+        "mock-nonce",
+        expect.objectContaining({
+          httpOnly: true,
+          maxAge: 600000,
+        }),
+      );
+      expect(oidcService.getAuthorizationUrl).toHaveBeenCalledWith(
+        "mock-state",
+        "mock-nonce",
+      );
+      expect(res.redirect).toHaveBeenCalledWith(
+        "https://provider.example.com/auth?state=mock-state",
+      );
+    });
+  });
+
+  describe("oidcCallback", () => {
+    it("redirects with success on valid callback", async () => {
+      (oidcService as any).handleCallback = jest
+        .fn()
+        .mockResolvedValue({ access_token: "oidc-access-token" });
+      (oidcService as any).getUserInfo = jest.fn().mockResolvedValue({
+        sub: "oidc-sub-123",
+        email: "oidc@example.com",
+        name: "OIDC User",
+      });
+      authService.findOrCreateOidcUser.mockResolvedValue({
+        id: "user-oidc",
+        email: "oidc@example.com",
+      });
+      authService.generateTokenPair.mockResolvedValue({
+        accessToken: "oidc-jwt",
+        refreshToken: "oidc-refresh",
+      });
+
+      const res = mockRes();
+      const expressReq = {
+        cookies: { oidc_state: "valid-state", oidc_nonce: "valid-nonce" },
+      } as any;
+      const query = { code: "auth-code" };
+
+      await controller.oidcCallback(query, expressReq, res as any);
+
+      expect(res.clearCookie).toHaveBeenCalledWith("oidc_state");
+      expect(res.clearCookie).toHaveBeenCalledWith("oidc_nonce");
+      expect(oidcService.handleCallback).toHaveBeenCalledWith(
+        query,
+        "valid-state",
+        "valid-nonce",
+      );
+      expect(oidcService.getUserInfo).toHaveBeenCalledWith("oidc-access-token");
+      expect(authService.findOrCreateOidcUser).toHaveBeenCalledWith(
+        { sub: "oidc-sub-123", email: "oidc@example.com", name: "OIDC User" },
+        true,
+      );
+      expect(authService.generateTokenPair).toHaveBeenCalledWith({
+        id: "user-oidc",
+        email: "oidc@example.com",
+      });
+      expect(res.cookie).toHaveBeenCalledWith(
+        "auth_token",
+        "oidc-jwt",
+        expect.any(Object),
+      );
+      expect(res.cookie).toHaveBeenCalledWith(
+        "refresh_token",
+        "oidc-refresh",
+        expect.any(Object),
+      );
+      expect(res.redirect).toHaveBeenCalledWith(
+        expect.stringContaining("/auth/callback?success=true"),
+      );
+    });
+
+    it("redirects with error when state or nonce is missing", async () => {
+      const res = mockRes();
+      const expressReq = { cookies: {} } as any;
+      const query = { code: "auth-code" };
+
+      await controller.oidcCallback(query, expressReq, res as any);
+
+      expect(res.redirect).toHaveBeenCalledWith(
+        expect.stringContaining("error=authentication_failed"),
+      );
+    });
+
+    it("redirects with error when handleCallback throws", async () => {
+      (oidcService as any).handleCallback = jest
+        .fn()
+        .mockRejectedValue(new Error("Invalid callback"));
+
+      const res = mockRes();
+      const expressReq = {
+        cookies: { oidc_state: "state", oidc_nonce: "nonce" },
+      } as any;
+      const query = { code: "bad-code" };
+
+      await controller.oidcCallback(query, expressReq, res as any);
+
+      expect(res.redirect).toHaveBeenCalledWith(
+        expect.stringContaining("error=authentication_failed"),
+      );
+    });
+
+    it("redirects with error when no access_token in tokenSet", async () => {
+      (oidcService as any).handleCallback = jest
+        .fn()
+        .mockResolvedValue({ access_token: null });
+
+      const res = mockRes();
+      const expressReq = {
+        cookies: { oidc_state: "state", oidc_nonce: "nonce" },
+      } as any;
+      const query = { code: "auth-code" };
+
+      await controller.oidcCallback(query, expressReq, res as any);
+
+      expect(res.redirect).toHaveBeenCalledWith(
+        expect.stringContaining("error=authentication_failed"),
+      );
+    });
+  });
+
+  describe("csrfRefresh", () => {
+    it("sets csrf_token cookie and returns success message", async () => {
+      const res = mockRes();
+
+      await controller.csrfRefresh(res as any);
+
+      expect(res.cookie).toHaveBeenCalledWith(
+        "csrf_token",
+        expect.any(String),
+        expect.objectContaining({
+          httpOnly: false,
+          sameSite: "lax",
+          path: "/",
+        }),
+      );
+      expect(res.json).toHaveBeenCalledWith({
+        message: "CSRF token refreshed",
+      });
+    });
+  });
+
+  describe("verify2FA", () => {
+    it("sets auth cookies and returns user on successful verification", async () => {
+      const verifyResult = {
+        accessToken: "2fa-access",
+        refreshToken: "2fa-refresh",
+        user: { id: "user-1", email: "test@example.com" },
+        trustedDeviceToken: null,
+      };
+      authService.verify2FA.mockResolvedValue(verifyResult);
+      const res = mockRes();
+      const expressReq = {
+        headers: { "user-agent": "Test Browser" },
+        ip: "127.0.0.1",
+        socket: { remoteAddress: "127.0.0.1" },
+      } as any;
+      const dto = {
+        tempToken: "temp-token",
+        code: "123456",
+        rememberDevice: false,
+      };
+
+      await controller.verify2FA(dto as any, expressReq, res as any);
+
+      expect(authService.verify2FA).toHaveBeenCalledWith(
+        "temp-token",
+        "123456",
+        false,
+        "Test Browser",
+        "127.0.0.1",
+      );
+      expect(res.cookie).toHaveBeenCalledWith(
+        "auth_token",
+        "2fa-access",
+        expect.any(Object),
+      );
+      expect(res.cookie).toHaveBeenCalledWith(
+        "refresh_token",
+        "2fa-refresh",
+        expect.any(Object),
+      );
+      expect(res.json).toHaveBeenCalledWith({ user: verifyResult.user });
+    });
+
+    it("sets trusted_device cookie when rememberDevice is true", async () => {
+      const verifyResult = {
+        accessToken: "2fa-access",
+        refreshToken: "2fa-refresh",
+        user: { id: "user-1", email: "test@example.com" },
+        trustedDeviceToken: "trusted-device-token-abc",
+      };
+      authService.verify2FA.mockResolvedValue(verifyResult);
+      const res = mockRes();
+      const expressReq = {
+        headers: { "user-agent": "Test Browser" },
+        ip: "192.168.1.100",
+        socket: { remoteAddress: "192.168.1.100" },
+      } as any;
+      const dto = {
+        tempToken: "temp-token",
+        code: "654321",
+        rememberDevice: true,
+      };
+
+      await controller.verify2FA(dto as any, expressReq, res as any);
+
+      expect(authService.verify2FA).toHaveBeenCalledWith(
+        "temp-token",
+        "654321",
+        true,
+        "Test Browser",
+        "192.168.1.100",
+      );
+      expect(res.cookie).toHaveBeenCalledWith(
+        "trusted_device",
+        "trusted-device-token-abc",
+        expect.objectContaining({
+          httpOnly: true,
+          sameSite: "lax",
+          maxAge: 30 * 24 * 60 * 60 * 1000,
+        }),
+      );
+    });
+
+    it("does not set trusted_device cookie when trustedDeviceToken is null", async () => {
+      const verifyResult = {
+        accessToken: "2fa-access",
+        refreshToken: "2fa-refresh",
+        user: { id: "user-1", email: "test@example.com" },
+        trustedDeviceToken: null,
+      };
+      authService.verify2FA.mockResolvedValue(verifyResult);
+      const res = mockRes();
+      const expressReq = {
+        headers: { "user-agent": "Test Browser" },
+        ip: "127.0.0.1",
+        socket: { remoteAddress: "127.0.0.1" },
+      } as any;
+      const dto = {
+        tempToken: "temp-token",
+        code: "123456",
+        rememberDevice: false,
+      };
+
+      await controller.verify2FA(dto as any, expressReq, res as any);
+
+      expect(res.cookie).not.toHaveBeenCalledWith(
+        "trusted_device",
+        expect.anything(),
+        expect.anything(),
+      );
+    });
+
+    it("strips ::ffff: prefix from IPv4-mapped IPv6 addresses", async () => {
+      const verifyResult = {
+        accessToken: "2fa-access",
+        refreshToken: "2fa-refresh",
+        user: { id: "user-1" },
+        trustedDeviceToken: null,
+      };
+      authService.verify2FA.mockResolvedValue(verifyResult);
+      const res = mockRes();
+      const expressReq = {
+        headers: { "user-agent": "Test Browser" },
+        ip: "::ffff:10.0.0.1",
+        socket: { remoteAddress: "::ffff:10.0.0.1" },
+      } as any;
+      const dto = {
+        tempToken: "temp-token",
+        code: "111111",
+      };
+
+      await controller.verify2FA(dto as any, expressReq, res as any);
+
+      expect(authService.verify2FA).toHaveBeenCalledWith(
+        "temp-token",
+        "111111",
+        false,
+        "Test Browser",
+        "10.0.0.1",
+      );
+    });
+  });
+
+  describe("setup2FA", () => {
+    it("delegates to authService.setup2FA with user id", async () => {
+      const setupResult = {
+        secret: "JBSWY3DPEHPK3PXP",
+        qrCodeDataUrl: "data:image/png;base64,abc123",
+      };
+      authService.setup2FA.mockResolvedValue(setupResult);
+      const reqWithUser = { user: { id: "user-1" } };
+
+      const result = await controller.setup2FA(reqWithUser);
+
+      expect(authService.setup2FA).toHaveBeenCalledWith("user-1");
+      expect(result).toEqual(setupResult);
+    });
+  });
+
+  describe("confirmSetup2FA", () => {
+    it("delegates to authService.confirmSetup2FA with user id and code", async () => {
+      const confirmResult = { message: "2FA enabled successfully" };
+      authService.confirmSetup2FA.mockResolvedValue(confirmResult);
+      const reqWithUser = { user: { id: "user-1" } };
+      const dto = { code: "123456" };
+
+      const result = await controller.confirmSetup2FA(reqWithUser, dto as any);
+
+      expect(authService.confirmSetup2FA).toHaveBeenCalledWith(
+        "user-1",
+        "123456",
+      );
+      expect(result).toEqual(confirmResult);
+    });
+  });
+
+  describe("disable2FA", () => {
+    it("delegates to authService.disable2FA with user id and code", async () => {
+      const disableResult = { message: "2FA disabled successfully" };
+      authService.disable2FA.mockResolvedValue(disableResult);
+      const reqWithUser = { user: { id: "user-1" } };
+      const dto = { code: "654321" };
+
+      const result = await controller.disable2FA(reqWithUser, dto as any);
+
+      expect(authService.disable2FA).toHaveBeenCalledWith("user-1", "654321");
+      expect(result).toEqual(disableResult);
+    });
+  });
+
+  describe("getTrustedDevices", () => {
+    const mockDevices = [
+      {
+        id: "device-1",
+        deviceName: "Chrome on Linux",
+        ipAddress: "192.168.1.1",
+        lastUsedAt: new Date("2026-02-01"),
+        expiresAt: new Date("2026-03-01"),
+        createdAt: new Date("2026-01-01"),
+      },
+      {
+        id: "device-2",
+        deviceName: "Firefox on Windows",
+        ipAddress: "10.0.0.1",
+        lastUsedAt: new Date("2026-02-10"),
+        expiresAt: new Date("2026-03-10"),
+        createdAt: new Date("2026-01-10"),
+      },
+    ];
+
+    it("returns devices with isCurrent flag for the matching device", async () => {
+      authService.getTrustedDevices.mockResolvedValue(mockDevices);
+      authService.findTrustedDeviceByToken.mockResolvedValue("device-1");
+      const res = mockRes();
+      const expressReq = {
+        user: { id: "user-1" },
+        cookies: { trusted_device: "current-device-token" },
+      } as any;
+
+      await controller.getTrustedDevices(expressReq, res as any);
+
+      expect(authService.getTrustedDevices).toHaveBeenCalledWith("user-1");
+      expect(authService.findTrustedDeviceByToken).toHaveBeenCalledWith(
+        "user-1",
+        "current-device-token",
+      );
+      expect(res.json).toHaveBeenCalledWith([
+        expect.objectContaining({ id: "device-1", isCurrent: true }),
+        expect.objectContaining({ id: "device-2", isCurrent: false }),
+      ]);
+    });
+
+    it("returns all devices with isCurrent false when no trusted_device cookie", async () => {
+      authService.getTrustedDevices.mockResolvedValue(mockDevices);
+      const res = mockRes();
+      const expressReq = {
+        user: { id: "user-1" },
+        cookies: {},
+      } as any;
+
+      await controller.getTrustedDevices(expressReq, res as any);
+
+      expect(authService.findTrustedDeviceByToken).not.toHaveBeenCalled();
+      expect(res.json).toHaveBeenCalledWith([
+        expect.objectContaining({ id: "device-1", isCurrent: false }),
+        expect.objectContaining({ id: "device-2", isCurrent: false }),
+      ]);
+    });
+
+    it("returns empty array when no devices exist", async () => {
+      authService.getTrustedDevices.mockResolvedValue([]);
+      const res = mockRes();
+      const expressReq = {
+        user: { id: "user-1" },
+        cookies: {},
+      } as any;
+
+      await controller.getTrustedDevices(expressReq, res as any);
+
+      expect(res.json).toHaveBeenCalledWith([]);
+    });
+  });
+
+  describe("revokeTrustedDevice", () => {
+    it("revokes device and clears cookie if revoking current device", async () => {
+      authService.revokeTrustedDevice.mockResolvedValue(undefined);
+      authService.findTrustedDeviceByToken.mockResolvedValue("device-1");
+      const res = mockRes();
+      const expressReq = {
+        user: { id: "user-1" },
+        cookies: { trusted_device: "current-device-token" },
+      } as any;
+
+      await controller.revokeTrustedDevice(expressReq, "device-1", res as any);
+
+      expect(authService.revokeTrustedDevice).toHaveBeenCalledWith(
+        "user-1",
+        "device-1",
+      );
+      expect(authService.findTrustedDeviceByToken).toHaveBeenCalledWith(
+        "user-1",
+        "current-device-token",
+      );
+      expect(res.clearCookie).toHaveBeenCalledWith("trusted_device");
+      expect(res.json).toHaveBeenCalledWith({
+        message: "Device revoked successfully",
+      });
+    });
+
+    it("revokes device without clearing cookie if revoking a different device", async () => {
+      authService.revokeTrustedDevice.mockResolvedValue(undefined);
+      authService.findTrustedDeviceByToken.mockResolvedValue("device-2");
+      const res = mockRes();
+      const expressReq = {
+        user: { id: "user-1" },
+        cookies: { trusted_device: "current-device-token" },
+      } as any;
+
+      await controller.revokeTrustedDevice(expressReq, "device-1", res as any);
+
+      expect(authService.revokeTrustedDevice).toHaveBeenCalledWith(
+        "user-1",
+        "device-1",
+      );
+      expect(res.clearCookie).not.toHaveBeenCalledWith("trusted_device");
+      expect(res.json).toHaveBeenCalledWith({
+        message: "Device revoked successfully",
+      });
+    });
+
+    it("does not look up current device when no trusted_device cookie", async () => {
+      authService.revokeTrustedDevice.mockResolvedValue(undefined);
+      const res = mockRes();
+      const expressReq = {
+        user: { id: "user-1" },
+        cookies: {},
+      } as any;
+
+      await controller.revokeTrustedDevice(expressReq, "device-1", res as any);
+
+      expect(authService.findTrustedDeviceByToken).not.toHaveBeenCalled();
+      expect(res.clearCookie).not.toHaveBeenCalledWith("trusted_device");
+      expect(res.json).toHaveBeenCalledWith({
+        message: "Device revoked successfully",
+      });
+    });
+
+    it("clears cookie when findTrustedDeviceByToken returns null (token already invalid)", async () => {
+      authService.revokeTrustedDevice.mockResolvedValue(undefined);
+      authService.findTrustedDeviceByToken.mockResolvedValue(null);
+      const res = mockRes();
+      const expressReq = {
+        user: { id: "user-1" },
+        cookies: { trusted_device: "stale-token" },
+      } as any;
+
+      await controller.revokeTrustedDevice(expressReq, "device-1", res as any);
+
+      expect(res.clearCookie).toHaveBeenCalledWith("trusted_device");
+    });
+  });
+
+  describe("revokeAllTrustedDevices", () => {
+    it("revokes all devices, clears cookie, and returns count", async () => {
+      authService.revokeAllTrustedDevices.mockResolvedValue(3);
+      const res = mockRes();
+      const expressReq = {
+        user: { id: "user-1" },
+      } as any;
+
+      await controller.revokeAllTrustedDevices(expressReq, res as any);
+
+      expect(authService.revokeAllTrustedDevices).toHaveBeenCalledWith(
+        "user-1",
+      );
+      expect(res.clearCookie).toHaveBeenCalledWith("trusted_device");
+      expect(res.json).toHaveBeenCalledWith({
+        message: "3 device(s) revoked",
+        count: 3,
+      });
+    });
+
+    it("returns zero count when no devices existed", async () => {
+      authService.revokeAllTrustedDevices.mockResolvedValue(0);
+      const res = mockRes();
+      const expressReq = {
+        user: { id: "user-1" },
+      } as any;
+
+      await controller.revokeAllTrustedDevices(expressReq, res as any);
+
+      expect(res.clearCookie).toHaveBeenCalledWith("trusted_device");
+      expect(res.json).toHaveBeenCalledWith({
+        message: "0 device(s) revoked",
+        count: 0,
+      });
+    });
+  });
+
+  describe("refresh", () => {
+    it("throws UnauthorizedException when no refresh token cookie exists", async () => {
+      const res = mockRes();
+      const expressReq = { cookies: {} } as any;
+
+      await expect(
+        controller.refresh(expressReq, res as any),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+
+    it("sets new auth cookies on successful refresh", async () => {
+      authService.refreshTokens.mockResolvedValue({
+        accessToken: "new-access",
+        refreshToken: "new-refresh",
+      });
+      const res = mockRes();
+      const expressReq = { cookies: { refresh_token: "old-refresh" } } as any;
+
+      await controller.refresh(expressReq, res as any);
+
+      expect(authService.refreshTokens).toHaveBeenCalledWith("old-refresh");
+      expect(res.cookie).toHaveBeenCalledWith(
+        "auth_token",
+        "new-access",
+        expect.any(Object),
+      );
+      expect(res.cookie).toHaveBeenCalledWith(
+        "refresh_token",
+        "new-refresh",
+        expect.any(Object),
+      );
+      expect(res.json).toHaveBeenCalledWith({ message: "Token refreshed" });
+    });
+
+    it("clears all auth cookies and re-throws when refreshTokens fails", async () => {
+      const error = new UnauthorizedException("Token revoked");
+      authService.refreshTokens.mockRejectedValue(error);
+      const res = mockRes();
+      const expressReq = { cookies: { refresh_token: "bad-refresh" } } as any;
+
+      await expect(
+        controller.refresh(expressReq, res as any),
+      ).rejects.toThrow(UnauthorizedException);
+
+      expect(res.clearCookie).toHaveBeenCalledWith(
+        "auth_token",
+        expect.any(Object),
+      );
+      expect(res.clearCookie).toHaveBeenCalledWith(
+        "refresh_token",
+        expect.any(Object),
+      );
+      expect(res.clearCookie).toHaveBeenCalledWith(
+        "csrf_token",
+        expect.any(Object),
+      );
+    });
+  });
+
+  describe("login with trustedDeviceToken", () => {
+    it("passes trusted_device cookie to authService.login", async () => {
+      const loginResult = {
+        accessToken: "access-token",
+        refreshToken: "refresh-token",
+        user: { id: "user-1", email: "test@example.com" },
+      };
+      authService.login.mockResolvedValue(loginResult);
+      const res = mockRes();
+      const expressReq = {
+        cookies: { trusted_device: "my-trusted-token" },
+      } as any;
+      const dto = { email: "test@example.com", password: "password" };
+
+      await controller.login(dto as any, expressReq, res as any);
+
+      expect(authService.login).toHaveBeenCalledWith(dto, "my-trusted-token");
+    });
+
+    it("passes undefined when no trusted_device cookie exists", async () => {
+      const loginResult = {
+        accessToken: "access-token",
+        refreshToken: "refresh-token",
+        user: { id: "user-1", email: "test@example.com" },
+      };
+      authService.login.mockResolvedValue(loginResult);
+      const res = mockRes();
+      const expressReq = { cookies: {} } as any;
+      const dto = { email: "test@example.com", password: "password" };
+
+      await controller.login(dto as any, expressReq, res as any);
+
+      expect(authService.login).toHaveBeenCalledWith(dto, undefined);
     });
   });
 });
