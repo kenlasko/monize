@@ -85,7 +85,7 @@ describe("ScheduledTransactionsController", () => {
       const expected = [{ id: "st-1" }];
       mockService.findUpcoming.mockResolvedValue(expected);
 
-      const result = await controller.findUpcoming(mockReq);
+      const result = await controller.findUpcoming(mockReq, 30);
 
       expect(result).toEqual(expected);
       expect(mockService.findUpcoming).toHaveBeenCalledWith("user-1", 30);
@@ -94,7 +94,7 @@ describe("ScheduledTransactionsController", () => {
     it("parses days query parameter", async () => {
       mockService.findUpcoming.mockResolvedValue([]);
 
-      await controller.findUpcoming(mockReq, "7");
+      await controller.findUpcoming(mockReq, 7);
 
       expect(mockService.findUpcoming).toHaveBeenCalledWith("user-1", 7);
     });

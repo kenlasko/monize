@@ -170,7 +170,7 @@ describe("PayeesController", () => {
 
       const result = await controller.applyCategorySuggestions(
         mockReq,
-        assignments,
+        { assignments },
       );
 
       expect(result).toEqual(expected);

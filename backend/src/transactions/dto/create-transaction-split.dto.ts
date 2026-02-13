@@ -1,4 +1,10 @@
-import { IsString, IsNumber, IsOptional, IsUUID } from "class-validator";
+import {
+  IsString,
+  IsNumber,
+  IsOptional,
+  IsUUID,
+  MaxLength,
+} from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
 export class CreateTransactionSplitDto {
@@ -28,5 +34,6 @@ export class CreateTransactionSplitDto {
   @ApiPropertyOptional({ description: "Memo/note for this split" })
   @IsOptional()
   @IsString()
+  @MaxLength(500)
   memo?: string;
 }

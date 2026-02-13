@@ -11,12 +11,13 @@ import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 export class CreateCategoryDto {
   @ApiProperty({ description: "Category name" })
   @IsString()
-  @MaxLength(255)
+  @MaxLength(100)
   name: string;
 
   @ApiPropertyOptional({ description: "Category description" })
   @IsOptional()
   @IsString()
+  @MaxLength(255)
   description?: string;
 
   @ApiPropertyOptional({ description: "Icon name or emoji" })

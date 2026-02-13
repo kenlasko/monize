@@ -24,6 +24,7 @@ import { AuthGuard } from "@nestjs/passport";
 import { CategoriesService } from "./categories.service";
 import { CreateCategoryDto } from "./dto/create-category.dto";
 import { UpdateCategoryDto } from "./dto/update-category.dto";
+import { ReassignTransactionsDto } from "./dto/reassign-transactions.dto";
 
 @ApiTags("Categories")
 @Controller("categories")
@@ -205,12 +206,12 @@ export class CategoriesController {
   reassignTransactions(
     @Request() req,
     @Param("id", ParseUUIDPipe) id: string,
-    @Body() body: { toCategoryId: string | null },
+    @Body() reassignDto: ReassignTransactionsDto,
   ) {
     return this.categoriesService.reassignTransactions(
       req.user.id,
       id,
-      body.toCategoryId,
+      reassignDto.toCategoryId ?? null,
     );
   }
 }

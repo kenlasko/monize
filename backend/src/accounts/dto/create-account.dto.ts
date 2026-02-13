@@ -51,7 +51,7 @@ export class CreateAccountDto {
     description: "Display name for the account",
   })
   @IsString()
-  @MaxLength(255)
+  @MaxLength(100)
   name: string;
 
   @ApiPropertyOptional({
@@ -60,6 +60,7 @@ export class CreateAccountDto {
   })
   @IsOptional()
   @IsString()
+  @MaxLength(500)
   description?: string;
 
   @ApiProperty({
@@ -86,7 +87,7 @@ export class CreateAccountDto {
   })
   @IsOptional()
   @IsString()
-  @MaxLength(255)
+  @MaxLength(100)
   institution?: string;
 
   @ApiPropertyOptional({

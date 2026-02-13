@@ -24,6 +24,7 @@ import { AuthGuard } from "@nestjs/passport";
 import { PayeesService } from "./payees.service";
 import { CreatePayeeDto } from "./dto/create-payee.dto";
 import { UpdatePayeeDto } from "./dto/update-payee.dto";
+import { ApplyCategorySuggestionsDto } from "./dto/apply-category-suggestions.dto";
 import { Payee } from "./entities/payee.entity";
 
 @ApiTags("payees")
@@ -181,11 +182,11 @@ export class PayeesController {
   @ApiResponse({ status: 200, description: "Assignments applied successfully" })
   applyCategorySuggestions(
     @Request() req,
-    @Body() assignments: Array<{ payeeId: string; categoryId: string }>,
+    @Body() dto: ApplyCategorySuggestionsDto,
   ) {
     return this.payeesService.applyCategorySuggestions(
       req.user.id,
-      assignments,
+      dto.assignments,
     );
   }
 

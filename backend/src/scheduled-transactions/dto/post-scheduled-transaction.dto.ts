@@ -8,6 +8,7 @@ import {
   IsArray,
   ValidateNested,
   IsDateString,
+  MaxLength,
 } from "class-validator";
 import { Type } from "class-transformer";
 
@@ -29,6 +30,7 @@ class InlineSplitDto {
   @ApiPropertyOptional({ description: "Memo for this split" })
   @IsOptional()
   @IsString()
+  @MaxLength(500)
   memo?: string | null;
 }
 
@@ -57,6 +59,7 @@ export class PostScheduledTransactionDto {
   })
   @IsOptional()
   @IsString()
+  @MaxLength(500)
   description?: string | null;
 
   @ApiPropertyOptional({ description: "Use splits for this posting" })

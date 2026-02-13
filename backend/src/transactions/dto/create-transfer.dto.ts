@@ -75,12 +75,13 @@ export class CreateTransferDto {
   })
   @IsOptional()
   @IsString()
-  @MaxLength(255)
+  @MaxLength(100)
   payeeName?: string;
 
   @ApiPropertyOptional({ description: "Transfer description/notes" })
   @IsOptional()
   @IsString()
+  @MaxLength(500)
   description?: string;
 
   @ApiPropertyOptional({ description: "Reference number" })
