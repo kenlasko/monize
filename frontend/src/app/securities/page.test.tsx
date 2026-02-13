@@ -302,4 +302,45 @@ describe('SecuritiesPage', () => {
       expect(holdingsData).toHaveTextContent('"s1":15');
     });
   });
+
+  it('handles string quantities from API (PostgreSQL decimal)', async () => {
+    mockGetHoldings.mockResolvedValue([
+      { id: 'h1', accountId: 'a1', securityId: 's1', quantity: '21410.58770000', averageCost: 150, security: {}, createdAt: '2026-01-01', updatedAt: '2026-01-01' },
+    ]);
+
+    render(<SecuritiesPage />);
+    await waitFor(() => {
+      const holdingsData = screen.getByTestId('holdings-data');
+      expect(holdingsData).toHaveTextContent('"s1":21410.5877');
+    });
+  });
+
+  it('aggregates mixed string and numeric quantities', async () => {
+    mockGetHoldings.mockResolvedValue([
+      { id: 'h1', accountId: 'a1', securityId: 's1', quantity: '100.5', averageCost: 150, security: {}, createdAt: '2026-01-01', updatedAt: '2026-01-01' },
+      { id: 'h2', accountId: 'a2', securityId: 's1', quantity: 50, averageCost: 160, security: {}, createdAt: '2026-01-01', updatedAt: '2026-01-01' },
+    ]);
+
+    render(<SecuritiesPage />);
+    await waitFor(() => {
+      const holdingsData = screen.getByTestId('holdings-data');
+      expect(holdingsData).toHaveTextContent('"s1":150.5');
+    });
+  });
+
+  it('filters out negligible quantities (rounding errors)', async () => {
+    mockGetHoldings.mockResolvedValue([
+      { id: 'h1', accountId: 'a1', securityId: 's1', quantity: 100, averageCost: 150, security: {}, createdAt: '2026-01-01', updatedAt: '2026-01-01' },
+      { id: 'h2', accountId: 'a2', securityId: 's1', quantity: -100, averageCost: 160, security: {}, createdAt: '2026-01-01', updatedAt: '2026-01-01' },
+      { id: 'h3', accountId: 'a3', securityId: 's2', quantity: 0.000000001, averageCost: 50, security: {}, createdAt: '2026-01-01', updatedAt: '2026-01-01' },
+    ]);
+
+    render(<SecuritiesPage />);
+    await waitFor(() => {
+      const holdingsData = screen.getByTestId('holdings-data');
+      // s1 should not appear (100 - 100 = 0)
+      // s2 should not appear (0.000000001 < threshold)
+      expect(holdingsData.textContent).toBe('{}');
+    });
+  });
 });

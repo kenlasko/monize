@@ -61,11 +61,23 @@ function SecuritiesContent() {
         investmentsApi.getHoldings(),
       ]);
       setAllSecurities(data);
-      // Aggregate holdings by securityId
+
+      // Aggregate holdings by securityId, filtering out negligible quantities
       const holdingsMap: SecurityHoldings = {};
       holdingsData.forEach((h: Holding) => {
-        holdingsMap[h.securityId] = (holdingsMap[h.securityId] || 0) + h.quantity;
+        const currentQty = holdingsMap[h.securityId] || 0;
+        // Convert quantity to number in case it's returned as a string from the API
+        const quantity = typeof h.quantity === 'string' ? parseFloat(h.quantity) : h.quantity;
+        const newQty = currentQty + quantity;
+        // Only include if quantity is meaningful (not just rounding errors)
+        if (Math.abs(newQty) > 0.00000001) {
+          holdingsMap[h.securityId] = newQty;
+        } else {
+          // Remove if it rounds to zero
+          delete holdingsMap[h.securityId];
+        }
       });
+
       setHoldings(holdingsMap);
     } catch (error) {
       toast.error(getErrorMessage(error, 'Failed to load securities'));

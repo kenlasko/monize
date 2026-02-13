@@ -2,10 +2,12 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  ForbiddenException,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { Security } from "./entities/security.entity";
+import { Holding } from "./entities/holding.entity";
 import { CreateSecurityDto } from "./dto/create-security.dto";
 import { UpdateSecurityDto } from "./dto/update-security.dto";
 
@@ -14,6 +16,8 @@ export class SecuritiesService {
   constructor(
     @InjectRepository(Security)
     private securitiesRepository: Repository<Security>,
+    @InjectRepository(Holding)
+    private holdingsRepository: Repository<Holding>,
   ) {}
 
   async create(
@@ -110,6 +114,23 @@ export class SecuritiesService {
 
   async deactivate(userId: string, id: string): Promise<Security> {
     const security = await this.findOne(userId, id);
+
+    // Check if security has any holdings with non-zero quantity
+    // Using ABS() to handle potential small negative values from rounding
+    const holdingsCount = await this.holdingsRepository
+      .createQueryBuilder("holding")
+      .leftJoin("holding.account", "account")
+      .where("holding.securityId = :securityId", { securityId: id })
+      .andWhere("account.userId = :userId", { userId })
+      .andWhere("ABS(holding.quantity) > :threshold", { threshold: 0.00000001 })
+      .getCount();
+
+    if (holdingsCount > 0) {
+      throw new ForbiddenException(
+        "Cannot deactivate security with active holdings. Please sell all shares first.",
+      );
+    }
+
     security.isActive = false;
     return this.securitiesRepository.save(security);
   }

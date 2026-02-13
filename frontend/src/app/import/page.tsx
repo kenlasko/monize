@@ -1088,18 +1088,23 @@ function ImportContent() {
         {/* Progress indicator */}
         <div className="mb-8">
           <div className="flex items-center justify-center space-x-4">
-            {['upload', 'selectAccount', 'mapCategories', 'mapSecurities', 'mapAccounts', 'review', 'complete'].map(
-              (s, i) => {
-                const stepOrder = ['upload', 'selectAccount', 'mapCategories', 'mapSecurities', 'mapAccounts', 'review', 'complete'];
-                const currentIndex = stepOrder.indexOf(step);
+            {(() => {
+              const stepOrder = ['upload', 'selectAccount', 'mapCategories', 'mapSecurities', 'mapAccounts', 'review', 'complete'];
+              const currentIndex = stepOrder.indexOf(step);
+
+              // Filter to only visible steps
+              const visibleSteps = stepOrder.filter((s) => {
+                if (s === 'mapCategories' && categoryMappings.length === 0) return false;
+                if (s === 'mapSecurities' && securityMappings.length === 0) return false;
+                if (s === 'mapAccounts' && !shouldShowMapAccounts) return false;
+                return true;
+              });
+
+              return visibleSteps.map((s, visibleIndex) => {
                 const stepIndex = stepOrder.indexOf(s);
                 const isActive = s === step;
                 const isComplete = stepIndex < currentIndex;
-
-                // Skip steps that aren't needed
-                if (s === 'mapCategories' && categoryMappings.length === 0) return null;
-                if (s === 'mapSecurities' && securityMappings.length === 0) return null;
-                if (s === 'mapAccounts' && !shouldShowMapAccounts) return null;
+                const isLastStep = visibleIndex === visibleSteps.length - 1;
 
                 return (
                   <div key={s} className="flex items-center">
@@ -1121,10 +1126,10 @@ function ImportContent() {
                           />
                         </svg>
                       ) : (
-                        i + 1
+                        visibleIndex + 1
                       )}
                     </div>
-                    {i < 6 && (
+                    {!isLastStep && (
                       <div
                         className={`w-12 h-1 ${
                           isComplete ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'
@@ -1133,8 +1138,8 @@ function ImportContent() {
                     )}
                   </div>
                 );
-              }
-            )}
+              });
+            })()}
           </div>
         </div>
 

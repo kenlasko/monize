@@ -1,12 +1,18 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
-import { ConflictException, NotFoundException } from "@nestjs/common";
+import {
+  ConflictException,
+  NotFoundException,
+  ForbiddenException,
+} from "@nestjs/common";
 import { SecuritiesService } from "./securities.service";
 import { Security } from "./entities/security.entity";
+import { Holding } from "./entities/holding.entity";
 
 describe("SecuritiesService", () => {
   let service: SecuritiesService;
   let securitiesRepository: Record<string, jest.Mock>;
+  let holdingsRepository: Record<string, jest.Mock>;
 
   const mockSecurity = {
     id: "sec-1",
@@ -38,12 +44,25 @@ describe("SecuritiesService", () => {
       })),
     };
 
+    holdingsRepository = {
+      createQueryBuilder: jest.fn(() => ({
+        leftJoin: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getCount: jest.fn().mockResolvedValue(0),
+      })),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         SecuritiesService,
         {
           provide: getRepositoryToken(Security),
           useValue: securitiesRepository,
+        },
+        {
+          provide: getRepositoryToken(Holding),
+          useValue: holdingsRepository,
         },
       ],
     }).compile();
@@ -200,8 +219,51 @@ describe("SecuritiesService", () => {
   });
 
   describe("deactivate", () => {
-    it("sets isActive to false", async () => {
+    it("sets isActive to false when no holdings exist", async () => {
       securitiesRepository.findOne.mockResolvedValue({ ...mockSecurity });
+      const getCount = jest.fn().mockResolvedValue(0);
+      holdingsRepository.createQueryBuilder.mockReturnValue({
+        leftJoin: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getCount,
+      });
+
+      const result = await service.deactivate("user-1", "sec-1");
+
+      expect(result.isActive).toBe(false);
+      expect(securitiesRepository.save).toHaveBeenCalled();
+      expect(getCount).toHaveBeenCalled();
+    });
+
+    it("throws ForbiddenException when security has holdings", async () => {
+      securitiesRepository.findOne.mockResolvedValue({ ...mockSecurity });
+      const getCount = jest.fn().mockResolvedValue(1); // 1 holding exists
+      holdingsRepository.createQueryBuilder.mockReturnValue({
+        leftJoin: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getCount,
+      });
+
+      await expect(service.deactivate("user-1", "sec-1")).rejects.toThrow(
+        ForbiddenException,
+      );
+      await expect(service.deactivate("user-1", "sec-1")).rejects.toThrow(
+        "Cannot deactivate security with active holdings",
+      );
+      expect(securitiesRepository.save).not.toHaveBeenCalled();
+    });
+
+    it("allows deactivating when holdings have zero quantity", async () => {
+      securitiesRepository.findOne.mockResolvedValue({ ...mockSecurity });
+      const getCount = jest.fn().mockResolvedValue(0); // Zero non-zero holdings
+      holdingsRepository.createQueryBuilder.mockReturnValue({
+        leftJoin: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getCount,
+      });
 
       const result = await service.deactivate("user-1", "sec-1");
 

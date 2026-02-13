@@ -73,7 +73,7 @@ const SecurityRow = memo(function SecurityRow({
 
   return (
     <tr
-      className={`hover:bg-gray-50 dark:hover:bg-gray-700 select-none ${
+      className={`hover:bg-gray-50 dark:hover:bg-gray-800 select-none ${
         !security.isActive ? 'opacity-60' : ''
       } ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-gray-800/50' : ''}`}
       onMouseDown={() => onLongPressStart(security)}
@@ -132,6 +132,7 @@ const SecurityRow = memo(function SecurityRow({
             variant="ghost"
             size="sm"
             onClick={handleEdit}
+            className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300"
           >
             {density === 'dense' ? '✎' : 'Edit'}
           </Button>
@@ -140,6 +141,9 @@ const SecurityRow = memo(function SecurityRow({
               variant="ghost"
               size="sm"
               onClick={handleToggleActive}
+              className={security.isActive
+                ? 'text-yellow-600 dark:text-yellow-400 hover:text-yellow-900 dark:hover:text-yellow-300'
+                : 'text-green-600 dark:text-green-400 hover:text-green-900 dark:hover:text-green-300'}
             >
               {density === 'dense'
                 ? (security.isActive ? '⊘' : '✓')
@@ -312,7 +316,7 @@ export function SecurityList({
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+          <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
             {securities.map((security, index) => (
               <SecurityRow
                 key={security.id}
