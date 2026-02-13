@@ -290,11 +290,11 @@ export default function LoginPage() {
             No authentication methods are configured. Please contact the administrator.
           </div>
         )}
-      </div>
 
-      <p className="text-center text-xs text-gray-400 dark:text-gray-500 mt-6">
-        v{process.env.NEXT_PUBLIC_APP_VERSION}
-      </p>
+        <p className="text-center text-xs text-gray-400 dark:text-gray-500 mt-6">
+          v{process.env.NEXT_PUBLIC_APP_VERSION}
+        </p>
+      </div>
     </div>
   );
 }
