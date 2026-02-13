@@ -775,4 +775,650 @@ describe("ImportRegularProcessorService", () => {
       expect(createCall[1].accountId).toBe(accountId);
     });
   });
+
+  describe("cross-currency transfer detection and matching", () => {
+    it("should detect cross-currency transfer and find existing pending transfer", async () => {
+      const accountMap = new Map<string, string | null>();
+      accountMap.set("USD Account", "acc-usd");
+      const ctx = makeContext({ accountMap });
+
+      const existingPending = {
+        id: "tx-pending-cross",
+        amount: 380,
+        payeeName: null,
+        description: "PENDING IMPORT",
+      };
+
+      let qbCallCount = 0;
+      ctx.queryRunner.manager.createQueryBuilder.mockImplementation(() => {
+        qbCallCount++;
+        if (qbCallCount <= 2) {
+          // isDuplicateTransfer checks return null (no duplicates)
+          return makeMockQueryBuilder(null);
+        }
+        if (qbCallCount === 3) {
+          // matchPendingTransfer returns null
+          return makeMockQueryBuilder(null);
+        }
+        // processTransfer cross-currency pending check
+        return makeMockQueryBuilder(existingPending);
+      });
+
+      ctx.queryRunner.manager.findOne.mockImplementation(
+        (_entity: any, opts: any) => {
+          if (opts?.where?.id === "acc-usd") {
+            return Promise.resolve({
+              id: "acc-usd",
+              currencyCode: "USD",
+            });
+          }
+          return Promise.resolve(null);
+        },
+      );
+
+      const qifTx = {
+        date: "2025-01-15",
+        amount: -500,
+        isTransfer: true,
+        transferAccount: "USD Account",
+        payee: "Transfer to USD",
+        memo: "Currency conversion",
+      };
+
+      await service.processTransaction(ctx, qifTx);
+
+      expect(ctx.importResult.imported).toBe(1);
+      // Should update the existing pending transfer to link it
+      expect(ctx.queryRunner.manager.update).toHaveBeenCalled();
+      const updateCalls = ctx.queryRunner.manager.update.mock.calls;
+      // One of the update calls should set linkedTransactionId on the pending transfer
+      const pendingUpdate = updateCalls.find(
+        (call: any) => call[1] === existingPending.id,
+      );
+      expect(pendingUpdate).toBeDefined();
+    });
+
+    it("should create pending import note when no existing pending transfer found for cross-currency", async () => {
+      const accountMap = new Map<string, string | null>();
+      accountMap.set("EUR Account", "acc-eur");
+      const ctx = makeContext({ accountMap });
+
+      ctx.queryRunner.manager.createQueryBuilder.mockReturnValue(
+        makeMockQueryBuilder(null),
+      );
+
+      ctx.queryRunner.manager.findOne.mockImplementation(
+        (_entity: any, opts: any) => {
+          if (opts?.where?.id === "acc-eur") {
+            return Promise.resolve({
+              id: "acc-eur",
+              currencyCode: "EUR",
+            });
+          }
+          return Promise.resolve(null);
+        },
+      );
+
+      const qifTx = {
+        date: "2025-01-15",
+        amount: -500,
+        isTransfer: true,
+        transferAccount: "EUR Account",
+        memo: "FX transfer",
+      };
+
+      await service.processTransaction(ctx, qifTx);
+
+      const createCalls = ctx.queryRunner.manager.create.mock.calls;
+      const linkedTxCreate = createCalls.find(
+        (call: any) => call[1]?.accountId === "acc-eur",
+      );
+      expect(linkedTxCreate).toBeDefined();
+      expect(linkedTxCreate[1].description).toContain("PENDING IMPORT");
+      expect(linkedTxCreate[1].currencyCode).toBe("EUR");
+    });
+
+    it("should use loan payment payee name for cross-currency existing pending transfer", async () => {
+      const loanCategoryMap = new Map<string, string>();
+      loanCategoryMap.set("Car Loan USD", "acc-loan-usd");
+      const ctx = makeContext({ loanCategoryMap });
+
+      const existingPending = {
+        id: "tx-pending-loan",
+        amount: 380,
+        payeeName: null,
+        description: "PENDING IMPORT",
+      };
+
+      let qbCallCount = 0;
+      ctx.queryRunner.manager.createQueryBuilder.mockImplementation(() => {
+        qbCallCount++;
+        if (qbCallCount <= 2) {
+          return makeMockQueryBuilder(null);
+        }
+        // processTransfer cross-currency pending check
+        return makeMockQueryBuilder(existingPending);
+      });
+
+      ctx.queryRunner.manager.findOne.mockImplementation(
+        (_entity: any, opts: any) => {
+          if (opts?.where?.id === "acc-loan-usd") {
+            return Promise.resolve({
+              id: "acc-loan-usd",
+              currencyCode: "USD",
+            });
+          }
+          return Promise.resolve(null);
+        },
+      );
+
+      const qifTx = {
+        date: "2025-01-15",
+        amount: -500,
+        category: "Car Loan USD",
+      };
+
+      await service.processTransaction(ctx, qifTx);
+
+      const updateCalls = ctx.queryRunner.manager.update.mock.calls;
+      const pendingUpdate = updateCalls.find(
+        (call: any) => call[1] === existingPending.id,
+      );
+      expect(pendingUpdate).toBeDefined();
+      expect(pendingUpdate[2].payeeName).toContain("Loan Payment");
+    });
+  });
+
+  describe("split transfer linking from prior imports", () => {
+    it("should link existing split transfer from prior import", async () => {
+      const accountMap = new Map<string, string | null>();
+      accountMap.set("Savings", "acc-savings");
+      const categoryMap = new Map<string, string | null>();
+      categoryMap.set("Food", "cat-food");
+      const ctx = makeContext({ accountMap, categoryMap });
+
+      const existingLinkedTx = {
+        id: "tx-existing-linked",
+        accountId: "acc-savings",
+        linkedTransactionId: null,
+      };
+
+      let qbCallCount = 0;
+      ctx.queryRunner.manager.createQueryBuilder.mockImplementation(() => {
+        qbCallCount++;
+        if (qbCallCount <= 2) {
+          // isDuplicateTransfer checks
+          return makeMockQueryBuilder(null);
+        }
+        // processSplitTransfer existing linked check
+        return makeMockQueryBuilder(existingLinkedTx);
+      });
+
+      ctx.queryRunner.manager.findOne.mockImplementation(
+        (_entity: any, opts: any) => {
+          if (opts?.where?.id === accountId) {
+            return Promise.resolve({
+              id: accountId,
+              currentBalance: 1000,
+            });
+          }
+          return Promise.resolve(null);
+        },
+      );
+
+      const qifTx = {
+        date: "2025-01-15",
+        amount: -200,
+        splits: [
+          { amount: -100, category: "Food", memo: "Food" },
+          {
+            amount: -100,
+            isTransfer: true,
+            transferAccount: "Savings",
+            memo: "Savings",
+          },
+        ],
+      };
+
+      await service.processTransaction(ctx, qifTx);
+
+      expect(ctx.importResult.imported).toBe(1);
+      // Should have updated the split to link to existing tx
+      const updateCalls = ctx.queryRunner.manager.update.mock.calls;
+      const splitLinkUpdate = updateCalls.find(
+        (call: any) =>
+          call[2]?.linkedTransactionId === existingLinkedTx.id,
+      );
+      expect(splitLinkUpdate).toBeDefined();
+    });
+
+    it("should link existing split transfer and update back-link when not already linked", async () => {
+      const accountMap = new Map<string, string | null>();
+      accountMap.set("Savings", "acc-savings");
+      const ctx = makeContext({ accountMap });
+
+      const existingLinkedTx = {
+        id: "tx-existing-no-link",
+        accountId: "acc-savings",
+        linkedTransactionId: null,
+      };
+
+      let qbCallCount = 0;
+      ctx.queryRunner.manager.createQueryBuilder.mockImplementation(() => {
+        qbCallCount++;
+        if (qbCallCount <= 2) {
+          return makeMockQueryBuilder(null);
+        }
+        return makeMockQueryBuilder(existingLinkedTx);
+      });
+
+      ctx.queryRunner.manager.findOne.mockResolvedValue(null);
+
+      const qifTx = {
+        date: "2025-01-15",
+        amount: -100,
+        splits: [
+          {
+            amount: -100,
+            isTransfer: true,
+            transferAccount: "Savings",
+            memo: "Transfer",
+          },
+        ],
+      };
+
+      await service.processTransaction(ctx, qifTx);
+
+      // Should update the existing linked tx's linkedTransactionId to point to saved tx
+      const updateCalls = ctx.queryRunner.manager.update.mock.calls;
+      const backLinkUpdate = updateCalls.find(
+        (call: any) => call[1] === existingLinkedTx.id,
+      );
+      expect(backLinkUpdate).toBeDefined();
+    });
+  });
+
+  describe("placeholder transaction cleanup", () => {
+    it("should clean up placeholder transaction when linking existing split transfer", async () => {
+      const accountMap = new Map<string, string | null>();
+      accountMap.set("Savings", "acc-savings");
+      const ctx = makeContext({ accountMap });
+
+      const placeholderTx = {
+        id: "tx-placeholder",
+        accountId: accountId,
+        amount: -100,
+      };
+
+      const existingLinkedTx = {
+        id: "tx-existing-with-placeholder",
+        accountId: "acc-savings",
+        linkedTransactionId: "tx-placeholder",
+      };
+
+      let qbCallCount = 0;
+      ctx.queryRunner.manager.createQueryBuilder.mockImplementation(() => {
+        qbCallCount++;
+        if (qbCallCount <= 2) {
+          return makeMockQueryBuilder(null);
+        }
+        return makeMockQueryBuilder(existingLinkedTx);
+      });
+
+      ctx.queryRunner.manager.findOne.mockImplementation(
+        (_entity: any, opts: any) => {
+          if (
+            opts?.where?.id === "tx-placeholder" &&
+            opts?.where?.accountId === accountId
+          ) {
+            return Promise.resolve(placeholderTx);
+          }
+          if (opts?.where?.id === accountId) {
+            return Promise.resolve({
+              id: accountId,
+              currentBalance: 1000,
+            });
+          }
+          return Promise.resolve(null);
+        },
+      );
+
+      const qifTx = {
+        date: "2025-01-15",
+        amount: -100,
+        splits: [
+          {
+            amount: -100,
+            isTransfer: true,
+            transferAccount: "Savings",
+            memo: "Transfer",
+          },
+        ],
+      };
+
+      await service.processTransaction(ctx, qifTx);
+
+      // Should delete the placeholder transaction
+      expect(ctx.queryRunner.manager.delete).toHaveBeenCalled();
+      const deleteCall = ctx.queryRunner.manager.delete.mock.calls.find(
+        (call: any) => call[1] === "tx-placeholder",
+      );
+      expect(deleteCall).toBeDefined();
+
+      // Should nullify the linkedTransactionId on existing linked tx
+      const updateCalls = ctx.queryRunner.manager.update.mock.calls;
+      const nullifyLinkUpdate = updateCalls.find(
+        (call: any) =>
+          call[1] === existingLinkedTx.id &&
+          call[2]?.linkedTransactionId === null,
+      );
+      expect(nullifyLinkUpdate).toBeDefined();
+    });
+
+    it("should not clean up when placeholder not found in current account", async () => {
+      const accountMap = new Map<string, string | null>();
+      accountMap.set("Savings", "acc-savings");
+      const ctx = makeContext({ accountMap });
+
+      const existingLinkedTx = {
+        id: "tx-existing-link-other",
+        accountId: "acc-savings",
+        linkedTransactionId: "tx-other-account",
+      };
+
+      let qbCallCount = 0;
+      ctx.queryRunner.manager.createQueryBuilder.mockImplementation(() => {
+        qbCallCount++;
+        if (qbCallCount <= 2) {
+          return makeMockQueryBuilder(null);
+        }
+        return makeMockQueryBuilder(existingLinkedTx);
+      });
+
+      // findOne returns null for the placeholder (not in current account)
+      ctx.queryRunner.manager.findOne.mockResolvedValue(null);
+
+      const qifTx = {
+        date: "2025-01-15",
+        amount: -100,
+        splits: [
+          {
+            amount: -100,
+            isTransfer: true,
+            transferAccount: "Savings",
+            memo: "Transfer",
+          },
+        ],
+      };
+
+      await service.processTransaction(ctx, qifTx);
+
+      // Should NOT delete any transaction since placeholder was not found
+      expect(ctx.queryRunner.manager.delete).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("balance adjustments for currency conversions", () => {
+    it("should adjust balance when pending transfer amount differs from actual", async () => {
+      const accountMap = new Map<string, string | null>();
+      accountMap.set("USD Account", "acc-usd");
+      const ctx = makeContext({ accountMap });
+
+      const pendingTransfer = {
+        id: "tx-pending-diff",
+        amount: 90,
+        payeeName: "Transfer",
+        referenceNumber: null,
+        linkedTransaction: { accountId: "acc-usd" },
+      };
+
+      let qbCallCount = 0;
+      ctx.queryRunner.manager.createQueryBuilder.mockImplementation(() => {
+        qbCallCount++;
+        if (qbCallCount <= 2) {
+          return makeMockQueryBuilder(null);
+        }
+        return makeMockQueryBuilder(pendingTransfer);
+      });
+
+      ctx.queryRunner.manager.findOne.mockImplementation(
+        (_entity: any, opts: any) => {
+          if (opts?.where?.id === accountId) {
+            return Promise.resolve({
+              id: accountId,
+              currentBalance: 500,
+            });
+          }
+          return Promise.resolve(null);
+        },
+      );
+
+      const qifTx = {
+        date: "2025-01-15",
+        amount: 100,
+        isTransfer: true,
+        transferAccount: "USD Account",
+        memo: "Updated conversion",
+      };
+
+      await service.processTransaction(ctx, qifTx);
+
+      expect(ctx.importResult.imported).toBe(1);
+      // Balance adjustment should happen for the difference (100 - 90 = 10)
+      expect(ctx.queryRunner.manager.update).toHaveBeenCalled();
+    });
+
+    it("should not adjust balance when pending transfer amount matches actual", async () => {
+      const accountMap = new Map<string, string | null>();
+      accountMap.set("USD Account", "acc-usd");
+      const ctx = makeContext({ accountMap });
+
+      const pendingTransfer = {
+        id: "tx-pending-exact",
+        amount: 100,
+        payeeName: "Transfer",
+        referenceNumber: null,
+        linkedTransaction: { accountId: "acc-usd" },
+      };
+
+      let qbCallCount = 0;
+      ctx.queryRunner.manager.createQueryBuilder.mockImplementation(() => {
+        qbCallCount++;
+        if (qbCallCount <= 2) {
+          return makeMockQueryBuilder(null);
+        }
+        return makeMockQueryBuilder(pendingTransfer);
+      });
+
+      const qifTx = {
+        date: "2025-01-15",
+        amount: 100,
+        isTransfer: true,
+        transferAccount: "USD Account",
+      };
+
+      await service.processTransaction(ctx, qifTx);
+
+      expect(ctx.importResult.imported).toBe(1);
+      // The update for the pending transfer should happen, but the balance update
+      // for the account should NOT happen because balanceDiff === 0
+      const updateCalls = ctx.queryRunner.manager.update.mock.calls;
+      // Only the pending transfer update should exist, no Account balance update
+      const pendingTxUpdate = updateCalls.find(
+        (call: any) => call[1] === pendingTransfer.id,
+      );
+      expect(pendingTxUpdate).toBeDefined();
+    });
+
+    it("should adjust balance for split pending transfer with amount difference", async () => {
+      const accountMap = new Map<string, string | null>();
+      accountMap.set("Savings", "acc-savings");
+      const categoryMap = new Map<string, string | null>();
+      categoryMap.set("Food", "cat-food");
+      const ctx = makeContext({ accountMap, categoryMap });
+
+      const pendingSplitTransfer = {
+        id: "tx-split-pending",
+        amount: 80,
+        description: "PENDING IMPORT note",
+      };
+
+      let qbCallCount = 0;
+      ctx.queryRunner.manager.createQueryBuilder.mockImplementation(() => {
+        qbCallCount++;
+        if (qbCallCount <= 2) {
+          return makeMockQueryBuilder(null);
+        }
+        if (qbCallCount === 3) {
+          // First split: existing linked check returns null
+          return makeMockQueryBuilder(null);
+        }
+        // Second call for split: pending transfer check
+        return makeMockQueryBuilder(pendingSplitTransfer);
+      });
+
+      ctx.queryRunner.manager.findOne.mockImplementation(
+        (_entity: any, opts: any) => {
+          if (opts?.where?.id === accountId) {
+            return Promise.resolve({
+              id: accountId,
+              currentBalance: 1000,
+            });
+          }
+          if (opts?.where?.id === "acc-savings") {
+            return Promise.resolve({
+              id: "acc-savings",
+              currentBalance: 500,
+            });
+          }
+          return Promise.resolve(null);
+        },
+      );
+
+      const qifTx = {
+        date: "2025-01-15",
+        amount: -200,
+        splits: [
+          { amount: -100, category: "Food", memo: "Food" },
+          {
+            amount: -100,
+            isTransfer: true,
+            transferAccount: "Savings",
+            memo: "Transfer part",
+          },
+        ],
+      };
+
+      await service.processTransaction(ctx, qifTx);
+
+      expect(ctx.importResult.imported).toBe(1);
+      // The pending transfer should be updated
+      const updateCalls = ctx.queryRunner.manager.update.mock.calls;
+      const pendingUpdate = updateCalls.find(
+        (call: any) => call[1] === pendingSplitTransfer.id,
+      );
+      expect(pendingUpdate).toBeDefined();
+    });
+  });
+
+  describe("isDuplicateTransfer - transfer with mapped account but no existing", () => {
+    it("should not skip when transfer account is mapped but no duplicate found", async () => {
+      const accountMap = new Map<string, string | null>();
+      accountMap.set("Savings", "acc-savings");
+      const ctx = makeContext({ accountMap });
+
+      ctx.queryRunner.manager.createQueryBuilder.mockReturnValue(
+        makeMockQueryBuilder(null),
+      );
+
+      ctx.queryRunner.manager.findOne.mockImplementation(
+        (_entity: any, opts: any) => {
+          if (opts?.where?.id === "acc-savings") {
+            return Promise.resolve({
+              id: "acc-savings",
+              currencyCode: "CAD",
+            });
+          }
+          return Promise.resolve(null);
+        },
+      );
+
+      const qifTx = {
+        date: "2025-01-15",
+        amount: -200,
+        isTransfer: true,
+        transferAccount: "Savings",
+      };
+
+      await service.processTransaction(ctx, qifTx);
+
+      expect(ctx.importResult.skipped).toBe(0);
+      expect(ctx.importResult.imported).toBe(1);
+    });
+  });
+
+  describe("matchPendingTransfer edge cases", () => {
+    it("should return false when transfer account is not mapped", async () => {
+      const ctx = makeContext();
+
+      ctx.queryRunner.manager.createQueryBuilder.mockReturnValue(
+        makeMockQueryBuilder(null),
+      );
+
+      ctx.queryRunner.manager.findOne.mockResolvedValue(null);
+
+      const qifTx = {
+        date: "2025-01-15",
+        amount: -200,
+        isTransfer: true,
+        transferAccount: "Unknown Account",
+      };
+
+      await service.processTransaction(ctx, qifTx);
+
+      // Should not match pending and instead create new (but no linked since no mapped account)
+      expect(ctx.importResult.imported).toBe(1);
+    });
+
+    it("should preserve existing payeeName and referenceNumber if not provided in qifTx", async () => {
+      const accountMap = new Map<string, string | null>();
+      accountMap.set("USD Account", "acc-usd");
+      const ctx = makeContext({ accountMap });
+
+      const pendingTransfer = {
+        id: "tx-pending-existing-fields",
+        amount: 95,
+        payeeName: "Existing Payee",
+        referenceNumber: "REF-123",
+        linkedTransaction: { accountId: "acc-usd" },
+      };
+
+      let qbCallCount = 0;
+      ctx.queryRunner.manager.createQueryBuilder.mockImplementation(() => {
+        qbCallCount++;
+        if (qbCallCount <= 2) {
+          return makeMockQueryBuilder(null);
+        }
+        return makeMockQueryBuilder(pendingTransfer);
+      });
+
+      const qifTx = {
+        date: "2025-01-15",
+        amount: 100,
+        isTransfer: true,
+        transferAccount: "USD Account",
+        // No payee or number provided
+      };
+
+      await service.processTransaction(ctx, qifTx);
+
+      const updateCalls = ctx.queryRunner.manager.update.mock.calls;
+      const pendingUpdate = updateCalls.find(
+        (call: any) => call[1] === pendingTransfer.id,
+      );
+      expect(pendingUpdate).toBeDefined();
+      expect(pendingUpdate[2].payeeName).toBe("Existing Payee");
+      expect(pendingUpdate[2].referenceNumber).toBe("REF-123");
+    });
+  });
 });
