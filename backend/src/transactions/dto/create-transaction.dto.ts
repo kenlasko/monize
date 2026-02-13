@@ -67,6 +67,7 @@ export class CreateTransactionDto {
   @ApiPropertyOptional({ description: "Transaction description/notes" })
   @IsOptional()
   @IsString()
+  @MaxLength(1000)
   description?: string;
 
   @ApiPropertyOptional({

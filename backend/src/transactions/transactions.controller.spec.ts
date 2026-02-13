@@ -268,7 +268,9 @@ describe("TransactionsController", () => {
       const expected = { id: "tx-1", isCleared: true };
       mockService.markCleared.mockResolvedValue(expected);
 
-      const result = await controller.markCleared(mockReq, "tx-1", true);
+      const result = await controller.markCleared(mockReq, "tx-1", {
+        isCleared: true,
+      });
 
       expect(result).toEqual(expected);
       expect(mockService.markCleared).toHaveBeenCalledWith(
@@ -308,11 +310,9 @@ describe("TransactionsController", () => {
       const expected = { id: "tx-1", status: "cleared" };
       mockService.updateStatus.mockResolvedValue(expected);
 
-      const result = await controller.updateStatus(
-        mockReq,
-        "tx-1",
-        "cleared" as any,
-      );
+      const result = await controller.updateStatus(mockReq, "tx-1", {
+        status: "cleared" as any,
+      });
 
       expect(result).toEqual(expected);
       expect(mockService.updateStatus).toHaveBeenCalledWith(

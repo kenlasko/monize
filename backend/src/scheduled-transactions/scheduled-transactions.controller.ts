@@ -10,6 +10,8 @@ import {
   Request,
   Query,
   ParseUUIDPipe,
+  ParseIntPipe,
+  DefaultValuePipe,
 } from "@nestjs/common";
 import {
   ApiTags,
@@ -87,9 +89,11 @@ export class ScheduledTransactionsController {
       "List of upcoming scheduled transactions retrieved successfully",
   })
   @ApiResponse({ status: 401, description: "Unauthorized" })
-  findUpcoming(@Request() req, @Query("days") days?: string) {
-    const daysNum = days ? parseInt(days, 10) : 30;
-    return this.scheduledTransactionsService.findUpcoming(req.user.id, daysNum);
+  findUpcoming(
+    @Request() req,
+    @Query("days", new DefaultValuePipe(30), ParseIntPipe) days: number,
+  ) {
+    return this.scheduledTransactionsService.findUpcoming(req.user.id, days);
   }
 
   @Get(":id")

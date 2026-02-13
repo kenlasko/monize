@@ -7,6 +7,7 @@ import {
   IsUUID,
   IsDateString,
   Min,
+  MaxLength,
 } from "class-validator";
 import { InvestmentAction } from "../entities/investment-transaction.entity";
 
@@ -67,5 +68,6 @@ export class CreateInvestmentTransactionDto {
   })
   @IsOptional()
   @IsString()
+  @MaxLength(1000)
   description?: string;
 }

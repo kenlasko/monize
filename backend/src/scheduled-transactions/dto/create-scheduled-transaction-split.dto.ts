@@ -4,6 +4,7 @@ import {
   IsOptional,
   IsString,
   ValidateIf,
+  MaxLength,
 } from "class-validator";
 import { ApiPropertyOptional } from "@nestjs/swagger";
 
@@ -31,5 +32,6 @@ export class CreateScheduledTransactionSplitDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(500)
   memo?: string;
 }

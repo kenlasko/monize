@@ -38,6 +38,7 @@ export class FilterConditionDto {
       "Value to match (UUID for entity fields, search string for text)",
   })
   @IsString()
+  @MaxLength(500)
   value: string;
 }
 
@@ -76,6 +77,7 @@ export class ReportFiltersDto {
   })
   @IsOptional()
   @IsString()
+  @MaxLength(500)
   searchText?: string;
 
   @ApiPropertyOptional({
@@ -152,6 +154,7 @@ export class CreateCustomReportDto {
   @ApiPropertyOptional({ description: "Report description" })
   @IsOptional()
   @IsString()
+  @MaxLength(1000)
   description?: string;
 
   @ApiPropertyOptional({ description: "Icon identifier (emoji or icon name)" })

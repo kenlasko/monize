@@ -55,6 +55,7 @@ export class CreateScheduledTransactionDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(1000)
   description?: string;
 
   @IsEnum(FrequencyType)

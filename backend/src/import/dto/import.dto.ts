@@ -19,6 +19,7 @@ export class ParseQifDto {
 export class CategoryMappingDto {
   @ApiProperty({ description: "Original category name from QIF" })
   @IsString()
+  @MaxLength(255)
   originalName: string;
 
   @ApiPropertyOptional({ description: "Existing category ID to map to" })
@@ -29,6 +30,7 @@ export class CategoryMappingDto {
   @ApiPropertyOptional({ description: "Create new category with this name" })
   @IsOptional()
   @IsString()
+  @MaxLength(255)
   createNew?: string;
 
   @ApiPropertyOptional({ description: "Parent category ID for new category" })
@@ -52,6 +54,7 @@ export class CategoryMappingDto {
   @ApiPropertyOptional({ description: "Name for new loan account to create" })
   @IsOptional()
   @IsString()
+  @MaxLength(255)
   createNewLoan?: string;
 
   @ApiPropertyOptional({
@@ -63,12 +66,14 @@ export class CategoryMappingDto {
   @ApiPropertyOptional({ description: "Institution name for new loan account" })
   @IsOptional()
   @IsString()
+  @MaxLength(255)
   newLoanInstitution?: string;
 }
 
 export class AccountMappingDto {
   @ApiProperty({ description: "Original transfer account name from QIF" })
   @IsString()
+  @MaxLength(255)
   originalName: string;
 
   @ApiPropertyOptional({ description: "Existing account ID to map to" })
@@ -79,11 +84,13 @@ export class AccountMappingDto {
   @ApiPropertyOptional({ description: "Create new account with this name" })
   @IsOptional()
   @IsString()
+  @MaxLength(255)
   createNew?: string;
 
   @ApiPropertyOptional({ description: "Account type for new account" })
   @IsOptional()
   @IsString()
+  @MaxLength(50)
   accountType?: string;
 
   @ApiPropertyOptional({
@@ -91,12 +98,14 @@ export class AccountMappingDto {
   })
   @IsOptional()
   @IsString()
+  @MaxLength(3)
   currencyCode?: string;
 }
 
 export class SecurityMappingDto {
   @ApiProperty({ description: "Original security name/symbol from QIF" })
   @IsString()
+  @MaxLength(255)
   originalName: string;
 
   @ApiPropertyOptional({ description: "Existing security ID to map to" })
@@ -107,11 +116,13 @@ export class SecurityMappingDto {
   @ApiPropertyOptional({ description: "Create new security with this symbol" })
   @IsOptional()
   @IsString()
+  @MaxLength(50)
   createNew?: string;
 
   @ApiPropertyOptional({ description: "Full name for new security" })
   @IsOptional()
   @IsString()
+  @MaxLength(255)
   securityName?: string;
 
   @ApiPropertyOptional({
@@ -120,6 +131,7 @@ export class SecurityMappingDto {
   })
   @IsOptional()
   @IsString()
+  @MaxLength(50)
   securityType?: string;
 
   @ApiPropertyOptional({
@@ -127,6 +139,7 @@ export class SecurityMappingDto {
   })
   @IsOptional()
   @IsString()
+  @MaxLength(50)
   exchange?: string;
 
   @ApiPropertyOptional({
@@ -134,6 +147,7 @@ export class SecurityMappingDto {
   })
   @IsOptional()
   @IsString()
+  @MaxLength(3)
   currencyCode?: string;
 }
 
@@ -178,6 +192,7 @@ export class ImportQifDto {
   })
   @IsOptional()
   @IsString()
+  @MaxLength(50)
   dateFormat?: string;
 }
 

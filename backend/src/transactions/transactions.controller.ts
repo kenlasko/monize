@@ -26,7 +26,9 @@ import { CreateTransactionDto } from "./dto/create-transaction.dto";
 import { UpdateTransactionDto } from "./dto/update-transaction.dto";
 import { CreateTransactionSplitDto } from "./dto/create-transaction-split.dto";
 import { CreateTransferDto } from "./dto/create-transfer.dto";
-import { TransactionStatus } from "./entities/transaction.entity";
+import { BulkReconcileDto } from "./dto/bulk-reconcile.dto";
+import { MarkClearedDto } from "./dto/mark-cleared.dto";
+import { UpdateTransactionStatusDto } from "./dto/update-transaction-status.dto";
 
 @ApiTags("Transactions")
 @Controller("transactions")
@@ -308,13 +310,13 @@ export class TransactionsController {
   bulkReconcile(
     @Request() req,
     @Param("accountId", ParseUUIDPipe) accountId: string,
-    @Body() body: { transactionIds: string[]; reconciledDate: string },
+    @Body() bulkReconcileDto: BulkReconcileDto,
   ) {
     return this.transactionsService.bulkReconcile(
       req.user.id,
       accountId,
-      body.transactionIds,
-      body.reconciledDate,
+      bulkReconcileDto.transactionIds,
+      bulkReconcileDto.reconciledDate,
     );
   }
 
@@ -408,9 +410,13 @@ export class TransactionsController {
   markCleared(
     @Request() req,
     @Param("id", ParseUUIDPipe) id: string,
-    @Body("isCleared") isCleared: boolean,
+    @Body() markClearedDto: MarkClearedDto,
   ) {
-    return this.transactionsService.markCleared(req.user.id, id, isCleared);
+    return this.transactionsService.markCleared(
+      req.user.id,
+      id,
+      markClearedDto.isCleared,
+    );
   }
 
   @Post(":id/reconcile")
@@ -454,9 +460,13 @@ export class TransactionsController {
   updateStatus(
     @Request() req,
     @Param("id", ParseUUIDPipe) id: string,
-    @Body("status") status: TransactionStatus,
+    @Body() updateStatusDto: UpdateTransactionStatusDto,
   ) {
-    return this.transactionsService.updateStatus(req.user.id, id, status);
+    return this.transactionsService.updateStatus(
+      req.user.id,
+      id,
+      updateStatusDto.status,
+    );
   }
 
   // ==================== Split Transaction Endpoints ====================

@@ -23,5 +23,6 @@ export class CreatePayeeDto {
   })
   @IsOptional()
   @IsString()
+  @MaxLength(1000)
   notes?: string;
 }

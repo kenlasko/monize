@@ -59,6 +59,7 @@ export class UpdateAccountDto {
   })
   @IsOptional()
   @IsString()
+  @MaxLength(1000)
   description?: string;
 
   @ApiPropertyOptional({

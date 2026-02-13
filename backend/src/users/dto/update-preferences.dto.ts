@@ -23,6 +23,7 @@ export class UpdatePreferencesDto {
   })
   @IsOptional()
   @IsString()
+  @MaxLength(50)
   dateFormat?: string;
 
   @ApiPropertyOptional({
@@ -31,6 +32,7 @@ export class UpdatePreferencesDto {
   })
   @IsOptional()
   @IsString()
+  @MaxLength(50)
   numberFormat?: string;
 
   @ApiPropertyOptional({ description: "Theme preference", example: "light" })
@@ -45,6 +47,7 @@ export class UpdatePreferencesDto {
   })
   @IsOptional()
   @IsString()
+  @MaxLength(100)
   timezone?: string;
 
   @ApiPropertyOptional({ description: "Receive email notifications" })

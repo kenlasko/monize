@@ -8,6 +8,7 @@ import {
   IsArray,
   ValidateNested,
   IsDateString,
+  MaxLength,
 } from "class-validator";
 import { Type } from "class-transformer";
 
@@ -29,6 +30,7 @@ export class OverrideSplitDto {
   @ApiPropertyOptional({ description: "Memo for this split" })
   @IsOptional()
   @IsString()
+  @MaxLength(500)
   memo?: string | null;
 }
 
@@ -60,6 +62,7 @@ export class CreateScheduledTransactionOverrideDto {
   @ApiPropertyOptional({ description: "Overridden description" })
   @IsOptional()
   @IsString()
+  @MaxLength(1000)
   description?: string | null;
 
   @ApiPropertyOptional({
@@ -94,6 +97,7 @@ export class UpdateScheduledTransactionOverrideDto {
   @ApiPropertyOptional({ description: "Overridden description" })
   @IsOptional()
   @IsString()
+  @MaxLength(1000)
   description?: string | null;
 
   @ApiPropertyOptional({

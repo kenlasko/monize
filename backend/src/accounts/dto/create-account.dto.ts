@@ -60,6 +60,7 @@ export class CreateAccountDto {
   })
   @IsOptional()
   @IsString()
+  @MaxLength(1000)
   description?: string;
 
   @ApiProperty({

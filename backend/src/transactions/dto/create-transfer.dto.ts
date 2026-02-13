@@ -81,6 +81,7 @@ export class CreateTransferDto {
   @ApiPropertyOptional({ description: "Transfer description/notes" })
   @IsOptional()
   @IsString()
+  @MaxLength(1000)
   description?: string;
 
   @ApiPropertyOptional({ description: "Reference number" })
