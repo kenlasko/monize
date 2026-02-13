@@ -30,6 +30,10 @@ vi.mock('@/lib/logger', () => ({
   }),
 }));
 
+vi.mock('@/lib/errors', () => ({
+  getErrorMessage: vi.fn((_error: unknown, fallback: string) => fallback),
+}));
+
 // Auth store
 vi.mock('@/store/authStore', () => ({
   useAuthStore: Object.assign(
@@ -176,6 +180,7 @@ function makeAccount(overrides: Partial<Account> = {}): Account {
 }
 
 function makeTransaction(overrides: Partial<Transaction> = {}): Transaction {
+  const payeeName = overrides.payeeName ?? 'Grocery Store';
   return {
     id: 'txn-1',
     userId: 'test-user-id',
@@ -183,8 +188,8 @@ function makeTransaction(overrides: Partial<Transaction> = {}): Transaction {
     account: null,
     transactionDate: '2025-02-01',
     payeeId: 'pay-1',
-    payeeName: 'Grocery Store',
-    payee: { id: 'pay-1', userId: 'test-user-id', name: 'Grocery Store', defaultCategoryId: null, defaultCategory: null, createdAt: '2025-01-01T00:00:00Z', updatedAt: '2025-01-01T00:00:00Z' },
+    payeeName,
+    payee: { id: 'pay-1', userId: 'test-user-id', name: payeeName, defaultCategoryId: null, defaultCategory: null, createdAt: '2025-01-01T00:00:00Z', updatedAt: '2025-01-01T00:00:00Z' },
     categoryId: 'cat-1',
     category: { id: 'cat-1', userId: 'test-user-id', name: 'Groceries', type: 'EXPENSE', parentId: null, parent: null, children: [], isHidden: false, createdAt: '2025-01-01T00:00:00Z', updatedAt: '2025-01-01T00:00:00Z' },
     amount: -50,

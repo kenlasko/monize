@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@/test/render';
+import { render, screen, waitFor, fireEvent, act } from '@/test/render';
 import ImportPage from './page';
 
 // Mock next/image
@@ -315,6 +315,35 @@ const mockCurrencies = [
   { code: 'CAD', name: 'Canadian Dollar', symbol: '$', decimalPlaces: 2, isActive: true, createdAt: '2025-01-01' },
 ];
 
+/**
+ * Creates a File object with a polyfilled .text() method.
+ * jsdom's File implementation does not support .text(), but the source code
+ * calls file.text() to read file contents. This helper ensures the File
+ * works correctly in tests.
+ */
+function createTestFile(content: string, name: string, type = 'application/qif'): File {
+  const file = new File([content], name, { type });
+  file.text = () => Promise.resolve(content);
+  return file;
+}
+
+/**
+ * Helper to simulate a file upload via the mock UploadStep input.
+ * Sets up the file on the input and fires the change event.
+ * Waits for data loading to complete before triggering the upload.
+ */
+async function uploadFile(fileContent: string, fileName: string) {
+  // Wait for initial data load to finish so handleFileSelect has current accounts
+  await waitFor(() => {
+    expect(mockGetAllAccounts).toHaveBeenCalled();
+  });
+
+  const fileInput = screen.getByTestId('file-input');
+  const file = createTestFile(fileContent, fileName);
+  Object.defineProperty(fileInput, 'files', { value: [file], configurable: true });
+  fireEvent.change(fileInput);
+}
+
 describe('ImportPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -449,10 +478,7 @@ describe('ImportPage', () => {
       });
 
       // Simulate file selection that triggers parse failure
-      const fileInput = screen.getByTestId('file-input');
-      const file = new File(['invalid content'], 'test.qif', { type: 'application/qif' });
-      Object.defineProperty(fileInput, 'files', { value: [file] });
-      fireEvent.change(fileInput);
+      await uploadFile('invalid content', 'test.qif');
 
       await waitFor(() => {
         expect(toast.error).toHaveBeenCalledWith('Failed to parse QIF file(s)');
@@ -475,10 +501,7 @@ describe('ImportPage', () => {
       });
 
       // Simulate file selection
-      const fileInput = screen.getByTestId('file-input');
-      const file = new File(['!Type:Bank\n^'], 'chequing.qif', { type: 'application/qif' });
-      Object.defineProperty(fileInput, 'files', { value: [file] });
-      fireEvent.change(fileInput);
+      await uploadFile('!Type:Bank\n^', 'chequing.qif');
 
       await waitFor(() => {
         expect(screen.getByTestId('select-account-step')).toBeInTheDocument();
@@ -496,10 +519,7 @@ describe('ImportPage', () => {
       render(<ImportPage />);
 
       // First go to selectAccount via file upload
-      const fileInput = screen.getByTestId('file-input');
-      const file = new File(['!Type:Bank\n^'], 'chequing.qif', { type: 'application/qif' });
-      Object.defineProperty(fileInput, 'files', { value: [file] });
-      fireEvent.change(fileInput);
+      await uploadFile('!Type:Bank\n^', 'chequing.qif');
 
       await waitFor(() => {
         expect(screen.getByTestId('select-account-step')).toBeInTheDocument();
@@ -523,10 +543,7 @@ describe('ImportPage', () => {
 
       render(<ImportPage />);
 
-      const fileInput = screen.getByTestId('file-input');
-      const file = new File(['!Type:Bank\n^'], 'chequing.qif', { type: 'application/qif' });
-      Object.defineProperty(fileInput, 'files', { value: [file] });
-      fireEvent.change(fileInput);
+      await uploadFile('!Type:Bank\n^', 'chequing.qif');
 
       await waitFor(() => {
         expect(screen.getByTestId('select-account-step')).toBeInTheDocument();
@@ -549,10 +566,7 @@ describe('ImportPage', () => {
       render(<ImportPage />);
 
       // Upload a file to progress
-      const fileInput = screen.getByTestId('file-input');
-      const file = new File(['!Type:Bank\n^'], 'chequing.qif', { type: 'application/qif' });
-      Object.defineProperty(fileInput, 'files', { value: [file] });
-      fireEvent.change(fileInput);
+      await uploadFile('!Type:Bank\n^', 'chequing.qif');
 
       await waitFor(() => {
         expect(screen.getByTestId('select-account-step')).toBeInTheDocument();
@@ -580,10 +594,7 @@ describe('ImportPage', () => {
 
       render(<ImportPage />);
 
-      const fileInput = screen.getByTestId('file-input');
-      const file = new File(['!Type:Bank\n^'], 'chequing.qif', { type: 'application/qif' });
-      Object.defineProperty(fileInput, 'files', { value: [file] });
-      fireEvent.change(fileInput);
+      await uploadFile('!Type:Bank\n^', 'chequing.qif');
 
       await waitFor(() => {
         expect(screen.getByTestId('select-account-step')).toBeInTheDocument();
@@ -611,10 +622,7 @@ describe('ImportPage', () => {
 
       render(<ImportPage />);
 
-      const fileInput = screen.getByTestId('file-input');
-      const file = new File(['!Type:Bank\n^'], 'chequing.qif', { type: 'application/qif' });
-      Object.defineProperty(fileInput, 'files', { value: [file] });
-      fireEvent.change(fileInput);
+      await uploadFile('!Type:Bank\n^', 'chequing.qif');
 
       await waitFor(() => {
         expect(screen.getByTestId('select-account-step')).toBeInTheDocument();
@@ -644,10 +652,7 @@ describe('ImportPage', () => {
 
       render(<ImportPage />);
 
-      const fileInput = screen.getByTestId('file-input');
-      const file = new File(['!Type:Bank\n^'], 'chequing.qif', { type: 'application/qif' });
-      Object.defineProperty(fileInput, 'files', { value: [file] });
-      fireEvent.change(fileInput);
+      await uploadFile('!Type:Bank\n^', 'chequing.qif');
 
       await waitFor(() => {
         expect(screen.getByTestId('select-account-step')).toBeInTheDocument();
@@ -669,10 +674,7 @@ describe('ImportPage', () => {
 
       render(<ImportPage />);
 
-      const fileInput = screen.getByTestId('file-input');
-      const file = new File(['!Type:Bank\n^'], 'chequing.qif', { type: 'application/qif' });
-      Object.defineProperty(fileInput, 'files', { value: [file] });
-      fireEvent.change(fileInput);
+      await uploadFile('!Type:Bank\n^', 'chequing.qif');
 
       await waitFor(() => {
         expect(screen.getByTestId('select-account-step')).toBeInTheDocument();
@@ -700,10 +702,7 @@ describe('ImportPage', () => {
 
       render(<ImportPage />);
 
-      const fileInput = screen.getByTestId('file-input');
-      const file = new File(['!Type:Bank\n^'], 'chequing.qif', { type: 'application/qif' });
-      Object.defineProperty(fileInput, 'files', { value: [file] });
-      fireEvent.change(fileInput);
+      await uploadFile('!Type:Bank\n^', 'chequing.qif');
 
       await waitFor(() => {
         expect(screen.getByTestId('select-account-step')).toBeInTheDocument();
@@ -755,10 +754,7 @@ describe('ImportPage', () => {
       render(<ImportPage />);
 
       // Upload file
-      const fileInput = screen.getByTestId('file-input');
-      const file = new File(['!Type:Bank\n^'], 'chequing.qif', { type: 'application/qif' });
-      Object.defineProperty(fileInput, 'files', { value: [file] });
-      fireEvent.change(fileInput);
+      await uploadFile('!Type:Bank\n^', 'chequing.qif');
 
       await waitFor(() => {
         expect(screen.getByTestId('select-account-step')).toBeInTheDocument();
@@ -796,10 +792,7 @@ describe('ImportPage', () => {
       render(<ImportPage />);
 
       // Upload file
-      const fileInput = screen.getByTestId('file-input');
-      const file = new File(['!Type:Bank\n^'], 'chequing.qif', { type: 'application/qif' });
-      Object.defineProperty(fileInput, 'files', { value: [file] });
-      fireEvent.change(fileInput);
+      await uploadFile('!Type:Bank\n^', 'chequing.qif');
 
       await waitFor(() => {
         expect(screen.getByTestId('select-account-step')).toBeInTheDocument();
@@ -847,10 +840,7 @@ describe('ImportPage', () => {
       render(<ImportPage />);
 
       // Upload file
-      const fileInput = screen.getByTestId('file-input');
-      const file = new File(['!Type:Bank\n^'], 'chequing.qif', { type: 'application/qif' });
-      Object.defineProperty(fileInput, 'files', { value: [file] });
-      fireEvent.change(fileInput);
+      await uploadFile('!Type:Bank\n^', 'chequing.qif');
 
       await waitFor(() => {
         expect(screen.getByTestId('select-account-step')).toBeInTheDocument();
@@ -899,9 +889,14 @@ describe('ImportPage', () => {
       expect(screen.getByText('Upload QIF Files')).toBeInTheDocument();
 
       // Simulate file selection which triggers loading
+      // Wait for data to be loaded first
+      await waitFor(() => {
+        expect(mockGetAllAccounts).toHaveBeenCalled();
+      });
+
       const fileInput = screen.getByTestId('file-input');
-      const file = new File(['!Type:Bank\n^'], 'test.qif', { type: 'application/qif' });
-      Object.defineProperty(fileInput, 'files', { value: [file] });
+      const file = createTestFile('!Type:Bank\n^', 'test.qif');
+      Object.defineProperty(fileInput, 'files', { value: [file], configurable: true });
       fireEvent.change(fileInput);
 
       // During parse, isLoading should be true and the component should show Processing
@@ -935,10 +930,7 @@ describe('ImportPage', () => {
       render(<ImportPage />);
 
       // Upload file - no categories means category mapping step is unnecessary
-      const fileInput = screen.getByTestId('file-input');
-      const file = new File(['!Type:Bank\n^'], 'test.qif', { type: 'application/qif' });
-      Object.defineProperty(fileInput, 'files', { value: [file] });
-      fireEvent.change(fileInput);
+      await uploadFile('!Type:Bank\n^', 'test.qif');
 
       await waitFor(() => {
         expect(screen.getByTestId('select-account-step')).toBeInTheDocument();
@@ -968,10 +960,7 @@ describe('ImportPage', () => {
 
       render(<ImportPage />);
 
-      const fileInput = screen.getByTestId('file-input');
-      const file = new File(['!Type:Invst\n^'], 'investments.qif', { type: 'application/qif' });
-      Object.defineProperty(fileInput, 'files', { value: [file] });
-      fireEvent.change(fileInput);
+      await uploadFile('!Type:Invst\n^', 'investments.qif');
 
       await waitFor(() => {
         expect(screen.getByTestId('select-account-step')).toBeInTheDocument();
@@ -996,7 +985,7 @@ describe('ImportPage', () => {
 
       // Simulate file input change with no files
       const fileInput = screen.getByTestId('file-input');
-      Object.defineProperty(fileInput, 'files', { value: [] });
+      Object.defineProperty(fileInput, 'files', { value: [], configurable: true });
       fireEvent.change(fileInput);
 
       // Should remain on upload step
@@ -1023,10 +1012,7 @@ describe('ImportPage', () => {
       });
 
       // Upload file -> Step 2: Select Account
-      const fileInput = screen.getByTestId('file-input');
-      const file = new File(['!Type:Bank\n^'], 'chequing.qif', { type: 'application/qif' });
-      Object.defineProperty(fileInput, 'files', { value: [file] });
-      fireEvent.change(fileInput);
+      await uploadFile('!Type:Bank\n^', 'chequing.qif');
 
       await waitFor(() => {
         expect(screen.getByTestId('select-account-step')).toBeInTheDocument();

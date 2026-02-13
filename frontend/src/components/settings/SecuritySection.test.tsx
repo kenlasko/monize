@@ -839,7 +839,8 @@ describe('SecuritySection', () => {
       />
     );
 
-    expect(screen.getByText(/Single Sign-On \(SSO\)/)).toBeInTheDocument();
+    const ssoElements = screen.getAllByText(/Single Sign-On \(SSO\)/);
+    expect(ssoElements.length).toBeGreaterThanOrEqual(1);
   });
 
   it('does not show SSO info banner for local users', () => {

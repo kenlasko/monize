@@ -79,6 +79,29 @@ describe('useSwipeNavigation', () => {
     return hookResult;
   }
 
+  // Helper for enter animation tests: renders with a dummy pathname first so the
+  // ref is connected before the useLayoutEffect runs with the target pathname.
+  // This ensures the useLayoutEffect (which depends on [pathname]) re-runs when
+  // the pathname changes to the target, at which point contentRef.current is set.
+  function renderSwipeHookWithEnterAnimation(targetPathname: string) {
+    // Start with a different pathname so we can trigger a pathname change later
+    const dummyPathname = targetPathname === '/dashboard' ? '/transactions' : '/dashboard';
+    mockPathname = dummyPathname;
+
+    const hookResult = renderHook(() => useSwipeNavigation());
+    // Attach contentRef to our DOM div
+    Object.defineProperty(hookResult.result.current.contentRef, 'current', {
+      value: contentDiv,
+      writable: true,
+    });
+
+    // Now switch to the target pathname and re-render. This triggers the
+    // useLayoutEffect because pathname changed, and contentRef.current is already set.
+    mockPathname = targetPathname;
+    hookResult.rerender();
+    return hookResult;
+  }
+
   describe('basic return values', () => {
     it('returns currentIndex for dashboard (index 0)', () => {
       mockPathname = '/dashboard';
@@ -384,7 +407,7 @@ describe('useSwipeNavigation', () => {
       sessionStorage.setItem('swipe-enter', 'from-right');
       mockPathname = '/transactions';
 
-      renderSwipeHook();
+      renderSwipeHookWithEnterAnimation('/transactions');
 
       // The useLayoutEffect should have read and removed the session storage item
       expect(sessionStorage.getItem('swipe-enter')).toBeNull();
@@ -396,7 +419,7 @@ describe('useSwipeNavigation', () => {
       sessionStorage.setItem('swipe-enter', 'from-left');
       mockPathname = '/accounts';
 
-      renderSwipeHook();
+      renderSwipeHookWithEnterAnimation('/accounts');
 
       expect(sessionStorage.getItem('swipe-enter')).toBeNull();
       expect(contentDiv.style.transform).toBe('translateX(0)');

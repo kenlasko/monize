@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
-import { render, screen, waitFor, fireEvent, act } from '@/test/render';
+import { render, screen, waitFor, fireEvent, act, within } from '@/test/render';
 import InvestmentsPage from './page';
 import { PortfolioSummary, PaginatedInvestmentTransactions, InvestmentTransaction } from '@/types/investment';
 import { Account } from '@/types/account';
@@ -369,7 +369,7 @@ vi.mock('@/components/investments/InvestmentTransactionList', () => ({
 vi.mock('@/components/investments/InvestmentTransactionForm', () => ({
   InvestmentTransactionForm: ({ transaction, onSuccess, onCancel, onDirtyChange }: any) => (
     <div data-testid="investment-transaction-form">
-      <span>{transaction ? 'Edit Transaction' : 'New Investment Transaction'}</span>
+      <span data-testid="form-title">{transaction ? 'Edit Transaction' : 'New Investment Transaction'}</span>
       <button data-testid="form-save" onClick={onSuccess}>Save</button>
       <button data-testid="form-cancel" onClick={onCancel}>Cancel</button>
       <button data-testid="form-mark-dirty" onClick={() => onDirtyChange(true)}>Mark Dirty</button>
@@ -618,8 +618,12 @@ describe('InvestmentsPage', () => {
   it('shows account name in holdings list', async () => {
     render(<InvestmentsPage />);
     await waitFor(() => {
-      expect(screen.getByText('Brokerage Account')).toBeInTheDocument();
+      expect(screen.getByTestId('account-holdings-acct-brokerage-1')).toBeInTheDocument();
     });
+    // "Brokerage Account" appears in both the MultiSelect option and the holdings list,
+    // so scope the query to the holdings container
+    const holdingsContainer = screen.getByTestId('account-holdings-acct-brokerage-1');
+    expect(within(holdingsContainer).getByText('Brokerage Account')).toBeInTheDocument();
   });
 
   // --- Investment value chart ---
@@ -731,14 +735,20 @@ describe('InvestmentsPage', () => {
       expect(screen.getByText('Refresh')).toBeInTheDocument();
     });
 
-    await act(async () => {
-      fireEvent.click(screen.getByText('Refresh'));
-    });
+    // Clear call counts after initial load
+    mockGetPortfolioSummary.mockClear();
+
+    fireEvent.click(screen.getByText('Refresh'));
 
     await waitFor(() => {
       // handleRefreshPrices calls getPortfolioSummary first to get holdings, then refreshSelectedPrices
       expect(mockGetPortfolioSummary).toHaveBeenCalled();
       expect(mockRefreshSelectedPrices).toHaveBeenCalledWith(['sec-1', 'sec-2']);
+    });
+
+    // Flush any pending setTimeout calls to prevent hanging
+    await act(async () => {
+      vi.runAllTimers();
     });
   });
 
@@ -753,9 +763,7 @@ describe('InvestmentsPage', () => {
       expect(screen.getByText('Refresh')).toBeInTheDocument();
     });
 
-    await act(async () => {
-      fireEvent.click(screen.getByText('Refresh'));
-    });
+    fireEvent.click(screen.getByText('Refresh'));
 
     await waitFor(() => {
       expect(screen.getByText('Updating...')).toBeInTheDocument();
@@ -768,12 +776,15 @@ describe('InvestmentsPage', () => {
       expect(screen.getByText('Refresh')).toBeInTheDocument();
     });
 
-    await act(async () => {
-      fireEvent.click(screen.getByText('Refresh'));
-    });
+    fireEvent.click(screen.getByText('Refresh'));
 
     await waitFor(() => {
       expect(screen.getByText(/2 updated/)).toBeInTheDocument();
+    });
+
+    // Flush any pending setTimeout calls to prevent hanging
+    await act(async () => {
+      vi.runAllTimers();
     });
   });
 
@@ -786,12 +797,15 @@ describe('InvestmentsPage', () => {
       expect(screen.getByText('Refresh')).toBeInTheDocument();
     });
 
-    await act(async () => {
-      fireEvent.click(screen.getByText('Refresh'));
-    });
+    fireEvent.click(screen.getByText('Refresh'));
 
     await waitFor(() => {
       expect(screen.getByText('Error refreshing')).toBeInTheDocument();
+    });
+
+    // Flush any pending setTimeout calls to prevent hanging
+    await act(async () => {
+      vi.runAllTimers();
     });
   });
 
@@ -813,12 +827,15 @@ describe('InvestmentsPage', () => {
       expect(screen.getByText('Refresh')).toBeInTheDocument();
     });
 
-    await act(async () => {
-      fireEvent.click(screen.getByText('Refresh'));
-    });
+    fireEvent.click(screen.getByText('Refresh'));
 
     await waitFor(() => {
       expect(screen.getByText(/1 updated, 1 failed/)).toBeInTheDocument();
+    });
+
+    // Flush any pending setTimeout calls to prevent hanging
+    await act(async () => {
+      vi.runAllTimers();
     });
   });
 
@@ -836,13 +853,16 @@ describe('InvestmentsPage', () => {
       expect(screen.getByText('Refresh')).toBeInTheDocument();
     });
 
-    await act(async () => {
-      fireEvent.click(screen.getByText('Refresh'));
-    });
+    fireEvent.click(screen.getByText('Refresh'));
 
     // refreshSelectedPrices should not be called if no securities
     await waitFor(() => {
       expect(mockRefreshSelectedPrices).not.toHaveBeenCalled();
+    });
+
+    // Flush any pending setTimeout calls to prevent hanging
+    await act(async () => {
+      vi.runAllTimers();
     });
   });
 
@@ -877,9 +897,11 @@ describe('InvestmentsPage', () => {
     mockGetPortfolioSummary.mockClear();
     mockGetTransactions.mockClear();
 
-    // Simulate account selection
-    const select = screen.getByTestId('account-filter-select');
-    fireEvent.change(select, { target: { selectedOptions: [{ value: 'acct-cash-1' }] } });
+    // Simulate account selection by selecting the option natively
+    const select = screen.getByTestId('account-filter-select') as HTMLSelectElement;
+    const option = select.querySelector('option[value="acct-cash-1"]') as HTMLOptionElement;
+    option.selected = true;
+    fireEvent.change(select);
 
     await waitFor(() => {
       expect(mockGetPortfolioSummary).toHaveBeenCalled();
@@ -919,7 +941,10 @@ describe('InvestmentsPage', () => {
     fireEvent.click(screen.getByText('+ New Transaction'));
 
     await waitFor(() => {
-      expect(screen.getByText('New Investment Transaction')).toBeInTheDocument();
+      // The heading text appears in both the modal h2 and the mock form span,
+      // so use getAllByText and verify at least one exists
+      const elements = screen.getAllByText('New Investment Transaction');
+      expect(elements.length).toBeGreaterThanOrEqual(1);
     });
   });
 
@@ -935,7 +960,10 @@ describe('InvestmentsPage', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('modal')).toBeInTheDocument();
-      expect(screen.getByText('Edit Transaction')).toBeInTheDocument();
+      // The "Edit Transaction" text appears in both the modal h2 and the mock form span,
+      // so use getAllByText and verify at least one exists
+      const elements = screen.getAllByText('Edit Transaction');
+      expect(elements.length).toBeGreaterThanOrEqual(1);
     });
   });
 
@@ -1268,7 +1296,10 @@ describe('InvestmentsPage', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('modal')).toBeInTheDocument();
-      expect(screen.getByText('New Investment Transaction')).toBeInTheDocument();
+      // The "New Investment Transaction" text appears in both the modal h2 and the mock form span,
+      // so use getAllByText and verify at least one exists
+      const elements = screen.getAllByText('New Investment Transaction');
+      expect(elements.length).toBeGreaterThanOrEqual(1);
     });
   });
 });

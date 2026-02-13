@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@/test/render';
 import { ScheduledTransactionForm } from './ScheduledTransactionForm';
-import toast from 'react-hot-toast';
 
 vi.mock('@/hooks/useNumberFormat', () => ({
   useNumberFormat: () => ({ defaultCurrency: 'CAD' }),
@@ -25,35 +24,16 @@ vi.mock('@/lib/format', () => ({
   evaluateExpression: (v: string) => parseFloat(v) || 0,
 }));
 
-const mockAccounts = [
-  {
-    id: 'acc-1',
-    name: 'Chequing',
-    currencyCode: 'CAD',
-    isClosed: false,
-    accountType: 'CHEQUING',
-    accountSubType: null,
-  },
-  {
-    id: 'acc-2',
-    name: 'Savings',
-    currencyCode: 'CAD',
-    isClosed: false,
-    accountType: 'SAVINGS',
-    accountSubType: null,
-  },
-  {
-    id: 'acc-3',
-    name: 'Closed Account',
-    currencyCode: 'CAD',
-    isClosed: true,
-    accountType: 'CHEQUING',
-    accountSubType: null,
-  },
-];
+vi.mock('@/lib/errors', () => ({
+  getErrorMessage: (_error: unknown, fallback: string) => fallback,
+}));
+
+const mockAccountsGetAll = vi.fn();
+const mockCreate = vi.fn().mockResolvedValue({});
+const mockUpdate = vi.fn().mockResolvedValue({});
 
 vi.mock('@/lib/accounts', () => ({
-  accountsApi: { getAll: vi.fn().mockResolvedValue(mockAccounts) },
+  accountsApi: { getAll: (...args: any[]) => mockAccountsGetAll(...args) },
 }));
 
 vi.mock('@/lib/categories', () => ({
@@ -63,9 +43,6 @@ vi.mock('@/lib/categories', () => ({
 vi.mock('@/lib/payees', () => ({
   payeesApi: { getAll: vi.fn().mockResolvedValue([]), create: vi.fn().mockResolvedValue({ id: 'new', name: 'New' }) },
 }));
-
-const mockCreate = vi.fn().mockResolvedValue({});
-const mockUpdate = vi.fn().mockResolvedValue({});
 
 vi.mock('@/lib/scheduled-transactions', () => ({
   scheduledTransactionsApi: {
@@ -98,9 +75,37 @@ vi.mock('@/components/ui/Combobox', () => ({
   ),
 }));
 
+const mockAccounts = [
+  {
+    id: 'acc-1',
+    name: 'Chequing',
+    currencyCode: 'CAD',
+    isClosed: false,
+    accountType: 'CHEQUING',
+    accountSubType: null,
+  },
+  {
+    id: 'acc-2',
+    name: 'Savings',
+    currencyCode: 'CAD',
+    isClosed: false,
+    accountType: 'SAVINGS',
+    accountSubType: null,
+  },
+  {
+    id: 'acc-3',
+    name: 'Closed Account',
+    currencyCode: 'CAD',
+    isClosed: true,
+    accountType: 'CHEQUING',
+    accountSubType: null,
+  },
+];
+
 describe('ScheduledTransactionForm', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockAccountsGetAll.mockResolvedValue(mockAccounts);
   });
 
   it('renders form with payment and transfer toggle', () => {
