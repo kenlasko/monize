@@ -148,13 +148,13 @@ export class ReportConfigDto {
 export class CreateCustomReportDto {
   @ApiProperty({ description: "Report name" })
   @IsString()
-  @MaxLength(255)
+  @MaxLength(100)
   name: string;
 
   @ApiPropertyOptional({ description: "Report description" })
   @IsOptional()
   @IsString()
-  @MaxLength(1000)
+  @MaxLength(500)
   description?: string;
 
   @ApiPropertyOptional({ description: "Icon identifier (emoji or icon name)" })

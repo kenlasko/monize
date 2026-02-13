@@ -68,6 +68,6 @@ export class CreateInvestmentTransactionDto {
   })
   @IsOptional()
   @IsString()
-  @MaxLength(1000)
+  @MaxLength(500)
   description?: string;
 }

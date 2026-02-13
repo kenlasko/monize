@@ -4,7 +4,7 @@ import { IsString, IsOptional, MaxLength, IsUUID } from "class-validator";
 export class CreatePayeeDto {
   @ApiProperty({ example: "Starbucks", description: "Name of the payee" })
   @IsString()
-  @MaxLength(255)
+  @MaxLength(100)
   name: string;
 
   @ApiProperty({
@@ -23,6 +23,6 @@ export class CreatePayeeDto {
   })
   @IsOptional()
   @IsString()
-  @MaxLength(1000)
+  @MaxLength(500)
   notes?: string;
 }

@@ -23,7 +23,7 @@ export class UpdateAccountDto {
   })
   @IsOptional()
   @IsString()
-  @MaxLength(255)
+  @MaxLength(100)
   name?: string;
 
   @ApiPropertyOptional({
@@ -59,7 +59,7 @@ export class UpdateAccountDto {
   })
   @IsOptional()
   @IsString()
-  @MaxLength(1000)
+  @MaxLength(500)
   description?: string;
 
   @ApiPropertyOptional({
@@ -77,7 +77,7 @@ export class UpdateAccountDto {
   })
   @IsOptional()
   @IsString()
-  @MaxLength(255)
+  @MaxLength(100)
   institution?: string;
 
   @ApiPropertyOptional({

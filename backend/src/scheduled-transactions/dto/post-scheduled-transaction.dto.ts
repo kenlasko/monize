@@ -59,7 +59,7 @@ export class PostScheduledTransactionDto {
   })
   @IsOptional()
   @IsString()
-  @MaxLength(1000)
+  @MaxLength(500)
   description?: string | null;
 
   @ApiPropertyOptional({ description: "Use splits for this posting" })

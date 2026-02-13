@@ -30,7 +30,7 @@ export class CreateScheduledTransactionDto {
   accountId: string;
 
   @IsString()
-  @MaxLength(255)
+  @MaxLength(100)
   name: string;
 
   @IsOptional()
@@ -39,7 +39,7 @@ export class CreateScheduledTransactionDto {
 
   @IsOptional()
   @IsString()
-  @MaxLength(255)
+  @MaxLength(100)
   payeeName?: string;
 
   @IsOptional()
@@ -55,7 +55,7 @@ export class CreateScheduledTransactionDto {
 
   @IsOptional()
   @IsString()
-  @MaxLength(1000)
+  @MaxLength(500)
   description?: string;
 
   @IsEnum(FrequencyType)

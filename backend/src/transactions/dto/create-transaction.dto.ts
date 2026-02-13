@@ -35,7 +35,7 @@ export class CreateTransactionDto {
   })
   @IsOptional()
   @IsString()
-  @MaxLength(255)
+  @MaxLength(100)
   payeeName?: string;
 
   @ApiPropertyOptional({
@@ -67,7 +67,7 @@ export class CreateTransactionDto {
   @ApiPropertyOptional({ description: "Transaction description/notes" })
   @IsOptional()
   @IsString()
-  @MaxLength(1000)
+  @MaxLength(500)
   description?: string;
 
   @ApiPropertyOptional({

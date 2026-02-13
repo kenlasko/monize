@@ -62,7 +62,7 @@ export class CreateScheduledTransactionOverrideDto {
   @ApiPropertyOptional({ description: "Overridden description" })
   @IsOptional()
   @IsString()
-  @MaxLength(1000)
+  @MaxLength(500)
   description?: string | null;
 
   @ApiPropertyOptional({
@@ -97,7 +97,7 @@ export class UpdateScheduledTransactionOverrideDto {
   @ApiPropertyOptional({ description: "Overridden description" })
   @IsOptional()
   @IsString()
-  @MaxLength(1000)
+  @MaxLength(500)
   description?: string | null;
 
   @ApiPropertyOptional({
