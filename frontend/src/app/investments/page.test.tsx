@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
 import { render, screen, waitFor, fireEvent, act, within } from '@/test/render';
 import InvestmentsPage from './page';
 import { PortfolioSummary, PaginatedInvestmentTransactions, InvestmentTransaction } from '@/types/investment';

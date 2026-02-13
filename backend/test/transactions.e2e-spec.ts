@@ -1,5 +1,9 @@
 import { Test, TestingModule } from "@nestjs/testing";
-import { INestApplication, ValidationPipe } from "@nestjs/common";
+import {
+  INestApplication,
+  ValidationPipe,
+  NotFoundException,
+} from "@nestjs/common";
 import * as request from "supertest";
 import * as cookieParser from "cookie-parser";
 import { TransactionsController } from "@/transactions/transactions.controller";
@@ -144,7 +148,11 @@ describe("TransactionsController (e2e)", () => {
     };
 
     it("should create a transaction successfully", async () => {
-      const created = { id: mockTransactionId, ...validPayload, userId: mockUserId };
+      const created = {
+        id: mockTransactionId,
+        ...validPayload,
+        userId: mockUserId,
+      };
       mockTransactionsService.create.mockResolvedValue(created);
 
       const res = await request(app.getHttpServer())
@@ -210,7 +218,11 @@ describe("TransactionsController (e2e)", () => {
           { categoryId: mockCategoryId, amount: -10.5 },
         ],
       };
-      const created = { id: mockTransactionId, ...withSplits, userId: mockUserId };
+      const created = {
+        id: mockTransactionId,
+        ...withSplits,
+        userId: mockUserId,
+      };
       mockTransactionsService.create.mockResolvedValue(created);
 
       await request(app.getHttpServer())
@@ -259,7 +271,13 @@ describe("TransactionsController (e2e)", () => {
     it("should pass filter parameters correctly", async () => {
       mockTransactionsService.findAll.mockResolvedValue({
         data: [],
-        pagination: { page: 2, limit: 10, total: 25, totalPages: 3, hasMore: true },
+        pagination: {
+          page: 2,
+          limit: 10,
+          total: 25,
+          totalPages: 3,
+          hasMore: true,
+        },
       });
 
       await request(app.getHttpServer())
@@ -292,7 +310,13 @@ describe("TransactionsController (e2e)", () => {
     it("should pass single accountId as array for backward compatibility", async () => {
       mockTransactionsService.findAll.mockResolvedValue({
         data: [],
-        pagination: { page: 1, limit: 50, total: 0, totalPages: 0, hasMore: false },
+        pagination: {
+          page: 1,
+          limit: 50,
+          total: 0,
+          totalPages: 0,
+          hasMore: false,
+        },
       });
 
       await request(app.getHttpServer())
@@ -318,7 +342,13 @@ describe("TransactionsController (e2e)", () => {
     it("should parse includeInvestmentBrokerage flag", async () => {
       mockTransactionsService.findAll.mockResolvedValue({
         data: [],
-        pagination: { page: 1, limit: 50, total: 0, totalPages: 0, hasMore: false },
+        pagination: {
+          page: 1,
+          limit: 50,
+          total: 0,
+          totalPages: 0,
+          hasMore: false,
+        },
       });
 
       await request(app.getHttpServer())
@@ -454,7 +484,7 @@ describe("TransactionsController (e2e)", () => {
         message: "Transaction deleted",
       });
 
-      const res = await request(app.getHttpServer())
+      await request(app.getHttpServer())
         .delete(`/transactions/${mockTransactionId}`)
         .set("X-CSRF-Token", "test")
         .set("Cookie", ["csrf_token=test"])
@@ -476,7 +506,6 @@ describe("TransactionsController (e2e)", () => {
 
     it("should propagate not-found from service", async () => {
       const nonExistentId = "00000000-0000-0000-0000-000000000000";
-      const { NotFoundException } = require("@nestjs/common");
       mockTransactionsService.remove.mockRejectedValue(
         new NotFoundException("Transaction not found"),
       );

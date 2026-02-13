@@ -986,8 +986,7 @@ describe("ImportRegularProcessorService", () => {
       // Should have updated the split to link to existing tx
       const updateCalls = ctx.queryRunner.manager.update.mock.calls;
       const splitLinkUpdate = updateCalls.find(
-        (call: any) =>
-          call[2]?.linkedTransactionId === existingLinkedTx.id,
+        (call: any) => call[2]?.linkedTransactionId === existingLinkedTx.id,
       );
       expect(splitLinkUpdate).toBeDefined();
     });

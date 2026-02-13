@@ -225,10 +225,7 @@ describe("AuthController (e2e)", () => {
       expect(res.body.user.email).toBe(mockUser.email);
       expect(res.body.user.firstName).toBe(mockUser.firstName);
       expect(res.body.user.authProvider).toBe(mockUser.authProvider);
-      expect(mockAuthService.login).toHaveBeenCalledWith(
-        validLogin,
-        undefined,
-      );
+      expect(mockAuthService.login).toHaveBeenCalledWith(validLogin, undefined);
 
       const cookies = res.headers["set-cookie"];
       expect(cookies).toBeDefined();
@@ -359,9 +356,7 @@ describe("AuthController (e2e)", () => {
       // Cookies should be cleared on failure
       const cookies = res.headers["set-cookie"];
       if (cookies) {
-        const cookieStr = Array.isArray(cookies)
-          ? cookies.join("; ")
-          : cookies;
+        const cookieStr = Array.isArray(cookies) ? cookies.join("; ") : cookies;
         // clearCookie sets the cookie with an expiry in the past
         expect(cookieStr).toContain("auth_token=");
       }
