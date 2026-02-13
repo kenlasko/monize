@@ -149,9 +149,9 @@ export function InvestmentTransactionForm({
           action: 'BUY',
           transactionDate: new Date().toISOString().split('T')[0],
           fundingAccountId: '',
-          quantity: 0,
-          price: 0,
-          commission: 0,
+          quantity: undefined,
+          price: undefined,
+          commission: undefined,
           description: '',
         },
   });
@@ -427,8 +427,8 @@ export function InvestmentTransactionForm({
         <div className="grid grid-cols-2 gap-4">
           <NumericInput
             label="Quantity (Shares)"
-            value={watchedQuantity}
-            onChange={(value) => setValue('quantity', value ?? 0, { shouldValidate: true })}
+            value={watchedQuantity || undefined}
+            onChange={(value) => setValue('quantity', value, { shouldValidate: true })}
             decimalPlaces={8}
             min={0}
             error={errors.quantity?.message}
@@ -436,8 +436,8 @@ export function InvestmentTransactionForm({
           <NumericInput
             label="Price per Share"
             prefix={currencySymbol}
-            value={watchedPrice}
-            onChange={(value) => setValue('price', value ?? 0, { shouldValidate: true })}
+            value={watchedPrice || undefined}
+            onChange={(value) => setValue('price', value, { shouldValidate: true })}
             decimalPlaces={5}
             min={0}
             error={errors.price?.message}
@@ -449,8 +449,8 @@ export function InvestmentTransactionForm({
       {isQuantityOnly && (
         <NumericInput
           label="Quantity (Shares)"
-          value={watchedQuantity}
-          onChange={(value) => setValue('quantity', value ?? 0, { shouldValidate: true })}
+          value={watchedQuantity || undefined}
+          onChange={(value) => setValue('quantity', value, { shouldValidate: true })}
           decimalPlaces={8}
           min={0}
           error={errors.quantity?.message}
@@ -462,8 +462,8 @@ export function InvestmentTransactionForm({
         <CurrencyInput
           label="Amount"
           prefix={currencySymbol}
-          value={watchedPrice}
-          onChange={(value) => setValue('price', value ?? 0, { shouldValidate: true })}
+          value={watchedPrice || undefined}
+          onChange={(value) => setValue('price', value, { shouldValidate: true })}
           error={errors.price?.message}
           allowNegative={false}
         />
@@ -474,8 +474,8 @@ export function InvestmentTransactionForm({
         <CurrencyInput
           label="Commission / Fees"
           prefix={currencySymbol}
-          value={watchedCommission}
-          onChange={(value) => setValue('commission', value ?? 0, { shouldValidate: true })}
+          value={watchedCommission || undefined}
+          onChange={(value) => setValue('commission', value, { shouldValidate: true })}
           error={errors.commission?.message}
           allowNegative={false}
         />
