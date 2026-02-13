@@ -1,300 +1,189 @@
 # Test Coverage Analysis
 
-## Current State
+## Executive Summary
 
-| Layer | Framework | Test Files | Tests | Stmt Coverage | Branch Coverage |
-|-------|-----------|-----------|-------|---------------|-----------------|
-| Backend Unit | Jest | 60 | 1,461 | 82.37% | 66.34% |
-| Frontend Unit | Vitest | 154 | 1,058 | 52.68% | 45.43% |
-| E2E | Playwright | 3 | ~10 | N/A | N/A |
-| Backend Integration | Jest | 0 | 0 | N/A | N/A |
+The monize codebase has **240+ test files** (80 backend, 157 frontend, 3 E2E) with **3,579 total tests** (2,366 backend, 1,213 frontend). Backend unit test coverage is strong at **95.6% statements / 86.5% branches**, well above the 80% project target. Frontend coverage is significantly below target at **53.1% statements / 46.1% branches**. Integration tests exist only as infrastructure -- no implementations. E2E tests cover only 3 basic happy-path scenarios.
 
-**Backend** meets the 80% statement coverage target overall, but several critical services fall far short. **Frontend** is at 52.68% - well below the 80% target. **Integration tests** have infrastructure in place (helpers, factories, config) but zero actual tests. **E2E tests** cover only the most basic happy paths.
+### Coverage at a Glance
 
----
+| Layer | Stmts | Branch | Funcs | Lines | Target | Status |
+|-------|-------|--------|-------|-------|--------|--------|
+| Backend unit | 95.6% | 86.5% | 96.9% | 95.9% | 80% | PASS |
+| Frontend unit | 53.1% | 46.1% | 49.4% | 54.4% | 80% | FAIL |
+| Backend integration | 0% | 0% | 0% | 0% | -- | Missing |
+| E2E (Playwright) | 3 tests | -- | -- | -- | -- | Minimal |
 
-## Priority 1: Backend Services with Critical Coverage Gaps
+### Configuration Issue: Coverage Thresholds
 
-### 1.1 transactions.service.ts - 32.64% line coverage
+CLAUDE.md specifies **80% minimum coverage**. However:
+- Backend Jest thresholds are set to **5%** across all metrics (`backend/package.json`)
+- Frontend Vitest has **no coverage thresholds at all**
 
-The most critical gap. This is the largest service (1,935 lines) and the core of the application.
-
-**Untested functionality:**
-- `findAll()` - pagination, filtering by category (with children), search, running balance calculation
-- `getReconciliationData()` / `bulkReconcile()` - entire reconciliation workflow
-- `getSummary()` - transaction aggregation with currency grouping
-- Split operations: `getSplits()`, `updateSplits()`, `addSplit()`, `removeSplit()`, `createSplits()`
-- `updateTransfer()` - transfer updates with amount/account changes
-- Complex `update()` paths: split creation within updates, account changes, VOID transitions
-- `deleteTransferSplitLinkedTransactions()` - cascading delete logic
-- `triggerNetWorthRecalc()` - debounce mechanism
-
-**Recommended tests:**
-- Pagination with various sort/filter combinations
-- Category filtering with subcategory inclusion
-- Full split transaction lifecycle (create, update, remove splits)
-- Reconciliation flow (get data, bulk reconcile, verify balances)
-- Transfer updates (change amounts, change accounts, cross-currency)
-- Transaction summary aggregation
-
-### 1.2 auth.service.ts - 32.31% line coverage
-
-Critical security code with minimal test coverage (776 lines).
-
-**Untested functionality:**
-- `setup2FA()` / `confirmSetup2FA()` / `disable2FA()` - entire 2FA lifecycle
-- `findOrCreateOidcUser()` / `validateOidcUser()` - entire OIDC flow
-- `refreshTokens()` - replay detection, pessimistic locking, family tracking, token rotation
-- `purgeExpiredRefreshTokens()` - cron job cleanup
-- Trusted device operations: `createTrustedDevice()`, `validateTrustedDevice()`, `getTrustedDevices()`, `revokeTrustedDevice()`, `revokeAllTrustedDevices()`
-- `generateResetToken()` - token generation and SHA-256 hashing
-- `resetPassword()` - success path with actual password update
-- Login with trusted device bypass of 2FA
-- `verify2FA()` - success path with rememberDevice flow
-
-**Recommended tests:**
-- 2FA setup, confirmation, and disable flows
-- Refresh token rotation with replay detection (reuse of old token revokes entire family)
-- OIDC user creation, linking, and update flows
-- Trusted device CRUD and validation
-- Password reset complete flow (generate token, hash, verify, reset)
-- Token purge cron job
-
-### 1.3 accounts.service.ts - 50.17% line coverage
-
-**Untested functionality:**
-- `findAll()` - batch canDelete calculation, inactive filtering
-- `createInvestmentAccountPair()` - dual account creation and linking
-- `createLoanAccount()` - loan setup with amortization schedule generation
-- `createMortgageAccount()` - mortgage setup including Canadian mortgage variants
-- `previewMortgageAmortization()` / `previewLoanAmortization()` - amortization previews
-- `updateMortgageRate()` - rate changes with payment recalculation
-- `reopen()` - account reopening
-- `getSummary()` - asset/liability categorization, net worth calculation
-- Investment pair currency synchronization during updates
-
-**Recommended tests:**
-- Investment account pair lifecycle (create, update currency sync, close both)
-- Loan creation with amortization schedule verification
-- Mortgage creation (standard and Canadian) with payment calculation
-- Mortgage rate update with payment recalculation
-- Account summary aggregation
-
-### 1.4 currencies.service.ts - 44.68% line coverage
-
-**Untested functionality:**
-- `lookupCurrency()` - metadata lookup, Yahoo Finance API fallback
-- `searchMetadataByText()` - name/symbol matching and substring search
-- `extractCurrencyCode()` - code extraction from forex pairs
-- `findAll()` - inactive currency filtering
-- `isInUse()` - complex SQL EXISTS validation
-
-**Recommended tests:**
-- Currency lookup by name, code, and country
-- Yahoo Finance fallback behavior
-- Metadata search matching edge cases
-- Deletion prevention when currency is in use
+These should be raised to enforce the project standard.
 
 ---
 
-## Priority 2: Frontend Pages with Zero Coverage
+## Backend Analysis (95.6% overall)
 
-13 pages have 0% test coverage and no test files exist for any of them.
+All 42 services and 19 controllers have test files. Most modules achieve 95-100% coverage. The few gaps worth addressing are below.
 
-### 2.1 High-impact pages (should be tested first)
+### 1. Auth Controller (58.9% statements -- lowest in backend)
 
-| Page | Lines | Complexity | Why It Matters |
-|------|-------|------------|----------------|
-| `app/bills/page.tsx` | 679 | High | Core feature: scheduled transaction management, calendar/list views, overrides, forecasting |
-| `app/import/page.tsx` | 1,224 | Very High | 7-step wizard: file upload, account/category/security mapping, review |
-| `app/investments/page.tsx` | 528 | High | Portfolio management: holdings, allocation charts, price refresh |
-| `app/reconcile/page.tsx` | ~460 | High | Bank reconciliation: transaction matching, balance confirmation |
-| `app/payees/page.tsx` | ~250 | Medium | Payee management: CRUD, category reassignment |
-| `app/admin/users/page.tsx` | 234 | Medium | User management: role changes, status toggles, password resets |
+The auth controller is the single biggest backend gap. Untested endpoints:
 
-### 2.2 Auth-related pages
+- **OIDC login and callback**: State/nonce generation, cookie handling, user creation/lookup, token pair generation, error handling for provider failures
+- **2FA lifecycle**: Setup, confirm, disable, verify endpoints
+- **Trusted device management**: List devices, detect current device, revoke individual or all, cookie clearing
+- **Refresh token error handling**: Cookie clearing when refresh fails
+- **CSRF refresh endpoint**
 
-| Page | Complexity | Why It Matters |
-|------|------------|----------------|
-| `app/auth/callback/page.tsx` | Medium | OAuth/OIDC callback handler |
-| `app/change-password/page.tsx` | Low | Password change form |
-| `app/forgot-password/page.tsx` | Low | Password recovery initiation |
-| `app/reset-password/page.tsx` | Low | Password reset completion |
-| `app/setup-2fa/page.tsx` | Medium | 2FA enrollment |
+This is **security-critical** code. OIDC and 2FA bugs could lead to account compromise or lockout.
 
-### 2.3 Reports pages
+### 2. JWT Strategy (77.8% statements)
 
-| Page | Complexity |
-|------|------------|
-| `app/reports/[reportId]/page.tsx` | Low |
-| `app/reports/custom/page.tsx` | Low |
-| `app/reports/custom/new/page.tsx` | Low |
-| `app/reports/custom/[id]/page.tsx` | Low |
-| `app/reports/custom/[id]/edit/page.tsx` | Medium |
+The `extractJwtFromRequest` helper is untested: Bearer token extraction from Authorization header, fallback to httpOnly cookie, and null return when both are missing.
 
----
+### 3. Reports Service (89.3% statements)
 
-## Priority 3: Frontend Components with Low Coverage
+Missing coverage for advanced `FilterGroups` with nested bracket conditions and OR logic, transaction-specific column sorting (DATE, PAYEE, DESCRIPTION, MEMO, CATEGORY, ACCOUNT), and default/unknown metric type handling.
 
-### 3.1 Transaction Components (7-30% coverage)
+### 4. Import Regular Processor (85.0% statements)
 
-The transaction component group has test files but they mostly test initial rendering, not behavior.
+Missing coverage for cross-currency transfer detection and matching, split transfer linking from prior imports, placeholder transaction cleanup, and balance adjustments for currency conversions.
 
-**Missing across all transaction components:**
-- Form submission and validation error display
-- Field-level interactions (typing, selecting, clearing)
-- Transaction type switching (normal, transfer, split)
-- Multi-currency amount handling
-- Payee/category inline creation
-- Filter panel: applying and clearing filters
-- Pagination controls
+### 5. QIF Parser (85.7% statements)
 
-**Key files needing more tests:**
-- `TransactionForm.tsx` (28.8% stmts) - form submission, validation, type switching
-- `SplitEditor.tsx` (41.66%) - split line add/remove, balance validation
-- `TransactionFilterPanel.tsx` (23.52%) - filter apply/clear/persist
-- `TransferTransactionFields.tsx` (16.66%) - account selection, validation
-- `InvestmentTransactionFields.tsx` (7.14%) - investment-specific fields
-- `NormalTransactionFields.tsx` (14.28%) - core field interactions
+Missing coverage for ambiguous date format detection (all parts <= 12), M/D'YY format with apostrophe separator, 2-digit year conversion boundary (49 vs 50), EOF handling without ^ terminator, and account name extraction.
 
-### 3.2 Scheduled Transaction Components (25-46% coverage)
+### 6. Scheduled Transactions Service (92.9% statements)
 
-- `ScheduledTransactionForm.tsx` (25.38%) - frequency, occurrence, override creation
-- `OverrideEditorDialog.tsx` (46.34%) - override application, date selection
-- `PostTransactionDialog.tsx` (41.26%) - posting confirmation, field modifications
-
-### 3.3 Import Components (13-40% coverage)
-
-- `SelectAccountStep.tsx` (13.84%) - account selection, creation, bulk handling
-- `ReviewStep.tsx` (36.66%) - summary validation, bulk review
-- `CategoryMappingRow.tsx` (40.47%) - category selection, parent handling
-
-### 3.4 Other Low-Coverage Components
-
-- `AppHeader.tsx` (43.75%) - mobile menu, dropdowns, logout, admin visibility
-- `CategoryAutoAssignDialog.tsx` (32.78%) - payee-category assignment
-- `SecurityForm.tsx` (30.9%) - security CRUD
-- `ResetPasswordModal.tsx` (30%) - admin password reset
+Missing coverage for loan payment split recalculation, cron job error handling (partial failures), override date boundary cases, and end date validation.
 
 ---
 
-## Priority 4: Missing Test Layers
+## Frontend Analysis (53.1% overall -- needs significant work)
 
-### 4.1 Backend Integration Tests (0 tests)
+### Pages with 0% Coverage
 
-Infrastructure exists (`test/helpers/test-database.ts`, `test/helpers/test-factories.ts`, `test/helpers/auth-helper.ts`) but no integration tests have been written.
+Seven full pages have zero test coverage:
 
-**High-value integration tests to add:**
-- Transaction CRUD through API endpoints with real database
-- Transfer creation and balance propagation
-- Split transaction lifecycle
-- Account creation with opening balance transaction
-- Reconciliation workflow end-to-end
-- Auth flows: register, login, refresh token, 2FA setup/verify
-- Import workflow: upload, map, review, confirm
-- Scheduled transaction posting
+| Page | Lines | Risk | Key Untested Functionality |
+|------|-------|------|---------------------------|
+| **app/bills/page.tsx** | 704 | HIGH | Monthly frequency normalization (DAILY x30, WEEKLY x4.33), calendar grid generation, override confirmation dialogs |
+| **app/investments/page.tsx** | 552 | HIGH | Price refresh orchestration with retry, parallel portfolio loading, auto-refresh timing |
+| **app/reconcile/page.tsx** | 474 | HIGH | Three-step state machine, floating-point balance calc (`Math.round(x*100)/100`), bulk reconcile affecting 100+ records |
+| **app/payees/page.tsx** | 261 | MED | Optimistic state updates, search+pagination reset, sort toggling |
+| **app/admin/users/page.tsx** | 233 | MED | Role changes (destructive), user deletion, temporary password display |
+| **app/setup-2fa/page.tsx** | 42 | LOW | Redirect when already enabled, completion callback |
+| **app/auth/callback/page.tsx** | 87 | MED | OIDC callback handling, conditional routing for password change, error states |
 
-### 4.2 E2E Tests (3 files, basic happy paths only)
+Additionally, **app/import/page.tsx** (1,145 lines) has only **5.3% coverage**. This is the most complex page in the application: multi-file bulk import orchestration, QIF parsing with fuzzy name matching, inline account/category creation, and step-progression logic with conditional steps.
 
-Current E2E tests cover registration, login, basic account creation, and basic transaction creation. They use `waitForTimeout` (flaky) and conditional flows.
+### Components with Critical Gaps
 
-**Missing E2E scenarios:**
-- Bill/scheduled transaction management
-- Import workflow (QIF/CSV file upload through completion)
-- Investment portfolio management
-- Bank reconciliation
-- Report generation and viewing
-- Multi-currency operations
-- Settings management
-- Category management with drag-and-drop reordering
-- Password change / 2FA setup
+| Component | Stmts | Key Untested Functionality |
+|-----------|-------|---------------------------|
+| TransferTransactionFields | 7.1% | Cross-currency detection, account filtering, target amount input |
+| NormalTransactionFields | 14.3% | Payee/category combobox creation, split button, amount handling |
+| SplitTransactionFields | 16.7% | Split editor integration, total validation, row add/remove |
+| SelectAccountStep (import) | 13.8% | File-by-file account selection, inline creation, matching confidence |
+| TransactionFilterPanel | 23.5% | All filter interactions, favorite accounts, date range, clear filters |
+| ScheduledTransactionForm | 27.3% | Frequency selection, due/end date logic, auto-post, reminders |
+| TransactionForm | 30.2% | Mode switching (normal/split/transfer), form submission per mode |
+| CategoryAutoAssignDialog | 32.8% | Sliders, preview loading, batch apply, select all/none |
+| SecuritySection (settings) | 38.5% | Password change, 2FA setup/disable, trusted device management |
 
----
+### Directory-Level Frontend Coverage
 
-## Priority 5: Branch Coverage Gaps
-
-Overall backend branch coverage is 66.34% (vs 82.37% statements). This gap indicates many conditional paths are untested.
-
-**Worst branch coverage in backend:**
-- `auth.service.ts` - 16.16% branches
-- `transactions.service.ts` - 26.73% branches
-- `currencies.service.ts` - 27.08% branches
-- `accounts.service.ts` - 36.73% branches
-- `import.service.ts` - 68.31% branches
-
-**Worst branch coverage in frontend:**
-- `useSwipeNavigation.ts` - 9.45% branches
-- `MortgageFields.tsx` - 12% branches
-- `app/accounts/page.tsx` - 13.15% branches
-- `IncomeExpensesBarChart.tsx` - 15.78% branches
-- `SelectAccountStep.tsx` - 12.5% branches
-
-**Common patterns in missing branches:**
-- Error handling catch blocks
-- Null/undefined guard clauses
-- Feature flag / configuration conditionals
-- Edge cases in calculations (zero amounts, negative balances)
-- Empty state rendering
+| Directory | Stmts | Branch | Notes |
+|-----------|-------|--------|-------|
+| app/* (pages) | 0-80% | 0-68% | 7 pages at 0%, import at 5% |
+| components/transactions | 35.8% | 47.0% | Core CRUD components undertested |
+| components/scheduled-transactions | 38.9% | 34.2% | Form and dialog components weak |
+| components/import | 38.9% | 38.4% | Multi-step wizard components weak |
+| components/payees | 47.1% | 40.5% | Auto-assign dialog very low |
+| components/layout | 56.5% | 41.1% | AppHeader at 43.8% |
+| components/investments | 64.2% | 48.8% | Form and list components weak |
+| components/reports | 72.1% | 49.9% | Branch coverage consistently low |
+| components/ui | 71.7% | 67.8% | CurrencyInput at 42.9%, Pagination at 54.8% |
+| hooks | 66.1% | 44.4% | useSwipeNavigation at 32.9% stmts, 9.5% branches |
+| lib | 85.2% | 71.4% | exchange-rates at 40.9%, forecast at 65.6% |
+| store | 97.0% | 100% | Well tested |
+| contexts | 93.2% | 85.0% | Well tested |
 
 ---
 
-## Recommended Action Plan
+## Integration and E2E Gaps
 
-### Phase 1: Close Critical Backend Gaps
+### Backend Integration Tests (0 implementations)
 
-Focus on the four services below 50% coverage. These are the core of the application and contain security-critical code.
+The test helper infrastructure exists (`/backend/test/helpers/`) with database setup, auth helpers, and factory functions. The Jest E2E config exists. But **no actual integration test files have been written**.
 
-1. Add tests for `transactions.service.ts` targeting splits, reconciliation, and findAll
-2. Add tests for `auth.service.ts` targeting 2FA, OIDC, refresh tokens, and trusted devices
-3. Add tests for `accounts.service.ts` targeting investment pairs, loans, and mortgages
-4. Add tests for `currencies.service.ts` targeting lookup and metadata search
+Critical flows that need integration tests:
+1. **Auth lifecycle**: Register -> login -> access protected resource -> refresh token -> logout
+2. **Transaction lifecycle**: Create -> update -> split -> transfer -> reconcile -> delete
+3. **Import pipeline**: QIF parse -> category mapping -> account matching -> transaction creation -> balance updates
+4. **Scheduled transactions**: Create -> auto-post via cron -> balance update -> loan recalculation
+5. **Reports**: Create custom report -> execute with filters -> verify aggregation
 
-**Target: Bring all four services above 80% statement coverage.**
+### E2E Tests (3 files, minimal)
 
-### Phase 2: Frontend Page Tests
+Current Playwright tests cover only registration, login, basic account creation, and basic transaction creation. Missing: import workflow, reconciliation, investments, scheduled transactions, reports, multi-currency operations, admin management, 2FA flows.
 
-Add test files for the 13 pages currently at 0% coverage, prioritizing by user impact and complexity.
+---
 
-1. `app/bills/page.tsx` - complex state management, calendar views
-2. `app/import/page.tsx` - multi-step wizard, file handling
-3. `app/investments/page.tsx` - portfolio charts, price refresh
-4. `app/reconcile/page.tsx` - reconciliation workflow
-5. Auth pages (change-password, forgot-password, reset-password, setup-2fa)
-6. `app/payees/page.tsx` and `app/admin/users/page.tsx`
-7. Reports pages
+## Prioritized Recommendations
 
-**Target: All pages above 50% statement coverage.**
+### Tier 1: Critical (security and data integrity)
 
-### Phase 3: Deepen Frontend Component Tests
+1. **Auth controller tests** -- Add 30-40 tests for OIDC, 2FA, trusted devices, refresh token error handling. These are security-critical flows with the lowest backend coverage (58.9%).
 
-Improve coverage on components that have test files but only test rendering.
+2. **Reconcile page tests** -- Floating-point balance calculations and bulk state updates. Precision errors silently prevent reconciliation. The `Math.round(x*100)/100` logic and the three-step state machine need coverage.
 
-1. Transaction form components - add submission, validation, type-switching tests
-2. Scheduled transaction components - add frequency, posting, override tests
-3. Import step components - add interaction and error tests
-4. AppHeader - add mobile menu, dropdown, and auth-state tests
+3. **Import page tests** -- Multi-file orchestration, fuzzy name matching, conditional step progression. At 5.3% coverage on 1,145 lines, this is the largest untested surface. Bugs cause data loss during onboarding.
 
-**Target: All components above 60% statement coverage.**
+4. **Raise coverage thresholds** -- Change backend Jest thresholds from 5% to 80%. Add 80% thresholds to frontend Vitest config. This prevents regression.
 
-### Phase 4: Backend Integration Tests
+### Tier 2: High (core functionality)
 
-Write integration tests using the existing test helpers and factories.
+5. **Transaction form components** -- TransactionForm (30.2%), TransferTransactionFields (7.1%), NormalTransactionFields (14.3%), SplitTransactionFields (16.7%). These are the most-used UI components.
 
-1. Transaction lifecycle (create, update, split, reconcile, delete)
-2. Auth flows (register, login, refresh, 2FA, OIDC)
-3. Account lifecycle (create various types, close, reopen)
-4. Import pipeline
+6. **Bills page tests** -- Monthly calculation normalization and calendar generation.
 
-**Target: Cover all critical API endpoints with at least happy-path integration tests.**
+7. **Investments page tests** -- Price refresh with retry, portfolio loading, symbol filtering.
 
-### Phase 5: E2E Test Expansion
+8. **Backend integration tests** -- Implement auth and transaction lifecycle tests using existing helper infrastructure.
 
-Expand Playwright tests to cover more user journeys.
+### Tier 3: Medium (improved confidence)
 
-1. Import workflow
-2. Bills/scheduled transactions
-3. Investments
-4. Reconciliation
-5. Reports
+9. **ScheduledTransactionForm** -- Frequency logic, due/end date handling, override creation.
 
-**Target: One E2E test per major feature area.**
+10. **SecuritySection (settings)** -- Password change form, 2FA management UI.
+
+11. **FilterBuilder and TransactionFilterPanel** -- Complex filter state management.
+
+12. **Backend edge cases** -- Cross-currency transfers in import, QIF date parsing, report advanced filtering, loan recalculation in scheduled transactions.
+
+13. **E2E expansion** -- Add Playwright tests for import, reconciliation, investments, and scheduled transactions.
+
+### Tier 4: Low (polish)
+
+14. **useSwipeNavigation** -- Touch gesture state machine (9.5% branch coverage).
+
+15. **lib/exchange-rates.ts** (40.9%) and **lib/forecast.ts** (65.6%) -- API wrappers and date calculations.
+
+16. **Remaining pages** -- payees, admin, setup-2fa, auth callback, report pages.
+
+---
+
+## Quick Wins
+
+These provide the most coverage gain for the least effort:
+
+1. **Page-level smoke tests** for the 7 untested pages: Render with mocked data, verify key elements appear. Estimated +5-8% frontend statement coverage.
+
+2. **Transaction form mode switching**: 3-4 tests covering normal/split/transfer transitions would cover a significant portion of the 70% gap in TransactionForm.
+
+3. **Reconcile balance calculation unit tests**: Isolate the `Math.round(x*100)/100` logic and test with known floating-point problem values (0.1 + 0.2, etc.).
+
+4. **Raise coverage thresholds**: One-line change in `backend/package.json` (5 -> 80) and a few lines in `frontend/vitest.config.ts` to enforce standards in CI.
