@@ -1,13 +1,16 @@
 {
   "moduleFileExtensions": ["js", "json", "ts"],
   "rootDir": "..",
-  "testRegex": "test/.*\\.spec\\.ts$",
+  "testRegex": "test/.*[.-]spec\\.ts$",
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
   },
   "moduleNameMapper": {
     "^@/(.*)$": "<rootDir>/src/$1"
   },
+  "transformIgnorePatterns": [
+    "node_modules/(?!(@scure|@otplib|otplib|@noble)/)"
+  ],
   "testEnvironment": "node",
   "testTimeout": 30000
 }
