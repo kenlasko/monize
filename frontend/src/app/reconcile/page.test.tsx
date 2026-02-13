@@ -1296,7 +1296,7 @@ describe('ReconcilePage', () => {
       await user.click(screen.getByRole('button', { name: 'Cancel' }));
 
       await waitFor(() => {
-        expect(screen.getByText('Start Reconciliation')).toBeInTheDocument();
+        expect(screen.getByRole('heading', { name: 'Start Reconciliation' })).toBeInTheDocument();
       });
     });
 
@@ -1401,7 +1401,7 @@ describe('ReconcilePage', () => {
       await user.click(screen.getByRole('button', { name: 'Reconcile Another Account' }));
 
       await waitFor(() => {
-        expect(screen.getByText('Start Reconciliation')).toBeInTheDocument();
+        expect(screen.getByRole('heading', { name: 'Start Reconciliation' })).toBeInTheDocument();
       });
     });
   });

@@ -454,4 +454,298 @@ U-75.00
       expect(result.transactions[0].amount).toBe(-75.0);
     });
   });
+
+  describe("parseQif - ambiguous date format (all parts <= 12)", () => {
+    it("defaults to MM/DD/YYYY when both parts are <= 12 and no format specified", () => {
+      const qif = `!Type:Bank
+D01/02/2026
+T-50.00
+^
+D03/04/2026
+T-30.00
+^`;
+      const result = parseQif(qif);
+      // Both 01 and 02 are <= 12, so detection cannot disambiguate
+      // Default should be MM/DD/YYYY
+      expect(result.detectedDateFormat).toBe("MM/DD/YYYY");
+      expect(result.transactions[0].date).toBe("2026-01-02");
+      expect(result.transactions[1].date).toBe("2026-03-04");
+    });
+
+    it("parses ambiguous dates as DD/MM/YYYY when explicit format provided", () => {
+      const qif = `!Type:Bank
+D01/02/2026
+T-50.00
+^`;
+      const result = parseQif(qif, "DD/MM/YYYY");
+      // With DD/MM/YYYY, 01 is day and 02 is month
+      expect(result.transactions[0].date).toBe("2026-02-01");
+    });
+
+    it("defaults to YYYY-MM-DD for ISO format when both parts are <= 12", () => {
+      const qif = `!Type:Bank
+D2026-03-05
+T-50.00
+^
+D2026-06-07
+T-20.00
+^`;
+      const result = parseQif(qif);
+      // Both month and day <= 12, defaults to YYYY-MM-DD
+      expect(result.detectedDateFormat).toBe("YYYY-MM-DD");
+      expect(result.transactions[0].date).toBe("2026-03-05");
+    });
+
+    it("detects YYYY-DD-MM when second part > 12 in ISO format", () => {
+      const qif = `!Type:Bank
+D2026-15-01
+T-50.00
+^`;
+      const result = parseQif(qif);
+      expect(result.detectedDateFormat).toBe("YYYY-DD-MM");
+    });
+
+    it("disambiguates using later dates when first date is ambiguous", () => {
+      const qif = `!Type:Bank
+D01/02/2026
+T-50.00
+^
+D01/15/2026
+T-30.00
+^`;
+      const result = parseQif(qif);
+      // Second date has 15 in the day position, so it must be MM/DD/YYYY
+      expect(result.detectedDateFormat).toBe("MM/DD/YYYY");
+    });
+  });
+
+  describe("parseQif - M/D'YY format with apostrophe separator", () => {
+    it("parses date with apostrophe before 2-digit year (M/D'YY)", () => {
+      const qif = `!Type:Bank
+D1/15'26
+T-50.00
+^`;
+      const result = parseQif(qif, "MM/DD/YYYY");
+      expect(result.transactions[0].date).toBe("2026-01-15");
+    });
+
+    it("parses date with apostrophe and year > 50 as 19xx", () => {
+      const qif = `!Type:Bank
+D3/20'97
+T-100.00
+^`;
+      const result = parseQif(qif, "MM/DD/YYYY");
+      expect(result.transactions[0].date).toBe("1997-03-20");
+    });
+
+    it("parses apostrophe format with DD/MM/YYYY format", () => {
+      const qif = `!Type:Bank
+D15/3'26
+T-50.00
+^`;
+      const result = parseQif(qif, "DD/MM/YYYY");
+      expect(result.transactions[0].date).toBe("2026-03-15");
+    });
+  });
+
+  describe("parseQif - 2-digit year boundary (year 49 vs 50)", () => {
+    it("treats year 50 as 2050", () => {
+      const qif = `!Type:Bank
+D01/15/50
+T-50.00
+^`;
+      const result = parseQif(qif, "MM/DD/YYYY");
+      expect(result.transactions[0].date).toBe("2050-01-15");
+    });
+
+    it("treats year 51 as 1951", () => {
+      const qif = `!Type:Bank
+D01/15/51
+T-50.00
+^`;
+      const result = parseQif(qif, "MM/DD/YYYY");
+      expect(result.transactions[0].date).toBe("1951-01-15");
+    });
+
+    it("treats year 49 as 2049", () => {
+      const qif = `!Type:Bank
+D01/15/49
+T-50.00
+^`;
+      const result = parseQif(qif, "MM/DD/YYYY");
+      expect(result.transactions[0].date).toBe("2049-01-15");
+    });
+
+    it("treats year 00 as 2000", () => {
+      const qif = `!Type:Bank
+D06/15/00
+T-25.00
+^`;
+      const result = parseQif(qif, "MM/DD/YYYY");
+      expect(result.transactions[0].date).toBe("2000-06-15");
+    });
+
+    it("treats year 99 as 1999", () => {
+      const qif = `!Type:Bank
+D12/31/99
+T-75.00
+^`;
+      const result = parseQif(qif, "MM/DD/YYYY");
+      expect(result.transactions[0].date).toBe("1999-12-31");
+    });
+  });
+
+  describe("parseQif - EOF handling without ^ terminator", () => {
+    it("captures transaction data when file ends without ^", () => {
+      const qif = `!Type:Bank
+D01/15/2026
+T-50.00
+PGrocery Store
+MGroceries
+LFood`;
+      const result = parseQif(qif);
+      expect(result.transactions).toHaveLength(1);
+      expect(result.transactions[0].payee).toBe("Grocery Store");
+      expect(result.transactions[0].memo).toBe("Groceries");
+      expect(result.transactions[0].category).toBe("Food");
+      expect(result.transactions[0].amount).toBe(-50);
+    });
+
+    it("captures splits when file ends without ^", () => {
+      const qif = `!Type:Bank
+D01/15/2026
+T-100.00
+SFood
+EGroceries
+$-60.00
+STransport
+EBus fare
+$-40.00`;
+      const result = parseQif(qif);
+      expect(result.transactions).toHaveLength(1);
+      expect(result.transactions[0].splits).toHaveLength(2);
+      expect(result.transactions[0].splits[0].category).toBe("Food");
+      expect(result.transactions[0].splits[0].amount).toBe(-60);
+      expect(result.transactions[0].splits[1].category).toBe("Transport");
+      expect(result.transactions[0].splits[1].amount).toBe(-40);
+    });
+
+    it("handles multiple transactions where only the last lacks ^", () => {
+      const qif = `!Type:Bank
+D01/15/2026
+T-50.00
+PStore A
+^
+D01/16/2026
+T-30.00
+PStore B`;
+      const result = parseQif(qif);
+      expect(result.transactions).toHaveLength(2);
+      expect(result.transactions[0].payee).toBe("Store A");
+      expect(result.transactions[1].payee).toBe("Store B");
+    });
+
+    it("does not create transaction for incomplete record without date at EOF", () => {
+      const qif = `!Type:Bank
+D01/15/2026
+T-50.00
+^
+T-30.00
+PNo Date`;
+      const result = parseQif(qif);
+      // The second record has no date (T comes before D), so currentTransaction
+      // is null when T is encountered. Only the first transaction should be captured.
+      expect(result.transactions).toHaveLength(1);
+    });
+  });
+
+  describe("parseQif - account name extraction from !Account headers", () => {
+    it("handles !Account header without crashing", () => {
+      const qif = `!Account
+NChecking Account
+TBank
+^
+!Type:Bank
+D01/15/2026
+T-50.00
+^`;
+      const result = parseQif(qif);
+      // The parser skips !Account and N lines within account header
+      // but still parses the subsequent transactions
+      expect(result.transactions).toHaveLength(1);
+      expect(result.accountType).toBe("CHEQUING");
+    });
+
+    it("continues parsing after !Account section", () => {
+      const qif = `!Account
+NMy Savings
+TCash
+^
+!Type:Cash
+D03/01/2026
+T100.00
+PDeposit
+^
+D03/02/2026
+T-20.00
+PWithdrawal
+^`;
+      const result = parseQif(qif);
+      expect(result.transactions).toHaveLength(2);
+      expect(result.accountType).toBe("CASH");
+    });
+  });
+
+  describe("parseQif - YYYY-DD-MM with explicit format", () => {
+    it("parses YYYY-DD-MM format when specified", () => {
+      const qif = `!Type:Bank
+D2026-15-01
+T-50.00
+^`;
+      const result = parseQif(qif, "YYYY-DD-MM");
+      expect(result.transactions[0].date).toBe("2026-01-15");
+    });
+  });
+
+  describe("parseQif - lowercase reconciled status", () => {
+    it("handles lowercase x as reconciled", () => {
+      const qif = `!Type:Bank
+D01/15/2026
+T-50.00
+Cx
+^`;
+      const result = parseQif(qif);
+      expect(result.transactions[0].reconciled).toBe(true);
+      expect(result.transactions[0].cleared).toBe(false);
+    });
+  });
+
+  describe("parseQif - unparseable date returns as-is", () => {
+    it("returns unparseable date string as-is", () => {
+      const qif = `!Type:Bank
+DJanuary 15, 2026
+T-50.00
+^`;
+      const result = parseQif(qif);
+      expect(result.transactions[0].date).toBe("January 15, 2026");
+    });
+  });
+
+  describe("parseQif - date detection with multiple ambiguous ISO dates", () => {
+    it("checks later ISO dates to disambiguate format", () => {
+      const qif = `!Type:Bank
+D2026-01-02
+T-50.00
+^
+D2026-01-03
+T-30.00
+^
+D2026-01-15
+T-20.00
+^`;
+      const result = parseQif(qif);
+      // Third date has 15 as the third part, which > 12, confirming YYYY-MM-DD
+      expect(result.detectedDateFormat).toBe("YYYY-MM-DD");
+    });
+  });
 });

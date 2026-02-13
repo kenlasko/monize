@@ -13,8 +13,9 @@ vi.mock('@/lib/user-settings', () => ({
 vi.mock('@/lib/auth', () => ({
   authApi: {
     getTrustedDevices: vi.fn().mockResolvedValue([]),
-    revokeAllTrustedDevices: vi.fn(),
-    revokeTrustedDevice: vi.fn(),
+    revokeAllTrustedDevices: vi.fn().mockResolvedValue({ count: 0 }),
+    revokeTrustedDevice: vi.fn().mockResolvedValue({}),
+    disable2FA: vi.fn().mockResolvedValue({}),
   },
 }));
 
@@ -31,6 +32,7 @@ vi.mock('@/lib/errors', () => ({
 }));
 
 import { userSettingsApi } from '@/lib/user-settings';
+import { authApi } from '@/lib/auth';
 import toast from 'react-hot-toast';
 
 const mockUser: User = {
@@ -149,5 +151,751 @@ describe('SecuritySection', () => {
     await waitFor(() => {
       expect(screen.getByText('Trusted Devices')).toBeInTheDocument();
     });
+  });
+
+  // --- Password change form renders with current/new/confirm fields ---
+  it('renders password change form with correct input types', () => {
+    render(
+      <SecuritySection
+        user={mockUser}
+        preferences={mockPreferences}
+        force2fa={false}
+        onPreferencesUpdated={mockOnPreferencesUpdated}
+      />
+    );
+
+    const currentPw = screen.getByLabelText('Current Password');
+    const newPw = screen.getByLabelText('New Password');
+    const confirmPw = screen.getByLabelText('Confirm New Password');
+
+    expect(currentPw).toHaveAttribute('type', 'password');
+    expect(newPw).toHaveAttribute('type', 'password');
+    expect(confirmPw).toHaveAttribute('type', 'password');
+  });
+
+  it('renders password inputs with correct placeholders', () => {
+    render(
+      <SecuritySection
+        user={mockUser}
+        preferences={mockPreferences}
+        force2fa={false}
+        onPreferencesUpdated={mockOnPreferencesUpdated}
+      />
+    );
+
+    expect(screen.getByPlaceholderText('Enter current password')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Enter new password (min. 8 characters)')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Confirm new password')).toBeInTheDocument();
+  });
+
+  // --- Password change submission ---
+  it('submits password change successfully', async () => {
+    (userSettingsApi.changePassword as any).mockResolvedValueOnce({});
+
+    render(
+      <SecuritySection
+        user={mockUser}
+        preferences={mockPreferences}
+        force2fa={false}
+        onPreferencesUpdated={mockOnPreferencesUpdated}
+      />
+    );
+
+    fireEvent.change(screen.getByLabelText('Current Password'), { target: { value: 'oldpass123' } });
+    fireEvent.change(screen.getByLabelText('New Password'), { target: { value: 'newpass123' } });
+    fireEvent.change(screen.getByLabelText('Confirm New Password'), { target: { value: 'newpass123' } });
+    fireEvent.submit(screen.getByRole('button', { name: 'Change Password' }));
+
+    await waitFor(() => {
+      expect(userSettingsApi.changePassword).toHaveBeenCalledWith({
+        currentPassword: 'oldpass123',
+        newPassword: 'newpass123',
+      });
+    });
+
+    await waitFor(() => {
+      expect(toast.success).toHaveBeenCalledWith('Password changed successfully');
+    });
+  });
+
+  it('shows minimum length error for short password', async () => {
+    render(
+      <SecuritySection
+        user={mockUser}
+        preferences={mockPreferences}
+        force2fa={false}
+        onPreferencesUpdated={mockOnPreferencesUpdated}
+      />
+    );
+
+    fireEvent.change(screen.getByLabelText('Current Password'), { target: { value: 'oldpass123' } });
+    fireEvent.change(screen.getByLabelText('New Password'), { target: { value: 'short' } });
+    fireEvent.change(screen.getByLabelText('Confirm New Password'), { target: { value: 'short' } });
+    fireEvent.submit(screen.getByRole('button', { name: 'Change Password' }));
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('Password must be at least 8 characters');
+    });
+  });
+
+  // --- Error handling for password change ---
+  it('shows error toast when password change API fails', async () => {
+    (userSettingsApi.changePassword as any).mockRejectedValueOnce(new Error('API error'));
+
+    render(
+      <SecuritySection
+        user={mockUser}
+        preferences={mockPreferences}
+        force2fa={false}
+        onPreferencesUpdated={mockOnPreferencesUpdated}
+      />
+    );
+
+    fireEvent.change(screen.getByLabelText('Current Password'), { target: { value: 'oldpass123' } });
+    fireEvent.change(screen.getByLabelText('New Password'), { target: { value: 'newpass123' } });
+    fireEvent.change(screen.getByLabelText('Confirm New Password'), { target: { value: 'newpass123' } });
+    fireEvent.submit(screen.getByRole('button', { name: 'Change Password' }));
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('Failed to change password');
+    });
+  });
+
+  it('clears password fields after successful change', async () => {
+    (userSettingsApi.changePassword as any).mockResolvedValueOnce({});
+
+    render(
+      <SecuritySection
+        user={mockUser}
+        preferences={mockPreferences}
+        force2fa={false}
+        onPreferencesUpdated={mockOnPreferencesUpdated}
+      />
+    );
+
+    fireEvent.change(screen.getByLabelText('Current Password'), { target: { value: 'oldpass123' } });
+    fireEvent.change(screen.getByLabelText('New Password'), { target: { value: 'newpass123' } });
+    fireEvent.change(screen.getByLabelText('Confirm New Password'), { target: { value: 'newpass123' } });
+    fireEvent.submit(screen.getByRole('button', { name: 'Change Password' }));
+
+    await waitFor(() => {
+      expect((screen.getByLabelText('Current Password') as HTMLInputElement).value).toBe('');
+      expect((screen.getByLabelText('New Password') as HTMLInputElement).value).toBe('');
+      expect((screen.getByLabelText('Confirm New Password') as HTMLInputElement).value).toBe('');
+    });
+  });
+
+  // --- 2FA setup button (when not enabled) ---
+  it('shows Enable 2FA button when 2FA is not enabled', () => {
+    render(
+      <SecuritySection
+        user={mockUser}
+        preferences={mockPreferences}
+        force2fa={false}
+        onPreferencesUpdated={mockOnPreferencesUpdated}
+      />
+    );
+
+    expect(screen.getByRole('button', { name: 'Enable 2FA' })).toBeInTheDocument();
+    expect(screen.getByText('Add an extra layer of security to your account.')).toBeInTheDocument();
+  });
+
+  it('opens 2FA setup modal when Enable 2FA is clicked', async () => {
+    render(
+      <SecuritySection
+        user={mockUser}
+        preferences={mockPreferences}
+        force2fa={false}
+        onPreferencesUpdated={mockOnPreferencesUpdated}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Enable 2FA' }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('two-factor-setup')).toBeInTheDocument();
+    });
+  });
+
+  // --- 2FA disable button (when enabled) ---
+  it('shows Disable 2FA button when 2FA is enabled and force2fa is false', () => {
+    const prefsWith2fa = { ...mockPreferences, twoFactorEnabled: true };
+
+    render(
+      <SecuritySection
+        user={mockUser}
+        preferences={prefsWith2fa}
+        force2fa={false}
+        onPreferencesUpdated={mockOnPreferencesUpdated}
+      />
+    );
+
+    expect(screen.getByRole('button', { name: 'Disable 2FA' })).toBeInTheDocument();
+    expect(screen.getByText('Enabled')).toBeInTheDocument();
+    expect(screen.getByText('Your account is protected with TOTP verification.')).toBeInTheDocument();
+  });
+
+  it('shows "Required by administrator" instead of Disable button when force2fa is true', () => {
+    const prefsWith2fa = { ...mockPreferences, twoFactorEnabled: true };
+
+    render(
+      <SecuritySection
+        user={mockUser}
+        preferences={prefsWith2fa}
+        force2fa={true}
+        onPreferencesUpdated={mockOnPreferencesUpdated}
+      />
+    );
+
+    expect(screen.getByText('Required by administrator')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Disable 2FA' })).not.toBeInTheDocument();
+  });
+
+  // --- 2FA verify code dialog ---
+  it('opens disable 2FA modal when Disable 2FA is clicked', async () => {
+    const prefsWith2fa = { ...mockPreferences, twoFactorEnabled: true };
+
+    render(
+      <SecuritySection
+        user={mockUser}
+        preferences={prefsWith2fa}
+        force2fa={false}
+        onPreferencesUpdated={mockOnPreferencesUpdated}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Disable 2FA' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Disable Two-Factor Authentication')).toBeInTheDocument();
+      expect(screen.getByText('Enter your current 6-digit code to confirm disabling 2FA.')).toBeInTheDocument();
+      expect(screen.getByLabelText('Verification Code')).toBeInTheDocument();
+    });
+  });
+
+  it('disables the confirm button when code is less than 6 digits', async () => {
+    const prefsWith2fa = { ...mockPreferences, twoFactorEnabled: true };
+
+    render(
+      <SecuritySection
+        user={mockUser}
+        preferences={prefsWith2fa}
+        force2fa={false}
+        onPreferencesUpdated={mockOnPreferencesUpdated}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Disable 2FA' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Disable Two-Factor Authentication')).toBeInTheDocument();
+    });
+
+    // Enter a short code
+    fireEvent.change(screen.getByLabelText('Verification Code'), { target: { value: '123' } });
+
+    // The Disable 2FA button in the modal should be disabled
+    const disableButtons = screen.getAllByRole('button', { name: /Disable 2FA/ });
+    const modalDisableBtn = disableButtons[disableButtons.length - 1];
+    expect(modalDisableBtn).toBeDisabled();
+  });
+
+  it('calls disable2FA API with correct code when confirmed', async () => {
+    const prefsWith2fa = { ...mockPreferences, twoFactorEnabled: true };
+    (authApi.disable2FA as any).mockResolvedValueOnce({});
+
+    render(
+      <SecuritySection
+        user={mockUser}
+        preferences={prefsWith2fa}
+        force2fa={false}
+        onPreferencesUpdated={mockOnPreferencesUpdated}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Disable 2FA' }));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Verification Code')).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByLabelText('Verification Code'), { target: { value: '123456' } });
+
+    // Find the Disable 2FA button in the modal (not the one in the main section)
+    const disableButtons = screen.getAllByRole('button', { name: /Disable 2FA/ });
+    const modalDisableBtn = disableButtons[disableButtons.length - 1];
+    fireEvent.click(modalDisableBtn);
+
+    await waitFor(() => {
+      expect(authApi.disable2FA).toHaveBeenCalledWith('123456');
+    });
+
+    await waitFor(() => {
+      expect(toast.success).toHaveBeenCalledWith('Two-factor authentication disabled');
+    });
+  });
+
+  it('closes disable 2FA modal when cancel is clicked', async () => {
+    const prefsWith2fa = { ...mockPreferences, twoFactorEnabled: true };
+
+    render(
+      <SecuritySection
+        user={mockUser}
+        preferences={prefsWith2fa}
+        force2fa={false}
+        onPreferencesUpdated={mockOnPreferencesUpdated}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Disable 2FA' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Disable Two-Factor Authentication')).toBeInTheDocument();
+    });
+
+    // Click cancel in the modal
+    const cancelButtons = screen.getAllByRole('button', { name: 'Cancel' });
+    fireEvent.click(cancelButtons[0]);
+
+    await waitFor(() => {
+      expect(screen.queryByText('Disable Two-Factor Authentication')).not.toBeInTheDocument();
+    });
+  });
+
+  // --- Trusted devices list rendering ---
+  it('renders trusted devices list when devices are loaded', async () => {
+    const prefsWith2fa = { ...mockPreferences, twoFactorEnabled: true };
+    const mockDevices = [
+      {
+        id: 'dev-1',
+        deviceName: 'Chrome on Windows',
+        ipAddress: '192.168.1.1',
+        lastUsedAt: '2024-01-15T00:00:00Z',
+        expiresAt: '2024-02-15T00:00:00Z',
+        createdAt: '2024-01-01T00:00:00Z',
+        isCurrent: true,
+      },
+      {
+        id: 'dev-2',
+        deviceName: 'Firefox on macOS',
+        ipAddress: '10.0.0.1',
+        lastUsedAt: '2024-01-10T00:00:00Z',
+        expiresAt: '2024-02-10T00:00:00Z',
+        createdAt: '2024-01-05T00:00:00Z',
+        isCurrent: false,
+      },
+    ];
+
+    (authApi.getTrustedDevices as any).mockResolvedValueOnce(mockDevices);
+
+    render(
+      <SecuritySection
+        user={mockUser}
+        preferences={prefsWith2fa}
+        force2fa={false}
+        onPreferencesUpdated={mockOnPreferencesUpdated}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Chrome on Windows')).toBeInTheDocument();
+      expect(screen.getByText('Firefox on macOS')).toBeInTheDocument();
+    });
+
+    // Check "Current" badge
+    expect(screen.getByText('Current')).toBeInTheDocument();
+
+    // Check IP addresses
+    expect(screen.getByText('IP: 192.168.1.1')).toBeInTheDocument();
+    expect(screen.getByText('IP: 10.0.0.1')).toBeInTheDocument();
+  });
+
+  it('shows no trusted devices message when list is empty', async () => {
+    const prefsWith2fa = { ...mockPreferences, twoFactorEnabled: true };
+    (authApi.getTrustedDevices as any).mockResolvedValueOnce([]);
+
+    render(
+      <SecuritySection
+        user={mockUser}
+        preferences={prefsWith2fa}
+        force2fa={false}
+        onPreferencesUpdated={mockOnPreferencesUpdated}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText(/No trusted devices/)).toBeInTheDocument();
+    });
+  });
+
+  // --- Revoke single device button ---
+  it('revokes a single device when Revoke button is clicked', async () => {
+    const prefsWith2fa = { ...mockPreferences, twoFactorEnabled: true };
+    const mockDevices = [
+      {
+        id: 'dev-1',
+        deviceName: 'Chrome on Windows',
+        ipAddress: '192.168.1.1',
+        lastUsedAt: '2024-01-15T00:00:00Z',
+        expiresAt: '2024-02-15T00:00:00Z',
+        createdAt: '2024-01-01T00:00:00Z',
+        isCurrent: false,
+      },
+    ];
+
+    (authApi.getTrustedDevices as any).mockResolvedValueOnce(mockDevices);
+    (authApi.revokeTrustedDevice as any).mockResolvedValueOnce({});
+
+    render(
+      <SecuritySection
+        user={mockUser}
+        preferences={prefsWith2fa}
+        force2fa={false}
+        onPreferencesUpdated={mockOnPreferencesUpdated}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Chrome on Windows')).toBeInTheDocument();
+    });
+
+    // Click the Revoke button next to the device
+    const revokeButton = screen.getByRole('button', { name: 'Revoke' });
+    fireEvent.click(revokeButton);
+
+    await waitFor(() => {
+      expect(authApi.revokeTrustedDevice).toHaveBeenCalledWith('dev-1');
+    });
+
+    await waitFor(() => {
+      expect(toast.success).toHaveBeenCalledWith('Device revoked');
+    });
+  });
+
+  it('shows error toast when revoking a device fails', async () => {
+    const prefsWith2fa = { ...mockPreferences, twoFactorEnabled: true };
+    const mockDevices = [
+      {
+        id: 'dev-1',
+        deviceName: 'Chrome on Windows',
+        ipAddress: '192.168.1.1',
+        lastUsedAt: '2024-01-15T00:00:00Z',
+        expiresAt: '2024-02-15T00:00:00Z',
+        createdAt: '2024-01-01T00:00:00Z',
+        isCurrent: false,
+      },
+    ];
+
+    (authApi.getTrustedDevices as any).mockResolvedValueOnce(mockDevices);
+    (authApi.revokeTrustedDevice as any).mockRejectedValueOnce(new Error('Revoke failed'));
+
+    render(
+      <SecuritySection
+        user={mockUser}
+        preferences={prefsWith2fa}
+        force2fa={false}
+        onPreferencesUpdated={mockOnPreferencesUpdated}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Chrome on Windows')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Revoke' }));
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('Failed to revoke device');
+    });
+  });
+
+  // --- Revoke all devices button ---
+  it('shows Revoke All button when there are trusted devices', async () => {
+    const prefsWith2fa = { ...mockPreferences, twoFactorEnabled: true };
+    const mockDevices = [
+      {
+        id: 'dev-1',
+        deviceName: 'Chrome on Windows',
+        ipAddress: '192.168.1.1',
+        lastUsedAt: '2024-01-15T00:00:00Z',
+        expiresAt: '2024-02-15T00:00:00Z',
+        createdAt: '2024-01-01T00:00:00Z',
+        isCurrent: false,
+      },
+    ];
+
+    (authApi.getTrustedDevices as any).mockResolvedValueOnce(mockDevices);
+
+    render(
+      <SecuritySection
+        user={mockUser}
+        preferences={prefsWith2fa}
+        force2fa={false}
+        onPreferencesUpdated={mockOnPreferencesUpdated}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Revoke All' })).toBeInTheDocument();
+    });
+  });
+
+  it('opens revoke all confirmation modal', async () => {
+    const prefsWith2fa = { ...mockPreferences, twoFactorEnabled: true };
+    const mockDevices = [
+      {
+        id: 'dev-1',
+        deviceName: 'Chrome on Windows',
+        ipAddress: '192.168.1.1',
+        lastUsedAt: '2024-01-15T00:00:00Z',
+        expiresAt: '2024-02-15T00:00:00Z',
+        createdAt: '2024-01-01T00:00:00Z',
+        isCurrent: false,
+      },
+    ];
+
+    (authApi.getTrustedDevices as any).mockResolvedValueOnce(mockDevices);
+
+    render(
+      <SecuritySection
+        user={mockUser}
+        preferences={prefsWith2fa}
+        force2fa={false}
+        onPreferencesUpdated={mockOnPreferencesUpdated}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Revoke All' })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Revoke All' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Revoke All Trusted Devices')).toBeInTheDocument();
+      expect(screen.getByText(/This will remove all trusted devices/)).toBeInTheDocument();
+    });
+  });
+
+  it('revokes all devices when confirmed in modal', async () => {
+    const prefsWith2fa = { ...mockPreferences, twoFactorEnabled: true };
+    const mockDevices = [
+      {
+        id: 'dev-1',
+        deviceName: 'Chrome on Windows',
+        ipAddress: '192.168.1.1',
+        lastUsedAt: '2024-01-15T00:00:00Z',
+        expiresAt: '2024-02-15T00:00:00Z',
+        createdAt: '2024-01-01T00:00:00Z',
+        isCurrent: false,
+      },
+      {
+        id: 'dev-2',
+        deviceName: 'Firefox on macOS',
+        ipAddress: '10.0.0.1',
+        lastUsedAt: '2024-01-10T00:00:00Z',
+        expiresAt: '2024-02-10T00:00:00Z',
+        createdAt: '2024-01-05T00:00:00Z',
+        isCurrent: false,
+      },
+    ];
+
+    (authApi.getTrustedDevices as any).mockResolvedValueOnce(mockDevices);
+    (authApi.revokeAllTrustedDevices as any).mockResolvedValueOnce({ count: 2 });
+
+    render(
+      <SecuritySection
+        user={mockUser}
+        preferences={prefsWith2fa}
+        force2fa={false}
+        onPreferencesUpdated={mockOnPreferencesUpdated}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Chrome on Windows')).toBeInTheDocument();
+    });
+
+    // Click the Revoke All button in the header
+    const revokeAllButtons = screen.getAllByRole('button', { name: 'Revoke All' });
+    fireEvent.click(revokeAllButtons[0]);
+
+    await waitFor(() => {
+      expect(screen.getByText('Revoke All Trusted Devices')).toBeInTheDocument();
+    });
+
+    // Confirm in the modal - find the Revoke All button inside the modal
+    const modalRevokeAll = screen.getAllByRole('button', { name: 'Revoke All' });
+    // The last one is in the modal
+    fireEvent.click(modalRevokeAll[modalRevokeAll.length - 1]);
+
+    await waitFor(() => {
+      expect(authApi.revokeAllTrustedDevices).toHaveBeenCalled();
+    });
+
+    await waitFor(() => {
+      expect(toast.success).toHaveBeenCalledWith('2 device(s) revoked');
+    });
+  });
+
+  it('closes revoke all modal when cancel is clicked', async () => {
+    const prefsWith2fa = { ...mockPreferences, twoFactorEnabled: true };
+    const mockDevices = [
+      {
+        id: 'dev-1',
+        deviceName: 'Chrome on Windows',
+        ipAddress: '192.168.1.1',
+        lastUsedAt: '2024-01-15T00:00:00Z',
+        expiresAt: '2024-02-15T00:00:00Z',
+        createdAt: '2024-01-01T00:00:00Z',
+        isCurrent: false,
+      },
+    ];
+
+    (authApi.getTrustedDevices as any).mockResolvedValueOnce(mockDevices);
+
+    render(
+      <SecuritySection
+        user={mockUser}
+        preferences={prefsWith2fa}
+        force2fa={false}
+        onPreferencesUpdated={mockOnPreferencesUpdated}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Revoke All' })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Revoke All' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Revoke All Trusted Devices')).toBeInTheDocument();
+    });
+
+    // Click cancel
+    const cancelButton = screen.getByRole('button', { name: 'Cancel' });
+    fireEvent.click(cancelButton);
+
+    await waitFor(() => {
+      expect(screen.queryByText('Revoke All Trusted Devices')).not.toBeInTheDocument();
+    });
+  });
+
+  it('shows error toast when revoking all devices fails', async () => {
+    const prefsWith2fa = { ...mockPreferences, twoFactorEnabled: true };
+    const mockDevices = [
+      {
+        id: 'dev-1',
+        deviceName: 'Chrome on Windows',
+        ipAddress: null,
+        lastUsedAt: '2024-01-15T00:00:00Z',
+        expiresAt: '2024-02-15T00:00:00Z',
+        createdAt: '2024-01-01T00:00:00Z',
+        isCurrent: false,
+      },
+    ];
+
+    (authApi.getTrustedDevices as any).mockResolvedValueOnce(mockDevices);
+    (authApi.revokeAllTrustedDevices as any).mockRejectedValueOnce(new Error('Revoke all failed'));
+
+    render(
+      <SecuritySection
+        user={mockUser}
+        preferences={prefsWith2fa}
+        force2fa={false}
+        onPreferencesUpdated={mockOnPreferencesUpdated}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Revoke All' })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Revoke All' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Revoke All Trusted Devices')).toBeInTheDocument();
+    });
+
+    const modalRevokeAll = screen.getAllByRole('button', { name: 'Revoke All' });
+    fireEvent.click(modalRevokeAll[modalRevokeAll.length - 1]);
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('Failed to revoke devices');
+    });
+  });
+
+  // --- SSO info banner ---
+  it('shows SSO info banner for OIDC users', () => {
+    const oidcUser = { ...mockUser, authProvider: 'oidc' as const };
+
+    render(
+      <SecuritySection
+        user={oidcUser}
+        preferences={mockPreferences}
+        force2fa={false}
+        onPreferencesUpdated={mockOnPreferencesUpdated}
+      />
+    );
+
+    expect(screen.getByText(/Single Sign-On \(SSO\)/)).toBeInTheDocument();
+  });
+
+  it('does not show SSO info banner for local users', () => {
+    render(
+      <SecuritySection
+        user={mockUser}
+        preferences={mockPreferences}
+        force2fa={false}
+        onPreferencesUpdated={mockOnPreferencesUpdated}
+      />
+    );
+
+    expect(screen.queryByText(/Single Sign-On \(SSO\)/)).not.toBeInTheDocument();
+  });
+
+  // --- 2FA disable error handling ---
+  it('shows error toast when disable 2FA API fails', async () => {
+    const prefsWith2fa = { ...mockPreferences, twoFactorEnabled: true };
+    (authApi.disable2FA as any).mockRejectedValueOnce(new Error('Invalid code'));
+
+    render(
+      <SecuritySection
+        user={mockUser}
+        preferences={prefsWith2fa}
+        force2fa={false}
+        onPreferencesUpdated={mockOnPreferencesUpdated}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Disable 2FA' }));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Verification Code')).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByLabelText('Verification Code'), { target: { value: '999999' } });
+
+    const disableButtons = screen.getAllByRole('button', { name: /Disable 2FA/ });
+    fireEvent.click(disableButtons[disableButtons.length - 1]);
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('Failed to disable 2FA');
+    });
+  });
+
+  // --- Trusted devices not shown when 2FA disabled ---
+  it('does not show trusted devices section when 2FA is not enabled', () => {
+    render(
+      <SecuritySection
+        user={mockUser}
+        preferences={mockPreferences}
+        force2fa={false}
+        onPreferencesUpdated={mockOnPreferencesUpdated}
+      />
+    );
+
+    expect(screen.queryByText('Trusted Devices')).not.toBeInTheDocument();
   });
 });

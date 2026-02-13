@@ -465,10 +465,7 @@ vi.mock('@/components/auth/ProtectedRoute', () => ({
 }));
 
 vi.mock('@/hooks/useLocalStorage', () => ({
-  useLocalStorage: (key: string, defaultValue: any) => {
-    const [value, setValue] = vi.importActual<typeof import('react')>('react').useState(defaultValue);
-    return [value, setValue];
-  },
+  useLocalStorage: (key: string, defaultValue: any) => [defaultValue, vi.fn()],
 }));
 
 vi.mock('@/hooks/useDateFormat', () => ({
