@@ -2,6 +2,7 @@
 
 import { MultiSelect, MultiSelectOption } from '@/components/ui/MultiSelect';
 import { Input } from '@/components/ui/Input';
+import { Button } from '@/components/ui/Button';
 import { Account } from '@/types/account';
 import { Category } from '@/types/category';
 import { Payee } from '@/types/payee';
@@ -37,6 +38,8 @@ interface TransactionFilterPanelProps {
   payeeFilterOptions: MultiSelectOption[];
   formatDate: (date: string) => string;
   onClearFilters: () => void;
+  bulkSelectMode?: boolean;
+  onToggleBulkSelectMode?: () => void;
 }
 
 export function TransactionFilterPanel({
@@ -70,6 +73,8 @@ export function TransactionFilterPanel({
   payeeFilterOptions,
   formatDate,
   onClearFilters,
+  bulkSelectMode,
+  onToggleBulkSelectMode,
 }: TransactionFilterPanelProps) {
   return (
     <>
@@ -254,8 +259,8 @@ export function TransactionFilterPanel({
         >
           <div className={filtersExpanded ? '' : 'overflow-hidden'}>
             <div className="px-4 pb-4 sm:px-6 border-t border-gray-200 dark:border-gray-700">
-              {/* Account status segmented control */}
-              <div className="flex items-center gap-3 pt-4 pb-2">
+              {/* Account status segmented control + Bulk Update button */}
+              <div className="flex flex-wrap items-center gap-3 pt-4 pb-2">
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Show accounts:</span>
                 <div className="inline-flex rounded-md shadow-sm">
                   <button
@@ -289,6 +294,16 @@ export function TransactionFilterPanel({
                     Closed
                   </button>
                 </div>
+                {onToggleBulkSelectMode && (
+                  <Button
+                    variant={bulkSelectMode ? 'secondary' : 'outline'}
+                    size="sm"
+                    onClick={onToggleBulkSelectMode}
+                    className="hidden sm:inline-flex ml-auto"
+                  >
+                    {bulkSelectMode ? 'Cancel Bulk' : 'Bulk Update'}
+                  </Button>
+                )}
               </div>
 
               {/* First row: Main filters */}
@@ -342,6 +357,18 @@ export function TransactionFilterPanel({
                   placeholder="Search descriptions..."
                 />
               </div>
+
+              {/* Bulk Update button - mobile only (full width at bottom) */}
+              {onToggleBulkSelectMode && (
+                <Button
+                  variant={bulkSelectMode ? 'secondary' : 'outline'}
+                  size="sm"
+                  onClick={onToggleBulkSelectMode}
+                  className="w-full mt-4 sm:hidden"
+                >
+                  {bulkSelectMode ? 'Cancel Bulk' : 'Bulk Update'}
+                </Button>
+              )}
             </div>
           </div>
         </div>

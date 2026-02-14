@@ -121,6 +121,7 @@ function TransactionsContent() {
   const [editingPayee, setEditingPayee] = useState<Payee | undefined>();
   const [listDensity, setListDensity] = useLocalStorage<DensityLevel>('monize-transactions-density', 'normal');
   const [showBulkUpdate, setShowBulkUpdate] = useState(false);
+  const [bulkSelectMode, setBulkSelectMode] = useState(false);
 
   // Ref to track whether any modal is open (used by popstate handler to avoid conflicts)
   const modalOpenRef = useRef(false);
@@ -726,6 +727,7 @@ function TransactionsContent() {
     }
 
     setShowBulkUpdate(false);
+    setBulkSelectMode(false);
     selection.clearSelection();
     loadAllData();
     return result;
@@ -823,6 +825,13 @@ function TransactionsContent() {
           categoryFilterOptions={categoryFilterOptions}
           payeeFilterOptions={payeeFilterOptions}
           formatDate={formatDate}
+          bulkSelectMode={bulkSelectMode}
+          onToggleBulkSelectMode={() => {
+            if (bulkSelectMode) {
+              selection.clearSelection();
+            }
+            setBulkSelectMode(!bulkSelectMode);
+          }}
           onClearFilters={() => {
             setCurrentPage(1);
             setFilterAccountIds([]);
@@ -851,7 +860,7 @@ function TransactionsContent() {
             selectAllMatching={selection.selectAllMatching}
             totalMatching={pagination?.total ?? 0}
             onSelectAllMatching={selection.selectAllMatchingTransactions}
-            onClearSelection={selection.clearSelection}
+            onClearSelection={() => { selection.clearSelection(); setBulkSelectMode(false); }}
             onBulkUpdate={() => setShowBulkUpdate(true)}
           />
         )}
@@ -883,7 +892,7 @@ function TransactionsContent() {
               density={listDensity}
               onDensityChange={setListDensity}
               isSingleAccountView={filterAccountIds.length === 1}
-              selectionMode
+              selectionMode={bulkSelectMode}
               selectedIds={selection.selectedIds}
               onToggleSelection={selection.toggleTransaction}
               onToggleAllOnPage={selection.toggleAllOnPage}

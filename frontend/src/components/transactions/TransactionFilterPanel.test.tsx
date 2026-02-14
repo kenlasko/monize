@@ -1117,6 +1117,153 @@ describe('TransactionFilterPanel', () => {
   });
 
   // ----------------------------------------------------------------
+  // Bulk Update toggle button
+  // ----------------------------------------------------------------
+
+  describe('bulk update toggle button', () => {
+    it('does not render the bulk update button when onToggleBulkSelectMode is not provided', () => {
+      render(<TransactionFilterPanel {...defaultProps} filtersExpanded={true} />);
+
+      expect(screen.queryByText('Bulk Update')).not.toBeInTheDocument();
+      expect(screen.queryByText('Cancel Bulk')).not.toBeInTheDocument();
+    });
+
+    it('renders "Bulk Update" buttons when bulkSelectMode is false and filters expanded', () => {
+      render(
+        <TransactionFilterPanel
+          {...defaultProps}
+          filtersExpanded={true}
+          bulkSelectMode={false}
+          onToggleBulkSelectMode={vi.fn()}
+        />
+      );
+
+      // Two instances: one for desktop (inline), one for mobile (full width)
+      const buttons = screen.getAllByText('Bulk Update');
+      expect(buttons.length).toBe(2);
+      expect(screen.queryByText('Cancel Bulk')).not.toBeInTheDocument();
+    });
+
+    it('renders "Cancel Bulk" buttons when bulkSelectMode is true', () => {
+      render(
+        <TransactionFilterPanel
+          {...defaultProps}
+          filtersExpanded={true}
+          bulkSelectMode={true}
+          onToggleBulkSelectMode={vi.fn()}
+        />
+      );
+
+      const buttons = screen.getAllByText('Cancel Bulk');
+      expect(buttons.length).toBe(2);
+      expect(screen.queryByText('Bulk Update')).not.toBeInTheDocument();
+    });
+
+    it('calls onToggleBulkSelectMode when a Bulk Update button is clicked', () => {
+      const onToggle = vi.fn();
+      render(
+        <TransactionFilterPanel
+          {...defaultProps}
+          filtersExpanded={true}
+          bulkSelectMode={false}
+          onToggleBulkSelectMode={onToggle}
+        />
+      );
+
+      // Click either instance — both should call the same handler
+      fireEvent.click(screen.getAllByText('Bulk Update')[0]);
+      expect(onToggle).toHaveBeenCalledTimes(1);
+    });
+
+    it('calls onToggleBulkSelectMode when a Cancel Bulk button is clicked', () => {
+      const onToggle = vi.fn();
+      render(
+        <TransactionFilterPanel
+          {...defaultProps}
+          filtersExpanded={true}
+          bulkSelectMode={true}
+          onToggleBulkSelectMode={onToggle}
+        />
+      );
+
+      fireEvent.click(screen.getAllByText('Cancel Bulk')[0]);
+      expect(onToggle).toHaveBeenCalledTimes(1);
+    });
+
+    it('is inside the filter body, not the header', () => {
+      render(
+        <TransactionFilterPanel
+          {...defaultProps}
+          filtersExpanded={false}
+          bulkSelectMode={false}
+          onToggleBulkSelectMode={vi.fn()}
+        />
+      );
+
+      // Buttons are inside the collapsible body, so they should be inside overflow-hidden when collapsed
+      const buttons = screen.queryAllByText('Bulk Update');
+      expect(buttons.length).toBeGreaterThan(0);
+      buttons.forEach(button => {
+        const overflowParent = button.closest('.overflow-hidden');
+        expect(overflowParent).toBeTruthy();
+      });
+    });
+
+    it('renders desktop button hidden on mobile and mobile button hidden on desktop', () => {
+      render(
+        <TransactionFilterPanel
+          {...defaultProps}
+          filtersExpanded={true}
+          bulkSelectMode={false}
+          onToggleBulkSelectMode={vi.fn()}
+        />
+      );
+
+      const buttons = screen.getAllByText('Bulk Update');
+      // Desktop button: hidden on mobile (has sm:inline-flex)
+      const desktopButton = buttons.find(b => b.className.includes('sm:inline-flex'));
+      expect(desktopButton).toBeTruthy();
+      // Mobile button: hidden on desktop (has sm:hidden)
+      const mobileButton = buttons.find(b => b.className.includes('sm:hidden'));
+      expect(mobileButton).toBeTruthy();
+    });
+
+    it('uses outline variant styling when bulkSelectMode is false', () => {
+      render(
+        <TransactionFilterPanel
+          {...defaultProps}
+          filtersExpanded={true}
+          bulkSelectMode={false}
+          onToggleBulkSelectMode={vi.fn()}
+        />
+      );
+
+      const buttons = screen.getAllByText('Bulk Update');
+      // All instances should use outline variant (border styling)
+      buttons.forEach(button => {
+        expect(button.className).toContain('border');
+      });
+    });
+
+    it('uses secondary variant styling when bulkSelectMode is true', () => {
+      render(
+        <TransactionFilterPanel
+          {...defaultProps}
+          filtersExpanded={true}
+          bulkSelectMode={true}
+          onToggleBulkSelectMode={vi.fn()}
+        />
+      );
+
+      const buttons = screen.getAllByText('Cancel Bulk');
+      // All instances should use secondary variant (bg-gray-600)
+      buttons.forEach(button => {
+        expect(button.className).toContain('bg-gray-600');
+      });
+    });
+  });
+
+  // ----------------------------------------------------------------
   // Account status segmented control
   // ----------------------------------------------------------------
 
