@@ -129,4 +129,145 @@ describe('NotificationsSection', () => {
 
     expect(screen.getByRole('button', { name: 'Send Test Email' })).toBeDisabled();
   });
+
+  it('reverts toggle and shows error toast when toggle API call fails', async () => {
+    (userSettingsApi.updatePreferences as ReturnType<typeof vi.fn>).mockRejectedValue(
+      new Error('Network error')
+    );
+
+    render(
+      <NotificationsSection
+        initialNotificationEmail={false}
+        smtpConfigured={true}
+        preferences={mockPreferences}
+        onPreferencesUpdated={mockOnPreferencesUpdated}
+      />
+    );
+
+    const toggle = screen.getByRole('switch');
+    expect(toggle).toHaveAttribute('aria-checked', 'false');
+
+    fireEvent.click(toggle);
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('Failed to update notification preference');
+    });
+
+    // The toggle should revert back to false
+    expect(toggle).toHaveAttribute('aria-checked', 'false');
+  });
+
+  it('shows disabled message toast when toggling notifications off', async () => {
+    const updatedPrefs = { ...mockPreferences, notificationEmail: false };
+    (userSettingsApi.updatePreferences as ReturnType<typeof vi.fn>).mockResolvedValue(updatedPrefs);
+
+    render(
+      <NotificationsSection
+        initialNotificationEmail={true}
+        smtpConfigured={true}
+        preferences={mockPreferences}
+        onPreferencesUpdated={mockOnPreferencesUpdated}
+      />
+    );
+
+    const toggle = screen.getByRole('switch');
+    expect(toggle).toHaveAttribute('aria-checked', 'true');
+
+    fireEvent.click(toggle);
+
+    await waitFor(() => {
+      expect(userSettingsApi.updatePreferences).toHaveBeenCalledWith({ notificationEmail: false });
+      expect(toast.success).toHaveBeenCalledWith('Email notifications disabled');
+    });
+  });
+
+  it('sends test email successfully and shows success toast', async () => {
+    (userSettingsApi.sendTestEmail as ReturnType<typeof vi.fn>).mockResolvedValue({});
+
+    render(
+      <NotificationsSection
+        initialNotificationEmail={true}
+        smtpConfigured={true}
+        preferences={mockPreferences}
+        onPreferencesUpdated={mockOnPreferencesUpdated}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Send Test Email' }));
+
+    await waitFor(() => {
+      expect(userSettingsApi.sendTestEmail).toHaveBeenCalled();
+      expect(toast.success).toHaveBeenCalledWith('Test email sent! Check your inbox.');
+    });
+  });
+
+  it('shows error toast when send test email fails', async () => {
+    (userSettingsApi.sendTestEmail as ReturnType<typeof vi.fn>).mockRejectedValue(
+      new Error('SMTP error')
+    );
+
+    render(
+      <NotificationsSection
+        initialNotificationEmail={true}
+        smtpConfigured={true}
+        preferences={mockPreferences}
+        onPreferencesUpdated={mockOnPreferencesUpdated}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Send Test Email' }));
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('Failed to send test email');
+    });
+  });
+
+  it('shows Sending... text while test email is in progress', async () => {
+    let resolvePromise: (value: unknown) => void;
+    const pendingPromise = new Promise((resolve) => {
+      resolvePromise = resolve;
+    });
+    (userSettingsApi.sendTestEmail as ReturnType<typeof vi.fn>).mockReturnValue(pendingPromise);
+
+    render(
+      <NotificationsSection
+        initialNotificationEmail={true}
+        smtpConfigured={true}
+        preferences={mockPreferences}
+        onPreferencesUpdated={mockOnPreferencesUpdated}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Send Test Email' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Sending...' })).toBeInTheDocument();
+    });
+
+    resolvePromise!({});
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Send Test Email' })).toBeInTheDocument();
+    });
+  });
+
+  it('calls onPreferencesUpdated when toggle succeeds', async () => {
+    const updatedPrefs = { ...mockPreferences, notificationEmail: true };
+    (userSettingsApi.updatePreferences as ReturnType<typeof vi.fn>).mockResolvedValue(updatedPrefs);
+
+    render(
+      <NotificationsSection
+        initialNotificationEmail={false}
+        smtpConfigured={true}
+        preferences={mockPreferences}
+        onPreferencesUpdated={mockOnPreferencesUpdated}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('switch'));
+
+    await waitFor(() => {
+      expect(mockOnPreferencesUpdated).toHaveBeenCalledWith(updatedPrefs);
+    });
+  });
 });

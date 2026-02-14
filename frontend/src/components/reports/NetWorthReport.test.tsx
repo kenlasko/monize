@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@/test/render';
+import { render, screen, waitFor, fireEvent } from '@/test/render';
 import { NetWorthReport } from './NetWorthReport';
 
 vi.mock('@/hooks/useNumberFormat', () => ({
@@ -102,6 +102,66 @@ describe('NetWorthReport', () => {
     render(<NetWorthReport />);
     await waitFor(() => {
       expect(screen.getByText('Recalculate')).toBeInTheDocument();
+    });
+  });
+
+  it('handles recalculate button click', async () => {
+    mockGetMonthly.mockResolvedValue([
+      { month: '2024-06-01', assets: 50000, liabilities: 10000, netWorth: 40000 },
+    ]);
+    mockRecalculate.mockResolvedValue(undefined);
+    render(<NetWorthReport />);
+    await waitFor(() => {
+      expect(screen.getByText('Recalculate')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText('Recalculate'));
+    await waitFor(() => {
+      expect(mockRecalculate).toHaveBeenCalled();
+    });
+  });
+
+  it('renders summary with negative net worth', async () => {
+    mockGetMonthly.mockResolvedValue([
+      { month: '2024-01-01', assets: 5000, liabilities: 50000, netWorth: -45000 },
+      { month: '2024-06-01', assets: 6000, liabilities: 48000, netWorth: -42000 },
+    ]);
+    render(<NetWorthReport />);
+    await waitFor(() => {
+      expect(screen.getByText('Current Net Worth')).toBeInTheDocument();
+    });
+    expect(screen.getByText('Change')).toBeInTheDocument();
+    expect(screen.getByText('Change %')).toBeInTheDocument();
+  });
+
+  it('renders chart with single data point', async () => {
+    mockGetMonthly.mockResolvedValue([
+      { month: '2024-01-01', assets: 50000, liabilities: 10000, netWorth: 40000 },
+    ]);
+    render(<NetWorthReport />);
+    await waitFor(() => {
+      expect(screen.getByText('Current Net Worth')).toBeInTheDocument();
+    });
+    expect(screen.getByTestId('area-chart')).toBeInTheDocument();
+  });
+
+  it('handles recalculate error', async () => {
+    mockGetMonthly.mockResolvedValue([]);
+    mockRecalculate.mockRejectedValue(new Error('Recalculate failed'));
+    render(<NetWorthReport />);
+    await waitFor(() => {
+      expect(screen.getByText('Recalculate')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText('Recalculate'));
+    await waitFor(() => {
+      expect(screen.getByText('Recalculate')).toBeInTheDocument();
+    });
+  });
+
+  it('renders date range selector', async () => {
+    mockGetMonthly.mockResolvedValue([]);
+    render(<NetWorthReport />);
+    await waitFor(() => {
+      expect(screen.getByTestId('date-range-selector')).toBeInTheDocument();
     });
   });
 });

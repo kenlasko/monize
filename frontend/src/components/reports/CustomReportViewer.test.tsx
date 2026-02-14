@@ -145,4 +145,131 @@ describe('CustomReportViewer', () => {
       expect(screen.getByText('Timeframe')).toBeInTheDocument();
     });
   });
+
+  it('renders no data message when result has empty data', async () => {
+    mockGetById.mockResolvedValue({
+      id: 'rpt-1',
+      name: 'Empty Report',
+      viewType: 'PIE_CHART',
+      timeframeType: 'LAST_3_MONTHS',
+      groupBy: 'CATEGORY',
+      config: { metric: 'TOTAL_AMOUNT', direction: 'EXPENSES_ONLY', includeTransfers: false },
+      filters: {},
+    });
+    mockExecute.mockResolvedValue({
+      viewType: 'PIE_CHART',
+      groupBy: 'CATEGORY',
+      data: [],
+      summary: { total: 0, count: 0 },
+      timeframe: { label: 'Last 3 months', startDate: '2024-10-01', endDate: '2025-01-01' },
+    });
+    render(<CustomReportViewer reportId="rpt-1" />);
+    await waitFor(() => {
+      expect(screen.getByText('No data found for the selected criteria')).toBeInTheDocument();
+    });
+  });
+
+  it('renders pie chart legend when data is present with pie view', async () => {
+    mockGetById.mockResolvedValue({
+      id: 'rpt-1',
+      name: 'Pie Report',
+      icon: 'chart-pie',
+      backgroundColor: '#ef4444',
+      viewType: 'PIE_CHART',
+      timeframeType: 'LAST_3_MONTHS',
+      groupBy: 'CATEGORY',
+      config: { metric: 'TOTAL_AMOUNT', direction: 'EXPENSES_ONLY', includeTransfers: false },
+      filters: {},
+    });
+    mockExecute.mockResolvedValue({
+      viewType: 'PIE_CHART',
+      groupBy: 'CATEGORY',
+      data: [
+        { label: 'Food', value: 500, count: 20, id: 'cat-1', color: '#ff0000' },
+        { label: 'Transport', value: 200, count: 10, id: 'cat-2', color: '#00ff00' },
+      ],
+      summary: { total: 700, count: 30 },
+      timeframe: { label: 'Last 3 months', startDate: '2024-10-01', endDate: '2025-01-01' },
+    });
+    render(<CustomReportViewer reportId="rpt-1" />);
+    await waitFor(() => {
+      expect(screen.getByText('Pie Report')).toBeInTheDocument();
+    });
+    // Wait for the report execution to complete and legend to render
+    await waitFor(() => {
+      expect(screen.getByText('Food')).toBeInTheDocument();
+    });
+    expect(screen.getByText('Transport')).toBeInTheDocument();
+    // Summary values
+    expect(screen.getByText('$700.00')).toBeInTheDocument();
+    expect(screen.getByText('30 transactions')).toBeInTheDocument();
+  });
+
+  it('renders bar chart legend', async () => {
+    mockGetById.mockResolvedValue({
+      id: 'rpt-1',
+      name: 'Bar Report',
+      viewType: 'BAR_CHART',
+      timeframeType: 'LAST_3_MONTHS',
+      groupBy: 'PAYEE',
+      config: { metric: 'TOTAL_AMOUNT', direction: 'EXPENSES_ONLY', includeTransfers: false },
+      filters: {},
+    });
+    mockExecute.mockResolvedValue({
+      viewType: 'BAR_CHART',
+      groupBy: 'PAYEE',
+      data: [
+        { label: 'Amazon', value: 300, count: 5, id: 'p-1', color: '#3b82f6' },
+      ],
+      summary: { total: 300, count: 5 },
+      timeframe: { label: 'Last 3 months', startDate: '2024-10-01', endDate: '2025-01-01' },
+    });
+    render(<CustomReportViewer reportId="rpt-1" />);
+    await waitFor(() => {
+      expect(screen.getByText('Bar Report')).toBeInTheDocument();
+    });
+    await waitFor(() => {
+      expect(screen.getByText('Amazon')).toBeInTheDocument();
+    });
+  });
+
+  it('renders report without description and icon', async () => {
+    mockGetById.mockResolvedValue({
+      id: 'rpt-1',
+      name: 'Simple Report',
+      viewType: 'TABLE',
+      timeframeType: 'LAST_3_MONTHS',
+      groupBy: 'NONE',
+      config: { metric: 'TOTAL_AMOUNT', direction: 'EXPENSES_ONLY', includeTransfers: false },
+      filters: {},
+    });
+    mockExecute.mockResolvedValue({
+      viewType: 'TABLE',
+      groupBy: 'NONE',
+      data: [{ label: 'Item 1', value: 100, count: 2, id: 'i-1' }],
+      summary: { total: 100, count: 2 },
+      timeframe: { label: 'Last 3 months' },
+    });
+    render(<CustomReportViewer reportId="rpt-1" />);
+    await waitFor(() => {
+      expect(screen.getByText('Simple Report')).toBeInTheDocument();
+    });
+  });
+
+  it('handles execute error gracefully', async () => {
+    mockGetById.mockResolvedValue({
+      id: 'rpt-1',
+      name: 'Error Report',
+      viewType: 'TABLE',
+      timeframeType: 'LAST_3_MONTHS',
+      groupBy: 'NONE',
+      config: { metric: 'TOTAL_AMOUNT', direction: 'EXPENSES_ONLY', includeTransfers: false },
+      filters: {},
+    });
+    mockExecute.mockRejectedValue(new Error('Execute failed'));
+    render(<CustomReportViewer reportId="rpt-1" />);
+    await waitFor(() => {
+      expect(screen.getByText('Error Report')).toBeInTheDocument();
+    });
+  });
 });

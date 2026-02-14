@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor, act } from '@/test/render';
+import { render, screen, waitFor } from '@/test/render';
 import { LoanFields } from './LoanFields';
 import { Account } from '@/types/account';
 import { Category } from '@/types/category';
@@ -88,7 +88,6 @@ describe('LoanFields', () => {
 
   it('renders the heading and all form fields', () => {
     render(<LoanFields {...defaultProps} />);
-
     expect(screen.getByText('Loan Payment Details')).toBeInTheDocument();
     expect(screen.getByText('Payment Amount (required)')).toBeInTheDocument();
     expect(screen.getByText('Payment Frequency (required)')).toBeInTheDocument();
@@ -99,7 +98,6 @@ describe('LoanFields', () => {
 
   it('renders payment frequency select options', () => {
     render(<LoanFields {...defaultProps} />);
-
     expect(screen.getByText('Weekly')).toBeInTheDocument();
     expect(screen.getByText('Every 2 Weeks')).toBeInTheDocument();
     expect(screen.getByText('Monthly')).toBeInTheDocument();
@@ -109,17 +107,29 @@ describe('LoanFields', () => {
 
   it('renders accounts in the source account select', () => {
     render(<LoanFields {...defaultProps} />);
-
     const sourceAccountSelect = screen.getByLabelText('Payment From Account (required)');
     const options = sourceAccountSelect.querySelectorAll('option');
     expect(options[0].textContent).toBe('Select account...');
     expect(options[1].textContent).toBe('Main Chequing (CAD)');
   });
 
+  it('renders categories in the interest category select', () => {
+    render(<LoanFields {...defaultProps} />);
+    const categorySelect = screen.getByLabelText('Interest Category');
+    const options = categorySelect.querySelectorAll('option');
+    expect(options[0].textContent).toBe('Select category...');
+    expect(options[1].textContent).toBe('Interest Expenses');
+  });
+
   it('does not show amortization preview when required fields are missing', () => {
     render(<LoanFields {...defaultProps} />);
-
     expect(screen.queryByText('Payment Preview (First Payment)')).not.toBeInTheDocument();
+  });
+
+  it('renders with blue-themed border and background', () => {
+    const { container } = render(<LoanFields {...defaultProps} />);
+    const wrapper = container.querySelector('.bg-blue-50');
+    expect(wrapper).toBeInTheDocument();
   });
 
   it('shows amortization preview when API returns data', async () => {
@@ -138,6 +148,10 @@ describe('LoanFields', () => {
     await waitFor(() => {
       expect(screen.getByText('Payment Preview (First Payment)')).toBeInTheDocument();
     }, { timeout: 3000 });
+
+    expect(screen.getByText('Principal:')).toBeInTheDocument();
+    expect(screen.getByText('Interest:')).toBeInTheDocument();
+    expect(screen.getByText('Total Payments:')).toBeInTheDocument();
   });
 
   it('shows "Calculating preview..." while loading', async () => {
@@ -152,5 +166,30 @@ describe('LoanFields', () => {
     await waitFor(() => {
       expect(screen.getByText('Calculating preview...')).toBeInTheDocument();
     }, { timeout: 3000 });
+  });
+
+  it('handles API error gracefully (no preview shown)', async () => {
+    vi.useRealTimers();
+    vi.mocked(accountsApi.previewLoanAmortization).mockRejectedValue(new Error('API Error'));
+
+    render(<LoanFields {...defaultProps}
+      openingBalance={10000} interestRate={5} paymentAmount={500}
+      paymentFrequency="MONTHLY" paymentStartDate="2024-02-01"
+    />);
+
+    // Wait for the API call to complete (500ms debounce + network)
+    await waitFor(() => {
+      expect(accountsApi.previewLoanAmortization).toHaveBeenCalled();
+    }, { timeout: 3000 });
+
+    // Preview should not be shown on error
+    expect(screen.queryByText('Payment Preview (First Payment)')).not.toBeInTheDocument();
+  });
+
+  it('shows placeholder options in frequency and account selects', () => {
+    render(<LoanFields {...defaultProps} />);
+    expect(screen.getByText('Select frequency...')).toBeInTheDocument();
+    expect(screen.getByText('Select account...')).toBeInTheDocument();
+    expect(screen.getByText('Select category...')).toBeInTheDocument();
   });
 });

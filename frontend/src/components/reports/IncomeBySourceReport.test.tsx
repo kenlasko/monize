@@ -113,4 +113,45 @@ describe('IncomeBySourceReport', () => {
     });
     expect(screen.getByTestId('chart-view-toggle')).toBeInTheDocument();
   });
+
+  it('renders categories with provided colors', async () => {
+    mockGetIncomeBySource.mockResolvedValue({
+      data: [
+        { categoryId: 'cat-1', categoryName: 'Salary', total: 5000, color: '#00ff00' },
+        { categoryId: '', categoryName: 'Other', total: 500, color: '' },
+      ],
+      totalIncome: 5500,
+    });
+    render(<IncomeBySourceReport />);
+    await waitFor(() => {
+      expect(screen.getByText('Salary')).toBeInTheDocument();
+    });
+    expect(screen.getByText('Other')).toBeInTheDocument();
+    // The Other button should be disabled (no categoryId)
+    const otherButton = screen.getByText('Other').closest('button');
+    expect(otherButton).toBeDisabled();
+  });
+
+  it('shows percentages in legend', async () => {
+    mockGetIncomeBySource.mockResolvedValue({
+      data: [
+        { categoryId: 'cat-1', categoryName: 'Salary', total: 8000, color: '' },
+        { categoryId: 'cat-2', categoryName: 'Freelance', total: 2000, color: '' },
+      ],
+      totalIncome: 10000,
+    });
+    render(<IncomeBySourceReport />);
+    await waitFor(() => {
+      expect(screen.getByText('$8000.00 (80.0%)')).toBeInTheDocument();
+    });
+    expect(screen.getByText('$2000.00 (20.0%)')).toBeInTheDocument();
+  });
+
+  it('handles API error gracefully', async () => {
+    mockGetIncomeBySource.mockRejectedValue(new Error('Network error'));
+    render(<IncomeBySourceReport />);
+    await waitFor(() => {
+      expect(screen.getByText('No income data for this period.')).toBeInTheDocument();
+    });
+  });
 });

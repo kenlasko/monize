@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@/test/render';
+import { render, screen, waitFor, fireEvent } from '@/test/render';
 import { WeekendVsWeekdayReport } from './WeekendVsWeekdayReport';
 
 vi.mock('@/hooks/useNumberFormat', () => ({
@@ -108,5 +108,79 @@ describe('WeekendVsWeekdayReport', () => {
     });
     expect(screen.getByText('By Day')).toBeInTheDocument();
     expect(screen.getByText('By Category')).toBeInTheDocument();
+  });
+
+  it('switches to By Day view when button is clicked', async () => {
+    mockGetWeekendVsWeekday.mockResolvedValue({
+      summary: { weekendTotal: 500, weekdayTotal: 1500, weekendCount: 10, weekdayCount: 30 },
+      byDay: [
+        { dayOfWeek: 0, total: 200, count: 5 },
+        { dayOfWeek: 1, total: 300, count: 7 },
+        { dayOfWeek: 6, total: 300, count: 5 },
+      ],
+      byCategory: [],
+    });
+    render(<WeekendVsWeekdayReport />);
+    await waitFor(() => {
+      expect(screen.getByText('By Day')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText('By Day'));
+    await waitFor(() => {
+      expect(screen.getByText('Spending by Day of Week')).toBeInTheDocument();
+    });
+  });
+
+  it('switches to By Category view when button is clicked', async () => {
+    mockGetWeekendVsWeekday.mockResolvedValue({
+      summary: { weekendTotal: 500, weekdayTotal: 1500, weekendCount: 10, weekdayCount: 30 },
+      byDay: [],
+      byCategory: [
+        { categoryId: 'cat-1', categoryName: 'Food', weekendTotal: 200, weekdayTotal: 500 },
+        { categoryId: 'cat-2', categoryName: 'Transport', weekendTotal: 100, weekdayTotal: 300 },
+      ],
+    });
+    render(<WeekendVsWeekdayReport />);
+    await waitFor(() => {
+      expect(screen.getByText('By Category')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText('By Category'));
+    await waitFor(() => {
+      expect(screen.getByText('Category Comparison')).toBeInTheDocument();
+    });
+  });
+
+  it('renders comparison view with pie chart and spending details', async () => {
+    mockGetWeekendVsWeekday.mockResolvedValue({
+      summary: { weekendTotal: 500, weekdayTotal: 1500, weekendCount: 10, weekdayCount: 30 },
+      byDay: [],
+      byCategory: [],
+    });
+    render(<WeekendVsWeekdayReport />);
+    await waitFor(() => {
+      expect(screen.getByText('Weekend vs Weekday Split')).toBeInTheDocument();
+    });
+    expect(screen.getByText(/Weekend \(Sat-Sun\)/)).toBeInTheDocument();
+    expect(screen.getByText(/Weekday \(Mon-Fri\)/)).toBeInTheDocument();
+    expect(screen.getByText(/more per transaction on weekdays/)).toBeInTheDocument();
+  });
+
+  it('shows weekend spending more message when weekend avg is higher', async () => {
+    mockGetWeekendVsWeekday.mockResolvedValue({
+      summary: { weekendTotal: 1000, weekdayTotal: 500, weekendCount: 5, weekdayCount: 25 },
+      byDay: [],
+      byCategory: [],
+    });
+    render(<WeekendVsWeekdayReport />);
+    await waitFor(() => {
+      expect(screen.getByText(/more per transaction on weekends/)).toBeInTheDocument();
+    });
+  });
+
+  it('handles API error gracefully', async () => {
+    mockGetWeekendVsWeekday.mockRejectedValue(new Error('Network error'));
+    render(<WeekendVsWeekdayReport />);
+    await waitFor(() => {
+      expect(screen.getByText('No expense transactions found for this period.')).toBeInTheDocument();
+    });
   });
 });

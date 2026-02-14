@@ -470,4 +470,1285 @@ describe('TransactionList', () => {
       expect(mockToggleAll).toHaveBeenCalled();
     });
   });
+
+  // =========================================================================
+  // Table column headers
+  // =========================================================================
+
+  describe('table column headers', () => {
+    it('renders all column headers', () => {
+      render(
+        <TransactionList
+          transactions={[createTransaction()]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+        />
+      );
+
+      expect(screen.getByText('Date')).toBeInTheDocument();
+      expect(screen.getByText('Account')).toBeInTheDocument();
+      expect(screen.getByText('Payee')).toBeInTheDocument();
+      expect(screen.getByText('Category')).toBeInTheDocument();
+      expect(screen.getByText('Description')).toBeInTheDocument();
+      expect(screen.getByText('Amount')).toBeInTheDocument();
+      expect(screen.getByText('Status')).toBeInTheDocument();
+      expect(screen.getByText('Actions')).toBeInTheDocument();
+    });
+
+    it('renders Balance column header when isSingleAccountView is true', () => {
+      render(
+        <TransactionList
+          transactions={[createTransaction()]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+          isSingleAccountView={true}
+          startingBalance={1000}
+        />
+      );
+
+      expect(screen.getByText('Balance')).toBeInTheDocument();
+    });
+
+    it('does not render Balance column header when isSingleAccountView is false', () => {
+      render(
+        <TransactionList
+          transactions={[createTransaction()]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+        />
+      );
+
+      expect(screen.queryByText('Balance')).not.toBeInTheDocument();
+    });
+  });
+
+  // =========================================================================
+  // Transaction row data display
+  // =========================================================================
+
+  describe('transaction row data display', () => {
+    it('displays transaction date', () => {
+      const tx = createTransaction({ transactionDate: '2024-03-15' });
+
+      render(
+        <TransactionList
+          transactions={[tx]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+        />
+      );
+
+      expect(screen.getByText('2024-03-15')).toBeInTheDocument();
+    });
+
+    it('displays account name', () => {
+      render(
+        <TransactionList
+          transactions={[createTransaction()]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+        />
+      );
+
+      expect(screen.getByText('Chequing')).toBeInTheDocument();
+    });
+
+    it('displays dash when account is null', () => {
+      const tx = createTransaction({ account: null });
+
+      render(
+        <TransactionList
+          transactions={[tx]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+        />
+      );
+
+      // Account column should show '-'
+      const accountCells = document.querySelectorAll('td');
+      const accountCell = Array.from(accountCells).find(cell =>
+        cell.textContent === '-' && cell.classList.contains('hidden')
+      );
+      expect(accountCell).toBeTruthy();
+    });
+
+    it('displays payee name', () => {
+      render(
+        <TransactionList
+          transactions={[createTransaction()]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+        />
+      );
+
+      expect(screen.getByText('Grocery Store')).toBeInTheDocument();
+    });
+
+    it('displays description', () => {
+      const tx = createTransaction({ description: 'Test description text' });
+
+      render(
+        <TransactionList
+          transactions={[tx]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+        />
+      );
+
+      expect(screen.getByText('Test description text')).toBeInTheDocument();
+    });
+
+    it('displays dash when description is null', () => {
+      const tx = createTransaction({ description: null });
+
+      render(
+        <TransactionList
+          transactions={[tx]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+        />
+      );
+
+      // Multiple '-' dashes may appear (for null fields)
+      const dashes = screen.getAllByText('-');
+      expect(dashes.length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('displays reference number when available in normal density', () => {
+      const tx = createTransaction({ referenceNumber: 'CHQ-12345' });
+
+      render(
+        <TransactionList
+          transactions={[tx]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+        />
+      );
+
+      expect(screen.getByText('Ref: CHQ-12345')).toBeInTheDocument();
+    });
+
+    it('does not display reference number in compact density', () => {
+      const tx = createTransaction({ referenceNumber: 'CHQ-12345' });
+
+      render(
+        <TransactionList
+          transactions={[tx]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+          density="compact"
+        />
+      );
+
+      expect(screen.queryByText('Ref: CHQ-12345')).not.toBeInTheDocument();
+    });
+  });
+
+  // =========================================================================
+  // Status display and cycling
+  // =========================================================================
+
+  describe('status display', () => {
+    it('shows Pending for unreconciled transactions', () => {
+      const tx = createTransaction({ status: TransactionStatus.UNRECONCILED });
+
+      render(
+        <TransactionList
+          transactions={[tx]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+        />
+      );
+
+      expect(screen.getByText('Pending')).toBeInTheDocument();
+    });
+
+    it('shows Cleared for cleared transactions', () => {
+      const tx = createTransaction({ status: TransactionStatus.CLEARED });
+
+      render(
+        <TransactionList
+          transactions={[tx]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+        />
+      );
+
+      expect(screen.getByText('Cleared')).toBeInTheDocument();
+    });
+
+    it('shows Reconciled for reconciled transactions', () => {
+      const tx = createTransaction({ status: TransactionStatus.RECONCILED });
+
+      render(
+        <TransactionList
+          transactions={[tx]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+        />
+      );
+
+      expect(screen.getByText('Reconciled')).toBeInTheDocument();
+    });
+
+    it('shows VOID for void transactions', () => {
+      const tx = createTransaction({ status: TransactionStatus.VOID, isVoid: true });
+
+      render(
+        <TransactionList
+          transactions={[tx]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+        />
+      );
+
+      expect(screen.getByText('VOID')).toBeInTheDocument();
+    });
+
+    it('shows abbreviated status in dense mode', () => {
+      const tx = createTransaction({ status: TransactionStatus.CLEARED });
+
+      render(
+        <TransactionList
+          transactions={[tx]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+          density="dense"
+        />
+      );
+
+      expect(screen.getByText('C')).toBeInTheDocument();
+    });
+
+    it('shows abbreviated R for reconciled in dense mode', () => {
+      const tx = createTransaction({ status: TransactionStatus.RECONCILED });
+
+      render(
+        <TransactionList
+          transactions={[tx]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+          density="dense"
+        />
+      );
+
+      expect(screen.getByText('R')).toBeInTheDocument();
+    });
+
+    it('shows abbreviated V for void in dense mode', () => {
+      const tx = createTransaction({ status: TransactionStatus.VOID, isVoid: true });
+
+      render(
+        <TransactionList
+          transactions={[tx]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+          density="dense"
+        />
+      );
+
+      expect(screen.getByText('V')).toBeInTheDocument();
+    });
+
+    it('cycles status when status button is clicked', async () => {
+      const { transactionsApi } = await import('@/lib/transactions');
+      const tx = createTransaction({ status: TransactionStatus.UNRECONCILED });
+      const updatedTx = { ...tx, status: TransactionStatus.CLEARED };
+      vi.mocked(transactionsApi.updateStatus).mockResolvedValueOnce(updatedTx);
+
+      render(
+        <TransactionList
+          transactions={[tx]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+        />
+      );
+
+      const statusButton = screen.getByTitle('Click to cycle status');
+      fireEvent.click(statusButton);
+
+      await waitFor(() => {
+        expect(transactionsApi.updateStatus).toHaveBeenCalledWith(
+          tx.id,
+          TransactionStatus.CLEARED
+        );
+      });
+    });
+
+    it('shows toast.error when trying to cycle VOID status', async () => {
+      const { transactionsApi } = await import('@/lib/transactions');
+      const tx = createTransaction({ status: TransactionStatus.VOID, isVoid: true });
+
+      render(
+        <TransactionList
+          transactions={[tx]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+        />
+      );
+
+      const statusButton = screen.getByTitle('Click to cycle status');
+      fireEvent.click(statusButton);
+
+      // Should not call updateStatus for VOID
+      expect(transactionsApi.updateStatus).not.toHaveBeenCalled();
+    });
+
+    it('calls onTransactionUpdate after successful status cycle', async () => {
+      const { transactionsApi } = await import('@/lib/transactions');
+      const mockOnTransactionUpdate = vi.fn();
+      const tx = createTransaction({ status: TransactionStatus.UNRECONCILED });
+      const updatedTx = { ...tx, status: TransactionStatus.CLEARED };
+      vi.mocked(transactionsApi.updateStatus).mockResolvedValueOnce(updatedTx);
+
+      render(
+        <TransactionList
+          transactions={[tx]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+          onTransactionUpdate={mockOnTransactionUpdate}
+        />
+      );
+
+      const statusButton = screen.getByTitle('Click to cycle status');
+      fireEvent.click(statusButton);
+
+      await waitFor(() => {
+        expect(mockOnTransactionUpdate).toHaveBeenCalledWith(updatedTx);
+      });
+    });
+
+    it('calls onRefresh when onTransactionUpdate is not provided', async () => {
+      const { transactionsApi } = await import('@/lib/transactions');
+      const tx = createTransaction({ status: TransactionStatus.UNRECONCILED });
+      const updatedTx = { ...tx, status: TransactionStatus.CLEARED };
+      vi.mocked(transactionsApi.updateStatus).mockResolvedValueOnce(updatedTx);
+
+      render(
+        <TransactionList
+          transactions={[tx]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+        />
+      );
+
+      const statusButton = screen.getByTitle('Click to cycle status');
+      fireEvent.click(statusButton);
+
+      await waitFor(() => {
+        expect(mockOnRefresh).toHaveBeenCalled();
+      });
+    });
+  });
+
+  // =========================================================================
+  // Delete confirmation and execution
+  // =========================================================================
+
+  describe('delete confirmation flow', () => {
+    it('shows delete confirmation dialog with correct message for regular transaction', () => {
+      const tx = createTransaction();
+
+      render(
+        <TransactionList
+          transactions={[tx]}
+          onEdit={mockOnEdit}
+          onDelete={mockOnDelete}
+          onRefresh={mockOnRefresh}
+        />
+      );
+
+      fireEvent.click(screen.getByText('Delete'));
+
+      expect(screen.getByText('Delete Transaction')).toBeInTheDocument();
+      expect(screen.getByText(/This action cannot be undone/)).toBeInTheDocument();
+    });
+
+    it('shows delete confirmation dialog with transfer-specific message', () => {
+      const transferTx = createTransaction({
+        isTransfer: true,
+        linkedTransactionId: 'linked-tx-1',
+        linkedTransaction: {
+          id: 'linked-tx-1',
+          account: { id: 'acc-2', name: 'Savings' },
+        } as any,
+        amount: -200,
+        categoryId: null,
+        category: null,
+      });
+
+      render(
+        <TransactionList
+          transactions={[transferTx]}
+          onEdit={mockOnEdit}
+          onDelete={mockOnDelete}
+          onRefresh={mockOnRefresh}
+        />
+      );
+
+      fireEvent.click(screen.getByText('Delete'));
+
+      expect(screen.getByText('Delete Transfer')).toBeInTheDocument();
+      expect(screen.getByText(/Both linked transactions will be deleted/)).toBeInTheDocument();
+    });
+
+    it('deletes transaction when confirm is clicked', async () => {
+      const { transactionsApi } = await import('@/lib/transactions');
+      vi.mocked(transactionsApi.delete).mockResolvedValueOnce(undefined);
+
+      const tx = createTransaction();
+
+      render(
+        <TransactionList
+          transactions={[tx]}
+          onEdit={mockOnEdit}
+          onDelete={mockOnDelete}
+          onRefresh={mockOnRefresh}
+        />
+      );
+
+      // Open confirm dialog
+      fireEvent.click(screen.getByText('Delete'));
+
+      // Click the confirmation button (the red "Delete" button in the dialog)
+      const confirmButtons = screen.getAllByText('Delete');
+      // Find the confirm button in the dialog (last one)
+      const confirmButton = confirmButtons[confirmButtons.length - 1];
+      fireEvent.click(confirmButton);
+
+      await waitFor(() => {
+        expect(transactionsApi.delete).toHaveBeenCalledWith(tx.id);
+      });
+    });
+
+    it('deletes transfer when confirm is clicked for transfer transaction', async () => {
+      const { transactionsApi } = await import('@/lib/transactions');
+      vi.mocked(transactionsApi.deleteTransfer).mockResolvedValueOnce(undefined);
+
+      const transferTx = createTransaction({
+        isTransfer: true,
+        linkedTransactionId: 'linked-tx-1',
+        categoryId: null,
+        category: null,
+      });
+
+      render(
+        <TransactionList
+          transactions={[transferTx]}
+          onEdit={mockOnEdit}
+          onDelete={mockOnDelete}
+          onRefresh={mockOnRefresh}
+        />
+      );
+
+      fireEvent.click(screen.getByText('Delete'));
+
+      const confirmButtons = screen.getAllByText('Delete');
+      const confirmButton = confirmButtons[confirmButtons.length - 1];
+      fireEvent.click(confirmButton);
+
+      await waitFor(() => {
+        expect(transactionsApi.deleteTransfer).toHaveBeenCalledWith(transferTx.id);
+      });
+    });
+
+    it('closes confirm dialog when Cancel is clicked', () => {
+      const tx = createTransaction();
+
+      render(
+        <TransactionList
+          transactions={[tx]}
+          onEdit={mockOnEdit}
+          onDelete={mockOnDelete}
+          onRefresh={mockOnRefresh}
+        />
+      );
+
+      fireEvent.click(screen.getByText('Delete'));
+      expect(screen.getByText('Delete Transaction')).toBeInTheDocument();
+
+      // Click Cancel in the dialog
+      fireEvent.click(screen.getByText('Cancel'));
+
+      // Dialog should close (the title should no longer be visible)
+      expect(screen.queryByText('Delete Transaction')).not.toBeInTheDocument();
+    });
+
+    it('calls onDelete and onRefresh after successful deletion', async () => {
+      const { transactionsApi } = await import('@/lib/transactions');
+      vi.mocked(transactionsApi.delete).mockResolvedValueOnce(undefined);
+
+      const tx = createTransaction();
+
+      render(
+        <TransactionList
+          transactions={[tx]}
+          onEdit={mockOnEdit}
+          onDelete={mockOnDelete}
+          onRefresh={mockOnRefresh}
+        />
+      );
+
+      fireEvent.click(screen.getByText('Delete'));
+
+      const confirmButtons = screen.getAllByText('Delete');
+      const confirmButton = confirmButtons[confirmButtons.length - 1];
+      fireEvent.click(confirmButton);
+
+      await waitFor(() => {
+        expect(mockOnDelete).toHaveBeenCalledWith(tx.id);
+        expect(mockOnRefresh).toHaveBeenCalled();
+      });
+    });
+  });
+
+  // =========================================================================
+  // Amount formatting
+  // =========================================================================
+
+  describe('amount formatting', () => {
+    it('formats negative amounts with minus sign and red color', () => {
+      const tx = createTransaction({ amount: -75.50 });
+
+      render(
+        <TransactionList
+          transactions={[tx]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+        />
+      );
+
+      const amountEl = screen.getByText('-$75.50');
+      expect(amountEl).toHaveClass('text-red-600');
+    });
+
+    it('formats positive amounts with plus sign and green color', () => {
+      const tx = createTransaction({
+        id: 'income-tx',
+        amount: 250.00,
+        payeeName: 'Income Source',
+      });
+
+      render(
+        <TransactionList
+          transactions={[tx]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+        />
+      );
+
+      const amountEl = screen.getByText('+$250.00');
+      expect(amountEl).toHaveClass('text-green-600');
+    });
+
+    it('formats zero amounts', () => {
+      const tx = createTransaction({
+        id: 'zero-tx',
+        amount: 0,
+        payeeName: 'Zero Amount',
+      });
+
+      render(
+        <TransactionList
+          transactions={[tx]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+        />
+      );
+
+      const amountEl = screen.getByText('+$0.00');
+      expect(amountEl).toHaveClass('text-green-600');
+    });
+  });
+
+  // =========================================================================
+  // Running balance calculation
+  // =========================================================================
+
+  describe('running balance calculation', () => {
+    it('calculates running balances correctly for multiple transactions', () => {
+      const transactions = [
+        createTransaction({ id: 'tx-1', amount: -100, payeeName: 'First' }),
+        createTransaction({ id: 'tx-2', amount: -50, payeeName: 'Second' }),
+        createTransaction({ id: 'tx-3', amount: 200, payeeName: 'Third' }),
+      ];
+
+      render(
+        <TransactionList
+          transactions={transactions}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+          isSingleAccountView={true}
+          startingBalance={500}
+        />
+      );
+
+      // First tx: balance = 500 (startingBalance)
+      // Second tx: balance = 500 - (-100) = 600
+      // Third tx: balance = 500 - (-100) - (-50) = 650
+      expect(screen.getByText('$500.00')).toBeInTheDocument();
+      expect(screen.getByText('$600.00')).toBeInTheDocument();
+      expect(screen.getByText('$650.00')).toBeInTheDocument();
+    });
+
+    it('does not show running balance when isSingleAccountView is false', () => {
+      const tx = createTransaction({ amount: -50 });
+
+      render(
+        <TransactionList
+          transactions={[tx]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+          isSingleAccountView={false}
+          startingBalance={1000}
+        />
+      );
+
+      expect(screen.queryByText('Balance')).not.toBeInTheDocument();
+    });
+
+    it('shows negative balances in red', () => {
+      const tx = createTransaction({ amount: 100, payeeName: 'Test' });
+
+      render(
+        <TransactionList
+          transactions={[tx]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+          isSingleAccountView={true}
+          startingBalance={-50}
+        />
+      );
+
+      // Balance of -50 should be rendered as "-$50.00" in red
+      const balanceEl = screen.getByText('-$50.00');
+      expect(balanceEl).toHaveClass('text-red-600');
+    });
+  });
+
+  // =========================================================================
+  // Density toggle with controlled prop
+  // =========================================================================
+
+  describe('density with controlled prop', () => {
+    it('uses propDensity when provided', () => {
+      render(
+        <TransactionList
+          transactions={[createTransaction()]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+          density="compact"
+        />
+      );
+
+      const densityButton = screen.getByTitle('Toggle row density');
+      expect(densityButton).toHaveTextContent('Compact');
+    });
+
+    it('calls onDensityChange when density toggle is clicked', () => {
+      const mockOnDensityChange = vi.fn();
+
+      render(
+        <TransactionList
+          transactions={[createTransaction()]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+          density="normal"
+          onDensityChange={mockOnDensityChange}
+        />
+      );
+
+      const densityButton = screen.getByTitle('Toggle row density');
+      fireEvent.click(densityButton);
+
+      expect(mockOnDensityChange).toHaveBeenCalledWith('compact');
+    });
+
+    it('cycles from compact to dense via onDensityChange', () => {
+      const mockOnDensityChange = vi.fn();
+
+      render(
+        <TransactionList
+          transactions={[createTransaction()]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+          density="compact"
+          onDensityChange={mockOnDensityChange}
+        />
+      );
+
+      const densityButton = screen.getByTitle('Toggle row density');
+      fireEvent.click(densityButton);
+
+      expect(mockOnDensityChange).toHaveBeenCalledWith('dense');
+    });
+
+    it('cycles from dense back to normal via onDensityChange', () => {
+      const mockOnDensityChange = vi.fn();
+
+      render(
+        <TransactionList
+          transactions={[createTransaction()]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+          density="dense"
+          onDensityChange={mockOnDensityChange}
+        />
+      );
+
+      const densityButton = screen.getByTitle('Toggle row density');
+      fireEvent.click(densityButton);
+
+      expect(mockOnDensityChange).toHaveBeenCalledWith('normal');
+    });
+  });
+
+  // =========================================================================
+  // Payee click interaction
+  // =========================================================================
+
+  describe('payee click', () => {
+    it('calls onPayeeClick when payee name is clicked', () => {
+      const mockOnPayeeClick = vi.fn();
+      const tx = createTransaction();
+
+      render(
+        <TransactionList
+          transactions={[tx]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+          onPayeeClick={mockOnPayeeClick}
+        />
+      );
+
+      const payeeButton = screen.getByTitle('Edit payee: Grocery Store');
+      fireEvent.click(payeeButton);
+
+      expect(mockOnPayeeClick).toHaveBeenCalledWith('payee-1');
+    });
+
+    it('renders payee as plain text when onPayeeClick is not provided', () => {
+      const tx = createTransaction();
+
+      render(
+        <TransactionList
+          transactions={[tx]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+        />
+      );
+
+      // Should show payee name as a div (non-clickable)
+      const payeeEl = screen.getByText('Grocery Store');
+      expect(payeeEl.tagName).toBe('DIV');
+    });
+
+    it('shows dash when payee name is null', () => {
+      const tx = createTransaction({ payeeName: null, payeeId: null });
+
+      render(
+        <TransactionList
+          transactions={[tx]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+        />
+      );
+
+      // Should have at least one dash for the payee
+      const dashes = screen.getAllByText('-');
+      expect(dashes.length).toBeGreaterThanOrEqual(1);
+    });
+  });
+
+  // =========================================================================
+  // Transfer click interaction
+  // =========================================================================
+
+  describe('transfer click', () => {
+    it('calls onTransferClick when transfer badge is clicked', () => {
+      const mockOnTransferClick = vi.fn();
+      const transferTx = createTransaction({
+        isTransfer: true,
+        linkedTransactionId: 'linked-tx-1',
+        linkedTransaction: {
+          id: 'linked-tx-1',
+          account: { id: 'acc-2', name: 'Savings' },
+        } as any,
+        amount: -200,
+        categoryId: null,
+        category: null,
+      });
+
+      render(
+        <TransactionList
+          transactions={[transferTx]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+          onTransferClick={mockOnTransferClick}
+        />
+      );
+
+      const transferButton = screen.getByTitle('Click to view in Savings');
+      fireEvent.click(transferButton);
+
+      expect(mockOnTransferClick).toHaveBeenCalledWith('acc-2', 'linked-tx-1');
+    });
+
+    it('shows transfer badge as non-clickable span when onTransferClick is not provided', () => {
+      const transferTx = createTransaction({
+        isTransfer: true,
+        linkedTransactionId: 'linked-tx-1',
+        linkedTransaction: {
+          id: 'linked-tx-1',
+          account: { id: 'acc-2', name: 'Savings' },
+        } as any,
+        amount: -200,
+        categoryId: null,
+        category: null,
+      });
+
+      render(
+        <TransactionList
+          transactions={[transferTx]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+        />
+      );
+
+      // Should show as span (not button) since no onTransferClick
+      const transferSpan = screen.getByText(/Savings/);
+      expect(transferSpan.tagName).toBe('SPAN');
+    });
+
+    it('shows arrow direction based on amount sign for outgoing transfer', () => {
+      const transferTx = createTransaction({
+        isTransfer: true,
+        linkedTransactionId: 'linked-tx-1',
+        linkedTransaction: {
+          id: 'linked-tx-1',
+          account: { id: 'acc-2', name: 'Savings' },
+        } as any,
+        amount: -200,
+        categoryId: null,
+        category: null,
+      });
+
+      render(
+        <TransactionList
+          transactions={[transferTx]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+        />
+      );
+
+      // Negative amount means outgoing: arrow points right
+      expect(screen.getByText(/→ Savings/)).toBeInTheDocument();
+    });
+
+    it('shows arrow direction based on amount sign for incoming transfer', () => {
+      const transferTx = createTransaction({
+        isTransfer: true,
+        linkedTransactionId: 'linked-tx-1',
+        linkedTransaction: {
+          id: 'linked-tx-1',
+          account: { id: 'acc-2', name: 'Savings' },
+        } as any,
+        amount: 200,
+        categoryId: null,
+        category: null,
+      });
+
+      render(
+        <TransactionList
+          transactions={[transferTx]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+        />
+      );
+
+      // Positive amount means incoming: arrow points away from source
+      expect(screen.getByText(/Savings →/)).toBeInTheDocument();
+    });
+  });
+
+  // =========================================================================
+  // Split transaction display
+  // =========================================================================
+
+  describe('split transaction display', () => {
+    it('shows split count in badge', () => {
+      const splitTx = createTransaction({
+        isSplit: true,
+        categoryId: null,
+        category: null,
+        splits: [
+          { id: 's1', transactionId: 'tx-1', categoryId: 'cat-1', category: { id: 'cat-1', name: 'Groceries' } as any, transferAccountId: null, transferAccount: null, linkedTransactionId: null, amount: -30, memo: null, createdAt: '' },
+          { id: 's2', transactionId: 'tx-1', categoryId: 'cat-2', category: { id: 'cat-2', name: 'Dining' } as any, transferAccountId: null, transferAccount: null, linkedTransactionId: null, amount: -20, memo: null, createdAt: '' },
+          { id: 's3', transactionId: 'tx-1', categoryId: 'cat-1', category: { id: 'cat-1', name: 'Groceries' } as any, transferAccountId: null, transferAccount: null, linkedTransactionId: null, amount: -10, memo: null, createdAt: '' },
+        ],
+      });
+
+      render(
+        <TransactionList
+          transactions={[splitTx]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+        />
+      );
+
+      expect(screen.getByText('Split (3)')).toBeInTheDocument();
+    });
+
+    it('shows split details in normal density with category names and amounts', () => {
+      const splitTx = createTransaction({
+        isSplit: true,
+        categoryId: null,
+        category: null,
+        splits: [
+          { id: 's1', transactionId: 'tx-1', categoryId: 'cat-1', category: { id: 'cat-1', name: 'Groceries' } as any, transferAccountId: null, transferAccount: null, linkedTransactionId: null, amount: -30, memo: null, createdAt: '' },
+          { id: 's2', transactionId: 'tx-1', categoryId: 'cat-2', category: { id: 'cat-2', name: 'Dining' } as any, transferAccountId: null, transferAccount: null, linkedTransactionId: null, amount: -20, memo: null, createdAt: '' },
+        ],
+      });
+
+      render(
+        <TransactionList
+          transactions={[splitTx]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+        />
+      );
+
+      // In normal density, split details are shown
+      expect(screen.getByText(/Groceries.*30\.00/)).toBeInTheDocument();
+      expect(screen.getByText(/Dining.*20\.00/)).toBeInTheDocument();
+    });
+
+    it('shows "+N more" indicator when more than 3 splits', () => {
+      const splitTx = createTransaction({
+        isSplit: true,
+        categoryId: null,
+        category: null,
+        splits: [
+          { id: 's1', transactionId: 'tx-1', categoryId: 'cat-1', category: { id: 'cat-1', name: 'Groceries' } as any, transferAccountId: null, transferAccount: null, linkedTransactionId: null, amount: -30, memo: null, createdAt: '' },
+          { id: 's2', transactionId: 'tx-1', categoryId: 'cat-2', category: { id: 'cat-2', name: 'Dining' } as any, transferAccountId: null, transferAccount: null, linkedTransactionId: null, amount: -20, memo: null, createdAt: '' },
+          { id: 's3', transactionId: 'tx-1', categoryId: 'cat-3', category: { id: 'cat-3', name: 'Transport' } as any, transferAccountId: null, transferAccount: null, linkedTransactionId: null, amount: -15, memo: null, createdAt: '' },
+          { id: 's4', transactionId: 'tx-1', categoryId: 'cat-4', category: { id: 'cat-4', name: 'Utilities' } as any, transferAccountId: null, transferAccount: null, linkedTransactionId: null, amount: -10, memo: null, createdAt: '' },
+        ],
+      });
+
+      render(
+        <TransactionList
+          transactions={[splitTx]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+        />
+      );
+
+      expect(screen.getByText('+1 more')).toBeInTheDocument();
+    });
+
+    it('shows transfer account name for split transfers', () => {
+      const splitTx = createTransaction({
+        isSplit: true,
+        categoryId: null,
+        category: null,
+        splits: [
+          {
+            id: 's1',
+            transactionId: 'tx-1',
+            categoryId: null,
+            category: null,
+            transferAccountId: 'acc-2',
+            transferAccount: { id: 'acc-2', name: 'Savings' } as any,
+            linkedTransactionId: 'linked-split-1',
+            amount: -30,
+            memo: null,
+            createdAt: '',
+          },
+        ],
+      });
+
+      render(
+        <TransactionList
+          transactions={[splitTx]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+        />
+      );
+
+      expect(screen.getByText(/Savings/)).toBeInTheDocument();
+    });
+
+    it('shows "Uncategorized" for splits without category', () => {
+      const splitTx = createTransaction({
+        isSplit: true,
+        categoryId: null,
+        category: null,
+        splits: [
+          { id: 's1', transactionId: 'tx-1', categoryId: null, category: null, transferAccountId: null, transferAccount: null, linkedTransactionId: null, amount: -30, memo: null, createdAt: '' },
+        ],
+      });
+
+      render(
+        <TransactionList
+          transactions={[splitTx]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+        />
+      );
+
+      expect(screen.getByText(/Uncategorized/)).toBeInTheDocument();
+    });
+  });
+
+  // =========================================================================
+  // Investment transaction indicator
+  // =========================================================================
+
+  describe('investment transaction', () => {
+    it('shows Investment badge for linked investment transactions', () => {
+      const investmentTx = createTransaction({
+        linkedInvestmentTransactionId: 'inv-tx-1',
+        categoryId: null,
+        category: null,
+      });
+
+      render(
+        <TransactionList
+          transactions={[investmentTx]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+        />
+      );
+
+      expect(screen.getByText('Investment')).toBeInTheDocument();
+    });
+
+    it('shows "View" button instead of "Edit" for investment transactions', () => {
+      const investmentTx = createTransaction({
+        linkedInvestmentTransactionId: 'inv-tx-1',
+      });
+
+      render(
+        <TransactionList
+          transactions={[investmentTx]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+        />
+      );
+
+      expect(screen.getByText('View')).toBeInTheDocument();
+      expect(screen.queryByText('Edit')).not.toBeInTheDocument();
+    });
+
+    it('hides delete button for investment transactions', () => {
+      const investmentTx = createTransaction({
+        linkedInvestmentTransactionId: 'inv-tx-1',
+      });
+
+      render(
+        <TransactionList
+          transactions={[investmentTx]}
+          onEdit={mockOnEdit}
+          onDelete={mockOnDelete}
+          onRefresh={mockOnRefresh}
+        />
+      );
+
+      // Delete button should not be present for investment transactions
+      expect(screen.queryByText('Delete')).not.toBeInTheDocument();
+    });
+  });
+
+  // =========================================================================
+  // Row click behavior
+  // =========================================================================
+
+  describe('row click', () => {
+    it('calls onEdit when row is clicked', () => {
+      const tx = createTransaction();
+
+      render(
+        <TransactionList
+          transactions={[tx]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+        />
+      );
+
+      const row = screen.getByText('Grocery Store').closest('tr')!;
+      fireEvent.click(row);
+
+      expect(mockOnEdit).toHaveBeenCalledWith(tx);
+    });
+
+    it('does not call onEdit when onEdit is not provided', () => {
+      const tx = createTransaction();
+
+      render(
+        <TransactionList
+          transactions={[tx]}
+          onRefresh={mockOnRefresh}
+        />
+      );
+
+      const row = screen.getByText('Grocery Store').closest('tr')!;
+      fireEvent.click(row);
+
+      // No error should be thrown, and onEdit should not have been called
+      expect(mockOnEdit).not.toHaveBeenCalled();
+    });
+  });
+
+  // =========================================================================
+  // Void transaction styling
+  // =========================================================================
+
+  describe('void transaction styling', () => {
+    it('applies opacity-50 to void transaction rows', () => {
+      const tx = createTransaction({ status: TransactionStatus.VOID, isVoid: true });
+
+      render(
+        <TransactionList
+          transactions={[tx]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+        />
+      );
+
+      const row = screen.getByText('Grocery Store').closest('tr');
+      expect(row).toHaveClass('opacity-50');
+    });
+
+    it('applies line-through to void transaction text', () => {
+      const tx = createTransaction({ status: TransactionStatus.VOID, isVoid: true });
+
+      render(
+        <TransactionList
+          transactions={[tx]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+        />
+      );
+
+      // The date cell should have line-through
+      const dateCell = screen.getByText('2024-01-15');
+      expect(dateCell).toHaveClass('line-through');
+    });
+
+    it('does not apply void styling to non-void transactions', () => {
+      const tx = createTransaction({ status: TransactionStatus.CLEARED });
+
+      render(
+        <TransactionList
+          transactions={[tx]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+        />
+      );
+
+      const row = screen.getByText('Grocery Store').closest('tr');
+      expect(row).not.toHaveClass('opacity-50');
+    });
+  });
+
+  // =========================================================================
+  // No category display
+  // =========================================================================
+
+  describe('no category', () => {
+    it('shows dash when category is null', () => {
+      const tx = createTransaction({ categoryId: null, category: null });
+
+      render(
+        <TransactionList
+          transactions={[tx]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+        />
+      );
+
+      // There should be dash elements for the missing category
+      const dashes = screen.getAllByText('-');
+      expect(dashes.length).toBeGreaterThanOrEqual(1);
+    });
+  });
+
+  // =========================================================================
+  // Multiple transactions rendering
+  // =========================================================================
+
+  describe('multiple transactions', () => {
+    it('renders all transactions in order', () => {
+      const transactions = [
+        createTransaction({ id: 'tx-1', payeeName: 'First Payee' }),
+        createTransaction({ id: 'tx-2', payeeName: 'Second Payee' }),
+        createTransaction({ id: 'tx-3', payeeName: 'Third Payee' }),
+      ];
+
+      render(
+        <TransactionList
+          transactions={transactions}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+        />
+      );
+
+      expect(screen.getByText('First Payee')).toBeInTheDocument();
+      expect(screen.getByText('Second Payee')).toBeInTheDocument();
+      expect(screen.getByText('Third Payee')).toBeInTheDocument();
+    });
+
+    it('applies alternating row colors in compact density', () => {
+      const transactions = [
+        createTransaction({ id: 'tx-1', payeeName: 'First' }),
+        createTransaction({ id: 'tx-2', payeeName: 'Second' }),
+      ];
+
+      render(
+        <TransactionList
+          transactions={transactions}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+          density="compact"
+        />
+      );
+
+      const firstRow = screen.getByText('First').closest('tr');
+      const secondRow = screen.getByText('Second').closest('tr');
+
+      // Odd index rows (1-based index 2 = 0-based index 1) should have bg-gray-50
+      expect(firstRow).not.toHaveClass('bg-gray-50');
+      expect(secondRow).toHaveClass('bg-gray-50');
+    });
+  });
+
+  // =========================================================================
+  // Edit button when onEdit is not provided
+  // =========================================================================
+
+  describe('edit button visibility', () => {
+    it('does not render Edit button when onEdit is not provided', () => {
+      render(
+        <TransactionList
+          transactions={[createTransaction()]}
+          onRefresh={mockOnRefresh}
+        />
+      );
+
+      expect(screen.queryByText('Edit')).not.toBeInTheDocument();
+    });
+
+    it('renders Edit button when onEdit is provided', () => {
+      render(
+        <TransactionList
+          transactions={[createTransaction()]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+        />
+      );
+
+      expect(screen.getByText('Edit')).toBeInTheDocument();
+    });
+  });
 });

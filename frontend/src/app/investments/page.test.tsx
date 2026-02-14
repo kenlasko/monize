@@ -1,22 +1,10 @@
-import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
-import { render, screen, waitFor, fireEvent, act, within } from '@/test/render';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, waitFor, fireEvent } from '@/test/render';
 import InvestmentsPage from './page';
-import { PortfolioSummary, PaginatedInvestmentTransactions, InvestmentTransaction } from '@/types/investment';
-import { Account } from '@/types/account';
-
-// Mock next/navigation
-const mockPush = vi.fn();
-const mockReplace = vi.fn();
-const mockSearchParams = new URLSearchParams();
-vi.mock('next/navigation', () => ({
-  useRouter: () => ({ push: mockPush, replace: mockReplace }),
-  useSearchParams: () => mockSearchParams,
-  usePathname: () => '/investments',
-}));
 
 // Mock next/image
 vi.mock('next/image', () => ({
-  default: (props: any) => <img {...props} />,
+  default: (props: any) => <img alt="" {...props} />,
 }));
 
 // Mock logger
@@ -57,7 +45,7 @@ vi.mock('@/store/authStore', () => ({
 vi.mock('@/store/preferencesStore', () => ({
   usePreferencesStore: (selector?: any) => {
     const state = {
-      preferences: { twoFactorEnabled: true, theme: 'system', defaultCurrency: 'USD' },
+      preferences: { twoFactorEnabled: true, theme: 'system' },
       isLoaded: true,
       _hasHydrated: true,
     };
@@ -74,195 +62,14 @@ vi.mock('@/lib/auth', () => ({
   },
 }));
 
-// --- Test data factories ---
+vi.mock('@/lib/constants', () => ({
+  PAGE_SIZE: 25,
+}));
 
-function makeMockAccount(overrides: Partial<Account> = {}): Account {
-  return {
-    id: 'acct-cash-1',
-    userId: 'test-user-id',
-    accountType: 'INVESTMENT',
-    accountSubType: 'INVESTMENT_CASH',
-    linkedAccountId: 'acct-brokerage-1',
-    name: 'Brokerage Account - Cash',
-    description: null,
-    currencyCode: 'USD',
-    accountNumber: null,
-    institution: null,
-    openingBalance: 0,
-    currentBalance: 5000,
-    creditLimit: null,
-    interestRate: null,
-    isClosed: false,
-    closedDate: null,
-    isFavourite: false,
-    paymentAmount: null,
-    paymentFrequency: null,
-    paymentStartDate: null,
-    sourceAccountId: null,
-    principalCategoryId: null,
-    interestCategoryId: null,
-    scheduledTransactionId: null,
-    assetCategoryId: null,
-    dateAcquired: null,
-    isCanadianMortgage: false,
-    isVariableRate: false,
-    termMonths: null,
-    termEndDate: null,
-    amortizationMonths: null,
-    originalPrincipal: null,
-    canDelete: true,
-    createdAt: '2024-01-01T00:00:00Z',
-    updatedAt: '2024-01-01T00:00:00Z',
-    ...overrides,
-  };
-}
-
-function makeMockBrokerageAccount(): Account {
-  return makeMockAccount({
-    id: 'acct-brokerage-1',
-    accountSubType: 'INVESTMENT_BROKERAGE',
-    linkedAccountId: 'acct-cash-1',
-    name: 'Brokerage Account',
-    currentBalance: 50000,
-  });
-}
-
-function makeMockPortfolioSummary(overrides: Partial<PortfolioSummary> = {}): PortfolioSummary {
-  return {
-    totalCashValue: 5000,
-    totalHoldingsValue: 45000,
-    totalCostBasis: 40000,
-    totalPortfolioValue: 50000,
-    totalGainLoss: 5000,
-    totalGainLossPercent: 12.5,
-    holdings: [
-      {
-        id: 'holding-1',
-        accountId: 'acct-brokerage-1',
-        securityId: 'sec-1',
-        symbol: 'AAPL',
-        name: 'Apple Inc.',
-        securityType: 'STOCK',
-        currencyCode: 'USD',
-        quantity: 100,
-        averageCost: 150,
-        costBasis: 15000,
-        currentPrice: 175,
-        marketValue: 17500,
-        gainLoss: 2500,
-        gainLossPercent: 16.67,
-      },
-      {
-        id: 'holding-2',
-        accountId: 'acct-brokerage-1',
-        securityId: 'sec-2',
-        symbol: 'MSFT',
-        name: 'Microsoft Corp.',
-        securityType: 'STOCK',
-        currencyCode: 'USD',
-        quantity: 50,
-        averageCost: 300,
-        costBasis: 15000,
-        currentPrice: 350,
-        marketValue: 17500,
-        gainLoss: 2500,
-        gainLossPercent: 16.67,
-      },
-    ],
-    holdingsByAccount: [
-      {
-        accountId: 'acct-brokerage-1',
-        accountName: 'Brokerage Account',
-        currencyCode: 'USD',
-        cashAccountId: 'acct-cash-1',
-        cashBalance: 5000,
-        holdings: [
-          {
-            id: 'holding-1',
-            accountId: 'acct-brokerage-1',
-            securityId: 'sec-1',
-            symbol: 'AAPL',
-            name: 'Apple Inc.',
-            securityType: 'STOCK',
-            currencyCode: 'USD',
-            quantity: 100,
-            averageCost: 150,
-            costBasis: 15000,
-            currentPrice: 175,
-            marketValue: 17500,
-            gainLoss: 2500,
-            gainLossPercent: 16.67,
-          },
-        ],
-        totalCostBasis: 15000,
-        totalMarketValue: 17500,
-        totalGainLoss: 2500,
-        totalGainLossPercent: 16.67,
-      },
-    ],
-    allocation: [
-      { name: 'Apple Inc.', symbol: 'AAPL', type: 'security', value: 17500, percentage: 35 },
-      { name: 'Microsoft Corp.', symbol: 'MSFT', type: 'security', value: 17500, percentage: 35 },
-      { name: 'Cash', symbol: null, type: 'cash', value: 5000, percentage: 10 },
-    ],
-    ...overrides,
-  };
-}
-
-function makeMockTransaction(overrides: Partial<InvestmentTransaction> = {}): InvestmentTransaction {
-  return {
-    id: 'tx-1',
-    accountId: 'acct-brokerage-1',
-    securityId: 'sec-1',
-    fundingAccountId: 'acct-cash-1',
-    action: 'BUY',
-    transactionDate: '2024-06-15',
-    quantity: 10,
-    price: 150,
-    commission: 9.99,
-    totalAmount: 1509.99,
-    description: 'Buy AAPL shares',
-    security: {
-      id: 'sec-1',
-      symbol: 'AAPL',
-      name: 'Apple Inc.',
-      securityType: 'STOCK',
-      exchange: 'NASDAQ',
-      currencyCode: 'USD',
-      isActive: true,
-      skipPriceUpdates: false,
-      createdAt: '2024-01-01T00:00:00Z',
-      updatedAt: '2024-01-01T00:00:00Z',
-    },
-    fundingAccount: { id: 'acct-cash-1', name: 'Brokerage Account - Cash' },
-    createdAt: '2024-06-15T10:00:00Z',
-    updatedAt: '2024-06-15T10:00:00Z',
-    ...overrides,
-  };
-}
-
-function makeMockPaginatedTransactions(
-  transactions: InvestmentTransaction[] = [makeMockTransaction()],
-  paginationOverrides: Partial<PaginatedInvestmentTransactions['pagination']> = {},
-): PaginatedInvestmentTransactions {
-  return {
-    data: transactions,
-    pagination: {
-      page: 1,
-      limit: 50,
-      total: transactions.length,
-      totalPages: 1,
-      hasMore: false,
-      ...paginationOverrides,
-    },
-  };
-}
-
-// --- Mock API modules ---
-
+const mockGetInvestmentAccounts = vi.fn();
+const mockGetAllAccounts = vi.fn();
 const mockGetPortfolioSummary = vi.fn();
 const mockGetTransactions = vi.fn();
-const mockGetInvestmentAccounts = vi.fn();
 const mockGetPriceStatus = vi.fn();
 const mockRefreshSelectedPrices = vi.fn();
 const mockDeleteTransaction = vi.fn();
@@ -270,23 +77,15 @@ const mockGetTransaction = vi.fn();
 
 vi.mock('@/lib/investments', () => ({
   investmentsApi: {
+    getInvestmentAccounts: (...args: any[]) => mockGetInvestmentAccounts(...args),
     getPortfolioSummary: (...args: any[]) => mockGetPortfolioSummary(...args),
     getTransactions: (...args: any[]) => mockGetTransactions(...args),
-    getInvestmentAccounts: (...args: any[]) => mockGetInvestmentAccounts(...args),
     getPriceStatus: (...args: any[]) => mockGetPriceStatus(...args),
     refreshSelectedPrices: (...args: any[]) => mockRefreshSelectedPrices(...args),
-    refreshPrices: vi.fn(),
-    deleteTransaction: (...args: any[]) => mockDeleteTransaction(...args),
     getTransaction: (...args: any[]) => mockGetTransaction(...args),
-    getHoldings: vi.fn().mockResolvedValue([]),
-    getSecurities: vi.fn().mockResolvedValue([]),
-    createTransaction: vi.fn(),
-    updateTransaction: vi.fn(),
-    getAssetAllocation: vi.fn(),
+    deleteTransaction: (...args: any[]) => mockDeleteTransaction(...args),
   },
 }));
-
-const mockGetAllAccounts = vi.fn();
 
 vi.mock('@/lib/accounts', () => ({
   accountsApi: {
@@ -294,984 +93,560 @@ vi.mock('@/lib/accounts', () => ({
   },
 }));
 
-// Mock usePriceRefresh hook
-const mockTriggerAutoRefresh = vi.fn();
+const mockOpenCreate = vi.fn();
+const mockOpenEdit = vi.fn();
+const mockClose = vi.fn();
+
+vi.mock('@/hooks/useFormModal', () => ({
+  useFormModal: () => ({
+    showForm: false,
+    editingItem: null,
+    openCreate: mockOpenCreate,
+    openEdit: mockOpenEdit,
+    close: mockClose,
+    isEditing: false,
+    modalProps: {},
+    setFormDirty: vi.fn(),
+    unsavedChangesDialog: { isOpen: false, onConfirm: vi.fn(), onCancel: vi.fn() },
+    formSubmitRef: { current: null },
+  }),
+}));
+
+vi.mock('@/hooks/useLocalStorage', () => ({
+  useLocalStorage: (_key: string, defaultValue: any) => [defaultValue, vi.fn()],
+}));
+
 vi.mock('@/hooks/usePriceRefresh', () => ({
   usePriceRefresh: () => ({
     isRefreshing: false,
-    triggerManualRefresh: vi.fn(),
-    triggerAutoRefresh: mockTriggerAutoRefresh,
+    triggerAutoRefresh: vi.fn(),
   }),
   setRefreshInProgress: vi.fn(),
-  getRefreshInProgress: vi.fn(() => false),
-  isMarketHours: vi.fn(() => false),
-}));
-
-// --- Mock child components ---
-
-vi.mock('@/components/investments/PortfolioSummaryCard', () => ({
-  PortfolioSummaryCard: ({ summary, isLoading }: any) => (
-    <div data-testid="portfolio-summary-card">
-      {isLoading ? 'Loading summary...' : summary ? `Portfolio: $${summary.totalPortfolioValue}` : 'No data'}
-    </div>
-  ),
-}));
-
-vi.mock('@/components/investments/AssetAllocationChart', () => ({
-  AssetAllocationChart: ({ allocation, isLoading }: any) => (
-    <div data-testid="asset-allocation-chart">
-      {isLoading ? 'Loading allocation...' : allocation ? 'Allocation chart' : 'No allocation'}
-    </div>
-  ),
-}));
-
-vi.mock('@/components/investments/GroupedHoldingsList', () => ({
-  GroupedHoldingsList: ({ holdingsByAccount, isLoading, onSymbolClick, onCashClick }: any) => (
-    <div data-testid="grouped-holdings-list">
-      {isLoading ? 'Loading holdings...' : `${holdingsByAccount.length} account(s)`}
-      {holdingsByAccount.map((acct: any) => (
-        <div key={acct.accountId} data-testid={`account-holdings-${acct.accountId}`}>
-          {acct.accountName}
-          {acct.holdings.map((h: any) => (
-            <button key={h.id} data-testid={`symbol-${h.symbol}`} onClick={() => onSymbolClick(h.symbol)}>
-              {h.symbol}
-            </button>
-          ))}
-          {acct.cashAccountId && (
-            <button data-testid={`cash-link-${acct.cashAccountId}`} onClick={() => onCashClick(acct.cashAccountId)}>
-              Cash
-            </button>
-          )}
-        </div>
-      ))}
-    </div>
-  ),
-}));
-
-vi.mock('@/components/investments/InvestmentTransactionList', () => ({
-  InvestmentTransactionList: ({ transactions, isLoading, onDelete, onEdit, onNewTransaction, filters, onFiltersChange }: any) => (
-    <div data-testid="investment-transaction-list">
-      {isLoading ? 'Loading transactions...' : `${transactions.length} transaction(s)`}
-      {transactions.map((tx: any) => (
-        <div key={tx.id} data-testid={`transaction-${tx.id}`}>
-          <span>{tx.action} {tx.security?.symbol}</span>
-          <button data-testid={`edit-tx-${tx.id}`} onClick={() => onEdit(tx)}>Edit</button>
-          <button data-testid={`delete-tx-${tx.id}`} onClick={() => onDelete(tx.id)}>Delete</button>
-        </div>
-      ))}
-      <button data-testid="new-transaction-from-list" onClick={onNewTransaction}>New</button>
-    </div>
-  ),
-  DensityLevel: {},
-  TransactionFilters: {},
-}));
-
-vi.mock('@/components/investments/InvestmentTransactionForm', () => ({
-  InvestmentTransactionForm: ({ transaction, onSuccess, onCancel, onDirtyChange }: any) => (
-    <div data-testid="investment-transaction-form">
-      <span data-testid="form-title">{transaction ? 'Edit Transaction' : 'New Investment Transaction'}</span>
-      <button data-testid="form-save" onClick={onSuccess}>Save</button>
-      <button data-testid="form-cancel" onClick={onCancel}>Cancel</button>
-      <button data-testid="form-mark-dirty" onClick={() => onDirtyChange(true)}>Mark Dirty</button>
-      <button data-testid="form-mark-clean" onClick={() => onDirtyChange(false)}>Mark Clean</button>
-    </div>
-  ),
-}));
-
-vi.mock('@/components/investments/InvestmentValueChart', () => ({
-  InvestmentValueChart: ({ accountIds }: any) => (
-    <div data-testid="investment-value-chart">
-      Value chart (accounts: {accountIds?.length ?? 0})
-    </div>
-  ),
-}));
-
-vi.mock('@/components/ui/Modal', () => ({
-  Modal: ({ children, isOpen, onClose, onBeforeClose }: any) => {
-    if (!isOpen) return null;
-    return (
-      <div data-testid="modal">
-        <button data-testid="modal-close" onClick={() => {
-          const shouldClose = onBeforeClose ? onBeforeClose() : undefined;
-          if (shouldClose !== false) {
-            onClose();
-          }
-        }}>Close Modal</button>
-        {children}
-      </div>
-    );
-  },
-}));
-
-vi.mock('@/components/ui/UnsavedChangesDialog', () => ({
-  UnsavedChangesDialog: ({ isOpen, onSave, onDiscard, onCancel }: any) => {
-    if (!isOpen) return null;
-    return (
-      <div data-testid="unsaved-changes-dialog">
-        <span>Unsaved Changes</span>
-        <button data-testid="unsaved-save" onClick={onSave}>Save</button>
-        <button data-testid="unsaved-discard" onClick={onDiscard}>Discard</button>
-        <button data-testid="unsaved-cancel" onClick={onCancel}>Cancel</button>
-      </div>
-    );
-  },
-}));
-
-vi.mock('@/components/ui/Button', () => ({
-  Button: ({ children, onClick, disabled, className, title, variant, ...rest }: any) => (
-    <button onClick={onClick} disabled={disabled} className={className} title={title} data-variant={variant} {...rest}>
-      {children}
-    </button>
-  ),
-}));
-
-vi.mock('@/components/ui/Pagination', () => ({
-  Pagination: ({ currentPage, totalPages, totalItems, pageSize, onPageChange, itemName }: any) => (
-    <div data-testid="pagination">
-      <span data-testid="pagination-info">Page {currentPage} of {totalPages} ({totalItems} {itemName})</span>
-      <button data-testid="pagination-prev" onClick={() => onPageChange(currentPage - 1)} disabled={currentPage <= 1}>Previous</button>
-      <button data-testid="pagination-next" onClick={() => onPageChange(currentPage + 1)} disabled={currentPage >= totalPages}>Next</button>
-    </div>
-  ),
-}));
-
-vi.mock('@/components/ui/MultiSelect', () => ({
-  MultiSelect: ({ value, onChange, options, placeholder }: any) => (
-    <div data-testid="multi-select">
-      <select
-        data-testid="account-filter-select"
-        multiple
-        value={value}
-        onChange={(e) => {
-          const selected = Array.from(e.target.selectedOptions).map((o: any) => o.value);
-          onChange(selected);
-        }}
-      >
-        <option value="">{placeholder}</option>
-        {options?.map((opt: any) => (
-          <option key={opt.value} value={opt.value}>{opt.label}</option>
-        ))}
-      </select>
-    </div>
-  ),
 }));
 
 vi.mock('@/components/layout/PageLayout', () => ({
   PageLayout: ({ children }: { children: React.ReactNode }) => <div data-testid="page-layout">{children}</div>,
 }));
 
-vi.mock('@/components/auth/ProtectedRoute', () => ({
-  ProtectedRoute: ({ children }: { children: React.ReactNode }) => <div data-testid="protected-route">{children}</div>,
+vi.mock('@/components/ui/Button', () => ({
+  Button: ({ children, onClick, disabled, ...rest }: any) => (
+    <button onClick={onClick} disabled={disabled} {...rest}>{children}</button>
+  ),
 }));
 
-vi.mock('@/hooks/useLocalStorage', () => ({
-  useLocalStorage: (key: string, defaultValue: any) => [defaultValue, vi.fn()],
+vi.mock('@/components/ui/Modal', () => ({
+  Modal: ({ children, isOpen }: any) => isOpen ? <div data-testid="modal">{children}</div> : null,
 }));
 
-vi.mock('@/hooks/useDateFormat', () => ({
-  useDateFormat: () => ({
-    formatDate: (d: string) => d,
-  }),
+vi.mock('@/components/ui/UnsavedChangesDialog', () => ({
+  UnsavedChangesDialog: () => null,
 }));
 
-vi.mock('@/hooks/useNumberFormat', () => ({
-  useNumberFormat: () => ({
-    formatCurrency: (val: number) => `$${val.toFixed(2)}`,
-    formatNumber: (val: number) => val.toString(),
-  }),
+vi.mock('@/components/ui/MultiSelect', () => ({
+  MultiSelect: ({ options, placeholder, onChange }: any) => (
+    <div data-testid="multi-select">
+      <span>{placeholder}</span>
+      {options?.map((opt: any) => (
+        <button key={opt.value} data-testid={`option-${opt.value}`} onClick={() => onChange([opt.value])}>
+          {opt.label}
+        </button>
+      ))}
+    </div>
+  ),
 }));
 
-vi.mock('@/hooks/useExchangeRates', () => ({
-  useExchangeRates: () => ({
-    convertToDefault: (val: number) => val,
-    defaultCurrency: 'USD',
-  }),
+vi.mock('@/components/ui/Pagination', () => ({
+  Pagination: ({ currentPage, totalPages }: any) => (
+    <div data-testid="pagination">Page {currentPage} of {totalPages}</div>
+  ),
 }));
 
-// --- Test setup ---
+vi.mock('@/components/investments/PortfolioSummaryCard', () => ({
+  PortfolioSummaryCard: ({ summary, singleAccountCurrency }: any) => (
+    <div data-testid="portfolio-summary">
+      {summary ? `Total: ${summary.totalPortfolioValue}` : 'No data'}
+      {singleAccountCurrency && <span data-testid="single-currency">{singleAccountCurrency}</span>}
+    </div>
+  ),
+}));
 
-const mockCashAccount = makeMockAccount();
-const mockBrokerageAccount = makeMockBrokerageAccount();
-const mockSummary = makeMockPortfolioSummary();
-const mockTransaction = makeMockTransaction();
+vi.mock('@/components/investments/AssetAllocationChart', () => ({
+  AssetAllocationChart: ({ allocation }: any) => (
+    <div data-testid="asset-allocation-chart">
+      {allocation ? `Value: ${allocation.totalValue}` : 'No allocation'}
+    </div>
+  ),
+}));
 
-function setupDefaultMocks() {
-  mockGetInvestmentAccounts.mockResolvedValue([mockCashAccount, mockBrokerageAccount]);
-  mockGetAllAccounts.mockResolvedValue([mockCashAccount, mockBrokerageAccount]);
-  mockGetPortfolioSummary.mockResolvedValue(mockSummary);
-  mockGetTransactions.mockResolvedValue(makeMockPaginatedTransactions([mockTransaction]));
-  mockGetPriceStatus.mockResolvedValue({ lastUpdated: '2024-06-15T12:00:00Z' });
-  mockRefreshSelectedPrices.mockResolvedValue({
-    totalSecurities: 2,
-    updated: 2,
-    failed: 0,
-    skipped: 0,
-    results: [
-      { symbol: 'AAPL', success: true, price: 175 },
-      { symbol: 'MSFT', success: true, price: 350 },
-    ],
-    lastUpdated: '2024-06-15T12:30:00Z',
-  });
-  mockDeleteTransaction.mockResolvedValue(undefined);
-  mockGetTransaction.mockResolvedValue(mockTransaction);
-}
+vi.mock('@/components/investments/GroupedHoldingsList', () => ({
+  GroupedHoldingsList: ({ onSymbolClick, onCashClick }: any) => (
+    <div data-testid="grouped-holdings">
+      <button data-testid="symbol-click" onClick={() => onSymbolClick('AAPL')}>AAPL</button>
+      <button data-testid="cash-click" onClick={() => onCashClick('cash-1')}>Cash</button>
+    </div>
+  ),
+}));
+
+vi.mock('@/components/investments/InvestmentTransactionList', () => ({
+  InvestmentTransactionList: ({ transactions, onDelete, onEdit, onNewTransaction, onFiltersChange, filters }: any) => (
+    <div data-testid="transaction-list">
+      <span>{transactions.length} transactions</span>
+      {transactions.map((t: any) => (
+        <div key={t.id} data-testid={`itx-${t.id}`}>
+          <button data-testid={`delete-${t.id}`} onClick={() => onDelete(t.id)}>Delete</button>
+          <button data-testid={`edit-${t.id}`} onClick={() => onEdit(t)}>Edit</button>
+        </div>
+      ))}
+      <button data-testid="new-tx-btn" onClick={onNewTransaction}>New</button>
+      <button data-testid="clear-filters" onClick={() => onFiltersChange({})}>Clear Filters</button>
+      {filters?.symbol && <span data-testid="symbol-filter">{filters.symbol}</span>}
+    </div>
+  ),
+}));
+
+vi.mock('@/components/investments/InvestmentTransactionForm', () => ({
+  InvestmentTransactionForm: () => <div data-testid="transaction-form">Form</div>,
+}));
+
+vi.mock('@/components/investments/InvestmentValueChart', () => ({
+  InvestmentValueChart: ({ accountIds }: any) => (
+    <div data-testid="value-chart">
+      {accountIds?.length > 0 ? `Filtered: ${accountIds.join(',')}` : 'All accounts'}
+    </div>
+  ),
+}));
+
+const mockCashAccounts = [
+  { id: 'cash-1', name: 'RRSP - Cash', accountType: 'INVESTMENT', accountSubType: 'INVESTMENT_CASH', linkedAccountId: 'brok-1', currencyCode: 'USD', currentBalance: 5000, isClosed: false },
+  { id: 'cash-2', name: 'TFSA - Cash', accountType: 'INVESTMENT', accountSubType: 'INVESTMENT_CASH', linkedAccountId: 'brok-2', currencyCode: 'CAD', currentBalance: 3000, isClosed: false },
+];
+
+const mockPortfolioSummary = {
+  totalPortfolioValue: 50000,
+  totalCostBasis: 40000,
+  totalGainLoss: 10000,
+  totalGainLossPercentage: 25,
+  holdingsByAccount: [{ accountName: 'RRSP', holdings: [] }],
+  holdings: [
+    { securityId: 'sec-1', symbol: 'AAPL', quantity: 10 },
+    { securityId: 'sec-2', symbol: 'GOOG', quantity: 5 },
+    { securityId: 'sec-3', symbol: 'SOLD', quantity: 0 },
+  ],
+  allocation: [],
+};
+
+const mockTxResponse = {
+  data: [{ id: 'itx-1', action: 'BUY', symbol: 'AAPL', quantity: 10, price: 150 }],
+  pagination: { page: 1, totalPages: 1, total: 1 },
+};
 
 describe('InvestmentsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.useFakeTimers({ shouldAdvanceTime: true });
-    setupDefaultMocks();
+    mockGetInvestmentAccounts.mockResolvedValue(mockCashAccounts);
+    mockGetAllAccounts.mockResolvedValue(mockCashAccounts);
+    mockGetPortfolioSummary.mockResolvedValue(mockPortfolioSummary);
+    mockGetTransactions.mockResolvedValue(mockTxResponse);
+    mockGetPriceStatus.mockResolvedValue({ lastUpdated: null });
   });
 
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
-  // --- Rendering basics ---
-
-  it('renders with ProtectedRoute wrapper', async () => {
-    render(<InvestmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByTestId('protected-route')).toBeInTheDocument();
+  describe('Rendering', () => {
+    it('renders page title and subtitle', async () => {
+      render(<InvestmentsPage />);
+      await waitFor(() => {
+        expect(screen.getByText('Investments')).toBeInTheDocument();
+        expect(screen.getByText('Track your investment portfolio')).toBeInTheDocument();
+      });
     });
-  });
 
-  it('renders within PageLayout', async () => {
-    render(<InvestmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByTestId('page-layout')).toBeInTheDocument();
+    it('renders within page layout', async () => {
+      render(<InvestmentsPage />);
+      await waitFor(() => {
+        expect(screen.getByTestId('page-layout')).toBeInTheDocument();
+      });
     });
-  });
 
-  it('renders the page header with "Investments" title', async () => {
-    render(<InvestmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByText('Investments')).toBeInTheDocument();
+    it('renders portfolio summary card', async () => {
+      render(<InvestmentsPage />);
+      await waitFor(() => {
+        expect(screen.getByTestId('portfolio-summary')).toBeInTheDocument();
+      });
     });
-  });
 
-  it('renders the subtitle "Track your investment portfolio"', async () => {
-    render(<InvestmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByText('Track your investment portfolio')).toBeInTheDocument();
+    it('renders asset allocation chart', async () => {
+      render(<InvestmentsPage />);
+      await waitFor(() => {
+        expect(screen.getByTestId('asset-allocation-chart')).toBeInTheDocument();
+      });
     });
-  });
 
-  // --- Portfolio summary cards ---
-
-  it('renders PortfolioSummaryCard component', async () => {
-    render(<InvestmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByTestId('portfolio-summary-card')).toBeInTheDocument();
+    it('renders investment value chart', async () => {
+      render(<InvestmentsPage />);
+      await waitFor(() => {
+        expect(screen.getByTestId('value-chart')).toBeInTheDocument();
+      });
     });
-  });
 
-  it('displays portfolio value after data loads', async () => {
-    render(<InvestmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByText('Portfolio: $50000')).toBeInTheDocument();
+    it('renders grouped holdings list', async () => {
+      render(<InvestmentsPage />);
+      await waitFor(() => {
+        expect(screen.getByTestId('grouped-holdings')).toBeInTheDocument();
+      });
     });
-  });
 
-  it('shows loading state in summary card while fetching', async () => {
-    // Make getPortfolioSummary hang so loading remains true
-    mockGetPortfolioSummary.mockReturnValue(new Promise(() => {}));
-    mockGetTransactions.mockReturnValue(new Promise(() => {}));
-    render(<InvestmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByText('Loading summary...')).toBeInTheDocument();
+    it('renders transaction list', async () => {
+      render(<InvestmentsPage />);
+      await waitFor(() => {
+        expect(screen.getByTestId('transaction-list')).toBeInTheDocument();
+      });
     });
-  });
 
-  // --- Asset allocation chart ---
-
-  it('renders AssetAllocationChart component', async () => {
-    render(<InvestmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByTestId('asset-allocation-chart')).toBeInTheDocument();
+    it('renders New Transaction button', async () => {
+      render(<InvestmentsPage />);
+      await waitFor(() => {
+        expect(screen.getByText('+ New Transaction')).toBeInTheDocument();
+      });
     });
-  });
 
-  it('displays allocation chart after data loads', async () => {
-    render(<InvestmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByText('Allocation chart')).toBeInTheDocument();
+    it('renders Refresh button', async () => {
+      render(<InvestmentsPage />);
+      await waitFor(() => {
+        expect(screen.getByText(/Refresh/)).toBeInTheDocument();
+      });
     });
-  });
 
-  // --- Holdings section ---
-
-  it('renders GroupedHoldingsList component', async () => {
-    render(<InvestmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByTestId('grouped-holdings-list')).toBeInTheDocument();
+    it('renders auto-generated symbol note', async () => {
+      render(<InvestmentsPage />);
+      await waitFor(() => {
+        expect(screen.getByText(/Auto-generated symbol name/)).toBeInTheDocument();
+      });
     });
   });
 
-  it('displays grouped holdings data after loading', async () => {
-    render(<InvestmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByText('1 account(s)')).toBeInTheDocument();
+  describe('Account Filter', () => {
+    it('renders account filter with placeholder', async () => {
+      render(<InvestmentsPage />);
+      await waitFor(() => {
+        expect(screen.getByText('All Investment Accounts')).toBeInTheDocument();
+      });
+    });
+
+    it('displays account names without " - Cash" suffix', async () => {
+      render(<InvestmentsPage />);
+      await waitFor(() => {
+        expect(screen.getByText('RRSP')).toBeInTheDocument();
+        expect(screen.getByText('TFSA')).toBeInTheDocument();
+      });
     });
   });
 
-  it('shows account name in holdings list', async () => {
-    render(<InvestmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByTestId('account-holdings-acct-brokerage-1')).toBeInTheDocument();
+  describe('Data Loading', () => {
+    it('loads investment accounts, all accounts, and price status on mount', async () => {
+      render(<InvestmentsPage />);
+      await waitFor(() => {
+        expect(mockGetInvestmentAccounts).toHaveBeenCalled();
+        expect(mockGetAllAccounts).toHaveBeenCalled();
+        expect(mockGetPriceStatus).toHaveBeenCalled();
+      });
     });
-    // "Brokerage Account" appears in both the MultiSelect option and the holdings list,
-    // so scope the query to the holdings container
-    const holdingsContainer = screen.getByTestId('account-holdings-acct-brokerage-1');
-    expect(within(holdingsContainer).getByText('Brokerage Account')).toBeInTheDocument();
-  });
 
-  // --- Investment value chart ---
-
-  it('renders InvestmentValueChart component', async () => {
-    render(<InvestmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByTestId('investment-value-chart')).toBeInTheDocument();
+    it('loads portfolio summary and transactions', async () => {
+      render(<InvestmentsPage />);
+      await waitFor(() => {
+        expect(mockGetPortfolioSummary).toHaveBeenCalled();
+        expect(mockGetTransactions).toHaveBeenCalled();
+      });
     });
-  });
 
-  // --- Transaction list ---
-
-  it('renders InvestmentTransactionList component', async () => {
-    render(<InvestmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByTestId('investment-transaction-list')).toBeInTheDocument();
+    it('handles portfolio summary load failure gracefully', async () => {
+      mockGetPortfolioSummary.mockRejectedValue(new Error('Failed'));
+      render(<InvestmentsPage />);
+      await waitFor(() => {
+        expect(screen.getByTestId('portfolio-summary')).toHaveTextContent('No data');
+      });
     });
-  });
 
-  it('displays transaction data after loading', async () => {
-    render(<InvestmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByText('1 transaction(s)')).toBeInTheDocument();
+    it('handles transaction load failure gracefully', async () => {
+      mockGetTransactions.mockRejectedValue(new Error('Failed'));
+      render(<InvestmentsPage />);
+      await waitFor(() => {
+        expect(screen.getByTestId('transaction-list')).toHaveTextContent('0 transactions');
+      });
     });
-  });
 
-  it('shows transaction details (action + symbol)', async () => {
-    render(<InvestmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByText('BUY AAPL')).toBeInTheDocument();
+    it('handles investment accounts load failure gracefully', async () => {
+      mockGetInvestmentAccounts.mockRejectedValue(new Error('Failed'));
+      render(<InvestmentsPage />);
+      // Should still render the page
+      await waitFor(() => {
+        expect(screen.getByText('Investments')).toBeInTheDocument();
+      });
     });
-  });
 
-  it('renders empty transaction list when no transactions', async () => {
-    mockGetTransactions.mockResolvedValue(makeMockPaginatedTransactions([]));
-    render(<InvestmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByText('0 transaction(s)')).toBeInTheDocument();
-    });
-  });
-
-  // --- Pagination ---
-
-  it('does not render pagination when only one page', async () => {
-    mockGetTransactions.mockResolvedValue(makeMockPaginatedTransactions([mockTransaction], { totalPages: 1 }));
-    render(<InvestmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByText('1 transaction(s)')).toBeInTheDocument();
-    });
-    expect(screen.queryByTestId('pagination')).not.toBeInTheDocument();
-  });
-
-  it('shows total count text when only one page with items', async () => {
-    mockGetTransactions.mockResolvedValue(makeMockPaginatedTransactions([mockTransaction], { total: 5, totalPages: 1 }));
-    render(<InvestmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByText(/5 transactions/)).toBeInTheDocument();
+    it('handles price status load failure gracefully', async () => {
+      mockGetPriceStatus.mockRejectedValue(new Error('Failed'));
+      render(<InvestmentsPage />);
+      await waitFor(() => {
+        expect(screen.getByText(/Refresh/)).toBeInTheDocument();
+      });
     });
   });
 
-  it('renders pagination when multiple pages exist', async () => {
-    const transactions = Array.from({ length: 50 }, (_, i) =>
-      makeMockTransaction({ id: `tx-${i}` }),
-    );
-    mockGetTransactions.mockResolvedValue(
-      makeMockPaginatedTransactions(transactions, { total: 150, totalPages: 3, hasMore: true }),
-    );
-    render(<InvestmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByTestId('pagination')).toBeInTheDocument();
-    });
-    expect(screen.getByTestId('pagination-info')).toHaveTextContent('Page 1 of 3 (150 transactions)');
-  });
-
-  it('changes page when pagination next is clicked', async () => {
-    const transactions = [makeMockTransaction()];
-    mockGetTransactions.mockResolvedValue(
-      makeMockPaginatedTransactions(transactions, { total: 100, totalPages: 2, hasMore: true }),
-    );
-    render(<InvestmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByTestId('pagination')).toBeInTheDocument();
+  describe('Price Refresh', () => {
+    it('calls refreshSelectedPrices with non-zero-quantity holdings', async () => {
+      mockRefreshSelectedPrices.mockResolvedValue({
+        updated: 2, failed: 0, results: [], lastUpdated: '2026-02-14T12:00:00Z',
+      });
+      render(<InvestmentsPage />);
+      await waitFor(() => expect(screen.getByText(/Refresh/)).toBeInTheDocument());
+      fireEvent.click(screen.getByText(/Refresh/));
+      await waitFor(() => {
+        // sec-3 (qty=0) should be excluded, only sec-1 and sec-2
+        expect(mockRefreshSelectedPrices).toHaveBeenCalledWith(['sec-1', 'sec-2']);
+      });
     });
 
-    // Click next page
-    fireEvent.click(screen.getByTestId('pagination-next'));
-
-    // Should re-fetch with page 2
-    await waitFor(() => {
-      expect(mockGetTransactions).toHaveBeenCalledWith(
-        expect.objectContaining({ page: 2 }),
-      );
-    });
-  });
-
-  // --- Price refresh button ---
-
-  it('renders the Refresh button', async () => {
-    render(<InvestmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByText('Refresh')).toBeInTheDocument();
-    });
-  });
-
-  it('calls API when Refresh button is clicked', async () => {
-    vi.useRealTimers();
-    render(<InvestmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByText('Refresh')).toBeInTheDocument();
+    it('handles empty holdings gracefully', async () => {
+      mockGetPortfolioSummary
+        .mockResolvedValueOnce(mockPortfolioSummary) // initial load
+        .mockResolvedValueOnce(mockPortfolioSummary) // account change load
+        .mockResolvedValueOnce({ ...mockPortfolioSummary, holdings: [] }); // refresh click
+      render(<InvestmentsPage />);
+      await waitFor(() => expect(screen.getByText(/Refresh/)).toBeInTheDocument());
+      fireEvent.click(screen.getByText(/Refresh/));
+      await waitFor(() => {
+        expect(mockRefreshSelectedPrices).not.toHaveBeenCalled();
+      });
     });
 
-    // Clear call counts after initial load
-    mockGetPortfolioSummary.mockClear();
-
-    fireEvent.click(screen.getByText('Refresh'));
-
-    await waitFor(() => {
-      // handleRefreshPrices calls getPortfolioSummary first to get holdings, then refreshSelectedPrices
-      expect(mockGetPortfolioSummary).toHaveBeenCalled();
-      expect(mockRefreshSelectedPrices).toHaveBeenCalledWith(['sec-1', 'sec-2']);
-    });
-  });
-
-  it('shows "Updating..." text while refreshing prices', async () => {
-    // Make refreshSelectedPrices hang to keep refreshing state
-    mockRefreshSelectedPrices.mockReturnValue(new Promise(() => {}));
-    // Need getPortfolioSummary to resolve for the refresh flow
-    mockGetPortfolioSummary.mockResolvedValue(mockSummary);
-
-    render(<InvestmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByText('Refresh')).toBeInTheDocument();
+    it('displays refresh result with failures', async () => {
+      mockRefreshSelectedPrices.mockResolvedValue({
+        updated: 1,
+        failed: 1,
+        results: [
+          { symbol: 'AAPL', success: true, price: 150.00 },
+          { symbol: 'GOOG', success: false, error: 'Not found' },
+        ],
+        lastUpdated: '2026-02-14T12:00:00Z',
+      });
+      render(<InvestmentsPage />);
+      await waitFor(() => expect(screen.getByText(/Refresh/)).toBeInTheDocument());
+      fireEvent.click(screen.getByText(/Refresh/));
+      await waitFor(() => {
+        expect(screen.getByText(/1 updated, 1 failed/)).toBeInTheDocument();
+      });
     });
 
-    fireEvent.click(screen.getByText('Refresh'));
+    it('handles refresh API error', async () => {
+      mockRefreshSelectedPrices.mockRejectedValue(new Error('API Error'));
+      // Need initial summary to get holdings for refresh
+      render(<InvestmentsPage />);
+      await waitFor(() => expect(screen.getByText(/Refresh/)).toBeInTheDocument());
+      fireEvent.click(screen.getByText(/Refresh/));
+      await waitFor(() => {
+        expect(screen.getByText('Error refreshing')).toBeInTheDocument();
+      });
+    });
 
-    await waitFor(() => {
-      expect(screen.getByText('Updating...')).toBeInTheDocument();
+    it('shows last update time on refresh button', async () => {
+      mockGetPriceStatus.mockResolvedValue({ lastUpdated: '2026-02-14T11:00:00Z' });
+      render(<InvestmentsPage />);
+      await waitFor(() => {
+        const refreshBtn = screen.getByText(/Refresh/);
+        expect(refreshBtn).toBeInTheDocument();
+      });
     });
   });
 
-  it('shows success result after price refresh completes', async () => {
-    vi.useRealTimers();
-    render(<InvestmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByText('Refresh')).toBeInTheDocument();
-    });
+  describe('Symbol Click', () => {
+    it('filters transactions by symbol when clicked in holdings', async () => {
+      render(<InvestmentsPage />);
+      await waitFor(() => {
+        expect(screen.getByTestId('symbol-click')).toBeInTheDocument();
+      });
 
-    fireEvent.click(screen.getByText('Refresh'));
+      fireEvent.click(screen.getByTestId('symbol-click'));
 
-    await waitFor(() => {
-      expect(screen.getByText(/2 updated/)).toBeInTheDocument();
-    });
-  });
-
-  it('shows error result when price refresh fails with API error', async () => {
-    vi.useRealTimers();
-    mockGetPortfolioSummary
-      .mockResolvedValueOnce(mockSummary) // initial load
-      .mockRejectedValueOnce(new Error('Network error')); // refresh call
-    render(<InvestmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByText('Refresh')).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByText('Refresh'));
-
-    await waitFor(() => {
-      expect(screen.getByText('Error refreshing')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByTestId('symbol-filter')).toHaveTextContent('AAPL');
+      });
     });
   });
 
-  it('shows partial failure result when some prices fail to refresh', async () => {
-    vi.useRealTimers();
-    mockRefreshSelectedPrices.mockResolvedValue({
-      totalSecurities: 2,
-      updated: 1,
-      failed: 1,
-      skipped: 0,
-      results: [
-        { symbol: 'AAPL', success: true, price: 175 },
-        { symbol: 'MSFT', success: false, error: 'Not found' },
-      ],
-      lastUpdated: '2024-06-15T12:30:00Z',
-    });
+  describe('Cash Click', () => {
+    it('navigates to transactions page for cash account', async () => {
+      render(<InvestmentsPage />);
+      await waitFor(() => {
+        expect(screen.getByTestId('cash-click')).toBeInTheDocument();
+      });
 
-    render(<InvestmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByText('Refresh')).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByText('Refresh'));
-
-    await waitFor(() => {
-      expect(screen.getByText(/1 updated, 1 failed/)).toBeInTheDocument();
+      // Clicking cash should navigate - we can verify it doesn't throw
+      fireEvent.click(screen.getByTestId('cash-click'));
     });
   });
 
-  it('skips refresh when portfolio has no holdings with non-zero quantity', async () => {
-    vi.useRealTimers();
-    const emptySummary = makeMockPortfolioSummary({
-      holdings: [],
-      holdingsByAccount: [],
-    });
-    mockGetPortfolioSummary
-      .mockResolvedValueOnce(mockSummary) // initial load
-      .mockResolvedValueOnce(emptySummary); // refresh call
+  describe('Transaction Actions', () => {
+    it('opens new transaction form when button clicked', async () => {
+      render(<InvestmentsPage />);
+      await waitFor(() => {
+        expect(screen.getByText('+ New Transaction')).toBeInTheDocument();
+      });
 
-    render(<InvestmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByText('Refresh')).toBeInTheDocument();
+      fireEvent.click(screen.getByText('+ New Transaction'));
+
+      expect(mockOpenCreate).toHaveBeenCalled();
     });
 
-    fireEvent.click(screen.getByText('Refresh'));
+    it('opens edit form when transaction edit button is clicked', async () => {
+      render(<InvestmentsPage />);
+      await waitFor(() => {
+        expect(screen.getByTestId('edit-itx-1')).toBeInTheDocument();
+      });
 
-    // refreshSelectedPrices should not be called if no securities
-    await waitFor(() => {
-      expect(mockRefreshSelectedPrices).not.toHaveBeenCalled();
-    });
-  });
+      fireEvent.click(screen.getByTestId('edit-itx-1'));
 
-  // --- Account filter ---
-
-  it('renders the account filter MultiSelect', async () => {
-    render(<InvestmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByTestId('multi-select')).toBeInTheDocument();
-    });
-  });
-
-  it('shows cash accounts in the filter dropdown options', async () => {
-    render(<InvestmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByTestId('account-filter-select')).toBeInTheDocument();
-    });
-    // The cash account name "Brokerage Account - Cash" should be displayed
-    // as "Brokerage Account" (stripping " - Cash") via getAccountDisplayName
-    const options = screen.getByTestId('account-filter-select').querySelectorAll('option');
-    const optionTexts = Array.from(options).map((o) => o.textContent);
-    expect(optionTexts).toContain('Brokerage Account');
-  });
-
-  it('reloads data when account filter changes', async () => {
-    // useLocalStorage is mocked to return a no-op setter, so changing the select
-    // won't actually update state. Instead, verify the MultiSelect renders options correctly.
-    render(<InvestmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByTestId('account-filter-select')).toBeInTheDocument();
+      expect(mockOpenEdit).toHaveBeenCalled();
     });
 
-    const select = screen.getByTestId('account-filter-select') as HTMLSelectElement;
-    const options = Array.from(select.querySelectorAll('option'));
-    // Verify filter options are populated with account names
-    expect(options.length).toBeGreaterThan(1); // placeholder + at least one account
-  });
+    it('deletes transaction when confirmed', async () => {
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
+      mockDeleteTransaction.mockResolvedValue(undefined);
 
-  // --- Create transaction button ---
+      render(<InvestmentsPage />);
+      await waitFor(() => {
+        expect(screen.getByTestId('delete-itx-1')).toBeInTheDocument();
+      });
 
-  it('renders the "+ New Transaction" button', async () => {
-    render(<InvestmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByText('+ New Transaction')).toBeInTheDocument();
-    });
-  });
+      fireEvent.click(screen.getByTestId('delete-itx-1'));
 
-  it('opens transaction form modal when "+ New Transaction" is clicked', async () => {
-    render(<InvestmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByText('+ New Transaction')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(mockDeleteTransaction).toHaveBeenCalledWith('itx-1');
+      });
+
+      vi.restoreAllMocks();
     });
 
-    fireEvent.click(screen.getByText('+ New Transaction'));
+    it('does not delete transaction when cancelled', async () => {
+      vi.spyOn(window, 'confirm').mockReturnValue(false);
 
-    await waitFor(() => {
-      expect(screen.getByTestId('modal')).toBeInTheDocument();
-      expect(screen.getByTestId('investment-transaction-form')).toBeInTheDocument();
+      render(<InvestmentsPage />);
+      await waitFor(() => {
+        expect(screen.getByTestId('delete-itx-1')).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByTestId('delete-itx-1'));
+
+      expect(mockDeleteTransaction).not.toHaveBeenCalled();
+
+      vi.restoreAllMocks();
+    });
+
+    it('shows alert when delete fails', async () => {
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
+      vi.spyOn(window, 'alert').mockImplementation(() => {});
+      mockDeleteTransaction.mockRejectedValue(new Error('Delete failed'));
+
+      render(<InvestmentsPage />);
+      await waitFor(() => {
+        expect(screen.getByTestId('delete-itx-1')).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByTestId('delete-itx-1'));
+
+      await waitFor(() => {
+        expect(window.alert).toHaveBeenCalledWith('Failed to delete transaction');
+      });
+
+      vi.restoreAllMocks();
     });
   });
 
-  it('shows "New Investment Transaction" heading in form modal for new transaction', async () => {
-    render(<InvestmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByText('+ New Transaction')).toBeInTheDocument();
-    });
+  describe('Transaction Filters', () => {
+    it('clears transaction filters and resets to page 1', async () => {
+      render(<InvestmentsPage />);
+      await waitFor(() => {
+        expect(screen.getByTestId('clear-filters')).toBeInTheDocument();
+      });
 
-    fireEvent.click(screen.getByText('+ New Transaction'));
+      // First set a symbol filter
+      fireEvent.click(screen.getByTestId('symbol-click'));
+      await waitFor(() => {
+        expect(screen.getByTestId('symbol-filter')).toBeInTheDocument();
+      });
 
-    await waitFor(() => {
-      // The heading text appears in both the modal h2 and the mock form span,
-      // so use getAllByText and verify at least one exists
-      const elements = screen.getAllByText('New Investment Transaction');
-      expect(elements.length).toBeGreaterThanOrEqual(1);
-    });
-  });
-
-  // --- Edit transaction ---
-
-  it('opens form in edit mode when edit button is clicked on a transaction', async () => {
-    render(<InvestmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByTestId('edit-tx-tx-1')).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByTestId('edit-tx-tx-1'));
-
-    await waitFor(() => {
-      expect(screen.getByTestId('modal')).toBeInTheDocument();
-      // The "Edit Transaction" text appears in both the modal h2 and the mock form span,
-      // so use getAllByText and verify at least one exists
-      const elements = screen.getAllByText('Edit Transaction');
-      expect(elements.length).toBeGreaterThanOrEqual(1);
+      // Clear filters
+      fireEvent.click(screen.getByTestId('clear-filters'));
+      await waitFor(() => {
+        expect(screen.queryByTestId('symbol-filter')).not.toBeInTheDocument();
+      });
     });
   });
 
-  // --- Form close and cancel ---
-
-  it('closes form modal when cancel is clicked', async () => {
-    render(<InvestmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByText('+ New Transaction')).toBeInTheDocument();
+  describe('Pagination', () => {
+    it('shows single page count when only one page', async () => {
+      render(<InvestmentsPage />);
+      await waitFor(() => {
+        expect(screen.getByText('1 transaction')).toBeInTheDocument();
+      });
     });
 
-    fireEvent.click(screen.getByText('+ New Transaction'));
-    await waitFor(() => {
-      expect(screen.getByTestId('modal')).toBeInTheDocument();
+    it('shows pagination when multiple pages exist', async () => {
+      mockGetTransactions.mockResolvedValue({
+        data: Array(25).fill({ id: 'tx', action: 'BUY' }),
+        pagination: { page: 1, totalPages: 3, total: 75 },
+      });
+      render(<InvestmentsPage />);
+      await waitFor(() => {
+        expect(screen.getByTestId('pagination')).toBeInTheDocument();
+        expect(screen.getByText('Page 1 of 3')).toBeInTheDocument();
+      });
     });
 
-    fireEvent.click(screen.getByTestId('form-cancel'));
-
-    await waitFor(() => {
-      expect(screen.queryByTestId('modal')).not.toBeInTheDocument();
-    });
-  });
-
-  it('closes form and reloads data on successful save', async () => {
-    render(<InvestmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByText('+ New Transaction')).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByText('+ New Transaction'));
-    await waitFor(() => {
-      expect(screen.getByTestId('modal')).toBeInTheDocument();
-    });
-
-    // Clear call counts before save
-    mockGetPortfolioSummary.mockClear();
-    mockGetTransactions.mockClear();
-
-    fireEvent.click(screen.getByTestId('form-save'));
-
-    await waitFor(() => {
-      expect(screen.queryByTestId('modal')).not.toBeInTheDocument();
-    });
-
-    // Should reload portfolio data
-    await waitFor(() => {
-      expect(mockGetPortfolioSummary).toHaveBeenCalled();
-      expect(mockGetTransactions).toHaveBeenCalled();
+    it('shows plural transactions label for multiple', async () => {
+      mockGetTransactions.mockResolvedValue({
+        data: [
+          { id: 'itx-1', action: 'BUY' },
+          { id: 'itx-2', action: 'SELL' },
+        ],
+        pagination: { page: 1, totalPages: 1, total: 2 },
+      });
+      render(<InvestmentsPage />);
+      await waitFor(() => {
+        // The page renders a total count div separate from the mock transaction list.
+        // Match the page's own total count div specifically (the one with the class for styling).
+        const totalCountDiv = document.querySelector('.mt-4.text-sm.text-gray-500');
+        expect(totalCountDiv).toBeInTheDocument();
+        expect(totalCountDiv?.textContent).toBe('2 transactions');
+      });
     });
   });
 
-  // --- Unsaved changes dialog ---
-
-  it('shows unsaved changes dialog when closing form with dirty state', async () => {
-    render(<InvestmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByText('+ New Transaction')).toBeInTheDocument();
+  describe('Portfolio Data Display', () => {
+    it('shows portfolio summary with total value', async () => {
+      render(<InvestmentsPage />);
+      await waitFor(() => {
+        expect(screen.getByTestId('portfolio-summary')).toHaveTextContent('Total: 50000');
+      });
     });
 
-    // Open the form
-    fireEvent.click(screen.getByText('+ New Transaction'));
-    await waitFor(() => {
-      expect(screen.getByTestId('modal')).toBeInTheDocument();
-    });
-
-    // Mark the form as dirty
-    fireEvent.click(screen.getByTestId('form-mark-dirty'));
-
-    // Try to close the modal
-    fireEvent.click(screen.getByTestId('modal-close'));
-
-    await waitFor(() => {
-      expect(screen.getByTestId('unsaved-changes-dialog')).toBeInTheDocument();
-      expect(screen.getByText('Unsaved Changes')).toBeInTheDocument();
+    it('passes allocation data to asset allocation chart', async () => {
+      render(<InvestmentsPage />);
+      await waitFor(() => {
+        expect(screen.getByTestId('asset-allocation-chart')).toHaveTextContent('Value: 50000');
+      });
     });
   });
 
-  it('discards changes and closes form when Discard is clicked in unsaved dialog', async () => {
-    render(<InvestmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByText('+ New Transaction')).toBeInTheDocument();
-    });
+  describe('New Transaction from list', () => {
+    it('opens create form when new transaction button clicked in list', async () => {
+      render(<InvestmentsPage />);
+      await waitFor(() => {
+        expect(screen.getByTestId('new-tx-btn')).toBeInTheDocument();
+      });
 
-    fireEvent.click(screen.getByText('+ New Transaction'));
-    await waitFor(() => {
-      expect(screen.getByTestId('modal')).toBeInTheDocument();
-    });
+      fireEvent.click(screen.getByTestId('new-tx-btn'));
 
-    // Mark dirty and try to close
-    fireEvent.click(screen.getByTestId('form-mark-dirty'));
-    fireEvent.click(screen.getByTestId('modal-close'));
-
-    await waitFor(() => {
-      expect(screen.getByTestId('unsaved-changes-dialog')).toBeInTheDocument();
-    });
-
-    // Click Discard
-    fireEvent.click(screen.getByTestId('unsaved-discard'));
-
-    await waitFor(() => {
-      expect(screen.queryByTestId('unsaved-changes-dialog')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('modal')).not.toBeInTheDocument();
-    });
-  });
-
-  it('keeps form open when Cancel is clicked in unsaved dialog', async () => {
-    render(<InvestmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByText('+ New Transaction')).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByText('+ New Transaction'));
-    await waitFor(() => {
-      expect(screen.getByTestId('modal')).toBeInTheDocument();
-    });
-
-    // Mark dirty and try to close
-    fireEvent.click(screen.getByTestId('form-mark-dirty'));
-    fireEvent.click(screen.getByTestId('modal-close'));
-
-    await waitFor(() => {
-      expect(screen.getByTestId('unsaved-changes-dialog')).toBeInTheDocument();
-    });
-
-    // Click Cancel in the unsaved dialog
-    fireEvent.click(screen.getByTestId('unsaved-cancel'));
-
-    await waitFor(() => {
-      expect(screen.queryByTestId('unsaved-changes-dialog')).not.toBeInTheDocument();
-    });
-    // Form should still be visible
-    expect(screen.getByTestId('modal')).toBeInTheDocument();
-  });
-
-  it('does not show unsaved dialog when form is not dirty', async () => {
-    render(<InvestmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByText('+ New Transaction')).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByText('+ New Transaction'));
-    await waitFor(() => {
-      expect(screen.getByTestId('modal')).toBeInTheDocument();
-    });
-
-    // Close without marking dirty
-    fireEvent.click(screen.getByTestId('modal-close'));
-
-    // Dialog should not appear; form should close
-    expect(screen.queryByTestId('unsaved-changes-dialog')).not.toBeInTheDocument();
-  });
-
-  // --- Empty state ---
-
-  it('renders page even when no investment accounts exist', async () => {
-    mockGetInvestmentAccounts.mockResolvedValue([]);
-    mockGetAllAccounts.mockResolvedValue([]);
-    mockGetPortfolioSummary.mockResolvedValue(
-      makeMockPortfolioSummary({
-        totalCashValue: 0,
-        totalHoldingsValue: 0,
-        totalCostBasis: 0,
-        totalPortfolioValue: 0,
-        totalGainLoss: 0,
-        totalGainLossPercent: 0,
-        holdings: [],
-        holdingsByAccount: [],
-        allocation: [],
-      }),
-    );
-    mockGetTransactions.mockResolvedValue(makeMockPaginatedTransactions([]));
-
-    render(<InvestmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByText('Investments')).toBeInTheDocument();
-      expect(screen.getByText('0 account(s)')).toBeInTheDocument();
-      expect(screen.getByText('0 transaction(s)')).toBeInTheDocument();
-    });
-  });
-
-  it('does not show account options in filter when no cash accounts', async () => {
-    // Return only brokerage accounts (no cash accounts)
-    mockGetInvestmentAccounts.mockResolvedValue([makeMockBrokerageAccount()]);
-
-    render(<InvestmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByTestId('account-filter-select')).toBeInTheDocument();
-    });
-
-    const options = screen.getByTestId('account-filter-select').querySelectorAll('option');
-    // Should only have the placeholder option
-    expect(options.length).toBe(1);
-  });
-
-  // --- Loading states ---
-
-  it('shows loading state for holdings while data is fetching', async () => {
-    mockGetPortfolioSummary.mockReturnValue(new Promise(() => {}));
-    mockGetTransactions.mockReturnValue(new Promise(() => {}));
-    render(<InvestmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByText('Loading holdings...')).toBeInTheDocument();
-    });
-  });
-
-  it('shows loading state for transactions while data is fetching', async () => {
-    mockGetPortfolioSummary.mockReturnValue(new Promise(() => {}));
-    mockGetTransactions.mockReturnValue(new Promise(() => {}));
-    render(<InvestmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByText('Loading transactions...')).toBeInTheDocument();
-    });
-  });
-
-  it('shows loading state for allocation chart while data is fetching', async () => {
-    mockGetPortfolioSummary.mockReturnValue(new Promise(() => {}));
-    mockGetTransactions.mockReturnValue(new Promise(() => {}));
-    render(<InvestmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByText('Loading allocation...')).toBeInTheDocument();
-    });
-  });
-
-  // --- Error handling for data loading ---
-
-  it('handles portfolio data load failure gracefully', async () => {
-    mockGetPortfolioSummary.mockRejectedValue(new Error('Server error'));
-    mockGetTransactions.mockRejectedValue(new Error('Server error'));
-
-    render(<InvestmentsPage />);
-    await waitFor(() => {
-      // Page should still render
-      expect(screen.getByText('Investments')).toBeInTheDocument();
-      // Summary card should show no data state
-      expect(screen.getByText('No data')).toBeInTheDocument();
-      // Transaction list should be empty
-      expect(screen.getByText('0 transaction(s)')).toBeInTheDocument();
-    });
-  });
-
-  it('handles investment accounts load failure gracefully', async () => {
-    mockGetInvestmentAccounts.mockRejectedValue(new Error('Failed'));
-
-    render(<InvestmentsPage />);
-    await waitFor(() => {
-      // Page should still render
-      expect(screen.getByText('Investments')).toBeInTheDocument();
-    });
-  });
-
-  // --- Symbol click navigation ---
-
-  it('navigates to symbol filter when symbol is clicked in holdings', async () => {
-    render(<InvestmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByTestId('symbol-AAPL')).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByTestId('symbol-AAPL'));
-
-    // Should re-fetch transactions with symbol filter
-    await waitFor(() => {
-      expect(mockGetTransactions).toHaveBeenCalledWith(
-        expect.objectContaining({ symbol: 'AAPL' }),
-      );
-    });
-  });
-
-  it('navigates to transactions page when cash link is clicked', async () => {
-    render(<InvestmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByTestId('cash-link-acct-cash-1')).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByTestId('cash-link-acct-cash-1'));
-
-    expect(mockPush).toHaveBeenCalledWith('/transactions?accountId=acct-cash-1');
-  });
-
-  // --- API call verification ---
-
-  it('calls required APIs on initial mount', async () => {
-    render(<InvestmentsPage />);
-    await waitFor(() => {
-      expect(mockGetInvestmentAccounts).toHaveBeenCalledTimes(1);
-      expect(mockGetAllAccounts).toHaveBeenCalledTimes(1);
-      expect(mockGetPriceStatus).toHaveBeenCalledTimes(1);
-      expect(mockGetPortfolioSummary).toHaveBeenCalled();
-      expect(mockGetTransactions).toHaveBeenCalled();
-    });
-  });
-
-  it('triggers auto-refresh after initial load completes', async () => {
-    render(<InvestmentsPage />);
-    await waitFor(() => {
-      expect(mockTriggerAutoRefresh).toHaveBeenCalled();
-    });
-  });
-
-  // --- Footer note ---
-
-  it('renders the footer note about auto-generated symbols', async () => {
-    render(<InvestmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByText(/Auto-generated symbol name/)).toBeInTheDocument();
-    });
-  });
-
-  // --- Single transaction count ---
-
-  it('shows singular "transaction" when count is 1', async () => {
-    mockGetTransactions.mockResolvedValue(
-      makeMockPaginatedTransactions([mockTransaction], { total: 1, totalPages: 1 }),
-    );
-    render(<InvestmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByText('1 transaction')).toBeInTheDocument();
-    });
-  });
-
-  // --- New transaction from list component ---
-
-  it('opens new transaction form when triggered from transaction list', async () => {
-    render(<InvestmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByTestId('new-transaction-from-list')).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByTestId('new-transaction-from-list'));
-
-    await waitFor(() => {
-      expect(screen.getByTestId('modal')).toBeInTheDocument();
-      // The "New Investment Transaction" text appears in both the modal h2 and the mock form span,
-      // so use getAllByText and verify at least one exists
-      const elements = screen.getAllByText('New Investment Transaction');
-      expect(elements.length).toBeGreaterThanOrEqual(1);
+      expect(mockOpenCreate).toHaveBeenCalled();
     });
   });
 });

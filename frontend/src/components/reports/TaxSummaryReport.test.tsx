@@ -81,4 +81,54 @@ describe('TaxSummaryReport', () => {
       expect(screen.getByText('Tax Year:')).toBeInTheDocument();
     });
   });
+
+  it('renders empty income message', async () => {
+    mockGetTaxSummary.mockResolvedValue({
+      incomeBySource: [],
+      deductibleExpenses: [],
+      allExpenses: [],
+      totals: { income: 0, expenses: 0, deductible: 0 },
+    });
+    render(<TaxSummaryReport />);
+    await waitFor(() => {
+      const currentYear = new Date().getFullYear();
+      expect(screen.getByText(`No income recorded for ${currentYear}`)).toBeInTheDocument();
+    });
+  });
+
+  it('renders empty deductible expenses message', async () => {
+    mockGetTaxSummary.mockResolvedValue({
+      incomeBySource: [{ name: 'Salary', total: 50000 }],
+      deductibleExpenses: [],
+      allExpenses: [],
+      totals: { income: 50000, expenses: 0, deductible: 0 },
+    });
+    render(<TaxSummaryReport />);
+    await waitFor(() => {
+      expect(screen.getByText(/No potentially deductible expenses detected/)).toBeInTheDocument();
+    });
+  });
+
+  it('renders income and deduction totals at bottom of tables', async () => {
+    mockGetTaxSummary.mockResolvedValue({
+      incomeBySource: [{ name: 'Employment', total: 60000 }],
+      deductibleExpenses: [{ name: 'Medical', total: 2000 }],
+      allExpenses: [{ name: 'Groceries', total: 5000 }],
+      totals: { income: 60000, expenses: 5000, deductible: 2000 },
+    });
+    render(<TaxSummaryReport />);
+    await waitFor(() => {
+      expect(screen.getByText('Total Potential Deductions')).toBeInTheDocument();
+    });
+    expect(screen.getByText('All Expenses by Category')).toBeInTheDocument();
+    expect(screen.getByText('Groceries')).toBeInTheDocument();
+  });
+
+  it('handles API error gracefully', async () => {
+    mockGetTaxSummary.mockRejectedValue(new Error('Network error'));
+    render(<TaxSummaryReport />);
+    await waitFor(() => {
+      expect(screen.getByText('Tax Year:')).toBeInTheDocument();
+    });
+  });
 });

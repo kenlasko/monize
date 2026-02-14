@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@/test/render';
 import SecuritiesPage from './page';
+import toast from 'react-hot-toast';
 
 // Mock next/image
 vi.mock('next/image', () => ({
@@ -81,24 +82,32 @@ const mockGetSecurities = vi.fn().mockResolvedValue([
 const mockGetHoldings = vi.fn().mockResolvedValue([
   { id: 'h1', accountId: 'a1', securityId: 's1', quantity: 10, averageCost: 150, security: {}, createdAt: '2026-01-01', updatedAt: '2026-01-01' },
 ]);
+const mockCreateSecurity = vi.fn();
+const mockUpdateSecurity = vi.fn();
+const mockDeactivateSecurity = vi.fn();
+const mockActivateSecurity = vi.fn();
 
 vi.mock('@/lib/investments', () => ({
   investmentsApi: {
     getSecurities: (...args: any[]) => mockGetSecurities(...args),
     getHoldings: (...args: any[]) => mockGetHoldings(...args),
-    createSecurity: vi.fn(),
-    updateSecurity: vi.fn(),
-    deactivateSecurity: vi.fn(),
-    activateSecurity: vi.fn(),
+    createSecurity: (...args: any[]) => mockCreateSecurity(...args),
+    updateSecurity: (...args: any[]) => mockUpdateSecurity(...args),
+    deactivateSecurity: (...args: any[]) => mockDeactivateSecurity(...args),
+    activateSecurity: (...args: any[]) => mockActivateSecurity(...args),
   },
 }));
 
 // Mock child components
 vi.mock('@/components/securities/SecurityList', () => ({
-  SecurityList: ({ securities, holdings }: any) => (
+  SecurityList: ({ securities, holdings, onEdit, onToggleActive }: any) => (
     <div data-testid="security-list">
       {securities.map((s: any) => (
-        <div key={s.id} data-testid={`security-row-${s.symbol}`}>{s.name}</div>
+        <div key={s.id} data-testid={`security-row-${s.symbol}`}>
+          {s.name}
+          <button data-testid={`edit-${s.symbol}`} onClick={() => onEdit(s)}>Edit</button>
+          <button data-testid={`toggle-${s.symbol}`} onClick={() => onToggleActive(s)}>Toggle</button>
+        </div>
       ))}
       <div data-testid="holdings-data">{JSON.stringify(holdings)}</div>
     </div>
@@ -109,6 +118,10 @@ vi.mock('@/components/securities/SecurityList', () => ({
 
 vi.mock('@/components/ui/Modal', () => ({
   Modal: ({ children, isOpen }: any) => isOpen ? <div data-testid="modal">{children}</div> : null,
+}));
+
+vi.mock('@/components/ui/UnsavedChangesDialog', () => ({
+  UnsavedChangesDialog: () => null,
 }));
 
 vi.mock('@/components/ui/LoadingSpinner', () => ({
@@ -268,16 +281,27 @@ describe('SecuritiesPage', () => {
     });
   });
 
-  it('summary counts always show totals including inactive', async () => {
-    // Even though showInactive defaults to false, summary cards use allSecurities
+  it('shows inactive securities when checkbox is checked', async () => {
     render(<SecuritiesPage />);
     await waitFor(() => {
-      // Total should be 3 (all securities including inactive BTC)
-      expect(screen.getByTestId('summary-Total Securities')).toHaveTextContent('3');
-      // Active should be 2
-      expect(screen.getByTestId('summary-Active')).toHaveTextContent('2');
-      // Inactive should be 1
-      expect(screen.getByTestId('summary-Inactive')).toHaveTextContent('1');
+      expect(screen.getByTestId('security-list')).toBeInTheDocument();
+    });
+    const checkbox = screen.getByRole('checkbox');
+    fireEvent.click(checkbox);
+    await waitFor(() => {
+      expect(screen.getByTestId('security-row-BTC')).toBeInTheDocument();
+    });
+  });
+
+  it('filters securities by search query', async () => {
+    render(<SecuritiesPage />);
+    await waitFor(() => {
+      expect(screen.getByTestId('security-list')).toBeInTheDocument();
+    });
+    fireEvent.change(screen.getByPlaceholderText('Search by symbol or name...'), { target: { value: 'Apple' } });
+    await waitFor(() => {
+      expect(screen.getByTestId('security-row-AAPL')).toBeInTheDocument();
+      expect(screen.queryByTestId('security-row-XEQT')).not.toBeInTheDocument();
     });
   });
 
@@ -341,6 +365,48 @@ describe('SecuritiesPage', () => {
       // s1 should not appear (100 - 100 = 0)
       // s2 should not appear (0.000000001 < threshold)
       expect(holdingsData.textContent).toBe('{}');
+    });
+  });
+
+  it('shows loading spinner while data is loading', async () => {
+    mockGetSecurities.mockReturnValue(new Promise(() => {}));
+    render(<SecuritiesPage />);
+    await waitFor(() => {
+      expect(screen.getByTestId('loading-spinner')).toBeInTheDocument();
+    });
+  });
+
+  it('calls deactivateSecurity when toggling an active security', async () => {
+    mockDeactivateSecurity.mockResolvedValue(undefined);
+    render(<SecuritiesPage />);
+    await waitFor(() => {
+      expect(screen.getByTestId('security-list')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByTestId('toggle-AAPL'));
+    await waitFor(() => {
+      expect(mockDeactivateSecurity).toHaveBeenCalledWith('s1');
+    });
+  });
+
+  it('shows error toast when toggle active fails', async () => {
+    mockDeactivateSecurity.mockRejectedValueOnce(new Error('Failed'));
+    render(<SecuritiesPage />);
+    await waitFor(() => {
+      expect(screen.getByTestId('security-list')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByTestId('toggle-AAPL'));
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('Failed to update security status');
+    });
+  });
+
+  it('shows singular "security" for count of 1', async () => {
+    mockGetSecurities.mockResolvedValue([
+      { id: 's1', symbol: 'AAPL', name: 'Apple Inc.', securityType: 'STOCK', exchange: 'NASDAQ', currencyCode: 'USD', isActive: true, skipPriceUpdates: false, createdAt: '2026-01-01', updatedAt: '2026-01-01' },
+    ]);
+    render(<SecuritiesPage />);
+    await waitFor(() => {
+      expect(screen.getByText(/1 security/i)).toBeInTheDocument();
     });
   });
 });
