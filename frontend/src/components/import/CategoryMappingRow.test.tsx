@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@/test/render';
 import { CategoryMappingRow } from './CategoryMappingRow';
+import type { CategoryMapping } from '@/lib/import';
 
 describe('CategoryMappingRow', () => {
   const defaultMapping = {
@@ -31,7 +32,7 @@ describe('CategoryMappingRow', () => {
     { id: 'loan2', name: 'Car Loan', institution: null },
   ] as any[];
 
-  let onMappingChange: ReturnType<typeof vi.fn>;
+  let onMappingChange: ReturnType<typeof vi.fn<(update: Partial<CategoryMapping>) => void>>;
   const formatCategoryPath = (path: string) => path.replace(':', ' > ');
 
   beforeEach(() => {
