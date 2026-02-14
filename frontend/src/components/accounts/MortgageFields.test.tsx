@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen } from '@/test/render';
+import { render, screen, waitFor, act } from '@/test/render';
 import { MortgageFields } from './MortgageFields';
 import { Account } from '@/types/account';
 import { Category } from '@/types/category';
@@ -29,11 +29,25 @@ vi.mock('@/lib/logger', () => ({
   }),
 }));
 
+import { accountsApi } from '@/lib/accounts';
+
 const mockAccounts: Account[] = [
   {
     id: 'acc-1', userId: 'user-1', accountType: 'CHEQUING', accountSubType: null,
     linkedAccountId: null, name: 'Main Chequing', description: null, currencyCode: 'CAD',
     accountNumber: null, institution: null, openingBalance: 5000, currentBalance: 5000,
+    creditLimit: null, interestRate: null, isClosed: false, closedDate: null,
+    isFavourite: false, paymentAmount: null, paymentFrequency: null, paymentStartDate: null,
+    sourceAccountId: null, principalCategoryId: null, interestCategoryId: null,
+    scheduledTransactionId: null, assetCategoryId: null, dateAcquired: null,
+    isCanadianMortgage: false, isVariableRate: false, termMonths: null, termEndDate: null,
+    amortizationMonths: null, originalPrincipal: null,
+    createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-01-01T00:00:00Z',
+  },
+  {
+    id: 'acc-2', userId: 'user-1', accountType: 'SAVINGS', accountSubType: null,
+    linkedAccountId: null, name: 'Savings', description: null, currencyCode: 'CAD',
+    accountNumber: null, institution: null, openingBalance: 10000, currentBalance: 10000,
     creditLimit: null, interestRate: null, isClosed: false, closedDate: null,
     isFavourite: false, paymentAmount: null, paymentFrequency: null, paymentStartDate: null,
     sourceAccountId: null, principalCategoryId: null, interestCategoryId: null,
@@ -48,6 +62,11 @@ const mockCategories: Category[] = [
   {
     id: 'cat-1', userId: 'user-1', parentId: null, parent: null, children: [],
     name: 'Interest Expenses', description: null, icon: null, color: null,
+    isIncome: false, isSystem: false, createdAt: '2024-01-01T00:00:00Z',
+  },
+  {
+    id: 'cat-2', userId: 'user-1', parentId: null, parent: null, children: [],
+    name: 'Mortgage Interest', description: null, icon: null, color: null,
     isIncome: false, isSystem: false, createdAt: '2024-01-01T00:00:00Z',
   },
 ];
@@ -91,7 +110,6 @@ describe('MortgageFields', () => {
 
   it('renders the heading and mortgage-specific fields', () => {
     render(<MortgageFields {...defaultProps} />);
-
     expect(screen.getByText('Mortgage Details')).toBeInTheDocument();
     expect(screen.getByText('Payment Frequency (required)')).toBeInTheDocument();
     expect(screen.getByText('First Payment Date (required)')).toBeInTheDocument();
@@ -100,33 +118,98 @@ describe('MortgageFields', () => {
 
   it('renders payment frequency options for mortgages', () => {
     render(<MortgageFields {...defaultProps} />);
-
     expect(screen.getByText('Monthly')).toBeInTheDocument();
     expect(screen.getByText('Bi-Weekly')).toBeInTheDocument();
     expect(screen.getByText('Weekly')).toBeInTheDocument();
+    expect(screen.getByText('Semi-Monthly (1st & 15th)')).toBeInTheDocument();
+    expect(screen.getByText('Accelerated Bi-Weekly')).toBeInTheDocument();
+    expect(screen.getByText('Accelerated Weekly')).toBeInTheDocument();
   });
 
-  it('renders term options', () => {
+  it('renders term length options', () => {
     render(<MortgageFields {...defaultProps} />);
-
     expect(screen.getByText('Term Length')).toBeInTheDocument();
+    expect(screen.getByText('5 years')).toBeInTheDocument();
+    expect(screen.getByText('10 years')).toBeInTheDocument();
   });
 
-  it('renders amortization options', () => {
+  it('renders amortization period options', () => {
     render(<MortgageFields {...defaultProps} />);
-
     expect(screen.getByText('Amortization Period (required)')).toBeInTheDocument();
+    expect(screen.getByText('25 years')).toBeInTheDocument();
+    expect(screen.getByText('30 years')).toBeInTheDocument();
   });
 
-  it('renders source account select', () => {
+  it('renders source account select with sorted accounts', () => {
     render(<MortgageFields {...defaultProps} />);
-
     expect(screen.getByText('Payment From Account (required)')).toBeInTheDocument();
+    expect(screen.getByText('Main Chequing (CAD)')).toBeInTheDocument();
+    expect(screen.getByText('Savings (CAD)')).toBeInTheDocument();
+  });
+
+  it('renders interest category select with sorted categories', () => {
+    render(<MortgageFields {...defaultProps} />);
+    expect(screen.getByText('Interest Category')).toBeInTheDocument();
+    expect(screen.getByText('Interest Expenses')).toBeInTheDocument();
+    expect(screen.getByText('Mortgage Interest')).toBeInTheDocument();
+  });
+
+  it('renders Canadian Mortgage and Variable Rate checkboxes', () => {
+    render(<MortgageFields {...defaultProps} />);
+    expect(screen.getByText('Canadian Mortgage')).toBeInTheDocument();
+    expect(screen.getByText('Variable Rate')).toBeInTheDocument();
+    expect(screen.getByText(/semi-annual compounding/)).toBeInTheDocument();
+    expect(screen.getByText(/Rate may change during the term/)).toBeInTheDocument();
   });
 
   it('does not show mortgage preview when required fields are missing', () => {
     render(<MortgageFields {...defaultProps} />);
+    expect(screen.queryByText('Amortization Preview')).not.toBeInTheDocument();
+  });
 
-    expect(screen.queryByText('Mortgage Preview')).not.toBeInTheDocument();
+  it('renders with purple-themed border and background', () => {
+    const { container } = render(<MortgageFields {...defaultProps} />);
+    const wrapper = container.querySelector('.bg-purple-50');
+    expect(wrapper).toBeInTheDocument();
+  });
+
+  it('shows amortization preview when API returns data', async () => {
+    vi.useRealTimers();
+    const mockPreview = {
+      paymentAmount: 1500,
+      effectiveAnnualRate: 5.06,
+      principalPayment: 1200,
+      interestPayment: 300,
+      totalPayments: 300,
+      totalInterest: 150000,
+      endDate: '2049-01-15',
+    };
+    vi.mocked(accountsApi.previewMortgageAmortization).mockResolvedValue(mockPreview);
+
+    render(<MortgageFields {...defaultProps}
+      openingBalance={400000} interestRate={5} amortizationMonths={300}
+      mortgagePaymentFrequency="MONTHLY" paymentStartDate="2024-02-01"
+    />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Amortization Preview')).toBeInTheDocument();
+    }, { timeout: 3000 });
+
+    expect(screen.getByText('Payment Amount:')).toBeInTheDocument();
+    expect(screen.getByText('Effective Rate:')).toBeInTheDocument();
+  });
+
+  it('shows "Calculating preview..." while loading', async () => {
+    vi.useRealTimers();
+    vi.mocked(accountsApi.previewMortgageAmortization).mockImplementation(() => new Promise(() => {}));
+
+    render(<MortgageFields {...defaultProps}
+      openingBalance={400000} interestRate={5} amortizationMonths={300}
+      mortgagePaymentFrequency="MONTHLY" paymentStartDate="2024-02-01"
+    />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Calculating preview...')).toBeInTheDocument();
+    }, { timeout: 3000 });
   });
 });

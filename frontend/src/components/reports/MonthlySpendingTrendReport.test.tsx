@@ -100,4 +100,24 @@ describe('MonthlySpendingTrendReport', () => {
       expect(screen.getByTestId('date-range-selector')).toBeInTheDocument();
     });
   });
+
+  it('renders line chart when data present', async () => {
+    mockGetIncomeVsExpenses.mockResolvedValue({
+      data: [
+        { month: '2024-01', income: 5000, expenses: 3000, net: 2000 },
+      ],
+    });
+    render(<MonthlySpendingTrendReport />);
+    await waitFor(() => {
+      expect(screen.getByTestId('line-chart')).toBeInTheDocument();
+    });
+  });
+
+  it('handles API error gracefully', async () => {
+    mockGetIncomeVsExpenses.mockRejectedValue(new Error('Network error'));
+    render(<MonthlySpendingTrendReport />);
+    await waitFor(() => {
+      expect(screen.getByText('No data for this period.')).toBeInTheDocument();
+    });
+  });
 });

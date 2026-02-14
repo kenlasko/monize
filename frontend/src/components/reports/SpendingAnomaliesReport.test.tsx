@@ -87,4 +87,59 @@ describe('SpendingAnomaliesReport', () => {
     expect(screen.getByText('5')).toBeInTheDocument();
     expect(screen.getByText('3')).toBeInTheDocument();
   });
+
+  it('renders medium and low severity anomalies', async () => {
+    mockGetSpendingAnomalies.mockResolvedValue({
+      anomalies: [
+        {
+          title: 'Category spike in Dining',
+          description: 'Spending increased by 150%',
+          severity: 'medium',
+          type: 'category_spike',
+          categoryId: 'cat-1',
+          currentPeriodAmount: 500,
+          previousPeriodAmount: 200,
+        },
+        {
+          title: 'New payee detected',
+          description: 'First time transaction with Store Y',
+          severity: 'low',
+          type: 'unusual_payee',
+          amount: 75,
+          transactionId: 'tx-2',
+          payeeName: 'Store Y',
+        },
+      ],
+      counts: { high: 0, medium: 1, low: 1 },
+    });
+    render(<SpendingAnomaliesReport />);
+    await waitFor(() => {
+      expect(screen.getByText('Category spike in Dining')).toBeInTheDocument();
+    });
+    expect(screen.getByText('medium')).toBeInTheDocument();
+    expect(screen.getByText('low')).toBeInTheDocument();
+    expect(screen.getByText('New payee detected')).toBeInTheDocument();
+    // Category spike details
+    expect(screen.getByText(/Last month/)).toBeInTheDocument();
+    expect(screen.getByText(/This month/)).toBeInTheDocument();
+  });
+
+  it('renders sensitivity selector', async () => {
+    mockGetSpendingAnomalies.mockResolvedValue({
+      anomalies: [],
+      counts: { high: 0, medium: 0, low: 0 },
+    });
+    render(<SpendingAnomaliesReport />);
+    await waitFor(() => {
+      expect(screen.getByText('Sensitivity:')).toBeInTheDocument();
+    });
+  });
+
+  it('handles API error gracefully', async () => {
+    mockGetSpendingAnomalies.mockRejectedValue(new Error('Network error'));
+    render(<SpendingAnomaliesReport />);
+    await waitFor(() => {
+      expect(screen.getByText('High Priority')).toBeInTheDocument();
+    });
+  });
 });

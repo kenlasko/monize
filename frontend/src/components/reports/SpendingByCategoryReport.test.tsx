@@ -116,4 +116,46 @@ describe('SpendingByCategoryReport', () => {
     });
     expect(screen.getByTestId('chart-view-toggle')).toBeInTheDocument();
   });
+
+  it('renders category with provided color and percentage', async () => {
+    mockGetSpendingByCategory.mockResolvedValue({
+      data: [
+        { categoryId: 'cat-1', categoryName: 'Food', total: 300, color: '#ff0000' },
+        { categoryId: 'cat-2', categoryName: 'Rent', total: 700, color: '' },
+      ],
+      totalSpending: 1000,
+    });
+    render(<SpendingByCategoryReport />);
+    await waitFor(() => {
+      expect(screen.getByText('Food')).toBeInTheDocument();
+    });
+    expect(screen.getByText('Rent')).toBeInTheDocument();
+    // Percentages in legend
+    expect(screen.getByText('$300.00 (30.0%)')).toBeInTheDocument();
+    expect(screen.getByText('$700.00 (70.0%)')).toBeInTheDocument();
+  });
+
+  it('renders category without categoryId as disabled', async () => {
+    mockGetSpendingByCategory.mockResolvedValue({
+      data: [
+        { categoryId: '', categoryName: 'Uncategorized', total: 100, color: '' },
+      ],
+      totalSpending: 100,
+    });
+    render(<SpendingByCategoryReport />);
+    await waitFor(() => {
+      expect(screen.getByText('Uncategorized')).toBeInTheDocument();
+    });
+    // The button should be disabled
+    const button = screen.getByText('Uncategorized').closest('button');
+    expect(button).toBeDisabled();
+  });
+
+  it('handles API error gracefully', async () => {
+    mockGetSpendingByCategory.mockRejectedValue(new Error('Network error'));
+    render(<SpendingByCategoryReport />);
+    await waitFor(() => {
+      expect(screen.getByText('No expense data for this period.')).toBeInTheDocument();
+    });
+  });
 });

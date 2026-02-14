@@ -137,7 +137,7 @@ describe('InvestmentValueChart', () => {
   });
 
   it('shows negative change values correctly', async () => {
-    vi.mocked(netWorthApi.getInvestmentsMonthly).mockResolvedValueOnce([
+    vi.mocked(netWorthApi.getInvestmentsMonthly).mockResolvedValue([
       { month: '2023-06-01', value: 20000 },
       { month: '2024-01-01', value: 15000 },
     ]);

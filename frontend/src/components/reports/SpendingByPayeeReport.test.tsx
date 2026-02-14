@@ -104,4 +104,25 @@ describe('SpendingByPayeeReport', () => {
       expect(screen.getByTestId('date-range-selector')).toBeInTheDocument();
     });
   });
+
+  it('renders bar chart when data is present', async () => {
+    mockGetSpendingByPayee.mockResolvedValue({
+      data: [
+        { payeeId: 'p-1', payeeName: 'Superstore', total: 300 },
+      ],
+      totalSpending: 300,
+    });
+    render(<SpendingByPayeeReport />);
+    await waitFor(() => {
+      expect(screen.getByTestId('bar-chart')).toBeInTheDocument();
+    });
+  });
+
+  it('handles API error gracefully', async () => {
+    mockGetSpendingByPayee.mockRejectedValue(new Error('Network error'));
+    render(<SpendingByPayeeReport />);
+    await waitFor(() => {
+      expect(screen.getByText('No expense data for this period.')).toBeInTheDocument();
+    });
+  });
 });

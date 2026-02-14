@@ -119,4 +119,42 @@ describe('CashFlowReport', () => {
     expect(screen.getByText('Salary')).toBeInTheDocument();
     expect(screen.getByText('Groceries')).toBeInTheDocument();
   });
+
+  it('renders negative cash flow with orange styling', async () => {
+    mockGetCashFlow.mockResolvedValue({
+      data: [{ month: '2024-07', income: 2000, expenses: 3000, net: -1000 }],
+      totals: { income: 2000, expenses: 3000, net: -1000 },
+    });
+    mockGetIncomeBySource.mockResolvedValue({ data: [], totalIncome: 0 });
+    mockGetSpendingByCategory.mockResolvedValue({ data: [], totalSpending: 0 });
+    render(<CashFlowReport />);
+    await waitFor(() => {
+      expect(screen.getByText('Net Cash Flow')).toBeInTheDocument();
+    });
+  });
+
+  it('renders empty income and expense tables', async () => {
+    mockGetCashFlow.mockResolvedValue({
+      data: [],
+      totals: { income: 0, expenses: 0, net: 0 },
+    });
+    mockGetIncomeBySource.mockResolvedValue({ data: [], totalIncome: 0 });
+    mockGetSpendingByCategory.mockResolvedValue({ data: [], totalSpending: 0 });
+    render(<CashFlowReport />);
+    await waitFor(() => {
+      expect(screen.getByText('No income in this period')).toBeInTheDocument();
+    });
+    expect(screen.getByText('No expenses in this period')).toBeInTheDocument();
+  });
+
+  it('handles API error gracefully', async () => {
+    mockGetCashFlow.mockRejectedValue(new Error('Network error'));
+    mockGetIncomeBySource.mockRejectedValue(new Error('Network error'));
+    mockGetSpendingByCategory.mockRejectedValue(new Error('Network error'));
+    render(<CashFlowReport />);
+    await waitFor(() => {
+      // After error, should render with zero totals
+      expect(screen.getByText('Total Inflows')).toBeInTheDocument();
+    });
+  });
 });

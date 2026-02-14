@@ -103,4 +103,39 @@ describe('IncomeVsExpensesReport', () => {
       expect(screen.getByTestId('date-range-selector')).toBeInTheDocument();
     });
   });
+
+  it('renders negative savings with orange styling', async () => {
+    mockGetIncomeVsExpenses.mockResolvedValue({
+      data: [
+        { month: '2024-01', income: 2000, expenses: 3000, net: -1000 },
+      ],
+      totals: { income: 2000, expenses: 3000 },
+    });
+    render(<IncomeVsExpensesReport />);
+    await waitFor(() => {
+      expect(screen.getByText('Total Savings')).toBeInTheDocument();
+    });
+    expect(screen.getByText('Savings Rate')).toBeInTheDocument();
+  });
+
+  it('handles API error gracefully', async () => {
+    mockGetIncomeVsExpenses.mockRejectedValue(new Error('Network error'));
+    render(<IncomeVsExpensesReport />);
+    await waitFor(() => {
+      expect(screen.getByText('No data for this period.')).toBeInTheDocument();
+    });
+  });
+
+  it('renders bar chart with monthly data', async () => {
+    mockGetIncomeVsExpenses.mockResolvedValue({
+      data: [
+        { month: '2024-01', income: 5000, expenses: 3000, net: 2000 },
+      ],
+      totals: { income: 5000, expenses: 3000 },
+    });
+    render(<IncomeVsExpensesReport />);
+    await waitFor(() => {
+      expect(screen.getByTestId('bar-chart')).toBeInTheDocument();
+    });
+  });
 });

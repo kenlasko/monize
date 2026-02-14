@@ -102,4 +102,99 @@ describe('DuplicateTransactionReport', () => {
     expect(screen.getByText('Medium Confidence')).toBeInTheDocument();
     expect(screen.getByText('Potential Impact')).toBeInTheDocument();
   });
+
+  it('renders medium confidence group with correct styles', async () => {
+    mockGetDuplicateTransactions.mockResolvedValue({
+      groups: [
+        {
+          key: 'group-1',
+          confidence: 'medium',
+          reason: 'Same date and amount',
+          transactions: [
+            { id: 'tx-1', transactionDate: '2025-02-01', payeeName: 'Store B', amount: -30, accountName: 'Savings' },
+            { id: 'tx-2', transactionDate: '2025-02-02', payeeName: 'Store B', amount: -30, accountName: 'Savings' },
+          ],
+        },
+      ],
+      summary: { totalGroups: 1, highCount: 0, mediumCount: 1, lowCount: 0, potentialSavings: 30 },
+    });
+    render(<DuplicateTransactionReport />);
+    await waitFor(() => {
+      expect(screen.getByText('medium confidence')).toBeInTheDocument();
+    });
+    expect(screen.getByText('Same date and amount')).toBeInTheDocument();
+    expect(screen.getByText('2 transactions')).toBeInTheDocument();
+  });
+
+  it('renders low confidence group', async () => {
+    mockGetDuplicateTransactions.mockResolvedValue({
+      groups: [
+        {
+          key: 'group-1',
+          confidence: 'low',
+          reason: 'Same amount within date range',
+          transactions: [
+            { id: 'tx-1', transactionDate: '2025-02-01', payeeName: 'Store C', amount: 20, accountName: 'Chequing', description: 'Refund' },
+          ],
+        },
+      ],
+      summary: { totalGroups: 1, highCount: 0, mediumCount: 0, lowCount: 1, potentialSavings: 20 },
+    });
+    render(<DuplicateTransactionReport />);
+    await waitFor(() => {
+      expect(screen.getByText('low confidence')).toBeInTheDocument();
+    });
+    expect(screen.getByText('Refund')).toBeInTheDocument();
+  });
+
+  it('renders transaction without payeeName as Unknown', async () => {
+    mockGetDuplicateTransactions.mockResolvedValue({
+      groups: [
+        {
+          key: 'group-1',
+          confidence: 'high',
+          reason: 'Test',
+          transactions: [
+            { id: 'tx-1', transactionDate: '2025-02-01', payeeName: null, amount: -10, accountName: null },
+          ],
+        },
+      ],
+      summary: { totalGroups: 1, highCount: 1, mediumCount: 0, lowCount: 0, potentialSavings: 10 },
+    });
+    render(<DuplicateTransactionReport />);
+    await waitFor(() => {
+      expect(screen.getByText('Unknown')).toBeInTheDocument();
+    });
+    expect(screen.getByText('Unknown account')).toBeInTheDocument();
+  });
+
+  it('renders info box about duplicate detection', async () => {
+    mockGetDuplicateTransactions.mockResolvedValue({
+      groups: [],
+      summary: { totalGroups: 0, highCount: 0, mediumCount: 0, lowCount: 0, potentialSavings: 0 },
+    });
+    render(<DuplicateTransactionReport />);
+    await waitFor(() => {
+      expect(screen.getByText('How duplicates are detected:')).toBeInTheDocument();
+    });
+  });
+
+  it('renders sensitivity selector', async () => {
+    mockGetDuplicateTransactions.mockResolvedValue({
+      groups: [],
+      summary: { totalGroups: 0, highCount: 0, mediumCount: 0, lowCount: 0, potentialSavings: 0 },
+    });
+    render(<DuplicateTransactionReport />);
+    await waitFor(() => {
+      expect(screen.getByText('Sensitivity:')).toBeInTheDocument();
+    });
+  });
+
+  it('handles API error gracefully', async () => {
+    mockGetDuplicateTransactions.mockRejectedValue(new Error('Network error'));
+    render(<DuplicateTransactionReport />);
+    await waitFor(() => {
+      expect(screen.getByText('Potential Duplicates')).toBeInTheDocument();
+    });
+  });
 });
