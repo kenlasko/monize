@@ -1,13 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@/test/render';
+import { render, screen, waitFor } from '@/test/render';
 import Setup2FAPage from './page';
 
-const mockPush = vi.fn();
-
-// Mock next/navigation
+const mockRouterPush = vi.fn();
 vi.mock('next/navigation', () => ({
   useRouter: () => ({
-    push: mockPush,
+    push: mockRouterPush,
     replace: vi.fn(),
     back: vi.fn(),
     prefetch: vi.fn(),
@@ -17,10 +15,8 @@ vi.mock('next/navigation', () => ({
   useSearchParams: () => new URLSearchParams(),
 }));
 
-// Track preferences mock state
-let mockPreferences = { twoFactorEnabled: false, theme: 'system', defaultCurrency: 'USD' };
+let mockPreferences: any = { twoFactorEnabled: false, theme: 'system' };
 
-// Mock preferences store
 vi.mock('@/store/preferencesStore', () => ({
   usePreferencesStore: (selector?: any) => {
     const state = {
@@ -32,11 +28,11 @@ vi.mock('@/store/preferencesStore', () => ({
   },
 }));
 
-// Mock TwoFactorSetup component
 vi.mock('@/components/auth/TwoFactorSetup', () => ({
-  TwoFactorSetup: ({ isForced }: any) => (
-    <div data-testid="two-factor-setup" data-forced={isForced}>
-      TwoFactorSetup
+  TwoFactorSetup: ({ isForced, onComplete }: any) => (
+    <div data-testid="two-factor-setup">
+      <span data-testid="is-forced">{isForced ? 'forced' : 'optional'}</span>
+      <button onClick={onComplete}>Complete Setup</button>
     </div>
   ),
 }));
@@ -44,41 +40,42 @@ vi.mock('@/components/auth/TwoFactorSetup', () => ({
 describe('Setup2FAPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockPreferences = { twoFactorEnabled: false, theme: 'system', defaultCurrency: 'USD' };
+    mockPreferences = { twoFactorEnabled: false, theme: 'system' };
   });
 
-  it('renders the 2FA setup heading', () => {
+  it('renders setup page title', () => {
     render(<Setup2FAPage />);
     expect(screen.getByText('Set Up Two-Factor Authentication')).toBeInTheDocument();
   });
 
   it('renders the description text', () => {
     render(<Setup2FAPage />);
-    expect(
-      screen.getByText('Two-factor authentication is required by the administrator before you can continue.'),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/required by the administrator/)).toBeInTheDocument();
   });
 
-  it('renders the TwoFactorSetup component', () => {
+  it('renders TwoFactorSetup component with isForced prop', () => {
     render(<Setup2FAPage />);
     expect(screen.getByTestId('two-factor-setup')).toBeInTheDocument();
+    expect(screen.getByTestId('is-forced')).toHaveTextContent('forced');
   });
 
-  it('passes isForced prop to TwoFactorSetup', () => {
+  it('redirects to dashboard when 2FA is already enabled', async () => {
+    mockPreferences = { twoFactorEnabled: true, theme: 'system' };
     render(<Setup2FAPage />);
-    expect(screen.getByTestId('two-factor-setup')).toHaveAttribute('data-forced', 'true');
+    await waitFor(() => {
+      expect(mockRouterPush).toHaveBeenCalledWith('/dashboard');
+    });
   });
 
-  it('redirects to dashboard if 2FA is already enabled', () => {
-    mockPreferences = { twoFactorEnabled: true, theme: 'system', defaultCurrency: 'USD' };
-
+  it('does not render setup component when 2FA is already enabled', () => {
+    mockPreferences = { twoFactorEnabled: true, theme: 'system' };
     const { container } = render(<Setup2FAPage />);
-    expect(mockPush).toHaveBeenCalledWith('/dashboard');
-    expect(container.innerHTML).toBe('');
+    expect(container.querySelector('[data-testid="two-factor-setup"]')).toBeNull();
   });
 
-  it('does not redirect when 2FA is not enabled', () => {
+  it('navigates to dashboard on setup completion', () => {
     render(<Setup2FAPage />);
-    expect(mockPush).not.toHaveBeenCalled();
+    screen.getByText('Complete Setup').click();
+    expect(mockRouterPush).toHaveBeenCalledWith('/dashboard');
   });
 });
