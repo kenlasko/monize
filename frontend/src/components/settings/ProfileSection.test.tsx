@@ -110,4 +110,46 @@ describe('ProfileSection', () => {
     expect(screen.getByLabelText('First Name')).toHaveValue('');
     expect(screen.getByLabelText('Last Name')).toHaveValue('');
   });
+
+  it('shows Saving... text while profile is being updated', async () => {
+    let resolvePromise: (value: unknown) => void;
+    const pendingPromise = new Promise((resolve) => {
+      resolvePromise = resolve;
+    });
+    (userSettingsApi.updateProfile as ReturnType<typeof vi.fn>).mockReturnValue(pendingPromise);
+
+    render(<ProfileSection user={mockUser} onUserUpdated={mockOnUserUpdated} />);
+
+    fireEvent.change(screen.getByLabelText('First Name'), { target: { value: 'Jane' } });
+    fireEvent.submit(screen.getByRole('button', { name: 'Save Profile' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Saving...' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Saving...' })).toBeDisabled();
+    });
+
+    resolvePromise!({ ...mockUser, firstName: 'Jane' });
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Save Profile' })).toBeInTheDocument();
+    });
+  });
+
+  it('sends only changed fields to the API', async () => {
+    const updatedUser = { ...mockUser, lastName: 'Smith', email: 'new@example.com' };
+    (userSettingsApi.updateProfile as ReturnType<typeof vi.fn>).mockResolvedValue(updatedUser);
+
+    render(<ProfileSection user={mockUser} onUserUpdated={mockOnUserUpdated} />);
+
+    fireEvent.change(screen.getByLabelText('Last Name'), { target: { value: 'Smith' } });
+    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'new@example.com' } });
+    fireEvent.submit(screen.getByRole('button', { name: 'Save Profile' }));
+
+    await waitFor(() => {
+      expect(userSettingsApi.updateProfile).toHaveBeenCalledWith({
+        lastName: 'Smith',
+        email: 'new@example.com',
+      });
+    });
+  });
 });

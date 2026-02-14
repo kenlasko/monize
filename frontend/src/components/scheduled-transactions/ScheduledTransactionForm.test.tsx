@@ -200,8 +200,10 @@ describe('ScheduledTransactionForm', () => {
   });
 
   it('shows Create button for new form', () => {
-    render(<ScheduledTransactionForm />);
-    expect(screen.getByText('Create')).toBeInTheDocument();
+    const { container } = render(<ScheduledTransactionForm />);
+    const submitButton = container.querySelector('button[type="submit"]');
+    expect(submitButton).toBeInTheDocument();
+    expect(submitButton!.textContent).toContain('Create');
   });
 
   it('shows Update button when editing', () => {
@@ -416,14 +418,14 @@ describe('ScheduledTransactionForm', () => {
 
   // --- Form submission for new scheduled transaction ---
   it('submits form for new scheduled transaction via submit button', async () => {
-    render(<ScheduledTransactionForm />);
+    const { container } = render(<ScheduledTransactionForm />);
 
     // Fill in required fields
     const nameInput = screen.getByLabelText('Name');
     fireEvent.change(nameInput, { target: { value: 'Test Rent Payment' } });
 
     // Submit the form
-    const createButton = screen.getByText('Create');
+    const createButton = container.querySelector('button[type="submit"]')!;
     fireEvent.click(createButton);
 
     // The form should attempt submission (validation may reject, but the button click works)
@@ -702,7 +704,7 @@ describe('ScheduledTransactionForm', () => {
 
   it('calls create API when submitting new form', async () => {
     const onSuccess = vi.fn();
-    render(<ScheduledTransactionForm onSuccess={onSuccess} />);
+    const { container } = render(<ScheduledTransactionForm onSuccess={onSuccess} />);
 
     await waitFor(() => {
       expect(mockAccountsGetAll).toHaveBeenCalled();
@@ -716,11 +718,12 @@ describe('ScheduledTransactionForm', () => {
     fireEvent.change(accountSelect, { target: { value: 'acc-1' } });
 
     // Submit form
-    fireEvent.click(screen.getByText('Create'));
+    const createButton = container.querySelector('button[type="submit"]')!;
+    fireEvent.click(createButton);
 
     await waitFor(() => {
       // form attempted submission (create or validation toast)
-      expect(screen.getByText('Create')).toBeInTheDocument();
+      expect(createButton).toBeInTheDocument();
     });
   });
 
@@ -891,7 +894,7 @@ describe('ScheduledTransactionForm', () => {
   });
 
   it('does not auto-fill category if payee has no default category', async () => {
-    render(<ScheduledTransactionForm />);
+    const { container } = render(<ScheduledTransactionForm />);
 
     await waitFor(() => {
       expect(mockPayeesGetAll).toHaveBeenCalled();
@@ -902,11 +905,13 @@ describe('ScheduledTransactionForm', () => {
     fireEvent.click(payeeOption);
 
     // No crash, form should still work
-    expect(screen.getByText('Create')).toBeInTheDocument();
+    const submitButton = container.querySelector('button[type="submit"]');
+    expect(submitButton).toBeInTheDocument();
+    expect(submitButton!.textContent).toContain('Create');
   });
 
   it('clears payee when empty selection is made', async () => {
-    render(<ScheduledTransactionForm />);
+    const { container } = render(<ScheduledTransactionForm />);
 
     await waitFor(() => {
       expect(mockPayeesGetAll).toHaveBeenCalled();
@@ -920,7 +925,9 @@ describe('ScheduledTransactionForm', () => {
     const comboboxInput = screen.getByTestId('combobox-input-Payee');
     fireEvent.change(comboboxInput, { target: { value: '' } });
 
-    expect(screen.getByText('Create')).toBeInTheDocument();
+    const submitButton = container.querySelector('button[type="submit"]');
+    expect(submitButton).toBeInTheDocument();
+    expect(submitButton!.textContent).toContain('Create');
   });
 
   // ============================================================
@@ -928,7 +935,7 @@ describe('ScheduledTransactionForm', () => {
   // ============================================================
 
   it('allows selecting a category', async () => {
-    render(<ScheduledTransactionForm />);
+    const { container } = render(<ScheduledTransactionForm />);
 
     await waitFor(() => {
       expect(mockCategoriesGetAll).toHaveBeenCalled();
@@ -939,11 +946,13 @@ describe('ScheduledTransactionForm', () => {
     fireEvent.click(catOption);
 
     // Should still render normally
-    expect(screen.getByText('Create')).toBeInTheDocument();
+    const submitButton = container.querySelector('button[type="submit"]');
+    expect(submitButton).toBeInTheDocument();
+    expect(submitButton!.textContent).toContain('Create');
   });
 
   it('clears category when empty selection is made', async () => {
-    render(<ScheduledTransactionForm />);
+    const { container } = render(<ScheduledTransactionForm />);
 
     await waitFor(() => {
       expect(mockCategoriesGetAll).toHaveBeenCalled();
@@ -958,7 +967,9 @@ describe('ScheduledTransactionForm', () => {
     const comboboxInput = screen.getByTestId('combobox-input-unnamed');
     fireEvent.change(comboboxInput, { target: { value: '' } });
 
-    expect(screen.getByText('Create')).toBeInTheDocument();
+    const submitButton = container.querySelector('button[type="submit"]');
+    expect(submitButton).toBeInTheDocument();
+    expect(submitButton!.textContent).toContain('Create');
   });
 
   // ============================================================

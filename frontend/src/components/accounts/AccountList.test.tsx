@@ -328,12 +328,12 @@ describe('AccountList', () => {
     expect(screen.getByText('Investment Acct')).toBeInTheDocument();
     expect(screen.getByText('Cash Acct')).toBeInTheDocument();
 
-    // Type badges
-    expect(screen.getByText('Chequing')).toBeInTheDocument();
-    expect(screen.getByText('Savings')).toBeInTheDocument();
-    expect(screen.getByText('Credit Card')).toBeInTheDocument();
-    expect(screen.getByText('Investment')).toBeInTheDocument();
-    expect(screen.getByText('Cash')).toBeInTheDocument();
+    // Type badges (also appear in the filter dropdown options, so use getAllByText)
+    expect(screen.getAllByText('Chequing').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Savings').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Credit Card').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Investment').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Cash').length).toBeGreaterThanOrEqual(1);
 
     expect(screen.getByText('5 of 5 accounts')).toBeInTheDocument();
   });
@@ -424,16 +424,19 @@ describe('AccountList', () => {
 
   it('shows "No accounts match your filters" and Clear Filters button when filters exclude all accounts', () => {
     const accounts = [
-      createAccount({ id: 'a1', name: 'Chequing Only', accountType: 'CHEQUING' }),
+      createAccount({ id: 'a1', name: 'Chequing Only', accountType: 'CHEQUING', isClosed: false }),
     ];
 
     render(
       <AccountList accounts={accounts} onEdit={mockOnEdit} onRefresh={mockOnRefresh} />
     );
 
-    // Filter by a type that has no accounts
-    const typeFilter = screen.getByDisplayValue('All Types');
-    fireEvent.change(typeFilter, { target: { value: 'SAVINGS' } });
+    // Filter by closed status when all accounts are active
+    const closedFilterButton = screen.getAllByRole('button').find(
+      (btn) => btn.textContent === 'Closed' && btn.closest('.inline-flex.rounded-md')
+    );
+    expect(closedFilterButton).toBeTruthy();
+    fireEvent.click(closedFilterButton!);
 
     expect(screen.getByText('No accounts match your filters.')).toBeInTheDocument();
     expect(screen.getByText('Clear Filters')).toBeInTheDocument();
@@ -551,8 +554,8 @@ describe('AccountList', () => {
 
     expect(screen.getByText(/Are you sure you want to close/)).toBeInTheDocument();
 
-    // Confirm the close
-    const confirmButton = screen.getByText('Close Account');
+    // Confirm the close (use getByRole to target the confirm button, not the dialog title)
+    const confirmButton = screen.getByRole('button', { name: 'Close Account' });
     fireEvent.click(confirmButton);
 
     await waitFor(() => {
@@ -594,8 +597,8 @@ describe('AccountList', () => {
     fireEvent.click(screen.getByText('Delete'));
     expect(screen.getByText(/Are you sure you want to permanently delete/)).toBeInTheDocument();
 
-    // Confirm delete
-    fireEvent.click(screen.getByText('Delete Account'));
+    // Confirm delete (use getByRole to target the confirm button, not the dialog title)
+    fireEvent.click(screen.getByRole('button', { name: 'Delete Account' }));
 
     await waitFor(() => {
       expect(accountsApi.delete).toHaveBeenCalledWith(account.id);
@@ -747,7 +750,7 @@ describe('AccountList', () => {
     );
 
     fireEvent.click(screen.getByRole('button', { name: 'Close' }));
-    fireEvent.click(screen.getByText('Close Account'));
+    fireEvent.click(screen.getByRole('button', { name: 'Close Account' }));
 
     await waitFor(() => {
       expect(accountsApi.close).toHaveBeenCalled();
@@ -766,7 +769,7 @@ describe('AccountList', () => {
     );
 
     fireEvent.click(screen.getByText('Delete'));
-    fireEvent.click(screen.getByText('Delete Account'));
+    fireEvent.click(screen.getByRole('button', { name: 'Delete Account' }));
 
     await waitFor(() => {
       expect(accountsApi.delete).toHaveBeenCalled();
@@ -890,15 +893,19 @@ describe('AccountList', () => {
 
   it('clears filter from "No accounts match" empty state', () => {
     const accounts = [
-      createAccount({ id: 'a1', name: 'Chequing Only', accountType: 'CHEQUING' }),
+      createAccount({ id: 'a1', name: 'Chequing Only', accountType: 'CHEQUING', isClosed: false }),
     ];
 
     render(
       <AccountList accounts={accounts} onEdit={mockOnEdit} onRefresh={mockOnRefresh} />
     );
 
-    const typeFilter = screen.getByDisplayValue('All Types');
-    fireEvent.change(typeFilter, { target: { value: 'SAVINGS' } });
+    // Filter by closed status when all accounts are active to produce empty results
+    const closedFilterButton = screen.getAllByRole('button').find(
+      (btn) => btn.textContent === 'Closed' && btn.closest('.inline-flex.rounded-md')
+    );
+    expect(closedFilterButton).toBeTruthy();
+    fireEvent.click(closedFilterButton!);
 
     expect(screen.getByText('No accounts match your filters.')).toBeInTheDocument();
 

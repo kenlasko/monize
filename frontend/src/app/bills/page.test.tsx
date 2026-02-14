@@ -74,13 +74,17 @@ const mockGetAll = vi.fn();
 const mockGetAllCategories = vi.fn();
 const mockGetAllAccounts = vi.fn();
 const mockHasOverrides = vi.fn();
+const mockGetOverrides = vi.fn();
+const mockDeleteAllOverrides = vi.fn();
+const mockGetOverrideByDate = vi.fn();
 
 vi.mock('@/lib/scheduled-transactions', () => ({
   scheduledTransactionsApi: {
     getAll: (...args: any[]) => mockGetAll(...args),
     hasOverrides: (...args: any[]) => mockHasOverrides(...args),
-    getOverrides: vi.fn().mockResolvedValue([]),
-    deleteAllOverrides: vi.fn().mockResolvedValue(undefined),
+    getOverrides: (...args: any[]) => mockGetOverrides(...args),
+    deleteAllOverrides: (...args: any[]) => mockDeleteAllOverrides(...args),
+    getOverrideByDate: (...args: any[]) => mockGetOverrideByDate(...args),
   },
 }));
 
@@ -103,13 +107,17 @@ vi.mock('@/hooks/useNumberFormat', () => ({
   }),
 }));
 
+const mockOpenCreate = vi.fn();
+const mockOpenEdit = vi.fn();
+const mockClose = vi.fn();
+
 vi.mock('@/hooks/useFormModal', () => ({
   useFormModal: () => ({
     showForm: false,
     editingItem: null,
-    openCreate: vi.fn(),
-    openEdit: vi.fn(),
-    close: vi.fn(),
+    openCreate: mockOpenCreate,
+    openEdit: mockOpenEdit,
+    close: mockClose,
     isEditing: false,
     modalProps: {},
     setFormDirty: vi.fn(),
@@ -168,25 +176,44 @@ vi.mock('@/components/scheduled-transactions/ScheduledTransactionForm', () => ({
 }));
 
 vi.mock('@/components/scheduled-transactions/ScheduledTransactionList', () => ({
-  ScheduledTransactionList: ({ transactions, onEdit }: any) => (
+  ScheduledTransactionList: ({ transactions, onEdit, onEditOccurrence, onPost }: any) => (
     <div data-testid="scheduled-transaction-list">
       {transactions.map((t: any) => (
-        <div key={t.id} data-testid={`st-${t.id}`} onClick={() => onEdit(t)}>{t.name}</div>
+        <div key={t.id} data-testid={`st-${t.id}`}>
+          <span onClick={() => onEdit(t)}>{t.name}</span>
+          <button data-testid={`edit-occurrence-${t.id}`} onClick={() => onEditOccurrence(t)}>Edit Occurrence</button>
+          <button data-testid={`post-${t.id}`} onClick={() => onPost(t)}>Post</button>
+        </div>
       ))}
     </div>
   ),
 }));
 
 vi.mock('@/components/scheduled-transactions/OverrideEditorDialog', () => ({
-  OverrideEditorDialog: () => null,
+  OverrideEditorDialog: ({ isOpen, onClose, onSave }: any) => isOpen ? (
+    <div data-testid="override-editor">
+      <button data-testid="override-close" onClick={onClose}>Close</button>
+      <button data-testid="override-save" onClick={onSave}>Save</button>
+    </div>
+  ) : null,
 }));
 
 vi.mock('@/components/scheduled-transactions/OccurrenceDatePicker', () => ({
-  OccurrenceDatePicker: () => null,
+  OccurrenceDatePicker: ({ isOpen, onSelect, onClose }: any) => isOpen ? (
+    <div data-testid="date-picker">
+      <button data-testid="pick-date" onClick={() => onSelect('2026-02-15')}>Pick Date</button>
+      <button data-testid="close-date-picker" onClick={onClose}>Close</button>
+    </div>
+  ) : null,
 }));
 
 vi.mock('@/components/scheduled-transactions/PostTransactionDialog', () => ({
-  PostTransactionDialog: () => null,
+  PostTransactionDialog: ({ isOpen, onClose, onPosted }: any) => isOpen ? (
+    <div data-testid="post-dialog">
+      <button data-testid="post-close" onClick={onClose}>Close</button>
+      <button data-testid="post-confirm" onClick={onPosted}>Confirm Post</button>
+    </div>
+  ) : null,
 }));
 
 const now = new Date('2026-02-14T12:00:00');
@@ -207,6 +234,9 @@ describe('BillsPage', () => {
     mockGetAllCategories.mockResolvedValue([]);
     mockGetAllAccounts.mockResolvedValue([]);
     mockHasOverrides.mockResolvedValue({ hasOverrides: false, count: 0 });
+    mockGetOverrides.mockResolvedValue([]);
+    mockDeleteAllOverrides.mockResolvedValue(undefined);
+    mockGetOverrideByDate.mockResolvedValue(null);
   });
 
   afterEach(() => {
@@ -359,6 +389,16 @@ describe('BillsPage', () => {
       fireEvent.click(screen.getByText('List'));
       expect(screen.getByTestId('scheduled-transaction-list')).toBeInTheDocument();
     });
+
+    it('hides filter tabs when in calendar view', async () => {
+      render(<BillsPage />);
+      await waitFor(() => expect(screen.getByTestId('scheduled-transaction-list')).toBeInTheDocument());
+      // Filter tabs visible in list view
+      expect(screen.getByText('All (5)')).toBeInTheDocument();
+      fireEvent.click(screen.getByText('Calendar'));
+      // Filter tabs hidden in calendar view
+      expect(screen.queryByText('All (5)')).not.toBeInTheDocument();
+    });
   });
 
   describe('Calendar View', () => {
@@ -382,6 +422,52 @@ describe('BillsPage', () => {
       await waitFor(() => expect(screen.getByTestId('scheduled-transaction-list')).toBeInTheDocument());
       fireEvent.click(screen.getByText('Calendar'));
       expect(screen.queryByText('Savings Transfer')).not.toBeInTheDocument();
+    });
+
+    it('navigates to previous month', async () => {
+      render(<BillsPage />);
+      await waitFor(() => expect(screen.getByTestId('scheduled-transaction-list')).toBeInTheDocument());
+      fireEvent.click(screen.getByText('Calendar'));
+      expect(screen.getByText('February 2026')).toBeInTheDocument();
+
+      // Find and click the previous month button (left arrow SVG button)
+      const monthNav = screen.getByText('February 2026').parentElement;
+      const buttons = monthNav!.querySelectorAll('button');
+      // First button is previous month
+      fireEvent.click(buttons[0]);
+
+      expect(screen.getByText('January 2026')).toBeInTheDocument();
+    });
+
+    it('navigates to next month', async () => {
+      render(<BillsPage />);
+      await waitFor(() => expect(screen.getByTestId('scheduled-transaction-list')).toBeInTheDocument());
+      fireEvent.click(screen.getByText('Calendar'));
+      expect(screen.getByText('February 2026')).toBeInTheDocument();
+
+      // Find and click the next month button
+      const monthNav = screen.getByText('February 2026').parentElement;
+      const buttons = monthNav!.querySelectorAll('button');
+      // Second button is next month
+      fireEvent.click(buttons[1]);
+
+      expect(screen.getByText('March 2026')).toBeInTheDocument();
+    });
+
+    it('navigates to today when Today button clicked', async () => {
+      render(<BillsPage />);
+      await waitFor(() => expect(screen.getByTestId('scheduled-transaction-list')).toBeInTheDocument());
+      fireEvent.click(screen.getByText('Calendar'));
+
+      // Navigate away first
+      const monthNav = screen.getByText('February 2026').parentElement;
+      const buttons = monthNav!.querySelectorAll('button');
+      fireEvent.click(buttons[1]); // Next month
+      expect(screen.getByText('March 2026')).toBeInTheDocument();
+
+      // Click Today
+      fireEvent.click(screen.getByText('Today'));
+      expect(screen.getByText('February 2026')).toBeInTheDocument();
     });
   });
 
@@ -411,7 +497,7 @@ describe('BillsPage', () => {
       mockHasOverrides.mockResolvedValue({ hasOverrides: true, count: 3 });
       render(<BillsPage />);
       await waitFor(() => expect(screen.getByTestId('scheduled-transaction-list')).toBeInTheDocument());
-      fireEvent.click(screen.getByTestId('st-st-1'));
+      fireEvent.click(screen.getByText('Rent'));
       await waitFor(() => {
         expect(screen.getByText('Existing Overrides Found')).toBeInTheDocument();
         expect(screen.getByText(/3 individual occurrences/)).toBeInTheDocument();
@@ -422,7 +508,7 @@ describe('BillsPage', () => {
       mockHasOverrides.mockResolvedValue({ hasOverrides: true, count: 2 });
       render(<BillsPage />);
       await waitFor(() => expect(screen.getByTestId('scheduled-transaction-list')).toBeInTheDocument());
-      fireEvent.click(screen.getByTestId('st-st-1'));
+      fireEvent.click(screen.getByText('Rent'));
       await waitFor(() => expect(screen.getByText('Existing Overrides Found')).toBeInTheDocument());
       expect(screen.getByText('Keep Modifications')).toBeInTheDocument();
       expect(screen.getByText('Delete All Modifications')).toBeInTheDocument();
@@ -432,12 +518,284 @@ describe('BillsPage', () => {
       mockHasOverrides.mockResolvedValue({ hasOverrides: true, count: 2 });
       render(<BillsPage />);
       await waitFor(() => expect(screen.getByTestId('scheduled-transaction-list')).toBeInTheDocument());
-      fireEvent.click(screen.getByTestId('st-st-1'));
+      fireEvent.click(screen.getByText('Rent'));
       await waitFor(() => expect(screen.getByText('Existing Overrides Found')).toBeInTheDocument());
       const cancelButtons = screen.getAllByText('Cancel');
       fireEvent.click(cancelButtons[cancelButtons.length - 1]);
       await waitFor(() => {
         expect(screen.queryByText('Existing Overrides Found')).not.toBeInTheDocument();
+      });
+    });
+
+    it('keeps overrides and opens edit when Keep Modifications clicked', async () => {
+      mockHasOverrides.mockResolvedValue({ hasOverrides: true, count: 2 });
+      render(<BillsPage />);
+      await waitFor(() => expect(screen.getByTestId('scheduled-transaction-list')).toBeInTheDocument());
+      fireEvent.click(screen.getByText('Rent'));
+      await waitFor(() => expect(screen.getByText('Existing Overrides Found')).toBeInTheDocument());
+      fireEvent.click(screen.getByText('Keep Modifications'));
+      await waitFor(() => {
+        expect(screen.queryByText('Existing Overrides Found')).not.toBeInTheDocument();
+      });
+      expect(mockOpenEdit).toHaveBeenCalled();
+    });
+
+    it('deletes overrides and opens edit when Delete All clicked', async () => {
+      mockHasOverrides.mockResolvedValue({ hasOverrides: true, count: 2 });
+      mockDeleteAllOverrides.mockResolvedValue(undefined);
+      render(<BillsPage />);
+      await waitFor(() => expect(screen.getByTestId('scheduled-transaction-list')).toBeInTheDocument());
+      fireEvent.click(screen.getByText('Rent'));
+      await waitFor(() => expect(screen.getByText('Existing Overrides Found')).toBeInTheDocument());
+      fireEvent.click(screen.getByText('Delete All Modifications'));
+      await waitFor(() => {
+        expect(mockDeleteAllOverrides).toHaveBeenCalledWith('st-1');
+        expect(mockOpenEdit).toHaveBeenCalled();
+      });
+    });
+
+    it('proceeds to edit directly when no overrides exist', async () => {
+      mockHasOverrides.mockResolvedValue({ hasOverrides: false, count: 0 });
+      render(<BillsPage />);
+      await waitFor(() => expect(screen.getByTestId('scheduled-transaction-list')).toBeInTheDocument());
+      fireEvent.click(screen.getByText('Rent'));
+      await waitFor(() => {
+        expect(mockOpenEdit).toHaveBeenCalled();
+      });
+      expect(screen.queryByText('Existing Overrides Found')).not.toBeInTheDocument();
+    });
+
+    it('proceeds to edit when override check fails', async () => {
+      mockHasOverrides.mockRejectedValue(new Error('Check failed'));
+      render(<BillsPage />);
+      await waitFor(() => expect(screen.getByTestId('scheduled-transaction-list')).toBeInTheDocument());
+      fireEvent.click(screen.getByText('Rent'));
+      await waitFor(() => {
+        expect(mockOpenEdit).toHaveBeenCalled();
+      });
+    });
+
+    it('shows delete all overrides error toast', async () => {
+      const toast = await import('react-hot-toast');
+      mockHasOverrides.mockResolvedValue({ hasOverrides: true, count: 2 });
+      mockDeleteAllOverrides.mockRejectedValue(new Error('Failed'));
+      render(<BillsPage />);
+      await waitFor(() => expect(screen.getByTestId('scheduled-transaction-list')).toBeInTheDocument());
+      fireEvent.click(screen.getByText('Rent'));
+      await waitFor(() => expect(screen.getByText('Existing Overrides Found')).toBeInTheDocument());
+      fireEvent.click(screen.getByText('Delete All Modifications'));
+      await waitFor(() => {
+        expect(toast.default.error).toHaveBeenCalledWith('Failed to delete overrides');
+      });
+    });
+  });
+
+  describe('Create New Schedule', () => {
+    it('opens create form when New Schedule button is clicked', async () => {
+      render(<BillsPage />);
+      await waitFor(() => expect(screen.getByText('+ New Schedule')).toBeInTheDocument());
+      fireEvent.click(screen.getByText('+ New Schedule'));
+      expect(mockOpenCreate).toHaveBeenCalled();
+    });
+  });
+
+  describe('Edit Occurrence', () => {
+    it('opens date picker when edit occurrence is clicked', async () => {
+      render(<BillsPage />);
+      await waitFor(() => expect(screen.getByTestId('scheduled-transaction-list')).toBeInTheDocument());
+
+      fireEvent.click(screen.getByTestId('edit-occurrence-st-1'));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('date-picker')).toBeInTheDocument();
+      });
+    });
+
+    it('opens override editor after date is picked', async () => {
+      mockGetOverrideByDate.mockResolvedValue(null);
+      render(<BillsPage />);
+      await waitFor(() => expect(screen.getByTestId('scheduled-transaction-list')).toBeInTheDocument());
+
+      fireEvent.click(screen.getByTestId('edit-occurrence-st-1'));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('date-picker')).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByTestId('pick-date'));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('override-editor')).toBeInTheDocument();
+      });
+    });
+
+    it('closes date picker when close is clicked', async () => {
+      render(<BillsPage />);
+      await waitFor(() => expect(screen.getByTestId('scheduled-transaction-list')).toBeInTheDocument());
+
+      fireEvent.click(screen.getByTestId('edit-occurrence-st-1'));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('date-picker')).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByTestId('close-date-picker'));
+
+      await waitFor(() => {
+        expect(screen.queryByTestId('date-picker')).not.toBeInTheDocument();
+      });
+    });
+
+    it('closes override editor and reloads data on save', async () => {
+      mockGetOverrideByDate.mockResolvedValue(null);
+      render(<BillsPage />);
+      await waitFor(() => expect(screen.getByTestId('scheduled-transaction-list')).toBeInTheDocument());
+
+      fireEvent.click(screen.getByTestId('edit-occurrence-st-1'));
+      await waitFor(() => expect(screen.getByTestId('date-picker')).toBeInTheDocument());
+
+      fireEvent.click(screen.getByTestId('pick-date'));
+      await waitFor(() => expect(screen.getByTestId('override-editor')).toBeInTheDocument());
+
+      mockGetAll.mockClear();
+      fireEvent.click(screen.getByTestId('override-save'));
+
+      await waitFor(() => {
+        expect(mockGetAll).toHaveBeenCalled();
+      });
+    });
+
+    it('closes override editor on close click', async () => {
+      mockGetOverrideByDate.mockResolvedValue(null);
+      render(<BillsPage />);
+      await waitFor(() => expect(screen.getByTestId('scheduled-transaction-list')).toBeInTheDocument());
+
+      fireEvent.click(screen.getByTestId('edit-occurrence-st-1'));
+      await waitFor(() => expect(screen.getByTestId('date-picker')).toBeInTheDocument());
+
+      fireEvent.click(screen.getByTestId('pick-date'));
+      await waitFor(() => expect(screen.getByTestId('override-editor')).toBeInTheDocument());
+
+      fireEvent.click(screen.getByTestId('override-close'));
+
+      await waitFor(() => {
+        expect(screen.queryByTestId('override-editor')).not.toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('Post Transaction', () => {
+    it('opens post dialog when post button is clicked', async () => {
+      render(<BillsPage />);
+      await waitFor(() => expect(screen.getByTestId('scheduled-transaction-list')).toBeInTheDocument());
+
+      fireEvent.click(screen.getByTestId('post-st-1'));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('post-dialog')).toBeInTheDocument();
+      });
+    });
+
+    it('closes post dialog', async () => {
+      render(<BillsPage />);
+      await waitFor(() => expect(screen.getByTestId('scheduled-transaction-list')).toBeInTheDocument());
+
+      fireEvent.click(screen.getByTestId('post-st-1'));
+      await waitFor(() => expect(screen.getByTestId('post-dialog')).toBeInTheDocument());
+
+      fireEvent.click(screen.getByTestId('post-close'));
+
+      await waitFor(() => {
+        expect(screen.queryByTestId('post-dialog')).not.toBeInTheDocument();
+      });
+    });
+
+    it('reloads data after transaction is posted', async () => {
+      render(<BillsPage />);
+      await waitFor(() => expect(screen.getByTestId('scheduled-transaction-list')).toBeInTheDocument());
+
+      fireEvent.click(screen.getByTestId('post-st-1'));
+      await waitFor(() => expect(screen.getByTestId('post-dialog')).toBeInTheDocument());
+
+      mockGetAll.mockClear();
+      fireEvent.click(screen.getByTestId('post-confirm'));
+
+      await waitFor(() => {
+        expect(mockGetAll).toHaveBeenCalled();
+      });
+    });
+  });
+
+  describe('Monthly Net Calculation', () => {
+    it('calculates monthly net for MONTHLY frequency', async () => {
+      mockGetAll.mockResolvedValue([
+        { id: 'st-a', name: 'Bill', amount: -100, frequency: 'MONTHLY', nextDueDate: '2026-03-01', isActive: true, isTransfer: false },
+        { id: 'st-b', name: 'Income', amount: 3000, frequency: 'MONTHLY', nextDueDate: '2026-03-01', isActive: true, isTransfer: false },
+      ]);
+      render(<BillsPage />);
+      await waitFor(() => {
+        // Monthly net = 3000 - 100 = 2900
+        expect(screen.getByTestId('summary-Monthly Net')).toHaveTextContent('$2900.00');
+      });
+    });
+
+    it('normalizes WEEKLY frequency to monthly', async () => {
+      mockGetAll.mockResolvedValue([
+        { id: 'st-a', name: 'Weekly Bill', amount: -100, frequency: 'WEEKLY', nextDueDate: '2026-03-01', isActive: true, isTransfer: false },
+      ]);
+      render(<BillsPage />);
+      await waitFor(() => {
+        // Weekly: 100 * 4.33 = 433, monthly net = -433
+        expect(screen.getByTestId('summary-Monthly Net')).toHaveTextContent('$433.00');
+      });
+    });
+
+    it('excludes transfers from monthly calculations', async () => {
+      mockGetAll.mockResolvedValue([
+        { id: 'st-a', name: 'Transfer', amount: -500, frequency: 'MONTHLY', nextDueDate: '2026-03-01', isActive: true, isTransfer: true },
+        { id: 'st-b', name: 'Bill', amount: -100, frequency: 'MONTHLY', nextDueDate: '2026-03-01', isActive: true, isTransfer: false },
+      ]);
+      render(<BillsPage />);
+      await waitFor(() => {
+        // Only the bill counts, transfer excluded. Monthly net = -100
+        expect(screen.getByTestId('summary-Monthly Net')).toHaveTextContent('$100.00');
+      });
+    });
+
+    it('excludes inactive from monthly calculations', async () => {
+      mockGetAll.mockResolvedValue([
+        { id: 'st-a', name: 'Inactive Bill', amount: -500, frequency: 'MONTHLY', nextDueDate: '2026-03-01', isActive: false, isTransfer: false },
+        { id: 'st-b', name: 'Active Bill', amount: -100, frequency: 'MONTHLY', nextDueDate: '2026-03-01', isActive: true, isTransfer: false },
+      ]);
+      render(<BillsPage />);
+      await waitFor(() => {
+        // Only active bill counted
+        expect(screen.getByTestId('summary-Active Bills')).toHaveTextContent('1');
+      });
+    });
+  });
+
+  describe('Due Count', () => {
+    it('counts multiple due items', async () => {
+      mockGetAll.mockResolvedValue([
+        { id: 'st-a', name: 'Due Bill 1', amount: -100, frequency: 'MONTHLY', nextDueDate: '2026-02-10', isActive: true, isTransfer: false },
+        { id: 'st-b', name: 'Due Bill 2', amount: -200, frequency: 'MONTHLY', nextDueDate: '2026-02-14', isActive: true, isTransfer: false },
+        { id: 'st-c', name: 'Future Bill', amount: -300, frequency: 'MONTHLY', nextDueDate: '2026-02-20', isActive: true, isTransfer: false },
+      ]);
+      render(<BillsPage />);
+      await waitFor(() => {
+        // Due Bill 1 (Feb 10) and Due Bill 2 (Feb 14) are due today or past
+        expect(screen.getByTestId('summary-Due Now')).toHaveTextContent('2');
+      });
+    });
+
+    it('shows zero when no items are due', async () => {
+      mockGetAll.mockResolvedValue([
+        { id: 'st-a', name: 'Future', amount: -100, frequency: 'MONTHLY', nextDueDate: '2026-02-20', isActive: true, isTransfer: false },
+      ]);
+      render(<BillsPage />);
+      await waitFor(() => {
+        expect(screen.getByTestId('summary-Due Now')).toHaveTextContent('0');
       });
     });
   });

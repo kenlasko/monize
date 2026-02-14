@@ -997,6 +997,98 @@ describe('SecuritySection', () => {
     expect(screen.queryByText(/IP:/)).not.toBeInTheDocument();
   });
 
+  // --- Modal onClose callbacks (Escape key) ---
+  it('closes 2FA setup modal via Escape key (onClose callback)', async () => {
+    render(
+      <SecuritySection
+        user={mockUser}
+        preferences={mockPreferences}
+        force2fa={false}
+        onPreferencesUpdated={mockOnPreferencesUpdated}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Enable 2FA' }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('two-factor-setup')).toBeInTheDocument();
+    });
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('two-factor-setup')).not.toBeInTheDocument();
+    });
+  });
+
+  it('closes disable 2FA modal via Escape key and clears the code (onClose callback)', async () => {
+    const prefsWith2fa = { ...mockPreferences, twoFactorEnabled: true };
+
+    render(
+      <SecuritySection
+        user={mockUser}
+        preferences={prefsWith2fa}
+        force2fa={false}
+        onPreferencesUpdated={mockOnPreferencesUpdated}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Disable 2FA' }));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Verification Code')).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByLabelText('Verification Code'), { target: { value: '123456' } });
+    fireEvent.keyDown(document, { key: 'Escape' });
+
+    await waitFor(() => {
+      expect(screen.queryByText('Disable Two-Factor Authentication')).not.toBeInTheDocument();
+    });
+  });
+
+  it('closes revoke all modal via Escape key (onClose callback)', async () => {
+    const prefsWith2fa = { ...mockPreferences, twoFactorEnabled: true };
+    const mockDevices = [
+      {
+        id: 'dev-1',
+        deviceName: 'Chrome on Windows',
+        ipAddress: '192.168.1.1',
+        lastUsedAt: '2024-01-15T00:00:00Z',
+        expiresAt: '2024-02-15T00:00:00Z',
+        createdAt: '2024-01-01T00:00:00Z',
+        isCurrent: false,
+      },
+    ];
+
+    (authApi.getTrustedDevices as any).mockResolvedValueOnce(mockDevices);
+
+    render(
+      <SecuritySection
+        user={mockUser}
+        preferences={prefsWith2fa}
+        force2fa={false}
+        onPreferencesUpdated={mockOnPreferencesUpdated}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Revoke All' })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Revoke All' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Revoke All Trusted Devices')).toBeInTheDocument();
+    });
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+
+    await waitFor(() => {
+      expect(screen.queryByText('Revoke All Trusted Devices')).not.toBeInTheDocument();
+    });
+  });
+
   // --- Verification code only allows digits ---
   it('strips non-digit characters from the verification code input', async () => {
     const prefsWith2fa = { ...mockPreferences, twoFactorEnabled: true };

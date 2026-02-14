@@ -101,7 +101,7 @@ describe('BulkUpdateModal', () => {
     // Click the first checkbox (Payee)
     fireEvent.click(checkboxes[0]);
     // Should now show the payee combobox input
-    expect(screen.getByPlaceholder('Select or type payee name...')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Select or type payee name...')).toBeInTheDocument();
   });
 
   it('disables submit when no fields enabled', () => {

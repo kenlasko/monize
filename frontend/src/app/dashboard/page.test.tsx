@@ -82,9 +82,10 @@ vi.mock('@/lib/auth', () => ({
 }));
 
 // Mock all API libs
+const mockGetAccounts = vi.fn().mockResolvedValue([]);
 vi.mock('@/lib/accounts', () => ({
   accountsApi: {
-    getAll: vi.fn().mockResolvedValue([]),
+    getAll: (...args: any[]) => mockGetAccounts(...args),
   },
 }));
 
@@ -106,9 +107,10 @@ vi.mock('@/lib/scheduled-transactions', () => ({
   },
 }));
 
+const mockGetTopMovers = vi.fn().mockResolvedValue([]);
 vi.mock('@/lib/investments', () => ({
   investmentsApi: {
-    getTopMovers: vi.fn().mockResolvedValue([]),
+    getTopMovers: (...args: any[]) => mockGetTopMovers(...args),
   },
 }));
 
@@ -120,11 +122,11 @@ vi.mock('@/lib/net-worth', () => ({
 
 // Mock all dashboard child components
 vi.mock('@/components/dashboard/FavouriteAccounts', () => ({
-  FavouriteAccounts: () => <div data-testid="favourite-accounts">FavouriteAccounts</div>,
+  FavouriteAccounts: ({ isLoading }: any) => <div data-testid="favourite-accounts">{isLoading ? 'loading' : 'loaded'}</div>,
 }));
 
 vi.mock('@/components/dashboard/UpcomingBills', () => ({
-  UpcomingBills: () => <div data-testid="upcoming-bills">UpcomingBills</div>,
+  UpcomingBills: ({ isLoading }: any) => <div data-testid="upcoming-bills">{isLoading ? 'loading' : 'loaded'}</div>,
 }));
 
 vi.mock('@/components/dashboard/ExpensesPieChart', () => ({
@@ -140,18 +142,21 @@ vi.mock('@/components/dashboard/GettingStarted', () => ({
 }));
 
 vi.mock('@/components/dashboard/TopMovers', () => ({
-  TopMovers: () => <div data-testid="top-movers">TopMovers</div>,
+  TopMovers: ({ hasInvestmentAccounts }: any) => (
+    <div data-testid="top-movers">{hasInvestmentAccounts ? 'has-investments' : 'no-investments'}</div>
+  ),
 }));
 
 vi.mock('@/components/dashboard/NetWorthChart', () => ({
   NetWorthChart: () => <div data-testid="net-worth-chart">NetWorthChart</div>,
 }));
 
+const mockTriggerAutoRefresh = vi.fn();
 vi.mock('@/hooks/usePriceRefresh', () => ({
   usePriceRefresh: () => ({
     isRefreshing: false,
     triggerManualRefresh: vi.fn(),
-    triggerAutoRefresh: vi.fn(),
+    triggerAutoRefresh: mockTriggerAutoRefresh,
   }),
 }));
 
@@ -163,6 +168,7 @@ vi.mock('@/components/layout/PageLayout', () => ({
 describe('DashboardPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockGetAccounts.mockResolvedValue([]);
   });
 
   it('renders the welcome message with user name', async () => {
@@ -193,6 +199,85 @@ describe('DashboardPage', () => {
     render(<DashboardPage />);
     await waitFor(() => {
       expect(screen.getByTestId('page-layout')).toBeInTheDocument();
+    });
+  });
+
+  it('renders GettingStarted component', async () => {
+    render(<DashboardPage />);
+    await waitFor(() => {
+      expect(screen.getByTestId('getting-started')).toBeInTheDocument();
+    });
+  });
+
+  it('renders NetWorthChart component', async () => {
+    render(<DashboardPage />);
+    await waitFor(() => {
+      expect(screen.getByTestId('net-worth-chart')).toBeInTheDocument();
+    });
+  });
+
+  it('renders TopMovers component', async () => {
+    render(<DashboardPage />);
+    await waitFor(() => {
+      expect(screen.getByTestId('top-movers')).toBeInTheDocument();
+    });
+  });
+
+  it('detects investment accounts and sets hasInvestments', async () => {
+    mockGetAccounts.mockResolvedValue([
+      { id: 'acc-1', name: 'Brokerage', accountType: 'INVESTMENT', isClosed: false },
+    ]);
+    render(<DashboardPage />);
+    await waitFor(() => {
+      expect(screen.getByTestId('top-movers')).toHaveTextContent('has-investments');
+    });
+  });
+
+  it('does not set hasInvestments when no investment accounts exist', async () => {
+    mockGetAccounts.mockResolvedValue([
+      { id: 'acc-1', name: 'Checking', accountType: 'CHECKING', isClosed: false },
+    ]);
+    render(<DashboardPage />);
+    await waitFor(() => {
+      expect(screen.getByTestId('top-movers')).toHaveTextContent('no-investments');
+    });
+  });
+
+  it('ignores closed investment accounts for hasInvestments', async () => {
+    mockGetAccounts.mockResolvedValue([
+      { id: 'acc-1', name: 'Old Brokerage', accountType: 'INVESTMENT', isClosed: true },
+    ]);
+    render(<DashboardPage />);
+    await waitFor(() => {
+      expect(screen.getByTestId('top-movers')).toHaveTextContent('no-investments');
+    });
+  });
+
+  it('loads top movers when investment accounts exist', async () => {
+    mockGetAccounts.mockResolvedValue([
+      { id: 'acc-1', name: 'Brokerage', accountType: 'INVESTMENT', isClosed: false },
+    ]);
+    render(<DashboardPage />);
+    await waitFor(() => {
+      expect(mockGetTopMovers).toHaveBeenCalled();
+    });
+  });
+
+  it('triggers auto price refresh when investments exist', async () => {
+    mockGetAccounts.mockResolvedValue([
+      { id: 'acc-1', name: 'Brokerage', accountType: 'INVESTMENT', isClosed: false },
+    ]);
+    render(<DashboardPage />);
+    await waitFor(() => {
+      expect(mockTriggerAutoRefresh).toHaveBeenCalled();
+    });
+  });
+
+  it('shows loading state in child components while data loads', async () => {
+    mockGetAccounts.mockReturnValue(new Promise(() => {}));
+    render(<DashboardPage />);
+    await waitFor(() => {
+      expect(screen.getByTestId('favourite-accounts')).toHaveTextContent('loading');
     });
   });
 });

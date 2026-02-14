@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@/test/render';
 import PayeesPage from './page';
+import toast from 'react-hot-toast';
 
 // Mock next/image
 vi.mock('next/image', () => ({
@@ -70,12 +71,14 @@ vi.mock('@/lib/constants', () => ({
 
 const mockGetAllPayees = vi.fn();
 const mockGetAllCategories = vi.fn();
+const mockCreatePayee = vi.fn();
+const mockUpdatePayee = vi.fn();
 
 vi.mock('@/lib/payees', () => ({
   payeesApi: {
     getAll: (...args: any[]) => mockGetAllPayees(...args),
-    create: vi.fn(),
-    update: vi.fn(),
+    create: (...args: any[]) => mockCreatePayee(...args),
+    update: (...args: any[]) => mockUpdatePayee(...args),
   },
 }));
 
@@ -144,10 +147,13 @@ vi.mock('@/components/payees/PayeeForm', () => ({
 }));
 
 vi.mock('@/components/payees/PayeeList', () => ({
-  PayeeList: ({ payees, sortField, sortDirection }: any) => (
+  PayeeList: ({ payees, sortField, sortDirection, onSort }: any) => (
     <div data-testid="payee-list">
       {payees.map((p: any) => <div key={p.id} data-testid={`payee-${p.id}`}>{p.name}</div>)}
       <span data-testid="sort-info">{sortField} {sortDirection}</span>
+      <button data-testid="sort-by-name" onClick={() => onSort('name')}>Sort Name</button>
+      <button data-testid="sort-by-count" onClick={() => onSort('count')}>Sort Count</button>
+      <button data-testid="sort-by-category" onClick={() => onSort('category')}>Sort Category</button>
     </div>
   ),
 }));
@@ -174,6 +180,11 @@ describe('PayeesPage', () => {
     it('renders the page header with title', async () => {
       render(<PayeesPage />);
       await waitFor(() => expect(screen.getByText('Payees')).toBeInTheDocument());
+    });
+
+    it('renders the subtitle', async () => {
+      render(<PayeesPage />);
+      await waitFor(() => expect(screen.getByText(/Manage your payees and their default categories/i)).toBeInTheDocument());
     });
 
     it('renders within page layout', async () => {
@@ -256,6 +267,48 @@ describe('PayeesPage', () => {
       render(<PayeesPage />);
       await waitFor(() => expect(screen.getByText('1 payee')).toBeInTheDocument());
     });
+
+    it('shows default sort info (name asc)', async () => {
+      render(<PayeesPage />);
+      await waitFor(() => {
+        expect(screen.getByTestId('sort-info')).toHaveTextContent('name asc');
+      });
+    });
+  });
+
+  describe('Sorting', () => {
+    it('toggles sort direction when clicking same field', async () => {
+      render(<PayeesPage />);
+      await waitFor(() => {
+        expect(screen.getByTestId('sort-info')).toHaveTextContent('name asc');
+      });
+      fireEvent.click(screen.getByTestId('sort-by-name'));
+      await waitFor(() => {
+        expect(screen.getByTestId('sort-info')).toHaveTextContent('name desc');
+      });
+    });
+
+    it('sorts by count in desc order by default', async () => {
+      render(<PayeesPage />);
+      await waitFor(() => {
+        expect(screen.getByTestId('payee-list')).toBeInTheDocument();
+      });
+      fireEvent.click(screen.getByTestId('sort-by-count'));
+      await waitFor(() => {
+        expect(screen.getByTestId('sort-info')).toHaveTextContent('count desc');
+      });
+    });
+
+    it('sorts by category in asc order by default', async () => {
+      render(<PayeesPage />);
+      await waitFor(() => {
+        expect(screen.getByTestId('payee-list')).toBeInTheDocument();
+      });
+      fireEvent.click(screen.getByTestId('sort-by-category'));
+      await waitFor(() => {
+        expect(screen.getByTestId('sort-info')).toHaveTextContent('category asc');
+      });
+    });
   });
 
   describe('Auto-Assign Categories', () => {
@@ -277,10 +330,35 @@ describe('PayeesPage', () => {
 
   describe('Error Handling', () => {
     it('shows error toast when data loading fails', async () => {
-      const toast = await import('react-hot-toast');
       mockGetAllPayees.mockRejectedValue(new Error('Network error'));
       render(<PayeesPage />);
-      await waitFor(() => expect(toast.default.error).toHaveBeenCalledWith('Failed to load data'));
+      await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Failed to load data'));
+    });
+  });
+
+  describe('Pagination', () => {
+    it('shows pagination when more payees than page size', async () => {
+      // PAGE_SIZE is mocked to 25, so create 30 payees
+      const manyPayees = Array.from({ length: 30 }, (_, i) => ({
+        id: `p-${i}`,
+        name: `Payee ${String(i).padStart(3, '0')}`,
+        defaultCategoryId: null,
+        defaultCategory: null,
+        transactionCount: i,
+      }));
+      mockGetAllPayees.mockResolvedValue(manyPayees);
+      render(<PayeesPage />);
+      await waitFor(() => {
+        expect(screen.getByTestId('pagination')).toBeInTheDocument();
+      });
+    });
+
+    it('does not show pagination when fewer payees than page size', async () => {
+      render(<PayeesPage />);
+      await waitFor(() => {
+        expect(screen.getByTestId('payee-list')).toBeInTheDocument();
+      });
+      expect(screen.queryByTestId('pagination')).not.toBeInTheDocument();
     });
   });
 });

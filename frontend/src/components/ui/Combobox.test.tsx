@@ -135,6 +135,417 @@ describe('Combobox', () => {
     expect(screen.getByRole('textbox')).toBeDisabled();
   });
 
+  it('resets input value to selected label on Escape', () => {
+    render(<Combobox options={options} onChange={onChange} value="2" initialDisplayValue="Banana" />);
+
+    const input = screen.getByRole('textbox');
+    expect(input).toHaveValue('Banana');
+
+    fireEvent.focus(input);
+    fireEvent.keyDown(input, { key: 'Escape' });
+
+    expect(input).toHaveValue('Banana');
+  });
+
+  it('opens dropdown on ArrowDown when closed', () => {
+    render(<Combobox options={options} onChange={onChange} />);
+
+    const input = screen.getByRole('textbox');
+
+    // Dropdown should be closed initially (no options visible)
+    expect(screen.queryByText('Apple')).not.toBeInTheDocument();
+
+    // ArrowDown should open the dropdown
+    fireEvent.keyDown(input, { key: 'ArrowDown' });
+
+    expect(screen.getByText('Apple')).toBeInTheDocument();
+  });
+
+  it('opens dropdown on ArrowUp when closed', () => {
+    render(<Combobox options={options} onChange={onChange} />);
+
+    const input = screen.getByRole('textbox');
+
+    expect(screen.queryByText('Apple')).not.toBeInTheDocument();
+
+    fireEvent.keyDown(input, { key: 'ArrowUp' });
+
+    expect(screen.getByText('Apple')).toBeInTheDocument();
+  });
+
+  it('ArrowUp does not go below index 0', () => {
+    render(<Combobox options={options} onChange={onChange} />);
+
+    const input = screen.getByRole('textbox');
+    fireEvent.focus(input);
+
+    // Highlight first option
+    fireEvent.keyDown(input, { key: 'ArrowDown' });
+    // Try to go up from index 0
+    fireEvent.keyDown(input, { key: 'ArrowUp' });
+    // Enter should still select the first option
+    fireEvent.keyDown(input, { key: 'Enter' });
+
+    expect(onChange).toHaveBeenCalledWith('1', 'Apple');
+  });
+
+  it('ArrowDown does not go past last option', () => {
+    render(<Combobox options={options} onChange={onChange} />);
+
+    const input = screen.getByRole('textbox');
+    fireEvent.focus(input);
+
+    // Navigate past all options
+    fireEvent.keyDown(input, { key: 'ArrowDown' });
+    fireEvent.keyDown(input, { key: 'ArrowDown' });
+    fireEvent.keyDown(input, { key: 'ArrowDown' });
+    fireEvent.keyDown(input, { key: 'ArrowDown' });
+    // One more should stay on last
+    fireEvent.keyDown(input, { key: 'ArrowDown' });
+    fireEvent.keyDown(input, { key: 'Enter' });
+
+    // Should select the last option (Date, index 3)
+    expect(onChange).toHaveBeenCalledWith('4', 'Date');
+  });
+
+  it('clicking on already-focused input re-opens dropdown', () => {
+    render(<Combobox options={options} onChange={onChange} />);
+
+    const input = screen.getByRole('textbox');
+    fireEvent.focus(input);
+
+    expect(screen.getByText('Apple')).toBeInTheDocument();
+
+    // Select an option to close dropdown
+    fireEvent.click(screen.getByText('Banana'));
+    expect(screen.queryByText('Apple')).not.toBeInTheDocument();
+
+    // Click input again
+    fireEvent.click(input);
+    expect(screen.getByText('Apple')).toBeInTheDocument();
+  });
+
+  it('calls onCreateNew when create option is clicked', async () => {
+    const onCreateNew = vi.fn();
+
+    render(
+      <Combobox
+        options={options}
+        onChange={onChange}
+        allowCustomValue
+        onCreateNew={onCreateNew}
+      />,
+    );
+
+    const input = screen.getByRole('textbox');
+    fireEvent.focus(input);
+
+    await new Promise(r => setTimeout(r, 150));
+
+    fireEvent.change(input, { target: { value: 'Mango' } });
+
+    await waitFor(() => {
+      expect(screen.getByText(/Create "Mango"/)).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText(/Create "Mango"/));
+
+    expect(onCreateNew).toHaveBeenCalledWith('Mango');
+  });
+
+  it('falls back to onChange when onCreateNew is not provided for custom value', async () => {
+    render(
+      <Combobox
+        options={options}
+        onChange={onChange}
+        allowCustomValue
+      />,
+    );
+
+    const input = screen.getByRole('textbox');
+    fireEvent.focus(input);
+
+    await new Promise(r => setTimeout(r, 150));
+
+    fireEvent.change(input, { target: { value: 'Mango' } });
+
+    await waitFor(() => {
+      expect(screen.getByText(/Create "Mango"/)).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText(/Create "Mango"/));
+
+    // Without onCreateNew, it should call onChange with empty value and the label
+    expect(onChange).toHaveBeenCalledWith('', 'Mango');
+  });
+
+  it('closes dropdown when clicking outside', async () => {
+    render(
+      <div>
+        <Combobox options={options} onChange={onChange} />
+        <button data-testid="outside">Outside</button>
+      </div>,
+    );
+
+    const input = screen.getByRole('textbox');
+    fireEvent.focus(input);
+
+    expect(screen.getByText('Apple')).toBeInTheDocument();
+
+    // Click outside
+    fireEvent.mouseDown(screen.getByTestId('outside'));
+
+    await waitFor(() => {
+      expect(screen.queryByText('Apple')).not.toBeInTheDocument();
+    });
+  });
+
+  it('resets to selected value on click outside when not allowing custom values', async () => {
+    render(
+      <div>
+        <Combobox options={options} onChange={onChange} value="1" initialDisplayValue="Apple" />
+        <button data-testid="outside">Outside</button>
+      </div>,
+    );
+
+    const input = screen.getByRole('textbox');
+    fireEvent.focus(input);
+
+    await new Promise(r => setTimeout(r, 150));
+
+    // Type something different
+    fireEvent.change(input, { target: { value: 'xyz' } });
+
+    // Click outside
+    fireEvent.mouseDown(screen.getByTestId('outside'));
+
+    await waitFor(() => {
+      // Should revert to the selected label
+      expect(input).toHaveValue('Apple');
+    });
+  });
+
+  it('displays initial value from initialDisplayValue prop', () => {
+    render(
+      <Combobox
+        options={options}
+        onChange={onChange}
+        value="1"
+        initialDisplayValue="Apple"
+      />,
+    );
+
+    expect(screen.getByRole('textbox')).toHaveValue('Apple');
+  });
+
+  it('updates input when value prop changes', () => {
+    const { rerender } = render(
+      <Combobox
+        options={options}
+        onChange={onChange}
+        value="1"
+        initialDisplayValue="Apple"
+      />,
+    );
+
+    expect(screen.getByRole('textbox')).toHaveValue('Apple');
+
+    rerender(
+      <Combobox
+        options={options}
+        onChange={onChange}
+        value="2"
+      />,
+    );
+
+    expect(screen.getByRole('textbox')).toHaveValue('Banana');
+  });
+
+  it('shows checkmark on selected option', () => {
+    const { container } = render(
+      <Combobox options={options} onChange={onChange} value="2" initialDisplayValue="Banana" />,
+    );
+
+    const input = screen.getByRole('textbox');
+    fireEvent.focus(input);
+
+    // The selected option should have the checkmark svg
+    const bananaOption = screen.getByText('Banana').closest('[data-option-index]');
+    expect(bananaOption).toBeInTheDocument();
+    const checkmark = bananaOption?.querySelector('svg');
+    expect(checkmark).toBeInTheDocument();
+  });
+
+  it('does not show create option when input matches an existing option exactly', async () => {
+    render(
+      <Combobox
+        options={options}
+        onChange={onChange}
+        allowCustomValue
+      />,
+    );
+
+    const input = screen.getByRole('textbox');
+    fireEvent.focus(input);
+
+    await new Promise(r => setTimeout(r, 150));
+
+    fireEvent.change(input, { target: { value: 'Apple' } });
+
+    await waitFor(() => {
+      expect(screen.queryByText(/Create "Apple"/)).not.toBeInTheDocument();
+    });
+  });
+
+  it('renders without label', () => {
+    render(<Combobox options={options} onChange={onChange} />);
+
+    // Should not have any label elements
+    expect(screen.queryByText('Fruit')).not.toBeInTheDocument();
+    expect(screen.getByRole('textbox')).toBeInTheDocument();
+  });
+
+  it('uses default placeholder when none provided', () => {
+    render(<Combobox options={options} onChange={onChange} />);
+
+    expect(screen.getByPlaceholderText('Select or type...')).toBeInTheDocument();
+  });
+
+  it('calls onInputChange when typing', async () => {
+    const onInputChange = vi.fn();
+
+    render(
+      <Combobox options={options} onChange={onChange} onInputChange={onInputChange} />,
+    );
+
+    const input = screen.getByRole('textbox');
+    fireEvent.focus(input);
+
+    await new Promise(r => setTimeout(r, 150));
+
+    fireEvent.change(input, { target: { value: 'ban' } });
+
+    expect(onInputChange).toHaveBeenCalledWith('ban');
+  });
+
+  it('filters by subtitle content', async () => {
+    render(<Combobox options={options} onChange={onChange} />);
+
+    const input = screen.getByRole('textbox');
+    fireEvent.focus(input);
+
+    await new Promise(r => setTimeout(r, 150));
+
+    fireEvent.change(input, { target: { value: 'tropical' } });
+
+    await waitFor(() => {
+      // Date has subtitle "A tropical fruit" which matches
+      expect(screen.getByText('Date')).toBeInTheDocument();
+      // Others should be filtered out
+      expect(screen.queryByText('Apple')).not.toBeInTheDocument();
+      expect(screen.queryByText('Banana')).not.toBeInTheDocument();
+    });
+  });
+
+  it('shows subtitle text when filtering', async () => {
+    render(<Combobox options={options} onChange={onChange} />);
+
+    const input = screen.getByRole('textbox');
+    fireEvent.focus(input);
+
+    await new Promise(r => setTimeout(r, 150));
+
+    fireEvent.change(input, { target: { value: 'dat' } });
+
+    await waitFor(() => {
+      expect(screen.getByText('A tropical fruit')).toBeInTheDocument();
+    });
+  });
+
+  it('handles custom value on click-outside with allowCustomValue', async () => {
+    render(
+      <div>
+        <Combobox options={options} onChange={onChange} allowCustomValue />
+        <button data-testid="outside">Outside</button>
+      </div>,
+    );
+
+    const input = screen.getByRole('textbox');
+    fireEvent.focus(input);
+
+    await new Promise(r => setTimeout(r, 150));
+
+    fireEvent.change(input, { target: { value: 'Custom Fruit' } });
+
+    // Click outside
+    fireEvent.mouseDown(screen.getByTestId('outside'));
+
+    await waitFor(() => {
+      expect(onChange).toHaveBeenCalledWith('', 'Custom Fruit');
+    });
+  });
+
+  it('matches exact option on click-outside with allowCustomValue', async () => {
+    render(
+      <div>
+        <Combobox options={options} onChange={onChange} allowCustomValue />
+        <button data-testid="outside">Outside</button>
+      </div>,
+    );
+
+    const input = screen.getByRole('textbox');
+    fireEvent.focus(input);
+
+    await new Promise(r => setTimeout(r, 150));
+
+    // Type an existing option name exactly (case-insensitive)
+    fireEvent.change(input, { target: { value: 'apple' } });
+
+    // Click outside
+    fireEvent.mouseDown(screen.getByTestId('outside'));
+
+    await waitFor(() => {
+      // Should match and select the existing Apple option
+      expect(onChange).toHaveBeenCalledWith('1', 'Apple');
+    });
+  });
+
+  it('Enter with no highlighted option does nothing', () => {
+    render(<Combobox options={options} onChange={onChange} />);
+
+    const input = screen.getByRole('textbox');
+    fireEvent.focus(input);
+
+    // highlightedIndex is -1 initially when not typing
+    // Press Enter without highlighting anything
+    fireEvent.keyDown(input, { key: 'Enter' });
+
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('clears value when value prop becomes empty without allowCustomValue', () => {
+    const { rerender } = render(
+      <Combobox
+        options={options}
+        onChange={onChange}
+        value="1"
+        initialDisplayValue="Apple"
+      />,
+    );
+
+    expect(screen.getByRole('textbox')).toHaveValue('Apple');
+
+    rerender(
+      <Combobox
+        options={options}
+        onChange={onChange}
+        value=""
+      />,
+    );
+
+    expect(screen.getByRole('textbox')).toHaveValue('');
+  });
+
   describe('inline autocomplete', () => {
     it('autocompletes input with best prefix match', async () => {
       render(<Combobox options={options} onChange={onChange} />);
@@ -172,7 +583,7 @@ describe('Combobox', () => {
       fireEvent.change(input, { target: { value: 'ba' } });
       await waitFor(() => expect(input).toHaveValue('Banana'));
 
-      // Press Backspace then change — should NOT autocomplete
+      // Press Backspace then change -- should NOT autocomplete
       fireEvent.keyDown(input, { key: 'Backspace' });
       fireEvent.change(input, { target: { value: 'b' } });
 
@@ -238,7 +649,7 @@ describe('Combobox', () => {
       fireEvent.change(input, { target: { value: 'b' } });
       await waitFor(() => expect(input).toHaveValue('b'));
 
-      // Type again — autocomplete should resume
+      // Type again -- autocomplete should resume
       fireEvent.change(input, { target: { value: 'ba' } });
       await waitFor(() => {
         expect(input).toHaveValue('Banana');
@@ -417,7 +828,7 @@ describe('Combobox', () => {
         expect(screen.getByText('Cherry')).toBeInTheDocument();
       });
 
-      // Press Enter without manual arrow navigation — auto-highlighted option is selected
+      // Press Enter without manual arrow navigation -- auto-highlighted option is selected
       fireEvent.keyDown(input, { key: 'Enter' });
 
       expect(onChange).toHaveBeenCalledWith('3', 'Cherry');
@@ -495,6 +906,94 @@ describe('Combobox', () => {
       fireEvent.keyDown(input, { key: 'Tab' });
 
       expect(onChange).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('create option keyboard navigation', () => {
+    it('selects create option via Enter when highlighted at index 0', async () => {
+      const onCreateNew = vi.fn();
+
+      // Use options where the typed text is a substring but not a prefix,
+      // so inline autocomplete does not create an exact match
+      render(
+        <Combobox
+          options={[
+            { value: '1', label: 'Big Apple' },
+          ]}
+          onChange={onChange}
+          allowCustomValue
+          onCreateNew={onCreateNew}
+        />,
+      );
+
+      const input = screen.getByRole('textbox');
+      fireEvent.focus(input);
+      await new Promise(r => setTimeout(r, 150));
+
+      // "app" matches "Big Apple" as substring but is not a prefix, so no autocomplete
+      // and input value stays "app" (not exact match) so Create option appears
+      fireEvent.change(input, { target: { value: 'app' } });
+
+      await waitFor(() => {
+        expect(screen.getByText(/Create "app"/)).toBeInTheDocument();
+        expect(screen.getByText('Big Apple')).toBeInTheDocument();
+      });
+
+      // Create option is at index 0, first matched option is at index 1
+      // Auto-highlight goes to index 1 (first filtered option)
+      // Navigate up to create option at index 0
+      fireEvent.keyDown(input, { key: 'ArrowUp' });
+      fireEvent.keyDown(input, { key: 'Enter' });
+
+      expect(onCreateNew).toHaveBeenCalledWith('app');
+    });
+
+    it('selects create option via Tab when highlighted at index 0', async () => {
+      const onCreateNew = vi.fn();
+
+      render(
+        <Combobox
+          options={[
+            { value: '1', label: 'Big Apple' },
+          ]}
+          onChange={onChange}
+          allowCustomValue
+          onCreateNew={onCreateNew}
+        />,
+      );
+
+      const input = screen.getByRole('textbox');
+      fireEvent.focus(input);
+      await new Promise(r => setTimeout(r, 150));
+
+      fireEvent.change(input, { target: { value: 'app' } });
+
+      await waitFor(() => {
+        expect(screen.getByText(/Create "app"/)).toBeInTheDocument();
+      });
+
+      // Navigate up to index 0 (create option)
+      fireEvent.keyDown(input, { key: 'ArrowUp' });
+      fireEvent.keyDown(input, { key: 'Tab' });
+
+      expect(onCreateNew).toHaveBeenCalledWith('app');
+    });
+  });
+
+  describe('scrollIntoView behavior', () => {
+    it('scrolls highlighted item into view during keyboard navigation', async () => {
+      const scrollSpy = vi.fn();
+      Element.prototype.scrollIntoView = scrollSpy;
+
+      render(<Combobox options={options} onChange={onChange} />);
+      const input = screen.getByRole('textbox');
+      fireEvent.focus(input);
+
+      fireEvent.keyDown(input, { key: 'ArrowDown' });
+
+      await waitFor(() => {
+        expect(scrollSpy).toHaveBeenCalled();
+      });
     });
   });
 });

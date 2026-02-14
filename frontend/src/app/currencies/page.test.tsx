@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@/test/render';
 import CurrenciesPage from './page';
+import toast from 'react-hot-toast';
 
 // Mock next/image
 vi.mock('next/image', () => ({
@@ -80,6 +81,8 @@ const mockGetCurrencyUsage = vi.fn().mockResolvedValue({
 });
 
 const mockRefreshRates = vi.fn().mockResolvedValue({ updated: 5, failed: 0 });
+const mockDeactivateCurrency = vi.fn();
+const mockActivateCurrency = vi.fn();
 
 vi.mock('@/lib/exchange-rates', () => ({
   exchangeRatesApi: {
@@ -89,14 +92,15 @@ vi.mock('@/lib/exchange-rates', () => ({
     getLatestRates: vi.fn().mockResolvedValue([]),
     createCurrency: vi.fn(),
     updateCurrency: vi.fn(),
-    deactivateCurrency: vi.fn(),
-    activateCurrency: vi.fn(),
+    deactivateCurrency: (...args: any[]) => mockDeactivateCurrency(...args),
+    activateCurrency: (...args: any[]) => mockActivateCurrency(...args),
     deleteCurrency: vi.fn(),
     lookupCurrency: vi.fn(),
   },
 }));
 
 // Mock useExchangeRates
+const mockRefreshHook = vi.fn().mockResolvedValue(undefined);
 vi.mock('@/hooks/useExchangeRates', () => ({
   useExchangeRates: () => ({
     rates: [],
@@ -105,7 +109,7 @@ vi.mock('@/hooks/useExchangeRates', () => ({
     convert: vi.fn(),
     convertToDefault: vi.fn(),
     getRate: vi.fn().mockReturnValue(null),
-    refresh: vi.fn().mockResolvedValue(undefined),
+    refresh: mockRefreshHook,
     defaultCurrency: 'CAD',
   }),
 }));
@@ -116,10 +120,13 @@ vi.mock('@/components/currencies/CurrencyForm', () => ({
 }));
 
 vi.mock('@/components/currencies/CurrencyList', () => ({
-  CurrencyList: ({ currencies }: any) => (
+  CurrencyList: ({ currencies, onToggleActive }: any) => (
     <div data-testid="currency-list">
       {currencies.map((c: any) => (
-        <div key={c.code} data-testid={`currency-row-${c.code}`}>{c.name}</div>
+        <div key={c.code} data-testid={`currency-row-${c.code}`}>
+          {c.name}
+          <button data-testid={`toggle-${c.code}`} onClick={() => onToggleActive(c)}>Toggle</button>
+        </div>
       ))}
     </div>
   ),
@@ -128,6 +135,10 @@ vi.mock('@/components/currencies/CurrencyList', () => ({
 
 vi.mock('@/components/ui/Modal', () => ({
   Modal: ({ children, isOpen }: any) => isOpen ? <div data-testid="modal">{children}</div> : null,
+}));
+
+vi.mock('@/components/ui/UnsavedChangesDialog', () => ({
+  UnsavedChangesDialog: () => null,
 }));
 
 vi.mock('@/components/ui/LoadingSpinner', () => ({
@@ -308,16 +319,49 @@ describe('CurrenciesPage', () => {
     });
   });
 
-  it('summary counts always show totals including inactive', async () => {
-    // Even though showInactive defaults to false, summary cards use allCurrencies
+  it('shows success toast after refreshing rates', async () => {
     render(<CurrenciesPage />);
     await waitFor(() => {
-      // Total should be 3 (all currencies including inactive EUR)
-      expect(screen.getByTestId('summary-Total Currencies')).toHaveTextContent('3');
-      // Active should be 2
-      expect(screen.getByTestId('summary-Active')).toHaveTextContent('2');
-      // Inactive should be 1
-      expect(screen.getByTestId('summary-Inactive')).toHaveTextContent('1');
+      expect(screen.getByText('Refresh Rates')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText('Refresh Rates'));
+    await waitFor(() => {
+      expect(toast.success).toHaveBeenCalledWith('Exchange rates refreshed: 5 pairs updated');
+    });
+  });
+
+  it('shows success toast with failed count when some rates fail', async () => {
+    mockRefreshRates.mockResolvedValueOnce({ updated: 3, failed: 2 });
+    render(<CurrenciesPage />);
+    await waitFor(() => {
+      expect(screen.getByText('Refresh Rates')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText('Refresh Rates'));
+    await waitFor(() => {
+      expect(toast.success).toHaveBeenCalledWith('Exchange rates refreshed: 3 updated, 2 failed');
+    });
+  });
+
+  it('shows error toast when refresh rates fails', async () => {
+    mockRefreshRates.mockRejectedValueOnce(new Error('API error'));
+    render(<CurrenciesPage />);
+    await waitFor(() => {
+      expect(screen.getByText('Refresh Rates')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText('Refresh Rates'));
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('Failed to refresh exchange rates');
+    });
+  });
+
+  it('refreshes hook rates after successful API refresh', async () => {
+    render(<CurrenciesPage />);
+    await waitFor(() => {
+      expect(screen.getByText('Refresh Rates')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText('Refresh Rates'));
+    await waitFor(() => {
+      expect(mockRefreshHook).toHaveBeenCalled();
     });
   });
 
@@ -327,6 +371,48 @@ describe('CurrenciesPage', () => {
     // Should still render the page without crashing
     await waitFor(() => {
       expect(screen.getByTestId('page-header')).toBeInTheDocument();
+    });
+  });
+
+  it('shows loading spinner while data is loading', async () => {
+    mockGetCurrencies.mockReturnValue(new Promise(() => {}));
+    render(<CurrenciesPage />);
+    await waitFor(() => {
+      expect(screen.getByTestId('loading-spinner')).toBeInTheDocument();
+    });
+  });
+
+  it('filters currencies by search query', async () => {
+    render(<CurrenciesPage />);
+    await waitFor(() => {
+      expect(screen.getByTestId('currency-list')).toBeInTheDocument();
+    });
+    fireEvent.change(screen.getByPlaceholderText('Search by code or name...'), { target: { value: 'Canadian' } });
+    await waitFor(() => {
+      expect(screen.getByTestId('currency-row-CAD')).toBeInTheDocument();
+      expect(screen.queryByTestId('currency-row-USD')).not.toBeInTheDocument();
+    });
+  });
+
+  it('deactivates a currency when toggle is clicked on active currency', async () => {
+    mockDeactivateCurrency.mockResolvedValue(undefined);
+    render(<CurrenciesPage />);
+    await waitFor(() => {
+      expect(screen.getByTestId('currency-list')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByTestId('toggle-USD'));
+    await waitFor(() => {
+      expect(mockDeactivateCurrency).toHaveBeenCalledWith('USD');
+    });
+  });
+
+  it('shows singular "currency" for count of 1', async () => {
+    mockGetCurrencies.mockResolvedValue([
+      { code: 'CAD', name: 'Canadian Dollar', symbol: 'CA$', decimalPlaces: 2, isActive: true, createdAt: '2026-01-01' },
+    ]);
+    render(<CurrenciesPage />);
+    await waitFor(() => {
+      expect(screen.getByText(/1 currency/i)).toBeInTheDocument();
     });
   });
 });

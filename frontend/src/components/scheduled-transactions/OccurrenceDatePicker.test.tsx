@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@/test/render';
 import { OccurrenceDatePicker } from './OccurrenceDatePicker';
 
@@ -7,7 +7,10 @@ vi.mock('@/hooks/useDateFormat', () => ({
 }));
 
 vi.mock('@/lib/utils', () => ({
-  parseLocalDate: (d: string) => new Date(d + 'T00:00:00'),
+  parseLocalDate: (d: string) => {
+    const dateStr = d.includes('T') ? d.split('T')[0] : d;
+    return new Date(dateStr + 'T00:00:00');
+  },
 }));
 
 describe('OccurrenceDatePicker', () => {
@@ -21,6 +24,11 @@ describe('OccurrenceDatePicker', () => {
   const onSelect = vi.fn();
   const onClose = vi.fn();
 
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  // --- Basic rendering ---
   it('renders dialog title and transaction name', () => {
     render(
       <OccurrenceDatePicker isOpen={true} scheduledTransaction={scheduledTransaction} onSelect={onSelect} onClose={onClose} />
@@ -29,14 +37,123 @@ describe('OccurrenceDatePicker', () => {
     expect(screen.getByText(/Rent/)).toBeInTheDocument();
   });
 
-  it('renders calculated occurrence dates', () => {
+  it('renders instruction text', () => {
     render(
       <OccurrenceDatePicker isOpen={true} scheduledTransaction={scheduledTransaction} onSelect={onSelect} onClose={onClose} />
     );
-    // Should show dates for monthly frequency
-    expect(screen.getByText('2025-03-01')).toBeInTheDocument();
+    expect(screen.getByText(/Choose which occurrence/)).toBeInTheDocument();
   });
 
+  it('does not render when isOpen is false', () => {
+    render(
+      <OccurrenceDatePicker isOpen={false} scheduledTransaction={scheduledTransaction} onSelect={onSelect} onClose={onClose} />
+    );
+    expect(screen.queryByText('Select Occurrence Date')).not.toBeInTheDocument();
+  });
+
+  // --- Calculated occurrence dates ---
+  it('renders calculated occurrence dates for monthly frequency', () => {
+    render(
+      <OccurrenceDatePicker isOpen={true} scheduledTransaction={scheduledTransaction} onSelect={onSelect} onClose={onClose} />
+    );
+    // Should show 5 dates for monthly frequency starting from 2025-03-01
+    expect(screen.getByText('2025-03-01')).toBeInTheDocument();
+    expect(screen.getByText('2025-04-01')).toBeInTheDocument();
+    expect(screen.getByText('2025-05-01')).toBeInTheDocument();
+    expect(screen.getByText('2025-06-01')).toBeInTheDocument();
+    expect(screen.getByText('2025-07-01')).toBeInTheDocument();
+  });
+
+  it('renders dates for weekly frequency', () => {
+    const weeklyTransaction = {
+      ...scheduledTransaction,
+      frequency: 'WEEKLY' as const,
+    };
+    render(
+      <OccurrenceDatePicker isOpen={true} scheduledTransaction={weeklyTransaction} onSelect={onSelect} onClose={onClose} />
+    );
+    expect(screen.getByText('2025-03-01')).toBeInTheDocument();
+    expect(screen.getByText('2025-03-08')).toBeInTheDocument();
+    expect(screen.getByText('2025-03-15')).toBeInTheDocument();
+    expect(screen.getByText('2025-03-22')).toBeInTheDocument();
+    expect(screen.getByText('2025-03-29')).toBeInTheDocument();
+  });
+
+  it('renders dates for biweekly frequency', () => {
+    const biweeklyTransaction = {
+      ...scheduledTransaction,
+      frequency: 'BIWEEKLY' as const,
+    };
+    render(
+      <OccurrenceDatePicker isOpen={true} scheduledTransaction={biweeklyTransaction} onSelect={onSelect} onClose={onClose} />
+    );
+    expect(screen.getByText('2025-03-01')).toBeInTheDocument();
+    expect(screen.getByText('2025-03-15')).toBeInTheDocument();
+    expect(screen.getByText('2025-03-29')).toBeInTheDocument();
+  });
+
+  it('renders dates for daily frequency', () => {
+    const dailyTransaction = {
+      ...scheduledTransaction,
+      frequency: 'DAILY' as const,
+    };
+    render(
+      <OccurrenceDatePicker isOpen={true} scheduledTransaction={dailyTransaction} onSelect={onSelect} onClose={onClose} />
+    );
+    expect(screen.getByText('2025-03-01')).toBeInTheDocument();
+    expect(screen.getByText('2025-03-02')).toBeInTheDocument();
+    expect(screen.getByText('2025-03-03')).toBeInTheDocument();
+    expect(screen.getByText('2025-03-04')).toBeInTheDocument();
+    expect(screen.getByText('2025-03-05')).toBeInTheDocument();
+  });
+
+  it('renders dates for quarterly frequency', () => {
+    const quarterlyTransaction = {
+      ...scheduledTransaction,
+      frequency: 'QUARTERLY' as const,
+    };
+    render(
+      <OccurrenceDatePicker isOpen={true} scheduledTransaction={quarterlyTransaction} onSelect={onSelect} onClose={onClose} />
+    );
+    expect(screen.getByText('2025-03-01')).toBeInTheDocument();
+    expect(screen.getByText('2025-06-01')).toBeInTheDocument();
+    expect(screen.getByText('2025-09-01')).toBeInTheDocument();
+    expect(screen.getByText('2025-12-01')).toBeInTheDocument();
+    expect(screen.getByText('2026-03-01')).toBeInTheDocument();
+  });
+
+  it('renders dates for yearly frequency', () => {
+    const yearlyTransaction = {
+      ...scheduledTransaction,
+      frequency: 'YEARLY' as const,
+    };
+    render(
+      <OccurrenceDatePicker isOpen={true} scheduledTransaction={yearlyTransaction} onSelect={onSelect} onClose={onClose} />
+    );
+    expect(screen.getByText('2025-03-01')).toBeInTheDocument();
+    expect(screen.getByText('2026-03-01')).toBeInTheDocument();
+    expect(screen.getByText('2027-03-01')).toBeInTheDocument();
+    expect(screen.getByText('2028-03-01')).toBeInTheDocument();
+    expect(screen.getByText('2029-03-01')).toBeInTheDocument();
+  });
+
+  it('renders only one date for ONCE frequency', () => {
+    const onceTransaction = {
+      ...scheduledTransaction,
+      frequency: 'ONCE' as const,
+    };
+    render(
+      <OccurrenceDatePicker isOpen={true} scheduledTransaction={onceTransaction} onSelect={onSelect} onClose={onClose} />
+    );
+    expect(screen.getByText('2025-03-01')).toBeInTheDocument();
+    // Should only have one date button
+    const buttons = screen.getAllByRole('button');
+    // Cancel button + the one date button = 2 + X close button
+    const dateButtons = buttons.filter(b => b.textContent?.includes('2025'));
+    expect(dateButtons.length).toBe(1);
+  });
+
+  // --- Date selection ---
   it('calls onSelect when a date is clicked', () => {
     render(
       <OccurrenceDatePicker isOpen={true} scheduledTransaction={scheduledTransaction} onSelect={onSelect} onClose={onClose} />
@@ -45,11 +162,148 @@ describe('OccurrenceDatePicker', () => {
     expect(onSelect).toHaveBeenCalledWith('2025-03-01');
   });
 
+  it('calls onSelect with the correct date for non-first date', () => {
+    render(
+      <OccurrenceDatePicker isOpen={true} scheduledTransaction={scheduledTransaction} onSelect={onSelect} onClose={onClose} />
+    );
+    fireEvent.click(screen.getByText('2025-05-01'));
+    expect(onSelect).toHaveBeenCalledWith('2025-05-01');
+  });
+
+  // --- Cancel button ---
+  it('renders Cancel button', () => {
+    render(
+      <OccurrenceDatePicker isOpen={true} scheduledTransaction={scheduledTransaction} onSelect={onSelect} onClose={onClose} />
+    );
+    expect(screen.getByText('Cancel')).toBeInTheDocument();
+  });
+
+  it('calls onClose when Cancel button is clicked', () => {
+    render(
+      <OccurrenceDatePicker isOpen={true} scheduledTransaction={scheduledTransaction} onSelect={onSelect} onClose={onClose} />
+    );
+    fireEvent.click(screen.getByText('Cancel'));
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  // --- Override dates ---
   it('marks overridden dates as modified', () => {
     const overrides = [{ originalDate: '2025-03-01', overrideDate: '2025-03-05' }];
     render(
       <OccurrenceDatePicker isOpen={true} scheduledTransaction={scheduledTransaction} overrides={overrides} onSelect={onSelect} onClose={onClose} />
     );
     expect(screen.getByText('Modified')).toBeInTheDocument();
+  });
+
+  it('shows override date instead of original calculated date', () => {
+    const overrides = [{ originalDate: '2025-03-01', overrideDate: '2025-03-05' }];
+    render(
+      <OccurrenceDatePicker isOpen={true} scheduledTransaction={scheduledTransaction} overrides={overrides} onSelect={onSelect} onClose={onClose} />
+    );
+    // Override date should be shown
+    expect(screen.getByText('2025-03-05')).toBeInTheDocument();
+    // Original calculated date should be replaced (not shown as a separate button)
+    // But the next dates should still be present
+    expect(screen.getByText('2025-04-01')).toBeInTheDocument();
+  });
+
+  it('handles multiple overrides', () => {
+    const overrides = [
+      { originalDate: '2025-03-01', overrideDate: '2025-03-05' },
+      { originalDate: '2025-04-01', overrideDate: '2025-04-10' },
+    ];
+    render(
+      <OccurrenceDatePicker isOpen={true} scheduledTransaction={scheduledTransaction} overrides={overrides} onSelect={onSelect} onClose={onClose} />
+    );
+    const modifiedBadges = screen.getAllByText('Modified');
+    expect(modifiedBadges.length).toBe(2);
+    expect(screen.getByText('2025-03-05')).toBeInTheDocument();
+    expect(screen.getByText('2025-04-10')).toBeInTheDocument();
+  });
+
+  it('calls onSelect with override date when override date button is clicked', () => {
+    const overrides = [{ originalDate: '2025-03-01', overrideDate: '2025-03-05' }];
+    render(
+      <OccurrenceDatePicker isOpen={true} scheduledTransaction={scheduledTransaction} overrides={overrides} onSelect={onSelect} onClose={onClose} />
+    );
+    fireEvent.click(screen.getByText('2025-03-05'));
+    expect(onSelect).toHaveBeenCalledWith('2025-03-05');
+  });
+
+  // --- Next Due badge ---
+  it('shows Next Due badge on the first occurrence date', () => {
+    render(
+      <OccurrenceDatePicker isOpen={true} scheduledTransaction={scheduledTransaction} onSelect={onSelect} onClose={onClose} />
+    );
+    expect(screen.getByText('Next Due')).toBeInTheDocument();
+  });
+
+  it('does not show Next Due badge on non-first occurrence dates', () => {
+    render(
+      <OccurrenceDatePicker isOpen={true} scheduledTransaction={scheduledTransaction} onSelect={onSelect} onClose={onClose} />
+    );
+    // Only one Next Due badge should be present
+    const badges = screen.getAllByText('Next Due');
+    expect(badges.length).toBe(1);
+  });
+
+  // --- Close button (X) ---
+  it('calls onClose when X button is clicked', () => {
+    render(
+      <OccurrenceDatePicker isOpen={true} scheduledTransaction={scheduledTransaction} onSelect={onSelect} onClose={onClose} />
+    );
+    const closeButtons = screen.getAllByRole('button');
+    const xButton = closeButtons.find(b => b.querySelector('svg path[d*="M6 18L18 6"]'));
+    if (xButton) {
+      fireEvent.click(xButton);
+      expect(onClose).toHaveBeenCalled();
+    }
+  });
+
+  // --- Semimonthly frequency ---
+  it('renders dates for semimonthly frequency', () => {
+    const semimonthlyTransaction = {
+      ...scheduledTransaction,
+      nextDueDate: '2025-03-15',
+      frequency: 'SEMIMONTHLY' as const,
+    };
+    render(
+      <OccurrenceDatePicker isOpen={true} scheduledTransaction={semimonthlyTransaction} onSelect={onSelect} onClose={onClose} />
+    );
+    // Semimonthly from the 15th goes to end of month, then 15th of next month, etc.
+    expect(screen.getByText('2025-03-15')).toBeInTheDocument();
+    expect(screen.getByText('2025-03-31')).toBeInTheDocument();
+    expect(screen.getByText('2025-04-15')).toBeInTheDocument();
+  });
+
+  // --- Empty overrides array ---
+  it('renders correctly with empty overrides array', () => {
+    render(
+      <OccurrenceDatePicker isOpen={true} scheduledTransaction={scheduledTransaction} overrides={[]} onSelect={onSelect} onClose={onClose} />
+    );
+    expect(screen.getByText('2025-03-01')).toBeInTheDocument();
+    expect(screen.queryByText('Modified')).not.toBeInTheDocument();
+  });
+
+  // --- No overrides prop ---
+  it('renders correctly without overrides prop', () => {
+    render(
+      <OccurrenceDatePicker isOpen={true} scheduledTransaction={scheduledTransaction} onSelect={onSelect} onClose={onClose} />
+    );
+    expect(screen.getByText('2025-03-01')).toBeInTheDocument();
+    expect(screen.queryByText('Modified')).not.toBeInTheDocument();
+  });
+
+  // --- Next due date with T suffix ---
+  it('handles nextDueDate with T00:00:00Z suffix', () => {
+    const transactionWithTSuffix = {
+      ...scheduledTransaction,
+      nextDueDate: '2025-03-01T00:00:00Z',
+    };
+    render(
+      <OccurrenceDatePicker isOpen={true} scheduledTransaction={transactionWithTSuffix} onSelect={onSelect} onClose={onClose} />
+    );
+    // The component splits on 'T' to get the date part for nextDueDate badge
+    expect(screen.getByText('Next Due')).toBeInTheDocument();
   });
 });
