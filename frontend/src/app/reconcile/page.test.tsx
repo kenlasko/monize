@@ -222,9 +222,8 @@ describe('ReconcilePage', () => {
     it('filters out investment brokerage and closed accounts', async () => {
       render(<ReconcilePage />);
       await waitFor(() => {
-        expect(screen.getByLabelText('Account')).toBeInTheDocument();
+        expect(screen.getByText(/Checking/)).toBeInTheDocument();
       });
-      expect(screen.getByText(/Checking/)).toBeInTheDocument();
       expect(screen.getByText(/Visa/)).toBeInTheDocument();
       expect(screen.queryByText(/Brokerage/)).not.toBeInTheDocument();
       expect(screen.queryByText(/Old Savings/)).not.toBeInTheDocument();
@@ -232,14 +231,14 @@ describe('ReconcilePage', () => {
 
     it('shows liability note for credit card accounts', async () => {
       render(<ReconcilePage />);
-      await waitFor(() => expect(screen.getByLabelText('Account')).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByText(/Checking/)).toBeInTheDocument());
       fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-2' } });
       expect(screen.getByText(/Liability accounts typically have a negative balance/)).toBeInTheDocument();
     });
 
     it('does not show liability note for non-liability accounts', async () => {
       render(<ReconcilePage />);
-      await waitFor(() => expect(screen.getByLabelText('Account')).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByText(/Checking/)).toBeInTheDocument());
       fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-1' } });
       expect(screen.queryByText(/Liability accounts typically/)).not.toBeInTheDocument();
     });
@@ -263,7 +262,7 @@ describe('ReconcilePage', () => {
   describe('Reconcile Step', () => {
     async function advanceToReconcileStep() {
       render(<ReconcilePage />);
-      await waitFor(() => expect(screen.getByLabelText('Account')).toBeInTheDocument(), { timeout: 3000 });
+      await waitFor(() => expect(screen.getByText(/Checking/)).toBeInTheDocument(), { timeout: 3000 });
       fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-1' } });
       fireEvent.change(screen.getByLabelText('Statement Ending Balance'), { target: { value: '1500' } });
       await waitFor(() => {
@@ -359,7 +358,7 @@ describe('ReconcilePage', () => {
     it('shows empty state when no transactions', async () => {
       mockGetReconciliationData.mockResolvedValue({ ...mockReconciliationData, transactions: [] });
       render(<ReconcilePage />);
-      await waitFor(() => expect(screen.getByLabelText('Account')).toBeInTheDocument(), { timeout: 3000 });
+      await waitFor(() => expect(screen.getByText(/Checking/)).toBeInTheDocument(), { timeout: 3000 });
       fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-1' } });
       fireEvent.change(screen.getByLabelText('Statement Ending Balance'), { target: { value: '1500' } });
       fireEvent.click(screen.getAllByText('Start Reconciliation').find(el => el.tagName === 'BUTTON')!);
@@ -385,7 +384,7 @@ describe('ReconcilePage', () => {
         reconciledBalance: 1000, clearedBalance: 1500, difference: 0,
       });
       render(<ReconcilePage />);
-      await waitFor(() => expect(screen.getByLabelText('Account')).toBeInTheDocument(), { timeout: 3000 });
+      await waitFor(() => expect(screen.getByText(/Checking/)).toBeInTheDocument(), { timeout: 3000 });
       fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-1' } });
       fireEvent.change(screen.getByLabelText('Statement Ending Balance'), { target: { value: '1500' } });
       fireEvent.click(screen.getAllByText('Start Reconciliation').find(el => el.tagName === 'BUTTON')!);
@@ -428,7 +427,7 @@ describe('ReconcilePage', () => {
       const toast = await import('react-hot-toast');
       mockGetReconciliationData.mockRejectedValue(new Error('Server error'));
       render(<ReconcilePage />);
-      await waitFor(() => expect(screen.getByLabelText('Account')).toBeInTheDocument(), { timeout: 3000 });
+      await waitFor(() => expect(screen.getByText(/Checking/)).toBeInTheDocument(), { timeout: 3000 });
       fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-1' } });
       fireEvent.change(screen.getByLabelText('Statement Ending Balance'), { target: { value: '1500' } });
       fireEvent.click(screen.getAllByText('Start Reconciliation').find(el => el.tagName === 'BUTTON')!);
@@ -448,7 +447,7 @@ describe('ReconcilePage', () => {
         reconciledBalance: 1000, clearedBalance: 1500, difference: 0,
       });
       render(<ReconcilePage />);
-      await waitFor(() => expect(screen.getByLabelText('Account')).toBeInTheDocument(), { timeout: 3000 });
+      await waitFor(() => expect(screen.getByText(/Checking/)).toBeInTheDocument(), { timeout: 3000 });
       fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-1' } });
       fireEvent.change(screen.getByLabelText('Statement Ending Balance'), { target: { value: '1500' } });
       fireEvent.click(screen.getAllByText('Start Reconciliation').find(el => el.tagName === 'BUTTON')!);
