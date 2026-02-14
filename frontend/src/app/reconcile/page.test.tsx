@@ -266,8 +266,11 @@ describe('ReconcilePage', () => {
       await waitFor(() => expect(screen.getByLabelText('Account')).toBeInTheDocument());
       fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-1' } });
       fireEvent.change(screen.getByLabelText('Statement Ending Balance'), { target: { value: '1500' } });
-      const startButtons = screen.getAllByText('Start Reconciliation');
-      fireEvent.click(startButtons.find(el => el.tagName === 'BUTTON')!);
+      await waitFor(() => {
+        const button = screen.getAllByText('Start Reconciliation').find(el => el.tagName === 'BUTTON');
+        expect(button).not.toBeDisabled();
+      });
+      fireEvent.click(screen.getAllByText('Start Reconciliation').find(el => el.tagName === 'BUTTON')!);
       await waitFor(() => expect(screen.getByText('Statement Balance')).toBeInTheDocument());
     }
 
