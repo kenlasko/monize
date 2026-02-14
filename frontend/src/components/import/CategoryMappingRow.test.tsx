@@ -31,7 +31,7 @@ describe('CategoryMappingRow', () => {
     { id: 'loan2', name: 'Car Loan', institution: null },
   ] as any[];
 
-  let onMappingChange: ReturnType<typeof vi.fn>;
+  let onMappingChange: any;
   const formatCategoryPath = (path: string) => path.replace(':', ' > ');
 
   beforeEach(() => {
