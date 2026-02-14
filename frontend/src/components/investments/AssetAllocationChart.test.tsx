@@ -16,8 +16,12 @@ vi.mock('@/hooks/useNumberFormat', () => ({
   }),
 }));
 
-vi.mock('@/store/preferencesStore', () => ({
-  usePreferencesStore: (selector: any) => selector({ preferences: { defaultCurrency: 'CAD' } }),
+vi.mock('@/hooks/useExchangeRates', () => ({
+  useExchangeRates: () => ({
+    defaultCurrency: 'CAD',
+    convertToDefault: (amount: number) => amount,
+    getRate: () => null,
+  }),
 }));
 
 describe('AssetAllocationChart', () => {
