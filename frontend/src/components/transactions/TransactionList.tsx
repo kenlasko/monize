@@ -299,6 +299,12 @@ interface TransactionListProps {
   onTransferClick?: (linkedAccountId: string, linkedTransactionId: string) => void;
   /** Callback when clicking on a category badge to filter by that category */
   onCategoryClick?: (categoryId: string) => void;
+  /** Callback to filter transactions by a specific date */
+  onDateFilterClick?: (date: string) => void;
+  /** Callback to filter transactions by a specific account */
+  onAccountFilterClick?: (accountId: string) => void;
+  /** Callback to filter transactions by a specific payee */
+  onPayeeFilterClick?: (payeeId: string) => void;
   density?: DensityLevel;
   onDensityChange?: (density: DensityLevel) => void;
   /** Starting balance for running balance calculation (balance after first tx on page) */
@@ -328,6 +334,9 @@ export function TransactionList({
   onPayeeClick,
   onTransferClick,
   onCategoryClick,
+  onDateFilterClick,
+  onAccountFilterClick,
+  onPayeeFilterClick,
   density: propDensity,
   onDensityChange,
   startingBalance,
@@ -460,6 +469,33 @@ export function TransactionList({
       onCategoryClick(tx.category.id);
     }
   }, [actionSheet.transaction, onCategoryClick]);
+
+  const handleActionSheetFilterDate = useCallback(() => {
+    const tx = actionSheet.transaction;
+    if (!tx) return;
+    setActionSheet({ isOpen: false, transaction: null });
+    if (tx.transactionDate && onDateFilterClick) {
+      onDateFilterClick(tx.transactionDate);
+    }
+  }, [actionSheet.transaction, onDateFilterClick]);
+
+  const handleActionSheetFilterAccount = useCallback(() => {
+    const tx = actionSheet.transaction;
+    if (!tx) return;
+    setActionSheet({ isOpen: false, transaction: null });
+    if (tx.account?.id && onAccountFilterClick) {
+      onAccountFilterClick(tx.account.id);
+    }
+  }, [actionSheet.transaction, onAccountFilterClick]);
+
+  const handleActionSheetFilterPayee = useCallback(() => {
+    const tx = actionSheet.transaction;
+    if (!tx) return;
+    setActionSheet({ isOpen: false, transaction: null });
+    if (tx.payeeId && onPayeeFilterClick) {
+      onPayeeFilterClick(tx.payeeId);
+    }
+  }, [actionSheet.transaction, onPayeeFilterClick]);
 
   const handleActionSheetDelete = useCallback(() => {
     const tx = actionSheet.transaction;
@@ -728,6 +764,39 @@ export function TransactionList({
               {actionSheet.transaction && formatDate(actionSheet.transaction.transactionDate)}
             </p>
           </div>
+          {onDateFilterClick && actionSheet.transaction?.transactionDate && (
+            <button
+              onClick={handleActionSheetFilterDate}
+              className="w-full px-4 py-3 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3"
+            >
+              <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              Filter by date &ldquo;{formatDate(actionSheet.transaction.transactionDate)}&rdquo;
+            </button>
+          )}
+          {onAccountFilterClick && actionSheet.transaction?.account && (
+            <button
+              onClick={handleActionSheetFilterAccount}
+              className="w-full px-4 py-3 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3"
+            >
+              <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+              </svg>
+              Filter by &ldquo;{actionSheet.transaction.account.name}&rdquo;
+            </button>
+          )}
+          {onPayeeFilterClick && actionSheet.transaction?.payeeId && (
+            <button
+              onClick={handleActionSheetFilterPayee}
+              className="w-full px-4 py-3 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3"
+            >
+              <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              Filter by &ldquo;{actionSheet.transaction.payeeName || 'Payee'}&rdquo;
+            </button>
+          )}
           {onCategoryClick && actionSheet.transaction?.category && (
             <button
               onClick={handleActionSheetFilterCategory}

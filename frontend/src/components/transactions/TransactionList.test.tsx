@@ -347,6 +347,205 @@ describe('TransactionList', () => {
     expect(deleteButtons.length).toBeGreaterThanOrEqual(2); // row Delete + action sheet Delete
   });
 
+  it('shows all filter options in action sheet when all callbacks provided', async () => {
+    const transaction = createTransaction();
+
+    vi.useFakeTimers();
+
+    render(
+      <TransactionList
+        transactions={[transaction]}
+        onEdit={mockOnEdit}
+        onRefresh={mockOnRefresh}
+        onCategoryClick={vi.fn()}
+        onDateFilterClick={vi.fn()}
+        onAccountFilterClick={vi.fn()}
+        onPayeeFilterClick={vi.fn()}
+      />
+    );
+
+    const row = screen.getByText('Grocery Store').closest('tr')!;
+    fireEvent.mouseDown(row);
+    vi.advanceTimersByTime(800);
+    vi.useRealTimers();
+
+    await waitFor(() => {
+      expect(screen.getByText(/Filter by date/)).toBeInTheDocument();
+      expect(screen.getByText(/Filter by.*Chequing/)).toBeInTheDocument();
+      expect(screen.getByText(/Filter by.*Grocery Store/)).toBeInTheDocument();
+      expect(screen.getByText(/Filter by.*Groceries/)).toBeInTheDocument();
+    });
+  });
+
+  it('calls onDateFilterClick with transaction date from action sheet', async () => {
+    const mockOnDateFilterClick = vi.fn();
+    const transaction = createTransaction({ transactionDate: '2024-03-15' });
+
+    vi.useFakeTimers();
+
+    render(
+      <TransactionList
+        transactions={[transaction]}
+        onEdit={mockOnEdit}
+        onRefresh={mockOnRefresh}
+        onDateFilterClick={mockOnDateFilterClick}
+      />
+    );
+
+    const row = screen.getByText('Grocery Store').closest('tr')!;
+    fireEvent.mouseDown(row);
+    vi.advanceTimersByTime(800);
+    vi.useRealTimers();
+
+    await waitFor(() => {
+      expect(screen.getByText(/Filter by date/)).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText(/Filter by date/));
+    expect(mockOnDateFilterClick).toHaveBeenCalledWith('2024-03-15');
+  });
+
+  it('calls onAccountFilterClick with account ID from action sheet', async () => {
+    const mockOnAccountFilterClick = vi.fn();
+    const transaction = createTransaction();
+
+    vi.useFakeTimers();
+
+    render(
+      <TransactionList
+        transactions={[transaction]}
+        onEdit={mockOnEdit}
+        onRefresh={mockOnRefresh}
+        onAccountFilterClick={mockOnAccountFilterClick}
+      />
+    );
+
+    const row = screen.getByText('Grocery Store').closest('tr')!;
+    fireEvent.mouseDown(row);
+    vi.advanceTimersByTime(800);
+    vi.useRealTimers();
+
+    await waitFor(() => {
+      expect(screen.getByText(/Filter by.*Chequing/)).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText(/Filter by.*Chequing/));
+    expect(mockOnAccountFilterClick).toHaveBeenCalledWith('acc-1');
+  });
+
+  it('calls onPayeeFilterClick with payee ID from action sheet', async () => {
+    const mockOnPayeeFilterClick = vi.fn();
+    const transaction = createTransaction();
+
+    vi.useFakeTimers();
+
+    render(
+      <TransactionList
+        transactions={[transaction]}
+        onEdit={mockOnEdit}
+        onRefresh={mockOnRefresh}
+        onPayeeFilterClick={mockOnPayeeFilterClick}
+      />
+    );
+
+    const row = screen.getByText('Grocery Store').closest('tr')!;
+    fireEvent.mouseDown(row);
+    vi.advanceTimersByTime(800);
+    vi.useRealTimers();
+
+    await waitFor(() => {
+      expect(screen.getByText(/Filter by.*Grocery Store/)).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText(/Filter by.*Grocery Store/));
+    expect(mockOnPayeeFilterClick).toHaveBeenCalledWith('payee-1');
+  });
+
+  it('does not show date filter option when onDateFilterClick is not provided', async () => {
+    const transaction = createTransaction();
+
+    vi.useFakeTimers();
+
+    render(
+      <TransactionList
+        transactions={[transaction]}
+        onEdit={mockOnEdit}
+        onRefresh={mockOnRefresh}
+        onCategoryClick={vi.fn()}
+      />
+    );
+
+    const row = screen.getByText('Grocery Store').closest('tr')!;
+    fireEvent.mouseDown(row);
+    vi.advanceTimersByTime(800);
+    vi.useRealTimers();
+
+    await waitFor(() => {
+      expect(screen.getByText(/Filter by.*Groceries/)).toBeInTheDocument();
+    });
+
+    expect(screen.queryByText(/Filter by date/)).not.toBeInTheDocument();
+  });
+
+  it('does not show account filter option when account is null', async () => {
+    const transaction = createTransaction({ account: null });
+
+    vi.useFakeTimers();
+
+    render(
+      <TransactionList
+        transactions={[transaction]}
+        onEdit={mockOnEdit}
+        onRefresh={mockOnRefresh}
+        onAccountFilterClick={vi.fn()}
+      />
+    );
+
+    const row = screen.getByText('Grocery Store').closest('tr')!;
+    fireEvent.mouseDown(row);
+    vi.advanceTimersByTime(800);
+    vi.useRealTimers();
+
+    await waitFor(() => {
+      expect(screen.getByText('Grocery Store', { selector: '.text-sm.font-medium' })).toBeInTheDocument();
+    });
+
+    // Account filter should not appear since account is null
+    const filterButtons = screen.queryAllByText(/Filter by/);
+    const accountFilterButton = filterButtons.find(el => el.textContent?.includes('Chequing'));
+    expect(accountFilterButton).toBeUndefined();
+  });
+
+  it('does not show payee filter option when payeeId is null', async () => {
+    const transaction = createTransaction({ payeeId: null, payeeName: null });
+
+    vi.useFakeTimers();
+
+    render(
+      <TransactionList
+        transactions={[transaction]}
+        onEdit={mockOnEdit}
+        onRefresh={mockOnRefresh}
+        onPayeeFilterClick={vi.fn()}
+        onCategoryClick={vi.fn()}
+      />
+    );
+
+    const row = screen.getByText('Chequing').closest('tr')!;
+    fireEvent.mouseDown(row);
+    vi.advanceTimersByTime(800);
+    vi.useRealTimers();
+
+    await waitFor(() => {
+      expect(screen.getByText(/Filter by.*Groceries/)).toBeInTheDocument();
+    });
+
+    // Payee filter should not appear since payeeId is null
+    const filterButtons = screen.queryAllByText(/Filter by/);
+    const payeeFilterButton = filterButtons.find(el => el.textContent?.includes('Payee'));
+    expect(payeeFilterButton).toBeUndefined();
+  });
+
   it('shows Split badge for split transactions', () => {
     const splitTransaction = createTransaction({
       isSplit: true,

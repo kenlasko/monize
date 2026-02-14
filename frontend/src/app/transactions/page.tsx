@@ -617,6 +617,23 @@ function TransactionsContent() {
     setFilterCategoryIds([categoryId]);
   }, []);
 
+  const handleDateFilterClick = useCallback((date: string) => {
+    isFilterChange.current = true;
+    setFilterStartDate(date);
+    setFilterEndDate(date);
+  }, []);
+
+  const handleAccountFilterClick = useCallback((accountId: string) => {
+    isFilterChange.current = true;
+    setFilterAccountStatus('');
+    setFilterAccountIds([accountId]);
+  }, []);
+
+  const handlePayeeFilterClick = useCallback((payeeId: string) => {
+    isFilterChange.current = true;
+    setFilterPayeeIds([payeeId]);
+  }, []);
+
   const handleTransferClick = useCallback((linkedAccountId: string, linkedTransactionId: string) => {
     // Navigate to the linked account and jump to the page containing the linked transaction
     // Store the target transaction ID so loadTransactions can request the correct page
@@ -860,6 +877,9 @@ function TransactionsContent() {
               onPayeeClick={handlePayeeClick}
               onTransferClick={handleTransferClick}
               onCategoryClick={handleCategoryClick}
+              onDateFilterClick={handleDateFilterClick}
+              onAccountFilterClick={handleAccountFilterClick}
+              onPayeeFilterClick={handlePayeeFilterClick}
               density={listDensity}
               onDensityChange={setListDensity}
               isSingleAccountView={filterAccountIds.length === 1}
