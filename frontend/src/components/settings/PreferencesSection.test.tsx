@@ -95,4 +95,118 @@ describe('PreferencesSection', () => {
       expect(toast.error).toHaveBeenCalledWith('Failed to save preferences');
     });
   });
+
+  it('sends updated date format when changed and saved', async () => {
+    (userSettingsApi.updatePreferences as ReturnType<typeof vi.fn>).mockResolvedValue(mockPreferences);
+
+    render(<PreferencesSection preferences={mockPreferences} onPreferencesUpdated={mockOnPreferencesUpdated} />);
+
+    fireEvent.change(screen.getByLabelText('Date Format'), { target: { value: 'MM/DD/YYYY' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save Preferences' }));
+
+    await waitFor(() => {
+      expect(userSettingsApi.updatePreferences).toHaveBeenCalledWith(
+        expect.objectContaining({ dateFormat: 'MM/DD/YYYY' })
+      );
+    });
+  });
+
+  it('sends updated number format when changed and saved', async () => {
+    (userSettingsApi.updatePreferences as ReturnType<typeof vi.fn>).mockResolvedValue(mockPreferences);
+
+    render(<PreferencesSection preferences={mockPreferences} onPreferencesUpdated={mockOnPreferencesUpdated} />);
+
+    fireEvent.change(screen.getByLabelText('Number Format'), { target: { value: 'de-DE' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save Preferences' }));
+
+    await waitFor(() => {
+      expect(userSettingsApi.updatePreferences).toHaveBeenCalledWith(
+        expect.objectContaining({ numberFormat: 'de-DE' })
+      );
+    });
+  });
+
+  it('sends updated timezone when changed and saved', async () => {
+    (userSettingsApi.updatePreferences as ReturnType<typeof vi.fn>).mockResolvedValue(mockPreferences);
+
+    render(<PreferencesSection preferences={mockPreferences} onPreferencesUpdated={mockOnPreferencesUpdated} />);
+
+    fireEvent.change(screen.getByLabelText('Timezone'), { target: { value: 'America/New_York' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save Preferences' }));
+
+    await waitFor(() => {
+      expect(userSettingsApi.updatePreferences).toHaveBeenCalledWith(
+        expect.objectContaining({ timezone: 'America/New_York' })
+      );
+    });
+  });
+
+  it('sends updated default currency when changed and saved', async () => {
+    (userSettingsApi.updatePreferences as ReturnType<typeof vi.fn>).mockResolvedValue(mockPreferences);
+
+    render(<PreferencesSection preferences={mockPreferences} onPreferencesUpdated={mockOnPreferencesUpdated} />);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Default Currency')).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByLabelText('Default Currency'), { target: { value: 'USD' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save Preferences' }));
+
+    await waitFor(() => {
+      expect(userSettingsApi.updatePreferences).toHaveBeenCalledWith(
+        expect.objectContaining({ defaultCurrency: 'USD' })
+      );
+    });
+  });
+
+  it('sends updated theme when changed and saved', async () => {
+    (userSettingsApi.updatePreferences as ReturnType<typeof vi.fn>).mockResolvedValue(mockPreferences);
+
+    render(<PreferencesSection preferences={mockPreferences} onPreferencesUpdated={mockOnPreferencesUpdated} />);
+
+    fireEvent.change(screen.getByLabelText('Theme'), { target: { value: 'dark' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save Preferences' }));
+
+    await waitFor(() => {
+      expect(userSettingsApi.updatePreferences).toHaveBeenCalledWith(
+        expect.objectContaining({ theme: 'dark' })
+      );
+    });
+  });
+
+  it('shows Saving... text while preferences are being saved', async () => {
+    let resolvePromise: (value: unknown) => void;
+    const pendingPromise = new Promise((resolve) => {
+      resolvePromise = resolve;
+    });
+    (userSettingsApi.updatePreferences as ReturnType<typeof vi.fn>).mockReturnValue(pendingPromise);
+
+    render(<PreferencesSection preferences={mockPreferences} onPreferencesUpdated={mockOnPreferencesUpdated} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save Preferences' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Saving...' })).toBeInTheDocument();
+    });
+
+    resolvePromise!(mockPreferences);
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Save Preferences' })).toBeInTheDocument();
+    });
+  });
+
+  it('calls onPreferencesUpdated with updated preferences on successful save', async () => {
+    const updatedPrefs = { ...mockPreferences, theme: 'dark' as const };
+    (userSettingsApi.updatePreferences as ReturnType<typeof vi.fn>).mockResolvedValue(updatedPrefs);
+
+    render(<PreferencesSection preferences={mockPreferences} onPreferencesUpdated={mockOnPreferencesUpdated} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save Preferences' }));
+
+    await waitFor(() => {
+      expect(mockOnPreferencesUpdated).toHaveBeenCalledWith(updatedPrefs);
+    });
+  });
 });

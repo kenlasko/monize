@@ -24,7 +24,13 @@ vi.mock('@/store/preferencesStore', () => ({
 }));
 
 vi.mock('@/components/auth/TwoFactorSetup', () => ({
-  TwoFactorSetup: () => <div data-testid="two-factor-setup">2FA Setup</div>,
+  TwoFactorSetup: ({ onComplete, onSkip }: { onComplete: () => void; onSkip: () => void }) => (
+    <div data-testid="two-factor-setup">
+      2FA Setup
+      <button data-testid="2fa-complete" onClick={onComplete}>Complete</button>
+      <button data-testid="2fa-skip" onClick={onSkip}>Skip</button>
+    </div>
+  ),
 }));
 
 vi.mock('@/lib/errors', () => ({
@@ -898,5 +904,120 @@ describe('SecuritySection', () => {
     );
 
     expect(screen.queryByText('Trusted Devices')).not.toBeInTheDocument();
+  });
+
+  // --- 2FA Setup Modal onComplete callback ---
+  it('enables 2FA and calls onPreferencesUpdated when setup is completed', async () => {
+    render(
+      <SecuritySection
+        user={mockUser}
+        preferences={mockPreferences}
+        force2fa={false}
+        onPreferencesUpdated={mockOnPreferencesUpdated}
+      />
+    );
+
+    // Open the 2FA setup modal
+    fireEvent.click(screen.getByRole('button', { name: 'Enable 2FA' }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('two-factor-setup')).toBeInTheDocument();
+    });
+
+    // Click the Complete button in the mocked TwoFactorSetup
+    fireEvent.click(screen.getByTestId('2fa-complete'));
+
+    await waitFor(() => {
+      expect(mockOnPreferencesUpdated).toHaveBeenCalledWith(
+        expect.objectContaining({ twoFactorEnabled: true })
+      );
+    });
+  });
+
+  // --- 2FA Setup Modal onSkip callback ---
+  it('closes 2FA setup modal when skip is clicked', async () => {
+    render(
+      <SecuritySection
+        user={mockUser}
+        preferences={mockPreferences}
+        force2fa={false}
+        onPreferencesUpdated={mockOnPreferencesUpdated}
+      />
+    );
+
+    // Open the 2FA setup modal
+    fireEvent.click(screen.getByRole('button', { name: 'Enable 2FA' }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('two-factor-setup')).toBeInTheDocument();
+    });
+
+    // Click the Skip button in the mocked TwoFactorSetup
+    fireEvent.click(screen.getByTestId('2fa-skip'));
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('two-factor-setup')).not.toBeInTheDocument();
+    });
+
+    // onPreferencesUpdated should not have been called since user skipped
+    expect(mockOnPreferencesUpdated).not.toHaveBeenCalled();
+  });
+
+  // --- Trusted devices: device without IP address ---
+  it('renders device without IP address correctly', async () => {
+    const prefsWith2fa = { ...mockPreferences, twoFactorEnabled: true };
+    const mockDevices = [
+      {
+        id: 'dev-1',
+        deviceName: 'Safari on iPhone',
+        ipAddress: null,
+        lastUsedAt: '2024-01-15T00:00:00Z',
+        expiresAt: '2024-02-15T00:00:00Z',
+        createdAt: '2024-01-01T00:00:00Z',
+        isCurrent: false,
+      },
+    ];
+
+    (authApi.getTrustedDevices as any).mockResolvedValueOnce(mockDevices);
+
+    render(
+      <SecuritySection
+        user={mockUser}
+        preferences={prefsWith2fa}
+        force2fa={false}
+        onPreferencesUpdated={mockOnPreferencesUpdated}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Safari on iPhone')).toBeInTheDocument();
+    });
+
+    // IP address should not be rendered when null
+    expect(screen.queryByText(/IP:/)).not.toBeInTheDocument();
+  });
+
+  // --- Verification code only allows digits ---
+  it('strips non-digit characters from the verification code input', async () => {
+    const prefsWith2fa = { ...mockPreferences, twoFactorEnabled: true };
+
+    render(
+      <SecuritySection
+        user={mockUser}
+        preferences={prefsWith2fa}
+        force2fa={false}
+        onPreferencesUpdated={mockOnPreferencesUpdated}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Disable 2FA' }));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Verification Code')).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByLabelText('Verification Code'), { target: { value: 'abc123' } });
+
+    expect((screen.getByLabelText('Verification Code') as HTMLInputElement).value).toBe('123');
   });
 });
