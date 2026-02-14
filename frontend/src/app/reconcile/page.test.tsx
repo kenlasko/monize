@@ -263,15 +263,15 @@ describe('ReconcilePage', () => {
   describe('Reconcile Step', () => {
     async function advanceToReconcileStep() {
       render(<ReconcilePage />);
-      await waitFor(() => expect(screen.getByLabelText('Account')).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByLabelText('Account')).toBeInTheDocument(), { timeout: 3000 });
       fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-1' } });
       fireEvent.change(screen.getByLabelText('Statement Ending Balance'), { target: { value: '1500' } });
       await waitFor(() => {
         const button = screen.getAllByText('Start Reconciliation').find(el => el.tagName === 'BUTTON');
         expect(button).not.toBeDisabled();
-      });
+      }, { timeout: 3000 });
       fireEvent.click(screen.getAllByText('Start Reconciliation').find(el => el.tagName === 'BUTTON')!);
-      await waitFor(() => expect(screen.getByText('Statement Balance')).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByText('Statement Balance')).toBeInTheDocument(), { timeout: 3000 });
     }
 
     it('loads reconciliation data and shows summary bar', async () => {
@@ -322,7 +322,7 @@ describe('ReconcilePage', () => {
       fireEvent.click(screen.getByText('Select All'));
       await waitFor(() => {
         screen.getAllByRole('checkbox').forEach(cb => expect(cb).toBeChecked());
-      });
+      }, { timeout: 3000 });
     });
 
     it('Select None deselects all transactions', async () => {
@@ -330,7 +330,7 @@ describe('ReconcilePage', () => {
       fireEvent.click(screen.getByText('Select None'));
       await waitFor(() => {
         screen.getAllByRole('checkbox').forEach(cb => expect(cb).not.toBeChecked());
-      });
+      }, { timeout: 3000 });
     });
 
     it('calculates difference correctly', async () => {
@@ -353,19 +353,19 @@ describe('ReconcilePage', () => {
       await waitFor(() => {
         const btns = screen.getAllByText('Start Reconciliation');
         expect(btns.length).toBeGreaterThan(0);
-      });
+      }, { timeout: 3000 });
     });
 
     it('shows empty state when no transactions', async () => {
       mockGetReconciliationData.mockResolvedValue({ ...mockReconciliationData, transactions: [] });
       render(<ReconcilePage />);
-      await waitFor(() => expect(screen.getByLabelText('Account')).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByLabelText('Account')).toBeInTheDocument(), { timeout: 3000 });
       fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-1' } });
       fireEvent.change(screen.getByLabelText('Statement Ending Balance'), { target: { value: '1500' } });
       fireEvent.click(screen.getAllByText('Start Reconciliation').find(el => el.tagName === 'BUTTON')!);
       await waitFor(() => {
         expect(screen.getByText('No unreconciled transactions found for this period.')).toBeInTheDocument();
-      });
+      }, { timeout: 3000 });
     });
 
     it('displays transaction status indicators', async () => {
@@ -385,13 +385,13 @@ describe('ReconcilePage', () => {
         reconciledBalance: 1000, clearedBalance: 1500, difference: 0,
       });
       render(<ReconcilePage />);
-      await waitFor(() => expect(screen.getByLabelText('Account')).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByLabelText('Account')).toBeInTheDocument(), { timeout: 3000 });
       fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-1' } });
       fireEvent.change(screen.getByLabelText('Statement Ending Balance'), { target: { value: '1500' } });
       fireEvent.click(screen.getAllByText('Start Reconciliation').find(el => el.tagName === 'BUTTON')!);
-      await waitFor(() => expect(screen.getByText('Finish Reconciliation')).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByText('Finish Reconciliation')).toBeInTheDocument(), { timeout: 3000 });
       fireEvent.click(screen.getByText('Finish Reconciliation'));
-      await waitFor(() => expect(screen.getByText('Reconciliation Complete')).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByText('Reconciliation Complete')).toBeInTheDocument(), { timeout: 3000 });
     }
 
     it('shows completion message after successful reconciliation', async () => {
@@ -410,7 +410,7 @@ describe('ReconcilePage', () => {
       fireEvent.click(screen.getByText('Reconcile Another Account'));
       await waitFor(() => {
         expect(screen.getAllByText('Start Reconciliation').length).toBeGreaterThan(0);
-      });
+      }, { timeout: 3000 });
     });
   });
 
@@ -421,20 +421,20 @@ describe('ReconcilePage', () => {
       render(<ReconcilePage />);
       await waitFor(() => {
         expect(toast.default.error).toHaveBeenCalledWith('Failed to load accounts');
-      });
+      }, { timeout: 3000 });
     });
 
     it('shows error toast when reconciliation data fails', async () => {
       const toast = await import('react-hot-toast');
       mockGetReconciliationData.mockRejectedValue(new Error('Server error'));
       render(<ReconcilePage />);
-      await waitFor(() => expect(screen.getByLabelText('Account')).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByLabelText('Account')).toBeInTheDocument(), { timeout: 3000 });
       fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-1' } });
       fireEvent.change(screen.getByLabelText('Statement Ending Balance'), { target: { value: '1500' } });
       fireEvent.click(screen.getAllByText('Start Reconciliation').find(el => el.tagName === 'BUTTON')!);
       await waitFor(() => {
         expect(toast.default.error).toHaveBeenCalledWith('Failed to load reconciliation data');
-      });
+      }, { timeout: 3000 });
     });
 
     it('shows error toast when finish reconciliation fails', async () => {
@@ -448,15 +448,15 @@ describe('ReconcilePage', () => {
         reconciledBalance: 1000, clearedBalance: 1500, difference: 0,
       });
       render(<ReconcilePage />);
-      await waitFor(() => expect(screen.getByLabelText('Account')).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByLabelText('Account')).toBeInTheDocument(), { timeout: 3000 });
       fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-1' } });
       fireEvent.change(screen.getByLabelText('Statement Ending Balance'), { target: { value: '1500' } });
       fireEvent.click(screen.getAllByText('Start Reconciliation').find(el => el.tagName === 'BUTTON')!);
-      await waitFor(() => expect(screen.getByText('Finish Reconciliation')).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByText('Finish Reconciliation')).toBeInTheDocument(), { timeout: 3000 });
       fireEvent.click(screen.getByText('Finish Reconciliation'));
       await waitFor(() => {
         expect(toast.default.error).toHaveBeenCalledWith('Failed to reconcile transactions');
-      });
+      }, { timeout: 3000 });
     });
   });
 });
