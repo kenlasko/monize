@@ -317,13 +317,17 @@ describe('ReconcilePage', () => {
     it('Select All selects all transactions', async () => {
       await advanceToReconcileStep();
       fireEvent.click(screen.getByText('Select All'));
-      screen.getAllByRole('checkbox').forEach(cb => expect(cb).toBeChecked());
+      await waitFor(() => {
+        screen.getAllByRole('checkbox').forEach(cb => expect(cb).toBeChecked());
+      });
     });
 
     it('Select None deselects all transactions', async () => {
       await advanceToReconcileStep();
       fireEvent.click(screen.getByText('Select None'));
-      screen.getAllByRole('checkbox').forEach(cb => expect(cb).not.toBeChecked());
+      await waitFor(() => {
+        screen.getAllByRole('checkbox').forEach(cb => expect(cb).not.toBeChecked());
+      });
     });
 
     it('calculates difference correctly', async () => {
