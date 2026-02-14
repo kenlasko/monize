@@ -114,6 +114,21 @@ export function SplitEditor({
       }
     }
 
+    // If changing amount, adjust sign based on selected category
+    if (field === 'amount') {
+      const categoryId = newSplits[index].categoryId;
+      if (categoryId) {
+        const category = categories.find(c => c.id === categoryId);
+        if (category) {
+          const newAmount = Number(value) || 0;
+          if (newAmount !== 0) {
+            const absAmount = Math.abs(newAmount);
+            value = category.isIncome ? absAmount : -absAmount;
+          }
+        }
+      }
+    }
+
     newSplits[index] = { ...newSplits[index], [field]: value };
     setLocalSplits(newSplits);
     onChange(newSplits);
