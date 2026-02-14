@@ -51,6 +51,12 @@ export class NetWorthController {
     description:
       "Comma-separated account IDs to filter by (will include linked pairs)",
   })
+  @ApiQuery({
+    name: "displayCurrency",
+    required: false,
+    description:
+      "Currency code to display values in (defaults to user preference)",
+  })
   @ApiResponse({ status: 200, description: "Monthly investment value data" })
   @ApiResponse({ status: 401, description: "Unauthorized" })
   getMonthlyInvestments(
@@ -58,6 +64,7 @@ export class NetWorthController {
     @Query("startDate") startDate?: string,
     @Query("endDate") endDate?: string,
     @Query("accountIds") accountIds?: string,
+    @Query("displayCurrency") displayCurrency?: string,
   ) {
     const ids = accountIds ? accountIds.split(",").filter(Boolean) : undefined;
     return this.netWorthService.getMonthlyInvestments(
@@ -65,6 +72,7 @@ export class NetWorthController {
       startDate,
       endDate,
       ids,
+      displayCurrency,
     );
   }
 

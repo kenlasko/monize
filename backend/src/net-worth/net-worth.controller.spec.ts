@@ -67,6 +67,7 @@ describe("NetWorthController", () => {
         "2024-01-01",
         "2024-12-31",
         "acc-1,acc-2",
+        undefined,
       );
 
       expect(result).toBe("investments");
@@ -75,6 +76,7 @@ describe("NetWorthController", () => {
         "2024-01-01",
         "2024-12-31",
         ["acc-1", "acc-2"],
+        undefined,
       );
     });
 
@@ -86,12 +88,14 @@ describe("NetWorthController", () => {
         "2024-01-01",
         "2024-12-31",
         undefined,
+        undefined,
       );
 
       expect(mockNetWorthService.getMonthlyInvestments).toHaveBeenCalledWith(
         "user-1",
         "2024-01-01",
         "2024-12-31",
+        undefined,
         undefined,
       );
     });

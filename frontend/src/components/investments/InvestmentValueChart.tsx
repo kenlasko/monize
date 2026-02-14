@@ -15,6 +15,7 @@ import { netWorthApi } from '@/lib/net-worth';
 import { MonthlyInvestmentValue } from '@/types/net-worth';
 import { parseLocalDate } from '@/lib/utils';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { useDateRange } from '@/hooks/useDateRange';
 import { DateRangeSelector } from '@/components/ui/DateRangeSelector';
 import { createLogger } from '@/lib/logger';
@@ -23,13 +24,30 @@ const logger = createLogger('InvestmentChart');
 
 interface InvestmentValueChartProps {
   accountIds?: string[];
+  displayCurrency?: string | null;
 }
 
-export function InvestmentValueChart({ accountIds }: InvestmentValueChartProps) {
-  const { formatCurrencyCompact: formatCurrency, formatCurrencyAxis } = useNumberFormat();
+export function InvestmentValueChart({ accountIds, displayCurrency }: InvestmentValueChartProps) {
+  const { formatCurrencyCompact, formatCurrencyAxis } = useNumberFormat();
+  const { defaultCurrency } = useExchangeRates();
   const [monthlyData, setMonthlyData] = useState<MonthlyInvestmentValue[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { dateRange, setDateRange, resolvedRange, isValid } = useDateRange({ defaultRange: '1y', alignment: 'month' });
+
+  // Determine the effective currency for display
+  const foreignCurrency = displayCurrency && displayCurrency !== defaultCurrency
+    ? displayCurrency
+    : null;
+
+  const fmtVal = useCallback((value: number) => {
+    if (foreignCurrency) return `${formatCurrencyCompact(value, foreignCurrency)} ${foreignCurrency}`;
+    return formatCurrencyCompact(value);
+  }, [foreignCurrency, formatCurrencyCompact]);
+
+  const fmtAxis = useCallback((value: number) => {
+    if (foreignCurrency) return formatCurrencyAxis(value, foreignCurrency);
+    return formatCurrencyAxis(value);
+  }, [foreignCurrency, formatCurrencyAxis]);
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
@@ -39,6 +57,7 @@ export function InvestmentValueChart({ accountIds }: InvestmentValueChartProps) 
         startDate: start,
         endDate: end,
         accountIds: accountIds?.length ? accountIds.join(',') : undefined,
+        displayCurrency: foreignCurrency || undefined,
       });
       setMonthlyData(data);
     } catch (error) {
@@ -46,7 +65,7 @@ export function InvestmentValueChart({ accountIds }: InvestmentValueChartProps) 
     } finally {
       setIsLoading(false);
     }
-  }, [resolvedRange, accountIds]);
+  }, [resolvedRange, accountIds, foreignCurrency]);
 
   useEffect(() => {
     if (isValid) {
@@ -103,7 +122,7 @@ export function InvestmentValueChart({ accountIds }: InvestmentValueChartProps) 
         <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
           <p className="font-medium text-gray-900 dark:text-gray-100 mb-1">{data?.name}</p>
           <p className="text-sm text-emerald-600 dark:text-emerald-400">
-            Portfolio: {formatCurrency(payload[0].value)}
+            Portfolio: {fmtVal(payload[0].value)}
           </p>
         </div>
       );
@@ -143,7 +162,7 @@ export function InvestmentValueChart({ accountIds }: InvestmentValueChartProps) 
         <div>
           <div className="text-xs text-gray-500 dark:text-gray-400">Current Value</div>
           <div className="text-lg font-bold text-gray-900 dark:text-gray-100">
-            {formatCurrency(summary.current)}
+            {fmtVal(summary.current)}
           </div>
         </div>
         <div>
@@ -151,7 +170,7 @@ export function InvestmentValueChart({ accountIds }: InvestmentValueChartProps) 
           <div className={`text-lg font-bold ${
             summary.change >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
           }`}>
-            {summary.change >= 0 ? '+' : ''}{formatCurrency(summary.change)}
+            {summary.change >= 0 ? '+' : ''}{fmtVal(summary.change)}
           </div>
         </div>
         <div>
@@ -196,7 +215,7 @@ export function InvestmentValueChart({ accountIds }: InvestmentValueChartProps) 
               />
               <YAxis
                 domain={yAxisDomain}
-                tickFormatter={formatCurrencyAxis}
+                tickFormatter={fmtAxis}
                 tick={{ fontSize: 12 }}
               />
               <Tooltip content={<CustomTooltip />} />

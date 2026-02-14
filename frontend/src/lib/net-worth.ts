@@ -17,6 +17,7 @@ export const netWorthApi = {
     startDate?: string;
     endDate?: string;
     accountIds?: string;
+    displayCurrency?: string;
   }): Promise<MonthlyInvestmentValue[]> => {
     const response = await apiClient.get<MonthlyInvestmentValue[]>(
       '/net-worth/investments-monthly',

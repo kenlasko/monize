@@ -2,21 +2,56 @@
 
 import { useMemo } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
-import { AssetAllocation } from '@/types/investment';
+import { AssetAllocation, AccountHoldings } from '@/types/investment';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
-import { usePreferencesStore } from '@/store/preferencesStore';
+import { useExchangeRates } from '@/hooks/useExchangeRates';
 
 interface AssetAllocationChartProps {
   allocation: AssetAllocation | null;
   isLoading: boolean;
+  singleAccountCurrency?: string | null;
+  holdingsByAccount?: AccountHoldings[];
 }
 
 export function AssetAllocationChart({
   allocation,
   isLoading,
+  singleAccountCurrency,
+  holdingsByAccount,
 }: AssetAllocationChartProps) {
   const { formatCurrencyCompact: formatCurrency } = useNumberFormat();
-  const defaultCurrency = usePreferencesStore((state) => state.preferences?.defaultCurrency) || 'CAD';
+  const { convertToDefault, defaultCurrency } = useExchangeRates();
+
+  // When viewing a single foreign-currency account, show values in that currency
+  const foreignCurrency = singleAccountCurrency && singleAccountCurrency !== defaultCurrency
+    ? singleAccountCurrency
+    : null;
+
+  // Compute raw total in the foreign currency from holdingsByAccount
+  const foreignTotal = useMemo(() => {
+    if (!foreignCurrency || !holdingsByAccount) return 0;
+    let total = 0;
+    for (const acct of holdingsByAccount) {
+      total += acct.cashBalance + acct.totalMarketValue;
+    }
+    return total;
+  }, [foreignCurrency, holdingsByAccount]);
+
+  // Compute default-currency total for the "approx" line
+  const defaultTotal = useMemo(() => {
+    if (!foreignCurrency || !holdingsByAccount) return null;
+    let total = 0;
+    for (const acct of holdingsByAccount) {
+      total += convertToDefault(acct.cashBalance, acct.currencyCode);
+      total += convertToDefault(acct.totalMarketValue, acct.currencyCode);
+    }
+    return total;
+  }, [foreignCurrency, holdingsByAccount, convertToDefault]);
+
+  const fmtVal = (value: number) => {
+    if (foreignCurrency) return `${formatCurrency(value, foreignCurrency)} ${foreignCurrency}`;
+    return formatCurrency(value);
+  };
 
   const chartData = useMemo(() => {
     if (!allocation) return [];
@@ -41,17 +76,16 @@ export function AssetAllocationChart({
   }) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
-      const isForeign = data.currencyCode && data.currencyCode !== defaultCurrency;
+      const displayValue = foreignCurrency
+        ? (data.percentage / 100) * foreignTotal
+        : data.value;
       return (
         <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
           <p className="font-medium text-gray-900 dark:text-gray-100">
             {data.fullName}
           </p>
           <p className="text-gray-600 dark:text-gray-400">
-            {formatCurrency(data.value)} ({data.percentage.toFixed(1)}%)
-            {isForeign && (
-              <span className="ml-1 text-xs text-amber-600 dark:text-amber-400">{data.currencyCode}</span>
-            )}
+            {fmtVal(displayValue)} ({data.percentage.toFixed(1)}%)
           </p>
         </div>
       );
@@ -112,7 +146,7 @@ export function AssetAllocationChart({
       </div>
       <div className="mt-4 grid grid-cols-2 gap-2">
         {chartData.slice(0, 10).map((item, index) => {
-          const isForeign = item.currencyCode && item.currencyCode !== defaultCurrency;
+          const isForeign = !foreignCurrency && item.currencyCode && item.currencyCode !== defaultCurrency;
           return (
             <div key={index} className="flex items-center gap-2 text-sm">
               <div
@@ -135,8 +169,13 @@ export function AssetAllocationChart({
       <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 text-center">
         <div className="text-sm text-gray-500 dark:text-gray-400">Total</div>
         <div className="font-semibold text-gray-900 dark:text-gray-100">
-          {formatCurrency(allocation.totalValue)}
+          {fmtVal(foreignCurrency ? foreignTotal : allocation.totalValue)}
         </div>
+        {foreignCurrency && defaultTotal !== null && (
+          <div className="text-xs text-gray-400 dark:text-gray-500">
+            {'\u2248 '}{formatCurrency(defaultTotal, defaultCurrency)} {defaultCurrency}
+          </div>
+        )}
       </div>
     </div>
   );

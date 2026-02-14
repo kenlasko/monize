@@ -479,12 +479,25 @@ function InvestmentsContent() {
             <AssetAllocationChart
               allocation={portfolioSummary ? { allocation: portfolioSummary.allocation, totalValue: portfolioSummary.totalPortfolioValue } : null}
               isLoading={isLoading}
+              singleAccountCurrency={
+                selectedAccountIds.length === 1
+                  ? accounts.find(a => a.id === selectedAccountIds[0])?.currencyCode ?? null
+                  : null
+              }
+              holdingsByAccount={portfolioSummary?.holdingsByAccount}
             />
           </div>
 
           {/* Portfolio Value Over Time */}
           <div className="mb-6">
-            <InvestmentValueChart accountIds={selectedAccountIds} />
+            <InvestmentValueChart
+              accountIds={selectedAccountIds}
+              displayCurrency={
+                selectedAccountIds.length === 1
+                  ? accounts.find(a => a.id === selectedAccountIds[0])?.currencyCode ?? null
+                  : null
+              }
+            />
           </div>
 
           {/* Holdings List */}

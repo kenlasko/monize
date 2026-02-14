@@ -230,11 +230,12 @@ export class NetWorthService {
     startDate?: string,
     endDate?: string,
     accountIds?: string[],
+    displayCurrency?: string,
   ): Promise<{ month: string; value: number }[]> {
     await this.ensurePopulated(userId);
 
     const pref = await this.prefRepo.findOne({ where: { userId } });
-    const defaultCurrency = pref?.defaultCurrency || "USD";
+    const defaultCurrency = displayCurrency || pref?.defaultCurrency || "USD";
 
     const start = startDate || "1990-01-01";
     const end = endDate || new Date().toISOString().slice(0, 10);
