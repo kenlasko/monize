@@ -6,12 +6,15 @@ import {
   IsArray,
   ValidateNested,
   MaxLength,
+  IsNotEmpty,
+  IsIn,
 } from "class-validator";
 import { Type } from "class-transformer";
 
 export class ParseQifDto {
   @ApiProperty({ description: "QIF file content as string" })
   @IsString()
+  @IsNotEmpty()
   @MaxLength(10_000_000) // ~10MB limit, matches Express body parser
   content: string;
 }
@@ -89,8 +92,18 @@ export class AccountMappingDto {
 
   @ApiPropertyOptional({ description: "Account type for new account" })
   @IsOptional()
-  @IsString()
-  @MaxLength(50)
+  @IsIn([
+    "CHEQUING",
+    "SAVINGS",
+    "CREDIT_CARD",
+    "LOAN",
+    "MORTGAGE",
+    "INVESTMENT",
+    "CASH",
+    "LINE_OF_CREDIT",
+    "ASSET",
+    "OTHER",
+  ])
   accountType?: string;
 
   @ApiPropertyOptional({
@@ -127,11 +140,10 @@ export class SecurityMappingDto {
 
   @ApiPropertyOptional({
     description:
-      "Security type for new security (STOCK, ETF, MUTUAL_FUND, BOND, OPTION, CRYPTO, OTHER)",
+      "Security type for new security (STOCK, ETF, MUTUAL_FUND, BOND, GIC, CASH, OTHER)",
   })
   @IsOptional()
-  @IsString()
-  @MaxLength(50)
+  @IsIn(["STOCK", "ETF", "MUTUAL_FUND", "BOND", "GIC", "CASH", "OTHER"])
   securityType?: string;
 
   @ApiPropertyOptional({
@@ -154,6 +166,7 @@ export class SecurityMappingDto {
 export class ImportQifDto {
   @ApiProperty({ description: "QIF file content as string" })
   @IsString()
+  @IsNotEmpty()
   @MaxLength(10_000_000) // ~10MB limit, matches Express body parser
   content: string;
 
@@ -191,8 +204,7 @@ export class ImportQifDto {
       "Date format to use for parsing (MM/DD/YYYY, DD/MM/YYYY, YYYY-MM-DD, YYYY-DD-MM)",
   })
   @IsOptional()
-  @IsString()
-  @MaxLength(50)
+  @IsIn(["MM/DD/YYYY", "DD/MM/YYYY", "YYYY-MM-DD", "YYYY-DD-MM"])
   dateFormat?: string;
 }
 

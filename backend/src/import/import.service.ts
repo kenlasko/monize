@@ -13,7 +13,7 @@ import { ExchangeRateService } from "../currencies/exchange-rate.service";
 import { Account, AccountSubType } from "../accounts/entities/account.entity";
 import { Category } from "../categories/entities/category.entity";
 import { Payee } from "../payees/entities/payee.entity";
-import { parseQif, validateQifContent } from "./qif-parser";
+import { parseQif, validateQifContent, DateFormat } from "./qif-parser";
 import {
   ImportQifDto,
   ParsedQifResponseDto,
@@ -105,7 +105,7 @@ export class ImportService {
       throw new BadRequestException("Account not found");
     }
 
-    const result = parseQif(dto.content, dto.dateFormat as any);
+    const result = parseQif(dto.content, dto.dateFormat as DateFormat);
 
     // Validate QIF type matches destination account type
     const isQifInvestment = result.accountType === "INVESTMENT";
