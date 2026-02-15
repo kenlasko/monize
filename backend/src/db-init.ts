@@ -2,13 +2,22 @@ import { Client } from "pg";
 import * as fs from "fs";
 import * as path from "path";
 
+function requiredEnv(name: string, fallback?: string): string {
+  const value = process.env[name] || fallback;
+  if (!value) {
+    console.error(`Missing required environment variable: ${name}`);
+    process.exit(1);
+  }
+  return value;
+}
+
 async function initDatabase() {
   const client = new Client({
     host: process.env.DATABASE_HOST || "localhost",
     port: parseInt(process.env.DATABASE_PORT || "5432", 10),
-    user: process.env.DATABASE_USER || "monize_user",
-    password: process.env.DATABASE_PASSWORD || "monize_password",
-    database: process.env.DATABASE_NAME || "monize",
+    user: requiredEnv("DATABASE_USER"),
+    password: requiredEnv("DATABASE_PASSWORD"),
+    database: requiredEnv("DATABASE_NAME"),
   });
 
   try {

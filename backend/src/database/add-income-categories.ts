@@ -3,13 +3,22 @@ import * as dotenv from "dotenv";
 
 dotenv.config();
 
+function requiredEnv(name: string): string {
+  const value = process.env[name];
+  if (!value) {
+    console.error(`Missing required environment variable: ${name}`);
+    process.exit(1);
+  }
+  return value;
+}
+
 const dataSource = new DataSource({
   type: "postgres",
   host: process.env.DATABASE_HOST || "localhost",
   port: parseInt(process.env.DATABASE_PORT || "5432"),
-  username: process.env.DATABASE_USER || "monize_user",
-  password: process.env.DATABASE_PASSWORD || "monize_password",
-  database: process.env.DATABASE_NAME || "monize",
+  username: requiredEnv("DATABASE_USER"),
+  password: requiredEnv("DATABASE_PASSWORD"),
+  database: requiredEnv("DATABASE_NAME"),
 });
 
 interface CategoryDef {

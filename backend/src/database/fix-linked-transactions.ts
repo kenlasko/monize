@@ -15,18 +15,23 @@ import * as path from "path";
 
 dotenv.config({ path: path.join(__dirname, "../../../.env") });
 
+function requiredEnv(...names: string[]): string {
+  for (const name of names) {
+    const value = process.env[name];
+    if (value) return value;
+  }
+  console.error(`Missing required environment variable: ${names.join(" or ")}`);
+  process.exit(1);
+}
+
 async function fixLinkedTransactions() {
   const dataSource = new DataSource({
     type: "postgres",
     host: process.env.DATABASE_HOST || "localhost",
     port: parseInt(process.env.DATABASE_PORT || "5432"),
-    username:
-      process.env.DATABASE_USER || process.env.POSTGRES_USER || "monize_user",
-    password:
-      process.env.DATABASE_PASSWORD ||
-      process.env.POSTGRES_PASSWORD ||
-      "monize_password",
-    database: process.env.DATABASE_NAME || process.env.POSTGRES_DB || "monize",
+    username: requiredEnv("DATABASE_USER", "POSTGRES_USER"),
+    password: requiredEnv("DATABASE_PASSWORD", "POSTGRES_PASSWORD"),
+    database: requiredEnv("DATABASE_NAME", "POSTGRES_DB"),
   });
 
   await dataSource.initialize();
