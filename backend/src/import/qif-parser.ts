@@ -74,6 +74,20 @@ export type DateFormat =
   | "YYYY-MM-DD"
   | "YYYY-DD-MM";
 
+// Truncate a string to a maximum length to match database column limits.
+function truncate(value: string, maxLength: number): string {
+  return value.length > maxLength ? value.substring(0, maxLength) : value;
+}
+
+// Field length limits matching database column constraints
+const FIELD_LIMITS = {
+  PAYEE: 255, // transaction.payee_name VARCHAR(255), payee.name VARCHAR(255)
+  MEMO: 5000, // transaction.description TEXT (capped for safety)
+  REFERENCE_NUMBER: 100, // transaction.reference_number VARCHAR(100)
+  CATEGORY: 255, // category.name VARCHAR(255)
+  SECURITY: 255, // security.name VARCHAR(255)
+} as const;
+
 export function parseQif(
   content: string,
   dateFormat?: DateFormat,
@@ -171,15 +185,18 @@ export function parseQif(
         break;
 
       case "P": // Payee
-        currentTransaction.payee = value;
+        currentTransaction.payee = truncate(value, FIELD_LIMITS.PAYEE);
         break;
 
       case "M": // Memo
-        currentTransaction.memo = value;
+        currentTransaction.memo = truncate(value, FIELD_LIMITS.MEMO);
         break;
 
       case "N": // Number (cheque number) OR Action (for investment transactions)
-        currentTransaction.number = value;
+        currentTransaction.number = truncate(
+          value,
+          FIELD_LIMITS.REFERENCE_NUMBER,
+        );
         // For investment transactions, N is the action (Buy, Sell, Div, etc.)
         currentTransaction.action = value;
         break;
@@ -196,14 +213,19 @@ export function parseQif(
         // Category or Transfer
         const { category, isTransfer, transferAccount } =
           parseCategoryOrTransfer(value);
-        currentTransaction.category = category;
+        currentTransaction.category = truncate(category, FIELD_LIMITS.CATEGORY);
         currentTransaction.isTransfer = isTransfer;
-        currentTransaction.transferAccount = transferAccount;
+        currentTransaction.transferAccount = truncate(
+          transferAccount,
+          FIELD_LIMITS.CATEGORY,
+        );
 
         if (isTransfer) {
-          transferAccountsSet.add(transferAccount);
+          transferAccountsSet.add(
+            truncate(transferAccount, FIELD_LIMITS.CATEGORY),
+          );
         } else if (category) {
-          categoriesSet.add(category);
+          categoriesSet.add(truncate(category, FIELD_LIMITS.CATEGORY));
         }
         break;
       }
@@ -217,24 +239,31 @@ export function parseQif(
 
         const splitParsed = parseCategoryOrTransfer(value);
         currentSplit = {
-          category: splitParsed.category,
+          category: truncate(splitParsed.category, FIELD_LIMITS.CATEGORY),
           memo: "",
           amount: 0,
           isTransfer: splitParsed.isTransfer,
-          transferAccount: splitParsed.transferAccount,
+          transferAccount: truncate(
+            splitParsed.transferAccount,
+            FIELD_LIMITS.CATEGORY,
+          ),
         };
 
         if (splitParsed.isTransfer) {
-          transferAccountsSet.add(splitParsed.transferAccount);
+          transferAccountsSet.add(
+            truncate(splitParsed.transferAccount, FIELD_LIMITS.CATEGORY),
+          );
         } else if (splitParsed.category) {
-          categoriesSet.add(splitParsed.category);
+          categoriesSet.add(
+            truncate(splitParsed.category, FIELD_LIMITS.CATEGORY),
+          );
         }
         break;
       }
 
       case "E": // Split memo
         if (currentSplit) {
-          currentSplit.memo = value;
+          currentSplit.memo = truncate(value, FIELD_LIMITS.MEMO);
         }
         break;
 
@@ -246,9 +275,9 @@ export function parseQif(
 
       // Investment-specific fields
       case "Y": // Security name/symbol
-        currentTransaction.security = value;
+        currentTransaction.security = truncate(value, FIELD_LIMITS.SECURITY);
         if (value) {
-          securitiesSet.add(value);
+          securitiesSet.add(truncate(value, FIELD_LIMITS.SECURITY));
         }
         break;
 

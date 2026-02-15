@@ -147,3 +147,22 @@ This is a comprehensive web-based personal finance management application design
 - Cookie security: httpOnly, secure (production), sameSite (lax/strict), no tokens in localStorage
 - Client-side auth: UI-only role checks, all admin enforcement server-side
 - Rate limiting: Auth endpoints 3-5 per 15 min, global 100/min
+
+### File Upload / Import Security Audit (Feb 2026)
+
+#### Architecture (Secure by Design)
+- No traditional file uploads (no multer/multipart/FileInterceptor)
+- QIF content sent as string in JSON POST body, processed in-memory
+- No files written to disk or stored on the server
+- No files served from web-accessible directories
+- No external tool processing (no ImageMagick, sharp, ffmpeg, etc.)
+- No stored XSS risk: React auto-escapes JSX, no dangerouslySetInnerHTML
+- All database operations use parameterized TypeORM queries
+
+#### Fixed
+- [x] dateFormat field in ImportQifDto validated against enum via @IsIn(): Previously accepted any string up to 50 chars, cast `as any` to parser
+- [x] @IsNotEmpty() added to ParseQifDto.content and ImportQifDto.content: Empty strings previously passed @IsString() + @MaxLength() validation
+- [x] QIF parser field truncation to match DB column limits: payee (255), referenceNumber (100), memo (5000), category (255), security (255) - prevents DB errors from crafted QIF content
+- [x] accountType in AccountMappingDto validated against AccountType enum via @IsIn(): Previously accepted any string
+- [x] securityType in SecurityMappingDto validated against allowed values via @IsIn(): Previously accepted any string
+- [x] Removed unsafe `as any` cast on dateFormat in import service: Now uses proper DateFormat type
