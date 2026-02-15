@@ -18,4 +18,12 @@ export class UpdateProfileDto {
   @IsOptional()
   @IsEmail()
   email?: string;
+
+  @ApiPropertyOptional({
+    description: "Current password (required when changing email)",
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(128)
+  currentPassword?: string;
 }

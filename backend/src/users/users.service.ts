@@ -2,12 +2,14 @@ import {
   Injectable,
   BadRequestException,
   ConflictException,
+  ForbiddenException,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import * as bcrypt from "bcryptjs";
 import { User } from "./entities/user.entity";
 import { UserPreference } from "./entities/user-preference.entity";
+import { RefreshToken } from "../auth/entities/refresh-token.entity";
 import { UpdateProfileDto } from "./dto/update-profile.dto";
 import { UpdatePreferencesDto } from "./dto/update-preferences.dto";
 import { ChangePasswordDto } from "./dto/change-password.dto";
@@ -19,6 +21,8 @@ export class UsersService {
     private usersRepository: Repository<User>,
     @InjectRepository(UserPreference)
     private preferencesRepository: Repository<UserPreference>,
+    @InjectRepository(RefreshToken)
+    private refreshTokensRepository: Repository<RefreshToken>,
   ) {}
 
   async findById(id: string): Promise<User | null> {
@@ -39,8 +43,26 @@ export class UsersService {
       throw new BadRequestException("User not found");
     }
 
-    // Check if email is being changed and if it's already taken
+    // SECURITY: Require password confirmation when changing email to prevent
+    // account takeover via compromised session
     if (dto.email && dto.email !== user.email) {
+      if (!dto.currentPassword) {
+        throw new BadRequestException(
+          "Current password is required to change email address",
+        );
+      }
+      if (!user.passwordHash) {
+        throw new BadRequestException(
+          "Cannot change email for accounts without a local password",
+        );
+      }
+      const isPasswordValid = await bcrypt.compare(
+        dto.currentPassword,
+        user.passwordHash,
+      );
+      if (!isPasswordValid) {
+        throw new BadRequestException("Current password is incorrect");
+      }
       const existingUser = await this.usersRepository.findOne({
         where: { email: dto.email },
       });
@@ -160,6 +182,12 @@ export class UsersService {
     user.passwordHash = await bcrypt.hash(dto.newPassword, saltRounds);
     user.mustChangePassword = false;
     await this.usersRepository.save(user);
+
+    // SECURITY: Revoke all refresh tokens to force re-login on all devices
+    await this.refreshTokensRepository.update(
+      { userId, isRevoked: false },
+      { isRevoked: true },
+    );
   }
 
   async deleteAccount(userId: string): Promise<void> {
@@ -168,8 +196,27 @@ export class UsersService {
       throw new BadRequestException("User not found");
     }
 
+    // SECURITY: Prevent the last admin from self-deleting, which would leave
+    // the system with no administrator
+    if (user.role === "admin") {
+      const adminCount = await this.usersRepository.count({
+        where: { role: "admin" },
+      });
+      if (adminCount <= 1) {
+        throw new ForbiddenException(
+          "Cannot delete the last admin account. Promote another user first.",
+        );
+      }
+    }
+
     // Delete preferences first (due to FK constraint)
     await this.preferencesRepository.delete({ userId });
+
+    // Revoke all refresh tokens before deletion
+    await this.refreshTokensRepository.update(
+      { userId, isRevoked: false },
+      { isRevoked: true },
+    );
 
     // Delete the user
     await this.usersRepository.remove(user);

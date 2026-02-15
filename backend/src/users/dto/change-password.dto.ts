@@ -4,6 +4,7 @@ import { IsString, MinLength, MaxLength, Matches } from "class-validator";
 export class ChangePasswordDto {
   @ApiProperty({ description: "Current password" })
   @IsString()
+  @MaxLength(128)
   currentPassword: string;
 
   @ApiProperty({

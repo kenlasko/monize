@@ -1,9 +1,16 @@
-import { IsString, Length, IsBoolean, IsOptional } from "class-validator";
+import {
+  IsString,
+  Length,
+  IsBoolean,
+  IsOptional,
+  MaxLength,
+} from "class-validator";
 import { ApiProperty } from "@nestjs/swagger";
 
 export class VerifyTotpDto {
   @ApiProperty({ description: "Temporary token from login response" })
   @IsString()
+  @MaxLength(2048)
   tempToken: string;
 
   @ApiProperty({ description: "6-digit TOTP code from authenticator app" })

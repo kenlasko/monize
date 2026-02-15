@@ -1,15 +1,21 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
-import { BadRequestException, ConflictException } from "@nestjs/common";
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+} from "@nestjs/common";
 import * as bcrypt from "bcryptjs";
 import { UsersService } from "./users.service";
 import { User } from "./entities/user.entity";
 import { UserPreference } from "./entities/user-preference.entity";
+import { RefreshToken } from "../auth/entities/refresh-token.entity";
 
 describe("UsersService", () => {
   let service: UsersService;
   let usersRepository: Record<string, jest.Mock>;
   let preferencesRepository: Record<string, jest.Mock>;
+  let refreshTokensRepository: Record<string, jest.Mock>;
 
   const mockUser = {
     id: "user-1",
@@ -47,12 +53,17 @@ describe("UsersService", () => {
       find: jest.fn(),
       save: jest.fn().mockImplementation((data) => data),
       remove: jest.fn(),
+      count: jest.fn(),
     };
 
     preferencesRepository = {
       findOne: jest.fn(),
       save: jest.fn().mockImplementation((data) => data),
       delete: jest.fn(),
+    };
+
+    refreshTokensRepository = {
+      update: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -62,6 +73,10 @@ describe("UsersService", () => {
         {
           provide: getRepositoryToken(UserPreference),
           useValue: preferencesRepository,
+        },
+        {
+          provide: getRepositoryToken(RefreshToken),
+          useValue: refreshTokensRepository,
         },
       ],
     }).compile();
@@ -136,26 +151,55 @@ describe("UsersService", () => {
       expect(result.lastName).toBe("Name");
     });
 
-    it("updates email when not taken", async () => {
+    it("updates email when not taken and password is correct", async () => {
+      const hashedPassword = await bcrypt.hash("CorrectPass123!", 10);
       usersRepository.findOne
-        .mockResolvedValueOnce({ ...mockUser }) // find user
+        .mockResolvedValueOnce({ ...mockUser, passwordHash: hashedPassword }) // find user
         .mockResolvedValueOnce(null); // email not taken
       usersRepository.save.mockImplementation((user) => user);
 
       const result = await service.updateProfile("user-1", {
         email: "new@example.com",
+        currentPassword: "CorrectPass123!",
       });
 
       expect(result.email).toBe("new@example.com");
     });
 
+    it("throws BadRequestException when changing email without password", async () => {
+      usersRepository.findOne.mockResolvedValueOnce({ ...mockUser });
+
+      await expect(
+        service.updateProfile("user-1", { email: "new@example.com" }),
+      ).rejects.toThrow("Current password is required to change email address");
+    });
+
+    it("throws BadRequestException when changing email with wrong password", async () => {
+      const hashedPassword = await bcrypt.hash("CorrectPass123!", 10);
+      usersRepository.findOne.mockResolvedValueOnce({
+        ...mockUser,
+        passwordHash: hashedPassword,
+      });
+
+      await expect(
+        service.updateProfile("user-1", {
+          email: "new@example.com",
+          currentPassword: "WrongPassword!",
+        }),
+      ).rejects.toThrow("Current password is incorrect");
+    });
+
     it("throws ConflictException when email is already taken", async () => {
+      const hashedPassword = await bcrypt.hash("CorrectPass123!", 10);
       usersRepository.findOne
-        .mockResolvedValueOnce({ ...mockUser }) // find user
+        .mockResolvedValueOnce({ ...mockUser, passwordHash: hashedPassword }) // find user
         .mockResolvedValueOnce({ id: "other-user" }); // email taken
 
       await expect(
-        service.updateProfile("user-1", { email: "taken@example.com" }),
+        service.updateProfile("user-1", {
+          email: "taken@example.com",
+          currentPassword: "CorrectPass123!",
+        }),
       ).rejects.toThrow(ConflictException);
     });
 
@@ -284,6 +328,24 @@ describe("UsersService", () => {
       expect(isNewHash).toBe(true);
     });
 
+    it("revokes all refresh tokens after password change", async () => {
+      const hashedPassword = await bcrypt.hash("OldPass123!", 10);
+      usersRepository.findOne.mockResolvedValue({
+        ...mockUser,
+        passwordHash: hashedPassword,
+      });
+
+      await service.changePassword("user-1", {
+        currentPassword: "OldPass123!",
+        newPassword: "NewPass456!",
+      });
+
+      expect(refreshTokensRepository.update).toHaveBeenCalledWith(
+        { userId: "user-1", isRevoked: false },
+        { isRevoked: true },
+      );
+    });
+
     it("throws when current password is incorrect", async () => {
       const hashedPassword = await bcrypt.hash("CorrectPass", 10);
       usersRepository.findOne.mockResolvedValue({
@@ -326,15 +388,19 @@ describe("UsersService", () => {
   });
 
   describe("deleteAccount", () => {
-    it("deletes preferences then user", async () => {
-      usersRepository.findOne.mockResolvedValue(mockUser);
+    it("deletes preferences, revokes tokens, then deletes user", async () => {
+      usersRepository.findOne.mockResolvedValue({ ...mockUser });
 
       await service.deleteAccount("user-1");
 
       expect(preferencesRepository.delete).toHaveBeenCalledWith({
         userId: "user-1",
       });
-      expect(usersRepository.remove).toHaveBeenCalledWith(mockUser);
+      expect(refreshTokensRepository.update).toHaveBeenCalledWith(
+        { userId: "user-1", isRevoked: false },
+        { isRevoked: true },
+      );
+      expect(usersRepository.remove).toHaveBeenCalled();
     });
 
     it("throws when user not found", async () => {
@@ -343,6 +409,30 @@ describe("UsersService", () => {
       await expect(service.deleteAccount("nonexistent")).rejects.toThrow(
         BadRequestException,
       );
+    });
+
+    it("prevents the last admin from self-deleting", async () => {
+      usersRepository.findOne.mockResolvedValue({
+        ...mockUser,
+        role: "admin",
+      });
+      usersRepository.count.mockResolvedValue(1);
+
+      await expect(service.deleteAccount("user-1")).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it("allows admin self-deletion when other admins exist", async () => {
+      usersRepository.findOne.mockResolvedValue({
+        ...mockUser,
+        role: "admin",
+      });
+      usersRepository.count.mockResolvedValue(2);
+
+      await service.deleteAccount("user-1");
+
+      expect(usersRepository.remove).toHaveBeenCalled();
     });
   });
 });
