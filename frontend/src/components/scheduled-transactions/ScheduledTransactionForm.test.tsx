@@ -883,7 +883,7 @@ describe('ScheduledTransactionForm', () => {
     });
 
     // Select payee with default category
-    const payeeOption = screen.getByTestId('option-payee-1');
+    const payeeOption = await screen.findByTestId('option-payee-1');
     fireEvent.click(payeeOption);
 
     // The category should be auto-set (payee-1 has defaultCategoryId: cat-1)
@@ -901,7 +901,7 @@ describe('ScheduledTransactionForm', () => {
     });
 
     // Select payee without default category
-    const payeeOption = screen.getByTestId('option-payee-3');
+    const payeeOption = await screen.findByTestId('option-payee-3');
     fireEvent.click(payeeOption);
 
     // No crash, form should still work
@@ -918,7 +918,7 @@ describe('ScheduledTransactionForm', () => {
     });
 
     // Select then deselect payee
-    const payeeOption = screen.getByTestId('option-payee-1');
+    const payeeOption = await screen.findByTestId('option-payee-1');
     fireEvent.click(payeeOption);
 
     // Select empty (clear)
@@ -942,7 +942,7 @@ describe('ScheduledTransactionForm', () => {
     });
 
     // Select category (cat-1 = Rent, which is expense)
-    const catOption = screen.getByTestId('option-cat-1');
+    const catOption = await screen.findByTestId('option-cat-1');
     fireEvent.click(catOption);
 
     // Should still render normally
@@ -959,7 +959,7 @@ describe('ScheduledTransactionForm', () => {
     });
 
     // Select category
-    const catOption = screen.getByTestId('option-cat-1');
+    const catOption = await screen.findByTestId('option-cat-1');
     fireEvent.click(catOption);
 
     // Clear selection by clicking with empty value
