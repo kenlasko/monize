@@ -96,11 +96,22 @@ describe('ProfileSection', () => {
     render(<ProfileSection user={mockUser} onUserUpdated={mockOnUserUpdated} />);
 
     fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'new@example.com' } });
+    fireEvent.change(screen.getByLabelText('Current Password'), { target: { value: 'MyPass123!' } });
     fireEvent.submit(screen.getByRole('button', { name: 'Save Profile' }));
 
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith('Failed to update profile');
     });
+  });
+
+  it('shows password field when email is changed', () => {
+    render(<ProfileSection user={mockUser} onUserUpdated={mockOnUserUpdated} />);
+
+    expect(screen.queryByLabelText('Current Password')).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'new@example.com' } });
+
+    expect(screen.getByLabelText('Current Password')).toBeInTheDocument();
   });
 
   it('handles user with empty firstName and lastName', () => {
@@ -135,7 +146,7 @@ describe('ProfileSection', () => {
     });
   });
 
-  it('sends only changed fields to the API', async () => {
+  it('sends only changed fields to the API with password for email change', async () => {
     const updatedUser = { ...mockUser, lastName: 'Smith', email: 'new@example.com' };
     (userSettingsApi.updateProfile as ReturnType<typeof vi.fn>).mockResolvedValue(updatedUser);
 
@@ -143,12 +154,14 @@ describe('ProfileSection', () => {
 
     fireEvent.change(screen.getByLabelText('Last Name'), { target: { value: 'Smith' } });
     fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'new@example.com' } });
+    fireEvent.change(screen.getByLabelText('Current Password'), { target: { value: 'MyPass123!' } });
     fireEvent.submit(screen.getByRole('button', { name: 'Save Profile' }));
 
     await waitFor(() => {
       expect(userSettingsApi.updateProfile).toHaveBeenCalledWith({
         lastName: 'Smith',
         email: 'new@example.com',
+        currentPassword: 'MyPass123!',
       });
     });
   });

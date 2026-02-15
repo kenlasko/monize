@@ -37,10 +37,12 @@ import { VerifyTotpDto } from "./dto/verify-totp.dto";
 import { Setup2faDto } from "./dto/setup-2fa.dto";
 import { passwordResetTemplate } from "../notifications/email-templates";
 import { SkipCsrf } from "../common/decorators/skip-csrf.decorator";
+import { SkipPasswordCheck } from "./decorators/skip-password-check.decorator";
 import { generateCsrfToken, getCsrfCookieOptions } from "../common/csrf.util";
 
 @ApiTags("Authentication")
 @Controller("auth")
+@SkipPasswordCheck()
 export class AuthController {
   private readonly logger = new Logger(AuthController.name);
   private localAuthEnabled: boolean;

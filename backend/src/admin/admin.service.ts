@@ -9,6 +9,7 @@ import { Repository } from "typeorm";
 import * as bcrypt from "bcryptjs";
 import { User } from "../users/entities/user.entity";
 import { UserPreference } from "../users/entities/user-preference.entity";
+import { RefreshToken } from "../auth/entities/refresh-token.entity";
 import { generateReadablePassword } from "./utils/password-generator";
 
 @Injectable()
@@ -18,6 +19,8 @@ export class AdminService {
     private usersRepository: Repository<User>,
     @InjectRepository(UserPreference)
     private preferencesRepository: Repository<UserPreference>,
+    @InjectRepository(RefreshToken)
+    private refreshTokensRepository: Repository<RefreshToken>,
   ) {}
 
   async findAllUsers() {
@@ -99,6 +102,16 @@ export class AdminService {
 
     targetUser.isActive = isActive;
     const saved = await this.usersRepository.save(targetUser);
+
+    // SECURITY: Revoke all refresh tokens when deactivating a user to
+    // immediately invalidate all sessions
+    if (!isActive) {
+      await this.refreshTokensRepository.update(
+        { userId: targetUserId, isRevoked: false },
+        { isRevoked: true },
+      );
+    }
+
     return this.sanitizeUser(saved);
   }
 
@@ -159,6 +172,12 @@ export class AdminService {
     targetUser.resetToken = null;
     targetUser.resetTokenExpiry = null;
     await this.usersRepository.save(targetUser);
+
+    // SECURITY: Revoke all refresh tokens to force re-login on all devices
+    await this.refreshTokensRepository.update(
+      { userId: targetUserId, isRevoked: false },
+      { isRevoked: true },
+    );
 
     return { temporaryPassword };
   }

@@ -89,6 +89,7 @@ export interface UpdateProfileData {
   firstName?: string;
   lastName?: string;
   email?: string;
+  currentPassword?: string;
 }
 
 export interface UpdatePreferencesData {

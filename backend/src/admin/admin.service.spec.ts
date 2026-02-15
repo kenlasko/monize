@@ -8,11 +8,13 @@ import {
 import { AdminService } from "./admin.service";
 import { User } from "../users/entities/user.entity";
 import { UserPreference } from "../users/entities/user-preference.entity";
+import { RefreshToken } from "../auth/entities/refresh-token.entity";
 
 describe("AdminService", () => {
   let service: AdminService;
   let usersRepository: Record<string, jest.Mock>;
   let preferencesRepository: Record<string, jest.Mock>;
+  let refreshTokensRepository: Record<string, jest.Mock>;
 
   const mockAdmin = {
     id: "admin-1",
@@ -59,6 +61,10 @@ describe("AdminService", () => {
       delete: jest.fn(),
     };
 
+    refreshTokensRepository = {
+      update: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AdminService,
@@ -66,6 +72,10 @@ describe("AdminService", () => {
         {
           provide: getRepositoryToken(UserPreference),
           useValue: preferencesRepository,
+        },
+        {
+          provide: getRepositoryToken(RefreshToken),
+          useValue: refreshTokensRepository,
         },
       ],
     }).compile();
@@ -160,15 +170,19 @@ describe("AdminService", () => {
   });
 
   describe("updateUserStatus", () => {
-    it("deactivates a user", async () => {
+    it("deactivates a user and revokes refresh tokens", async () => {
       usersRepository.findOne.mockResolvedValue({ ...mockTargetUser });
 
       const result = await service.updateUserStatus("admin-1", "user-2", false);
 
       expect(result.isActive).toBe(false);
+      expect(refreshTokensRepository.update).toHaveBeenCalledWith(
+        { userId: "user-2", isRevoked: false },
+        { isRevoked: true },
+      );
     });
 
-    it("activates a user", async () => {
+    it("activates a user without revoking tokens", async () => {
       usersRepository.findOne.mockResolvedValue({
         ...mockTargetUser,
         isActive: false,
@@ -177,6 +191,7 @@ describe("AdminService", () => {
       const result = await service.updateUserStatus("admin-1", "user-2", true);
 
       expect(result.isActive).toBe(true);
+      expect(refreshTokensRepository.update).not.toHaveBeenCalled();
     });
 
     it("throws ForbiddenException when disabling own account", async () => {
@@ -261,6 +276,17 @@ describe("AdminService", () => {
       expect(savedUser.resetTokenExpiry).toBeNull();
       // Password should be hashed, not plaintext
       expect(savedUser.passwordHash).not.toBe(result.temporaryPassword);
+    });
+
+    it("revokes all refresh tokens after password reset", async () => {
+      usersRepository.findOne.mockResolvedValue({ ...mockTargetUser });
+
+      await service.resetUserPassword("admin-1", "user-2");
+
+      expect(refreshTokensRepository.update).toHaveBeenCalledWith(
+        { userId: "user-2", isRevoked: false },
+        { isRevoked: true },
+      );
     });
 
     it("throws ForbiddenException when resetting own password", async () => {

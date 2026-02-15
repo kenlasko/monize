@@ -120,3 +120,30 @@ This is a comprehensive web-based personal finance management application design
 - [ ] console.log in db-init.ts and seed.service.ts: Logs file paths during startup
 - [ ] Refresh token cookie uses path "/": Needed by frontend proxy auth check, restricting would break SSR auth detection
 - [ ] Swagger docs exposed in non-production: Intentional for development
+
+### Auth & Accounts Audit (Feb 2026)
+
+#### Fixed
+- [x] changePassword did not revoke refresh tokens: Old sessions remained active after password change, allowing continued access from compromised devices
+- [x] Admin resetUserPassword did not revoke refresh tokens: Users kept active sessions even after admin-forced password reset
+- [x] Admin updateUserStatus (deactivate) did not revoke refresh tokens: Deactivated users could continue using existing sessions until access token expired
+- [x] mustChangePassword flag not enforced server-side: Users with admin-assigned temporary passwords could access all endpoints without changing password. Added MustChangePasswordGuard as global guard with @SkipPasswordCheck() on auth, profile, and change-password endpoints
+- [x] Self-deletion of last admin account: Users could delete their own account via DELETE /users/account even as the last admin, leaving the system with no administrator
+- [x] Email change without password confirmation: updateProfile allowed email changes without verifying current password, enabling account takeover via compromised sessions. Now requires currentPassword when email is being changed
+- [x] Missing MaxLength on ChangePasswordDto.currentPassword: Could accept unlimited length input (added @MaxLength(128))
+- [x] Missing MaxLength on VerifyTotpDto.tempToken: Could accept arbitrarily large strings (added @MaxLength(2048))
+- [x] Missing MaxLength on ForgotPasswordDto.email: No length constraint on email field (added @MaxLength(254) per RFC 5321)
+
+#### Verified Secure (no action needed)
+- Authentication guards: All 19 controllers audited; 17 use class-level @UseGuards(AuthGuard("jwt")), 2 intentionally public (health, auth)
+- User identity: All endpoints derive userId from req.user (JWT), never from request params/body
+- Admin authorization: AdminController uses @UseGuards(AuthGuard("jwt"), RolesGuard) with @Roles("admin") at class level
+- ParseUUIDPipe: Applied to all path ID parameters across all controllers
+- JWT strategy: Validates signature (HS256), enforces expiration, rejects 2FA pending tokens, checks user active status
+- Refresh token rotation: Family-based replay detection with pessimistic write locks
+- Password reset tokens: SHA-256 hashed before storage, 1-hour expiry, revokes all refresh tokens
+- OIDC: State/nonce validation, email_verified check before account linking, no open redirects
+- CSRF: Double-submit cookie pattern with timing-safe comparison, global guard
+- Cookie security: httpOnly, secure (production), sameSite (lax/strict), no tokens in localStorage
+- Client-side auth: UI-only role checks, all admin enforcement server-side
+- Rate limiting: Auth endpoints 3-5 per 15 min, global 100/min

@@ -21,6 +21,7 @@ import { UsersService } from "./users.service";
 import { UpdateProfileDto } from "./dto/update-profile.dto";
 import { UpdatePreferencesDto } from "./dto/update-preferences.dto";
 import { ChangePasswordDto } from "./dto/change-password.dto";
+import { SkipPasswordCheck } from "../auth/decorators/skip-password-check.decorator";
 
 @ApiTags("Users")
 @Controller("users")
@@ -30,6 +31,7 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get("me")
+  @SkipPasswordCheck()
   @ApiOperation({ summary: "Get current user profile" })
   async getProfile(@Request() req) {
     const user = await this.usersService.findById(req.user.id);
@@ -65,6 +67,7 @@ export class UsersController {
   }
 
   @Post("change-password")
+  @SkipPasswordCheck()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Change current user password" })
   @ApiResponse({ status: 200, description: "Password changed successfully" })
