@@ -1,11 +1,15 @@
 import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { Issuer, Client, generators, TokenSet } from "openid-client";
+import * as client from "openid-client";
+
+export interface OidcTokenResult {
+  access_token: string;
+  sub: string;
+}
 
 @Injectable()
 export class OidcService implements OnModuleInit {
-  private client: Client | null = null;
-  private issuer: Issuer | null = null;
+  private config: client.Configuration | null = null;
   private readonly logger = new Logger(OidcService.name);
   private _enabled = false;
   private callbackUrl: string;
@@ -35,16 +39,14 @@ export class OidcService implements OnModuleInit {
     }
 
     try {
-      // Auto-discover OIDC configuration from issuer
-      this.issuer = await Issuer.discover(issuerUrl);
-      this.logger.log(`Discovered OIDC issuer: ${this.issuer.metadata.issuer}`);
-
-      this.client = new this.issuer.Client({
-        client_id: clientId,
-        client_secret: clientSecret,
-        redirect_uris: [this.callbackUrl],
-        response_types: ["code"],
-      });
+      this.config = await client.discovery(
+        new URL(issuerUrl),
+        clientId,
+        clientSecret,
+      );
+      this.logger.log(
+        `Discovered OIDC issuer: ${this.config.serverMetadata().issuer}`,
+      );
 
       this._enabled = true;
       this.logger.log("OIDC initialized successfully");
@@ -59,15 +61,18 @@ export class OidcService implements OnModuleInit {
    * Generate authorization URL for OIDC login
    */
   getAuthorizationUrl(state: string, nonce: string): string {
-    if (!this.client) {
+    if (!this.config) {
       throw new Error("OIDC client not initialized");
     }
 
-    return this.client.authorizationUrl({
+    const url = client.buildAuthorizationUrl(this.config, {
+      redirect_uri: this.callbackUrl,
       scope: "openid profile email",
       state,
       nonce,
     });
+
+    return url.href;
   }
 
   /**
@@ -77,41 +82,72 @@ export class OidcService implements OnModuleInit {
     params: Record<string, string>,
     state: string,
     nonce: string,
-  ): Promise<TokenSet> {
-    if (!this.client) {
+  ): Promise<OidcTokenResult> {
+    if (!this.config) {
       throw new Error("OIDC client not initialized");
     }
 
-    const tokenSet = await this.client.callback(this.callbackUrl, params, {
-      state,
-      nonce,
-    });
+    // Build the full callback URL with query params for v6's authorizationCodeGrant
+    const callbackUrl = new URL(this.callbackUrl);
+    for (const [key, value] of Object.entries(params)) {
+      callbackUrl.searchParams.set(key, value);
+    }
 
-    return tokenSet;
+    const tokens = await client.authorizationCodeGrant(
+      this.config,
+      callbackUrl,
+      {
+        expectedState: state,
+        expectedNonce: nonce,
+      },
+    );
+
+    if (!tokens.access_token) {
+      throw new Error("No access token received from OIDC provider");
+    }
+
+    const claims = tokens.claims();
+    if (!claims?.sub) {
+      throw new Error("No subject claim in ID token");
+    }
+
+    return {
+      access_token: tokens.access_token,
+      sub: claims.sub,
+    };
   }
 
   /**
    * Get user info from the OIDC provider
    */
-  async getUserInfo(accessToken: string): Promise<Record<string, unknown>> {
-    if (!this.client) {
+  async getUserInfo(
+    accessToken: string,
+    expectedSubject: string,
+  ): Promise<Record<string, unknown>> {
+    if (!this.config) {
       throw new Error("OIDC client not initialized");
     }
 
-    return this.client.userinfo(accessToken);
+    const userInfo = await client.fetchUserInfo(
+      this.config,
+      accessToken,
+      expectedSubject,
+    );
+
+    return userInfo as unknown as Record<string, unknown>;
   }
 
   /**
    * Generate a random state value for CSRF protection
    */
   generateState(): string {
-    return generators.state();
+    return client.randomState();
   }
 
   /**
    * Generate a random nonce value for replay protection
    */
   generateNonce(): string {
-    return generators.nonce();
+    return client.randomNonce();
   }
 }

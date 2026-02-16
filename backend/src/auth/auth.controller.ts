@@ -236,13 +236,10 @@ export class AuthController {
         nonce,
       );
 
-      if (!tokenSet.access_token) {
-        throw new Error("No access token received from OIDC provider");
-      }
-
       // Get user info from OIDC provider
       const userInfo = await this.oidcService.getUserInfo(
         tokenSet.access_token,
+        tokenSet.sub,
       );
 
       // Find or create user

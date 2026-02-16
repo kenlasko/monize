@@ -2,48 +2,40 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { ConfigService } from "@nestjs/config";
 import { OidcService } from "./oidc.service";
 
-// Mock the entire openid-client module
-jest.mock("openid-client", () => {
-  const mockAuthorizationUrl = jest
-    .fn()
-    .mockReturnValue("https://issuer.example.com/auth?scope=openid");
-  const mockCallback = jest
-    .fn()
-    .mockResolvedValue({ access_token: "at-123", id_token: "id-123" });
-  const mockUserinfo = jest
-    .fn()
-    .mockResolvedValue({ sub: "oidc-user-1", email: "user@example.com" });
+const mockServerMetadata = jest
+  .fn()
+  .mockReturnValue({ issuer: "https://issuer.example.com" });
 
-  const MockClient = jest.fn().mockImplementation(() => ({
-    authorizationUrl: mockAuthorizationUrl,
-    callback: mockCallback,
-    userinfo: mockUserinfo,
-  }));
-
-  const mockDiscover = jest.fn().mockResolvedValue({
-    metadata: { issuer: "https://issuer.example.com" },
-    Client: MockClient,
-  });
-
-  return {
-    Issuer: {
-      discover: mockDiscover,
-    },
-    generators: {
-      state: jest.fn().mockReturnValue("random-state-value"),
-      nonce: jest.fn().mockReturnValue("random-nonce-value"),
-    },
-    // Re-export for test access
-    __mockDiscover: mockDiscover,
-    __MockClient: MockClient,
-    __mockAuthorizationUrl: mockAuthorizationUrl,
-    __mockCallback: mockCallback,
-    __mockUserinfo: mockUserinfo,
-  };
+const mockDiscovery = jest.fn().mockResolvedValue({
+  serverMetadata: mockServerMetadata,
 });
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const oidcClient = require("openid-client");
+const mockBuildAuthorizationUrl = jest.fn().mockReturnValue({
+  href: "https://issuer.example.com/auth?scope=openid",
+});
+
+const mockAuthorizationCodeGrant = jest.fn().mockResolvedValue({
+  access_token: "at-123",
+  claims: () => ({ sub: "oidc-user-1" }),
+});
+
+const mockFetchUserInfo = jest
+  .fn()
+  .mockResolvedValue({ sub: "oidc-user-1", email: "user@example.com" });
+
+const mockRandomState = jest.fn().mockReturnValue("random-state-value");
+const mockRandomNonce = jest.fn().mockReturnValue("random-nonce-value");
+
+jest.mock("openid-client", () => ({
+  discovery: (...args: unknown[]) => mockDiscovery(...args),
+  buildAuthorizationUrl: (...args: unknown[]) =>
+    mockBuildAuthorizationUrl(...args),
+  authorizationCodeGrant: (...args: unknown[]) =>
+    mockAuthorizationCodeGrant(...args),
+  fetchUserInfo: (...args: unknown[]) => mockFetchUserInfo(...args),
+  randomState: () => mockRandomState(),
+  randomNonce: () => mockRandomNonce(),
+}));
 
 describe("OidcService", () => {
   let service: OidcService;
@@ -88,12 +80,14 @@ describe("OidcService", () => {
   });
 
   describe("initialize()", () => {
-    it("discovers the OIDC issuer and creates a client", async () => {
+    it("discovers the OIDC issuer and creates a configuration", async () => {
       const result = await service.initialize();
 
       expect(result).toBe(true);
-      expect(oidcClient.Issuer.discover).toHaveBeenCalledWith(
-        "https://issuer.example.com",
+      expect(mockDiscovery).toHaveBeenCalledWith(
+        expect.any(URL),
+        "my-client-id",
+        "my-client-secret",
       );
       expect(service.enabled).toBe(true);
     });
@@ -108,7 +102,7 @@ describe("OidcService", () => {
 
       expect(result).toBe(false);
       expect(service.enabled).toBe(false);
-      expect(oidcClient.Issuer.discover).not.toHaveBeenCalled();
+      expect(mockDiscovery).not.toHaveBeenCalled();
     });
 
     it("returns false when OIDC_CLIENT_ID is not configured", async () => {
@@ -136,9 +130,7 @@ describe("OidcService", () => {
     });
 
     it("returns false and logs error when discovery fails", async () => {
-      oidcClient.Issuer.discover.mockRejectedValueOnce(
-        new Error("Network error"),
-      );
+      mockDiscovery.mockRejectedValueOnce(new Error("Network error"));
 
       const result = await service.initialize();
 
@@ -160,11 +152,16 @@ describe("OidcService", () => {
       const url = service.getAuthorizationUrl("state-1", "nonce-1");
 
       expect(url).toBe("https://issuer.example.com/auth?scope=openid");
-      expect(oidcClient.__mockAuthorizationUrl).toHaveBeenCalledWith({
-        scope: "openid profile email",
-        state: "state-1",
-        nonce: "nonce-1",
-      });
+      expect(mockBuildAuthorizationUrl).toHaveBeenCalledWith(
+        expect.anything(),
+        {
+          redirect_uri:
+            "http://localhost:3001/api/v1/auth/oidc/callback",
+          scope: "openid profile email",
+          state: "state-1",
+          nonce: "nonce-1",
+        },
+      );
     });
   });
 
@@ -178,42 +175,74 @@ describe("OidcService", () => {
     it("exchanges the authorization code for tokens", async () => {
       await service.initialize();
 
-      const tokenSet = await service.handleCallback(
+      const result = await service.handleCallback(
         { code: "auth-code-123" },
         "state-1",
         "nonce-1",
       );
 
-      expect(tokenSet).toEqual({
+      expect(result).toEqual({
         access_token: "at-123",
-        id_token: "id-123",
+        sub: "oidc-user-1",
       });
-      expect(oidcClient.__mockCallback).toHaveBeenCalledWith(
-        "http://localhost:3001/api/v1/auth/oidc/callback",
-        { code: "auth-code-123" },
-        { state: "state-1", nonce: "nonce-1" },
+      expect(mockAuthorizationCodeGrant).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.any(URL),
+        {
+          expectedState: "state-1",
+          expectedNonce: "nonce-1",
+        },
       );
+    });
+
+    it("throws when no access token is received", async () => {
+      await service.initialize();
+      mockAuthorizationCodeGrant.mockResolvedValueOnce({
+        access_token: undefined,
+        claims: () => ({ sub: "oidc-user-1" }),
+      });
+
+      await expect(
+        service.handleCallback({ code: "abc" }, "state-1", "nonce-1"),
+      ).rejects.toThrow("No access token received from OIDC provider");
+    });
+
+    it("throws when no subject claim in ID token", async () => {
+      await service.initialize();
+      mockAuthorizationCodeGrant.mockResolvedValueOnce({
+        access_token: "at-123",
+        claims: () => undefined,
+      });
+
+      await expect(
+        service.handleCallback({ code: "abc" }, "state-1", "nonce-1"),
+      ).rejects.toThrow("No subject claim in ID token");
     });
   });
 
   describe("getUserInfo()", () => {
     it("throws when client is not initialized", async () => {
-      await expect(service.getUserInfo("access-token")).rejects.toThrow(
-        "OIDC client not initialized",
-      );
+      await expect(
+        service.getUserInfo("access-token", "sub-1"),
+      ).rejects.toThrow("OIDC client not initialized");
     });
 
     it("returns user info from the OIDC provider", async () => {
       await service.initialize();
 
-      const userInfo = await service.getUserInfo("access-token-123");
+      const userInfo = await service.getUserInfo(
+        "access-token-123",
+        "oidc-user-1",
+      );
 
       expect(userInfo).toEqual({
         sub: "oidc-user-1",
         email: "user@example.com",
       });
-      expect(oidcClient.__mockUserinfo).toHaveBeenCalledWith(
+      expect(mockFetchUserInfo).toHaveBeenCalledWith(
+        expect.anything(),
         "access-token-123",
+        "oidc-user-1",
       );
     });
   });
@@ -222,7 +251,7 @@ describe("OidcService", () => {
     it("returns a random state value", () => {
       const state = service.generateState();
       expect(state).toBe("random-state-value");
-      expect(oidcClient.generators.state).toHaveBeenCalled();
+      expect(mockRandomState).toHaveBeenCalled();
     });
   });
 
@@ -230,7 +259,7 @@ describe("OidcService", () => {
     it("returns a random nonce value", () => {
       const nonce = service.generateNonce();
       expect(nonce).toBe("random-nonce-value");
-      expect(oidcClient.generators.nonce).toHaveBeenCalled();
+      expect(mockRandomNonce).toHaveBeenCalled();
     });
   });
 });
