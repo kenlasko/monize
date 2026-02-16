@@ -878,8 +878,9 @@ describe('ScheduledTransactionForm', () => {
   it('auto-fills category from payee default category', async () => {
     render(<ScheduledTransactionForm />);
 
+    // Wait for payee options to actually render (not just API call)
     await waitFor(() => {
-      expect(mockPayeesGetAll).toHaveBeenCalled();
+      expect(screen.getByTestId('option-payee-1')).toBeInTheDocument();
     });
 
     // Select payee with default category
@@ -896,8 +897,9 @@ describe('ScheduledTransactionForm', () => {
   it('does not auto-fill category if payee has no default category', async () => {
     const { container } = render(<ScheduledTransactionForm />);
 
+    // Wait for payee options to actually render (not just API call)
     await waitFor(() => {
-      expect(mockPayeesGetAll).toHaveBeenCalled();
+      expect(screen.getByTestId('option-payee-3')).toBeInTheDocument();
     });
 
     // Select payee without default category
@@ -913,8 +915,9 @@ describe('ScheduledTransactionForm', () => {
   it('clears payee when empty selection is made', async () => {
     const { container } = render(<ScheduledTransactionForm />);
 
+    // Wait for payee options to actually render (not just API call)
     await waitFor(() => {
-      expect(mockPayeesGetAll).toHaveBeenCalled();
+      expect(screen.getByTestId('option-payee-1')).toBeInTheDocument();
     });
 
     // Select then deselect payee
