@@ -148,7 +148,7 @@ export function CustomReportViewer({ reportId }: CustomReportViewerProps) {
     <div className="space-y-6">
       <PageHeader
         title={report.name}
-        subtitle={report.description}
+        subtitle={report.description ?? undefined}
         actions={
           <>
             <Button
