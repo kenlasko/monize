@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, MutableRefObject } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Resolver } from 'react-hook-form';
 import '@/lib/zodConfig';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -142,7 +142,7 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
     watch,
     formState: { errors, isDirty },
   } = useForm<TransactionFormData>({
-    resolver: zodResolver(transactionSchema),
+    resolver: zodResolver(transactionSchema) as Resolver<TransactionFormData>,
     defaultValues: transaction
       ? {
           // For transfers, use the "from" account as the primary account
@@ -275,16 +275,16 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
   // Handle payee selection
   const handlePayeeChange = (payeeId: string, payeeName: string) => {
     setSelectedPayeeId(payeeId);
-    setValue('payeeName', payeeName, { shouldDirty: true, shouldValidate: true });
+    setValue('payeeName', payeeName, { shouldDirty: true });
 
     if (payeeId) {
-      setValue('payeeId', payeeId, { shouldDirty: true, shouldValidate: true });
+      setValue('payeeId', payeeId, { shouldDirty: true });
 
       // Auto-fill category from payee's default category
       const payee = payees.find(p => p.id === payeeId);
       if (payee?.defaultCategoryId && !selectedCategoryId) {
         setSelectedCategoryId(payee.defaultCategoryId);
-        setValue('categoryId', payee.defaultCategoryId, { shouldDirty: true, shouldValidate: true });
+        setValue('categoryId', payee.defaultCategoryId, { shouldDirty: true });
 
         // Adjust amount sign based on default category type
         const category = categories.find(c => c.id === payee.defaultCategoryId);
@@ -292,13 +292,13 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
           const absAmount = Math.abs(watchedAmount);
           const newAmount = category.isIncome ? absAmount : -absAmount;
           if (newAmount !== watchedAmount) {
-            setValue('amount', newAmount, { shouldDirty: true, shouldValidate: true });
+            setValue('amount', newAmount, { shouldDirty: true });
           }
         }
       }
     } else {
       // Custom payee name (not in database)
-      setValue('payeeId', undefined, { shouldDirty: true, shouldValidate: true });
+      setValue('payeeId', undefined, { shouldDirty: true });
     }
   };
 

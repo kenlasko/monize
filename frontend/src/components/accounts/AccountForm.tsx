@@ -1,6 +1,6 @@
 'use client';
 
-import { useForm } from 'react-hook-form';
+import { useForm, Resolver } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
 import '@/lib/zodConfig';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -131,7 +131,7 @@ export function AccountForm({ account, onSubmit, onCancel, onDirtyChange, submit
     getValues,
     formState: { errors, isSubmitting, isDirty },
   } = useForm<AccountFormData>({
-    resolver: zodResolver(accountSchema),
+    resolver: zodResolver(accountSchema) as Resolver<AccountFormData>,
     defaultValues: account
       ? {
           name: account.name,

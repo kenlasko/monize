@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, MutableRefObject } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Resolver } from 'react-hook-form';
 import '@/lib/zodConfig';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -123,7 +123,7 @@ export function ScheduledTransactionForm({
     watch,
     formState: { errors, isDirty },
   } = useForm<ScheduledTransactionFormData>({
-    resolver: zodResolver(scheduledTransactionSchema),
+    resolver: zodResolver(scheduledTransactionSchema) as Resolver<ScheduledTransactionFormData>,
     defaultValues: scheduledTransaction
       ? {
           accountId: scheduledTransaction.accountId,
@@ -206,20 +206,17 @@ export function ScheduledTransactionForm({
 
   const handlePayeeChange = (payeeId: string, payeeName: string) => {
     setSelectedPayeeId(payeeId);
-    setValue('payeeName', payeeName, { shouldDirty: true, shouldValidate: true });
+    setValue('payeeName', payeeName, { shouldDirty: true });
 
     if (payeeId) {
-      setValue('payeeId', payeeId, { shouldDirty: true, shouldValidate: true });
+      setValue('payeeId', payeeId, { shouldDirty: true });
 
       // Auto-fill category from payee's default category (payment mode only)
       if (transactionType === 'payment') {
         const payee = payees.find((p) => p.id === payeeId);
         if (payee?.defaultCategoryId && !selectedCategoryId) {
           setSelectedCategoryId(payee.defaultCategoryId);
-          setValue('categoryId', payee.defaultCategoryId, {
-            shouldDirty: true,
-            shouldValidate: true,
-          });
+          setValue('categoryId', payee.defaultCategoryId, { shouldDirty: true });
 
           // Adjust amount sign based on default category type
           const category = categories.find((c) => c.id === payee.defaultCategoryId);
@@ -228,14 +225,14 @@ export function ScheduledTransactionForm({
             const newAmount = category.isIncome ? absAmount : -absAmount;
             if (newAmount !== watchedAmount) {
               const rounded = roundToCents(newAmount);
-              setValue('amount', rounded, { shouldDirty: true, shouldValidate: true });
+              setValue('amount', rounded, { shouldDirty: true });
               // CurrencyInput syncs display from value prop
             }
           }
         }
       }
     } else {
-      setValue('payeeId', undefined, { shouldDirty: true, shouldValidate: true });
+      setValue('payeeId', undefined, { shouldDirty: true });
     }
   };
 

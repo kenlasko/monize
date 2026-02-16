@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, MutableRefObject } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Resolver } from 'react-hook-form';
 import '@/lib/zodConfig';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -46,7 +46,7 @@ export function CurrencyForm({ currency, onSubmit, onCancel, onDirtyChange, subm
     reset,
     formState: { errors, isSubmitting, isDirty, defaultValues },
   } = useForm<CurrencyFormData>({
-    resolver: zodResolver(currencySchema),
+    resolver: zodResolver(currencySchema) as Resolver<CurrencyFormData>,
     defaultValues: {
       code: currency?.code || '',
       name: currency?.name || '',

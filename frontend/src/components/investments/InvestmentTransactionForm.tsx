@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, MutableRefObject } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Resolver } from 'react-hook-form';
 import '@/lib/zodConfig';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -132,7 +132,7 @@ export function InvestmentTransactionForm({
     setValue,
     formState: { errors, isDirty },
   } = useForm<InvestmentTransactionFormData>({
-    resolver: zodResolver(investmentTransactionSchema),
+    resolver: zodResolver(investmentTransactionSchema) as Resolver<InvestmentTransactionFormData>,
     defaultValues: transaction
       ? {
           accountId: transaction.accountId,

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useLayoutEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { cn, inputBaseClasses, inputErrorClasses } from '@/lib/utils';
 
 interface ComboboxOption {
@@ -49,17 +49,6 @@ export function Combobox({
   const isDeleteRef = useRef(false);
   const isNavigatingRef = useRef(false);
   const prevFilterTextRef = useRef('');
-  const pendingSelectionRef = useRef<{ start: number; end: number } | null>(null);
-
-  // Apply autocomplete selection synchronously after DOM update,
-  // before the browser processes any new keystrokes
-  useLayoutEffect(() => {
-    if (pendingSelectionRef.current && inputRef.current) {
-      const { start, end } = pendingSelectionRef.current;
-      inputRef.current.setSelectionRange(start, end);
-      pendingSelectionRef.current = null;
-    }
-  });
 
   // Find selected option label when value changes (only if not currently typing)
   useEffect(() => {
@@ -94,7 +83,6 @@ export function Combobox({
 
       if (!isInsideWrapper) {
         setIsOpen(false);
-
         // Only process if user was actively typing AND the click is not on a form submit button
         // This prevents the click-outside handler from interfering with form submission
         const target = event.target as HTMLElement;
@@ -147,20 +135,6 @@ export function Combobox({
 
     if (onInputChange) {
       onInputChange(newValue);
-    }
-
-    // Inline autocomplete: find best prefix match and show completion
-    if (!isDeleteRef.current && newValue.trim()) {
-      const lowerValue = newValue.toLowerCase();
-      const prefixMatch = options.find(opt =>
-        opt.label.toLowerCase().startsWith(lowerValue)
-      );
-      if (prefixMatch) {
-        setInputValue(prefixMatch.label);
-        pendingSelectionRef.current = { start: newValue.length, end: prefixMatch.label.length };
-        isDeleteRef.current = false;
-        return;
-      }
     }
 
     setInputValue(newValue);
@@ -338,13 +312,15 @@ export function Combobox({
         break;
       case 'Tab':
         // Accept the highlighted/autocompleted option on Tab, then let focus move naturally
-        if (isTyping && highlightedIndex >= 0) {
-          if (showCreateOption && highlightedIndex === 0) {
-            handleCreateNew();
-          } else {
-            const optionIndex = showCreateOption ? highlightedIndex - 1 : highlightedIndex;
-            if (optionIndex >= 0 && optionIndex < filteredOptions.length) {
-              handleSelectOption(filteredOptions[optionIndex]);
+        if (isTyping) {
+          if (highlightedIndex >= 0) {
+            if (showCreateOption && highlightedIndex === 0) {
+              handleCreateNew();
+            } else {
+              const optionIndex = showCreateOption ? highlightedIndex - 1 : highlightedIndex;
+              if (optionIndex >= 0 && optionIndex < filteredOptions.length) {
+                handleSelectOption(filteredOptions[optionIndex]);
+              }
             }
           }
         }
