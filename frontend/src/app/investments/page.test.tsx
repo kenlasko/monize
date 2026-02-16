@@ -219,6 +219,8 @@ vi.mock('@/components/investments/InvestmentValueChart', () => ({
 const mockCashAccounts = [
   { id: 'cash-1', name: 'RRSP - Cash', accountType: 'INVESTMENT', accountSubType: 'INVESTMENT_CASH', linkedAccountId: 'brok-1', currencyCode: 'USD', currentBalance: 5000, isClosed: false },
   { id: 'cash-2', name: 'TFSA - Cash', accountType: 'INVESTMENT', accountSubType: 'INVESTMENT_CASH', linkedAccountId: 'brok-2', currencyCode: 'CAD', currentBalance: 3000, isClosed: false },
+  { id: 'brok-1', name: 'RRSP - Brokerage', accountType: 'INVESTMENT', accountSubType: 'INVESTMENT_BROKERAGE', linkedAccountId: 'cash-1', currencyCode: 'USD', currentBalance: 0, isClosed: false },
+  { id: 'brok-2', name: 'TFSA - Brokerage', accountType: 'INVESTMENT', accountSubType: 'INVESTMENT_BROKERAGE', linkedAccountId: 'cash-2', currencyCode: 'CAD', currentBalance: 0, isClosed: false },
 ];
 
 const mockPortfolioSummary = {
@@ -331,7 +333,7 @@ describe('InvestmentsPage', () => {
       });
     });
 
-    it('displays account names without " - Cash" suffix', async () => {
+    it('displays account names without " - Brokerage" suffix', async () => {
       render(<InvestmentsPage />);
       await waitFor(() => {
         expect(screen.getByText('RRSP')).toBeInTheDocument();
