@@ -3,7 +3,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
+import Link from 'next/link';
 import { ReportChart } from './ReportChart';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { customReportsApi } from '@/lib/custom-reports';
@@ -18,7 +20,6 @@ import {
 } from '@/types/custom-report';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useDateFormat } from '@/hooks/useDateFormat';
-import { getIconComponent } from '@/components/ui/IconPicker';
 import { createLogger } from '@/lib/logger';
 import { getErrorMessage } from '@/lib/errors';
 
@@ -145,50 +146,28 @@ export function CustomReportViewer({ reportId }: CustomReportViewerProps) {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="flex items-center gap-4 min-w-0">
-            <button
-              onClick={() => router.push('/reports')}
-              className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 shrink-0"
-              title="Back to Reports"
+      <PageHeader
+        title={report.name}
+        subtitle={report.description}
+        actions={
+          <>
+            <Button
+              variant="outline"
+              className="shrink-0"
+              onClick={() => router.push(`/reports/custom/${reportId}/edit`)}
             >
-              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-            {report.icon && (
-              <div
-                className="w-12 h-12 rounded-lg flex items-center justify-center text-white shrink-0"
-                style={{ backgroundColor: report.backgroundColor || '#3b82f6' }}
-              >
-                {getIconComponent(report.icon)}
-              </div>
-            )}
-            <div className="min-w-0">
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 truncate">
-                {report.name}
-              </h1>
-              {report.description && (
-                <p className="text-gray-500 dark:text-gray-400 mt-1">
-                  {report.description}
-                </p>
-              )}
-            </div>
-          </div>
-          <Button
-            variant="outline"
-            className="shrink-0"
-            onClick={() => router.push(`/reports/custom/${reportId}/edit`)}
-          >
-            Edit
-          </Button>
-        </div>
+              Edit
+            </Button>
+            <Link href="/reports">
+              <Button variant="outline">Back to Reports</Button>
+            </Link>
+          </>
+        }
+      />
 
-        {/* Timeframe Override */}
-        <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-          <div className="flex flex-wrap items-end gap-4">
+      {/* Timeframe Override */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <div className="flex flex-wrap items-end gap-4">
             <div className="w-64">
               <Select
                 label="Timeframe"
@@ -230,7 +209,6 @@ export function CustomReportViewer({ reportId }: CustomReportViewerProps) {
               </div>
             )}
           </div>
-        </div>
       </div>
 
       {/* Results */}

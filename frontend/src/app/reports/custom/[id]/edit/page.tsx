@@ -3,8 +3,10 @@
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
+import Link from 'next/link';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { PageLayout } from '@/components/layout/PageLayout';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
@@ -98,23 +100,24 @@ function EditCustomReportContent({ reportId }: { reportId: string }) {
     <PageLayout>
 
       <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-12 pt-6 pb-8">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-              Edit Report
-            </h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-1">
-              Modify your custom report configuration
-            </p>
-          </div>
-          <Button
-            variant="outline"
-            onClick={() => setShowDeleteConfirm(true)}
-            className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/20"
-          >
-            Delete Report
-          </Button>
-        </div>
+        <PageHeader
+          title="Edit Report"
+          subtitle="Modify your custom report configuration"
+          actions={
+            <>
+              <Button
+                variant="outline"
+                onClick={() => setShowDeleteConfirm(true)}
+                className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/20"
+              >
+                Delete Report
+              </Button>
+              <Link href="/reports">
+                <Button variant="outline">Back to Reports</Button>
+              </Link>
+            </>
+          }
+        />
 
         <CustomReportForm
           report={report}

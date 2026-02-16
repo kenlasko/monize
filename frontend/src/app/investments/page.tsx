@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { PageLayout } from '@/components/layout/PageLayout';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { UnsavedChangesDialog } from '@/components/ui/UnsavedChangesDialog';
@@ -331,27 +332,23 @@ function InvestmentsContent() {
     }
   };
 
-  // Get brokerage account for the first selected cash account (for new transaction default)
+  // Get brokerage account for the first selected account (for new transaction default)
   const getSelectedBrokerageAccountId = () => {
     if (selectedAccountIds.length === 0) return undefined;
-    const cashAccount = accounts.find((a) => a.id === selectedAccountIds[0]);
-    if (cashAccount?.linkedAccountId) {
-      return cashAccount.linkedAccountId;
-    }
-    return undefined;
+    return selectedAccountIds[0];
   };
 
-  // Group accounts by pair for display
+  // Display name for account selector (strip " - Brokerage" suffix)
   const getAccountDisplayName = (account: Account) => {
-    if (account.accountSubType === 'INVESTMENT_CASH') {
-      return account.name.replace(' - Cash', '');
+    if (account.accountSubType === 'INVESTMENT_BROKERAGE') {
+      return account.name.replace(' - Brokerage', '');
     }
     return account.name;
   };
 
-  // Get unique investment pairs (only show cash accounts in selector)
-  const cashAccounts = accounts.filter(
-    (a) => a.accountSubType === 'INVESTMENT_CASH',
+  // Get selectable investment accounts (brokerage and standalone)
+  const selectableAccounts = accounts.filter(
+    (a) => a.accountSubType === 'INVESTMENT_BROKERAGE' || !a.accountSubType,
   );
 
   return (
@@ -359,111 +356,106 @@ function InvestmentsContent() {
 
       <main className="px-4 sm:px-6 lg:px-12 pt-6 pb-8">
         <div className="sm:px-0">
-          {/* Header */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                Investments
-              </h1>
-              <p className="text-gray-500 dark:text-gray-400">
-                Track your investment portfolio
-              </p>
-            </div>
-
-            {/* Account Filter and Actions */}
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="w-64">
-                <MultiSelect
-                  value={selectedAccountIds}
-                  onChange={handleAccountChange}
-                  placeholder="All Investment Accounts"
-                  showSearch={false}
-                  options={cashAccounts.map((account) => ({
-                    value: account.id,
-                    label: getAccountDisplayName(account),
-                  }))}
-                />
-              </div>
-              <div className="relative">
-                <Button
-                  variant="outline"
-                  onClick={handleRefreshPrices}
-                  disabled={isRefreshingPrices}
-                  className="whitespace-nowrap"
-                  title={lastPriceUpdate ? `Last updated: ${formatRelativeTime(lastPriceUpdate)}` : 'Never updated'}
-                >
-                  {isRefreshingPrices ? (
-                    <>
-                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Updating...
-                    </>
-                  ) : (
-                    <>
-                      <svg className="mr-1.5 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                      </svg>
-                      Refresh
-                      {!refreshResult && lastPriceUpdate && (
-                        <span className="hidden sm:inline ml-1.5 text-xs text-gray-500 dark:text-gray-400">
-                          ({formatRelativeTime(lastPriceUpdate)})
-                        </span>
-                      )}
-                    </>
-                  )}
-                </Button>
-                {refreshResult && (
-                  <div className="absolute top-full right-0 mt-1 z-50">
-                    <button
-                      onClick={() => refreshResult.failed > 0 && setShowRefreshDetails(!showRefreshDetails)}
-                      className={`text-xs whitespace-nowrap ${refreshResult.failed === -1 ? 'text-red-600 dark:text-red-400' : refreshResult.failed > 0 ? 'text-yellow-600 dark:text-yellow-400 hover:underline cursor-pointer' : 'text-green-600 dark:text-green-400'}`}
+          <PageHeader
+            title="Investments"
+            subtitle="Track your investment portfolio"
+            actions={
+              <>
+                <div className="flex items-stretch gap-3 w-full sm:w-auto">
+                  <div className="flex-1 sm:flex-none sm:w-64 min-w-0">
+                    <MultiSelect
+                      value={selectedAccountIds}
+                      onChange={handleAccountChange}
+                      placeholder="All Investment Accounts"
+                      showSearch={false}
+                      options={selectableAccounts.map((account: Account) => ({
+                        value: account.id,
+                        label: getAccountDisplayName(account),
+                      }))}
+                    />
+                  </div>
+                  <div className="relative">
+                    <Button
+                      variant="outline"
+                      onClick={handleRefreshPrices}
+                      disabled={isRefreshingPrices}
+                      className="whitespace-nowrap h-full"
+                      title={lastPriceUpdate ? `Last updated: ${formatRelativeTime(lastPriceUpdate)}` : 'Never updated'}
                     >
-                      {refreshResult.failed === -1 ? 'Error refreshing' : `${refreshResult.updated} updated${refreshResult.failed > 0 ? `, ${refreshResult.failed} failed` : ''}`}
-                      {refreshResult.failed > 0 && (
-                        <svg className="inline-block ml-1 h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={showRefreshDetails ? "M5 15l7-7 7 7" : "M19 9l-7 7-7-7"} />
-                        </svg>
+                      {isRefreshingPrices ? (
+                        <>
+                          <svg className="animate-spin sm:-ml-1 sm:mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          <span className="hidden sm:inline">Updating...</span>
+                        </>
+                      ) : (
+                        <>
+                          <svg className="sm:mr-1.5 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                          </svg>
+                          <span className="hidden sm:inline">Refresh</span>
+                          {!refreshResult && lastPriceUpdate && (
+                            <span className="hidden sm:inline ml-1.5 text-xs text-gray-500 dark:text-gray-400">
+                              ({formatRelativeTime(lastPriceUpdate)})
+                            </span>
+                          )}
+                        </>
                       )}
-                    </button>
-                    {showRefreshDetails && refreshResult.results && (
-                      <div className="absolute top-full right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3 min-w-64 max-w-md">
-                        <div className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">Price Update Results</div>
-                        <div className="max-h-48 overflow-y-auto space-y-1">
-                          {refreshResult.results
-                            .filter(r => !r.success)
-                            .map((r, i) => (
-                              <div key={i} className="flex items-start gap-2 text-xs">
-                                <span className="text-red-500 dark:text-red-400 flex-shrink-0">✗</span>
-                                <span className="font-medium text-gray-800 dark:text-gray-200">{r.symbol}</span>
-                                <span className="text-gray-500 dark:text-gray-400 truncate">{r.error}</span>
-                              </div>
-                            ))}
-                          {refreshResult.results
-                            .filter(r => r.success)
-                            .map((r, i) => (
-                              <div key={i} className="flex items-start gap-2 text-xs">
-                                <span className="text-green-500 dark:text-green-400 flex-shrink-0">✓</span>
-                                <span className="font-medium text-gray-800 dark:text-gray-200">{r.symbol}</span>
-                                <span className="text-gray-500 dark:text-gray-400">${r.price?.toFixed(2)}</span>
-                              </div>
-                            ))}
-                        </div>
+                    </Button>
+                    {refreshResult && (
+                      <div className="absolute top-full right-0 mt-1 z-50">
                         <button
-                          onClick={() => setShowRefreshDetails(false)}
-                          className="mt-2 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                          onClick={() => refreshResult.failed > 0 && setShowRefreshDetails(!showRefreshDetails)}
+                          className={`text-xs whitespace-nowrap ${refreshResult.failed === -1 ? 'text-red-600 dark:text-red-400' : refreshResult.failed > 0 ? 'text-yellow-600 dark:text-yellow-400 hover:underline cursor-pointer' : 'text-green-600 dark:text-green-400'}`}
                         >
-                          Close
+                          {refreshResult.failed === -1 ? 'Error refreshing' : `${refreshResult.updated} updated${refreshResult.failed > 0 ? `, ${refreshResult.failed} failed` : ''}`}
+                          {refreshResult.failed > 0 && (
+                            <svg className="inline-block ml-1 h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={showRefreshDetails ? "M5 15l7-7 7 7" : "M19 9l-7 7-7-7"} />
+                            </svg>
+                          )}
                         </button>
+                        {showRefreshDetails && refreshResult.results && (
+                          <div className="absolute top-full right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3 min-w-64 max-w-md">
+                            <div className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">Price Update Results</div>
+                            <div className="max-h-48 overflow-y-auto space-y-1">
+                              {refreshResult.results
+                                .filter(r => !r.success)
+                                .map((r, i) => (
+                                  <div key={i} className="flex items-start gap-2 text-xs">
+                                    <span className="text-red-500 dark:text-red-400 flex-shrink-0">✗</span>
+                                    <span className="font-medium text-gray-800 dark:text-gray-200">{r.symbol}</span>
+                                    <span className="text-gray-500 dark:text-gray-400 truncate">{r.error}</span>
+                                  </div>
+                                ))}
+                              {refreshResult.results
+                                .filter(r => r.success)
+                                .map((r, i) => (
+                                  <div key={i} className="flex items-start gap-2 text-xs">
+                                    <span className="text-green-500 dark:text-green-400 flex-shrink-0">✓</span>
+                                    <span className="font-medium text-gray-800 dark:text-gray-200">{r.symbol}</span>
+                                    <span className="text-gray-500 dark:text-gray-400">${r.price?.toFixed(2)}</span>
+                                  </div>
+                                ))}
+                            </div>
+                            <button
+                              onClick={() => setShowRefreshDetails(false)}
+                              className="mt-2 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                            >
+                              Close
+                            </button>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
-                )}
-              </div>
-              <Button onClick={handleNewTransaction} className="whitespace-nowrap">+ New Transaction</Button>
-            </div>
-          </div>
+                </div>
+                <Button onClick={handleNewTransaction} className="whitespace-nowrap">+ New Transaction</Button>
+              </>
+            }
+          />
 
           {/* Summary and Allocation Row */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">

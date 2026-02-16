@@ -1,9 +1,12 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { PageLayout } from '@/components/layout/PageLayout';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { Button } from '@/components/ui/Button';
 import { CustomReportForm } from '@/components/reports/CustomReportForm';
 import { customReportsApi } from '@/lib/custom-reports';
 import { getErrorMessage } from '@/lib/errors';
@@ -35,14 +38,15 @@ function NewCustomReportContent() {
     <PageLayout>
 
       <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-12 pt-6 pb-8">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            Create Custom Report
-          </h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">
-            Define how you want to view and analyze your financial data
-          </p>
-        </div>
+        <PageHeader
+          title="Create Custom Report"
+          subtitle="Define how you want to view and analyze your financial data"
+          actions={
+            <Link href="/reports">
+              <Button variant="outline">Back to Reports</Button>
+            </Link>
+          }
+        />
 
         <CustomReportForm
           onSubmit={handleSubmit}

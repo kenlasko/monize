@@ -26,7 +26,7 @@ export function PageHeader({ title, subtitle, actions }: PageHeaderProps) {
           </p>
         )}
       </div>
-      {actions && <div className="flex flex-wrap items-center gap-3">{actions}</div>}
+      {actions && <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto [&>*]:w-full [&>*]:sm:w-auto">{actions}</div>}
     </div>
   );
 }
