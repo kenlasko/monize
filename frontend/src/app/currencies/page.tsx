@@ -92,10 +92,6 @@ function CurrenciesContent() {
     }
   };
 
-  const handleFormCancel = () => {
-    close();
-  };
-
   const handleToggleActive = async (currency: CurrencyInfo) => {
     try {
       if (currency.isActive) {

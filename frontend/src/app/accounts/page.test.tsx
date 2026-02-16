@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@/test/render';
+import { render, screen, waitFor } from '@/test/render';
 import AccountsPage from './page';
 import toast from 'react-hot-toast';
 
