@@ -57,24 +57,9 @@ Migrations run via `db-init.js` at container startup. Always update `schema.sql`
 
 ## Environment Configuration
 
-### `.env` (development)
-```
-POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD
-JWT_SECRET (min 32 chars)
-NODE_ENV=development
-PUBLIC_APP_URL=http://localhost:3000
-```
-
-### `.env.docker` (Docker overrides)
-```
-DATABASE_HOST=db (container name)
-INTERNAL_API_URL=http://backend:3001
-```
-
-### `.env.prod` (production)
-```
-NODE_ENV=production
-```
+All environment variables are defined in a single `.env.example` file.
+Copy to `.env` and update for your environment (`cp .env.example .env`).
+Docker-compose files read from `.env` automatically.
 
 ### Key environment variables
 | Variable | Used By | Purpose |

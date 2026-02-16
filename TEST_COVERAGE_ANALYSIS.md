@@ -2,14 +2,14 @@
 
 ## Executive Summary
 
-The monize codebase has **240+ test files** (80 backend, 157 frontend, 3 E2E) with **3,579 total tests** (2,366 backend, 1,213 frontend). Backend unit test coverage is strong at **95.6% statements / 86.5% branches**, well above the 80% project target. Frontend coverage is significantly below target at **53.1% statements / 46.1% branches**. Integration tests exist only as infrastructure -- no implementations. E2E tests cover only 3 basic happy-path scenarios.
+The monize codebase has **260+ test files** (80 backend, 176 frontend, 3 E2E) with **5,300+ total tests** (2,366 backend, 2,873 frontend). Backend unit test coverage is strong at **95.6% statements / 86.5% branches**, well above the 80% project target. Frontend coverage now meets the 80% target at **80.3% statements / 72.4% branches**. Integration tests exist only as infrastructure -- no implementations. E2E tests cover only 3 basic happy-path scenarios.
 
 ### Coverage at a Glance
 
 | Layer | Stmts | Branch | Funcs | Lines | Target | Status |
 |-------|-------|--------|-------|-------|--------|--------|
 | Backend unit | 95.6% | 86.5% | 96.9% | 95.9% | 80% | PASS |
-| Frontend unit | 53.1% | 46.1% | 49.4% | 54.4% | 80% | FAIL |
+| Frontend unit | 80.3% | 72.4% | 77.1% | 81.7% | 80% | PASS (stmts/lines) |
 | Backend integration | 0% | 0% | 0% | 0% | -- | Missing |
 | E2E (Playwright) | 3 tests | -- | -- | -- | -- | Minimal |
 
@@ -61,23 +61,31 @@ Missing coverage for loan payment split recalculation, cron job error handling (
 
 ---
 
-## Frontend Analysis (53.1% overall -- needs significant work)
+## Frontend Analysis (80.3% overall -- meets statement target)
 
 ### Pages with 0% Coverage
 
-Seven full pages have zero test coverage:
+Six full pages still have zero test coverage:
 
 | Page | Lines | Risk | Key Untested Functionality |
 |------|-------|------|---------------------------|
 | **app/bills/page.tsx** | 704 | HIGH | Monthly frequency normalization (DAILY x30, WEEKLY x4.33), calendar grid generation, override confirmation dialogs |
-| **app/investments/page.tsx** | 552 | HIGH | Price refresh orchestration with retry, parallel portfolio loading, auto-refresh timing |
 | **app/reconcile/page.tsx** | 474 | HIGH | Three-step state machine, floating-point balance calc (`Math.round(x*100)/100`), bulk reconcile affecting 100+ records |
 | **app/payees/page.tsx** | 261 | MED | Optimistic state updates, search+pagination reset, sort toggling |
 | **app/admin/users/page.tsx** | 233 | MED | Role changes (destructive), user deletion, temporary password display |
 | **app/setup-2fa/page.tsx** | 42 | LOW | Redirect when already enabled, completion callback |
 | **app/auth/callback/page.tsx** | 87 | MED | OIDC callback handling, conditional routing for password change, error states |
 
-Additionally, **app/import/page.tsx** (1,145 lines) has only **5.3% coverage**. This is the most complex page in the application: multi-file bulk import orchestration, QIF parsing with fuzzy name matching, inline account/category creation, and step-progression logic with conditional steps.
+**Previously 0% pages now covered:**
+- **app/investments/page.tsx** -- rendering, account filter (brokerage accounts), data loading, price refresh, transaction creation
+- **app/reports/[reportId]/page.tsx** -- report lookup, not-found state, title/description rendering, back navigation
+- **app/reports/custom/[id]/page.tsx** -- report viewer rendering with correct ID (100%)
+- **app/reports/custom/[id]/edit/page.tsx** -- loading state, form population, update, delete confirmation, error redirect (86%)
+- **app/reports/custom/new/page.tsx** -- form rendering, creation flow, cancel navigation (82%)
+
+Additionally, **app/import/page.tsx** (1,145 lines) has improved to **53% coverage** but remains complex: multi-file bulk import orchestration, QIF parsing with fuzzy name matching, inline account/category creation, and step-progression logic with conditional steps.
+
+**lib/zod-helpers.ts** improved from 50% to **100%** -- all three preprocess helpers (optionalUuid, optionalString, optionalNumber) now fully tested.
 
 ### Components with Critical Gaps
 
@@ -97,7 +105,7 @@ Additionally, **app/import/page.tsx** (1,145 lines) has only **5.3% coverage**. 
 
 | Directory | Stmts | Branch | Notes |
 |-----------|-------|--------|-------|
-| app/* (pages) | 0-80% | 0-68% | 7 pages at 0%, import at 5% |
+| app/* (pages) | 0-92% | 0-94% | 6 pages at 0%, import at 53% |
 | components/transactions | 35.8% | 47.0% | Core CRUD components undertested |
 | components/scheduled-transactions | 38.9% | 34.2% | Form and dialog components weak |
 | components/import | 38.9% | 38.4% | Multi-step wizard components weak |
@@ -150,7 +158,7 @@ Current Playwright tests cover only registration, login, basic account creation,
 
 6. **Bills page tests** -- Monthly calculation normalization and calendar generation.
 
-7. **Investments page tests** -- Price refresh with retry, portfolio loading, symbol filtering.
+7. **Investments page tests** -- Tests exist for rendering, account filter, data loading, and price refresh. Additional coverage needed for retry logic, error states, and transaction form interactions.
 
 8. **Backend integration tests** -- Implement auth and transaction lifecycle tests using existing helper infrastructure.
 
@@ -172,7 +180,7 @@ Current Playwright tests cover only registration, login, basic account creation,
 
 15. **lib/exchange-rates.ts** (40.9%) and **lib/forecast.ts** (65.6%) -- API wrappers and date calculations.
 
-16. **Remaining pages** -- payees, admin, setup-2fa, auth callback, report pages.
+16. **Remaining pages** -- payees, admin, setup-2fa, auth callback.
 
 ---
 
@@ -180,7 +188,7 @@ Current Playwright tests cover only registration, login, basic account creation,
 
 These provide the most coverage gain for the least effort:
 
-1. **Page-level smoke tests** for the 7 untested pages: Render with mocked data, verify key elements appear. Estimated +5-8% frontend statement coverage.
+1. **Page-level smoke tests** for the 6 remaining untested pages: Render with mocked data, verify key elements appear. Estimated +2-4% frontend statement coverage.
 
 2. **Transaction form mode switching**: 3-4 tests covering normal/split/transfer transitions would cover a significant portion of the 70% gap in TransactionForm.
 

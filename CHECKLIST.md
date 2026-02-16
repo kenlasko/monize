@@ -183,6 +183,8 @@ Use this checklist to track your progress as you complete the Personal Finance M
 - [x] App header with navigation
 - [x] Page layout container
 - [x] Responsive mobile menu
+- [x] Standardized PageHeader component across all pages
+- [x] Mobile-responsive action buttons (full-width on mobile)
 
 ### Form Components
 - [x] Account form
@@ -234,6 +236,8 @@ Use this checklist to track your progress as you complete the Personal Finance M
 - [x] Asset allocation chart
 - [x] Investment value chart
 - [x] Security price refresh
+- [x] Account filter (brokerage accounts, open only)
+- [x] Mobile-optimized refresh button (icon-only on small screens)
 
 ### Bills & Scheduled Transactions
 - [x] Scheduled transaction list
@@ -248,6 +252,7 @@ Use this checklist to track your progress as you complete the Personal Finance M
 - [x] Date range selectors
 - [x] Interactive charts
 - [x] Responsive layouts
+- [x] Consistent "Back to Reports" navigation across all report pages
 
 ### Settings
 - [x] Profile editing (name, email)
@@ -358,4 +363,4 @@ Use this checklist to track your progress as you complete the Personal Finance M
 
 ---
 
-**Last Updated**: 2026-02-08
+**Last Updated**: 2026-02-16

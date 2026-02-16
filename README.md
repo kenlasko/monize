@@ -248,7 +248,7 @@ npm run start:dev
 ```bash
 cd frontend
 npm install
-cp .env.local.example .env.local
+cp ../.env.example .env.local  # Update INTERNAL_API_URL if needed
 npm run dev
 ```
 
@@ -288,18 +288,15 @@ npm run dev
 
 ### Docker Compose (Production)
 
-1. Create `.env.prod` with production values:
-```env
-POSTGRES_DB=monize
-POSTGRES_USER=monize_user
-POSTGRES_PASSWORD=<strong-password>
-JWT_SECRET=<generate-with-openssl>
-PUBLIC_APP_URL=https://your-domain.com
+1. Create `.env` from the example and set production values:
+```bash
+cp .env.example .env
+# Edit .env: set NODE_ENV=production, strong passwords, your domain, etc.
 ```
 
 2. Build and start:
 ```bash
-docker-compose -f docker-compose.prod.yml --env-file .env.prod up -d
+docker compose -f docker-compose.prod.yml up -d
 ```
 
 ### Kubernetes
