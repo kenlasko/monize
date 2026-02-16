@@ -26,7 +26,11 @@ async function bootstrap() {
   app.use(cookieParser());
 
   // Security middleware
-  app.use(helmet());
+  app.use(
+    helmet({
+      frameguard: { action: "deny" },
+    }),
+  );
 
   // Enable CORS
   const allowedOrigins = [

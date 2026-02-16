@@ -7,6 +7,7 @@ import {
   Matches,
 } from "class-validator";
 import { ApiProperty } from "@nestjs/swagger";
+import { SanitizeHtml } from "../../common/decorators/sanitize-html.decorator";
 
 export class RegisterDto {
   @ApiProperty({ example: "user@example.com" })
@@ -31,11 +32,13 @@ export class RegisterDto {
   @IsOptional()
   @IsString()
   @MaxLength(100)
+  @SanitizeHtml()
   firstName?: string;
 
   @ApiProperty({ example: "Doe", required: false })
   @IsOptional()
   @IsString()
   @MaxLength(100)
+  @SanitizeHtml()
   lastName?: string;
 }

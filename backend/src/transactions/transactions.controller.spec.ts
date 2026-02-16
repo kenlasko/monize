@@ -1,3 +1,4 @@
+import { BadRequestException } from "@nestjs/common";
 import { Test, TestingModule } from "@nestjs/testing";
 import { TransactionsController } from "./transactions.controller";
 import { TransactionsService } from "./transactions.service";
@@ -6,6 +7,11 @@ describe("TransactionsController", () => {
   let controller: TransactionsController;
   let mockService: Record<string, jest.Mock>;
   const mockReq = { user: { id: "user-1" } };
+
+  // Valid UUIDs for testing
+  const uuid1 = "00000000-0000-0000-0000-000000000001";
+  const uuid2 = "00000000-0000-0000-0000-000000000002";
+  const uuid3 = "00000000-0000-0000-0000-000000000003";
 
   beforeEach(async () => {
     mockService = {
@@ -29,6 +35,7 @@ describe("TransactionsController", () => {
       removeTransfer: jest.fn(),
       updateTransfer: jest.fn(),
       getSummary: jest.fn(),
+      bulkUpdate: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -46,8 +53,8 @@ describe("TransactionsController", () => {
 
   describe("create()", () => {
     it("delegates to service.create with userId and dto", async () => {
-      const dto = { accountId: "acc-1", amount: -50 };
-      const expected = { id: "tx-1", accountId: "acc-1", amount: -50 };
+      const dto = { accountId: uuid1, amount: -50 };
+      const expected = { id: "tx-1", accountId: uuid1, amount: -50 };
       mockService.create.mockResolvedValue(expected);
 
       const result = await controller.create(mockReq, dto as any);
@@ -86,14 +93,14 @@ describe("TransactionsController", () => {
       await controller.findAll(
         mockReq,
         undefined,
-        "acc-1,acc-2",
+        `${uuid1},${uuid2}`,
         "2024-01-01",
         "2024-12-31",
       );
 
       expect(mockService.findAll).toHaveBeenCalledWith(
         "user-1",
-        ["acc-1", "acc-2"],
+        [uuid1, uuid2],
         "2024-01-01",
         "2024-12-31",
         undefined,
@@ -109,11 +116,11 @@ describe("TransactionsController", () => {
     it("falls back to singular accountId when accountIds not provided", async () => {
       mockService.findAll.mockResolvedValue({ data: [], total: 0 });
 
-      await controller.findAll(mockReq, "acc-1");
+      await controller.findAll(mockReq, uuid1);
 
       expect(mockService.findAll).toHaveBeenCalledWith(
         "user-1",
-        ["acc-1"],
+        [uuid1],
         undefined,
         undefined,
         undefined,
@@ -208,7 +215,7 @@ describe("TransactionsController", () => {
         undefined,
         undefined,
         "grocery",
-        "tx-target",
+        uuid3,
       );
 
       expect(mockService.findAll).toHaveBeenCalledWith(
@@ -222,8 +229,166 @@ describe("TransactionsController", () => {
         undefined,
         false,
         "grocery",
-        "tx-target",
+        uuid3,
       );
+    });
+
+    // ── Validation tests ────────────────────────────────────────
+
+    it("rejects negative page number", () => {
+      expect(() =>
+        controller.findAll(
+          mockReq,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          "-1",
+        ),
+      ).toThrow(BadRequestException);
+    });
+
+    it("rejects page=0", () => {
+      expect(() =>
+        controller.findAll(
+          mockReq,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          "0",
+        ),
+      ).toThrow(BadRequestException);
+    });
+
+    it("rejects non-numeric page", () => {
+      expect(() =>
+        controller.findAll(
+          mockReq,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          "abc",
+        ),
+      ).toThrow(BadRequestException);
+    });
+
+    it("rejects limit=0", () => {
+      expect(() =>
+        controller.findAll(
+          mockReq,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          "0",
+        ),
+      ).toThrow(BadRequestException);
+    });
+
+    it("rejects negative limit", () => {
+      expect(() =>
+        controller.findAll(
+          mockReq,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          "-5",
+        ),
+      ).toThrow(BadRequestException);
+    });
+
+    it("rejects limit exceeding 200", () => {
+      expect(() =>
+        controller.findAll(
+          mockReq,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          "201",
+        ),
+      ).toThrow(BadRequestException);
+    });
+
+    it("rejects invalid startDate format", () => {
+      expect(() =>
+        controller.findAll(mockReq, undefined, undefined, "notadate"),
+      ).toThrow(BadRequestException);
+    });
+
+    it("rejects invalid endDate format", () => {
+      expect(() =>
+        controller.findAll(
+          mockReq,
+          undefined,
+          undefined,
+          undefined,
+          "2024/01/01",
+        ),
+      ).toThrow(BadRequestException);
+    });
+
+    it("rejects invalid UUID in accountIds", () => {
+      expect(() =>
+        controller.findAll(mockReq, undefined, "not-a-uuid"),
+      ).toThrow(BadRequestException);
+    });
+
+    it("rejects invalid UUID in singular accountId", () => {
+      expect(() => controller.findAll(mockReq, "not-a-uuid")).toThrow(
+        BadRequestException,
+      );
+    });
+
+    it("rejects invalid targetTransactionId", () => {
+      expect(() =>
+        controller.findAll(
+          mockReq,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          "not-a-uuid",
+        ),
+      ).toThrow(BadRequestException);
     });
   });
 
@@ -334,7 +499,7 @@ describe("TransactionsController", () => {
 
       const result = await controller.getReconciliationData(
         mockReq,
-        "acc-1",
+        uuid1,
         "2024-01-31",
         "1000.50",
       );
@@ -342,7 +507,7 @@ describe("TransactionsController", () => {
       expect(result).toEqual(expected);
       expect(mockService.getReconciliationData).toHaveBeenCalledWith(
         "user-1",
-        "acc-1",
+        uuid1,
         "2024-01-31",
         1000.5,
       );
@@ -358,12 +523,12 @@ describe("TransactionsController", () => {
       const expected = { reconciled: 2 };
       mockService.bulkReconcile.mockResolvedValue(expected);
 
-      const result = await controller.bulkReconcile(mockReq, "acc-1", body);
+      const result = await controller.bulkReconcile(mockReq, uuid1, body);
 
       expect(result).toEqual(expected);
       expect(mockService.bulkReconcile).toHaveBeenCalledWith(
         "user-1",
-        "acc-1",
+        uuid1,
         ["tx-1", "tx-2"],
         "2024-01-31",
       );
@@ -445,8 +610,8 @@ describe("TransactionsController", () => {
   describe("createTransfer()", () => {
     it("delegates to service.createTransfer with userId and dto", async () => {
       const dto = {
-        fromAccountId: "acc-1",
-        toAccountId: "acc-2",
+        fromAccountId: uuid1,
+        toAccountId: uuid2,
         amount: 500,
       };
       const expected = { id: "tx-1", linkedTransactionId: "tx-2" };
@@ -531,20 +696,32 @@ describe("TransactionsController", () => {
       await controller.getSummary(
         mockReq,
         undefined,
-        "acc-1,acc-2",
+        `${uuid1},${uuid2}`,
         "2024-01-01",
         "2024-12-31",
       );
 
       expect(mockService.getSummary).toHaveBeenCalledWith(
         "user-1",
-        ["acc-1", "acc-2"],
+        [uuid1, uuid2],
         "2024-01-01",
         "2024-12-31",
         undefined,
         undefined,
         undefined,
       );
+    });
+
+    it("rejects invalid date in summary startDate", () => {
+      expect(() =>
+        controller.getSummary(mockReq, undefined, undefined, "notadate"),
+      ).toThrow(BadRequestException);
+    });
+
+    it("rejects invalid UUID in summary accountIds", () => {
+      expect(() =>
+        controller.getSummary(mockReq, undefined, "bad-uuid"),
+      ).toThrow(BadRequestException);
     });
   });
 });

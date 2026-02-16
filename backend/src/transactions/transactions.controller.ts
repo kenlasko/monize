@@ -11,6 +11,7 @@ import {
   Request,
   Query,
   ParseUUIDPipe,
+  BadRequestException,
 } from "@nestjs/common";
 import {
   ApiTags,
@@ -141,19 +142,72 @@ export class TransactionsController {
     @Query("search") search?: string,
     @Query("targetTransactionId") targetTransactionId?: string,
   ) {
+    // Validate pagination parameters
+    const uuidRegex =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+
+    if (page !== undefined) {
+      const pageNum = parseInt(page, 10);
+      if (isNaN(pageNum) || pageNum < 1) {
+        throw new BadRequestException("page must be a positive integer");
+      }
+    }
+
+    if (limit !== undefined) {
+      const limitNum = parseInt(limit, 10);
+      if (isNaN(limitNum) || limitNum < 1) {
+        throw new BadRequestException("limit must be a positive integer");
+      }
+      if (limitNum > 200) {
+        throw new BadRequestException("limit must not exceed 200");
+      }
+    }
+
+    // Validate date parameters
+    if (startDate !== undefined && !dateRegex.test(startDate)) {
+      throw new BadRequestException(
+        "startDate must be a valid date in YYYY-MM-DD format",
+      );
+    }
+    if (endDate !== undefined && !dateRegex.test(endDate)) {
+      throw new BadRequestException(
+        "endDate must be a valid date in YYYY-MM-DD format",
+      );
+    }
+
     // Parse comma-separated IDs into arrays, with backward compatibility for singular params
     const parseIds = (
       plural?: string,
       singular?: string,
     ): string[] | undefined => {
-      if (plural)
-        return plural
+      if (plural) {
+        const ids = plural
           .split(",")
           .map((id) => id.trim())
           .filter((id) => id);
-      if (singular) return [singular];
+        for (const id of ids) {
+          if (!uuidRegex.test(id)) {
+            throw new BadRequestException(`Invalid UUID: ${id}`);
+          }
+        }
+        return ids;
+      }
+      if (singular) {
+        if (!uuidRegex.test(singular)) {
+          throw new BadRequestException(`Invalid UUID: ${singular}`);
+        }
+        return [singular];
+      }
       return undefined;
     };
+
+    // Validate targetTransactionId
+    if (targetTransactionId && !uuidRegex.test(targetTransactionId)) {
+      throw new BadRequestException(
+        "targetTransactionId must be a valid UUID",
+      );
+    }
 
     return this.transactionsService.findAll(
       req.user.id,
@@ -235,17 +289,45 @@ export class TransactionsController {
     @Query("payeeIds") payeeIds?: string,
     @Query("search") search?: string,
   ) {
+    const uuidRegex =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+
+    // Validate date parameters
+    if (startDate !== undefined && !dateRegex.test(startDate)) {
+      throw new BadRequestException(
+        "startDate must be a valid date in YYYY-MM-DD format",
+      );
+    }
+    if (endDate !== undefined && !dateRegex.test(endDate)) {
+      throw new BadRequestException(
+        "endDate must be a valid date in YYYY-MM-DD format",
+      );
+    }
+
     // Parse comma-separated IDs into arrays, with backward compatibility for singular params
     const parseIds = (
       plural?: string,
       singular?: string,
     ): string[] | undefined => {
-      if (plural)
-        return plural
+      if (plural) {
+        const ids = plural
           .split(",")
           .map((id) => id.trim())
           .filter((id) => id);
-      if (singular) return [singular];
+        for (const id of ids) {
+          if (!uuidRegex.test(id)) {
+            throw new BadRequestException(`Invalid UUID: ${id}`);
+          }
+        }
+        return ids;
+      }
+      if (singular) {
+        if (!uuidRegex.test(singular)) {
+          throw new BadRequestException(`Invalid UUID: ${singular}`);
+        }
+        return [singular];
+      }
       return undefined;
     };
 

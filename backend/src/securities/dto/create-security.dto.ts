@@ -1,10 +1,12 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { IsString, IsOptional, MaxLength, IsBoolean } from "class-validator";
+import { SanitizeHtml } from "../../common/decorators/sanitize-html.decorator";
 
 export class CreateSecurityDto {
   @ApiProperty({ example: "AAPL", description: "Stock symbol or ticker" })
   @IsString()
   @MaxLength(20)
+  @SanitizeHtml()
   symbol: string;
 
   @ApiProperty({
@@ -13,6 +15,7 @@ export class CreateSecurityDto {
   })
   @IsString()
   @MaxLength(255)
+  @SanitizeHtml()
   name: string;
 
   @ApiProperty({

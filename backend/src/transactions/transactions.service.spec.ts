@@ -823,7 +823,7 @@ describe("TransactionsService", () => {
       expect(mockQb.take).toHaveBeenCalledWith(1);
     });
 
-    it("clamps limit to maximum 100000", async () => {
+    it("clamps limit to maximum 200", async () => {
       const mockQb = createMockQueryBuilder();
       mockQb.getManyAndCount.mockResolvedValue([[], 0]);
       transactionsRepository.createQueryBuilder.mockReturnValue(mockQb);
@@ -840,7 +840,7 @@ describe("TransactionsService", () => {
         999999,
       );
 
-      expect(mockQb.take).toHaveBeenCalledWith(100000);
+      expect(mockQb.take).toHaveBeenCalledWith(200);
     });
 
     it("filters by accountIds", async () => {

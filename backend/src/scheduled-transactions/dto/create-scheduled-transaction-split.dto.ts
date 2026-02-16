@@ -7,6 +7,7 @@ import {
   MaxLength,
 } from "class-validator";
 import { ApiPropertyOptional } from "@nestjs/swagger";
+import { SanitizeHtml } from "../../common/decorators/sanitize-html.decorator";
 
 export class CreateScheduledTransactionSplitDto {
   @ApiPropertyOptional({
@@ -33,5 +34,6 @@ export class CreateScheduledTransactionSplitDto {
   @IsOptional()
   @IsString()
   @MaxLength(500)
+  @SanitizeHtml()
   memo?: string;
 }

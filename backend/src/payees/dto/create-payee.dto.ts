@@ -1,10 +1,12 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { IsString, IsOptional, MaxLength, IsUUID } from "class-validator";
+import { SanitizeHtml } from "../../common/decorators/sanitize-html.decorator";
 
 export class CreatePayeeDto {
   @ApiProperty({ example: "Starbucks", description: "Name of the payee" })
   @IsString()
   @MaxLength(100)
+  @SanitizeHtml()
   name: string;
 
   @ApiProperty({
@@ -24,5 +26,6 @@ export class CreatePayeeDto {
   @IsOptional()
   @IsString()
   @MaxLength(500)
+  @SanitizeHtml()
   notes?: string;
 }

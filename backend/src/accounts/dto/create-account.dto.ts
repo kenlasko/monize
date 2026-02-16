@@ -14,6 +14,7 @@ import {
 } from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { AccountType } from "../entities/account.entity";
+import { SanitizeHtml } from "../../common/decorators/sanitize-html.decorator";
 
 export const PAYMENT_FREQUENCIES = [
   "WEEKLY",
@@ -52,6 +53,7 @@ export class CreateAccountDto {
   })
   @IsString()
   @MaxLength(100)
+  @SanitizeHtml()
   name: string;
 
   @ApiPropertyOptional({
@@ -61,6 +63,7 @@ export class CreateAccountDto {
   @IsOptional()
   @IsString()
   @MaxLength(500)
+  @SanitizeHtml()
   description?: string;
 
   @ApiProperty({
@@ -79,6 +82,7 @@ export class CreateAccountDto {
   @IsOptional()
   @IsString()
   @MaxLength(100)
+  @SanitizeHtml()
   accountNumber?: string;
 
   @ApiPropertyOptional({
@@ -88,6 +92,7 @@ export class CreateAccountDto {
   @IsOptional()
   @IsString()
   @MaxLength(100)
+  @SanitizeHtml()
   institution?: string;
 
   @ApiPropertyOptional({

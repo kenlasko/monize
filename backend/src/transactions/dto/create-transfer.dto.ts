@@ -9,6 +9,7 @@ import {
 } from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { TransactionStatus } from "../entities/transaction.entity";
+import { SanitizeHtml } from "../../common/decorators/sanitize-html.decorator";
 
 export class CreateTransferDto {
   @ApiProperty({
@@ -76,18 +77,21 @@ export class CreateTransferDto {
   @IsOptional()
   @IsString()
   @MaxLength(100)
+  @SanitizeHtml()
   payeeName?: string;
 
   @ApiPropertyOptional({ description: "Transfer description/notes" })
   @IsOptional()
   @IsString()
   @MaxLength(500)
+  @SanitizeHtml()
   description?: string;
 
   @ApiPropertyOptional({ description: "Reference number" })
   @IsOptional()
   @IsString()
   @MaxLength(100)
+  @SanitizeHtml()
   referenceNumber?: string;
 
   @ApiPropertyOptional({

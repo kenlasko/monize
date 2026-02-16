@@ -15,6 +15,7 @@ import {
 import { ApiPropertyOptional } from "@nestjs/swagger";
 import { AccountType } from "../entities/account.entity";
 import { PAYMENT_FREQUENCIES, PaymentFrequency } from "./create-account.dto";
+import { SanitizeHtml } from "../../common/decorators/sanitize-html.decorator";
 
 export class UpdateAccountDto {
   @ApiPropertyOptional({
@@ -24,6 +25,7 @@ export class UpdateAccountDto {
   @IsOptional()
   @IsString()
   @MaxLength(100)
+  @SanitizeHtml()
   name?: string;
 
   @ApiPropertyOptional({
@@ -60,6 +62,7 @@ export class UpdateAccountDto {
   @IsOptional()
   @IsString()
   @MaxLength(500)
+  @SanitizeHtml()
   description?: string;
 
   @ApiPropertyOptional({
@@ -69,6 +72,7 @@ export class UpdateAccountDto {
   @IsOptional()
   @IsString()
   @MaxLength(100)
+  @SanitizeHtml()
   accountNumber?: string;
 
   @ApiPropertyOptional({
@@ -78,6 +82,7 @@ export class UpdateAccountDto {
   @IsOptional()
   @IsString()
   @MaxLength(100)
+  @SanitizeHtml()
   institution?: string;
 
   @ApiPropertyOptional({

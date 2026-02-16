@@ -199,7 +199,7 @@ export class TransactionsService {
     targetTransactionId?: string,
   ): Promise<PaginatedTransactions> {
     let safePage = Math.max(1, page);
-    const safeLimit = Math.min(100000, Math.max(1, limit));
+    const safeLimit = Math.min(200, Math.max(1, limit));
 
     const queryBuilder = this.transactionsRepository
       .createQueryBuilder("transaction")

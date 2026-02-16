@@ -15,6 +15,7 @@ import { Type } from "class-transformer";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { CreateTransactionSplitDto } from "./create-transaction-split.dto";
 import { TransactionStatus } from "../entities/transaction.entity";
+import { SanitizeHtml } from "../../common/decorators/sanitize-html.decorator";
 
 export class CreateTransactionDto {
   @ApiProperty({ description: "Account ID where the transaction occurs" })
@@ -36,6 +37,7 @@ export class CreateTransactionDto {
   @IsOptional()
   @IsString()
   @MaxLength(100)
+  @SanitizeHtml()
   payeeName?: string;
 
   @ApiPropertyOptional({
@@ -68,6 +70,7 @@ export class CreateTransactionDto {
   @IsOptional()
   @IsString()
   @MaxLength(500)
+  @SanitizeHtml()
   description?: string;
 
   @ApiPropertyOptional({
@@ -76,6 +79,7 @@ export class CreateTransactionDto {
   @IsOptional()
   @IsString()
   @MaxLength(100)
+  @SanitizeHtml()
   referenceNumber?: string;
 
   @ApiPropertyOptional({

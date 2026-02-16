@@ -13,6 +13,7 @@ import {
 } from "class-validator";
 import { Type } from "class-transformer";
 import { CreateScheduledTransactionSplitDto } from "./create-scheduled-transaction-split.dto";
+import { SanitizeHtml } from "../../common/decorators/sanitize-html.decorator";
 
 export enum FrequencyType {
   ONCE = "ONCE",
@@ -31,6 +32,7 @@ export class CreateScheduledTransactionDto {
 
   @IsString()
   @MaxLength(100)
+  @SanitizeHtml()
   name: string;
 
   @IsOptional()
@@ -40,6 +42,7 @@ export class CreateScheduledTransactionDto {
   @IsOptional()
   @IsString()
   @MaxLength(100)
+  @SanitizeHtml()
   payeeName?: string;
 
   @IsOptional()
@@ -56,6 +59,7 @@ export class CreateScheduledTransactionDto {
   @IsOptional()
   @IsString()
   @MaxLength(500)
+  @SanitizeHtml()
   description?: string;
 
   @IsEnum(FrequencyType)
