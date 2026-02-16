@@ -543,28 +543,29 @@ describe("ScheduledTransactionsService", () => {
 
   // ==================== skip (frequency advancement) ====================
 
-  // Helper to format Date as YYYY-MM-DD in local time (matching how the service operates)
-  const toLocalDateStr = (d: Date) => {
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
+  // Helper to format Date as YYYY-MM-DD in UTC (matching how the service operates)
+  const toUTCDateStr = (d: Date) => {
+    const y = d.getUTCFullYear();
+    const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+    const day = String(d.getUTCDate()).padStart(2, "0");
     return `${y}-${m}-${day}`;
   };
-  // Build a local-time date to avoid UTC-offset shifts
-  const localDate = (y: number, m: number, d: number) => new Date(y, m - 1, d);
+  // Build a UTC date to match database DATE column parsing
+  const utcDate = (y: number, m: number, d: number) =>
+    new Date(Date.UTC(y, m - 1, d));
 
   describe("skip", () => {
     it("should advance DAILY by 1 day", async () => {
       const scheduled = makeScheduled({
         frequency: "DAILY",
-        nextDueDate: localDate(2025, 3, 1),
+        nextDueDate: utcDate(2025, 3, 1),
       });
       stubFindOne(scheduled);
 
       await service.skip(userId, stId);
 
       const updateArg = scheduledRepo.update.mock.calls[0][1];
-      expect(toLocalDateStr(new Date(updateArg.nextDueDate))).toBe(
+      expect(toUTCDateStr(new Date(updateArg.nextDueDate))).toBe(
         "2025-03-02",
       );
     });
@@ -572,14 +573,14 @@ describe("ScheduledTransactionsService", () => {
     it("should advance WEEKLY by 7 days", async () => {
       const scheduled = makeScheduled({
         frequency: "WEEKLY",
-        nextDueDate: localDate(2025, 3, 1),
+        nextDueDate: utcDate(2025, 3, 1),
       });
       stubFindOne(scheduled);
 
       await service.skip(userId, stId);
 
       const updateArg = scheduledRepo.update.mock.calls[0][1];
-      expect(toLocalDateStr(new Date(updateArg.nextDueDate))).toBe(
+      expect(toUTCDateStr(new Date(updateArg.nextDueDate))).toBe(
         "2025-03-08",
       );
     });
@@ -587,14 +588,14 @@ describe("ScheduledTransactionsService", () => {
     it("should advance BIWEEKLY by 14 days", async () => {
       const scheduled = makeScheduled({
         frequency: "BIWEEKLY",
-        nextDueDate: localDate(2025, 3, 1),
+        nextDueDate: utcDate(2025, 3, 1),
       });
       stubFindOne(scheduled);
 
       await service.skip(userId, stId);
 
       const updateArg = scheduledRepo.update.mock.calls[0][1];
-      expect(toLocalDateStr(new Date(updateArg.nextDueDate))).toBe(
+      expect(toUTCDateStr(new Date(updateArg.nextDueDate))).toBe(
         "2025-03-15",
       );
     });
@@ -602,14 +603,14 @@ describe("ScheduledTransactionsService", () => {
     it("should advance SEMIMONTHLY: day<=15 goes to last day of month", async () => {
       const scheduled = makeScheduled({
         frequency: "SEMIMONTHLY",
-        nextDueDate: localDate(2025, 3, 15),
+        nextDueDate: utcDate(2025, 3, 15),
       });
       stubFindOne(scheduled);
 
       await service.skip(userId, stId);
 
       const updateArg = scheduledRepo.update.mock.calls[0][1];
-      expect(toLocalDateStr(new Date(updateArg.nextDueDate))).toBe(
+      expect(toUTCDateStr(new Date(updateArg.nextDueDate))).toBe(
         "2025-03-31",
       );
     });
@@ -617,14 +618,14 @@ describe("ScheduledTransactionsService", () => {
     it("should advance SEMIMONTHLY: day>15 goes to 15th of next month", async () => {
       const scheduled = makeScheduled({
         frequency: "SEMIMONTHLY",
-        nextDueDate: localDate(2025, 3, 31),
+        nextDueDate: utcDate(2025, 3, 31),
       });
       stubFindOne(scheduled);
 
       await service.skip(userId, stId);
 
       const updateArg = scheduledRepo.update.mock.calls[0][1];
-      expect(toLocalDateStr(new Date(updateArg.nextDueDate))).toBe(
+      expect(toUTCDateStr(new Date(updateArg.nextDueDate))).toBe(
         "2025-04-15",
       );
     });
@@ -632,14 +633,14 @@ describe("ScheduledTransactionsService", () => {
     it("should advance MONTHLY by 1 month", async () => {
       const scheduled = makeScheduled({
         frequency: "MONTHLY",
-        nextDueDate: localDate(2025, 1, 15),
+        nextDueDate: utcDate(2025, 1, 15),
       });
       stubFindOne(scheduled);
 
       await service.skip(userId, stId);
 
       const updateArg = scheduledRepo.update.mock.calls[0][1];
-      expect(toLocalDateStr(new Date(updateArg.nextDueDate))).toBe(
+      expect(toUTCDateStr(new Date(updateArg.nextDueDate))).toBe(
         "2025-02-15",
       );
     });
@@ -647,14 +648,14 @@ describe("ScheduledTransactionsService", () => {
     it("should advance QUARTERLY by 3 months", async () => {
       const scheduled = makeScheduled({
         frequency: "QUARTERLY",
-        nextDueDate: localDate(2025, 1, 15),
+        nextDueDate: utcDate(2025, 1, 15),
       });
       stubFindOne(scheduled);
 
       await service.skip(userId, stId);
 
       const updateArg = scheduledRepo.update.mock.calls[0][1];
-      expect(toLocalDateStr(new Date(updateArg.nextDueDate))).toBe(
+      expect(toUTCDateStr(new Date(updateArg.nextDueDate))).toBe(
         "2025-04-15",
       );
     });
@@ -662,14 +663,14 @@ describe("ScheduledTransactionsService", () => {
     it("should advance YEARLY by 1 year", async () => {
       const scheduled = makeScheduled({
         frequency: "YEARLY",
-        nextDueDate: localDate(2025, 1, 15),
+        nextDueDate: utcDate(2025, 1, 15),
       });
       stubFindOne(scheduled);
 
       await service.skip(userId, stId);
 
       const updateArg = scheduledRepo.update.mock.calls[0][1];
-      expect(toLocalDateStr(new Date(updateArg.nextDueDate))).toBe(
+      expect(toUTCDateStr(new Date(updateArg.nextDueDate))).toBe(
         "2026-01-15",
       );
     });
@@ -918,7 +919,7 @@ describe("ScheduledTransactionsService", () => {
     it("should advance nextDueDate for recurring frequency", async () => {
       const scheduled = makeScheduled({
         frequency: "MONTHLY",
-        nextDueDate: localDate(2025, 2, 15),
+        nextDueDate: utcDate(2025, 2, 15),
       });
       stubFindOne(scheduled);
       const overrideQb = mockQueryBuilder(null);
@@ -929,7 +930,7 @@ describe("ScheduledTransactionsService", () => {
       await service.post(userId, stId);
 
       const updateArg = scheduledRepo.update.mock.calls[0][1];
-      expect(toLocalDateStr(new Date(updateArg.nextDueDate))).toBe(
+      expect(toUTCDateStr(new Date(updateArg.nextDueDate))).toBe(
         "2025-03-15",
       );
     });
