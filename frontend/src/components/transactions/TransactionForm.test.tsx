@@ -243,7 +243,7 @@ vi.mock('@/lib/logger', () => ({
   }),
 }));
 
-vi.mock('@/lib/zodResolver', () => ({
+vi.mock('@hookform/resolvers/zod', () => ({
   zodResolver: () => async (values: any) => {
     return { values, errors: {} };
   },

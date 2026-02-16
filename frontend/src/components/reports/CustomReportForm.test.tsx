@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@/test/render';
 import { CustomReportForm } from './CustomReportForm';
 
-vi.mock('@/lib/zodResolver', () => ({
+vi.mock('@hookform/resolvers/zod', () => ({
   zodResolver: (schema: any) => {
     return async (values: any) => {
       try {

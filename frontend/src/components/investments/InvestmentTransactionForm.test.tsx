@@ -36,7 +36,7 @@ vi.mock('@/lib/logger', () => ({
   createLogger: () => ({ error: vi.fn(), info: vi.fn(), warn: vi.fn(), debug: vi.fn() }),
 }));
 
-vi.mock('@/lib/zodResolver', () => ({
+vi.mock('@hookform/resolvers/zod', () => ({
   zodResolver: () => async (data: any) => ({ values: data, errors: {} }),
 }));
 

@@ -2,7 +2,8 @@
 
 import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
-import { zodResolver } from '@/lib/zodResolver';
+import '@/lib/zodConfig';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useState, useEffect, useMemo, MutableRefObject } from 'react';
 import { Input } from '@/components/ui/Input';

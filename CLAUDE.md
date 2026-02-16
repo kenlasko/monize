@@ -181,10 +181,10 @@ This is a comprehensive web-based personal finance management application design
 
 #### Fixed
 - [x] axios minimum version bumped to ^1.13.5 in backend and frontend: CVE-2026-25639 (DoS via __proto__ in mergeConfig) affects <=1.13.4. Lockfiles already resolved to 1.13.5 but package.json floor allowed vulnerable 1.13.4
+- [x] @hookform/resolvers upgraded from v3 to v5 (5.2.2): Replaced custom zodResolver wrapper with official resolver that natively supports Zod v4. Extracted z.config({ jitless: true }) CSP config to dedicated zodConfig.ts
 
 #### Action Required
 - [ ] openid-client v5 to v6 migration: v5 EOL is April 30, 2026. v6 is a complete API rewrite (ESM-only, functional API). No CVEs in v5 currently, but security patches end at EOL. Migration requires rewriting the OIDC authentication module
-- [ ] @hookform/resolvers upgrade from v3 to v5: Two major versions behind (3.10.0 vs 5.2.2). v5 adds proper Zod v4 support which is needed since the project uses zod ^4.3.6. Migration requires updating useForm TypeScript generics
 
 #### Monitoring (no action needed now)
 - [ ] passport ^0.7.0 / passport-jwt ^4.0.1 / passport-local ^1.0.0: All on latest versions but ecosystem shows low maintenance activity (passport-local last released 12 years ago). No CVEs. Deeply embedded in NestJS auth pattern

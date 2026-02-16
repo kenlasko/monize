@@ -1,3 +1,4 @@
+import '@/lib/zodConfig';
 import { z } from 'zod';
 
 /** Convert empty strings to undefined for optional UUID fields */

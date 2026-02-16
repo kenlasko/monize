@@ -9,7 +9,7 @@ vi.mock('@/hooks/useNumberFormat', () => ({
   useNumberFormat: () => ({ defaultCurrency: 'CAD' }),
 }));
 
-vi.mock('@/lib/zodResolver', () => ({
+vi.mock('@hookform/resolvers/zod', () => ({
   zodResolver: () => async (values: any) => {
     const errors: any = {};
     if (!values.symbol || values.symbol.trim() === '') {

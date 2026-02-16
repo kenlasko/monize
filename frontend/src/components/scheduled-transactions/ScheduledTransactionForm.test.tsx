@@ -14,7 +14,7 @@ vi.mock('@/hooks/useNumberFormat', () => ({
   useNumberFormat: () => ({ defaultCurrency: 'CAD' }),
 }));
 
-vi.mock('@/lib/zodResolver', () => ({
+vi.mock('@hookform/resolvers/zod', () => ({
   zodResolver: () => async (values: any) => {
     // Simple pass-through resolver that returns the raw form values
     return { values, errors: {} };
