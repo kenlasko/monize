@@ -189,7 +189,17 @@ export class DataQualityReportsService {
       sensitivity === "high" ? 3 : sensitivity === "medium" ? 1 : 0;
     const checkPayee = sensitivity !== "low";
 
-    let query = `
+    const params: string[] = [userId, endDate];
+    let paramIndex = 3;
+
+    let dateFilter = `AND t.transaction_date <= $2`;
+    if (startDate) {
+      dateFilter = `AND t.transaction_date >= $${paramIndex} AND t.transaction_date <= $2`;
+      params.push(startDate);
+      paramIndex++;
+    }
+
+    const query = `
       SELECT
         t.id,
         t.transaction_date,
@@ -201,21 +211,12 @@ export class DataQualityReportsService {
       LEFT JOIN payees p ON p.id = t.payee_id
       LEFT JOIN accounts a ON a.id = t.account_id
       WHERE t.user_id = $1
-        AND t.transaction_date <= $2
+        ${dateFilter}
         AND t.is_transfer = false
         AND (t.status IS NULL OR t.status != 'VOID')
         AND t.parent_transaction_id IS NULL
       ORDER BY t.transaction_date ASC, t.amount ASC
     `;
-
-    const params: string[] = [userId, endDate];
-    if (startDate) {
-      query = query.replace(
-        "AND t.transaction_date <= $2",
-        "AND t.transaction_date >= $3 AND t.transaction_date <= $2",
-      );
-      params.push(startDate);
-    }
 
     interface RawTx {
       id: string;

@@ -19,7 +19,7 @@ vi.mock('@/lib/format', () => ({
   filterCurrencyInput: (input: string) => input.replace(/[^0-9.-]/g, ''),
   filterCalculatorInput: (input: string) => input.replace(/[^0-9.+\-*/() ]/g, ''),
   hasCalculatorOperators: (input: string) => /[+*/()]/.test(input.replace(/^-/, '')) || /(?!^)-/.test(input),
-  evaluateExpression: (input: string) => { try { const r = new Function(`"use strict"; return (${input})`)(); return typeof r === 'number' && isFinite(r) ? Math.round(r * 100) / 100 : undefined; } catch { return undefined; } },
+  evaluateExpression: vi.fn().mockImplementation(() => undefined),
   formatCurrency: (amount: number) => `$${amount.toFixed(2)}`,
 }));
 

@@ -8,6 +8,7 @@ const config = [
       "@typescript-eslint": tseslint.plugin,
     },
     rules: {
+      "no-new-func": "error",
       "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_", varsIgnorePattern: "^_", caughtErrorsIgnorePattern: "^_", ignoreRestSiblings: true }],
       "react/no-unescaped-entities": "off",
       // Downgrade React compiler rules to warnings until codebase is refactored

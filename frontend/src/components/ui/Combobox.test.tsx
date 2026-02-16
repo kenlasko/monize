@@ -546,8 +546,8 @@ describe('Combobox', () => {
     expect(screen.getByRole('textbox')).toHaveValue('');
   });
 
-  describe('inline autocomplete', () => {
-    it('autocompletes input with best prefix match', async () => {
+  describe('typing filters dropdown without changing input value', () => {
+    it('keeps typed value in input and shows matching options', async () => {
       render(<Combobox options={options} onChange={onChange} />);
       const input = screen.getByRole('textbox');
       fireEvent.focus(input);
@@ -556,11 +556,12 @@ describe('Combobox', () => {
       fireEvent.change(input, { target: { value: 'ba' } });
 
       await waitFor(() => {
-        expect(input).toHaveValue('Banana');
+        expect(input).toHaveValue('ba');
+        expect(screen.getByText('Banana')).toBeInTheDocument();
       });
     });
 
-    it('autocompletes case-insensitively', async () => {
+    it('filters case-insensitively', async () => {
       render(<Combobox options={options} onChange={onChange} />);
       const input = screen.getByRole('textbox');
       fireEvent.focus(input);
@@ -569,21 +570,20 @@ describe('Combobox', () => {
       fireEvent.change(input, { target: { value: 'ch' } });
 
       await waitFor(() => {
-        expect(input).toHaveValue('Cherry');
+        expect(input).toHaveValue('ch');
+        expect(screen.getByText('Cherry')).toBeInTheDocument();
       });
     });
 
-    it('does not autocomplete on backspace', async () => {
+    it('keeps typed value after backspace', async () => {
       render(<Combobox options={options} onChange={onChange} />);
       const input = screen.getByRole('textbox');
       fireEvent.focus(input);
       await new Promise(r => setTimeout(r, 150));
 
-      // Type "ba" to trigger autocomplete
       fireEvent.change(input, { target: { value: 'ba' } });
-      await waitFor(() => expect(input).toHaveValue('Banana'));
+      await waitFor(() => expect(input).toHaveValue('ba'));
 
-      // Press Backspace then change -- should NOT autocomplete
       fireEvent.keyDown(input, { key: 'Backspace' });
       fireEvent.change(input, { target: { value: 'b' } });
 
@@ -592,14 +592,14 @@ describe('Combobox', () => {
       });
     });
 
-    it('does not autocomplete on delete key', async () => {
+    it('keeps typed value after delete key', async () => {
       render(<Combobox options={options} onChange={onChange} />);
       const input = screen.getByRole('textbox');
       fireEvent.focus(input);
       await new Promise(r => setTimeout(r, 150));
 
       fireEvent.change(input, { target: { value: 'ba' } });
-      await waitFor(() => expect(input).toHaveValue('Banana'));
+      await waitFor(() => expect(input).toHaveValue('ba'));
 
       fireEvent.keyDown(input, { key: 'Delete' });
       fireEvent.change(input, { target: { value: 'b' } });
@@ -609,7 +609,7 @@ describe('Combobox', () => {
       });
     });
 
-    it('does not autocomplete when no prefix match exists', async () => {
+    it('shows no matches for non-matching input', async () => {
       render(<Combobox options={options} onChange={onChange} />);
       const input = screen.getByRole('textbox');
       fireEvent.focus(input);
@@ -622,7 +622,7 @@ describe('Combobox', () => {
       });
     });
 
-    it('does not autocomplete empty input', async () => {
+    it('keeps empty input value', async () => {
       render(<Combobox options={options} onChange={onChange} />);
       const input = screen.getByRole('textbox');
       fireEvent.focus(input);
@@ -635,24 +635,22 @@ describe('Combobox', () => {
       });
     });
 
-    it('resumes autocomplete after backspace when typing new characters', async () => {
+    it('keeps typed value through multiple changes', async () => {
       render(<Combobox options={options} onChange={onChange} />);
       const input = screen.getByRole('textbox');
       fireEvent.focus(input);
       await new Promise(r => setTimeout(r, 150));
 
-      // Type, backspace, then type again
       fireEvent.change(input, { target: { value: 'ba' } });
-      await waitFor(() => expect(input).toHaveValue('Banana'));
+      await waitFor(() => expect(input).toHaveValue('ba'));
 
       fireEvent.keyDown(input, { key: 'Backspace' });
       fireEvent.change(input, { target: { value: 'b' } });
       await waitFor(() => expect(input).toHaveValue('b'));
 
-      // Type again -- autocomplete should resume
       fireEvent.change(input, { target: { value: 'ba' } });
       await waitFor(() => {
-        expect(input).toHaveValue('Banana');
+        expect(input).toHaveValue('ba');
       });
     });
   });
