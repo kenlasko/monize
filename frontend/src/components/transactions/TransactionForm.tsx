@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useMemo, MutableRefObject } from 'react';
 import { useForm } from 'react-hook-form';
-import { zodResolver } from '@/lib/zodResolver';
+import '@/lib/zodConfig';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
 import { Select } from '@/components/ui/Select';

@@ -166,3 +166,41 @@ This is a comprehensive web-based personal finance management application design
 - [x] accountType in AccountMappingDto validated against AccountType enum via @IsIn(): Previously accepted any string
 - [x] securityType in SecurityMappingDto validated against allowed values via @IsIn(): Previously accepted any string
 - [x] Removed unsafe `as any` cast on dateFormat in import service: Now uses proper DateFormat type
+
+### Dependency Audit (Feb 2026)
+
+#### npm audit: All three packages (backend, frontend, e2e) report 0 vulnerabilities.
+
+#### Credential & Secret Management: SECURE
+- All sensitive values externalized to environment variables via ConfigService
+- .gitignore properly excludes .env files (only .env.example committed)
+- JWT_SECRET enforces minimum 32-character length at startup
+- Helm/K8s configs use secretRef pattern, no hardcoded secrets
+- All external API URLs use HTTPS
+- Demo credentials (seed.service.ts) are known and documented
+
+#### Fixed
+- [x] axios minimum version bumped to ^1.13.5 in backend and frontend: CVE-2026-25639 (DoS via __proto__ in mergeConfig) affects <=1.13.4. Lockfiles already resolved to 1.13.5 but package.json floor allowed vulnerable 1.13.4
+- [x] @hookform/resolvers upgraded from v3 to v5 (5.2.2): Replaced custom zodResolver wrapper with official resolver that natively supports Zod v4. Extracted z.config({ jitless: true }) CSP config to dedicated zodConfig.ts
+
+#### Action Required
+- [ ] openid-client v5 to v6 migration: v5 EOL is April 30, 2026. v6 is a complete API rewrite (ESM-only, functional API). No CVEs in v5 currently, but security patches end at EOL. Migration requires rewriting the OIDC authentication module
+
+#### Monitoring (no action needed now)
+- [ ] passport ^0.7.0 / passport-jwt ^4.0.1 / passport-local ^1.0.0: All on latest versions but ecosystem shows low maintenance activity (passport-local last released 12 years ago). No CVEs. Deeply embedded in NestJS auth pattern
+- [ ] class-transformer ^0.5.1: Latest version, no CVEs, but inactive maintenance (no releases in 12+ months). Required by NestJS ecosystem
+- [ ] react-hot-toast ^2.6.0: No releases since April 2023. No CVEs. Consider migrating to sonner if React 19 compatibility issues arise
+- [ ] source-map-support ^0.5.21 (dev): Unmaintained (~4 years). Consider replacing with Node.js built-in --enable-source-maps
+
+#### Verified Current (no issues)
+- NestJS ecosystem: All packages on latest (11.x)
+- bcryptjs ^3.0.3: Latest, no CVEs, actively maintained
+- otplib ^13.2.1: Latest major, no CVEs, uses audited crypto deps
+- helmet ^8.1.0: Latest, actively maintained
+- lodash override 4.17.23: Correctly patches CVE-2025-13465 (prototype pollution)
+- typeorm ^0.3.28: Latest, CVE-2025-60542 (SQL injection) only affects MySQL, not PostgreSQL
+- nodemailer ^8.0.1: Latest, CVE-2025-14874 and CVE-2025-13033 patched in v8.x
+- next ^16.1.6: All known CVEs patched (including critical CVE-2025-66478 RCE)
+- react/react-dom ^19.2.4: All known CVEs patched (including CVE-2025-55182 RCE)
+- zod ^4.3.6, zustand ^5.0.11, tailwindcss ^4.1.18: All current
+- All dev dependencies current with no known CVEs

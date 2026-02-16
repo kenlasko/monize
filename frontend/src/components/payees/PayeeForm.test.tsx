@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@/test/render';
 import { PayeeForm } from './PayeeForm';
 
-vi.mock('@/lib/zodResolver', () => ({
+vi.mock('@hookform/resolvers/zod', () => ({
   zodResolver: () => async () => ({ values: {}, errors: {} }),
 }));
 

@@ -89,7 +89,7 @@ vi.mock('@/lib/auth', () => ({
 }));
 
 // Mock zodResolver
-vi.mock('@/lib/zodResolver', () => ({
+vi.mock('@hookform/resolvers/zod', () => ({
   zodResolver: (schema: any) => {
     return async (data: any) => {
       try {
