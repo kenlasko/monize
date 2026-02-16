@@ -680,29 +680,29 @@ export class ScheduledTransactionsService {
 
     switch (frequency) {
       case "DAILY":
-        date.setDate(date.getDate() + 1);
+        date.setUTCDate(date.getUTCDate() + 1);
         break;
       case "WEEKLY":
-        date.setDate(date.getDate() + 7);
+        date.setUTCDate(date.getUTCDate() + 7);
         break;
       case "BIWEEKLY":
-        date.setDate(date.getDate() + 14);
+        date.setUTCDate(date.getUTCDate() + 14);
         break;
       case "SEMIMONTHLY":
-        if (date.getDate() <= 15) {
-          date.setMonth(date.getMonth() + 1, 0);
+        if (date.getUTCDate() <= 15) {
+          date.setUTCMonth(date.getUTCMonth() + 1, 0);
         } else {
-          date.setMonth(date.getMonth() + 1, 15);
+          date.setUTCMonth(date.getUTCMonth() + 1, 15);
         }
         break;
       case "MONTHLY":
-        date.setMonth(date.getMonth() + 1);
+        date.setUTCMonth(date.getUTCMonth() + 1);
         break;
       case "QUARTERLY":
-        date.setMonth(date.getMonth() + 3);
+        date.setUTCMonth(date.getUTCMonth() + 3);
         break;
       case "YEARLY":
-        date.setFullYear(date.getFullYear() + 1);
+        date.setUTCFullYear(date.getUTCFullYear() + 1);
         break;
       case "ONCE":
       default:
