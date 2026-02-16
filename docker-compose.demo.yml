@@ -1,0 +1,14 @@
+# Docker Compose override for Monize Demo Mode
+#
+# Usage:
+#   docker compose -f docker-compose.prod.yml -f docker-compose.demo.yml up -d
+#
+# This enables demo mode on top of the production configuration.
+# A fixed demo account (demo@monize.com / Demo123!) is seeded on first start
+# and all data resets daily at 4:00 AM UTC.
+
+services:
+  backend:
+    environment:
+      DEMO_MODE: "true"
+      REGISTRATION_ENABLED: "false"

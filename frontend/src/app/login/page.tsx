@@ -12,6 +12,7 @@ import toast from 'react-hot-toast';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/store/authStore';
+import { useDemoStore } from '@/store/demoStore';
 import { authApi, AuthMethods } from '@/lib/auth';
 import { TwoFactorVerify } from '@/components/auth/TwoFactorVerify';
 import { User } from '@/types/auth';
@@ -31,7 +32,7 @@ export default function LoginPage() {
   const { login } = useAuthStore();
   const [isLoading, setIsLoading] = useState(false);
   const [twoFactorState, setTwoFactorState] = useState<{ tempToken: string } | null>(null);
-  const [authMethods, setAuthMethods] = useState<AuthMethods>({ local: true, oidc: false, registration: true, smtp: false, force2fa: false });
+  const [authMethods, setAuthMethods] = useState<AuthMethods>({ local: true, oidc: false, registration: true, smtp: false, force2fa: false, demo: false });
   const [isLoadingMethods, setIsLoadingMethods] = useState(true);
 
   useEffect(() => {
@@ -39,6 +40,7 @@ export default function LoginPage() {
       try {
         const methods = await authApi.getAuthMethods();
         setAuthMethods(methods);
+        useDemoStore.getState().setDemoMode(methods.demo ?? false);
       } catch (error) {
         // Default to local auth if we can't fetch methods
         logger.error('Failed to fetch auth methods:', error);
@@ -52,10 +54,21 @@ export default function LoginPage() {
   const {
     register,
     handleSubmit,
+    reset,
     formState: { errors },
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
   });
+
+  // Pre-fill demo credentials when demo mode is active
+  useEffect(() => {
+    if (authMethods.demo) {
+      reset({
+        email: 'demo@monize.com',
+        password: 'Demo123!',
+      });
+    }
+  }, [authMethods.demo, reset]);
 
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
@@ -69,7 +82,11 @@ export default function LoginPage() {
 
       // Token is now in httpOnly cookie, not in response body
       login(response.user!, 'httpOnly');
-      toast.success('Welcome back!');
+      if (authMethods.demo) {
+        toast.success('Welcome to Monize Demo! Data resets daily at 4:00 AM UTC.', { duration: 6000 });
+      } else {
+        toast.success('Welcome back!');
+      }
       if (response.user!.mustChangePassword) {
         router.push('/change-password');
       } else {
@@ -85,7 +102,11 @@ export default function LoginPage() {
 
   const handle2FAVerified = (user: User) => {
     login(user, 'httpOnly');
-    toast.success('Welcome back!');
+    if (authMethods.demo) {
+      toast.success('Welcome to Monize Demo! Data resets daily at 4:00 AM UTC.', { duration: 6000 });
+    } else {
+      toast.success('Welcome back!');
+    }
     if (user.mustChangePassword) {
       router.push('/change-password');
     } else {
@@ -174,7 +195,7 @@ export default function LoginPage() {
           <h2 className="mt-4 text-center text-3xl font-extrabold text-gray-900 dark:text-gray-100">
             Sign in to Monize
           </h2>
-          {authMethods.local && authMethods.registration && (
+          {authMethods.local && authMethods.registration && !authMethods.demo && (
             <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
               Or{' '}
               <Link
@@ -186,6 +207,13 @@ export default function LoginPage() {
             </p>
           )}
         </div>
+
+        {authMethods.demo && (
+          <div className="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-lg px-4 py-3 text-center text-sm text-amber-800 dark:text-amber-200">
+            <p className="font-semibold">Demo Mode</p>
+            <p className="mt-1">Credentials are pre-filled. All data resets daily at 4:00 AM UTC.</p>
+          </div>
+        )}
 
         {authMethods.local && (
           <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)}>
@@ -223,7 +251,7 @@ export default function LoginPage() {
                 </label>
               </div>
 
-              {authMethods.smtp && (
+              {authMethods.smtp && !authMethods.demo && (
                 <div className="text-sm">
                   <Link
                     href="/forgot-password"
@@ -243,7 +271,7 @@ export default function LoginPage() {
                 isLoading={isLoading}
                 className="w-full"
               >
-                Sign in
+                {authMethods.demo ? 'Try Demo' : 'Sign in'}
               </Button>
 
               {authMethods.oidc && (

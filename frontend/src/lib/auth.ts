@@ -7,6 +7,7 @@ export interface AuthMethods {
   registration: boolean;
   smtp: boolean;
   force2fa: boolean;
+  demo: boolean;
 }
 
 export const authApi = {

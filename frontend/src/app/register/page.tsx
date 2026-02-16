@@ -39,7 +39,7 @@ export default function RegisterPage() {
   const { login } = useAuthStore();
   const [isLoading, setIsLoading] = useState(false);
   const [showTwoFactorSetup, setShowTwoFactorSetup] = useState(false);
-  const [authMethods, setAuthMethods] = useState<AuthMethods>({ local: true, oidc: false, registration: true, smtp: false, force2fa: false });
+  const [authMethods, setAuthMethods] = useState<AuthMethods>({ local: true, oidc: false, registration: true, smtp: false, force2fa: false, demo: false });
   const [isLoadingMethods, setIsLoadingMethods] = useState(true);
 
   useEffect(() => {
@@ -48,7 +48,7 @@ export default function RegisterPage() {
         const methods = await authApi.getAuthMethods();
         setAuthMethods(methods);
         // Redirect to login if local auth or registration is disabled
-        if (!methods.local || !methods.registration) {
+        if (!methods.local || !methods.registration || methods.demo) {
           router.replace('/login');
         }
       } catch (error) {

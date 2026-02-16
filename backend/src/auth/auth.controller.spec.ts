@@ -9,6 +9,7 @@ import { AuthController } from "./auth.controller";
 import { AuthService } from "./auth.service";
 import { OidcService } from "./oidc/oidc.service";
 import { EmailService } from "../notifications/email.service";
+import { DemoModeService } from "../common/demo-mode.service";
 
 jest.mock("openid-client", () => ({}));
 
@@ -18,6 +19,7 @@ describe("AuthController", () => {
   let oidcService: Record<string, jest.Mock | boolean>;
   let configService: Record<string, jest.Mock>;
   let emailService: Record<string, jest.Mock>;
+  let demoModeService: { isDemo: boolean };
 
   const mockUser = {
     id: "user-1",
@@ -85,6 +87,8 @@ describe("AuthController", () => {
         }),
     };
 
+    demoModeService = { isDemo: false };
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AuthController],
       providers: [
@@ -92,6 +96,7 @@ describe("AuthController", () => {
         { provide: OidcService, useValue: oidcService },
         { provide: ConfigService, useValue: configService },
         { provide: EmailService, useValue: emailService },
+        { provide: DemoModeService, useValue: demoModeService },
       ],
     }).compile();
 
@@ -124,6 +129,7 @@ describe("AuthController", () => {
           { provide: OidcService, useValue: oidcService },
           { provide: ConfigService, useValue: configService },
           { provide: EmailService, useValue: emailService },
+          { provide: DemoModeService, useValue: demoModeService },
         ],
       }).compile();
 
@@ -160,6 +166,7 @@ describe("AuthController", () => {
           { provide: OidcService, useValue: oidcService },
           { provide: ConfigService, useValue: configService },
           { provide: EmailService, useValue: emailService },
+          { provide: DemoModeService, useValue: demoModeService },
         ],
       }).compile();
 
@@ -228,6 +235,7 @@ describe("AuthController", () => {
           { provide: OidcService, useValue: oidcService },
           { provide: ConfigService, useValue: configService },
           { provide: EmailService, useValue: emailService },
+          { provide: DemoModeService, useValue: demoModeService },
         ],
       }).compile();
 
@@ -300,6 +308,7 @@ describe("AuthController", () => {
         registration: true,
         smtp: true,
         force2fa: false,
+        demo: false,
       });
     });
 
@@ -407,6 +416,7 @@ describe("AuthController", () => {
           { provide: OidcService, useValue: oidcService },
           { provide: ConfigService, useValue: configService },
           { provide: EmailService, useValue: emailService },
+          { provide: DemoModeService, useValue: demoModeService },
         ],
       }).compile();
 

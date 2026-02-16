@@ -148,11 +148,21 @@ export function DebtPayoffTimelineReport() {
       }
 
       try {
-        const result = await transactionsApi.getAll({
-          accountId: selectedAccountId,
-          limit: 1000,
-        });
-        setTransactions(result.data);
+        // Paginate through all transactions (API limit is 200 per page)
+        let allTransactions: Transaction[] = [];
+        let page = 1;
+        let hasMore = true;
+        while (hasMore) {
+          const result = await transactionsApi.getAll({
+            accountId: selectedAccountId,
+            limit: 200,
+            page,
+          });
+          allTransactions = allTransactions.concat(result.data);
+          hasMore = result.pagination.hasMore;
+          page++;
+        }
+        setTransactions(allTransactions);
       } catch (error) {
         logger.error('Failed to load transactions:', error);
         setTransactions([]);

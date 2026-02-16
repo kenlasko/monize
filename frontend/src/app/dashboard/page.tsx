@@ -78,7 +78,7 @@ function DashboardContent() {
         transactionsApi.getAll({
           startDate: thirtyDaysAgo,
           endDate: today,
-          limit: 1000,
+          limit: 200,
         }),
         categoriesApi.getAll(),
         scheduledTransactionsApi.getAll(),

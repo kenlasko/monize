@@ -5,8 +5,10 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 import { ScheduleModule } from "@nestjs/schedule";
 import { ThrottlerModule, ThrottlerGuard } from "@nestjs/throttler";
 import { CsrfGuard } from "./common/guards/csrf.guard";
+import { DemoModeGuard } from "./common/guards/demo-mode.guard";
 import { MustChangePasswordGuard } from "./auth/guards/must-change-password.guard";
 import { CsrfRefreshInterceptor } from "./common/interceptors/csrf-refresh.interceptor";
+import { DemoModeModule } from "./common/demo-mode.module";
 
 import { AuthModule } from "./auth/auth.module";
 import { UsersModule } from "./users/users.module";
@@ -71,6 +73,9 @@ import { AdminModule } from "./admin/admin.module";
     // Scheduled tasks
     ScheduleModule.forRoot(),
 
+    // Demo mode (global — available to all modules)
+    DemoModeModule,
+
     // Feature modules
     HealthModule,
     AuthModule,
@@ -94,6 +99,7 @@ import { AdminModule } from "./admin/admin.module";
     { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: CsrfGuard },
     { provide: APP_GUARD, useClass: MustChangePasswordGuard },
+    { provide: APP_GUARD, useClass: DemoModeGuard },
     { provide: APP_INTERCEPTOR, useClass: CsrfRefreshInterceptor },
   ],
 })

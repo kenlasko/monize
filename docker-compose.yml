@@ -49,6 +49,8 @@ services:
       LOCAL_AUTH_ENABLED: ${LOCAL_AUTH_ENABLED:-true}
       REGISTRATION_ENABLED: ${REGISTRATION_ENABLED:-true}
       FORCE_2FA: ${FORCE_2FA:-false}
+      # Demo mode (optional)
+      DEMO_MODE: ${DEMO_MODE:-false}
       # OIDC (optional)
       OIDC_ISSUER_URL: ${OIDC_ISSUER_URL:-}
       OIDC_CLIENT_ID: ${OIDC_CLIENT_ID:-}
@@ -70,7 +72,7 @@ services:
       - "${BACKEND_PORT:-3000}:3000"
     networks:
       - finance-network
-    command: sh -c "node dist/db-init.js && npm run start:dev"
+    command: sh -c "node dist/db-init.js && if [ \"$$DEMO_MODE\" = 'true' ]; then node dist/database/seed.js; fi && npm run start:dev"
 
   # Frontend (Next.js)
   frontend:

@@ -28,7 +28,7 @@ export default function ForgotPasswordPage() {
     const checkSmtp = async () => {
       try {
         const methods = await authApi.getAuthMethods();
-        if (!methods.smtp || !methods.local) {
+        if (!methods.smtp || !methods.local || methods.demo) {
           router.replace('/login');
           return;
         }

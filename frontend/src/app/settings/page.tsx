@@ -14,6 +14,7 @@ import { userSettingsApi } from '@/lib/user-settings';
 import { authApi } from '@/lib/auth';
 import { User, UserPreferences } from '@/types/auth';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { useDemoStore } from '@/store/demoStore';
 import { createLogger } from '@/lib/logger';
 import { getErrorMessage } from '@/lib/errors';
 
@@ -33,6 +34,7 @@ function SettingsContent() {
   const [preferences, setPreferences] = useState<UserPreferences | null>(null);
   const [smtpConfigured, setSmtpConfigured] = useState(false);
   const [force2fa, setForce2fa] = useState(false);
+  const isDemoMode = useDemoStore((s) => s.isDemoMode);
 
   useEffect(() => {
     loadData();
@@ -45,12 +47,13 @@ function SettingsContent() {
         userSettingsApi.getProfile(),
         userSettingsApi.getPreferences(),
         userSettingsApi.getSmtpStatus().catch(() => ({ configured: false })),
-        authApi.getAuthMethods().catch(() => ({ local: true, oidc: false, registration: true, smtp: false, force2fa: false })),
+        authApi.getAuthMethods().catch(() => ({ local: true, oidc: false, registration: true, smtp: false, force2fa: false, demo: false })),
       ]);
       setUser(userData);
       setPreferences(prefsData);
       setSmtpConfigured(smtpStatus.configured);
       setForce2fa(authMethods.force2fa);
+      useDemoStore.getState().setDemoMode(authMethods.demo ?? false);
     } catch (error) {
       toast.error(getErrorMessage(error, 'Failed to load settings'));
       logger.error(error);
@@ -77,7 +80,18 @@ function SettingsContent() {
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-12 pt-6 pb-8">
         <PageHeader title="Settings" />
 
-        {user && (
+        {isDemoMode && (
+          <div className="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-lg p-6 mb-6">
+            <h2 className="text-lg font-semibold text-amber-800 dark:text-amber-200 mb-2">
+              Restricted in Demo Mode
+            </h2>
+            <p className="text-sm text-amber-700 dark:text-amber-300">
+              Profile editing, password changes, two-factor authentication, and account deletion are disabled in demo mode.
+            </p>
+          </div>
+        )}
+
+        {user && !isDemoMode && (
           <ProfileSection
             user={user}
             onUserUpdated={setUser}
@@ -100,7 +114,7 @@ function SettingsContent() {
           />
         )}
 
-        {user && preferences && (
+        {user && preferences && !isDemoMode && (
           <SecuritySection
             user={user}
             preferences={preferences}
@@ -109,7 +123,7 @@ function SettingsContent() {
           />
         )}
 
-        <DangerZoneSection />
+        {!isDemoMode && <DangerZoneSection />}
       </main>
 
       <p className="text-center text-xs text-gray-400 dark:text-gray-500 mt-8 mb-4">

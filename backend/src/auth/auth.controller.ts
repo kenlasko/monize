@@ -38,6 +38,8 @@ import { Setup2faDto } from "./dto/setup-2fa.dto";
 import { passwordResetTemplate } from "../notifications/email-templates";
 import { SkipCsrf } from "../common/decorators/skip-csrf.decorator";
 import { SkipPasswordCheck } from "./decorators/skip-password-check.decorator";
+import { DemoRestricted } from "../common/decorators/demo-restricted.decorator";
+import { DemoModeService } from "../common/demo-mode.service";
 import { generateCsrfToken, getCsrfCookieOptions } from "../common/csrf.util";
 
 @ApiTags("Authentication")
@@ -55,6 +57,7 @@ export class AuthController {
     private oidcService: OidcService,
     private configService: ConfigService,
     private emailService: EmailService,
+    private demoModeService: DemoModeService,
   ) {
     // Default to true if not explicitly set to 'false'
     const localAuthSetting = this.configService.get<string>(
@@ -132,6 +135,7 @@ export class AuthController {
 
   @Post("register")
   @SkipCsrf()
+  @DemoRestricted()
   @Throttle({ default: { ttl: 900000, limit: 5 } }) // 5 attempts per 15 minutes
   @ApiOperation({ summary: "Register a new user with local credentials" })
   @ApiResponse({ status: 403, description: "Local authentication is disabled" })
@@ -279,9 +283,12 @@ export class AuthController {
     return {
       local: this.localAuthEnabled,
       oidc: this.oidcService.enabled,
-      registration: this.registrationEnabled,
+      registration: this.demoModeService.isDemo
+        ? false
+        : this.registrationEnabled,
       smtp: this.emailService.getStatus().configured,
-      force2fa: this.force2fa,
+      force2fa: this.demoModeService.isDemo ? false : this.force2fa,
+      demo: this.demoModeService.isDemo,
     };
   }
 
@@ -315,6 +322,7 @@ export class AuthController {
 
   @Post("forgot-password")
   @SkipCsrf()
+  @DemoRestricted()
   @Throttle({ default: { ttl: 900000, limit: 3 } })
   @ApiOperation({ summary: "Request password reset email" })
   async forgotPassword(@Body() dto: ForgotPasswordDto) {
@@ -355,6 +363,7 @@ export class AuthController {
 
   @Post("reset-password")
   @SkipCsrf()
+  @DemoRestricted()
   @Throttle({ default: { ttl: 900000, limit: 5 } })
   @ApiOperation({ summary: "Reset password using token" })
   async resetPassword(@Body() dto: ResetPasswordDto) {
@@ -398,6 +407,7 @@ export class AuthController {
 
   @Post("2fa/setup")
   @UseGuards(AuthGuard("jwt"))
+  @DemoRestricted()
   @ApiBearerAuth()
   @ApiOperation({ summary: "Generate QR code and secret for 2FA setup" })
   async setup2FA(@Request() req) {
@@ -406,6 +416,7 @@ export class AuthController {
 
   @Post("2fa/confirm-setup")
   @UseGuards(AuthGuard("jwt"))
+  @DemoRestricted()
   @ApiBearerAuth()
   @ApiOperation({ summary: "Confirm 2FA setup with verification code" })
   async confirmSetup2FA(@Request() req, @Body() dto: Setup2faDto) {
@@ -414,6 +425,7 @@ export class AuthController {
 
   @Post("2fa/disable")
   @UseGuards(AuthGuard("jwt"))
+  @DemoRestricted()
   @ApiBearerAuth()
   @ApiOperation({ summary: "Disable 2FA with verification code" })
   async disable2FA(@Request() req, @Body() dto: Setup2faDto) {

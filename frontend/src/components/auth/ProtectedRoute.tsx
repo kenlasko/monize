@@ -5,6 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { authApi } from '@/lib/auth';
+import { useDemoStore } from '@/store/demoStore';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -28,6 +29,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     if (isAuthenticated && user?.hasPassword) {
       authApi.getAuthMethods().then((methods) => {
         setForce2fa(methods.force2fa);
+        useDemoStore.getState().setDemoMode(methods.demo ?? false);
       }).catch(() => {});
     }
   }, [isAuthenticated, user?.hasPassword]);

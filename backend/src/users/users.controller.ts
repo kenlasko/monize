@@ -22,6 +22,7 @@ import { UpdateProfileDto } from "./dto/update-profile.dto";
 import { UpdatePreferencesDto } from "./dto/update-preferences.dto";
 import { ChangePasswordDto } from "./dto/change-password.dto";
 import { SkipPasswordCheck } from "../auth/decorators/skip-password-check.decorator";
+import { DemoRestricted } from "../common/decorators/demo-restricted.decorator";
 
 @ApiTags("Users")
 @Controller("users")
@@ -47,6 +48,7 @@ export class UsersController {
   }
 
   @Patch("profile")
+  @DemoRestricted()
   @ApiOperation({ summary: "Update current user profile" })
   @ApiResponse({ status: 200, description: "Profile updated successfully" })
   updateProfile(@Request() req, @Body() dto: UpdateProfileDto) {
@@ -68,6 +70,7 @@ export class UsersController {
 
   @Post("change-password")
   @SkipPasswordCheck()
+  @DemoRestricted()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Change current user password" })
   @ApiResponse({ status: 200, description: "Password changed successfully" })
@@ -81,6 +84,7 @@ export class UsersController {
   }
 
   @Delete("account")
+  @DemoRestricted()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Delete current user account" })
   @ApiResponse({ status: 200, description: "Account deleted successfully" })

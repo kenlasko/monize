@@ -3,6 +3,7 @@
 import { ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
 import { AppHeader } from './AppHeader';
+import { DemoModeBanner } from './DemoModeBanner';
 import { SwipeIndicator } from './SwipeIndicator';
 import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
 
@@ -25,6 +26,7 @@ export function SwipeShell({ children }: SwipeShellProps) {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 overflow-x-hidden">
       <AppHeader />
+      <DemoModeBanner />
       <SwipeIndicator currentIndex={currentIndex} totalPages={totalPages} isSwipePage={isSwipePage} />
       <div ref={contentRef}>
         {children}

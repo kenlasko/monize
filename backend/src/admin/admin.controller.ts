@@ -21,6 +21,7 @@ import {
 } from "@nestjs/swagger";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
+import { DemoRestricted } from "../common/decorators/demo-restricted.decorator";
 import { AdminService } from "./admin.service";
 import { UpdateUserRoleDto } from "./dto/update-user-role.dto";
 import { UpdateUserStatusDto } from "./dto/update-user-status.dto";
@@ -30,6 +31,7 @@ import { UpdateUserStatusDto } from "./dto/update-user-status.dto";
 @UseGuards(AuthGuard("jwt"), RolesGuard)
 @Roles("admin")
 @ApiBearerAuth()
+@DemoRestricted()
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 
