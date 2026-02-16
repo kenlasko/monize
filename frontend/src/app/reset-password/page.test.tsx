@@ -35,7 +35,7 @@ vi.mock('@/lib/auth', () => ({
   authApi: {
     resetPassword: (...args: any[]) => mockResetPassword(...args),
     getAuthMethods: vi.fn().mockResolvedValue({
-      local: true, oidc: false, registration: true, smtp: false, force2fa: false,
+      local: true, oidc: false, registration: true, smtp: false, force2fa: false, demo: false,
     }),
   },
 }));

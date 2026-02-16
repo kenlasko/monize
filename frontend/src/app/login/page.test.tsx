@@ -11,7 +11,7 @@ vi.mock('@/lib/auth', () => ({
       oidc: false,
       registration: true,
       smtp: false,
-      force2fa: false,
+      force2fa: false, demo: false,
     }),
     login: vi.fn(),
     initiateOidc: vi.fn(),
@@ -74,7 +74,7 @@ describe('LoginPage', () => {
       oidc: false,
       registration: true,
       smtp: false,
-      force2fa: false,
+      force2fa: false, demo: false,
     });
   });
 
@@ -122,7 +122,7 @@ describe('LoginPage', () => {
       oidc: true,
       registration: false,
       smtp: false,
-      force2fa: false,
+      force2fa: false, demo: false,
     });
 
     render(<LoginPage />);
@@ -139,7 +139,7 @@ describe('LoginPage', () => {
       oidc: false,
       registration: false,
       smtp: false,
-      force2fa: false,
+      force2fa: false, demo: false,
     });
 
     render(<LoginPage />);
@@ -155,7 +155,7 @@ describe('LoginPage', () => {
       oidc: true,
       registration: true,
       smtp: false,
-      force2fa: false,
+      force2fa: false, demo: false,
     });
 
     render(<LoginPage />);
@@ -172,7 +172,7 @@ describe('LoginPage', () => {
       oidc: false,
       registration: true,
       smtp: true,
-      force2fa: false,
+      force2fa: false, demo: false,
     });
 
     render(<LoginPage />);
@@ -196,7 +196,7 @@ describe('LoginPage', () => {
       oidc: false,
       registration: false,
       smtp: false,
-      force2fa: false,
+      force2fa: false, demo: false,
     });
 
     render(<LoginPage />);
@@ -319,7 +319,7 @@ describe('LoginPage', () => {
       oidc: true,
       registration: true,
       smtp: false,
-      force2fa: false,
+      force2fa: false, demo: false,
     });
 
     render(<LoginPage />);
@@ -335,7 +335,7 @@ describe('LoginPage', () => {
       oidc: true,
       registration: false,
       smtp: false,
-      force2fa: false,
+      force2fa: false, demo: false,
     });
 
     render(<LoginPage />);

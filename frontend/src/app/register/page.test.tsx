@@ -26,7 +26,7 @@ vi.mock('@/lib/auth', () => ({
       oidc: false,
       registration: true,
       smtp: false,
-      force2fa: false,
+      force2fa: false, demo: false,
     }),
     register: vi.fn(),
     initiateOidc: vi.fn(),
@@ -80,7 +80,7 @@ describe('RegisterPage', () => {
       oidc: false,
       registration: true,
       smtp: false,
-      force2fa: false,
+      force2fa: false, demo: false,
     });
   });
 
@@ -133,7 +133,7 @@ describe('RegisterPage', () => {
       oidc: false,
       registration: false,
       smtp: false,
-      force2fa: false,
+      force2fa: false, demo: false,
     });
 
     render(<RegisterPage />);
@@ -148,7 +148,7 @@ describe('RegisterPage', () => {
       oidc: true,
       registration: true,
       smtp: false,
-      force2fa: false,
+      force2fa: false, demo: false,
     });
 
     render(<RegisterPage />);
@@ -217,7 +217,7 @@ describe('RegisterPage', () => {
       oidc: true,
       registration: true,
       smtp: false,
-      force2fa: false,
+      force2fa: false, demo: false,
     });
 
     render(<RegisterPage />);
@@ -234,7 +234,7 @@ describe('RegisterPage', () => {
       oidc: true,
       registration: true,
       smtp: false,
-      force2fa: false,
+      force2fa: false, demo: false,
     });
 
     render(<RegisterPage />);
@@ -261,7 +261,7 @@ describe('RegisterPage', () => {
       oidc: false,
       registration: true,
       smtp: false,
-      force2fa: true,
+      force2fa: true, demo: false,
     });
 
     const mockUser = { id: 'u1', email: 'test@example.com', firstName: 'Test', lastName: 'User', role: 'user', hasPassword: true };

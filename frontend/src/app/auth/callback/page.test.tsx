@@ -64,7 +64,7 @@ vi.mock('@/lib/auth', () => ({
   authApi: {
     getProfile: (...args: any[]) => mockGetProfile(...args),
     getAuthMethods: vi.fn().mockResolvedValue({
-      local: true, oidc: true, registration: true, smtp: false, force2fa: false,
+      local: true, oidc: true, registration: true, smtp: false, force2fa: false, demo: false,
     }),
   },
 }));

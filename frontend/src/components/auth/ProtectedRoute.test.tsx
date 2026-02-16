@@ -22,7 +22,7 @@ vi.mock('next/navigation', () => ({
 
 vi.mock('@/lib/auth', () => ({
   authApi: {
-    getAuthMethods: vi.fn().mockResolvedValue({ force2fa: false }),
+    getAuthMethods: vi.fn().mockResolvedValue({ force2fa: false, demo: false }),
   },
 }));
 
@@ -134,6 +134,7 @@ describe('ProtectedRoute', () => {
       registration: true,
       smtp: false,
       force2fa: true,
+      demo: false,
     });
 
     setAuthenticatedState();

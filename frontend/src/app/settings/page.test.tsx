@@ -70,7 +70,7 @@ vi.mock('@/contexts/ThemeContext', () => ({
 vi.mock('@/lib/auth', () => ({
   authApi: {
     getAuthMethods: vi.fn().mockResolvedValue({
-      local: true, oidc: false, registration: true, smtp: false, force2fa: false,
+      local: true, oidc: false, registration: true, smtp: false, force2fa: false, demo: false,
     }),
     disable2FA: vi.fn(),
     getTrustedDevices: vi.fn().mockResolvedValue([]),

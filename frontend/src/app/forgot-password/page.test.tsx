@@ -85,7 +85,7 @@ describe('ForgotPasswordPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockGetAuthMethods.mockResolvedValue({
-      local: true, oidc: false, registration: true, smtp: true, force2fa: false,
+      local: true, oidc: false, registration: true, smtp: true, force2fa: false, demo: false,
     });
     mockForgotPassword.mockResolvedValue(undefined);
   });
@@ -143,7 +143,7 @@ describe('ForgotPasswordPage', () => {
 
   it('redirects to login when SMTP is not configured', async () => {
     mockGetAuthMethods.mockResolvedValue({
-      local: true, oidc: false, registration: true, smtp: false, force2fa: false,
+      local: true, oidc: false, registration: true, smtp: false, force2fa: false, demo: false,
     });
 
     render(<ForgotPasswordPage />);
@@ -155,7 +155,7 @@ describe('ForgotPasswordPage', () => {
 
   it('redirects to login when local auth is not available', async () => {
     mockGetAuthMethods.mockResolvedValue({
-      local: false, oidc: true, registration: true, smtp: true, force2fa: false,
+      local: false, oidc: true, registration: true, smtp: true, force2fa: false, demo: false,
     });
 
     render(<ForgotPasswordPage />);

@@ -38,7 +38,7 @@ vi.mock('@/store/preferencesStore', () => ({
 
 vi.mock('@/lib/auth', () => ({
   authApi: {
-    getAuthMethods: vi.fn().mockResolvedValue({ local: true, oidc: false, registration: true, smtp: false, force2fa: false }),
+    getAuthMethods: vi.fn().mockResolvedValue({ local: true, oidc: false, registration: true, smtp: false, force2fa: false, demo: false }),
     logout: vi.fn().mockResolvedValue(undefined),
   },
 }));

@@ -75,7 +75,7 @@ vi.mock('@/lib/auth', () => ({
       oidc: false,
       registration: true,
       smtp: false,
-      force2fa: false,
+      force2fa: false, demo: false,
     }),
     logout: vi.fn().mockResolvedValue(undefined),
   },
