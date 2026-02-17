@@ -29,6 +29,7 @@ interface PayeeListProps {
   sortField?: SortField;
   sortDirection?: SortDirection;
   onSort?: (field: SortField) => void;
+  categoryColorMap?: Map<string, string | null>;
 }
 
 interface PayeeRowProps {
@@ -39,6 +40,7 @@ interface PayeeRowProps {
   onDelete: (payee: Payee) => void;
   onViewTransactions: (payee: Payee) => void;
   index: number;
+  categoryColorMap?: Map<string, string | null>;
 }
 
 const PayeeRow = memo(function PayeeRow({
@@ -49,7 +51,11 @@ const PayeeRow = memo(function PayeeRow({
   onDelete,
   onViewTransactions,
   index,
+  categoryColorMap,
 }: PayeeRowProps) {
+  const defaultCategoryColor = payee.defaultCategory
+    ? (categoryColorMap?.get(payee.defaultCategory.id) ?? payee.defaultCategory.color)
+    : null;
   const handleEdit = useCallback(() => {
     onEdit(payee);
   }, [onEdit, payee]);
@@ -80,11 +86,11 @@ const PayeeRow = memo(function PayeeRow({
           <span
             className={`inline-flex text-xs leading-5 font-semibold rounded-full ${density === 'dense' ? 'px-1.5 py-0.5' : 'px-2 py-1'}`}
             style={{
-              backgroundColor: payee.defaultCategory.color
-                ? `color-mix(in srgb, ${payee.defaultCategory.color} 15%, var(--category-bg-base, #e5e7eb))`
+              backgroundColor: defaultCategoryColor
+                ? `color-mix(in srgb, ${defaultCategoryColor} 15%, var(--category-bg-base, #e5e7eb))`
                 : 'var(--category-bg-base, #e5e7eb)',
-              color: payee.defaultCategory.color
-                ? `color-mix(in srgb, ${payee.defaultCategory.color} 85%, var(--category-text-mix, #000))`
+              color: defaultCategoryColor
+                ? `color-mix(in srgb, ${defaultCategoryColor} 85%, var(--category-text-mix, #000))`
                 : 'var(--category-text-base, #6b7280)',
             }}
           >
@@ -135,6 +141,7 @@ export function PayeeList({
   sortField: propSortField,
   sortDirection: propSortDirection,
   onSort,
+  categoryColorMap,
 }: PayeeListProps) {
   const router = useRouter();
   const [deletePayee, setDeletePayee] = useState<Payee | null>(null);
@@ -296,6 +303,7 @@ export function PayeeList({
                 onDelete={setDeletePayee}
                 onViewTransactions={handleViewTransactions}
                 index={index}
+                categoryColorMap={categoryColorMap}
               />
             ))}
           </tbody>

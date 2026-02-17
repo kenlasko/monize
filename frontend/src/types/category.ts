@@ -8,6 +8,7 @@ export interface Category {
   description: string | null;
   icon: string | null;
   color: string | null;
+  effectiveColor: string | null;
   isIncome: boolean;
   isSystem: boolean;
   createdAt: string;

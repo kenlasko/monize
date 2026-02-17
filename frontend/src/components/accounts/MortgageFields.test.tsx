@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor } from '@/test/render';
+import { render, screen, waitFor, fireEvent } from '@/test/render';
 import { MortgageFields } from './MortgageFields';
 import { Account } from '@/types/account';
 import { Category } from '@/types/category';
@@ -119,6 +119,7 @@ describe('MortgageFields', () => {
     accounts: mockAccounts,
     categories: mockCategories,
     formatCurrency: mockFormatCurrency,
+    isEditing: false,
     selectedInterestCategoryId: '',
     handleInterestCategoryChange: vi.fn(),
   };
@@ -132,7 +133,7 @@ describe('MortgageFields', () => {
     vi.useRealTimers();
   });
 
-  it('renders the heading and mortgage-specific fields', () => {
+  it('renders the heading and all form fields', () => {
     render(<MortgageFields {...defaultProps} />);
     expect(screen.getByText('Mortgage Details')).toBeInTheDocument();
     expect(screen.getByText('Payment Frequency (required)')).toBeInTheDocument();
@@ -150,18 +151,57 @@ describe('MortgageFields', () => {
     expect(screen.getByText('Accelerated Weekly')).toBeInTheDocument();
   });
 
-  it('renders term length options', () => {
+  it('renders term length years and months inputs', () => {
     render(<MortgageFields {...defaultProps} />);
     expect(screen.getByText('Term Length')).toBeInTheDocument();
-    expect(screen.getByText('5 years')).toBeInTheDocument();
-    expect(screen.getByText('10 years')).toBeInTheDocument();
+    // Should have Years and Months labels (2 each for term + amortization)
+    const yearsLabels = screen.getAllByText('Years');
+    const monthsLabels = screen.getAllByText('Months');
+    expect(yearsLabels).toHaveLength(2);
+    expect(monthsLabels).toHaveLength(2);
   });
 
-  it('renders amortization period options', () => {
+  it('renders amortization period years and months inputs', () => {
     render(<MortgageFields {...defaultProps} />);
     expect(screen.getByText('Amortization Period (required)')).toBeInTheDocument();
-    expect(screen.getByText('25 years')).toBeInTheDocument();
-    expect(screen.getByText('30 years')).toBeInTheDocument();
+  });
+
+  it('populates term inputs from termMonths prop', () => {
+    render(<MortgageFields {...defaultProps} termMonths={62} />);
+    // 62 months = 5 years, 2 months
+    const numberInputs = screen.getAllByRole('spinbutton');
+    // Term years, term months, amort years, amort months
+    expect(numberInputs[0]).toHaveValue(5);
+    expect(numberInputs[1]).toHaveValue(2);
+  });
+
+  it('populates amortization inputs from amortizationMonths prop', () => {
+    render(<MortgageFields {...defaultProps} amortizationMonths={303} />);
+    // 303 months = 25 years, 3 months
+    const numberInputs = screen.getAllByRole('spinbutton');
+    expect(numberInputs[2]).toHaveValue(25);
+    expect(numberInputs[3]).toHaveValue(3);
+  });
+
+  it('calls setValue when term years are changed', () => {
+    render(<MortgageFields {...defaultProps} />);
+    const numberInputs = screen.getAllByRole('spinbutton');
+    fireEvent.change(numberInputs[0], { target: { value: '5' } });
+    expect(mockSetValue).toHaveBeenCalledWith('termMonths', 60, { shouldValidate: true, shouldDirty: true });
+  });
+
+  it('calls setValue when term months are changed', () => {
+    render(<MortgageFields {...defaultProps} termMonths={60} />);
+    const numberInputs = screen.getAllByRole('spinbutton');
+    fireEvent.change(numberInputs[1], { target: { value: '6' } });
+    expect(mockSetValue).toHaveBeenCalledWith('termMonths', 66, { shouldValidate: true, shouldDirty: true });
+  });
+
+  it('calls setValue when amortization years are changed', () => {
+    render(<MortgageFields {...defaultProps} />);
+    const numberInputs = screen.getAllByRole('spinbutton');
+    fireEvent.change(numberInputs[2], { target: { value: '25' } });
+    expect(mockSetValue).toHaveBeenCalledWith('amortizationMonths', 300, { shouldValidate: true, shouldDirty: true });
   });
 
   it('renders source account select with sorted accounts', () => {
@@ -174,8 +214,6 @@ describe('MortgageFields', () => {
   it('renders interest category select with sorted categories', () => {
     render(<MortgageFields {...defaultProps} />);
     expect(screen.getByText('Interest Category')).toBeInTheDocument();
-    expect(screen.getByText('Interest Expenses')).toBeInTheDocument();
-    expect(screen.getByText('Mortgage Interest')).toBeInTheDocument();
   });
 
   it('renders Canadian Mortgage and Variable Rate checkboxes', () => {
@@ -235,5 +273,174 @@ describe('MortgageFields', () => {
     await waitFor(() => {
       expect(screen.getByText('Calculating preview...')).toBeInTheDocument();
     }, { timeout: 3000 });
+  });
+
+  it('hides payment fields when isEditing is true', () => {
+    render(<MortgageFields {...defaultProps} isEditing={true} />);
+    expect(screen.getByText('Mortgage Details')).toBeInTheDocument();
+    expect(screen.getByText('Term Length')).toBeInTheDocument();
+    expect(screen.getByText('Amortization Period (required)')).toBeInTheDocument();
+    expect(screen.getByText('Canadian Mortgage')).toBeInTheDocument();
+    // Payment fields should be hidden
+    expect(screen.queryByText('Payment Frequency (required)')).not.toBeInTheDocument();
+    expect(screen.queryByText('First Payment Date (required)')).not.toBeInTheDocument();
+    expect(screen.queryByText('Payment From Account (required)')).not.toBeInTheDocument();
+    expect(screen.queryByText('Interest Category')).not.toBeInTheDocument();
+  });
+
+  it('does not call preview API when isEditing is true', async () => {
+    vi.useRealTimers();
+    render(<MortgageFields {...defaultProps}
+      isEditing={true}
+      openingBalance={400000} interestRate={5} amortizationMonths={300}
+      mortgagePaymentFrequency="MONTHLY" paymentStartDate="2024-02-01"
+    />);
+
+    // Wait a bit for any debounced calls
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    expect(accountsApi.previewMortgageAmortization).not.toHaveBeenCalled();
+  });
+
+  it('handles API error gracefully (no preview shown)', async () => {
+    vi.useRealTimers();
+    vi.mocked(accountsApi.previewMortgageAmortization).mockRejectedValue(new Error('API Error'));
+
+    render(<MortgageFields {...defaultProps}
+      openingBalance={400000} interestRate={5} amortizationMonths={300}
+      mortgagePaymentFrequency="MONTHLY" paymentStartDate="2024-02-01"
+    />);
+
+    await waitFor(() => {
+      expect(accountsApi.previewMortgageAmortization).toHaveBeenCalled();
+    }, { timeout: 3000 });
+
+    expect(screen.queryByText('Amortization Preview')).not.toBeInTheDocument();
+  });
+
+  it('calls setValue when amortization months are changed', () => {
+    render(<MortgageFields {...defaultProps} amortizationMonths={300} />);
+    const numberInputs = screen.getAllByRole('spinbutton');
+    fireEvent.change(numberInputs[3], { target: { value: '6' } });
+    expect(mockSetValue).toHaveBeenCalledWith('amortizationMonths', 306, { shouldValidate: true, shouldDirty: true });
+  });
+
+  it('sets amortizationMonths to undefined when both years and months are 0', () => {
+    render(<MortgageFields {...defaultProps} amortizationMonths={12} />);
+    const numberInputs = screen.getAllByRole('spinbutton');
+    // Set years to 0
+    fireEvent.change(numberInputs[2], { target: { value: '0' } });
+    // Set months to 0
+    fireEvent.change(numberInputs[3], { target: { value: '0' } });
+    expect(mockSetValue).toHaveBeenCalledWith('amortizationMonths', undefined, { shouldValidate: true, shouldDirty: true });
+  });
+
+  it('debounces mortgage preview API call by 500ms', async () => {
+    vi.mocked(accountsApi.previewMortgageAmortization).mockResolvedValue({
+      paymentAmount: 1500, effectiveAnnualRate: 5.06,
+      principalPayment: 1200, interestPayment: 300,
+      totalPayments: 300, totalInterest: 150000, endDate: '2049-01-15',
+    });
+
+    render(<MortgageFields {...defaultProps}
+      openingBalance={400000} interestRate={5} amortizationMonths={300}
+      mortgagePaymentFrequency="MONTHLY" paymentStartDate="2024-02-01"
+    />);
+
+    vi.advanceTimersByTime(400);
+    expect(accountsApi.previewMortgageAmortization).not.toHaveBeenCalled();
+
+    await vi.advanceTimersByTimeAsync(200);
+    expect(accountsApi.previewMortgageAmortization).toHaveBeenCalledTimes(1);
+  });
+
+  it('passes isCanadian and isVariableRate to preview API', async () => {
+    vi.mocked(accountsApi.previewMortgageAmortization).mockResolvedValue({
+      paymentAmount: 1500, effectiveAnnualRate: 5.06,
+      principalPayment: 1200, interestPayment: 300,
+      totalPayments: 300, totalInterest: 150000, endDate: '2049-01-15',
+    });
+
+    render(<MortgageFields {...defaultProps}
+      openingBalance={400000} interestRate={5} amortizationMonths={300}
+      mortgagePaymentFrequency="MONTHLY" paymentStartDate="2024-02-01"
+      isCanadianMortgage={true} isVariableRate={true}
+    />);
+
+    await vi.advanceTimersByTimeAsync(600);
+
+    expect(accountsApi.previewMortgageAmortization).toHaveBeenCalledWith(
+      expect.objectContaining({
+        isCanadian: true,
+        isVariableRate: true,
+      })
+    );
+  });
+
+  it('shows N/A for totalPayments and totalInterest when 0', async () => {
+    vi.useRealTimers();
+    vi.mocked(accountsApi.previewMortgageAmortization).mockResolvedValue({
+      paymentAmount: 100, effectiveAnnualRate: 5.0,
+      principalPayment: 0, interestPayment: 100,
+      totalPayments: 0, totalInterest: 0, endDate: '',
+    });
+
+    render(<MortgageFields {...defaultProps}
+      openingBalance={400000} interestRate={5} amortizationMonths={300}
+      mortgagePaymentFrequency="MONTHLY" paymentStartDate="2024-02-01"
+    />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Amortization Preview')).toBeInTheDocument();
+    }, { timeout: 3000 });
+
+    const naElements = screen.getAllByText('N/A');
+    expect(naElements.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('shows all preview fields when preview data is complete', async () => {
+    vi.useRealTimers();
+    vi.mocked(accountsApi.previewMortgageAmortization).mockResolvedValue({
+      paymentAmount: 1500, effectiveAnnualRate: 5.06,
+      principalPayment: 1200, interestPayment: 300,
+      totalPayments: 300, totalInterest: 150000, endDate: '2049-01-15',
+    });
+
+    render(<MortgageFields {...defaultProps}
+      openingBalance={400000} interestRate={5} amortizationMonths={300}
+      mortgagePaymentFrequency="MONTHLY" paymentStartDate="2024-02-01"
+    />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Amortization Preview')).toBeInTheDocument();
+    }, { timeout: 3000 });
+
+    expect(screen.getByText('Payment Amount:')).toBeInTheDocument();
+    expect(screen.getByText('Effective Rate:')).toBeInTheDocument();
+    expect(screen.getByText('First Payment Principal:')).toBeInTheDocument();
+    expect(screen.getByText('First Payment Interest:')).toBeInTheDocument();
+    expect(screen.getByText('Total Payments:')).toBeInTheDocument();
+    expect(screen.getByText('Total Interest:')).toBeInTheDocument();
+    expect(screen.getByText('Est. Payoff Date:')).toBeInTheDocument();
+    expect(screen.getByText('5.06%')).toBeInTheDocument();
+  });
+
+  it('does not allow term years above 99', () => {
+    render(<MortgageFields {...defaultProps} />);
+    const numberInputs = screen.getAllByRole('spinbutton');
+    fireEvent.change(numberInputs[0], { target: { value: '100' } });
+    // Value should not change - setValue not called with invalid value
+    expect(mockSetValue).not.toHaveBeenCalledWith('termMonths', 1200, expect.anything());
+  });
+
+  it('does not allow term months above 11', () => {
+    render(<MortgageFields {...defaultProps} />);
+    const numberInputs = screen.getAllByRole('spinbutton');
+    fireEvent.change(numberInputs[1], { target: { value: '12' } });
+    expect(mockSetValue).not.toHaveBeenCalledWith('termMonths', 12, expect.anything());
+  });
+
+  it('shows term length help text', () => {
+    render(<MortgageFields {...defaultProps} />);
+    expect(screen.getByText('Leave at 0 years and 0 months for no term.')).toBeInTheDocument();
   });
 });

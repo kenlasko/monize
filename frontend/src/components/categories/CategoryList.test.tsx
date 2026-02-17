@@ -48,6 +48,7 @@ function makeCategory(overrides: Partial<Category> & { id: string; name: string 
     description: null,
     icon: null,
     color: null,
+    effectiveColor: null,
     isIncome: false,
     isSystem: false,
     createdAt: '2026-01-01T00:00:00Z',
@@ -139,7 +140,7 @@ describe('CategoryList', () => {
 
   it('shows color indicator when category has color', () => {
     const categories = [
-      makeCategory({ id: 'c1', name: 'Food', color: '#ef4444' }),
+      makeCategory({ id: 'c1', name: 'Food', color: '#ef4444', effectiveColor: '#ef4444' }),
     ];
 
     render(<CategoryList categories={categories} onEdit={onEdit} onRefresh={onRefresh} />);
@@ -147,6 +148,41 @@ describe('CategoryList', () => {
     expect(colorDot).toBeTruthy();
     // jsdom converts hex to rgb, so check for the rgb equivalent
     expect(colorDot?.getAttribute('style')).toContain('background-color');
+  });
+
+  it('shows inherited color indicator with half opacity when color is inherited', () => {
+    const categories = [
+      makeCategory({ id: 'c1', name: 'Food', color: null, effectiveColor: '#3b82f6' }),
+    ];
+
+    render(<CategoryList categories={categories} onEdit={onEdit} onRefresh={onRefresh} />);
+    const colorDot = screen.getByText('Food').closest('div')?.querySelector('span[style]');
+    expect(colorDot).toBeTruthy();
+    expect(colorDot?.getAttribute('style')).toContain('background-color');
+    expect(colorDot?.classList.contains('opacity-50')).toBe(true);
+    expect(colorDot?.getAttribute('title')).toBe('Inherited from parent');
+  });
+
+  it('shows full opacity color dot when color is explicitly set', () => {
+    const categories = [
+      makeCategory({ id: 'c1', name: 'Food', color: '#ef4444', effectiveColor: '#ef4444' }),
+    ];
+
+    render(<CategoryList categories={categories} onEdit={onEdit} onRefresh={onRefresh} />);
+    const colorDot = screen.getByText('Food').closest('div')?.querySelector('span[style]');
+    expect(colorDot).toBeTruthy();
+    expect(colorDot?.classList.contains('opacity-50')).toBe(false);
+    expect(colorDot?.getAttribute('title')).toBeNull();
+  });
+
+  it('does not show color indicator when effectiveColor is null', () => {
+    const categories = [
+      makeCategory({ id: 'c1', name: 'Food', color: null, effectiveColor: null }),
+    ];
+
+    render(<CategoryList categories={categories} onEdit={onEdit} onRefresh={onRefresh} />);
+    const colorDot = screen.getByText('Food').closest('div')?.querySelector('span[style]');
+    expect(colorDot).toBeNull();
   });
 
   // System category

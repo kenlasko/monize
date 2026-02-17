@@ -11,6 +11,7 @@ import { Modal } from '@/components/ui/Modal';
 import { UnsavedChangesDialog } from '@/components/ui/UnsavedChangesDialog';
 import { payeesApi } from '@/lib/payees';
 import { categoriesApi } from '@/lib/categories';
+import { buildCategoryColorMap } from '@/lib/categoryUtils';
 import { Payee } from '@/types/payee';
 import { Category } from '@/types/category';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
@@ -93,6 +94,8 @@ function PayeesContent() {
       throw error;
     }
   };
+
+  const categoryColorMap = useMemo(() => buildCategoryColorMap(categories), [categories]);
 
   const filteredPayees = useMemo(() => {
     if (!searchQuery) return payees;
@@ -223,6 +226,7 @@ function PayeesContent() {
               sortField={sortField}
               sortDirection={sortDirection}
               onSort={handleSort}
+              categoryColorMap={categoryColorMap}
             />
           )}
         </div>

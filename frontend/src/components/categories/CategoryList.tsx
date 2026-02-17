@@ -59,10 +59,13 @@ const CategoryRow = memo(function CategoryRow({
           className="flex items-center"
           style={{ paddingLeft: `${(category._level || 0) * (density === 'dense' ? 0.75 : 1.5)}rem` }}
         >
-          {category.color && (
+          {category.effectiveColor && (
             <span
-              className={`rounded-full mr-2 flex-shrink-0 ${density === 'dense' ? 'w-2 h-2' : 'w-3 h-3'}`}
-              style={{ backgroundColor: category.color }}
+              className={`rounded-full mr-2 flex-shrink-0 ${density === 'dense' ? 'w-2 h-2' : 'w-3 h-3'} ${
+                !category.color && category.effectiveColor ? 'opacity-50' : ''
+              }`}
+              style={{ backgroundColor: category.effectiveColor }}
+              title={!category.color && category.effectiveColor ? 'Inherited from parent' : undefined}
             />
           )}
           <button

@@ -56,6 +56,38 @@ export class CategoriesService {
     return this.categoriesRepository.save(category);
   }
 
+  private resolveEffectiveColors<
+    T extends { id: string; parentId: string | null; color: string | null },
+  >(categories: T[]): (T & { effectiveColor: string | null })[] {
+    const categoryMap = new Map(categories.map((c) => [c.id, c]));
+    const resolved = new Map<string, string | null>();
+
+    const getEffectiveColor = (cat: T): string | null => {
+      if (resolved.has(cat.id)) {
+        return resolved.get(cat.id)!;
+      }
+      if (cat.color !== null) {
+        resolved.set(cat.id, cat.color);
+        return cat.color;
+      }
+      if (cat.parentId) {
+        const parent = categoryMap.get(cat.parentId);
+        if (parent) {
+          const parentColor = getEffectiveColor(parent);
+          resolved.set(cat.id, parentColor);
+          return parentColor;
+        }
+      }
+      resolved.set(cat.id, null);
+      return null;
+    };
+
+    return categories.map((cat) => ({
+      ...cat,
+      effectiveColor: getEffectiveColor(cat),
+    }));
+  }
+
   async findAll(
     userId: string,
     includeSystem = false,
@@ -108,10 +140,12 @@ export class CategoriesService {
       countMap.set(row.categoryId, existing + parseInt(row.count || "0", 10));
     }
 
-    return categories.map((category) => ({
+    const categoriesWithCounts = categories.map((category) => ({
       ...category,
       transactionCount: countMap.get(category.id) || 0,
     }));
+
+    return this.resolveEffectiveColors(categoriesWithCounts);
   }
 
   async getTree(
@@ -149,14 +183,22 @@ export class CategoriesService {
     return rootCategories;
   }
 
-  async findByType(userId: string, isIncome: boolean): Promise<Category[]> {
-    return this.categoriesRepository.find({
+  async findByType(
+    userId: string,
+    isIncome: boolean,
+  ): Promise<(Category & { effectiveColor: string | null })[]> {
+    const categories = await this.categoriesRepository.find({
       where: { userId, isIncome },
       order: { name: "ASC" },
     });
+
+    return this.resolveEffectiveColors(categories);
   }
 
-  async findOne(userId: string, id: string): Promise<Category> {
+  async findOne(
+    userId: string,
+    id: string,
+  ): Promise<Category & { effectiveColor: string | null }> {
     const category = await this.categoriesRepository.findOne({
       where: { id },
       relations: ["children"],
@@ -170,7 +212,24 @@ export class CategoriesService {
       throw new ForbiddenException("You do not have access to this category");
     }
 
-    return category;
+    let effectiveColor = category.color;
+    if (effectiveColor === null && category.parentId) {
+      let currentParentId: string | null = category.parentId;
+      while (currentParentId !== null && effectiveColor === null) {
+        const parent = await this.categoriesRepository.findOne({
+          where: { id: currentParentId },
+          select: ["id", "color", "parentId"],
+        });
+        if (parent) {
+          effectiveColor = parent.color;
+          currentParentId = parent.parentId;
+        } else {
+          break;
+        }
+      }
+    }
+
+    return { ...category, effectiveColor };
   }
 
   async update(

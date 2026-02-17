@@ -22,6 +22,7 @@ import { useTransactionSelection } from '@/hooks/useTransactionSelection';
 import { BulkSelectionBanner } from '@/components/transactions/BulkSelectionBanner';
 import { Account } from '@/types/account';
 import { Category } from '@/types/category';
+import { buildCategoryColorMap } from '@/lib/categoryUtils';
 import { Payee } from '@/types/payee';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useDateFormat } from '@/hooks/useDateFormat';
@@ -254,6 +255,8 @@ function TransactionsContent() {
     };
     return [...specialOptions, ...buildOptions()];
   }, [categories]);
+
+  const categoryColorMap = useMemo(() => buildCategoryColorMap(categories), [categories]);
 
   const accountFilterOptions = useMemo(() => {
     return filteredAccounts
@@ -903,6 +906,7 @@ function TransactionsContent() {
               totalItems={pagination?.total ?? 0}
               pageSize={PAGE_SIZE}
               onPageChange={goToPage}
+              categoryColorMap={categoryColorMap}
             />
           )}
         </div>

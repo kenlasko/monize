@@ -306,6 +306,53 @@ describe("AccountsService", () => {
       const saved = accountsRepository.save.mock.calls[0][0];
       expect(saved.currentBalance).toBe(1700);
     });
+
+    it("recalculates termEndDate when termMonths changes to a positive value", async () => {
+      const startDate = new Date("2025-01-15T12:00:00Z");
+      accountsRepository.findOne.mockResolvedValue({
+        ...mockAccount,
+        accountType: "MORTGAGE",
+        paymentStartDate: startDate,
+        termMonths: 60,
+        termEndDate: new Date("2030-01-15"),
+      });
+
+      await service.update("user-1", "account-1", { termMonths: 36 });
+
+      const saved = accountsRepository.save.mock.calls[0][0];
+      expect(saved.termMonths).toBe(36);
+      expect(saved.termEndDate).toBeInstanceOf(Date);
+      expect(saved.termEndDate.getTime()).toBeGreaterThan(startDate.getTime());
+    });
+
+    it("sets termEndDate to null when termMonths is set to 0", async () => {
+      accountsRepository.findOne.mockResolvedValue({
+        ...mockAccount,
+        accountType: "MORTGAGE",
+        paymentStartDate: new Date("2025-01-01"),
+        termMonths: 60,
+        termEndDate: new Date("2030-01-01"),
+      });
+
+      await service.update("user-1", "account-1", { termMonths: 0 });
+
+      const saved = accountsRepository.save.mock.calls[0][0];
+      expect(saved.termMonths).toBeNull();
+      expect(saved.termEndDate).toBeNull();
+    });
+
+    it("updates amortizationMonths when provided", async () => {
+      accountsRepository.findOne.mockResolvedValue({
+        ...mockAccount,
+        accountType: "MORTGAGE",
+        amortizationMonths: 300,
+      });
+
+      await service.update("user-1", "account-1", { amortizationMonths: 360 });
+
+      const saved = accountsRepository.save.mock.calls[0][0];
+      expect(saved.amortizationMonths).toBe(360);
+    });
   });
 
   describe("close", () => {

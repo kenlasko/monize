@@ -22,24 +22,6 @@ const mortgagePaymentFrequencyOptions = [
   { value: 'ACCELERATED_WEEKLY', label: 'Accelerated Weekly' },
 ];
 
-const termOptions = [
-  { value: '6', label: '6 months' },
-  { value: '12', label: '1 year' },
-  { value: '24', label: '2 years' },
-  { value: '36', label: '3 years' },
-  { value: '48', label: '4 years' },
-  { value: '60', label: '5 years' },
-  { value: '84', label: '7 years' },
-  { value: '120', label: '10 years' },
-];
-
-const amortizationOptions = [
-  { value: '180', label: '15 years' },
-  { value: '240', label: '20 years' },
-  { value: '300', label: '25 years' },
-  { value: '360', label: '30 years' },
-];
-
 interface MortgageFieldsProps {
   watchedCurrency: string;
   openingBalance: number | undefined;
@@ -47,6 +29,7 @@ interface MortgageFieldsProps {
   paymentStartDate: string | undefined;
   isCanadianMortgage: boolean | undefined;
   isVariableRate: boolean | undefined;
+  termMonths: number | undefined;
   amortizationMonths: number | undefined;
   mortgagePaymentFrequency: MortgagePaymentFrequency | undefined;
   setValue: UseFormSetValue<any>;
@@ -55,6 +38,7 @@ interface MortgageFieldsProps {
   accounts: Account[];
   categories: Category[];
   formatCurrency: (amount: number, currency?: string) => string;
+  isEditing: boolean;
   selectedInterestCategoryId: string;
   handleInterestCategoryChange: (categoryId: string) => void;
 }
@@ -66,6 +50,7 @@ export function MortgageFields({
   paymentStartDate,
   isCanadianMortgage,
   isVariableRate,
+  termMonths,
   amortizationMonths,
   mortgagePaymentFrequency,
   setValue: _setValue,
@@ -74,14 +59,92 @@ export function MortgageFields({
   accounts,
   categories,
   formatCurrency,
+  isEditing,
   selectedInterestCategoryId,
   handleInterestCategoryChange,
 }: MortgageFieldsProps) {
   const [mortgagePreview, setMortgagePreview] = useState<MortgageAmortizationPreview | null>(null);
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
 
+  // Local string state for years+months inputs
+  const [termYears, setTermYears] = useState<string>(() => {
+    if (termMonths != null && termMonths > 0) return String(Math.floor(termMonths / 12));
+    return '';
+  });
+  const [termRemainder, setTermRemainder] = useState<string>(() => {
+    if (termMonths != null && termMonths > 0) return String(termMonths % 12);
+    return '';
+  });
+  const [amortYears, setAmortYears] = useState<string>(() => {
+    if (amortizationMonths != null && amortizationMonths > 0) return String(Math.floor(amortizationMonths / 12));
+    return '';
+  });
+  const [amortRemainder, setAmortRemainder] = useState<string>(() => {
+    if (amortizationMonths != null && amortizationMonths > 0) return String(amortizationMonths % 12);
+    return '';
+  });
+
+  // Sync local state when termMonths/amortizationMonths change externally (e.g. form reset)
+  useEffect(() => {
+    if (termMonths != null && termMonths > 0) {
+      setTermYears(String(Math.floor(termMonths / 12)));
+      setTermRemainder(String(termMonths % 12));
+    }
+  }, [termMonths]);
+
+  useEffect(() => {
+    if (amortizationMonths != null && amortizationMonths > 0) {
+      setAmortYears(String(Math.floor(amortizationMonths / 12)));
+      setAmortRemainder(String(amortizationMonths % 12));
+    }
+  }, [amortizationMonths]);
+
+  const updateTermMonths = (years: string, months: string) => {
+    const y = years === '' ? 0 : parseInt(years, 10);
+    const m = months === '' ? 0 : parseInt(months, 10);
+    if (isNaN(y) || isNaN(m)) return;
+    const total = y * 12 + m;
+    setValue('termMonths', total, { shouldValidate: true, shouldDirty: true });
+  };
+
+  const updateAmortizationMonths = (years: string, months: string) => {
+    const y = years === '' ? 0 : parseInt(years, 10);
+    const m = months === '' ? 0 : parseInt(months, 10);
+    if (isNaN(y) || isNaN(m)) return;
+    const total = y * 12 + m;
+    setValue('amortizationMonths', total > 0 ? total : undefined, { shouldValidate: true, shouldDirty: true });
+  };
+
+  const handleTermYearsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    if (val !== '' && (parseInt(val, 10) < 0 || parseInt(val, 10) > 99)) return;
+    setTermYears(val);
+    updateTermMonths(val, termRemainder);
+  };
+
+  const handleTermMonthsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    if (val !== '' && (parseInt(val, 10) < 0 || parseInt(val, 10) > 11)) return;
+    setTermRemainder(val);
+    updateTermMonths(termYears, val);
+  };
+
+  const handleAmortYearsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    if (val !== '' && (parseInt(val, 10) < 0 || parseInt(val, 10) > 99)) return;
+    setAmortYears(val);
+    updateAmortizationMonths(val, amortRemainder);
+  };
+
+  const handleAmortMonthsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    if (val !== '' && (parseInt(val, 10) < 0 || parseInt(val, 10) > 11)) return;
+    setAmortRemainder(val);
+    updateAmortizationMonths(amortYears, val);
+  };
+
   const calculateMortgagePreview = useCallback(async () => {
-    if (!openingBalance || !interestRate || !amortizationMonths || !mortgagePaymentFrequency || !paymentStartDate) {
+    if (isEditing || !openingBalance || !interestRate || !amortizationMonths || !mortgagePaymentFrequency || !paymentStartDate) {
       setMortgagePreview(null);
       return;
     }
@@ -104,7 +167,7 @@ export function MortgageFields({
     } finally {
       setIsLoadingPreview(false);
     }
-  }, [openingBalance, interestRate, amortizationMonths, mortgagePaymentFrequency, paymentStartDate, isCanadianMortgage, isVariableRate]);
+  }, [isEditing, openingBalance, interestRate, amortizationMonths, mortgagePaymentFrequency, paymentStartDate, isCanadianMortgage, isVariableRate]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -176,125 +239,166 @@ export function MortgageFields({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <Select
-          label="Term Length"
-          options={[
-            { value: '', label: 'Select term...' },
-            ...termOptions,
-          ]}
-          error={errors.termMonths?.message as string | undefined}
-          {...register('termMonths', { valueAsNumber: true })}
-        />
+      {/* Hidden inputs for form registration */}
+      <input type="hidden" {...register('termMonths', { valueAsNumber: true })} />
+      <input type="hidden" {...register('amortizationMonths', { valueAsNumber: true })} />
 
-        <Select
-          label="Amortization Period (required)"
-          options={[
-            { value: '', label: 'Select period...' },
-            ...amortizationOptions,
-          ]}
-          error={errors.amortizationMonths?.message as string | undefined}
-          {...register('amortizationMonths', { valueAsNumber: true })}
-        />
+      {/* Term Length - years + months inputs */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          Term Length
+        </label>
+        <div className="grid grid-cols-2 gap-4">
+          <Input
+            label="Years"
+            type="number"
+            min={0}
+            max={99}
+            value={termYears}
+            onChange={handleTermYearsChange}
+            error={errors.termMonths?.message as string | undefined}
+          />
+          <Input
+            label="Months"
+            type="number"
+            min={0}
+            max={11}
+            value={termRemainder}
+            onChange={handleTermMonthsChange}
+          />
+        </div>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          Leave at 0 years and 0 months for no term.
+        </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <Select
-          label="Payment Frequency (required)"
-          options={[
-            { value: '', label: 'Select frequency...' },
-            ...mortgagePaymentFrequencyOptions,
-          ]}
-          error={errors.mortgagePaymentFrequency?.message as string | undefined}
-          {...register('mortgagePaymentFrequency')}
-        />
-
-        <Input
-          label="First Payment Date (required)"
-          type="date"
-          error={errors.paymentStartDate?.message as string | undefined}
-          {...register('paymentStartDate')}
-        />
+      {/* Amortization Period - years + months inputs */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          Amortization Period (required)
+        </label>
+        <div className="grid grid-cols-2 gap-4">
+          <Input
+            label="Years"
+            type="number"
+            min={0}
+            max={99}
+            value={amortYears}
+            onChange={handleAmortYearsChange}
+            error={errors.amortizationMonths?.message as string | undefined}
+          />
+          <Input
+            label="Months"
+            type="number"
+            min={0}
+            max={11}
+            value={amortRemainder}
+            onChange={handleAmortMonthsChange}
+          />
+        </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <Select
-          label="Payment From Account (required)"
-          options={[
-            { value: '', label: 'Select account...' },
-            ...accounts
-              .slice()
-              .sort((a, b) => a.name.localeCompare(b.name))
-              .map(a => ({
-                value: a.id,
-                label: `${a.name} (${a.currencyCode})`,
-              })),
-          ]}
-          error={errors.sourceAccountId?.message as string | undefined}
-          {...register('sourceAccountId')}
-        />
+      {!isEditing && (
+        <>
+          <div className="grid grid-cols-2 gap-4">
+            <Select
+              label="Payment Frequency (required)"
+              options={[
+                { value: '', label: 'Select frequency...' },
+                ...mortgagePaymentFrequencyOptions,
+              ]}
+              error={errors.mortgagePaymentFrequency?.message as string | undefined}
+              {...register('mortgagePaymentFrequency')}
+            />
 
-        <Combobox
-          label="Interest Category"
-          placeholder="Select category..."
-          options={interestCategoryOptions}
-          value={selectedInterestCategoryId}
-          initialDisplayValue={initialInterestCategoryName}
-          onChange={handleInterestCategoryChange}
-          error={errors.interestCategoryId?.message as string | undefined}
-        />
-      </div>
-
-      {/* Mortgage Amortization Preview */}
-      {mortgagePreview && (
-        <div className="p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-          <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">
-            Amortization Preview
-          </h4>
-          <div className="grid grid-cols-2 gap-2 text-sm">
-            <div>
-              <span className="text-gray-500 dark:text-gray-400">Payment Amount:</span>{' '}
-              <span className="font-medium">{formatCurrency(mortgagePreview.paymentAmount, watchedCurrency)}</span>
-            </div>
-            <div>
-              <span className="text-gray-500 dark:text-gray-400">Effective Rate:</span>{' '}
-              <span className="font-medium">{mortgagePreview.effectiveAnnualRate.toFixed(2)}%</span>
-            </div>
-            <div>
-              <span className="text-gray-500 dark:text-gray-400">First Payment Principal:</span>{' '}
-              <span className="font-medium">{formatCurrency(mortgagePreview.principalPayment, watchedCurrency)}</span>
-            </div>
-            <div>
-              <span className="text-gray-500 dark:text-gray-400">First Payment Interest:</span>{' '}
-              <span className="font-medium">{formatCurrency(mortgagePreview.interestPayment, watchedCurrency)}</span>
-            </div>
-            <div>
-              <span className="text-gray-500 dark:text-gray-400">Total Payments:</span>{' '}
-              <span className="font-medium">
-                {mortgagePreview.totalPayments > 0 ? mortgagePreview.totalPayments : 'N/A'}
-              </span>
-            </div>
-            <div>
-              <span className="text-gray-500 dark:text-gray-400">Total Interest:</span>{' '}
-              <span className="font-medium">
-                {mortgagePreview.totalInterest > 0 ? formatCurrency(mortgagePreview.totalInterest, watchedCurrency) : 'N/A'}
-              </span>
-            </div>
-            <div className="col-span-2">
-              <span className="text-gray-500 dark:text-gray-400">Est. Payoff Date:</span>{' '}
-              <span className="font-medium">
-                {mortgagePreview.totalPayments > 0
-                  ? new Date(mortgagePreview.endDate).toLocaleDateString()
-                  : 'N/A'}
-              </span>
-            </div>
+            <Input
+              label="First Payment Date (required)"
+              type="date"
+              error={errors.paymentStartDate?.message as string | undefined}
+              {...register('paymentStartDate')}
+            />
           </div>
-        </div>
-      )}
-      {isLoadingPreview && (
-        <div className="text-sm text-gray-500 dark:text-gray-400">
-          Calculating preview...
-        </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <Select
+              label="Payment From Account (required)"
+              options={[
+                { value: '', label: 'Select account...' },
+                ...accounts
+                  .slice()
+                  .sort((a, b) => a.name.localeCompare(b.name))
+                  .map(a => ({
+                    value: a.id,
+                    label: `${a.name} (${a.currencyCode})`,
+                  })),
+              ]}
+              error={errors.sourceAccountId?.message as string | undefined}
+              {...register('sourceAccountId')}
+            />
+
+            <Combobox
+              label="Interest Category"
+              placeholder="Select category..."
+              options={interestCategoryOptions}
+              value={selectedInterestCategoryId}
+              initialDisplayValue={initialInterestCategoryName}
+              onChange={handleInterestCategoryChange}
+              error={errors.interestCategoryId?.message as string | undefined}
+            />
+          </div>
+
+          {/* Mortgage Amortization Preview */}
+          {mortgagePreview && (
+            <div className="p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+              <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">
+                Amortization Preview
+              </h4>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div>
+                  <span className="text-gray-500 dark:text-gray-400">Payment Amount:</span>{' '}
+                  <span className="font-medium">{formatCurrency(mortgagePreview.paymentAmount, watchedCurrency)}</span>
+                </div>
+                <div>
+                  <span className="text-gray-500 dark:text-gray-400">Effective Rate:</span>{' '}
+                  <span className="font-medium">{mortgagePreview.effectiveAnnualRate.toFixed(2)}%</span>
+                </div>
+                <div>
+                  <span className="text-gray-500 dark:text-gray-400">First Payment Principal:</span>{' '}
+                  <span className="font-medium">{formatCurrency(mortgagePreview.principalPayment, watchedCurrency)}</span>
+                </div>
+                <div>
+                  <span className="text-gray-500 dark:text-gray-400">First Payment Interest:</span>{' '}
+                  <span className="font-medium">{formatCurrency(mortgagePreview.interestPayment, watchedCurrency)}</span>
+                </div>
+                <div>
+                  <span className="text-gray-500 dark:text-gray-400">Total Payments:</span>{' '}
+                  <span className="font-medium">
+                    {mortgagePreview.totalPayments > 0 ? mortgagePreview.totalPayments : 'N/A'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-gray-500 dark:text-gray-400">Total Interest:</span>{' '}
+                  <span className="font-medium">
+                    {mortgagePreview.totalInterest > 0 ? formatCurrency(mortgagePreview.totalInterest, watchedCurrency) : 'N/A'}
+                  </span>
+                </div>
+                <div className="col-span-2">
+                  <span className="text-gray-500 dark:text-gray-400">Est. Payoff Date:</span>{' '}
+                  <span className="font-medium">
+                    {mortgagePreview.totalPayments > 0
+                      ? new Date(mortgagePreview.endDate).toLocaleDateString()
+                      : 'N/A'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+          {isLoadingPreview && (
+            <div className="text-sm text-gray-500 dark:text-gray-400">
+              Calculating preview...
+            </div>
+          )}
+        </>
       )}
     </div>
   );

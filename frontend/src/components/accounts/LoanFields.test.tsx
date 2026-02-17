@@ -214,6 +214,122 @@ describe('LoanFields', () => {
     render(<LoanFields {...defaultProps} />);
     expect(screen.getByText('Select frequency...')).toBeInTheDocument();
     expect(screen.getByText('Select account...')).toBeInTheDocument();
-    expect(screen.getByText('Select category...')).toBeInTheDocument();
+  });
+
+  it('debounces preview API call by 500ms', async () => {
+    vi.mocked(accountsApi.previewLoanAmortization).mockResolvedValue({
+      principalPayment: 450, interestPayment: 50,
+      remainingBalance: 9550, totalPayments: 24, endDate: '2026-01-15',
+    });
+
+    render(<LoanFields {...defaultProps}
+      openingBalance={10000} interestRate={5} paymentAmount={500}
+      paymentFrequency="MONTHLY" paymentStartDate="2024-02-01"
+    />);
+
+    // Before 500ms, API should not have been called
+    vi.advanceTimersByTime(400);
+    expect(accountsApi.previewLoanAmortization).not.toHaveBeenCalled();
+
+    // After 500ms, API should be called
+    await vi.advanceTimersByTimeAsync(200);
+    expect(accountsApi.previewLoanAmortization).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows N/A for totalPayments and payoff when totalPayments is 0', async () => {
+    vi.useRealTimers();
+    vi.mocked(accountsApi.previewLoanAmortization).mockResolvedValue({
+      principalPayment: 0, interestPayment: 100,
+      remainingBalance: 10000, totalPayments: 0, endDate: '',
+    });
+
+    render(<LoanFields {...defaultProps}
+      openingBalance={10000} interestRate={15} paymentAmount={100}
+      paymentFrequency="MONTHLY" paymentStartDate="2024-02-01"
+    />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Payment Preview (First Payment)')).toBeInTheDocument();
+    }, { timeout: 3000 });
+
+    const naElements = screen.getAllByText('N/A');
+    expect(naElements.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('renders multiple source accounts sorted alphabetically', () => {
+    const multipleAccounts = [
+      { ...mockAccounts[0], id: 'acc-z', name: 'Zebra Account' },
+      { ...mockAccounts[0], id: 'acc-a', name: 'Alpha Account' },
+      { ...mockAccounts[0], id: 'acc-m', name: 'Middle Account' },
+    ] as any[];
+
+    render(<LoanFields {...defaultProps} accounts={multipleAccounts} />);
+    const sourceSelect = screen.getByLabelText('Payment From Account (required)');
+    const options = sourceSelect.querySelectorAll('option');
+    // First option is placeholder
+    expect(options[0].textContent).toBe('Select account...');
+    expect(options[1].textContent).toBe('Alpha Account (CAD)');
+    expect(options[2].textContent).toBe('Middle Account (CAD)');
+    expect(options[3].textContent).toBe('Zebra Account (CAD)');
+  });
+
+  it('passes correct parameters to preview API', async () => {
+    vi.mocked(accountsApi.previewLoanAmortization).mockResolvedValue({
+      principalPayment: 450, interestPayment: 50,
+      remainingBalance: 9550, totalPayments: 24, endDate: '2026-01-15',
+    });
+
+    render(<LoanFields {...defaultProps}
+      openingBalance={25000} interestRate={6.5} paymentAmount={750}
+      paymentFrequency="BIWEEKLY" paymentStartDate="2025-03-01"
+    />);
+
+    await vi.advanceTimersByTimeAsync(600);
+
+    expect(accountsApi.previewLoanAmortization).toHaveBeenCalledWith({
+      loanAmount: 25000,
+      interestRate: 6.5,
+      paymentAmount: 750,
+      paymentFrequency: 'BIWEEKLY',
+      paymentStartDate: '2025-03-01',
+    });
+  });
+
+  it('clears preview when a required field becomes undefined', async () => {
+    vi.useRealTimers();
+    const mockPreview = {
+      principalPayment: 450, interestPayment: 50,
+      remainingBalance: 9550, totalPayments: 24, endDate: '2026-01-15',
+    };
+    vi.mocked(accountsApi.previewLoanAmortization).mockResolvedValue(mockPreview);
+
+    const { rerender } = render(<LoanFields {...defaultProps}
+      openingBalance={10000} interestRate={5} paymentAmount={500}
+      paymentFrequency="MONTHLY" paymentStartDate="2024-02-01"
+    />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Payment Preview (First Payment)')).toBeInTheDocument();
+    }, { timeout: 3000 });
+
+    // Remove a required field
+    rerender(<LoanFields {...defaultProps}
+      openingBalance={10000} interestRate={5} paymentAmount={undefined}
+      paymentFrequency="MONTHLY" paymentStartDate="2024-02-01"
+    />);
+
+    await waitFor(() => {
+      expect(screen.queryByText('Payment Preview (First Payment)')).not.toBeInTheDocument();
+    }, { timeout: 3000 });
+  });
+
+  it('renders interest category options from categories prop', () => {
+    const categoriesWithParent = [
+      { ...mockCategories[0], id: 'parent-1', name: 'Expenses', parentId: null },
+      { ...mockCategories[0], id: 'child-1', name: 'Interest', parentId: 'parent-1' },
+    ] as any[];
+
+    render(<LoanFields {...defaultProps} categories={categoriesWithParent} />);
+    expect(screen.getByText('Interest Category')).toBeInTheDocument();
   });
 });

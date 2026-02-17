@@ -87,3 +87,17 @@ export function getCategorySelectOptions(
 
   return [...result, ...categoryOptions];
 }
+
+/**
+ * Build a map of category ID to effective (inherited) color.
+ * Used by components that display categories from DB joins
+ * (e.g., transaction lists, payee lists) which don't include
+ * the computed effectiveColor field.
+ */
+export function buildCategoryColorMap(
+  categories: Category[],
+): Map<string, string | null> {
+  return new Map(
+    categories.map((c) => [c.id, c.effectiveColor ?? c.color]),
+  );
+}

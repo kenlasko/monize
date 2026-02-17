@@ -32,8 +32,7 @@ interface CategoryFormProps {
   submitRef?: MutableRefObject<(() => void) | null>;
 }
 
-const colourOptions = [
-  { value: '', label: 'No colour' },
+const colourPalette = [
   { value: '#ef4444', label: 'Red' },
   { value: '#f97316', label: 'Orange' },
   { value: '#eab308', label: 'Yellow' },
@@ -172,25 +171,50 @@ export function CategoryForm({ category, categories, onSubmit, onCancel, onDirty
         </div>
 
         <div>
+          <input type="hidden" {...register('color')} />
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Colour</label>
-          <div className="flex items-center gap-2">
-            <select
-              className="block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:focus:border-blue-400 dark:focus:ring-blue-400 font-sans"
-              {...register('color')}
+          <div className="flex flex-wrap gap-2 items-center">
+            <button
+              type="button"
+              onClick={() => setValue('color', '', { shouldDirty: true })}
+              className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all ${
+                !watchedColor
+                  ? 'border-blue-500 dark:border-blue-400 ring-2 ring-blue-200 dark:ring-blue-800'
+                  : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
+              }`}
+              title={hasParent ? 'Inherit from parent' : 'No colour'}
+              style={
+                !watchedColor && parentCategory?.effectiveColor
+                  ? { backgroundColor: parentCategory.effectiveColor, opacity: 0.4 }
+                  : undefined
+              }
             >
-              {colourOptions.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-            {watchedColor && (
-              <div
-                className="w-8 h-8 rounded-full border border-gray-300 dark:border-gray-600 flex-shrink-0"
-                style={{ backgroundColor: watchedColor }}
+              {!watchedColor && !parentCategory?.effectiveColor && (
+                <svg className="w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              )}
+            </button>
+            {colourPalette.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setValue('color', opt.value, { shouldDirty: true })}
+                className={`w-8 h-8 rounded-full border-2 transition-all ${
+                  watchedColor === opt.value
+                    ? 'border-blue-500 dark:border-blue-400 ring-2 ring-blue-200 dark:ring-blue-800 scale-110'
+                    : 'border-transparent hover:border-gray-400 dark:hover:border-gray-500 hover:scale-110'
+                }`}
+                style={{ backgroundColor: opt.value }}
+                title={opt.label}
               />
-            )}
+            ))}
           </div>
+          {hasParent && !watchedColor && parentCategory?.effectiveColor && (
+            <p className="mt-1 text-xs text-gray-500">
+              Colour inherited from parent ({parentCategory.name})
+            </p>
+          )}
         </div>
       </div>
 

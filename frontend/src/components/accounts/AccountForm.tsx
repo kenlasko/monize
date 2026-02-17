@@ -158,6 +158,11 @@ export function AccountForm({ account, onSubmit, onCancel, onDirtyChange, submit
           interestCategoryId: account.interestCategoryId || undefined,
           assetCategoryId: account.assetCategoryId || undefined,
           dateAcquired: account.dateAcquired?.split('T')[0] || undefined,
+          isCanadianMortgage: account.isCanadianMortgage || false,
+          isVariableRate: account.isVariableRate || false,
+          termMonths: account.termMonths || undefined,
+          amortizationMonths: account.amortizationMonths || undefined,
+          mortgagePaymentFrequency: (account as any).mortgagePaymentFrequency || undefined,
         }
       : {
           currencyCode: defaultCurrency,
@@ -196,6 +201,7 @@ export function AccountForm({ account, onSubmit, onCancel, onDirtyChange, submit
   const isMortgageAccount = watchedAccountType === 'MORTGAGE';
   const watchedIsCanadianMortgage = watch('isCanadianMortgage');
   const watchedIsVariableRate = watch('isVariableRate');
+  const watchedTermMonths = watch('termMonths');
   const watchedAmortizationMonths = watch('amortizationMonths');
   const watchedMortgagePaymentFrequency = watch('mortgagePaymentFrequency');
 
@@ -235,7 +241,7 @@ export function AccountForm({ account, onSubmit, onCancel, onDirtyChange, submit
   // For assets: always (to allow editing the value change category)
   useEffect(() => {
     const shouldLoadForLoan = isLoanAccount && !account;
-    const shouldLoadForMortgage = isMortgageAccount && !account;
+    const shouldLoadForMortgage = isMortgageAccount;
     const shouldLoadForAsset = isAssetAccount;
 
     if (shouldLoadForLoan || shouldLoadForMortgage || shouldLoadForAsset) {
@@ -495,7 +501,7 @@ export function AccountForm({ account, onSubmit, onCancel, onDirtyChange, submit
         />
       )}
 
-      {isMortgageAccount && !account && (
+      {isMortgageAccount && (
         <MortgageFields
           watchedCurrency={watchedCurrency}
           openingBalance={watchedOpeningBalance}
@@ -503,6 +509,7 @@ export function AccountForm({ account, onSubmit, onCancel, onDirtyChange, submit
           paymentStartDate={watchedPaymentStartDate}
           isCanadianMortgage={watchedIsCanadianMortgage}
           isVariableRate={watchedIsVariableRate}
+          termMonths={watchedTermMonths}
           amortizationMonths={watchedAmortizationMonths}
           mortgagePaymentFrequency={watchedMortgagePaymentFrequency}
           setValue={setValue}
@@ -511,6 +518,7 @@ export function AccountForm({ account, onSubmit, onCancel, onDirtyChange, submit
           accounts={accounts}
           categories={categories}
           formatCurrency={formatCurrency}
+          isEditing={!!account}
           selectedInterestCategoryId={selectedInterestCategoryId}
           handleInterestCategoryChange={handleInterestCategoryChange}
         />

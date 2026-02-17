@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildCategoryTree, getCategorySelectOptions } from './categoryUtils';
+import { buildCategoryTree, getCategorySelectOptions, buildCategoryColorMap } from './categoryUtils';
 import { Category } from '@/types/category';
 
 function makeCategory(overrides: Partial<Category> & { id: string; name: string }): Category {
@@ -112,5 +112,48 @@ describe('getCategorySelectOptions', () => {
 
   it('returns empty array for empty categories and no special options', () => {
     expect(getCategorySelectOptions([])).toEqual([]);
+  });
+});
+
+describe('buildCategoryColorMap', () => {
+  it('returns empty map for empty input', () => {
+    const result = buildCategoryColorMap([]);
+    expect(result.size).toBe(0);
+  });
+
+  it('maps category id to effectiveColor when available', () => {
+    const cat = makeCategory({ id: 'c1', name: 'Food', color: null, effectiveColor: '#ef4444' });
+    const result = buildCategoryColorMap([cat]);
+    expect(result.get('c1')).toBe('#ef4444');
+  });
+
+  it('falls back to color when effectiveColor is null', () => {
+    const cat = makeCategory({ id: 'c1', name: 'Food', color: '#3b82f6', effectiveColor: null });
+    const result = buildCategoryColorMap([cat]);
+    expect(result.get('c1')).toBe('#3b82f6');
+  });
+
+  it('returns null when both color and effectiveColor are null', () => {
+    const cat = makeCategory({ id: 'c1', name: 'Food', color: null, effectiveColor: null });
+    const result = buildCategoryColorMap([cat]);
+    expect(result.get('c1')).toBeNull();
+  });
+
+  it('prefers effectiveColor over color', () => {
+    const cat = makeCategory({ id: 'c1', name: 'Food', color: '#ef4444', effectiveColor: '#3b82f6' });
+    const result = buildCategoryColorMap([cat]);
+    expect(result.get('c1')).toBe('#3b82f6');
+  });
+
+  it('builds map for multiple categories', () => {
+    const cats = [
+      makeCategory({ id: 'c1', name: 'Food', color: '#ef4444', effectiveColor: '#ef4444' }),
+      makeCategory({ id: 'c2', name: 'Transport', color: null, effectiveColor: '#3b82f6' }),
+      makeCategory({ id: 'c3', name: 'Other', color: null, effectiveColor: null }),
+    ];
+    const result = buildCategoryColorMap(cats);
+    expect(result.get('c1')).toBe('#ef4444');
+    expect(result.get('c2')).toBe('#3b82f6');
+    expect(result.get('c3')).toBeNull();
   });
 });
