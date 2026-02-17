@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@/test/render';
+import { render, screen, fireEvent, waitFor } from '@/test/render';
 import { DeleteCategoryDialog } from './DeleteCategoryDialog';
 
 vi.mock('@/lib/categories', () => ({
@@ -28,11 +28,13 @@ describe('DeleteCategoryDialog', () => {
     expect(container.innerHTML).toBe('');
   });
 
-  it('renders dialog with category name', () => {
+  it('renders dialog with category name', async () => {
     render(
       <DeleteCategoryDialog isOpen={true} category={categories[0]} categories={categories} onConfirm={onConfirm} onCancel={onCancel} />
     );
-    expect(screen.getByText('Delete "Food"?')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Delete "Food"?')).toBeInTheDocument();
+    });
     expect(screen.getByText('This action cannot be undone.')).toBeInTheDocument();
   });
 

@@ -71,9 +71,11 @@ describe('BulkUpdateModal', () => {
     mockGetAllPayees.mockResolvedValue([]);
   });
 
-  it('renders title and selection count', () => {
+  it('renders title and selection count', async () => {
     render(<BulkUpdateModal {...defaultProps} />);
-    expect(screen.getByText('Bulk Update Transactions')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Bulk Update Transactions')).toBeInTheDocument();
+    });
     expect(screen.getByText(/Update 5 selected transactions/)).toBeInTheDocument();
   });
 
@@ -85,48 +87,59 @@ describe('BulkUpdateModal', () => {
     });
   });
 
-  it('shows all four toggle fields', () => {
+  it('shows all four toggle fields', async () => {
     render(<BulkUpdateModal {...defaultProps} />);
-    expect(screen.getByText('Payee')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Payee')).toBeInTheDocument();
+    });
     expect(screen.getByText('Category')).toBeInTheDocument();
     expect(screen.getByText('Description')).toBeInTheDocument();
     expect(screen.getByText('Status')).toBeInTheDocument();
   });
 
-  it('enables field when checkbox clicked', () => {
+  it('enables field when checkbox clicked', async () => {
     render(<BulkUpdateModal {...defaultProps} />);
     // All checkboxes start unchecked
+    await waitFor(() => {
+      expect(screen.getAllByRole('checkbox')).toHaveLength(4);
+    });
     const checkboxes = screen.getAllByRole('checkbox');
-    expect(checkboxes).toHaveLength(4);
     // Click the first checkbox (Payee)
     fireEvent.click(checkboxes[0]);
     // Should now show the payee combobox input
     expect(screen.getByPlaceholderText('Select or type payee name...')).toBeInTheDocument();
   });
 
-  it('disables submit when no fields enabled', () => {
+  it('disables submit when no fields enabled', async () => {
     render(<BulkUpdateModal {...defaultProps} />);
     // The form actions wrapper has opacity-50 and pointer-events-none when nothing enabled
+    await waitFor(() => {
+      expect(screen.getByText(/Update 5 Transaction/)).toBeInTheDocument();
+    });
     const submitButton = screen.getByText(/Update 5 Transaction/);
     const wrapper = submitButton.parentElement;
     expect(wrapper?.className).toContain('opacity-50');
     expect(wrapper?.className).toContain('pointer-events-none');
   });
 
-  it('shows transfer note when payee enabled', () => {
+  it('shows transfer note when payee enabled', async () => {
     render(<BulkUpdateModal {...defaultProps} />);
     // Initially no transfer note
-    expect(screen.queryByText(/Transfer transactions will be skipped/)).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.queryByText(/Transfer transactions will be skipped/)).not.toBeInTheDocument();
+    });
     // Enable payee
     const checkboxes = screen.getAllByRole('checkbox');
     fireEvent.click(checkboxes[0]); // Payee checkbox
     expect(screen.getByText(/Transfer transactions will be skipped/)).toBeInTheDocument();
   });
 
-  it('shows split note when category enabled', () => {
+  it('shows split note when category enabled', async () => {
     render(<BulkUpdateModal {...defaultProps} />);
     // Initially no split note
-    expect(screen.queryByText(/Split transactions will be skipped/)).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.queryByText(/Split transactions will be skipped/)).not.toBeInTheDocument();
+    });
     // Enable category
     const checkboxes = screen.getAllByRole('checkbox');
     fireEvent.click(checkboxes[1]); // Category checkbox
@@ -154,10 +167,13 @@ describe('BulkUpdateModal', () => {
     });
   });
 
-  it('resets form when modal closes', () => {
+  it('resets form when modal closes', async () => {
     const { rerender } = render(<BulkUpdateModal {...defaultProps} isOpen={true} />);
 
     // Enable a field
+    await waitFor(() => {
+      expect(screen.getAllByRole('checkbox')).toHaveLength(4);
+    });
     const checkboxes = screen.getAllByRole('checkbox');
     fireEvent.click(checkboxes[0]); // Enable payee
 

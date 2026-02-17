@@ -140,31 +140,37 @@ describe('AccountForm', () => {
     vi.clearAllMocks();
   });
 
-  it('renders account name input', () => {
+  it('renders account name input', async () => {
     render(
       <AccountForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} />
     );
 
-    expect(screen.getByText('Account Name')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Account Name')).toBeInTheDocument();
+    });
   });
 
-  it('renders account type select with options', () => {
+  it('renders account type select with options', async () => {
     render(
       <AccountForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} />
     );
 
-    expect(screen.getByText('Account Type')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Account Type')).toBeInTheDocument();
+    });
   });
 
-  it('shows "Create Account" button for new account', () => {
+  it('shows "Create Account" button for new account', async () => {
     render(
       <AccountForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} />
     );
 
-    expect(screen.getByRole('button', { name: /Create Account/i })).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Create Account/i })).toBeInTheDocument();
+    });
   });
 
-  it('shows "Update Account" button when editing', () => {
+  it('shows "Update Account" button when editing', async () => {
     const existingAccount = createExistingAccount();
 
     render(
@@ -175,16 +181,20 @@ describe('AccountForm', () => {
       />
     );
 
-    expect(screen.getByRole('button', { name: /Update Account/i })).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Update Account/i })).toBeInTheDocument();
+    });
   });
 
-  it('calls onCancel when Cancel button is clicked', () => {
+  it('calls onCancel when Cancel button is clicked', async () => {
     render(
       <AccountForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} />
     );
 
     fireEvent.click(screen.getByRole('button', { name: /Cancel/i }));
-    expect(mockOnCancel).toHaveBeenCalledTimes(1);
+    await waitFor(() => {
+      expect(mockOnCancel).toHaveBeenCalledTimes(1);
+    });
   });
 
   it('shows Investment pair checkbox when INVESTMENT type is selected (new account)', async () => {
@@ -214,15 +224,17 @@ describe('AccountForm', () => {
     });
   });
 
-  it('shows favourite toggle', () => {
+  it('shows favourite toggle', async () => {
     render(
       <AccountForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} />
     );
 
-    expect(screen.getByText('Add to favourites')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Add to favourites')).toBeInTheDocument();
+    });
   });
 
-  it('toggles favourite when star button is clicked', () => {
+  it('toggles favourite when star button is clicked', async () => {
     render(
       <AccountForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} />
     );
@@ -230,10 +242,12 @@ describe('AccountForm', () => {
     const favButton = screen.getByTitle('Add to favourites');
     fireEvent.click(favButton);
 
-    expect(screen.getByText('Favourite')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Favourite')).toBeInTheDocument();
+    });
   });
 
-  it('shows Import QIF button only when editing an existing account', () => {
+  it('shows Import QIF button only when editing an existing account', async () => {
     const existingAccount = createExistingAccount();
 
     render(
@@ -244,25 +258,31 @@ describe('AccountForm', () => {
       />
     );
 
-    expect(screen.getByText('Import QIF')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Import QIF')).toBeInTheDocument();
+    });
   });
 
-  it('does not show Import QIF button for new accounts', () => {
+  it('does not show Import QIF button for new accounts', async () => {
     render(
       <AccountForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} />
     );
 
-    expect(screen.queryByText('Import QIF')).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.queryByText('Import QIF')).not.toBeInTheDocument();
+    });
   });
 
   // --- New tests for improved coverage ---
 
-  it('renders all standard form fields for a new account', () => {
+  it('renders all standard form fields for a new account', async () => {
     render(
       <AccountForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} />
     );
 
-    expect(screen.getByText('Account Name')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Account Name')).toBeInTheDocument();
+    });
     expect(screen.getByText('Account Type')).toBeInTheDocument();
     expect(screen.getByText('Currency')).toBeInTheDocument();
     expect(screen.getByText('Opening Balance')).toBeInTheDocument();
@@ -273,10 +293,14 @@ describe('AccountForm', () => {
     expect(screen.getByText('Description (optional)')).toBeInTheDocument();
   });
 
-  it('renders all account type options in the select', () => {
+  it('renders all account type options in the select', async () => {
     render(
       <AccountForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} />
     );
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Account Type')).toBeInTheDocument();
+    });
 
     const typeSelect = screen.getByLabelText('Account Type') as HTMLSelectElement;
     const options = Array.from(typeSelect.querySelectorAll('option'));
@@ -294,7 +318,7 @@ describe('AccountForm', () => {
     expect(optionValues).toContain('OTHER');
   });
 
-  it('populates form values when editing an existing account', () => {
+  it('populates form values when editing an existing account', async () => {
     const existingAccount = createExistingAccount({
       name: 'My Savings',
       accountType: 'SAVINGS',
@@ -312,13 +336,15 @@ describe('AccountForm', () => {
       />
     );
 
-    expect(screen.getByDisplayValue('My Savings')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('My Savings')).toBeInTheDocument();
+    });
     expect(screen.getByDisplayValue('Test description')).toBeInTheDocument();
     expect(screen.getByDisplayValue('RBC')).toBeInTheDocument();
     expect(screen.getByDisplayValue('1234567')).toBeInTheDocument();
   });
 
-  it('does not show Investment pair checkbox when editing an existing INVESTMENT account', () => {
+  it('does not show Investment pair checkbox when editing an existing INVESTMENT account', async () => {
     const investmentAccount = createExistingAccount({
       accountType: 'INVESTMENT',
     });
@@ -331,7 +357,9 @@ describe('AccountForm', () => {
       />
     );
 
-    expect(screen.queryByText(/Create as Cash \+ Brokerage pair/i)).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.queryByText(/Create as Cash \+ Brokerage pair/i)).not.toBeInTheDocument();
+    });
   });
 
   it('shows loan-specific label for opening balance when LOAN selected', async () => {
@@ -441,7 +469,7 @@ describe('AccountForm', () => {
     });
   });
 
-  it('does not show loan fields when editing existing LOAN account', () => {
+  it('does not show loan fields when editing existing LOAN account', async () => {
     const loanAccount = createExistingAccount({
       accountType: 'LOAN',
       interestRate: 5.5,
@@ -457,7 +485,9 @@ describe('AccountForm', () => {
     );
 
     // Loan payment details are only shown for new accounts
-    expect(screen.queryByText('Loan Payment Details')).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.queryByText('Loan Payment Details')).not.toBeInTheDocument();
+    });
   });
 
   it('shows mortgage fields when MORTGAGE type is selected for a new account', async () => {
@@ -473,7 +503,7 @@ describe('AccountForm', () => {
     });
   });
 
-  it('shows mortgage fields in edit mode but hides payment fields', () => {
+  it('shows mortgage fields in edit mode but hides payment fields', async () => {
     const mortgageAccount = createExistingAccount({
       accountType: 'MORTGAGE',
       interestRate: 3.5,
@@ -491,7 +521,9 @@ describe('AccountForm', () => {
     );
 
     // Mortgage section should be shown with term/amortization fields
-    expect(screen.getByText('Mortgage Details')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Mortgage Details')).toBeInTheDocument();
+    });
     expect(screen.getByText('Term Length')).toBeInTheDocument();
     expect(screen.getByText('Amortization Period (required)')).toBeInTheDocument();
     expect(screen.getByText('Canadian Mortgage')).toBeInTheDocument();
@@ -513,7 +545,7 @@ describe('AccountForm', () => {
     });
   });
 
-  it('toggles favourite star from on to off', () => {
+  it('toggles favourite star from on to off', async () => {
     const favAccount = createExistingAccount({ isFavourite: true });
 
     render(
@@ -524,12 +556,16 @@ describe('AccountForm', () => {
       />
     );
 
-    expect(screen.getByText('Favourite')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Favourite')).toBeInTheDocument();
+    });
 
     const favButton = screen.getByTitle('Remove from favourites');
     fireEvent.click(favButton);
 
-    expect(screen.getByText('Add to favourites')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Add to favourites')).toBeInTheDocument();
+    });
   });
 
   it('loads currencies and renders currency dropdown options', async () => {
@@ -626,7 +662,7 @@ describe('AccountForm', () => {
     });
   });
 
-  it('shows standard fields when SAVINGS type is selected', () => {
+  it('shows standard fields when SAVINGS type is selected', async () => {
     render(
       <AccountForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} />
     );
@@ -635,12 +671,14 @@ describe('AccountForm', () => {
     fireEvent.change(typeSelect, { target: { value: 'SAVINGS' } });
 
     // Standard fields should still be present
-    expect(screen.getByText('Opening Balance')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Opening Balance')).toBeInTheDocument();
+    });
     expect(screen.getByText('Credit Limit (optional)')).toBeInTheDocument();
     expect(screen.getByText('Interest Rate % (optional)')).toBeInTheDocument();
   });
 
-  it('shows standard fields when CREDIT_CARD type is selected', () => {
+  it('shows standard fields when CREDIT_CARD type is selected', async () => {
     render(
       <AccountForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} />
     );
@@ -648,7 +686,9 @@ describe('AccountForm', () => {
     const typeSelect = screen.getByLabelText('Account Type') as HTMLSelectElement;
     fireEvent.change(typeSelect, { target: { value: 'CREDIT_CARD' } });
 
-    expect(screen.getByText('Opening Balance')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Opening Balance')).toBeInTheDocument();
+    });
     expect(screen.getByText('Credit Limit (optional)')).toBeInTheDocument();
     expect(screen.getByText('Interest Rate % (optional)')).toBeInTheDocument();
   });
@@ -673,7 +713,7 @@ describe('AccountForm', () => {
     });
   });
 
-  it('populates existing account values including credit card fields', () => {
+  it('populates existing account values including credit card fields', async () => {
     const ccAccount = createExistingAccount({
       accountType: 'CREDIT_CARD',
       creditLimit: 10000,
@@ -688,7 +728,9 @@ describe('AccountForm', () => {
       />
     );
 
-    expect(screen.getByDisplayValue('19.99')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('19.99')).toBeInTheDocument();
+    });
   });
 
   it('switches from one type to another correctly', async () => {

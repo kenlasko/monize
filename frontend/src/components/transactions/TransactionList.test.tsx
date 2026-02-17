@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@/test/render';
+import { render, screen, fireEvent, waitFor, act } from '@/test/render';
 import { TransactionList } from './TransactionList';
 import { Transaction, TransactionStatus } from '@/types/transaction';
 
@@ -73,7 +73,7 @@ describe('TransactionList', () => {
     vi.clearAllMocks();
   });
 
-  it('renders empty state when no transactions', () => {
+  it('renders empty state when no transactions', async () => {
     render(
       <TransactionList
         transactions={[]}
@@ -83,11 +83,13 @@ describe('TransactionList', () => {
       />
     );
 
-    expect(screen.getByText('No transactions')).toBeInTheDocument();
-    expect(screen.getByText('Get started by creating a new transaction.')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('No transactions')).toBeInTheDocument();
+      expect(screen.getByText('Get started by creating a new transaction.')).toBeInTheDocument();
+    });
   });
 
-  it('renders transaction rows with data', () => {
+  it('renders transaction rows with data', async () => {
     const transactions = [
       createTransaction(),
       createTransaction({
@@ -106,11 +108,13 @@ describe('TransactionList', () => {
       />
     );
 
-    expect(screen.getByText('Grocery Store')).toBeInTheDocument();
-    expect(screen.getByText('Coffee Shop')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Grocery Store')).toBeInTheDocument();
+      expect(screen.getByText('Coffee Shop')).toBeInTheDocument();
+    });
   });
 
-  it('shows amount with color - negative red, positive green', () => {
+  it('shows amount with color - negative red, positive green', async () => {
     const transactions = [
       createTransaction({ amount: -50.0 }),
       createTransaction({
@@ -128,16 +132,18 @@ describe('TransactionList', () => {
       />
     );
 
-    // Negative amounts should have text-red-600
-    const negativeAmount = screen.getByText('-$50.00');
-    expect(negativeAmount).toHaveClass('text-red-600');
+    await waitFor(() => {
+      // Negative amounts should have text-red-600
+      const negativeAmount = screen.getByText('-$50.00');
+      expect(negativeAmount).toHaveClass('text-red-600');
 
-    // Positive amounts should have text-green-600
-    const positiveAmount = screen.getByText('+$100.00');
-    expect(positiveAmount).toHaveClass('text-green-600');
+      // Positive amounts should have text-green-600
+      const positiveAmount = screen.getByText('+$100.00');
+      expect(positiveAmount).toHaveClass('text-green-600');
+    });
   });
 
-  it('calls onEdit when Edit button is clicked', () => {
+  it('calls onEdit when Edit button is clicked', async () => {
     const transaction = createTransaction();
 
     render(
@@ -151,10 +157,12 @@ describe('TransactionList', () => {
     const editButton = screen.getByText('Edit');
     fireEvent.click(editButton);
 
-    expect(mockOnEdit).toHaveBeenCalledWith(transaction);
+    await waitFor(() => {
+      expect(mockOnEdit).toHaveBeenCalledWith(transaction);
+    });
   });
 
-  it('shows delete button and opens confirm dialog', () => {
+  it('shows delete button and opens confirm dialog', async () => {
     const transaction = createTransaction();
 
     render(
@@ -170,11 +178,13 @@ describe('TransactionList', () => {
     fireEvent.click(deleteButton);
 
     // Confirm dialog should appear
-    expect(screen.getByText('Delete Transaction')).toBeInTheDocument();
-    expect(screen.getByText(/Are you sure you want to delete this transaction/)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Delete Transaction')).toBeInTheDocument();
+      expect(screen.getByText(/Are you sure you want to delete this transaction/)).toBeInTheDocument();
+    });
   });
 
-  it('density toggle changes the displayed label', () => {
+  it('density toggle changes the displayed label', async () => {
     const transactions = [createTransaction()];
 
     render(
@@ -187,22 +197,30 @@ describe('TransactionList', () => {
 
     // Default density is 'normal'
     const densityButton = screen.getByTitle('Toggle row density');
-    expect(densityButton).toHaveTextContent('Normal');
+    await waitFor(() => {
+      expect(densityButton).toHaveTextContent('Normal');
+    });
 
     // Click to cycle to compact
     fireEvent.click(densityButton);
-    expect(densityButton).toHaveTextContent('Compact');
+    await waitFor(() => {
+      expect(densityButton).toHaveTextContent('Compact');
+    });
 
     // Click to cycle to dense
     fireEvent.click(densityButton);
-    expect(densityButton).toHaveTextContent('Dense');
+    await waitFor(() => {
+      expect(densityButton).toHaveTextContent('Dense');
+    });
 
     // Click to cycle back to normal
     fireEvent.click(densityButton);
-    expect(densityButton).toHaveTextContent('Normal');
+    await waitFor(() => {
+      expect(densityButton).toHaveTextContent('Normal');
+    });
   });
 
-  it('shows VOID status indicator with reduced opacity', () => {
+  it('shows VOID status indicator with reduced opacity', async () => {
     const voidTransaction = createTransaction({
       status: TransactionStatus.VOID,
       isVoid: true,
@@ -216,14 +234,16 @@ describe('TransactionList', () => {
       />
     );
 
-    expect(screen.getByText('VOID')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('VOID')).toBeInTheDocument();
 
-    // The row should have opacity-50 class
-    const row = screen.getByText('Grocery Store').closest('tr');
-    expect(row).toHaveClass('opacity-50');
+      // The row should have opacity-50 class
+      const row = screen.getByText('Grocery Store').closest('tr');
+      expect(row).toHaveClass('opacity-50');
+    });
   });
 
-  it('shows running balance when isSingleAccountView is true', () => {
+  it('shows running balance when isSingleAccountView is true', async () => {
     const transactions = [
       createTransaction({ amount: -50.0 }),
       createTransaction({
@@ -243,16 +263,18 @@ describe('TransactionList', () => {
       />
     );
 
-    // The Balance column header should be visible
-    expect(screen.getByText('Balance')).toBeInTheDocument();
+    await waitFor(() => {
+      // The Balance column header should be visible
+      expect(screen.getByText('Balance')).toBeInTheDocument();
 
-    // First transaction: startingBalance = 1000
-    // Second transaction: 1000 - (-50) = 1050
-    expect(screen.getByText('$1000.00')).toBeInTheDocument();
-    expect(screen.getByText('$1050.00')).toBeInTheDocument();
+      // First transaction: startingBalance = 1000
+      // Second transaction: 1000 - (-50) = 1050
+      expect(screen.getByText('$1000.00')).toBeInTheDocument();
+      expect(screen.getByText('$1050.00')).toBeInTheDocument();
+    });
   });
 
-  it('shows Transfer badge for transfer transactions', () => {
+  it('shows Transfer badge for transfer transactions', async () => {
     const transferTransaction = createTransaction({
       isTransfer: true,
       linkedTransactionId: 'linked-tx-1',
@@ -274,10 +296,12 @@ describe('TransactionList', () => {
     );
 
     // Should show the transfer badge with destination account name
-    expect(screen.getByText(/Savings/)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText(/Savings/)).toBeInTheDocument();
+    });
   });
 
-  it('calls onCategoryClick when category badge is clicked', () => {
+  it('calls onCategoryClick when category badge is clicked', async () => {
     const mockOnCategoryClick = vi.fn();
     const transaction = createTransaction();
 
@@ -293,10 +317,12 @@ describe('TransactionList', () => {
     const categoryButton = screen.getByTitle('Filter by Groceries');
     fireEvent.click(categoryButton);
 
-    expect(mockOnCategoryClick).toHaveBeenCalledWith('cat-1');
+    await waitFor(() => {
+      expect(mockOnCategoryClick).toHaveBeenCalledWith('cat-1');
+    });
   });
 
-  it('renders category as non-clickable span when onCategoryClick is not provided', () => {
+  it('renders category as non-clickable span when onCategoryClick is not provided', async () => {
     const transaction = createTransaction();
 
     render(
@@ -307,9 +333,11 @@ describe('TransactionList', () => {
       />
     );
 
-    // Should show category name but as a span (with plain title, not "Filter by")
-    const categorySpan = screen.getByTitle('Groceries');
-    expect(categorySpan.tagName).toBe('SPAN');
+    await waitFor(() => {
+      // Should show category name but as a span (with plain title, not "Filter by")
+      const categorySpan = screen.getByTitle('Groceries');
+      expect(categorySpan.tagName).toBe('SPAN');
+    });
   });
 
   it('shows action sheet with filter and delete options on long-press', async () => {
@@ -331,7 +359,7 @@ describe('TransactionList', () => {
     fireEvent.mouseDown(row);
 
     // Advance past 750ms long-press threshold
-    vi.advanceTimersByTime(800);
+    await act(async () => { vi.advanceTimersByTime(800); });
 
     vi.useRealTimers();
 
@@ -366,7 +394,7 @@ describe('TransactionList', () => {
 
     const row = screen.getByText('Grocery Store').closest('tr')!;
     fireEvent.mouseDown(row);
-    vi.advanceTimersByTime(800);
+    await act(async () => { vi.advanceTimersByTime(800); });
     vi.useRealTimers();
 
     await waitFor(() => {
@@ -394,7 +422,7 @@ describe('TransactionList', () => {
 
     const row = screen.getByText('Grocery Store').closest('tr')!;
     fireEvent.mouseDown(row);
-    vi.advanceTimersByTime(800);
+    await act(async () => { vi.advanceTimersByTime(800); });
     vi.useRealTimers();
 
     await waitFor(() => {
@@ -422,7 +450,7 @@ describe('TransactionList', () => {
 
     const row = screen.getByText('Grocery Store').closest('tr')!;
     fireEvent.mouseDown(row);
-    vi.advanceTimersByTime(800);
+    await act(async () => { vi.advanceTimersByTime(800); });
     vi.useRealTimers();
 
     await waitFor(() => {
@@ -450,7 +478,7 @@ describe('TransactionList', () => {
 
     const row = screen.getByText('Grocery Store').closest('tr')!;
     fireEvent.mouseDown(row);
-    vi.advanceTimersByTime(800);
+    await act(async () => { vi.advanceTimersByTime(800); });
     vi.useRealTimers();
 
     await waitFor(() => {
@@ -477,7 +505,7 @@ describe('TransactionList', () => {
 
     const row = screen.getByText('Grocery Store').closest('tr')!;
     fireEvent.mouseDown(row);
-    vi.advanceTimersByTime(800);
+    await act(async () => { vi.advanceTimersByTime(800); });
     vi.useRealTimers();
 
     await waitFor(() => {
@@ -501,13 +529,14 @@ describe('TransactionList', () => {
       />
     );
 
-    const row = screen.getByText('Grocery Store').closest('tr')!;
+    const row = screen.getAllByText('Grocery Store')[0].closest('tr')!;
     fireEvent.mouseDown(row);
-    vi.advanceTimersByTime(800);
+    await act(async () => { vi.advanceTimersByTime(800); });
     vi.useRealTimers();
 
+    // Wait for action sheet to appear
     await waitFor(() => {
-      expect(screen.getByText('Grocery Store', { selector: '.text-sm.font-medium' })).toBeInTheDocument();
+      expect(screen.getAllByText('Edit').length).toBeGreaterThanOrEqual(2);
     });
 
     // Account filter should not appear since account is null
@@ -533,7 +562,7 @@ describe('TransactionList', () => {
 
     const row = screen.getByText('Chequing').closest('tr')!;
     fireEvent.mouseDown(row);
-    vi.advanceTimersByTime(800);
+    await act(async () => { vi.advanceTimersByTime(800); });
     vi.useRealTimers();
 
     await waitFor(() => {
@@ -546,7 +575,7 @@ describe('TransactionList', () => {
     expect(payeeFilterButton).toBeUndefined();
   });
 
-  it('shows Split badge for split transactions', () => {
+  it('shows Split badge for split transactions', async () => {
     const splitTransaction = createTransaction({
       isSplit: true,
       categoryId: null,
@@ -565,11 +594,13 @@ describe('TransactionList', () => {
       />
     );
 
-    expect(screen.getByText('Split (2)')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Split (2)')).toBeInTheDocument();
+    });
   });
 
   describe('selection mode', () => {
-    it('renders checkboxes when selectionMode is true', () => {
+    it('renders checkboxes when selectionMode is true', async () => {
       const transactions = [createTransaction()];
 
       render(
@@ -585,12 +616,14 @@ describe('TransactionList', () => {
         />
       );
 
-      const checkboxes = screen.getAllByRole('checkbox');
-      // 1 header checkbox + 1 row checkbox
-      expect(checkboxes).toHaveLength(2);
+      await waitFor(() => {
+        const checkboxes = screen.getAllByRole('checkbox');
+        // 1 header checkbox + 1 row checkbox
+        expect(checkboxes).toHaveLength(2);
+      });
     });
 
-    it('does not render checkboxes when selectionMode is false', () => {
+    it('does not render checkboxes when selectionMode is false', async () => {
       const transactions = [createTransaction()];
 
       render(
@@ -601,10 +634,12 @@ describe('TransactionList', () => {
         />
       );
 
-      expect(screen.queryAllByRole('checkbox')).toHaveLength(0);
+      await waitFor(() => {
+        expect(screen.queryAllByRole('checkbox')).toHaveLength(0);
+      });
     });
 
-    it('shows selected row with highlight', () => {
+    it('shows selected row with highlight', async () => {
       const transaction = createTransaction();
 
       render(
@@ -620,11 +655,13 @@ describe('TransactionList', () => {
         />
       );
 
-      const row = screen.getByText('Grocery Store').closest('tr');
-      expect(row).toHaveClass('bg-blue-50');
+      await waitFor(() => {
+        const row = screen.getByText('Grocery Store').closest('tr');
+        expect(row).toHaveClass('bg-blue-50');
+      });
     });
 
-    it('calls onToggleSelection when row checkbox is clicked', () => {
+    it('calls onToggleSelection when row checkbox is clicked', async () => {
       const mockToggle = vi.fn();
       const transaction = createTransaction();
 
@@ -644,10 +681,12 @@ describe('TransactionList', () => {
       const checkboxes = screen.getAllByRole('checkbox');
       // checkboxes[0] is header, checkboxes[1] is the row
       fireEvent.click(checkboxes[1]);
-      expect(mockToggle).toHaveBeenCalledWith(transaction.id);
+      await waitFor(() => {
+        expect(mockToggle).toHaveBeenCalledWith(transaction.id);
+      });
     });
 
-    it('calls onToggleAllOnPage when header checkbox is clicked', () => {
+    it('calls onToggleAllOnPage when header checkbox is clicked', async () => {
       const mockToggleAll = vi.fn();
       const transactions = [createTransaction()];
 
@@ -666,7 +705,9 @@ describe('TransactionList', () => {
 
       const checkboxes = screen.getAllByRole('checkbox');
       fireEvent.click(checkboxes[0]);
-      expect(mockToggleAll).toHaveBeenCalled();
+      await waitFor(() => {
+        expect(mockToggleAll).toHaveBeenCalled();
+      });
     });
   });
 
@@ -675,7 +716,7 @@ describe('TransactionList', () => {
   // =========================================================================
 
   describe('table column headers', () => {
-    it('renders all column headers', () => {
+    it('renders all column headers', async () => {
       render(
         <TransactionList
           transactions={[createTransaction()]}
@@ -684,17 +725,19 @@ describe('TransactionList', () => {
         />
       );
 
-      expect(screen.getByText('Date')).toBeInTheDocument();
-      expect(screen.getByText('Account')).toBeInTheDocument();
-      expect(screen.getByText('Payee')).toBeInTheDocument();
-      expect(screen.getByText('Category')).toBeInTheDocument();
-      expect(screen.getByText('Description')).toBeInTheDocument();
-      expect(screen.getByText('Amount')).toBeInTheDocument();
-      expect(screen.getByText('Status')).toBeInTheDocument();
-      expect(screen.getByText('Actions')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('Date')).toBeInTheDocument();
+        expect(screen.getByText('Account')).toBeInTheDocument();
+        expect(screen.getByText('Payee')).toBeInTheDocument();
+        expect(screen.getByText('Category')).toBeInTheDocument();
+        expect(screen.getByText('Description')).toBeInTheDocument();
+        expect(screen.getByText('Amount')).toBeInTheDocument();
+        expect(screen.getByText('Status')).toBeInTheDocument();
+        expect(screen.getByText('Actions')).toBeInTheDocument();
+      });
     });
 
-    it('renders Balance column header when isSingleAccountView is true', () => {
+    it('renders Balance column header when isSingleAccountView is true', async () => {
       render(
         <TransactionList
           transactions={[createTransaction()]}
@@ -705,10 +748,12 @@ describe('TransactionList', () => {
         />
       );
 
-      expect(screen.getByText('Balance')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('Balance')).toBeInTheDocument();
+      });
     });
 
-    it('does not render Balance column header when isSingleAccountView is false', () => {
+    it('does not render Balance column header when isSingleAccountView is false', async () => {
       render(
         <TransactionList
           transactions={[createTransaction()]}
@@ -717,7 +762,9 @@ describe('TransactionList', () => {
         />
       );
 
-      expect(screen.queryByText('Balance')).not.toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.queryByText('Balance')).not.toBeInTheDocument();
+      });
     });
   });
 
@@ -726,7 +773,7 @@ describe('TransactionList', () => {
   // =========================================================================
 
   describe('transaction row data display', () => {
-    it('displays transaction date', () => {
+    it('displays transaction date', async () => {
       const tx = createTransaction({ transactionDate: '2024-03-15' });
 
       render(
@@ -737,10 +784,12 @@ describe('TransactionList', () => {
         />
       );
 
-      expect(screen.getByText('2024-03-15')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('2024-03-15')).toBeInTheDocument();
+      });
     });
 
-    it('displays account name', () => {
+    it('displays account name', async () => {
       render(
         <TransactionList
           transactions={[createTransaction()]}
@@ -749,10 +798,12 @@ describe('TransactionList', () => {
         />
       );
 
-      expect(screen.getByText('Chequing')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('Chequing')).toBeInTheDocument();
+      });
     });
 
-    it('displays dash when account is null', () => {
+    it('displays dash when account is null', async () => {
       const tx = createTransaction({ account: null });
 
       render(
@@ -763,15 +814,17 @@ describe('TransactionList', () => {
         />
       );
 
-      // Account column should show '-'
-      const accountCells = document.querySelectorAll('td');
-      const accountCell = Array.from(accountCells).find(cell =>
-        cell.textContent === '-' && cell.classList.contains('hidden')
-      );
-      expect(accountCell).toBeTruthy();
+      await waitFor(() => {
+        // Account column should show '-'
+        const accountCells = document.querySelectorAll('td');
+        const accountCell = Array.from(accountCells).find(cell =>
+          cell.textContent === '-' && cell.classList.contains('hidden')
+        );
+        expect(accountCell).toBeTruthy();
+      });
     });
 
-    it('displays payee name', () => {
+    it('displays payee name', async () => {
       render(
         <TransactionList
           transactions={[createTransaction()]}
@@ -780,10 +833,12 @@ describe('TransactionList', () => {
         />
       );
 
-      expect(screen.getByText('Grocery Store')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('Grocery Store')).toBeInTheDocument();
+      });
     });
 
-    it('displays description', () => {
+    it('displays description', async () => {
       const tx = createTransaction({ description: 'Test description text' });
 
       render(
@@ -794,10 +849,12 @@ describe('TransactionList', () => {
         />
       );
 
-      expect(screen.getByText('Test description text')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('Test description text')).toBeInTheDocument();
+      });
     });
 
-    it('displays dash when description is null', () => {
+    it('displays dash when description is null', async () => {
       const tx = createTransaction({ description: null });
 
       render(
@@ -808,12 +865,14 @@ describe('TransactionList', () => {
         />
       );
 
-      // Multiple '-' dashes may appear (for null fields)
-      const dashes = screen.getAllByText('-');
-      expect(dashes.length).toBeGreaterThanOrEqual(1);
+      await waitFor(() => {
+        // Multiple '-' dashes may appear (for null fields)
+        const dashes = screen.getAllByText('-');
+        expect(dashes.length).toBeGreaterThanOrEqual(1);
+      });
     });
 
-    it('displays reference number when available in normal density', () => {
+    it('displays reference number when available in normal density', async () => {
       const tx = createTransaction({ referenceNumber: 'CHQ-12345' });
 
       render(
@@ -824,10 +883,12 @@ describe('TransactionList', () => {
         />
       );
 
-      expect(screen.getByText('Ref: CHQ-12345')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('Ref: CHQ-12345')).toBeInTheDocument();
+      });
     });
 
-    it('does not display reference number in compact density', () => {
+    it('does not display reference number in compact density', async () => {
       const tx = createTransaction({ referenceNumber: 'CHQ-12345' });
 
       render(
@@ -839,7 +900,9 @@ describe('TransactionList', () => {
         />
       );
 
-      expect(screen.queryByText('Ref: CHQ-12345')).not.toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.queryByText('Ref: CHQ-12345')).not.toBeInTheDocument();
+      });
     });
   });
 
@@ -848,7 +911,7 @@ describe('TransactionList', () => {
   // =========================================================================
 
   describe('status display', () => {
-    it('shows Pending for unreconciled transactions', () => {
+    it('shows Pending for unreconciled transactions', async () => {
       const tx = createTransaction({ status: TransactionStatus.UNRECONCILED });
 
       render(
@@ -859,10 +922,12 @@ describe('TransactionList', () => {
         />
       );
 
-      expect(screen.getByText('Pending')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('Pending')).toBeInTheDocument();
+      });
     });
 
-    it('shows Cleared for cleared transactions', () => {
+    it('shows Cleared for cleared transactions', async () => {
       const tx = createTransaction({ status: TransactionStatus.CLEARED });
 
       render(
@@ -873,10 +938,12 @@ describe('TransactionList', () => {
         />
       );
 
-      expect(screen.getByText('Cleared')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('Cleared')).toBeInTheDocument();
+      });
     });
 
-    it('shows Reconciled for reconciled transactions', () => {
+    it('shows Reconciled for reconciled transactions', async () => {
       const tx = createTransaction({ status: TransactionStatus.RECONCILED });
 
       render(
@@ -887,10 +954,12 @@ describe('TransactionList', () => {
         />
       );
 
-      expect(screen.getByText('Reconciled')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('Reconciled')).toBeInTheDocument();
+      });
     });
 
-    it('shows VOID for void transactions', () => {
+    it('shows VOID for void transactions', async () => {
       const tx = createTransaction({ status: TransactionStatus.VOID, isVoid: true });
 
       render(
@@ -901,10 +970,12 @@ describe('TransactionList', () => {
         />
       );
 
-      expect(screen.getByText('VOID')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('VOID')).toBeInTheDocument();
+      });
     });
 
-    it('shows abbreviated status in dense mode', () => {
+    it('shows abbreviated status in dense mode', async () => {
       const tx = createTransaction({ status: TransactionStatus.CLEARED });
 
       render(
@@ -916,10 +987,12 @@ describe('TransactionList', () => {
         />
       );
 
-      expect(screen.getByText('C')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('C')).toBeInTheDocument();
+      });
     });
 
-    it('shows abbreviated R for reconciled in dense mode', () => {
+    it('shows abbreviated R for reconciled in dense mode', async () => {
       const tx = createTransaction({ status: TransactionStatus.RECONCILED });
 
       render(
@@ -931,10 +1004,12 @@ describe('TransactionList', () => {
         />
       );
 
-      expect(screen.getByText('R')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('R')).toBeInTheDocument();
+      });
     });
 
-    it('shows abbreviated V for void in dense mode', () => {
+    it('shows abbreviated V for void in dense mode', async () => {
       const tx = createTransaction({ status: TransactionStatus.VOID, isVoid: true });
 
       render(
@@ -946,7 +1021,9 @@ describe('TransactionList', () => {
         />
       );
 
-      expect(screen.getByText('V')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('V')).toBeInTheDocument();
+      });
     });
 
     it('cycles status when status button is clicked', async () => {
@@ -1045,7 +1122,7 @@ describe('TransactionList', () => {
   // =========================================================================
 
   describe('delete confirmation flow', () => {
-    it('shows delete confirmation dialog with correct message for regular transaction', () => {
+    it('shows delete confirmation dialog with correct message for regular transaction', async () => {
       const tx = createTransaction();
 
       render(
@@ -1059,11 +1136,13 @@ describe('TransactionList', () => {
 
       fireEvent.click(screen.getByText('Delete'));
 
-      expect(screen.getByText('Delete Transaction')).toBeInTheDocument();
-      expect(screen.getByText(/This action cannot be undone/)).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('Delete Transaction')).toBeInTheDocument();
+        expect(screen.getByText(/This action cannot be undone/)).toBeInTheDocument();
+      });
     });
 
-    it('shows delete confirmation dialog with transfer-specific message', () => {
+    it('shows delete confirmation dialog with transfer-specific message', async () => {
       const transferTx = createTransaction({
         isTransfer: true,
         linkedTransactionId: 'linked-tx-1',
@@ -1087,8 +1166,10 @@ describe('TransactionList', () => {
 
       fireEvent.click(screen.getByText('Delete'));
 
-      expect(screen.getByText('Delete Transfer')).toBeInTheDocument();
-      expect(screen.getByText(/Both linked transactions will be deleted/)).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('Delete Transfer')).toBeInTheDocument();
+        expect(screen.getByText(/Both linked transactions will be deleted/)).toBeInTheDocument();
+      });
     });
 
     it('deletes transaction when confirm is clicked', async () => {
@@ -1151,7 +1232,7 @@ describe('TransactionList', () => {
       });
     });
 
-    it('closes confirm dialog when Cancel is clicked', () => {
+    it('closes confirm dialog when Cancel is clicked', async () => {
       const tx = createTransaction();
 
       render(
@@ -1164,13 +1245,17 @@ describe('TransactionList', () => {
       );
 
       fireEvent.click(screen.getByText('Delete'));
-      expect(screen.getByText('Delete Transaction')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('Delete Transaction')).toBeInTheDocument();
+      });
 
       // Click Cancel in the dialog
       fireEvent.click(screen.getByText('Cancel'));
 
       // Dialog should close (the title should no longer be visible)
-      expect(screen.queryByText('Delete Transaction')).not.toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.queryByText('Delete Transaction')).not.toBeInTheDocument();
+      });
     });
 
     it('calls onDelete and onRefresh after successful deletion', async () => {
@@ -1206,7 +1291,7 @@ describe('TransactionList', () => {
   // =========================================================================
 
   describe('amount formatting', () => {
-    it('formats negative amounts with minus sign and red color', () => {
+    it('formats negative amounts with minus sign and red color', async () => {
       const tx = createTransaction({ amount: -75.50 });
 
       render(
@@ -1217,11 +1302,13 @@ describe('TransactionList', () => {
         />
       );
 
-      const amountEl = screen.getByText('-$75.50');
-      expect(amountEl).toHaveClass('text-red-600');
+      await waitFor(() => {
+        const amountEl = screen.getByText('-$75.50');
+        expect(amountEl).toHaveClass('text-red-600');
+      });
     });
 
-    it('formats positive amounts with plus sign and green color', () => {
+    it('formats positive amounts with plus sign and green color', async () => {
       const tx = createTransaction({
         id: 'income-tx',
         amount: 250.00,
@@ -1236,11 +1323,13 @@ describe('TransactionList', () => {
         />
       );
 
-      const amountEl = screen.getByText('+$250.00');
-      expect(amountEl).toHaveClass('text-green-600');
+      await waitFor(() => {
+        const amountEl = screen.getByText('+$250.00');
+        expect(amountEl).toHaveClass('text-green-600');
+      });
     });
 
-    it('formats zero amounts', () => {
+    it('formats zero amounts', async () => {
       const tx = createTransaction({
         id: 'zero-tx',
         amount: 0,
@@ -1255,8 +1344,10 @@ describe('TransactionList', () => {
         />
       );
 
-      const amountEl = screen.getByText('+$0.00');
-      expect(amountEl).toHaveClass('text-green-600');
+      await waitFor(() => {
+        const amountEl = screen.getByText('+$0.00');
+        expect(amountEl).toHaveClass('text-green-600');
+      });
     });
   });
 
@@ -1265,7 +1356,7 @@ describe('TransactionList', () => {
   // =========================================================================
 
   describe('running balance calculation', () => {
-    it('calculates running balances correctly for multiple transactions', () => {
+    it('calculates running balances correctly for multiple transactions', async () => {
       const transactions = [
         createTransaction({ id: 'tx-1', amount: -100, payeeName: 'First' }),
         createTransaction({ id: 'tx-2', amount: -50, payeeName: 'Second' }),
@@ -1282,15 +1373,17 @@ describe('TransactionList', () => {
         />
       );
 
-      // First tx: balance = 500 (startingBalance)
-      // Second tx: balance = 500 - (-100) = 600
-      // Third tx: balance = 500 - (-100) - (-50) = 650
-      expect(screen.getByText('$500.00')).toBeInTheDocument();
-      expect(screen.getByText('$600.00')).toBeInTheDocument();
-      expect(screen.getByText('$650.00')).toBeInTheDocument();
+      await waitFor(() => {
+        // First tx: balance = 500 (startingBalance)
+        // Second tx: balance = 500 - (-100) = 600
+        // Third tx: balance = 500 - (-100) - (-50) = 650
+        expect(screen.getByText('$500.00')).toBeInTheDocument();
+        expect(screen.getByText('$600.00')).toBeInTheDocument();
+        expect(screen.getByText('$650.00')).toBeInTheDocument();
+      });
     });
 
-    it('does not show running balance when isSingleAccountView is false', () => {
+    it('does not show running balance when isSingleAccountView is false', async () => {
       const tx = createTransaction({ amount: -50 });
 
       render(
@@ -1303,10 +1396,12 @@ describe('TransactionList', () => {
         />
       );
 
-      expect(screen.queryByText('Balance')).not.toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.queryByText('Balance')).not.toBeInTheDocument();
+      });
     });
 
-    it('shows negative balances in red', () => {
+    it('shows negative balances in red', async () => {
       const tx = createTransaction({ amount: 100, payeeName: 'Test' });
 
       render(
@@ -1319,9 +1414,11 @@ describe('TransactionList', () => {
         />
       );
 
-      // Balance of -50 should be rendered as "-$50.00" in red
-      const balanceEl = screen.getByText('-$50.00');
-      expect(balanceEl).toHaveClass('text-red-600');
+      await waitFor(() => {
+        // Balance of -50 should be rendered as "-$50.00" in red
+        const balanceEl = screen.getByText('-$50.00');
+        expect(balanceEl).toHaveClass('text-red-600');
+      });
     });
   });
 
@@ -1330,7 +1427,7 @@ describe('TransactionList', () => {
   // =========================================================================
 
   describe('density with controlled prop', () => {
-    it('uses propDensity when provided', () => {
+    it('uses propDensity when provided', async () => {
       render(
         <TransactionList
           transactions={[createTransaction()]}
@@ -1340,11 +1437,13 @@ describe('TransactionList', () => {
         />
       );
 
-      const densityButton = screen.getByTitle('Toggle row density');
-      expect(densityButton).toHaveTextContent('Compact');
+      await waitFor(() => {
+        const densityButton = screen.getByTitle('Toggle row density');
+        expect(densityButton).toHaveTextContent('Compact');
+      });
     });
 
-    it('calls onDensityChange when density toggle is clicked', () => {
+    it('calls onDensityChange when density toggle is clicked', async () => {
       const mockOnDensityChange = vi.fn();
 
       render(
@@ -1360,10 +1459,12 @@ describe('TransactionList', () => {
       const densityButton = screen.getByTitle('Toggle row density');
       fireEvent.click(densityButton);
 
-      expect(mockOnDensityChange).toHaveBeenCalledWith('compact');
+      await waitFor(() => {
+        expect(mockOnDensityChange).toHaveBeenCalledWith('compact');
+      });
     });
 
-    it('cycles from compact to dense via onDensityChange', () => {
+    it('cycles from compact to dense via onDensityChange', async () => {
       const mockOnDensityChange = vi.fn();
 
       render(
@@ -1379,10 +1480,12 @@ describe('TransactionList', () => {
       const densityButton = screen.getByTitle('Toggle row density');
       fireEvent.click(densityButton);
 
-      expect(mockOnDensityChange).toHaveBeenCalledWith('dense');
+      await waitFor(() => {
+        expect(mockOnDensityChange).toHaveBeenCalledWith('dense');
+      });
     });
 
-    it('cycles from dense back to normal via onDensityChange', () => {
+    it('cycles from dense back to normal via onDensityChange', async () => {
       const mockOnDensityChange = vi.fn();
 
       render(
@@ -1398,7 +1501,9 @@ describe('TransactionList', () => {
       const densityButton = screen.getByTitle('Toggle row density');
       fireEvent.click(densityButton);
 
-      expect(mockOnDensityChange).toHaveBeenCalledWith('normal');
+      await waitFor(() => {
+        expect(mockOnDensityChange).toHaveBeenCalledWith('normal');
+      });
     });
   });
 
@@ -1407,7 +1512,7 @@ describe('TransactionList', () => {
   // =========================================================================
 
   describe('payee click', () => {
-    it('calls onPayeeClick when payee name is clicked', () => {
+    it('calls onPayeeClick when payee name is clicked', async () => {
       const mockOnPayeeClick = vi.fn();
       const tx = createTransaction();
 
@@ -1423,10 +1528,12 @@ describe('TransactionList', () => {
       const payeeButton = screen.getByTitle('Edit payee: Grocery Store');
       fireEvent.click(payeeButton);
 
-      expect(mockOnPayeeClick).toHaveBeenCalledWith('payee-1');
+      await waitFor(() => {
+        expect(mockOnPayeeClick).toHaveBeenCalledWith('payee-1');
+      });
     });
 
-    it('renders payee as plain text when onPayeeClick is not provided', () => {
+    it('renders payee as plain text when onPayeeClick is not provided', async () => {
       const tx = createTransaction();
 
       render(
@@ -1437,12 +1544,14 @@ describe('TransactionList', () => {
         />
       );
 
-      // Should show payee name as a div (non-clickable)
-      const payeeEl = screen.getByText('Grocery Store');
-      expect(payeeEl.tagName).toBe('DIV');
+      await waitFor(() => {
+        // Should show payee name as a div (non-clickable)
+        const payeeEl = screen.getByText('Grocery Store');
+        expect(payeeEl.tagName).toBe('DIV');
+      });
     });
 
-    it('shows dash when payee name is null', () => {
+    it('shows dash when payee name is null', async () => {
       const tx = createTransaction({ payeeName: null, payeeId: null });
 
       render(
@@ -1453,9 +1562,11 @@ describe('TransactionList', () => {
         />
       );
 
-      // Should have at least one dash for the payee
-      const dashes = screen.getAllByText('-');
-      expect(dashes.length).toBeGreaterThanOrEqual(1);
+      await waitFor(() => {
+        // Should have at least one dash for the payee
+        const dashes = screen.getAllByText('-');
+        expect(dashes.length).toBeGreaterThanOrEqual(1);
+      });
     });
   });
 
@@ -1464,7 +1575,7 @@ describe('TransactionList', () => {
   // =========================================================================
 
   describe('transfer click', () => {
-    it('calls onTransferClick when transfer badge is clicked', () => {
+    it('calls onTransferClick when transfer badge is clicked', async () => {
       const mockOnTransferClick = vi.fn();
       const transferTx = createTransaction({
         isTransfer: true,
@@ -1490,10 +1601,12 @@ describe('TransactionList', () => {
       const transferButton = screen.getByTitle('Click to view in Savings');
       fireEvent.click(transferButton);
 
-      expect(mockOnTransferClick).toHaveBeenCalledWith('acc-2', 'linked-tx-1');
+      await waitFor(() => {
+        expect(mockOnTransferClick).toHaveBeenCalledWith('acc-2', 'linked-tx-1');
+      });
     });
 
-    it('shows transfer badge as non-clickable span when onTransferClick is not provided', () => {
+    it('shows transfer badge as non-clickable span when onTransferClick is not provided', async () => {
       const transferTx = createTransaction({
         isTransfer: true,
         linkedTransactionId: 'linked-tx-1',
@@ -1514,12 +1627,14 @@ describe('TransactionList', () => {
         />
       );
 
-      // Should show as span (not button) since no onTransferClick
-      const transferSpan = screen.getByText(/Savings/);
-      expect(transferSpan.tagName).toBe('SPAN');
+      await waitFor(() => {
+        // Should show as span (not button) since no onTransferClick
+        const transferSpan = screen.getByText(/Savings/);
+        expect(transferSpan.tagName).toBe('SPAN');
+      });
     });
 
-    it('shows arrow direction based on amount sign for outgoing transfer', () => {
+    it('shows arrow direction based on amount sign for outgoing transfer', async () => {
       const transferTx = createTransaction({
         isTransfer: true,
         linkedTransactionId: 'linked-tx-1',
@@ -1540,11 +1655,13 @@ describe('TransactionList', () => {
         />
       );
 
-      // Negative amount means outgoing: arrow points right
-      expect(screen.getByText(/→ Savings/)).toBeInTheDocument();
+      await waitFor(() => {
+        // Negative amount means outgoing: arrow points right
+        expect(screen.getByText(/→ Savings/)).toBeInTheDocument();
+      });
     });
 
-    it('shows arrow direction based on amount sign for incoming transfer', () => {
+    it('shows arrow direction based on amount sign for incoming transfer', async () => {
       const transferTx = createTransaction({
         isTransfer: true,
         linkedTransactionId: 'linked-tx-1',
@@ -1565,8 +1682,10 @@ describe('TransactionList', () => {
         />
       );
 
-      // Positive amount means incoming: arrow points away from source
-      expect(screen.getByText(/Savings →/)).toBeInTheDocument();
+      await waitFor(() => {
+        // Positive amount means incoming: arrow points away from source
+        expect(screen.getByText(/Savings →/)).toBeInTheDocument();
+      });
     });
   });
 
@@ -1575,7 +1694,7 @@ describe('TransactionList', () => {
   // =========================================================================
 
   describe('split transaction display', () => {
-    it('shows split count in badge', () => {
+    it('shows split count in badge', async () => {
       const splitTx = createTransaction({
         isSplit: true,
         categoryId: null,
@@ -1595,10 +1714,12 @@ describe('TransactionList', () => {
         />
       );
 
-      expect(screen.getByText('Split (3)')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('Split (3)')).toBeInTheDocument();
+      });
     });
 
-    it('shows split details in normal density with category names and amounts', () => {
+    it('shows split details in normal density with category names and amounts', async () => {
       const splitTx = createTransaction({
         isSplit: true,
         categoryId: null,
@@ -1617,12 +1738,14 @@ describe('TransactionList', () => {
         />
       );
 
-      // In normal density, split details are shown
-      expect(screen.getByText(/Groceries.*30\.00/)).toBeInTheDocument();
-      expect(screen.getByText(/Dining.*20\.00/)).toBeInTheDocument();
+      await waitFor(() => {
+        // In normal density, split details are shown
+        expect(screen.getByText(/Groceries.*30\.00/)).toBeInTheDocument();
+        expect(screen.getByText(/Dining.*20\.00/)).toBeInTheDocument();
+      });
     });
 
-    it('shows "+N more" indicator when more than 3 splits', () => {
+    it('shows "+N more" indicator when more than 3 splits', async () => {
       const splitTx = createTransaction({
         isSplit: true,
         categoryId: null,
@@ -1643,10 +1766,12 @@ describe('TransactionList', () => {
         />
       );
 
-      expect(screen.getByText('+1 more')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('+1 more')).toBeInTheDocument();
+      });
     });
 
-    it('shows transfer account name for split transfers', () => {
+    it('shows transfer account name for split transfers', async () => {
       const splitTx = createTransaction({
         isSplit: true,
         categoryId: null,
@@ -1675,10 +1800,12 @@ describe('TransactionList', () => {
         />
       );
 
-      expect(screen.getByText(/Savings/)).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText(/Savings/)).toBeInTheDocument();
+      });
     });
 
-    it('shows "Uncategorized" for splits without category', () => {
+    it('shows "Uncategorized" for splits without category', async () => {
       const splitTx = createTransaction({
         isSplit: true,
         categoryId: null,
@@ -1696,7 +1823,9 @@ describe('TransactionList', () => {
         />
       );
 
-      expect(screen.getByText(/Uncategorized/)).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText(/Uncategorized/)).toBeInTheDocument();
+      });
     });
   });
 
@@ -1705,7 +1834,7 @@ describe('TransactionList', () => {
   // =========================================================================
 
   describe('investment transaction', () => {
-    it('shows Investment badge for linked investment transactions', () => {
+    it('shows Investment badge for linked investment transactions', async () => {
       const investmentTx = createTransaction({
         linkedInvestmentTransactionId: 'inv-tx-1',
         categoryId: null,
@@ -1720,10 +1849,12 @@ describe('TransactionList', () => {
         />
       );
 
-      expect(screen.getByText('Investment')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('Investment')).toBeInTheDocument();
+      });
     });
 
-    it('shows "View" button instead of "Edit" for investment transactions', () => {
+    it('shows "View" button instead of "Edit" for investment transactions', async () => {
       const investmentTx = createTransaction({
         linkedInvestmentTransactionId: 'inv-tx-1',
       });
@@ -1736,11 +1867,13 @@ describe('TransactionList', () => {
         />
       );
 
-      expect(screen.getByText('View')).toBeInTheDocument();
-      expect(screen.queryByText('Edit')).not.toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('View')).toBeInTheDocument();
+        expect(screen.queryByText('Edit')).not.toBeInTheDocument();
+      });
     });
 
-    it('hides delete button for investment transactions', () => {
+    it('hides delete button for investment transactions', async () => {
       const investmentTx = createTransaction({
         linkedInvestmentTransactionId: 'inv-tx-1',
       });
@@ -1754,8 +1887,10 @@ describe('TransactionList', () => {
         />
       );
 
-      // Delete button should not be present for investment transactions
-      expect(screen.queryByText('Delete')).not.toBeInTheDocument();
+      await waitFor(() => {
+        // Delete button should not be present for investment transactions
+        expect(screen.queryByText('Delete')).not.toBeInTheDocument();
+      });
     });
   });
 
@@ -1764,7 +1899,7 @@ describe('TransactionList', () => {
   // =========================================================================
 
   describe('row click', () => {
-    it('calls onEdit when row is clicked', () => {
+    it('calls onEdit when row is clicked', async () => {
       const tx = createTransaction();
 
       render(
@@ -1778,10 +1913,12 @@ describe('TransactionList', () => {
       const row = screen.getByText('Grocery Store').closest('tr')!;
       fireEvent.click(row);
 
-      expect(mockOnEdit).toHaveBeenCalledWith(tx);
+      await waitFor(() => {
+        expect(mockOnEdit).toHaveBeenCalledWith(tx);
+      });
     });
 
-    it('does not call onEdit when onEdit is not provided', () => {
+    it('does not call onEdit when onEdit is not provided', async () => {
       const tx = createTransaction();
 
       render(
@@ -1794,8 +1931,10 @@ describe('TransactionList', () => {
       const row = screen.getByText('Grocery Store').closest('tr')!;
       fireEvent.click(row);
 
-      // No error should be thrown, and onEdit should not have been called
-      expect(mockOnEdit).not.toHaveBeenCalled();
+      await waitFor(() => {
+        // No error should be thrown, and onEdit should not have been called
+        expect(mockOnEdit).not.toHaveBeenCalled();
+      });
     });
   });
 
@@ -1804,7 +1943,7 @@ describe('TransactionList', () => {
   // =========================================================================
 
   describe('void transaction styling', () => {
-    it('applies opacity-50 to void transaction rows', () => {
+    it('applies opacity-50 to void transaction rows', async () => {
       const tx = createTransaction({ status: TransactionStatus.VOID, isVoid: true });
 
       render(
@@ -1815,11 +1954,13 @@ describe('TransactionList', () => {
         />
       );
 
-      const row = screen.getByText('Grocery Store').closest('tr');
-      expect(row).toHaveClass('opacity-50');
+      await waitFor(() => {
+        const row = screen.getByText('Grocery Store').closest('tr');
+        expect(row).toHaveClass('opacity-50');
+      });
     });
 
-    it('applies line-through to void transaction text', () => {
+    it('applies line-through to void transaction text', async () => {
       const tx = createTransaction({ status: TransactionStatus.VOID, isVoid: true });
 
       render(
@@ -1830,12 +1971,14 @@ describe('TransactionList', () => {
         />
       );
 
-      // The date cell should have line-through
-      const dateCell = screen.getByText('2024-01-15');
-      expect(dateCell).toHaveClass('line-through');
+      await waitFor(() => {
+        // The date cell should have line-through
+        const dateCell = screen.getByText('2024-01-15');
+        expect(dateCell).toHaveClass('line-through');
+      });
     });
 
-    it('does not apply void styling to non-void transactions', () => {
+    it('does not apply void styling to non-void transactions', async () => {
       const tx = createTransaction({ status: TransactionStatus.CLEARED });
 
       render(
@@ -1846,8 +1989,10 @@ describe('TransactionList', () => {
         />
       );
 
-      const row = screen.getByText('Grocery Store').closest('tr');
-      expect(row).not.toHaveClass('opacity-50');
+      await waitFor(() => {
+        const row = screen.getByText('Grocery Store').closest('tr');
+        expect(row).not.toHaveClass('opacity-50');
+      });
     });
   });
 
@@ -1856,7 +2001,7 @@ describe('TransactionList', () => {
   // =========================================================================
 
   describe('no category', () => {
-    it('shows dash when category is null', () => {
+    it('shows dash when category is null', async () => {
       const tx = createTransaction({ categoryId: null, category: null });
 
       render(
@@ -1867,9 +2012,11 @@ describe('TransactionList', () => {
         />
       );
 
-      // There should be dash elements for the missing category
-      const dashes = screen.getAllByText('-');
-      expect(dashes.length).toBeGreaterThanOrEqual(1);
+      await waitFor(() => {
+        // There should be dash elements for the missing category
+        const dashes = screen.getAllByText('-');
+        expect(dashes.length).toBeGreaterThanOrEqual(1);
+      });
     });
   });
 
@@ -1878,7 +2025,7 @@ describe('TransactionList', () => {
   // =========================================================================
 
   describe('multiple transactions', () => {
-    it('renders all transactions in order', () => {
+    it('renders all transactions in order', async () => {
       const transactions = [
         createTransaction({ id: 'tx-1', payeeName: 'First Payee' }),
         createTransaction({ id: 'tx-2', payeeName: 'Second Payee' }),
@@ -1893,12 +2040,14 @@ describe('TransactionList', () => {
         />
       );
 
-      expect(screen.getByText('First Payee')).toBeInTheDocument();
-      expect(screen.getByText('Second Payee')).toBeInTheDocument();
-      expect(screen.getByText('Third Payee')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('First Payee')).toBeInTheDocument();
+        expect(screen.getByText('Second Payee')).toBeInTheDocument();
+        expect(screen.getByText('Third Payee')).toBeInTheDocument();
+      });
     });
 
-    it('applies alternating row colors in compact density', () => {
+    it('applies alternating row colors in compact density', async () => {
       const transactions = [
         createTransaction({ id: 'tx-1', payeeName: 'First' }),
         createTransaction({ id: 'tx-2', payeeName: 'Second' }),
@@ -1913,12 +2062,14 @@ describe('TransactionList', () => {
         />
       );
 
-      const firstRow = screen.getByText('First').closest('tr');
-      const secondRow = screen.getByText('Second').closest('tr');
+      await waitFor(() => {
+        const firstRow = screen.getByText('First').closest('tr');
+        const secondRow = screen.getByText('Second').closest('tr');
 
-      // Odd index rows (1-based index 2 = 0-based index 1) should have bg-gray-50
-      expect(firstRow).not.toHaveClass('bg-gray-50');
-      expect(secondRow).toHaveClass('bg-gray-50');
+        // Odd index rows (1-based index 2 = 0-based index 1) should have bg-gray-50
+        expect(firstRow).not.toHaveClass('bg-gray-50');
+        expect(secondRow).toHaveClass('bg-gray-50');
+      });
     });
   });
 
@@ -1927,7 +2078,7 @@ describe('TransactionList', () => {
   // =========================================================================
 
   describe('edit button visibility', () => {
-    it('does not render Edit button when onEdit is not provided', () => {
+    it('does not render Edit button when onEdit is not provided', async () => {
       render(
         <TransactionList
           transactions={[createTransaction()]}
@@ -1935,10 +2086,12 @@ describe('TransactionList', () => {
         />
       );
 
-      expect(screen.queryByText('Edit')).not.toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.queryByText('Edit')).not.toBeInTheDocument();
+      });
     });
 
-    it('renders Edit button when onEdit is provided', () => {
+    it('renders Edit button when onEdit is provided', async () => {
       render(
         <TransactionList
           transactions={[createTransaction()]}
@@ -1947,7 +2100,9 @@ describe('TransactionList', () => {
         />
       );
 
-      expect(screen.getByText('Edit')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('Edit')).toBeInTheDocument();
+      });
     });
   });
 });

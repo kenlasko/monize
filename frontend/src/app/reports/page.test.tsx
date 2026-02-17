@@ -4,7 +4,7 @@ import ReportsPage from './page';
 
 // Mock next/image
 vi.mock('next/image', () => ({
-  default: (props: any) => <img {...props} />,
+  default: ({ priority, fill, ...props }: any) => <img {...props} />,
 }));
 
 // Mock logger

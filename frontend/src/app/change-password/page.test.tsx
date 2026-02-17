@@ -19,7 +19,7 @@ vi.mock('next/navigation', () => ({
 
 // Mock next/image
 vi.mock('next/image', () => ({
-  default: (props: any) => <img alt="" {...props} />,
+  default: ({ priority, fill, ...props }: any) => <img alt="" {...props} />,
 }));
 
 // Track auth store state so tests can modify it

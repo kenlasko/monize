@@ -4,7 +4,7 @@ import { AppHeader } from './AppHeader';
 
 // Mock next/image
 vi.mock('next/image', () => ({
-  default: (props: any) => <img {...props} />,
+  default: ({ priority, fill, ...props }: any) => <img {...props} />,
 }));
 
 // Track router.push calls

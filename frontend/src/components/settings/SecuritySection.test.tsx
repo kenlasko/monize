@@ -324,7 +324,7 @@ describe('SecuritySection', () => {
   });
 
   // --- 2FA disable button (when enabled) ---
-  it('shows Disable 2FA button when 2FA is enabled and force2fa is false', () => {
+  it('shows Disable 2FA button when 2FA is enabled and force2fa is false', async () => {
     const prefsWith2fa = { ...mockPreferences, twoFactorEnabled: true };
 
     render(
@@ -336,12 +336,14 @@ describe('SecuritySection', () => {
       />
     );
 
-    expect(screen.getByRole('button', { name: 'Disable 2FA' })).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Disable 2FA' })).toBeInTheDocument();
+    });
     expect(screen.getByText('Enabled')).toBeInTheDocument();
     expect(screen.getByText('Your account is protected with TOTP verification.')).toBeInTheDocument();
   });
 
-  it('shows "Required by administrator" instead of Disable button when force2fa is true', () => {
+  it('shows "Required by administrator" instead of Disable button when force2fa is true', async () => {
     const prefsWith2fa = { ...mockPreferences, twoFactorEnabled: true };
 
     render(
@@ -353,7 +355,9 @@ describe('SecuritySection', () => {
       />
     );
 
-    expect(screen.getByText('Required by administrator')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Required by administrator')).toBeInTheDocument();
+    });
     expect(screen.queryByRole('button', { name: 'Disable 2FA' })).not.toBeInTheDocument();
   });
 

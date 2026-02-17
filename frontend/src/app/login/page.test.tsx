@@ -111,9 +111,11 @@ describe('LoginPage', () => {
     });
   });
 
-  it('shows loading state initially', () => {
+  it('shows loading state initially', async () => {
     render(<LoginPage />);
-    expect(screen.getByText('Loading...')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Loading...')).toBeInTheDocument();
+    });
   });
 
   it('renders SSO-only mode when only OIDC is available', async () => {

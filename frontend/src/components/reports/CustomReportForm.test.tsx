@@ -45,7 +45,7 @@ vi.mock('@/components/ui/Select', () => ({
 }));
 
 vi.mock('@/components/ui/Button', () => ({
-  Button: ({ children, ...props }: any) => <button {...props}>{children}</button>,
+  Button: ({ children, isLoading, variant, size, ...props }: any) => <button {...props}>{children}</button>,
 }));
 
 vi.mock('@/components/ui/IconPicker', () => ({

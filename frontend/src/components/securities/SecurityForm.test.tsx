@@ -71,35 +71,43 @@ describe('SecurityForm', () => {
     vi.clearAllMocks();
   });
 
-  it('renders create form fields', () => {
+  it('renders create form fields', async () => {
     render(<SecurityForm onSubmit={onSubmit} onCancel={onCancel} />);
-    expect(screen.getByText('Symbol')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Symbol')).toBeInTheDocument();
+    });
     expect(screen.getByText('Name')).toBeInTheDocument();
     expect(screen.getByText('Type')).toBeInTheDocument();
     expect(screen.getByText('Exchange')).toBeInTheDocument();
     expect(screen.getByText('Currency')).toBeInTheDocument();
   });
 
-  it('shows Create Security button for new form', () => {
+  it('shows Create Security button for new form', async () => {
     render(<SecurityForm onSubmit={onSubmit} onCancel={onCancel} />);
-    expect(screen.getByText('Create Security')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Create Security')).toBeInTheDocument();
+    });
   });
 
-  it('shows Update Security button when editing', () => {
+  it('shows Update Security button when editing', async () => {
     const security = createSecurity();
     render(<SecurityForm security={security} onSubmit={onSubmit} onCancel={onCancel} />);
-    expect(screen.getByText('Update Security')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Update Security')).toBeInTheDocument();
+    });
   });
 
-  it('calls onCancel when cancel is clicked', () => {
+  it('calls onCancel when cancel is clicked', async () => {
     render(<SecurityForm onSubmit={onSubmit} onCancel={onCancel} />);
     fireEvent.click(screen.getByText('Cancel'));
-    expect(onCancel).toHaveBeenCalled();
+    await waitFor(() => {
+      expect(onCancel).toHaveBeenCalled();
+    });
   });
 
   // --- New tests for improved coverage ---
 
-  it('populates form with security data when editing', () => {
+  it('populates form with security data when editing', async () => {
     const security = createSecurity({
       symbol: 'XEQT',
       name: 'iShares Core Equity ETF',
@@ -110,29 +118,37 @@ describe('SecurityForm', () => {
 
     render(<SecurityForm security={security} onSubmit={onSubmit} onCancel={onCancel} />);
 
-    expect(screen.getByDisplayValue('XEQT')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('XEQT')).toBeInTheDocument();
+    });
     expect(screen.getByDisplayValue('iShares Core Equity ETF')).toBeInTheDocument();
   });
 
-  it('shows Lookup button for new security form', () => {
+  it('shows Lookup button for new security form', async () => {
     render(<SecurityForm onSubmit={onSubmit} onCancel={onCancel} />);
-    expect(screen.getByText('Lookup')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Lookup')).toBeInTheDocument();
+    });
   });
 
-  it('does not show Lookup button when editing existing security', () => {
+  it('does not show Lookup button when editing existing security', async () => {
     const security = createSecurity();
     render(<SecurityForm security={security} onSubmit={onSubmit} onCancel={onCancel} />);
-    expect(screen.queryByText('Lookup')).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.queryByText('Lookup')).not.toBeInTheDocument();
+    });
   });
 
-  it('renders security type options', () => {
+  it('renders security type options', async () => {
     render(<SecurityForm onSubmit={onSubmit} onCancel={onCancel} />);
 
     const typeSelect = screen.getByLabelText('Type') as HTMLSelectElement;
     const options = Array.from(typeSelect.querySelectorAll('option'));
     const optionValues = options.map(o => o.value);
 
-    expect(optionValues).toContain('STOCK');
+    await waitFor(() => {
+      expect(optionValues).toContain('STOCK');
+    });
     expect(optionValues).toContain('ETF');
     expect(optionValues).toContain('MUTUAL_FUND');
     expect(optionValues).toContain('BOND');
@@ -141,33 +157,41 @@ describe('SecurityForm', () => {
     expect(optionValues).toContain('OTHER');
   });
 
-  it('renders security type option labels', () => {
+  it('renders security type option labels', async () => {
     render(<SecurityForm onSubmit={onSubmit} onCancel={onCancel} />);
 
     const typeSelect = screen.getByLabelText('Type') as HTMLSelectElement;
     const options = Array.from(typeSelect.querySelectorAll('option'));
     const optionTexts = options.map(o => o.textContent);
 
-    expect(optionTexts).toContain('Stock');
+    await waitFor(() => {
+      expect(optionTexts).toContain('Stock');
+    });
     expect(optionTexts).toContain('ETF');
     expect(optionTexts).toContain('Mutual Fund');
     expect(optionTexts).toContain('Bond');
     expect(optionTexts).toContain('Cryptocurrency');
   });
 
-  it('shows placeholder text for symbol input', () => {
+  it('shows placeholder text for symbol input', async () => {
     render(<SecurityForm onSubmit={onSubmit} onCancel={onCancel} />);
-    expect(screen.getByPlaceholderText('e.g., AAPL, XEQT, BTC')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText('e.g., AAPL, XEQT, BTC')).toBeInTheDocument();
+    });
   });
 
-  it('shows placeholder text for name input', () => {
+  it('shows placeholder text for name input', async () => {
     render(<SecurityForm onSubmit={onSubmit} onCancel={onCancel} />);
-    expect(screen.getByPlaceholderText('e.g., Apple Inc., iShares Core Equity ETF')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText('e.g., Apple Inc., iShares Core Equity ETF')).toBeInTheDocument();
+    });
   });
 
-  it('shows placeholder text for exchange input', () => {
+  it('shows placeholder text for exchange input', async () => {
     render(<SecurityForm onSubmit={onSubmit} onCancel={onCancel} />);
-    expect(screen.getByPlaceholderText('e.g., NYSE, TSX, NASDAQ')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText('e.g., NYSE, TSX, NASDAQ')).toBeInTheDocument();
+    });
   });
 
   it('loads currencies on mount', async () => {
@@ -324,27 +348,33 @@ describe('SecurityForm', () => {
     });
   });
 
-  it('prefills default currency when creating new security', () => {
+  it('prefills default currency when creating new security', async () => {
     render(<SecurityForm onSubmit={onSubmit} onCancel={onCancel} />);
 
     // The currency select should be present (currency options loaded asynchronously)
-    const currencyLabel = screen.getByText('Currency');
-    expect(currencyLabel).toBeInTheDocument();
+    await waitFor(() => {
+      const currencyLabel = screen.getByText('Currency');
+      expect(currencyLabel).toBeInTheDocument();
+    });
   });
 
-  it('selects "Select type..." as default security type for new form', () => {
+  it('selects "Select type..." as default security type for new form', async () => {
     render(<SecurityForm onSubmit={onSubmit} onCancel={onCancel} />);
 
-    const typeSelect = screen.getByLabelText('Type') as HTMLSelectElement;
-    expect(typeSelect.value).toBe('');
+    await waitFor(() => {
+      const typeSelect = screen.getByLabelText('Type') as HTMLSelectElement;
+      expect(typeSelect.value).toBe('');
+    });
   });
 
-  it('populates security type when editing', () => {
+  it('populates security type when editing', async () => {
     const security = createSecurity({ securityType: 'ETF' });
 
     render(<SecurityForm security={security} onSubmit={onSubmit} onCancel={onCancel} />);
 
-    const typeSelect = screen.getByLabelText('Type') as HTMLSelectElement;
-    expect(typeSelect.value).toBe('ETF');
+    await waitFor(() => {
+      const typeSelect = screen.getByLabelText('Type') as HTMLSelectElement;
+      expect(typeSelect.value).toBe('ETF');
+    });
   });
 });

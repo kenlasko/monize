@@ -52,10 +52,12 @@ describe('PreferencesSection', () => {
     vi.clearAllMocks();
   });
 
-  it('renders the preferences heading and all selects', () => {
+  it('renders the preferences heading and all selects', async () => {
     render(<PreferencesSection preferences={mockPreferences} onPreferencesUpdated={mockOnPreferencesUpdated} />);
 
-    expect(screen.getByText('Preferences')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Preferences')).toBeInTheDocument();
+    });
     expect(screen.getByText('Theme')).toBeInTheDocument();
     expect(screen.getByText('Default Currency')).toBeInTheDocument();
     expect(screen.getByText('Date Format')).toBeInTheDocument();
@@ -64,11 +66,12 @@ describe('PreferencesSection', () => {
     expect(screen.getByRole('button', { name: 'Save Preferences' })).toBeInTheDocument();
   });
 
-  it('shows theme options', () => {
+  it('shows theme options', async () => {
     render(<PreferencesSection preferences={mockPreferences} onPreferencesUpdated={mockOnPreferencesUpdated} />);
 
-    const themeSelect = screen.getByLabelText('Theme');
-    expect(themeSelect).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByLabelText('Theme')).toBeInTheDocument();
+    });
   });
 
   it('calls updatePreferences and shows success toast on save', async () => {

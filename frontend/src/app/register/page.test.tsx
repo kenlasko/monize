@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 
 // Mock next/image
 vi.mock('next/image', () => ({
-  default: (props: any) => <img {...props} />,
+  default: ({ priority, fill, ...props }: any) => <img {...props} />,
 }));
 
 // Mock logger
@@ -114,9 +114,11 @@ describe('RegisterPage', () => {
     });
   });
 
-  it('shows loading state initially', () => {
+  it('shows loading state initially', async () => {
     render(<RegisterPage />);
-    expect(screen.getByText('Loading...')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Loading...')).toBeInTheDocument();
+    });
   });
 
   it('renders first name and last name fields', async () => {

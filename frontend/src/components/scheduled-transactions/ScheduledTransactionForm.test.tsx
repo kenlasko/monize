@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@/test/render';
+import { render, screen, fireEvent, waitFor, act } from '@/test/render';
 import { ScheduledTransactionForm } from './ScheduledTransactionForm';
 import toast from 'react-hot-toast';
 
@@ -186,39 +186,51 @@ describe('ScheduledTransactionForm', () => {
   });
 
   // --- Basic rendering ---
-  it('renders form with payment and transfer toggle', () => {
+  it('renders form with payment and transfer toggle', async () => {
     render(<ScheduledTransactionForm />);
-    expect(screen.getByText('Bill / Deposit')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Bill / Deposit')).toBeInTheDocument();
+    });
     expect(screen.getByText('Transfer')).toBeInTheDocument();
   });
 
-  it('renders name and frequency fields', () => {
+  it('renders name and frequency fields', async () => {
     render(<ScheduledTransactionForm />);
-    expect(screen.getByText('Name')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Name')).toBeInTheDocument();
+    });
     expect(screen.getByText('Frequency')).toBeInTheDocument();
     expect(screen.getByText('Next Due Date')).toBeInTheDocument();
   });
 
-  it('shows Create button for new form', () => {
+  it('shows Create button for new form', async () => {
     const { container } = render(<ScheduledTransactionForm />);
+    await waitFor(() => {
+      expect(container.querySelector('button[type="submit"]')).toBeInTheDocument();
+    });
     const submitButton = container.querySelector('button[type="submit"]');
-    expect(submitButton).toBeInTheDocument();
     expect(submitButton!.textContent).toContain('Create');
   });
 
-  it('shows Update button when editing', () => {
+  it('shows Update button when editing', async () => {
     const st = {
       id: 's1', accountId: 'a1', name: 'Rent', amount: -1500, currencyCode: 'CAD',
       frequency: 'MONTHLY', nextDueDate: '2024-02-01', isActive: true, autoPost: false,
       reminderDaysBefore: 3, isTransfer: false, isSplit: false,
     } as any;
     render(<ScheduledTransactionForm scheduledTransaction={st} />);
-    expect(screen.getByText('Update')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Update')).toBeInTheDocument();
+    });
   });
 
   // --- Frequency select dropdown ---
   it('renders frequency dropdown with all frequency options', async () => {
     render(<ScheduledTransactionForm />);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Frequency')).toBeInTheDocument();
+    });
 
     const frequencySelect = screen.getByLabelText('Frequency');
     expect(frequencySelect).toBeInTheDocument();
@@ -234,43 +246,57 @@ describe('ScheduledTransactionForm', () => {
     expect(screen.getByText('Yearly')).toBeInTheDocument();
   });
 
-  it('defaults frequency to MONTHLY for new form', () => {
+  it('defaults frequency to MONTHLY for new form', async () => {
     render(<ScheduledTransactionForm />);
-    const frequencySelect = screen.getByLabelText('Frequency') as HTMLSelectElement;
-    expect(frequencySelect.value).toBe('MONTHLY');
+    await waitFor(() => {
+      expect((screen.getByLabelText('Frequency') as HTMLSelectElement).value).toBe('MONTHLY');
+    });
   });
 
-  it('allows changing frequency via dropdown', () => {
+  it('allows changing frequency via dropdown', async () => {
     render(<ScheduledTransactionForm />);
+    await waitFor(() => {
+      expect(screen.getByLabelText('Frequency')).toBeInTheDocument();
+    });
     const frequencySelect = screen.getByLabelText('Frequency') as HTMLSelectElement;
     fireEvent.change(frequencySelect, { target: { value: 'WEEKLY' } });
     expect(frequencySelect.value).toBe('WEEKLY');
   });
 
   // --- Start date (next due date) and end date ---
-  it('renders next due date field with date input', () => {
+  it('renders next due date field with date input', async () => {
     render(<ScheduledTransactionForm />);
+    await waitFor(() => {
+      expect(screen.getByLabelText('Next Due Date')).toBeInTheDocument();
+    });
     const dateInput = screen.getByLabelText('Next Due Date');
-    expect(dateInput).toBeInTheDocument();
     expect(dateInput).toHaveAttribute('type', 'date');
   });
 
-  it('shows end date section when frequency is not ONCE', () => {
+  it('shows end date section when frequency is not ONCE', async () => {
     render(<ScheduledTransactionForm />);
     // Default frequency is MONTHLY, so end condition section should be present
-    expect(screen.getByText('End Condition (optional)')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('End Condition (optional)')).toBeInTheDocument();
+    });
     expect(screen.getByLabelText('End by date')).toBeInTheDocument();
   });
 
-  it('hides end date section when frequency is ONCE', () => {
+  it('hides end date section when frequency is ONCE', async () => {
     render(<ScheduledTransactionForm />);
+    await waitFor(() => {
+      expect(screen.getByLabelText('Frequency')).toBeInTheDocument();
+    });
     const frequencySelect = screen.getByLabelText('Frequency');
     fireEvent.change(frequencySelect, { target: { value: 'ONCE' } });
     expect(screen.queryByText('End Condition (optional)')).not.toBeInTheDocument();
   });
 
-  it('shows end date input when end by date checkbox is checked', () => {
+  it('shows end date input when end by date checkbox is checked', async () => {
     render(<ScheduledTransactionForm />);
+    await waitFor(() => {
+      expect(screen.getByLabelText('End by date')).toBeInTheDocument();
+    });
     const endDateCheckbox = screen.getByLabelText('End by date');
     fireEvent.click(endDateCheckbox);
     // After clicking, an additional date input should appear (the end date input)
@@ -279,13 +305,18 @@ describe('ScheduledTransactionForm', () => {
   });
 
   // --- Occurrences remaining ---
-  it('shows number of occurrences checkbox', () => {
+  it('shows number of occurrences checkbox', async () => {
     render(<ScheduledTransactionForm />);
-    expect(screen.getByLabelText('Number of occurrences')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByLabelText('Number of occurrences')).toBeInTheDocument();
+    });
   });
 
-  it('shows occurrences input when number of occurrences checkbox is checked', () => {
+  it('shows occurrences input when number of occurrences checkbox is checked', async () => {
     render(<ScheduledTransactionForm />);
+    await waitFor(() => {
+      expect(screen.getByLabelText('Number of occurrences')).toBeInTheDocument();
+    });
     const occurrencesCheckbox = screen.getByLabelText('Number of occurrences');
     fireEvent.click(occurrencesCheckbox);
     const numberInput = screen.getByPlaceholderText('# remaining');
@@ -293,8 +324,11 @@ describe('ScheduledTransactionForm', () => {
     expect(numberInput).toHaveAttribute('type', 'number');
   });
 
-  it('unchecks end date when occurrences is checked (mutual exclusion)', () => {
+  it('unchecks end date when occurrences is checked (mutual exclusion)', async () => {
     render(<ScheduledTransactionForm />);
+    await waitFor(() => {
+      expect(screen.getByLabelText('End by date')).toBeInTheDocument();
+    });
     const endDateCheckbox = screen.getByLabelText('End by date') as HTMLInputElement;
     const occurrencesCheckbox = screen.getByLabelText('Number of occurrences') as HTMLInputElement;
 
@@ -306,8 +340,11 @@ describe('ScheduledTransactionForm', () => {
     expect(endDateCheckbox.checked).toBe(false);
   });
 
-  it('unchecks occurrences when end date is checked (mutual exclusion)', () => {
+  it('unchecks occurrences when end date is checked (mutual exclusion)', async () => {
     render(<ScheduledTransactionForm />);
+    await waitFor(() => {
+      expect(screen.getByLabelText('End by date')).toBeInTheDocument();
+    });
     const endDateCheckbox = screen.getByLabelText('End by date') as HTMLInputElement;
     const occurrencesCheckbox = screen.getByLabelText('Number of occurrences') as HTMLInputElement;
 
@@ -320,15 +357,20 @@ describe('ScheduledTransactionForm', () => {
   });
 
   // --- Auto-post checkbox ---
-  it('renders auto-post checkbox defaulting to unchecked', () => {
+  it('renders auto-post checkbox defaulting to unchecked', async () => {
     render(<ScheduledTransactionForm />);
+    await waitFor(() => {
+      expect(screen.getByLabelText('Auto-post on due date')).toBeInTheDocument();
+    });
     const autoPostCheckbox = screen.getByLabelText('Auto-post on due date') as HTMLInputElement;
-    expect(autoPostCheckbox).toBeInTheDocument();
     expect(autoPostCheckbox.checked).toBe(false);
   });
 
-  it('allows toggling auto-post checkbox', () => {
+  it('allows toggling auto-post checkbox', async () => {
     render(<ScheduledTransactionForm />);
+    await waitFor(() => {
+      expect(screen.getByLabelText('Auto-post on due date')).toBeInTheDocument();
+    });
     const autoPostCheckbox = screen.getByLabelText('Auto-post on due date') as HTMLInputElement;
     fireEvent.click(autoPostCheckbox);
     expect(autoPostCheckbox.checked).toBe(true);
@@ -337,37 +379,50 @@ describe('ScheduledTransactionForm', () => {
   });
 
   // --- Active checkbox ---
-  it('renders active checkbox defaulting to checked', () => {
+  it('renders active checkbox defaulting to checked', async () => {
     render(<ScheduledTransactionForm />);
+    await waitFor(() => {
+      expect(screen.getByLabelText('Active')).toBeInTheDocument();
+    });
     const activeCheckbox = screen.getByLabelText('Active') as HTMLInputElement;
-    expect(activeCheckbox).toBeInTheDocument();
     expect(activeCheckbox.checked).toBe(true);
   });
 
   // --- Reminder days input ---
-  it('renders remind days before input', () => {
+  it('renders remind days before input', async () => {
     render(<ScheduledTransactionForm />);
+    await waitFor(() => {
+      expect(screen.getByLabelText('Remind Days Before')).toBeInTheDocument();
+    });
     const reminderInput = screen.getByLabelText('Remind Days Before');
-    expect(reminderInput).toBeInTheDocument();
     expect(reminderInput).toHaveAttribute('type', 'number');
   });
 
-  it('defaults remind days before to 3', () => {
+  it('defaults remind days before to 3', async () => {
     render(<ScheduledTransactionForm />);
+    await waitFor(() => {
+      expect(screen.getByLabelText('Remind Days Before')).toBeInTheDocument();
+    });
     const reminderInput = screen.getByLabelText('Remind Days Before') as HTMLInputElement;
     expect(reminderInput.value).toBe('3');
   });
 
-  it('allows changing reminder days', () => {
+  it('allows changing reminder days', async () => {
     render(<ScheduledTransactionForm />);
+    await waitFor(() => {
+      expect(screen.getByLabelText('Remind Days Before')).toBeInTheDocument();
+    });
     const reminderInput = screen.getByLabelText('Remind Days Before') as HTMLInputElement;
     fireEvent.change(reminderInput, { target: { value: '7' } });
     expect(reminderInput.value).toBe('7');
   });
 
   // --- Transfer mode detection ---
-  it('switches to transfer mode when Transfer button is clicked', () => {
+  it('switches to transfer mode when Transfer button is clicked', async () => {
     render(<ScheduledTransactionForm />);
+    await waitFor(() => {
+      expect(screen.getByText('Transfer')).toBeInTheDocument();
+    });
     const transferButton = screen.getByText('Transfer');
     fireEvent.click(transferButton);
 
@@ -385,8 +440,11 @@ describe('ScheduledTransactionForm', () => {
     });
   });
 
-  it('switches back to payment mode from transfer mode', () => {
+  it('switches back to payment mode from transfer mode', async () => {
     render(<ScheduledTransactionForm />);
+    await waitFor(() => {
+      expect(screen.getByText('Transfer')).toBeInTheDocument();
+    });
     fireEvent.click(screen.getByText('Transfer'));
     expect(screen.getByText('From Account')).toBeInTheDocument();
 
@@ -394,7 +452,7 @@ describe('ScheduledTransactionForm', () => {
     expect(screen.getByText('Account')).toBeInTheDocument();
   });
 
-  it('renders transfer mode for existing transfer scheduled transaction', () => {
+  it('renders transfer mode for existing transfer scheduled transaction', async () => {
     const transferSt = {
       id: 's1',
       accountId: 'acc-1',
@@ -412,7 +470,9 @@ describe('ScheduledTransactionForm', () => {
     } as any;
 
     render(<ScheduledTransactionForm scheduledTransaction={transferSt} />);
-    expect(screen.getByText('From Account')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('From Account')).toBeInTheDocument();
+    });
     expect(screen.getByText('To Account')).toBeInTheDocument();
   });
 
@@ -436,7 +496,7 @@ describe('ScheduledTransactionForm', () => {
   });
 
   // --- Form submission for editing existing ---
-  it('shows Update button and pre-fills values when editing existing scheduled transaction', () => {
+  it('shows Update button and pre-fills values when editing existing scheduled transaction', async () => {
     const existingSt = {
       id: 's1',
       accountId: 'acc-1',
@@ -457,7 +517,9 @@ describe('ScheduledTransactionForm', () => {
 
     render(<ScheduledTransactionForm scheduledTransaction={existingSt} />);
 
-    expect(screen.getByText('Update')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Update')).toBeInTheDocument();
+    });
 
     // Check pre-filled name
     const nameInput = screen.getByLabelText('Name') as HTMLInputElement;
@@ -476,7 +538,7 @@ describe('ScheduledTransactionForm', () => {
     expect(reminderInput.value).toBe('5');
   });
 
-  it('pre-fills next due date from existing scheduled transaction', () => {
+  it('pre-fills next due date from existing scheduled transaction', async () => {
     const existingSt = {
       id: 's1',
       accountId: 'acc-1',
@@ -493,46 +555,63 @@ describe('ScheduledTransactionForm', () => {
     } as any;
 
     render(<ScheduledTransactionForm scheduledTransaction={existingSt} />);
+    await waitFor(() => {
+      expect(screen.getByLabelText('Next Due Date')).toBeInTheDocument();
+    });
     const dateInput = screen.getByLabelText('Next Due Date') as HTMLInputElement;
     expect(dateInput.value).toBe('2024-03-01');
   });
 
   // --- Cancel button ---
-  it('renders cancel button when onCancel is provided', () => {
+  it('renders cancel button when onCancel is provided', async () => {
     const onCancel = vi.fn();
     render(<ScheduledTransactionForm onCancel={onCancel} />);
-    expect(screen.getByText('Cancel')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Cancel')).toBeInTheDocument();
+    });
   });
 
-  it('does not render cancel button when onCancel is not provided', () => {
+  it('does not render cancel button when onCancel is not provided', async () => {
     render(<ScheduledTransactionForm />);
+    await waitFor(() => {
+      expect(screen.getByText('Bill / Deposit')).toBeInTheDocument();
+    });
     expect(screen.queryByText('Cancel')).not.toBeInTheDocument();
   });
 
-  it('calls onCancel when cancel button is clicked', () => {
+  it('calls onCancel when cancel button is clicked', async () => {
     const onCancel = vi.fn();
     render(<ScheduledTransactionForm onCancel={onCancel} />);
+    await waitFor(() => {
+      expect(screen.getByText('Cancel')).toBeInTheDocument();
+    });
     fireEvent.click(screen.getByText('Cancel'));
     expect(onCancel).toHaveBeenCalledTimes(1);
   });
 
   // --- Description field ---
-  it('renders description textarea', () => {
+  it('renders description textarea', async () => {
     render(<ScheduledTransactionForm />);
-    expect(screen.getByText('Description')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Description')).toBeInTheDocument();
+    });
   });
 
   // --- Category section visible in payment mode ---
-  it('shows Category section in payment mode', () => {
+  it('shows Category section in payment mode', async () => {
     render(<ScheduledTransactionForm />);
     // The Combobox mock renders a label "Category" in payment mode
-    expect(screen.getByText('Category')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Category')).toBeInTheDocument();
+    });
   });
 
   // --- Amount field ---
-  it('renders amount field', () => {
+  it('renders amount field', async () => {
     render(<ScheduledTransactionForm />);
-    expect(screen.getByText('Amount')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Amount')).toBeInTheDocument();
+    });
   });
 
   // --- Account select ---
@@ -548,14 +627,19 @@ describe('ScheduledTransactionForm', () => {
   });
 
   // --- Payee field ---
-  it('renders payee combobox', () => {
+  it('renders payee combobox', async () => {
     render(<ScheduledTransactionForm />);
-    expect(screen.getByText('Payee')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Payee')).toBeInTheDocument();
+    });
   });
 
   // --- Multiple frequency changes ---
-  it('allows changing frequency multiple times', () => {
+  it('allows changing frequency multiple times', async () => {
     render(<ScheduledTransactionForm />);
+    await waitFor(() => {
+      expect(screen.getByLabelText('Frequency')).toBeInTheDocument();
+    });
     const frequencySelect = screen.getByLabelText('Frequency') as HTMLSelectElement;
 
     fireEvent.change(frequencySelect, { target: { value: 'DAILY' } });
@@ -580,14 +664,19 @@ describe('ScheduledTransactionForm', () => {
   });
 
   // --- Split toggle in payment mode ---
-  it('renders split checkbox in payment mode', () => {
+  it('renders split checkbox in payment mode', async () => {
     render(<ScheduledTransactionForm />);
-    expect(screen.getByText('Split')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Split')).toBeInTheDocument();
+    });
   });
 
   // --- Transfer hides category and split ---
-  it('hides category and split in transfer mode', () => {
+  it('hides category and split in transfer mode', async () => {
     render(<ScheduledTransactionForm />);
+    await waitFor(() => {
+      expect(screen.getByText('Transfer')).toBeInTheDocument();
+    });
     fireEvent.click(screen.getByText('Transfer'));
     // Category section should not be shown in transfer mode
     // The category Combobox is only rendered for payment mode
@@ -598,7 +687,7 @@ describe('ScheduledTransactionForm', () => {
   // NEW TESTS: Editing an existing scheduled transaction
   // ============================================================
 
-  it('pre-fills description from existing scheduled transaction', () => {
+  it('pre-fills description from existing scheduled transaction', async () => {
     const existingSt = {
       id: 's1', accountId: 'acc-1', name: 'Monthly Rent', amount: -1500,
       currencyCode: 'CAD', frequency: 'MONTHLY' as const,
@@ -608,12 +697,14 @@ describe('ScheduledTransactionForm', () => {
     } as any;
 
     render(<ScheduledTransactionForm scheduledTransaction={existingSt} />);
+    await waitFor(() => {
+      expect(document.querySelector('textarea')).toBeTruthy();
+    });
     const textarea = document.querySelector('textarea');
-    expect(textarea).toBeTruthy();
     expect(textarea!.value).toBe('Rent payment for apartment');
   });
 
-  it('pre-fills inactive status from existing scheduled transaction', () => {
+  it('pre-fills inactive status from existing scheduled transaction', async () => {
     const existingSt = {
       id: 's1', accountId: 'acc-1', name: 'Old Sub', amount: -10,
       currencyCode: 'CAD', frequency: 'MONTHLY' as const,
@@ -622,11 +713,14 @@ describe('ScheduledTransactionForm', () => {
     } as any;
 
     render(<ScheduledTransactionForm scheduledTransaction={existingSt} />);
+    await waitFor(() => {
+      expect(screen.getByLabelText('Active')).toBeInTheDocument();
+    });
     const activeCheckbox = screen.getByLabelText('Active') as HTMLInputElement;
     expect(activeCheckbox.checked).toBe(false);
   });
 
-  it('pre-fills end date checkbox and value from existing scheduled transaction', () => {
+  it('pre-fills end date checkbox and value from existing scheduled transaction', async () => {
     const existingSt = {
       id: 's1', accountId: 'acc-1', name: 'Lease', amount: -2000,
       currencyCode: 'CAD', frequency: 'MONTHLY' as const,
@@ -637,11 +731,14 @@ describe('ScheduledTransactionForm', () => {
     } as any;
 
     render(<ScheduledTransactionForm scheduledTransaction={existingSt} />);
+    await waitFor(() => {
+      expect(screen.getByLabelText('End by date')).toBeInTheDocument();
+    });
     const endDateCheckbox = screen.getByLabelText('End by date') as HTMLInputElement;
     expect(endDateCheckbox.checked).toBe(true);
   });
 
-  it('pre-fills occurrences remaining from existing scheduled transaction', () => {
+  it('pre-fills occurrences remaining from existing scheduled transaction', async () => {
     const existingSt = {
       id: 's1', accountId: 'acc-1', name: 'Installments', amount: -200,
       currencyCode: 'CAD', frequency: 'MONTHLY' as const,
@@ -652,13 +749,16 @@ describe('ScheduledTransactionForm', () => {
     } as any;
 
     render(<ScheduledTransactionForm scheduledTransaction={existingSt} />);
+    await waitFor(() => {
+      expect(screen.getByLabelText('Number of occurrences')).toBeInTheDocument();
+    });
     const occurrencesCheckbox = screen.getByLabelText('Number of occurrences') as HTMLInputElement;
     expect(occurrencesCheckbox.checked).toBe(true);
     const occurrencesInput = screen.getByPlaceholderText('# remaining') as HTMLInputElement;
     expect(occurrencesInput.value).toBe('12');
   });
 
-  it('shows transfer amount as absolute value when editing a transfer', () => {
+  it('shows transfer amount as absolute value when editing a transfer', async () => {
     const transferSt = {
       id: 's1', accountId: 'acc-1', name: 'Savings Transfer',
       amount: -500, currencyCode: 'CAD', frequency: 'MONTHLY' as const,
@@ -669,10 +769,12 @@ describe('ScheduledTransactionForm', () => {
     render(<ScheduledTransactionForm scheduledTransaction={transferSt} />);
     // The form should display absolute value of the transfer amount
     // (checking it doesn't crash and renders properly)
-    expect(screen.getByText('Update')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Update')).toBeInTheDocument();
+    });
   });
 
-  it('pre-fills frequency from existing scheduled transaction with WEEKLY', () => {
+  it('pre-fills frequency from existing scheduled transaction with WEEKLY', async () => {
     const existingSt = {
       id: 's1', accountId: 'acc-1', name: 'Weekly Groceries', amount: -100,
       currencyCode: 'CAD', frequency: 'WEEKLY' as const,
@@ -681,11 +783,14 @@ describe('ScheduledTransactionForm', () => {
     } as any;
 
     render(<ScheduledTransactionForm scheduledTransaction={existingSt} />);
+    await waitFor(() => {
+      expect(screen.getByLabelText('Frequency')).toBeInTheDocument();
+    });
     const frequencySelect = screen.getByLabelText('Frequency') as HTMLSelectElement;
     expect(frequencySelect.value).toBe('WEEKLY');
   });
 
-  it('pre-fills frequency from existing scheduled transaction with YEARLY', () => {
+  it('pre-fills frequency from existing scheduled transaction with YEARLY', async () => {
     const existingSt = {
       id: 's1', accountId: 'acc-1', name: 'Insurance Premium', amount: -1200,
       currencyCode: 'CAD', frequency: 'YEARLY' as const,
@@ -694,6 +799,9 @@ describe('ScheduledTransactionForm', () => {
     } as any;
 
     render(<ScheduledTransactionForm scheduledTransaction={existingSt} />);
+    await waitFor(() => {
+      expect(screen.getByLabelText('Frequency')).toBeInTheDocument();
+    });
     const frequencySelect = screen.getByLabelText('Frequency') as HTMLSelectElement;
     expect(frequencySelect.value).toBe('YEARLY');
   });
@@ -767,17 +875,21 @@ describe('ScheduledTransactionForm', () => {
   // NEW TESTS: Transfer mode
   // ============================================================
 
-  it('clears split state when switching to transfer mode', () => {
+  it('clears split state when switching to transfer mode', async () => {
     render(<ScheduledTransactionForm />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Split')).toBeInTheDocument();
+    });
 
     // Enable split first
     const splitCheckbox = screen.getByText('Split').closest('label')?.querySelector('input');
     if (splitCheckbox) {
-      fireEvent.click(splitCheckbox);
+      await act(async () => { fireEvent.click(splitCheckbox); });
     }
 
     // Switch to transfer
-    fireEvent.click(screen.getByText('Transfer'));
+    await act(async () => { fireEvent.click(screen.getByText('Transfer')); });
 
     // Split should not be visible
     expect(screen.queryByText('Split')).not.toBeInTheDocument();
@@ -837,37 +949,47 @@ describe('ScheduledTransactionForm', () => {
   // NEW TESTS: Split toggle
   // ============================================================
 
-  it('shows split editor when split checkbox is checked in payment mode', () => {
+  it('shows split editor when split checkbox is checked in payment mode', async () => {
     render(<ScheduledTransactionForm />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Split')).toBeInTheDocument();
+    });
 
     const splitCheckbox = screen.getByText('Split').closest('label')?.querySelector('input');
     expect(splitCheckbox).toBeTruthy();
-    fireEvent.click(splitCheckbox!);
+    await act(async () => { fireEvent.click(splitCheckbox!); });
 
     expect(screen.getByTestId('split-editor')).toBeInTheDocument();
   });
 
-  it('hides category combobox when split is enabled', () => {
+  it('hides category combobox when split is enabled', async () => {
     render(<ScheduledTransactionForm />);
 
     // Category combobox should be present initially
-    expect(screen.getByTestId('combobox-unnamed')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByTestId('combobox-unnamed')).toBeInTheDocument();
+    });
 
     const splitCheckbox = screen.getByText('Split').closest('label')?.querySelector('input');
-    fireEvent.click(splitCheckbox!);
+    await act(async () => { fireEvent.click(splitCheckbox!); });
 
     // Should show split info instead
     expect(screen.getByText(/categories/)).toBeInTheDocument();
   });
 
-  it('removes split editor when split checkbox is unchecked', () => {
+  it('removes split editor when split checkbox is unchecked', async () => {
     render(<ScheduledTransactionForm />);
 
+    await waitFor(() => {
+      expect(screen.getByText('Split')).toBeInTheDocument();
+    });
+
     const splitCheckbox = screen.getByText('Split').closest('label')?.querySelector('input');
-    fireEvent.click(splitCheckbox!);
+    await act(async () => { fireEvent.click(splitCheckbox!); });
     expect(screen.getByTestId('split-editor')).toBeInTheDocument();
 
-    fireEvent.click(splitCheckbox!);
+    await act(async () => { fireEvent.click(splitCheckbox!); });
     expect(screen.queryByTestId('split-editor')).not.toBeInTheDocument();
   });
 
@@ -904,7 +1026,7 @@ describe('ScheduledTransactionForm', () => {
 
     // Select payee without default category
     const payeeOption = screen.getByTestId('option-payee-3');
-    fireEvent.click(payeeOption);
+    await act(async () => { fireEvent.click(payeeOption); });
 
     // No crash, form should still work
     const submitButton = container.querySelector('button[type="submit"]');
@@ -922,7 +1044,7 @@ describe('ScheduledTransactionForm', () => {
 
     // Select then deselect payee
     const payeeOption = screen.getByTestId('option-payee-1');
-    fireEvent.click(payeeOption);
+    await act(async () => { fireEvent.click(payeeOption); });
 
     // Select empty (clear)
     const comboboxInput = screen.getByTestId('combobox-input-Payee');
@@ -946,7 +1068,7 @@ describe('ScheduledTransactionForm', () => {
 
     // Select category (cat-1 = Rent, which is expense)
     const catOption = screen.getByTestId('option-cat-1');
-    fireEvent.click(catOption);
+    await act(async () => { fireEvent.click(catOption); });
 
     // Should still render normally
     const submitButton = container.querySelector('button[type="submit"]');
@@ -963,7 +1085,7 @@ describe('ScheduledTransactionForm', () => {
 
     // Select category
     const catOption = screen.getByTestId('option-cat-1');
-    fireEvent.click(catOption);
+    await act(async () => { fireEvent.click(catOption); });
 
     // Clear selection by clicking with empty value
     // Use the unnamed combobox (category combobox doesn't have a label prop in this component)
@@ -1047,13 +1169,15 @@ describe('ScheduledTransactionForm', () => {
   // NEW TESTS: Amount label changes when split is enabled
   // ============================================================
 
-  it('changes amount label to Total Amount when split is enabled', () => {
+  it('changes amount label to Total Amount when split is enabled', async () => {
     render(<ScheduledTransactionForm />);
 
-    expect(screen.getByText('Amount')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Amount')).toBeInTheDocument();
+    });
 
     const splitCheckbox = screen.getByText('Split').closest('label')?.querySelector('input');
-    fireEvent.click(splitCheckbox!);
+    await act(async () => { fireEvent.click(splitCheckbox!); });
 
     expect(screen.getByText('Total Amount')).toBeInTheDocument();
     expect(screen.queryByText('Amount')).not.toBeInTheDocument();
@@ -1063,11 +1187,13 @@ describe('ScheduledTransactionForm', () => {
   // NEW TESTS: Frequency-specific behavior for ONCE
   // ============================================================
 
-  it('hides end condition section for ONCE frequency', () => {
+  it('hides end condition section for ONCE frequency', async () => {
     render(<ScheduledTransactionForm />);
 
     // Default MONTHLY should show end condition
-    expect(screen.getByText('End Condition (optional)')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('End Condition (optional)')).toBeInTheDocument();
+    });
 
     // Switch to ONCE
     const frequencySelect = screen.getByLabelText('Frequency') as HTMLSelectElement;
@@ -1083,7 +1209,7 @@ describe('ScheduledTransactionForm', () => {
   // NEW TESTS: Form with existing ONCE frequency
   // ============================================================
 
-  it('does not show end condition for existing ONCE frequency transaction', () => {
+  it('does not show end condition for existing ONCE frequency transaction', async () => {
     const onceSt = {
       id: 's1', accountId: 'acc-1', name: 'One Time Payment', amount: -500,
       currencyCode: 'CAD', frequency: 'ONCE' as const,
@@ -1092,6 +1218,9 @@ describe('ScheduledTransactionForm', () => {
     } as any;
 
     render(<ScheduledTransactionForm scheduledTransaction={onceSt} />);
+    await waitFor(() => {
+      expect(screen.getByText('Update')).toBeInTheDocument();
+    });
     expect(screen.queryByText('End Condition (optional)')).not.toBeInTheDocument();
   });
 
@@ -1099,14 +1228,20 @@ describe('ScheduledTransactionForm', () => {
   // NEW TESTS: Name placeholder changes based on transaction type
   // ============================================================
 
-  it('shows payment placeholder for name field in payment mode', () => {
+  it('shows payment placeholder for name field in payment mode', async () => {
     render(<ScheduledTransactionForm />);
+    await waitFor(() => {
+      expect(screen.getByLabelText('Name')).toBeInTheDocument();
+    });
     const nameInput = screen.getByLabelText('Name') as HTMLInputElement;
     expect(nameInput.placeholder).toContain('Rent');
   });
 
-  it('shows transfer placeholder for name field in transfer mode', () => {
+  it('shows transfer placeholder for name field in transfer mode', async () => {
     render(<ScheduledTransactionForm />);
+    await waitFor(() => {
+      expect(screen.getByText('Transfer')).toBeInTheDocument();
+    });
     fireEvent.click(screen.getByText('Transfer'));
     const nameInput = screen.getByLabelText('Name') as HTMLInputElement;
     expect(nameInput.placeholder).toContain('Savings Transfer');

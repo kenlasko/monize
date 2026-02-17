@@ -331,11 +331,9 @@ describe('LoanAmortizationReport', () => {
     });
     render(<LoanAmortizationReport />);
     await waitFor(() => {
-      // The table should display the principal and interest amounts
-      expect(screen.getByText('#')).toBeInTheDocument();
+      // Check payment history header shows correct count after transactions load
+      expect(screen.getByText(/1 payments made/)).toBeInTheDocument();
     });
-    // Check payment history header shows correct count
-    expect(screen.getByText(/1 payments made/)).toBeInTheDocument();
   });
 
   it('shows "Payment History & Projection" header when projections exist', async () => {

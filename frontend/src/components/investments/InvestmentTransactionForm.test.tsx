@@ -82,48 +82,60 @@ describe('InvestmentTransactionForm', () => {
     vi.clearAllMocks();
   });
 
-  it('renders form fields', () => {
+  it('renders form fields', async () => {
     render(<InvestmentTransactionForm accounts={accounts} />);
-    expect(screen.getByText('Brokerage Account')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Brokerage Account')).toBeInTheDocument();
+    });
     expect(screen.getByText('Transaction Type')).toBeInTheDocument();
     expect(screen.getByText('Date')).toBeInTheDocument();
   });
 
-  it('shows Create Transaction button for new form', () => {
+  it('shows Create Transaction button for new form', async () => {
     render(<InvestmentTransactionForm accounts={accounts} />);
-    expect(screen.getByText('Create Transaction')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Create Transaction')).toBeInTheDocument();
+    });
   });
 
-  it('shows Update Transaction button for editing', () => {
+  it('shows Update Transaction button for editing', async () => {
     const transaction = {
       id: 't1', accountId: 'a1', action: 'BUY' as const, transactionDate: '2024-01-01',
       quantity: 10, price: 50, commission: 5, totalAmount: 505, description: '',
     } as any;
 
     render(<InvestmentTransactionForm accounts={accounts} transaction={transaction} />);
-    expect(screen.getByText('Update Transaction')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Update Transaction')).toBeInTheDocument();
+    });
   });
 
-  it('renders cancel button when onCancel provided', () => {
+  it('renders cancel button when onCancel provided', async () => {
     const onCancel = vi.fn();
     render(<InvestmentTransactionForm accounts={accounts} onCancel={onCancel} />);
-    expect(screen.getByText('Cancel')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Cancel')).toBeInTheDocument();
+    });
   });
 
-  it('only shows brokerage accounts in account dropdown', () => {
+  it('only shows brokerage accounts in account dropdown', async () => {
     render(<InvestmentTransactionForm accounts={accounts} />);
-    const select = screen.getByLabelText('Brokerage Account');
-    const options = select.querySelectorAll('option');
-    // "Select account..." + "RRSP Brokerage" only (no chequing, no cash)
-    expect(options).toHaveLength(2);
-    expect(options[1].textContent).toBe('RRSP Brokerage (CAD)');
+    await waitFor(() => {
+      const select = screen.getByLabelText('Brokerage Account');
+      const options = select.querySelectorAll('option');
+      // "Select account..." + "RRSP Brokerage" only (no chequing, no cash)
+      expect(options).toHaveLength(2);
+      expect(options[1].textContent).toBe('RRSP Brokerage (CAD)');
+    });
   });
 
-  it('renders all action types in dropdown', () => {
+  it('renders all action types in dropdown', async () => {
     render(<InvestmentTransactionForm accounts={accounts} />);
-    const select = screen.getByLabelText('Transaction Type');
-    const options = select.querySelectorAll('option');
-    expect(options.length).toBe(11); // 11 action types
+    await waitFor(() => {
+      const select = screen.getByLabelText('Transaction Type');
+      const options = select.querySelectorAll('option');
+      expect(options.length).toBe(11); // 11 action types
+    });
   });
 
   it('shows security select for BUY action', async () => {
@@ -209,18 +221,22 @@ describe('InvestmentTransactionForm', () => {
     });
   });
 
-  it('shows description field', () => {
+  it('shows description field', async () => {
     render(<InvestmentTransactionForm accounts={accounts} />);
-    expect(screen.getByText('Description (optional)')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Description (optional)')).toBeInTheDocument();
+    });
   });
 
-  it('uses defaultAccountId when provided', () => {
+  it('uses defaultAccountId when provided', async () => {
     render(<InvestmentTransactionForm accounts={accounts} defaultAccountId="a1" />);
-    const select = screen.getByLabelText('Brokerage Account');
-    expect((select as HTMLSelectElement).value).toBe('a1');
+    await waitFor(() => {
+      const select = screen.getByLabelText('Brokerage Account');
+      expect((select as HTMLSelectElement).value).toBe('a1');
+    });
   });
 
-  it('renders with editing transaction that has DIVIDEND action', () => {
+  it('renders with editing transaction that has DIVIDEND action', async () => {
     const transaction = {
       id: 't1', accountId: 'a1', action: 'DIVIDEND' as const, transactionDate: '2024-06-15',
       quantity: null, price: null, commission: 0, totalAmount: 250, description: 'Q2 Dividend',
@@ -228,22 +244,28 @@ describe('InvestmentTransactionForm', () => {
     } as any;
 
     render(<InvestmentTransactionForm accounts={accounts} transaction={transaction} />);
-    expect(screen.getByText('Update Transaction')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Update Transaction')).toBeInTheDocument();
+    });
   });
 
-  it('shows funding account select for BUY action', () => {
+  it('shows funding account select for BUY action', async () => {
     render(<InvestmentTransactionForm accounts={accounts} />);
-    // Default action is BUY which supports funding account
-    expect(screen.getByText('Funds From (optional)')).toBeInTheDocument();
+    await waitFor(() => {
+      // Default action is BUY which supports funding account
+      expect(screen.getByText('Funds From (optional)')).toBeInTheDocument();
+    });
   });
 
-  it('filters out CASH and ASSET accounts from funding accounts', () => {
+  it('filters out CASH and ASSET accounts from funding accounts', async () => {
     render(<InvestmentTransactionForm accounts={accounts} />);
-    const fundingSelect = screen.getByLabelText('Funds From (optional)');
-    const options = fundingSelect.querySelectorAll('option');
-    // "Default cash account" + chequing + brokerage (not cash account or asset)
-    const optionTexts = Array.from(options).map(o => o.textContent);
-    expect(optionTexts).not.toContain('Cash Account');
+    await waitFor(() => {
+      const fundingSelect = screen.getByLabelText('Funds From (optional)');
+      const options = fundingSelect.querySelectorAll('option');
+      // "Default cash account" + chequing + brokerage (not cash account or asset)
+      const optionTexts = Array.from(options).map(o => o.textContent);
+      expect(optionTexts).not.toContain('Cash Account');
+    });
   });
 
   it('loads securities on mount', async () => {
@@ -262,21 +284,25 @@ describe('InvestmentTransactionForm', () => {
     });
   });
 
-  it('uses allAccounts for funding dropdown when provided', () => {
+  it('uses allAccounts for funding dropdown when provided', async () => {
     const extraAccount = {
       id: 'a4', name: 'Savings', accountType: 'SAVINGS',
       accountSubType: null, currencyCode: 'CAD',
     } as any;
 
     render(<InvestmentTransactionForm accounts={accounts} allAccounts={[...accounts, extraAccount]} />);
-    const fundingSelect = screen.getByLabelText('Funds From (optional)');
-    const options = fundingSelect.querySelectorAll('option');
-    const optionTexts = Array.from(options).map(o => o.textContent);
-    expect(optionTexts).toContain('Savings');
+    await waitFor(() => {
+      const fundingSelect = screen.getByLabelText('Funds From (optional)');
+      const options = fundingSelect.querySelectorAll('option');
+      const optionTexts = Array.from(options).map(o => o.textContent);
+      expect(optionTexts).toContain('Savings');
+    });
   });
 
-  it('shows Total Amount display for BUY action', () => {
+  it('shows Total Amount display for BUY action', async () => {
     render(<InvestmentTransactionForm accounts={accounts} />);
-    expect(screen.getByText(/Total Amount/)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText(/Total Amount/)).toBeInTheDocument();
+    });
   });
 });

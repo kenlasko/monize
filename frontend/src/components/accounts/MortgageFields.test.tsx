@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@/test/render';
+import { render, screen, waitFor, fireEvent, act } from '@/test/render';
 import { MortgageFields } from './MortgageFields';
 import { Account } from '@/types/account';
 import { Category } from '@/types/category';
@@ -346,11 +346,19 @@ describe('MortgageFields', () => {
       mortgagePaymentFrequency="MONTHLY" paymentStartDate="2024-02-01"
     />);
 
-    vi.advanceTimersByTime(400);
+    await act(async () => { vi.advanceTimersByTime(400); });
     expect(accountsApi.previewMortgageAmortization).not.toHaveBeenCalled();
 
-    await vi.advanceTimersByTimeAsync(200);
+    await act(async () => { await vi.advanceTimersByTimeAsync(200); });
     expect(accountsApi.previewMortgageAmortization).toHaveBeenCalledTimes(1);
+
+    // Switch to real timers so waitFor can poll properly
+    vi.useRealTimers();
+
+    // Wait for state updates from the resolved API call
+    await waitFor(() => {
+      expect(screen.getByText('Amortization Preview')).toBeInTheDocument();
+    });
   });
 
   it('passes isCanadian and isVariableRate to preview API', async () => {
@@ -366,7 +374,7 @@ describe('MortgageFields', () => {
       isCanadianMortgage={true} isVariableRate={true}
     />);
 
-    await vi.advanceTimersByTimeAsync(600);
+    await act(async () => { await vi.advanceTimersByTimeAsync(600); });
 
     expect(accountsApi.previewMortgageAmortization).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -374,6 +382,14 @@ describe('MortgageFields', () => {
         isVariableRate: true,
       })
     );
+
+    // Switch to real timers so waitFor can poll properly
+    vi.useRealTimers();
+
+    // Wait for state updates from the resolved API call
+    await waitFor(() => {
+      expect(screen.getByText('Amortization Preview')).toBeInTheDocument();
+    });
   });
 
   it('shows N/A for totalPayments and totalInterest when 0', async () => {

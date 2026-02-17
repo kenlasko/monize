@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor } from '@/test/render';
+import { render, screen, waitFor, act } from '@/test/render';
 import { LoanFields } from './LoanFields';
 import { Account } from '@/types/account';
 import { Category } from '@/types/category';
@@ -228,12 +228,20 @@ describe('LoanFields', () => {
     />);
 
     // Before 500ms, API should not have been called
-    vi.advanceTimersByTime(400);
+    await act(async () => { vi.advanceTimersByTime(400); });
     expect(accountsApi.previewLoanAmortization).not.toHaveBeenCalled();
 
     // After 500ms, API should be called
-    await vi.advanceTimersByTimeAsync(200);
+    await act(async () => { await vi.advanceTimersByTimeAsync(200); });
     expect(accountsApi.previewLoanAmortization).toHaveBeenCalledTimes(1);
+
+    // Switch to real timers so waitFor can poll properly
+    vi.useRealTimers();
+
+    // Wait for state updates from the resolved API call
+    await waitFor(() => {
+      expect(screen.getByText('Payment Preview (First Payment)')).toBeInTheDocument();
+    });
   });
 
   it('shows N/A for totalPayments and payoff when totalPayments is 0', async () => {
@@ -284,7 +292,7 @@ describe('LoanFields', () => {
       paymentFrequency="BIWEEKLY" paymentStartDate="2025-03-01"
     />);
 
-    await vi.advanceTimersByTimeAsync(600);
+    await act(async () => { await vi.advanceTimersByTimeAsync(600); });
 
     expect(accountsApi.previewLoanAmortization).toHaveBeenCalledWith({
       loanAmount: 25000,
@@ -292,6 +300,14 @@ describe('LoanFields', () => {
       paymentAmount: 750,
       paymentFrequency: 'BIWEEKLY',
       paymentStartDate: '2025-03-01',
+    });
+
+    // Switch to real timers so waitFor can poll properly
+    vi.useRealTimers();
+
+    // Wait for state updates from the resolved API call
+    await waitFor(() => {
+      expect(screen.getByText('Payment Preview (First Payment)')).toBeInTheDocument();
     });
   });
 

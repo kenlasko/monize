@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 
 // Mock next/image
 vi.mock('next/image', () => ({
-  default: (props: any) => <img alt="" {...props} />,
+  default: ({ priority, fill, ...props }: any) => <img alt="" {...props} />,
 }));
 
 // Mock logger

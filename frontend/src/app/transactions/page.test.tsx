@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 
 // Mock next/image
 vi.mock('next/image', () => ({
-  default: (props: any) => <img alt="" {...props} />,
+  default: ({ priority, fill, ...props }: any) => <img alt="" {...props} />,
 }));
 
 // Mock next/dynamic to return mock components that render with props
@@ -15,13 +15,13 @@ vi.mock('next/dynamic', () => ({
     const DynamicComponent = (props: any) => {
       // Check loader path to determine which component
       if (props.transaction !== undefined || props.onSuccess !== undefined) {
-        return <div data-testid="dynamic-transaction-form" {...props}>TransactionForm</div>;
+        return <div data-testid="dynamic-transaction-form">TransactionForm</div>;
       }
       if (props.payee !== undefined) {
-        return <div data-testid="dynamic-payee-form" {...props}>PayeeForm</div>;
+        return <div data-testid="dynamic-payee-form">PayeeForm</div>;
       }
       if (props.selectionCount !== undefined) {
-        return <div data-testid="dynamic-bulk-update-modal" {...props}>BulkUpdateModal</div>;
+        return <div data-testid="dynamic-bulk-update-modal">BulkUpdateModal</div>;
       }
       return <div data-testid="dynamic-component">DynamicComponent</div>;
     };
@@ -823,7 +823,9 @@ describe('TransactionsPage', () => {
       // handleTransactionUpdate only calls setTransactions - it does NOT call loadAllData
       // which would reload accounts, categories, and payees. Verify that the static
       // data APIs are not called again.
-      expect(mockGetAllAccounts.mock.calls.length).toBe(staticDataCallsBefore);
+      await waitFor(() => {
+        expect(mockGetAllAccounts.mock.calls.length).toBe(staticDataCallsBefore);
+      });
       expect(mockGetAllCategories.mock.calls.length).toBeLessThanOrEqual(1);
       expect(mockGetAllPayees.mock.calls.length).toBeLessThanOrEqual(1);
     });

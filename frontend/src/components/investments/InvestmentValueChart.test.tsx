@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@/test/render';
+import { render, screen, waitFor } from '@/test/render';
 import { InvestmentValueChart } from './InvestmentValueChart';
 import { netWorthApi } from '@/lib/net-worth';
 
@@ -65,9 +65,11 @@ describe('InvestmentValueChart', () => {
     ]);
   });
 
-  it('renders loading state initially', () => {
+  it('renders loading state initially', async () => {
     render(<InvestmentValueChart />);
-    expect(document.querySelector('.animate-pulse')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(document.querySelector('.animate-pulse')).toBeInTheDocument();
+    });
   });
 
   it('renders title after data loads', async () => {

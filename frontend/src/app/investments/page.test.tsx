@@ -4,7 +4,7 @@ import InvestmentsPage from './page';
 
 // Mock next/image
 vi.mock('next/image', () => ({
-  default: (props: any) => <img alt="" {...props} />,
+  default: ({ priority, fill, ...props }: any) => <img alt="" {...props} />,
 }));
 
 // Mock logger
@@ -611,7 +611,7 @@ describe('InvestmentsPage', () => {
 
     it('shows pagination when multiple pages exist', async () => {
       mockGetTransactions.mockResolvedValue({
-        data: Array(25).fill({ id: 'tx', action: 'BUY' }),
+        data: Array.from({ length: 25 }, (_, i) => ({ id: `tx-${i}`, action: 'BUY' })),
         pagination: { page: 1, totalPages: 3, total: 75 },
       });
       render(<InvestmentsPage />);

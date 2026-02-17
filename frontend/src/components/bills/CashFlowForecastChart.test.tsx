@@ -118,7 +118,7 @@ describe('CashFlowForecastChart', () => {
     });
 
     render(
-      <CashFlowForecastChart scheduledTransactions={[{} as any]} accounts={[{} as any]} isLoading={false} />
+      <CashFlowForecastChart scheduledTransactions={[{} as any]} accounts={[{ id: 'a1', name: 'Checking', isClosed: false, accountType: 'CHEQUING', accountSubType: null } as any]} isLoading={false} />
     );
     expect(screen.getByText('Starting')).toBeInTheDocument();
     expect(screen.getByText('Ending')).toBeInTheDocument();
@@ -136,7 +136,7 @@ describe('CashFlowForecastChart', () => {
     mockBuildForecast.mockReturnValue(forecastData);
 
     render(
-      <CashFlowForecastChart scheduledTransactions={[{} as any]} accounts={[{} as any]} isLoading={false} />
+      <CashFlowForecastChart scheduledTransactions={[{} as any]} accounts={[{ id: 'a1', name: 'Checking', isClosed: false, accountType: 'CHEQUING', accountSubType: null } as any]} isLoading={false} />
     );
     expect(screen.getByText('2 scheduled transactions in forecast')).toBeInTheDocument();
   });
@@ -155,7 +155,7 @@ describe('CashFlowForecastChart', () => {
     });
 
     render(
-      <CashFlowForecastChart scheduledTransactions={[{} as any]} accounts={[{} as any]} isLoading={false} />
+      <CashFlowForecastChart scheduledTransactions={[{} as any]} accounts={[{ id: 'a1', name: 'Checking', isClosed: false, accountType: 'CHEQUING', accountSubType: null } as any]} isLoading={false} />
     );
     expect(screen.getByText('Lowest')).toBeInTheDocument();
     expect(screen.getByText('!')).toBeInTheDocument();
@@ -175,7 +175,7 @@ describe('CashFlowForecastChart', () => {
     });
 
     render(
-      <CashFlowForecastChart scheduledTransactions={[{} as any]} accounts={[{} as any]} isLoading={false} />
+      <CashFlowForecastChart scheduledTransactions={[{} as any]} accounts={[{ id: 'a1', name: 'Checking', isClosed: false, accountType: 'CHEQUING', accountSubType: null } as any]} isLoading={false} />
     );
     expect(screen.getByText('No upcoming transactions in this period - showing current balance')).toBeInTheDocument();
   });
