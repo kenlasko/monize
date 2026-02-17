@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { UseFormRegister, UseFormSetValue, FieldErrors } from 'react-hook-form';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { Combobox } from '@/components/ui/Combobox';
 import { Account, MortgageAmortizationPreview, MortgagePaymentFrequency } from '@/types/account';
 import { Category } from '@/types/category';
+import { buildCategoryTree } from '@/lib/categoryUtils';
 import { accountsApi } from '@/lib/accounts';
 import { createLogger } from '@/lib/logger';
 
@@ -53,6 +55,8 @@ interface MortgageFieldsProps {
   accounts: Account[];
   categories: Category[];
   formatCurrency: (amount: number, currency?: string) => string;
+  selectedInterestCategoryId: string;
+  handleInterestCategoryChange: (categoryId: string) => void;
 }
 
 export function MortgageFields({
@@ -70,6 +74,8 @@ export function MortgageFields({
   accounts,
   categories,
   formatCurrency,
+  selectedInterestCategoryId,
+  handleInterestCategoryChange,
 }: MortgageFieldsProps) {
   const [mortgagePreview, setMortgagePreview] = useState<MortgageAmortizationPreview | null>(null);
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
@@ -106,6 +112,26 @@ export function MortgageFields({
     }, 500);
     return () => clearTimeout(timer);
   }, [calculateMortgagePreview]);
+
+  const interestCategoryOptions = useMemo(() =>
+    buildCategoryTree(categories).map(({ category }) => {
+      const parentCategory = category.parentId
+        ? categories.find(c => c.id === category.parentId)
+        : null;
+      return {
+        value: category.id,
+        label: parentCategory ? `${parentCategory.name}: ${category.name}` : category.name,
+      };
+    }),
+  [categories]);
+
+  const initialInterestCategoryName = useMemo(() => {
+    if (!selectedInterestCategoryId) return '';
+    const cat = categories.find(c => c.id === selectedInterestCategoryId);
+    if (!cat) return '';
+    const parent = cat.parentId ? categories.find(c => c.id === cat.parentId) : null;
+    return parent ? `${parent.name}: ${cat.name}` : cat.name;
+  }, [selectedInterestCategoryId, categories]);
 
   return (
     <div className="space-y-4 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
@@ -208,21 +234,14 @@ export function MortgageFields({
           {...register('sourceAccountId')}
         />
 
-        <Select
+        <Combobox
           label="Interest Category"
-          options={[
-            { value: '', label: 'Select category...' },
-            ...categories
-              .map(c => ({
-                value: c.id,
-                label: c.parentId
-                  ? `${categories.find(p => p.id === c.parentId)?.name || ''}: ${c.name}`
-                  : c.name,
-              }))
-              .sort((a, b) => a.label.localeCompare(b.label)),
-          ]}
+          placeholder="Select category..."
+          options={interestCategoryOptions}
+          value={selectedInterestCategoryId}
+          initialDisplayValue={initialInterestCategoryName}
+          onChange={handleInterestCategoryChange}
           error={errors.interestCategoryId?.message as string | undefined}
-          {...register('interestCategoryId')}
         />
       </div>
 

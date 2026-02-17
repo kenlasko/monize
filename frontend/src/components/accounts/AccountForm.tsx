@@ -122,6 +122,7 @@ export function AccountForm({ account, onSubmit, onCancel, onDirtyChange, submit
   }>({ principalId: null, interestId: null });
   const [selectedAssetCategoryId, setSelectedAssetCategoryId] = useState<string>(account?.assetCategoryId || '');
   const [assetCategoryName, setAssetCategoryName] = useState<string>('');
+  const [selectedInterestCategoryId, setSelectedInterestCategoryId] = useState<string>(account?.interestCategoryId || '');
 
   const {
     register,
@@ -262,6 +263,7 @@ export function AccountForm({ account, onSubmit, onCancel, onDirtyChange, submit
               // Set default interest category if not already set
               if (interestCat && !getValues('interestCategoryId')) {
                 setValue('interestCategoryId', interestCat.id);
+                setSelectedInterestCategoryId(interestCat.id);
               }
             }
           }
@@ -277,6 +279,7 @@ export function AccountForm({ account, onSubmit, onCancel, onDirtyChange, submit
               );
               if (interestCat && !getValues('interestCategoryId')) {
                 setValue('interestCategoryId', interestCat.id);
+                setSelectedInterestCategoryId(interestCat.id);
               }
             }
           }
@@ -296,6 +299,12 @@ export function AccountForm({ account, onSubmit, onCancel, onDirtyChange, submit
     if (account) {
       router.push(`/import?accountId=${account.id}`);
     }
+  };
+
+  // Handle interest category selection (for loan/mortgage)
+  const handleInterestCategoryChange = (categoryId: string) => {
+    setSelectedInterestCategoryId(categoryId);
+    setValue('interestCategoryId', categoryId || '', { shouldDirty: true, shouldValidate: true });
   };
 
   // Handle asset category selection
@@ -481,6 +490,8 @@ export function AccountForm({ account, onSubmit, onCancel, onDirtyChange, submit
           accounts={accounts}
           categories={categories}
           formatCurrency={formatCurrency}
+          selectedInterestCategoryId={selectedInterestCategoryId}
+          handleInterestCategoryChange={handleInterestCategoryChange}
         />
       )}
 
@@ -500,6 +511,8 @@ export function AccountForm({ account, onSubmit, onCancel, onDirtyChange, submit
           accounts={accounts}
           categories={categories}
           formatCurrency={formatCurrency}
+          selectedInterestCategoryId={selectedInterestCategoryId}
+          handleInterestCategoryChange={handleInterestCategoryChange}
         />
       )}
 

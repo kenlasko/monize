@@ -1,12 +1,12 @@
 'use client';
 
-import { useMemo, MutableRefObject } from 'react';
+import { useState, useMemo, MutableRefObject } from 'react';
 import { useForm } from 'react-hook-form';
 import '@/lib/zodConfig';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Input } from '@/components/ui/Input';
-import { Select } from '@/components/ui/Select';
+import { Combobox } from '@/components/ui/Combobox';
 import { Payee } from '@/types/payee';
 import { Category } from '@/types/category';
 import { buildCategoryTree } from '@/lib/categoryUtils';
@@ -32,9 +32,12 @@ interface PayeeFormProps {
 }
 
 export function PayeeForm({ payee, categories, onSubmit, onCancel, onDirtyChange, submitRef }: PayeeFormProps) {
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>(payee?.defaultCategoryId || '');
+
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors, isSubmitting, isDirty },
   } = useForm<PayeeFormData>({
     resolver: zodResolver(payeeSchema),
@@ -53,9 +56,8 @@ export function PayeeForm({ payee, categories, onSubmit, onCancel, onDirtyChange
 
   useFormSubmitRef(submitRef, handleSubmit, onSubmit);
 
-  const categoryOptions = useMemo(() => [
-    { value: '', label: 'No default category' },
-    ...buildCategoryTree(categories).map(({ category }) => {
+  const categoryOptions = useMemo(() =>
+    buildCategoryTree(categories).map(({ category }) => {
       const parentCategory = category.parentId
         ? categories.find(c => c.id === category.parentId)
         : null;
@@ -64,7 +66,21 @@ export function PayeeForm({ payee, categories, onSubmit, onCancel, onDirtyChange
         label: parentCategory ? `${parentCategory.name}: ${category.name}` : category.name,
       };
     }),
-  ], [categories]);
+  [categories]);
+
+  const handleCategoryChange = (categoryId: string) => {
+    setSelectedCategoryId(categoryId);
+    setValue('defaultCategoryId', categoryId || '', { shouldDirty: true });
+  };
+
+  // Find display name for the initial category
+  const initialCategoryName = useMemo(() => {
+    if (!payee?.defaultCategoryId) return '';
+    const cat = categories.find(c => c.id === payee.defaultCategoryId);
+    if (!cat) return '';
+    const parent = cat.parentId ? categories.find(c => c.id === cat.parentId) : null;
+    return parent ? `${parent.name}: ${cat.name}` : cat.name;
+  }, [payee?.defaultCategoryId, categories]);
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -74,11 +90,14 @@ export function PayeeForm({ payee, categories, onSubmit, onCancel, onDirtyChange
         {...register('name')}
       />
 
-      <Select
+      <Combobox
         label="Default Category"
+        placeholder="Select category..."
         options={categoryOptions}
+        value={selectedCategoryId}
+        initialDisplayValue={initialCategoryName}
+        onChange={handleCategoryChange}
         error={errors.defaultCategoryId?.message}
-        {...register('defaultCategoryId')}
       />
 
       <Input
