@@ -58,7 +58,7 @@ export function ProviderList({ configs, encryptionAvailable, onConfigsChanged }:
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 mb-6">
+    <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-4 sm:p-6 mb-6">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white">AI Providers</h2>
         <Button size="sm" onClick={() => setShowForm(true)}>
@@ -83,13 +83,13 @@ export function ProviderList({ configs, encryptionAvailable, onConfigsChanged }:
           {configs.map((config) => (
             <div
               key={config.id}
-              className={`border rounded-lg p-4 ${
+              className={`border rounded-lg p-3 sm:p-4 ${
                 config.isActive
                   ? 'border-gray-200 dark:border-gray-700'
                   : 'border-gray-100 dark:border-gray-800 opacity-60'
               }`}
             >
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <h3 className="text-sm font-medium text-gray-900 dark:text-white truncate">
@@ -112,7 +112,7 @@ export function ProviderList({ configs, encryptionAvailable, onConfigsChanged }:
                     {config.baseUrl && <span className="truncate max-w-xs">URL: {config.baseUrl}</span>}
                   </div>
                 </div>
-                <div className="flex items-center gap-2 ml-4">
+                <div className="flex items-center gap-2">
                   <ProviderTestButton configId={config.id} />
                   <Button
                     variant="ghost"
