@@ -66,6 +66,9 @@ const localStorageMock = (() => {
 
 Object.defineProperty(window, 'localStorage', { value: localStorageMock });
 
+// Mock scrollTo (not implemented in jsdom)
+window.scrollTo = vi.fn() as any;
+
 // Mock matchMedia
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
