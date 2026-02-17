@@ -7,7 +7,6 @@ import { DemoModeService } from "../demo-mode.service";
 describe("DemoModeGuard", () => {
   let guard: DemoModeGuard;
   let reflector: Reflector;
-  let demoModeService: DemoModeService;
 
   function createMockContext(): ExecutionContext {
     return {
@@ -34,7 +33,6 @@ describe("DemoModeGuard", () => {
 
       guard = module.get<DemoModeGuard>(DemoModeGuard);
       reflector = module.get<Reflector>(Reflector);
-      demoModeService = module.get<DemoModeService>(DemoModeService);
     });
 
     it("allows all requests regardless of decorator", () => {
@@ -66,7 +64,6 @@ describe("DemoModeGuard", () => {
 
       guard = module.get<DemoModeGuard>(DemoModeGuard);
       reflector = module.get<Reflector>(Reflector);
-      demoModeService = module.get<DemoModeService>(DemoModeService);
     });
 
     it("allows requests to unrestricted endpoints", () => {

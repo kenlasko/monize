@@ -1,13 +1,15 @@
 import { Injectable } from "@nestjs/common";
 import { DataSource } from "typeorm";
-import * as bcrypt from "bcryptjs";
 
 import { SeedService } from "./seed.service";
 import { demoAccounts } from "./demo-seed-data/accounts";
 import { demoPayees } from "./demo-seed-data/payees";
 import { generateTransactions } from "./demo-seed-data/transactions";
 import { demoScheduledTransactions } from "./demo-seed-data/scheduled";
-import { demoSecurities, generatePriceHistory } from "./demo-seed-data/securities";
+import {
+  demoSecurities,
+  generatePriceHistory,
+} from "./demo-seed-data/securities";
 import { demoReports } from "./demo-seed-data/reports";
 import { demoPreferences } from "./demo-seed-data/preferences";
 
@@ -38,20 +40,57 @@ export class DemoSeedService {
     }
 
     // Delete base seed data so we can replace with richer demo data (FK-safe order)
-    await this.dataSource.query("DELETE FROM investment_transactions WHERE user_id = $1", [demoUser.id]);
-    await this.dataSource.query("DELETE FROM holdings WHERE account_id IN (SELECT id FROM accounts WHERE user_id = $1)", [demoUser.id]);
-    await this.dataSource.query("DELETE FROM security_prices WHERE security_id IN (SELECT id FROM securities WHERE user_id = $1)", [demoUser.id]);
-    await this.dataSource.query("DELETE FROM securities WHERE user_id = $1", [demoUser.id]);
-    await this.dataSource.query("DELETE FROM transaction_splits WHERE transaction_id IN (SELECT id FROM transactions WHERE user_id = $1)", [demoUser.id]);
-    await this.dataSource.query("DELETE FROM transactions WHERE user_id = $1", [demoUser.id]);
-    await this.dataSource.query("DELETE FROM scheduled_transaction_splits WHERE scheduled_transaction_id IN (SELECT id FROM scheduled_transactions WHERE user_id = $1)", [demoUser.id]);
-    await this.dataSource.query("DELETE FROM scheduled_transactions WHERE user_id = $1", [demoUser.id]);
-    await this.dataSource.query("DELETE FROM monthly_account_balances WHERE user_id = $1", [demoUser.id]);
-    await this.dataSource.query("DELETE FROM custom_reports WHERE user_id = $1", [demoUser.id]);
-    await this.dataSource.query("DELETE FROM payees WHERE user_id = $1", [demoUser.id]);
-    await this.dataSource.query("DELETE FROM accounts WHERE user_id = $1", [demoUser.id]);
-    await this.dataSource.query("DELETE FROM categories WHERE user_id = $1", [demoUser.id]);
-    await this.dataSource.query("DELETE FROM user_preferences WHERE user_id = $1", [demoUser.id]);
+    await this.dataSource.query(
+      "DELETE FROM investment_transactions WHERE user_id = $1",
+      [demoUser.id],
+    );
+    await this.dataSource.query(
+      "DELETE FROM holdings WHERE account_id IN (SELECT id FROM accounts WHERE user_id = $1)",
+      [demoUser.id],
+    );
+    await this.dataSource.query(
+      "DELETE FROM security_prices WHERE security_id IN (SELECT id FROM securities WHERE user_id = $1)",
+      [demoUser.id],
+    );
+    await this.dataSource.query("DELETE FROM securities WHERE user_id = $1", [
+      demoUser.id,
+    ]);
+    await this.dataSource.query(
+      "DELETE FROM transaction_splits WHERE transaction_id IN (SELECT id FROM transactions WHERE user_id = $1)",
+      [demoUser.id],
+    );
+    await this.dataSource.query("DELETE FROM transactions WHERE user_id = $1", [
+      demoUser.id,
+    ]);
+    await this.dataSource.query(
+      "DELETE FROM scheduled_transaction_splits WHERE scheduled_transaction_id IN (SELECT id FROM scheduled_transactions WHERE user_id = $1)",
+      [demoUser.id],
+    );
+    await this.dataSource.query(
+      "DELETE FROM scheduled_transactions WHERE user_id = $1",
+      [demoUser.id],
+    );
+    await this.dataSource.query(
+      "DELETE FROM monthly_account_balances WHERE user_id = $1",
+      [demoUser.id],
+    );
+    await this.dataSource.query(
+      "DELETE FROM custom_reports WHERE user_id = $1",
+      [demoUser.id],
+    );
+    await this.dataSource.query("DELETE FROM payees WHERE user_id = $1", [
+      demoUser.id,
+    ]);
+    await this.dataSource.query("DELETE FROM accounts WHERE user_id = $1", [
+      demoUser.id,
+    ]);
+    await this.dataSource.query("DELETE FROM categories WHERE user_id = $1", [
+      demoUser.id,
+    ]);
+    await this.dataSource.query(
+      "DELETE FROM user_preferences WHERE user_id = $1",
+      [demoUser.id],
+    );
 
     await this.seedDemoData(demoUser.id);
 
@@ -67,15 +106,18 @@ export class DemoSeedService {
     const accountMap = await this.seedAccounts(userId);
     const payeeMap = await this.seedPayees(userId, categoryMap);
     await this.seedTransactions(userId, accountMap, categoryMap, payeeMap);
-    await this.seedScheduledTransactions(userId, accountMap, categoryMap, payeeMap);
+    await this.seedScheduledTransactions(
+      userId,
+      accountMap,
+      categoryMap,
+      payeeMap,
+    );
     await this.seedSecurities(userId, accountMap);
     await this.seedReports(userId);
     await this.seedPreferences(userId);
   }
 
-  private async seedCategories(
-    userId: string,
-  ): Promise<Map<string, string>> {
+  private async seedCategories(userId: string): Promise<Map<string, string>> {
     console.log("📁 Seeding demo categories...");
 
     const categoryMap = new Map<string, string>();
@@ -181,9 +223,7 @@ export class DemoSeedService {
     return categoryMap;
   }
 
-  private async seedAccounts(
-    userId: string,
-  ): Promise<Map<string, string>> {
+  private async seedAccounts(userId: string): Promise<Map<string, string>> {
     console.log("💳 Seeding demo accounts...");
 
     const accountMap = new Map<string, string>();
@@ -369,9 +409,17 @@ export class DemoSeedService {
           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, true)
           RETURNING id`,
           [
-            userId, accountId, tx.date, payeeId, tx.payeeName,
-            tx.amount, currencyCode, tx.description,
-            tx.isCleared, tx.isReconciled, tx.status,
+            userId,
+            accountId,
+            tx.date,
+            payeeId,
+            tx.payeeName,
+            tx.amount,
+            currencyCode,
+            tx.description,
+            tx.isCleared,
+            tx.isReconciled,
+            tx.status,
           ],
         );
 
@@ -383,9 +431,17 @@ export class DemoSeedService {
           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, true, $12)
           RETURNING id`,
           [
-            userId, transferAccountId, tx.date, payeeId, tx.payeeName,
-            -tx.amount, currencyCode, tx.description,
-            tx.isCleared, tx.isReconciled, tx.status,
+            userId,
+            transferAccountId,
+            tx.date,
+            payeeId,
+            tx.payeeName,
+            -tx.amount,
+            currencyCode,
+            tx.description,
+            tx.isCleared,
+            tx.isReconciled,
+            tx.status,
             fromTx.id,
           ],
         );
@@ -407,9 +463,17 @@ export class DemoSeedService {
           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, true)
           RETURNING id`,
           [
-            userId, accountId, tx.date, payeeId, tx.payeeName,
-            tx.amount, currencyCode, tx.description,
-            tx.isCleared, tx.isReconciled, tx.status,
+            userId,
+            accountId,
+            tx.date,
+            payeeId,
+            tx.payeeName,
+            tx.amount,
+            currencyCode,
+            tx.description,
+            tx.isCleared,
+            tx.isReconciled,
+            tx.status,
           ],
         );
 
@@ -433,9 +497,18 @@ export class DemoSeedService {
             is_cleared, is_reconciled, status
           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
           [
-            userId, accountId, tx.date, payeeId, tx.payeeName,
-            categoryId, tx.amount, currencyCode, tx.description,
-            tx.isCleared, tx.isReconciled, tx.status,
+            userId,
+            accountId,
+            tx.date,
+            payeeId,
+            tx.payeeName,
+            categoryId,
+            tx.amount,
+            currencyCode,
+            tx.description,
+            tx.isCleared,
+            tx.isReconciled,
+            tx.status,
           ],
         );
         count++;
@@ -452,14 +525,17 @@ export class DemoSeedService {
          WHERE account_id = $1 AND user_id = $2`,
         [accountId, userId],
       );
-      const openingBalance = demoAccounts.find((a) => a.key === key)?.openingBalance || 0;
+      const openingBalance =
+        demoAccounts.find((a) => a.key === key)?.openingBalance || 0;
       await this.dataSource.query(
         "UPDATE accounts SET current_balance = $1 WHERE id = $2",
         [openingBalance + parseFloat(result.total), accountId],
       );
     }
 
-    console.log(`   ✓ Seeded ${count} transactions (${splitCount} splits, ${transferCount} transfers)`);
+    console.log(
+      `   ✓ Seeded ${count} transactions (${splitCount} splits, ${transferCount} transfers)`,
+    );
   }
 
   private async seedScheduledTransactions(
@@ -483,7 +559,11 @@ export class DemoSeedService {
         : null;
 
       // Calculate next due date
-      const nextDue = new Date(now.getFullYear(), now.getMonth(), st.dueDayOfMonth);
+      const nextDue = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        st.dueDayOfMonth,
+      );
       if (nextDue <= now) {
         nextDue.setMonth(nextDue.getMonth() + 1);
       }
@@ -519,7 +599,9 @@ export class DemoSeedService {
       );
     }
 
-    console.log(`   ✓ Seeded ${demoScheduledTransactions.length} scheduled transactions`);
+    console.log(
+      `   ✓ Seeded ${demoScheduledTransactions.length} scheduled transactions`,
+    );
   }
 
   private async seedSecurities(
@@ -599,7 +681,8 @@ export class DemoSeedService {
           const divDate = new Date(now);
           divDate.setMonth(divDate.getMonth() - monthsAgo);
           divDate.setDate(15);
-          const divAmount = Math.round(sec.quantity * sec.basePrice * 0.005 * 100) / 100;
+          const divAmount =
+            Math.round(sec.quantity * sec.basePrice * 0.005 * 100) / 100;
 
           await this.dataSource.query(
             `INSERT INTO investment_transactions (

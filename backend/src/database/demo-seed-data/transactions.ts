@@ -26,22 +26,12 @@ function seededRandom(seed: number): () => number {
   };
 }
 
-function randomBetween(
-  rand: () => number,
-  min: number,
-  max: number,
-): number {
+function randomBetween(rand: () => number, min: number, max: number): number {
   return Math.round((min + rand() * (max - min)) * 100) / 100;
 }
 
 function formatDate(date: Date): string {
   return date.toISOString().split("T")[0];
-}
-
-function addDays(date: Date, days: number): Date {
-  const result = new Date(date);
-  result.setDate(result.getDate() + days);
-  return result;
 }
 
 function getMonthDate(year: number, month: number, day: number): Date {
@@ -54,9 +44,7 @@ function getMonthDate(year: number, month: number, day: number): Date {
  * Generate 12 months of realistic transactions ending at referenceDate.
  * Returns ~400-500 transactions with realistic patterns.
  */
-export function generateTransactions(
-  referenceDate: Date,
-): DemoTransaction[] {
+export function generateTransactions(referenceDate: Date): DemoTransaction[] {
   const transactions: DemoTransaction[] = [];
   const rand = seededRandom(42);
 
@@ -71,9 +59,11 @@ export function generateTransactions(
     const month = (startMonth + i) % 12;
     const monthDate = new Date(year, month, 1);
     const isOlderThan2Months =
-      monthDate < new Date(referenceDate.getFullYear(), referenceDate.getMonth() - 2, 1);
+      monthDate <
+      new Date(referenceDate.getFullYear(), referenceDate.getMonth() - 2, 1);
     const isCurrentMonth =
-      year === referenceDate.getFullYear() && month === referenceDate.getMonth();
+      year === referenceDate.getFullYear() &&
+      month === referenceDate.getMonth();
 
     const clearedStatus = isOlderThan2Months
       ? { isCleared: true, isReconciled: true, status: "RECONCILED" }
@@ -128,8 +118,7 @@ export function generateTransactions(
       // Approximate balance after i months of payments
       const balanceAfterPayments = 385000 - i * 700; // rough approximation
       const interestPortion = balanceAfterPayments * monthlyRate;
-      const principalPortion =
-        Math.round((2370 - interestPortion) * 100) / 100;
+      const principalPortion = Math.round((2370 - interestPortion) * 100) / 100;
 
       transactions.push({
         accountKey: "mortgage",
@@ -363,8 +352,16 @@ export function generateTransactions(
             description: "Weekly shopping",
             isSplit: true,
             splits: [
-              { categoryPath: "Food > Groceries", amount: -groceryAmt, memo: "Groceries" },
-              { categoryPath: "Shopping > Home Goods", amount: -homeGoodsAmt, memo: "Household items" },
+              {
+                categoryPath: "Food > Groceries",
+                amount: -groceryAmt,
+                memo: "Groceries",
+              },
+              {
+                categoryPath: "Shopping > Home Goods",
+                amount: -homeGoodsAmt,
+                memo: "Household items",
+              },
             ],
             ...clearedStatus,
           });
@@ -389,9 +386,10 @@ export function generateTransactions(
       const coffeeDate = getMonthDate(year, month, day);
       if (coffeeDate <= referenceDate && coffeeDate >= startDate) {
         const shop = rand() > 0.6 ? "Starbucks" : "Tim Hortons";
-        const amount = shop === "Starbucks"
-          ? randomBetween(rand, 5.5, 8.5)
-          : randomBetween(rand, 2.5, 5.5);
+        const amount =
+          shop === "Starbucks"
+            ? randomBetween(rand, 5.5, 8.5)
+            : randomBetween(rand, 2.5, 5.5);
         transactions.push({
           accountKey: "visa",
           date: formatDate(coffeeDate),
