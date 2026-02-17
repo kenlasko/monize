@@ -27,6 +27,7 @@ import { BuiltInReportsModule } from "./built-in-reports/built-in-reports.module
 import { NotificationsModule } from "./notifications/notifications.module";
 import { HealthModule } from "./health/health.module";
 import { AdminModule } from "./admin/admin.module";
+import { AiModule } from "./ai/ai.module";
 
 @Module({
   imports: [
@@ -94,6 +95,7 @@ import { AdminModule } from "./admin/admin.module";
     BuiltInReportsModule,
     NotificationsModule,
     AdminModule,
+    AiModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

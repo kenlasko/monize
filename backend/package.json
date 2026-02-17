@@ -29,6 +29,7 @@
     "seed": "ts-node -r tsconfig-paths/register src/database/seed.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.75.0",
     "@nestjs/common": "^11.1.12",
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.1.12",
@@ -46,6 +47,7 @@
     "date-fns": "^4.1.0",
     "helmet": "^8.1.0",
     "nodemailer": "^8.0.1",
+    "openai": "^6.22.0",
     "openid-client": "^6.8.2",
     "otplib": "^13.2.1",
     "passport": "^0.7.0",

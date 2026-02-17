@@ -1062,8 +1062,9 @@ describe('ScheduledTransactionForm', () => {
   it('allows selecting a category', async () => {
     const { container } = render(<ScheduledTransactionForm />);
 
+    // Wait for category options to actually render
     await waitFor(() => {
-      expect(mockCategoriesGetAll).toHaveBeenCalled();
+      expect(screen.getByTestId('option-cat-1')).toBeInTheDocument();
     });
 
     // Select category (cat-1 = Rent, which is expense)
@@ -1079,8 +1080,9 @@ describe('ScheduledTransactionForm', () => {
   it('clears category when empty selection is made', async () => {
     const { container } = render(<ScheduledTransactionForm />);
 
+    // Wait for category options to actually render
     await waitFor(() => {
-      expect(mockCategoriesGetAll).toHaveBeenCalled();
+      expect(screen.getByTestId('option-cat-1')).toBeInTheDocument();
     });
 
     // Select category

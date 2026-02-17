@@ -17,6 +17,7 @@ import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { useDemoStore } from '@/store/demoStore';
 import { createLogger } from '@/lib/logger';
 import { getErrorMessage } from '@/lib/errors';
+import Link from 'next/link';
 
 const logger = createLogger('Settings');
 
@@ -121,6 +122,20 @@ function SettingsContent() {
             force2fa={force2fa}
             onPreferencesUpdated={setPreferences}
           />
+        )}
+
+        {!isDemoMode && (
+          <Link
+            href="/settings/ai"
+            className="block bg-white dark:bg-gray-800 shadow rounded-lg p-6 mb-6 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors"
+          >
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
+              AI Settings
+            </h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Configure AI providers, manage API keys, and view usage statistics.
+            </p>
+          </Link>
         )}
 
         {!isDemoMode && <DangerZoneSection />}
