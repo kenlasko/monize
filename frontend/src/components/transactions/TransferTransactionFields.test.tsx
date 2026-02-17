@@ -35,7 +35,7 @@ vi.mock('@/components/ui/Combobox', () => ({
 }));
 
 vi.mock('@/components/ui/CurrencyInput', () => ({
-  CurrencyInput: ({ label, value, onChange, error, prefix, allowNegative }: any) => (
+  CurrencyInput: ({ label, value, onChange, error, prefix, allowNegative: _allowNegative }: any) => (
     <div data-testid={`currency-input-${label}`}>
       <label>{label}</label>
       {prefix && <span data-testid={`currency-prefix-${label}`}>{prefix}</span>}

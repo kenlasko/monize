@@ -1,8 +1,30 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor, act } from '@/test/render';
+import { render, screen, waitFor } from '@/test/render';
 import { MortgageFields } from './MortgageFields';
 import { Account } from '@/types/account';
 import { Category } from '@/types/category';
+
+vi.mock('@/lib/categoryUtils', () => ({
+  buildCategoryTree: (cats: any[]) => cats.map((c: any) => ({ category: c, depth: 0 })),
+}));
+
+vi.mock('@/components/ui/Combobox', () => ({
+  Combobox: ({ label, options, value, onChange, placeholder }: any) => (
+    <div data-testid={`combobox-${label}`}>
+      {label && <label>{label}</label>}
+      <select
+        data-testid={`combobox-select-${label}`}
+        value={value || ''}
+        onChange={(e: any) => onChange?.(e.target.value)}
+      >
+        <option value="">{placeholder || 'Select...'}</option>
+        {(options || []).map((opt: any) => (
+          <option key={opt.value} value={opt.value}>{opt.label}</option>
+        ))}
+      </select>
+    </div>
+  ),
+}));
 
 vi.mock('@/lib/accounts', () => ({
   accountsApi: {
@@ -97,6 +119,8 @@ describe('MortgageFields', () => {
     accounts: mockAccounts,
     categories: mockCategories,
     formatCurrency: mockFormatCurrency,
+    selectedInterestCategoryId: '',
+    handleInterestCategoryChange: vi.fn(),
   };
 
   beforeEach(() => {

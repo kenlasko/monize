@@ -1,16 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent, act } from '@/test/render';
+import { render, screen, waitFor, fireEvent } from '@/test/render';
 import TransactionsPage from './page';
 import toast from 'react-hot-toast';
 
 // Mock next/image
 vi.mock('next/image', () => ({
-  default: (props: any) => <img {...props} />,
+  default: (props: any) => <img alt="" {...props} />,
 }));
 
 // Mock next/dynamic to return mock components that render with props
 vi.mock('next/dynamic', () => ({
-  default: (loader: any) => {
+  default: (_loader: any) => {
     // Return a component that passes through props
     const DynamicComponent = (props: any) => {
       // Check loader path to determine which component
@@ -134,13 +134,6 @@ vi.mock('@/lib/errors', () => ({
 }));
 
 // Mock child components
-const mockOnEdit = vi.fn();
-const mockOnRefresh = vi.fn();
-const mockOnTransactionUpdate = vi.fn();
-const mockOnPayeeClick = vi.fn();
-const mockOnTransferClick = vi.fn();
-const mockOnCategoryClick = vi.fn();
-
 vi.mock('@/components/transactions/TransactionList', () => ({
   TransactionList: (props: any) => (
     <div data-testid="transaction-list">

@@ -867,7 +867,7 @@ describe('TransactionFilterPanel', () => {
     });
 
     it('shows "From" date chip when only start date is set', () => {
-      const formatDate = vi.fn((d: string) => 'Mar 15, 2025');
+      const formatDate = vi.fn((_d: string) => 'Mar 15, 2025');
 
       render(
         <TransactionFilterPanel
@@ -884,7 +884,7 @@ describe('TransactionFilterPanel', () => {
     });
 
     it('shows "Until" date chip when only end date is set', () => {
-      const formatDate = vi.fn((d: string) => 'Jun 30, 2025');
+      const formatDate = vi.fn((_d: string) => 'Jun 30, 2025');
 
       render(
         <TransactionFilterPanel
@@ -1026,7 +1026,7 @@ describe('TransactionFilterPanel', () => {
     });
 
     it('clears date range chip by calling handleFilterChange for both dates', () => {
-      const formatDate = vi.fn((d: string) => 'formatted');
+      const formatDate = vi.fn((_d: string) => 'formatted');
 
       render(
         <TransactionFilterPanel

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Select } from '@/components/ui/Select';
 import { Input } from '@/components/ui/Input';
 import { CategoryMapping } from '@/lib/import';
@@ -37,30 +37,14 @@ export function CategoryMappingRow({
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Sync from parent if mapping changes externally (e.g., reset)
-  useEffect(() => {
-    if (mapping.createNew !== undefined && mapping.createNew !== localCreateNew) {
-      setLocalCreateNew(mapping.createNew || '');
-    }
-  }, [mapping.createNew]);
-
-  useEffect(() => {
-    if (mapping.createNewLoan !== undefined && mapping.createNewLoan !== localNewLoanName) {
-      setLocalNewLoanName(mapping.createNewLoan || '');
-    }
-  }, [mapping.createNewLoan]);
-
-  useEffect(() => {
-    const mappingAmountStr = mapping.newLoanAmount?.toString() || '';
-    if (mappingAmountStr !== localNewLoanAmount) {
-      setLocalNewLoanAmount(mappingAmountStr);
-    }
-  }, [mapping.newLoanAmount]);
-
-  useEffect(() => {
-    if (mapping.newLoanInstitution !== undefined && mapping.newLoanInstitution !== localNewLoanInstitution) {
-      setLocalNewLoanInstitution(mapping.newLoanInstitution || '');
-    }
-  }, [mapping.newLoanInstitution]);
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional sync from parent props
+  useEffect(() => { setLocalCreateNew(mapping.createNew || ''); }, [mapping.createNew]);
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional sync from parent props
+  useEffect(() => { setLocalNewLoanName(mapping.createNewLoan || ''); }, [mapping.createNewLoan]);
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional sync from parent props
+  useEffect(() => { setLocalNewLoanAmount(mapping.newLoanAmount?.toString() || ''); }, [mapping.newLoanAmount]);
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional sync from parent props
+  useEffect(() => { setLocalNewLoanInstitution(mapping.newLoanInstitution || ''); }, [mapping.newLoanInstitution]);
 
   const handleCategorySelect = (categoryId: string) => {
     onMappingChange({

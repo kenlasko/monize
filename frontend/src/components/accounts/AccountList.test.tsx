@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, act } from '@/test/render';
+import { render, screen, fireEvent, waitFor } from '@/test/render';
 import { AccountList } from './AccountList';
-import { Account, AccountType } from '@/types/account';
+import { Account } from '@/types/account';
 import { accountsApi } from '@/lib/accounts';
 
 vi.mock('@/lib/accounts', () => ({

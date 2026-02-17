@@ -116,7 +116,7 @@ function TransactionsContent() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [payees, setPayees] = useState<Payee[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { showForm, editingItem: editingTransaction, openCreate, openEdit, close, isEditing, modalProps, setFormDirty, unsavedChangesDialog, formSubmitRef } = useFormModal<Transaction>();
+  const { showForm, editingItem: editingTransaction, openCreate, openEdit, close, modalProps, setFormDirty, unsavedChangesDialog, formSubmitRef } = useFormModal<Transaction>();
   const [showPayeeForm, setShowPayeeForm] = useState(false);
   const [editingPayee, setEditingPayee] = useState<Payee | undefined>();
   const [listDensity, setListDensity] = useLocalStorage<DensityLevel>('monize-transactions-density', 'normal');
@@ -301,7 +301,7 @@ function TransactionsContent() {
     if (filtersInitialized) {
       setFiltersExpanded(activeFilterCount === 0);
     }
-  }, [filtersInitialized]); // Only run when filters are first initialized
+  }, [filtersInitialized]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Track if static data has been loaded
   const staticDataLoaded = useRef(false);

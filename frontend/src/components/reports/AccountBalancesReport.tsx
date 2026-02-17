@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { accountsApi } from '@/lib/accounts';
@@ -135,11 +135,11 @@ export function AccountBalancesReport() {
   }, [filteredAccounts, brokerageMarketValues, convertToDefault]);
 
   // Helper to get effective balance for an account
-  const getEffectiveBalance = (acc: Account): number => {
+  const getEffectiveBalance = useCallback((acc: Account): number => {
     return acc.accountSubType === 'INVESTMENT_BROKERAGE'
       ? (brokerageMarketValues.get(acc.id) ?? 0)
       : (Number(acc.currentBalance) || 0);
-  };
+  }, [brokerageMarketValues]);
 
   // Build chart data
   const chartData = useMemo(() => {
@@ -174,7 +174,7 @@ export function AccountBalancesReport() {
       });
       return data.sort((a, b) => b.value - a.value);
     }
-  }, [chartGrouping, groupedAccounts, filteredAccounts, convertToDefault, brokerageMarketValues]);
+  }, [chartGrouping, groupedAccounts, filteredAccounts, convertToDefault, getEffectiveBalance]);
 
   const chartTotal = useMemo(() => {
     return chartData.reduce((sum, d) => sum + d.value, 0);

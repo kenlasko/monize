@@ -56,7 +56,7 @@ export function TransferTransactionFields({
   setTransferPayeeName,
   crossCurrencyInfo,
   payees,
-  transaction,
+  transaction: _transaction,
 }: TransferTransactionFieldsProps) {
   return (
     <div className="space-y-4">

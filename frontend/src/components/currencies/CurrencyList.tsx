@@ -61,7 +61,6 @@ const CurrencyRow = memo(function CurrencyRow({
 }: CurrencyRowProps) {
   const handleEdit = useCallback(() => onEdit(currency), [onEdit, currency]);
   const handleToggle = useCallback(() => onToggleActive(currency), [onToggleActive, currency]);
-  const handleDelete = useCallback(() => onDelete(currency), [onDelete, currency]);
 
   const totalUsage = (usage?.accounts || 0) + (usage?.securities || 0);
   const isDefault = currency.code === defaultCurrency;

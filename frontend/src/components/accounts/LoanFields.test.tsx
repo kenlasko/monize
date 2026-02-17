@@ -4,6 +4,28 @@ import { LoanFields } from './LoanFields';
 import { Account } from '@/types/account';
 import { Category } from '@/types/category';
 
+vi.mock('@/lib/categoryUtils', () => ({
+  buildCategoryTree: (cats: any[]) => cats.map((c: any) => ({ category: c, depth: 0 })),
+}));
+
+vi.mock('@/components/ui/Combobox', () => ({
+  Combobox: ({ label, options, value, onChange, placeholder }: any) => (
+    <div data-testid={`combobox-${label}`}>
+      {label && <label>{label}</label>}
+      <select
+        data-testid={`combobox-select-${label}`}
+        value={value || ''}
+        onChange={(e: any) => onChange?.(e.target.value)}
+      >
+        <option value="">{placeholder || 'Select...'}</option>
+        {(options || []).map((opt: any) => (
+          <option key={opt.value} value={opt.value}>{opt.label}</option>
+        ))}
+      </select>
+    </div>
+  ),
+}));
+
 vi.mock('@/lib/accounts', () => ({
   accountsApi: {
     previewLoanAmortization: vi.fn(),
@@ -75,6 +97,8 @@ describe('LoanFields', () => {
     accounts: mockAccounts,
     categories: mockCategories,
     formatCurrency: mockFormatCurrency,
+    selectedInterestCategoryId: '',
+    handleInterestCategoryChange: vi.fn(),
   };
 
   beforeEach(() => {
@@ -115,7 +139,7 @@ describe('LoanFields', () => {
 
   it('renders categories in the interest category select', () => {
     render(<LoanFields {...defaultProps} />);
-    const categorySelect = screen.getByLabelText('Interest Category');
+    const categorySelect = screen.getByTestId('combobox-select-Interest Category');
     const options = categorySelect.querySelectorAll('option');
     expect(options[0].textContent).toBe('Select category...');
     expect(options[1].textContent).toBe('Interest Expenses');

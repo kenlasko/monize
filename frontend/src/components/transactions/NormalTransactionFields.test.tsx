@@ -9,7 +9,7 @@ vi.mock('@/lib/format', () => ({
 }));
 
 vi.mock('@/components/ui/Combobox', () => ({
-  Combobox: ({ label, options, value, onChange, onCreateNew, error, placeholder, allowCustomValue, initialDisplayValue }: any) => (
+  Combobox: ({ label, options, value, onChange, onCreateNew, error, placeholder, allowCustomValue: _allowCustomValue, initialDisplayValue: _initialDisplayValue }: any) => (
     <div data-testid={`combobox-${label}`}>
       <label>{label}</label>
       {error && <span data-testid={`combobox-error-${label}`}>{error}</span>}

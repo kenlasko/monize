@@ -159,7 +159,7 @@ describe('useSwipeNavigation', () => {
 
     it('enters swiping phase on horizontal move beyond threshold', () => {
       mockPathname = '/transactions'; // index 1, can go both left and right
-      const { result } = renderSwipeHook();
+      renderSwipeHook();
 
       act(() => {
         contentDiv.dispatchEvent(createTouchEvent('touchstart', 200, 300));
@@ -340,7 +340,6 @@ describe('useSwipeNavigation', () => {
       // The hook checks velocity = absX / elapsed
       // We need absX/elapsed > 0.4 px/ms
       // With fakeTimers, Date.now() is controlled
-      const startTime = Date.now();
 
       act(() => {
         contentDiv.dispatchEvent(createTouchEvent('touchstart', 200, 200));

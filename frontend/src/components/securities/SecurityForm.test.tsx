@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@/test/render';
 import { SecurityForm } from './SecurityForm';
-import { Security, CreateSecurityData } from '@/types/investment';
+import { Security } from '@/types/investment';
 import { investmentsApi } from '@/lib/investments';
 import { exchangeRatesApi } from '@/lib/exchange-rates';
 

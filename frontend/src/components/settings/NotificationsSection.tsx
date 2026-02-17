@@ -18,7 +18,7 @@ interface NotificationsSectionProps {
 export function NotificationsSection({
   initialNotificationEmail,
   smtpConfigured,
-  preferences,
+  preferences: _preferences,
   onPreferencesUpdated,
 }: NotificationsSectionProps) {
   const updatePreferencesStore = usePreferencesStore((state) => state.updatePreferences);

@@ -110,9 +110,6 @@ function SecuritiesContent() {
     }
   };
 
-  const handleFormCancel = () => {
-    close();
-  };
 
   const handleToggleActive = async (security: Security) => {
     try {

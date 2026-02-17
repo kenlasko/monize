@@ -44,7 +44,7 @@ export function CurrencyForm({ currency, onSubmit, onCancel, onDirtyChange, subm
     setValue,
     getValues,
     reset,
-    formState: { errors, isSubmitting, isDirty, defaultValues },
+    formState: { errors, isSubmitting, isDirty },
   } = useForm<CurrencyFormData>({
     resolver: zodResolver(currencySchema) as Resolver<CurrencyFormData>,
     defaultValues: {

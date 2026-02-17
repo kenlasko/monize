@@ -90,7 +90,7 @@ vi.mock('@/components/transactions/SplitEditor', () => ({
 }));
 
 vi.mock('@/components/ui/Combobox', () => ({
-  Combobox: ({ label, placeholder, onChange, onCreateNew, value, options }: any) => (
+  Combobox: ({ label, placeholder, onChange, onCreateNew, value: _value, options }: any) => (
     <div data-testid={`combobox-${label || 'unnamed'}`}>
       {label && <label>{label}</label>}
       <input

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { render, screen } from '@/test/render';
+import { render } from '@/test/render';
 import { SwipeIndicator } from './SwipeIndicator';
 
 describe('SwipeIndicator', () => {

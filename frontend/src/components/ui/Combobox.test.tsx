@@ -362,7 +362,7 @@ describe('Combobox', () => {
   });
 
   it('shows checkmark on selected option', () => {
-    const { container } = render(
+    render(
       <Combobox options={options} onChange={onChange} value="2" initialDisplayValue="Banana" />,
     );
 

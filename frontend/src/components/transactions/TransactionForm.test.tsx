@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, act } from '@/test/render';
+import { render, screen, fireEvent, waitFor } from '@/test/render';
 import { TransactionForm } from './TransactionForm';
 import { TransactionStatus } from '@/types/transaction';
 import toast from 'react-hot-toast';
@@ -270,7 +270,7 @@ vi.mock('./SplitEditor', () => ({
 }));
 
 vi.mock('@/components/ui/Combobox', () => ({
-  Combobox: ({ label, placeholder, options, value, onChange, onCreateNew, allowCustomValue }: any) => (
+  Combobox: ({ label, placeholder, options, value: _value, onChange, onCreateNew, allowCustomValue }: any) => (
     <div data-testid={`combobox-${label}`}>
       {label && <label>{label}</label>}
       <input

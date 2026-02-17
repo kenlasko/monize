@@ -1,10 +1,10 @@
-import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
-import { render, screen, waitFor, fireEvent, act } from '@/test/render';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, waitFor, fireEvent } from '@/test/render';
 import ImportPage from './page';
 
 // Mock next/image
 vi.mock('next/image', () => ({
-  default: (props: any) => <img {...props} />,
+  default: (props: any) => <img alt="" {...props} />,
 }));
 
 // Mock logger
@@ -127,7 +127,7 @@ vi.mock('@/components/import/UploadStep', () => ({
 }));
 
 vi.mock('@/components/import/SelectAccountStep', () => ({
-  SelectAccountStep: ({ setStep, categoryMappings, securityMappings, shouldShowMapAccounts }: any) => (
+  SelectAccountStep: ({ setStep }: any) => (
     <div data-testid="select-account-step">
       <span>Select Account</span>
       <button

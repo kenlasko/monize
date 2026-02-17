@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@/test/render';
+import { render, screen } from '@/test/render';
 import ResetPasswordPage from './page';
 
 const mockPush = vi.fn();

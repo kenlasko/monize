@@ -68,7 +68,7 @@ export function MortgageFields({
   isVariableRate,
   amortizationMonths,
   mortgagePaymentFrequency,
-  setValue,
+  setValue: _setValue,
   register,
   errors,
   accounts,

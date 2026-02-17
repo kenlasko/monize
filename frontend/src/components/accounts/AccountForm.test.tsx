@@ -62,6 +62,27 @@ vi.mock('@/lib/categoryUtils', () => ({
   buildCategoryTree: (cats: any[]) => cats.map((c: any) => ({ category: c, children: [] })),
 }));
 
+vi.mock('@hookform/resolvers/zod', () => ({
+  zodResolver: (schema: any) => {
+    return async (data: any) => {
+      try {
+        const result = schema.parse(data);
+        return { values: result, errors: {} };
+      } catch (error: any) {
+        const fieldErrors: any = {};
+        const issues = error.issues || error.errors || [];
+        for (const err of issues) {
+          const path = err.path.join('.');
+          if (!fieldErrors[path]) {
+            fieldErrors[path] = { type: 'validation', message: err.message };
+          }
+        }
+        return { values: {}, errors: fieldErrors };
+      }
+    };
+  },
+}));
+
 vi.mock('@/lib/logger', () => ({
   createLogger: () => ({
     error: vi.fn(),
