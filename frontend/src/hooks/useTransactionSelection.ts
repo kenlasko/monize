@@ -26,6 +26,7 @@ export function useTransactionSelection(
 
   // Track filter changes to clear selection
   const filtersRef = useRef(currentFilters);
+  /* eslint-disable react-hooks/set-state-in-effect -- clearing selection when filters change */
   useEffect(() => {
     const prev = filtersRef.current;
     const changed =
@@ -36,16 +37,19 @@ export function useTransactionSelection(
       filtersRef.current = currentFilters;
     }
   }, [currentFilters]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Clear individual selections on page change (but not selectAllMatching)
   const transactionIdsKey = transactions.map(t => t.id).join(',');
   const prevTransactionIdsKey = useRef(transactionIdsKey);
+  /* eslint-disable react-hooks/set-state-in-effect -- clearing selection on page change */
   useEffect(() => {
     if (prevTransactionIdsKey.current !== transactionIdsKey && !selectAllMatching) {
       setSelectedIds(new Set());
     }
     prevTransactionIdsKey.current = transactionIdsKey;
   }, [transactionIdsKey, selectAllMatching]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const isAllOnPageSelected = useMemo(() => {
     if (transactions.length === 0) return false;

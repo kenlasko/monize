@@ -47,10 +47,6 @@ export const NumericInput = forwardRef<HTMLInputElement, NumericInputProps>(
     },
     ref
   ) => {
-    // Local display state - allows free typing
-    const [displayValue, setDisplayValue] = useState(() => formatValue(value, decimalPlaces));
-    const [isFocused, setIsFocused] = useState(false);
-
     // Format value to specified decimal places
     function formatValue(val: number | undefined | null, decimals: number): string {
       if (val === undefined || val === null || isNaN(val)) {
@@ -58,6 +54,10 @@ export const NumericInput = forwardRef<HTMLInputElement, NumericInputProps>(
       }
       return val.toFixed(decimals);
     }
+
+    // Local display state - allows free typing
+    const [displayValue, setDisplayValue] = useState(() => formatValue(value, decimalPlaces));
+    const [isFocused, setIsFocused] = useState(false);
 
     // Round to specified decimal places
     function roundToDecimals(val: number, decimals: number): number {
@@ -79,11 +79,13 @@ export const NumericInput = forwardRef<HTMLInputElement, NumericInputProps>(
     }
 
     // Sync from parent when value changes externally (e.g., form reset)
+    /* eslint-disable react-hooks/set-state-in-effect -- syncing display from prop changes */
     useEffect(() => {
       if (!isFocused) {
         setDisplayValue(formatValue(value, decimalPlaces));
       }
     }, [value, isFocused, decimalPlaces]);
+    /* eslint-enable react-hooks/set-state-in-effect */
 
     const inputId = id || `input-${label?.toLowerCase().replace(/\s+/g, '-')}`;
 

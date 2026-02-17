@@ -51,6 +51,7 @@ export function Combobox({
   const prevFilterTextRef = useRef('');
 
   // Find selected option label when value changes (only if not currently typing)
+  /* eslint-disable react-hooks/set-state-in-effect -- syncing display state from prop changes */
   useEffect(() => {
     if (isTyping) return;
 
@@ -75,6 +76,7 @@ export function Combobox({
       setHasInitialized(true);
     }
   }, [value, options, isTyping, allowCustomValue, initialDisplayValue, hasInitialized]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -214,6 +216,7 @@ export function Combobox({
   const selectedOptionIndex = filteredOptions.findIndex(opt => opt.value === value);
 
   // Reset highlighted index when dropdown opens or filter results change
+  /* eslint-disable react-hooks/set-state-in-effect -- syncing UI state from derived values */
   useEffect(() => {
     if (isOpen) {
       if (isTyping && filteredOptions.length > 0) {
@@ -230,6 +233,7 @@ export function Combobox({
     }
     prevFilterTextRef.current = filterText;
   }, [isOpen, isTyping, selectedOptionIndex, showCreateOption, filteredOptions.length, filterText]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Scroll highlighted/selected item into view when dropdown opens
   useEffect(() => {

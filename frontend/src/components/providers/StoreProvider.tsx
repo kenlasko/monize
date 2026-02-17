@@ -9,9 +9,8 @@ interface StoreProviderProps {
 export function StoreProvider({ children }: StoreProviderProps) {
   const [isHydrated, setIsHydrated] = useState(false);
 
-  useEffect(() => {
-    setIsHydrated(true);
-  }, []);
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time hydration flag on mount
+  useEffect(() => { setIsHydrated(true); }, []);
 
   if (!isHydrated) {
     return (

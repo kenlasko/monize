@@ -74,13 +74,14 @@ export function PayeeForm({ payee, categories, onSubmit, onCancel, onDirtyChange
   };
 
   // Find display name for the initial category
+  const defaultCategoryId = payee?.defaultCategoryId;
   const initialCategoryName = useMemo(() => {
-    if (!payee?.defaultCategoryId) return '';
-    const cat = categories.find(c => c.id === payee.defaultCategoryId);
+    if (!defaultCategoryId) return '';
+    const cat = categories.find(c => c.id === defaultCategoryId);
     if (!cat) return '';
     const parent = cat.parentId ? categories.find(c => c.id === cat.parentId) : null;
     return parent ? `${parent.name}: ${cat.name}` : cat.name;
-  }, [payee?.defaultCategoryId, categories]);
+  }, [defaultCategoryId, categories]);
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">

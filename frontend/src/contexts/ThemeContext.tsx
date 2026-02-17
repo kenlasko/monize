@@ -28,6 +28,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   };
 
   // Load theme from localStorage on mount
+  /* eslint-disable react-hooks/set-state-in-effect -- one-time initialization from localStorage */
   useEffect(() => {
     const stored = localStorage.getItem(THEME_KEY) as Theme | null;
     if (stored && ['light', 'dark', 'system'].includes(stored)) {
@@ -35,6 +36,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     }
     setMounted(true);
   }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Update resolved theme when theme or system preference changes
   useEffect(() => {
