@@ -135,6 +135,11 @@ describe("AnomalyReportsService", () => {
     });
 
     it("returns empty anomalies when exactly 10 uniform transactions exist", async () => {
+      // Pin date to mid-month so all 10 transactions (today-10 through today-19)
+      // stay within one month and don't trigger date-dependent category spike detection
+      jest.useFakeTimers();
+      jest.setSystemTime(new Date("2025-06-25T12:00:00Z"));
+
       transactionsRepository.query.mockResolvedValue(buildRawExpenses(10, 50));
       categoriesRepository.find.mockResolvedValue([]);
 
@@ -143,6 +148,8 @@ describe("AnomalyReportsService", () => {
       // All transactions are 50.00, so stdDev = 0 and z-score would be NaN/Infinity
       // No anomalies should be detected
       expect(result.anomalies).toEqual([]);
+
+      jest.useRealTimers();
     });
 
     it("detects a large single transaction anomaly", async () => {
