@@ -83,12 +83,12 @@ const mockAccounts: Account[] = [
 const mockCategories: Category[] = [
   {
     id: 'cat-1', userId: 'user-1', parentId: null, parent: null, children: [],
-    name: 'Interest Expenses', description: null, icon: null, color: null,
+    name: 'Interest Expenses', description: null, icon: null, color: null, effectiveColor: null,
     isIncome: false, isSystem: false, createdAt: '2024-01-01T00:00:00Z',
   },
   {
     id: 'cat-2', userId: 'user-1', parentId: null, parent: null, children: [],
-    name: 'Mortgage Interest', description: null, icon: null, color: null,
+    name: 'Mortgage Interest', description: null, icon: null, color: null, effectiveColor: null,
     isIncome: false, isSystem: false, createdAt: '2024-01-01T00:00:00Z',
   },
 ];

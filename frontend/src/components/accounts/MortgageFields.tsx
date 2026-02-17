@@ -53,7 +53,7 @@ export function MortgageFields({
   termMonths,
   amortizationMonths,
   mortgagePaymentFrequency,
-  setValue: _setValue,
+  setValue,
   register,
   errors,
   accounts,

@@ -90,6 +90,7 @@ describe('PayeeList', () => {
           description: null,
           icon: null,
           color: '#22c55e',
+          effectiveColor: '#22c55e',
           isIncome: false,
           isSystem: false,
           createdAt: '2026-01-01T00:00:00Z',
@@ -290,7 +291,7 @@ describe('PayeeList', () => {
         name: 'Walmart',
         defaultCategory: {
           id: 'cat-1', userId: 'u', parentId: null, parent: null, children: [],
-          name: 'Groceries', description: null, icon: null, color: null,
+          name: 'Groceries', description: null, icon: null, color: null, effectiveColor: null,
           isIncome: false, isSystem: false, createdAt: '',
         },
       }),
@@ -454,7 +455,7 @@ describe('PayeeList', () => {
         name: 'Walmart',
         defaultCategory: {
           id: 'cat-1', userId: 'u', parentId: null, parent: null, children: [],
-          name: 'Groceries', description: null, icon: null, color: '#ef4444',
+          name: 'Groceries', description: null, icon: null, color: '#ef4444', effectiveColor: '#ef4444',
           isIncome: false, isSystem: false, createdAt: '',
         },
       }),
