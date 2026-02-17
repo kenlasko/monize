@@ -59,7 +59,7 @@ export function ExpensesPieChart({
                 id: split.categoryId,
                 name: cat.name,
                 value: splitAmount,
-                colour: cat.color || '',
+                colour: cat.effectiveColor ?? cat.color ?? '',
               });
             }
           } else if (!split.transferAccountId) {
@@ -77,7 +77,7 @@ export function ExpensesPieChart({
             id: tx.categoryId,
             name: cat.name,
             value: expenseAmount,
-            colour: cat.color || '',
+            colour: cat.effectiveColor ?? cat.color ?? '',
           });
         }
       } else {

@@ -298,6 +298,166 @@ describe("CategoriesService", () => {
     });
   });
 
+  describe("effectiveColor resolution", () => {
+    const setupFindAll = (categories: Category[]) => {
+      const catQb = createMockQueryBuilder({
+        getMany: jest.fn().mockResolvedValue(categories),
+      });
+      categoriesRepository.createQueryBuilder.mockReturnValue(catQb);
+      transactionsRepository.createQueryBuilder.mockReturnValue(
+        createMockQueryBuilder(),
+      );
+      splitsRepository.createQueryBuilder.mockReturnValue(
+        createMockQueryBuilder(),
+      );
+    };
+
+    it("returns own color as effectiveColor when category has explicit color", async () => {
+      setupFindAll([{ ...mockCategory, id: "c1", color: "#ef4444" }]);
+
+      const result = await service.findAll("user-1");
+
+      expect((result[0] as any).effectiveColor).toBe("#ef4444");
+    });
+
+    it("inherits effectiveColor from parent when child color is null", async () => {
+      setupFindAll([
+        { ...mockCategory, id: "p1", parentId: null, color: "#3b82f6" },
+        { ...mockChildCategory, id: "c1", parentId: "p1", color: null },
+      ]);
+
+      const result = await service.findAll("user-1");
+      const child = result.find((c) => c.id === "c1");
+
+      expect((child as any).effectiveColor).toBe("#3b82f6");
+    });
+
+    it("returns null effectiveColor for top-level category without color", async () => {
+      setupFindAll([{ ...mockCategory, id: "c1", color: null }]);
+
+      const result = await service.findAll("user-1");
+
+      expect((result[0] as any).effectiveColor).toBeNull();
+    });
+
+    it("child with explicit color overrides parent color", async () => {
+      setupFindAll([
+        { ...mockCategory, id: "p1", parentId: null, color: "#ef4444" },
+        {
+          ...mockChildCategory,
+          id: "c1",
+          parentId: "p1",
+          color: "#3b82f6",
+        },
+      ]);
+
+      const result = await service.findAll("user-1");
+      const child = result.find((c) => c.id === "c1");
+
+      expect((child as any).effectiveColor).toBe("#3b82f6");
+    });
+
+    it("grandchild inherits color through parent chain", async () => {
+      setupFindAll([
+        { ...mockCategory, id: "gp", parentId: null, color: "#22c55e" },
+        { ...mockCategory, id: "p", parentId: "gp", color: null },
+        { ...mockCategory, id: "c", parentId: "p", color: null },
+      ]);
+
+      const result = await service.findAll("user-1");
+      const grandchild = result.find((c) => c.id === "c");
+      const parent = result.find((c) => c.id === "p");
+
+      expect((grandchild as any).effectiveColor).toBe("#22c55e");
+      expect((parent as any).effectiveColor).toBe("#22c55e");
+    });
+
+    it("grandchild stops at nearest ancestor with explicit color", async () => {
+      setupFindAll([
+        { ...mockCategory, id: "gp", parentId: null, color: "#ef4444" },
+        { ...mockCategory, id: "p", parentId: "gp", color: "#3b82f6" },
+        { ...mockCategory, id: "c", parentId: "p", color: null },
+      ]);
+
+      const result = await service.findAll("user-1");
+      const grandchild = result.find((c) => c.id === "c");
+
+      expect((grandchild as any).effectiveColor).toBe("#3b82f6");
+    });
+
+    it("orphaned child returns null effectiveColor when parent not in set", async () => {
+      setupFindAll([
+        { ...mockCategory, id: "o1", parentId: "missing", color: null },
+      ]);
+
+      const result = await service.findAll("user-1");
+
+      expect((result[0] as any).effectiveColor).toBeNull();
+    });
+  });
+
+  describe("findOne effectiveColor", () => {
+    it("resolves effectiveColor from parent via DB lookup", async () => {
+      const child = {
+        ...mockChildCategory,
+        id: "c1",
+        parentId: "p1",
+        color: null,
+      };
+      const parent = { ...mockCategory, id: "p1", color: "#ef4444", parentId: null };
+
+      categoriesRepository.findOne
+        .mockResolvedValueOnce(child) // findOne: load child
+        .mockResolvedValueOnce(parent); // findOne: parent chain lookup
+
+      const result = await service.findOne("user-1", "c1");
+
+      expect(result.effectiveColor).toBe("#ef4444");
+    });
+
+    it("returns own color as effectiveColor for category with explicit color", async () => {
+      const cat = { ...mockCategory, id: "c1", color: "#22c55e" };
+      categoriesRepository.findOne.mockResolvedValue(cat);
+
+      const result = await service.findOne("user-1", "c1");
+
+      expect(result.effectiveColor).toBe("#22c55e");
+    });
+
+    it("returns null effectiveColor for top-level category without color", async () => {
+      categoriesRepository.findOne.mockResolvedValue(mockCategory);
+
+      const result = await service.findOne("user-1", "cat-1");
+
+      expect(result.effectiveColor).toBeNull();
+    });
+
+    it("walks multiple parents to find color", async () => {
+      const grandchild = {
+        ...mockCategory,
+        id: "gc",
+        parentId: "p",
+        color: null,
+      };
+      const parent = { ...mockCategory, id: "p", parentId: "gp", color: null };
+      const grandparent = {
+        ...mockCategory,
+        id: "gp",
+        parentId: null,
+        color: "#8b5cf6",
+      };
+
+      categoriesRepository.findOne
+        .mockResolvedValueOnce(grandchild) // findOne: load grandchild
+        .mockResolvedValueOnce(parent) // parent chain: first hop
+        .mockResolvedValueOnce(grandparent); // parent chain: second hop
+
+      const result = await service.findOne("user-1", "gc");
+
+      expect(result.effectiveColor).toBe("#8b5cf6");
+    });
+  });
+
   describe("getTree", () => {
     it("builds hierarchical tree from flat categories", async () => {
       const parent = { ...mockCategory, id: "p1", parentId: null };
@@ -369,7 +529,9 @@ describe("CategoriesService", () => {
         where: { userId: "user-1", isIncome: true },
         order: { name: "ASC" },
       });
-      expect(result).toEqual(incomeCategories);
+      expect(result).toEqual(
+        incomeCategories.map((c) => ({ ...c, effectiveColor: null })),
+      );
     });
 
     it("returns expense categories", async () => {
@@ -381,7 +543,9 @@ describe("CategoriesService", () => {
         where: { userId: "user-1", isIncome: false },
         order: { name: "ASC" },
       });
-      expect(result).toEqual([mockCategory]);
+      expect(result).toEqual([
+        { ...mockCategory, effectiveColor: null },
+      ]);
     });
   });
 
@@ -391,7 +555,7 @@ describe("CategoriesService", () => {
 
       const result = await service.findOne("user-1", "cat-1");
 
-      expect(result).toEqual(mockCategory);
+      expect(result).toEqual({ ...mockCategory, effectiveColor: null });
       expect(categoriesRepository.findOne).toHaveBeenCalledWith({
         where: { id: "cat-1" },
         relations: ["children"],
@@ -472,8 +636,10 @@ describe("CategoriesService", () => {
     it("ignores isIncome in dto for existing child category", async () => {
       const parentCat = { ...mockCategory, id: "parent-1", isIncome: false };
       categoriesRepository.findOne
-        .mockResolvedValueOnce({ ...mockChildCategory, isIncome: false })
-        .mockResolvedValueOnce(parentCat);
+        .mockResolvedValueOnce({ ...mockChildCategory, isIncome: false }) // findOne: load child
+        .mockResolvedValueOnce(parentCat) // findOne: parent chain color resolution
+        .mockResolvedValueOnce(parentCat) // update: load parent for isIncome inheritance
+        .mockResolvedValueOnce(parentCat); // update findOne: parent chain color resolution
       categoriesRepository.save.mockImplementation((data) => data);
 
       const result = await service.update("user-1", "cat-2", {

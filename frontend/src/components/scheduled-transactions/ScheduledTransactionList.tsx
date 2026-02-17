@@ -35,6 +35,7 @@ interface ScheduledTransactionRowProps {
   onOpenConfirm: (action: 'post' | 'skip' | 'delete', transaction: ScheduledTransaction) => void;
   onEdit?: (transaction: ScheduledTransaction) => void;
   onEditOccurrence?: (transaction: ScheduledTransaction) => void;
+  categoryColorMap?: Map<string, string | null>;
 }
 
 const ScheduledTransactionRow = memo(function ScheduledTransactionRow({
@@ -52,7 +53,11 @@ const ScheduledTransactionRow = memo(function ScheduledTransactionRow({
   onOpenConfirm,
   onEdit,
   onEditOccurrence,
+  categoryColorMap,
 }: ScheduledTransactionRowProps) {
+  const categoryColor = transaction.category
+    ? (categoryColorMap?.get(transaction.category.id) ?? transaction.category.color)
+    : null;
   const effectiveDueDate = transaction.nextOverride?.overrideDate || transaction.nextDueDate || '';
   const dueDateStatus = effectiveDueDate ? getDueDateStatus(effectiveDueDate) : null;
   const payee = transaction.payeeName || transaction.payee?.name;
@@ -114,11 +119,11 @@ const ScheduledTransactionRow = memo(function ScheduledTransactionRow({
           <span
             className="inline-flex text-xs font-medium rounded-full px-2 py-0.5"
             style={{
-              backgroundColor: transaction.category.color
-                ? `color-mix(in srgb, ${transaction.category.color} 15%, var(--category-bg-base, #e5e7eb))`
+              backgroundColor: categoryColor
+                ? `color-mix(in srgb, ${categoryColor} 15%, var(--category-bg-base, #e5e7eb))`
                 : 'var(--category-bg-base, #e5e7eb)',
-              color: transaction.category.color
-                ? `color-mix(in srgb, ${transaction.category.color} 85%, var(--category-text-mix, #000))`
+              color: categoryColor
+                ? `color-mix(in srgb, ${categoryColor} 85%, var(--category-text-mix, #000))`
                 : 'var(--category-text-base, #6b7280)',
             }}
           >
@@ -275,6 +280,7 @@ interface ScheduledTransactionListProps {
   onEditOccurrence?: (transaction: ScheduledTransaction) => void;
   onPost?: (transaction: ScheduledTransaction) => void;
   onRefresh?: () => void;
+  categoryColorMap?: Map<string, string | null>;
 }
 
 export function ScheduledTransactionList({
@@ -283,6 +289,7 @@ export function ScheduledTransactionList({
   onEditOccurrence,
   onPost,
   onRefresh,
+  categoryColorMap,
 }: ScheduledTransactionListProps) {
   const { formatDate } = useDateFormat();
   const { formatCurrency } = useNumberFormat();
@@ -527,6 +534,7 @@ export function ScheduledTransactionList({
               onOpenConfirm={openConfirm}
               onEdit={onEdit}
               onEditOccurrence={onEditOccurrence}
+              categoryColorMap={categoryColorMap}
             />
           ))}
         </tbody>

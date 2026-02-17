@@ -39,6 +39,7 @@ interface TransactionRowProps {
   isSelected?: boolean;
   selectionMode?: boolean;
   onToggleSelection?: () => void;
+  categoryColorMap?: Map<string, string | null>;
 }
 
 const TransactionRow = memo(function TransactionRow({
@@ -66,8 +67,12 @@ const TransactionRow = memo(function TransactionRow({
   isSelected,
   selectionMode,
   onToggleSelection,
+  categoryColorMap,
 }: TransactionRowProps) {
   const isVoid = transaction.status === TransactionStatus.VOID;
+  const categoryColor = transaction.category
+    ? (categoryColorMap?.get(transaction.category.id) ?? transaction.category.color)
+    : null;
 
   return (
     <tr
@@ -191,11 +196,11 @@ const TransactionRow = memo(function TransactionRow({
               onClick={(e) => { e.stopPropagation(); onCategoryClick(transaction.category!.id); }}
               className={`inline-flex text-xs leading-5 font-semibold rounded-full truncate max-w-[160px] hover:opacity-80 transition-opacity ${density === 'dense' ? 'px-1.5 py-0.5' : 'px-2 py-1'}`}
               style={{
-                backgroundColor: transaction.category.color
-                  ? `color-mix(in srgb, ${transaction.category.color} 15%, var(--category-bg-base, #e5e7eb))`
+                backgroundColor: categoryColor
+                  ? `color-mix(in srgb, ${categoryColor} 15%, var(--category-bg-base, #e5e7eb))`
                   : 'var(--category-bg-base, #e5e7eb)',
-                color: transaction.category.color
-                  ? `color-mix(in srgb, ${transaction.category.color} 85%, var(--category-text-mix, #000))`
+                color: categoryColor
+                  ? `color-mix(in srgb, ${categoryColor} 85%, var(--category-text-mix, #000))`
                   : 'var(--category-text-base, #6b7280)',
               }}
               title={`Filter by ${transaction.category.name}`}
@@ -206,11 +211,11 @@ const TransactionRow = memo(function TransactionRow({
             <span
               className={`inline-flex text-xs leading-5 font-semibold rounded-full truncate max-w-[160px] ${density === 'dense' ? 'px-1.5 py-0.5' : 'px-2 py-1'}`}
               style={{
-                backgroundColor: transaction.category.color
-                  ? `color-mix(in srgb, ${transaction.category.color} 15%, var(--category-bg-base, #e5e7eb))`
+                backgroundColor: categoryColor
+                  ? `color-mix(in srgb, ${categoryColor} 15%, var(--category-bg-base, #e5e7eb))`
                   : 'var(--category-bg-base, #e5e7eb)',
-                color: transaction.category.color
-                  ? `color-mix(in srgb, ${transaction.category.color} 85%, var(--category-text-mix, #000))`
+                color: categoryColor
+                  ? `color-mix(in srgb, ${categoryColor} 85%, var(--category-text-mix, #000))`
                   : 'var(--category-text-base, #6b7280)',
               }}
               title={transaction.category.name}
@@ -323,6 +328,7 @@ interface TransactionListProps {
   onToggleSelection?: (id: string) => void;
   onToggleAllOnPage?: () => void;
   isAllOnPageSelected?: boolean;
+  categoryColorMap?: Map<string, string | null>;
 }
 
 export function TransactionList({
@@ -351,6 +357,7 @@ export function TransactionList({
   onToggleSelection,
   onToggleAllOnPage,
   isAllOnPageSelected,
+  categoryColorMap,
 }: TransactionListProps) {
   const { formatDate } = useDateFormat();
   const { formatCurrency } = useNumberFormat();
@@ -747,6 +754,7 @@ export function TransactionList({
                 selectionMode={selectionMode}
                 isSelected={selectionMode ? selectedIds?.has(transaction.id) : undefined}
                 onToggleSelection={selectionMode ? () => onToggleSelection?.(transaction.id) : undefined}
+                categoryColorMap={categoryColorMap}
               />
             ))}
           </tbody>

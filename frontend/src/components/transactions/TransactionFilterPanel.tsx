@@ -187,10 +187,10 @@ export function TransactionFilterPanel({
                   key={`category-${cat.id}`}
                   className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 whitespace-nowrap"
                 >
-                  {cat.color && (
+                  {(cat.effectiveColor ?? cat.color) && (
                     <span
                       className="w-2 h-2 rounded-full flex-shrink-0"
-                      style={{ backgroundColor: cat.color }}
+                      style={{ backgroundColor: (cat.effectiveColor ?? cat.color)! }}
                     />
                   )}
                   {cat.name}

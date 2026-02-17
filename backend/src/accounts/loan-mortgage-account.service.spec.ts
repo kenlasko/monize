@@ -364,6 +364,20 @@ describe("LoanMortgageAccountService", () => {
       );
     });
 
+    it("should set termEndDate to null when termMonths is 0 (no term)", async () => {
+      const dto = makeValidMortgageDto();
+      dto.termMonths = 0;
+
+      await service.createMortgageAccount(userId, dto);
+
+      expect(accountsRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          termMonths: null,
+          termEndDate: null,
+        }),
+      );
+    });
+
     it("should throw BadRequestException when mortgagePaymentFrequency is missing", async () => {
       const dto = makeValidMortgageDto();
       delete (dto as any).mortgagePaymentFrequency;

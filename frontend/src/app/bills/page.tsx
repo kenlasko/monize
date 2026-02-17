@@ -29,6 +29,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { SummaryCard, SummaryIcons } from '@/components/ui/SummaryCard';
 import { scheduledTransactionsApi } from '@/lib/scheduled-transactions';
 import { categoriesApi } from '@/lib/categories';
+import { buildCategoryColorMap } from '@/lib/categoryUtils';
 import { accountsApi } from '@/lib/accounts';
 import { ScheduledTransaction, ScheduledTransactionOverride } from '@/types/scheduled-transaction';
 import { Category } from '@/types/category';
@@ -276,6 +277,8 @@ function BillsContent() {
     if (filterType === 'deposits') return t.amount > 0;
     return true;
   });
+
+  const categoryColorMap = useMemo(() => buildCategoryColorMap(categories), [categories]);
 
   // Calculate summary stats in a single pass (exclude transfers from bills/deposits)
   const summary = useMemo(() => {
@@ -528,6 +531,7 @@ function BillsContent() {
                 onEditOccurrence={handleEditOccurrence}
                 onPost={handlePost}
                 onRefresh={loadData}
+                categoryColorMap={categoryColorMap}
               />
             )}
           </div>

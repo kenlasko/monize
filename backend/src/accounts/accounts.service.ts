@@ -402,8 +402,19 @@ export class AccountsService {
       account.isCanadianMortgage = updateAccountDto.isCanadianMortgage;
     if (updateAccountDto.isVariableRate !== undefined)
       account.isVariableRate = updateAccountDto.isVariableRate;
-    if (updateAccountDto.termMonths !== undefined)
-      account.termMonths = updateAccountDto.termMonths;
+    if (updateAccountDto.termMonths !== undefined) {
+      account.termMonths = updateAccountDto.termMonths || null;
+      // Recalculate termEndDate when termMonths changes
+      if (updateAccountDto.termMonths > 0 && account.paymentStartDate) {
+        const termEndDate = new Date(account.paymentStartDate);
+        termEndDate.setMonth(
+          termEndDate.getMonth() + updateAccountDto.termMonths,
+        );
+        account.termEndDate = termEndDate;
+      } else {
+        account.termEndDate = null;
+      }
+    }
     if (updateAccountDto.amortizationMonths !== undefined)
       account.amortizationMonths = updateAccountDto.amortizationMonths;
 

@@ -197,11 +197,11 @@ export class UpdateAccountDto {
 
   @ApiPropertyOptional({
     example: 60,
-    description: "Mortgage term length in months",
+    description: "Mortgage term length in months. 0 means no term.",
   })
   @IsOptional()
   @IsNumber()
-  @IsPositive()
+  @Min(0)
   termMonths?: number;
 
   @ApiPropertyOptional({

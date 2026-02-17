@@ -441,7 +441,7 @@ describe('AccountForm', () => {
     });
   });
 
-  it('does not show loan fields when LOAN type is selected for editing existing account', () => {
+  it('does not show loan fields when editing existing LOAN account', () => {
     const loanAccount = createExistingAccount({
       accountType: 'LOAN',
       interestRate: 5.5,
@@ -473,10 +473,13 @@ describe('AccountForm', () => {
     });
   });
 
-  it('does not show mortgage fields when editing existing MORTGAGE account', () => {
+  it('shows mortgage fields in edit mode but hides payment fields', () => {
     const mortgageAccount = createExistingAccount({
       accountType: 'MORTGAGE',
       interestRate: 3.5,
+      termMonths: 60,
+      amortizationMonths: 300,
+      isCanadianMortgage: true,
     });
 
     render(
@@ -487,7 +490,14 @@ describe('AccountForm', () => {
       />
     );
 
-    expect(screen.queryByText('Mortgage Details')).not.toBeInTheDocument();
+    // Mortgage section should be shown with term/amortization fields
+    expect(screen.getByText('Mortgage Details')).toBeInTheDocument();
+    expect(screen.getByText('Term Length')).toBeInTheDocument();
+    expect(screen.getByText('Amortization Period (required)')).toBeInTheDocument();
+    expect(screen.getByText('Canadian Mortgage')).toBeInTheDocument();
+    // Payment fields should be hidden during editing
+    expect(screen.queryByText('Payment Frequency (required)')).not.toBeInTheDocument();
+    expect(screen.queryByText('First Payment Date (required)')).not.toBeInTheDocument();
   });
 
   it('shows asset fields when ASSET type is selected', async () => {
