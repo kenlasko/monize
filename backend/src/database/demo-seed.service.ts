@@ -195,39 +195,91 @@ export class DemoSeedService {
     const createdAtStr = createdAt.toISOString();
 
     for (const acc of demoAccounts) {
-      const result = await this.dataSource.query(
-        `INSERT INTO accounts (
-          user_id, account_type, name, description, currency_code,
-          opening_balance, current_balance, credit_limit, interest_rate,
-          institution, is_favourite,
-          is_canadian_mortgage, is_variable_rate, term_months, amortization_months, original_principal,
-          payment_amount, payment_frequency,
-          created_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
-        RETURNING id`,
-        [
-          userId,
-          acc.type,
-          acc.name,
-          acc.description,
-          acc.currency,
-          acc.openingBalance,
-          acc.openingBalance,
-          acc.creditLimit || null,
-          acc.interestRate || null,
-          acc.institution || null,
-          acc.isFavourite || false,
-          acc.isCanadianMortgage || false,
-          acc.isVariableRate || false,
-          acc.termMonths || null,
-          acc.amortizationMonths || null,
-          acc.originalPrincipal || null,
-          acc.paymentAmount || null,
-          acc.paymentFrequency || null,
-          createdAtStr,
-        ],
-      );
-      accountMap.set(acc.key, result[0].id);
+      if (acc.isInvestmentPair) {
+        // Create investment account pair: cash + brokerage with bidirectional linking
+        const [cashAccount] = await this.dataSource.query(
+          `INSERT INTO accounts (
+            user_id, account_type, account_sub_type, name, description, currency_code,
+            opening_balance, current_balance, institution, is_favourite, created_at
+          ) VALUES ($1, 'INVESTMENT', 'INVESTMENT_CASH', $2, $3, $4, $5, $6, $7, $8, $9)
+          RETURNING id`,
+          [
+            userId,
+            `${acc.name} - Cash`,
+            acc.description,
+            acc.currency,
+            acc.openingBalance,
+            acc.openingBalance,
+            acc.institution || null,
+            acc.isFavourite || false,
+            createdAtStr,
+          ],
+        );
+
+        const [brokerageAccount] = await this.dataSource.query(
+          `INSERT INTO accounts (
+            user_id, account_type, account_sub_type, name, description, currency_code,
+            opening_balance, current_balance, institution, is_favourite,
+            linked_account_id, created_at
+          ) VALUES ($1, 'INVESTMENT', 'INVESTMENT_BROKERAGE', $2, $3, $4, 0, 0, $5, $6, $7, $8)
+          RETURNING id`,
+          [
+            userId,
+            `${acc.name} - Brokerage`,
+            acc.description,
+            acc.currency,
+            acc.institution || null,
+            acc.isFavourite || false,
+            cashAccount.id,
+            createdAtStr,
+          ],
+        );
+
+        // Link cash account back to brokerage
+        await this.dataSource.query(
+          "UPDATE accounts SET linked_account_id = $1 WHERE id = $2",
+          [brokerageAccount.id, cashAccount.id],
+        );
+
+        // Map the key to the brokerage account (securities/holdings go here)
+        accountMap.set(acc.key, brokerageAccount.id);
+        // Also store the cash account ID for balance updates
+        accountMap.set(`${acc.key}_cash`, cashAccount.id);
+      } else {
+        const result = await this.dataSource.query(
+          `INSERT INTO accounts (
+            user_id, account_type, name, description, currency_code,
+            opening_balance, current_balance, credit_limit, interest_rate,
+            institution, is_favourite,
+            is_canadian_mortgage, is_variable_rate, term_months, amortization_months, original_principal,
+            payment_amount, payment_frequency,
+            created_at
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
+          RETURNING id`,
+          [
+            userId,
+            acc.type,
+            acc.name,
+            acc.description,
+            acc.currency,
+            acc.openingBalance,
+            acc.openingBalance,
+            acc.creditLimit || null,
+            acc.interestRate || null,
+            acc.institution || null,
+            acc.isFavourite || false,
+            acc.isCanadianMortgage || false,
+            acc.isVariableRate || false,
+            acc.termMonths || null,
+            acc.amortizationMonths || null,
+            acc.originalPrincipal || null,
+            acc.paymentAmount || null,
+            acc.paymentFrequency || null,
+            createdAtStr,
+          ],
+        );
+        accountMap.set(acc.key, result[0].id);
+      }
     }
 
     // Set mortgage term_end_date
@@ -241,7 +293,7 @@ export class DemoSeedService {
       );
     }
 
-    console.log(`   ✓ Seeded ${demoAccounts.length} accounts`);
+    console.log(`   ✓ Seeded ${accountMap.size} accounts`);
     return accountMap;
   }
 
@@ -392,6 +444,9 @@ export class DemoSeedService {
 
     // Update account balances based on transactions
     for (const [key, accountId] of accountMap) {
+      // Skip internal keys (e.g., "rrsp_cash") — their balance is set at creation
+      if (key.endsWith("_cash")) continue;
+
       const [result] = await this.dataSource.query(
         `SELECT COALESCE(SUM(amount), 0) as total FROM transactions
          WHERE account_id = $1 AND user_id = $2`,

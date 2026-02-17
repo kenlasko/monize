@@ -248,6 +248,22 @@ function InvestmentsContent() {
     loadPriceStatus();
   }, [loadInvestmentAccounts, loadAllAccounts, loadPriceStatus]);
 
+  // Prune stale/non-selectable account IDs from localStorage when accounts load
+  useEffect(() => {
+    if (accounts.length > 0 && selectedAccountIds.length > 0) {
+      // Only keep IDs that appear in the dropdown (brokerage + standalone)
+      const selectableIds = new Set(
+        accounts
+          .filter((a) => a.accountSubType === 'INVESTMENT_BROKERAGE' || !a.accountSubType)
+          .map((a) => a.id),
+      );
+      const pruned = selectedAccountIds.filter((id) => selectableIds.has(id));
+      if (pruned.length !== selectedAccountIds.length) {
+        setSelectedAccountIds(pruned);
+      }
+    }
+  }, [accounts]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Load summary when account selection changes
   useEffect(() => {
     loadPortfolioSummary(selectedAccountIds);

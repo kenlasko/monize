@@ -164,6 +164,7 @@ export function InvestmentTransactionForm({
 
   const watchedAccountId = watch('accountId');
   const watchedAction = watch('action') as InvestmentAction;
+  const watchedSecurityId = watch('securityId');
   const watchedQuantity = Number(watch('quantity')) || 0;
   const watchedPrice = Number(watch('price')) || 0;
   const watchedCommission = Number(watch('commission')) || 0;
@@ -176,7 +177,16 @@ export function InvestmentTransactionForm({
     }
     return defaultCurrency;
   }, [watchedAccountId, accounts, defaultCurrency]);
-  const currencySymbol = getCurrencySymbol(accountCurrency);
+
+  // Use security currency when a security is selected, otherwise fall back to account currency
+  const transactionCurrency = useMemo(() => {
+    if (watchedSecurityId) {
+      const security = securities.find(s => s.id === watchedSecurityId);
+      if (security) return security.currencyCode;
+    }
+    return accountCurrency;
+  }, [watchedSecurityId, securities, accountCurrency]);
+  const currencySymbol = getCurrencySymbol(transactionCurrency);
 
   // Calculate total amount
   const totalAmount = useMemo(() => {
@@ -298,7 +308,7 @@ export function InvestmentTransactionForm({
           { value: '', label: 'Select account...' },
           ...brokerageAccounts.map((a) => ({
             value: a.id,
-            label: a.name,
+            label: `${a.name} (${a.currencyCode})`,
           })),
         ]}
         {...register('accountId')}
@@ -348,7 +358,7 @@ export function InvestmentTransactionForm({
               { value: '', label: 'Select security...' },
               ...securities.map((s) => ({
                 value: s.id,
-                label: `${s.symbol} - ${s.name}`,
+                label: `${s.symbol} - ${s.name} (${s.currencyCode})`,
               })),
             ]}
             {...register('securityId')}
@@ -435,7 +445,7 @@ export function InvestmentTransactionForm({
             error={errors.quantity?.message}
           />
           <NumericInput
-            label="Price per Share"
+            label={`Price per Share (${transactionCurrency})`}
             prefix={currencySymbol}
             value={watchedPrice || undefined}
             onChange={(value) => setValue('price', value, { shouldValidate: true })}
@@ -461,7 +471,7 @@ export function InvestmentTransactionForm({
       {/* Amount - for dividend/interest/capital gain/transfers */}
       {isAmountOnly && (
         <CurrencyInput
-          label="Amount"
+          label={`Amount (${transactionCurrency})`}
           prefix={currencySymbol}
           value={watchedPrice || undefined}
           onChange={(value) => setValue('price', value, { shouldValidate: true })}
@@ -473,7 +483,7 @@ export function InvestmentTransactionForm({
       {/* Commission */}
       {(needsQuantityPrice || watchedAction === 'SPLIT') && (
         <CurrencyInput
-          label="Commission / Fees"
+          label={`Commission / Fees (${transactionCurrency})`}
           prefix={currencySymbol}
           value={watchedCommission || undefined}
           onChange={(value) => setValue('commission', value, { shouldValidate: true })}
@@ -495,7 +505,7 @@ export function InvestmentTransactionForm({
         <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-4">
           <div className="flex justify-between items-center">
             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Total Amount
+              Total Amount ({transactionCurrency})
             </span>
             <span className="text-lg font-semibold text-gray-900 dark:text-gray-100">
               {currencySymbol}{totalAmount.toFixed(2)}

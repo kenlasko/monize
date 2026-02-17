@@ -112,8 +112,21 @@ vi.mock('@/hooks/useFormModal', () => ({
   }),
 }));
 
+// Configurable useLocalStorage mock - tracks state per key
+const mockLocalStorageState: Record<string, { value: any; setter: ReturnType<typeof vi.fn> }> = {};
+
 vi.mock('@/hooks/useLocalStorage', () => ({
-  useLocalStorage: (_key: string, defaultValue: any) => [defaultValue, vi.fn()],
+  useLocalStorage: (key: string, defaultValue: any) => {
+    if (!mockLocalStorageState[key]) {
+      const setter = vi.fn((newValue: any) => {
+        mockLocalStorageState[key].value = typeof newValue === 'function'
+          ? newValue(mockLocalStorageState[key].value)
+          : newValue;
+      });
+      mockLocalStorageState[key] = { value: defaultValue, setter };
+    }
+    return [mockLocalStorageState[key].value, mockLocalStorageState[key].setter];
+  },
 }));
 
 vi.mock('@/hooks/usePriceRefresh', () => ({
@@ -245,6 +258,10 @@ const mockTxResponse = {
 describe('InvestmentsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Reset useLocalStorage mock state
+    for (const key of Object.keys(mockLocalStorageState)) {
+      delete mockLocalStorageState[key];
+    }
     mockGetInvestmentAccounts.mockResolvedValue(mockCashAccounts);
     mockGetAllAccounts.mockResolvedValue(mockCashAccounts);
     mockGetPortfolioSummary.mockResolvedValue(mockPortfolioSummary);
@@ -649,6 +666,107 @@ describe('InvestmentsPage', () => {
       fireEvent.click(screen.getByTestId('new-tx-btn'));
 
       expect(mockOpenCreate).toHaveBeenCalled();
+    });
+  });
+
+  describe('Account ID pruning', () => {
+    it('removes stale account IDs that no longer exist', async () => {
+      // Pre-populate with stale IDs
+      const staleIds = ['old-1', 'old-2', 'old-3', 'old-4', 'old-5', 'old-6', 'old-7', 'old-8', 'old-9', 'old-10'];
+      mockLocalStorageState['monize-investments-accounts'] = {
+        value: staleIds,
+        setter: vi.fn((newValue: any) => {
+          mockLocalStorageState['monize-investments-accounts'].value = newValue;
+        }),
+      };
+
+      render(<InvestmentsPage />);
+
+      await waitFor(() => {
+        const setter = mockLocalStorageState['monize-investments-accounts'].setter;
+        expect(setter).toHaveBeenCalledWith([]);
+      });
+    });
+
+    it('keeps valid IDs and removes only stale ones', async () => {
+      // Mix of valid (brok-1, brok-2) and stale IDs
+      const mixedIds = ['brok-1', 'stale-id-1', 'brok-2', 'stale-id-2'];
+      mockLocalStorageState['monize-investments-accounts'] = {
+        value: mixedIds,
+        setter: vi.fn((newValue: any) => {
+          mockLocalStorageState['monize-investments-accounts'].value = newValue;
+        }),
+      };
+
+      render(<InvestmentsPage />);
+
+      await waitFor(() => {
+        const setter = mockLocalStorageState['monize-investments-accounts'].setter;
+        expect(setter).toHaveBeenCalledWith(['brok-1', 'brok-2']);
+      });
+    });
+
+    it('removes cash account IDs that exist but are not selectable', async () => {
+      // cash-1 and cash-2 exist in accounts but are INVESTMENT_CASH (not shown in dropdown)
+      const mixedIds = ['brok-1', 'cash-1', 'brok-2', 'cash-2'];
+      mockLocalStorageState['monize-investments-accounts'] = {
+        value: mixedIds,
+        setter: vi.fn((newValue: any) => {
+          mockLocalStorageState['monize-investments-accounts'].value = newValue;
+        }),
+      };
+
+      render(<InvestmentsPage />);
+
+      await waitFor(() => {
+        const setter = mockLocalStorageState['monize-investments-accounts'].setter;
+        expect(setter).toHaveBeenCalledWith(['brok-1', 'brok-2']);
+      });
+    });
+
+    it('does not call setter when all IDs are valid', async () => {
+      const validIds = ['brok-1', 'brok-2'];
+      mockLocalStorageState['monize-investments-accounts'] = {
+        value: validIds,
+        setter: vi.fn(),
+      };
+
+      render(<InvestmentsPage />);
+
+      // Wait for accounts to load
+      await waitFor(() => {
+        expect(mockGetInvestmentAccounts).toHaveBeenCalled();
+      });
+
+      // Setter should NOT be called for pruning (all IDs are valid)
+      const setter = mockLocalStorageState['monize-investments-accounts'].setter;
+      // The setter might be called for other reasons (account change effects),
+      // but should never be called with a different array than what was set
+      const pruningCalls = setter.mock.calls.filter(
+        (call: any[]) => Array.isArray(call[0]) && call[0].length < validIds.length,
+      );
+      expect(pruningCalls.length).toBe(0);
+    });
+
+    it('does not prune when selectedAccountIds is empty', async () => {
+      // Default empty selection - no pruning needed
+      mockLocalStorageState['monize-investments-accounts'] = {
+        value: [],
+        setter: vi.fn(),
+      };
+
+      render(<InvestmentsPage />);
+
+      await waitFor(() => {
+        expect(mockGetInvestmentAccounts).toHaveBeenCalled();
+      });
+
+      // Setter should not be called for pruning
+      const setter = mockLocalStorageState['monize-investments-accounts'].setter;
+      const pruningCalls = setter.mock.calls.filter(
+        (call: any[]) => Array.isArray(call[0]),
+      );
+      expect(pruningCalls.length).toBe(0);
     });
   });
 });

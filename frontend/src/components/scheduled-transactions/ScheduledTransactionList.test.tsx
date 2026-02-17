@@ -41,23 +41,31 @@ vi.mock('@/lib/utils', () => ({
   cn: (...args: any[]) => args.filter(Boolean).join(' '),
 }));
 
+// Format a local date as YYYY-MM-DD (avoids UTC offset issues with toISOString)
+function formatLocalDate(d: Date): string {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 // Helper to create a future date string
 function futureDate(daysFromNow: number): string {
   const d = new Date();
   d.setDate(d.getDate() + daysFromNow);
-  return d.toISOString().split('T')[0];
+  return formatLocalDate(d);
 }
 
 // Helper to create a past date string
 function pastDate(daysAgo: number): string {
   const d = new Date();
   d.setDate(d.getDate() - daysAgo);
-  return d.toISOString().split('T')[0];
+  return formatLocalDate(d);
 }
 
 // Helper to create today's date string
 function todayDate(): string {
-  return new Date().toISOString().split('T')[0];
+  return formatLocalDate(new Date());
 }
 
 function createTransaction(overrides: Partial<any> = {}) {

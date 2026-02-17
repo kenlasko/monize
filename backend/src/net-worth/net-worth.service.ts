@@ -256,6 +256,10 @@ export class NetWorthService {
         }
       }
       const idArray = [...resolvedIds];
+      if (idArray.length === 0) {
+        // No matching accounts found — return empty result
+        return [];
+      }
       // Build parameterized IN clause
       const placeholders = idArray.map((_, i) => `$${i + 4}`).join(", ");
       accountFilter = `AND a.id IN (${placeholders})`;

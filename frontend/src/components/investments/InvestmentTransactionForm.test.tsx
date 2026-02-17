@@ -116,7 +116,7 @@ describe('InvestmentTransactionForm', () => {
     const options = select.querySelectorAll('option');
     // "Select account..." + "RRSP Brokerage" only (no chequing, no cash)
     expect(options).toHaveLength(2);
-    expect(options[1].textContent).toBe('RRSP Brokerage');
+    expect(options[1].textContent).toBe('RRSP Brokerage (CAD)');
   });
 
   it('renders all action types in dropdown', () => {
@@ -277,6 +277,6 @@ describe('InvestmentTransactionForm', () => {
 
   it('shows Total Amount display for BUY action', () => {
     render(<InvestmentTransactionForm accounts={accounts} />);
-    expect(screen.getByText('Total Amount')).toBeInTheDocument();
+    expect(screen.getByText(/Total Amount/)).toBeInTheDocument();
   });
 });

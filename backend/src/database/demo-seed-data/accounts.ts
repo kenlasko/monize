@@ -9,6 +9,8 @@ export interface DemoAccount {
   description: string;
   institution?: string;
   isFavourite?: boolean;
+  // Investment account pair flag
+  isInvestmentPair?: boolean;
   // Debt payment fields
   paymentAmount?: number;
   paymentFrequency?: string;
@@ -99,6 +101,7 @@ export const demoAccounts: DemoAccount[] = [
     openingBalance: 42500.0,
     description: "Long-term retirement investments",
     institution: "Questrade",
+    isInvestmentPair: true,
   },
   {
     key: "tfsa",
@@ -108,6 +111,7 @@ export const demoAccounts: DemoAccount[] = [
     openingBalance: 28750.0,
     description: "Tax-free investment account",
     institution: "Questrade",
+    isInvestmentPair: true,
   },
   {
     key: "us_stocks",
@@ -117,6 +121,7 @@ export const demoAccounts: DemoAccount[] = [
     openingBalance: 12300.0,
     description: "Individual stocks and ETFs",
     institution: "Questrade",
+    isInvestmentPair: true,
   },
   {
     key: "cash",
