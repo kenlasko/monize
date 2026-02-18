@@ -142,7 +142,7 @@ describe("AiQueryController", () => {
         written[0].replace("data: ", "").replace("\n\n", ""),
       );
       expect(errorEvent.type).toBe("error");
-      expect(errorEvent.message).toBe("Provider crashed");
+      expect(errorEvent.message).toBe("An unexpected error occurred while processing your query.");
       expect(mockRes.end).toHaveBeenCalled();
     });
 
@@ -172,7 +172,7 @@ describe("AiQueryController", () => {
         written[0].replace("data: ", "").replace("\n\n", ""),
       );
       expect(errorEvent.type).toBe("error");
-      expect(errorEvent.message).toBe("Unknown error");
+      expect(errorEvent.message).toBe("An unexpected error occurred while processing your query.");
     });
 
     it("passes query service the correct user ID", async () => {

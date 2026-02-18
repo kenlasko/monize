@@ -301,7 +301,7 @@ describe("AiQueryService", () => {
 
       const errorEvent = events.find((e) => e.type === "error");
       expect(errorEvent).toBeDefined();
-      expect(errorEvent!.message).toContain("Rate limit exceeded");
+      expect(errorEvent!.message).toContain("The AI provider encountered an error processing your query.");
     });
 
     it("logs usage after successful completion", async () => {

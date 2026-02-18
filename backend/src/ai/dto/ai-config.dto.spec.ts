@@ -33,7 +33,7 @@ describe("CreateAiConfigDto", () => {
   it("accepts valid ollama config without API key", async () => {
     const dto = createDto({
       provider: "ollama",
-      baseUrl: "http://localhost:11434",
+      baseUrl: "http://ollama-server.example.com:11434",
     });
     const errors = await validate(dto);
     expect(errors).toHaveLength(0);
