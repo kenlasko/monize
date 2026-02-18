@@ -20,6 +20,9 @@ import { ToolExecutorService } from "./query/tool-executor.service";
 import { AiInsightsService } from "./insights/ai-insights.service";
 import { AiInsightsController } from "./insights/ai-insights.controller";
 import { InsightsAggregatorService } from "./insights/insights-aggregator.service";
+import { AiForecastService } from "./forecast/ai-forecast.service";
+import { AiForecastController } from "./forecast/ai-forecast.controller";
+import { ForecastAggregatorService } from "./forecast/forecast-aggregator.service";
 import { AccountsModule } from "../accounts/accounts.module";
 import { CategoriesModule } from "../categories/categories.module";
 import { TransactionsModule } from "../transactions/transactions.module";
@@ -52,8 +55,15 @@ import { NetWorthModule } from "../net-worth/net-worth.module";
     ToolExecutorService,
     AiInsightsService,
     InsightsAggregatorService,
+    AiForecastService,
+    ForecastAggregatorService,
   ],
-  controllers: [AiController, AiQueryController, AiInsightsController],
+  controllers: [
+    AiController,
+    AiQueryController,
+    AiInsightsController,
+    AiForecastController,
+  ],
   exports: [AiService, AiUsageService],
 })
 export class AiModule {}

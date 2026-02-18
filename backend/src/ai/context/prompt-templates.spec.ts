@@ -94,9 +94,47 @@ describe("prompt-templates", () => {
     it("CATEGORIZATION_SYSTEM_PROMPT is a placeholder", () => {
       expect(CATEGORIZATION_SYSTEM_PROMPT).toContain("TODO");
     });
+  });
 
-    it("FORECAST_SYSTEM_PROMPT is a placeholder", () => {
-      expect(FORECAST_SYSTEM_PROMPT).toContain("TODO");
+  describe("FORECAST_SYSTEM_PROMPT", () => {
+    it("is a non-empty string", () => {
+      expect(typeof FORECAST_SYSTEM_PROMPT).toBe("string");
+      expect(FORECAST_SYSTEM_PROMPT.length).toBeGreaterThan(100);
+    });
+
+    it("is not a TODO placeholder", () => {
+      expect(FORECAST_SYSTEM_PROMPT).not.toMatch(/^TODO/);
+    });
+
+    it("instructs the AI to respond with JSON", () => {
+      expect(FORECAST_SYSTEM_PROMPT).toMatch(/JSON/i);
+    });
+
+    it("defines the monthly projection schema", () => {
+      expect(FORECAST_SYSTEM_PROMPT).toMatch(/monthlyProjections/);
+      expect(FORECAST_SYSTEM_PROMPT).toMatch(/projectedIncome/);
+      expect(FORECAST_SYSTEM_PROMPT).toMatch(/confidenceLow/);
+      expect(FORECAST_SYSTEM_PROMPT).toMatch(/confidenceHigh/);
+    });
+
+    it("mentions seasonal patterns", () => {
+      expect(FORECAST_SYSTEM_PROMPT).toMatch(/seasonal/i);
+    });
+
+    it("mentions income variability", () => {
+      expect(FORECAST_SYSTEM_PROMPT).toMatch(/income variability/i);
+    });
+
+    it("mentions risk flags", () => {
+      expect(FORECAST_SYSTEM_PROMPT).toMatch(/riskFlags/);
+    });
+
+    it("mentions narrative summary", () => {
+      expect(FORECAST_SYSTEM_PROMPT).toMatch(/narrativeSummary/);
+    });
+
+    it("forbids fabricating data", () => {
+      expect(FORECAST_SYSTEM_PROMPT).toMatch(/not fabricate|do not fabricate/i);
     });
   });
 });
