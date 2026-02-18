@@ -44,6 +44,7 @@ describe("AiService", () => {
     mockConfigRepository = {
       find: jest.fn().mockResolvedValue([]),
       findOne: jest.fn().mockResolvedValue(null),
+      count: jest.fn().mockResolvedValue(0),
       create: jest.fn().mockImplementation((data) => ({ ...data })),
       save: jest.fn().mockImplementation((data) =>
         Promise.resolve({
@@ -286,7 +287,7 @@ describe("AiService", () => {
 
       const result = await service.testConnection(userId, "config-1");
       expect(result.available).toBe(false);
-      expect(result.error).toBe("Connection refused");
+      expect(result.error).toBe("Connection test failed. Check your provider settings.");
     });
   });
 
