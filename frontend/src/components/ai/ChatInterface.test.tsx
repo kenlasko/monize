@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@/test/render';
+import { render, screen, fireEvent, waitFor, act } from '@/test/render';
 import { ChatInterface } from './ChatInterface';
 import type { StreamCallbacks } from '@/types/ai';
 
@@ -247,7 +247,9 @@ describe('ChatInterface', () => {
       fireEvent.click(screen.getByTitle('Send'));
 
       // Simulate content event
-      capturedCallbacks?.onEvent({ type: 'content', text: 'Your balance is $5,000.' });
+      act(() => {
+        capturedCallbacks?.onEvent({ type: 'content', text: 'Your balance is $5,000.' });
+      });
 
       await waitFor(() => {
         expect(
@@ -268,9 +270,11 @@ describe('ChatInterface', () => {
       fireEvent.click(screen.getByTitle('Send'));
 
       // Simulate tool_start event
-      capturedCallbacks?.onEvent({
-        type: 'tool_start',
-        name: 'get_account_balances',
+      act(() => {
+        capturedCallbacks?.onEvent({
+          type: 'tool_start',
+          name: 'get_account_balances',
+        });
       });
 
       await waitFor(() => {
@@ -291,9 +295,11 @@ describe('ChatInterface', () => {
       });
       fireEvent.click(screen.getByTitle('Send'));
 
-      capturedCallbacks?.onEvent({
-        type: 'error',
-        message: 'No AI provider configured',
+      act(() => {
+        capturedCallbacks?.onEvent({
+          type: 'error',
+          message: 'No AI provider configured',
+        });
       });
 
       await waitFor(() => {
@@ -314,10 +320,12 @@ describe('ChatInterface', () => {
       });
       fireEvent.click(screen.getByTitle('Send'));
 
-      capturedCallbacks?.onEvent({ type: 'content', text: 'Answer.' });
-      capturedCallbacks?.onEvent({
-        type: 'done',
-        usage: { inputTokens: 100, outputTokens: 50, toolCalls: 0 },
+      act(() => {
+        capturedCallbacks?.onEvent({ type: 'content', text: 'Answer.' });
+        capturedCallbacks?.onEvent({
+          type: 'done',
+          usage: { inputTokens: 100, outputTokens: 50, toolCalls: 0 },
+        });
       });
 
       await waitFor(() => {

@@ -57,13 +57,42 @@ describe("prompt-templates", () => {
     });
   });
 
+  describe("INSIGHT_SYSTEM_PROMPT", () => {
+    it("is a non-empty string", () => {
+      expect(typeof INSIGHT_SYSTEM_PROMPT).toBe("string");
+      expect(INSIGHT_SYSTEM_PROMPT.length).toBeGreaterThan(100);
+    });
+
+    it("is not a TODO placeholder", () => {
+      expect(INSIGHT_SYSTEM_PROMPT).not.toMatch(/^TODO/);
+    });
+
+    it("instructs the AI to generate insights as JSON", () => {
+      expect(INSIGHT_SYSTEM_PROMPT).toMatch(/JSON array/i);
+      expect(INSIGHT_SYSTEM_PROMPT).toMatch(/insight/i);
+    });
+
+    it("defines insight types", () => {
+      expect(INSIGHT_SYSTEM_PROMPT).toMatch(/anomaly/);
+      expect(INSIGHT_SYSTEM_PROMPT).toMatch(/trend/);
+      expect(INSIGHT_SYSTEM_PROMPT).toMatch(/subscription/);
+      expect(INSIGHT_SYSTEM_PROMPT).toMatch(/budget_pace/);
+    });
+
+    it("defines severity levels", () => {
+      expect(INSIGHT_SYSTEM_PROMPT).toMatch(/info/);
+      expect(INSIGHT_SYSTEM_PROMPT).toMatch(/warning/);
+      expect(INSIGHT_SYSTEM_PROMPT).toMatch(/alert/);
+    });
+
+    it("forbids fabricating data", () => {
+      expect(INSIGHT_SYSTEM_PROMPT).toMatch(/not fabricate|do not fabricate/i);
+    });
+  });
+
   describe("placeholder prompts", () => {
     it("CATEGORIZATION_SYSTEM_PROMPT is a placeholder", () => {
       expect(CATEGORIZATION_SYSTEM_PROMPT).toContain("TODO");
-    });
-
-    it("INSIGHT_SYSTEM_PROMPT is a placeholder", () => {
-      expect(INSIGHT_SYSTEM_PROMPT).toContain("TODO");
     });
 
     it("FORECAST_SYSTEM_PROMPT is a placeholder", () => {
