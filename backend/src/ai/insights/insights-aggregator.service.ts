@@ -71,7 +71,12 @@ export class InsightsAggregatorService {
 
     const [categorySpending, monthlySpending, recurringCharges] =
       await Promise.all([
-        this.getCategorySpending(userId, sixMonthsAgo, today, currentMonthStart),
+        this.getCategorySpending(
+          userId,
+          sixMonthsAgo,
+          today,
+          currentMonthStart,
+        ),
         this.getMonthlySpending(userId, sixMonthsAgo, today),
         this.getRecurringCharges(userId, sixMonthsAgo, today),
       ]);
@@ -79,7 +84,11 @@ export class InsightsAggregatorService {
     const currentMonth = monthlySpending.find(
       (m) => m.month === currentMonthStart.substring(0, 7),
     );
-    const previousMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const previousMonthDate = new Date(
+      now.getFullYear(),
+      now.getMonth() - 1,
+      1,
+    );
     const previousMonthKey = `${previousMonthDate.getFullYear()}-${String(previousMonthDate.getMonth() + 1).padStart(2, "0")}`;
     const previousMonth = monthlySpending.find(
       (m) => m.month === previousMonthKey,
@@ -175,9 +184,7 @@ export class InsightsAggregatorService {
       currentMonthTotal: Number(r.currentMonthTotal) || 0,
       previousMonthTotal: Number(r.previousMonthTotal) || 0,
       averageMonthlyTotal:
-        Number(r.monthCount) > 0
-          ? Number(r.total) / Number(r.monthCount)
-          : 0,
+        Number(r.monthCount) > 0 ? Number(r.total) / Number(r.monthCount) : 0,
       monthCount: Number(r.monthCount),
       transactionCount: Number(r.txnCount),
     }));
@@ -272,7 +279,8 @@ export class InsightsAggregatorService {
         const amounts: number[] = (r.amounts || []).map(Number);
         const dates: string[] = r.dates || [];
         const frequency = this.detectFrequency(dates);
-        const currentAmount = amounts.length > 0 ? amounts[amounts.length - 1] : 0;
+        const currentAmount =
+          amounts.length > 0 ? amounts[amounts.length - 1] : 0;
         const previousAmount =
           amounts.length > 1 ? amounts[amounts.length - 2] : currentAmount;
 

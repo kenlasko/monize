@@ -5,12 +5,15 @@ import { AiInsightsService } from "./ai-insights.service";
 import { AiInsight } from "../entities/ai-insight.entity";
 import { AiService } from "../ai.service";
 import { AiUsageService } from "../ai-usage.service";
-import { InsightsAggregatorService, SpendingAggregates } from "./insights-aggregator.service";
+import {
+  InsightsAggregatorService,
+  SpendingAggregates,
+} from "./insights-aggregator.service";
 import { UserPreference } from "../../users/entities/user-preference.entity";
 
 describe("AiInsightsService", () => {
   let service: AiInsightsService;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   let mockInsightRepo: Record<string, any>;
   let mockPrefRepo: Record<string, jest.Mock>;
   let mockAiService: Partial<Record<keyof AiService, jest.Mock>>;

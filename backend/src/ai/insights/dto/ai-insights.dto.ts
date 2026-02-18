@@ -1,8 +1,4 @@
-import {
-  IsOptional,
-  IsString,
-  IsIn,
-} from "class-validator";
+import { IsOptional, IsString, IsIn } from "class-validator";
 import {
   INSIGHT_TYPES,
   INSIGHT_SEVERITIES,

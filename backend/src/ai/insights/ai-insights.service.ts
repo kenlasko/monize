@@ -1,21 +1,21 @@
-import {
-  Injectable,
-  Logger,
-  NotFoundException,
-} from "@nestjs/common";
+import { Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository, LessThan } from "typeorm";
 import { Cron, CronExpression } from "@nestjs/schedule";
-import { AiInsight, InsightType, InsightSeverity } from "../entities/ai-insight.entity";
+import {
+  AiInsight,
+  InsightType,
+  InsightSeverity,
+} from "../entities/ai-insight.entity";
 import { AiService } from "../ai.service";
 import { AiUsageService } from "../ai-usage.service";
-import { InsightsAggregatorService, SpendingAggregates } from "./insights-aggregator.service";
+import {
+  InsightsAggregatorService,
+  SpendingAggregates,
+} from "./insights-aggregator.service";
 import { INSIGHT_SYSTEM_PROMPT } from "../context/prompt-templates";
 import { UserPreference } from "../../users/entities/user-preference.entity";
-import {
-  AiInsightResponse,
-  InsightsListResponse,
-} from "./dto/ai-insights.dto";
+import { AiInsightResponse, InsightsListResponse } from "./dto/ai-insights.dto";
 
 const INSIGHT_EXPIRY_DAYS = 7;
 const MAX_INSIGHTS_PER_USER = 50;
@@ -97,10 +97,7 @@ export class AiInsightsService {
       throw new NotFoundException("Insight not found");
     }
 
-    await this.insightRepo.update(
-      { id: insightId },
-      { isDismissed: true },
-    );
+    await this.insightRepo.update({ id: insightId }, { isDismissed: true });
   }
 
   async generateInsights(userId: string): Promise<InsightsListResponse> {
@@ -130,8 +127,7 @@ export class AiInsightsService {
         currency,
       );
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Unknown error";
+      const message = error instanceof Error ? error.message : "Unknown error";
       this.logger.warn(
         `Failed to compute aggregates for user ${userId}: ${message}`,
       );
@@ -162,8 +158,7 @@ export class AiInsightsService {
       const rawInsights = this.parseInsightsResponse(response.content);
       await this.saveInsights(userId, rawInsights);
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Unknown error";
+      const message = error instanceof Error ? error.message : "Unknown error";
       this.logger.warn(
         `Failed to generate AI insights for user ${userId}: ${message}`,
       );
@@ -179,8 +174,7 @@ export class AiInsightsService {
     try {
       await this.cleanupExpiredInsights();
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Unknown error";
+      const message = error instanceof Error ? error.message : "Unknown error";
       this.logger.warn(`Failed to cleanup expired insights: ${message}`);
     }
 
@@ -324,8 +318,7 @@ export class AiInsightsService {
           data: this.sanitizeData(item.data),
         }));
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Unknown error";
+      const message = error instanceof Error ? error.message : "Unknown error";
       this.logger.warn(`Failed to parse AI insights response: ${message}`);
       return [];
     }
@@ -378,11 +371,7 @@ export class AiInsightsService {
       return {};
     }
 
-    const DANGEROUS_KEYS = new Set([
-      "__proto__",
-      "constructor",
-      "prototype",
-    ]);
+    const DANGEROUS_KEYS = new Set(["__proto__", "constructor", "prototype"]);
     const MAX_KEYS = 20;
     const MAX_STRING_LENGTH = 1000;
 

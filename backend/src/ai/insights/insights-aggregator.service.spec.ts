@@ -53,9 +53,7 @@ describe("InsightsAggregatorService", () => {
       ],
     }).compile();
 
-    service = module.get<InsightsAggregatorService>(
-      InsightsAggregatorService,
-    );
+    service = module.get<InsightsAggregatorService>(InsightsAggregatorService);
   });
 
   describe("computeAggregates()", () => {
@@ -159,12 +157,7 @@ describe("InsightsAggregatorService", () => {
               payeeName: "Netflix",
               categoryName: "Entertainment",
               amounts: [15.99, 15.99, 15.99, 17.99],
-              dates: [
-                "2025-09-01",
-                "2025-10-01",
-                "2025-11-01",
-                "2025-12-01",
-              ],
+              dates: ["2025-09-01", "2025-10-01", "2025-11-01", "2025-12-01"],
               txnCount: "4",
             },
           ]);

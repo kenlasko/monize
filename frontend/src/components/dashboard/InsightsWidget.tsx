@@ -4,9 +4,6 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { aiApi } from '@/lib/ai';
 import { AiInsight } from '@/types/ai';
-import { createLogger } from '@/lib/logger';
-
-const logger = createLogger('InsightsWidget');
 
 const severityColors: Record<string, string> = {
   alert: 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800',
