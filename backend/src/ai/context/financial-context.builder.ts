@@ -68,10 +68,7 @@ ${categoryList || "(No categories configured)"}`;
     return this.formatCategoryTree(categoryTree);
   }
 
-  private formatCategoryTree(
-    categories: CategoryNode[],
-    indent = 0,
-  ): string {
+  private formatCategoryTree(categories: CategoryNode[], indent = 0): string {
     return categories
       .map((cat) => {
         const prefix = "  ".repeat(indent) + "- ";

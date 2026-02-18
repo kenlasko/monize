@@ -13,6 +13,8 @@ CREATE TABLE IF NOT EXISTS ai_insights (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+ALTER TABLE ai_insights OWNER TO monize;
+
 CREATE INDEX idx_ai_insights_user ON ai_insights(user_id);
 CREATE INDEX idx_ai_insights_user_dismissed ON ai_insights(user_id, is_dismissed);
 CREATE INDEX idx_ai_insights_expires ON ai_insights(expires_at);

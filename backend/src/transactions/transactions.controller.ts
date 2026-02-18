@@ -204,9 +204,7 @@ export class TransactionsController {
 
     // Validate targetTransactionId
     if (targetTransactionId && !uuidRegex.test(targetTransactionId)) {
-      throw new BadRequestException(
-        "targetTransactionId must be a valid UUID",
-      );
+      throw new BadRequestException("targetTransactionId must be a valid UUID");
     }
 
     return this.transactionsService.findAll(

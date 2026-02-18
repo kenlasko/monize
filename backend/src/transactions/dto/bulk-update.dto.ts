@@ -50,7 +50,8 @@ export class BulkUpdateFilterDto {
 
 export class BulkUpdateDto {
   @ApiProperty({
-    description: 'Selection mode: "ids" for explicit IDs, "filter" for filter-based',
+    description:
+      'Selection mode: "ids" for explicit IDs, "filter" for filter-based',
     enum: ["ids", "filter"],
   })
   @IsEnum(["ids", "filter"])

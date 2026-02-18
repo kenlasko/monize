@@ -195,9 +195,7 @@ describe("AiQueryService", () => {
       (mockProvider.completeWithTools as jest.Mock)
         .mockResolvedValueOnce({
           content: "",
-          toolCalls: [
-            { id: "tc-1", name: "get_account_balances", input: {} },
-          ],
+          toolCalls: [{ id: "tc-1", name: "get_account_balances", input: {} }],
           usage: { inputTokens: 80, outputTokens: 20 },
           model: "claude-sonnet-4-20250514",
           provider: "anthropic",
@@ -246,7 +244,11 @@ describe("AiQueryService", () => {
       (mockProvider.completeWithTools as jest.Mock).mockResolvedValue({
         content: "",
         toolCalls: [
-          { id: "tc-x", name: "query_transactions", input: { startDate: "2026-01-01", endDate: "2026-01-31" } },
+          {
+            id: "tc-x",
+            name: "query_transactions",
+            input: { startDate: "2026-01-01", endDate: "2026-01-31" },
+          },
         ],
         usage: { inputTokens: 50, outputTokens: 20 },
         model: "claude-sonnet-4-20250514",
@@ -289,7 +291,9 @@ describe("AiQueryService", () => {
 
       const errorEvent = events.find((e) => e.type === "error");
       expect(errorEvent).toBeDefined();
-      expect(errorEvent!.message).toContain("No AI provider with tool use support");
+      expect(errorEvent!.message).toContain(
+        "No AI provider with tool use support",
+      );
     });
 
     it("yields error when AI provider throws during completion", async () => {
@@ -301,7 +305,9 @@ describe("AiQueryService", () => {
 
       const errorEvent = events.find((e) => e.type === "error");
       expect(errorEvent).toBeDefined();
-      expect(errorEvent!.message).toContain("The AI provider encountered an error processing your query.");
+      expect(errorEvent!.message).toContain(
+        "The AI provider encountered an error processing your query.",
+      );
     });
 
     it("logs usage after successful completion", async () => {
@@ -341,9 +347,7 @@ describe("AiQueryService", () => {
       (mockProvider.completeWithTools as jest.Mock)
         .mockResolvedValueOnce({
           content: "Looking up data...",
-          toolCalls: [
-            { id: "tc-1", name: "get_account_balances", input: {} },
-          ],
+          toolCalls: [{ id: "tc-1", name: "get_account_balances", input: {} }],
           usage: { inputTokens: 80, outputTokens: 20 },
           model: "claude-sonnet-4-20250514",
           provider: "anthropic",
@@ -381,9 +385,7 @@ describe("AiQueryService", () => {
       (mockProvider.completeWithTools as jest.Mock)
         .mockResolvedValueOnce({
           content: "",
-          toolCalls: [
-            { id: "tc-1", name: "get_account_balances", input: {} },
-          ],
+          toolCalls: [{ id: "tc-1", name: "get_account_balances", input: {} }],
           usage: { inputTokens: 80, outputTokens: 20 },
           model: "claude-sonnet-4-20250514",
           provider: "anthropic",
@@ -414,9 +416,9 @@ describe("AiQueryService", () => {
         new Error("DB error"),
       );
 
-      await expect(
-        service.executeQuery(userId, "Any query"),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.executeQuery(userId, "Any query")).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 });

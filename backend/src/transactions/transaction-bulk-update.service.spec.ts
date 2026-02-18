@@ -300,9 +300,7 @@ describe("TransactionBulkUpdateService", () => {
       });
       // Net worth recalc query
       const accountIdsQb = createMockQueryBuilder({
-        getRawMany: jest
-          .fn()
-          .mockResolvedValue([{ accountId: "acc-1" }]),
+        getRawMany: jest.fn().mockResolvedValue([{ accountId: "acc-1" }]),
       });
 
       transactionsRepository.createQueryBuilder
@@ -351,9 +349,7 @@ describe("TransactionBulkUpdateService", () => {
         execute: jest.fn().mockResolvedValue({ affected: 1 }),
       });
       const accountIdsQb = createMockQueryBuilder({
-        getRawMany: jest
-          .fn()
-          .mockResolvedValue([{ accountId: "acc-1" }]),
+        getRawMany: jest.fn().mockResolvedValue([{ accountId: "acc-1" }]),
       });
 
       transactionsRepository.createQueryBuilder

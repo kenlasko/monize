@@ -180,9 +180,11 @@ export class OpenAiProvider implements AiProvider {
 
     const finishReason = choice?.finish_reason;
     const stopReason =
-      finishReason === "tool_calls" ? "tool_use" as const :
-      finishReason === "length" ? "max_tokens" as const :
-      "end_turn" as const;
+      finishReason === "tool_calls"
+        ? ("tool_use" as const)
+        : finishReason === "length"
+          ? ("max_tokens" as const)
+          : ("end_turn" as const);
 
     return {
       content: choice?.message?.content || "",

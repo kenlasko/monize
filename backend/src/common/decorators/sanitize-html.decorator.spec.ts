@@ -32,7 +32,7 @@ describe("SanitizeHtml", () => {
   });
 
   it("strips img onerror XSS payload", () => {
-    const dto = toDto({ name: '<img src=x onerror=alert(1)>' });
+    const dto = toDto({ name: "<img src=x onerror=alert(1)>" });
     expect(dto.name).toBe("img src=x onerror=alert(1)");
   });
 

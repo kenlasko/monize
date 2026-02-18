@@ -142,7 +142,11 @@ describe("OpenAiProvider", () => {
 
       expect(result.content).toBe("Let me categorize.");
       expect(result.toolCalls).toEqual([
-        { id: expect.any(String), name: "categorize", input: { category: "food" } },
+        {
+          id: expect.any(String),
+          name: "categorize",
+          input: { category: "food" },
+        },
       ]);
       expect(result.usage.inputTokens).toBe(20);
       expect(result.usage.outputTokens).toBe(30);
@@ -161,7 +165,7 @@ describe("OpenAiProvider", () => {
                   type: "function",
                   function: {
                     name: "get_balance",
-                    arguments: '{}',
+                    arguments: "{}",
                   },
                 },
               ],
@@ -222,7 +226,10 @@ describe("OpenAiProvider", () => {
       });
 
       result = await provider.completeWithTools(
-        { systemPrompt: "test", messages: [{ role: "user", content: "write a lot" }] },
+        {
+          systemPrompt: "test",
+          messages: [{ role: "user", content: "write a lot" }],
+        },
         [],
       );
       expect(result.stopReason).toBe("max_tokens");
@@ -273,9 +280,7 @@ describe("OpenAiProvider", () => {
             {
               role: "assistant",
               content: "",
-              toolCalls: [
-                { id: "call_1", name: "get_balance", input: {} },
-              ],
+              toolCalls: [{ id: "call_1", name: "get_balance", input: {} }],
             },
             {
               role: "tool",

@@ -193,7 +193,11 @@ describe("CategoriesService", () => {
     });
 
     it("inherits isIncome from parent category, ignoring provided value", async () => {
-      const incomeParent = { ...mockCategory, id: "income-parent", isIncome: true };
+      const incomeParent = {
+        ...mockCategory,
+        id: "income-parent",
+        isIncome: true,
+      };
       categoriesRepository.findOne.mockResolvedValue(incomeParent);
       categoriesRepository.save.mockImplementation((data) => data);
 
@@ -404,7 +408,12 @@ describe("CategoriesService", () => {
         parentId: "p1",
         color: null,
       };
-      const parent = { ...mockCategory, id: "p1", color: "#ef4444", parentId: null };
+      const parent = {
+        ...mockCategory,
+        id: "p1",
+        color: "#ef4444",
+        parentId: null,
+      };
 
       categoriesRepository.findOne
         .mockResolvedValueOnce(child) // findOne: load child
@@ -543,9 +552,7 @@ describe("CategoriesService", () => {
         where: { userId: "user-1", isIncome: false },
         order: { name: "ASC" },
       });
-      expect(result).toEqual([
-        { ...mockCategory, effectiveColor: null },
-      ]);
+      expect(result).toEqual([{ ...mockCategory, effectiveColor: null }]);
     });
   });
 
@@ -618,7 +625,11 @@ describe("CategoriesService", () => {
     });
 
     it("inherits isIncome from parent when parentId is set on update", async () => {
-      const incomeParent = { ...mockCategory, id: "income-parent", isIncome: true };
+      const incomeParent = {
+        ...mockCategory,
+        id: "income-parent",
+        isIncome: true,
+      };
       categoriesRepository.findOne
         .mockResolvedValueOnce({ ...mockCategory, isIncome: false })
         .mockResolvedValueOnce(incomeParent)

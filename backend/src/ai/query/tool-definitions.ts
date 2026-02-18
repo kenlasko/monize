@@ -25,7 +25,8 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
         accountNames: {
           type: "array",
           items: { type: "string" },
-          description: "Filter by account names. Use exact names from the user's account list.",
+          description:
+            "Filter by account names. Use exact names from the user's account list.",
         },
         searchText: {
           type: "string",
@@ -152,14 +153,12 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
         groupBy: {
           type: "string",
           enum: ["category", "payee"],
-          description:
-            "How to group comparison (default: category)",
+          description: "How to group comparison (default: category)",
         },
         direction: {
           type: "string",
           enum: ["expenses", "income", "both"],
-          description:
-            "Filter by direction (default: expenses)",
+          description: "Filter by direction (default: expenses)",
         },
       },
       required: ["period1Start", "period1End", "period2Start", "period2End"],

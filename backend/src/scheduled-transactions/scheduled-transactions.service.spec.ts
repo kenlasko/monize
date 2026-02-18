@@ -565,9 +565,7 @@ describe("ScheduledTransactionsService", () => {
       await service.skip(userId, stId);
 
       const updateArg = scheduledRepo.update.mock.calls[0][1];
-      expect(toUTCDateStr(new Date(updateArg.nextDueDate))).toBe(
-        "2025-03-02",
-      );
+      expect(toUTCDateStr(new Date(updateArg.nextDueDate))).toBe("2025-03-02");
     });
 
     it("should advance WEEKLY by 7 days", async () => {
@@ -580,9 +578,7 @@ describe("ScheduledTransactionsService", () => {
       await service.skip(userId, stId);
 
       const updateArg = scheduledRepo.update.mock.calls[0][1];
-      expect(toUTCDateStr(new Date(updateArg.nextDueDate))).toBe(
-        "2025-03-08",
-      );
+      expect(toUTCDateStr(new Date(updateArg.nextDueDate))).toBe("2025-03-08");
     });
 
     it("should advance BIWEEKLY by 14 days", async () => {
@@ -595,9 +591,7 @@ describe("ScheduledTransactionsService", () => {
       await service.skip(userId, stId);
 
       const updateArg = scheduledRepo.update.mock.calls[0][1];
-      expect(toUTCDateStr(new Date(updateArg.nextDueDate))).toBe(
-        "2025-03-15",
-      );
+      expect(toUTCDateStr(new Date(updateArg.nextDueDate))).toBe("2025-03-15");
     });
 
     it("should advance SEMIMONTHLY: day<=15 goes to last day of month", async () => {
@@ -610,9 +604,7 @@ describe("ScheduledTransactionsService", () => {
       await service.skip(userId, stId);
 
       const updateArg = scheduledRepo.update.mock.calls[0][1];
-      expect(toUTCDateStr(new Date(updateArg.nextDueDate))).toBe(
-        "2025-03-31",
-      );
+      expect(toUTCDateStr(new Date(updateArg.nextDueDate))).toBe("2025-03-31");
     });
 
     it("should advance SEMIMONTHLY: day>15 goes to 15th of next month", async () => {
@@ -625,9 +617,7 @@ describe("ScheduledTransactionsService", () => {
       await service.skip(userId, stId);
 
       const updateArg = scheduledRepo.update.mock.calls[0][1];
-      expect(toUTCDateStr(new Date(updateArg.nextDueDate))).toBe(
-        "2025-04-15",
-      );
+      expect(toUTCDateStr(new Date(updateArg.nextDueDate))).toBe("2025-04-15");
     });
 
     it("should advance MONTHLY by 1 month", async () => {
@@ -640,9 +630,7 @@ describe("ScheduledTransactionsService", () => {
       await service.skip(userId, stId);
 
       const updateArg = scheduledRepo.update.mock.calls[0][1];
-      expect(toUTCDateStr(new Date(updateArg.nextDueDate))).toBe(
-        "2025-02-15",
-      );
+      expect(toUTCDateStr(new Date(updateArg.nextDueDate))).toBe("2025-02-15");
     });
 
     it("should advance QUARTERLY by 3 months", async () => {
@@ -655,9 +643,7 @@ describe("ScheduledTransactionsService", () => {
       await service.skip(userId, stId);
 
       const updateArg = scheduledRepo.update.mock.calls[0][1];
-      expect(toUTCDateStr(new Date(updateArg.nextDueDate))).toBe(
-        "2025-04-15",
-      );
+      expect(toUTCDateStr(new Date(updateArg.nextDueDate))).toBe("2025-04-15");
     });
 
     it("should advance YEARLY by 1 year", async () => {
@@ -670,9 +656,7 @@ describe("ScheduledTransactionsService", () => {
       await service.skip(userId, stId);
 
       const updateArg = scheduledRepo.update.mock.calls[0][1];
-      expect(toUTCDateStr(new Date(updateArg.nextDueDate))).toBe(
-        "2026-01-15",
-      );
+      expect(toUTCDateStr(new Date(updateArg.nextDueDate))).toBe("2026-01-15");
     });
 
     it("should delete override for the skipped date", async () => {
@@ -930,9 +914,7 @@ describe("ScheduledTransactionsService", () => {
       await service.post(userId, stId);
 
       const updateArg = scheduledRepo.update.mock.calls[0][1];
-      expect(toUTCDateStr(new Date(updateArg.nextDueDate))).toBe(
-        "2025-03-15",
-      );
+      expect(toUTCDateStr(new Date(updateArg.nextDueDate))).toBe("2025-03-15");
     });
 
     it("should decrement occurrencesRemaining and deactivate at 0", async () => {

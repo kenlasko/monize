@@ -287,7 +287,9 @@ describe("AiService", () => {
 
       const result = await service.testConnection(userId, "config-1");
       expect(result.available).toBe(false);
-      expect(result.error).toBe("Connection test failed. Check your provider settings.");
+      expect(result.error).toBe(
+        "Connection test failed. Check your provider settings.",
+      );
     });
   });
 

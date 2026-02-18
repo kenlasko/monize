@@ -561,9 +561,10 @@ describe("AuthController", () => {
 
   describe("oidcCallback", () => {
     it("redirects with success on valid callback", async () => {
-      (oidcService as any).handleCallback = jest
-        .fn()
-        .mockResolvedValue({ access_token: "oidc-access-token", sub: "oidc-sub-123" });
+      (oidcService as any).handleCallback = jest.fn().mockResolvedValue({
+        access_token: "oidc-access-token",
+        sub: "oidc-sub-123",
+      });
       (oidcService as any).getUserInfo = jest.fn().mockResolvedValue({
         sub: "oidc-sub-123",
         email: "oidc@example.com",
@@ -593,7 +594,10 @@ describe("AuthController", () => {
         "valid-state",
         "valid-nonce",
       );
-      expect(oidcService.getUserInfo).toHaveBeenCalledWith("oidc-access-token", "oidc-sub-123");
+      expect(oidcService.getUserInfo).toHaveBeenCalledWith(
+        "oidc-access-token",
+        "oidc-sub-123",
+      );
       expect(authService.findOrCreateOidcUser).toHaveBeenCalledWith(
         { sub: "oidc-sub-123", email: "oidc@example.com", name: "OIDC User" },
         true,
@@ -650,7 +654,9 @@ describe("AuthController", () => {
     it("redirects with error when handleCallback returns no token", async () => {
       (oidcService as any).handleCallback = jest
         .fn()
-        .mockRejectedValue(new Error("No access token received from OIDC provider"));
+        .mockRejectedValue(
+          new Error("No access token received from OIDC provider"),
+        );
 
       const res = mockRes();
       const expressReq = {

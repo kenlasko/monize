@@ -116,9 +116,7 @@ describe("FINANCIAL_TOOLS", () => {
 
   describe("compare_periods", () => {
     it("requires all four period boundary dates", () => {
-      const tool = FINANCIAL_TOOLS.find(
-        (t) => t.name === "compare_periods",
-      )!;
+      const tool = FINANCIAL_TOOLS.find((t) => t.name === "compare_periods")!;
       expect(tool.inputSchema.required).toEqual([
         "period1Start",
         "period1End",
@@ -128,9 +126,7 @@ describe("FINANCIAL_TOOLS", () => {
     });
 
     it("supports groupBy with category and payee", () => {
-      const tool = FINANCIAL_TOOLS.find(
-        (t) => t.name === "compare_periods",
-      )!;
+      const tool = FINANCIAL_TOOLS.find((t) => t.name === "compare_periods")!;
       const props = tool.inputSchema.properties as Record<
         string,
         Record<string, unknown>

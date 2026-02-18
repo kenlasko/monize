@@ -1,4 +1,7 @@
-import { CATEGORIZATION_TOOL, QUERY_TRANSACTIONS_TOOL } from "./schema-definitions";
+import {
+  CATEGORIZATION_TOOL,
+  QUERY_TRANSACTIONS_TOOL,
+} from "./schema-definitions";
 
 describe("schema-definitions", () => {
   describe("CATEGORIZATION_TOOL", () => {

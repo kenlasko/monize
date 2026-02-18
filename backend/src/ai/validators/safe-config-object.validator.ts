@@ -5,18 +5,12 @@ import {
   ValidatorConstraintInterface,
 } from "class-validator";
 
-const DANGEROUS_KEYS = new Set([
-  "__proto__",
-  "constructor",
-  "prototype",
-]);
+const DANGEROUS_KEYS = new Set(["__proto__", "constructor", "prototype"]);
 
 const MAX_KEYS = 20;
 
 @ValidatorConstraint({ async: false })
-export class IsSafeConfigObjectConstraint
-  implements ValidatorConstraintInterface
-{
+export class IsSafeConfigObjectConstraint implements ValidatorConstraintInterface {
   validate(value: unknown): boolean {
     if (value === undefined || value === null) return true;
     if (typeof value !== "object" || Array.isArray(value)) return false;

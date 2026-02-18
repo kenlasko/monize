@@ -10,7 +10,9 @@ export class DemoModeService {
     this.isDemo = setting.toLowerCase() === "true";
 
     if (this.isDemo) {
-      console.log("🎭 Demo mode is ACTIVE — restricted operations will be blocked");
+      console.log(
+        "🎭 Demo mode is ACTIVE — restricted operations will be blocked",
+      );
     }
   }
 }

@@ -22,9 +22,7 @@ export class AnthropicProvider implements AiProvider {
     this.modelId = model || "claude-sonnet-4-20250514";
   }
 
-  private toAnthropicMessages(
-    messages: AiMessage[],
-  ): Anthropic.MessageParam[] {
+  private toAnthropicMessages(messages: AiMessage[]): Anthropic.MessageParam[] {
     const result: Anthropic.MessageParam[] = [];
 
     for (const msg of messages) {
@@ -78,9 +76,7 @@ export class AnthropicProvider implements AiProvider {
     return result;
   }
 
-  private toSimpleMessages(
-    messages: AiMessage[],
-  ): Anthropic.MessageParam[] {
+  private toSimpleMessages(messages: AiMessage[]): Anthropic.MessageParam[] {
     return messages
       .filter((m) => m.role === "user" || m.role === "assistant")
       .map((m) => ({
@@ -175,9 +171,11 @@ export class AnthropicProvider implements AiProvider {
       });
 
     const stopReason =
-      response.stop_reason === "tool_use" ? "tool_use" as const :
-      response.stop_reason === "max_tokens" ? "max_tokens" as const :
-      "end_turn" as const;
+      response.stop_reason === "tool_use"
+        ? ("tool_use" as const)
+        : response.stop_reason === "max_tokens"
+          ? ("max_tokens" as const)
+          : ("end_turn" as const);
 
     return {
       content: textContent,

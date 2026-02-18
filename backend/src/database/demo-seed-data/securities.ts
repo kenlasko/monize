@@ -165,8 +165,7 @@ export function generatePriceHistory(
 
   // Brownian bridge: interpolate between start and end with noise
   // log(endPrice/startPrice) gives us the total log-return
-  const logReturn =
-    Math.log(security.currentPrice / security.basePrice);
+  const logReturn = Math.log(security.currentPrice / security.basePrice);
 
   // Generate cumulative noise path
   const noise: number[] = [0];
@@ -185,8 +184,7 @@ export function generatePriceHistory(
   // Generate prices along the bridge
   for (let i = 0; i < totalDays; i++) {
     const t = i / (totalDays - 1);
-    const logPrice =
-      Math.log(security.basePrice) + t * logReturn + noise[i];
+    const logPrice = Math.log(security.basePrice) + t * logReturn + noise[i];
     const price = Math.round(Math.exp(logPrice) * 100) / 100;
 
     prices.push({

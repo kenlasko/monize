@@ -84,10 +84,9 @@ export class DemoResetService {
         "DELETE FROM monthly_account_balances WHERE user_id = $1",
         [userId],
       );
-      await queryRunner.query(
-        "DELETE FROM custom_reports WHERE user_id = $1",
-        [userId],
-      );
+      await queryRunner.query("DELETE FROM custom_reports WHERE user_id = $1", [
+        userId,
+      ]);
       await queryRunner.query("DELETE FROM payees WHERE user_id = $1", [
         userId,
       ]);

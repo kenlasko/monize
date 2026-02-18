@@ -119,7 +119,8 @@ export class UpdateAiConfigDto {
 
   @ApiPropertyOptional({
     example: "https://api.example.com",
-    description: "Base URL for the provider. Must be a valid external HTTP/HTTPS URL.",
+    description:
+      "Base URL for the provider. Must be a valid external HTTP/HTTPS URL.",
   })
   @IsOptional()
   @IsString()

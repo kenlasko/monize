@@ -60,8 +60,7 @@ export class ToolExecutorService {
           };
       }
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Unknown error";
+      const message = error instanceof Error ? error.message : "Unknown error";
       this.logger.warn(`Tool ${toolName} failed: ${message}`);
       return {
         data: { error: message },
@@ -78,9 +77,7 @@ export class ToolExecutorService {
     if (!accountNames || accountNames.length === 0) return undefined;
 
     const accounts = await this.accountsService.findAll(userId, false);
-    const nameMap = new Map(
-      accounts.map((a) => [a.name.toLowerCase(), a.id]),
-    );
+    const nameMap = new Map(accounts.map((a) => [a.name.toLowerCase(), a.id]));
 
     return accountNames
       .map((name) => nameMap.get(name.toLowerCase()))
@@ -271,9 +268,7 @@ export class ToolExecutorService {
         )
           .addSelect("SUM(ABS(t.amount))", "total")
           .addSelect("COUNT(*)", "count")
-          .groupBy(
-            "DATE_TRUNC('week', t.transactionDate)",
-          )
+          .groupBy("DATE_TRUNC('week', t.transactionDate)")
           .orderBy("week", "ASC");
 
         const rows = await qb.getRawMany();
@@ -360,10 +355,7 @@ export class ToolExecutorService {
       .orderBy("total", "DESC");
 
     const rows = await qb.getRawMany();
-    const totalSpending = rows.reduce(
-      (sum, r) => sum + Number(r.total),
-      0,
-    );
+    const totalSpending = rows.reduce((sum, r) => sum + Number(r.total), 0);
 
     let categories = rows.map((r) => ({
       category: r.category,
@@ -479,11 +471,7 @@ export class ToolExecutorService {
     input: Record<string, unknown>,
   ): Promise<ToolResult> {
     const today = new Date();
-    const defaultStart = new Date(
-      today.getFullYear() - 1,
-      today.getMonth(),
-      1,
-    )
+    const defaultStart = new Date(today.getFullYear() - 1, today.getMonth(), 1)
       .toISOString()
       .substring(0, 10);
 
@@ -546,20 +534,22 @@ export class ToolExecutorService {
             ? 100
             : 0;
 
-      return { label, period1Amount: p1Amount, period2Amount: p2Amount, change, changePercent };
+      return {
+        label,
+        period1Amount: p1Amount,
+        period2Amount: p2Amount,
+        change,
+        changePercent,
+      };
     });
 
-    comparison.sort(
-      (a, b) => Math.abs(b.change) - Math.abs(a.change),
-    );
+    comparison.sort((a, b) => Math.abs(b.change) - Math.abs(a.change));
 
     const p1Total = period1.reduce((sum, i) => sum + i.total, 0);
     const p2Total = period2.reduce((sum, i) => sum + i.total, 0);
     const totalChange = p2Total - p1Total;
     const totalChangePercent =
-      p1Total !== 0
-        ? Math.round((totalChange / p1Total) * 10000) / 100
-        : 0;
+      p1Total !== 0 ? Math.round((totalChange / p1Total) * 10000) / 100 : 0;
 
     return {
       data: {

@@ -21,9 +21,27 @@ describe("ToolExecutorService", () => {
   const userId = "user-1";
 
   const mockAccounts = [
-    { id: "acc-1", name: "Checking", accountType: "checking", currencyCode: "USD", currentBalance: "5000.00" },
-    { id: "acc-2", name: "Savings", accountType: "savings", currencyCode: "USD", currentBalance: "15000.00" },
-    { id: "acc-3", name: "Credit Card", accountType: "credit_card", currencyCode: "USD", currentBalance: "-1200.00" },
+    {
+      id: "acc-1",
+      name: "Checking",
+      accountType: "checking",
+      currencyCode: "USD",
+      currentBalance: "5000.00",
+    },
+    {
+      id: "acc-2",
+      name: "Savings",
+      accountType: "savings",
+      currencyCode: "USD",
+      currentBalance: "15000.00",
+    },
+    {
+      id: "acc-3",
+      name: "Credit Card",
+      accountType: "credit_card",
+      currencyCode: "USD",
+      currentBalance: "-1200.00",
+    },
   ];
 
   const mockCategories = [
@@ -88,9 +106,15 @@ describe("ToolExecutorService", () => {
         ToolExecutorService,
         { provide: AccountsService, useValue: mockAccountsService },
         { provide: CategoriesService, useValue: mockCategoriesService },
-        { provide: TransactionAnalyticsService, useValue: mockAnalyticsService },
+        {
+          provide: TransactionAnalyticsService,
+          useValue: mockAnalyticsService,
+        },
         { provide: NetWorthService, useValue: mockNetWorthService },
-        { provide: getRepositoryToken(Transaction), useValue: mockTransactionRepo },
+        {
+          provide: getRepositoryToken(Transaction),
+          useValue: mockTransactionRepo,
+        },
         { provide: getRepositoryToken(Category), useValue: mockCategoryRepo },
       ],
     }).compile();
@@ -293,7 +317,9 @@ describe("ToolExecutorService", () => {
         endDate: "2026-01-31",
       });
 
-      expect((result.data as Record<string, unknown>).byCurrency).toBeUndefined();
+      expect(
+        (result.data as Record<string, unknown>).byCurrency,
+      ).toBeUndefined();
     });
 
     it("includes breakdown when groupBy is specified", async () => {

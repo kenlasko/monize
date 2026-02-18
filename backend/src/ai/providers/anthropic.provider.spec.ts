@@ -178,7 +178,9 @@ describe("AnthropicProvider", () => {
 
     it("handles multi-turn messages with tool results", async () => {
       mockCreate.mockResolvedValueOnce({
-        content: [{ type: "text", text: "Based on the data, your balance is $5,000." }],
+        content: [
+          { type: "text", text: "Based on the data, your balance is $5,000." },
+        ],
         usage: { input_tokens: 50, output_tokens: 30 },
         model: "claude-sonnet-4-20250514",
         stop_reason: "end_turn",
@@ -192,9 +194,7 @@ describe("AnthropicProvider", () => {
             {
               role: "assistant",
               content: "Let me check.",
-              toolCalls: [
-                { id: "tu_1", name: "get_balance", input: {} },
-              ],
+              toolCalls: [{ id: "tu_1", name: "get_balance", input: {} }],
             },
             {
               role: "tool",

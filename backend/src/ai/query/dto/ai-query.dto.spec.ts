@@ -20,12 +20,8 @@ describe("AiQueryDto", () => {
     const dto = createDto({ query: "" });
     const errors = await validate(dto);
     expect(errors.length).toBeGreaterThan(0);
-    const messages = errors.flatMap((e) =>
-      Object.values(e.constraints || {}),
-    );
-    expect(messages.some((m) => m.includes("should not be empty"))).toBe(
-      true,
-    );
+    const messages = errors.flatMap((e) => Object.values(e.constraints || {}));
+    expect(messages.some((m) => m.includes("should not be empty"))).toBe(true);
   });
 
   it("rejects a missing query", async () => {
@@ -44,9 +40,7 @@ describe("AiQueryDto", () => {
     const dto = createDto({ query: "a".repeat(2001) });
     const errors = await validate(dto);
     expect(errors.length).toBeGreaterThan(0);
-    const messages = errors.flatMap((e) =>
-      Object.values(e.constraints || {}),
-    );
+    const messages = errors.flatMap((e) => Object.values(e.constraints || {}));
     expect(
       messages.some((m) => m.includes("must be shorter than or equal to 2000")),
     ).toBe(true);

@@ -155,8 +155,7 @@ describe("OidcService", () => {
       expect(mockBuildAuthorizationUrl).toHaveBeenCalledWith(
         expect.anything(),
         {
-          redirect_uri:
-            "http://localhost:3001/api/v1/auth/oidc/callback",
+          redirect_uri: "http://localhost:3001/api/v1/auth/oidc/callback",
           scope: "openid profile email",
           state: "state-1",
           nonce: "nonce-1",

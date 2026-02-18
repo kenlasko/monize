@@ -56,13 +56,12 @@ export class TransactionBulkUpdateService {
     }
 
     // Step 2: Apply exclusions and compute skip counts
-    const { eligibleIds, skipped, skippedReasons } =
-      await this.applyExclusions(
-        userId,
-        allIds,
-        isUpdatingPayee,
-        isUpdatingCategory,
-      );
+    const { eligibleIds, skipped, skippedReasons } = await this.applyExclusions(
+      userId,
+      allIds,
+      isUpdatingPayee,
+      isUpdatingCategory,
+    );
 
     if (eligibleIds.length === 0) {
       return { updated: 0, skipped, skippedReasons };
@@ -70,11 +69,7 @@ export class TransactionBulkUpdateService {
 
     // Step 3: Handle balance adjustments for VOID status changes
     if (isUpdatingStatus) {
-      await this.handleStatusBalanceChanges(
-        userId,
-        eligibleIds,
-        dto.status!,
-      );
+      await this.handleStatusBalanceChanges(userId, eligibleIds, dto.status!);
     }
 
     // Step 4: Execute batch update
@@ -98,9 +93,7 @@ export class TransactionBulkUpdateService {
     };
   }
 
-  private extractUpdateFields(
-    dto: BulkUpdateDto,
-  ): Partial<Transaction> {
+  private extractUpdateFields(dto: BulkUpdateDto): Partial<Transaction> {
     const fields: Record<string, unknown> = {};
 
     if ("payeeId" in dto) {
@@ -297,7 +290,11 @@ export class TransactionBulkUpdateService {
     }
 
     if (filters.categoryIds && filters.categoryIds.length > 0) {
-      await this.applyCategoryFilters(queryBuilder, userId, filters.categoryIds);
+      await this.applyCategoryFilters(
+        queryBuilder,
+        userId,
+        filters.categoryIds,
+      );
     }
 
     if (filters.payeeIds && filters.payeeIds.length > 0) {

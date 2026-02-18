@@ -70,8 +70,8 @@ describe("DemoResetService", () => {
 
     await service.resetDemoData();
 
-    const userQuery = queryRunner.query.mock.calls.find(
-      (call: string[]) => call[0].includes("SELECT id FROM users"),
+    const userQuery = queryRunner.query.mock.calls.find((call: string[]) =>
+      call[0].includes("SELECT id FROM users"),
     );
     expect(userQuery).toBeDefined();
     expect(userQuery[0]).toContain("demo@monize.com");
@@ -148,9 +148,7 @@ describe("DemoResetService", () => {
     it("re-seeds demo data after clearing", async () => {
       await service.resetDemoData();
 
-      expect(demoSeedService.seedDemoData).toHaveBeenCalledWith(
-        "demo-user-id",
-      );
+      expect(demoSeedService.seedDemoData).toHaveBeenCalledWith("demo-user-id");
     });
 
     it("commits transaction before re-seeding", async () => {

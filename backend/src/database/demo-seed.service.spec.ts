@@ -66,8 +66,7 @@ describe("DemoSeedService", () => {
 
       const userLookup = dataSource.query.mock.calls.find(
         (call: string[]) =>
-          call[0].includes("SELECT id FROM users") &&
-          call[0].includes("email"),
+          call[0].includes("SELECT id FROM users") && call[0].includes("email"),
       );
       expect(userLookup).toBeDefined();
       expect(userLookup[1]).toContain("demo@monize.com");
@@ -124,9 +123,10 @@ describe("DemoSeedService", () => {
       expect(categoryCalls.length).toBeGreaterThanOrEqual(40);
 
       // Verify income categories exist
-      const incomeInserts = categoryCalls.filter((call: (string | unknown[])[]) =>
-        (call[0] as string).includes("is_income") &&
-        (call[0] as string).includes("true"),
+      const incomeInserts = categoryCalls.filter(
+        (call: (string | unknown[])[]) =>
+          (call[0] as string).includes("is_income") &&
+          (call[0] as string).includes("true"),
       );
       expect(incomeInserts.length).toBe(4);
     });
@@ -144,18 +144,15 @@ describe("DemoSeedService", () => {
       ).length;
       const regularCount = demoAccounts.length - investmentPairCount;
       // Each pair creates 2 accounts (cash + brokerage)
-      expect(accountCalls.length).toBe(
-        regularCount + investmentPairCount * 2,
-      );
+      expect(accountCalls.length).toBe(regularCount + investmentPairCount * 2);
     });
 
     it("creates investment account pairs with bidirectional linking", async () => {
       await service.seedDemoData("user-123");
 
       // Look for the UPDATE that links cash to brokerage
-      const linkUpdates = dataSource.query.mock.calls.filter(
-        (call: string[]) =>
-          call[0].includes("UPDATE accounts SET linked_account_id"),
+      const linkUpdates = dataSource.query.mock.calls.filter((call: string[]) =>
+        call[0].includes("UPDATE accounts SET linked_account_id"),
       );
 
       // One link-back per investment pair + 1 for mortgage term_end_date
@@ -198,8 +195,8 @@ describe("DemoSeedService", () => {
     it("seeds all demo payees", async () => {
       await service.seedDemoData("user-123");
 
-      const payeeCalls = dataSource.query.mock.calls.filter(
-        (call: string[]) => call[0].includes("INSERT INTO payees"),
+      const payeeCalls = dataSource.query.mock.calls.filter((call: string[]) =>
+        call[0].includes("INSERT INTO payees"),
       );
 
       // demoPayees + Transfer payee
@@ -209,8 +206,8 @@ describe("DemoSeedService", () => {
     it("seeds transactions including regular, splits, and transfers", async () => {
       await service.seedDemoData("user-123");
 
-      const txCalls = dataSource.query.mock.calls.filter(
-        (call: string[]) => call[0].includes("INSERT INTO transactions"),
+      const txCalls = dataSource.query.mock.calls.filter((call: string[]) =>
+        call[0].includes("INSERT INTO transactions"),
       );
 
       // Should produce a substantial number of transactions
@@ -220,8 +217,8 @@ describe("DemoSeedService", () => {
     it("seeds split transactions with transaction_splits", async () => {
       await service.seedDemoData("user-123");
 
-      const splitCalls = dataSource.query.mock.calls.filter(
-        (call: string[]) => call[0].includes("INSERT INTO transaction_splits"),
+      const splitCalls = dataSource.query.mock.calls.filter((call: string[]) =>
+        call[0].includes("INSERT INTO transaction_splits"),
       );
 
       expect(splitCalls.length).toBeGreaterThan(0);
@@ -257,8 +254,8 @@ describe("DemoSeedService", () => {
       );
       expect(securityCalls.length).toBe(demoSecurities.length);
 
-      const priceCalls = dataSource.query.mock.calls.filter(
-        (call: string[]) => call[0].includes("INSERT INTO security_prices"),
+      const priceCalls = dataSource.query.mock.calls.filter((call: string[]) =>
+        call[0].includes("INSERT INTO security_prices"),
       );
       // 12 months of trading days per security (~250 days each)
       expect(priceCalls.length).toBeGreaterThan(100);
@@ -304,8 +301,8 @@ describe("DemoSeedService", () => {
     it("seeds custom reports", async () => {
       await service.seedDemoData("user-123");
 
-      const reportCalls = dataSource.query.mock.calls.filter(
-        (call: string[]) => call[0].includes("INSERT INTO custom_reports"),
+      const reportCalls = dataSource.query.mock.calls.filter((call: string[]) =>
+        call[0].includes("INSERT INTO custom_reports"),
       );
 
       expect(reportCalls.length).toBe(demoReports.length);
@@ -314,8 +311,8 @@ describe("DemoSeedService", () => {
     it("seeds user preferences", async () => {
       await service.seedDemoData("user-123");
 
-      const prefCalls = dataSource.query.mock.calls.filter(
-        (call: string[]) => call[0].includes("INSERT INTO user_preferences"),
+      const prefCalls = dataSource.query.mock.calls.filter((call: string[]) =>
+        call[0].includes("INSERT INTO user_preferences"),
       );
 
       expect(prefCalls.length).toBe(1);
@@ -330,7 +327,9 @@ describe("DemoSeedService", () => {
 
       // Check that created_at parameter is roughly 12 months ago
       const firstAccountParams = accountCalls[0][1];
-      const createdAt = new Date(firstAccountParams[firstAccountParams.length - 1]);
+      const createdAt = new Date(
+        firstAccountParams[firstAccountParams.length - 1],
+      );
       const now = new Date();
       const monthsDiff =
         (now.getFullYear() - createdAt.getFullYear()) * 12 +
