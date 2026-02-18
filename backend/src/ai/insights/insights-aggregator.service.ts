@@ -271,7 +271,7 @@ export class InsightsAggregatorService {
       .groupBy("t.payeeName")
       .addGroupBy("cat.name")
       .having("COUNT(*) >= 3")
-      .orderBy("txnCount", "DESC")
+      .orderBy("COUNT(*)", "DESC")
       .getRawMany();
 
     return rows
