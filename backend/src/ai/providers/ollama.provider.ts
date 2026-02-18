@@ -3,10 +3,22 @@ import {
   AiCompletionRequest,
   AiCompletionResponse,
   AiStreamChunk,
+  AiToolDefinition,
+  AiToolResponse,
+  AiMessage,
 } from "./ai-provider.interface";
+import { randomUUID } from "crypto";
+
+interface OllamaToolCall {
+  function: { name: string; arguments: Record<string, unknown> };
+}
 
 interface OllamaChatResponse {
-  message: { role: string; content: string };
+  message: {
+    role: string;
+    content: string;
+    tool_calls?: OllamaToolCall[];
+  };
   done: boolean;
   prompt_eval_count?: number;
   eval_count?: number;
@@ -15,7 +27,7 @@ interface OllamaChatResponse {
 export class OllamaProvider implements AiProvider {
   readonly name = "ollama";
   readonly supportsStreaming = true;
-  readonly supportsToolUse = false;
+  readonly supportsToolUse = true;
 
   private readonly baseUrl: string;
   private readonly modelId: string;
@@ -29,12 +41,7 @@ export class OllamaProvider implements AiProvider {
     // Use streaming internally to keep the TCP connection alive during
     // long CPU-only inference. Idle connections get killed by kube-proxy /
     // conntrack after ~120 s, causing "fetch failed" errors.
-    const messages = [
-      { role: "system", content: request.systemPrompt },
-      ...request.messages
-        .filter((m) => m.role === "user" || m.role === "assistant")
-        .map((m) => ({ role: m.role, content: m.content })),
-    ];
+    const messages = this.toOllamaMessages(request.messages, request.systemPrompt);
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10 * 60 * 1000); // 10 minutes for CPU inference
@@ -117,12 +124,7 @@ export class OllamaProvider implements AiProvider {
   }
 
   async *stream(request: AiCompletionRequest): AsyncIterable<AiStreamChunk> {
-    const messages = [
-      { role: "system", content: request.systemPrompt },
-      ...request.messages
-        .filter((m) => m.role === "user" || m.role === "assistant")
-        .map((m) => ({ role: m.role, content: m.content })),
-    ];
+    const messages = this.toOllamaMessages(request.messages, request.systemPrompt);
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10 * 60 * 1000); // 10 minutes for CPU inference
@@ -189,6 +191,93 @@ export class OllamaProvider implements AiProvider {
     }
 
     yield { content: "", done: true };
+  }
+
+  async completeWithTools(
+    request: AiCompletionRequest,
+    tools: AiToolDefinition[],
+  ): Promise<AiToolResponse> {
+    const messages = this.toOllamaMessages(request.messages, request.systemPrompt);
+
+    const ollamaTools = tools.map((tool) => ({
+      type: "function" as const,
+      function: {
+        name: tool.name,
+        description: tool.description,
+        parameters: tool.inputSchema,
+      },
+    }));
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10 * 60 * 1000);
+    let response: Response;
+    try {
+      response = await fetch(`${this.baseUrl}/api/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
+        body: JSON.stringify({
+          model: this.modelId,
+          messages,
+          tools: ollamaTools,
+          stream: false,
+          ...(request.temperature !== undefined && {
+            options: { temperature: request.temperature },
+          }),
+        }),
+      });
+    } finally {
+      clearTimeout(timeout);
+    }
+
+    if (!response.ok) {
+      throw new Error(
+        `Ollama request failed: ${response.status} ${response.statusText}`,
+      );
+    }
+
+    const data = (await response.json()) as OllamaChatResponse;
+
+    const toolCalls = (data.message?.tool_calls || []).map((tc) => ({
+      id: randomUUID(),
+      name: tc.function.name,
+      input: tc.function.arguments,
+    }));
+
+    const hasToolCalls = toolCalls.length > 0;
+
+    return {
+      content: data.message?.content || "",
+      toolCalls,
+      usage: {
+        inputTokens: data.prompt_eval_count || 0,
+        outputTokens: data.eval_count || 0,
+      },
+      model: this.modelId,
+      provider: this.name,
+      stopReason: hasToolCalls ? "tool_use" : "end_turn",
+    };
+  }
+
+  private toOllamaMessages(
+    messages: AiMessage[],
+    systemPrompt: string,
+  ): Array<{ role: string; content: string }> {
+    const result: Array<{ role: string; content: string }> = [
+      { role: "system", content: systemPrompt },
+    ];
+
+    for (const msg of messages) {
+      if (msg.role === "user") {
+        result.push({ role: "user", content: msg.content });
+      } else if (msg.role === "assistant") {
+        result.push({ role: "assistant", content: msg.content });
+      } else if (msg.role === "tool") {
+        result.push({ role: "tool", content: msg.content });
+      }
+    }
+
+    return result;
   }
 
   async isAvailable(): Promise<boolean> {

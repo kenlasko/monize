@@ -251,7 +251,7 @@ export class AiService {
     }
 
     throw new BadRequestException(
-      "No AI provider with tool use support configured. Natural language queries require Anthropic or OpenAI. Please configure one in AI Settings.",
+      "No AI provider with tool use support configured. Natural language queries require Anthropic, OpenAI, or Ollama. Please configure one in AI Settings.",
     );
   }
 
