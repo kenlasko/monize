@@ -24,7 +24,7 @@ import {
   AiProvider,
 } from "./providers/ai-provider.interface";
 
-const MAX_CONFIGS_PER_USER = 10;
+const MAX_AI_PROVIDERS_PER_USER = 10;
 
 @Injectable()
 export class AiService {
@@ -64,9 +64,9 @@ export class AiService {
     const existingCount = await this.configRepository.count({
       where: { userId },
     });
-    if (existingCount >= MAX_CONFIGS_PER_USER) {
+    if (existingCount >= MAX_AI_PROVIDERS_PER_USER) {
       throw new BadRequestException(
-        `Maximum of ${MAX_CONFIGS_PER_USER} AI provider configurations per user`,
+        `Maximum of ${MAX_AI_PROVIDERS_PER_USER} AI provider configurations per user`,
       );
     }
 
