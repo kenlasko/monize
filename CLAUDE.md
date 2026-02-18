@@ -204,3 +204,39 @@ This is a comprehensive web-based personal finance management application design
 - react/react-dom ^19.2.4: All known CVEs patched (including CVE-2025-55182 RCE)
 - zod ^4.3.6, zustand ^5.0.11, tailwindcss ^4.1.18: All current
 - All dev dependencies current with no known CVEs
+
+### AI Module Security Audit (Feb 2026)
+
+#### Fixed
+- [x] SSRF via baseUrl: User-supplied baseUrl for Ollama/OpenAI-compatible providers had no validation. Added IsSafeUrl validator that rejects private/internal IPs (127.x, 10.x, 172.16-31.x, 192.168.x, ::1), cloud metadata endpoints (169.254.169.254), .internal/.local hostnames, non-HTTP(S) protocols, and URLs with embedded credentials
+- [x] Uncaught JSON.parse in OpenAI tool arguments: OpenAI provider's completeWithTools parsed tool call arguments with bare JSON.parse, which would throw on malformed LLM output and crash the request. Wrapped in try/catch with empty-object fallback
+- [x] Uncaught JSON.parse in Ollama streaming: Ollama provider's stream method parsed NDJSON lines without try/catch. Malformed chunks from the Ollama server would throw and terminate the stream. Added try/catch with continue
+- [x] No per-user config limit: Users could create unlimited AI provider configurations (DoS/storage abuse). Added MAX_CONFIGS_PER_USER = 10 limit enforced in createConfig
+- [x] Prototype pollution via config DTO: The config field (JSONB) accepted arbitrary nested objects including __proto__/constructor keys. Added IsSafeConfigObject validator that restricts to flat objects with primitive values only (max 20 keys)
+- [x] Error message leakage in testConnection: Raw provider error messages (including internal URLs, API key validation messages, stack traces) were returned to the client. Now logs internally and returns generic message
+- [x] Error message leakage in complete(): When all providers fail, raw error messages from each provider were concatenated and returned to the client. Now logs the details server-side and returns generic message
+- [x] Error message leakage in SSE streaming: The catch block in streamQuery forwarded raw error.message to the SSE event stream. Now logs internally and sends generic error
+- [x] Error message leakage in AI query iterations: Provider errors during tool-use iterations were forwarded to the client. Now logs internally and returns generic message
+- [x] Unbounded priority field: priority had @Min(0) but no upper bound, accepting arbitrarily large integers. Added @Max(100)
+
+#### Verified Secure (no action needed)
+- Authentication: Both AiController and AiQueryController use class-level @UseGuards(AuthGuard("jwt")). All endpoints derive userId from req.user (JWT)
+- Authorization/IDOR: All service methods take userId from JWT and filter queries with userId. No cross-user data access possible
+- MustChangePasswordGuard: Applied globally via APP_GUARD, covers AI endpoints (no @SkipPasswordCheck on AI controllers)
+- SQL injection: All queries in ToolExecutorService use TypeORM QueryBuilder with parameterized bindings (:userId, :startDate, :search, etc.)
+- Rate limiting: AI query endpoints have @Throttle 10 req/min, config creation 10 req/min, test connection 5 req/min. Global 100/min also applies
+- API key encryption: Uses AES-256-GCM with per-encryption random salt via crypto.scryptSync. AI_ENCRYPTION_KEY minimum 32 chars enforced
+- API key exposure: Keys are never returned to client, only masked (last 4 chars) via toResponseDto
+- Input validation: AiQueryDto has @IsString + @MaxLength(2000) + @IsNotEmpty + @SanitizeHtml. All DTO fields have appropriate constraints
+- Tool execution boundary: ToolExecutorService only executes from a fixed allowlist of 6 tool names (switch/case), no dynamic dispatch
+- Tool iteration limit: MAX_ITERATIONS = 5 prevents infinite tool-use loops
+- XSS: Frontend uses React JSX (auto-escaped), no dangerouslySetInnerHTML in AI components
+- Prompt injection defense: System prompt instructs model to only share aggregated data, never individual transaction details. Tools return aggregates only
+- CSRF: Global CsrfGuard covers AI endpoints. Frontend SSE fetch includes X-CSRF-Token header
+- ParseUUIDPipe: Applied to all :id parameters in AI controllers
+
+#### Informational (acceptable risk or design notes)
+- [ ] Prompt injection is an inherent risk with LLM-based features: System prompt rules (e.g., "never reveal individual transaction details") are advisory, not enforceable. A determined user querying their own data can potentially override these via prompt manipulation. Since users can only access their own data, this is an acceptable risk
+- [ ] AI response content is rendered as plain text: If markdown rendering is added later, content sanitization will be needed to prevent stored XSS from LLM outputs
+- [ ] Ollama baseUrl defaults to http://localhost:11434: The default is only used when no explicit config exists. In Docker deployments, this typically points to a sibling container. The SSRF validator does not apply to the env-based AI_DEFAULT_BASE_URL (admin-controlled)
+- [ ] config JSONB field stores provider settings in plaintext: Values like temperature/maxTokens are non-sensitive. If sensitive values are added in future, they should use the encryption service

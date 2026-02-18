@@ -135,12 +135,16 @@ export class AiQueryService {
           FINANCIAL_TOOLS,
         );
       } catch (error) {
-        const message =
+        const rawMessage =
           error instanceof Error ? error.message : "AI provider error";
         this.logger.warn(
-          `AI query failed on iteration ${iteration}: ${message}`,
+          `AI query failed on iteration ${iteration}: ${rawMessage}`,
         );
-        yield { type: "error", message: `AI provider error: ${message}` };
+        yield {
+          type: "error",
+          message:
+            "The AI provider encountered an error processing your query. Please try again.",
+        };
         return;
       }
 
