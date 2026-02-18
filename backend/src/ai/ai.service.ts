@@ -24,11 +24,12 @@ import {
   AiProvider,
 } from "./providers/ai-provider.interface";
 
-const MAX_AI_PROVIDERS_PER_USER = 10;
+const DEFAULT_MAX_AI_PROVIDERS_PER_USER = 10;
 
 @Injectable()
 export class AiService {
   private readonly logger = new Logger(AiService.name);
+  private readonly maxProvidersPerUser: number;
 
   constructor(
     @InjectRepository(AiProviderConfig)
@@ -37,7 +38,13 @@ export class AiService {
     private readonly providerFactory: AiProviderFactory,
     private readonly usageService: AiUsageService,
     private readonly configService: ConfigService,
-  ) {}
+  ) {
+    const envVal = this.configService.get<number>("AI_MAX_PROVIDERS_PER_USER");
+    this.maxProvidersPerUser =
+      envVal && Number.isInteger(envVal) && envVal > 0
+        ? envVal
+        : DEFAULT_MAX_AI_PROVIDERS_PER_USER;
+  }
 
   async getConfigs(userId: string): Promise<AiProviderConfigResponse[]> {
     const configs = await this.configRepository.find({
@@ -64,9 +71,9 @@ export class AiService {
     const existingCount = await this.configRepository.count({
       where: { userId },
     });
-    if (existingCount >= MAX_AI_PROVIDERS_PER_USER) {
+    if (existingCount >= this.maxProvidersPerUser) {
       throw new BadRequestException(
-        `Maximum of ${MAX_AI_PROVIDERS_PER_USER} AI provider configurations per user`,
+        `Maximum of ${this.maxProvidersPerUser} AI provider configurations per user`,
       );
     }
 
