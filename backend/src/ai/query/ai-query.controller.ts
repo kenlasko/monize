@@ -51,7 +51,9 @@ export class AiQueryController {
         req.user.id,
         dto.query,
       )) {
-        res.write(`data: ${JSON.stringify(event)}\n\n`);
+        if (event) {
+          res.write(`data: ${JSON.stringify(event)}\n\n`);
+        }
       }
     } catch (error) {
       const message =
