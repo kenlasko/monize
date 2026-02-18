@@ -2,7 +2,6 @@ import {
   IsOptional,
   IsString,
   IsIn,
-  MaxLength,
 } from "class-validator";
 import {
   INSIGHT_TYPES,
@@ -26,13 +25,6 @@ export class GetInsightsQueryDto {
   @IsString()
   @IsIn(["true", "false"])
   includeDismissed?: string;
-}
-
-export class DismissInsightDto {
-  @IsOptional()
-  @IsString()
-  @MaxLength(500)
-  reason?: string;
 }
 
 export interface AiInsightResponse {

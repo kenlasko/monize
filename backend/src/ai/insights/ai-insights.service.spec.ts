@@ -78,6 +78,7 @@ describe("AiInsightsService", () => {
       andWhere: jest.fn().mockReturnThis(),
       orderBy: jest.fn().mockReturnThis(),
       addOrderBy: jest.fn().mockReturnThis(),
+      take: jest.fn().mockReturnThis(),
       select: jest.fn().mockReturnThis(),
       getMany: jest.fn().mockResolvedValue([]),
       getOne: jest.fn().mockResolvedValue(null),

@@ -16,10 +16,10 @@ import {
   ApiBearerAuth,
   ApiOperation,
   ApiParam,
-  ApiQuery,
 } from "@nestjs/swagger";
 import { AiInsightsService } from "./ai-insights.service";
-import { InsightType, InsightSeverity } from "../entities/ai-insight.entity";
+import { GetInsightsQueryDto } from "./dto/ai-insights.dto";
+import { InsightType } from "../entities/ai-insight.entity";
 
 @ApiTags("AI Insights")
 @Controller("ai/insights")
@@ -29,21 +29,17 @@ export class AiInsightsController {
   constructor(private readonly insightsService: AiInsightsService) {}
 
   @Get()
+  @Throttle({ default: { ttl: 60000, limit: 30 } })
   @ApiOperation({ summary: "Get spending insights for the current user" })
-  @ApiQuery({ name: "type", required: false, description: "Filter by insight type" })
-  @ApiQuery({ name: "severity", required: false, description: "Filter by severity" })
-  @ApiQuery({ name: "includeDismissed", required: false, description: "Include dismissed insights" })
   getInsights(
     @Request() req: { user: { id: string } },
-    @Query("type") type?: InsightType,
-    @Query("severity") severity?: InsightSeverity,
-    @Query("includeDismissed") includeDismissed?: string,
+    @Query() query: GetInsightsQueryDto,
   ) {
     return this.insightsService.getInsights(
       req.user.id,
-      type,
-      severity,
-      includeDismissed === "true",
+      query.type as InsightType | undefined,
+      query.severity,
+      query.includeDismissed === "true",
     );
   }
 
@@ -55,6 +51,7 @@ export class AiInsightsController {
   }
 
   @Patch(":id/dismiss")
+  @Throttle({ default: { ttl: 60000, limit: 20 } })
   @ApiOperation({ summary: "Dismiss an insight" })
   @ApiParam({ name: "id", description: "Insight ID" })
   dismissInsight(

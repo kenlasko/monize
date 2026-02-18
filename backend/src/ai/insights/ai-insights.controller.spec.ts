@@ -36,7 +36,7 @@ describe("AiInsightsController", () => {
 
   describe("getInsights()", () => {
     it("returns insights for the authenticated user", async () => {
-      const result = await controller.getInsights(req);
+      const result = await controller.getInsights(req, {});
 
       expect(mockInsightsService.getInsights).toHaveBeenCalledWith(
         userId,
@@ -52,7 +52,11 @@ describe("AiInsightsController", () => {
     });
 
     it("passes filter parameters", async () => {
-      await controller.getInsights(req, "anomaly", "warning", "true");
+      await controller.getInsights(req, {
+        type: "anomaly",
+        severity: "warning",
+        includeDismissed: "true",
+      });
 
       expect(mockInsightsService.getInsights).toHaveBeenCalledWith(
         userId,
@@ -63,7 +67,7 @@ describe("AiInsightsController", () => {
     });
 
     it("handles includeDismissed=false", async () => {
-      await controller.getInsights(req, undefined, undefined, "false");
+      await controller.getInsights(req, { includeDismissed: "false" });
 
       expect(mockInsightsService.getInsights).toHaveBeenCalledWith(
         userId,

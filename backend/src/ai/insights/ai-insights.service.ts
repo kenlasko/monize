@@ -20,6 +20,7 @@ import {
 const INSIGHT_EXPIRY_DAYS = 7;
 const MAX_INSIGHTS_PER_USER = 50;
 const MIN_GENERATION_INTERVAL_HOURS = 12;
+const CRON_BATCH_SIZE = 50;
 
 interface RawInsight {
   type: string;
@@ -67,7 +68,8 @@ export class AiInsightsService {
     }
 
     qb.orderBy("i.severity", "ASC")
-      .addOrderBy("i.generatedAt", "DESC");
+      .addOrderBy("i.generatedAt", "DESC")
+      .take(MAX_INSIGHTS_PER_USER);
 
     const insights = await qb.getMany();
 
@@ -183,8 +185,9 @@ export class AiInsightsService {
     }
 
     const userIds = await this.getActiveUserIds();
+    const batch = userIds.slice(0, CRON_BATCH_SIZE);
 
-    for (const userId of userIds) {
+    for (const userId of batch) {
       try {
         await this.generateInsights(userId);
       } catch (error) {
@@ -197,7 +200,7 @@ export class AiInsightsService {
     }
 
     this.logger.log(
-      `Daily insight generation complete for ${userIds.length} users`,
+      `Daily insight generation complete for ${batch.length} of ${userIds.length} users`,
     );
   }
 
@@ -318,10 +321,7 @@ export class AiInsightsService {
           title: String(item.title).substring(0, 255),
           description: String(item.description).substring(0, 5000),
           severity: item.severity as string,
-          data:
-            item.data && typeof item.data === "object"
-              ? (item.data as Record<string, unknown>)
-              : {},
+          data: this.sanitizeData(item.data),
         }));
     } catch (error) {
       const message =
@@ -371,6 +371,45 @@ export class AiInsightsService {
         await this.insightRepo.remove(toRemove);
       }
     }
+  }
+
+  private sanitizeData(data: unknown): Record<string, unknown> {
+    if (!data || typeof data !== "object" || Array.isArray(data)) {
+      return {};
+    }
+
+    const DANGEROUS_KEYS = new Set([
+      "__proto__",
+      "constructor",
+      "prototype",
+    ]);
+    const MAX_KEYS = 20;
+    const MAX_STRING_LENGTH = 1000;
+
+    const result: Record<string, unknown> = {};
+    let keyCount = 0;
+
+    for (const key of Object.keys(data)) {
+      if (keyCount >= MAX_KEYS) break;
+      if (DANGEROUS_KEYS.has(key)) continue;
+
+      const value = (data as Record<string, unknown>)[key];
+
+      if (
+        typeof value === "string" ||
+        typeof value === "number" ||
+        typeof value === "boolean" ||
+        value === null
+      ) {
+        result[key] =
+          typeof value === "string"
+            ? value.substring(0, MAX_STRING_LENGTH)
+            : value;
+        keyCount++;
+      }
+    }
+
+    return result;
   }
 
   private toResponse(insight: AiInsight): AiInsightResponse {
