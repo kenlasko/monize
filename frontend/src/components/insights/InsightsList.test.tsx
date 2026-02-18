@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@/test/render';
 import { InsightsList } from './InsightsList';
 
@@ -189,8 +189,8 @@ describe('InsightsList', () => {
       expect(mockGenerateInsights).toHaveBeenCalled();
     });
 
-    // Advance past the poll interval
-    await vi.advanceTimersByTimeAsync(3500);
+    // Advance past the poll interval (POLL_INTERVAL = 5000ms)
+    await vi.advanceTimersByTimeAsync(5500);
 
     await vi.waitFor(() => {
       expect(screen.getByText('New Insight')).toBeInTheDocument();
