@@ -14,7 +14,6 @@ const navLinks = [
   { href: '/investments', label: 'Investments' },
   { href: '/bills', label: 'Bills & Deposits' },
   { href: '/reports', label: 'Reports' },
-  { href: '/ai', label: 'AI Assistant' },
 ];
 
 const toolsLinks = [
@@ -25,13 +24,20 @@ const toolsLinks = [
   { href: '/import', label: 'Import Transactions' },
 ];
 
+const aiLinks = [
+  { href: '/insights', label: 'Insights' },
+  { href: '/ai', label: 'AI Assistant' },
+];
+
 export function AppHeader() {
   const router = useRouter();
   const pathname = usePathname();
   const { user, logout } = useAuthStore();
   const [toolsOpen, setToolsOpen] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const toolsRef = useRef<HTMLDivElement>(null);
+  const aiRef = useRef<HTMLDivElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
 
   // Close dropdowns when clicking outside
@@ -39,6 +45,9 @@ export function AppHeader() {
     const handleClickOutside = (event: MouseEvent) => {
       if (toolsRef.current && !toolsRef.current.contains(event.target as Node)) {
         setToolsOpen(false);
+      }
+      if (aiRef.current && !aiRef.current.contains(event.target as Node)) {
+        setAiOpen(false);
       }
       if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target as Node)) {
         setMobileMenuOpen(false);
@@ -54,6 +63,7 @@ export function AppHeader() {
   }, [pathname]);
 
   const isToolsActive = toolsLinks.some((link) => pathname === link.href);
+  const isAiActive = aiLinks.some((link) => pathname === link.href);
 
   const handleLogout = async () => {
     try {
@@ -108,6 +118,29 @@ export function AppHeader() {
 
                     {/* Main nav links */}
                     {navLinks.map((link) => (
+                      <button
+                        key={link.href}
+                        onClick={() => router.push(link.href)}
+                        className={`block w-full text-left px-4 py-2 text-sm transition-colors ${
+                          pathname === link.href
+                            ? 'bg-blue-50 dark:bg-blue-900/50 text-blue-700 dark:text-blue-200'
+                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                        }`}
+                      >
+                        {link.label}
+                      </button>
+                    ))}
+
+                    {/* Divider */}
+                    <div className="border-t border-gray-200 dark:border-gray-700 my-1" />
+
+                    {/* AI section header */}
+                    <div className="px-4 py-1 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      AI
+                    </div>
+
+                    {/* AI links */}
+                    {aiLinks.map((link) => (
                       <button
                         key={link.href}
                         onClick={() => router.push(link.href)}
@@ -218,6 +251,51 @@ export function AppHeader() {
                   Admin
                 </button>
               )}
+
+              {/* AI Dropdown */}
+              <div className="relative" ref={aiRef}>
+                <button
+                  onClick={() => setAiOpen(!aiOpen)}
+                  className={`px-3 py-2 text-sm font-medium rounded-md transition-colors inline-flex items-center gap-1 ${
+                    isAiActive
+                      ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200'
+                      : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  AI
+                  <svg
+                    className={`w-4 h-4 transition-transform ${aiOpen ? 'rotate-180' : ''}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                {aiOpen && (
+                  <div className="absolute left-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg dark:shadow-gray-700/50 border border-gray-200 dark:border-gray-700 z-50">
+                    <div className="py-1">
+                      {aiLinks.map((link) => (
+                        <button
+                          key={link.href}
+                          onClick={() => {
+                            router.push(link.href);
+                            setAiOpen(false);
+                          }}
+                          className={`block w-full text-left px-4 py-2 text-sm transition-colors ${
+                            pathname === link.href
+                              ? 'bg-blue-50 dark:bg-blue-900/50 text-blue-700 dark:text-blue-200'
+                              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                          }`}
+                        >
+                          {link.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
 
               {/* Tools Dropdown */}
               <div className="relative" ref={toolsRef}>

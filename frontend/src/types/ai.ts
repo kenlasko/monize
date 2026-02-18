@@ -112,3 +112,42 @@ export interface StreamCallbacks {
   onDone?: () => void;
   onError?: (error: Error) => void;
 }
+
+// Spending Insights types
+
+export type InsightType = 'anomaly' | 'trend' | 'subscription' | 'budget_pace' | 'seasonal' | 'new_recurring';
+export type InsightSeverity = 'info' | 'warning' | 'alert';
+
+export interface AiInsight {
+  id: string;
+  type: InsightType;
+  title: string;
+  description: string;
+  severity: InsightSeverity;
+  data: Record<string, unknown>;
+  isDismissed: boolean;
+  generatedAt: string;
+  expiresAt: string;
+  createdAt: string;
+}
+
+export interface InsightsListResponse {
+  insights: AiInsight[];
+  total: number;
+  lastGeneratedAt: string | null;
+}
+
+export const INSIGHT_TYPE_LABELS: Record<InsightType, string> = {
+  anomaly: 'Anomaly',
+  trend: 'Trend',
+  subscription: 'Subscription',
+  budget_pace: 'Budget Pace',
+  seasonal: 'Seasonal',
+  new_recurring: 'New Recurring',
+};
+
+export const INSIGHT_SEVERITY_LABELS: Record<InsightSeverity, string> = {
+  info: 'Info',
+  warning: 'Warning',
+  alert: 'Alert',
+};

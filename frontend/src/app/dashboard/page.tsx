@@ -8,6 +8,7 @@ import { FavouriteAccounts } from '@/components/dashboard/FavouriteAccounts';
 import { UpcomingBills } from '@/components/dashboard/UpcomingBills';
 import { GettingStarted } from '@/components/dashboard/GettingStarted';
 import { TopMovers } from '@/components/dashboard/TopMovers';
+import { InsightsWidget } from '@/components/dashboard/InsightsWidget';
 
 const ExpensesPieChart = dynamic(() => import('@/components/dashboard/ExpensesPieChart').then(m => m.ExpensesPieChart), { ssr: false });
 const IncomeExpensesBarChart = dynamic(() => import('@/components/dashboard/IncomeExpensesBarChart').then(m => m.IncomeExpensesBarChart), { ssr: false });
@@ -151,13 +152,17 @@ function DashboardContent() {
             <TopMovers movers={topMovers} isLoading={isLoading} hasInvestmentAccounts={hasInvestments} onRefresh={triggerManualRefresh} isRefreshing={isRefreshing} />
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
             <ExpensesPieChart
               transactions={transactions}
               categories={categories}
               isLoading={isLoading}
             />
             <IncomeExpensesBarChart transactions={transactions} isLoading={isLoading} />
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <InsightsWidget isLoading={isLoading} />
           </div>
         </div>
       </main>

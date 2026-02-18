@@ -8,6 +8,9 @@ import type {
   AiConnectionTestResult,
   QueryResult,
   StreamCallbacks,
+  InsightsListResponse,
+  InsightType,
+  InsightSeverity,
 } from '@/types/ai';
 
 export const aiApi = {
@@ -127,5 +130,30 @@ export const aiApi = {
       });
 
     return controller;
+  },
+
+  // Spending Insights
+  getInsights: async (params?: {
+    type?: InsightType;
+    severity?: InsightSeverity;
+    includeDismissed?: boolean;
+  }): Promise<InsightsListResponse> => {
+    const queryParams: Record<string, string> = {};
+    if (params?.type) queryParams.type = params.type;
+    if (params?.severity) queryParams.severity = params.severity;
+    if (params?.includeDismissed) queryParams.includeDismissed = 'true';
+    const response = await apiClient.get<InsightsListResponse>('/ai/insights', {
+      params: queryParams,
+    });
+    return response.data;
+  },
+
+  generateInsights: async (): Promise<InsightsListResponse> => {
+    const response = await apiClient.post<InsightsListResponse>('/ai/insights/generate');
+    return response.data;
+  },
+
+  dismissInsight: async (id: string): Promise<void> => {
+    await apiClient.patch(`/ai/insights/${id}/dismiss`);
   },
 };
