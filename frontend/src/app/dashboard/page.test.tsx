@@ -151,6 +151,10 @@ vi.mock('@/components/dashboard/NetWorthChart', () => ({
   NetWorthChart: () => <div data-testid="net-worth-chart">NetWorthChart</div>,
 }));
 
+vi.mock('@/components/dashboard/InsightsWidget', () => ({
+  InsightsWidget: ({ isLoading }: any) => <div data-testid="insights-widget">{isLoading ? 'loading' : 'loaded'}</div>,
+}));
+
 const mockTriggerAutoRefresh = vi.fn();
 vi.mock('@/hooks/usePriceRefresh', () => ({
   usePriceRefresh: () => ({
