@@ -31,9 +31,7 @@ describe("AiQueryController", () => {
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AiQueryController],
-      providers: [
-        { provide: AiQueryService, useValue: mockQueryService },
-      ],
+      providers: [{ provide: AiQueryService, useValue: mockQueryService }],
     }).compile();
 
     controller = module.get<AiQueryController>(AiQueryController);
@@ -69,7 +67,10 @@ describe("AiQueryController", () => {
       const events = [
         { type: "thinking", message: "Analyzing..." },
         { type: "content", text: "Your balance is $5,000." },
-        { type: "done", usage: { inputTokens: 100, outputTokens: 50, toolCalls: 0 } },
+        {
+          type: "done",
+          usage: { inputTokens: 100, outputTokens: 50, toolCalls: 0 },
+        },
       ];
 
       mockQueryService.executeQueryStream.mockReturnValue(
@@ -106,15 +107,9 @@ describe("AiQueryController", () => {
 
       // Verify events were written as SSE
       expect(written).toHaveLength(3);
-      expect(written[0]).toBe(
-        `data: ${JSON.stringify(events[0])}\n\n`,
-      );
-      expect(written[1]).toBe(
-        `data: ${JSON.stringify(events[1])}\n\n`,
-      );
-      expect(written[2]).toBe(
-        `data: ${JSON.stringify(events[2])}\n\n`,
-      );
+      expect(written[0]).toBe(`data: ${JSON.stringify(events[0])}\n\n`);
+      expect(written[1]).toBe(`data: ${JSON.stringify(events[1])}\n\n`);
+      expect(written[2]).toBe(`data: ${JSON.stringify(events[2])}\n\n`);
 
       // Verify stream ended
       expect(mockRes.end).toHaveBeenCalled();
@@ -123,6 +118,7 @@ describe("AiQueryController", () => {
     it("writes error event when stream throws", async () => {
       mockQueryService.executeQueryStream.mockReturnValue(
         (async function* () {
+          yield; // satisfy require-yield
           throw new Error("Provider crashed");
         })(),
       );
@@ -153,6 +149,7 @@ describe("AiQueryController", () => {
     it("handles non-Error throws in stream", async () => {
       mockQueryService.executeQueryStream.mockReturnValue(
         (async function* () {
+          yield; // satisfy require-yield
           throw "String error";
         })(),
       );

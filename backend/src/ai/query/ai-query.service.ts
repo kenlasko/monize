@@ -4,11 +4,7 @@ import { AiUsageService } from "../ai-usage.service";
 import { FinancialContextBuilder } from "../context/financial-context.builder";
 import { ToolExecutorService } from "./tool-executor.service";
 import { FINANCIAL_TOOLS } from "./tool-definitions";
-import {
-  AiMessage,
-  AiToolCall,
-  AiProvider,
-} from "../providers/ai-provider.interface";
+import { AiMessage, AiProvider } from "../providers/ai-provider.interface";
 
 const MAX_ITERATIONS = 5;
 
@@ -141,7 +137,9 @@ export class AiQueryService {
       } catch (error) {
         const message =
           error instanceof Error ? error.message : "AI provider error";
-        this.logger.warn(`AI query failed on iteration ${iteration}: ${message}`);
+        this.logger.warn(
+          `AI query failed on iteration ${iteration}: ${message}`,
+        );
         yield { type: "error", message: `AI provider error: ${message}` };
         return;
       }
