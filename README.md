@@ -103,6 +103,18 @@ I could easily add import capabilities for other filetypes, but I would need exa
 - **Custom Reports**: Build your own reports with flexible filters
 - Visual charts (pie, bar, line, area)
 
+### AI Financial Assistant
+- **Natural language queries** about your finances ("How much did I spend on dining last month?", "What are my top expense categories?")
+- **Multi-provider support**: Anthropic (Claude), OpenAI (GPT), Ollama (local models), and any OpenAI-compatible endpoint
+- **Real-time streaming** responses via Server-Sent Events
+- **6 financial analysis tools**: transaction search/aggregation, account balances, spending by category, income summary, net worth history, and period comparison
+- **Per-user provider configuration** with encrypted API key storage (AES-256-GCM)
+- **Usage tracking** with per-request token and cost analytics
+- **Provider fallback chain** with priority-based ordering
+- **Connection testing** to verify provider setup before use
+- **Suggested queries** for quick exploration of your financial data
+- No financial data is sent to AI providers beyond what is needed to answer the specific query
+
 ### Security
 - OIDC (OpenID Connect) authentication (Authentik, Authelia, Pocket-ID, etc.)
 - Local credential authentication with bcrypt hashing
@@ -159,6 +171,7 @@ monize/
 │   │   ├── net-worth/         # Net worth calculations
 │   │   ├── built-in-reports/  # Server-side report aggregation
 │   │   ├── custom-reports/    # User-defined custom reports
+│   │   ├── ai/                # AI assistant (providers, query engine, usage tracking)
 │   │   ├── import/            # QIF file import
 │   │   ├── health/            # Health check endpoints
 │   │   └── main.ts            # Application entry point
@@ -284,6 +297,12 @@ npm run dev
 | `SMTP_USER` | SMTP username | - |
 | `SMTP_PASS` | SMTP password | - |
 | `SMTP_FROM` | Email sender address | - |
+| `AI_ENCRYPTION_KEY` | Encryption key for AI API keys (`openssl rand -hex 32`) | - |
+| `AI_DEFAULT_PROVIDER` | System-level default AI provider | - |
+| `AI_DEFAULT_MODEL` | Default model for the provider | - |
+| `AI_DEFAULT_API_KEY` | System-wide AI API key | - |
+| `AI_DEFAULT_BASE_URL` | Base URL for Ollama or compatible endpoints | - |
+| `AI_RATE_LIMIT_PER_MINUTE` | Rate limit for AI endpoints | `10` |
 
 
 ## Deployment
@@ -338,6 +357,13 @@ Swagger UI is available at `/api/docs` in **development mode only** (disabled in
 - `GET /api/v1/portfolio/summary` - Investment portfolio summary
 - `GET /api/v1/portfolio/top-movers` - Daily top movers
 - `GET /api/v1/admin/users` - Admin: list all users
+- `POST /api/v1/ai/query` - Natural language financial query
+- `POST /api/v1/ai/query/stream` - Streaming financial query (SSE)
+- `GET /api/v1/ai/configs` - List AI provider configurations
+- `POST /api/v1/ai/configs` - Add AI provider
+- `POST /api/v1/ai/configs/:id/test` - Test AI provider connection
+- `GET /api/v1/ai/usage` - AI usage summary
+- `GET /api/v1/ai/status` - AI feature availability
 - `GET /api/v1/built-in-reports/*` - Pre-aggregated reports
 - `GET /api/v1/health/live` - Liveness probe
 - `GET /api/v1/health/ready` - Readiness probe
@@ -356,6 +382,8 @@ Main tables:
 - **investment_transactions**: Buy/sell/dividend transactions
 - **monthly_account_balances**: Net worth snapshots
 - **custom_reports**: User-defined report configurations
+- **ai_provider_configs**: Per-user AI provider settings (encrypted API keys)
+- **ai_usage_logs**: AI query usage tracking (tokens, duration, provider)
 
 ## Security Notes
 
