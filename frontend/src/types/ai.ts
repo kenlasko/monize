@@ -86,3 +86,29 @@ export const AI_PROVIDER_DEFAULT_MODELS: Record<AiProviderType, string[]> = {
   ollama: ['llama3', 'llama3:70b', 'mistral', 'codellama', 'phi3'],
   'openai-compatible': [],
 };
+
+// Natural Language Query types
+
+export interface QueryResult {
+  answer: string;
+  toolsUsed: Array<{ name: string; summary: string }>;
+  sources: Array<{ type: string; description: string; dateRange?: string }>;
+  usage: { inputTokens: number; outputTokens: number; toolCalls: number };
+}
+
+export interface StreamEvent {
+  type: 'thinking' | 'tool_start' | 'tool_result' | 'content' | 'sources' | 'done' | 'error';
+  message?: string;
+  name?: string;
+  description?: string;
+  summary?: string;
+  text?: string;
+  sources?: Array<{ type: string; description: string; dateRange?: string }>;
+  usage?: { inputTokens: number; outputTokens: number; toolCalls: number };
+}
+
+export interface StreamCallbacks {
+  onEvent: (event: StreamEvent) => void;
+  onDone?: () => void;
+  onError?: (error: Error) => void;
+}

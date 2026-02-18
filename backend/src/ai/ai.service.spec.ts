@@ -426,4 +426,84 @@ describe("AiService", () => {
       expect(mockUsageService.getUsageSummary).toHaveBeenCalledWith(userId, 30);
     });
   });
+
+  describe("getToolUseProvider()", () => {
+    it("returns first provider that supports tool use", async () => {
+      const config = makeConfig({ provider: "anthropic" });
+      mockConfigRepository.find.mockResolvedValue([config]);
+      mockProviderFactory.createProvider!.mockReturnValue({
+        name: "anthropic",
+        supportsToolUse: true,
+        completeWithTools: jest.fn(),
+      });
+
+      const provider = await service.getToolUseProvider(userId);
+
+      expect(provider.name).toBe("anthropic");
+      expect(provider.supportsToolUse).toBe(true);
+    });
+
+    it("skips providers without tool use support", async () => {
+      const ollamaConfig = makeConfig({
+        id: "c1",
+        provider: "ollama",
+        priority: 0,
+      });
+      const anthropicConfig = makeConfig({
+        id: "c2",
+        provider: "anthropic",
+        priority: 1,
+      });
+      mockConfigRepository.find.mockResolvedValue([
+        ollamaConfig,
+        anthropicConfig,
+      ]);
+
+      let callCount = 0;
+      mockProviderFactory.createProvider!.mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          return { name: "ollama", supportsToolUse: false };
+        }
+        return {
+          name: "anthropic",
+          supportsToolUse: true,
+          completeWithTools: jest.fn(),
+        };
+      });
+
+      const provider = await service.getToolUseProvider(userId);
+
+      expect(provider.name).toBe("anthropic");
+    });
+
+    it("throws BadRequestException when no tool-use provider found", async () => {
+      const ollamaConfig = makeConfig({ provider: "ollama" });
+      mockConfigRepository.find.mockResolvedValue([ollamaConfig]);
+      mockProviderFactory.createProvider!.mockReturnValue({
+        name: "ollama",
+        supportsToolUse: false,
+      });
+
+      await expect(service.getToolUseProvider(userId)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it("throws BadRequestException when no providers configured at all", async () => {
+      mockConfigRepository.find.mockResolvedValue([]);
+
+      await expect(service.getToolUseProvider(userId)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it("error message mentions Anthropic or OpenAI", async () => {
+      mockConfigRepository.find.mockResolvedValue([]);
+
+      await expect(service.getToolUseProvider(userId)).rejects.toThrow(
+        /Anthropic or OpenAI/,
+      );
+    });
+  });
 });

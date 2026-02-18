@@ -6,6 +6,7 @@ import {
   AiStreamChunk,
   AiToolDefinition,
   AiToolResponse,
+  AiMessage,
 } from "./ai-provider.interface";
 
 export class OpenAiProvider implements AiProvider {
@@ -24,16 +25,66 @@ export class OpenAiProvider implements AiProvider {
     this.modelId = model || "gpt-4o";
   }
 
-  async complete(request: AiCompletionRequest): Promise<AiCompletionResponse> {
-    const messages: OpenAI.ChatCompletionMessageParam[] = [
-      { role: "system", content: request.systemPrompt },
-      ...request.messages
-        .filter((m) => m.role !== "system")
+  private toOpenAiMessages(
+    messages: AiMessage[],
+    systemPrompt: string,
+  ): OpenAI.ChatCompletionMessageParam[] {
+    const result: OpenAI.ChatCompletionMessageParam[] = [
+      { role: "system", content: systemPrompt },
+    ];
+
+    for (const msg of messages) {
+      if (msg.role === "user") {
+        result.push({ role: "user", content: msg.content });
+      } else if (msg.role === "assistant") {
+        if (msg.toolCalls && msg.toolCalls.length > 0) {
+          result.push({
+            role: "assistant",
+            content: msg.content || null,
+            tool_calls: msg.toolCalls.map((tc) => ({
+              id: tc.id,
+              type: "function" as const,
+              function: {
+                name: tc.name,
+                arguments: JSON.stringify(tc.input),
+              },
+            })),
+          });
+        } else {
+          result.push({ role: "assistant", content: msg.content });
+        }
+      } else if (msg.role === "tool") {
+        result.push({
+          role: "tool",
+          tool_call_id: msg.toolCallId,
+          content: msg.content,
+        });
+      }
+    }
+
+    return result;
+  }
+
+  private toSimpleMessages(
+    messages: AiMessage[],
+    systemPrompt: string,
+  ): OpenAI.ChatCompletionMessageParam[] {
+    return [
+      { role: "system", content: systemPrompt },
+      ...messages
+        .filter((m) => m.role === "user" || m.role === "assistant")
         .map((m) => ({
           role: m.role as "user" | "assistant",
           content: m.content,
         })),
     ];
+  }
+
+  async complete(request: AiCompletionRequest): Promise<AiCompletionResponse> {
+    const messages = this.toSimpleMessages(
+      request.messages,
+      request.systemPrompt,
+    );
 
     const response = await this.client.chat.completions.create({
       model: this.modelId,
@@ -58,15 +109,10 @@ export class OpenAiProvider implements AiProvider {
   }
 
   async *stream(request: AiCompletionRequest): AsyncIterable<AiStreamChunk> {
-    const messages: OpenAI.ChatCompletionMessageParam[] = [
-      { role: "system", content: request.systemPrompt },
-      ...request.messages
-        .filter((m) => m.role !== "system")
-        .map((m) => ({
-          role: m.role as "user" | "assistant",
-          content: m.content,
-        })),
-    ];
+    const messages = this.toSimpleMessages(
+      request.messages,
+      request.systemPrompt,
+    );
 
     const stream = await this.client.chat.completions.create({
       model: this.modelId,
@@ -92,20 +138,15 @@ export class OpenAiProvider implements AiProvider {
     request: AiCompletionRequest,
     tools: AiToolDefinition[],
   ): Promise<AiToolResponse> {
-    const messages: OpenAI.ChatCompletionMessageParam[] = [
-      { role: "system", content: request.systemPrompt },
-      ...request.messages
-        .filter((m) => m.role !== "system")
-        .map((m) => ({
-          role: m.role as "user" | "assistant",
-          content: m.content,
-        })),
-    ];
+    const messages = this.toOpenAiMessages(
+      request.messages,
+      request.systemPrompt,
+    );
 
     const response = await this.client.chat.completions.create({
       model: this.modelId,
       messages,
-      max_tokens: request.maxTokens || 1024,
+      max_tokens: request.maxTokens || 4096,
       tools: tools.map((tool) => ({
         type: "function" as const,
         function: {
@@ -128,9 +169,16 @@ export class OpenAiProvider implements AiProvider {
           tc.type === "function",
       )
       .map((tc) => ({
+        id: tc.id,
         name: tc.function.name,
         input: JSON.parse(tc.function.arguments) as Record<string, unknown>,
       }));
+
+    const finishReason = choice?.finish_reason;
+    const stopReason =
+      finishReason === "tool_calls" ? "tool_use" as const :
+      finishReason === "length" ? "max_tokens" as const :
+      "end_turn" as const;
 
     return {
       content: choice?.message?.content || "",
@@ -141,6 +189,7 @@ export class OpenAiProvider implements AiProvider {
       },
       model: response.model,
       provider: this.name,
+      stopReason,
     };
   }
 

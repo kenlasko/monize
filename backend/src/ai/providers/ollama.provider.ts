@@ -29,7 +29,7 @@ export class OllamaProvider implements AiProvider {
     const messages = [
       { role: "system", content: request.systemPrompt },
       ...request.messages
-        .filter((m) => m.role !== "system")
+        .filter((m) => m.role === "user" || m.role === "assistant")
         .map((m) => ({ role: m.role, content: m.content })),
     ];
 
@@ -69,7 +69,7 @@ export class OllamaProvider implements AiProvider {
     const messages = [
       { role: "system", content: request.systemPrompt },
       ...request.messages
-        .filter((m) => m.role !== "system")
+        .filter((m) => m.role === "user" || m.role === "assistant")
         .map((m) => ({ role: m.role, content: m.content })),
     ];
 

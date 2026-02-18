@@ -36,6 +36,6 @@ import { NetWorthModule } from "../net-worth/net-worth.module";
     TransactionBulkUpdateService,
   ],
   controllers: [TransactionsController],
-  exports: [TransactionsService],
+  exports: [TransactionsService, TransactionAnalyticsService],
 })
 export class TransactionsModule {}

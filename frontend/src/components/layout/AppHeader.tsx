@@ -14,6 +14,7 @@ const navLinks = [
   { href: '/investments', label: 'Investments' },
   { href: '/bills', label: 'Bills & Deposits' },
   { href: '/reports', label: 'Reports' },
+  { href: '/ai', label: 'AI Assistant' },
 ];
 
 const toolsLinks = [

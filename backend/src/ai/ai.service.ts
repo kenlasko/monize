@@ -21,6 +21,7 @@ import {
 import {
   AiCompletionRequest,
   AiCompletionResponse,
+  AiProvider,
 } from "./providers/ai-provider.interface";
 
 @Injectable()
@@ -211,6 +212,21 @@ export class AiService {
       encryptionAvailable: this.encryptionService.isConfigured(),
       activeProviders: configs.length,
     };
+  }
+
+  async getToolUseProvider(userId: string): Promise<AiProvider> {
+    const configs = await this.getActiveConfigs(userId);
+
+    for (const config of configs) {
+      const provider = this.providerFactory.createProvider(config);
+      if (provider.supportsToolUse) {
+        return provider;
+      }
+    }
+
+    throw new BadRequestException(
+      "No AI provider with tool use support configured. Natural language queries require Anthropic or OpenAI. Please configure one in AI Settings.",
+    );
   }
 
   private async getActiveConfigs(userId: string): Promise<AiProviderConfig[]> {
