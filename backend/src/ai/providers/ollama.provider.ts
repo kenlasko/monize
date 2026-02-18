@@ -111,7 +111,12 @@ export class OllamaProvider implements AiProvider {
 
         for (const line of lines) {
           if (!line.trim()) continue;
-          const chunk = JSON.parse(line) as OllamaChatResponse;
+          let chunk: OllamaChatResponse;
+          try {
+            chunk = JSON.parse(line) as OllamaChatResponse;
+          } catch {
+            continue;
+          }
           if (chunk.message?.content) {
             yield { content: chunk.message.content, done: chunk.done };
           }

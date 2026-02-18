@@ -7,9 +7,13 @@ import {
   IsObject,
   MaxLength,
   Min,
+  Max,
+  ValidateIf,
 } from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { SanitizeHtml } from "../../common/decorators/sanitize-html.decorator";
+import { IsSafeUrl } from "../validators/safe-url.validator";
+import { IsSafeConfigObject } from "../validators/safe-config-object.validator";
 import {
   AI_PROVIDERS,
   AiProviderType,
@@ -54,13 +58,15 @@ export class CreateAiConfigDto {
   apiKey?: string;
 
   @ApiPropertyOptional({
-    example: "http://localhost:11434",
+    example: "https://api.example.com",
     description:
-      "Base URL for the provider (required for Ollama and OpenAI-compatible)",
+      "Base URL for the provider (required for Ollama and OpenAI-compatible). Must be a valid external HTTP/HTTPS URL.",
   })
   @IsOptional()
   @IsString()
   @MaxLength(500)
+  @ValidateIf((o) => o.baseUrl !== undefined && o.baseUrl !== "")
+  @IsSafeUrl()
   baseUrl?: string;
 
   @ApiPropertyOptional({
@@ -71,6 +77,7 @@ export class CreateAiConfigDto {
   @IsOptional()
   @IsInt()
   @Min(0)
+  @Max(100)
   priority?: number;
 
   @ApiPropertyOptional({
@@ -78,6 +85,7 @@ export class CreateAiConfigDto {
   })
   @IsOptional()
   @IsObject()
+  @IsSafeConfigObject()
   config?: Record<string, unknown>;
 }
 
@@ -110,12 +118,14 @@ export class UpdateAiConfigDto {
   apiKey?: string;
 
   @ApiPropertyOptional({
-    example: "http://localhost:11434",
-    description: "Base URL for the provider",
+    example: "https://api.example.com",
+    description: "Base URL for the provider. Must be a valid external HTTP/HTTPS URL.",
   })
   @IsOptional()
   @IsString()
   @MaxLength(500)
+  @ValidateIf((o) => o.baseUrl !== undefined && o.baseUrl !== "")
+  @IsSafeUrl()
   baseUrl?: string;
 
   @ApiPropertyOptional({
@@ -125,6 +135,7 @@ export class UpdateAiConfigDto {
   @IsOptional()
   @IsInt()
   @Min(0)
+  @Max(100)
   priority?: number;
 
   @ApiPropertyOptional({
@@ -140,5 +151,6 @@ export class UpdateAiConfigDto {
   })
   @IsOptional()
   @IsObject()
+  @IsSafeConfigObject()
   config?: Record<string, unknown>;
 }

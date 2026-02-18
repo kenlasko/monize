@@ -1,5 +1,6 @@
 import {
   Controller,
+  Logger,
   Post,
   Body,
   Request,
@@ -18,6 +19,8 @@ import { AiQueryDto } from "./dto/ai-query.dto";
 @UseGuards(AuthGuard("jwt"))
 @ApiBearerAuth()
 export class AiQueryController {
+  private readonly logger = new Logger(AiQueryController.name);
+
   constructor(private readonly queryService: AiQueryService) {}
 
   @Post("query")
@@ -56,10 +59,11 @@ export class AiQueryController {
         }
       }
     } catch (error) {
-      const message =
+      const rawMessage =
         error instanceof Error ? error.message : "Unknown error";
+      this.logger.error(`SSE query stream error: ${rawMessage}`);
       res.write(
-        `data: ${JSON.stringify({ type: "error", message })}\n\n`,
+        `data: ${JSON.stringify({ type: "error", message: "An unexpected error occurred while processing your query." })}\n\n`,
       );
     }
 

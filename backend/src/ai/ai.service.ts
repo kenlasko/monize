@@ -24,6 +24,8 @@ import {
   AiProvider,
 } from "./providers/ai-provider.interface";
 
+const MAX_CONFIGS_PER_USER = 10;
+
 @Injectable()
 export class AiService {
   private readonly logger = new Logger(AiService.name);
@@ -59,6 +61,15 @@ export class AiService {
     userId: string,
     dto: CreateAiConfigDto,
   ): Promise<AiProviderConfigResponse> {
+    const existingCount = await this.configRepository.count({
+      where: { userId },
+    });
+    if (existingCount >= MAX_CONFIGS_PER_USER) {
+      throw new BadRequestException(
+        `Maximum of ${MAX_CONFIGS_PER_USER} AI provider configurations per user`,
+      );
+    }
+
     const config = this.configRepository.create({
       userId,
       provider: dto.provider,
@@ -131,8 +142,15 @@ export class AiService {
       const available = await provider.isAvailable();
       return { available };
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Unknown error";
-      return { available: false, error: message };
+      const rawMessage =
+        error instanceof Error ? error.message : "Unknown error";
+      this.logger.warn(
+        `Test connection failed for config ${configId}: ${rawMessage}`,
+      );
+      return {
+        available: false,
+        error: "Connection test failed. Check your provider settings.",
+      };
     }
   }
 
@@ -190,8 +208,9 @@ export class AiService {
       }
     }
 
+    this.logger.error(`All AI providers failed: ${errors.join("; ")}`);
     throw new BadRequestException(
-      `All AI providers failed: ${errors.join("; ")}`,
+      "All AI providers failed. Please check your provider configuration and try again.",
     );
   }
 
