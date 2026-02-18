@@ -50,7 +50,7 @@ export const aiApi = {
   },
 
   query: async (query: string): Promise<QueryResult> => {
-    const response = await apiClient.post<QueryResult>('/ai/query', { query });
+    const response = await apiClient.post<QueryResult>('/ai/query', { query }, { timeout: 120000 });
     return response.data;
   },
 
@@ -148,9 +148,8 @@ export const aiApi = {
     return response.data;
   },
 
-  generateInsights: async (): Promise<InsightsListResponse> => {
-    const response = await apiClient.post<InsightsListResponse>('/ai/insights/generate');
-    return response.data;
+  generateInsights: async (): Promise<void> => {
+    await apiClient.post('/ai/insights/generate');
   },
 
   dismissInsight: async (id: string): Promise<void> => {

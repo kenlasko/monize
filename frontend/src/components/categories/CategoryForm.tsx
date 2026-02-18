@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, MutableRefObject } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import '@/lib/zodConfig';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -48,7 +48,7 @@ export function CategoryForm({ category, categories, onSubmit, onCancel, onDirty
   const {
     register,
     handleSubmit,
-    watch,
+    control,
     setValue,
     formState: { errors, isSubmitting, isDirty },
   } = useForm<CategoryFormData>({
@@ -72,9 +72,9 @@ export function CategoryForm({ category, categories, onSubmit, onCancel, onDirty
 
   useFormSubmitRef(submitRef, handleSubmit, onSubmit);
 
-  const watchedColor = watch('color');
-  const watchedParentId = watch('parentId');
-  const watchedIsIncome = watch('isIncome');
+  const watchedColor = useWatch({ control, name: 'color' });
+  const watchedParentId = useWatch({ control, name: 'parentId' });
+  const watchedIsIncome = useWatch({ control, name: 'isIncome' });
 
   // When parent category changes, set type to match parent
   useEffect(() => {

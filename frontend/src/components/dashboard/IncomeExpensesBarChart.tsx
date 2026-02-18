@@ -19,6 +19,38 @@ import { useDateFormat } from '@/hooks/useDateFormat';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
 
+function IncomeExpensesTooltip({
+  active,
+  payload,
+  label,
+  formatCurrency,
+}: {
+  active?: boolean;
+  payload?: Array<{ name: string; value: number; color: string }>;
+  label?: string;
+  formatCurrency: (v: number) => string;
+}) {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
+        <p className="font-medium text-gray-900 dark:text-gray-100 mb-1">
+          Week of {label}
+        </p>
+        {payload.map((entry, index) => (
+          <p
+            key={index}
+            className="text-sm"
+            style={{ color: entry.color }}
+          >
+            {entry.name}: {formatCurrency(entry.value)}
+          </p>
+        ))}
+      </div>
+    );
+  }
+  return null;
+}
+
 interface IncomeExpensesBarChartProps {
   transactions: Transaction[];
   isLoading: boolean;
@@ -105,28 +137,6 @@ export function IncomeExpensesBarChart({
     );
   }, [chartData]);
 
-  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ name: string; value: number; color: string }>; label?: string }) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
-          <p className="font-medium text-gray-900 dark:text-gray-100 mb-1">
-            Week of {label}
-          </p>
-          {payload.map((entry, index) => (
-            <p
-              key={index}
-              className="text-sm"
-              style={{ color: entry.color }}
-            >
-              {entry.name}: {formatCurrency(entry.value)}
-            </p>
-          ))}
-        </div>
-      );
-    }
-    return null;
-  };
-
   if (isLoading) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6">
@@ -173,7 +183,7 @@ export function IncomeExpensesBarChart({
               axisLine={{ stroke: '#e5e7eb' }}
               tickFormatter={formatCurrencyAxis}
             />
-            <Tooltip content={<CustomTooltip />} />
+            <Tooltip content={<IncomeExpensesTooltip formatCurrency={formatCurrency} />} />
             <Legend
               wrapperStyle={{ paddingTop: '1rem' }}
               formatter={(value) => (

@@ -6,6 +6,40 @@ import { AssetAllocation, AccountHoldings } from '@/types/investment';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
 
+function AllocationTooltip({
+  active,
+  payload,
+  fmtVal,
+  foreignCurrency,
+  foreignTotal,
+}: {
+  active?: boolean;
+  payload?: Array<{
+    payload: { fullName: string; value: number; percentage: number; currencyCode?: string };
+  }>;
+  fmtVal: (v: number) => string;
+  foreignCurrency: string | null;
+  foreignTotal: number;
+}) {
+  if (active && payload && payload.length) {
+    const data = payload[0].payload;
+    const displayValue = foreignCurrency
+      ? (data.percentage / 100) * foreignTotal
+      : data.value;
+    return (
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
+        <p className="font-medium text-gray-900 dark:text-gray-100">
+          {data.fullName}
+        </p>
+        <p className="text-gray-600 dark:text-gray-400">
+          {fmtVal(displayValue)} ({data.percentage.toFixed(1)}%)
+        </p>
+      </div>
+    );
+  }
+  return null;
+}
+
 interface AssetAllocationChartProps {
   allocation: AssetAllocation | null;
   isLoading: boolean;
@@ -65,34 +99,6 @@ export function AssetAllocationChart({
     }));
   }, [allocation]);
 
-  const CustomTooltip = ({
-    active,
-    payload,
-  }: {
-    active?: boolean;
-    payload?: Array<{
-      payload: { fullName: string; value: number; percentage: number; currencyCode?: string };
-    }>;
-  }) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      const displayValue = foreignCurrency
-        ? (data.percentage / 100) * foreignTotal
-        : data.value;
-      return (
-        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
-          <p className="font-medium text-gray-900 dark:text-gray-100">
-            {data.fullName}
-          </p>
-          <p className="text-gray-600 dark:text-gray-400">
-            {fmtVal(displayValue)} ({data.percentage.toFixed(1)}%)
-          </p>
-        </div>
-      );
-    }
-    return null;
-  };
-
   if (isLoading) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6">
@@ -140,7 +146,7 @@ export function AssetAllocationChart({
                 <Cell key={`cell-${index}`} fill={entry.color} />
               ))}
             </Pie>
-            <Tooltip content={<CustomTooltip />} />
+            <Tooltip content={<AllocationTooltip fmtVal={fmtVal} foreignCurrency={foreignCurrency} foreignTotal={foreignTotal} />} />
           </PieChart>
         </ResponsiveContainer>
       </div>

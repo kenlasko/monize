@@ -26,11 +26,17 @@ vi.mock('@/lib/logger', () => ({
 describe('InsightsList', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.useRealTimers();
     mockGetInsights.mockResolvedValue({
       insights: [],
       total: 0,
       lastGeneratedAt: null,
+      isGenerating: false,
     });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('shows loading skeleton initially', () => {
@@ -75,6 +81,7 @@ describe('InsightsList', () => {
       ],
       total: 1,
       lastGeneratedAt: '2026-02-18T00:00:00.000Z',
+      isGenerating: false,
     });
 
     render(<InsightsList />);
@@ -114,6 +121,7 @@ describe('InsightsList', () => {
       ],
       total: 2,
       lastGeneratedAt: '2026-02-18T00:00:00.000Z',
+      isGenerating: false,
     });
 
     render(<InsightsList />);
@@ -124,7 +132,9 @@ describe('InsightsList', () => {
     });
   });
 
-  it('calls generateInsights when refresh button clicked', async () => {
+  it('calls generateInsights and polls for results when refresh button clicked', async () => {
+    vi.useFakeTimers();
+
     mockGetInsights.mockResolvedValue({
       insights: [
         {
@@ -142,23 +152,76 @@ describe('InsightsList', () => {
       ],
       total: 1,
       lastGeneratedAt: '2026-02-18T00:00:00.000Z',
+      isGenerating: false,
     });
-    mockGenerateInsights.mockResolvedValue({
-      insights: [],
-      total: 0,
-      lastGeneratedAt: '2026-02-18T12:00:00.000Z',
-    });
+    mockGenerateInsights.mockResolvedValue(undefined);
 
     render(<InsightsList />);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(screen.getByText('Refresh Insights')).toBeInTheDocument();
+    });
+
+    // Set up poll response with updated lastGeneratedAt
+    mockGetInsights.mockResolvedValue({
+      insights: [
+        {
+          id: 'i2',
+          type: 'trend',
+          title: 'New Insight',
+          description: 'New desc',
+          severity: 'info',
+          data: {},
+          isDismissed: false,
+          generatedAt: '2026-02-18T12:00:00.000Z',
+          expiresAt: '2026-02-25T12:00:00.000Z',
+          createdAt: '2026-02-18T12:00:00.000Z',
+        },
+      ],
+      total: 1,
+      lastGeneratedAt: '2026-02-18T12:00:00.000Z',
+      isGenerating: false,
     });
 
     fireEvent.click(screen.getByText('Refresh Insights'));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockGenerateInsights).toHaveBeenCalled();
+    });
+
+    // Advance past the poll interval
+    await vi.advanceTimersByTimeAsync(3500);
+
+    await vi.waitFor(() => {
+      expect(screen.getByText('New Insight')).toBeInTheDocument();
+    });
+
+    vi.useRealTimers();
+  });
+
+  it('shows generating state when server reports isGenerating on load', async () => {
+    // Server says generation is in progress — subsequent polls return completed
+    mockGetInsights
+      .mockResolvedValueOnce({
+        insights: [],
+        total: 0,
+        lastGeneratedAt: null,
+        isGenerating: true,
+      })
+      .mockResolvedValue({
+        insights: [],
+        total: 0,
+        lastGeneratedAt: '2026-02-18T12:00:00.000Z',
+        isGenerating: false,
+      });
+
+    render(<InsightsList />);
+
+    // Buttons should show "Generating..." after initial load detects isGenerating
+    await waitFor(() => {
+      const buttons = screen.getAllByText('Generating...');
+      expect(buttons.length).toBeGreaterThan(0);
+      expect(buttons[0]).toBeDisabled();
     });
   });
 
@@ -180,6 +243,7 @@ describe('InsightsList', () => {
       ],
       total: 1,
       lastGeneratedAt: '2026-02-18T00:00:00.000Z',
+      isGenerating: false,
     });
     mockDismissInsight.mockResolvedValue(undefined);
 
@@ -226,6 +290,7 @@ describe('InsightsList', () => {
       ],
       total: 1,
       lastGeneratedAt: '2026-02-18T00:00:00.000Z',
+      isGenerating: false,
     });
     mockGenerateInsights.mockRejectedValue(new Error('Provider error'));
 

@@ -26,6 +26,9 @@ export class OllamaProvider implements AiProvider {
   }
 
   async complete(request: AiCompletionRequest): Promise<AiCompletionResponse> {
+    // Use streaming internally to keep the TCP connection alive during
+    // long CPU-only inference. Idle connections get killed by kube-proxy /
+    // conntrack after ~120 s, causing "fetch failed" errors.
     const messages = [
       { role: "system", content: request.systemPrompt },
       ...request.messages
@@ -33,18 +36,27 @@ export class OllamaProvider implements AiProvider {
         .map((m) => ({ role: m.role, content: m.content })),
     ];
 
-    const response = await fetch(`${this.baseUrl}/api/chat`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: this.modelId,
-        messages,
-        stream: false,
-        ...(request.temperature !== undefined && {
-          options: { temperature: request.temperature },
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10 * 60 * 1000); // 10 minutes for CPU inference
+    let response: Response;
+    try {
+      response = await fetch(`${this.baseUrl}/api/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
+        body: JSON.stringify({
+          model: this.modelId,
+          messages,
+          stream: true,
+          ...(request.responseFormat === "json" && { format: "json" }),
+          ...(request.temperature !== undefined && {
+            options: { temperature: request.temperature },
+          }),
         }),
-      }),
-    });
+      });
+    } finally {
+      clearTimeout(timeout);
+    }
 
     if (!response.ok) {
       throw new Error(
@@ -52,13 +64,52 @@ export class OllamaProvider implements AiProvider {
       );
     }
 
-    const data = (await response.json()) as OllamaChatResponse;
+    const reader = response.body?.getReader();
+    if (!reader) {
+      throw new Error("No response body from Ollama");
+    }
+
+    const decoder = new TextDecoder();
+    let buffer = "";
+    const contentParts: string[] = [];
+    let promptTokens = 0;
+    let outputTokens = 0;
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          let chunk: OllamaChatResponse;
+          try {
+            chunk = JSON.parse(line) as OllamaChatResponse;
+          } catch {
+            continue;
+          }
+          if (chunk.message?.content) {
+            contentParts.push(chunk.message.content);
+          }
+          if (chunk.done) {
+            promptTokens = chunk.prompt_eval_count || 0;
+            outputTokens = chunk.eval_count || 0;
+          }
+        }
+      }
+    } finally {
+      reader.releaseLock();
+    }
 
     return {
-      content: data.message.content,
+      content: contentParts.join(""),
       usage: {
-        inputTokens: data.prompt_eval_count || 0,
-        outputTokens: data.eval_count || 0,
+        inputTokens: promptTokens,
+        outputTokens,
       },
       model: this.modelId,
       provider: this.name,
@@ -73,18 +124,26 @@ export class OllamaProvider implements AiProvider {
         .map((m) => ({ role: m.role, content: m.content })),
     ];
 
-    const response = await fetch(`${this.baseUrl}/api/chat`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: this.modelId,
-        messages,
-        stream: true,
-        ...(request.temperature !== undefined && {
-          options: { temperature: request.temperature },
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10 * 60 * 1000); // 10 minutes for CPU inference
+    let response: Response;
+    try {
+      response = await fetch(`${this.baseUrl}/api/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
+        body: JSON.stringify({
+          model: this.modelId,
+          messages,
+          stream: true,
+          ...(request.temperature !== undefined && {
+            options: { temperature: request.temperature },
+          }),
         }),
-      }),
-    });
+      });
+    } finally {
+      clearTimeout(timeout);
+    }
 
     if (!response.ok) {
       throw new Error(

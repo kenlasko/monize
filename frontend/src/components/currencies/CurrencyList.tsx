@@ -52,7 +52,7 @@ const CurrencyRow = memo(function CurrencyRow({
   cellPadding,
   onEdit,
   onToggleActive,
-  onDelete,
+  onDelete: _onDelete,
   onLongPressStart,
   onLongPressStartTouch,
   onLongPressEnd,

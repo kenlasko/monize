@@ -15,11 +15,13 @@ describe("AiInsightsController", () => {
         insights: [],
         total: 0,
         lastGeneratedAt: null,
+        isGenerating: false,
       }),
       generateInsights: jest.fn().mockResolvedValue({
         insights: [],
         total: 0,
         lastGeneratedAt: null,
+        isGenerating: false,
       }),
       dismissInsight: jest.fn().mockResolvedValue(undefined),
     };
@@ -48,6 +50,7 @@ describe("AiInsightsController", () => {
         insights: [],
         total: 0,
         lastGeneratedAt: null,
+        isGenerating: false,
       });
     });
 
@@ -78,32 +81,18 @@ describe("AiInsightsController", () => {
     });
   });
 
-  describe("generateInsights()", () => {
-    it("triggers insight generation for the authenticated user", async () => {
-      const expected = {
-        insights: [
-          {
-            id: "i1",
-            type: "anomaly",
-            title: "Test",
-            description: "Description",
-            severity: "warning",
-            data: {},
-            isDismissed: false,
-            generatedAt: "2026-02-18T00:00:00.000Z",
-            expiresAt: "2026-02-25T00:00:00.000Z",
-            createdAt: "2026-02-18T00:00:00.000Z",
-          },
-        ],
-        total: 1,
-        lastGeneratedAt: "2026-02-18T00:00:00.000Z",
-      };
-      mockInsightsService.generateInsights!.mockResolvedValue(expected);
+  describe("triggerGeneration()", () => {
+    it("triggers background generation and returns status immediately", () => {
+      mockInsightsService.generateInsights!.mockResolvedValue({
+        insights: [],
+        total: 0,
+        lastGeneratedAt: null,
+      });
 
-      const result = await controller.generateInsights(req);
+      const result = controller.triggerGeneration(req);
 
       expect(mockInsightsService.generateInsights).toHaveBeenCalledWith(userId);
-      expect(result).toEqual(expected);
+      expect(result).toEqual({ status: "generating" });
     });
   });
 

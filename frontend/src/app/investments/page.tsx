@@ -71,7 +71,7 @@ function InvestmentsContent() {
   const [pagination, setPagination] = useState<InvestmentTransactionPaginationInfo | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
-  const { showForm: showTransactionForm, editingItem: editingTransaction, openCreate, openEdit, close, isEditing, modalProps, setFormDirty, unsavedChangesDialog, formSubmitRef } = useFormModal<InvestmentTransaction>();
+  const { showForm: showTransactionForm, editingItem: editingTransaction, openCreate, openEdit, close, isEditing: _isEditing, modalProps, setFormDirty, unsavedChangesDialog, formSubmitRef } = useFormModal<InvestmentTransaction>();
   const [listDensity, setListDensity] = useLocalStorage<DensityLevel>('monize-investments-density', 'normal');
   const [isRefreshingPrices, setIsRefreshingPrices] = useState(false);
   const [lastPriceUpdate, setLastPriceUpdate] = useState<string | null>(null);

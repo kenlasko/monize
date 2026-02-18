@@ -40,4 +40,5 @@ export interface InsightsListResponse {
   insights: AiInsightResponse[];
   total: number;
   lastGeneratedAt: string | null;
+  isGenerating: boolean;
 }

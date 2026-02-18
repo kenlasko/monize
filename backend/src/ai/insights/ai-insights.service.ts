@@ -33,6 +33,7 @@ interface RawInsight {
 @Injectable()
 export class AiInsightsService {
   private readonly logger = new Logger(AiInsightsService.name);
+  private readonly generatingUsers = new Set<string>();
 
   constructor(
     @InjectRepository(AiInsight)
@@ -85,7 +86,12 @@ export class AiInsightsService {
       lastGeneratedAt: lastGenerated?.lastGenerated
         ? new Date(lastGenerated.lastGenerated).toISOString()
         : null,
+      isGenerating: this.generatingUsers.has(userId),
     };
+  }
+
+  isGenerating(userId: string): boolean {
+    return this.generatingUsers.has(userId);
   }
 
   async dismissInsight(userId: string, insightId: string): Promise<void> {
@@ -101,6 +107,10 @@ export class AiInsightsService {
   }
 
   async generateInsights(userId: string): Promise<InsightsListResponse> {
+    if (this.generatingUsers.has(userId)) {
+      return this.getInsights(userId);
+    }
+
     const recentInsight = await this.insightRepo
       .createQueryBuilder("i")
       .where("i.userId = :userId", { userId })
@@ -115,56 +125,65 @@ export class AiInsightsService {
       return this.getInsights(userId);
     }
 
-    const preferences = await this.prefRepo.findOne({
-      where: { userId },
-    });
-    const currency = preferences?.defaultCurrency || "USD";
-
-    let aggregates: SpendingAggregates;
-    try {
-      aggregates = await this.aggregatorService.computeAggregates(
-        userId,
-        currency,
-      );
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Unknown error";
-      this.logger.warn(
-        `Failed to compute aggregates for user ${userId}: ${message}`,
-      );
-      return this.getInsights(userId);
-    }
-
-    if (
-      aggregates.categorySpending.length === 0 &&
-      aggregates.monthlySpending.length === 0
-    ) {
-      return this.getInsights(userId);
-    }
-
-    const prompt = this.buildInsightsPrompt(aggregates);
+    this.generatingUsers.add(userId);
 
     try {
-      const response = await this.aiService.complete(
-        userId,
-        {
-          systemPrompt: INSIGHT_SYSTEM_PROMPT,
-          messages: [{ role: "user", content: prompt }],
-          maxTokens: 4096,
-          temperature: 0.3,
-        },
-        "insight",
-      );
+      const preferences = await this.prefRepo.findOne({
+        where: { userId },
+      });
+      const currency = preferences?.defaultCurrency || "USD";
 
-      const rawInsights = this.parseInsightsResponse(response.content);
-      await this.saveInsights(userId, rawInsights);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Unknown error";
-      this.logger.warn(
-        `Failed to generate AI insights for user ${userId}: ${message}`,
-      );
+      let aggregates: SpendingAggregates;
+      try {
+        aggregates = await this.aggregatorService.computeAggregates(
+          userId,
+          currency,
+        );
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Unknown error";
+        this.logger.warn(
+          `Failed to compute aggregates for user ${userId}: ${message}`,
+        );
+        return this.getInsights(userId);
+      }
+
+      if (
+        aggregates.categorySpending.length === 0 &&
+        aggregates.monthlySpending.length === 0
+      ) {
+        return this.getInsights(userId);
+      }
+
+      const prompt = this.buildInsightsPrompt(aggregates);
+
+      try {
+        const response = await this.aiService.complete(
+          userId,
+          {
+            systemPrompt: INSIGHT_SYSTEM_PROMPT,
+            messages: [{ role: "user", content: prompt }],
+            maxTokens: 4096,
+            temperature: 0.3,
+            responseFormat: "json",
+          },
+          "insight",
+        );
+
+        const rawInsights = this.parseInsightsResponse(response.content);
+        await this.saveInsights(userId, rawInsights);
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Unknown error";
+        this.logger.warn(
+          `Failed to generate AI insights for user ${userId}: ${message}`,
+        );
+      }
+
+      return this.getInsights(userId);
+    } finally {
+      this.generatingUsers.delete(userId);
     }
-
-    return this.getInsights(userId);
   }
 
   @Cron(CronExpression.EVERY_DAY_AT_6AM)

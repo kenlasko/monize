@@ -1,12 +1,15 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { aiApi } from '@/lib/ai';
 import { AiInsight, InsightType, InsightSeverity, INSIGHT_TYPE_LABELS, INSIGHT_SEVERITY_LABELS } from '@/types/ai';
 import { InsightCard } from './InsightCard';
 import { createLogger } from '@/lib/logger';
 
 const logger = createLogger('InsightsList');
+
+const POLL_INTERVAL = 5000;
+const MAX_POLL_ATTEMPTS = 150; // 150 * 5s = 12.5 minutes max for CPU inference
 
 export function InsightsList() {
   const [insights, setInsights] = useState<AiInsight[]>([]);
@@ -19,6 +22,49 @@ export function InsightsList() {
   const [filterSeverity, setFilterSeverity] = useState<InsightSeverity | ''>('');
   const [showDismissed, setShowDismissed] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const pollingRef = useRef(false);
+
+  const pollForResults = useCallback(async (previousLastGeneratedAt: string | null) => {
+    if (pollingRef.current) return;
+    pollingRef.current = true;
+    setIsGenerating(true);
+    let keepGenerating = false;
+
+    try {
+      for (let i = 0; i < MAX_POLL_ATTEMPTS; i++) {
+        await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL));
+        const response = await aiApi.getInsights({
+          type: filterType || undefined,
+          severity: filterSeverity || undefined,
+          includeDismissed: showDismissed,
+        });
+
+        if (!response.isGenerating) {
+          setInsights(response.insights);
+          setTotal(response.total);
+          setLastGeneratedAt(response.lastGeneratedAt);
+          return;
+        }
+
+        // Also check if lastGeneratedAt changed (new results available)
+        if (response.lastGeneratedAt !== previousLastGeneratedAt) {
+          setInsights(response.insights);
+          setTotal(response.total);
+          setLastGeneratedAt(response.lastGeneratedAt);
+          return;
+        }
+      }
+      // Max attempts reached — show message but keep generating state
+      // if the server is still working
+      keepGenerating = true;
+      setError('Insight generation is taking longer than expected. Please wait or refresh the page.');
+    } finally {
+      pollingRef.current = false;
+      if (!keepGenerating) {
+        setIsGenerating(false);
+      }
+    }
+  }, [filterType, filterSeverity, showDismissed]);
 
   const loadInsights = useCallback(async () => {
     try {
@@ -31,13 +77,18 @@ export function InsightsList() {
       setInsights(response.insights);
       setTotal(response.total);
       setLastGeneratedAt(response.lastGeneratedAt);
+
+      // Resume polling if generation is in progress on the server
+      if (response.isGenerating) {
+        pollForResults(response.lastGeneratedAt);
+      }
     } catch (err) {
       logger.error('Failed to load insights:', err);
       setError('Failed to load insights. Please try again.');
     } finally {
       setIsLoading(false);
     }
-  }, [filterType, filterSeverity, showDismissed]);
+  }, [filterType, filterSeverity, showDismissed, pollForResults]);
 
   useEffect(() => {
     loadInsights();
@@ -46,15 +97,13 @@ export function InsightsList() {
   const handleGenerate = async () => {
     setIsGenerating(true);
     setError(null);
+    const previousLastGeneratedAt = lastGeneratedAt;
     try {
-      const response = await aiApi.generateInsights();
-      setInsights(response.insights);
-      setTotal(response.total);
-      setLastGeneratedAt(response.lastGeneratedAt);
+      await aiApi.generateInsights();
+      await pollForResults(previousLastGeneratedAt);
     } catch (err) {
       logger.error('Failed to generate insights:', err);
       setError('Failed to generate insights. Make sure you have an AI provider configured.');
-    } finally {
       setIsGenerating(false);
     }
   };

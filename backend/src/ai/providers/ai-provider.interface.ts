@@ -26,6 +26,7 @@ export interface AiCompletionRequest {
   messages: AiMessage[];
   maxTokens?: number;
   temperature?: number;
+  responseFormat?: "text" | "json";
 }
 
 export interface AiCompletionResponse {

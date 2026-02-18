@@ -84,6 +84,7 @@ export class AiForecastService {
           messages: [{ role: "user", content: prompt }],
           maxTokens: 4096,
           temperature: 0.3,
+          responseFormat: "json",
         },
         "forecast",
       );

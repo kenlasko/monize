@@ -172,6 +172,7 @@ describe("AiInsightsService", () => {
       expect(result.insights).toEqual([]);
       expect(result.total).toBe(0);
       expect(result.lastGeneratedAt).toBeNull();
+      expect(result.isGenerating).toBe(false);
     });
 
     it("returns insights ordered by severity", async () => {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useForm, Resolver } from 'react-hook-form';
+import { useForm, useWatch, Resolver } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
 import '@/lib/zodConfig';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -127,7 +127,7 @@ export function AccountForm({ account, onSubmit, onCancel, onDirtyChange, submit
   const {
     register,
     handleSubmit,
-    watch,
+    control,
     setValue,
     getValues,
     formState: { errors, isSubmitting, isDirty },
@@ -176,15 +176,15 @@ export function AccountForm({ account, onSubmit, onCancel, onDirtyChange, submit
 
   useFormSubmitRef(submitRef, handleSubmit, onSubmit);
 
-  const watchedCurrency = watch('currencyCode');
-  const watchedIsFavourite = watch('isFavourite');
-  const watchedAccountType = watch('accountType');
-  const watchedOpeningBalance = watch('openingBalance');
-  const watchedCreditLimit = watch('creditLimit');
-  const watchedInterestRate = watch('interestRate');
-  const watchedPaymentAmount = watch('paymentAmount');
-  const watchedPaymentFrequency = watch('paymentFrequency');
-  const watchedPaymentStartDate = watch('paymentStartDate');
+  const watchedCurrency = useWatch({ control, name: 'currencyCode' });
+  const watchedIsFavourite = useWatch({ control, name: 'isFavourite' });
+  const watchedAccountType = useWatch({ control, name: 'accountType' });
+  const watchedOpeningBalance = useWatch({ control, name: 'openingBalance' });
+  const watchedCreditLimit = useWatch({ control, name: 'creditLimit' });
+  const watchedInterestRate = useWatch({ control, name: 'interestRate' });
+  const watchedPaymentAmount = useWatch({ control, name: 'paymentAmount' });
+  const watchedPaymentFrequency = useWatch({ control, name: 'paymentFrequency' });
+  const watchedPaymentStartDate = useWatch({ control, name: 'paymentStartDate' });
   const currencySymbol = getCurrencySymbol(watchedCurrency || defaultCurrency);
 
   // Show investment pair checkbox only when creating a new INVESTMENT account
@@ -195,15 +195,15 @@ export function AccountForm({ account, onSubmit, onCancel, onDirtyChange, submit
 
   // Show asset fields only for ASSET account type
   const isAssetAccount = watchedAccountType === 'ASSET';
-  const watchedDateAcquired = watch('dateAcquired');
+  const watchedDateAcquired = useWatch({ control, name: 'dateAcquired' });
 
   // Show mortgage fields only for MORTGAGE account type
   const isMortgageAccount = watchedAccountType === 'MORTGAGE';
-  const watchedIsCanadianMortgage = watch('isCanadianMortgage');
-  const watchedIsVariableRate = watch('isVariableRate');
-  const watchedTermMonths = watch('termMonths');
-  const watchedAmortizationMonths = watch('amortizationMonths');
-  const watchedMortgagePaymentFrequency = watch('mortgagePaymentFrequency');
+  const watchedIsCanadianMortgage = useWatch({ control, name: 'isCanadianMortgage' });
+  const watchedIsVariableRate = useWatch({ control, name: 'isVariableRate' });
+  const watchedTermMonths = useWatch({ control, name: 'termMonths' });
+  const watchedAmortizationMonths = useWatch({ control, name: 'amortizationMonths' });
+  const watchedMortgagePaymentFrequency = useWatch({ control, name: 'mortgagePaymentFrequency' });
 
   // Load supported currencies
   useEffect(() => {

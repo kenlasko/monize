@@ -57,10 +57,12 @@ export function AppHeader() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Close mobile menu on route change
-  useEffect(() => {
+  // Close mobile menu on route change (setState during render pattern)
+  const [prevPathname, setPrevPathname] = useState(pathname);
+  if (pathname !== prevPathname) {
+    setPrevPathname(pathname);
     setMobileMenuOpen(false);
-  }, [pathname]);
+  }
 
   const isToolsActive = toolsLinks.some((link) => pathname === link.href);
   const isAiActive = aiLinks.some((link) => pathname === link.href);

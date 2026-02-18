@@ -81,6 +81,7 @@ export function TwoFactorSetup({ onComplete, onSkip, isForced }: TwoFactorSetupP
 
       <div className="flex justify-center">
         <div className="bg-white p-4 rounded-lg">
+          {/* eslint-disable-next-line @next/next/no-img-element -- data URL not optimizable by next/image */}
           <img
             src={setupData.qrCodeDataUrl}
             alt="2FA QR Code"

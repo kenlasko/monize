@@ -16,6 +16,29 @@ import { MonthlyNetWorth } from '@/types/net-worth';
 import { parseLocalDate } from '@/lib/utils';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 
+function NetWorthTooltip({
+  active,
+  payload,
+  formatCurrency,
+}: {
+  active?: boolean;
+  payload?: Array<{ payload: { name: string; netWorth: number } }>;
+  formatCurrency: (v: number) => string;
+}) {
+  if (active && payload && payload.length) {
+    const d = payload[0].payload;
+    return (
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
+        <p className="font-medium text-gray-900 dark:text-gray-100">{d.name}</p>
+        <p className="text-sm text-blue-600 dark:text-blue-400">
+          {formatCurrency(d.netWorth)}
+        </p>
+      </div>
+    );
+  }
+  return null;
+}
+
 interface NetWorthChartProps {
   data: MonthlyNetWorth[];
   isLoading: boolean;
@@ -55,21 +78,6 @@ export function NetWorthChart({ data, isLoading }: NetWorthChartProps) {
       max: chartData[maxIdx],
     };
   }, [chartData]);
-
-  const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: Array<{ payload: { name: string; netWorth: number } }> }) => {
-    if (active && payload && payload.length) {
-      const d = payload[0].payload;
-      return (
-        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
-          <p className="font-medium text-gray-900 dark:text-gray-100">{d.name}</p>
-          <p className="text-sm text-blue-600 dark:text-blue-400">
-            {formatCurrency(d.netWorth)}
-          </p>
-        </div>
-      );
-    }
-    return null;
-  };
 
   if (isLoading) {
     return (
@@ -147,7 +155,7 @@ export function NetWorthChart({ data, isLoading }: NetWorthChartProps) {
               interval="preserveStartEnd"
               tickFormatter={(value: string) => value.split(' ')[0]}
             />
-            <Tooltip content={<CustomTooltip />} />
+            <Tooltip content={<NetWorthTooltip formatCurrency={formatCurrency} />} />
             <Area
               type="monotone"
               dataKey="netWorth"

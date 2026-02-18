@@ -29,6 +29,63 @@ interface CashFlowForecastChartProps {
   isLoading: boolean;
 }
 
+function CashFlowTooltip({
+  active,
+  payload,
+  formatCurrency,
+}: {
+  active?: boolean;
+  payload?: Array<{ payload: ForecastDataPoint }>;
+  formatCurrency: (v: number) => string;
+}) {
+  if (active && payload?.[0]) {
+    const data = payload[0].payload;
+    return (
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3 max-w-xs">
+        <p className="font-medium text-gray-900 dark:text-gray-100 mb-1">
+          {data.label}
+        </p>
+        <p
+          className={`text-lg font-semibold ${
+            data.balance >= 0
+              ? 'text-green-600 dark:text-green-400'
+              : 'text-red-600 dark:text-red-400'
+          }`}
+        >
+          {formatCurrency(data.balance)}
+        </p>
+        {data.transactions.length > 0 && (
+          <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+              Transactions:
+            </p>
+            {data.transactions.slice(0, 5).map((tx, i) => (
+              <p key={i} className="text-sm text-gray-700 dark:text-gray-300">
+                <span
+                  className={
+                    tx.amount >= 0
+                      ? 'text-green-600 dark:text-green-400'
+                      : 'text-red-600 dark:text-red-400'
+                  }
+                >
+                  {formatCurrency(tx.amount)}
+                </span>{' '}
+                {tx.name}
+              </p>
+            ))}
+            {data.transactions.length > 5 && (
+              <p className="text-xs text-gray-400 dark:text-gray-500">
+                +{data.transactions.length - 5} more
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  }
+  return null;
+}
+
 const PERIODS: ForecastPeriod[] = ['week', 'month', '90days', '6months', 'year'];
 const STORAGE_KEY_PERIOD = 'cashFlowForecast.period';
 const STORAGE_KEY_ACCOUNT = 'cashFlowForecast.accountId';
@@ -53,30 +110,18 @@ export function CashFlowForecastChart({
   isLoading,
 }: CashFlowForecastChartProps) {
   const { formatCurrencyCompact: formatCurrency, formatCurrencyAxis } = useNumberFormat();
-  const [selectedPeriod, setSelectedPeriod] = useState<ForecastPeriod>('month');
-  const [selectedAccountId, setSelectedAccountId] = useState<string>('all');
-  const [initialized, setInitialized] = useState(false);
-
-  // Load persisted values on mount
-  useEffect(() => {
-    setSelectedPeriod(getStoredPeriod());
-    setSelectedAccountId(getStoredAccountId());
-    setInitialized(true);
-  }, []);
+  const [selectedPeriod, setSelectedPeriod] = useState<ForecastPeriod>(() => getStoredPeriod());
+  const [selectedAccountId, setSelectedAccountId] = useState<string>(() => getStoredAccountId());
 
   // Persist period changes
   useEffect(() => {
-    if (initialized) {
-      localStorage.setItem(STORAGE_KEY_PERIOD, selectedPeriod);
-    }
-  }, [selectedPeriod, initialized]);
+    localStorage.setItem(STORAGE_KEY_PERIOD, selectedPeriod);
+  }, [selectedPeriod]);
 
   // Persist account changes
   useEffect(() => {
-    if (initialized) {
-      localStorage.setItem(STORAGE_KEY_ACCOUNT, selectedAccountId);
-    }
-  }, [selectedAccountId, initialized]);
+    localStorage.setItem(STORAGE_KEY_ACCOUNT, selectedAccountId);
+  }, [selectedAccountId]);
 
   const accountOptions = useMemo(() => {
     return [
@@ -100,61 +145,6 @@ export function CashFlowForecastChart({
   const totalForecastedTransactions = useMemo(() => {
     return forecastData.reduce((sum, dp) => sum + dp.transactions.length, 0);
   }, [forecastData]);
-
-  const CustomTooltip = ({
-    active,
-    payload,
-  }: {
-    active?: boolean;
-    payload?: Array<{ payload: ForecastDataPoint }>;
-  }) => {
-    if (active && payload?.[0]) {
-      const data = payload[0].payload;
-      return (
-        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3 max-w-xs">
-          <p className="font-medium text-gray-900 dark:text-gray-100 mb-1">
-            {data.label}
-          </p>
-          <p
-            className={`text-lg font-semibold ${
-              data.balance >= 0
-                ? 'text-green-600 dark:text-green-400'
-                : 'text-red-600 dark:text-red-400'
-            }`}
-          >
-            {formatCurrency(data.balance)}
-          </p>
-          {data.transactions.length > 0 && (
-            <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                Transactions:
-              </p>
-              {data.transactions.slice(0, 5).map((tx, i) => (
-                <p key={i} className="text-sm text-gray-700 dark:text-gray-300">
-                  <span
-                    className={
-                      tx.amount >= 0
-                        ? 'text-green-600 dark:text-green-400'
-                        : 'text-red-600 dark:text-red-400'
-                    }
-                  >
-                    {formatCurrency(tx.amount)}
-                  </span>{' '}
-                  {tx.name}
-                </p>
-              ))}
-              {data.transactions.length > 5 && (
-                <p className="text-xs text-gray-400 dark:text-gray-500">
-                  +{data.transactions.length - 5} more
-                </p>
-              )}
-            </div>
-          )}
-        </div>
-      );
-    }
-    return null;
-  };
 
   if (isLoading) {
     return (
@@ -234,7 +224,7 @@ export function CashFlowForecastChart({
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" className="dark:stroke-gray-700" />
               <XAxis dataKey="label" tick={{ fill: '#6b7280', fontSize: 12 }} tickLine={false} axisLine={{ stroke: '#e5e7eb' }} interval="preserveStartEnd" />
               <YAxis tick={{ fill: '#6b7280', fontSize: 12 }} tickLine={false} axisLine={{ stroke: '#e5e7eb' }} tickFormatter={formatCurrencyAxis} width={60} domain={['auto', 'auto']} />
-              <Tooltip content={<CustomTooltip />} />
+              <Tooltip content={<CashFlowTooltip formatCurrency={formatCurrency} />} />
               <ReferenceLine y={0} stroke="#ef4444" strokeDasharray="5 5" strokeOpacity={0.5} />
               <Line type="monotone" dataKey="balance" stroke="#9ca3af" strokeWidth={2} dot={false} strokeDasharray="5 5" />
             </LineChart>
@@ -269,7 +259,7 @@ export function CashFlowForecastChart({
                 width={60}
                 domain={['auto', 'auto']}
               />
-              <Tooltip content={<CustomTooltip />} />
+              <Tooltip content={<CashFlowTooltip formatCurrency={formatCurrency} />} />
               {/* Reference line at $0 */}
               <ReferenceLine
                 y={0}

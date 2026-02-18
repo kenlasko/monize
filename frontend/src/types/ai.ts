@@ -135,6 +135,7 @@ export interface InsightsListResponse {
   insights: AiInsight[];
   total: number;
   lastGeneratedAt: string | null;
+  isGenerating: boolean;
 }
 
 export const INSIGHT_TYPE_LABELS: Record<InsightType, string> = {

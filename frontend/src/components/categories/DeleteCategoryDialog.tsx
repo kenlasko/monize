@@ -23,18 +23,27 @@ export function DeleteCategoryDialog({
   onCancel,
 }: DeleteCategoryDialogProps) {
   const [transactionCount, setTransactionCount] = useState<number | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
   const [reassignTo, setReassignTo] = useState<string>('');
+
+  // Reset state during render when category changes
+  const categoryId = isOpen && category ? category.id : null;
+  const [prevCategoryId, setPrevCategoryId] = useState<string | null>(null);
+  if (categoryId !== prevCategoryId) {
+    setPrevCategoryId(categoryId);
+    if (categoryId) {
+      setTransactionCount(null);
+      setReassignTo('');
+    }
+  }
+
+  const isLoading = isOpen && categoryId !== null && transactionCount === null;
 
   useEffect(() => {
     if (isOpen && category) {
-      setIsLoading(true);
-      setReassignTo('');
       categoriesApi
         .getTransactionCount(category.id)
         .then(setTransactionCount)
-        .catch(() => setTransactionCount(0))
-        .finally(() => setIsLoading(false));
+        .catch(() => setTransactionCount(0));
     }
   }, [isOpen, category]);
 
