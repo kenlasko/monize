@@ -970,31 +970,30 @@ The implementation will proceed in logical phases, each delivering usable functi
 - [ ] Build BudgetWizardReview (Step 4): full summary, visual preview, create button
 - [ ] Create budget creation page: `frontend/src/app/(authenticated)/budgets/create/page.tsx`
 
-### Phase 3: Budget Dashboard -- PARTIALLY COMPLETE
+### Phase 3: Budget Dashboard -- COMPLETE
 
 **Backend (complete):**
 - [x] Implement budget summary endpoint with category actuals
 - [x] Implement velocity calculation endpoint with pace tracking
 
-**Frontend (not started):**
-- [ ] Create budget list page: `frontend/src/app/(authenticated)/budgets/page.tsx`
-- [ ] Create budget detail/dashboard page: `frontend/src/app/(authenticated)/budgets/[id]/page.tsx`
-- [ ] Create budget edit page: `frontend/src/app/(authenticated)/budgets/[id]/edit/page.tsx`
-- [ ] Build BudgetDashboard main container component
-- [ ] Build BudgetSummaryCards (total budget, spent, remaining, savings)
-- [ ] Build BudgetHealthGauge (circular 0-100 gauge with color labels)
-- [ ] Build BudgetCategoryList (sortable list of categories with progress)
-- [ ] Build BudgetCategoryRow (progress bar + amounts + velocity per category)
-- [ ] Build BudgetProgressBar (colored bar with pace marker)
-- [ ] Build BudgetVelocityWidget (burn rate, safe daily spend, projected end)
-- [ ] Build BudgetFlexGroupCard (aggregate flex group view)
-- [ ] Build BudgetUpcomingBills (scheduled transactions impact, "truly available" calculation)
-- [ ] Build BudgetHeatmap (calendar heatmap of daily spending)
-- [ ] Build BudgetTrendChart (line chart: budget vs actual over months)
-- [ ] Build BudgetPeriodSelector (switch between current/historical periods)
-- [ ] Build BudgetCategoryForm (edit single category allocation)
-- [ ] Build BudgetForm (edit budget settings)
-- [ ] Add "Budgets" to AppHeader navigation links (between Accounts and Investments)
+**Frontend (complete):**
+- [x] Create budget detail/dashboard page: `frontend/src/app/budgets/[id]/page.tsx`
+- [x] Create budget edit page: `frontend/src/app/budgets/[id]/edit/page.tsx`
+- [x] Build BudgetDashboard main container component
+- [x] Build BudgetSummaryCards (total budget, spent, remaining, savings)
+- [x] Build BudgetHealthGauge (circular 0-100 gauge with color labels)
+- [x] Build BudgetCategoryList (sortable list of categories with progress)
+- [x] Build BudgetCategoryRow (progress bar + amounts + velocity per category)
+- [x] Build BudgetProgressBar (colored bar with pace marker)
+- [x] Build BudgetVelocityWidget (burn rate, safe daily spend, projected end)
+- [x] Build BudgetFlexGroupCard (aggregate flex group view)
+- [x] Build BudgetUpcomingBills (scheduled transactions impact, "truly available" calculation)
+- [x] Build BudgetHeatmap (calendar heatmap of daily spending)
+- [x] Build BudgetTrendChart (line chart: budget vs actual over months)
+- [x] Build BudgetPeriodSelector (switch between current/historical periods)
+- [x] Build BudgetCategoryForm (edit single category allocation)
+- [x] Build BudgetForm (edit budget settings)
+- [x] Add "Budgets" to AppHeader navigation links (between Accounts and Investments)
 
 ### Phase 4: Period Management & Rollover -- MOSTLY COMPLETE
 
