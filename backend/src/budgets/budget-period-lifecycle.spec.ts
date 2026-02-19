@@ -1,7 +1,9 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
+import { ConfigService } from "@nestjs/config";
 import { BudgetPeriodService } from "./budget-period.service";
 import { BudgetPeriodCronService } from "./budget-period-cron.service";
+import { BudgetReportsService } from "./budget-reports.service";
 import { BudgetsService } from "./budgets.service";
 import { Budget, BudgetType, BudgetStrategy } from "./entities/budget.entity";
 import {
@@ -12,6 +14,9 @@ import { BudgetPeriod, PeriodStatus } from "./entities/budget-period.entity";
 import { BudgetPeriodCategory } from "./entities/budget-period-category.entity";
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
+import { User } from "../users/entities/user.entity";
+import { UserPreference } from "../users/entities/user-preference.entity";
+import { EmailService } from "../notifications/email.service";
 
 describe("Budget Period Lifecycle Integration", () => {
   let periodService: BudgetPeriodService;
@@ -183,6 +188,30 @@ describe("Budget Period Lifecycle Integration", () => {
         {
           provide: getRepositoryToken(Budget),
           useValue: budgetsRepository,
+        },
+        {
+          provide: getRepositoryToken(User),
+          useValue: { find: jest.fn().mockResolvedValue([]) },
+        },
+        {
+          provide: getRepositoryToken(UserPreference),
+          useValue: { findOne: jest.fn().mockResolvedValue(null) },
+        },
+        {
+          provide: BudgetReportsService,
+          useValue: { getHealthScore: jest.fn().mockResolvedValue(null) },
+        },
+        {
+          provide: EmailService,
+          useValue: {
+            isSmtpConfigured: jest.fn().mockReturnValue(false),
+            getStatus: jest.fn().mockReturnValue({ configured: false }),
+            sendEmail: jest.fn().mockResolvedValue(undefined),
+          },
+        },
+        {
+          provide: ConfigService,
+          useValue: { get: jest.fn().mockReturnValue("http://localhost:3000") },
         },
       ],
     }).compile();
