@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import { Button } from '@/components/ui/Button';
-import { formatCurrency } from '@/lib/format';
+import { formatCurrency, getCurrencySymbol } from '@/lib/format';
 import type { WizardState } from './BudgetWizard';
 import type { BudgetProfile } from '@/types/budget';
 
@@ -149,19 +149,24 @@ export function BudgetWizardCategories({
         </td>
         <td className="py-3 px-4">
           {isSelected && (
-            <input
-              type="number"
-              value={currentAmount}
-              min={0}
-              step={0.01}
-              onChange={(e) =>
-                handleAmountChange(
-                  cat.categoryId,
-                  parseFloat(e.target.value) || 0,
-                )
-              }
-              className="w-28 text-right rounded border border-gray-300 px-2 py-1 text-sm focus:ring-1 focus:ring-blue-500 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
-            />
+            <div className="relative inline-flex items-center">
+              <span className="absolute left-2 text-sm text-gray-500 dark:text-gray-400 pointer-events-none">
+                {getCurrencySymbol(currencyCode)}
+              </span>
+              <input
+                type="number"
+                value={currentAmount}
+                min={0}
+                step={0.01}
+                onChange={(e) =>
+                  handleAmountChange(
+                    cat.categoryId,
+                    parseFloat(e.target.value) || 0,
+                  )
+                }
+                className="w-32 text-right rounded border border-gray-300 pl-6 pr-4 py-1 text-sm focus:ring-1 focus:ring-blue-500 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+              />
+            </div>
           )}
         </td>
       </tr>
@@ -204,20 +209,17 @@ export function BudgetWizardCategories({
       {/* Income categories */}
       {incomeCategories.length > 0 && (
         <div>
-          <h4 className="text-sm font-medium text-green-700 dark:text-green-400 mb-2 uppercase tracking-wide">
-            Income
-          </h4>
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
             <table className="w-full">
               <thead>
-                <tr className="bg-gray-50 dark:bg-gray-750 border-b border-gray-200 dark:border-gray-700">
-                  <th className="text-left py-2 px-4 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                    Category
+                <tr className="bg-green-50 dark:bg-green-900/20 border-b border-green-200 dark:border-green-800">
+                  <th className="text-left py-2 px-4 text-xs font-medium text-green-700 dark:text-green-400 uppercase">
+                    Income
                   </th>
-                  <th className="text-right py-2 px-4 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                  <th className="text-right py-2 px-4 text-xs font-medium text-green-700 dark:text-green-400 uppercase">
                     Median
                   </th>
-                  <th className="py-2 px-4 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase text-right">
+                  <th className="py-2 px-4 text-xs font-medium text-green-700 dark:text-green-400 uppercase text-right">
                     Amount
                   </th>
                 </tr>
@@ -232,20 +234,17 @@ export function BudgetWizardCategories({
 
       {/* Expense categories */}
       <div>
-        <h4 className="text-sm font-medium text-red-700 dark:text-red-400 mb-2 uppercase tracking-wide">
-          Expenses
-        </h4>
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
           <table className="w-full">
             <thead>
-              <tr className="bg-gray-50 dark:bg-gray-750 border-b border-gray-200 dark:border-gray-700">
-                <th className="text-left py-2 px-4 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                  Category
+              <tr className="bg-red-50 dark:bg-red-900/20 border-b border-red-200 dark:border-red-800">
+                <th className="text-left py-2 px-4 text-xs font-medium text-red-700 dark:text-red-400 uppercase">
+                  Expenses
                 </th>
-                <th className="text-right py-2 px-4 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                <th className="text-right py-2 px-4 text-xs font-medium text-red-700 dark:text-red-400 uppercase">
                   Median
                 </th>
-                <th className="py-2 px-4 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase text-right">
+                <th className="py-2 px-4 text-xs font-medium text-red-700 dark:text-red-400 uppercase text-right">
                   Amount
                 </th>
               </tr>

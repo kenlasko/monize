@@ -18,6 +18,13 @@ const BUDGET_TYPE_OPTIONS = [
   { value: 'PAY_PERIOD', label: 'Pay Period' },
 ];
 
+const STRATEGY_LABELS: Record<string, string> = {
+  FIXED: 'Fixed',
+  ROLLOVER: 'Rollover',
+  ZERO_BASED: 'Zero-Based',
+  FIFTY_THIRTY_TWENTY: '50/30/20',
+};
+
 export function BudgetWizardStrategy({
   state,
   updateState,
@@ -71,7 +78,7 @@ export function BudgetWizardStrategy({
         {/* Strategy summary */}
         <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 mt-4">
           <div className="text-sm font-medium text-blue-700 dark:text-blue-300">
-            Strategy: {state.strategy}
+            Strategy: {STRATEGY_LABELS[state.strategy] ?? state.strategy}
           </div>
           <div className="text-sm text-blue-600 dark:text-blue-400 mt-1">
             {state.strategy === 'FIXED' &&

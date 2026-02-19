@@ -17,6 +17,10 @@ import { UpdateBudgetDto } from "./dto/update-budget.dto";
 import { CreateBudgetCategoryDto } from "./dto/create-budget-category.dto";
 import { UpdateBudgetCategoryDto } from "./dto/update-budget-category.dto";
 import { BulkCategoryAmountDto } from "./dto/bulk-update-budget-categories.dto";
+import {
+  getCurrentMonthPeriodDates,
+  PeriodDateRange,
+} from "./budget-date.utils";
 
 @Injectable()
 export class BudgetsService {
@@ -403,20 +407,158 @@ export class BudgetsService {
     return { updated: result.affected || 0 };
   }
 
-  private getCurrentPeriodDates(_budget: Budget): {
-    periodStart: string;
-    periodEnd: string;
-  } {
+  async getDashboardSummary(userId: string): Promise<{
+    budgetId: string;
+    budgetName: string;
+    totalBudgeted: number;
+    totalSpent: number;
+    remaining: number;
+    percentUsed: number;
+    safeDailySpend: number;
+    daysRemaining: number;
+    topCategories: Array<{
+      categoryName: string;
+      budgeted: number;
+      spent: number;
+      remaining: number;
+      percentUsed: number;
+    }>;
+  } | null> {
+    const budgets = await this.budgetsRepository.find({
+      where: { userId, isActive: true },
+      relations: ["categories", "categories.category"],
+      order: { createdAt: "DESC" },
+    });
+
+    if (budgets.length === 0) {
+      return null;
+    }
+
+    const budget = budgets[0];
+    const { periodStart, periodEnd } = this.getCurrentPeriodDates(budget);
+
+    const categoryBreakdown = await this.computeCategoryActuals(
+      userId,
+      budget,
+      periodStart,
+      periodEnd,
+    );
+
+    const expenseCategories = categoryBreakdown.filter((c) => !c.isIncome);
+
+    const totalBudgeted = expenseCategories.reduce(
+      (sum, c) => sum + c.budgeted,
+      0,
+    );
+    const totalSpent = expenseCategories.reduce((sum, c) => sum + c.spent, 0);
+    const remaining = totalBudgeted - totalSpent;
+    const percentUsed =
+      totalBudgeted > 0
+        ? Math.round((totalSpent / totalBudgeted) * 10000) / 100
+        : 0;
+
     const today = new Date();
-    const year = today.getFullYear();
-    const month = today.getMonth();
+    const startDate = new Date(periodStart);
+    const endDate = new Date(periodEnd);
+    const totalDays = Math.ceil(
+      (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
+    );
+    const daysElapsed = Math.max(
+      1,
+      Math.ceil(
+        (today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
+      ),
+    );
+    const daysRemaining = Math.max(0, totalDays - daysElapsed);
+    const safeDailySpend =
+      daysRemaining > 0 ? Math.max(0, remaining / daysRemaining) : 0;
 
-    const periodStart = `${year}-${String(month + 1).padStart(2, "0")}-01`;
+    const topCategories = [...expenseCategories]
+      .sort((a, b) => b.percentUsed - a.percentUsed)
+      .slice(0, 3)
+      .map((c) => ({
+        categoryName: c.categoryName,
+        budgeted: c.budgeted,
+        spent: c.spent,
+        remaining: c.remaining,
+        percentUsed: c.percentUsed,
+      }));
 
-    const lastDay = new Date(year, month + 1, 0).getDate();
-    const periodEnd = `${year}-${String(month + 1).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+    return {
+      budgetId: budget.id,
+      budgetName: budget.name,
+      totalBudgeted,
+      totalSpent,
+      remaining,
+      percentUsed,
+      safeDailySpend: Math.round(safeDailySpend * 100) / 100,
+      daysRemaining,
+      topCategories,
+    };
+  }
 
-    return { periodStart, periodEnd };
+  async getCategoryBudgetStatus(
+    userId: string,
+    categoryIds: string[],
+  ): Promise<
+    Map<
+      string,
+      {
+        budgeted: number;
+        spent: number;
+        remaining: number;
+        percentUsed: number;
+      }
+    >
+  > {
+    const budgets = await this.budgetsRepository.find({
+      where: { userId, isActive: true },
+      relations: ["categories", "categories.category"],
+      order: { createdAt: "DESC" },
+    });
+
+    const result = new Map<
+      string,
+      {
+        budgeted: number;
+        spent: number;
+        remaining: number;
+        percentUsed: number;
+      }
+    >();
+
+    if (budgets.length === 0 || categoryIds.length === 0) return result;
+
+    const budget = budgets[0];
+    const { periodStart, periodEnd } = this.getCurrentPeriodDates(budget);
+
+    const categoryBreakdown = await this.computeCategoryActuals(
+      userId,
+      budget,
+      periodStart,
+      periodEnd,
+    );
+
+    for (const breakdown of categoryBreakdown) {
+      if (
+        breakdown.categoryId &&
+        categoryIds.includes(breakdown.categoryId) &&
+        !breakdown.isIncome
+      ) {
+        result.set(breakdown.categoryId, {
+          budgeted: breakdown.budgeted,
+          spent: breakdown.spent,
+          remaining: breakdown.remaining,
+          percentUsed: breakdown.percentUsed,
+        });
+      }
+    }
+
+    return result;
+  }
+
+  private getCurrentPeriodDates(_budget: Budget): PeriodDateRange {
+    return getCurrentMonthPeriodDates();
   }
 
   private async computeCategoryActuals(

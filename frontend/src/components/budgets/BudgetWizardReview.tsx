@@ -8,6 +8,19 @@ import { formatCurrency } from '@/lib/format';
 import { getErrorMessage } from '@/lib/errors';
 import type { WizardState } from './BudgetWizard';
 
+const STRATEGY_LABELS: Record<string, string> = {
+  FIXED: 'Fixed',
+  ROLLOVER: 'Rollover',
+  ZERO_BASED: 'Zero-Based',
+  FIFTY_THIRTY_TWENTY: '50/30/20',
+};
+
+const BUDGET_TYPE_LABELS: Record<string, string> = {
+  MONTHLY: 'Monthly',
+  ANNUAL: 'Annual',
+  PAY_PERIOD: 'Pay Period',
+};
+
 interface BudgetWizardReviewProps {
   state: WizardState;
   updateState: (updates: Partial<WizardState>) => void;
@@ -78,7 +91,7 @@ export function BudgetWizardReview({
           <div>
             <dt className="text-sm text-gray-500 dark:text-gray-400">Type</dt>
             <dd className="text-sm font-medium text-gray-900 dark:text-gray-100">
-              {state.budgetType}
+              {BUDGET_TYPE_LABELS[state.budgetType] ?? state.budgetType}
             </dd>
           </div>
           <div>
@@ -86,7 +99,7 @@ export function BudgetWizardReview({
               Strategy
             </dt>
             <dd className="text-sm font-medium text-gray-900 dark:text-gray-100">
-              {state.strategy}
+              {STRATEGY_LABELS[state.strategy] ?? state.strategy}
             </dd>
           </div>
           <div>

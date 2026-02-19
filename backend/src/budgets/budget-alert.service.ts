@@ -18,6 +18,10 @@ import {
   budgetAlertImmediateTemplate,
   budgetWeeklyDigestTemplate,
 } from "../notifications/email-templates";
+import {
+  getCurrentMonthPeriodDates,
+  PeriodDateRange,
+} from "./budget-date.utils";
 
 interface CategoryActual {
   budgetCategoryId: string;
@@ -623,20 +627,8 @@ export class BudgetAlertService {
     return true;
   }
 
-  getCurrentPeriodDates(): {
-    periodStart: string;
-    periodEnd: string;
-  } {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = today.getMonth();
-
-    const periodStart = `${year}-${String(month + 1).padStart(2, "0")}-01`;
-
-    const lastDay = new Date(year, month + 1, 0).getDate();
-    const periodEnd = `${year}-${String(month + 1).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
-
-    return { periodStart, periodEnd };
+  getCurrentPeriodDates(): PeriodDateRange {
+    return getCurrentMonthPeriodDates();
   }
 
   private async computeCategoryActuals(

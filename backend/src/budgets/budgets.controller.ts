@@ -21,6 +21,7 @@ import {
   ApiQuery,
 } from "@nestjs/swagger";
 import { AuthGuard } from "@nestjs/passport";
+import { Throttle } from "@nestjs/throttler";
 import { BudgetsService } from "./budgets.service";
 import { BudgetPeriodService } from "./budget-period.service";
 import { BudgetGeneratorService } from "./budget-generator.service";
@@ -33,6 +34,7 @@ import { BulkUpdateBudgetCategoriesDto } from "./dto/bulk-update-budget-categori
 import { GenerateBudgetDto } from "./dto/generate-budget.dto";
 import { ApplyGeneratedBudgetDto } from "./dto/apply-generated-budget.dto";
 import { BudgetReportQueryDto } from "./dto/budget-report-query.dto";
+import { CategoryBudgetStatusDto } from "./dto/category-budget-status.dto";
 
 @ApiTags("Budgets")
 @Controller("budgets")
@@ -63,7 +65,41 @@ export class BudgetsController {
     return this.budgetsService.findAll(req.user.id);
   }
 
+  @Get("dashboard-summary")
+  @ApiOperation({
+    summary: "Get budget summary for dashboard widget",
+  })
+  @ApiResponse({
+    status: 200,
+    description:
+      "Dashboard budget summary retrieved (null if no active budget)",
+  })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  getDashboardSummary(@Request() req) {
+    return this.budgetsService.getDashboardSummary(req.user.id);
+  }
+
+  @Post("category-budget-status")
+  @ApiOperation({
+    summary:
+      "Get budget status for specific categories (for transaction list context)",
+  })
+  @ApiResponse({ status: 200, description: "Category budget status retrieved" })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  async getCategoryBudgetStatus(
+    @Request() req,
+    @Body() dto: CategoryBudgetStatusDto,
+  ) {
+    const statusMap = await this.budgetsService.getCategoryBudgetStatus(
+      req.user.id,
+      dto.categoryIds,
+    );
+
+    return Object.fromEntries(statusMap);
+  }
+
   @Post("generate")
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
   @ApiOperation({
     summary: "Analyze spending and suggest budget amounts",
   })
@@ -78,6 +114,7 @@ export class BudgetsController {
   }
 
   @Post("generate/apply")
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
   @ApiOperation({
     summary: "Create a budget from generated suggestions",
   })

@@ -221,6 +221,139 @@ export function budgetWeeklyDigestTemplate(
   `;
 }
 
+interface MonthlySummaryCategoryData {
+  categoryName: string;
+  budgeted: number;
+  actual: number;
+  percentUsed: number;
+}
+
+interface MonthlySummaryData {
+  budgetName: string;
+  periodLabel: string;
+  totalBudgeted: number;
+  totalSpent: number;
+  totalIncome: number;
+  remaining: number;
+  percentUsed: number;
+  healthScore: number | null;
+  healthLabel: string | null;
+  overBudgetCategories: MonthlySummaryCategoryData[];
+  topCategories: MonthlySummaryCategoryData[];
+}
+
+function healthScoreColor(score: number): string {
+  if (score >= 80) return "#059669";
+  if (score >= 60) return "#d97706";
+  return "#dc2626";
+}
+
+export function budgetMonthlySummaryTemplate(
+  firstName: string,
+  summaries: MonthlySummaryData[],
+  appUrl: string,
+): string {
+  const safeName = escapeHtml(firstName || "there");
+
+  const budgetSections = summaries
+    .map((s) => {
+      const percentColor =
+        s.percentUsed > 100
+          ? "#dc2626"
+          : s.percentUsed > 80
+            ? "#d97706"
+            : "#059669";
+
+      const overBudgetRows =
+        s.overBudgetCategories.length > 0
+          ? `
+          <h4 style="color: #dc2626; font-size: 14px; margin: 12px 0 8px 0;">Over Budget</h4>
+          <table style="width: 100%; border-collapse: collapse; margin-bottom: 12px;">
+            ${s.overBudgetCategories
+              .map(
+                (c) =>
+                  `<tr>
+                    <td style="padding: 4px 8px; color: #374151; font-size: 14px;">${escapeHtml(c.categoryName)}</td>
+                    <td style="padding: 4px 8px; text-align: right; color: #dc2626; font-size: 14px; font-weight: 600;">${c.percentUsed.toFixed(0)}%</td>
+                    <td style="padding: 4px 8px; text-align: right; color: #6b7280; font-size: 14px;">$${c.actual.toFixed(2)} / $${c.budgeted.toFixed(2)}</td>
+                  </tr>`,
+              )
+              .join("")}
+          </table>`
+          : "";
+
+      const topCategoryRows = s.topCategories
+        .map(
+          (c) =>
+            `<tr>
+              <td style="padding: 4px 8px; color: #374151; font-size: 14px;">${escapeHtml(c.categoryName)}</td>
+              <td style="padding: 4px 8px; text-align: right; font-size: 14px;">
+                <span style="color: ${c.percentUsed > 100 ? "#dc2626" : c.percentUsed > 80 ? "#d97706" : "#059669"}; font-weight: 600;">${c.percentUsed.toFixed(0)}%</span>
+              </td>
+              <td style="padding: 4px 8px; text-align: right; color: #6b7280; font-size: 14px;">$${c.actual.toFixed(2)} / $${c.budgeted.toFixed(2)}</td>
+            </tr>`,
+        )
+        .join("");
+
+      const healthSection =
+        s.healthScore !== null
+          ? `<p style="margin: 8px 0; color: #374151; font-size: 14px;">
+              Health Score: <span style="color: ${healthScoreColor(s.healthScore)}; font-weight: 700;">${s.healthScore}/100</span>
+              <span style="color: #6b7280;"> (${escapeHtml(s.healthLabel || "")})</span>
+            </p>`
+          : "";
+
+      return `
+        <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin: 16px 0;">
+          <h3 style="color: #1f2937; font-size: 16px; margin: 0 0 12px 0;">${escapeHtml(s.budgetName)} - ${escapeHtml(s.periodLabel)}</h3>
+
+          <div style="display: flex; gap: 16px; margin-bottom: 12px;">
+            <div>
+              <span style="color: #6b7280; font-size: 12px;">Budgeted</span><br/>
+              <span style="color: #374151; font-weight: 600;">$${s.totalBudgeted.toFixed(2)}</span>
+            </div>
+            <div>
+              <span style="color: #6b7280; font-size: 12px;">Spent</span><br/>
+              <span style="color: ${percentColor}; font-weight: 600;">$${s.totalSpent.toFixed(2)}</span>
+            </div>
+            <div>
+              <span style="color: #6b7280; font-size: 12px;">Remaining</span><br/>
+              <span style="color: ${s.remaining >= 0 ? "#059669" : "#dc2626"}; font-weight: 600;">$${s.remaining.toFixed(2)}</span>
+            </div>
+          </div>
+
+          <div style="background: #e5e7eb; border-radius: 4px; height: 8px; margin-bottom: 8px;">
+            <div style="background: ${percentColor}; border-radius: 4px; height: 8px; width: ${Math.min(s.percentUsed, 100)}%;"></div>
+          </div>
+          <p style="margin: 0 0 8px 0; color: ${percentColor}; font-weight: 600; font-size: 14px;">${s.percentUsed.toFixed(1)}% used</p>
+
+          ${healthSection}
+          ${overBudgetRows}
+
+          <h4 style="color: #374151; font-size: 14px; margin: 12px 0 8px 0;">Top Categories</h4>
+          <table style="width: 100%; border-collapse: collapse;">
+            ${topCategoryRows}
+          </table>
+        </div>`;
+    })
+    .join("");
+
+  return `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <h2 style="color: #1f2937;">Monthly Budget Summary</h2>
+      <p style="color: #374151;">Hi ${safeName},</p>
+      <p style="color: #374151;">Here is your monthly budget summary for the period that just closed:</p>
+
+      ${budgetSections}
+
+      <p style="margin-top: 20px;">
+        <a href="${appUrl}/budgets" style="display: inline-block; padding: 10px 20px; background: #2563eb; color: #ffffff; border-radius: 6px; text-decoration: none; font-weight: 500;">View Budget Dashboard</a>
+      </p>
+      <p style="color: #6b7280; font-size: 14px; margin-top: 24px;">-- Monize</p>
+    </div>
+  `;
+}
+
 export function passwordResetTemplate(
   firstName: string,
   resetUrl: string,

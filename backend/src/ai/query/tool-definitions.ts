@@ -164,4 +164,24 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
       required: ["period1Start", "period1End", "period2Start", "period2End"],
     },
   },
+  {
+    name: "get_budget_status",
+    description:
+      "Get budget status for a specific period. Returns total budgeted vs actual spending, per-category breakdowns, spending velocity, safe daily spend, and health score. Use for questions like 'how am I doing on my budget?', 'which categories am I overspending in?', or 'how much can I still spend this month?'.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        period: {
+          type: "string",
+          description:
+            "Which period to check: 'CURRENT' for the current month, 'PREVIOUS' for last month, or a specific month in YYYY-MM format. Default: CURRENT.",
+        },
+        budgetName: {
+          type: "string",
+          description:
+            "Optional: filter to a specific budget by name. If omitted, uses the first active budget.",
+        },
+      },
+    },
+  },
 ];

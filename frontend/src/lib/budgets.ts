@@ -11,6 +11,8 @@ import {
   HealthScoreResult,
   SeasonalPattern,
   FlexGroupStatus,
+  DashboardBudgetSummary,
+  CategoryBudgetStatus,
   CreateBudgetData,
   UpdateBudgetData,
   CreateBudgetCategoryData,
@@ -227,6 +229,29 @@ export const budgetsApi = {
   ): Promise<FlexGroupStatus[]> => {
     const response = await apiClient.get<FlexGroupStatus[]>(
       `/budgets/${budgetId}/reports/flex-groups`,
+    );
+    return response.data;
+  },
+
+  // Dashboard
+  getDashboardSummary: async (): Promise<DashboardBudgetSummary | null> => {
+    const cached = getCached<DashboardBudgetSummary | null>('budgets:dashboard');
+    if (cached !== undefined) return cached;
+    const response = await apiClient.get<DashboardBudgetSummary | null>(
+      '/budgets/dashboard-summary',
+    );
+    setCache('budgets:dashboard', response.data);
+    return response.data;
+  },
+
+  // Transaction context
+  getCategoryBudgetStatus: async (
+    categoryIds: string[],
+  ): Promise<Record<string, CategoryBudgetStatus>> => {
+    if (categoryIds.length === 0) return {};
+    const response = await apiClient.post<Record<string, CategoryBudgetStatus>>(
+      '/budgets/category-budget-status',
+      { categoryIds },
     );
     return response.data;
   },
