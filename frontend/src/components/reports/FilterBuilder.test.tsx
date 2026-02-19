@@ -10,6 +10,23 @@ vi.mock('@/lib/categoryUtils', () => ({
   ],
 }));
 
+// Mock Combobox as a native select so existing tests work unchanged
+vi.mock('@/components/ui/Combobox', () => ({
+  Combobox: ({ options, value, onChange, placeholder }: any) => (
+    <select
+      value={value}
+      onChange={(e: any) => onChange(e.target.value)}
+    >
+      <option value="">{placeholder}</option>
+      {options.map((opt: any) => (
+        <option key={opt.value} value={opt.value}>
+          {opt.label}
+        </option>
+      ))}
+    </select>
+  ),
+}));
+
 const mockAccounts = [
   { id: 'acc-1', name: 'Chequing' },
   { id: 'acc-2', name: 'Savings' },

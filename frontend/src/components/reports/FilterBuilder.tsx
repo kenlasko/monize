@@ -5,6 +5,7 @@ import { Account } from '@/types/account';
 import { Category } from '@/types/category';
 import { Payee } from '@/types/payee';
 import { getCategorySelectOptions } from '@/lib/categoryUtils';
+import { Combobox } from '@/components/ui/Combobox';
 
 interface FilterBuilderProps {
   value: FilterGroup[];
@@ -22,12 +23,16 @@ const FIELD_OPTIONS: { value: FilterField; label: string }[] = [
 ];
 
 export function FilterBuilder({ value, onChange, accounts, categories, payees }: FilterBuilderProps) {
-  const accountOptions = accounts.map((a) => ({ value: a.id, label: a.name }));
+  const accountOptions = [...accounts]
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map((a) => ({ value: a.id, label: a.name }));
   const categoryOptions = getCategorySelectOptions(categories, {
     includeUncategorized: true,
     includeTransfers: true,
   });
-  const payeeOptions = payees.map((p) => ({ value: p.id, label: p.name }));
+  const payeeOptions = [...payees]
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map((p) => ({ value: p.id, label: p.name }));
 
   const getValueOptions = (field: FilterField) => {
     switch (field) {
@@ -175,18 +180,12 @@ export function FilterBuilder({ value, onChange, accounts, categories, payees }:
                         className="min-w-0 rounded-md border border-gray-300 shadow-sm px-2 py-1.5 text-sm dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
                       />
                     ) : (
-                      <select
+                      <Combobox
+                        options={getValueOptions(condition.field)}
                         value={condition.value}
-                        onChange={(e) => updateCondition(gi, ci, { value: e.target.value })}
-                        className="min-w-0 rounded-md border border-gray-300 shadow-sm px-2 py-1.5 text-sm dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-                      >
-                        <option value="">Select {FIELD_OPTIONS.find((o) => o.value === condition.field)?.label}...</option>
-                        {getValueOptions(condition.field).map((opt) => (
-                          <option key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </option>
-                        ))}
-                      </select>
+                        onChange={(val) => updateCondition(gi, ci, { value: val })}
+                        placeholder={`Select ${FIELD_OPTIONS.find((o) => o.value === condition.field)?.label}...`}
+                      />
                     )}
 
                     <button
