@@ -138,16 +138,12 @@ describe("FINANCIAL_TOOLS", () => {
 
   describe("get_budget_status", () => {
     it("has no required fields", () => {
-      const tool = FINANCIAL_TOOLS.find(
-        (t) => t.name === "get_budget_status",
-      )!;
+      const tool = FINANCIAL_TOOLS.find((t) => t.name === "get_budget_status")!;
       expect(tool.inputSchema.required).toBeUndefined();
     });
 
     it("supports period and budgetName parameters", () => {
-      const tool = FINANCIAL_TOOLS.find(
-        (t) => t.name === "get_budget_status",
-      )!;
+      const tool = FINANCIAL_TOOLS.find((t) => t.name === "get_budget_status")!;
       const props = tool.inputSchema.properties as Record<
         string,
         Record<string, unknown>

@@ -155,10 +155,7 @@ export class BudgetGeneratorService {
       0,
     );
 
-    const totalTransfers = transfers.reduce(
-      (sum, t) => sum + t.suggested,
-      0,
-    );
+    const totalTransfers = transfers.reduce((sum, t) => sum + t.suggested, 0);
 
     return {
       categories: allCategories,
@@ -219,7 +216,11 @@ export class BudgetGeneratorService {
 
     return this.budgetsRepository.findOne({
       where: { id: savedBudget.id },
-      relations: ["categories", "categories.category", "categories.transferAccount"],
+      relations: [
+        "categories",
+        "categories.category",
+        "categories.transferAccount",
+      ],
     }) as Promise<Budget>;
   }
 

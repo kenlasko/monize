@@ -27,7 +27,9 @@ import {
 } from "../entities/budget-category.entity";
 
 export class ApplyBudgetCategoryDto {
-  @ApiPropertyOptional({ description: "Category ID (for regular budget lines)" })
+  @ApiPropertyOptional({
+    description: "Category ID (for regular budget lines)",
+  })
   @IsOptional()
   @IsUUID()
   categoryId?: string;

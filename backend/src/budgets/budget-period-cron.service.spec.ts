@@ -238,7 +238,11 @@ describe("BudgetPeriodCronService", () => {
 
       expect(budgetsRepository.find).toHaveBeenCalledWith({
         where: { isActive: true },
-        relations: ["categories", "categories.category", "categories.transferAccount"],
+        relations: [
+          "categories",
+          "categories.category",
+          "categories.transferAccount",
+        ],
       });
       expect(periodsRepository.findOne).not.toHaveBeenCalled();
       expect(budgetPeriodService.closePeriod).not.toHaveBeenCalled();

@@ -8,10 +8,7 @@ import {
   RolloverType,
   CategoryGroup,
 } from "./entities/budget-category.entity";
-import {
-  BudgetPeriod,
-  PeriodStatus,
-} from "./entities/budget-period.entity";
+import { BudgetPeriod, PeriodStatus } from "./entities/budget-period.entity";
 import { BudgetPeriodCategory } from "./entities/budget-period-category.entity";
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
@@ -326,10 +323,8 @@ describe("BudgetReportsService", () => {
         getRawOne: jest.fn().mockResolvedValue({ total: "50" }),
       });
 
-      transactionsRepository.createQueryBuilder
-        .mockReturnValueOnce(directQb);
-      splitsRepository.createQueryBuilder
-        .mockReturnValueOnce(splitQb);
+      transactionsRepository.createQueryBuilder.mockReturnValueOnce(directQb);
+      splitsRepository.createQueryBuilder.mockReturnValueOnce(splitQb);
 
       const result = await service.getTrend("user-1", "budget-1", 6);
 
@@ -413,11 +408,7 @@ describe("BudgetReportsService", () => {
 
       periodsRepository.find.mockResolvedValueOnce(periods);
 
-      const result = await service.getCategoryTrend(
-        "user-1",
-        "budget-1",
-        6,
-      );
+      const result = await service.getCategoryTrend("user-1", "budget-1", 6);
 
       expect(result).toHaveLength(1);
       expect(result[0].categoryId).toBe("cat-1");
@@ -463,12 +454,9 @@ describe("BudgetReportsService", () => {
 
       periodsRepository.find.mockResolvedValueOnce(periods);
 
-      const result = await service.getCategoryTrend(
-        "user-1",
-        "budget-1",
-        6,
-        ["cat-1"],
-      );
+      const result = await service.getCategoryTrend("user-1", "budget-1", 6, [
+        "cat-1",
+      ]);
 
       expect(result).toHaveLength(1);
       expect(result[0].categoryId).toBe("cat-1");
@@ -503,11 +491,7 @@ describe("BudgetReportsService", () => {
 
       periodsRepository.find.mockResolvedValueOnce(periods);
 
-      const result = await service.getCategoryTrend(
-        "user-1",
-        "budget-1",
-        6,
-      );
+      const result = await service.getCategoryTrend("user-1", "budget-1", 6);
 
       expect(result).toHaveLength(0);
     });
@@ -545,11 +529,7 @@ describe("BudgetReportsService", () => {
       transactionsRepository.createQueryBuilder.mockReturnValueOnce(directQb);
       splitsRepository.createQueryBuilder.mockReturnValueOnce(splitQb);
 
-      const result = await service.getCategoryTrend(
-        "user-1",
-        "budget-1",
-        6,
-      );
+      const result = await service.getCategoryTrend("user-1", "budget-1", 6);
 
       expect(result).toHaveLength(1);
       expect(result[0].data[0].actual).toBe(325);
@@ -578,11 +558,7 @@ describe("BudgetReportsService", () => {
 
       periodsRepository.find.mockResolvedValueOnce(periods);
 
-      const result = await service.getCategoryTrend(
-        "user-1",
-        "budget-1",
-        6,
-      );
+      const result = await service.getCategoryTrend("user-1", "budget-1", 6);
 
       expect(result).toHaveLength(0);
     });
@@ -1079,9 +1055,7 @@ describe("BudgetReportsService", () => {
     });
 
     it("should propagate ForbiddenException from budgetsService", async () => {
-      budgetsService.findOne.mockRejectedValueOnce(
-        new Error("Forbidden"),
-      );
+      budgetsService.findOne.mockRejectedValueOnce(new Error("Forbidden"));
 
       await expect(
         service.getHealthScore("wrong-user", "budget-1"),

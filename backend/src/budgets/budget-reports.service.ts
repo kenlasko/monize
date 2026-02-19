@@ -189,8 +189,13 @@ export class BudgetReportsService {
         "periodCategories",
         "periodCategories.budgetCategory",
         "periodCategories.category",
+        "periodCategories.category.parent",
       ],
     });
+
+    if (periods.length === 0) {
+      return this.computeLiveCategoryTrend(userId, budget, months, categoryIds);
+    }
 
     // Build a map of category series
     const seriesMap = new Map<string, CategoryTrendSeries>();
@@ -215,7 +220,12 @@ export class BudgetReportsService {
         // Skip income categories
         if (pc.budgetCategory?.isIncome) continue;
 
-        const categoryName = pc.category?.name || "Uncategorized";
+        const cat = pc.category;
+        const categoryName = cat
+          ? cat.parent
+            ? `${cat.parent.name} > ${cat.name}`
+            : cat.name
+          : "Uncategorized";
 
         if (!seriesMap.has(catId)) {
           seriesMap.set(catId, {
@@ -420,10 +430,13 @@ export class BudgetReportsService {
     const categoryNameMap = new Map<string, string>();
     for (const bc of categories) {
       if (bc.categoryId) {
-        categoryNameMap.set(
-          bc.categoryId,
-          bc.category?.name || "Uncategorized",
-        );
+        const cat = bc.category;
+        const name = cat
+          ? cat.parent
+            ? `${cat.parent.name} > ${cat.name}`
+            : cat.name
+          : "Uncategorized";
+        categoryNameMap.set(bc.categoryId, name);
       }
     }
 
@@ -783,6 +796,82 @@ export class BudgetReportsService {
       parseFloat(directResult?.total || "0") +
       parseFloat(splitResult?.total || "0")
     );
+  }
+
+  private async computeLiveCategoryTrend(
+    userId: string,
+    budget: Budget,
+    months: number,
+    categoryIds?: string[],
+  ): Promise<CategoryTrendSeries[]> {
+    const expenseCategories = (budget.categories || []).filter(
+      (bc) => !bc.isIncome && !bc.isTransfer && bc.categoryId,
+    );
+
+    const filtered =
+      categoryIds && categoryIds.length > 0
+        ? expenseCategories.filter((bc) =>
+            categoryIds.includes(bc.categoryId as string),
+          )
+        : expenseCategories;
+
+    if (filtered.length === 0) return [];
+
+    const today = new Date();
+    const seriesMap = new Map<string, CategoryTrendSeries>();
+
+    // Initialize series for each category
+    for (const bc of filtered) {
+      const cat = bc.category;
+      const categoryName = cat
+        ? cat.parent
+          ? `${cat.parent.name} > ${cat.name}`
+          : cat.name
+        : "Uncategorized";
+
+      seriesMap.set(bc.categoryId as string, {
+        categoryId: bc.categoryId as string,
+        categoryName,
+        data: [],
+      });
+    }
+
+    // Compute per-category actuals for each month
+    for (let i = months - 1; i >= 0; i--) {
+      const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      const year = d.getFullYear();
+      const month = d.getMonth();
+
+      const periodStart = `${year}-${String(month + 1).padStart(2, "0")}-01`;
+      const lastDay = new Date(year, month + 1, 0).getDate();
+      const periodEnd = `${year}-${String(month + 1).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+      const monthLabel = `${MONTH_NAMES[month].substring(0, 3)} ${year}`;
+
+      for (const bc of filtered) {
+        const catId = bc.categoryId as string;
+        const budgeted = Number(bc.amount) || 0;
+        const actual = await this.computeCategoryActual(
+          userId,
+          catId,
+          periodStart,
+          periodEnd,
+        );
+
+        const variance = actual - budgeted;
+        const percentUsed =
+          budgeted > 0 ? this.round((actual / budgeted) * 100) : 0;
+
+        seriesMap.get(catId)!.data.push({
+          month: monthLabel,
+          budgeted: this.round(budgeted),
+          actual: this.round(actual),
+          variance: this.round(variance),
+          percentUsed,
+        });
+      }
+    }
+
+    return Array.from(seriesMap.values());
   }
 
   private async computeLiveTrendFromTransactions(

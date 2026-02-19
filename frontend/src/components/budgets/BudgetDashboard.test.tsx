@@ -22,8 +22,12 @@ vi.mock('./BudgetVelocityWidget', () => ({
   BudgetVelocityWidget: () => <div data-testid="velocity-widget" />,
 }));
 
+let capturedCategoryListProps: any = {};
 vi.mock('./BudgetCategoryList', () => ({
-  BudgetCategoryList: () => <div data-testid="category-list" />,
+  BudgetCategoryList: (props: any) => {
+    capturedCategoryListProps = props;
+    return <div data-testid="category-list" />;
+  },
 }));
 
 vi.mock('./BudgetFlexGroupCard', () => ({
@@ -101,6 +105,7 @@ describe('BudgetDashboard', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-02-15T12:00:00Z'));
+    capturedCategoryListProps = {};
   });
 
   afterEach(() => {
@@ -160,5 +165,40 @@ describe('BudgetDashboard', () => {
     );
 
     expect(screen.getByTestId('health-gauge')).toHaveTextContent('92');
+  });
+
+  it('passes onCategoryClick to BudgetCategoryList', () => {
+    const mockOnCategoryClick = vi.fn();
+
+    render(
+      <BudgetDashboard
+        summary={mockSummary}
+        velocity={mockVelocity}
+        scheduledTransactions={[]}
+        dailySpending={[]}
+        trendData={[]}
+        healthScore={85}
+        formatCurrency={mockFormat}
+        onCategoryClick={mockOnCategoryClick}
+      />,
+    );
+
+    expect(capturedCategoryListProps.onCategoryClick).toBe(mockOnCategoryClick);
+  });
+
+  it('does not pass onCategoryClick when not provided', () => {
+    render(
+      <BudgetDashboard
+        summary={mockSummary}
+        velocity={mockVelocity}
+        scheduledTransactions={[]}
+        dailySpending={[]}
+        trendData={[]}
+        healthScore={85}
+        formatCurrency={mockFormat}
+      />,
+    );
+
+    expect(capturedCategoryListProps.onCategoryClick).toBeUndefined();
   });
 });

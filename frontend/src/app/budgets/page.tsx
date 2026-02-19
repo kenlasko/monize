@@ -9,7 +9,6 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { BudgetWizard } from '@/components/budgets/BudgetWizard';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
-import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { budgetsApi } from '@/lib/budgets';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { getErrorMessage } from '@/lib/errors';
@@ -28,7 +27,6 @@ function BudgetsContent() {
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showWizard, setShowWizard] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState<Budget | null>(null);
   const { defaultCurrency } = useExchangeRates();
   const router = useRouter();
 
@@ -51,18 +49,6 @@ function BudgetsContent() {
   const handleWizardComplete = () => {
     setShowWizard(false);
     loadBudgets();
-  };
-
-  const handleDelete = async () => {
-    if (!deleteTarget) return;
-    try {
-      await budgetsApi.delete(deleteTarget.id);
-      toast.success('Budget deleted');
-      setDeleteTarget(null);
-      loadBudgets();
-    } catch (error) {
-      toast.error(getErrorMessage(error, 'Failed to delete budget'));
-    }
   };
 
   if (showWizard) {
@@ -147,29 +133,10 @@ function BudgetsContent() {
                   </div>
                   <div>Started {budget.periodStart}</div>
                 </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={(e: React.MouseEvent) => { e.stopPropagation(); setDeleteTarget(budget); }}
-                  >
-                    Delete
-                  </Button>
-                </div>
               </div>
             ))}
           </div>
         )}
-        <ConfirmDialog
-          isOpen={deleteTarget !== null}
-          title="Delete Budget"
-          message={`Are you sure you want to delete "${deleteTarget?.name}"? This will remove all budget data including periods and alerts. This action cannot be undone.`}
-          confirmLabel="Delete"
-          cancelLabel="Cancel"
-          variant="danger"
-          onConfirm={handleDelete}
-          onCancel={() => setDeleteTarget(null)}
-        />
       </main>
     </PageLayout>
   );

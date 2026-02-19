@@ -84,12 +84,10 @@ vi.mock('@/hooks/useExchangeRates', () => ({
 
 // Mock budgets API
 const mockGetAll = vi.fn().mockResolvedValue([]);
-const mockDelete = vi.fn();
 
 vi.mock('@/lib/budgets', () => ({
   budgetsApi: {
     getAll: (...args: any[]) => mockGetAll(...args),
-    delete: (...args: any[]) => mockDelete(...args),
     generate: vi.fn(),
     applyGenerated: vi.fn(),
   },
@@ -103,17 +101,6 @@ vi.mock('@/components/budgets/BudgetWizard', () => ({
       <button data-testid="wizard-cancel" onClick={onCancel}>Cancel</button>
     </div>
   ),
-}));
-
-vi.mock('@/components/ui/ConfirmDialog', () => ({
-  ConfirmDialog: ({ isOpen, title, onConfirm, onCancel, confirmLabel }: any) =>
-    isOpen ? (
-      <div data-testid="confirm-dialog">
-        <span>{title}</span>
-        <button data-testid="confirm-btn" onClick={onConfirm}>{confirmLabel || 'Confirm'}</button>
-        <button data-testid="cancel-btn" onClick={onCancel}>Cancel</button>
-      </div>
-    ) : null,
 }));
 
 vi.mock('@/components/layout/PageLayout', () => ({
@@ -257,36 +244,4 @@ describe('BudgetsPage', () => {
     expect(mockPush).toHaveBeenCalledWith('/budgets/budget-1');
   });
 
-  it('deletes a budget after confirmation', async () => {
-    mockGetAll.mockResolvedValue([
-      {
-        id: 'budget-1',
-        name: 'Budget',
-        strategy: 'FIXED',
-        budgetType: 'MONTHLY',
-        isActive: true,
-        periodStart: '2026-02-01',
-        categories: [],
-      },
-    ]);
-    mockDelete.mockResolvedValue(undefined);
-
-    render(<BudgetsPage />);
-
-    await waitFor(() => {
-      expect(screen.getByText('Delete')).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByText('Delete'));
-
-    await waitFor(() => {
-      expect(screen.getByTestId('confirm-dialog')).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByTestId('confirm-btn'));
-
-    await waitFor(() => {
-      expect(mockDelete).toHaveBeenCalledWith('budget-1');
-    });
-  });
 });

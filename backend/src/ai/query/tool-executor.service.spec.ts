@@ -224,7 +224,9 @@ describe("ToolExecutorService", () => {
         endDate: "2026-01-31",
       });
 
-      expect(result.data).toEqual({ error: "An error occurred while retrieving data." });
+      expect(result.data).toEqual({
+        error: "An error occurred while retrieving data.",
+      });
       expect(result.summary).toContain("Error executing query_transactions");
       expect(result.sources).toEqual([]);
     });

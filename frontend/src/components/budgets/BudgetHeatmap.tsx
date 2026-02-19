@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   eachDayOfInterval,
   getDay,
@@ -90,7 +91,15 @@ export function BudgetHeatmap({
     return result;
   }, [days, spendingMap]);
 
+  const router = useRouter();
   const today = new Date();
+
+  const handleDateClick = useCallback((date: Date) => {
+    const dateStr = format(date, 'yyyy-MM-dd');
+    // Set active accounts filter before navigating
+    localStorage.setItem('transactions.filter.accountStatus', JSON.stringify('active'));
+    router.push(`/transactions?startDate=${dateStr}&endDate=${dateStr}`);
+  }, [router]);
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4 sm:p-6">
@@ -130,11 +139,13 @@ export function BudgetHeatmap({
                   return (
                     <td key={dayIdx} className="p-0.5">
                       <div
-                        className={`w-8 h-8 rounded-sm flex items-center justify-center text-xs ${color} ${
+                        className={`w-8 h-8 rounded-sm flex items-center justify-center text-xs cursor-pointer hover:ring-2 hover:ring-blue-400 transition-shadow ${color} ${
                           isToday ? 'ring-2 ring-blue-500' : ''
                         }`}
                         title={`${dateLabel}: ${formatCurrency(day.amount)}`}
                         data-testid={`heatmap-cell-${format(day.date, 'yyyy-MM-dd')}`}
+                        onClick={() => handleDateClick(day.date)}
+                        role="link"
                       >
                         {format(day.date, 'd')}
                       </div>

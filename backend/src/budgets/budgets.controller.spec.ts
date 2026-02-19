@@ -447,9 +447,10 @@ describe("BudgetsController", () => {
       const result = controller.getSeasonalPatterns(mockReq, "budget-1");
 
       expect(result).toBe("seasonal");
-      expect(
-        mockBudgetReportsService.getSeasonalPatterns,
-      ).toHaveBeenCalledWith("user-1", "budget-1");
+      expect(mockBudgetReportsService.getSeasonalPatterns).toHaveBeenCalledWith(
+        "user-1",
+        "budget-1",
+      );
     });
   });
 
@@ -462,9 +463,10 @@ describe("BudgetsController", () => {
       const result = controller.getFlexGroupStatus(mockReq, "budget-1");
 
       expect(result).toBe("flex-groups");
-      expect(
-        mockBudgetReportsService.getFlexGroupStatus,
-      ).toHaveBeenCalledWith("user-1", "budget-1");
+      expect(mockBudgetReportsService.getFlexGroupStatus).toHaveBeenCalledWith(
+        "user-1",
+        "budget-1",
+      );
     });
   });
 });

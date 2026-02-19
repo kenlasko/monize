@@ -1077,7 +1077,11 @@ describe("BudgetAlertService", () => {
       // Both budgets were processed (even with no categories)
       expect(budgetsRepository.find).toHaveBeenCalledWith({
         where: { isActive: true },
-        relations: ["categories", "categories.category", "categories.transferAccount"],
+        relations: [
+          "categories",
+          "categories.category",
+          "categories.transferAccount",
+        ],
       });
     });
 

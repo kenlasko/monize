@@ -281,7 +281,11 @@ describe("BudgetsService", () => {
       expect(result).toEqual(mockBudget);
       expect(budgetsRepository.findOne).toHaveBeenCalledWith({
         where: { id: "budget-1" },
-        relations: ["categories", "categories.category", "categories.transferAccount"],
+        relations: [
+          "categories",
+          "categories.category",
+          "categories.transferAccount",
+        ],
       });
     });
 
@@ -841,7 +845,11 @@ describe("BudgetsService", () => {
       expect(result).toBeNull();
       expect(budgetsRepository.find).toHaveBeenCalledWith({
         where: { userId: "user-1", isActive: true },
-        relations: ["categories", "categories.category", "categories.transferAccount"],
+        relations: [
+          "categories",
+          "categories.category",
+          "categories.transferAccount",
+        ],
         order: { createdAt: "DESC" },
       });
     });

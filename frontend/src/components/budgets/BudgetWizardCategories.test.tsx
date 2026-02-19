@@ -297,4 +297,145 @@ describe('BudgetWizardCategories', () => {
     // Should have at least one per input (currency symbol prefix)
     expect(dollarSigns.length).toBeGreaterThanOrEqual(3);
   });
+
+  describe('50/30/20 strategy', () => {
+    const make503020Categories = (): Map<string, ApplyBudgetCategoryData> => {
+      const map = new Map<string, ApplyBudgetCategoryData>();
+      map.set('cat-salary', { categoryId: 'cat-salary', amount: 5000, isIncome: true });
+      map.set('cat-groceries', { categoryId: 'cat-groceries', amount: 400, isIncome: false, categoryGroup: 'NEED' });
+      map.set('cat-dining', { categoryId: 'cat-dining', amount: 200, isIncome: false, categoryGroup: 'WANT' });
+      return map;
+    };
+
+    const state503020: WizardState = {
+      ...defaultState,
+      strategy: 'FIFTY_THIRTY_TWENTY',
+      selectedCategories: make503020Categories(),
+    };
+
+    it('shows group pickers on expense rows when strategy is FIFTY_THIRTY_TWENTY', () => {
+      render(
+        <BudgetWizardCategories
+          state={state503020}
+          updateState={mockUpdateState}
+          onNext={mockOnNext}
+          onBack={mockOnBack}
+        />,
+      );
+
+      // Each picker has 3 buttons (N, W, S). 2 expense categories = 6 group buttons
+      const groupButtons = screen.getAllByTitle(/Need|Want|Saving/);
+      expect(groupButtons.length).toBe(6);
+    });
+
+    it('does not show group pickers when strategy is FIXED', () => {
+      render(
+        <BudgetWizardCategories
+          state={defaultState}
+          updateState={mockUpdateState}
+          onNext={mockOnNext}
+          onBack={mockOnBack}
+        />,
+      );
+
+      const groupButtons = screen.queryAllByTitle(/Need|Want|Saving/);
+      expect(groupButtons.length).toBe(0);
+    });
+
+    it('renders 50/30/20 allocation summary', () => {
+      render(
+        <BudgetWizardCategories
+          state={state503020}
+          updateState={mockUpdateState}
+          onNext={mockOnNext}
+          onBack={mockOnBack}
+        />,
+      );
+
+      expect(screen.getByText('50/30/20 Allocation')).toBeInTheDocument();
+      expect(screen.getByText(/Needs/)).toBeInTheDocument();
+      expect(screen.getByText(/Wants/)).toBeInTheDocument();
+      expect(screen.getByText(/Savings/)).toBeInTheDocument();
+    });
+
+    it('does not render allocation summary for FIXED strategy', () => {
+      render(
+        <BudgetWizardCategories
+          state={defaultState}
+          updateState={mockUpdateState}
+          onNext={mockOnNext}
+          onBack={mockOnBack}
+        />,
+      );
+
+      expect(screen.queryByText('50/30/20 Allocation')).not.toBeInTheDocument();
+    });
+
+    it('updates categoryGroup when group picker button is clicked', () => {
+      render(
+        <BudgetWizardCategories
+          state={state503020}
+          updateState={mockUpdateState}
+          onNext={mockOnNext}
+          onBack={mockOnBack}
+        />,
+      );
+
+      // Click the "S" (Saving) button in the first picker
+      const savingButtons = screen.getAllByTitle('Saving');
+      fireEvent.click(savingButtons[0]);
+      expect(mockUpdateState).toHaveBeenCalled();
+
+      const update = mockUpdateState.mock.calls[0][0];
+      expect(update.selectedCategories).toBeInstanceOf(Map);
+    });
+
+    it('sets default categoryGroup to NEED when toggling expense category on', () => {
+      const stateWithUnselected: WizardState = {
+        ...state503020,
+        selectedCategories: new Map([
+          ['cat-salary', { categoryId: 'cat-salary', amount: 5000, isIncome: true }],
+        ]),
+      };
+
+      render(
+        <BudgetWizardCategories
+          state={stateWithUnselected}
+          updateState={mockUpdateState}
+          onNext={mockOnNext}
+          onBack={mockOnBack}
+        />,
+      );
+
+      // Find the Groceries checkbox (unchecked expense) and check it
+      const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+      // Groceries is the first expense category checkbox
+      const groceriesCheckbox = Array.from(checkboxes).find(cb => {
+        const label = cb.closest('label');
+        return label?.textContent?.includes('Groceries');
+      });
+      expect(groceriesCheckbox).toBeDefined();
+      fireEvent.click(groceriesCheckbox!);
+
+      expect(mockUpdateState).toHaveBeenCalled();
+      const update = mockUpdateState.mock.calls[0][0];
+      const groceriesEntry = update.selectedCategories.get('cat-groceries');
+      expect(groceriesEntry?.categoryGroup).toBe('NEED');
+    });
+
+    it('shows target percentages in allocation summary', () => {
+      render(
+        <BudgetWizardCategories
+          state={state503020}
+          updateState={mockUpdateState}
+          onNext={mockOnNext}
+          onBack={mockOnBack}
+        />,
+      );
+
+      expect(screen.getByText(/target 50%/)).toBeInTheDocument();
+      expect(screen.getByText(/target 30%/)).toBeInTheDocument();
+      expect(screen.getByText(/target 20%/)).toBeInTheDocument();
+    });
+  });
 });

@@ -74,7 +74,12 @@ export class BudgetAlertService {
     try {
       const activeBudgets = await this.budgetsRepository.find({
         where: { isActive: true },
-        relations: ["categories", "categories.category", "categories.transferAccount"],
+        relations: [
+          "categories",
+          "categories.category",
+          "categories.category.parent",
+          "categories.transferAccount",
+        ],
       });
 
       if (activeBudgets.length === 0) {
@@ -116,7 +121,12 @@ export class BudgetAlertService {
     try {
       const activeBudgets = await this.budgetsRepository.find({
         where: { isActive: true },
-        relations: ["categories", "categories.category", "categories.transferAccount"],
+        relations: [
+          "categories",
+          "categories.category",
+          "categories.category.parent",
+          "categories.transferAccount",
+        ],
       });
 
       if (activeBudgets.length === 0) {
@@ -735,7 +745,12 @@ export class BudgetAlertService {
         categoryName = bc.transferAccount?.name || "Transfer";
       } else {
         spent = bc.categoryId ? spendingMap.get(bc.categoryId) || 0 : 0;
-        categoryName = bc.category?.name || "Uncategorized";
+        const cat = bc.category;
+        categoryName = cat
+          ? cat.parent
+            ? `${cat.parent.name} > ${cat.name}`
+            : cat.name
+          : "Uncategorized";
       }
 
       const percentUsed =

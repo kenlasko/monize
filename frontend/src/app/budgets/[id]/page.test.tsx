@@ -131,8 +131,12 @@ vi.mock('@/components/budgets/utils/budget-labels', () => ({
 }));
 
 // Mock components
+let capturedOnCategoryClick: ((budgetCategoryId: string) => void) | undefined;
 vi.mock('@/components/budgets/BudgetDashboard', () => ({
-  BudgetDashboard: () => <div data-testid="budget-dashboard">Dashboard</div>,
+  BudgetDashboard: (props: any) => {
+    capturedOnCategoryClick = props.onCategoryClick;
+    return <div data-testid="budget-dashboard">Dashboard</div>;
+  },
 }));
 
 vi.mock('@/components/budgets/BudgetPeriodSelector', () => ({
@@ -180,7 +184,18 @@ const mockSummary = {
   totalIncome: 6000,
   remaining: 2100,
   percentUsed: 59.62,
-  categoryBreakdown: [],
+  categoryBreakdown: [
+    {
+      budgetCategoryId: 'bc-1',
+      categoryId: 'cat-groceries',
+      categoryName: 'Groceries',
+      budgeted: 600,
+      spent: 420,
+      remaining: 180,
+      percentUsed: 70,
+      isIncome: false,
+    },
+  ],
 };
 
 const mockVelocity = {
@@ -199,6 +214,8 @@ const mockVelocity = {
 describe('BudgetDetailPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.clear();
+    capturedOnCategoryClick = undefined;
     mockGetSummary.mockResolvedValue(mockSummary);
     mockGetVelocity.mockResolvedValue(mockVelocity);
     mockGetPeriods.mockResolvedValue([]);
@@ -261,5 +278,36 @@ describe('BudgetDetailPage', () => {
       expect(mockGetVelocity).toHaveBeenCalledWith('budget-1');
       expect(mockGetPeriods).toHaveBeenCalledWith('budget-1');
     });
+  });
+
+  it('navigates to transactions with category filter on category click', async () => {
+    render(<BudgetDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('budget-dashboard')).toBeInTheDocument();
+    });
+
+    // The BudgetDashboard mock captures onCategoryClick
+    expect(capturedOnCategoryClick).toBeDefined();
+    capturedOnCategoryClick!('bc-1');
+
+    expect(localStorage.getItem('transactions.filter.accountStatus')).toBe(
+      JSON.stringify('active'),
+    );
+    expect(mockPush).toHaveBeenCalledWith(
+      '/transactions?startDate=2026-02-01&endDate=2026-02-28&categoryIds=cat-groceries',
+    );
+  });
+
+  it('does not navigate when category is not found', async () => {
+    render(<BudgetDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('budget-dashboard')).toBeInTheDocument();
+    });
+
+    capturedOnCategoryClick!('non-existent-bc');
+
+    expect(mockPush).not.toHaveBeenCalled();
   });
 });

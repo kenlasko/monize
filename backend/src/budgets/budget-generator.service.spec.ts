@@ -704,7 +704,11 @@ describe("BudgetGeneratorService", () => {
 
       expect(budgetsRepository.findOne).toHaveBeenCalledWith({
         where: { id: "new-budget" },
-        relations: ["categories", "categories.category", "categories.transferAccount"],
+        relations: [
+          "categories",
+          "categories.category",
+          "categories.transferAccount",
+        ],
       });
     });
   });
