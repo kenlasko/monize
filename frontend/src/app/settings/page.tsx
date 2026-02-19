@@ -10,6 +10,7 @@ import { PreferencesSection } from '@/components/settings/PreferencesSection';
 import { NotificationsSection } from '@/components/settings/NotificationsSection';
 import { SecuritySection } from '@/components/settings/SecuritySection';
 import { DangerZoneSection } from '@/components/settings/DangerZoneSection';
+import { ApiAccessSection } from '@/components/settings/ApiAccessSection';
 import { userSettingsApi } from '@/lib/user-settings';
 import { authApi } from '@/lib/auth';
 import { User, UserPreferences } from '@/types/auth';
@@ -123,6 +124,8 @@ function SettingsContent() {
             onPreferencesUpdated={setPreferences}
           />
         )}
+
+        {!isDemoMode && <ApiAccessSection />}
 
         {!isDemoMode && (
           <Link

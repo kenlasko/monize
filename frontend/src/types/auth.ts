@@ -107,3 +107,24 @@ export interface ChangePasswordData {
   currentPassword: string;
   newPassword: string;
 }
+
+export interface PersonalAccessToken {
+  id: string;
+  name: string;
+  tokenPrefix: string;
+  scopes: string;
+  lastUsedAt: string | null;
+  expiresAt: string | null;
+  isRevoked: boolean;
+  createdAt: string;
+}
+
+export interface CreatePatData {
+  name: string;
+  scopes?: string;
+  expiresAt?: string;
+}
+
+export interface CreatePatResponse extends PersonalAccessToken {
+  token: string;
+}

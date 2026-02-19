@@ -584,3 +584,27 @@ CREATE INDEX idx_ai_insights_user ON ai_insights(user_id);
 CREATE INDEX idx_ai_insights_user_dismissed ON ai_insights(user_id, is_dismissed);
 CREATE INDEX idx_ai_insights_expires ON ai_insights(expires_at);
 CREATE INDEX idx_ai_insights_user_type ON ai_insights(user_id, type);
+
+-- Personal Access Tokens (for MCP server and API access)
+CREATE TABLE personal_access_tokens (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name VARCHAR(100) NOT NULL,
+    token_prefix VARCHAR(8) NOT NULL,     -- First 8 chars (e.g., "pat_xxxx") for display identification
+    token_hash VARCHAR(64) NOT NULL,      -- SHA-256 hash of the full token
+    scopes VARCHAR(500) NOT NULL DEFAULT 'read', -- Comma-separated: 'read', 'write', 'reports'
+    last_used_at TIMESTAMP,
+    expires_at TIMESTAMP,                 -- NULL = never expires
+    is_revoked BOOLEAN DEFAULT false,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_pat_user ON personal_access_tokens(user_id);
+CREATE UNIQUE INDEX idx_pat_token_hash ON personal_access_tokens(token_hash);
+CREATE INDEX idx_pat_user_active ON personal_access_tokens(user_id, is_revoked)
+    WHERE is_revoked = false;
+
+CREATE TRIGGER update_personal_access_tokens_updated_at
+    BEFORE UPDATE ON personal_access_tokens
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

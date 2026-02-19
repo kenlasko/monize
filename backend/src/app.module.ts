@@ -28,6 +28,7 @@ import { NotificationsModule } from "./notifications/notifications.module";
 import { HealthModule } from "./health/health.module";
 import { AdminModule } from "./admin/admin.module";
 import { AiModule } from "./ai/ai.module";
+import { McpModule } from "./mcp/mcp.module";
 
 @Module({
   imports: [
@@ -96,6 +97,7 @@ import { AiModule } from "./ai/ai.module";
     NotificationsModule,
     AdminModule,
     AiModule,
+    McpModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

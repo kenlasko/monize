@@ -76,6 +76,9 @@ vi.mock('@/lib/auth', () => ({
     revokeTrustedDevice: vi.fn(),
     revokeAllTrustedDevices: vi.fn(),
     logout: vi.fn().mockResolvedValue(undefined),
+    getTokens: vi.fn().mockResolvedValue([]),
+    createToken: vi.fn(),
+    revokeToken: vi.fn(),
   },
 }));
 
@@ -174,6 +177,13 @@ describe('SettingsPage', () => {
     render(<SettingsPage />);
     await waitFor(() => {
       expect(screen.getByRole('button', { name: /delete account/i })).toBeInTheDocument();
+    });
+  });
+
+  it('renders the API Access section', async () => {
+    render(<SettingsPage />);
+    await waitFor(() => {
+      expect(screen.getByText('API Access')).toBeInTheDocument();
     });
   });
 });

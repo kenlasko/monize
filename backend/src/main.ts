@@ -59,7 +59,14 @@ async function bootstrap() {
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "Accept", "X-CSRF-Token"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "Accept",
+      "X-CSRF-Token",
+      "Mcp-Session-Id",
+    ],
+    exposedHeaders: ["Mcp-Session-Id"],
   });
 
   // Global validation pipe

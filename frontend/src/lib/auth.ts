@@ -1,5 +1,5 @@
 import apiClient from './api';
-import { LoginCredentials, RegisterData, AuthResponse, TwoFactorSetupResponse, TrustedDevice } from '@/types/auth';
+import { LoginCredentials, RegisterData, AuthResponse, TwoFactorSetupResponse, TrustedDevice, PersonalAccessToken, CreatePatData, CreatePatResponse } from '@/types/auth';
 
 export interface AuthMethods {
   local: boolean;
@@ -82,6 +82,21 @@ export const authApi = {
 
   revokeAllTrustedDevices: async (): Promise<{ message: string; count: number }> => {
     const response = await apiClient.delete<{ message: string; count: number }>('/auth/2fa/trusted-devices');
+    return response.data;
+  },
+
+  getTokens: async (): Promise<PersonalAccessToken[]> => {
+    const response = await apiClient.get<PersonalAccessToken[]>('/auth/tokens');
+    return response.data;
+  },
+
+  createToken: async (data: CreatePatData): Promise<CreatePatResponse> => {
+    const response = await apiClient.post<CreatePatResponse>('/auth/tokens', data);
+    return response.data;
+  },
+
+  revokeToken: async (id: string): Promise<{ message: string }> => {
+    const response = await apiClient.delete<{ message: string }>(`/auth/tokens/${id}`);
     return response.data;
   },
 };

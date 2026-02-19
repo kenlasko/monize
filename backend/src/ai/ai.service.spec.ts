@@ -505,7 +505,7 @@ describe("AiService", () => {
       mockConfigRepository.find.mockResolvedValue([]);
 
       await expect(service.getToolUseProvider(userId)).rejects.toThrow(
-        /Anthropic or OpenAI/,
+        /Anthropic.*OpenAI/,
       );
     });
   });

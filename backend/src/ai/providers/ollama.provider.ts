@@ -41,7 +41,10 @@ export class OllamaProvider implements AiProvider {
     // Use streaming internally to keep the TCP connection alive during
     // long CPU-only inference. Idle connections get killed by kube-proxy /
     // conntrack after ~120 s, causing "fetch failed" errors.
-    const messages = this.toOllamaMessages(request.messages, request.systemPrompt);
+    const messages = this.toOllamaMessages(
+      request.messages,
+      request.systemPrompt,
+    );
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10 * 60 * 1000); // 10 minutes for CPU inference
@@ -124,7 +127,10 @@ export class OllamaProvider implements AiProvider {
   }
 
   async *stream(request: AiCompletionRequest): AsyncIterable<AiStreamChunk> {
-    const messages = this.toOllamaMessages(request.messages, request.systemPrompt);
+    const messages = this.toOllamaMessages(
+      request.messages,
+      request.systemPrompt,
+    );
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10 * 60 * 1000); // 10 minutes for CPU inference
@@ -197,7 +203,10 @@ export class OllamaProvider implements AiProvider {
     request: AiCompletionRequest,
     tools: AiToolDefinition[],
   ): Promise<AiToolResponse> {
-    const messages = this.toOllamaMessages(request.messages, request.systemPrompt);
+    const messages = this.toOllamaMessages(
+      request.messages,
+      request.systemPrompt,
+    );
 
     const ollamaTools = tools.map((tool) => ({
       type: "function" as const,

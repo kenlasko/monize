@@ -10,9 +10,12 @@ import { User } from "../users/entities/user.entity";
 import { UserPreference } from "../users/entities/user-preference.entity";
 import { TrustedDevice } from "../users/entities/trusted-device.entity";
 import { RefreshToken } from "./entities/refresh-token.entity";
+import { PersonalAccessToken } from "./entities/personal-access-token.entity";
 import { LocalStrategy } from "./strategies/local.strategy";
 import { JwtStrategy } from "./strategies/jwt.strategy";
 import { OidcService } from "./oidc/oidc.service";
+import { PatService } from "./pat.service";
+import { PatController } from "./pat.controller";
 import { UsersModule } from "../users/users.module";
 import { NotificationsModule } from "../notifications/notifications.module";
 
@@ -23,6 +26,7 @@ import { NotificationsModule } from "../notifications/notifications.module";
       UserPreference,
       TrustedDevice,
       RefreshToken,
+      PersonalAccessToken,
     ]),
     PassportModule,
     UsersModule,
@@ -42,8 +46,8 @@ import { NotificationsModule } from "../notifications/notifications.module";
       }),
     }),
   ],
-  providers: [AuthService, LocalStrategy, JwtStrategy, OidcService],
-  controllers: [AuthController],
-  exports: [AuthService, OidcService],
+  providers: [AuthService, LocalStrategy, JwtStrategy, OidcService, PatService],
+  controllers: [AuthController, PatController],
+  exports: [AuthService, OidcService, PatService],
 })
 export class AuthModule {}
