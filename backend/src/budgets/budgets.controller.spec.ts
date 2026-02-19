@@ -3,6 +3,7 @@ import { BudgetsController } from "./budgets.controller";
 import { BudgetsService } from "./budgets.service";
 import { BudgetPeriodService } from "./budget-period.service";
 import { BudgetGeneratorService } from "./budget-generator.service";
+import { BudgetReportsService } from "./budget-reports.service";
 
 describe("BudgetsController", () => {
   let controller: BudgetsController;
@@ -12,6 +13,9 @@ describe("BudgetsController", () => {
   >;
   let mockBudgetGeneratorService: Partial<
     Record<keyof BudgetGeneratorService, jest.Mock>
+  >;
+  let mockBudgetReportsService: Partial<
+    Record<keyof BudgetReportsService, jest.Mock>
   >;
   const mockReq = { user: { id: "user-1" } };
 
@@ -44,6 +48,14 @@ describe("BudgetsController", () => {
       apply: jest.fn(),
     };
 
+    mockBudgetReportsService = {
+      getTrend: jest.fn(),
+      getCategoryTrend: jest.fn(),
+      getHealthScore: jest.fn(),
+      getSeasonalPatterns: jest.fn(),
+      getFlexGroupStatus: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [BudgetsController],
       providers: [
@@ -52,6 +64,10 @@ describe("BudgetsController", () => {
         {
           provide: BudgetGeneratorService,
           useValue: mockBudgetGeneratorService,
+        },
+        {
+          provide: BudgetReportsService,
+          useValue: mockBudgetReportsService,
         },
       ],
     }).compile();
@@ -360,6 +376,95 @@ describe("BudgetsController", () => {
         "user-1",
         dto,
       );
+    });
+  });
+
+  describe("getTrend()", () => {
+    it("delegates to budgetReportsService.getTrend with default months", () => {
+      mockBudgetReportsService.getTrend!.mockReturnValue("trend");
+
+      const result = controller.getTrend(mockReq, "budget-1", {} as any);
+
+      expect(result).toBe("trend");
+      expect(mockBudgetReportsService.getTrend).toHaveBeenCalledWith(
+        "user-1",
+        "budget-1",
+        6,
+      );
+    });
+
+    it("delegates to budgetReportsService.getTrend with specified months", () => {
+      mockBudgetReportsService.getTrend!.mockReturnValue("trend-12");
+
+      const result = controller.getTrend(mockReq, "budget-1", {
+        months: 12,
+      } as any);
+
+      expect(result).toBe("trend-12");
+      expect(mockBudgetReportsService.getTrend).toHaveBeenCalledWith(
+        "user-1",
+        "budget-1",
+        12,
+      );
+    });
+  });
+
+  describe("getCategoryTrend()", () => {
+    it("delegates to budgetReportsService.getCategoryTrend", () => {
+      mockBudgetReportsService.getCategoryTrend!.mockReturnValue("cat-trend");
+
+      const query = { months: 3, categoryIds: ["cat-1", "cat-2"] } as any;
+      const result = controller.getCategoryTrend(mockReq, "budget-1", query);
+
+      expect(result).toBe("cat-trend");
+      expect(mockBudgetReportsService.getCategoryTrend).toHaveBeenCalledWith(
+        "user-1",
+        "budget-1",
+        3,
+        ["cat-1", "cat-2"],
+      );
+    });
+  });
+
+  describe("getHealthScore()", () => {
+    it("delegates to budgetReportsService.getHealthScore", () => {
+      mockBudgetReportsService.getHealthScore!.mockReturnValue("health");
+
+      const result = controller.getHealthScore(mockReq, "budget-1");
+
+      expect(result).toBe("health");
+      expect(mockBudgetReportsService.getHealthScore).toHaveBeenCalledWith(
+        "user-1",
+        "budget-1",
+      );
+    });
+  });
+
+  describe("getSeasonalPatterns()", () => {
+    it("delegates to budgetReportsService.getSeasonalPatterns", () => {
+      mockBudgetReportsService.getSeasonalPatterns!.mockReturnValue("seasonal");
+
+      const result = controller.getSeasonalPatterns(mockReq, "budget-1");
+
+      expect(result).toBe("seasonal");
+      expect(
+        mockBudgetReportsService.getSeasonalPatterns,
+      ).toHaveBeenCalledWith("user-1", "budget-1");
+    });
+  });
+
+  describe("getFlexGroupStatus()", () => {
+    it("delegates to budgetReportsService.getFlexGroupStatus", () => {
+      mockBudgetReportsService.getFlexGroupStatus!.mockReturnValue(
+        "flex-groups",
+      );
+
+      const result = controller.getFlexGroupStatus(mockReq, "budget-1");
+
+      expect(result).toBe("flex-groups");
+      expect(
+        mockBudgetReportsService.getFlexGroupStatus,
+      ).toHaveBeenCalledWith("user-1", "budget-1");
     });
   });
 });
