@@ -7,6 +7,7 @@ import type { GenerateBudgetResponse, ApplyBudgetCategoryData } from '@/types/bu
 // Mock format
 vi.mock('@/lib/format', () => ({
   formatCurrency: vi.fn((amount: number) => `$${amount.toFixed(2)}`),
+  getCurrencySymbol: vi.fn(() => '$'),
 }));
 
 describe('BudgetWizardCategories', () => {
