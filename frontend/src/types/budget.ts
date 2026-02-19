@@ -326,3 +326,30 @@ export interface FlexGroupStatus {
   percentUsed: number;
   categories: FlexGroupCategory[];
 }
+
+// Dashboard widget types
+export interface DashboardBudgetSummary {
+  budgetId: string;
+  budgetName: string;
+  totalBudgeted: number;
+  totalSpent: number;
+  remaining: number;
+  percentUsed: number;
+  safeDailySpend: number;
+  daysRemaining: number;
+  topCategories: Array<{
+    categoryName: string;
+    budgeted: number;
+    spent: number;
+    remaining: number;
+    percentUsed: number;
+  }>;
+}
+
+// Transaction list budget context
+export interface CategoryBudgetStatus {
+  budgeted: number;
+  spent: number;
+  remaining: number;
+  percentUsed: number;
+}

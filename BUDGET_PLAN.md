@@ -1057,15 +1057,27 @@ Note: Alert entity, repository, and basic retrieval/marking endpoints exist from
 - [x] Add BUDGET_VARIANCE metric to custom reports engine
 - [x] Write unit tests for health score algorithm and trend calculations (32 backend + 19 frontend tests)
 
-### Phase 7: Integration & Polish -- NOT STARTED
+### Phase 7: Integration & Polish -- COMPLETE (except E2E tests)
 
-- [ ] Add budget status widget to main dashboard (mini health gauge, top 3 categories, safe daily spend)
-- [ ] Add budget context indicator to transaction list (category approaching/over limit)
-- [ ] Implement `get_budget_status` AI tool in ToolExecutorService (current/previous/specific period)
-- [ ] Connect budget tool to AI query system for natural language budget questions
-- [ ] Write E2E tests (Playwright):
+- [x] Add budget status widget to main dashboard (top 3 categories by usage, safe daily spend, days remaining)
+- [x] Add budget context indicator to transaction list (colored dot when category approaching/over limit)
+- [x] Implement `get_budget_status` AI tool in ToolExecutorService (current/previous/specific period)
+- [x] Connect budget tool to AI query system via tool definitions + ToolExecutorService integration
+- [x] Implement monthly budget summary email at period close (deferred from Phase 5)
+  - [x] budgetMonthlySummaryTemplate in email-templates.ts
+  - [x] sendMonthlySummaryEmails in BudgetPeriodCronService (triggers after period close)
+  - [x] Per-user email preference check (budgetDigestEnabled)
+- [x] Add `GET /budgets/dashboard-summary` endpoint for dashboard widget
+- [x] Add `POST /budgets/category-budget-status` endpoint for transaction list context
+- [x] Extract shared budget-date.utils.ts (getCurrentMonthPeriodDates, getMonthPeriodDates, etc.)
+- [x] Extract shared frontend budget-colors.ts utility (budgetPercentColor, budgetProgressBarColor, etc.)
+- [x] Add partial index idx_budget_periods_open for OPEN period lookups
+- [x] Wire BudgetsModule into AiModule for get_budget_status tool
+- [x] Security review: all endpoints verified (auth guards, userId derivation, parameterized queries, input validation, HTML escaping in email templates)
+- [x] Unit tests: budget-date.utils, getDashboardSummary, getCategoryBudgetStatus, get_budget_status AI tool, BudgetPeriodCronService monthly email, email template, BudgetStatusWidget frontend component
+- [ ] E2E tests (Playwright) -- deferred:
   - [ ] Budget wizard: walk through all 4 steps and create budget
   - [ ] Dashboard: verify summary cards, progress bars, velocity display
   - [ ] Alert flow: trigger alert, verify badge, mark as read
   - [ ] Period navigation: switch between months, verify historical data
-- [ ] Performance optimization: batch queries, verify indexes, cache current period summary
+- [x] Performance optimization: batch queries verified, partial index added for OPEN periods

@@ -828,4 +828,357 @@ describe("BudgetsService", () => {
       expect(result.updated).toBe(0);
     });
   });
+
+  describe("getDashboardSummary", () => {
+    it("returns null if no active budgets exist", async () => {
+      budgetsRepository.find.mockResolvedValue([]);
+
+      const result = await service.getDashboardSummary("user-1");
+
+      expect(result).toBeNull();
+      expect(budgetsRepository.find).toHaveBeenCalledWith({
+        where: { userId: "user-1", isActive: true },
+        relations: ["categories", "categories.category"],
+        order: { createdAt: "DESC" },
+      });
+    });
+
+    it("returns summary with topCategories sorted by percentUsed descending", async () => {
+      const budgetWithCategories = {
+        ...mockBudget,
+        id: "budget-1",
+        name: "February 2026",
+        categories: [
+          {
+            ...mockBudgetCategory,
+            id: "bc-1",
+            categoryId: "cat-1",
+            amount: 500,
+            isIncome: false,
+            category: { name: "Groceries" },
+          },
+          {
+            ...mockBudgetCategory,
+            id: "bc-2",
+            categoryId: "cat-2",
+            amount: 1000,
+            isIncome: false,
+            category: { name: "Rent" },
+          },
+          {
+            ...mockBudgetCategory,
+            id: "bc-3",
+            categoryId: "cat-3",
+            amount: 300,
+            isIncome: false,
+            category: { name: "Entertainment" },
+          },
+          {
+            ...mockBudgetCategory,
+            id: "bc-4",
+            categoryId: "cat-4",
+            amount: 200,
+            isIncome: false,
+            category: { name: "Dining Out" },
+          },
+          {
+            ...mockBudgetCategory,
+            id: "bc-5",
+            categoryId: "cat-5",
+            amount: 5000,
+            isIncome: true,
+            category: { name: "Salary" },
+          },
+        ],
+      };
+      budgetsRepository.find.mockResolvedValue([budgetWithCategories]);
+
+      const directQb = createMockQueryBuilder({
+        getRawMany: jest.fn().mockResolvedValue([
+          { categoryId: "cat-1", total: "400" },
+          { categoryId: "cat-2", total: "950" },
+          { categoryId: "cat-3", total: "280" },
+          { categoryId: "cat-4", total: "50" },
+          { categoryId: "cat-5", total: "5000" },
+        ]),
+      });
+      const splitQb = createMockQueryBuilder({
+        getRawMany: jest.fn().mockResolvedValue([]),
+      });
+      transactionsRepository.createQueryBuilder.mockReturnValue(directQb);
+      splitsRepository.createQueryBuilder.mockReturnValue(splitQb);
+
+      const result = await service.getDashboardSummary("user-1");
+
+      expect(result).not.toBeNull();
+      expect(result!.budgetId).toBe("budget-1");
+      expect(result!.budgetName).toBe("February 2026");
+      expect(result!.totalBudgeted).toBe(2000);
+      expect(result!.totalSpent).toBe(1680);
+      expect(result!.remaining).toBe(320);
+      expect(result!.topCategories).toHaveLength(3);
+
+      // Sorted by percentUsed descending: Rent (95%), Entertainment (93.33%), Groceries (80%)
+      expect(result!.topCategories[0].categoryName).toBe("Rent");
+      expect(result!.topCategories[0].percentUsed).toBe(95);
+      expect(result!.topCategories[1].categoryName).toBe("Entertainment");
+      expect(result!.topCategories[2].categoryName).toBe("Groceries");
+
+      // Income categories should not be in topCategories
+      expect(
+        result!.topCategories.find((c) => c.categoryName === "Salary"),
+      ).toBeUndefined();
+    });
+
+    it("calculates safeDailySpend correctly", async () => {
+      const budgetWithCategories = {
+        ...mockBudget,
+        categories: [
+          {
+            ...mockBudgetCategory,
+            id: "bc-1",
+            categoryId: "cat-1",
+            amount: 3000,
+            isIncome: false,
+            category: { name: "Groceries" },
+          },
+        ],
+      };
+      budgetsRepository.find.mockResolvedValue([budgetWithCategories]);
+
+      const directQb = createMockQueryBuilder({
+        getRawMany: jest
+          .fn()
+          .mockResolvedValue([{ categoryId: "cat-1", total: "1000" }]),
+      });
+      const splitQb = createMockQueryBuilder({
+        getRawMany: jest.fn().mockResolvedValue([]),
+      });
+      transactionsRepository.createQueryBuilder.mockReturnValue(directQb);
+      splitsRepository.createQueryBuilder.mockReturnValue(splitQb);
+
+      const result = await service.getDashboardSummary("user-1");
+
+      expect(result).not.toBeNull();
+      expect(result!.totalBudgeted).toBe(3000);
+      expect(result!.totalSpent).toBe(1000);
+      expect(result!.remaining).toBe(2000);
+      expect(typeof result!.safeDailySpend).toBe("number");
+      expect(result!.safeDailySpend).toBeGreaterThanOrEqual(0);
+      expect(typeof result!.daysRemaining).toBe("number");
+      expect(result!.daysRemaining).toBeGreaterThanOrEqual(0);
+    });
+
+    it("returns zero percentUsed when totalBudgeted is zero", async () => {
+      const budgetWithNoExpenseCategories = {
+        ...mockBudget,
+        categories: [
+          {
+            ...mockBudgetCategory,
+            id: "bc-1",
+            categoryId: "cat-1",
+            amount: 5000,
+            isIncome: true,
+            category: { name: "Salary" },
+          },
+        ],
+      };
+      budgetsRepository.find.mockResolvedValue([budgetWithNoExpenseCategories]);
+
+      const directQb = createMockQueryBuilder({
+        getRawMany: jest
+          .fn()
+          .mockResolvedValue([{ categoryId: "cat-1", total: "5000" }]),
+      });
+      const splitQb = createMockQueryBuilder({
+        getRawMany: jest.fn().mockResolvedValue([]),
+      });
+      transactionsRepository.createQueryBuilder.mockReturnValue(directQb);
+      splitsRepository.createQueryBuilder.mockReturnValue(splitQb);
+
+      const result = await service.getDashboardSummary("user-1");
+
+      expect(result).not.toBeNull();
+      expect(result!.totalBudgeted).toBe(0);
+      expect(result!.percentUsed).toBe(0);
+      expect(result!.topCategories).toHaveLength(0);
+    });
+  });
+
+  describe("getCategoryBudgetStatus", () => {
+    it("returns empty map if no active budgets exist", async () => {
+      budgetsRepository.find.mockResolvedValue([]);
+
+      const result = await service.getCategoryBudgetStatus("user-1", ["cat-1"]);
+
+      expect(result).toBeInstanceOf(Map);
+      expect(result.size).toBe(0);
+    });
+
+    it("returns empty map if categoryIds is empty", async () => {
+      budgetsRepository.find.mockResolvedValue([mockBudget]);
+
+      const result = await service.getCategoryBudgetStatus("user-1", []);
+
+      expect(result).toBeInstanceOf(Map);
+      expect(result.size).toBe(0);
+    });
+
+    it("returns correct budget status for matching categories", async () => {
+      const budgetWithCategories = {
+        ...mockBudget,
+        categories: [
+          {
+            ...mockBudgetCategory,
+            id: "bc-1",
+            categoryId: "cat-1",
+            amount: 500,
+            isIncome: false,
+            category: { name: "Groceries" },
+          },
+          {
+            ...mockBudgetCategory,
+            id: "bc-2",
+            categoryId: "cat-2",
+            amount: 1000,
+            isIncome: false,
+            category: { name: "Rent" },
+          },
+        ],
+      };
+      budgetsRepository.find.mockResolvedValue([budgetWithCategories]);
+
+      const directQb = createMockQueryBuilder({
+        getRawMany: jest.fn().mockResolvedValue([
+          { categoryId: "cat-1", total: "350" },
+          { categoryId: "cat-2", total: "900" },
+        ]),
+      });
+      const splitQb = createMockQueryBuilder({
+        getRawMany: jest.fn().mockResolvedValue([]),
+      });
+      transactionsRepository.createQueryBuilder.mockReturnValue(directQb);
+      splitsRepository.createQueryBuilder.mockReturnValue(splitQb);
+
+      const result = await service.getCategoryBudgetStatus("user-1", [
+        "cat-1",
+        "cat-2",
+      ]);
+
+      expect(result.size).toBe(2);
+
+      const groceries = result.get("cat-1");
+      expect(groceries).toBeDefined();
+      expect(groceries!.budgeted).toBe(500);
+      expect(groceries!.spent).toBe(350);
+      expect(groceries!.remaining).toBe(150);
+      expect(groceries!.percentUsed).toBe(70);
+
+      const rent = result.get("cat-2");
+      expect(rent).toBeDefined();
+      expect(rent!.budgeted).toBe(1000);
+      expect(rent!.spent).toBe(900);
+      expect(rent!.remaining).toBe(100);
+      expect(rent!.percentUsed).toBe(90);
+    });
+
+    it("excludes income categories from the result", async () => {
+      const budgetWithIncomeAndExpense = {
+        ...mockBudget,
+        categories: [
+          {
+            ...mockBudgetCategory,
+            id: "bc-1",
+            categoryId: "cat-1",
+            amount: 500,
+            isIncome: false,
+            category: { name: "Groceries" },
+          },
+          {
+            ...mockBudgetCategory,
+            id: "bc-2",
+            categoryId: "cat-2",
+            amount: 5000,
+            isIncome: true,
+            category: { name: "Salary" },
+          },
+        ],
+      };
+      budgetsRepository.find.mockResolvedValue([budgetWithIncomeAndExpense]);
+
+      const directQb = createMockQueryBuilder({
+        getRawMany: jest.fn().mockResolvedValue([
+          { categoryId: "cat-1", total: "300" },
+          { categoryId: "cat-2", total: "5000" },
+        ]),
+      });
+      const splitQb = createMockQueryBuilder({
+        getRawMany: jest.fn().mockResolvedValue([]),
+      });
+      transactionsRepository.createQueryBuilder.mockReturnValue(directQb);
+      splitsRepository.createQueryBuilder.mockReturnValue(splitQb);
+
+      const result = await service.getCategoryBudgetStatus("user-1", [
+        "cat-1",
+        "cat-2",
+      ]);
+
+      expect(result.size).toBe(1);
+      expect(result.has("cat-1")).toBe(true);
+      expect(result.has("cat-2")).toBe(false);
+    });
+
+    it("only returns status for requested category IDs", async () => {
+      const budgetWithCategories = {
+        ...mockBudget,
+        categories: [
+          {
+            ...mockBudgetCategory,
+            id: "bc-1",
+            categoryId: "cat-1",
+            amount: 500,
+            isIncome: false,
+            category: { name: "Groceries" },
+          },
+          {
+            ...mockBudgetCategory,
+            id: "bc-2",
+            categoryId: "cat-2",
+            amount: 1000,
+            isIncome: false,
+            category: { name: "Rent" },
+          },
+          {
+            ...mockBudgetCategory,
+            id: "bc-3",
+            categoryId: "cat-3",
+            amount: 300,
+            isIncome: false,
+            category: { name: "Entertainment" },
+          },
+        ],
+      };
+      budgetsRepository.find.mockResolvedValue([budgetWithCategories]);
+
+      const directQb = createMockQueryBuilder({
+        getRawMany: jest.fn().mockResolvedValue([
+          { categoryId: "cat-1", total: "200" },
+          { categoryId: "cat-2", total: "800" },
+          { categoryId: "cat-3", total: "150" },
+        ]),
+      });
+      const splitQb = createMockQueryBuilder({
+        getRawMany: jest.fn().mockResolvedValue([]),
+      });
+      transactionsRepository.createQueryBuilder.mockReturnValue(directQb);
+      splitsRepository.createQueryBuilder.mockReturnValue(splitQb);
+
+      const result = await service.getCategoryBudgetStatus("user-1", ["cat-1"]);
+
+      expect(result.size).toBe(1);
+      expect(result.has("cat-1")).toBe(true);
+      expect(result.has("cat-2")).toBe(false);
+      expect(result.has("cat-3")).toBe(false);
+    });
+  });
 });

@@ -49,6 +49,7 @@ import { NotificationsModule } from "../notifications/notifications.module";
     BudgetPeriodService,
     BudgetGeneratorService,
     BudgetReportsService,
+    BudgetAlertService,
   ],
 })
 export class BudgetsModule {}

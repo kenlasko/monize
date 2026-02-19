@@ -676,6 +676,7 @@ CREATE TABLE budget_periods (
 
 CREATE INDEX idx_budget_periods_budget ON budget_periods(budget_id);
 CREATE INDEX idx_budget_periods_dates ON budget_periods(budget_id, period_start, period_end);
+CREATE INDEX idx_budget_periods_open ON budget_periods(budget_id, status) WHERE status = 'OPEN';
 
 -- Budget Period Categories - per-category actuals for each period
 CREATE TABLE budget_period_categories (

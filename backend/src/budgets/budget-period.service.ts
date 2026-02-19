@@ -12,6 +12,7 @@ import { BudgetPeriodCategory } from "./entities/budget-period-category.entity";
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
 import { BudgetsService } from "./budgets.service";
+import { getCurrentMonthPeriodDates } from "./budget-date.utils";
 
 @Injectable()
 export class BudgetPeriodService {
@@ -135,13 +136,7 @@ export class BudgetPeriodService {
     budget: Budget,
     rolloverMap?: Map<string, number>,
   ): Promise<BudgetPeriod> {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = today.getMonth();
-
-    const periodStart = `${year}-${String(month + 1).padStart(2, "0")}-01`;
-    const lastDay = new Date(year, month + 1, 0).getDate();
-    const periodEnd = `${year}-${String(month + 1).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+    const { periodStart, periodEnd } = getCurrentMonthPeriodDates();
 
     const budgetCategories = budget.categories || [];
 

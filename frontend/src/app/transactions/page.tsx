@@ -39,6 +39,8 @@ import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { createLogger } from '@/lib/logger';
 import { getErrorMessage } from '@/lib/errors';
 import { PAGE_SIZE } from '@/lib/constants';
+import { budgetsApi } from '@/lib/budgets';
+import { CategoryBudgetStatus } from '@/types/budget';
 
 const logger = createLogger('Transactions');
 
@@ -257,6 +259,27 @@ function TransactionsContent() {
   }, [categories]);
 
   const categoryColorMap = useMemo(() => buildCategoryColorMap(categories), [categories]);
+
+  // Budget context for category indicators
+  const [budgetStatusMap, setBudgetStatusMap] = useState<Record<string, CategoryBudgetStatus>>({});
+
+  useEffect(() => {
+    if (transactions.length === 0) return;
+
+    const categoryIds = [
+      ...new Set(
+        transactions
+          .filter((t) => t.category?.id && !t.isTransfer)
+          .map((t) => t.category!.id),
+      ),
+    ];
+
+    if (categoryIds.length === 0) return;
+
+    budgetsApi.getCategoryBudgetStatus(categoryIds).then(setBudgetStatusMap).catch(() => {
+      // Budget status is optional - fail silently
+    });
+  }, [transactions]);
 
   const accountFilterOptions = useMemo(() => {
     return filteredAccounts
@@ -907,6 +930,7 @@ function TransactionsContent() {
               pageSize={PAGE_SIZE}
               onPageChange={goToPage}
               categoryColorMap={categoryColorMap}
+              budgetStatusMap={budgetStatusMap}
             />
           )}
         </div>

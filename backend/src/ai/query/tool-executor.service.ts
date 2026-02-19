@@ -5,6 +5,13 @@ import { AccountsService } from "../../accounts/accounts.service";
 import { CategoriesService } from "../../categories/categories.service";
 import { TransactionAnalyticsService } from "../../transactions/transaction-analytics.service";
 import { NetWorthService } from "../../net-worth/net-worth.service";
+import { BudgetsService } from "../../budgets/budgets.service";
+import { BudgetReportsService } from "../../budgets/budget-reports.service";
+import {
+  getCurrentMonthPeriodDates,
+  getPreviousMonthPeriodDates,
+  parsePeriodFromYYYYMM,
+} from "../../budgets/budget-date.utils";
 import { Transaction } from "../../transactions/entities/transaction.entity";
 import { Category } from "../../categories/entities/category.entity";
 
@@ -27,6 +34,10 @@ export class ToolExecutorService {
     private readonly analyticsService: TransactionAnalyticsService,
     @Inject(forwardRef(() => NetWorthService))
     private readonly netWorthService: NetWorthService,
+    @Inject(forwardRef(() => BudgetsService))
+    private readonly budgetsService: BudgetsService,
+    @Inject(forwardRef(() => BudgetReportsService))
+    private readonly budgetReportsService: BudgetReportsService,
     @InjectRepository(Transaction)
     private readonly transactionRepo: Repository<Transaction>,
     @InjectRepository(Category)
@@ -52,6 +63,8 @@ export class ToolExecutorService {
           return await this.getNetWorthHistory(userId, input);
         case "compare_periods":
           return await this.comparePeriods(userId, input);
+        case "get_budget_status":
+          return await this.getBudgetStatus(userId, input);
         default:
           return {
             data: null,
@@ -610,5 +623,174 @@ export class ToolExecutorService {
       label: r.label,
       total: Number(r.total),
     }));
+  }
+
+  private async getBudgetStatus(
+    userId: string,
+    input: Record<string, unknown>,
+  ): Promise<ToolResult> {
+    const period = (input.period as string) || "CURRENT";
+    const budgetName = input.budgetName as string | undefined;
+
+    const allBudgets = await this.budgetsService.findAll(userId);
+    const activeBudgets = allBudgets.filter((b) => b.isActive);
+
+    if (activeBudgets.length === 0) {
+      return {
+        data: { error: "No active budgets found" },
+        summary: "No active budgets found for this user.",
+        sources: [],
+      };
+    }
+
+    const budget = budgetName
+      ? activeBudgets.find(
+          (b) => b.name.toLowerCase() === budgetName.toLowerCase(),
+        )
+      : activeBudgets[0];
+
+    if (!budget) {
+      return {
+        data: {
+          error: `Budget "${budgetName}" not found`,
+          availableBudgets: activeBudgets.map((b) => b.name),
+        },
+        summary: `Budget "${budgetName}" not found. Available budgets: ${activeBudgets.map((b) => b.name).join(", ")}`,
+        sources: [],
+      };
+    }
+
+    const { periodStart, periodEnd } = this.resolvePeriodDates(period);
+
+    let summary;
+    try {
+      summary = await this.budgetsService.getSummary(userId, budget.id);
+    } catch {
+      return {
+        data: { error: "Failed to retrieve budget summary" },
+        summary: "Could not retrieve budget data for the requested period.",
+        sources: [],
+      };
+    }
+
+    let velocity;
+    try {
+      velocity = await this.budgetsService.getVelocity(userId, budget.id);
+    } catch {
+      velocity = null;
+    }
+
+    let healthScore;
+    try {
+      healthScore = await this.budgetReportsService.getHealthScore(
+        userId,
+        budget.id,
+      );
+    } catch {
+      healthScore = null;
+    }
+
+    const overBudgetCategories = summary.categoryBreakdown
+      .filter((c) => !c.isIncome && c.percentUsed > 100)
+      .map((c) => ({
+        category: c.categoryName,
+        budgeted: c.budgeted,
+        spent: c.spent,
+        percentUsed: c.percentUsed,
+      }));
+
+    const nearLimitCategories = summary.categoryBreakdown
+      .filter((c) => !c.isIncome && c.percentUsed >= 80 && c.percentUsed <= 100)
+      .map((c) => ({
+        category: c.categoryName,
+        budgeted: c.budgeted,
+        spent: c.spent,
+        remaining: c.remaining,
+        percentUsed: c.percentUsed,
+      }));
+
+    const data: Record<string, unknown> = {
+      budgetName: budget.name,
+      strategy: budget.strategy,
+      period: { start: periodStart, end: periodEnd },
+      totalBudgeted: summary.totalBudgeted,
+      totalSpent: summary.totalSpent,
+      totalIncome: summary.totalIncome,
+      remaining: summary.remaining,
+      percentUsed: summary.percentUsed,
+      overBudgetCategories,
+      nearLimitCategories,
+      categoryCount: summary.categoryBreakdown.filter((c) => !c.isIncome)
+        .length,
+    };
+
+    if (velocity) {
+      data.velocity = {
+        dailyBurnRate: velocity.dailyBurnRate,
+        safeDailySpend: velocity.safeDailySpend,
+        projectedTotal: velocity.projectedTotal,
+        projectedVariance: velocity.projectedVariance,
+        daysRemaining: velocity.daysRemaining,
+        paceStatus: velocity.paceStatus,
+      };
+    }
+
+    if (healthScore) {
+      data.healthScore = {
+        score: healthScore.score,
+        label: healthScore.label,
+      };
+    }
+
+    const summaryParts = [
+      `Budget "${budget.name}": ${summary.percentUsed.toFixed(1)}% used ($${summary.totalSpent.toFixed(2)} of $${summary.totalBudgeted.toFixed(2)})`,
+    ];
+
+    if (velocity) {
+      summaryParts.push(
+        `Safe daily spend: $${velocity.safeDailySpend.toFixed(2)}, ${velocity.daysRemaining} days remaining`,
+      );
+    }
+
+    if (overBudgetCategories.length > 0) {
+      summaryParts.push(
+        `${overBudgetCategories.length} categories over budget`,
+      );
+    }
+
+    if (healthScore) {
+      summaryParts.push(
+        `Health score: ${healthScore.score}/100 (${healthScore.label})`,
+      );
+    }
+
+    return {
+      data,
+      summary: summaryParts.join(". "),
+      sources: [
+        {
+          type: "budget",
+          description: `Budget status for "${budget.name}"`,
+          dateRange: `${periodStart} to ${periodEnd}`,
+        },
+      ],
+    };
+  }
+
+  private resolvePeriodDates(period: string): {
+    periodStart: string;
+    periodEnd: string;
+  } {
+    if (period === "PREVIOUS") {
+      return getPreviousMonthPeriodDates();
+    }
+
+    const parsed = parsePeriodFromYYYYMM(period);
+    if (parsed) {
+      return parsed;
+    }
+
+    // Default: CURRENT
+    return getCurrentMonthPeriodDates();
   }
 }

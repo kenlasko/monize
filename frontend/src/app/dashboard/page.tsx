@@ -9,6 +9,7 @@ import { UpcomingBills } from '@/components/dashboard/UpcomingBills';
 import { GettingStarted } from '@/components/dashboard/GettingStarted';
 import { TopMovers } from '@/components/dashboard/TopMovers';
 import { InsightsWidget } from '@/components/dashboard/InsightsWidget';
+import { BudgetStatusWidget } from '@/components/dashboard/BudgetStatusWidget';
 
 const ExpensesPieChart = dynamic(() => import('@/components/dashboard/ExpensesPieChart').then(m => m.ExpensesPieChart), { ssr: false });
 const IncomeExpensesBarChart = dynamic(() => import('@/components/dashboard/IncomeExpensesBarChart').then(m => m.IncomeExpensesBarChart), { ssr: false });
@@ -162,6 +163,7 @@ function DashboardContent() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <BudgetStatusWidget isLoading={isLoading} />
             <InsightsWidget isLoading={isLoading} />
           </div>
         </div>

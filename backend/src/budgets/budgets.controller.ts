@@ -63,6 +63,53 @@ export class BudgetsController {
     return this.budgetsService.findAll(req.user.id);
   }
 
+  @Get("dashboard-summary")
+  @ApiOperation({
+    summary: "Get budget summary for dashboard widget",
+  })
+  @ApiResponse({
+    status: 200,
+    description:
+      "Dashboard budget summary retrieved (null if no active budget)",
+  })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  getDashboardSummary(@Request() req) {
+    return this.budgetsService.getDashboardSummary(req.user.id);
+  }
+
+  @Post("category-budget-status")
+  @ApiOperation({
+    summary:
+      "Get budget status for specific categories (for transaction list context)",
+  })
+  @ApiResponse({ status: 200, description: "Category budget status retrieved" })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  async getCategoryBudgetStatus(
+    @Request() req,
+    @Body() body: { categoryIds: string[] },
+  ) {
+    const categoryIds = Array.isArray(body.categoryIds)
+      ? body.categoryIds.filter(
+          (id) =>
+            typeof id === "string" &&
+            /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+              id,
+            ),
+        )
+      : [];
+
+    if (categoryIds.length === 0) {
+      return {};
+    }
+
+    const statusMap = await this.budgetsService.getCategoryBudgetStatus(
+      req.user.id,
+      categoryIds,
+    );
+
+    return Object.fromEntries(statusMap);
+  }
+
   @Post("generate")
   @ApiOperation({
     summary: "Analyze spending and suggest budget amounts",
