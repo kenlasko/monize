@@ -110,6 +110,12 @@ export interface BudgetPeriodCategory {
   actualAmount: number;
   effectiveBudget: number;
   rolloverOut: number;
+  budgetCategory?: BudgetCategory;
+  category?: {
+    id: string;
+    name: string;
+    isIncome: boolean;
+  } | null;
   createdAt: string;
   updatedAt: string;
 }
