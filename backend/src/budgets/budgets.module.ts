@@ -10,6 +10,7 @@ import { TransactionSplit } from "../transactions/entities/transaction-split.ent
 import { Category } from "../categories/entities/category.entity";
 import { BudgetsService } from "./budgets.service";
 import { BudgetPeriodService } from "./budget-period.service";
+import { BudgetPeriodCronService } from "./budget-period-cron.service";
 import { BudgetGeneratorService } from "./budget-generator.service";
 import { BudgetsController } from "./budgets.controller";
 
@@ -26,7 +27,12 @@ import { BudgetsController } from "./budgets.controller";
       Category,
     ]),
   ],
-  providers: [BudgetsService, BudgetPeriodService, BudgetGeneratorService],
+  providers: [
+    BudgetsService,
+    BudgetPeriodService,
+    BudgetPeriodCronService,
+    BudgetGeneratorService,
+  ],
   controllers: [BudgetsController],
   exports: [BudgetsService, BudgetPeriodService, BudgetGeneratorService],
 })

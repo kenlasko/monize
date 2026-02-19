@@ -8,6 +8,7 @@ import { PageLayout } from '@/components/layout/PageLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { BudgetDashboard } from '@/components/budgets/BudgetDashboard';
+import { BudgetPeriodDetail } from '@/components/budgets/BudgetPeriodDetail';
 import { BudgetPeriodSelector } from '@/components/budgets/BudgetPeriodSelector';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { budgetsApi } from '@/lib/budgets';
@@ -64,7 +65,9 @@ function BudgetDetailContent() {
     ScheduledTransaction[]
   >([]);
   const [selectedPeriodId, setSelectedPeriodId] = useState<string | null>(null);
+  const [selectedPeriod, setSelectedPeriod] = useState<BudgetPeriod | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isPeriodLoading, setIsPeriodLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
@@ -96,6 +99,37 @@ function BudgetDetailContent() {
     loadData();
   }, [loadData]);
 
+  const handlePeriodChange = useCallback(
+    async (periodId: string | null) => {
+      setSelectedPeriodId(periodId);
+
+      if (periodId === null) {
+        setSelectedPeriod(null);
+        return;
+      }
+
+      const period = periods.find((p) => p.id === periodId);
+      if (period?.status === 'OPEN') {
+        setSelectedPeriod(null);
+        return;
+      }
+
+      setIsPeriodLoading(true);
+      try {
+        const periodDetail = await budgetsApi.getPeriodDetail(budgetId, periodId);
+        setSelectedPeriod(periodDetail);
+      } catch (err) {
+        const message = getErrorMessage(err, 'Failed to load period');
+        toast.error(message);
+        setSelectedPeriodId(null);
+        setSelectedPeriod(null);
+      } finally {
+        setIsPeriodLoading(false);
+      }
+    },
+    [budgetId, periods],
+  );
+
   if (isLoading) {
     return (
       <PageLayout>
@@ -123,6 +157,8 @@ function BudgetDetailContent() {
     );
   }
 
+  const isViewingHistoricalPeriod = selectedPeriod !== null && selectedPeriod.status !== 'OPEN';
+  const currencyCode = summary.budget.currencyCode;
   const healthScore = computeHealthScore(summary);
 
   // For now, daily spending and trend data are computed client-side as empty
@@ -135,13 +171,13 @@ function BudgetDetailContent() {
       <main className="px-4 sm:px-6 lg:px-12 pt-6 pb-8">
         <PageHeader
           title={summary.budget.name}
-          subtitle={`${summary.budget.strategy} budget - ${summary.budget.currencyCode}`}
+          subtitle={`${summary.budget.strategy} budget - ${currencyCode}`}
           actions={
             <div className="flex items-center gap-3">
               <BudgetPeriodSelector
                 periods={periods}
                 selectedPeriodId={selectedPeriodId}
-                onPeriodChange={setSelectedPeriodId}
+                onPeriodChange={handlePeriodChange}
               />
               <Button
                 variant="outline"
@@ -155,17 +191,24 @@ function BudgetDetailContent() {
             </div>
           }
         />
-        <BudgetDashboard
-          summary={summary}
-          velocity={velocity}
-          scheduledTransactions={scheduledTransactions}
-          dailySpending={dailySpending}
-          trendData={trendData}
-          healthScore={healthScore}
-          formatCurrency={(amount) =>
-            formatCurrency(amount, summary.budget.currencyCode)
-          }
-        />
+        {isPeriodLoading ? (
+          <LoadingSpinner />
+        ) : isViewingHistoricalPeriod ? (
+          <BudgetPeriodDetail
+            period={selectedPeriod}
+            formatCurrency={(amount) => formatCurrency(amount, currencyCode)}
+          />
+        ) : (
+          <BudgetDashboard
+            summary={summary}
+            velocity={velocity}
+            scheduledTransactions={scheduledTransactions}
+            dailySpending={dailySpending}
+            trendData={trendData}
+            healthScore={healthScore}
+            formatCurrency={(amount) => formatCurrency(amount, currencyCode)}
+          />
+        )}
       </main>
     </PageLayout>
   );

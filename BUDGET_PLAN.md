@@ -995,21 +995,23 @@ The implementation will proceed in logical phases, each delivering usable functi
 - [x] Build BudgetForm (edit budget settings)
 - [x] Add "Budgets" to AppHeader navigation links (between Accounts and Investments)
 
-### Phase 4: Period Management & Rollover -- MOSTLY COMPLETE
+### Phase 4: Period Management & Rollover -- COMPLETE
 
-**Backend (complete):**
+**Backend:**
 - [x] Implement BudgetPeriodService with full period lifecycle
 - [x] Implement period creation with automatic category allocations
 - [x] Implement period close with actuals computation
 - [x] Implement rollover calculation for all types (NONE, MONTHLY, QUARTERLY, ANNUAL) with caps
 - [x] Implement next period auto-creation with rollover carry-forward
 - [x] Controller endpoints: list periods, get period detail, close period
+- [x] Add cron job for automatic period closing (1st of each month) via BudgetPeriodCronService
+- [x] Write integration tests for full period lifecycle (create -> execute -> close -> rollover -> next)
 
-**Remaining:**
-- [ ] Add cron job for automatic period closing (1st of each month)
-- [ ] Build frontend PeriodSelector component
-- [ ] Build frontend historical period detail views
-- [ ] Write integration tests for full period lifecycle (create -> execute -> close -> rollover -> next)
+**Frontend:**
+- [x] Build BudgetPeriodSelector component (period navigation dropdown)
+- [x] Build BudgetPeriodDetail component (historical period detail views with rollover summary)
+- [x] Wire PeriodSelector to load historical period data via getPeriodDetail API
+- [x] Show current period dashboard (BudgetDashboard) or historical period view (BudgetPeriodDetail) based on selection
 
 ### Phase 5: Alerts & Notifications -- NOT STARTED
 
