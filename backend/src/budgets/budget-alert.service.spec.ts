@@ -1080,6 +1080,7 @@ describe("BudgetAlertService", () => {
         relations: [
           "categories",
           "categories.category",
+          "categories.category.parent",
           "categories.transferAccount",
         ],
       });
