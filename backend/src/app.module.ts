@@ -29,6 +29,7 @@ import { HealthModule } from "./health/health.module";
 import { AdminModule } from "./admin/admin.module";
 import { AiModule } from "./ai/ai.module";
 import { McpModule } from "./mcp/mcp.module";
+import { BudgetsModule } from "./budgets/budgets.module";
 
 @Module({
   imports: [
@@ -98,6 +99,7 @@ import { McpModule } from "./mcp/mcp.module";
     AdminModule,
     AiModule,
     McpModule,
+    BudgetsModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },
