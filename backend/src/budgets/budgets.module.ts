@@ -15,6 +15,7 @@ import { BudgetPeriodService } from "./budget-period.service";
 import { BudgetPeriodCronService } from "./budget-period-cron.service";
 import { BudgetGeneratorService } from "./budget-generator.service";
 import { BudgetAlertService } from "./budget-alert.service";
+import { BudgetReportsService } from "./budget-reports.service";
 import { BudgetsController } from "./budgets.controller";
 import { NotificationsModule } from "../notifications/notifications.module";
 
@@ -40,8 +41,14 @@ import { NotificationsModule } from "../notifications/notifications.module";
     BudgetPeriodCronService,
     BudgetGeneratorService,
     BudgetAlertService,
+    BudgetReportsService,
   ],
   controllers: [BudgetsController],
-  exports: [BudgetsService, BudgetPeriodService, BudgetGeneratorService],
+  exports: [
+    BudgetsService,
+    BudgetPeriodService,
+    BudgetGeneratorService,
+    BudgetReportsService,
+  ],
 })
 export class BudgetsModule {}

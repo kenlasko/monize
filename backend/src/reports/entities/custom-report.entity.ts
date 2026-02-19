@@ -41,6 +41,7 @@ export enum MetricType {
   TOTAL_AMOUNT = "TOTAL_AMOUNT",
   COUNT = "COUNT",
   AVERAGE = "AVERAGE",
+  BUDGET_VARIANCE = "BUDGET_VARIANCE",
 }
 
 export enum DirectionFilter {

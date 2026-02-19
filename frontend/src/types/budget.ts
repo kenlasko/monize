@@ -248,3 +248,81 @@ export interface BudgetVelocity {
   currentSpent: number;
   paceStatus: 'under' | 'on_track' | 'over';
 }
+
+// --- Report Types ---
+
+export interface BudgetTrendPoint {
+  month: string;
+  budgeted: number;
+  actual: number;
+  variance: number;
+  percentUsed: number;
+}
+
+export interface CategoryTrendDataPoint {
+  month: string;
+  budgeted: number;
+  actual: number;
+  variance: number;
+  percentUsed: number;
+}
+
+export interface CategoryTrendSeries {
+  categoryId: string;
+  categoryName: string;
+  data: CategoryTrendDataPoint[];
+}
+
+export interface HealthScoreBreakdown {
+  baseScore: number;
+  overBudgetDeductions: number;
+  underBudgetBonus: number;
+  trendBonus: number;
+  essentialWeightPenalty: number;
+}
+
+export interface HealthScoreCategoryDetail {
+  categoryId: string;
+  categoryName: string;
+  percentUsed: number;
+  impact: number;
+  categoryGroup: string | null;
+}
+
+export interface HealthScoreResult {
+  score: number;
+  label: string;
+  breakdown: HealthScoreBreakdown;
+  categoryScores: HealthScoreCategoryDetail[];
+}
+
+export interface SeasonalMonthlyAverage {
+  month: number;
+  monthName: string;
+  average: number;
+}
+
+export interface SeasonalPattern {
+  categoryId: string;
+  categoryName: string;
+  monthlyAverages: SeasonalMonthlyAverage[];
+  highMonths: number[];
+  typicalMonthlySpend: number;
+}
+
+export interface FlexGroupCategory {
+  categoryId: string;
+  categoryName: string;
+  budgeted: number;
+  spent: number;
+  percentUsed: number;
+}
+
+export interface FlexGroupStatus {
+  groupName: string;
+  totalBudgeted: number;
+  totalSpent: number;
+  remaining: number;
+  percentUsed: number;
+  categories: FlexGroupCategory[];
+}
