@@ -284,6 +284,7 @@ describe("BudgetsService", () => {
         relations: [
           "categories",
           "categories.category",
+          "categories.category.parent",
           "categories.transferAccount",
         ],
       });
@@ -848,6 +849,7 @@ describe("BudgetsService", () => {
         relations: [
           "categories",
           "categories.category",
+          "categories.category.parent",
           "categories.transferAccount",
         ],
         order: { createdAt: "DESC" },
