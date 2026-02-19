@@ -75,7 +75,7 @@ export function BudgetWizardCategories({
   onNext,
   onBack,
 }: BudgetWizardCategoriesProps) {
-  const { analysisResult, selectedCategories, selectedTransfers, profile, currencyCode } = state;
+  const { analysisResult, selectedCategories, selectedTransfers = new Map(), profile, currencyCode } = state;
 
   const incomeCategories = useMemo(
     () =>

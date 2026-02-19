@@ -69,6 +69,8 @@ describe('BudgetWizardCategories', () => {
     totalBudgeted: 600,
     projectedMonthlySavings: 4400,
     analysisWindow: { startDate: '2025-08-01', endDate: '2026-02-01', months: 6 },
+    transfers: [],
+    totalTransfers: 0,
   };
 
   const makeSelectedCategories = (): Map<string, ApplyBudgetCategoryData> => {
@@ -85,6 +87,7 @@ describe('BudgetWizardCategories', () => {
     strategy: 'FIXED',
     analysisResult: mockAnalysisResult,
     selectedCategories: makeSelectedCategories(),
+    selectedTransfers: new Map(),
     budgetName: 'Test Budget',
     budgetType: 'MONTHLY',
     periodStart: '2026-02-01',

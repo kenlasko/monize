@@ -23,6 +23,7 @@ describe('BudgetWizardAnalysis', () => {
     strategy: 'FIXED',
     analysisResult: null,
     selectedCategories: new Map(),
+    selectedTransfers: new Map(),
     budgetName: 'Test Budget',
     budgetType: 'MONTHLY',
     periodStart: '2026-02-01',

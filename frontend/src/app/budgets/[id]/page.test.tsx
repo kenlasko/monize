@@ -89,12 +89,18 @@ vi.mock('@/hooks/useNumberFormat', () => ({
 const mockGetSummary = vi.fn();
 const mockGetVelocity = vi.fn();
 const mockGetPeriods = vi.fn();
+const mockGetDailySpending = vi.fn();
+const mockGetTrend = vi.fn();
+const mockDeleteBudget = vi.fn();
 
 vi.mock('@/lib/budgets', () => ({
   budgetsApi: {
     getSummary: (...args: any[]) => mockGetSummary(...args),
     getVelocity: (...args: any[]) => mockGetVelocity(...args),
     getPeriods: (...args: any[]) => mockGetPeriods(...args),
+    getDailySpending: (...args: any[]) => mockGetDailySpending(...args),
+    getTrend: (...args: any[]) => mockGetTrend(...args),
+    delete: (...args: any[]) => mockDeleteBudget(...args),
   },
 }));
 
@@ -102,6 +108,25 @@ vi.mock('@/lib/budgets', () => ({
 vi.mock('@/lib/scheduled-transactions', () => ({
   scheduledTransactionsApi: {
     getAll: vi.fn().mockResolvedValue([]),
+  },
+}));
+
+vi.mock('@/components/ui/ConfirmDialog', () => ({
+  ConfirmDialog: ({ isOpen, onConfirm, onCancel, confirmLabel }: any) =>
+    isOpen ? (
+      <div data-testid="confirm-dialog">
+        <button data-testid="confirm-btn" onClick={onConfirm}>{confirmLabel || 'Confirm'}</button>
+        <button data-testid="cancel-btn" onClick={onCancel}>Cancel</button>
+      </div>
+    ) : null,
+}));
+
+vi.mock('@/components/budgets/utils/budget-labels', () => ({
+  STRATEGY_LABELS: {
+    FIXED: 'Fixed',
+    ROLLOVER: 'Rollover',
+    ZERO_BASED: 'Zero-Based',
+    FIFTY_THIRTY_TWENTY: '50/30/20',
   },
 }));
 
@@ -177,6 +202,9 @@ describe('BudgetDetailPage', () => {
     mockGetSummary.mockResolvedValue(mockSummary);
     mockGetVelocity.mockResolvedValue(mockVelocity);
     mockGetPeriods.mockResolvedValue([]);
+    mockGetDailySpending.mockResolvedValue([]);
+    mockGetTrend.mockResolvedValue([]);
+    mockDeleteBudget.mockResolvedValue(undefined);
   });
 
   it('shows loading spinner initially', async () => {
