@@ -54,8 +54,7 @@ export class CreateBudgetDto {
   baseIncome?: number;
 
   @ApiPropertyOptional({
-    description:
-      "Whether category amounts are percentages of actual income",
+    description: "Whether category amounts are percentages of actual income",
     default: false,
   })
   @IsOptional()

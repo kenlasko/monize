@@ -6,7 +6,7 @@ import {
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { Budget } from "./entities/budget.entity";
-import { BudgetCategory, RolloverType } from "./entities/budget-category.entity";
+import { RolloverType } from "./entities/budget-category.entity";
 import { BudgetPeriod, PeriodStatus } from "./entities/budget-period.entity";
 import { BudgetPeriodCategory } from "./entities/budget-period-category.entity";
 import { Transaction } from "../transactions/entities/transaction.entity";
@@ -27,10 +27,7 @@ export class BudgetPeriodService {
     private budgetsService: BudgetsService,
   ) {}
 
-  async findAll(
-    userId: string,
-    budgetId: string,
-  ): Promise<BudgetPeriod[]> {
+  async findAll(userId: string, budgetId: string): Promise<BudgetPeriod[]> {
     await this.budgetsService.findOne(userId, budgetId);
 
     return this.periodsRepository.find({
@@ -48,7 +45,11 @@ export class BudgetPeriodService {
 
     const period = await this.periodsRepository.findOne({
       where: { id: periodId, budgetId },
-      relations: ["periodCategories", "periodCategories.budgetCategory", "periodCategories.category"],
+      relations: [
+        "periodCategories",
+        "periodCategories.budgetCategory",
+        "periodCategories.category",
+      ],
     });
 
     if (!period) {
@@ -60,10 +61,7 @@ export class BudgetPeriodService {
     return period;
   }
 
-  async closePeriod(
-    userId: string,
-    budgetId: string,
-  ): Promise<BudgetPeriod> {
+  async closePeriod(userId: string, budgetId: string): Promise<BudgetPeriod> {
     const budget = await this.budgetsService.findOne(userId, budgetId);
 
     const openPeriod = await this.periodsRepository.findOne({
@@ -201,7 +199,10 @@ export class BudgetPeriodService {
 
     let rollover = unused;
 
-    if (budgetCategory.rolloverCap !== null && budgetCategory.rolloverCap !== undefined) {
+    if (
+      budgetCategory.rolloverCap !== null &&
+      budgetCategory.rolloverCap !== undefined
+    ) {
       rollover = Math.min(rollover, Number(budgetCategory.rolloverCap));
     }
 

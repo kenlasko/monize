@@ -1,13 +1,13 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
-import {
-  NotFoundException,
-  BadRequestException,
-} from "@nestjs/common";
+import { NotFoundException, BadRequestException } from "@nestjs/common";
 import { BudgetPeriodService } from "./budget-period.service";
 import { BudgetsService } from "./budgets.service";
 import { Budget, BudgetType, BudgetStrategy } from "./entities/budget.entity";
-import { BudgetCategory, RolloverType } from "./entities/budget-category.entity";
+import {
+  BudgetCategory,
+  RolloverType,
+} from "./entities/budget-category.entity";
 import { BudgetPeriod, PeriodStatus } from "./entities/budget-period.entity";
 import { BudgetPeriodCategory } from "./entities/budget-period-category.entity";
 import { Transaction } from "../transactions/entities/transaction.entity";
@@ -110,15 +110,24 @@ describe("BudgetPeriodService", () => {
 
   beforeEach(async () => {
     periodsRepository = {
-      create: jest.fn().mockImplementation((data) => ({ ...data, id: "new-period" })),
-      save: jest.fn().mockImplementation((data) => ({ ...data, id: data.id || "new-period" })),
+      create: jest
+        .fn()
+        .mockImplementation((data) => ({ ...data, id: "new-period" })),
+      save: jest.fn().mockImplementation((data) => ({
+        ...data,
+        id: data.id || "new-period",
+      })),
       findOne: jest.fn(),
       find: jest.fn().mockResolvedValue([]),
     };
 
     periodCategoriesRepository = {
-      create: jest.fn().mockImplementation((data) => ({ ...data, id: "new-bpc" })),
-      save: jest.fn().mockImplementation((data) => ({ ...data, id: data.id || "new-bpc" })),
+      create: jest
+        .fn()
+        .mockImplementation((data) => ({ ...data, id: "new-bpc" })),
+      save: jest
+        .fn()
+        .mockImplementation((data) => ({ ...data, id: data.id || "new-bpc" })),
     };
 
     transactionsRepository = {
@@ -136,10 +145,22 @@ describe("BudgetPeriodService", () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         BudgetPeriodService,
-        { provide: getRepositoryToken(BudgetPeriod), useValue: periodsRepository },
-        { provide: getRepositoryToken(BudgetPeriodCategory), useValue: periodCategoriesRepository },
-        { provide: getRepositoryToken(Transaction), useValue: transactionsRepository },
-        { provide: getRepositoryToken(TransactionSplit), useValue: splitsRepository },
+        {
+          provide: getRepositoryToken(BudgetPeriod),
+          useValue: periodsRepository,
+        },
+        {
+          provide: getRepositoryToken(BudgetPeriodCategory),
+          useValue: periodCategoriesRepository,
+        },
+        {
+          provide: getRepositoryToken(Transaction),
+          useValue: transactionsRepository,
+        },
+        {
+          provide: getRepositoryToken(TransactionSplit),
+          useValue: splitsRepository,
+        },
         { provide: BudgetsService, useValue: budgetsService },
       ],
     }).compile();
@@ -215,7 +236,10 @@ describe("BudgetPeriodService", () => {
             ...mockPeriodCategory,
             budgetCategoryId: "bc-1",
             effectiveBudget: 500,
-            budgetCategory: { ...mockBudgetCategory, rolloverType: RolloverType.NONE },
+            budgetCategory: {
+              ...mockBudgetCategory,
+              rolloverType: RolloverType.NONE,
+            },
           },
         ],
       };
@@ -223,9 +247,9 @@ describe("BudgetPeriodService", () => {
       periodsRepository.save.mockImplementation((data) => data);
 
       const directQb = createMockQueryBuilder({
-        getRawMany: jest.fn().mockResolvedValue([
-          { categoryId: "cat-1", total: "350" },
-        ]),
+        getRawMany: jest
+          .fn()
+          .mockResolvedValue([{ categoryId: "cat-1", total: "350" }]),
       });
       transactionsRepository.createQueryBuilder.mockReturnValue(directQb);
       splitsRepository.createQueryBuilder.mockReturnValue(
@@ -243,9 +267,9 @@ describe("BudgetPeriodService", () => {
       budgetsService.findOne.mockResolvedValue(mockBudget);
       periodsRepository.findOne.mockResolvedValue(null);
 
-      await expect(
-        service.closePeriod("user-1", "budget-1"),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.closePeriod("user-1", "budget-1")).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
@@ -302,7 +326,7 @@ describe("BudgetPeriodService", () => {
         id: "new-period",
       }));
 
-      const result = await service.createPeriodForBudget(budgetWithCategories);
+      await service.createPeriodForBudget(budgetWithCategories);
 
       expect(periodsRepository.create).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -317,7 +341,12 @@ describe("BudgetPeriodService", () => {
       const budgetWithCategories = {
         ...mockBudget,
         categories: [
-          { ...mockBudgetCategory, id: "bc-1", amount: 500, categoryId: "cat-1" },
+          {
+            ...mockBudgetCategory,
+            id: "bc-1",
+            amount: 500,
+            categoryId: "cat-1",
+          },
         ],
       };
       const rolloverMap = new Map<string, number>();

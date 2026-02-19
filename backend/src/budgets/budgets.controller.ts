@@ -80,10 +80,7 @@ export class BudgetsController {
   @ApiResponse({ status: 200, description: "Alert marked as read" })
   @ApiResponse({ status: 401, description: "Unauthorized" })
   @ApiResponse({ status: 404, description: "Alert not found" })
-  markAlertRead(
-    @Request() req,
-    @Param("id", ParseUUIDPipe) id: string,
-  ) {
+  markAlertRead(@Request() req, @Param("id", ParseUUIDPipe) id: string) {
     return this.budgetsService.markAlertRead(req.user.id, id);
   }
 
@@ -102,10 +99,7 @@ export class BudgetsController {
   @ApiResponse({ status: 401, description: "Unauthorized" })
   @ApiResponse({ status: 403, description: "Forbidden" })
   @ApiResponse({ status: 404, description: "Budget not found" })
-  findOne(
-    @Request() req,
-    @Param("id", ParseUUIDPipe) id: string,
-  ) {
+  findOne(@Request() req, @Param("id", ParseUUIDPipe) id: string) {
     return this.budgetsService.findOne(req.user.id, id);
   }
 
@@ -132,10 +126,7 @@ export class BudgetsController {
   @ApiResponse({ status: 401, description: "Unauthorized" })
   @ApiResponse({ status: 403, description: "Forbidden" })
   @ApiResponse({ status: 404, description: "Budget not found" })
-  remove(
-    @Request() req,
-    @Param("id", ParseUUIDPipe) id: string,
-  ) {
+  remove(@Request() req, @Param("id", ParseUUIDPipe) id: string) {
     return this.budgetsService.remove(req.user.id, id);
   }
 
@@ -168,12 +159,7 @@ export class BudgetsController {
     @Param("categoryId", ParseUUIDPipe) categoryId: string,
     @Body() dto: UpdateBudgetCategoryDto,
   ) {
-    return this.budgetsService.updateCategory(
-      req.user.id,
-      id,
-      categoryId,
-      dto,
-    );
+    return this.budgetsService.updateCategory(req.user.id, id, categoryId, dto);
   }
 
   @Delete(":id/categories/:categoryId")
@@ -216,10 +202,7 @@ export class BudgetsController {
   @ApiResponse({ status: 200, description: "Budget summary retrieved" })
   @ApiResponse({ status: 401, description: "Unauthorized" })
   @ApiResponse({ status: 404, description: "Budget not found" })
-  getSummary(
-    @Request() req,
-    @Param("id", ParseUUIDPipe) id: string,
-  ) {
+  getSummary(@Request() req, @Param("id", ParseUUIDPipe) id: string) {
     return this.budgetsService.getSummary(req.user.id, id);
   }
 
@@ -229,10 +212,7 @@ export class BudgetsController {
   @ApiResponse({ status: 200, description: "Velocity data retrieved" })
   @ApiResponse({ status: 401, description: "Unauthorized" })
   @ApiResponse({ status: 404, description: "Budget not found" })
-  getVelocity(
-    @Request() req,
-    @Param("id", ParseUUIDPipe) id: string,
-  ) {
+  getVelocity(@Request() req, @Param("id", ParseUUIDPipe) id: string) {
     return this.budgetsService.getVelocity(req.user.id, id);
   }
 
@@ -242,10 +222,7 @@ export class BudgetsController {
   @ApiResponse({ status: 200, description: "Periods retrieved" })
   @ApiResponse({ status: 401, description: "Unauthorized" })
   @ApiResponse({ status: 404, description: "Budget not found" })
-  getPeriods(
-    @Request() req,
-    @Param("id", ParseUUIDPipe) id: string,
-  ) {
+  getPeriods(@Request() req, @Param("id", ParseUUIDPipe) id: string) {
     return this.budgetPeriodService.findAll(req.user.id, id);
   }
 
@@ -271,10 +248,7 @@ export class BudgetsController {
   @ApiResponse({ status: 400, description: "No open period to close" })
   @ApiResponse({ status: 401, description: "Unauthorized" })
   @ApiResponse({ status: 404, description: "Budget not found" })
-  closePeriod(
-    @Request() req,
-    @Param("id", ParseUUIDPipe) id: string,
-  ) {
+  closePeriod(@Request() req, @Param("id", ParseUUIDPipe) id: string) {
     return this.budgetPeriodService.closePeriod(req.user.id, id);
   }
 }

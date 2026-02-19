@@ -30,7 +30,9 @@ export class CreateBudgetCategoryDto {
   @IsEnum(CategoryGroup)
   categoryGroup?: CategoryGroup;
 
-  @ApiProperty({ description: "Monthly target amount (or percentage if income-linked)" })
+  @ApiProperty({
+    description: "Monthly target amount (or percentage if income-linked)",
+  })
   @IsNumber()
   @Min(0)
   amount: number;

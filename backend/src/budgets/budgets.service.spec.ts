@@ -7,8 +7,15 @@ import {
 } from "@nestjs/common";
 import { BudgetsService } from "./budgets.service";
 import { Budget, BudgetType, BudgetStrategy } from "./entities/budget.entity";
-import { BudgetCategory, RolloverType } from "./entities/budget-category.entity";
-import { BudgetAlert, AlertType, AlertSeverity } from "./entities/budget-alert.entity";
+import {
+  BudgetCategory,
+  RolloverType,
+} from "./entities/budget-category.entity";
+import {
+  BudgetAlert,
+  AlertType,
+  AlertSeverity,
+} from "./entities/budget-alert.entity";
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
 import { Category } from "../categories/entities/category.entity";
@@ -117,16 +124,25 @@ describe("BudgetsService", () => {
 
   beforeEach(async () => {
     budgetsRepository = {
-      create: jest.fn().mockImplementation((data) => ({ ...data, id: "new-budget" })),
-      save: jest.fn().mockImplementation((data) => ({ ...data, id: data.id || "new-budget" })),
+      create: jest
+        .fn()
+        .mockImplementation((data) => ({ ...data, id: "new-budget" })),
+      save: jest.fn().mockImplementation((data) => ({
+        ...data,
+        id: data.id || "new-budget",
+      })),
       findOne: jest.fn(),
       find: jest.fn().mockResolvedValue([]),
       remove: jest.fn(),
     };
 
     budgetCategoriesRepository = {
-      create: jest.fn().mockImplementation((data) => ({ ...data, id: "new-bc" })),
-      save: jest.fn().mockImplementation((data) => ({ ...data, id: data.id || "new-bc" })),
+      create: jest
+        .fn()
+        .mockImplementation((data) => ({ ...data, id: "new-bc" })),
+      save: jest
+        .fn()
+        .mockImplementation((data) => ({ ...data, id: data.id || "new-bc" })),
       findOne: jest.fn(),
       find: jest.fn().mockResolvedValue([]),
       remove: jest.fn(),
@@ -155,11 +171,26 @@ describe("BudgetsService", () => {
       providers: [
         BudgetsService,
         { provide: getRepositoryToken(Budget), useValue: budgetsRepository },
-        { provide: getRepositoryToken(BudgetCategory), useValue: budgetCategoriesRepository },
-        { provide: getRepositoryToken(BudgetAlert), useValue: budgetAlertsRepository },
-        { provide: getRepositoryToken(Transaction), useValue: transactionsRepository },
-        { provide: getRepositoryToken(TransactionSplit), useValue: splitsRepository },
-        { provide: getRepositoryToken(Category), useValue: categoriesRepository },
+        {
+          provide: getRepositoryToken(BudgetCategory),
+          useValue: budgetCategoriesRepository,
+        },
+        {
+          provide: getRepositoryToken(BudgetAlert),
+          useValue: budgetAlertsRepository,
+        },
+        {
+          provide: getRepositoryToken(Transaction),
+          useValue: transactionsRepository,
+        },
+        {
+          provide: getRepositoryToken(TransactionSplit),
+          useValue: splitsRepository,
+        },
+        {
+          provide: getRepositoryToken(Category),
+          useValue: categoriesRepository,
+        },
       ],
     }).compile();
 
@@ -254,9 +285,9 @@ describe("BudgetsService", () => {
     it("throws NotFoundException when budget not found", async () => {
       budgetsRepository.findOne.mockResolvedValue(null);
 
-      await expect(
-        service.findOne("user-1", "nonexistent"),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.findOne("user-1", "nonexistent")).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it("throws ForbiddenException when budget belongs to different user", async () => {
@@ -265,9 +296,9 @@ describe("BudgetsService", () => {
         userId: "other-user",
       });
 
-      await expect(
-        service.findOne("user-1", "budget-1"),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.findOne("user-1", "budget-1")).rejects.toThrow(
+        ForbiddenException,
+      );
     });
   });
 
@@ -348,9 +379,9 @@ describe("BudgetsService", () => {
     it("throws NotFoundException when budget not found", async () => {
       budgetsRepository.findOne.mockResolvedValue(null);
 
-      await expect(
-        service.remove("user-1", "nonexistent"),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.remove("user-1", "nonexistent")).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -530,9 +561,30 @@ describe("BudgetsService", () => {
       const budgetWithCategories = {
         ...mockBudget,
         categories: [
-          { ...mockBudgetCategory, id: "bc-1", categoryId: "cat-1", amount: 500, isIncome: false, category: { name: "Groceries" } },
-          { ...mockBudgetCategory, id: "bc-2", categoryId: "cat-2", amount: 1500, isIncome: false, category: { name: "Rent" } },
-          { ...mockBudgetCategory, id: "bc-3", categoryId: "cat-3", amount: 3000, isIncome: true, category: { name: "Salary" } },
+          {
+            ...mockBudgetCategory,
+            id: "bc-1",
+            categoryId: "cat-1",
+            amount: 500,
+            isIncome: false,
+            category: { name: "Groceries" },
+          },
+          {
+            ...mockBudgetCategory,
+            id: "bc-2",
+            categoryId: "cat-2",
+            amount: 1500,
+            isIncome: false,
+            category: { name: "Rent" },
+          },
+          {
+            ...mockBudgetCategory,
+            id: "bc-3",
+            categoryId: "cat-3",
+            amount: 3000,
+            isIncome: true,
+            category: { name: "Salary" },
+          },
         ],
       };
       budgetsRepository.findOne.mockResolvedValue(budgetWithCategories);
@@ -583,20 +635,27 @@ describe("BudgetsService", () => {
       const budgetWithCategories = {
         ...mockBudget,
         categories: [
-          { ...mockBudgetCategory, id: "bc-1", categoryId: "cat-1", amount: 500, isIncome: false, category: { name: "Groceries" } },
+          {
+            ...mockBudgetCategory,
+            id: "bc-1",
+            categoryId: "cat-1",
+            amount: 500,
+            isIncome: false,
+            category: { name: "Groceries" },
+          },
         ],
       };
       budgetsRepository.findOne.mockResolvedValue(budgetWithCategories);
 
       const directQb = createMockQueryBuilder({
-        getRawMany: jest.fn().mockResolvedValue([
-          { categoryId: "cat-1", total: "200" },
-        ]),
+        getRawMany: jest
+          .fn()
+          .mockResolvedValue([{ categoryId: "cat-1", total: "200" }]),
       });
       const splitQb = createMockQueryBuilder({
-        getRawMany: jest.fn().mockResolvedValue([
-          { categoryId: "cat-1", total: "100" },
-        ]),
+        getRawMany: jest
+          .fn()
+          .mockResolvedValue([{ categoryId: "cat-1", total: "100" }]),
       });
       transactionsRepository.createQueryBuilder.mockReturnValue(directQb);
       splitsRepository.createQueryBuilder.mockReturnValue(splitQb);
@@ -615,15 +674,22 @@ describe("BudgetsService", () => {
       const budgetWithCategories = {
         ...mockBudget,
         categories: [
-          { ...mockBudgetCategory, id: "bc-1", categoryId: "cat-1", amount: 600, isIncome: false, category: { name: "Groceries" } },
+          {
+            ...mockBudgetCategory,
+            id: "bc-1",
+            categoryId: "cat-1",
+            amount: 600,
+            isIncome: false,
+            category: { name: "Groceries" },
+          },
         ],
       };
       budgetsRepository.findOne.mockResolvedValue(budgetWithCategories);
 
       const directQb = createMockQueryBuilder({
-        getRawMany: jest.fn().mockResolvedValue([
-          { categoryId: "cat-1", total: "200" },
-        ]),
+        getRawMany: jest
+          .fn()
+          .mockResolvedValue([{ categoryId: "cat-1", total: "200" }]),
       });
       const splitQb = createMockQueryBuilder({
         getRawMany: jest.fn().mockResolvedValue([]),
@@ -647,15 +713,22 @@ describe("BudgetsService", () => {
       const budgetWithCategories = {
         ...mockBudget,
         categories: [
-          { ...mockBudgetCategory, id: "bc-1", categoryId: "cat-1", amount: 100, isIncome: false, category: { name: "Groceries" } },
+          {
+            ...mockBudgetCategory,
+            id: "bc-1",
+            categoryId: "cat-1",
+            amount: 100,
+            isIncome: false,
+            category: { name: "Groceries" },
+          },
         ],
       };
       budgetsRepository.findOne.mockResolvedValue(budgetWithCategories);
 
       const directQb = createMockQueryBuilder({
-        getRawMany: jest.fn().mockResolvedValue([
-          { categoryId: "cat-1", total: "150" },
-        ]),
+        getRawMany: jest
+          .fn()
+          .mockResolvedValue([{ categoryId: "cat-1", total: "150" }]),
       });
       transactionsRepository.createQueryBuilder.mockReturnValue(directQb);
       splitsRepository.createQueryBuilder.mockReturnValue(
@@ -728,9 +801,9 @@ describe("BudgetsService", () => {
         userId: "other-user",
       });
 
-      await expect(
-        service.markAlertRead("user-1", "alert-1"),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.markAlertRead("user-1", "alert-1")).rejects.toThrow(
+        ForbiddenException,
+      );
     });
   });
 

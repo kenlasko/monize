@@ -133,9 +133,7 @@ export class BudgetsService {
     });
 
     if (existing) {
-      throw new BadRequestException(
-        "This category is already in the budget",
-      );
+      throw new BadRequestException("This category is already in the budget");
     }
 
     const budgetCategory = this.budgetCategoriesRepository.create({
@@ -329,10 +327,7 @@ export class BudgetsService {
     );
 
     const expenseCategories = categoryBreakdown.filter((c) => !c.isIncome);
-    const currentSpent = expenseCategories.reduce(
-      (sum, c) => sum + c.spent,
-      0,
-    );
+    const currentSpent = expenseCategories.reduce((sum, c) => sum + c.spent, 0);
     const budgetTotal = expenseCategories.reduce(
       (sum, c) => sum + c.budgeted,
       0,
@@ -369,10 +364,7 @@ export class BudgetsService {
     };
   }
 
-  async getAlerts(
-    userId: string,
-    unreadOnly = false,
-  ): Promise<BudgetAlert[]> {
+  async getAlerts(userId: string, unreadOnly = false): Promise<BudgetAlert[]> {
     const where: Record<string, unknown> = { userId };
     if (unreadOnly) {
       where.isRead = false;
@@ -385,10 +377,7 @@ export class BudgetsService {
     });
   }
 
-  async markAlertRead(
-    userId: string,
-    alertId: string,
-  ): Promise<BudgetAlert> {
+  async markAlertRead(userId: string, alertId: string): Promise<BudgetAlert> {
     const alert = await this.budgetAlertsRepository.findOne({
       where: { id: alertId },
     });
@@ -414,7 +403,7 @@ export class BudgetsService {
     return { updated: result.affected || 0 };
   }
 
-  private getCurrentPeriodDates(budget: Budget): {
+  private getCurrentPeriodDates(_budget: Budget): {
     periodStart: string;
     periodEnd: string;
   } {
@@ -457,7 +446,7 @@ export class BudgetsService {
       .filter((bc) => bc.categoryId !== null)
       .map((bc) => bc.categoryId as string);
 
-    let spendingMap = new Map<string, number>();
+    const spendingMap = new Map<string, number>();
 
     if (categoryIds.length > 0) {
       const directSpending = await this.transactionsRepository
@@ -501,7 +490,7 @@ export class BudgetsService {
 
     return budgetCategories.map((bc) => {
       const budgeted = Number(bc.amount);
-      const spent = bc.categoryId ? (spendingMap.get(bc.categoryId) || 0) : 0;
+      const spent = bc.categoryId ? spendingMap.get(bc.categoryId) || 0 : 0;
       const remaining = budgeted - spent;
       const percentUsed =
         budgeted > 0 ? Math.round((spent / budgeted) * 10000) / 100 : 0;

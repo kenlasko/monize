@@ -48,7 +48,11 @@ describe("BudgetsController", () => {
 
   describe("create()", () => {
     it("delegates to budgetsService.create with userId and dto", () => {
-      const dto = { name: "Budget", periodStart: "2026-02-01", currencyCode: "USD" } as any;
+      const dto = {
+        name: "Budget",
+        periodStart: "2026-02-01",
+        currencyCode: "USD",
+      } as any;
       mockBudgetsService.create!.mockReturnValue("created");
 
       const result = controller.create(mockReq, dto);
@@ -176,11 +180,7 @@ describe("BudgetsController", () => {
       };
       mockBudgetsService.bulkUpdateCategories!.mockReturnValue("bulk-updated");
 
-      const result = controller.bulkUpdateCategories(
-        mockReq,
-        "budget-1",
-        dto,
-      );
+      const result = controller.bulkUpdateCategories(mockReq, "budget-1", dto);
 
       expect(result).toBe("bulk-updated");
       expect(mockBudgetsService.bulkUpdateCategories).toHaveBeenCalledWith(
@@ -226,10 +226,7 @@ describe("BudgetsController", () => {
       const result = controller.getAlerts(mockReq, true);
 
       expect(result).toBe("alerts");
-      expect(mockBudgetsService.getAlerts).toHaveBeenCalledWith(
-        "user-1",
-        true,
-      );
+      expect(mockBudgetsService.getAlerts).toHaveBeenCalledWith("user-1", true);
     });
 
     it("defaults unreadOnly to false when undefined", () => {
