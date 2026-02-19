@@ -11,6 +11,7 @@ import toast from 'react-hot-toast';
 const navLinks = [
   { href: '/transactions', label: 'Transactions' },
   { href: '/accounts', label: 'Accounts' },
+  { href: '/budgets', label: 'Budgets' },
   { href: '/investments', label: 'Investments' },
   { href: '/bills', label: 'Bills & Deposits' },
   { href: '/reports', label: 'Reports' },
