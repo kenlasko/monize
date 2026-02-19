@@ -32,6 +32,7 @@ export enum MetricType {
   TOTAL_AMOUNT = 'TOTAL_AMOUNT',
   COUNT = 'COUNT',
   AVERAGE = 'AVERAGE',
+  BUDGET_VARIANCE = 'BUDGET_VARIANCE',
 }
 
 export enum DirectionFilter {
@@ -200,6 +201,7 @@ export const METRIC_LABELS: Record<MetricType, string> = {
   [MetricType.TOTAL_AMOUNT]: 'Total Amount',
   [MetricType.COUNT]: 'Transaction Count',
   [MetricType.AVERAGE]: 'Average Amount',
+  [MetricType.BUDGET_VARIANCE]: 'Budget Variance',
 };
 
 export const DIRECTION_LABELS: Record<DirectionFilter, string> = {

@@ -1035,27 +1035,27 @@ Note: Alert entity, repository, and basic retrieval/marking endpoints exist from
 - [x] Add budget notification preferences to user settings (budget_digest_enabled, budget_digest_day)
 - [x] Write tests for alert threshold logic and de-duplication (43 backend + 28 frontend + 7 settings tests)
 
-### Phase 6: Reports & Analytics -- NOT STARTED
+### Phase 6: Reports & Analytics -- COMPLETE
 
-- [ ] Implement BudgetReportsService
-  - [ ] Budget vs Actual trend over N months
-  - [ ] Per-category trend over time
-  - [ ] Health score calculation (0-100 algorithm with deductions/bonuses)
-  - [ ] Seasonal spending pattern analysis
-  - [ ] Flex group status aggregation
-- [ ] Add report endpoints to controller:
-  - [ ] `GET /budgets/:id/reports/trend`
-  - [ ] `GET /budgets/:id/reports/category-trend`
-  - [ ] `GET /budgets/:id/reports/health-score`
-  - [ ] `GET /budgets/:id/reports/seasonal`
-  - [ ] `GET /budgets/:id/reports/flex-groups`
-- [ ] Build BudgetTrendChart component (line chart: budget vs actual over months)
-- [ ] Build BudgetCategoryTrend component (per-category trend comparison)
-- [ ] Build BudgetHeatmap component (seasonal spending map: 12 months x N categories)
-- [ ] Build BudgetScenarioPlanner component (what-if slider tool, frontend-only calculation)
-- [ ] Add "Budget" section to existing reports page
-- [ ] Add BUDGET_VARIANCE metric to custom reports engine
-- [ ] Write unit tests for health score algorithm and trend calculations
+- [x] Implement BudgetReportsService
+  - [x] Budget vs Actual trend over N months
+  - [x] Per-category trend over time
+  - [x] Health score calculation (0-100 algorithm with deductions/bonuses)
+  - [x] Seasonal spending pattern analysis
+  - [x] Flex group status aggregation
+- [x] Add report endpoints to controller:
+  - [x] `GET /budgets/:id/reports/trend`
+  - [x] `GET /budgets/:id/reports/category-trend`
+  - [x] `GET /budgets/:id/reports/health-score`
+  - [x] `GET /budgets/:id/reports/seasonal`
+  - [x] `GET /budgets/:id/reports/flex-groups`
+- [x] Build BudgetTrendChart component (bar + line chart in BudgetVsActualReport with variance line)
+- [x] Build BudgetCategoryTrend component (per-category trend comparison with toggle and summary table)
+- [x] Build BudgetSeasonalPatternsReport (bar chart with high-month highlighting, replaces heatmap)
+- [x] Build BudgetScenarioPlanner component (what-if slider tool, frontend-only calculation)
+- [x] Add "Budget" section to existing reports page (3 reports: vs actual, health score, seasonal)
+- [x] Add BUDGET_VARIANCE metric to custom reports engine
+- [x] Write unit tests for health score algorithm and trend calculations (32 backend + 19 frontend tests)
 
 ### Phase 7: Integration & Polish -- NOT STARTED
 

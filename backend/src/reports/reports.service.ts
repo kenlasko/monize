@@ -682,6 +682,9 @@ export class ReportsService {
         return count;
       case MetricType.AVERAGE:
         return count > 0 ? Math.round((sum / count) * 100) / 100 : 0;
+      case MetricType.BUDGET_VARIANCE:
+        // For budget variance, sum contains the variance (actual - budgeted)
+        return Math.round(sum * 100) / 100;
       default:
         return sum;
     }

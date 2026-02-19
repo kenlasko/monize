@@ -35,6 +35,10 @@ const reportComponents: Record<string, React.LazyExoticComponent<React.Component
   // Scheduled & Bills
   'upcoming-bills': lazy(() => import('@/components/reports/UpcomingBillsReport').then(m => ({ default: m.UpcomingBillsReport }))),
   'bill-payment-history': lazy(() => import('@/components/reports/BillPaymentHistoryReport').then(m => ({ default: m.BillPaymentHistoryReport }))),
+  // Budget
+  'budget-vs-actual': lazy(() => import('@/components/reports/BudgetVsActualReport').then(m => ({ default: m.BudgetVsActualReport }))),
+  'budget-health-score': lazy(() => import('@/components/reports/BudgetHealthScoreReport').then(m => ({ default: m.BudgetHealthScoreReport }))),
+  'budget-seasonal-patterns': lazy(() => import('@/components/reports/BudgetSeasonalPatternsReport').then(m => ({ default: m.BudgetSeasonalPatternsReport }))),
 };
 
 const reportNames: Record<string, string> = {
@@ -64,6 +68,10 @@ const reportNames: Record<string, string> = {
   // Scheduled & Bills
   'upcoming-bills': 'Upcoming Bills Calendar',
   'bill-payment-history': 'Bill Payment History',
+  // Budget
+  'budget-vs-actual': 'Budget vs Actual',
+  'budget-health-score': 'Budget Health Score',
+  'budget-seasonal-patterns': 'Seasonal Spending Patterns',
 };
 
 const reportDescriptions: Record<string, string> = {
@@ -88,6 +96,9 @@ const reportDescriptions: Record<string, string> = {
   'duplicate-transactions': 'Identify potential duplicate entries that may need review or deletion.',
   'upcoming-bills': 'Visual calendar of scheduled transactions and upcoming bill due dates.',
   'bill-payment-history': 'Track payment patterns and history for recurring bills and scheduled transactions.',
+  'budget-vs-actual': 'Compare your budgeted amounts to actual spending over time across all categories.',
+  'budget-health-score': 'Get a 0-100 health score for your budget with detailed per-category impact analysis.',
+  'budget-seasonal-patterns': 'Discover seasonal trends and high-spending months across your budget categories.',
 };
 
 function ReportSkeleton() {

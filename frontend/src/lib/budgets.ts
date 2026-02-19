@@ -6,6 +6,11 @@ import {
   BudgetPeriod,
   BudgetSummary,
   BudgetVelocity,
+  BudgetTrendPoint,
+  CategoryTrendSeries,
+  HealthScoreResult,
+  SeasonalPattern,
+  FlexGroupStatus,
   CreateBudgetData,
   UpdateBudgetData,
   CreateBudgetCategoryData,
@@ -173,6 +178,55 @@ export const budgetsApi = {
   markAllAlertsRead: async (): Promise<{ updated: number }> => {
     const response = await apiClient.patch<{ updated: number }>(
       '/budgets/alerts/read-all',
+    );
+    return response.data;
+  },
+
+  // Reports
+  getTrend: async (
+    budgetId: string,
+    months = 6,
+  ): Promise<BudgetTrendPoint[]> => {
+    const response = await apiClient.get<BudgetTrendPoint[]>(
+      `/budgets/${budgetId}/reports/trend`,
+      { params: { months } },
+    );
+    return response.data;
+  },
+
+  getCategoryTrend: async (
+    budgetId: string,
+    months = 6,
+    categoryIds?: string[],
+  ): Promise<CategoryTrendSeries[]> => {
+    const response = await apiClient.get<CategoryTrendSeries[]>(
+      `/budgets/${budgetId}/reports/category-trend`,
+      { params: { months, categoryIds } },
+    );
+    return response.data;
+  },
+
+  getHealthScore: async (budgetId: string): Promise<HealthScoreResult> => {
+    const response = await apiClient.get<HealthScoreResult>(
+      `/budgets/${budgetId}/reports/health-score`,
+    );
+    return response.data;
+  },
+
+  getSeasonalPatterns: async (
+    budgetId: string,
+  ): Promise<SeasonalPattern[]> => {
+    const response = await apiClient.get<SeasonalPattern[]>(
+      `/budgets/${budgetId}/reports/seasonal`,
+    );
+    return response.data;
+  },
+
+  getFlexGroupStatus: async (
+    budgetId: string,
+  ): Promise<FlexGroupStatus[]> => {
+    const response = await apiClient.get<FlexGroupStatus[]>(
+      `/budgets/${budgetId}/reports/flex-groups`,
     );
     return response.data;
   },

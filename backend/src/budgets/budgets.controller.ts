@@ -24,6 +24,7 @@ import { AuthGuard } from "@nestjs/passport";
 import { BudgetsService } from "./budgets.service";
 import { BudgetPeriodService } from "./budget-period.service";
 import { BudgetGeneratorService } from "./budget-generator.service";
+import { BudgetReportsService } from "./budget-reports.service";
 import { CreateBudgetDto } from "./dto/create-budget.dto";
 import { UpdateBudgetDto } from "./dto/update-budget.dto";
 import { CreateBudgetCategoryDto } from "./dto/create-budget-category.dto";
@@ -31,6 +32,7 @@ import { UpdateBudgetCategoryDto } from "./dto/update-budget-category.dto";
 import { BulkUpdateBudgetCategoriesDto } from "./dto/bulk-update-budget-categories.dto";
 import { GenerateBudgetDto } from "./dto/generate-budget.dto";
 import { ApplyGeneratedBudgetDto } from "./dto/apply-generated-budget.dto";
+import { BudgetReportQueryDto } from "./dto/budget-report-query.dto";
 
 @ApiTags("Budgets")
 @Controller("budgets")
@@ -41,6 +43,7 @@ export class BudgetsController {
     private readonly budgetsService: BudgetsService,
     private readonly budgetPeriodService: BudgetPeriodService,
     private readonly budgetGeneratorService: BudgetGeneratorService,
+    private readonly budgetReportsService: BudgetReportsService,
   ) {}
 
   @Post()
@@ -282,5 +285,92 @@ export class BudgetsController {
   @ApiResponse({ status: 404, description: "Budget not found" })
   closePeriod(@Request() req, @Param("id", ParseUUIDPipe) id: string) {
     return this.budgetPeriodService.closePeriod(req.user.id, id);
+  }
+
+  // --- Budget Reports ---
+
+  @Get(":id/reports/trend")
+  @ApiOperation({ summary: "Get budget vs actual trend over N months" })
+  @ApiParam({ name: "id", description: "Budget UUID" })
+  @ApiQuery({
+    name: "months",
+    required: false,
+    type: Number,
+    description: "Number of months (default 6)",
+  })
+  @ApiResponse({ status: 200, description: "Trend data retrieved" })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  @ApiResponse({ status: 404, description: "Budget not found" })
+  getTrend(
+    @Request() req,
+    @Param("id", ParseUUIDPipe) id: string,
+    @Query() query: BudgetReportQueryDto,
+  ) {
+    return this.budgetReportsService.getTrend(
+      req.user.id,
+      id,
+      query.months || 6,
+    );
+  }
+
+  @Get(":id/reports/category-trend")
+  @ApiOperation({ summary: "Get per-category trend over time" })
+  @ApiParam({ name: "id", description: "Budget UUID" })
+  @ApiQuery({
+    name: "months",
+    required: false,
+    type: Number,
+    description: "Number of months (default 6)",
+  })
+  @ApiQuery({
+    name: "categoryIds",
+    required: false,
+    type: [String],
+    description: "Filter to specific category IDs",
+  })
+  @ApiResponse({ status: 200, description: "Category trend data retrieved" })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  @ApiResponse({ status: 404, description: "Budget not found" })
+  getCategoryTrend(
+    @Request() req,
+    @Param("id", ParseUUIDPipe) id: string,
+    @Query() query: BudgetReportQueryDto,
+  ) {
+    return this.budgetReportsService.getCategoryTrend(
+      req.user.id,
+      id,
+      query.months || 6,
+      query.categoryIds,
+    );
+  }
+
+  @Get(":id/reports/health-score")
+  @ApiOperation({ summary: "Get budget health score (0-100)" })
+  @ApiParam({ name: "id", description: "Budget UUID" })
+  @ApiResponse({ status: 200, description: "Health score calculated" })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  @ApiResponse({ status: 404, description: "Budget not found" })
+  getHealthScore(@Request() req, @Param("id", ParseUUIDPipe) id: string) {
+    return this.budgetReportsService.getHealthScore(req.user.id, id);
+  }
+
+  @Get(":id/reports/seasonal")
+  @ApiOperation({ summary: "Get seasonal spending patterns" })
+  @ApiParam({ name: "id", description: "Budget UUID" })
+  @ApiResponse({ status: 200, description: "Seasonal patterns retrieved" })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  @ApiResponse({ status: 404, description: "Budget not found" })
+  getSeasonalPatterns(@Request() req, @Param("id", ParseUUIDPipe) id: string) {
+    return this.budgetReportsService.getSeasonalPatterns(req.user.id, id);
+  }
+
+  @Get(":id/reports/flex-groups")
+  @ApiOperation({ summary: "Get flex group aggregation status" })
+  @ApiParam({ name: "id", description: "Budget UUID" })
+  @ApiResponse({ status: 200, description: "Flex group status retrieved" })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  @ApiResponse({ status: 404, description: "Budget not found" })
+  getFlexGroupStatus(@Request() req, @Param("id", ParseUUIDPipe) id: string) {
+    return this.budgetReportsService.getFlexGroupStatus(req.user.id, id);
   }
 }
