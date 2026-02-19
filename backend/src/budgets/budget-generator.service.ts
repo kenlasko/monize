@@ -175,8 +175,12 @@ export class BudgetGeneratorService {
     const directSpending = await this.transactionsRepository
       .createQueryBuilder("t")
       .innerJoin("t.category", "c")
+      .leftJoin("c.parent", "p")
       .select("t.category_id", "categoryId")
-      .addSelect("c.name", "categoryName")
+      .addSelect(
+        "CASE WHEN p.name IS NOT NULL THEN p.name || ': ' || c.name ELSE c.name END",
+        "categoryName",
+      )
       .addSelect("c.is_income", "isIncome")
       .addSelect("EXTRACT(YEAR FROM t.transaction_date)::int", "year")
       .addSelect("EXTRACT(MONTH FROM t.transaction_date)::int", "month")
@@ -190,6 +194,7 @@ export class BudgetGeneratorService {
       .andWhere(amountCondition)
       .groupBy("t.category_id")
       .addGroupBy("c.name")
+      .addGroupBy("p.name")
       .addGroupBy("c.is_income")
       .addGroupBy("EXTRACT(YEAR FROM t.transaction_date)")
       .addGroupBy("EXTRACT(MONTH FROM t.transaction_date)")
@@ -199,8 +204,12 @@ export class BudgetGeneratorService {
       .createQueryBuilder("s")
       .innerJoin("s.transaction", "t")
       .innerJoin("s.category", "c")
+      .leftJoin("c.parent", "p")
       .select("s.category_id", "categoryId")
-      .addSelect("c.name", "categoryName")
+      .addSelect(
+        "CASE WHEN p.name IS NOT NULL THEN p.name || ': ' || c.name ELSE c.name END",
+        "categoryName",
+      )
       .addSelect("c.is_income", "isIncome")
       .addSelect("EXTRACT(YEAR FROM t.transaction_date)::int", "year")
       .addSelect("EXTRACT(MONTH FROM t.transaction_date)::int", "month")
@@ -213,6 +222,7 @@ export class BudgetGeneratorService {
       .andWhere(isIncome ? "s.amount > 0" : "s.amount < 0")
       .groupBy("s.category_id")
       .addGroupBy("c.name")
+      .addGroupBy("p.name")
       .addGroupBy("c.is_income")
       .addGroupBy("EXTRACT(YEAR FROM t.transaction_date)")
       .addGroupBy("EXTRACT(MONTH FROM t.transaction_date)")
@@ -256,19 +266,25 @@ export class BudgetGeneratorService {
         analysisMonths,
       );
 
-      const sorted = [...monthlyAmounts].sort((a, b) => a - b);
-      const nonZeroMonths = monthlyAmounts.filter((m) => m > 0).length;
+      const nonZeroAmounts = monthlyAmounts.filter((m) => m > 0);
+      const nonZeroMonths = nonZeroAmounts.length;
+
+      // Use non-zero months for percentile calculations so that categories
+      // with sparse data (e.g. payroll deductions present in only some months)
+      // produce meaningful medians instead of zero.
+      const sortedForPercentiles = [...nonZeroAmounts].sort((a, b) => a - b);
+      const sortedAll = [...monthlyAmounts].sort((a, b) => a - b);
 
       results.push({
         categoryId: entry.categoryId,
         categoryName: entry.categoryName,
         isIncome: entry.isIncome,
         average: this.round(this.mean(monthlyAmounts)),
-        median: this.round(this.percentile(sorted, 50)),
-        p25: this.round(this.percentile(sorted, 25)),
-        p75: this.round(this.percentile(sorted, 75)),
-        min: this.round(sorted[0] ?? 0),
-        max: this.round(sorted[sorted.length - 1] ?? 0),
+        median: this.round(this.percentile(sortedForPercentiles, 50)),
+        p25: this.round(this.percentile(sortedForPercentiles, 25)),
+        p75: this.round(this.percentile(sortedForPercentiles, 75)),
+        min: this.round(sortedAll[0] ?? 0),
+        max: this.round(sortedAll[sortedAll.length - 1] ?? 0),
         stdDev: this.round(this.standardDeviation(monthlyAmounts)),
         monthlyAmounts,
         monthlyOccurrences: nonZeroMonths,

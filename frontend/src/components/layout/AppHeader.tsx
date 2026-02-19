@@ -12,9 +12,9 @@ import toast from 'react-hot-toast';
 const navLinks = [
   { href: '/transactions', label: 'Transactions' },
   { href: '/accounts', label: 'Accounts' },
-  { href: '/budgets', label: 'Budgets' },
   { href: '/investments', label: 'Investments' },
   { href: '/bills', label: 'Bills & Deposits' },
+  { href: '/budgets', label: 'Budgets' },
   { href: '/reports', label: 'Reports' },
 ];
 
@@ -242,20 +242,6 @@ export function AppHeader() {
                 </button>
               ))}
 
-              {/* Admin link - only visible to admins */}
-              {user?.role === 'admin' && (
-                <button
-                  onClick={() => router.push('/admin/users')}
-                  className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                    pathname.startsWith('/admin')
-                      ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200'
-                      : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700'
-                  }`}
-                >
-                  Admin
-                </button>
-              )}
-
               {/* AI Dropdown */}
               <div className="relative" ref={aiRef}>
                 <button
@@ -345,6 +331,20 @@ export function AppHeader() {
                   </div>
                 )}
               </div>
+
+              {/* Admin link - only visible to admins */}
+              {user?.role === 'admin' && (
+                <button
+                  onClick={() => router.push('/admin/users')}
+                  className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                    pathname.startsWith('/admin')
+                      ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200'
+                      : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  Admin
+                </button>
+              )}
             </nav>
           </div>
           <div className="flex items-center space-x-4">
