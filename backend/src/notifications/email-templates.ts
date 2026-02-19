@@ -71,6 +71,156 @@ export function billReminderTemplate(
   `;
 }
 
+interface BudgetAlertData {
+  title: string;
+  message: string;
+  severity: string;
+  categoryName: string;
+}
+
+function severityColor(severity: string): string {
+  switch (severity) {
+    case "critical":
+      return "#dc2626";
+    case "warning":
+      return "#d97706";
+    case "success":
+      return "#059669";
+    default:
+      return "#2563eb";
+  }
+}
+
+function severityLabel(severity: string): string {
+  switch (severity) {
+    case "critical":
+      return "Critical";
+    case "warning":
+      return "Warning";
+    case "success":
+      return "Good News";
+    default:
+      return "Info";
+  }
+}
+
+export function budgetAlertImmediateTemplate(
+  firstName: string,
+  alerts: BudgetAlertData[],
+  appUrl: string,
+): string {
+  const safeName = escapeHtml(firstName || "there");
+  const alertRows = alerts
+    .map(
+      (a) =>
+        `<tr>
+          <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb;">
+            <span style="display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; color: white; background: ${severityColor(a.severity)};">
+              ${escapeHtml(severityLabel(a.severity))}
+            </span>
+          </td>
+          <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; font-weight: 500;">${escapeHtml(a.title)}</td>
+          <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; color: #6b7280;">${escapeHtml(a.message)}</td>
+        </tr>`,
+    )
+    .join("");
+
+  return `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <h2 style="color: #1f2937;">Budget Alert</h2>
+      <p style="color: #374151;">Hi ${safeName},</p>
+      <p style="color: #374151;">Your budget needs attention:</p>
+      <table style="width: 100%; border-collapse: collapse; margin: 16px 0; border: 1px solid #e5e7eb; border-radius: 8px;">
+        <thead>
+          <tr style="background: #f3f4f6;">
+            <th style="padding: 10px 12px; text-align: left; font-weight: 600; color: #374151;">Severity</th>
+            <th style="padding: 10px 12px; text-align: left; font-weight: 600; color: #374151;">Alert</th>
+            <th style="padding: 10px 12px; text-align: left; font-weight: 600; color: #374151;">Details</th>
+          </tr>
+        </thead>
+        <tbody>${alertRows}</tbody>
+      </table>
+      <p style="margin-top: 20px;">
+        <a href="${appUrl}/budgets" style="display: inline-block; padding: 10px 20px; background: #2563eb; color: #ffffff; border-radius: 6px; text-decoration: none; font-weight: 500;">View Budget</a>
+      </p>
+      <p style="color: #6b7280; font-size: 14px; margin-top: 24px;">-- Monize</p>
+    </div>
+  `;
+}
+
+export function budgetWeeklyDigestTemplate(
+  firstName: string,
+  alerts: BudgetAlertData[],
+  budgetNames: string[],
+  appUrl: string,
+): string {
+  const safeName = escapeHtml(firstName || "there");
+
+  const criticalAlerts = alerts.filter((a) => a.severity === "critical");
+  const warningAlerts = alerts.filter((a) => a.severity === "warning");
+  const positiveAlerts = alerts.filter((a) => a.severity === "success");
+
+  const alertSummary: string[] = [];
+  if (criticalAlerts.length > 0) {
+    alertSummary.push(
+      `<span style="color: #dc2626; font-weight: 600;">${criticalAlerts.length} critical</span>`,
+    );
+  }
+  if (warningAlerts.length > 0) {
+    alertSummary.push(
+      `<span style="color: #d97706; font-weight: 600;">${warningAlerts.length} warning${warningAlerts.length !== 1 ? "s" : ""}</span>`,
+    );
+  }
+  if (positiveAlerts.length > 0) {
+    alertSummary.push(
+      `<span style="color: #059669; font-weight: 600;">${positiveAlerts.length} positive</span>`,
+    );
+  }
+
+  const topAlerts = alerts.slice(0, 5);
+  const alertRows = topAlerts
+    .map(
+      (a) =>
+        `<li style="margin-bottom: 8px;">
+          <span style="display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 11px; font-weight: 600; color: white; background: ${severityColor(a.severity)}; vertical-align: middle;">
+            ${escapeHtml(severityLabel(a.severity))}
+          </span>
+          <span style="color: #374151; margin-left: 4px;">${escapeHtml(a.title)}</span>
+        </li>`,
+    )
+    .join("");
+
+  const safeBudgetNames = budgetNames.map((n) => escapeHtml(n)).join(", ");
+
+  return `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <h2 style="color: #1f2937;">Weekly Budget Summary</h2>
+      <p style="color: #374151;">Hi ${safeName},</p>
+      <p style="color: #374151;">Here is your weekly budget summary for: <strong>${safeBudgetNames}</strong></p>
+
+      <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin: 16px 0;">
+        <p style="margin: 0 0 8px 0; color: #374151; font-weight: 600;">This Week: ${alertSummary.join(", ") || "No alerts"}</p>
+        <p style="margin: 0; color: #6b7280; font-size: 14px;">Total alerts: ${alerts.length}</p>
+      </div>
+
+      ${
+        topAlerts.length > 0
+          ? `
+        <h3 style="color: #374151; font-size: 16px; margin-top: 20px;">Top Alerts</h3>
+        <ul style="padding-left: 0; list-style: none;">${alertRows}</ul>
+        ${alerts.length > 5 ? `<p style="color: #6b7280; font-size: 14px;">...and ${alerts.length - 5} more</p>` : ""}
+      `
+          : ""
+      }
+
+      <p style="margin-top: 20px;">
+        <a href="${appUrl}/budgets" style="display: inline-block; padding: 10px 20px; background: #2563eb; color: #ffffff; border-radius: 6px; text-decoration: none; font-weight: 500;">View Budget Dashboard</a>
+      </p>
+      <p style="color: #6b7280; font-size: 14px; margin-top: 24px;">-- Monize</p>
+    </div>
+  `;
+}
+
 export function passwordResetTemplate(
   firstName: string,
   resetUrl: string,

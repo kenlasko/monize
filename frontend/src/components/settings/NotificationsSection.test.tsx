@@ -32,6 +32,8 @@ const mockPreferences: UserPreferences = {
   notificationBrowser: false,
   twoFactorEnabled: false,
   gettingStartedDismissed: false,
+  budgetDigestEnabled: true,
+  budgetDigestDay: 'MONDAY',
   createdAt: '2024-01-01T00:00:00Z',
   updatedAt: '2024-01-01T00:00:00Z',
 };
@@ -81,7 +83,7 @@ describe('NotificationsSection', () => {
     );
 
     expect(screen.getByText('Email Notifications')).toBeInTheDocument();
-    expect(screen.getByRole('switch')).toBeInTheDocument();
+    expect(screen.getAllByRole('switch').length).toBeGreaterThanOrEqual(1);
   });
 
   it('toggles notification on switch click', async () => {
@@ -96,7 +98,8 @@ describe('NotificationsSection', () => {
       />
     );
 
-    fireEvent.click(screen.getByRole('switch'));
+    // When notifications are off, only one switch is visible
+    fireEvent.click(screen.getAllByRole('switch')[0]);
 
     await waitFor(() => {
       expect(userSettingsApi.updatePreferences).toHaveBeenCalledWith({ notificationEmail: true });
@@ -144,7 +147,7 @@ describe('NotificationsSection', () => {
       />
     );
 
-    const toggle = screen.getByRole('switch');
+    const toggle = screen.getAllByRole('switch')[0];
     expect(toggle).toHaveAttribute('aria-checked', 'false');
 
     fireEvent.click(toggle);
@@ -170,7 +173,8 @@ describe('NotificationsSection', () => {
       />
     );
 
-    const toggle = screen.getByRole('switch');
+    // First switch is the main email notifications toggle
+    const toggle = screen.getAllByRole('switch')[0];
     expect(toggle).toHaveAttribute('aria-checked', 'true');
 
     fireEvent.click(toggle);
@@ -264,10 +268,107 @@ describe('NotificationsSection', () => {
       />
     );
 
-    fireEvent.click(screen.getByRole('switch'));
+    fireEvent.click(screen.getAllByRole('switch')[0]);
 
     await waitFor(() => {
       expect(mockOnPreferencesUpdated).toHaveBeenCalledWith(updatedPrefs);
+    });
+  });
+
+  it('shows budget digest toggle when email notifications are enabled', () => {
+    render(
+      <NotificationsSection
+        initialNotificationEmail={true}
+        smtpConfigured={true}
+        preferences={mockPreferences}
+        onPreferencesUpdated={mockOnPreferencesUpdated}
+      />
+    );
+
+    expect(screen.getByText('Budget Notifications')).toBeInTheDocument();
+    expect(screen.getByText('Weekly Budget Digest')).toBeInTheDocument();
+    expect(screen.getByLabelText('Toggle budget digest')).toBeInTheDocument();
+  });
+
+  it('hides budget digest section when email notifications are disabled', () => {
+    render(
+      <NotificationsSection
+        initialNotificationEmail={false}
+        smtpConfigured={true}
+        preferences={mockPreferences}
+        onPreferencesUpdated={mockOnPreferencesUpdated}
+      />
+    );
+
+    expect(screen.queryByText('Budget Notifications')).not.toBeInTheDocument();
+    expect(screen.queryByText('Weekly Budget Digest')).not.toBeInTheDocument();
+  });
+
+  it('shows digest day selector when budget digest is enabled', () => {
+    render(
+      <NotificationsSection
+        initialNotificationEmail={true}
+        smtpConfigured={true}
+        preferences={{ ...mockPreferences, budgetDigestEnabled: true }}
+        onPreferencesUpdated={mockOnPreferencesUpdated}
+      />
+    );
+
+    expect(screen.getByLabelText('Budget digest day')).toBeInTheDocument();
+  });
+
+  it('hides digest day selector when budget digest is disabled', () => {
+    render(
+      <NotificationsSection
+        initialNotificationEmail={true}
+        smtpConfigured={true}
+        preferences={{ ...mockPreferences, budgetDigestEnabled: false }}
+        onPreferencesUpdated={mockOnPreferencesUpdated}
+      />
+    );
+
+    expect(screen.queryByLabelText('Budget digest day')).not.toBeInTheDocument();
+  });
+
+  it('toggles budget digest', async () => {
+    const updatedPrefs = { ...mockPreferences, budgetDigestEnabled: false };
+    (userSettingsApi.updatePreferences as ReturnType<typeof vi.fn>).mockResolvedValue(updatedPrefs);
+
+    render(
+      <NotificationsSection
+        initialNotificationEmail={true}
+        smtpConfigured={true}
+        preferences={{ ...mockPreferences, budgetDigestEnabled: true }}
+        onPreferencesUpdated={mockOnPreferencesUpdated}
+      />
+    );
+
+    fireEvent.click(screen.getByLabelText('Toggle budget digest'));
+
+    await waitFor(() => {
+      expect(userSettingsApi.updatePreferences).toHaveBeenCalledWith({ budgetDigestEnabled: false });
+      expect(toast.success).toHaveBeenCalledWith('Budget digest disabled');
+    });
+  });
+
+  it('changes digest day', async () => {
+    const updatedPrefs = { ...mockPreferences, budgetDigestDay: 'FRIDAY' as const };
+    (userSettingsApi.updatePreferences as ReturnType<typeof vi.fn>).mockResolvedValue(updatedPrefs);
+
+    render(
+      <NotificationsSection
+        initialNotificationEmail={true}
+        smtpConfigured={true}
+        preferences={mockPreferences}
+        onPreferencesUpdated={mockOnPreferencesUpdated}
+      />
+    );
+
+    fireEvent.change(screen.getByLabelText('Budget digest day'), { target: { value: 'FRIDAY' } });
+
+    await waitFor(() => {
+      expect(userSettingsApi.updatePreferences).toHaveBeenCalledWith({ budgetDigestDay: 'FRIDAY' });
+      expect(toast.success).toHaveBeenCalledWith('Budget digest day set to Friday');
     });
   });
 });

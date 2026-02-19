@@ -1013,27 +1013,27 @@ The implementation will proceed in logical phases, each delivering usable functi
 - [x] Wire PeriodSelector to load historical period data via getPeriodDetail API
 - [x] Show current period dashboard (BudgetDashboard) or historical period view (BudgetPeriodDetail) based on selection
 
-### Phase 5: Alerts & Notifications -- NOT STARTED
+### Phase 5: Alerts & Notifications -- COMPLETE
 
-Note: Alert entity, repository, and basic retrieval/marking endpoints exist from Phase 1, but alert *generation* logic is entirely missing.
+Note: Alert entity, repository, and basic retrieval/marking endpoints exist from Phase 1. Alert generation logic added in this phase.
 
-- [ ] Implement BudgetAlertService with daily cron job (7 AM UTC)
-  - [ ] Threshold alerts: warn at configurable % (default 80%), critical at 95%, over at 100%
-  - [ ] Velocity/pace alerts: projected overspend >110% by period end
-  - [ ] Flex group alerts: group total reaching 90%
-  - [ ] Seasonal spike warnings: upcoming historically expensive month
-  - [ ] Projected overspend alerts: current velocity projects >15% over budget
-  - [ ] Income shortfall alerts: actual income <80% of expected (income-linked budgets)
-  - [ ] Positive milestone alerts: 50%+ through period and under 60% of budget
-  - [ ] De-duplication: prevent re-alerting for same category + type + period
-- [ ] Create budget alert email template (`budgetAlertTemplate`)
-- [ ] Implement immediate alert emails (critical threshold / over-budget)
-- [ ] Implement weekly budget digest email (configurable Monday/Friday)
-- [ ] Implement monthly budget summary email at period close
-- [ ] Build BudgetAlertBadge component in AppHeader (unread count badge)
-- [ ] Build BudgetAlertList dropdown component (severity-colored, mark-as-read, click-through)
-- [ ] Add budget notification preferences to user settings (budget_alert_email, budget_digest_day, budget_digest_enabled)
-- [ ] Write tests for alert threshold logic and de-duplication
+- [x] Implement BudgetAlertService with daily cron job (7 AM UTC)
+  - [x] Threshold alerts: warn at configurable % (default 80%), critical at 95%, over at 100%
+  - [x] Velocity/pace alerts: projected overspend >110% by period end
+  - [x] Flex group alerts: group total reaching 90%
+  - [ ] Seasonal spike warnings: upcoming historically expensive month (deferred -- requires historical data analysis)
+  - [x] Projected overspend alerts: current velocity projects >15% over budget
+  - [x] Income shortfall alerts: actual income <80% of expected (income-linked budgets)
+  - [x] Positive milestone alerts: 50%+ through period and under 60% of budget
+  - [x] De-duplication: prevent re-alerting for same category + type + period
+- [x] Create budget alert email templates (immediate alert + weekly digest)
+- [x] Implement immediate alert emails (critical threshold / over-budget / income shortfall)
+- [x] Implement weekly budget digest email (configurable Monday/Friday)
+- [ ] Implement monthly budget summary email at period close (deferred to Phase 7)
+- [x] Build BudgetAlertBadge component in AppHeader (unread count badge)
+- [x] Build BudgetAlertList dropdown component (severity-colored, mark-as-read, click-through)
+- [x] Add budget notification preferences to user settings (budget_digest_enabled, budget_digest_day)
+- [x] Write tests for alert threshold logic and de-duplication (43 backend + 28 frontend + 7 settings tests)
 
 ### Phase 6: Reports & Analytics -- NOT STARTED
 

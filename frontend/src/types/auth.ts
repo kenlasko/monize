@@ -81,6 +81,8 @@ export interface UserPreferences {
   notificationBrowser: boolean;
   twoFactorEnabled: boolean;
   gettingStartedDismissed: boolean;
+  budgetDigestEnabled: boolean;
+  budgetDigestDay: 'MONDAY' | 'FRIDAY';
   createdAt: string;
   updatedAt: string;
 }
@@ -101,6 +103,8 @@ export interface UpdatePreferencesData {
   notificationEmail?: boolean;
   notificationBrowser?: boolean;
   gettingStartedDismissed?: boolean;
+  budgetDigestEnabled?: boolean;
+  budgetDigestDay?: 'MONDAY' | 'FRIDAY';
 }
 
 export interface ChangePasswordData {

@@ -384,6 +384,8 @@ CREATE TABLE user_preferences (
     notification_browser BOOLEAN DEFAULT true,
     two_factor_enabled BOOLEAN DEFAULT false,
     getting_started_dismissed BOOLEAN DEFAULT false,
+    budget_digest_enabled BOOLEAN DEFAULT true,
+    budget_digest_day VARCHAR(10) DEFAULT 'MONDAY',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

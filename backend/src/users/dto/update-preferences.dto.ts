@@ -64,4 +64,20 @@ export class UpdatePreferencesDto {
   @IsOptional()
   @IsBoolean()
   gettingStartedDismissed?: boolean;
+
+  @ApiPropertyOptional({
+    description: "Enable weekly budget digest emails",
+  })
+  @IsOptional()
+  @IsBoolean()
+  budgetDigestEnabled?: boolean;
+
+  @ApiPropertyOptional({
+    description: "Day of week for budget digest email",
+    example: "MONDAY",
+  })
+  @IsOptional()
+  @IsString()
+  @IsIn(["MONDAY", "FRIDAY"])
+  budgetDigestDay?: string;
 }

@@ -57,6 +57,15 @@ vi.mock('@/store/authStore', () => ({
   }),
 }));
 
+// Mock budgets API for BudgetAlertBadge
+vi.mock('@/lib/budgets', () => ({
+  budgetsApi: {
+    getAlerts: vi.fn().mockResolvedValue([]),
+    markAlertRead: vi.fn().mockResolvedValue({}),
+    markAllAlertsRead: vi.fn().mockResolvedValue({ updated: 0 }),
+  },
+}));
+
 describe('AppHeader', () => {
   beforeEach(() => {
     vi.clearAllMocks();
