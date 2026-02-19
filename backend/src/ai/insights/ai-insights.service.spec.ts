@@ -9,6 +9,7 @@ import {
   InsightsAggregatorService,
   SpendingAggregates,
 } from "./insights-aggregator.service";
+import { ConfigService } from "@nestjs/config";
 import { UserPreference } from "../../users/entities/user-preference.entity";
 
 describe("AiInsightsService", () => {
@@ -159,6 +160,7 @@ describe("AiInsightsService", () => {
           provide: InsightsAggregatorService,
           useValue: mockAggregatorService,
         },
+        { provide: ConfigService, useValue: { get: jest.fn() } },
       ],
     }).compile();
 

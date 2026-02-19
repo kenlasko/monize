@@ -12,6 +12,7 @@ import {
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
 import { Category } from "../categories/entities/category.entity";
+import { Account } from "../accounts/entities/account.entity";
 import { BudgetProfile } from "./dto/generate-budget.dto";
 
 describe("BudgetGeneratorService", () => {
@@ -19,6 +20,7 @@ describe("BudgetGeneratorService", () => {
   let transactionsRepository: Record<string, jest.Mock>;
   let splitsRepository: Record<string, jest.Mock>;
   let categoriesRepository: Record<string, jest.Mock>;
+  let accountsRepository: Record<string, jest.Mock>;
   let budgetsRepository: Record<string, jest.Mock>;
   let budgetCategoriesRepository: Record<string, jest.Mock>;
 
@@ -50,6 +52,12 @@ describe("BudgetGeneratorService", () => {
     };
 
     categoriesRepository = {
+      findOne: jest.fn(),
+    };
+
+    accountsRepository = {
+      createQueryBuilder: jest.fn(() => createMockQueryBuilder()),
+      find: jest.fn().mockResolvedValue([]),
       findOne: jest.fn(),
     };
 
@@ -90,6 +98,10 @@ describe("BudgetGeneratorService", () => {
         {
           provide: getRepositoryToken(Category),
           useValue: categoriesRepository,
+        },
+        {
+          provide: getRepositoryToken(Account),
+          useValue: accountsRepository,
         },
         {
           provide: getRepositoryToken(Budget),
