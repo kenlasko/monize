@@ -913,3 +913,158 @@ The implementation will proceed in logical phases, each delivering usable functi
 | Upcoming Bills Awareness | "Truly available" is more honest than "remaining budget" |
 | Safe Daily Spend | The most actionable metric: "You can spend $X today and stay on track" |
 | Positive Milestones | Celebrates wins, not just warns about problems -- keeps users motivated |
+
+---
+
+## Implementation Checklist
+
+### Phase 1: Foundation (Database + Entities + CRUD) -- COMPLETE
+
+- [x] Add budget tables to `database/schema.sql` (budgets, budget_categories, budget_periods, budget_period_categories, budget_alerts)
+- [x] Create migration `database/migrations/015_add_budget_tables.sql` with all indexes and triggers
+- [x] Create TypeORM entity: `budget.entity.ts` with BudgetType, BudgetStrategy enums
+- [x] Create TypeORM entity: `budget-category.entity.ts` with RolloverType, CategoryGroup enums
+- [x] Create TypeORM entity: `budget-period.entity.ts`
+- [x] Create TypeORM entity: `budget-period-category.entity.ts`
+- [x] Create TypeORM entity: `budget-alert.entity.ts` with AlertType, AlertSeverity enums
+- [x] Create DTO: `create-budget.dto.ts` with validation (SanitizeHtml, max lengths, enum checks)
+- [x] Create DTO: `update-budget.dto.ts` with partial update support
+- [x] Create DTO: `create-budget-category.dto.ts`
+- [x] Create DTO: `update-budget-category.dto.ts`
+- [x] Create DTO: `bulk-update-budget-categories.dto.ts`
+- [x] Create DTO: `generate-budget.dto.ts` with profile enums (COMFORTABLE, ON_TRACK, AGGRESSIVE)
+- [x] Implement BudgetsService CRUD: create, findAll, findOne, update, remove
+- [x] Implement BudgetsService category management: addCategory, updateCategory, removeCategory, bulkUpdateCategories
+- [x] Implement BudgetsService summary: getSummary with category breakdown and actuals (including split transactions)
+- [x] Implement BudgetsService velocity: getVelocity with daily burn rate, projections, safe daily spend
+- [x] Implement BudgetsService alerts: getAlerts, markAlertRead, markAllAlertsRead
+- [x] Implement BudgetsController with 18 endpoints (CRUD, categories, summary, velocity, periods, alerts)
+- [x] Implement BudgetPeriodService: findAll, findOne, closePeriod, getOrCreateCurrentPeriod, createPeriodForBudget
+- [x] Implement rollover calculation supporting all types (NONE, MONTHLY, QUARTERLY, ANNUAL) with caps
+- [x] Create BudgetsModule and register in app.module.ts
+- [x] Write unit tests: `budgets.service.spec.ts` (25+ test cases, 831 lines)
+- [x] Write unit tests: `budgets.controller.spec.ts` (14+ test cases, 317 lines)
+- [x] Write unit tests: `budget-period.service.spec.ts` (521 lines, rollover logic tests)
+
+### Phase 2: Budget Generator -- NOT STARTED
+
+- [ ] Implement BudgetGeneratorService with spending analysis algorithm
+  - [ ] Historical spending aggregation by category over configurable window (3/6/12 months)
+  - [ ] Percentile calculations (p25, p50/median, p75) per category
+  - [ ] Fixed expense detection (low variance = subscription/bill)
+  - [ ] Seasonal peak detection (>1.5 standard deviations above mean)
+  - [ ] Monthly occurrence counting
+  - [ ] Income estimation from income-category transactions
+  - [ ] Three budget profiles: Comfortable (p75), On Track (median), Aggressive (p25)
+  - [ ] Projected savings calculation per profile
+- [ ] Add `POST /budgets/generate` endpoint (analyze spending and return suggestions)
+- [ ] Add `POST /budgets/generate/apply` endpoint (create budget from accepted suggestions)
+- [ ] Register BudgetGeneratorService in BudgetsModule
+- [ ] Write unit tests for generator algorithms (percentile math, seasonal detection, fixed-expense detection)
+- [ ] Create frontend types: `frontend/src/types/budget.ts` (Budget, BudgetCategory, BudgetPeriod, BudgetPeriodCategory, BudgetAlert, enums, request/response types)
+- [ ] Create frontend API client: `frontend/src/lib/budgets.ts` (all API methods)
+- [ ] Build BudgetWizard multi-step container component
+- [ ] Build BudgetWizardStrategy (Step 1): strategy cards, analysis period picker, profile selector
+- [ ] Build BudgetWizardCategories (Step 2): category table with historical data, editable amounts, profile toggle, sparklines
+- [ ] Build BudgetWizardStrategy options (Step 3): rollover rules, flex groups, alert thresholds, income linking, excluded accounts
+- [ ] Build BudgetWizardReview (Step 4): full summary, visual preview, create button
+- [ ] Create budget creation page: `frontend/src/app/(authenticated)/budgets/create/page.tsx`
+
+### Phase 3: Budget Dashboard -- PARTIALLY COMPLETE
+
+**Backend (complete):**
+- [x] Implement budget summary endpoint with category actuals
+- [x] Implement velocity calculation endpoint with pace tracking
+
+**Frontend (not started):**
+- [ ] Create budget list page: `frontend/src/app/(authenticated)/budgets/page.tsx`
+- [ ] Create budget detail/dashboard page: `frontend/src/app/(authenticated)/budgets/[id]/page.tsx`
+- [ ] Create budget edit page: `frontend/src/app/(authenticated)/budgets/[id]/edit/page.tsx`
+- [ ] Build BudgetDashboard main container component
+- [ ] Build BudgetSummaryCards (total budget, spent, remaining, savings)
+- [ ] Build BudgetHealthGauge (circular 0-100 gauge with color labels)
+- [ ] Build BudgetCategoryList (sortable list of categories with progress)
+- [ ] Build BudgetCategoryRow (progress bar + amounts + velocity per category)
+- [ ] Build BudgetProgressBar (colored bar with pace marker)
+- [ ] Build BudgetVelocityWidget (burn rate, safe daily spend, projected end)
+- [ ] Build BudgetFlexGroupCard (aggregate flex group view)
+- [ ] Build BudgetUpcomingBills (scheduled transactions impact, "truly available" calculation)
+- [ ] Build BudgetHeatmap (calendar heatmap of daily spending)
+- [ ] Build BudgetTrendChart (line chart: budget vs actual over months)
+- [ ] Build BudgetPeriodSelector (switch between current/historical periods)
+- [ ] Build BudgetCategoryForm (edit single category allocation)
+- [ ] Build BudgetForm (edit budget settings)
+- [ ] Add "Budgets" to AppHeader navigation links (between Accounts and Investments)
+
+### Phase 4: Period Management & Rollover -- MOSTLY COMPLETE
+
+**Backend (complete):**
+- [x] Implement BudgetPeriodService with full period lifecycle
+- [x] Implement period creation with automatic category allocations
+- [x] Implement period close with actuals computation
+- [x] Implement rollover calculation for all types (NONE, MONTHLY, QUARTERLY, ANNUAL) with caps
+- [x] Implement next period auto-creation with rollover carry-forward
+- [x] Controller endpoints: list periods, get period detail, close period
+
+**Remaining:**
+- [ ] Add cron job for automatic period closing (1st of each month)
+- [ ] Build frontend PeriodSelector component
+- [ ] Build frontend historical period detail views
+- [ ] Write integration tests for full period lifecycle (create -> execute -> close -> rollover -> next)
+
+### Phase 5: Alerts & Notifications -- NOT STARTED
+
+Note: Alert entity, repository, and basic retrieval/marking endpoints exist from Phase 1, but alert *generation* logic is entirely missing.
+
+- [ ] Implement BudgetAlertService with daily cron job (7 AM UTC)
+  - [ ] Threshold alerts: warn at configurable % (default 80%), critical at 95%, over at 100%
+  - [ ] Velocity/pace alerts: projected overspend >110% by period end
+  - [ ] Flex group alerts: group total reaching 90%
+  - [ ] Seasonal spike warnings: upcoming historically expensive month
+  - [ ] Projected overspend alerts: current velocity projects >15% over budget
+  - [ ] Income shortfall alerts: actual income <80% of expected (income-linked budgets)
+  - [ ] Positive milestone alerts: 50%+ through period and under 60% of budget
+  - [ ] De-duplication: prevent re-alerting for same category + type + period
+- [ ] Create budget alert email template (`budgetAlertTemplate`)
+- [ ] Implement immediate alert emails (critical threshold / over-budget)
+- [ ] Implement weekly budget digest email (configurable Monday/Friday)
+- [ ] Implement monthly budget summary email at period close
+- [ ] Build BudgetAlertBadge component in AppHeader (unread count badge)
+- [ ] Build BudgetAlertList dropdown component (severity-colored, mark-as-read, click-through)
+- [ ] Add budget notification preferences to user settings (budget_alert_email, budget_digest_day, budget_digest_enabled)
+- [ ] Write tests for alert threshold logic and de-duplication
+
+### Phase 6: Reports & Analytics -- NOT STARTED
+
+- [ ] Implement BudgetReportsService
+  - [ ] Budget vs Actual trend over N months
+  - [ ] Per-category trend over time
+  - [ ] Health score calculation (0-100 algorithm with deductions/bonuses)
+  - [ ] Seasonal spending pattern analysis
+  - [ ] Flex group status aggregation
+- [ ] Add report endpoints to controller:
+  - [ ] `GET /budgets/:id/reports/trend`
+  - [ ] `GET /budgets/:id/reports/category-trend`
+  - [ ] `GET /budgets/:id/reports/health-score`
+  - [ ] `GET /budgets/:id/reports/seasonal`
+  - [ ] `GET /budgets/:id/reports/flex-groups`
+- [ ] Build BudgetTrendChart component (line chart: budget vs actual over months)
+- [ ] Build BudgetCategoryTrend component (per-category trend comparison)
+- [ ] Build BudgetHeatmap component (seasonal spending map: 12 months x N categories)
+- [ ] Build BudgetScenarioPlanner component (what-if slider tool, frontend-only calculation)
+- [ ] Add "Budget" section to existing reports page
+- [ ] Add BUDGET_VARIANCE metric to custom reports engine
+- [ ] Write unit tests for health score algorithm and trend calculations
+
+### Phase 7: Integration & Polish -- NOT STARTED
+
+- [ ] Add budget status widget to main dashboard (mini health gauge, top 3 categories, safe daily spend)
+- [ ] Add budget context indicator to transaction list (category approaching/over limit)
+- [ ] Implement `get_budget_status` AI tool in ToolExecutorService (current/previous/specific period)
+- [ ] Connect budget tool to AI query system for natural language budget questions
+- [ ] Write E2E tests (Playwright):
+  - [ ] Budget wizard: walk through all 4 steps and create budget
+  - [ ] Dashboard: verify summary cards, progress bars, velocity display
+  - [ ] Alert flow: trigger alert, verify badge, mark as read
+  - [ ] Period navigation: switch between months, verify historical data
+- [ ] Performance optimization: batch queries, verify indexes, cache current period summary
