@@ -41,6 +41,17 @@ export class UserPreference {
   @Column({ name: "getting_started_dismissed", default: false })
   gettingStartedDismissed: boolean;
 
+  @Column({ name: "budget_digest_enabled", default: true })
+  budgetDigestEnabled: boolean;
+
+  @Column({
+    name: "budget_digest_day",
+    type: "varchar",
+    length: 10,
+    default: "MONDAY",
+  })
+  budgetDigestDay: string;
+
   @CreateDateColumn({ name: "created_at" })
   createdAt: Date;
 

@@ -8,11 +8,15 @@ import { BudgetAlert } from "./entities/budget-alert.entity";
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
 import { Category } from "../categories/entities/category.entity";
+import { User } from "../users/entities/user.entity";
+import { UserPreference } from "../users/entities/user-preference.entity";
 import { BudgetsService } from "./budgets.service";
 import { BudgetPeriodService } from "./budget-period.service";
 import { BudgetPeriodCronService } from "./budget-period-cron.service";
 import { BudgetGeneratorService } from "./budget-generator.service";
+import { BudgetAlertService } from "./budget-alert.service";
 import { BudgetsController } from "./budgets.controller";
+import { NotificationsModule } from "../notifications/notifications.module";
 
 @Module({
   imports: [
@@ -25,13 +29,17 @@ import { BudgetsController } from "./budgets.controller";
       Transaction,
       TransactionSplit,
       Category,
+      User,
+      UserPreference,
     ]),
+    NotificationsModule,
   ],
   providers: [
     BudgetsService,
     BudgetPeriodService,
     BudgetPeriodCronService,
     BudgetGeneratorService,
+    BudgetAlertService,
   ],
   controllers: [BudgetsController],
   exports: [BudgetsService, BudgetPeriodService, BudgetGeneratorService],
