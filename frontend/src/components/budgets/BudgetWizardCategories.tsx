@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { Sparkline } from './Sparkline';
 import { formatCurrency, getCurrencySymbol } from '@/lib/format';
 import type { WizardState } from './BudgetWizard';
 import type { BudgetProfile, CategoryGroup, TransferAnalysis } from '@/types/budget';
@@ -323,8 +324,18 @@ export function BudgetWizardCategories({
             )}
           </div>
         </td>
-        <td className="hidden sm:table-cell py-2 px-2 sm:px-4 text-right text-sm text-gray-500 dark:text-gray-400">
-          {formatCurrency(transfer.median, currencyCode)}
+        <td className="hidden sm:table-cell py-2 px-2 sm:px-4">
+          <div className="flex items-center justify-end gap-2">
+            <Sparkline
+              data={transfer.monthlyAmounts}
+              className="text-blue-400 dark:text-blue-500 flex-shrink-0"
+              strokeColor="currentColor"
+              fillColor="currentColor"
+            />
+            <span className="text-sm text-gray-500 dark:text-gray-400">
+              {formatCurrency(transfer.median, currencyCode)}
+            </span>
+          </div>
         </td>
         <td className="py-2 px-2 sm:px-4 text-right h-11">
           {isSelected ? (
@@ -343,11 +354,12 @@ export function BudgetWizardCategories({
   };
 
   const renderCategoryRow = (
-    cat: { categoryId: string; categoryName: string; isIncome: boolean; median: number; p25: number; p75: number; isFixed: boolean },
+    cat: { categoryId: string; categoryName: string; isIncome: boolean; median: number; p25: number; p75: number; isFixed: boolean; monthlyAmounts: number[] },
   ) => {
     const isSelected = selectedCategories.has(cat.categoryId);
     const currentAmount = selectedCategories.get(cat.categoryId)?.amount ?? 0;
     const currentGroup = selectedCategories.get(cat.categoryId)?.categoryGroup ?? 'NEED';
+    const sparklineColor = cat.isIncome ? 'text-green-400 dark:text-green-500' : 'text-red-400 dark:text-red-500';
 
     return (
       <tr
@@ -382,8 +394,18 @@ export function BudgetWizardCategories({
             )}
           </div>
         </td>
-        <td className="hidden sm:table-cell py-2 px-2 sm:px-4 text-right text-sm text-gray-500 dark:text-gray-400">
-          {formatCurrency(cat.median, currencyCode)}
+        <td className="hidden sm:table-cell py-2 px-2 sm:px-4">
+          <div className="flex items-center justify-end gap-2">
+            <Sparkline
+              data={cat.monthlyAmounts}
+              className={`${sparklineColor} flex-shrink-0`}
+              strokeColor="currentColor"
+              fillColor="currentColor"
+            />
+            <span className="text-sm text-gray-500 dark:text-gray-400">
+              {formatCurrency(cat.median, currencyCode)}
+            </span>
+          </div>
         </td>
         <td className="py-2 px-2 sm:px-4 text-right h-11">
           {isSelected ? (
@@ -471,8 +493,8 @@ export function BudgetWizardCategories({
                   <th className="text-left py-2 px-2 sm:px-4 text-xs font-medium text-green-700 dark:text-green-400 uppercase">
                     Income
                   </th>
-                  <th className="hidden sm:table-cell w-32 text-right py-2 px-2 sm:px-4 text-xs font-medium text-green-700 dark:text-green-400 uppercase">
-                    Median
+                  <th className="hidden sm:table-cell w-44 text-right py-2 px-2 sm:px-4 text-xs font-medium text-green-700 dark:text-green-400 uppercase">
+                    Trend / Median
                   </th>
                   <th className="w-36 sm:w-48 py-2 px-2 sm:px-4 text-xs font-medium text-green-700 dark:text-green-400 uppercase text-right">
                     Amount
@@ -496,8 +518,8 @@ export function BudgetWizardCategories({
                 <th className="text-left py-2 px-2 sm:px-4 text-xs font-medium text-red-700 dark:text-red-400 uppercase">
                   Expenses
                 </th>
-                <th className="hidden sm:table-cell w-32 text-right py-2 px-2 sm:px-4 text-xs font-medium text-red-700 dark:text-red-400 uppercase">
-                  Median
+                <th className="hidden sm:table-cell w-44 text-right py-2 px-2 sm:px-4 text-xs font-medium text-red-700 dark:text-red-400 uppercase">
+                  Trend / Median
                 </th>
                 <th className="w-36 sm:w-48 py-2 px-2 sm:px-4 text-xs font-medium text-red-700 dark:text-red-400 uppercase text-right">
                   Amount
@@ -521,8 +543,8 @@ export function BudgetWizardCategories({
                   <th className="text-left py-2 px-2 sm:px-4 text-xs font-medium text-blue-700 dark:text-blue-400 uppercase">
                     Transfers / Savings
                   </th>
-                  <th className="hidden sm:table-cell w-32 text-right py-2 px-2 sm:px-4 text-xs font-medium text-blue-700 dark:text-blue-400 uppercase">
-                    Median
+                  <th className="hidden sm:table-cell w-44 text-right py-2 px-2 sm:px-4 text-xs font-medium text-blue-700 dark:text-blue-400 uppercase">
+                    Trend / Median
                   </th>
                   <th className="w-36 sm:w-48 py-2 px-2 sm:px-4 text-xs font-medium text-blue-700 dark:text-blue-400 uppercase text-right">
                     Amount

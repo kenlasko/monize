@@ -26,6 +26,25 @@ export class IsSafeConfigObjectConstraint implements ValidatorConstraintInterfac
       const val = obj[key];
       if (val === null || val === undefined) continue;
 
+      // Allow arrays of primitives (e.g. excludedAccountIds: string[])
+      if (Array.isArray(val)) {
+        if (val.length > 100) return false;
+        for (const item of val) {
+          const itemType = typeof item;
+          if (
+            itemType !== "string" &&
+            itemType !== "number" &&
+            itemType !== "boolean"
+          ) {
+            return false;
+          }
+          if (itemType === "string" && (item as string).length > 1000) {
+            return false;
+          }
+        }
+        continue;
+      }
+
       const type = typeof val;
       if (type !== "string" && type !== "number" && type !== "boolean") {
         return false;
@@ -40,7 +59,7 @@ export class IsSafeConfigObjectConstraint implements ValidatorConstraintInterfac
   }
 
   defaultMessage(): string {
-    return "config must be a flat object with string, number, or boolean values only (max 20 keys)";
+    return "config must be a flat object with string, number, boolean, or array-of-primitive values only (max 20 keys)";
   }
 }
 

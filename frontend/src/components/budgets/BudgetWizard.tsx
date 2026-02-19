@@ -14,6 +14,7 @@ import {
   GenerateBudgetResponse,
   ApplyBudgetCategoryData,
 } from '@/types/budget';
+import type { Account } from '@/types/account';
 
 export interface WizardState {
   // Step 1: Analysis
@@ -31,6 +32,12 @@ export interface WizardState {
   budgetType: BudgetType;
   periodStart: string;
   currencyCode: string;
+  baseIncome: number | null;
+  incomeLinked: boolean;
+  defaultRolloverType: RolloverType;
+  alertWarnPercent: number;
+  alertCriticalPercent: number;
+  excludedAccountIds: string[];
 
   // Step 4: Review
   isSubmitting: boolean;
@@ -40,6 +47,7 @@ interface BudgetWizardProps {
   onComplete: () => void;
   onCancel: () => void;
   defaultCurrency: string;
+  accounts?: Account[];
 }
 
 const STEPS = ['Analyze', 'Categories', 'Configure', 'Review'] as const;
@@ -48,6 +56,7 @@ export function BudgetWizard({
   onComplete,
   onCancel,
   defaultCurrency,
+  accounts = [],
 }: BudgetWizardProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const now = new Date();
@@ -64,6 +73,12 @@ export function BudgetWizard({
     budgetType: 'MONTHLY',
     periodStart: defaultPeriodStart,
     currencyCode: defaultCurrency,
+    baseIncome: null,
+    incomeLinked: false,
+    defaultRolloverType: 'NONE',
+    alertWarnPercent: 80,
+    alertCriticalPercent: 95,
+    excludedAccountIds: [],
     isSubmitting: false,
   });
 
@@ -134,10 +149,16 @@ export function BudgetWizard({
         });
       }
 
+      // Set base income from analysis if available
+      const estimatedIncome = result.estimatedMonthlyIncome > 0
+        ? Math.round(result.estimatedMonthlyIncome * 100) / 100
+        : null;
+
       updateState({
         analysisResult: result,
         selectedCategories: categories,
         selectedTransfers: transfers,
+        baseIncome: estimatedIncome,
       });
     },
     [updateState, state.strategy],
@@ -208,6 +229,7 @@ export function BudgetWizard({
         <BudgetWizardStrategy
           state={state}
           updateState={updateState}
+          accounts={accounts}
           onNext={goNext}
           onBack={goBack}
         />

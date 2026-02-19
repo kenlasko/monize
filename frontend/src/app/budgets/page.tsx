@@ -10,10 +10,12 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { BudgetWizard } from '@/components/budgets/BudgetWizard';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { budgetsApi } from '@/lib/budgets';
+import { accountsApi } from '@/lib/accounts';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { getErrorMessage } from '@/lib/errors';
 import { STRATEGY_LABELS, BUDGET_TYPE_LABELS } from '@/components/budgets/utils/budget-labels';
 import type { Budget } from '@/types/budget';
+import type { Account } from '@/types/account';
 
 export default function BudgetsPage() {
   return (
@@ -25,6 +27,7 @@ export default function BudgetsPage() {
 
 function BudgetsContent() {
   const [budgets, setBudgets] = useState<Budget[]>([]);
+  const [accounts, setAccounts] = useState<Account[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showWizard, setShowWizard] = useState(false);
   const { defaultCurrency } = useExchangeRates();
@@ -44,6 +47,7 @@ function BudgetsContent() {
 
   useEffect(() => {
     loadBudgets();
+    accountsApi.getAll().then(setAccounts).catch(() => {});
   }, []);
 
   const handleWizardComplete = () => {
@@ -64,6 +68,7 @@ function BudgetsContent() {
               onComplete={handleWizardComplete}
               onCancel={() => setShowWizard(false)}
               defaultCurrency={defaultCurrency}
+              accounts={accounts}
             />
           </div>
         </main>
