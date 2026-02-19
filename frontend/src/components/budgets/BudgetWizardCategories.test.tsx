@@ -159,7 +159,7 @@ describe('BudgetWizardCategories', () => {
 
     expect(screen.getByText('Total Income')).toBeInTheDocument();
     expect(screen.getByText('Total Expenses')).toBeInTheDocument();
-    expect(screen.getByText('Net (Savings)')).toBeInTheDocument();
+    expect(screen.getByText('Remaining')).toBeInTheDocument();
   });
 
   it('calls onNext when Next button is clicked', () => {
@@ -255,8 +255,8 @@ describe('BudgetWizardCategories', () => {
       />,
     );
 
-    // The BudgetAmountInput component shows amounts with toFixed(2)
-    const inputs = document.querySelectorAll('input[type="number"]');
+    // The BudgetAmountInput component shows amounts with toFixed(2) using type="text" inputMode="decimal"
+    const inputs = document.querySelectorAll('input[type="text"][inputmode="decimal"]');
     // Should have inputs for selected categories (Salary=5000, Groceries=400, Dining=200)
     expect(inputs.length).toBeGreaterThanOrEqual(3);
     // Check that values have 2 decimal places
@@ -276,7 +276,7 @@ describe('BudgetWizardCategories', () => {
       />,
     );
 
-    const inputs = document.querySelectorAll('input[type="number"]');
+    const inputs = document.querySelectorAll('input[type="text"][inputmode="decimal"]');
     expect(inputs.length).toBeGreaterThanOrEqual(1);
     // BudgetAmountInput has text-right class
     expect((inputs[0] as HTMLElement).className).toContain('text-right');
