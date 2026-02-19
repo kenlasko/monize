@@ -5,6 +5,8 @@ import { AccountsService } from "../../accounts/accounts.service";
 import { CategoriesService } from "../../categories/categories.service";
 import { TransactionAnalyticsService } from "../../transactions/transaction-analytics.service";
 import { NetWorthService } from "../../net-worth/net-worth.service";
+import { BudgetsService } from "../../budgets/budgets.service";
+import { BudgetReportsService } from "../../budgets/budget-reports.service";
 import { Transaction } from "../../transactions/entities/transaction.entity";
 import { Category } from "../../categories/entities/category.entity";
 
@@ -14,6 +16,8 @@ describe("ToolExecutorService", () => {
   let mockCategoriesService: Record<string, jest.Mock>;
   let mockAnalyticsService: Record<string, jest.Mock>;
   let mockNetWorthService: Record<string, jest.Mock>;
+  let mockBudgetsService: Record<string, jest.Mock>;
+  let mockBudgetReportsService: Record<string, jest.Mock>;
   let mockTransactionRepo: Record<string, jest.Mock>;
   let mockCategoryRepo: Record<string, jest.Mock>;
   let mockQueryBuilder: Record<string, jest.Mock>;
@@ -93,6 +97,16 @@ describe("ToolExecutorService", () => {
       ]),
     };
 
+    mockBudgetsService = {
+      findAll: jest.fn().mockResolvedValue([]),
+      getSummary: jest.fn().mockResolvedValue({}),
+      getVelocity: jest.fn().mockResolvedValue(null),
+    };
+
+    mockBudgetReportsService = {
+      getHealthScore: jest.fn().mockResolvedValue(null),
+    };
+
     mockTransactionRepo = {
       createQueryBuilder: jest.fn().mockReturnValue(mockQueryBuilder),
     };
@@ -111,6 +125,8 @@ describe("ToolExecutorService", () => {
           useValue: mockAnalyticsService,
         },
         { provide: NetWorthService, useValue: mockNetWorthService },
+        { provide: BudgetsService, useValue: mockBudgetsService },
+        { provide: BudgetReportsService, useValue: mockBudgetReportsService },
         {
           provide: getRepositoryToken(Transaction),
           useValue: mockTransactionRepo,
@@ -208,7 +224,7 @@ describe("ToolExecutorService", () => {
         endDate: "2026-01-31",
       });
 
-      expect(result.data).toEqual({ error: "Database connection failed" });
+      expect(result.data).toEqual({ error: "An error occurred while retrieving data." });
       expect(result.summary).toContain("Error executing query_transactions");
       expect(result.sources).toEqual([]);
     });
