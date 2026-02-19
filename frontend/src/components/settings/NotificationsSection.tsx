@@ -59,7 +59,7 @@ export function NotificationsSection({
     }
   };
 
-  const handleDigestDayChange = async (day: string) => {
+  const handleDigestDayChange = async (day: 'MONDAY' | 'FRIDAY') => {
     const previousDay = budgetDigestDay;
     setBudgetDigestDay(day);
     try {
@@ -156,7 +156,7 @@ export function NotificationsSection({
                       <p className="text-sm text-gray-600 dark:text-gray-400">Digest day</p>
                       <select
                         value={budgetDigestDay}
-                        onChange={(e) => handleDigestDayChange(e.target.value)}
+                        onChange={(e) => handleDigestDayChange(e.target.value as 'MONDAY' | 'FRIDAY')}
                         aria-label="Budget digest day"
                         className="text-sm border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       >
