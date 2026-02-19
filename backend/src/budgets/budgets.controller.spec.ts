@@ -2,12 +2,16 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { BudgetsController } from "./budgets.controller";
 import { BudgetsService } from "./budgets.service";
 import { BudgetPeriodService } from "./budget-period.service";
+import { BudgetGeneratorService } from "./budget-generator.service";
 
 describe("BudgetsController", () => {
   let controller: BudgetsController;
   let mockBudgetsService: Partial<Record<keyof BudgetsService, jest.Mock>>;
   let mockBudgetPeriodService: Partial<
     Record<keyof BudgetPeriodService, jest.Mock>
+  >;
+  let mockBudgetGeneratorService: Partial<
+    Record<keyof BudgetGeneratorService, jest.Mock>
   >;
   const mockReq = { user: { id: "user-1" } };
 
@@ -35,11 +39,20 @@ describe("BudgetsController", () => {
       closePeriod: jest.fn(),
     };
 
+    mockBudgetGeneratorService = {
+      generate: jest.fn(),
+      apply: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [BudgetsController],
       providers: [
         { provide: BudgetsService, useValue: mockBudgetsService },
         { provide: BudgetPeriodService, useValue: mockBudgetPeriodService },
+        {
+          provide: BudgetGeneratorService,
+          useValue: mockBudgetGeneratorService,
+        },
       ],
     }).compile();
 
@@ -311,6 +324,41 @@ describe("BudgetsController", () => {
       expect(mockBudgetPeriodService.closePeriod).toHaveBeenCalledWith(
         "user-1",
         "budget-1",
+      );
+    });
+  });
+
+  describe("generate()", () => {
+    it("delegates to budgetGeneratorService.generate with userId and dto", () => {
+      const dto = { analysisMonths: 6 } as any;
+      mockBudgetGeneratorService.generate!.mockReturnValue("suggestions");
+
+      const result = controller.generate(mockReq, dto);
+
+      expect(result).toBe("suggestions");
+      expect(mockBudgetGeneratorService.generate).toHaveBeenCalledWith(
+        "user-1",
+        dto,
+      );
+    });
+  });
+
+  describe("applyGenerated()", () => {
+    it("delegates to budgetGeneratorService.apply with userId and dto", () => {
+      const dto = {
+        name: "Budget",
+        periodStart: "2026-02-01",
+        currencyCode: "USD",
+        categories: [{ categoryId: "cat-1", amount: 500 }],
+      } as any;
+      mockBudgetGeneratorService.apply!.mockReturnValue("applied");
+
+      const result = controller.applyGenerated(mockReq, dto);
+
+      expect(result).toBe("applied");
+      expect(mockBudgetGeneratorService.apply).toHaveBeenCalledWith(
+        "user-1",
+        dto,
       );
     });
   });

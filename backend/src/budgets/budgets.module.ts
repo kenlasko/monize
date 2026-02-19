@@ -10,6 +10,7 @@ import { TransactionSplit } from "../transactions/entities/transaction-split.ent
 import { Category } from "../categories/entities/category.entity";
 import { BudgetsService } from "./budgets.service";
 import { BudgetPeriodService } from "./budget-period.service";
+import { BudgetGeneratorService } from "./budget-generator.service";
 import { BudgetsController } from "./budgets.controller";
 
 @Module({
@@ -25,8 +26,8 @@ import { BudgetsController } from "./budgets.controller";
       Category,
     ]),
   ],
-  providers: [BudgetsService, BudgetPeriodService],
+  providers: [BudgetsService, BudgetPeriodService, BudgetGeneratorService],
   controllers: [BudgetsController],
-  exports: [BudgetsService, BudgetPeriodService],
+  exports: [BudgetsService, BudgetPeriodService, BudgetGeneratorService],
 })
 export class BudgetsModule {}

@@ -1,0 +1,179 @@
+import apiClient from './api';
+import {
+  Budget,
+  BudgetCategory,
+  BudgetAlert,
+  BudgetPeriod,
+  BudgetSummary,
+  BudgetVelocity,
+  CreateBudgetData,
+  UpdateBudgetData,
+  CreateBudgetCategoryData,
+  UpdateBudgetCategoryData,
+  GenerateBudgetRequest,
+  GenerateBudgetResponse,
+  ApplyGeneratedBudgetData,
+} from '@/types/budget';
+import { getCached, setCache, invalidateCache } from './apiCache';
+
+export const budgetsApi = {
+  // Budget CRUD
+  create: async (data: CreateBudgetData): Promise<Budget> => {
+    const response = await apiClient.post<Budget>('/budgets', data);
+    invalidateCache('budgets:');
+    return response.data;
+  },
+
+  getAll: async (): Promise<Budget[]> => {
+    const cached = getCached<Budget[]>('budgets:all');
+    if (cached) return cached;
+    const response = await apiClient.get<Budget[]>('/budgets');
+    setCache('budgets:all', response.data);
+    return response.data;
+  },
+
+  getById: async (id: string): Promise<Budget> => {
+    const response = await apiClient.get<Budget>(`/budgets/${id}`);
+    return response.data;
+  },
+
+  update: async (id: string, data: UpdateBudgetData): Promise<Budget> => {
+    const response = await apiClient.patch<Budget>(`/budgets/${id}`, data);
+    invalidateCache('budgets:');
+    return response.data;
+  },
+
+  delete: async (id: string): Promise<void> => {
+    await apiClient.delete(`/budgets/${id}`);
+    invalidateCache('budgets:');
+  },
+
+  // Category management
+  addCategory: async (
+    budgetId: string,
+    data: CreateBudgetCategoryData,
+  ): Promise<BudgetCategory> => {
+    const response = await apiClient.post<BudgetCategory>(
+      `/budgets/${budgetId}/categories`,
+      data,
+    );
+    invalidateCache('budgets:');
+    return response.data;
+  },
+
+  updateCategory: async (
+    budgetId: string,
+    categoryId: string,
+    data: UpdateBudgetCategoryData,
+  ): Promise<BudgetCategory> => {
+    const response = await apiClient.patch<BudgetCategory>(
+      `/budgets/${budgetId}/categories/${categoryId}`,
+      data,
+    );
+    invalidateCache('budgets:');
+    return response.data;
+  },
+
+  removeCategory: async (
+    budgetId: string,
+    categoryId: string,
+  ): Promise<void> => {
+    await apiClient.delete(`/budgets/${budgetId}/categories/${categoryId}`);
+    invalidateCache('budgets:');
+  },
+
+  bulkUpdateCategories: async (
+    budgetId: string,
+    categories: Array<{ id: string; amount: number }>,
+  ): Promise<BudgetCategory[]> => {
+    const response = await apiClient.post<BudgetCategory[]>(
+      `/budgets/${budgetId}/categories/bulk`,
+      { categories },
+    );
+    invalidateCache('budgets:');
+    return response.data;
+  },
+
+  // Generator
+  generate: async (
+    data: GenerateBudgetRequest,
+  ): Promise<GenerateBudgetResponse> => {
+    const response = await apiClient.post<GenerateBudgetResponse>(
+      '/budgets/generate',
+      data,
+    );
+    return response.data;
+  },
+
+  applyGenerated: async (data: ApplyGeneratedBudgetData): Promise<Budget> => {
+    const response = await apiClient.post<Budget>(
+      '/budgets/generate/apply',
+      data,
+    );
+    invalidateCache('budgets:');
+    return response.data;
+  },
+
+  // Execution
+  getSummary: async (budgetId: string): Promise<BudgetSummary> => {
+    const response = await apiClient.get<BudgetSummary>(
+      `/budgets/${budgetId}/summary`,
+    );
+    return response.data;
+  },
+
+  getVelocity: async (budgetId: string): Promise<BudgetVelocity> => {
+    const response = await apiClient.get<BudgetVelocity>(
+      `/budgets/${budgetId}/velocity`,
+    );
+    return response.data;
+  },
+
+  // Periods
+  getPeriods: async (budgetId: string): Promise<BudgetPeriod[]> => {
+    const response = await apiClient.get<BudgetPeriod[]>(
+      `/budgets/${budgetId}/periods`,
+    );
+    return response.data;
+  },
+
+  getPeriodDetail: async (
+    budgetId: string,
+    periodId: string,
+  ): Promise<BudgetPeriod> => {
+    const response = await apiClient.get<BudgetPeriod>(
+      `/budgets/${budgetId}/periods/${periodId}`,
+    );
+    return response.data;
+  },
+
+  closePeriod: async (budgetId: string): Promise<BudgetPeriod> => {
+    const response = await apiClient.post<BudgetPeriod>(
+      `/budgets/${budgetId}/periods/close`,
+    );
+    invalidateCache('budgets:');
+    return response.data;
+  },
+
+  // Alerts
+  getAlerts: async (unreadOnly = false): Promise<BudgetAlert[]> => {
+    const response = await apiClient.get<BudgetAlert[]>('/budgets/alerts', {
+      params: { unreadOnly },
+    });
+    return response.data;
+  },
+
+  markAlertRead: async (alertId: string): Promise<BudgetAlert> => {
+    const response = await apiClient.patch<BudgetAlert>(
+      `/budgets/alerts/${alertId}/read`,
+    );
+    return response.data;
+  },
+
+  markAllAlertsRead: async (): Promise<{ updated: number }> => {
+    const response = await apiClient.patch<{ updated: number }>(
+      '/budgets/alerts/read-all',
+    );
+    return response.data;
+  },
+};

@@ -23,11 +23,14 @@ import {
 import { AuthGuard } from "@nestjs/passport";
 import { BudgetsService } from "./budgets.service";
 import { BudgetPeriodService } from "./budget-period.service";
+import { BudgetGeneratorService } from "./budget-generator.service";
 import { CreateBudgetDto } from "./dto/create-budget.dto";
 import { UpdateBudgetDto } from "./dto/update-budget.dto";
 import { CreateBudgetCategoryDto } from "./dto/create-budget-category.dto";
 import { UpdateBudgetCategoryDto } from "./dto/update-budget-category.dto";
 import { BulkUpdateBudgetCategoriesDto } from "./dto/bulk-update-budget-categories.dto";
+import { GenerateBudgetDto } from "./dto/generate-budget.dto";
+import { ApplyGeneratedBudgetDto } from "./dto/apply-generated-budget.dto";
 
 @ApiTags("Budgets")
 @Controller("budgets")
@@ -37,6 +40,7 @@ export class BudgetsController {
   constructor(
     private readonly budgetsService: BudgetsService,
     private readonly budgetPeriodService: BudgetPeriodService,
+    private readonly budgetGeneratorService: BudgetGeneratorService,
   ) {}
 
   @Post()
@@ -54,6 +58,34 @@ export class BudgetsController {
   @ApiResponse({ status: 401, description: "Unauthorized" })
   findAll(@Request() req) {
     return this.budgetsService.findAll(req.user.id);
+  }
+
+  @Post("generate")
+  @ApiOperation({
+    summary: "Analyze spending and suggest budget amounts",
+  })
+  @ApiResponse({
+    status: 201,
+    description: "Budget suggestions generated",
+  })
+  @ApiResponse({ status: 400, description: "Bad request" })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  generate(@Request() req, @Body() dto: GenerateBudgetDto) {
+    return this.budgetGeneratorService.generate(req.user.id, dto);
+  }
+
+  @Post("generate/apply")
+  @ApiOperation({
+    summary: "Create a budget from generated suggestions",
+  })
+  @ApiResponse({
+    status: 201,
+    description: "Budget created from suggestions",
+  })
+  @ApiResponse({ status: 400, description: "Bad request" })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  applyGenerated(@Request() req, @Body() dto: ApplyGeneratedBudgetDto) {
+    return this.budgetGeneratorService.apply(req.user.id, dto);
   }
 
   @Get("alerts")
