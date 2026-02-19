@@ -640,6 +640,8 @@ CREATE TABLE budget_categories (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     budget_id UUID NOT NULL REFERENCES budgets(id) ON DELETE CASCADE,
     category_id UUID REFERENCES categories(id) ON DELETE SET NULL,
+    transfer_account_id UUID REFERENCES accounts(id) ON DELETE SET NULL,
+    is_transfer BOOLEAN DEFAULT false,
     category_group VARCHAR(20),
     amount NUMERIC(20, 4) NOT NULL,
     is_income BOOLEAN DEFAULT false,
@@ -656,6 +658,8 @@ CREATE TABLE budget_categories (
 
 CREATE INDEX idx_budget_categories_budget ON budget_categories(budget_id);
 CREATE INDEX idx_budget_categories_category ON budget_categories(category_id);
+CREATE INDEX idx_budget_categories_transfer_account ON budget_categories(transfer_account_id)
+    WHERE transfer_account_id IS NOT NULL;
 CREATE INDEX idx_budget_categories_flex ON budget_categories(budget_id, flex_group)
     WHERE flex_group IS NOT NULL;
 

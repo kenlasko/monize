@@ -3,6 +3,7 @@
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { STRATEGY_LABELS } from './utils/budget-labels';
 import type { WizardState } from './BudgetWizard';
 
 interface BudgetWizardStrategyProps {
@@ -17,13 +18,6 @@ const BUDGET_TYPE_OPTIONS = [
   { value: 'ANNUAL', label: 'Annual' },
   { value: 'PAY_PERIOD', label: 'Pay Period' },
 ];
-
-const STRATEGY_LABELS: Record<string, string> = {
-  FIXED: 'Fixed',
-  ROLLOVER: 'Rollover',
-  ZERO_BASED: 'Zero-Based',
-  FIFTY_THIRTY_TWENTY: '50/30/20',
-};
 
 export function BudgetWizardStrategy({
   state,

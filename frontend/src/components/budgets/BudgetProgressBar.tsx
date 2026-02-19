@@ -37,7 +37,7 @@ export function BudgetProgressBar({
       />
       {showPaceMarker && pacePosition !== undefined && (
         <div
-          className="absolute top-0 h-full w-0.5 bg-gray-800 dark:bg-gray-200"
+          className="absolute top-0 h-full w-px bg-gray-500/60 dark:bg-gray-400/60"
           style={{ left: `${pacePosition}%` }}
           title={`Expected pace: ${Math.round(pacePosition)}%`}
           data-testid="pace-marker"

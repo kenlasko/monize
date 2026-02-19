@@ -43,7 +43,7 @@ export class BudgetPeriodCronService {
     try {
       const activeBudgets = await this.budgetsRepository.find({
         where: { isActive: true },
-        relations: ["categories", "categories.category"],
+        relations: ["categories", "categories.category", "categories.transferAccount"],
       });
 
       if (activeBudgets.length === 0) {

@@ -28,6 +28,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { SummaryCard, SummaryIcons } from '@/components/ui/SummaryCard';
 import { scheduledTransactionsApi } from '@/lib/scheduled-transactions';
+import { transactionsApi } from '@/lib/transactions';
 import { categoriesApi } from '@/lib/categories';
 import { buildCategoryColorMap } from '@/lib/categoryUtils';
 import { accountsApi } from '@/lib/accounts';
@@ -35,6 +36,7 @@ import { ScheduledTransaction, ScheduledTransactionOverride } from '@/types/sche
 import { Category } from '@/types/category';
 import { Account } from '@/types/account';
 import { parseLocalDate } from '@/lib/utils';
+import type { FutureTransaction } from '@/lib/forecast';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { Modal } from '@/components/ui/Modal';
 import { UnsavedChangesDialog } from '@/components/ui/UnsavedChangesDialog';
@@ -66,6 +68,7 @@ function BillsContent() {
   const [scheduledTransactions, setScheduledTransactions] = useState<ScheduledTransaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
+  const [futureTransactions, setFutureTransactions] = useState<FutureTransaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { showForm, editingItem: editingTransaction, openCreate, openEdit, close, isEditing, modalProps, setFormDirty, unsavedChangesDialog, formSubmitRef } = useFormModal<ScheduledTransaction>();
   const [filterType, setFilterType] = useState<'all' | 'bills' | 'deposits'>('all');
@@ -95,14 +98,30 @@ function BillsContent() {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [transactionsData, categoriesData, accountsData] = await Promise.all([
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const tomorrowStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
+
+      const [transactionsData, categoriesData, accountsData, futureData] = await Promise.all([
         scheduledTransactionsApi.getAll(),
         categoriesApi.getAll(),
         accountsApi.getAll(),
+        transactionsApi.getAll({ startDate: tomorrowStr, limit: 200 }),
       ]);
       setScheduledTransactions(transactionsData);
       setCategories(categoriesData);
       setAccounts(accountsData);
+      setFutureTransactions(
+        futureData.data
+          .filter(t => t.status !== 'VOID')
+          .map(t => ({
+            id: t.id,
+            accountId: t.accountId,
+            name: t.payeeName || t.payee?.name || t.description || 'Transaction',
+            amount: Number(t.amount),
+            date: t.transactionDate.split('T')[0],
+          }))
+      );
     } catch (error) {
       toast.error(getErrorMessage(error, 'Failed to load scheduled transactions'));
       logger.error(error);
@@ -423,6 +442,7 @@ function BillsContent() {
           <CashFlowForecastChart
             scheduledTransactions={scheduledTransactions}
             accounts={accounts}
+            futureTransactions={futureTransactions}
             isLoading={isLoading}
           />
         </ErrorBoundary>

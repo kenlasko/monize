@@ -9,6 +9,7 @@ const SWIPE_PAGES = [
   { href: '/accounts', label: 'Accounts' },
   { href: '/investments', label: 'Investments' },
   { href: '/bills', label: 'Bills & Deposits' },
+  { href: '/budgets', label: 'Budgets' },
   { href: '/reports', label: 'Reports' },
 ] as const;
 

@@ -51,9 +51,13 @@ export function UpcomingBills({ scheduledTransactions, isLoading }: UpcomingBill
     return 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30';
   };
 
+  const getEffectiveAmount = (item: ScheduledTransaction): number => {
+    return item.nextOverride?.amount ?? item.amount;
+  };
+
   const getItemType = (item: ScheduledTransaction): 'bill' | 'deposit' | 'transfer' => {
     if (item.isTransfer) return 'transfer';
-    return item.amount < 0 ? 'bill' : 'deposit';
+    return getEffectiveAmount(item) < 0 ? 'bill' : 'deposit';
   };
 
   const getTypeBadge = (type: 'bill' | 'deposit' | 'transfer') => {
@@ -68,21 +72,22 @@ export function UpcomingBills({ scheduledTransactions, isLoading }: UpcomingBill
   };
 
   const getAmountDisplay = (item: ScheduledTransaction) => {
+    const amount = getEffectiveAmount(item);
     const type = getItemType(item);
     switch (type) {
       case 'bill':
         return {
-          text: `-${formatCurrency(item.amount, item.currencyCode)}`,
+          text: `-${formatCurrency(amount, item.currencyCode)}`,
           className: 'text-red-600 dark:text-red-400',
         };
       case 'deposit':
         return {
-          text: `+${formatCurrency(item.amount, item.currencyCode)}`,
+          text: `+${formatCurrency(amount, item.currencyCode)}`,
           className: 'text-green-600 dark:text-green-400',
         };
       case 'transfer':
         return {
-          text: formatCurrency(item.amount, item.currencyCode),
+          text: formatCurrency(amount, item.currencyCode),
           className: 'text-blue-600 dark:text-blue-400',
         };
     }
@@ -125,11 +130,11 @@ export function UpcomingBills({ scheduledTransactions, isLoading }: UpcomingBill
   }
 
   const totalDue = upcomingItems
-    .filter((item) => !item.isTransfer && item.amount < 0)
-    .reduce((sum, item) => sum + Math.abs(convertToDefault(item.amount, item.currencyCode)), 0);
+    .filter((item) => !item.isTransfer && getEffectiveAmount(item) < 0)
+    .reduce((sum, item) => sum + Math.abs(convertToDefault(getEffectiveAmount(item), item.currencyCode)), 0);
   const totalIncoming = upcomingItems
-    .filter((item) => !item.isTransfer && item.amount > 0)
-    .reduce((sum, item) => sum + convertToDefault(item.amount, item.currencyCode), 0);
+    .filter((item) => !item.isTransfer && getEffectiveAmount(item) > 0)
+    .reduce((sum, item) => sum + convertToDefault(getEffectiveAmount(item), item.currencyCode), 0);
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6">

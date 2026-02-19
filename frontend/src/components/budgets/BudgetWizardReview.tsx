@@ -6,20 +6,8 @@ import { Button } from '@/components/ui/Button';
 import { budgetsApi } from '@/lib/budgets';
 import { formatCurrency } from '@/lib/format';
 import { getErrorMessage } from '@/lib/errors';
+import { STRATEGY_LABELS, BUDGET_TYPE_LABELS } from './utils/budget-labels';
 import type { WizardState } from './BudgetWizard';
-
-const STRATEGY_LABELS: Record<string, string> = {
-  FIXED: 'Fixed',
-  ROLLOVER: 'Rollover',
-  ZERO_BASED: 'Zero-Based',
-  FIFTY_THIRTY_TWENTY: '50/30/20',
-};
-
-const BUDGET_TYPE_LABELS: Record<string, string> = {
-  MONTHLY: 'Monthly',
-  ANNUAL: 'Annual',
-  PAY_PERIOD: 'Pay Period',
-};
 
 interface BudgetWizardReviewProps {
   state: WizardState;
@@ -42,27 +30,43 @@ export function BudgetWizardReview({
     state.selectedCategories.values(),
   ).filter((c) => !c.isIncome);
 
+  const transferEntries = Array.from(state.selectedTransfers.values());
+
   const totalIncome = incomeCategories.reduce((sum, c) => sum + c.amount, 0);
   const totalExpenses = expenseCategories.reduce((sum, c) => sum + c.amount, 0);
-  const net = totalIncome - totalExpenses;
+  const totalTransfers = transferEntries.reduce((sum, t) => sum + t.amount, 0);
+  const net = totalIncome - totalExpenses - totalTransfers;
 
-  const getCategoryName = (categoryId: string): string => {
+  const getCategoryName = (categoryId?: string): string => {
+    if (!categoryId) return 'Unknown';
     const cat = state.analysisResult?.categories.find(
       (c) => c.categoryId === categoryId,
     );
     return cat?.categoryName ?? 'Unknown';
   };
 
+  const getTransferName = (accountId?: string): string => {
+    if (!accountId) return 'Transfer';
+    const t = state.analysisResult?.transfers?.find(
+      (tr) => tr.accountId === accountId,
+    );
+    return t?.accountName ?? 'Transfer';
+  };
+
   const handleCreate = async () => {
     setIsSubmitting(true);
     try {
+      const allCategories = [
+        ...Array.from(state.selectedCategories.values()),
+        ...transferEntries,
+      ];
       await budgetsApi.applyGenerated({
         name: state.budgetName,
         budgetType: state.budgetType,
         periodStart: state.periodStart,
         strategy: state.strategy,
         currencyCode: state.currencyCode,
-        categories: Array.from(state.selectedCategories.values()),
+        categories: allCategories,
       });
       toast.success('Budget created successfully');
       onComplete();
@@ -114,12 +118,20 @@ export function BudgetWizardReview({
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 text-center">
           <div className="text-sm text-gray-500 dark:text-gray-400">
-            Total Budget
+            Est. Income
           </div>
-          <div className="text-xl font-bold text-gray-900 dark:text-gray-100">
+          <div className="text-lg sm:text-xl font-bold text-green-600 dark:text-green-400">
+            {formatCurrency(totalIncome, state.currencyCode)}
+          </div>
+        </div>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 text-center">
+          <div className="text-sm text-gray-500 dark:text-gray-400">
+            Total Expenses
+          </div>
+          <div className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100">
             {formatCurrency(totalExpenses, state.currencyCode)}
           </div>
           <div className="text-xs text-gray-400 dark:text-gray-500">
@@ -128,18 +140,21 @@ export function BudgetWizardReview({
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 text-center">
           <div className="text-sm text-gray-500 dark:text-gray-400">
-            Est. Income
+            Transfers
           </div>
-          <div className="text-xl font-bold text-green-600 dark:text-green-400">
-            {formatCurrency(totalIncome, state.currencyCode)}
+          <div className="text-lg sm:text-xl font-bold text-blue-600 dark:text-blue-400">
+            {formatCurrency(totalTransfers, state.currencyCode)}
+          </div>
+          <div className="text-xs text-gray-400 dark:text-gray-500">
+            {transferEntries.length} accounts
           </div>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 text-center">
           <div className="text-sm text-gray-500 dark:text-gray-400">
-            Projected Savings
+            Remaining
           </div>
           <div
-            className={`text-xl font-bold ${
+            className={`text-lg sm:text-xl font-bold ${
               net >= 0
                 ? 'text-green-600 dark:text-green-400'
                 : 'text-red-600 dark:text-red-400'
@@ -198,6 +213,24 @@ export function BudgetWizardReview({
                   </td>
                   <td className="py-2 px-4 text-sm text-right text-gray-500 dark:text-gray-400">
                     Expense
+                  </td>
+                </tr>
+              ))}
+            {transferEntries
+              .sort((a, b) => b.amount - a.amount)
+              .map((t) => (
+                <tr
+                  key={t.transferAccountId}
+                  className="border-b border-gray-100 dark:border-gray-700 last:border-0"
+                >
+                  <td className="py-2 px-4 text-sm text-gray-900 dark:text-gray-100">
+                    {getTransferName(t.transferAccountId)}
+                  </td>
+                  <td className="py-2 px-4 text-sm text-right text-blue-600 dark:text-blue-400">
+                    {formatCurrency(t.amount, state.currencyCode)}
+                  </td>
+                  <td className="py-2 px-4 text-sm text-right text-blue-500 dark:text-blue-400">
+                    Transfer
                   </td>
                 </tr>
               ))}

@@ -105,6 +105,17 @@ vi.mock('@/components/budgets/BudgetWizard', () => ({
   ),
 }));
 
+vi.mock('@/components/ui/ConfirmDialog', () => ({
+  ConfirmDialog: ({ isOpen, title, onConfirm, onCancel, confirmLabel }: any) =>
+    isOpen ? (
+      <div data-testid="confirm-dialog">
+        <span>{title}</span>
+        <button data-testid="confirm-btn" onClick={onConfirm}>{confirmLabel || 'Confirm'}</button>
+        <button data-testid="cancel-btn" onClick={onCancel}>Cancel</button>
+      </div>
+    ) : null,
+}));
+
 vi.mock('@/components/layout/PageLayout', () => ({
   PageLayout: ({ children }: { children: React.ReactNode }) => <div data-testid="page-layout">{children}</div>,
 }));
@@ -165,7 +176,7 @@ describe('BudgetsPage', () => {
       expect(screen.getByText('February 2026')).toBeInTheDocument();
     });
     expect(screen.getByText('Active')).toBeInTheDocument();
-    expect(screen.getByText('FIXED - MONTHLY')).toBeInTheDocument();
+    expect(screen.getByText('Fixed - Monthly')).toBeInTheDocument();
     expect(screen.getByText('2 categories')).toBeInTheDocument();
   });
 
@@ -223,7 +234,7 @@ describe('BudgetsPage', () => {
     });
   });
 
-  it('navigates to budget detail on View click', async () => {
+  it('navigates to budget detail on card click', async () => {
     mockGetAll.mockResolvedValue([
       {
         id: 'budget-1',
@@ -239,14 +250,14 @@ describe('BudgetsPage', () => {
     render(<BudgetsPage />);
 
     await waitFor(() => {
-      expect(screen.getByText('View')).toBeInTheDocument();
+      expect(screen.getByText('Budget')).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText('View'));
+    fireEvent.click(screen.getByText('Budget'));
     expect(mockPush).toHaveBeenCalledWith('/budgets/budget-1');
   });
 
-  it('deletes a budget', async () => {
+  it('deletes a budget after confirmation', async () => {
     mockGetAll.mockResolvedValue([
       {
         id: 'budget-1',
@@ -267,6 +278,12 @@ describe('BudgetsPage', () => {
     });
 
     fireEvent.click(screen.getByText('Delete'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('confirm-dialog')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTestId('confirm-btn'));
 
     await waitFor(() => {
       expect(mockDelete).toHaveBeenCalledWith('budget-1');

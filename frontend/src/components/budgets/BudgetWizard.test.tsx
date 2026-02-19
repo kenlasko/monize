@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@/test/render';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, fireEvent, act } from '@/test/render';
 import { BudgetWizard } from './BudgetWizard';
 
 // Mock child components
@@ -66,9 +66,24 @@ vi.mock('./BudgetWizardReview', () => ({
 describe('BudgetWizard', () => {
   const mockOnComplete = vi.fn();
   const mockOnCancel = vi.fn();
+  const originalPushState = window.history.pushState;
+  const originalReplaceState = window.history.replaceState;
+  const originalBack = window.history.back;
+  const mockPushState = vi.fn();
+  const mockReplaceState = vi.fn();
+  const mockHistoryBack = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
+    window.history.pushState = mockPushState;
+    window.history.replaceState = mockReplaceState;
+    window.history.back = mockHistoryBack;
+  });
+
+  afterEach(() => {
+    window.history.pushState = originalPushState;
+    window.history.replaceState = originalReplaceState;
+    window.history.back = originalBack;
   });
 
   it('renders step 1 (Analysis) by default', () => {
@@ -199,5 +214,71 @@ describe('BudgetWizard', () => {
     // Go back
     fireEvent.click(screen.getByTestId('review-back'));
     expect(screen.getByTestId('step-strategy')).toBeInTheDocument();
+  });
+
+  it('replaces history state on mount with step 0', () => {
+    render(
+      <BudgetWizard
+        onComplete={mockOnComplete}
+        onCancel={mockOnCancel}
+        defaultCurrency="USD"
+      />,
+    );
+
+    expect(mockReplaceState).toHaveBeenCalledWith({ wizardStep: 0 }, '');
+  });
+
+  it('pushes history state when advancing steps', () => {
+    render(
+      <BudgetWizard
+        onComplete={mockOnComplete}
+        onCancel={mockOnCancel}
+        defaultCurrency="USD"
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId('analyze-btn'));
+    expect(mockPushState).toHaveBeenCalledWith({ wizardStep: 1 }, '');
+
+    fireEvent.click(screen.getByTestId('categories-next'));
+    expect(mockPushState).toHaveBeenCalledWith({ wizardStep: 2 }, '');
+  });
+
+  it('calls history.back when going back', () => {
+    render(
+      <BudgetWizard
+        onComplete={mockOnComplete}
+        onCancel={mockOnCancel}
+        defaultCurrency="USD"
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId('analyze-btn'));
+    fireEvent.click(screen.getByTestId('categories-back'));
+    expect(mockHistoryBack).toHaveBeenCalled();
+  });
+
+  it('responds to popstate events for browser back navigation', () => {
+    render(
+      <BudgetWizard
+        onComplete={mockOnComplete}
+        onCancel={mockOnCancel}
+        defaultCurrency="USD"
+      />,
+    );
+
+    // Advance to step 2
+    fireEvent.click(screen.getByTestId('analyze-btn'));
+    expect(screen.getByTestId('step-categories')).toBeInTheDocument();
+
+    // Simulate browser back button via popstate
+    act(() => {
+      const popStateEvent = new PopStateEvent('popstate', {
+        state: { wizardStep: 0 },
+      });
+      window.dispatchEvent(popStateEvent);
+    });
+
+    expect(screen.getByTestId('step-analysis')).toBeInTheDocument();
   });
 });

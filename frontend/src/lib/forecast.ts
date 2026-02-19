@@ -2,6 +2,14 @@ import { ScheduledTransaction, FrequencyType } from '@/types/scheduled-transacti
 import { Account } from '@/types/account';
 import { parseLocalDate } from '@/lib/utils';
 
+export interface FutureTransaction {
+  id: string;
+  accountId: string;
+  name: string;
+  amount: number;
+  date: string; // YYYY-MM-DD
+}
+
 export type ForecastPeriod = 'week' | 'month' | '90days' | '6months' | 'year';
 
 export interface ForecastTransaction {
@@ -198,15 +206,21 @@ function isTransfer(transaction: ScheduledTransaction): boolean {
 
 /**
  * Build forecast data points for the cash flow chart.
+ *
+ * futureTransactions: already-posted transactions with a date after today.
+ * These are already included in account.currentBalance, so we subtract them
+ * to get today's real balance, then re-add them at their correct future dates.
  */
 export function buildForecast(
   accounts: Account[],
   transactions: ScheduledTransaction[],
   period: ForecastPeriod,
-  accountId: string | 'all'
+  accountId: string | 'all',
+  futureTransactions: FutureTransaction[] = []
 ): ForecastDataPoint[] {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+  const todayKey = formatDateKey(today);
 
   const days = FORECAST_PERIOD_DAYS[period];
   const endDate = new Date(today);
@@ -223,19 +237,37 @@ export function buildForecast(
     return [];
   }
 
-  // Calculate starting balance
+  // currentBalance includes all transactions (even future-dated ones).
+  // Subtract future transactions to get the balance as of today.
+  const targetAccountIds = new Set(targetAccounts.map(a => a.id));
+  const relevantFuture = futureTransactions.filter(ft =>
+    targetAccountIds.has(ft.accountId) && ft.date > todayKey
+  );
+  const futureSum = relevantFuture.reduce((sum, ft) => sum + ft.amount, 0);
+
   const startingBalance = targetAccounts.reduce(
     (sum, acc) => sum + Number(acc.currentBalance),
     0
-  );
+  ) - futureSum;
 
-  // Filter transactions by account
+  // Filter scheduled transactions by account
   const relevantTransactions = accountId === 'all'
     ? transactions.filter(t => t.isActive && !isTransfer(t))
     : transactions.filter(t => t.isActive && t.accountId === accountId);
 
   // Generate all occurrences and group by date
   const transactionsByDate = new Map<string, ForecastTransaction[]>();
+
+  // Add future-dated regular transactions at their correct dates
+  for (const ft of relevantFuture) {
+    const existing = transactionsByDate.get(ft.date) || [];
+    existing.push({
+      name: ft.name,
+      amount: ft.amount,
+      scheduledTransactionId: ft.id,
+    });
+    transactionsByDate.set(ft.date, existing);
+  }
 
   for (const tx of relevantTransactions) {
     const occurrences = generateOccurrences(tx, today, endDate);

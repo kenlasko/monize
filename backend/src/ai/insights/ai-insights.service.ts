@@ -1,5 +1,6 @@
 import { Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
+import { ConfigService } from "@nestjs/config";
 import { Repository, LessThan } from "typeorm";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import {
@@ -43,6 +44,7 @@ export class AiInsightsService {
     private readonly aiService: AiService,
     private readonly usageService: AiUsageService,
     private readonly aggregatorService: InsightsAggregatorService,
+    private readonly configService: ConfigService,
   ) {}
 
   async getInsights(
@@ -228,14 +230,33 @@ export class AiInsightsService {
   }
 
   private async getActiveUserIds(): Promise<string[]> {
-    const rows = await this.insightRepo.manager
+    const userIdsWithConfig = await this.insightRepo.manager
       .createQueryBuilder()
       .select("DISTINCT apc.user_id", "userId")
       .from("ai_provider_configs", "apc")
       .where("apc.is_active = true")
       .getRawMany();
 
-    return rows.map((r) => r.userId);
+    const ids = new Set(userIdsWithConfig.map((r: any) => r.userId as string));
+
+    const hasServerDefault = !!this.configService.get<string>(
+      "AI_DEFAULT_PROVIDER",
+    );
+
+    if (hasServerDefault) {
+      const allActiveUsers = await this.insightRepo.manager
+        .createQueryBuilder()
+        .select("u.id", "userId")
+        .from("users", "u")
+        .where("u.is_active = true")
+        .getRawMany();
+
+      for (const row of allActiveUsers) {
+        ids.add(row.userId as string);
+      }
+    }
+
+    return [...ids] as string[];
   }
 
   private buildInsightsPrompt(aggregates: SpendingAggregates): string {

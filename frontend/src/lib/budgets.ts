@@ -233,6 +233,15 @@ export const budgetsApi = {
     return response.data;
   },
 
+  getDailySpending: async (
+    budgetId: string,
+  ): Promise<Array<{ date: string; amount: number }>> => {
+    const response = await apiClient.get<Array<{ date: string; amount: number }>>(
+      `/budgets/${budgetId}/reports/daily-spending`,
+    );
+    return response.data;
+  },
+
   // Dashboard
   getDashboardSummary: async (): Promise<DashboardBudgetSummary | null> => {
     const cached = getCached<DashboardBudgetSummary | null>('budgets:dashboard');

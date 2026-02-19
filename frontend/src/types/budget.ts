@@ -56,6 +56,13 @@ export interface BudgetCategory {
     name: string;
     isIncome: boolean;
   } | null;
+  transferAccountId: string | null;
+  transferAccount: {
+    id: string;
+    name: string;
+    accountType: string;
+  } | null;
+  isTransfer: boolean;
   categoryGroup: CategoryGroup | null;
   amount: number;
   isIncome: boolean;
@@ -138,6 +145,24 @@ export interface CategoryAnalysis {
   suggested: number;
 }
 
+export interface TransferAnalysis {
+  accountId: string;
+  accountName: string;
+  accountType: string;
+  average: number;
+  median: number;
+  p25: number;
+  p75: number;
+  min: number;
+  max: number;
+  stdDev: number;
+  monthlyAmounts: number[];
+  monthlyOccurrences: number;
+  isFixed: boolean;
+  seasonalMonths: number[];
+  suggested: number;
+}
+
 export interface GenerateBudgetRequest {
   analysisMonths: 3 | 6 | 12;
   strategy?: BudgetStrategy;
@@ -146,8 +171,10 @@ export interface GenerateBudgetRequest {
 
 export interface GenerateBudgetResponse {
   categories: CategoryAnalysis[];
+  transfers: TransferAnalysis[];
   estimatedMonthlyIncome: number;
   totalBudgeted: number;
+  totalTransfers: number;
   projectedMonthlySavings: number;
   analysisWindow: {
     startDate: string;
@@ -157,7 +184,9 @@ export interface GenerateBudgetResponse {
 }
 
 export interface ApplyBudgetCategoryData {
-  categoryId: string;
+  categoryId?: string;
+  transferAccountId?: string;
+  isTransfer?: boolean;
   amount: number;
   isIncome?: boolean;
   categoryGroup?: CategoryGroup;

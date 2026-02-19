@@ -9,9 +9,11 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { BudgetWizard } from '@/components/budgets/BudgetWizard';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { budgetsApi } from '@/lib/budgets';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { getErrorMessage } from '@/lib/errors';
+import { STRATEGY_LABELS, BUDGET_TYPE_LABELS } from '@/components/budgets/utils/budget-labels';
 import type { Budget } from '@/types/budget';
 
 export default function BudgetsPage() {
@@ -26,6 +28,7 @@ function BudgetsContent() {
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showWizard, setShowWizard] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Budget | null>(null);
   const { defaultCurrency } = useExchangeRates();
   const router = useRouter();
 
@@ -50,10 +53,12 @@ function BudgetsContent() {
     loadBudgets();
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
     try {
-      await budgetsApi.delete(id);
+      await budgetsApi.delete(deleteTarget.id);
       toast.success('Budget deleted');
+      setDeleteTarget(null);
       loadBudgets();
     } catch (error) {
       toast.error(getErrorMessage(error, 'Failed to delete budget'));
@@ -113,7 +118,9 @@ function BudgetsContent() {
             {budgets.map((budget) => (
               <div
                 key={budget.id}
-                className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 hover:shadow-md transition-shadow"
+                className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 hover:shadow-md transition-shadow cursor-pointer"
+                onClick={() => router.push(`/budgets/${budget.id}`)}
+                role="link"
               >
                 <div className="flex items-start justify-between mb-4">
                   <div>
@@ -121,7 +128,7 @@ function BudgetsContent() {
                       {budget.name}
                     </h3>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                      {budget.strategy} - {budget.budgetType}
+                      {STRATEGY_LABELS[budget.strategy] ?? budget.strategy} - {BUDGET_TYPE_LABELS[budget.budgetType] ?? budget.budgetType}
                     </p>
                   </div>
                   <span
@@ -142,16 +149,9 @@ function BudgetsContent() {
                 </div>
                 <div className="flex gap-2">
                   <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => router.push(`/budgets/${budget.id}`)}
-                  >
-                    View
-                  </Button>
-                  <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => handleDelete(budget.id)}
+                    onClick={(e: React.MouseEvent) => { e.stopPropagation(); setDeleteTarget(budget); }}
                   >
                     Delete
                   </Button>
@@ -160,6 +160,16 @@ function BudgetsContent() {
             ))}
           </div>
         )}
+        <ConfirmDialog
+          isOpen={deleteTarget !== null}
+          title="Delete Budget"
+          message={`Are you sure you want to delete "${deleteTarget?.name}"? This will remove all budget data including periods and alerts. This action cannot be undone.`}
+          confirmLabel="Delete"
+          cancelLabel="Cancel"
+          variant="danger"
+          onConfirm={handleDelete}
+          onCancel={() => setDeleteTarget(null)}
+        />
       </main>
     </PageLayout>
   );

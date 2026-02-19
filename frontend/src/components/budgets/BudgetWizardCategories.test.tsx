@@ -241,4 +241,57 @@ describe('BudgetWizardCategories', () => {
     expect(updateCall.profile).toBe('AGGRESSIVE');
     expect(updateCall.selectedCategories).toBeInstanceOf(Map);
   });
+
+  it('renders amount inputs with 2 decimal places', () => {
+    render(
+      <BudgetWizardCategories
+        state={defaultState}
+        updateState={mockUpdateState}
+        onNext={mockOnNext}
+        onBack={mockOnBack}
+      />,
+    );
+
+    // The BudgetAmountInput component shows amounts with toFixed(2)
+    const inputs = document.querySelectorAll('input[type="number"]');
+    // Should have inputs for selected categories (Salary=5000, Groceries=400, Dining=200)
+    expect(inputs.length).toBeGreaterThanOrEqual(3);
+    // Check that values have 2 decimal places
+    const values = Array.from(inputs).map(input => (input as HTMLInputElement).value);
+    expect(values).toContain('5000.00');
+    expect(values).toContain('400.00');
+    expect(values).toContain('200.00');
+  });
+
+  it('renders amount inputs as right-aligned', () => {
+    render(
+      <BudgetWizardCategories
+        state={defaultState}
+        updateState={mockUpdateState}
+        onNext={mockOnNext}
+        onBack={mockOnBack}
+      />,
+    );
+
+    const inputs = document.querySelectorAll('input[type="number"]');
+    expect(inputs.length).toBeGreaterThanOrEqual(1);
+    // BudgetAmountInput has text-right class
+    expect((inputs[0] as HTMLElement).className).toContain('text-right');
+  });
+
+  it('renders currency symbol prefix in amount inputs', () => {
+    render(
+      <BudgetWizardCategories
+        state={defaultState}
+        updateState={mockUpdateState}
+        onNext={mockOnNext}
+        onBack={mockOnBack}
+      />,
+    );
+
+    // getCurrencySymbol is mocked to return '$'
+    const dollarSigns = screen.getAllByText('$');
+    // Should have at least one per input (currency symbol prefix)
+    expect(dollarSigns.length).toBeGreaterThanOrEqual(3);
+  });
 });

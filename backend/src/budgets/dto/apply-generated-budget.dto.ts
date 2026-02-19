@@ -27,9 +27,25 @@ import {
 } from "../entities/budget-category.entity";
 
 export class ApplyBudgetCategoryDto {
-  @ApiProperty({ description: "Category ID" })
+  @ApiPropertyOptional({ description: "Category ID (for regular budget lines)" })
+  @IsOptional()
   @IsUUID()
-  categoryId: string;
+  categoryId?: string;
+
+  @ApiPropertyOptional({
+    description: "Transfer destination account ID (for transfer budget lines)",
+  })
+  @IsOptional()
+  @IsUUID()
+  transferAccountId?: string;
+
+  @ApiPropertyOptional({
+    description: "Whether this is a transfer budget line",
+    default: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  isTransfer?: boolean;
 
   @ApiProperty({ description: "Budget amount for this category" })
   @IsNumber()

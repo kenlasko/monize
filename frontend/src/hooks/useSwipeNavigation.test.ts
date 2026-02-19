@@ -117,9 +117,9 @@ describe('useSwipeNavigation', () => {
       expect(result.current.isSwipePage).toBe(true);
     });
 
-    it('returns totalPages as 6', () => {
+    it('returns totalPages as 7', () => {
       const { result } = renderHook(() => useSwipeNavigation());
-      expect(result.current.totalPages).toBe(6);
+      expect(result.current.totalPages).toBe(7);
     });
 
     it('returns -1 and isSwipePage false for non-swipe pages', () => {
@@ -310,7 +310,7 @@ describe('useSwipeNavigation', () => {
     });
 
     it('does not navigate right from the last page', () => {
-      mockPathname = '/reports'; // index 5, last page
+      mockPathname = '/reports'; // index 6, last page
       vi.useFakeTimers();
       renderSwipeHook();
 

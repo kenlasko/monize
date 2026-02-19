@@ -217,4 +217,48 @@ describe('CashFlowForecastChart', () => {
     expect(screen.queryByText('Closed Account')).not.toBeInTheDocument();
     expect(screen.queryByText('House')).not.toBeInTheDocument();
   });
+
+  it('passes futureTransactions to buildForecast', () => {
+    const accounts = [
+      { id: 'a1', name: 'Checking', isClosed: false, accountType: 'CHEQUING', accountSubType: null },
+    ] as any[];
+    const futureTransactions = [
+      { id: 'ft-1', accountId: 'a1', name: 'Future Bill', amount: -500, date: '2026-03-01' },
+    ];
+
+    render(
+      <CashFlowForecastChart
+        scheduledTransactions={[]}
+        accounts={accounts}
+        futureTransactions={futureTransactions}
+        isLoading={false}
+      />
+    );
+    // Verify buildForecast was called with the futureTransactions argument
+    expect(mockBuildForecast).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+      futureTransactions,
+    );
+  });
+
+  it('defaults futureTransactions to empty array when not provided', () => {
+    const accounts = [
+      { id: 'a1', name: 'Checking', isClosed: false, accountType: 'CHEQUING', accountSubType: null },
+    ] as any[];
+
+    render(
+      <CashFlowForecastChart scheduledTransactions={[]} accounts={accounts} isLoading={false} />
+    );
+    // buildForecast should be called with empty array for futureTransactions
+    expect(mockBuildForecast).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+      [],
+    );
+  });
 });

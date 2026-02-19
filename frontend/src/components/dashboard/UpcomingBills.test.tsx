@@ -226,4 +226,49 @@ describe('UpcomingBills', () => {
     const laterIdx = items.findIndex(el => el.textContent === 'Later Bill');
     expect(soonerIdx).toBeLessThan(laterIdx);
   });
+
+  it('shows override amount instead of default when nextOverride exists', () => {
+    const dateStr = futureDateStr(1);
+    const transactions = [
+      {
+        id: '1', name: 'Modified Bill', amount: -100, currencyCode: 'CAD',
+        nextDueDate: dateStr, isActive: true, autoPost: true,
+        nextOverride: { amount: -75 },
+      },
+    ] as any[];
+
+    render(<UpcomingBills scheduledTransactions={transactions} isLoading={false} />);
+    // Should show the override amount (-75), not the default (-100)
+    expect(screen.getAllByText('-$75.00').length).toBeGreaterThanOrEqual(1);
+    expect(screen.queryByText('-$100.00')).not.toBeInTheDocument();
+  });
+
+  it('uses override amount for type determination (bill vs deposit)', () => {
+    const dateStr = futureDateStr(1);
+    const transactions = [
+      {
+        id: '1', name: 'Overridden to Deposit', amount: -100, currencyCode: 'CAD',
+        nextDueDate: dateStr, isActive: true, autoPost: true,
+        nextOverride: { amount: 50 },
+      },
+    ] as any[];
+
+    render(<UpcomingBills scheduledTransactions={transactions} isLoading={false} />);
+    // Override amount is positive, so it should be classified as a deposit
+    expect(screen.getByText('Deposit')).toBeInTheDocument();
+  });
+
+  it('uses default amount when nextOverride is null', () => {
+    const dateStr = futureDateStr(1);
+    const transactions = [
+      {
+        id: '1', name: 'Normal Bill', amount: -200, currencyCode: 'CAD',
+        nextDueDate: dateStr, isActive: true, autoPost: true,
+        nextOverride: null,
+      },
+    ] as any[];
+
+    render(<UpcomingBills scheduledTransactions={transactions} isLoading={false} />);
+    expect(screen.getAllByText('-$200.00').length).toBeGreaterThanOrEqual(1);
+  });
 });

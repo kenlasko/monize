@@ -8,6 +8,9 @@ import { BudgetFlexGroupCard } from './BudgetFlexGroupCard';
 import { BudgetUpcomingBills } from './BudgetUpcomingBills';
 import { BudgetHeatmap } from './BudgetHeatmap';
 import { BudgetTrendChart } from './BudgetTrendChart';
+import { BudgetZeroBasedBar } from './BudgetZeroBasedBar';
+import { Budget503020Summary } from './Budget503020Summary';
+import { STRATEGY_LABELS, STRATEGY_DESCRIPTIONS } from './utils/budget-labels';
 import type { BudgetSummary, BudgetVelocity } from '@/types/budget';
 import type { ScheduledTransaction } from '@/types/scheduled-transaction';
 
@@ -60,8 +63,20 @@ export function BudgetDashboard({
       ? (velocity.daysElapsed / velocity.totalDays) * 100
       : 0;
 
+  const strategy = summary.budget.strategy;
+
   return (
     <div className="space-y-6">
+      {/* Strategy info bar */}
+      <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-sm">
+        <span className="font-medium text-blue-700 dark:text-blue-300">
+          {STRATEGY_LABELS[strategy] ?? strategy}
+        </span>
+        <span className="hidden sm:inline text-blue-600 dark:text-blue-400">
+          &mdash; {STRATEGY_DESCRIPTIONS[strategy] ?? ''}
+        </span>
+      </div>
+
       {/* Summary Cards */}
       <BudgetSummaryCards
         totalBudgeted={summary.totalBudgeted}
@@ -72,6 +87,23 @@ export function BudgetDashboard({
         daysRemaining={velocity.daysRemaining}
         formatCurrency={formatCurrency}
       />
+
+      {/* Strategy-specific widgets */}
+      {strategy === 'ZERO_BASED' && (
+        <BudgetZeroBasedBar
+          totalIncome={summary.totalIncome}
+          totalBudgeted={summary.totalBudgeted}
+          formatCurrency={formatCurrency}
+        />
+      )}
+      {strategy === 'FIFTY_THIRTY_TWENTY' && (
+        <Budget503020Summary
+          budgetCategories={summary.budget.categories}
+          categoryBreakdown={summary.categoryBreakdown}
+          totalIncome={summary.totalIncome}
+          formatCurrency={formatCurrency}
+        />
+      )}
 
       {/* Health Gauge + Velocity Widget */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -91,13 +123,15 @@ export function BudgetDashboard({
         onCategoryClick={onCategoryClick}
       />
 
-      {/* Flex Groups + Upcoming Bills */}
+      {/* Flex Groups */}
+      <BudgetFlexGroupCard
+        categories={summary.categoryBreakdown}
+        budgetCategories={summary.budget.categories}
+        formatCurrency={formatCurrency}
+      />
+
+      {/* Upcoming Bills + Heatmap */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <BudgetFlexGroupCard
-          categories={summary.categoryBreakdown}
-          budgetCategories={summary.budget.categories}
-          formatCurrency={formatCurrency}
-        />
         <BudgetUpcomingBills
           scheduledTransactions={scheduledTransactions}
           currentSpent={summary.totalSpent}
@@ -105,15 +139,13 @@ export function BudgetDashboard({
           periodEnd={periodEnd}
           formatCurrency={formatCurrency}
         />
+        <BudgetHeatmap
+          dailySpending={dailySpending}
+          periodStart={periodStart}
+          periodEnd={periodEnd}
+          formatCurrency={formatCurrency}
+        />
       </div>
-
-      {/* Heatmap */}
-      <BudgetHeatmap
-        dailySpending={dailySpending}
-        periodStart={periodStart}
-        periodEnd={periodEnd}
-        formatCurrency={formatCurrency}
-      />
 
       {/* Trend Chart */}
       <BudgetTrendChart data={trendData} formatCurrency={formatCurrency} />

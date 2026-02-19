@@ -74,7 +74,7 @@ export class BudgetAlertService {
     try {
       const activeBudgets = await this.budgetsRepository.find({
         where: { isActive: true },
-        relations: ["categories", "categories.category"],
+        relations: ["categories", "categories.category", "categories.transferAccount"],
       });
 
       if (activeBudgets.length === 0) {
@@ -116,7 +116,7 @@ export class BudgetAlertService {
     try {
       const activeBudgets = await this.budgetsRepository.find({
         where: { isActive: true },
-        relations: ["categories", "categories.category"],
+        relations: ["categories", "categories.category", "categories.transferAccount"],
       });
 
       if (activeBudgets.length === 0) {
@@ -689,12 +689,57 @@ export class BudgetAlertService {
       }
     }
 
+    // Transfer actuals
+    const transferSpendingMap = new Map<string, number>();
+    const transferBudgetCategories = budgetCategories.filter(
+      (bc) => bc.isTransfer && bc.transferAccountId,
+    );
+
+    if (transferBudgetCategories.length > 0) {
+      const transferAccountIds = transferBudgetCategories.map(
+        (bc) => bc.transferAccountId as string,
+      );
+
+      const transferActuals = await this.transactionsRepository
+        .createQueryBuilder("t")
+        .innerJoin("t.linkedTransaction", "lt")
+        .select("lt.account_id", "destinationAccountId")
+        .addSelect("COALESCE(SUM(ABS(t.amount)), 0)", "total")
+        .where("t.user_id = :userId", { userId })
+        .andWhere("t.is_transfer = true")
+        .andWhere("t.amount < 0")
+        .andWhere("lt.account_id IN (:...transferAccountIds)", {
+          transferAccountIds,
+        })
+        .andWhere("t.transaction_date >= :periodStart", { periodStart })
+        .andWhere("t.transaction_date <= :periodEnd", { periodEnd })
+        .andWhere("t.status != :void", { void: "VOID" })
+        .groupBy("lt.account_id")
+        .getRawMany();
+
+      for (const row of transferActuals) {
+        transferSpendingMap.set(
+          row.destinationAccountId,
+          parseFloat(row.total || "0"),
+        );
+      }
+    }
+
     return budgetCategories.map((bc) => {
       const budgeted = Number(bc.amount);
-      const spent = bc.categoryId ? spendingMap.get(bc.categoryId) || 0 : 0;
+      let spent = 0;
+      let categoryName: string;
+
+      if (bc.isTransfer && bc.transferAccountId) {
+        spent = transferSpendingMap.get(bc.transferAccountId) || 0;
+        categoryName = bc.transferAccount?.name || "Transfer";
+      } else {
+        spent = bc.categoryId ? spendingMap.get(bc.categoryId) || 0 : 0;
+        categoryName = bc.category?.name || "Uncategorized";
+      }
+
       const percentUsed =
         budgeted > 0 ? Math.round((spent / budgeted) * 10000) / 100 : 0;
-      const categoryName = bc.category?.name || "Uncategorized";
 
       return {
         budgetCategoryId: bc.id,

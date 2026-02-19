@@ -100,6 +100,13 @@ vi.mock('@/lib/accounts', () => ({
   },
 }));
 
+const mockGetAllTransactions = vi.fn();
+vi.mock('@/lib/transactions', () => ({
+  transactionsApi: {
+    getAll: (...args: any[]) => mockGetAllTransactions(...args),
+  },
+}));
+
 vi.mock('@/hooks/useNumberFormat', () => ({
   useNumberFormat: () => ({
     formatCurrency: (val: number) => `$${Math.abs(val).toFixed(2)}`,
@@ -233,6 +240,7 @@ describe('BillsPage', () => {
     mockGetAll.mockResolvedValue(mockScheduledTransactions);
     mockGetAllCategories.mockResolvedValue([]);
     mockGetAllAccounts.mockResolvedValue([]);
+    mockGetAllTransactions.mockResolvedValue({ data: [], total: 0 });
     mockHasOverrides.mockResolvedValue({ hasOverrides: false, count: 0 });
     mockGetOverrides.mockResolvedValue([]);
     mockDeleteAllOverrides.mockResolvedValue(undefined);

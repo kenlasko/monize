@@ -60,6 +60,8 @@ describe('BudgetWizardReview', () => {
         suggested: 400,
       },
     ],
+    transfers: [],
+    totalTransfers: 0,
     estimatedMonthlyIncome: 5000,
     totalBudgeted: 400,
     projectedMonthlySavings: 4600,
@@ -82,6 +84,7 @@ describe('BudgetWizardReview', () => {
     budgetName: 'February 2026 Budget',
     budgetType: 'MONTHLY',
     periodStart: '2026-02-01',
+    selectedTransfers: new Map(),
     currencyCode: 'USD',
     isSubmitting: false,
   };
@@ -120,9 +123,10 @@ describe('BudgetWizardReview', () => {
       />,
     );
 
-    expect(screen.getByText('Total Budget')).toBeInTheDocument();
     expect(screen.getByText('Est. Income')).toBeInTheDocument();
-    expect(screen.getByText('Projected Savings')).toBeInTheDocument();
+    expect(screen.getByText('Total Expenses')).toBeInTheDocument();
+    expect(screen.getByText('Transfers')).toBeInTheDocument();
+    expect(screen.getByText('Remaining')).toBeInTheDocument();
   });
 
   it('renders category list with names', () => {

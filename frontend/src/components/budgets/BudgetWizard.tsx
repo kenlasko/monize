@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { BudgetWizardAnalysis } from './BudgetWizardAnalysis';
 import { BudgetWizardCategories } from './BudgetWizardCategories';
 import { BudgetWizardStrategy } from './BudgetWizardStrategy';
@@ -23,6 +23,7 @@ export interface WizardState {
 
   // Step 2: Categories
   selectedCategories: Map<string, ApplyBudgetCategoryData>;
+  selectedTransfers: Map<string, ApplyBudgetCategoryData>;
 
   // Step 3: Strategy / Options
   budgetName: string;
@@ -57,6 +58,7 @@ export function BudgetWizard({
     strategy: 'FIXED',
     analysisResult: null,
     selectedCategories: new Map(),
+    selectedTransfers: new Map(),
     budgetName: `${now.toLocaleString('default', { month: 'long' })} ${now.getFullYear()} Budget`,
     budgetType: 'MONTHLY',
     periodStart: defaultPeriodStart,
@@ -71,18 +73,44 @@ export function BudgetWizard({
     [],
   );
 
+  // Sync wizard steps with browser history so the back button works
+  useEffect(() => {
+    // Replace current entry with step 0 state on mount
+    window.history.replaceState({ wizardStep: 0 }, '');
+
+    const handlePopState = (e: PopStateEvent) => {
+      const step = e.state?.wizardStep;
+      if (typeof step === 'number') {
+        setCurrentStep(step);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
   const goNext = useCallback(() => {
-    setCurrentStep((prev) => Math.min(prev + 1, STEPS.length - 1));
+    setCurrentStep((prev) => {
+      const next = Math.min(prev + 1, STEPS.length - 1);
+      window.history.pushState({ wizardStep: next }, '');
+      return next;
+    });
   }, []);
 
   const goBack = useCallback(() => {
-    setCurrentStep((prev) => Math.max(prev - 1, 0));
+    setCurrentStep((prev) => {
+      if (prev <= 0) return 0;
+      window.history.back();
+      return Math.max(prev - 1, 0);
+    });
   }, []);
 
   const initCategoriesFromAnalysis = useCallback(
     (result: GenerateBudgetResponse) => {
       const categories = new Map<string, ApplyBudgetCategoryData>();
       for (const cat of result.categories) {
+        // Skip expense categories with zero suggested amount (sporadic spending)
+        if (cat.suggested <= 0 && !cat.isIncome) continue;
         categories.set(cat.categoryId, {
           categoryId: cat.categoryId,
           amount: cat.suggested,
@@ -90,9 +118,22 @@ export function BudgetWizard({
           rolloverType: 'NONE' as RolloverType,
         });
       }
+
+      const transfers = new Map<string, ApplyBudgetCategoryData>();
+      for (const t of result.transfers ?? []) {
+        if (t.suggested <= 0) continue;
+        transfers.set(t.accountId, {
+          transferAccountId: t.accountId,
+          isTransfer: true,
+          amount: t.suggested,
+          rolloverType: 'NONE' as RolloverType,
+        });
+      }
+
       updateState({
         analysisResult: result,
         selectedCategories: categories,
+        selectedTransfers: transfers,
       });
     },
     [updateState],
@@ -102,11 +143,11 @@ export function BudgetWizard({
     <div>
       {/* Step indicators */}
       <nav aria-label="Wizard steps" className="mb-8">
-        <ol className="flex items-center justify-center gap-2">
+        <ol className="flex items-center justify-center gap-1 sm:gap-2">
           {STEPS.map((stepName, index) => (
             <li key={stepName} className="flex items-center">
               <div
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium ${
+                className={`flex items-center gap-1 sm:gap-2 px-2 py-1 sm:px-3 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium ${
                   index === currentStep
                     ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200'
                     : index < currentStep
@@ -115,7 +156,7 @@ export function BudgetWizard({
                 }`}
               >
                 <span
-                  className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${
+                  className={`flex items-center justify-center w-5 h-5 text-[10px] sm:w-6 sm:h-6 sm:text-xs rounded-full font-bold ${
                     index === currentStep
                       ? 'bg-blue-600 text-white'
                       : index < currentStep
@@ -129,7 +170,7 @@ export function BudgetWizard({
               </div>
               {index < STEPS.length - 1 && (
                 <div
-                  className={`w-8 h-0.5 mx-1 ${
+                  className={`w-4 sm:w-8 h-0.5 mx-0.5 sm:mx-1 ${
                     index < currentStep
                       ? 'bg-green-400 dark:bg-green-600'
                       : 'bg-gray-200 dark:bg-gray-600'

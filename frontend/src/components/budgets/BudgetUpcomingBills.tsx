@@ -22,11 +22,15 @@ export function BudgetUpcomingBills({
   const today = startOfDay(new Date());
   const endDate = parseISO(periodEnd);
 
+  const getEffectiveAmount = (st: ScheduledTransaction): number => {
+    return st.nextOverride?.amount ?? st.amount;
+  };
+
   const upcomingBills = useMemo(() => {
     return scheduledTransactions
       .filter((st) => {
         if (!st.isActive) return false;
-        if (st.amount >= 0) return false; // only bills (negative amounts)
+        if (getEffectiveAmount(st) >= 0) return false; // only bills (negative amounts)
         const dueDate = parseISO(st.nextDueDate);
         const daysUntil = differenceInDays(dueDate, today);
         const daysUntilEnd = differenceInDays(endDate, dueDate);
@@ -39,7 +43,7 @@ export function BudgetUpcomingBills({
   }, [scheduledTransactions, today, endDate]);
 
   const totalUpcoming = useMemo(
-    () => upcomingBills.reduce((sum, bill) => sum + Math.abs(bill.amount), 0),
+    () => upcomingBills.reduce((sum, bill) => sum + Math.abs(getEffectiveAmount(bill)), 0),
     [upcomingBills],
   );
 
@@ -70,7 +74,7 @@ export function BudgetUpcomingBills({
                 </span>
               </div>
               <span className="font-medium text-red-600 dark:text-red-400 ml-2 whitespace-nowrap">
-                {formatCurrency(Math.abs(bill.amount))}
+                {formatCurrency(Math.abs(getEffectiveAmount(bill)))}
               </span>
             </div>
           ))}

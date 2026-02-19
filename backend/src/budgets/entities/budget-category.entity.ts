@@ -9,6 +9,7 @@ import {
 } from "typeorm";
 import { Budget } from "./budget.entity";
 import { Category } from "../../categories/entities/category.entity";
+import { Account } from "../../accounts/entities/account.entity";
 
 export enum RolloverType {
   NONE = "NONE",
@@ -41,6 +42,16 @@ export class BudgetCategory {
   @ManyToOne(() => Category, { nullable: true })
   @JoinColumn({ name: "category_id" })
   category: Category | null;
+
+  @Column({ type: "uuid", name: "transfer_account_id", nullable: true })
+  transferAccountId: string | null;
+
+  @ManyToOne(() => Account, { nullable: true })
+  @JoinColumn({ name: "transfer_account_id" })
+  transferAccount: Account | null;
+
+  @Column({ name: "is_transfer", default: false })
+  isTransfer: boolean;
 
   @Column({
     type: "varchar",

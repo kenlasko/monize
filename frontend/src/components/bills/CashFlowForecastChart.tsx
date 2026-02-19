@@ -19,6 +19,7 @@ import {
   getForecastSummary,
   ForecastPeriod,
   ForecastDataPoint,
+  FutureTransaction,
   FORECAST_PERIOD_LABELS,
 } from '@/lib/forecast';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
@@ -26,6 +27,7 @@ import { useNumberFormat } from '@/hooks/useNumberFormat';
 interface CashFlowForecastChartProps {
   scheduledTransactions: ScheduledTransaction[];
   accounts: Account[];
+  futureTransactions?: FutureTransaction[];
   isLoading: boolean;
 }
 
@@ -107,6 +109,7 @@ function getStoredAccountId(): string {
 export function CashFlowForecastChart({
   scheduledTransactions,
   accounts,
+  futureTransactions = [],
   isLoading,
 }: CashFlowForecastChartProps) {
   const { formatCurrencyCompact: formatCurrency, formatCurrencyAxis } = useNumberFormat();
@@ -134,8 +137,8 @@ export function CashFlowForecastChart({
   }, [accounts]);
 
   const forecastData = useMemo(() => {
-    return buildForecast(accounts, scheduledTransactions, selectedPeriod, selectedAccountId);
-  }, [accounts, scheduledTransactions, selectedPeriod, selectedAccountId]);
+    return buildForecast(accounts, scheduledTransactions, selectedPeriod, selectedAccountId, futureTransactions);
+  }, [accounts, scheduledTransactions, selectedPeriod, selectedAccountId, futureTransactions]);
 
   const summary = useMemo(() => {
     return getForecastSummary(forecastData);

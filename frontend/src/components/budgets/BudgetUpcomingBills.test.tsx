@@ -220,4 +220,82 @@ describe('BudgetUpcomingBills', () => {
     expect(screen.getByText('In Period')).toBeInTheDocument();
     expect(screen.queryByText('Next Month')).not.toBeInTheDocument();
   });
+
+  it('uses override amount when nextOverride exists', () => {
+    const bills = [
+      createBill({
+        id: 'st-1',
+        name: 'Modified Bill',
+        amount: -80,
+        nextDueDate: '2026-02-25',
+        nextOverride: { amount: -50 } as any,
+      }),
+    ];
+
+    render(
+      <BudgetUpcomingBills
+        scheduledTransactions={bills}
+        currentSpent={3000}
+        totalBudgeted={5200}
+        periodEnd="2026-02-28"
+        formatCurrency={mockFormat}
+      />,
+    );
+
+    // Should show override amount (50), not default (80) - appears in item row and total
+    const amounts = screen.getAllByText('$50.00');
+    expect(amounts.length).toBeGreaterThanOrEqual(1);
+    expect(screen.queryByText('$80.00')).not.toBeInTheDocument();
+  });
+
+  it('calculates truly available using override amounts', () => {
+    const bills = [
+      createBill({
+        id: 'st-1',
+        name: 'Modified Bill',
+        amount: -80,
+        nextDueDate: '2026-02-25',
+        nextOverride: { amount: -50 } as any,
+      }),
+    ];
+
+    // truly available = 5200 - 3000 - 50 = 2150
+    render(
+      <BudgetUpcomingBills
+        scheduledTransactions={bills}
+        currentSpent={3000}
+        totalBudgeted={5200}
+        periodEnd="2026-02-28"
+        formatCurrency={mockFormat}
+      />,
+    );
+
+    expect(screen.getByText('$2150.00')).toBeInTheDocument();
+  });
+
+  it('excludes bills with positive override amount', () => {
+    const bills = [
+      createBill({
+        id: 'st-1',
+        name: 'Overridden Positive',
+        amount: -80,
+        nextDueDate: '2026-02-25',
+        nextOverride: { amount: 50 } as any,
+      }),
+    ];
+
+    render(
+      <BudgetUpcomingBills
+        scheduledTransactions={bills}
+        currentSpent={3000}
+        totalBudgeted={5200}
+        periodEnd="2026-02-28"
+        formatCurrency={mockFormat}
+      />,
+    );
+
+    // Override amount is positive, so it should be filtered out (only bills with negative amounts show)
+    expect(screen.queryByText('Overridden Positive')).not.toBeInTheDocument();
+    expect(screen.getByText('No bills due this period.')).toBeInTheDocument();
+  });
 });

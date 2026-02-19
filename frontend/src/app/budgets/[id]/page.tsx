@@ -11,10 +11,12 @@ import { BudgetDashboard } from '@/components/budgets/BudgetDashboard';
 import { BudgetPeriodDetail } from '@/components/budgets/BudgetPeriodDetail';
 import { BudgetPeriodSelector } from '@/components/budgets/BudgetPeriodSelector';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { budgetsApi } from '@/lib/budgets';
 import { scheduledTransactionsApi } from '@/lib/scheduled-transactions';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { getErrorMessage } from '@/lib/errors';
+import { STRATEGY_LABELS } from '@/components/budgets/utils/budget-labels';
 import type {
   BudgetSummary,
   BudgetVelocity,
@@ -64,28 +66,39 @@ function BudgetDetailContent() {
   const [scheduledTransactions, setScheduledTransactions] = useState<
     ScheduledTransaction[]
   >([]);
+  const [dailySpending, setDailySpending] = useState<
+    Array<{ date: string; amount: number }>
+  >([]);
+  const [trendData, setTrendData] = useState<
+    Array<{ month: string; budgeted: number; actual: number }>
+  >([]);
   const [selectedPeriodId, setSelectedPeriodId] = useState<string | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState<BudgetPeriod | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isPeriodLoading, setIsPeriodLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const [summaryData, velocityData, periodsData, stData] =
+      const [summaryData, velocityData, periodsData, stData, dailyData, trend] =
         await Promise.all([
           budgetsApi.getSummary(budgetId),
           budgetsApi.getVelocity(budgetId),
           budgetsApi.getPeriods(budgetId),
           scheduledTransactionsApi.getAll(),
+          budgetsApi.getDailySpending(budgetId).catch(() => []),
+          budgetsApi.getTrend(budgetId).catch(() => []),
         ]);
 
       setSummary(summaryData);
       setVelocity(velocityData);
       setPeriods(periodsData);
       setScheduledTransactions(stData);
+      setDailySpending(dailyData);
+      setTrendData(trend);
     } catch (err) {
       const message = getErrorMessage(err, 'Failed to load budget');
       setError(message);
@@ -130,6 +143,17 @@ function BudgetDetailContent() {
     [budgetId, periods],
   );
 
+  const handleDelete = async () => {
+    try {
+      await budgetsApi.delete(budgetId);
+      toast.success('Budget deleted');
+      router.push('/budgets');
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'Failed to delete budget'));
+      setShowDeleteConfirm(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <PageLayout>
@@ -161,17 +185,12 @@ function BudgetDetailContent() {
   const currencyCode = summary.budget.currencyCode;
   const healthScore = computeHealthScore(summary);
 
-  // For now, daily spending and trend data are computed client-side as empty
-  // until report endpoints are available in Phase 6
-  const dailySpending: Array<{ date: string; amount: number }> = [];
-  const trendData: Array<{ month: string; budgeted: number; actual: number }> = [];
-
   return (
     <PageLayout>
       <main className="px-4 sm:px-6 lg:px-12 pt-6 pb-8">
         <PageHeader
           title={summary.budget.name}
-          subtitle={`${summary.budget.strategy} budget - ${currencyCode}`}
+          subtitle={`${STRATEGY_LABELS[summary.budget.strategy] ?? summary.budget.strategy} budget - ${currencyCode}`}
           actions={
             <div className="flex items-center gap-3">
               <BudgetPeriodSelector
@@ -184,6 +203,12 @@ function BudgetDetailContent() {
                 onClick={() => router.push(`/budgets/${budgetId}/edit`)}
               >
                 Edit
+              </Button>
+              <Button
+                variant="danger"
+                onClick={() => setShowDeleteConfirm(true)}
+              >
+                Delete
               </Button>
               <Button variant="outline" onClick={() => router.push('/budgets')}>
                 Back
@@ -209,6 +234,16 @@ function BudgetDetailContent() {
             formatCurrency={(amount) => formatCurrency(amount, currencyCode)}
           />
         )}
+        <ConfirmDialog
+          isOpen={showDeleteConfirm}
+          title="Delete Budget"
+          message={`Are you sure you want to delete "${summary.budget.name}"? This will remove all budget data including periods and alerts. This action cannot be undone.`}
+          confirmLabel="Delete"
+          cancelLabel="Cancel"
+          variant="danger"
+          onConfirm={handleDelete}
+          onCancel={() => setShowDeleteConfirm(false)}
+        />
       </main>
     </PageLayout>
   );

@@ -4,6 +4,7 @@ import { Repository } from "typeorm";
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
 import { Category } from "../categories/entities/category.entity";
+import { Account } from "../accounts/entities/account.entity";
 import { Budget } from "./entities/budget.entity";
 import { BudgetCategory } from "./entities/budget-category.entity";
 import { GenerateBudgetDto, BudgetProfile } from "./dto/generate-budget.dto";
@@ -27,10 +28,30 @@ export interface CategoryAnalysis {
   suggested: number;
 }
 
+export interface TransferAnalysis {
+  accountId: string;
+  accountName: string;
+  accountType: string;
+  average: number;
+  median: number;
+  p25: number;
+  p75: number;
+  min: number;
+  max: number;
+  stdDev: number;
+  monthlyAmounts: number[];
+  monthlyOccurrences: number;
+  isFixed: boolean;
+  seasonalMonths: number[];
+  suggested: number;
+}
+
 export interface GenerateBudgetResult {
   categories: CategoryAnalysis[];
+  transfers: TransferAnalysis[];
   estimatedMonthlyIncome: number;
   totalBudgeted: number;
+  totalTransfers: number;
   projectedMonthlySavings: number;
   analysisWindow: {
     startDate: string;
@@ -48,6 +69,8 @@ export class BudgetGeneratorService {
     private splitsRepository: Repository<TransactionSplit>,
     @InjectRepository(Category)
     private categoriesRepository: Repository<Category>,
+    @InjectRepository(Account)
+    private accountsRepository: Repository<Account>,
     @InjectRepository(Budget)
     private budgetsRepository: Repository<Budget>,
     @InjectRepository(BudgetCategory)
@@ -93,7 +116,34 @@ export class BudgetGeneratorService {
       suggested: this.getSuggestedAmount(cat, profile),
     }));
 
-    const allCategories = [...incomeAnalysis, ...expenseAnalysis];
+    // Deduplicate: a category may appear in both income & expense results
+    // (e.g. refunds in an expense category). Keep the entry matching isIncome,
+    // or the one with the larger suggested amount as a fallback.
+    const categoryMap = new Map<string, CategoryAnalysis>();
+    for (const cat of [...incomeAnalysis, ...expenseAnalysis]) {
+      const existing = categoryMap.get(cat.categoryId);
+      if (!existing) {
+        categoryMap.set(cat.categoryId, cat);
+      } else if (existing.isIncome !== cat.isIncome) {
+        // Prefer the entry matching the category's isIncome flag
+        if (cat.suggested > existing.suggested) {
+          categoryMap.set(cat.categoryId, cat);
+        }
+      }
+    }
+    const allCategories = Array.from(categoryMap.values());
+
+    const transferAnalysisRaw = await this.getTransfersByDestination(
+      userId,
+      startDateStr,
+      endDateStr,
+      analysisMonths,
+    );
+
+    const transfers: TransferAnalysis[] = transferAnalysisRaw.map((t) => ({
+      ...t,
+      suggested: this.getSuggestedAmountFromStats(t, profile),
+    }));
 
     const estimatedMonthlyIncome =
       incomeAnalysis.length > 0
@@ -105,11 +155,19 @@ export class BudgetGeneratorService {
       0,
     );
 
+    const totalTransfers = transfers.reduce(
+      (sum, t) => sum + t.suggested,
+      0,
+    );
+
     return {
       categories: allCategories,
+      transfers,
       estimatedMonthlyIncome,
       totalBudgeted,
-      projectedMonthlySavings: estimatedMonthlyIncome - totalBudgeted,
+      totalTransfers,
+      projectedMonthlySavings:
+        estimatedMonthlyIncome - totalBudgeted - totalTransfers,
       analysisWindow: {
         startDate: startDateStr,
         endDate: endDateStr,
@@ -140,7 +198,9 @@ export class BudgetGeneratorService {
       const budgetCategories = dto.categories.map((cat) =>
         this.budgetCategoriesRepository.create({
           budgetId: savedBudget.id,
-          categoryId: cat.categoryId,
+          categoryId: cat.transferAccountId ? null : (cat.categoryId ?? null),
+          transferAccountId: cat.transferAccountId ?? null,
+          isTransfer: !!cat.transferAccountId,
           amount: cat.amount,
           isIncome: cat.isIncome ?? false,
           categoryGroup: cat.categoryGroup ?? null,
@@ -159,7 +219,7 @@ export class BudgetGeneratorService {
 
     return this.budgetsRepository.findOne({
       where: { id: savedBudget.id },
-      relations: ["categories", "categories.category"],
+      relations: ["categories", "categories.category", "categories.transferAccount"],
     }) as Promise<Budget>;
   }
 
@@ -266,14 +326,10 @@ export class BudgetGeneratorService {
         analysisMonths,
       );
 
-      const nonZeroAmounts = monthlyAmounts.filter((m) => m > 0);
-      const nonZeroMonths = nonZeroAmounts.length;
+      const nonZeroMonths = monthlyAmounts.filter((m) => m > 0).length;
 
-      // Use non-zero months for percentile calculations so that categories
-      // with sparse data (e.g. payroll deductions present in only some months)
-      // produce meaningful medians instead of zero.
-      const sortedForPercentiles = [...nonZeroAmounts].sort((a, b) => a - b);
-      const sortedAll = [...monthlyAmounts].sort((a, b) => a - b);
+      const sortedForPercentiles = [...monthlyAmounts].sort((a, b) => a - b);
+      const sortedAll = sortedForPercentiles;
 
       results.push({
         categoryId: entry.categoryId,
@@ -389,6 +445,114 @@ export class BudgetGeneratorService {
     }
 
     return peaks;
+  }
+
+  private async getTransfersByDestination(
+    userId: string,
+    startDate: string,
+    endDate: string,
+    analysisMonths: number,
+  ): Promise<Omit<TransferAnalysis, "suggested">[]> {
+    const rows = await this.transactionsRepository
+      .createQueryBuilder("t")
+      .innerJoin("t.linkedTransaction", "lt")
+      .innerJoin("lt.account", "a")
+      .select("a.id", "accountId")
+      .addSelect("a.name", "accountName")
+      .addSelect("a.account_type", "accountType")
+      .addSelect("EXTRACT(YEAR FROM t.transaction_date)::int", "year")
+      .addSelect("EXTRACT(MONTH FROM t.transaction_date)::int", "month")
+      .addSelect("SUM(ABS(t.amount))", "total")
+      .where("t.user_id = :userId", { userId })
+      .andWhere("t.transaction_date >= :startDate", { startDate })
+      .andWhere("t.transaction_date <= :endDate", { endDate })
+      .andWhere("t.status != :void", { void: "VOID" })
+      .andWhere("t.is_transfer = true")
+      .andWhere("t.amount < 0")
+      .groupBy("a.id")
+      .addGroupBy("a.name")
+      .addGroupBy("a.account_type")
+      .addGroupBy("EXTRACT(YEAR FROM t.transaction_date)")
+      .addGroupBy("EXTRACT(MONTH FROM t.transaction_date)")
+      .getRawMany();
+
+    const accountMap = new Map<
+      string,
+      {
+        accountId: string;
+        accountName: string;
+        accountType: string;
+        monthlyTotals: Map<string, number>;
+      }
+    >();
+
+    for (const row of rows) {
+      const key = row.accountId;
+      if (!accountMap.has(key)) {
+        accountMap.set(key, {
+          accountId: row.accountId,
+          accountName: row.accountName,
+          accountType: row.accountType,
+          monthlyTotals: new Map(),
+        });
+      }
+
+      const entry = accountMap.get(key)!;
+      const monthKey = `${row.year}-${String(row.month).padStart(2, "0")}`;
+      const existing = entry.monthlyTotals.get(monthKey) || 0;
+      entry.monthlyTotals.set(
+        monthKey,
+        existing + parseFloat(row.total || "0"),
+      );
+    }
+
+    const results: Omit<TransferAnalysis, "suggested">[] = [];
+
+    for (const entry of accountMap.values()) {
+      const monthlyAmounts = this.buildMonthlyArray(
+        entry.monthlyTotals,
+        analysisMonths,
+      );
+
+      const nonZeroMonths = monthlyAmounts.filter((m) => m > 0).length;
+      const sortedForPercentiles = [...monthlyAmounts].sort((a, b) => a - b);
+
+      results.push({
+        accountId: entry.accountId,
+        accountName: entry.accountName,
+        accountType: entry.accountType,
+        average: this.round(this.mean(monthlyAmounts)),
+        median: this.round(this.percentile(sortedForPercentiles, 50)),
+        p25: this.round(this.percentile(sortedForPercentiles, 25)),
+        p75: this.round(this.percentile(sortedForPercentiles, 75)),
+        min: this.round(sortedForPercentiles[0] ?? 0),
+        max: this.round(
+          sortedForPercentiles[sortedForPercentiles.length - 1] ?? 0,
+        ),
+        stdDev: this.round(this.standardDeviation(monthlyAmounts)),
+        monthlyAmounts,
+        monthlyOccurrences: nonZeroMonths,
+        isFixed: this.isFixedExpense(monthlyAmounts),
+        seasonalMonths: this.detectSeasonalPeaks(monthlyAmounts),
+      });
+    }
+
+    return results.sort((a, b) => b.median - a.median);
+  }
+
+  private getSuggestedAmountFromStats(
+    stats: { p25: number; median: number; p75: number },
+    profile: BudgetProfile,
+  ): number {
+    switch (profile) {
+      case BudgetProfile.COMFORTABLE:
+        return this.round(stats.p75);
+      case BudgetProfile.AGGRESSIVE:
+        return this.round(stats.p25);
+      case BudgetProfile.ON_TRACK:
+      default:
+        return this.round(stats.median);
+    }
   }
 
   private round(value: number): number {

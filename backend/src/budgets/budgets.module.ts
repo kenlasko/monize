@@ -8,6 +8,7 @@ import { BudgetAlert } from "./entities/budget-alert.entity";
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
 import { Category } from "../categories/entities/category.entity";
+import { Account } from "../accounts/entities/account.entity";
 import { User } from "../users/entities/user.entity";
 import { UserPreference } from "../users/entities/user-preference.entity";
 import { BudgetsService } from "./budgets.service";
@@ -30,6 +31,7 @@ import { NotificationsModule } from "../notifications/notifications.module";
       Transaction,
       TransactionSplit,
       Category,
+      Account,
       User,
       UserPreference,
     ]),

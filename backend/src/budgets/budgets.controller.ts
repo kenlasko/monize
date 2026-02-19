@@ -410,4 +410,14 @@ export class BudgetsController {
   getFlexGroupStatus(@Request() req, @Param("id", ParseUUIDPipe) id: string) {
     return this.budgetReportsService.getFlexGroupStatus(req.user.id, id);
   }
+
+  @Get(":id/reports/daily-spending")
+  @ApiOperation({ summary: "Get daily spending for current period (heatmap)" })
+  @ApiParam({ name: "id", description: "Budget UUID" })
+  @ApiResponse({ status: 200, description: "Daily spending data retrieved" })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  @ApiResponse({ status: 404, description: "Budget not found" })
+  getDailySpending(@Request() req, @Param("id", ParseUUIDPipe) id: string) {
+    return this.budgetReportsService.getDailySpending(req.user.id, id);
+  }
 }

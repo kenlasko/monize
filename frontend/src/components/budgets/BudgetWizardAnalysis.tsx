@@ -183,7 +183,7 @@ export function BudgetWizardAnalysis({
       </div>
 
       {/* Actions */}
-      <div className="flex justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
+      <div className="flex flex-col-reverse sm:flex-row justify-between gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
         <Button variant="outline" onClick={onCancel}>
           Cancel
         </Button>
