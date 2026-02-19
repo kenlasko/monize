@@ -225,8 +225,11 @@ function BudgetEditContent() {
           <Modal
             isOpen={true}
             onClose={() => setEditingCategory(null)}
-            title={`Edit ${editingCategory.category?.name ?? 'Category'}`}
+            className="p-6"
           >
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
+              Edit {editingCategory.category?.name ?? 'Category'}
+            </h2>
             <BudgetCategoryForm
               category={editingCategory}
               onSave={handleSaveCategory}
