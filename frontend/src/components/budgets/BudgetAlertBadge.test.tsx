@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@/test/render';
+import { render, screen, fireEvent, waitFor, act } from '@/test/render';
 import { BudgetAlertBadge } from './BudgetAlertBadge';
 import type { BudgetAlert } from '@/types/budget';
 
@@ -64,18 +64,16 @@ describe('BudgetAlertBadge', () => {
 
   it('renders the bell icon button', async () => {
     render(<BudgetAlertBadge />);
+    await act(async () => {});
 
-    await waitFor(() => {
-      expect(screen.getByTestId('alert-badge-button')).toBeInTheDocument();
-    });
+    expect(screen.getByTestId('alert-badge-button')).toBeInTheDocument();
   });
 
   it('fetches alerts on mount', async () => {
     render(<BudgetAlertBadge />);
+    await act(async () => {});
 
-    await waitFor(() => {
-      expect(mockGetAlerts).toHaveBeenCalled();
-    });
+    expect(mockGetAlerts).toHaveBeenCalled();
   });
 
   it('shows unread count badge when there are unread alerts', async () => {
@@ -86,10 +84,9 @@ describe('BudgetAlertBadge', () => {
     ]);
 
     render(<BudgetAlertBadge />);
+    await act(async () => {});
 
-    await waitFor(() => {
-      expect(screen.getByTestId('unread-count')).toHaveTextContent('2');
-    });
+    expect(screen.getByTestId('unread-count')).toHaveTextContent('2');
   });
 
   it('does not show badge when all alerts are read', async () => {
@@ -98,10 +95,9 @@ describe('BudgetAlertBadge', () => {
     ]);
 
     render(<BudgetAlertBadge />);
+    await act(async () => {});
 
-    await waitFor(() => {
-      expect(screen.queryByTestId('unread-count')).not.toBeInTheDocument();
-    });
+    expect(screen.queryByTestId('unread-count')).not.toBeInTheDocument();
   });
 
   it('shows 9+ when there are more than 9 unread alerts', async () => {
@@ -111,20 +107,16 @@ describe('BudgetAlertBadge', () => {
     mockGetAlerts.mockResolvedValue(alerts);
 
     render(<BudgetAlertBadge />);
+    await act(async () => {});
 
-    await waitFor(() => {
-      expect(screen.getByTestId('unread-count')).toHaveTextContent('9+');
-    });
+    expect(screen.getByTestId('unread-count')).toHaveTextContent('9+');
   });
 
   it('opens alert list dropdown when clicked', async () => {
     mockGetAlerts.mockResolvedValue([makeAlert()]);
 
     render(<BudgetAlertBadge />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId('alert-badge-button')).toBeInTheDocument();
-    });
+    await act(async () => {});
 
     fireEvent.click(screen.getByTestId('alert-badge-button'));
 
@@ -135,10 +127,7 @@ describe('BudgetAlertBadge', () => {
     mockGetAlerts.mockResolvedValue([makeAlert()]);
 
     render(<BudgetAlertBadge />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId('alert-badge-button')).toBeInTheDocument();
-    });
+    await act(async () => {});
 
     fireEvent.click(screen.getByTestId('alert-badge-button'));
     expect(screen.getByTestId('alert-list')).toBeInTheDocument();
@@ -152,10 +141,7 @@ describe('BudgetAlertBadge', () => {
     mockGetAlerts.mockResolvedValue([makeAlert({ id: 'a1', isRead: false })]);
 
     render(<BudgetAlertBadge />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId('alert-badge-button')).toBeInTheDocument();
-    });
+    await act(async () => {});
 
     fireEvent.click(screen.getByTestId('alert-badge-button'));
     fireEvent.click(screen.getByTestId('alert-item-a1'));
@@ -172,10 +158,7 @@ describe('BudgetAlertBadge', () => {
     ]);
 
     render(<BudgetAlertBadge />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId('alert-badge-button')).toBeInTheDocument();
-    });
+    await act(async () => {});
 
     fireEvent.click(screen.getByTestId('alert-badge-button'));
     fireEvent.click(screen.getByTestId('mark-all-read'));
@@ -189,10 +172,7 @@ describe('BudgetAlertBadge', () => {
     mockGetAlerts.mockResolvedValue([]);
 
     render(<BudgetAlertBadge />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId('alert-badge-button')).toBeInTheDocument();
-    });
+    await act(async () => {});
 
     fireEvent.click(screen.getByTestId('alert-badge-button'));
 
@@ -205,10 +185,7 @@ describe('BudgetAlertBadge', () => {
     ]);
 
     render(<BudgetAlertBadge />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId('alert-badge-button')).toBeInTheDocument();
-    });
+    await act(async () => {});
 
     fireEvent.click(screen.getByTestId('alert-badge-button'));
     fireEvent.click(screen.getByTestId('alert-item-a1'));
@@ -220,10 +197,7 @@ describe('BudgetAlertBadge', () => {
     mockGetAlerts.mockRejectedValue(new Error('Network error'));
 
     render(<BudgetAlertBadge />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId('alert-badge-button')).toBeInTheDocument();
-    });
+    await act(async () => {});
 
     // Should not throw, badge should render without count
     expect(screen.queryByTestId('unread-count')).not.toBeInTheDocument();

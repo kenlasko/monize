@@ -133,6 +133,13 @@ vi.mock('@/lib/errors', () => ({
   getErrorMessage: (_error: any, fallback: string) => fallback,
 }));
 
+// Mock budgets API (used for category budget status indicators)
+vi.mock('@/lib/budgets', () => ({
+  budgetsApi: {
+    getCategoryBudgetStatus: vi.fn().mockResolvedValue({}),
+  },
+}));
+
 // Mock child components
 vi.mock('@/components/transactions/TransactionList', () => ({
   TransactionList: (props: any) => (
