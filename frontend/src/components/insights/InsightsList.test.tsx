@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@/test/render';
+import { render, screen, fireEvent, waitFor, act } from '@/test/render';
 import { InsightsList } from './InsightsList';
 
 const mockGetInsights = vi.fn();
@@ -158,9 +158,12 @@ describe('InsightsList', () => {
 
     render(<InsightsList />);
 
-    await vi.waitFor(() => {
-      expect(screen.getByText('Refresh Insights')).toBeInTheDocument();
+    // Flush initial async load (useEffect -> loadInsights)
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
     });
+
+    expect(screen.getByText('Refresh Insights')).toBeInTheDocument();
 
     // Set up poll response with updated lastGeneratedAt
     mockGetInsights.mockResolvedValue({
@@ -183,18 +186,20 @@ describe('InsightsList', () => {
       isGenerating: false,
     });
 
-    fireEvent.click(screen.getByText('Refresh Insights'));
-
-    await vi.waitFor(() => {
-      expect(mockGenerateInsights).toHaveBeenCalled();
+    // Click refresh and flush microtasks so generateInsights resolves and polling starts
+    await act(async () => {
+      fireEvent.click(screen.getByText('Refresh Insights'));
+      await vi.advanceTimersByTimeAsync(0);
     });
+
+    expect(mockGenerateInsights).toHaveBeenCalled();
 
     // Advance past the poll interval (POLL_INTERVAL = 5000ms)
-    await vi.advanceTimersByTimeAsync(5500);
-
-    await vi.waitFor(() => {
-      expect(screen.getByText('New Insight')).toBeInTheDocument();
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(5500);
     });
+
+    expect(screen.getByText('New Insight')).toBeInTheDocument();
 
     vi.useRealTimers();
   });
