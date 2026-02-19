@@ -5,6 +5,7 @@ import {
   IsNumber,
   IsEnum,
   IsDateString,
+  IsNotEmpty,
   IsArray,
   IsUUID,
   IsInt,
@@ -18,6 +19,7 @@ import {
 import { Type } from "class-transformer";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { SanitizeHtml } from "../../common/decorators/sanitize-html.decorator";
+import { IsSafeConfigObject } from "../../ai/validators/safe-config-object.validator";
 import { BudgetType, BudgetStrategy } from "../entities/budget.entity";
 import {
   RolloverType,
@@ -32,6 +34,7 @@ export class ApplyBudgetCategoryDto {
   @ApiProperty({ description: "Budget amount for this category" })
   @IsNumber()
   @Min(0)
+  @Max(999999999999)
   amount: number;
 
   @ApiPropertyOptional({
@@ -65,6 +68,7 @@ export class ApplyBudgetCategoryDto {
   @IsOptional()
   @IsNumber()
   @Min(0)
+  @Max(999999999999)
   rolloverCap?: number;
 
   @ApiPropertyOptional({
@@ -114,6 +118,7 @@ export class ApplyBudgetCategoryDto {
 export class ApplyGeneratedBudgetDto {
   @ApiProperty({ description: "Budget name" })
   @IsString()
+  @IsNotEmpty()
   @MaxLength(255)
   @SanitizeHtml()
   name: string;
@@ -147,6 +152,7 @@ export class ApplyGeneratedBudgetDto {
   @IsOptional()
   @IsNumber()
   @Min(0)
+  @Max(999999999999)
   baseIncome?: number;
 
   @ApiPropertyOptional({
@@ -168,12 +174,14 @@ export class ApplyGeneratedBudgetDto {
 
   @ApiProperty({ description: "Currency code (ISO 4217)" })
   @IsString()
+  @IsNotEmpty()
   @MaxLength(3)
   currencyCode: string;
 
   @ApiPropertyOptional({ description: "Budget configuration" })
   @IsOptional()
   @IsObject()
+  @IsSafeConfigObject()
   config?: Record<string, unknown>;
 
   @ApiProperty({

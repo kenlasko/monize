@@ -21,6 +21,7 @@ import {
   ApiQuery,
 } from "@nestjs/swagger";
 import { AuthGuard } from "@nestjs/passport";
+import { Throttle } from "@nestjs/throttler";
 import { BudgetsService } from "./budgets.service";
 import { BudgetPeriodService } from "./budget-period.service";
 import { BudgetGeneratorService } from "./budget-generator.service";
@@ -33,6 +34,7 @@ import { BulkUpdateBudgetCategoriesDto } from "./dto/bulk-update-budget-categori
 import { GenerateBudgetDto } from "./dto/generate-budget.dto";
 import { ApplyGeneratedBudgetDto } from "./dto/apply-generated-budget.dto";
 import { BudgetReportQueryDto } from "./dto/budget-report-query.dto";
+import { CategoryBudgetStatusDto } from "./dto/category-budget-status.dto";
 
 @ApiTags("Budgets")
 @Controller("budgets")
@@ -86,31 +88,18 @@ export class BudgetsController {
   @ApiResponse({ status: 401, description: "Unauthorized" })
   async getCategoryBudgetStatus(
     @Request() req,
-    @Body() body: { categoryIds: string[] },
+    @Body() dto: CategoryBudgetStatusDto,
   ) {
-    const categoryIds = Array.isArray(body.categoryIds)
-      ? body.categoryIds.filter(
-          (id) =>
-            typeof id === "string" &&
-            /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-              id,
-            ),
-        )
-      : [];
-
-    if (categoryIds.length === 0) {
-      return {};
-    }
-
     const statusMap = await this.budgetsService.getCategoryBudgetStatus(
       req.user.id,
-      categoryIds,
+      dto.categoryIds,
     );
 
     return Object.fromEntries(statusMap);
   }
 
   @Post("generate")
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
   @ApiOperation({
     summary: "Analyze spending and suggest budget amounts",
   })
@@ -125,6 +114,7 @@ export class BudgetsController {
   }
 
   @Post("generate/apply")
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
   @ApiOperation({
     summary: "Create a budget from generated suggestions",
   })

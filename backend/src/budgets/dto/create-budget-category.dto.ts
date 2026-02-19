@@ -35,6 +35,7 @@ export class CreateBudgetCategoryDto {
   })
   @IsNumber()
   @Min(0)
+  @Max(999999999999)
   amount: number;
 
   @ApiPropertyOptional({
@@ -60,6 +61,7 @@ export class CreateBudgetCategoryDto {
   @IsOptional()
   @IsNumber()
   @Min(0)
+  @Max(999999999999)
   rolloverCap?: number;
 
   @ApiPropertyOptional({

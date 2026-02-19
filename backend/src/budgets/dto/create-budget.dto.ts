@@ -5,17 +5,21 @@ import {
   IsNumber,
   IsEnum,
   IsDateString,
+  IsNotEmpty,
   MaxLength,
   Min,
+  Max,
   IsObject,
 } from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { SanitizeHtml } from "../../common/decorators/sanitize-html.decorator";
+import { IsSafeConfigObject } from "../../ai/validators/safe-config-object.validator";
 import { BudgetType, BudgetStrategy } from "../entities/budget.entity";
 
 export class CreateBudgetDto {
   @ApiProperty({ description: "Budget name" })
   @IsString()
+  @IsNotEmpty()
   @MaxLength(255)
   @SanitizeHtml()
   name: string;
@@ -51,6 +55,7 @@ export class CreateBudgetDto {
   @IsOptional()
   @IsNumber()
   @Min(0)
+  @Max(999999999999)
   baseIncome?: number;
 
   @ApiPropertyOptional({
@@ -72,11 +77,13 @@ export class CreateBudgetDto {
 
   @ApiProperty({ description: "Currency code (ISO 4217)" })
   @IsString()
+  @IsNotEmpty()
   @MaxLength(3)
   currencyCode: string;
 
   @ApiPropertyOptional({ description: "Budget configuration options" })
   @IsOptional()
   @IsObject()
+  @IsSafeConfigObject()
   config?: Record<string, unknown>;
 }

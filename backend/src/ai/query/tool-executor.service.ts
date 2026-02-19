@@ -76,8 +76,8 @@ export class ToolExecutorService {
       const message = error instanceof Error ? error.message : "Unknown error";
       this.logger.warn(`Tool ${toolName} failed: ${message}`);
       return {
-        data: { error: message },
-        summary: `Error executing ${toolName}: ${message}`,
+        data: { error: "An error occurred while retrieving data." },
+        summary: `Error executing ${toolName}: unable to retrieve data.`,
         sources: [],
       };
     }
