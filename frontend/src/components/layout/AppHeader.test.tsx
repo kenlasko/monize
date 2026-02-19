@@ -57,13 +57,9 @@ vi.mock('@/store/authStore', () => ({
   }),
 }));
 
-// Mock budgets API for BudgetAlertBadge
-vi.mock('@/lib/budgets', () => ({
-  budgetsApi: {
-    getAlerts: vi.fn().mockResolvedValue([]),
-    markAlertRead: vi.fn().mockResolvedValue({}),
-    markAllAlertsRead: vi.fn().mockResolvedValue({ updated: 0 }),
-  },
+// Mock BudgetAlertBadge to avoid async act() warnings (tested in its own file)
+vi.mock('@/components/budgets/BudgetAlertBadge', () => ({
+  BudgetAlertBadge: () => <div data-testid="budget-alert-badge" />,
 }));
 
 describe('AppHeader', () => {

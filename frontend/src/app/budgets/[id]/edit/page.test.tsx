@@ -200,10 +200,15 @@ describe('BudgetEditPage', () => {
     mockGetSummary.mockResolvedValue(mockSummary);
   });
 
-  it('shows loading spinner initially', () => {
+  it('shows loading spinner initially', async () => {
     render(<BudgetEditPage />);
 
     expect(screen.getByTestId('loading-spinner')).toBeInTheDocument();
+
+    // Wait for async operations to complete to prevent act() warnings
+    await waitFor(() => {
+      expect(screen.queryByTestId('loading-spinner')).not.toBeInTheDocument();
+    });
   });
 
   it('renders budget form after loading', async () => {
