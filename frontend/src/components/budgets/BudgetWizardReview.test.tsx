@@ -105,8 +105,8 @@ describe('BudgetWizardReview', () => {
     );
 
     expect(screen.getByText('February 2026 Budget')).toBeInTheDocument();
-    expect(screen.getByText('MONTHLY')).toBeInTheDocument();
-    expect(screen.getByText('FIXED')).toBeInTheDocument();
+    expect(screen.getByText('Monthly')).toBeInTheDocument();
+    expect(screen.getByText('Fixed')).toBeInTheDocument();
     expect(screen.getByText('2026-02-01')).toBeInTheDocument();
   });
 

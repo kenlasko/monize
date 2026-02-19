@@ -1,8 +1,8 @@
 import { FINANCIAL_TOOLS } from "./tool-definitions";
 
 describe("FINANCIAL_TOOLS", () => {
-  it("defines exactly 6 tools", () => {
-    expect(FINANCIAL_TOOLS).toHaveLength(6);
+  it("defines exactly 7 tools", () => {
+    expect(FINANCIAL_TOOLS).toHaveLength(7);
   });
 
   it("has unique tool names", () => {
@@ -17,6 +17,7 @@ describe("FINANCIAL_TOOLS", () => {
     "get_income_summary",
     "get_net_worth_history",
     "compare_periods",
+    "get_budget_status",
   ];
 
   it.each(expectedTools)("includes the %s tool", (toolName) => {
@@ -132,6 +133,27 @@ describe("FINANCIAL_TOOLS", () => {
         Record<string, unknown>
       >;
       expect(props.groupBy.enum).toEqual(["category", "payee"]);
+    });
+  });
+
+  describe("get_budget_status", () => {
+    it("has no required fields", () => {
+      const tool = FINANCIAL_TOOLS.find(
+        (t) => t.name === "get_budget_status",
+      )!;
+      expect(tool.inputSchema.required).toBeUndefined();
+    });
+
+    it("supports period and budgetName parameters", () => {
+      const tool = FINANCIAL_TOOLS.find(
+        (t) => t.name === "get_budget_status",
+      )!;
+      const props = tool.inputSchema.properties as Record<
+        string,
+        Record<string, unknown>
+      >;
+      expect(props.period).toBeDefined();
+      expect(props.budgetName).toBeDefined();
     });
   });
 
