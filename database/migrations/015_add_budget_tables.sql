@@ -20,6 +20,8 @@ CREATE TABLE IF NOT EXISTS budgets (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+ALTER TABLE budgets OWNER TO monize;
+
 CREATE INDEX IF NOT EXISTS idx_budgets_user ON budgets(user_id);
 CREATE INDEX IF NOT EXISTS idx_budgets_user_active ON budgets(user_id, is_active);
 
@@ -41,6 +43,8 @@ CREATE TABLE IF NOT EXISTS budget_categories (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+ALTER TABLE budget_categories OWNER TO monize;
 
 CREATE INDEX IF NOT EXISTS idx_budget_categories_budget ON budget_categories(budget_id);
 CREATE INDEX IF NOT EXISTS idx_budget_categories_category ON budget_categories(category_id);
@@ -81,6 +85,8 @@ CREATE TABLE IF NOT EXISTS budget_period_categories (
     UNIQUE(budget_period_id, budget_category_id)
 );
 
+ALTER TABLE budget_period_categories OWNER TO monize;
+
 CREATE INDEX IF NOT EXISTS idx_bpc_period ON budget_period_categories(budget_period_id);
 CREATE INDEX IF NOT EXISTS idx_bpc_category ON budget_period_categories(category_id);
 
@@ -100,6 +106,8 @@ CREATE TABLE IF NOT EXISTS budget_alerts (
     period_start DATE NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+ALTER TABLE budget_alerts OWNER TO monize;
 
 CREATE INDEX IF NOT EXISTS idx_budget_alerts_user ON budget_alerts(user_id);
 CREATE INDEX IF NOT EXISTS idx_budget_alerts_user_unread ON budget_alerts(user_id, is_read) WHERE is_read = false;
