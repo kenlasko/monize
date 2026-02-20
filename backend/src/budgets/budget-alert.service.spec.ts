@@ -1239,10 +1239,7 @@ describe("BudgetAlertService", () => {
         getRawMany: jest.fn().mockResolvedValue([]),
       });
 
-      const alerts = await service.checkSeasonalSpikes(
-        "user-1",
-        budget,
-      );
+      const alerts = await service.checkSeasonalSpikes("user-1", budget);
 
       expect(alerts.length).toBeGreaterThanOrEqual(1);
       const spikeAlert = alerts.find(
@@ -1270,7 +1267,11 @@ describe("BudgetAlertService", () => {
       });
 
       // Flat spending across all months
-      const monthlyData: Array<{ categoryId: string; month: number; total: string }> = [];
+      const monthlyData: Array<{
+        categoryId: string;
+        month: number;
+        total: string;
+      }> = [];
       for (let m = 1; m <= 12; m++) {
         monthlyData.push({ categoryId: "cat-1", month: m, total: "200" });
       }
@@ -1292,10 +1293,7 @@ describe("BudgetAlertService", () => {
         getRawMany: jest.fn().mockResolvedValue([]),
       });
 
-      const alerts = await service.checkSeasonalSpikes(
-        "user-1",
-        budget,
-      );
+      const alerts = await service.checkSeasonalSpikes("user-1", budget);
 
       expect(alerts).toHaveLength(0);
     });
@@ -1316,10 +1314,7 @@ describe("BudgetAlertService", () => {
         ],
       });
 
-      const alerts = await service.checkSeasonalSpikes(
-        "user-1",
-        budget,
-      );
+      const alerts = await service.checkSeasonalSpikes("user-1", budget);
 
       expect(alerts).toHaveLength(0);
     });
@@ -1362,10 +1357,7 @@ describe("BudgetAlertService", () => {
         getRawMany: jest.fn().mockResolvedValue([]),
       });
 
-      const alerts = await service.checkSeasonalSpikes(
-        "user-1",
-        budget,
-      );
+      const alerts = await service.checkSeasonalSpikes("user-1", budget);
 
       expect(alerts).toHaveLength(0);
     });
@@ -1390,7 +1382,11 @@ describe("BudgetAlertService", () => {
         ],
       });
 
-      const monthlyData: Array<{ categoryId: string; month: number; total: string }> = [];
+      const monthlyData: Array<{
+        categoryId: string;
+        month: number;
+        total: string;
+      }> = [];
       for (let m = 1; m <= 12; m++) {
         const amount = m === nextMonthNum ? "600" : "200";
         monthlyData.push({ categoryId: "cat-1", month: m, total: amount });
@@ -1413,10 +1409,7 @@ describe("BudgetAlertService", () => {
         getRawMany: jest.fn().mockResolvedValue([]),
       });
 
-      const alerts = await service.checkSeasonalSpikes(
-        "user-1",
-        budget,
-      );
+      const alerts = await service.checkSeasonalSpikes("user-1", budget);
 
       if (alerts.length > 0) {
         const alert = alerts[0];

@@ -1,7 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-} from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository, Brackets } from "typeorm";
 import {
@@ -706,10 +703,7 @@ export class ReportsService {
       const activeBudget = budgets.find((b) => b.isActive) || budgets[0];
       if (!activeBudget) return data;
 
-      const budget = await this.budgetsService.findOne(
-        userId,
-        activeBudget.id,
-      );
+      const budget = await this.budgetsService.findOne(userId, activeBudget.id);
       const budgetMap = new Map<string, number>();
       for (const bc of budget.categories || []) {
         if (bc.categoryId && !bc.isIncome) {

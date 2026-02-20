@@ -1,9 +1,6 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
-import {
-  NotFoundException,
-  BadRequestException,
-} from "@nestjs/common";
+import { NotFoundException, BadRequestException } from "@nestjs/common";
 import { BudgetsService } from "./budgets.service";
 import { Budget, BudgetType, BudgetStrategy } from "./entities/budget.entity";
 import {
@@ -809,7 +806,9 @@ describe("BudgetsService", () => {
         ]),
         leftJoinAndSelect: jest.fn().mockReturnThis(),
       });
-      scheduledTransactionsRepository.createQueryBuilder.mockReturnValue(billQb);
+      scheduledTransactionsRepository.createQueryBuilder.mockReturnValue(
+        billQb,
+      );
 
       const result = await service.getAlerts("user-1");
 
@@ -860,7 +859,9 @@ describe("BudgetsService", () => {
         ]),
         leftJoinAndSelect: jest.fn().mockReturnThis(),
       });
-      scheduledTransactionsRepository.createQueryBuilder.mockReturnValue(billQb);
+      scheduledTransactionsRepository.createQueryBuilder.mockReturnValue(
+        billQb,
+      );
 
       const result = await service.getAlerts("user-1");
 
@@ -921,9 +922,9 @@ describe("BudgetsService", () => {
     it("throws NotFoundException when alert belongs to different user", async () => {
       budgetAlertsRepository.findOne.mockResolvedValue(null);
 
-      await expect(
-        service.deleteAlert("user-1", "alert-1"),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.deleteAlert("user-1", "alert-1")).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 

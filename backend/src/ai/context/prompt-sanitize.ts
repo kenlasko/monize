@@ -7,8 +7,11 @@
  * a prompt data section.
  */
 export function sanitizePromptValue(value: string): string {
-  return value
-    .replace(/[\r\n]+/g, " ") // collapse newlines into space
-    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "") // strip control chars
-    .trim();
+  return (
+    value
+      .replace(/[\r\n]+/g, " ") // collapse newlines into space
+      // eslint-disable-next-line no-control-regex
+      .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "") // strip control chars
+      .trim()
+  );
 }

@@ -157,7 +157,9 @@ export class AiForecastService {
       const topExpenses = month.categoryBreakdown
         .filter((c) => !c.isIncome)
         .slice(0, 5)
-        .map((c) => `${sanitizePromptValue(c.categoryName)}=${c.total.toFixed(2)}`)
+        .map(
+          (c) => `${sanitizePromptValue(c.categoryName)}=${c.total.toFixed(2)}`,
+        )
         .join(", ");
       sections.push(
         `${month.month}: income=${month.totalIncome.toFixed(2)}, expenses=${month.totalExpenses.toFixed(2)}, net=${month.netCashFlow.toFixed(2)} (top expenses: ${topExpenses})`,

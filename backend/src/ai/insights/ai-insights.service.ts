@@ -285,7 +285,10 @@ export class AiInsightsService {
       for (const month of aggregates.monthlySpending) {
         const top3 = month.categoryBreakdown
           .slice(0, 3)
-          .map((c) => `${sanitizePromptValue(c.categoryName)}=${c.total.toFixed(2)}`)
+          .map(
+            (c) =>
+              `${sanitizePromptValue(c.categoryName)}=${c.total.toFixed(2)}`,
+          )
           .join(", ");
         sections.push(
           `${month.month}: total=${month.total.toFixed(2)} (top: ${top3})`,

@@ -485,8 +485,7 @@ export class BudgetsService {
       const payeeName = bill.payee?.name || bill.payeeName || bill.name;
       const amount = Math.abs(Number(bill.amount));
       const daysUntilDue = Math.ceil(
-        (new Date(dueDate).getTime() - today.getTime()) /
-          (1000 * 60 * 60 * 24),
+        (new Date(dueDate).getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
       );
       const severity =
         daysUntilDue <= 1 ? AlertSeverity.WARNING : AlertSeverity.INFO;

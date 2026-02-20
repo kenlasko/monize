@@ -677,8 +677,7 @@ export class BudgetReportsService {
       }
 
       const savings = income - expenses;
-      const savingsRate =
-        income > 0 ? this.round((savings / income) * 100) : 0;
+      const savingsRate = income > 0 ? this.round((savings / income) * 100) : 0;
 
       result.push({
         month: monthLabel,
@@ -703,10 +702,7 @@ export class BudgetReportsService {
       where: { budgetId: budget.id },
       order: { periodStart: "ASC" },
       take: months,
-      relations: [
-        "periodCategories",
-        "periodCategories.budgetCategory",
-      ],
+      relations: ["periodCategories", "periodCategories.budgetCategory"],
     });
 
     if (periods.length === 0) {

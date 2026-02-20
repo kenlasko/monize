@@ -1,9 +1,6 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
-import {
-  NotFoundException,
-  BadRequestException,
-} from "@nestjs/common";
+import { NotFoundException, BadRequestException } from "@nestjs/common";
 import { CategoriesService } from "./categories.service";
 import { Category } from "./entities/category.entity";
 import { Transaction } from "../transactions/entities/transaction.entity";

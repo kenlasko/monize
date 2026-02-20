@@ -1,9 +1,6 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
-import {
-  NotFoundException,
-  BadRequestException,
-} from "@nestjs/common";
+import { NotFoundException, BadRequestException } from "@nestjs/common";
 import { ScheduledTransactionsService } from "./scheduled-transactions.service";
 import { ScheduledTransaction } from "./entities/scheduled-transaction.entity";
 import { ScheduledTransactionSplit } from "./entities/scheduled-transaction-split.entity";
