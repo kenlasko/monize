@@ -75,7 +75,6 @@ describe('BudgetWizardStrategy', () => {
       creditLimit: null,
       interestRate: null,
       isClosed: false,
-      isDefault: true,
       canDelete: true,
       createdAt: '2025-01-01',
       updatedAt: '2025-01-01',
@@ -96,12 +95,11 @@ describe('BudgetWizardStrategy', () => {
       creditLimit: null,
       interestRate: null,
       isClosed: false,
-      isDefault: false,
       canDelete: true,
       createdAt: '2025-01-01',
       updatedAt: '2025-01-01',
     },
-  ] as Account[];
+  ] as unknown as Account[];
 
   const defaultState: WizardState = {
     analysisMonths: 6,
