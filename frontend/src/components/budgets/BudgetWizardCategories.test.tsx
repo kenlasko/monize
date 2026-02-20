@@ -92,6 +92,12 @@ describe('BudgetWizardCategories', () => {
     budgetType: 'MONTHLY',
     periodStart: '2026-02-01',
     currencyCode: 'USD',
+    baseIncome: null,
+    incomeLinked: false,
+    defaultRolloverType: 'NONE',
+    alertWarnPercent: 80,
+    alertCriticalPercent: 95,
+    excludedAccountIds: [],
     isSubmitting: false,
   };
 

@@ -60,12 +60,21 @@ export function BudgetWizardReview({
         ...Array.from(state.selectedCategories.values()),
         ...transferEntries,
       ];
+
+      const config: Record<string, unknown> = {};
+      if (state.excludedAccountIds.length > 0) {
+        config.excludedAccountIds = state.excludedAccountIds;
+      }
+
       await budgetsApi.applyGenerated({
         name: state.budgetName,
         budgetType: state.budgetType,
         periodStart: state.periodStart,
         strategy: state.strategy,
         currencyCode: state.currencyCode,
+        baseIncome: state.baseIncome ?? undefined,
+        incomeLinked: state.incomeLinked,
+        config: Object.keys(config).length > 0 ? config : undefined,
         categories: allCategories,
       });
       toast.success('Budget created successfully');
@@ -85,7 +94,7 @@ export function BudgetWizardReview({
 
       {/* Budget details */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-        <dl className="grid grid-cols-2 gap-4">
+        <dl className="grid grid-cols-2 sm:grid-cols-3 gap-4">
           <div>
             <dt className="text-sm text-gray-500 dark:text-gray-400">Name</dt>
             <dd className="text-sm font-medium text-gray-900 dark:text-gray-100">
@@ -114,6 +123,42 @@ export function BudgetWizardReview({
               {state.periodStart}
             </dd>
           </div>
+          <div>
+            <dt className="text-sm text-gray-500 dark:text-gray-400">
+              Rollover
+            </dt>
+            <dd className="text-sm font-medium text-gray-900 dark:text-gray-100">
+              {state.defaultRolloverType === 'NONE' ? 'Off' : state.defaultRolloverType.charAt(0) + state.defaultRolloverType.slice(1).toLowerCase()}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-sm text-gray-500 dark:text-gray-400">
+              Alerts
+            </dt>
+            <dd className="text-sm font-medium text-gray-900 dark:text-gray-100">
+              Warn {state.alertWarnPercent}% / Critical {state.alertCriticalPercent}%
+            </dd>
+          </div>
+          {state.incomeLinked && state.baseIncome && (
+            <div>
+              <dt className="text-sm text-gray-500 dark:text-gray-400">
+                Income Linked
+              </dt>
+              <dd className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                {formatCurrency(state.baseIncome, state.currencyCode)}/mo
+              </dd>
+            </div>
+          )}
+          {state.excludedAccountIds.length > 0 && (
+            <div>
+              <dt className="text-sm text-gray-500 dark:text-gray-400">
+                Excluded Accounts
+              </dt>
+              <dd className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                {state.excludedAccountIds.length} account{state.excludedAccountIds.length === 1 ? '' : 's'}
+              </dd>
+            </div>
+          )}
         </dl>
       </div>
 
