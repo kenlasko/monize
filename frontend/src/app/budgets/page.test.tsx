@@ -74,6 +74,13 @@ vi.mock('@/lib/errors', () => ({
   getErrorMessage: vi.fn((_e: any, fallback: string) => fallback),
 }));
 
+// Mock accounts API
+vi.mock('@/lib/accounts', () => ({
+  accountsApi: {
+    getAll: vi.fn().mockResolvedValue([]),
+  },
+}));
+
 // Mock exchange rates
 vi.mock('@/hooks/useExchangeRates', () => ({
   useExchangeRates: () => ({
