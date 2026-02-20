@@ -96,6 +96,31 @@ export function BudgetVelocityWidget({
           </div>
         </div>
       </div>
+      {velocity.totalUpcomingBills > 0 && (
+        <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 grid grid-cols-2 gap-4">
+          <div>
+            <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">
+              Bills coming
+            </div>
+            <div className="text-lg font-semibold text-red-600 dark:text-red-400">
+              {formatCurrency(velocity.totalUpcomingBills)}
+            </div>
+          </div>
+          <div>
+            <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">
+              Truly available
+            </div>
+            <div className={`text-lg font-semibold ${
+              velocity.trulyAvailable >= 0
+                ? 'text-green-600 dark:text-green-400'
+                : 'text-red-600 dark:text-red-400'
+            }`}>
+              {formatCurrency(Math.abs(velocity.trulyAvailable))}
+              {velocity.trulyAvailable < 0 && ' over'}
+            </div>
+          </div>
+        </div>
+      )}
       <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
         <span>Day {velocity.daysElapsed} of {velocity.totalDays}</span>
         <span>{velocity.daysRemaining} days remaining</span>

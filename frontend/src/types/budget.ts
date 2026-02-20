@@ -253,6 +253,7 @@ export interface CategoryBreakdown {
   remaining: number;
   percentUsed: number;
   isIncome: boolean;
+  percentage: number | null;
 }
 
 export interface BudgetSummary {
@@ -262,7 +263,17 @@ export interface BudgetSummary {
   totalIncome: number;
   remaining: number;
   percentUsed: number;
+  incomeLinked: boolean;
+  actualIncome: number | null;
   categoryBreakdown: CategoryBreakdown[];
+}
+
+export interface UpcomingBill {
+  id: string;
+  name: string;
+  amount: number;
+  dueDate: string;
+  categoryId: string | null;
 }
 
 export interface BudgetVelocity {
@@ -276,6 +287,9 @@ export interface BudgetVelocity {
   totalDays: number;
   currentSpent: number;
   paceStatus: 'under' | 'on_track' | 'over';
+  upcomingBills: UpcomingBill[];
+  totalUpcomingBills: number;
+  trulyAvailable: number;
 }
 
 // --- Report Types ---

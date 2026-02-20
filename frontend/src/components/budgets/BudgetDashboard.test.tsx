@@ -72,6 +72,8 @@ const mockSummary: BudgetSummary = {
   totalIncome: 6000,
   remaining: 2100,
   percentUsed: 59.62,
+  incomeLinked: false,
+  actualIncome: null,
   categoryBreakdown: [
     {
       budgetCategoryId: 'bc-1',
@@ -82,6 +84,7 @@ const mockSummary: BudgetSummary = {
       remaining: 180,
       percentUsed: 70,
       isIncome: false,
+      percentage: null,
     },
   ],
 };
@@ -97,6 +100,9 @@ const mockVelocity: BudgetVelocity = {
   totalDays: 28,
   currentSpent: 2015,
   paceStatus: 'under',
+  upcomingBills: [],
+  totalUpcomingBills: 0,
+  trulyAvailable: 0,
 };
 
 const mockFormat = (amount: number) => `$${amount.toFixed(2)}`;

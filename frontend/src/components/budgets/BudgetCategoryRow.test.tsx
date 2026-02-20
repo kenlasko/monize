@@ -14,6 +14,7 @@ const baseCategory: CategoryBreakdown = {
   remaining: 180,
   percentUsed: 70,
   isIncome: false,
+  percentage: null,
 };
 
 describe('BudgetCategoryRow', () => {
@@ -156,5 +157,28 @@ describe('BudgetCategoryRow', () => {
     );
 
     expect(screen.getByRole('progressbar')).toBeInTheDocument();
+  });
+
+  it('shows percentage badge for income-linked budget categories', () => {
+    const incomeLinkedCategory: CategoryBreakdown = {
+      ...baseCategory,
+      percentage: 30,
+      budgeted: 1500,
+    };
+
+    render(
+      <BudgetCategoryRow category={incomeLinkedCategory} formatCurrency={mockFormat} />,
+    );
+
+    expect(screen.getByText('(30%)')).toBeInTheDocument();
+    expect(screen.getByText('$1500.00')).toBeInTheDocument();
+  });
+
+  it('does not show percentage badge for non-income-linked categories', () => {
+    render(
+      <BudgetCategoryRow category={baseCategory} formatCurrency={mockFormat} />,
+    );
+
+    expect(screen.queryByText(/\(\d+%\)/)).not.toBeInTheDocument();
   });
 });

@@ -15,6 +15,7 @@ const mockCategories: CategoryBreakdown[] = [
     remaining: 150,
     percentUsed: 70,
     isIncome: false,
+    percentage: null,
   },
   {
     budgetCategoryId: 'bc-2',
@@ -25,6 +26,7 @@ const mockCategories: CategoryBreakdown[] = [
     remaining: 100,
     percentUsed: 66.67,
     isIncome: false,
+    percentage: null,
   },
   {
     budgetCategoryId: 'bc-income',
@@ -35,6 +37,7 @@ const mockCategories: CategoryBreakdown[] = [
     remaining: 0,
     percentUsed: 100,
     isIncome: true,
+    percentage: null,
   },
 ];
 
@@ -224,6 +227,7 @@ describe('BudgetScenarioPlanner', () => {
         remaining: 0,
         percentUsed: 100,
         isIncome: true,
+        percentage: null,
       },
     ];
 

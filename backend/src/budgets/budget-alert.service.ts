@@ -23,6 +23,15 @@ import {
   PeriodDateRange,
 } from "./budget-date.utils";
 
+interface SeasonalProfile {
+  budgetCategoryId: string;
+  categoryId: string;
+  categoryName: string;
+  highMonths: number[];
+  typicalMonthlySpend: number;
+  typicalIncrease: number;
+}
+
 interface CategoryActual {
   budgetCategoryId: string;
   categoryId: string | null;
@@ -260,6 +269,22 @@ export class BudgetAlertService {
     candidates.push(
       ...milestoneAlerts.map((a) => ({ ...a, budgetId: budget.id })),
     );
+
+    // 6. Seasonal spike warnings
+    try {
+      const seasonalAlerts = await this.checkSeasonalSpikes(
+        budget.userId,
+        budget,
+      );
+      candidates.push(
+        ...seasonalAlerts.map((a) => ({ ...a, budgetId: budget.id })),
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to check seasonal spikes for budget ${budget.id}`,
+        error instanceof Error ? error.stack : error,
+      );
+    }
 
     // De-duplicate against existing alerts for same period
     const existingAlerts = await this.alertsRepository.find({
@@ -635,6 +660,205 @@ export class BudgetAlertService {
     const subject = "Monize: Your weekly budget summary";
     await this.emailService.sendMail(user.email, subject, html);
     return true;
+  }
+
+  async checkSeasonalSpikes(
+    userId: string,
+    budget: Budget,
+  ): Promise<AlertCandidate[]> {
+    const categories = (budget.categories || []).filter(
+      (bc) => !bc.isIncome && bc.categoryId !== null && !bc.isTransfer,
+    );
+
+    if (categories.length === 0) return [];
+
+    const categoryIds = categories.map((bc) => bc.categoryId as string);
+
+    const profiles = await this.buildSeasonalProfiles(
+      userId,
+      categories,
+      categoryIds,
+    );
+
+    if (profiles.length === 0) return [];
+
+    const nextMonth = new Date();
+    nextMonth.setMonth(nextMonth.getMonth() + 1);
+    const nextMonthNum = nextMonth.getMonth() + 1;
+
+    const alerts: AlertCandidate[] = [];
+
+    for (const profile of profiles) {
+      if (
+        profile.highMonths.includes(nextMonthNum) &&
+        profile.typicalIncrease >= 1.5
+      ) {
+        const monthName = this.getMonthName(nextMonthNum);
+        alerts.push({
+          budgetId: "",
+          budgetCategoryId: profile.budgetCategoryId,
+          alertType: AlertType.SEASONAL_SPIKE,
+          severity: AlertSeverity.INFO,
+          title: `Seasonal spike expected for ${profile.categoryName}`,
+          message: `Last ${monthName} you spent ${profile.typicalIncrease.toFixed(1)}x your usual on ${profile.categoryName}. Consider adjusting your budget.`,
+          data: {
+            categoryName: profile.categoryName,
+            highMonth: nextMonthNum,
+            highMonthName: monthName,
+            typicalMonthlySpend: profile.typicalMonthlySpend,
+            typicalIncrease: profile.typicalIncrease,
+            suggestedBudget:
+              Math.round(
+                profile.typicalMonthlySpend * profile.typicalIncrease * 100,
+              ) / 100,
+          },
+        });
+      }
+    }
+
+    return alerts;
+  }
+
+  private async buildSeasonalProfiles(
+    userId: string,
+    categories: Array<{
+      id: string;
+      categoryId: string | null;
+      category: any;
+    }>,
+    categoryIds: string[],
+  ): Promise<SeasonalProfile[]> {
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setMonth(startDate.getMonth() - 12);
+    const startStr = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, "0")}-01`;
+    const endStr = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, "0")}-${String(new Date(endDate.getFullYear(), endDate.getMonth() + 1, 0).getDate()).padStart(2, "0")}`;
+
+    const directSpending = await this.transactionsRepository
+      .createQueryBuilder("t")
+      .select("t.category_id", "categoryId")
+      .addSelect("EXTRACT(MONTH FROM t.transaction_date)::int", "month")
+      .addSelect("COALESCE(SUM(ABS(t.amount)), 0)", "total")
+      .where("t.user_id = :userId", { userId })
+      .andWhere("t.category_id IN (:...categoryIds)", { categoryIds })
+      .andWhere("t.transaction_date >= :startStr", { startStr })
+      .andWhere("t.transaction_date <= :endStr", { endStr })
+      .andWhere("t.status != :void", { void: "VOID" })
+      .andWhere("t.is_split = false")
+      .groupBy("t.category_id")
+      .addGroupBy("EXTRACT(MONTH FROM t.transaction_date)")
+      .getRawMany();
+
+    const splitSpending = await this.splitsRepository
+      .createQueryBuilder("s")
+      .innerJoin("s.transaction", "t")
+      .select("s.category_id", "categoryId")
+      .addSelect("EXTRACT(MONTH FROM t.transaction_date)::int", "month")
+      .addSelect("COALESCE(SUM(ABS(s.amount)), 0)", "total")
+      .where("t.user_id = :userId", { userId })
+      .andWhere("s.category_id IN (:...categoryIds)", { categoryIds })
+      .andWhere("t.transaction_date >= :startStr", { startStr })
+      .andWhere("t.transaction_date <= :endStr", { endStr })
+      .andWhere("t.status != :void", { void: "VOID" })
+      .groupBy("s.category_id")
+      .addGroupBy("EXTRACT(MONTH FROM t.transaction_date)")
+      .getRawMany();
+
+    const spendingMap = new Map<string, Map<number, number>>();
+
+    for (const row of [...directSpending, ...splitSpending]) {
+      const catId = row.categoryId as string;
+      const month = Number(row.month);
+      const total = parseFloat(row.total || "0");
+
+      if (!spendingMap.has(catId)) {
+        spendingMap.set(catId, new Map());
+      }
+      const monthMap = spendingMap.get(catId)!;
+      monthMap.set(month, (monthMap.get(month) || 0) + total);
+    }
+
+    const categoryNameMap = new Map<string, { name: string; bcId: string }>();
+    for (const bc of categories) {
+      if (bc.categoryId) {
+        const cat = bc.category;
+        const name = cat
+          ? cat.parent
+            ? `${cat.parent.name} > ${cat.name}`
+            : cat.name
+          : "Uncategorized";
+        categoryNameMap.set(bc.categoryId, { name, bcId: bc.id });
+      }
+    }
+
+    const profiles: SeasonalProfile[] = [];
+
+    for (const [catId, monthMap] of spendingMap.entries()) {
+      const amounts: number[] = [];
+      for (let m = 1; m <= 12; m++) {
+        amounts.push(monthMap.get(m) || 0);
+      }
+
+      const nonZero = amounts.filter((a) => a > 0);
+      if (nonZero.length < 3) continue;
+
+      const mean = nonZero.reduce((s, v) => s + v, 0) / nonZero.length;
+      const stdDev = this.standardDeviation(nonZero);
+      const threshold = mean + 1.5 * stdDev;
+
+      const highMonths: number[] = [];
+      let maxIncrease = 0;
+
+      for (let i = 0; i < 12; i++) {
+        if (amounts[i] > threshold) {
+          highMonths.push(i + 1);
+          const increase = mean > 0 ? amounts[i] / mean : 0;
+          if (increase > maxIncrease) maxIncrease = increase;
+        }
+      }
+
+      if (highMonths.length === 0) continue;
+
+      const info = categoryNameMap.get(catId);
+      if (!info) continue;
+
+      profiles.push({
+        budgetCategoryId: info.bcId,
+        categoryId: catId,
+        categoryName: info.name,
+        highMonths,
+        typicalMonthlySpend: Math.round(mean * 100) / 100,
+        typicalIncrease: Math.round(maxIncrease * 10) / 10,
+      });
+    }
+
+    return profiles;
+  }
+
+  private standardDeviation(values: number[]): number {
+    if (values.length <= 1) return 0;
+    const avg = values.reduce((s, v) => s + v, 0) / values.length;
+    const squaredDiffs = values.map((v) => (v - avg) ** 2);
+    const variance = squaredDiffs.reduce((s, v) => s + v, 0) / values.length;
+    return Math.sqrt(variance);
+  }
+
+  private getMonthName(month: number): string {
+    const names = [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
+    ];
+    return names[month - 1] || "";
   }
 
   getCurrentPeriodDates(): PeriodDateRange {

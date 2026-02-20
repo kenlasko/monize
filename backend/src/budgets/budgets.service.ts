@@ -12,6 +12,7 @@ import { BudgetAlert } from "./entities/budget-alert.entity";
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
 import { Category } from "../categories/entities/category.entity";
+import { ScheduledTransaction } from "../scheduled-transactions/entities/scheduled-transaction.entity";
 import { CreateBudgetDto } from "./dto/create-budget.dto";
 import { UpdateBudgetDto } from "./dto/update-budget.dto";
 import { CreateBudgetCategoryDto } from "./dto/create-budget-category.dto";
@@ -21,6 +22,14 @@ import {
   getCurrentMonthPeriodDates,
   PeriodDateRange,
 } from "./budget-date.utils";
+
+export interface UpcomingBill {
+  id: string;
+  name: string;
+  amount: number;
+  dueDate: string;
+  categoryId: string | null;
+}
 
 @Injectable()
 export class BudgetsService {
@@ -37,6 +46,8 @@ export class BudgetsService {
     private splitsRepository: Repository<TransactionSplit>,
     @InjectRepository(Category)
     private categoriesRepository: Repository<Category>,
+    @InjectRepository(ScheduledTransaction)
+    private scheduledTransactionsRepository: Repository<ScheduledTransaction>,
   ) {}
 
   async create(
@@ -247,6 +258,8 @@ export class BudgetsService {
     totalIncome: number;
     remaining: number;
     percentUsed: number;
+    incomeLinked: boolean;
+    actualIncome: number | null;
     categoryBreakdown: Array<{
       budgetCategoryId: string;
       categoryId: string | null;
@@ -256,6 +269,7 @@ export class BudgetsService {
       remaining: number;
       percentUsed: number;
       isIncome: boolean;
+      percentage: number | null;
     }>;
   }> {
     const budget = await this.findOne(userId, budgetId);
@@ -284,6 +298,11 @@ export class BudgetsService {
         ? Math.round((totalSpent / totalBudgeted) * 10000) / 100
         : 0;
 
+    let actualIncome: number | null = null;
+    if (budget.incomeLinked) {
+      actualIncome = totalIncome;
+    }
+
     return {
       budget,
       totalBudgeted,
@@ -291,8 +310,39 @@ export class BudgetsService {
       totalIncome,
       remaining,
       percentUsed,
+      incomeLinked: budget.incomeLinked,
+      actualIncome,
       categoryBreakdown,
     };
+  }
+
+  async getUpcomingBills(
+    userId: string,
+    periodEnd: string,
+  ): Promise<UpcomingBill[]> {
+    const today = new Date();
+    const todayStr = today.toISOString().split("T")[0];
+
+    const scheduledTransactions = await this.scheduledTransactionsRepository
+      .createQueryBuilder("st")
+      .where("st.user_id = :userId", { userId })
+      .andWhere("st.is_active = true")
+      .andWhere("st.amount < 0")
+      .andWhere("st.next_due_date >= :todayStr", { todayStr })
+      .andWhere("st.next_due_date <= :periodEnd", { periodEnd })
+      .orderBy("st.next_due_date", "ASC")
+      .getMany();
+
+    return scheduledTransactions.map((st) => ({
+      id: st.id,
+      name: st.name,
+      amount: Math.abs(Number(st.amount)),
+      dueDate:
+        typeof st.nextDueDate === "string"
+          ? st.nextDueDate
+          : (st.nextDueDate as Date).toISOString().split("T")[0],
+      categoryId: st.categoryId,
+    }));
   }
 
   async getVelocity(
@@ -309,6 +359,9 @@ export class BudgetsService {
     totalDays: number;
     currentSpent: number;
     paceStatus: "under" | "on_track" | "over";
+    upcomingBills: UpcomingBill[];
+    totalUpcomingBills: number;
+    trulyAvailable: number;
   }> {
     const budget = await this.findOne(userId, budgetId);
     const { periodStart, periodEnd } = this.getCurrentPeriodDates(budget);
@@ -342,12 +395,19 @@ export class BudgetsService {
       0,
     );
 
+    const upcomingBills = await this.getUpcomingBills(userId, periodEnd);
+    const totalUpcomingBills = upcomingBills.reduce(
+      (sum, b) => sum + b.amount,
+      0,
+    );
+
     const dailyBurnRate = currentSpent / daysElapsed;
     const projectedTotal = dailyBurnRate * totalDays;
     const projectedVariance = projectedTotal - budgetTotal;
     const remaining = budgetTotal - currentSpent;
+    const trulyAvailable = remaining - totalUpcomingBills;
     const safeDailySpend =
-      daysRemaining > 0 ? Math.max(0, remaining / daysRemaining) : 0;
+      daysRemaining > 0 ? Math.max(0, trulyAvailable / daysRemaining) : 0;
 
     let paceStatus: "under" | "on_track" | "over";
     const paceRatio = projectedTotal / budgetTotal;
@@ -370,6 +430,9 @@ export class BudgetsService {
       totalDays,
       currentSpent,
       paceStatus,
+      upcomingBills,
+      totalUpcomingBills: Math.round(totalUpcomingBills * 100) / 100,
+      trulyAvailable: Math.round(trulyAvailable * 100) / 100,
     };
   }
 
@@ -576,6 +639,54 @@ export class BudgetsService {
     return getCurrentMonthPeriodDates();
   }
 
+  async computeActualIncome(
+    userId: string,
+    budget: Budget,
+    periodStart: string,
+    periodEnd: string,
+  ): Promise<number> {
+    const incomeCategories = (budget.categories || []).filter(
+      (bc) => bc.isIncome && bc.categoryId !== null,
+    );
+
+    if (incomeCategories.length === 0) return 0;
+
+    const incomeCategoryIds = incomeCategories.map(
+      (bc) => bc.categoryId as string,
+    );
+
+    const directResult = await this.transactionsRepository
+      .createQueryBuilder("t")
+      .select("COALESCE(SUM(ABS(t.amount)), 0)", "total")
+      .where("t.user_id = :userId", { userId })
+      .andWhere("t.category_id IN (:...incomeCategoryIds)", {
+        incomeCategoryIds,
+      })
+      .andWhere("t.transaction_date >= :periodStart", { periodStart })
+      .andWhere("t.transaction_date <= :periodEnd", { periodEnd })
+      .andWhere("t.status != :void", { void: "VOID" })
+      .andWhere("t.is_split = false")
+      .getRawOne();
+
+    const splitResult = await this.splitsRepository
+      .createQueryBuilder("s")
+      .innerJoin("s.transaction", "t")
+      .select("COALESCE(SUM(ABS(s.amount)), 0)", "total")
+      .where("t.user_id = :userId", { userId })
+      .andWhere("s.category_id IN (:...incomeCategoryIds)", {
+        incomeCategoryIds,
+      })
+      .andWhere("t.transaction_date >= :periodStart", { periodStart })
+      .andWhere("t.transaction_date <= :periodEnd", { periodEnd })
+      .andWhere("t.status != :void", { void: "VOID" })
+      .getRawOne();
+
+    return (
+      parseFloat(directResult?.total || "0") +
+      parseFloat(splitResult?.total || "0")
+    );
+  }
+
   private async computeCategoryActuals(
     userId: string,
     budget: Budget,
@@ -591,12 +702,24 @@ export class BudgetsService {
       remaining: number;
       percentUsed: number;
       isIncome: boolean;
+      percentage: number | null;
     }>
   > {
     const budgetCategories = budget.categories || [];
 
     if (budgetCategories.length === 0) {
       return [];
+    }
+
+    // If income-linked, compute actual income to derive effective budgets
+    let actualIncome = 0;
+    if (budget.incomeLinked) {
+      actualIncome = await this.computeActualIncome(
+        userId,
+        budget,
+        periodStart,
+        periodEnd,
+      );
     }
 
     const categoryIds = budgetCategories
@@ -682,7 +805,17 @@ export class BudgetsService {
     }
 
     return budgetCategories.map((bc) => {
-      const budgeted = Number(bc.amount);
+      const rawAmount = Number(bc.amount);
+      let budgeted: number;
+      let percentage: number | null = null;
+
+      if (budget.incomeLinked && !bc.isIncome) {
+        percentage = rawAmount;
+        budgeted = Math.round(((actualIncome * rawAmount) / 100) * 100) / 100;
+      } else {
+        budgeted = rawAmount;
+      }
+
       let spent = 0;
       let categoryName: string;
 
@@ -712,6 +845,7 @@ export class BudgetsService {
         remaining,
         percentUsed,
         isIncome: bc.isIncome,
+        percentage,
       };
     });
   }
