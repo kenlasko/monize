@@ -66,6 +66,9 @@ export interface AiStatus {
   configured: boolean;
   encryptionAvailable: boolean;
   activeProviders: number;
+  hasSystemDefault: boolean;
+  systemDefaultProvider: string | null;
+  systemDefaultModel: string | null;
 }
 
 export interface AiConnectionTestResult {

@@ -23,6 +23,7 @@ describe("AccountsController", () => {
       reopen: jest.fn(),
       getTransactionCount: jest.fn(),
       delete: jest.fn(),
+      getDailyBalances: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -260,6 +261,45 @@ describe("AccountsController", () => {
       expect(mockAccountsService.getTransactionCount).toHaveBeenCalledWith(
         "user-1",
         "account-1",
+      );
+    });
+  });
+
+  describe("getDailyBalances()", () => {
+    it("delegates to accountsService.getDailyBalances with parsed accountIds", () => {
+      mockAccountsService.getDailyBalances!.mockReturnValue("balances");
+
+      const result = controller.getDailyBalances(
+        mockReq,
+        "2025-01-01",
+        "2025-12-31",
+        "acc-1,acc-2",
+      );
+
+      expect(result).toBe("balances");
+      expect(mockAccountsService.getDailyBalances).toHaveBeenCalledWith(
+        "user-1",
+        "2025-01-01",
+        "2025-12-31",
+        ["acc-1", "acc-2"],
+      );
+    });
+
+    it("passes undefined accountIds when not provided", () => {
+      mockAccountsService.getDailyBalances!.mockReturnValue("balances");
+
+      controller.getDailyBalances(
+        mockReq,
+        "2025-01-01",
+        "2025-12-31",
+        undefined,
+      );
+
+      expect(mockAccountsService.getDailyBalances).toHaveBeenCalledWith(
+        "user-1",
+        "2025-01-01",
+        "2025-12-31",
+        undefined,
       );
     });
   });

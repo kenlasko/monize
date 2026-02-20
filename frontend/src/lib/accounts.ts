@@ -105,6 +105,19 @@ export const accountsApi = {
     invalidateCache('accounts:');
   },
 
+  // Get daily running balances for accounts
+  getDailyBalances: async (params?: {
+    startDate?: string;
+    endDate?: string;
+    accountIds?: string;
+  }): Promise<Array<{ date: string; balance: number }>> => {
+    const response = await apiClient.get<Array<{ date: string; balance: number }>>(
+      '/accounts/daily-balances',
+      { params },
+    );
+    return response.data;
+  },
+
   // Preview loan amortization
   previewLoanAmortization: async (data: LoanPreviewData): Promise<AmortizationPreview> => {
     const response = await apiClient.post<AmortizationPreview>('/accounts/loan-preview', data);

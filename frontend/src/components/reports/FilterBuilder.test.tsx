@@ -3,22 +3,18 @@ import { render, screen, fireEvent, within } from '@/test/render';
 import { FilterBuilder } from './FilterBuilder';
 import { FilterGroup } from '@/types/custom-report';
 
-vi.mock('@/lib/categoryUtils', () => ({
-  getCategorySelectOptions: () => [
-    { value: 'cat-1', label: 'Groceries' },
-    { value: 'cat-2', label: 'Transport' },
-  ],
-}));
-
-// Mock Combobox as a native select so existing tests work unchanged
-vi.mock('@/components/ui/Combobox', () => ({
-  Combobox: ({ options, value, onChange, placeholder }: any) => (
+// Mock MultiSelect as a native select so tests can interact with it
+vi.mock('@/components/ui/MultiSelect', () => ({
+  MultiSelect: ({ options, value, onChange, placeholder }: any) => (
     <select
-      value={value}
-      onChange={(e: any) => onChange(e.target.value)}
+      value={value && value.length > 0 ? value[0] : ''}
+      onChange={(e: any) => {
+        const val = e.target.value;
+        onChange(val ? [val] : []);
+      }}
     >
       <option value="">{placeholder}</option>
-      {options.map((opt: any) => (
+      {(options || []).map((opt: any) => (
         <option key={opt.value} value={opt.value}>
           {opt.label}
         </option>
@@ -33,8 +29,8 @@ const mockAccounts = [
 ] as any[];
 
 const mockCategories = [
-  { id: 'cat-1', name: 'Groceries' },
-  { id: 'cat-2', name: 'Transport' },
+  { id: 'cat-1', name: 'Groceries', parentId: null },
+  { id: 'cat-2', name: 'Transport', parentId: null },
 ] as any[];
 
 const mockPayees = [
@@ -93,7 +89,7 @@ describe('FilterBuilder', () => {
       const { onChange } = renderFilterBuilder([]);
       fireEvent.click(screen.getByText('Add filter group'));
       expect(onChange).toHaveBeenCalledWith([
-        { conditions: [{ field: 'category', value: '' }] },
+        { conditions: [{ field: 'category', value: [] }] },
       ]);
     });
 
@@ -105,7 +101,7 @@ describe('FilterBuilder', () => {
       fireEvent.click(screen.getByText('Add AND group'));
       expect(onChange).toHaveBeenCalledWith([
         { conditions: [{ field: 'category', value: 'cat-1' }] },
-        { conditions: [{ field: 'category', value: '' }] },
+        { conditions: [{ field: 'category', value: [] }] },
       ]);
     });
 
@@ -118,7 +114,7 @@ describe('FilterBuilder', () => {
       fireEvent.click(screen.getByText('Add AND group'));
       expect(onChange).toHaveBeenCalledWith([
         ...existingGroups,
-        { conditions: [{ field: 'category', value: '' }] },
+        { conditions: [{ field: 'category', value: [] }] },
       ]);
     });
   });
@@ -188,10 +184,10 @@ describe('FilterBuilder', () => {
   describe('field select dropdown', () => {
     it('renders field select with correct options', () => {
       renderFilterBuilder([
-        { conditions: [{ field: 'category', value: '' }] },
+        { conditions: [{ field: 'category', value: [] }] },
       ]);
       const selects = screen.getAllByRole('combobox');
-      // First select is the field dropdown, second is the value dropdown
+      // First select is the field dropdown
       const fieldSelect = selects[0];
       const options = within(fieldSelect).getAllByRole('option');
       expect(options).toHaveLength(4);
@@ -203,7 +199,7 @@ describe('FilterBuilder', () => {
 
     it('has the correct field selected initially', () => {
       renderFilterBuilder([
-        { conditions: [{ field: 'account', value: 'acc-1' }] },
+        { conditions: [{ field: 'account', value: ['acc-1'] }] },
       ]);
       const selects = screen.getAllByRole('combobox');
       expect(selects[0]).toHaveValue('account');
@@ -216,7 +212,7 @@ describe('FilterBuilder', () => {
       const selects = screen.getAllByRole('combobox');
       fireEvent.change(selects[0], { target: { value: 'account' } });
       expect(onChange).toHaveBeenCalledWith([
-        { conditions: [{ field: 'account', value: '' }] },
+        { conditions: [{ field: 'account', value: [] }] },
       ]);
     });
 
@@ -227,7 +223,7 @@ describe('FilterBuilder', () => {
       const selects = screen.getAllByRole('combobox');
       fireEvent.change(selects[0], { target: { value: 'payee' } });
       expect(onChange).toHaveBeenCalledWith([
-        { conditions: [{ field: 'payee', value: '' }] },
+        { conditions: [{ field: 'payee', value: [] }] },
       ]);
     });
 
@@ -244,12 +240,12 @@ describe('FilterBuilder', () => {
   });
 
   describe('value select/input', () => {
-    it('renders a select with account options for account field', () => {
+    it('renders a MultiSelect with account options for account field', () => {
       renderFilterBuilder([
-        { conditions: [{ field: 'account', value: '' }] },
+        { conditions: [{ field: 'account', value: [] }] },
       ]);
       const selects = screen.getAllByRole('combobox');
-      // selects[1] is the value select
+      // selects[1] is the mocked MultiSelect (rendered as native select)
       const valueSelect = selects[1];
       const options = within(valueSelect).getAllByRole('option');
       // placeholder + 2 accounts
@@ -259,23 +255,25 @@ describe('FilterBuilder', () => {
       expect(options[2]).toHaveTextContent('Savings');
     });
 
-    it('renders a select with category options for category field', () => {
+    it('renders a MultiSelect with category options for category field', () => {
       renderFilterBuilder([
-        { conditions: [{ field: 'category', value: '' }] },
+        { conditions: [{ field: 'category', value: [] }] },
       ]);
       const selects = screen.getAllByRole('combobox');
       const valueSelect = selects[1];
       const options = within(valueSelect).getAllByRole('option');
-      // placeholder + 2 categories
-      expect(options).toHaveLength(3);
+      // placeholder + Uncategorized + Transfers + 2 categories
+      expect(options).toHaveLength(5);
       expect(options[0]).toHaveTextContent('Select Category...');
-      expect(options[1]).toHaveTextContent('Groceries');
-      expect(options[2]).toHaveTextContent('Transport');
+      expect(options[1]).toHaveTextContent('Uncategorized');
+      expect(options[2]).toHaveTextContent('Transfers');
+      expect(options[3]).toHaveTextContent('Groceries');
+      expect(options[4]).toHaveTextContent('Transport');
     });
 
-    it('renders a select with payee options for payee field', () => {
+    it('renders a MultiSelect with payee options for payee field', () => {
       renderFilterBuilder([
-        { conditions: [{ field: 'payee', value: '' }] },
+        { conditions: [{ field: 'payee', value: [] }] },
       ]);
       const selects = screen.getAllByRole('combobox');
       const valueSelect = selects[1];
@@ -298,12 +296,12 @@ describe('FilterBuilder', () => {
 
     it('calls onChange with updated value when value select changes', () => {
       const { onChange } = renderFilterBuilder([
-        { conditions: [{ field: 'category', value: '' }] },
+        { conditions: [{ field: 'category', value: [] }] },
       ]);
       const selects = screen.getAllByRole('combobox');
       fireEvent.change(selects[1], { target: { value: 'cat-2' } });
       expect(onChange).toHaveBeenCalledWith([
-        { conditions: [{ field: 'category', value: 'cat-2' }] },
+        { conditions: [{ field: 'category', value: ['cat-2'] }] },
       ]);
     });
 
@@ -320,7 +318,7 @@ describe('FilterBuilder', () => {
 
     it('has correct value selected in value dropdown', () => {
       renderFilterBuilder([
-        { conditions: [{ field: 'account', value: 'acc-2' }] },
+        { conditions: [{ field: 'account', value: ['acc-2'] }] },
       ]);
       const selects = screen.getAllByRole('combobox');
       expect(selects[1]).toHaveValue('acc-2');
@@ -345,7 +343,7 @@ describe('FilterBuilder', () => {
         {
           conditions: [
             { field: 'category', value: 'cat-1' },
-            { field: 'category', value: '' },
+            { field: 'category', value: [] },
           ],
         },
       ]);
@@ -364,7 +362,7 @@ describe('FilterBuilder', () => {
         {
           conditions: [
             { field: 'account', value: 'acc-1' },
-            { field: 'category', value: '' },
+            { field: 'category', value: [] },
           ],
         },
       ]);
@@ -381,7 +379,7 @@ describe('FilterBuilder', () => {
         {
           conditions: [
             { field: 'category', value: 'cat-1' },
-            { field: 'category', value: '' },
+            { field: 'category', value: [] },
           ],
         },
         { conditions: [{ field: 'account', value: 'acc-1' }] },
@@ -488,25 +486,25 @@ describe('FilterBuilder', () => {
       ]);
       // Change the field of the second group's condition
       const fieldSelects = screen.getAllByRole('combobox');
-      // fieldSelects: [group0-field, group0-value, group1-field, group1-value]
+      // fieldSelects: [group0-field, group0-value(mock), group1-field, group1-value(mock)]
       fireEvent.change(fieldSelects[2], { target: { value: 'payee' } });
       expect(onChange).toHaveBeenCalledWith([
         { conditions: [{ field: 'category', value: 'cat-1' }] },
-        { conditions: [{ field: 'payee', value: '' }] },
+        { conditions: [{ field: 'payee', value: [] }] },
       ]);
     });
 
     it('updates the correct condition value in the correct group', () => {
       const { onChange } = renderFilterBuilder([
-        { conditions: [{ field: 'category', value: '' }] },
-        { conditions: [{ field: 'account', value: '' }] },
+        { conditions: [{ field: 'category', value: [] }] },
+        { conditions: [{ field: 'account', value: [] }] },
       ]);
       const selects = screen.getAllByRole('combobox');
-      // selects: [group0-field, group0-value, group1-field, group1-value]
+      // selects: [group0-field, group0-value(mock), group1-field, group1-value(mock)]
       fireEvent.change(selects[3], { target: { value: 'acc-2' } });
       expect(onChange).toHaveBeenCalledWith([
-        { conditions: [{ field: 'category', value: '' }] },
-        { conditions: [{ field: 'account', value: 'acc-2' }] },
+        { conditions: [{ field: 'category', value: [] }] },
+        { conditions: [{ field: 'account', value: ['acc-2'] }] },
       ]);
     });
 
@@ -514,19 +512,19 @@ describe('FilterBuilder', () => {
       const { onChange } = renderFilterBuilder([
         {
           conditions: [
-            { field: 'category', value: '' },
-            { field: 'payee', value: '' },
+            { field: 'category', value: [] },
+            { field: 'payee', value: [] },
           ],
         },
       ]);
       const selects = screen.getAllByRole('combobox');
-      // selects: [cond0-field, cond0-value, cond1-field, cond1-value]
+      // selects: [cond0-field, cond0-value(mock), cond1-field, cond1-value(mock)]
       fireEvent.change(selects[3], { target: { value: 'pay-2' } });
       expect(onChange).toHaveBeenCalledWith([
         {
           conditions: [
-            { field: 'category', value: '' },
-            { field: 'payee', value: 'pay-2' },
+            { field: 'category', value: [] },
+            { field: 'payee', value: ['pay-2'] },
           ],
         },
       ]);
@@ -579,10 +577,10 @@ describe('FilterBuilder', () => {
           ],
         },
       ]);
-      // Should have field selects (2) + value select for category (1)
+      // Should have field selects (2) + value select for category (mocked MultiSelect = 1)
       // Text field renders input instead of select
       const selects = screen.getAllByRole('combobox');
-      expect(selects).toHaveLength(3); // field0, value0, field1
+      expect(selects).toHaveLength(3); // field0, value0(mock), field1
       const input = screen.getByPlaceholderText('Search text...');
       expect(input).toHaveValue('rent');
     });
@@ -605,7 +603,7 @@ describe('FilterBuilder', () => {
       const selects = screen.getAllByRole('combobox');
       fireEvent.change(selects[0], { target: { value: 'account' } });
       expect(onChange).toHaveBeenCalledWith([
-        { conditions: [{ field: 'account', value: '' }] },
+        { conditions: [{ field: 'account', value: [] }] },
       ]);
     });
   });
@@ -638,7 +636,7 @@ describe('FilterBuilder', () => {
 
     it('calls onChange exactly once per user action', () => {
       const { onChange } = renderFilterBuilder([
-        { conditions: [{ field: 'category', value: '' }] },
+        { conditions: [{ field: 'category', value: [] }] },
       ]);
       fireEvent.click(screen.getByText('Add OR condition'));
       expect(onChange).toHaveBeenCalledTimes(1);

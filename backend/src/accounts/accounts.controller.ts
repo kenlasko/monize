@@ -76,6 +76,36 @@ export class AccountsController {
     return this.accountsService.findAll(req.user.id, includeInactive || false);
   }
 
+  @Get("daily-balances")
+  @ApiOperation({ summary: "Get daily running balances for accounts" })
+  @ApiQuery({ name: "startDate", required: false, example: "2025-01-01" })
+  @ApiQuery({ name: "endDate", required: false, example: "2026-01-31" })
+  @ApiQuery({
+    name: "accountIds",
+    required: false,
+    description:
+      "Comma-separated account IDs to filter by (all accounts if omitted)",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Daily balance data retrieved successfully",
+  })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  getDailyBalances(
+    @Request() req,
+    @Query("startDate") startDate?: string,
+    @Query("endDate") endDate?: string,
+    @Query("accountIds") accountIds?: string,
+  ) {
+    const ids = accountIds ? accountIds.split(",").filter(Boolean) : undefined;
+    return this.accountsService.getDailyBalances(
+      req.user.id,
+      startDate,
+      endDate,
+      ids,
+    );
+  }
+
   @Get("summary")
   @ApiOperation({ summary: "Get account summary statistics" })
   @ApiResponse({

@@ -12,6 +12,9 @@ import {
   IsDateString,
   IsNumber,
   Matches,
+  ValidatorConstraint,
+  ValidatorConstraintInterface,
+  Validate,
 } from "class-validator";
 import { Type } from "class-transformer";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
@@ -25,6 +28,20 @@ import {
   SortDirection,
 } from "../entities/custom-report.entity";
 
+@ValidatorConstraint({ name: "isStringOrStringArray", async: false })
+class IsStringOrStringArray implements ValidatorConstraintInterface {
+  validate(value: unknown) {
+    if (typeof value === "string") return value.length <= 500;
+    if (Array.isArray(value))
+      return value.every((v) => typeof v === "string" && v.length <= 500);
+    return false;
+  }
+
+  defaultMessage() {
+    return "value must be a string (max 500 chars) or an array of strings";
+  }
+}
+
 export class FilterConditionDto {
   @ApiProperty({
     description: "Field to filter on",
@@ -35,11 +52,11 @@ export class FilterConditionDto {
 
   @ApiProperty({
     description:
-      "Value to match (UUID for entity fields, search string for text)",
+      "Value to match (string[] of UUIDs for entity fields, string for text)",
+    oneOf: [{ type: "string" }, { type: "array", items: { type: "string" } }],
   })
-  @IsString()
-  @MaxLength(500)
-  value: string;
+  @Validate(IsStringOrStringArray)
+  value: string | string[];
 }
 
 export class FilterGroupDto {

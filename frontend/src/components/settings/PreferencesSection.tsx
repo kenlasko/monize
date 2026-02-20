@@ -44,6 +44,16 @@ const TIMEZONE_OPTIONS = [
   { value: 'Australia/Sydney', label: 'Sydney' },
 ];
 
+const WEEK_STARTS_ON_OPTIONS = [
+  { value: '0', label: 'Sunday' },
+  { value: '1', label: 'Monday' },
+  { value: '2', label: 'Tuesday' },
+  { value: '3', label: 'Wednesday' },
+  { value: '4', label: 'Thursday' },
+  { value: '5', label: 'Friday' },
+  { value: '6', label: 'Saturday' },
+];
+
 const THEME_OPTIONS = [
   { value: 'system', label: 'System (follow device setting)' },
   { value: 'light', label: 'Light' },
@@ -64,6 +74,7 @@ export function PreferencesSection({ preferences, onPreferencesUpdated }: Prefer
   const [timezone, setTimezone] = useState(preferences.timezone);
   const [theme, setTheme] = useState<'light' | 'dark' | 'system'>(preferences.theme);
   const [defaultCurrency, setDefaultCurrency] = useState(preferences.defaultCurrency);
+  const [weekStartsOn, setWeekStartsOn] = useState(preferences.weekStartsOn ?? 1);
   const [isUpdatingPreferences, setIsUpdatingPreferences] = useState(false);
 
   const [availableCurrencies, setAvailableCurrencies] = useState<CurrencyInfo[]>([]);
@@ -88,6 +99,7 @@ export function PreferencesSection({ preferences, onPreferencesUpdated }: Prefer
         timezone,
         theme,
         defaultCurrency,
+        weekStartsOn,
       };
 
       const updated = await userSettingsApi.updatePreferences(data);
@@ -140,6 +152,13 @@ export function PreferencesSection({ preferences, onPreferencesUpdated }: Prefer
           options={TIMEZONE_OPTIONS}
           value={timezone}
           onChange={(e) => setTimezone(e.target.value)}
+        />
+
+        <Select
+          label="Week starts on"
+          options={WEEK_STARTS_ON_OPTIONS}
+          value={String(weekStartsOn)}
+          onChange={(e) => setWeekStartsOn(Number(e.target.value))}
         />
       </div>
 

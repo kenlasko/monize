@@ -92,6 +92,9 @@ function AiSettingsContent() {
           configs={configs}
           encryptionAvailable={status?.encryptionAvailable ?? false}
           onConfigsChanged={loadData}
+          hasSystemDefault={status?.hasSystemDefault}
+          systemDefaultProvider={status?.systemDefaultProvider}
+          systemDefaultModel={status?.systemDefaultModel}
         />
 
         {usage && (

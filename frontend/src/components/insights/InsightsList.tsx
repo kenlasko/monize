@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { aiApi } from '@/lib/ai';
-import { AiInsight, InsightType, InsightSeverity, INSIGHT_TYPE_LABELS, INSIGHT_SEVERITY_LABELS } from '@/types/ai';
+import { AiInsight, AiStatus, InsightType, InsightSeverity, INSIGHT_TYPE_LABELS, INSIGHT_SEVERITY_LABELS } from '@/types/ai';
 import { InsightCard } from './InsightCard';
 import { createLogger } from '@/lib/logger';
+import Link from 'next/link';
 
 const logger = createLogger('InsightsList');
 
@@ -22,7 +23,12 @@ export function InsightsList() {
   const [filterSeverity, setFilterSeverity] = useState<InsightSeverity | ''>('');
   const [showDismissed, setShowDismissed] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [aiStatus, setAiStatus] = useState<AiStatus | null>(null);
   const pollingRef = useRef(false);
+
+  useEffect(() => {
+    aiApi.getStatus().then(setAiStatus).catch(() => {});
+  }, []);
 
   const pollForResults = useCallback(async (previousLastGeneratedAt: string | null) => {
     if (pollingRef.current) return;
@@ -127,6 +133,7 @@ export function InsightsList() {
 
   const alertCount = insights.filter((i) => i.severity === 'alert' && !i.isDismissed).length;
   const warningCount = insights.filter((i) => i.severity === 'warning' && !i.isDismissed).length;
+  const aiNotConfigured = aiStatus !== null && !aiStatus.configured;
 
   if (isLoading) {
     return (
@@ -145,6 +152,27 @@ export function InsightsList() {
 
   return (
     <div className="space-y-4">
+      {/* AI not configured banner */}
+      {aiNotConfigured && (
+        <div className="p-4 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-lg">
+          <div className="flex items-start gap-3">
+            <svg className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+            </svg>
+            <div>
+              <h3 className="text-sm font-medium text-amber-800 dark:text-amber-200">AI Not Configured</h3>
+              <p className="mt-1 text-sm text-amber-700 dark:text-amber-300">
+                No AI provider is configured. To use Spending Insights, please{' '}
+                <Link href="/settings/ai" className="font-medium underline hover:text-amber-900 dark:hover:text-amber-100">
+                  configure an AI provider
+                </Link>{' '}
+                in your settings.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header with stats and actions */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
@@ -166,7 +194,7 @@ export function InsightsList() {
         </div>
         <button
           onClick={handleGenerate}
-          disabled={isGenerating}
+          disabled={isGenerating || aiNotConfigured}
           className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           {isGenerating ? 'Generating...' : 'Refresh Insights'}
@@ -225,7 +253,7 @@ export function InsightsList() {
               ? 'No insights generated yet. Click "Refresh Insights" to analyze your spending patterns.'
               : 'No insights match your current filters.'}
           </p>
-          {total === 0 && (
+          {total === 0 && !aiNotConfigured && (
             <button
               onClick={handleGenerate}
               disabled={isGenerating}

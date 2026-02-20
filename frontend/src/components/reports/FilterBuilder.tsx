@@ -1,11 +1,11 @@
 'use client';
 
+import { useMemo } from 'react';
 import { FilterGroup, FilterCondition, FilterField } from '@/types/custom-report';
 import { Account } from '@/types/account';
 import { Category } from '@/types/category';
 import { Payee } from '@/types/payee';
-import { getCategorySelectOptions } from '@/lib/categoryUtils';
-import { Combobox } from '@/components/ui/Combobox';
+import { MultiSelect, MultiSelectOption } from '@/components/ui/MultiSelect';
 
 interface FilterBuilderProps {
   value: FilterGroup[];
@@ -22,19 +22,46 @@ const FIELD_OPTIONS: { value: FilterField; label: string }[] = [
   { value: 'text', label: 'Text' },
 ];
 
-export function FilterBuilder({ value, onChange, accounts, categories, payees }: FilterBuilderProps) {
-  const accountOptions = [...accounts]
-    .sort((a, b) => a.name.localeCompare(b.name))
-    .map((a) => ({ value: a.id, label: a.name }));
-  const categoryOptions = getCategorySelectOptions(categories, {
-    includeUncategorized: true,
-    includeTransfers: true,
-  });
-  const payeeOptions = [...payees]
-    .sort((a, b) => a.name.localeCompare(b.name))
-    .map((p) => ({ value: p.id, label: p.name }));
+const ENTITY_FIELDS: FilterField[] = ['account', 'category', 'payee'];
 
-  const getValueOptions = (field: FilterField) => {
+export function FilterBuilder({ value, onChange, accounts, categories, payees }: FilterBuilderProps) {
+  const accountOptions: MultiSelectOption[] = useMemo(() =>
+    [...accounts]
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((a) => ({ value: a.id, label: a.name })),
+    [accounts]
+  );
+
+  const categoryOptions: MultiSelectOption[] = useMemo(() => {
+    const specialOptions: MultiSelectOption[] = [
+      { value: 'uncategorized', label: 'Uncategorized' },
+      { value: 'transfer', label: 'Transfers' },
+    ];
+    const buildOptions = (parentId: string | null = null): MultiSelectOption[] => {
+      return categories
+        .filter(c => c.parentId === parentId)
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .flatMap(cat => {
+          const children = buildOptions(cat.id);
+          return [{
+            value: cat.id,
+            label: cat.name,
+            parentId: cat.parentId,
+            children: children.length > 0 ? children : undefined,
+          }];
+        });
+    };
+    return [...specialOptions, ...buildOptions()];
+  }, [categories]);
+
+  const payeeOptions: MultiSelectOption[] = useMemo(() =>
+    [...payees]
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((p) => ({ value: p.id, label: p.name })),
+    [payees]
+  );
+
+  const getValueOptions = (field: FilterField): MultiSelectOption[] => {
     switch (field) {
       case 'account':
         return accountOptions;
@@ -48,7 +75,7 @@ export function FilterBuilder({ value, onChange, accounts, categories, payees }:
   };
 
   const addGroup = () => {
-    onChange([...value, { conditions: [{ field: 'category', value: '' }] }]);
+    onChange([...value, { conditions: [{ field: 'category', value: [] }] }]);
   };
 
   const removeGroup = (groupIndex: number) => {
@@ -60,7 +87,7 @@ export function FilterBuilder({ value, onChange, accounts, categories, payees }:
       if (i !== groupIndex) return group;
       return {
         ...group,
-        conditions: [...group.conditions, { field: 'category' as FilterField, value: '' }],
+        conditions: [...group.conditions, { field: 'category' as FilterField, value: [] as string[] }],
       };
     });
     onChange(updated);
@@ -90,7 +117,7 @@ export function FilterBuilder({ value, onChange, accounts, categories, payees }:
           const newCond = { ...cond, ...update };
           // Reset value when field changes
           if (update.field && update.field !== cond.field) {
-            newCond.value = '';
+            newCond.value = ENTITY_FIELDS.includes(update.field) ? [] : '';
           }
           return newCond;
         }),
@@ -156,13 +183,13 @@ export function FilterBuilder({ value, onChange, accounts, categories, payees }:
                       </span>
                     </div>
                   )}
-                  <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2">
+                  <div className="grid grid-cols-[auto_1fr_auto] items-start gap-2">
                     <select
                       value={condition.field}
                       onChange={(e) =>
                         updateCondition(gi, ci, { field: e.target.value as FilterField })
                       }
-                      className="rounded-md border border-gray-300 shadow-sm px-2 py-1.5 text-sm dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                      className="rounded-md border border-gray-300 shadow-sm px-2 py-1.5 text-sm dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none mt-0.5"
                     >
                       {FIELD_OPTIONS.map((opt) => (
                         <option key={opt.value} value={opt.value}>
@@ -174,16 +201,16 @@ export function FilterBuilder({ value, onChange, accounts, categories, payees }:
                     {condition.field === 'text' ? (
                       <input
                         type="text"
-                        value={condition.value}
+                        value={condition.value as string}
                         onChange={(e) => updateCondition(gi, ci, { value: e.target.value })}
                         placeholder="Search text..."
                         className="min-w-0 rounded-md border border-gray-300 shadow-sm px-2 py-1.5 text-sm dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
                       />
                     ) : (
-                      <Combobox
+                      <MultiSelect
                         options={getValueOptions(condition.field)}
-                        value={condition.value}
-                        onChange={(val) => updateCondition(gi, ci, { value: val })}
+                        value={Array.isArray(condition.value) ? condition.value : condition.value ? [condition.value] : []}
+                        onChange={(values) => updateCondition(gi, ci, { value: values })}
                         placeholder={`Select ${FIELD_OPTIONS.find((o) => o.value === condition.field)?.label}...`}
                       />
                     )}
@@ -191,7 +218,7 @@ export function FilterBuilder({ value, onChange, accounts, categories, payees }:
                     <button
                       type="button"
                       onClick={() => removeCondition(gi, ci)}
-                      className="flex-shrink-0 p-1 text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+                      className="flex-shrink-0 p-1 text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors mt-0.5"
                       title="Remove condition"
                     >
                       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

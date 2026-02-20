@@ -73,6 +73,24 @@ export class TransactionAnalyticsService {
       .addSelect("COUNT(*)", "transactionCount")
       .where("transaction.userId = :userId", { userId });
 
+    // Join account for investment filtering and uncategorized conditions.
+    queryBuilder.leftJoin("transaction.account", "summaryAccount");
+
+    // Exclude transfers by default — they are not real income/expenses.
+    // Only include them when the user explicitly filters for "transfer" category.
+    const wantsTransfers = categoryIds && categoryIds.includes("transfer");
+    if (!wantsTransfers) {
+      queryBuilder.andWhere("transaction.isTransfer = false");
+    }
+
+    // Exclude investment account transactions (purchases, sales, dividends)
+    // unless the user explicitly filters for specific investment accounts.
+    if (!accountIds || accountIds.length === 0) {
+      queryBuilder.andWhere("summaryAccount.accountType != :investmentType", {
+        investmentType: "INVESTMENT",
+      });
+    }
+
     if (accountIds && accountIds.length > 0) {
       queryBuilder.andWhere("transaction.accountId IN (:...accountIds)", {
         accountIds,
@@ -101,7 +119,6 @@ export class TransactionAnalyticsService {
       const conditions: string[] = [];
 
       if (hasUncategorized) {
-        queryBuilder.leftJoin("transaction.account", "summaryAccount");
         conditions.push(
           "(transaction.categoryId IS NULL AND transaction.isSplit = false AND transaction.isTransfer = false AND summaryAccount.accountType != 'INVESTMENT')",
         );

@@ -18,6 +18,7 @@ import { parseLocalDate } from '@/lib/utils';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
+import { usePreferencesStore } from '@/store/preferencesStore';
 
 function IncomeExpensesTooltip({
   active,
@@ -64,6 +65,7 @@ export function IncomeExpensesBarChart({
   const { formatDate } = useDateFormat();
   const { formatCurrencyCompact: formatCurrency, formatCurrencyAxis } = useNumberFormat();
   const { convertToDefault } = useExchangeRates();
+  const weekStartsOn = (usePreferencesStore((s) => s.preferences?.weekStartsOn) ?? 1) as 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
   // Group transactions by week and calculate income/expenses
   const chartData = useMemo(() => {
@@ -73,11 +75,11 @@ export function IncomeExpensesBarChart({
     // Get weeks in the range
     const weeks = eachWeekOfInterval(
       { start: thirtyDaysAgo, end: today },
-      { weekStartsOn: 0 }
+      { weekStartsOn }
     );
 
     const weekData = weeks.map((weekStart) => {
-      const weekEnd = endOfWeek(weekStart, { weekStartsOn: 0 });
+      const weekEnd = endOfWeek(weekStart, { weekStartsOn });
       return {
         weekStart,
         weekEnd,
@@ -89,11 +91,12 @@ export function IncomeExpensesBarChart({
 
     // Aggregate transactions by week
     transactions.forEach((tx) => {
-      // Skip transfers - they're not real income/expenses
+      // Skip transfers and investment account transactions
       if (tx.isTransfer) return;
+      if (tx.account?.accountType === 'INVESTMENT') return;
 
       const txDate = parseLocalDate(tx.transactionDate);
-      const txWeekStart = startOfWeek(txDate, { weekStartsOn: 0 });
+      const txWeekStart = startOfWeek(txDate, { weekStartsOn });
 
       const weekBucket = weekData.find(
         (w) => w.weekStart.getTime() === txWeekStart.getTime()
@@ -117,7 +120,7 @@ export function IncomeExpensesBarChart({
       startDate: format(w.weekStart, 'yyyy-MM-dd'),
       endDate: format(w.weekEnd, 'yyyy-MM-dd'),
     }));
-  }, [transactions, formatDate, convertToDefault]);
+  }, [transactions, formatDate, convertToDefault, weekStartsOn]);
 
   const handleChartClick = (state: unknown) => {
     const chartState = state as { activePayload?: Array<{ payload: { startDate: string; endDate: string } }> } | null;

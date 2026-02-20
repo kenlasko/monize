@@ -65,7 +65,7 @@ export type FilterField = 'account' | 'category' | 'payee' | 'text';
 
 export interface FilterCondition {
   field: FilterField;
-  value: string; // UUID for entity fields, search string for text
+  value: string | string[]; // string[] of UUIDs for entity fields, string for text
 }
 
 export interface FilterGroup {

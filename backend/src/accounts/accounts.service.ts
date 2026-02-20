@@ -7,7 +7,7 @@ import {
   Logger,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { Repository, DataSource } from "typeorm";
 import {
   Account,
   AccountType,
@@ -45,6 +45,7 @@ export class AccountsService {
     @Inject(forwardRef(() => NetWorthService))
     private netWorthService: NetWorthService,
     private loanMortgageService: LoanMortgageAccountService,
+    private dataSource: DataSource,
   ) {}
 
   /**
@@ -708,5 +709,84 @@ export class AccountsService {
     }
 
     return brokerageAccounts.length;
+  }
+
+  /**
+   * Get daily running balances for one or more accounts over a date range.
+   * Computes balance from opening_balance + cumulative transaction sums.
+   */
+  async getDailyBalances(
+    userId: string,
+    startDate?: string,
+    endDate?: string,
+    accountIds?: string[],
+  ): Promise<Array<{ date: string; balance: number }>> {
+    const end = endDate || new Date().toISOString().split("T")[0];
+    const start =
+      startDate ||
+      (() => {
+        const d = new Date();
+        d.setFullYear(d.getFullYear() - 1);
+        return d.toISOString().split("T")[0];
+      })();
+
+    const accountIdsParam =
+      accountIds && accountIds.length > 0 ? accountIds : null;
+
+    const rows: Array<{ date: string; balance: string }> =
+      await this.dataSource.query(
+        `WITH target_accounts AS (
+          SELECT id, opening_balance
+          FROM accounts
+          WHERE user_id = $1
+            AND ($2::UUID[] IS NULL OR id = ANY($2::UUID[]))
+        ),
+        pre_period AS (
+          SELECT t.account_id,
+                 SUM(t.amount) as total
+          FROM transactions t
+          JOIN target_accounts ta ON ta.id = t.account_id
+          WHERE (t.status IS NULL OR t.status != 'VOID')
+            AND t.parent_transaction_id IS NULL
+            AND t.transaction_date < $3
+          GROUP BY t.account_id
+        ),
+        daily_tx AS (
+          SELECT t.account_id,
+                 t.transaction_date::DATE as tx_date,
+                 SUM(t.amount) as total
+          FROM transactions t
+          JOIN target_accounts ta ON ta.id = t.account_id
+          WHERE (t.status IS NULL OR t.status != 'VOID')
+            AND t.parent_transaction_id IS NULL
+            AND t.transaction_date >= $3
+            AND t.transaction_date <= $4
+          GROUP BY t.account_id, t.transaction_date::DATE
+        ),
+        account_daily AS (
+          SELECT d.dt::DATE as date,
+                 ta.id as account_id,
+                 (ta.opening_balance + COALESCE(pp.total, 0) +
+                   COALESCE(SUM(dtx.total) OVER (
+                     PARTITION BY ta.id ORDER BY d.dt
+                     ROWS UNBOUNDED PRECEDING
+                   ), 0)
+                 ) as balance
+          FROM target_accounts ta
+          CROSS JOIN generate_series($3::TIMESTAMP, $4::TIMESTAMP, '1 day') d(dt)
+          LEFT JOIN pre_period pp ON pp.account_id = ta.id
+          LEFT JOIN daily_tx dtx ON dtx.account_id = ta.id AND dtx.tx_date = d.dt::DATE
+        )
+        SELECT date::TEXT, SUM(balance)::NUMERIC as balance
+        FROM account_daily
+        GROUP BY date
+        ORDER BY date`,
+        [userId, accountIdsParam, start, end],
+      );
+
+    return rows.map((r) => ({
+      date: r.date,
+      balance: Number(r.balance),
+    }));
   }
 }

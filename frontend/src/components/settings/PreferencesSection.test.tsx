@@ -41,6 +41,7 @@ const mockPreferences: UserPreferences = {
   notificationBrowser: false,
   twoFactorEnabled: false,
   gettingStartedDismissed: false,
+  weekStartsOn: 1,
   budgetDigestEnabled: true,
   budgetDigestDay: 'MONDAY',
   createdAt: '2024-01-01T00:00:00Z',
@@ -176,6 +177,30 @@ describe('PreferencesSection', () => {
     await waitFor(() => {
       expect(userSettingsApi.updatePreferences).toHaveBeenCalledWith(
         expect.objectContaining({ theme: 'dark' })
+      );
+    });
+  });
+
+  it('renders the Week starts on dropdown', async () => {
+    render(<PreferencesSection preferences={mockPreferences} onPreferencesUpdated={mockOnPreferencesUpdated} />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Week starts on')).toBeInTheDocument();
+    });
+    expect(screen.getByLabelText('Week starts on')).toBeInTheDocument();
+  });
+
+  it('sends updated weekStartsOn when changed and saved', async () => {
+    (userSettingsApi.updatePreferences as ReturnType<typeof vi.fn>).mockResolvedValue(mockPreferences);
+
+    render(<PreferencesSection preferences={mockPreferences} onPreferencesUpdated={mockOnPreferencesUpdated} />);
+
+    fireEvent.change(screen.getByLabelText('Week starts on'), { target: { value: '0' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save Preferences' }));
+
+    await waitFor(() => {
+      expect(userSettingsApi.updatePreferences).toHaveBeenCalledWith(
+        expect.objectContaining({ weekStartsOn: 0 })
       );
     });
   });

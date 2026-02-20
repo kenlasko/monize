@@ -411,15 +411,70 @@ describe("AiService", () => {
       expect(result.configured).toBe(true);
       expect(result.encryptionAvailable).toBe(true);
       expect(result.activeProviders).toBe(1);
+      expect(result.hasSystemDefault).toBe(false);
+      expect(result.systemDefaultProvider).toBeNull();
+      expect(result.systemDefaultModel).toBeNull();
     });
 
-    it("returns unconfigured when no providers", async () => {
+    it("returns unconfigured when no providers and no system default", async () => {
       mockConfigRepository.find.mockResolvedValue([]);
 
       const result = await service.getStatus(userId);
 
       expect(result.configured).toBe(false);
       expect(result.activeProviders).toBe(0);
+      expect(result.hasSystemDefault).toBe(false);
+      expect(result.systemDefaultProvider).toBeNull();
+      expect(result.systemDefaultModel).toBeNull();
+    });
+
+    it("returns configured when system default is set and no user providers", async () => {
+      mockConfigRepository.find.mockResolvedValue([]);
+      mockConfigService.get!.mockImplementation((key: string) => {
+        if (key === "AI_DEFAULT_PROVIDER") return "openai";
+        if (key === "AI_DEFAULT_MODEL") return "gpt-4o";
+        return undefined;
+      });
+
+      const result = await service.getStatus(userId);
+
+      expect(result.configured).toBe(true);
+      expect(result.activeProviders).toBe(0);
+      expect(result.hasSystemDefault).toBe(true);
+      expect(result.systemDefaultProvider).toBe("openai");
+      expect(result.systemDefaultModel).toBe("gpt-4o");
+    });
+
+    it("returns both user providers and system default info", async () => {
+      mockConfigRepository.find.mockResolvedValue([makeConfig()]);
+      mockConfigService.get!.mockImplementation((key: string) => {
+        if (key === "AI_DEFAULT_PROVIDER") return "anthropic";
+        if (key === "AI_DEFAULT_MODEL") return "claude-sonnet-4-20250514";
+        return undefined;
+      });
+
+      const result = await service.getStatus(userId);
+
+      expect(result.configured).toBe(true);
+      expect(result.activeProviders).toBe(1);
+      expect(result.hasSystemDefault).toBe(true);
+      expect(result.systemDefaultProvider).toBe("anthropic");
+      expect(result.systemDefaultModel).toBe("claude-sonnet-4-20250514");
+    });
+
+    it("returns null model when system default has no model", async () => {
+      mockConfigRepository.find.mockResolvedValue([]);
+      mockConfigService.get!.mockImplementation((key: string) => {
+        if (key === "AI_DEFAULT_PROVIDER") return "ollama";
+        return undefined;
+      });
+
+      const result = await service.getStatus(userId);
+
+      expect(result.configured).toBe(true);
+      expect(result.hasSystemDefault).toBe(true);
+      expect(result.systemDefaultProvider).toBe("ollama");
+      expect(result.systemDefaultModel).toBeNull();
     });
   });
 

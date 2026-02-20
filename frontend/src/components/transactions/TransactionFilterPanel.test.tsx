@@ -63,6 +63,8 @@ describe('TransactionFilterPanel', () => {
     filterSearch: '',
     searchInput: '',
     filterAccountStatus: '' as 'active' | 'closed' | '',
+    filterTimePeriod: '',
+    weekStartsOn: 1 as 0 | 1 | 2 | 3 | 4 | 5 | 6,
     handleArrayFilterChange: vi.fn(),
     handleFilterChange: vi.fn(),
     handleSearchChange: vi.fn(),
@@ -73,6 +75,7 @@ describe('TransactionFilterPanel', () => {
     setFilterStartDate: vi.fn(),
     setFilterEndDate: vi.fn(),
     setFilterSearch: vi.fn(),
+    setFilterTimePeriod: vi.fn(),
     filtersExpanded: false,
     setFiltersExpanded: vi.fn(),
     activeFilterCount: 0,
@@ -1321,6 +1324,141 @@ describe('TransactionFilterPanel', () => {
       const closedButton = screen.getByText('Closed');
       expect(allButton.className).not.toContain('bg-blue-600');
       expect(closedButton.className).not.toContain('bg-blue-600');
+    });
+  });
+
+  // ----------------------------------------------------------------
+  // Time Period filter
+  // ----------------------------------------------------------------
+
+  describe('time period filter', () => {
+    it('renders the Time Period select when expanded', () => {
+      render(<TransactionFilterPanel {...defaultProps} filtersExpanded={true} />);
+
+      expect(screen.getByText('Time Period')).toBeInTheDocument();
+      expect(screen.getByLabelText('Time Period')).toBeInTheDocument();
+    });
+
+    it('displays all time period options', () => {
+      render(<TransactionFilterPanel {...defaultProps} filtersExpanded={true} />);
+
+      const select = screen.getByLabelText('Time Period');
+      const options = select.querySelectorAll('option');
+      const labels = Array.from(options).map(o => o.textContent);
+      expect(labels).toContain('Select period...');
+      expect(labels).toContain('Today');
+      expect(labels).toContain('Yesterday');
+      expect(labels).toContain('This Week');
+      expect(labels).toContain('Last Week');
+      expect(labels).toContain('Month to Date');
+      expect(labels).toContain('Last Month');
+      expect(labels).toContain('Year to Date');
+      expect(labels).toContain('Last Year');
+      expect(labels).toContain('Custom');
+    });
+
+    it('calls setFilterTimePeriod and handleFilterChange for dates when a preset is selected', () => {
+      render(<TransactionFilterPanel {...defaultProps} filtersExpanded={true} />);
+
+      const select = screen.getByLabelText('Time Period');
+      fireEvent.change(select, { target: { value: 'today' } });
+
+      expect(defaultProps.setFilterTimePeriod).toHaveBeenCalledWith('today');
+      // Should also set start and end dates
+      expect(defaultProps.handleFilterChange).toHaveBeenCalledWith(
+        defaultProps.setFilterStartDate,
+        expect.any(String)
+      );
+      expect(defaultProps.handleFilterChange).toHaveBeenCalledWith(
+        defaultProps.setFilterEndDate,
+        expect.any(String)
+      );
+    });
+
+    it('does not set dates when custom is selected', () => {
+      render(<TransactionFilterPanel {...defaultProps} filtersExpanded={true} />);
+
+      const select = screen.getByLabelText('Time Period');
+      fireEvent.change(select, { target: { value: 'custom' } });
+
+      expect(defaultProps.setFilterTimePeriod).toHaveBeenCalledWith('custom');
+      // Should not call handleFilterChange for dates
+      expect(defaultProps.handleFilterChange).not.toHaveBeenCalled();
+    });
+
+    it('switches to custom when start date is manually changed', () => {
+      render(
+        <TransactionFilterPanel
+          {...defaultProps}
+          filtersExpanded={true}
+          filterTimePeriod="this_week"
+        />
+      );
+
+      const startInput = screen.getByLabelText('Start Date');
+      fireEvent.change(startInput, { target: { value: '2025-06-01' } });
+
+      expect(defaultProps.setFilterTimePeriod).toHaveBeenCalledWith('custom');
+    });
+
+    it('switches to custom when end date is manually changed', () => {
+      render(
+        <TransactionFilterPanel
+          {...defaultProps}
+          filtersExpanded={true}
+          filterTimePeriod="month_to_date"
+        />
+      );
+
+      const endInput = screen.getByLabelText('End Date');
+      fireEvent.change(endInput, { target: { value: '2025-06-30' } });
+
+      expect(defaultProps.setFilterTimePeriod).toHaveBeenCalledWith('custom');
+    });
+
+    it('does not switch to custom if already on custom when date changes', () => {
+      render(
+        <TransactionFilterPanel
+          {...defaultProps}
+          filtersExpanded={true}
+          filterTimePeriod="custom"
+        />
+      );
+
+      const startInput = screen.getByLabelText('Start Date');
+      fireEvent.change(startInput, { target: { value: '2025-06-01' } });
+
+      // setFilterTimePeriod should not be called since it's already 'custom'
+      expect(defaultProps.setFilterTimePeriod).not.toHaveBeenCalled();
+    });
+
+    it('does not switch to custom when no period is selected and date changes', () => {
+      render(
+        <TransactionFilterPanel
+          {...defaultProps}
+          filtersExpanded={true}
+          filterTimePeriod=""
+        />
+      );
+
+      const startInput = screen.getByLabelText('Start Date');
+      fireEvent.change(startInput, { target: { value: '2025-06-01' } });
+
+      // setFilterTimePeriod should not be called since no period was selected
+      expect(defaultProps.setFilterTimePeriod).not.toHaveBeenCalled();
+    });
+
+    it('displays the selected time period value', () => {
+      render(
+        <TransactionFilterPanel
+          {...defaultProps}
+          filtersExpanded={true}
+          filterTimePeriod="this_week"
+        />
+      );
+
+      const select = screen.getByLabelText('Time Period');
+      expect(select).toHaveValue('this_week');
     });
   });
 });

@@ -13,6 +13,7 @@ import { CategoriesService } from "../categories/categories.service";
 import { ScheduledTransactionsService } from "../scheduled-transactions/scheduled-transactions.service";
 import { NetWorthService } from "../net-worth/net-worth.service";
 import { LoanMortgageAccountService } from "./loan-mortgage-account.service";
+import { DataSource } from "typeorm";
 
 describe("AccountsService", () => {
   let service: AccountsService;
@@ -114,6 +115,7 @@ describe("AccountsService", () => {
         },
         { provide: NetWorthService, useValue: netWorthService },
         LoanMortgageAccountService,
+        { provide: DataSource, useValue: { query: jest.fn() } },
       ],
     }).compile();
 

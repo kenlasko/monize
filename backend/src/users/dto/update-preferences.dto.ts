@@ -3,6 +3,9 @@ import {
   IsString,
   IsOptional,
   IsBoolean,
+  IsInt,
+  Min,
+  Max,
   MaxLength,
   IsIn,
 } from "class-validator";
@@ -64,6 +67,16 @@ export class UpdatePreferencesDto {
   @IsOptional()
   @IsBoolean()
   gettingStartedDismissed?: boolean;
+
+  @ApiPropertyOptional({
+    description: "Day the week starts on (0=Sunday, 1=Monday, ..., 6=Saturday)",
+    example: 1,
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(6)
+  weekStartsOn?: number;
 
   @ApiPropertyOptional({
     description: "Enable weekly budget digest emails",

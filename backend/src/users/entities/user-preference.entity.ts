@@ -41,6 +41,9 @@ export class UserPreference {
   @Column({ name: "getting_started_dismissed", default: false })
   gettingStartedDismissed: boolean;
 
+  @Column({ name: "week_starts_on", type: "smallint", default: 1 })
+  weekStartsOn: number;
+
   @Column({ name: "budget_digest_enabled", default: true })
   budgetDigestEnabled: boolean;
 

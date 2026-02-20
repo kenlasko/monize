@@ -100,9 +100,11 @@ vi.mock('@/lib/transactions', () => ({
 }));
 
 const mockGetAllAccounts = vi.fn();
+const mockGetDailyBalances = vi.fn();
 vi.mock('@/lib/accounts', () => ({
   accountsApi: {
     getAll: (...args: any[]) => mockGetAllAccounts(...args),
+    getDailyBalances: (...args: any[]) => mockGetDailyBalances(...args),
   },
 }));
 
@@ -340,6 +342,7 @@ describe('TransactionsPage', () => {
     mockGetAllAccounts.mockResolvedValue([]);
     mockGetAllCategories.mockResolvedValue([]);
     mockGetAllPayees.mockResolvedValue([]);
+    mockGetDailyBalances.mockResolvedValue([]);
   });
 
   describe('Rendering', () => {
@@ -361,15 +364,6 @@ describe('TransactionsPage', () => {
       render(<TransactionsPage />);
       await waitFor(() => {
         expect(screen.getByTestId('page-layout')).toBeInTheDocument();
-      });
-    });
-
-    it('renders summary cards', async () => {
-      render(<TransactionsPage />);
-      await waitFor(() => {
-        expect(screen.getByTestId('summary-Total Income')).toBeInTheDocument();
-        expect(screen.getByTestId('summary-Total Expenses')).toBeInTheDocument();
-        expect(screen.getByTestId('summary-Net Cash Flow')).toBeInTheDocument();
       });
     });
 
@@ -396,12 +390,11 @@ describe('TransactionsPage', () => {
       });
     });
 
-    it('loads transactions and summary on mount', async () => {
+    it('loads transactions on mount', async () => {
       render(<TransactionsPage />);
 
       await waitFor(() => {
         expect(mockGetAll).toHaveBeenCalled();
-        expect(mockGetSummary).toHaveBeenCalled();
       });
     });
 
@@ -448,43 +441,6 @@ describe('TransactionsPage', () => {
 
       await waitFor(() => {
         expect(toast.error).toHaveBeenCalledWith('Failed to load form data');
-      });
-    });
-  });
-
-  describe('Summary Cards with Data', () => {
-    it('displays formatted summary values', async () => {
-      mockGetAll.mockResolvedValue({ data: [], pagination: { page: 1, totalPages: 1, total: 0 } });
-      mockGetSummary.mockResolvedValue({ totalIncome: 5000, totalExpenses: 2000, netCashFlow: 3000, transactionCount: 10 });
-
-      render(<TransactionsPage />);
-
-      await waitFor(() => {
-        expect(screen.getByTestId('summary-Total Income')).toHaveTextContent('$5000.00');
-        expect(screen.getByTestId('summary-Total Expenses')).toHaveTextContent('$2000.00');
-        expect(screen.getByTestId('summary-Net Cash Flow')).toHaveTextContent('$3000.00');
-      });
-    });
-
-    it('converts multi-currency summary using exchange rates', async () => {
-      mockGetAll.mockResolvedValue({ data: [], pagination: { page: 1, totalPages: 1, total: 0 } });
-      mockGetSummary.mockResolvedValue({
-        totalIncome: 5000,
-        totalExpenses: 2000,
-        netCashFlow: 3000,
-        transactionCount: 10,
-        byCurrency: {
-          USD: { totalIncome: 3000, totalExpenses: 1000 },
-          CAD: { totalIncome: 2000, totalExpenses: 1000 },
-        },
-      });
-
-      render(<TransactionsPage />);
-
-      await waitFor(() => {
-        // convertToDefault returns same value in mock, so totals should be sum
-        expect(screen.getByTestId('summary-Total Income')).toHaveTextContent('$5000.00');
-        expect(screen.getByTestId('summary-Total Expenses')).toHaveTextContent('$2000.00');
       });
     });
   });

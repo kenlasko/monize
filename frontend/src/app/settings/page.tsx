@@ -130,7 +130,7 @@ function SettingsContent() {
         {!isDemoMode && (
           <Link
             href="/settings/ai"
-            className="block bg-white dark:bg-gray-800 shadow rounded-lg p-6 mb-6 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors"
+            className="block bg-white dark:bg-gray-800 shadow rounded-lg p-6 mb-6 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
           >
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
               AI Settings

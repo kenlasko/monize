@@ -9,6 +9,7 @@ const mockAbortController = { abort: vi.fn() };
 
 vi.mock('@/lib/ai', () => ({
   aiApi: {
+    getStatus: vi.fn().mockResolvedValue({ configured: true }),
     queryStream: vi.fn((_query: string, callbacks: StreamCallbacks) => {
       capturedCallbacks = callbacks;
       return mockAbortController;

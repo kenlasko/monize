@@ -76,7 +76,7 @@ export type FilterField = "account" | "category" | "payee" | "text";
 
 export interface FilterCondition {
   field: FilterField;
-  value: string;
+  value: string | string[];
 }
 
 export interface FilterGroup {

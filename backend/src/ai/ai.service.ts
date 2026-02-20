@@ -233,10 +233,16 @@ export class AiService {
       where: { userId, isActive: true },
     });
 
+    const defaultConfig = this.buildDefaultConfig(userId);
+    const hasSystemDefault = defaultConfig !== null;
+
     return {
-      configured: configs.length > 0,
+      configured: configs.length > 0 || hasSystemDefault,
       encryptionAvailable: this.encryptionService.isConfigured(),
       activeProviders: configs.length,
+      hasSystemDefault,
+      systemDefaultProvider: hasSystemDefault ? defaultConfig.provider : null,
+      systemDefaultModel: hasSystemDefault ? defaultConfig.model : null,
     };
   }
 

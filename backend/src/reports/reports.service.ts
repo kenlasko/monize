@@ -358,7 +358,7 @@ export class ReportsService {
   private applyFilterGroups(
     queryBuilder: ReturnType<Repository<Transaction>["createQueryBuilder"]>,
     filterGroups: Array<{
-      conditions: Array<{ field: string; value: string }>;
+      conditions: Array<{ field: string; value: string | string[] }>;
     }>,
   ): void {
     for (let gi = 0; gi < filterGroups.length; gi++) {
@@ -373,31 +373,72 @@ export class ReportsService {
             const method = ci === 0 ? "where" : "orWhere";
 
             switch (condition.field) {
-              case "account":
-                qb[method](`transaction.accountId = :${param}`, {
-                  [param]: condition.value,
-                });
+              case "account": {
+                const values = Array.isArray(condition.value)
+                  ? condition.value
+                  : [condition.value];
+                if (values.length === 1) {
+                  qb[method](`transaction.accountId = :${param}`, {
+                    [param]: values[0],
+                  });
+                } else if (values.length > 1) {
+                  qb[method](`transaction.accountId IN (:...${param})`, {
+                    [param]: values,
+                  });
+                }
                 break;
-              case "category":
-                qb[method](
-                  new Brackets((inner) => {
-                    inner
-                      .where(`transaction.categoryId = :${param}`, {
-                        [param]: condition.value,
-                      })
-                      .orWhere(`splits.categoryId = :${param}`, {
-                        [param]: condition.value,
-                      });
-                  }),
-                );
+              }
+              case "category": {
+                const values = Array.isArray(condition.value)
+                  ? condition.value
+                  : [condition.value];
+                if (values.length === 1) {
+                  qb[method](
+                    new Brackets((inner) => {
+                      inner
+                        .where(`transaction.categoryId = :${param}`, {
+                          [param]: values[0],
+                        })
+                        .orWhere(`splits.categoryId = :${param}`, {
+                          [param]: values[0],
+                        });
+                    }),
+                  );
+                } else if (values.length > 1) {
+                  qb[method](
+                    new Brackets((inner) => {
+                      inner
+                        .where(`transaction.categoryId IN (:...${param})`, {
+                          [param]: values,
+                        })
+                        .orWhere(`splits.categoryId IN (:...${param})`, {
+                          [param]: values,
+                        });
+                    }),
+                  );
+                }
                 break;
-              case "payee":
-                qb[method](`transaction.payeeId = :${param}`, {
-                  [param]: condition.value,
-                });
+              }
+              case "payee": {
+                const values = Array.isArray(condition.value)
+                  ? condition.value
+                  : [condition.value];
+                if (values.length === 1) {
+                  qb[method](`transaction.payeeId = :${param}`, {
+                    [param]: values[0],
+                  });
+                } else if (values.length > 1) {
+                  qb[method](`transaction.payeeId IN (:...${param})`, {
+                    [param]: values,
+                  });
+                }
                 break;
+              }
               case "text": {
-                const textParam = `%${condition.value.trim().toLowerCase()}%`;
+                const textValue = Array.isArray(condition.value)
+                  ? condition.value[0] || ""
+                  : condition.value;
+                const textParam = `%${textValue.trim().toLowerCase()}%`;
                 qb[method](
                   new Brackets((inner) => {
                     inner

@@ -15,11 +15,13 @@ import {
   BulkUpdateData,
   BulkUpdateResult,
 } from '@/types/transaction';
+import { invalidateCache } from './apiCache';
 
 export const transactionsApi = {
   // Create a new transaction
   create: async (data: CreateTransactionData): Promise<Transaction> => {
     const response = await apiClient.post<Transaction>('/transactions', data);
+    invalidateCache('accounts:');
     return response.data;
   },
 
@@ -86,12 +88,14 @@ export const transactionsApi = {
   // Update transaction
   update: async (id: string, data: UpdateTransactionData): Promise<Transaction> => {
     const response = await apiClient.patch<Transaction>(`/transactions/${id}`, data);
+    invalidateCache('accounts:');
     return response.data;
   },
 
   // Delete transaction
   delete: async (id: string): Promise<void> => {
     await apiClient.delete(`/transactions/${id}`);
+    invalidateCache('accounts:');
   },
 
   // Mark transaction as cleared/uncleared
@@ -119,6 +123,7 @@ export const transactionsApi = {
     const response = await apiClient.patch<Transaction>(`/transactions/${id}/status`, {
       status,
     });
+    invalidateCache('accounts:');
     return response.data;
   },
 
@@ -214,6 +219,7 @@ export const transactionsApi = {
   // Create a transfer between two accounts
   createTransfer: async (data: CreateTransferData): Promise<TransferResult> => {
     const response = await apiClient.post<TransferResult>('/transactions/transfer', data);
+    invalidateCache('accounts:');
     return response.data;
   },
 
@@ -228,6 +234,7 @@ export const transactionsApi = {
   // Delete a transfer (deletes both linked transactions)
   deleteTransfer: async (transactionId: string): Promise<void> => {
     await apiClient.delete(`/transactions/${transactionId}/transfer`);
+    invalidateCache('accounts:');
   },
 
   // Update a transfer (updates both linked transactions)
@@ -239,6 +246,7 @@ export const transactionsApi = {
       `/transactions/${transactionId}/transfer`,
       data,
     );
+    invalidateCache('accounts:');
     return response.data;
   },
 
@@ -269,6 +277,7 @@ export const transactionsApi = {
       `/transactions/reconcile/${accountId}`,
       { transactionIds, reconciledDate },
     );
+    invalidateCache('accounts:');
     return response.data;
   },
 
@@ -278,6 +287,7 @@ export const transactionsApi = {
       '/transactions/bulk-update',
       data,
     );
+    invalidateCache('accounts:');
     return response.data;
   },
 };

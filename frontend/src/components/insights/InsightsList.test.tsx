@@ -8,6 +8,7 @@ const mockDismissInsight = vi.fn();
 
 vi.mock('@/lib/ai', () => ({
   aiApi: {
+    getStatus: vi.fn().mockResolvedValue({ configured: true }),
     getInsights: (...args: unknown[]) => mockGetInsights(...args),
     generateInsights: (...args: unknown[]) => mockGenerateInsights(...args),
     dismissInsight: (...args: unknown[]) => mockDismissInsight(...args),

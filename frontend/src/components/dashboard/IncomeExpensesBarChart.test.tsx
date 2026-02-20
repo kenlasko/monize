@@ -40,6 +40,10 @@ vi.mock('@/lib/utils', () => ({
   cn: (...args: any[]) => args.filter(Boolean).join(' '),
 }));
 
+vi.mock('@/store/preferencesStore', () => ({
+  usePreferencesStore: vi.fn((selector: any) => selector({ preferences: { weekStartsOn: 1 } })),
+}));
+
 describe('IncomeExpensesBarChart', () => {
   beforeEach(() => {
     mockPush.mockClear();
@@ -103,6 +107,51 @@ describe('IncomeExpensesBarChart', () => {
     // All values should be zero since transfer is skipped
     const zeroValues = screen.getAllByText('$0');
     expect(zeroValues.length).toBe(3);
+  });
+
+  it('skips investment account transactions', () => {
+    const today = new Date();
+    const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+    const transactions = [
+      {
+        id: '1', amount: -500, currencyCode: 'CAD', isTransfer: false,
+        transactionDate: dateStr,
+        account: { accountType: 'INVESTMENT' },
+      },
+      {
+        id: '2', amount: 1000, currencyCode: 'CAD', isTransfer: false,
+        transactionDate: dateStr,
+        account: { accountType: 'INVESTMENT' },
+      },
+    ] as any[];
+
+    render(<IncomeExpensesBarChart transactions={transactions} isLoading={false} />);
+    // All values should be zero since investment transactions are skipped
+    const zeroValues = screen.getAllByText('$0');
+    expect(zeroValues.length).toBe(3);
+  });
+
+  it('includes non-investment account transactions', () => {
+    const today = new Date();
+    const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+    const transactions = [
+      {
+        id: '1', amount: -300, currencyCode: 'CAD', isTransfer: false,
+        transactionDate: dateStr,
+        account: { accountType: 'CHECKING' },
+      },
+      {
+        id: '2', amount: -200, currencyCode: 'CAD', isTransfer: false,
+        transactionDate: dateStr,
+        account: { accountType: 'INVESTMENT' },
+      },
+    ] as any[];
+
+    render(<IncomeExpensesBarChart transactions={transactions} isLoading={false} />);
+    // Only the CHECKING transaction ($300 expense) should be counted
+    expect(screen.getByText('$300')).toBeInTheDocument();
   });
 
   it('applies green color class for positive net', () => {

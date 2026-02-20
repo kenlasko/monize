@@ -2,10 +2,12 @@
 
 import { MultiSelect, MultiSelectOption } from '@/components/ui/MultiSelect';
 import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
 import { Account } from '@/types/account';
 import { Category } from '@/types/category';
 import { Payee } from '@/types/payee';
+import { TimePeriod, TIME_PERIOD_OPTIONS, resolveTimePeriod } from '@/lib/time-periods';
 
 interface TransactionFilterPanelProps {
   filterAccountIds: string[];
@@ -16,6 +18,8 @@ interface TransactionFilterPanelProps {
   filterSearch: string;
   searchInput: string;
   filterAccountStatus: 'active' | 'closed' | '';
+  filterTimePeriod: string;
+  weekStartsOn: 0 | 1 | 2 | 3 | 4 | 5 | 6;
   handleArrayFilterChange: <T>(setter: (value: T) => void, value: T) => void;
   handleFilterChange: (setter: (value: string) => void, value: string) => void;
   handleSearchChange: (value: string) => void;
@@ -26,6 +30,7 @@ interface TransactionFilterPanelProps {
   setFilterStartDate: (value: string) => void;
   setFilterEndDate: (value: string) => void;
   setFilterSearch: (value: string) => void;
+  setFilterTimePeriod: (value: string) => void;
   filtersExpanded: boolean;
   setFiltersExpanded: (value: boolean) => void;
   activeFilterCount: number;
@@ -51,6 +56,8 @@ export function TransactionFilterPanel({
   filterSearch,
   searchInput,
   filterAccountStatus,
+  filterTimePeriod,
+  weekStartsOn,
   handleArrayFilterChange,
   handleFilterChange,
   handleSearchChange,
@@ -61,6 +68,7 @@ export function TransactionFilterPanel({
   setFilterStartDate,
   setFilterEndDate,
   setFilterSearch,
+  setFilterTimePeriod,
   filtersExpanded,
   setFiltersExpanded,
   activeFilterCount,
@@ -333,20 +341,45 @@ export function TransactionFilterPanel({
                 />
               </div>
 
-              {/* Second row: Dates and search */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+              {/* Second row: Time period, dates, and search */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+                <Select
+                  label="Time Period"
+                  options={TIME_PERIOD_OPTIONS}
+                  value={filterTimePeriod}
+                  onChange={(e) => {
+                    const period = e.target.value;
+                    setFilterTimePeriod(period);
+                    if (period && period !== 'custom') {
+                      const { startDate, endDate } = resolveTimePeriod(period as TimePeriod, weekStartsOn);
+                      handleFilterChange(setFilterStartDate, startDate);
+                      handleFilterChange(setFilterEndDate, endDate);
+                    }
+                  }}
+                />
+
                 <Input
                   label="Start Date"
                   type="date"
                   value={filterStartDate}
-                  onChange={(e) => handleFilterChange(setFilterStartDate, e.target.value)}
+                  onChange={(e) => {
+                    handleFilterChange(setFilterStartDate, e.target.value);
+                    if (filterTimePeriod && filterTimePeriod !== 'custom') {
+                      setFilterTimePeriod('custom');
+                    }
+                  }}
                 />
 
                 <Input
                   label="End Date"
                   type="date"
                   value={filterEndDate}
-                  onChange={(e) => handleFilterChange(setFilterEndDate, e.target.value)}
+                  onChange={(e) => {
+                    handleFilterChange(setFilterEndDate, e.target.value);
+                    if (filterTimePeriod && filterTimePeriod !== 'custom') {
+                      setFilterTimePeriod('custom');
+                    }
+                  }}
                 />
 
                 <Input

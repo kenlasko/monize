@@ -32,6 +32,7 @@ const mockPreferences: UserPreferences = {
   notificationBrowser: false,
   twoFactorEnabled: false,
   gettingStartedDismissed: false,
+  weekStartsOn: 1,
   budgetDigestEnabled: true,
   budgetDigestDay: 'MONDAY',
   createdAt: '2024-01-01T00:00:00Z',

@@ -81,6 +81,7 @@ export interface UserPreferences {
   notificationBrowser: boolean;
   twoFactorEnabled: boolean;
   gettingStartedDismissed: boolean;
+  weekStartsOn: number; // 0=Sunday, 1=Monday, ..., 6=Saturday
   budgetDigestEnabled: boolean;
   budgetDigestDay: 'MONDAY' | 'FRIDAY';
   createdAt: string;
@@ -103,6 +104,7 @@ export interface UpdatePreferencesData {
   notificationEmail?: boolean;
   notificationBrowser?: boolean;
   gettingStartedDismissed?: boolean;
+  weekStartsOn?: number;
   budgetDigestEnabled?: boolean;
   budgetDigestDay?: 'MONDAY' | 'FRIDAY';
 }

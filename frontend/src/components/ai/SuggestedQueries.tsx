@@ -11,9 +11,10 @@ const SUGGESTED_QUERIES = [
 
 interface SuggestedQueriesProps {
   onSelect: (query: string) => void;
+  disabled?: boolean;
 }
 
-export function SuggestedQueries({ onSelect }: SuggestedQueriesProps) {
+export function SuggestedQueries({ onSelect, disabled = false }: SuggestedQueriesProps) {
   return (
     <div className="flex flex-col items-center justify-center py-12 px-4">
       <div className="mb-2">
@@ -42,7 +43,8 @@ export function SuggestedQueries({ onSelect }: SuggestedQueriesProps) {
           <button
             key={suggestion.label}
             onClick={() => onSelect(suggestion.query)}
-            className="text-left px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+            disabled={disabled}
+            className="text-left px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-gray-200 dark:disabled:hover:border-gray-700 disabled:hover:bg-transparent"
           >
             <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
               {suggestion.label}

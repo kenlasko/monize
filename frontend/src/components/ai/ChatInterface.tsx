@@ -4,8 +4,9 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { aiApi } from '@/lib/ai';
 import { SuggestedQueries } from './SuggestedQueries';
 import { ChatMessage } from './ChatMessage';
-import type { StreamEvent } from '@/types/ai';
+import type { AiStatus, StreamEvent } from '@/types/ai';
 import toast from 'react-hot-toast';
+import Link from 'next/link';
 
 interface Message {
   id: string;
@@ -27,6 +28,8 @@ export function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [aiStatus, setAiStatus] = useState<AiStatus | null>(null);
+  const [statusLoading, setStatusLoading] = useState(true);
   const [thinking, setThinking] = useState<ThinkingState>({
     active: false,
     message: '',
@@ -35,6 +38,15 @@ export function ChatInterface() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    aiApi.getStatus().then((status) => {
+      setAiStatus(status);
+      setStatusLoading(false);
+    }).catch(() => {
+      setStatusLoading(false);
+    });
+  }, []);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -221,12 +233,35 @@ export function ChatInterface() {
     }
   }, [input]);
 
+  const aiNotConfigured = !statusLoading && aiStatus && !aiStatus.configured;
+
   return (
     <div className="flex flex-col h-[calc(100vh-12rem)]">
+      {/* AI not configured banner */}
+      {aiNotConfigured && (
+        <div className="mb-4 p-4 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-lg">
+          <div className="flex items-start gap-3">
+            <svg className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+            </svg>
+            <div>
+              <h3 className="text-sm font-medium text-amber-800 dark:text-amber-200">AI Not Configured</h3>
+              <p className="mt-1 text-sm text-amber-700 dark:text-amber-300">
+                No AI provider is configured. To use the AI Assistant, please{' '}
+                <Link href="/settings/ai" className="font-medium underline hover:text-amber-900 dark:hover:text-amber-100">
+                  configure an AI provider
+                </Link>{' '}
+                in your settings.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Messages area */}
       <div className="flex-1 overflow-y-auto px-2 py-4">
         {messages.length === 0 && !thinking.active ? (
-          <SuggestedQueries onSelect={handleSubmit} />
+          <SuggestedQueries onSelect={handleSubmit} disabled={!!aiNotConfigured} />
         ) : (
           <>
             {messages.map((msg) => (
@@ -332,8 +367,8 @@ export function ChatInterface() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Ask about your finances..."
-            disabled={isLoading}
+            placeholder={aiNotConfigured ? 'AI provider not configured' : 'Ask about your finances...'}
+            disabled={isLoading || !!aiNotConfigured}
             rows={1}
             className="flex-1 resize-none rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2.5 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
           />
@@ -360,7 +395,7 @@ export function ChatInterface() {
           ) : (
             <button
               onClick={() => handleSubmit()}
-              disabled={!input.trim()}
+              disabled={!input.trim() || !!aiNotConfigured}
               className="flex-shrink-0 p-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-600 text-white transition-colors disabled:cursor-not-allowed"
               title="Send"
             >

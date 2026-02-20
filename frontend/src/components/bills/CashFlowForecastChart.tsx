@@ -151,7 +151,7 @@ export function CashFlowForecastChart({
 
   if (isLoading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6 mb-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 mb-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
             Cash Flow Forecast
@@ -165,7 +165,7 @@ export function CashFlowForecastChart({
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6 mb-6">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 mb-6">
       {/* Header with controls */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
         <div>
@@ -223,10 +223,10 @@ export function CashFlowForecastChart({
             No upcoming transactions in this period - showing current balance
           </div>
           <ResponsiveContainer width="100%" height="90%" minWidth={0}>
-            <LineChart data={forecastData}>
+            <LineChart data={forecastData} margin={{ left: 0, right: 8, top: 5, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" className="dark:stroke-gray-700" />
               <XAxis dataKey="label" tick={{ fill: '#6b7280', fontSize: 12 }} tickLine={false} axisLine={{ stroke: '#e5e7eb' }} interval="preserveStartEnd" />
-              <YAxis tick={{ fill: '#6b7280', fontSize: 12 }} tickLine={false} axisLine={{ stroke: '#e5e7eb' }} tickFormatter={formatCurrencyAxis} width={60} domain={['auto', 'auto']} />
+              <YAxis tick={{ fill: '#6b7280', fontSize: 11 }} tickLine={false} axisLine={false} tickFormatter={formatCurrencyAxis} width={45} domain={['auto', 'auto']} />
               <Tooltip content={<CashFlowTooltip formatCurrency={formatCurrency} />} />
               <ReferenceLine y={0} stroke="#ef4444" strokeDasharray="5 5" strokeOpacity={0.5} />
               <Line type="monotone" dataKey="balance" stroke="#9ca3af" strokeWidth={2} dot={false} strokeDasharray="5 5" />
@@ -236,7 +236,7 @@ export function CashFlowForecastChart({
       ) : (
         <div className="h-72" style={{ minHeight: 288 }}>
           <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-            <LineChart data={forecastData}>
+            <LineChart data={forecastData} margin={{ left: 0, right: 8, top: 5, bottom: 0 }}>
               <defs>
                 <filter id="minShadow" x="-20%" y="-20%" width="140%" height="140%">
                   <feDropShadow dx="0" dy="1" stdDeviation="2" floodOpacity="0.3" />
@@ -255,11 +255,11 @@ export function CashFlowForecastChart({
                 interval="preserveStartEnd"
               />
               <YAxis
-                tick={{ fill: '#6b7280', fontSize: 12 }}
+                tick={{ fill: '#6b7280', fontSize: 11 }}
                 tickLine={false}
-                axisLine={{ stroke: '#e5e7eb' }}
+                axisLine={false}
                 tickFormatter={formatCurrencyAxis}
-                width={60}
+                width={45}
                 domain={['auto', 'auto']}
               />
               <Tooltip content={<CashFlowTooltip formatCurrency={formatCurrency} />} />

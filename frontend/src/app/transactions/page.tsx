@@ -13,11 +13,12 @@ import dynamic from 'next/dynamic';
 const TransactionForm = dynamic(() => import('@/components/transactions/TransactionForm').then(m => m.TransactionForm), { ssr: false });
 const PayeeForm = dynamic(() => import('@/components/payees/PayeeForm').then(m => m.PayeeForm), { ssr: false });
 const BulkUpdateModal = dynamic(() => import('@/components/transactions/BulkUpdateModal').then(m => m.BulkUpdateModal), { ssr: false });
+const BalanceHistoryChart = dynamic(() => import('@/components/transactions/BalanceHistoryChart').then(m => m.BalanceHistoryChart), { ssr: false });
 import { transactionsApi } from '@/lib/transactions';
 import { accountsApi } from '@/lib/accounts';
 import { categoriesApi } from '@/lib/categories';
 import { payeesApi } from '@/lib/payees';
-import { Transaction, PaginationInfo, TransactionSummary, BulkUpdateData, BulkUpdateFilters } from '@/types/transaction';
+import { Transaction, PaginationInfo, BulkUpdateData, BulkUpdateFilters } from '@/types/transaction';
 import { useTransactionSelection } from '@/hooks/useTransactionSelection';
 import { BulkSelectionBanner } from '@/components/transactions/BulkSelectionBanner';
 import { Account } from '@/types/account';
@@ -26,14 +27,12 @@ import { buildCategoryColorMap } from '@/lib/categoryUtils';
 import { Payee } from '@/types/payee';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useDateFormat } from '@/hooks/useDateFormat';
-import { useNumberFormat } from '@/hooks/useNumberFormat';
-import { useExchangeRates } from '@/hooks/useExchangeRates';
+import { usePreferencesStore } from '@/store/preferencesStore';
 import { useFormModal } from '@/hooks/useFormModal';
 import { Modal } from '@/components/ui/Modal';
 import { UnsavedChangesDialog } from '@/components/ui/UnsavedChangesDialog';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { SummaryCard, SummaryIcons } from '@/components/ui/SummaryCard';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { createLogger } from '@/lib/logger';
@@ -53,6 +52,7 @@ const STORAGE_KEYS = {
   startDate: 'transactions.filter.startDate',
   endDate: 'transactions.filter.endDate',
   search: 'transactions.filter.search',
+  timePeriod: 'transactions.filter.timePeriod',
 };
 
 // Helper to get filter values as array
@@ -112,12 +112,12 @@ function TransactionsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { formatDate } = useDateFormat();
-  const { formatCurrency } = useNumberFormat();
-  const { convertToDefault } = useExchangeRates();
+  const weekStartsOn = (usePreferencesStore((s) => s.preferences?.weekStartsOn) ?? 1) as 0 | 1 | 2 | 3 | 4 | 5 | 6;
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [payees, setPayees] = useState<Payee[]>([]);
+  const [dailyBalances, setDailyBalances] = useState<Array<{ date: string; balance: number }>>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { showForm, editingItem: editingTransaction, openCreate, openEdit, close, modalProps, setFormDirty, unsavedChangesDialog, formSubmitRef } = useFormModal<Transaction>();
   const [showPayeeForm, setShowPayeeForm] = useState(false);
@@ -138,30 +138,6 @@ function TransactionsContent() {
   });
   const [startingBalance, setStartingBalance] = useState<number | undefined>();
 
-  // Summary from API (for all matching transactions, not just current page)
-  const [summary, setSummary] = useState<TransactionSummary>({
-    totalIncome: 0,
-    totalExpenses: 0,
-    netCashFlow: 0,
-    transactionCount: 0,
-  });
-
-  // Convert per-currency totals to the user's base currency
-  const convertedSummary = useMemo(() => {
-    const bc = summary.byCurrency;
-    if (!bc || Object.keys(bc).length <= 1) {
-      // Single currency or no breakdown — use raw totals (no conversion needed)
-      return { totalIncome: summary.totalIncome, totalExpenses: summary.totalExpenses, netCashFlow: summary.netCashFlow };
-    }
-    let totalIncome = 0;
-    let totalExpenses = 0;
-    for (const [currency, data] of Object.entries(bc)) {
-      totalIncome += convertToDefault(data.totalIncome, currency);
-      totalExpenses += convertToDefault(data.totalExpenses, currency);
-    }
-    return { totalIncome, totalExpenses, netCashFlow: totalIncome - totalExpenses };
-  }, [summary, convertToDefault]);
-
   // Filters - initialize from URL params, falling back to localStorage
   const [filterAccountIds, setFilterAccountIds] = useState<string[]>([]);
   const [filterAccountStatus, setFilterAccountStatus] = useState<'active' | 'closed' | ''>(() =>
@@ -173,6 +149,7 @@ function TransactionsContent() {
   const [filterEndDate, setFilterEndDate] = useState<string>('');
   const [filterSearch, setFilterSearch] = useState<string>('');
   const [searchInput, setSearchInput] = useState<string>('');
+  const [filterTimePeriod, setFilterTimePeriod] = useState<string>('');
   const searchDebounceRef = useRef<NodeJS.Timeout | null>(null);
   const [filtersInitialized, setFiltersInitialized] = useState(false);
   const [filtersExpanded, setFiltersExpanded] = useState(true);
@@ -263,24 +240,6 @@ function TransactionsContent() {
   // Budget context for category indicators
   const [budgetStatusMap, setBudgetStatusMap] = useState<Record<string, CategoryBudgetStatus>>({});
 
-  useEffect(() => {
-    if (transactions.length === 0) return;
-
-    const categoryIds = [
-      ...new Set(
-        transactions
-          .filter((t) => t.category?.id && !t.isTransfer)
-          .map((t) => t.category!.id),
-      ),
-    ];
-
-    if (categoryIds.length === 0) return;
-
-    budgetsApi.getCategoryBudgetStatus(categoryIds).then(setBudgetStatusMap).catch(() => {
-      // Budget status is optional - fail silently
-    });
-  }, [transactions]);
-
   const accountFilterOptions = useMemo(() => {
     return filteredAccounts
       .sort((a, b) => a.name.localeCompare(b.name))
@@ -352,7 +311,7 @@ function TransactionsContent() {
     }
   }, []);
 
-  // Load transaction data based on filters - runs when filters/page change
+  // Load transaction data and chart data in parallel - runs when filters/page change
   const loadTransactions = useCallback(async (page: number) => {
     setIsLoading(true);
     try {
@@ -371,7 +330,14 @@ function TransactionsContent() {
       const targetTransactionId = targetTransactionIdRef.current;
       targetTransactionIdRef.current = null; // Clear after reading
 
-      const [transactionsResponse, summaryData] = await Promise.all([
+      // Build chart params (only filter accounts, not categories/payees/search)
+      const chartParams: { startDate?: string; endDate?: string; accountIds?: string } = {};
+      if (filterStartDate) chartParams.startDate = filterStartDate;
+      if (filterEndDate) chartParams.endDate = filterEndDate;
+      if (filterAccountIds.length > 0) chartParams.accountIds = filterAccountIds.join(',');
+
+      // Fetch transactions and daily balances in parallel
+      const [transactionsResponse, balancesResult] = await Promise.all([
         transactionsApi.getAll({
           accountIds: accountIdsForQuery,
           startDate: filterStartDate || undefined,
@@ -383,24 +349,31 @@ function TransactionsContent() {
           limit: PAGE_SIZE,
           targetTransactionId: targetTransactionId || undefined,
         }),
-        transactionsApi.getSummary({
-          accountIds: accountIdsForQuery,
-          startDate: filterStartDate || undefined,
-          endDate: filterEndDate || undefined,
-          categoryIds: filterCategoryIds.length > 0 ? filterCategoryIds : undefined,
-          payeeIds: filterPayeeIds.length > 0 ? filterPayeeIds : undefined,
-          search: filterSearch || undefined,
-        }),
+        accountsApi.getDailyBalances(
+          Object.keys(chartParams).length > 0 ? chartParams : undefined,
+        ).catch(() => [] as Array<{ date: string; balance: number }>),
       ]);
 
       setTransactions(transactionsResponse.data);
       setPagination(transactionsResponse.pagination);
       setStartingBalance(transactionsResponse.startingBalance);
-      setSummary(summaryData);
+      setDailyBalances(balancesResult);
 
       // If we navigated to a specific transaction, update the page from the response
       if (targetTransactionId && transactionsResponse.pagination.page !== page) {
         setCurrentPage(transactionsResponse.pagination.page);
+      }
+
+      // Fetch budget status for visible categories (non-blocking)
+      const categoryIds = [
+        ...new Set(
+          transactionsResponse.data
+            .filter((t) => t.category?.id && !t.isTransfer)
+            .map((t) => t.category!.id),
+        ),
+      ];
+      if (categoryIds.length > 0) {
+        budgetsApi.getCategoryBudgetStatus(categoryIds).then(setBudgetStatusMap).catch(() => {});
       }
     } catch (error) {
       toast.error(getErrorMessage(error, 'Failed to load transactions'));
@@ -464,11 +437,19 @@ function TransactionsContent() {
     setFilterAccountIds(getAccountIds());
     setFilterCategoryIds(getCategoryIds());
     setFilterPayeeIds(getPayeeIds());
-    setFilterStartDate(getFilterValue(STORAGE_KEYS.startDate, searchParams.get('startDate'), hasAnyUrlParams));
-    setFilterEndDate(getFilterValue(STORAGE_KEYS.endDate, searchParams.get('endDate'), hasAnyUrlParams));
+    const initialStartDate = getFilterValue(STORAGE_KEYS.startDate, searchParams.get('startDate'), hasAnyUrlParams);
+    const initialEndDate = getFilterValue(STORAGE_KEYS.endDate, searchParams.get('endDate'), hasAnyUrlParams);
+    setFilterStartDate(initialStartDate);
+    setFilterEndDate(initialEndDate);
     const initialSearch = getFilterValue(STORAGE_KEYS.search, searchParams.get('search'), hasAnyUrlParams);
     setFilterSearch(initialSearch);
     setSearchInput(initialSearch);
+    // Restore time period from localStorage, or set to 'custom' if dates came from URL
+    if (hasAnyUrlParams) {
+      setFilterTimePeriod((initialStartDate || initialEndDate) ? 'custom' : '');
+    } else {
+      setFilterTimePeriod(getFilterValue(STORAGE_KEYS.timePeriod, null, false));
+    }
     setFiltersInitialized(true);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -485,7 +466,8 @@ function TransactionsContent() {
     localStorage.setItem(STORAGE_KEYS.startDate, filterStartDate);
     localStorage.setItem(STORAGE_KEYS.endDate, filterEndDate);
     localStorage.setItem(STORAGE_KEYS.search, filterSearch);
-  }, [filterAccountIds, filterCategoryIds, filterPayeeIds, filterStartDate, filterEndDate, filterSearch, filtersInitialized]);
+    localStorage.setItem(STORAGE_KEYS.timePeriod, filterTimePeriod);
+  }, [filterAccountIds, filterCategoryIds, filterPayeeIds, filterStartDate, filterEndDate, filterSearch, filterTimePeriod, filtersInitialized]);
 
   // Track if this is a filter-triggered change (to reset page to 1)
   const isFilterChange = useRef(false);
@@ -579,6 +561,9 @@ function TransactionsContent() {
       const search = params.get('search') || '';
       setFilterSearch(search);
       setSearchInput(search);
+      // Reset time period to custom if dates exist, otherwise empty
+      const hasDateParams = params.has('startDate') || params.has('endDate');
+      setFilterTimePeriod(hasDateParams ? 'custom' : '');
       const pageParam = params.get('page');
       setCurrentPage(pageParam ? parseInt(pageParam, 10) : 1);
     };
@@ -648,6 +633,7 @@ function TransactionsContent() {
     isFilterChange.current = true;
     setFilterStartDate(date);
     setFilterEndDate(date);
+    setFilterTimePeriod('custom');
   }, []);
 
   const handleAccountFilterClick = useCallback((accountId: string) => {
@@ -767,27 +753,10 @@ function TransactionsContent() {
           subtitle="Manage your income and expenses"
           actions={<Button onClick={handleCreateNew}>+ New Transaction</Button>}
         />
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          <SummaryCard
-            label="Total Income"
-            value={formatCurrency(convertedSummary.totalIncome)}
-            icon={SummaryIcons.plus}
-            valueColor="green"
-          />
-          <SummaryCard
-            label="Total Expenses"
-            value={formatCurrency(convertedSummary.totalExpenses)}
-            icon={SummaryIcons.minus}
-            valueColor="red"
-          />
-          <SummaryCard
-            label="Net Cash Flow"
-            value={formatCurrency(convertedSummary.netCashFlow)}
-            icon={SummaryIcons.money}
-            valueColor={convertedSummary.netCashFlow >= 0 ? 'blue' : 'red'}
-          />
-        </div>
+        <BalanceHistoryChart
+          data={dailyBalances}
+          isLoading={isLoading}
+        />
 
         {/* Form Modal */}
         <Modal isOpen={showForm} onClose={close} {...modalProps} maxWidth="6xl" className="p-6">
@@ -830,6 +799,8 @@ function TransactionsContent() {
           filterSearch={filterSearch}
           searchInput={searchInput}
           filterAccountStatus={filterAccountStatus}
+          filterTimePeriod={filterTimePeriod}
+          weekStartsOn={weekStartsOn}
           handleArrayFilterChange={handleArrayFilterChange}
           handleFilterChange={handleFilterChange}
           handleSearchChange={handleSearchChange}
@@ -840,6 +811,7 @@ function TransactionsContent() {
           setFilterStartDate={setFilterStartDate}
           setFilterEndDate={setFilterEndDate}
           setFilterSearch={setFilterSearch}
+          setFilterTimePeriod={setFilterTimePeriod}
           filtersExpanded={filtersExpanded}
           setFiltersExpanded={setFiltersExpanded}
           activeFilterCount={activeFilterCount}
@@ -867,6 +839,7 @@ function TransactionsContent() {
             setFilterStartDate('');
             setFilterEndDate('');
             setFilterSearch('');
+            setFilterTimePeriod('');
             localStorage.removeItem(STORAGE_KEYS.accountIds);
             localStorage.removeItem(STORAGE_KEYS.accountStatus);
             localStorage.removeItem(STORAGE_KEYS.categoryIds);
@@ -874,6 +847,7 @@ function TransactionsContent() {
             localStorage.removeItem(STORAGE_KEYS.startDate);
             localStorage.removeItem(STORAGE_KEYS.endDate);
             localStorage.removeItem(STORAGE_KEYS.search);
+            localStorage.removeItem(STORAGE_KEYS.timePeriod);
             router.replace('/transactions', { scroll: false });
           }}
         />

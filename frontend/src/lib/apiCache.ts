@@ -7,12 +7,12 @@ type CacheEntry<T> = {
 const cache = new Map<string, CacheEntry<unknown>>();
 const DEFAULT_TTL = 30_000; // 30 seconds
 
-export function getCached<T>(key: string): T | null {
+export function getCached<T>(key: string): T | undefined {
   const entry = cache.get(key);
-  if (!entry) return null;
+  if (!entry) return undefined;
   if (Date.now() - entry.timestamp > entry.ttl) {
     cache.delete(key);
-    return null;
+    return undefined;
   }
   return entry.data as T;
 }
