@@ -29,12 +29,14 @@ function BudgetCreateContent() {
 
   return (
     <PageLayout>
-      <main className="px-4 sm:px-6 lg:px-12 pt-6 pb-8">
-        <PageHeader
-          title="Create Budget"
-          subtitle="Analyze your spending and create a personalized budget"
-        />
-        <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+      <main className="px-0 sm:px-6 lg:px-12 pt-2 sm:pt-6 pb-8">
+        <div className="px-2 sm:px-0">
+          <PageHeader
+            title="Create Budget"
+            subtitle="Analyze your spending and create a personalized budget"
+          />
+        </div>
+        <div className="bg-white dark:bg-gray-800 sm:shadow sm:rounded-lg p-0 sm:p-6">
           <BudgetWizard
             onComplete={() => router.push('/budgets')}
             onCancel={() => router.push('/budgets')}

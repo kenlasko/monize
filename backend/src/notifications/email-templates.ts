@@ -127,7 +127,7 @@ export function budgetAlertImmediateTemplate(
 
   return `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <h2 style="color: #1f2937;">Budget Alert</h2>
+      <h2 style="color: #1f2937;">Alert</h2>
       <p style="color: #374151;">Hi ${safeName},</p>
       <p style="color: #374151;">Your budget needs attention:</p>
       <table style="width: 100%; border-collapse: collapse; margin: 16px 0; border: 1px solid #e5e7eb; border-radius: 8px;">

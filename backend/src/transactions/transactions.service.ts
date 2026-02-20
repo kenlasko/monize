@@ -1,7 +1,6 @@
 import {
   Injectable,
   NotFoundException,
-  ForbiddenException,
   Inject,
   forwardRef,
   Logger,
@@ -497,7 +496,7 @@ export class TransactionsService {
 
   async findOne(userId: string, id: string): Promise<Transaction> {
     const transaction = await this.transactionsRepository.findOne({
-      where: { id },
+      where: { id, userId },
       relations: [
         "account",
         "payee",
@@ -512,12 +511,6 @@ export class TransactionsService {
 
     if (!transaction) {
       throw new NotFoundException(`Transaction with ID ${id} not found`);
-    }
-
-    if (transaction.userId !== userId) {
-      throw new ForbiddenException(
-        "You do not have access to this transaction",
-      );
     }
 
     return transaction;

@@ -2,7 +2,6 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
-  ForbiddenException,
   Inject,
   forwardRef,
   Logger,
@@ -204,16 +203,11 @@ export class AccountsService {
    */
   async findOne(userId: string, id: string): Promise<Account> {
     const account = await this.accountsRepository.findOne({
-      where: { id },
+      where: { id, userId },
     });
 
     if (!account) {
       throw new NotFoundException(`Account with ID ${id} not found`);
-    }
-
-    // Ensure the account belongs to the user
-    if (account.userId !== userId) {
-      throw new ForbiddenException("Access denied to this account");
     }
 
     return account;

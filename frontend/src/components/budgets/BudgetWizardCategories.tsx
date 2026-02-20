@@ -24,8 +24,8 @@ function BudgetAmountInput({
   const displayValue = editing ? editValue : amount.toFixed(2);
 
   return (
-    <div className="relative inline-flex items-center">
-      <span className="absolute left-2 text-sm text-gray-500 dark:text-gray-400 pointer-events-none">
+    <div className="relative flex items-center">
+      <span className="absolute left-1.5 sm:left-2 text-sm text-gray-500 dark:text-gray-400 pointer-events-none">
         {getCurrencySymbol(currencyCode)}
       </span>
       <input
@@ -48,7 +48,7 @@ function BudgetAmountInput({
             setEditValue(e.target.value);
           }
         }}
-        className="w-28 sm:w-36 h-7 text-right rounded border border-gray-300 pl-6 pr-2 py-0 text-sm leading-7 focus:ring-1 focus:ring-blue-500 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+        className="w-full h-7 text-right rounded border border-gray-300 pl-4 pr-1 sm:pl-6 sm:pr-2 py-0 text-sm leading-7 focus:ring-1 focus:ring-blue-500 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
       />
     </div>
   );
@@ -293,9 +293,9 @@ export function BudgetWizardCategories({
         key={transfer.accountId}
         className="border-b border-gray-100 dark:border-gray-700 last:border-0"
       >
-        <td className="py-2 px-2 sm:px-4">
-          <div className="flex items-center gap-2">
-            <label className="flex flex-1 items-center gap-2 cursor-pointer min-w-0">
+        <td className="py-1 pl-1 pr-0 sm:py-2 sm:px-4">
+          <div className="flex items-center gap-1 sm:gap-2">
+            <label className="flex flex-1 items-center gap-1 sm:gap-2 cursor-pointer min-w-0">
               <input
                 type="checkbox"
                 checked={isSelected}
@@ -311,7 +311,7 @@ export function BudgetWizardCategories({
                 {transfer.accountType.replace(/_/g, ' ')}
               </span>
               {transfer.isFixed && (
-                <span className="text-xs bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400 px-1.5 py-0.5 rounded flex-shrink-0">
+                <span className="hidden sm:inline text-xs bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400 px-1.5 py-0.5 rounded flex-shrink-0">
                   Fixed
                 </span>
               )}
@@ -324,7 +324,7 @@ export function BudgetWizardCategories({
             )}
           </div>
         </td>
-        <td className="hidden sm:table-cell py-2 px-2 sm:px-4">
+        <td className="hidden sm:table-cell py-2 px-4">
           <div className="flex items-center justify-end gap-2">
             <Sparkline
               data={transfer.monthlyAmounts}
@@ -337,7 +337,7 @@ export function BudgetWizardCategories({
             </span>
           </div>
         </td>
-        <td className="py-2 px-2 sm:px-4 text-right h-11">
+        <td className="py-1 pl-0.5 pr-1 sm:py-2 sm:px-4 text-right h-11">
           {isSelected ? (
             <BudgetAmountInput
               categoryId={transfer.accountId}
@@ -366,9 +366,9 @@ export function BudgetWizardCategories({
         key={cat.categoryId}
         className="border-b border-gray-100 dark:border-gray-700 last:border-0"
       >
-        <td className="py-2 px-2 sm:px-4">
-          <div className="flex items-center gap-2">
-            <label className="flex flex-1 items-center gap-2 cursor-pointer min-w-0">
+        <td className="py-1 pl-1 pr-0 sm:py-2 sm:px-4">
+          <div className="flex items-center gap-1 sm:gap-2">
+            <label className="flex flex-1 items-center gap-1 sm:gap-2 cursor-pointer min-w-0">
               <input
                 type="checkbox"
                 checked={isSelected}
@@ -381,7 +381,7 @@ export function BudgetWizardCategories({
                 {cat.categoryName}
               </span>
               {cat.isFixed && (
-                <span className="text-xs bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400 px-1.5 py-0.5 rounded flex-shrink-0">
+                <span className="hidden sm:inline text-xs bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400 px-1.5 py-0.5 rounded flex-shrink-0">
                   Fixed
                 </span>
               )}
@@ -394,7 +394,7 @@ export function BudgetWizardCategories({
             )}
           </div>
         </td>
-        <td className="hidden sm:table-cell py-2 px-2 sm:px-4">
+        <td className="hidden sm:table-cell py-2 px-4">
           <div className="flex items-center justify-end gap-2">
             <Sparkline
               data={cat.monthlyAmounts}
@@ -407,7 +407,7 @@ export function BudgetWizardCategories({
             </span>
           </div>
         </td>
-        <td className="py-2 px-2 sm:px-4 text-right h-11">
+        <td className="py-1 pl-0.5 pr-1 sm:py-2 sm:px-4 text-right h-11">
           {isSelected ? (
             <BudgetAmountInput
               categoryId={cat.categoryId}
@@ -459,9 +459,9 @@ export function BudgetWizardCategories({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3 sm:space-y-6">
       {/* Profile toggle */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
           Review Categories
         </h3>
@@ -487,16 +487,16 @@ export function BudgetWizardCategories({
       {incomeCategories.length > 0 && (
         <div>
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-            <table className="w-full">
+            <table className="w-full table-fixed sm:table-auto">
               <thead>
                 <tr className="bg-green-50 dark:bg-green-900/20 border-b border-green-200 dark:border-green-800">
-                  <th className="text-left py-2 px-2 sm:px-4 text-xs font-medium text-green-700 dark:text-green-400 uppercase">
+                  <th className="text-left py-2 pl-1 pr-0 sm:px-4 text-xs font-medium text-green-700 dark:text-green-400 uppercase">
                     Income
                   </th>
-                  <th className="hidden sm:table-cell w-44 text-right py-2 px-2 sm:px-4 text-xs font-medium text-green-700 dark:text-green-400 uppercase">
+                  <th className="hidden sm:table-cell w-44 text-right py-2 px-4 text-xs font-medium text-green-700 dark:text-green-400 uppercase">
                     Trend / Median
                   </th>
-                  <th className="w-36 sm:w-48 py-2 px-2 sm:px-4 text-xs font-medium text-green-700 dark:text-green-400 uppercase text-right">
+                  <th className="w-24 sm:w-48 py-2 pl-0.5 pr-1 sm:px-4 text-xs font-medium text-green-700 dark:text-green-400 uppercase text-right">
                     Amount
                   </th>
                 </tr>
@@ -512,16 +512,16 @@ export function BudgetWizardCategories({
       {/* Expense categories */}
       <div>
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-          <table className="w-full">
+          <table className="w-full table-fixed sm:table-auto">
             <thead>
               <tr className="bg-red-50 dark:bg-red-900/20 border-b border-red-200 dark:border-red-800">
-                <th className="text-left py-2 px-2 sm:px-4 text-xs font-medium text-red-700 dark:text-red-400 uppercase">
+                <th className="text-left py-2 pl-1 pr-0 sm:px-4 text-xs font-medium text-red-700 dark:text-red-400 uppercase">
                   Expenses
                 </th>
-                <th className="hidden sm:table-cell w-44 text-right py-2 px-2 sm:px-4 text-xs font-medium text-red-700 dark:text-red-400 uppercase">
+                <th className="hidden sm:table-cell w-44 text-right py-2 px-4 text-xs font-medium text-red-700 dark:text-red-400 uppercase">
                   Trend / Median
                 </th>
-                <th className="w-36 sm:w-48 py-2 px-2 sm:px-4 text-xs font-medium text-red-700 dark:text-red-400 uppercase text-right">
+                <th className="w-24 sm:w-48 py-2 pl-0.5 pr-1 sm:px-4 text-xs font-medium text-red-700 dark:text-red-400 uppercase text-right">
                   Amount
                 </th>
               </tr>
@@ -537,16 +537,16 @@ export function BudgetWizardCategories({
       {transferAnalysis.length > 0 && (
         <div>
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-            <table className="w-full">
+            <table className="w-full table-fixed sm:table-auto">
               <thead>
                 <tr className="bg-blue-50 dark:bg-blue-900/20 border-b border-blue-200 dark:border-blue-800">
-                  <th className="text-left py-2 px-2 sm:px-4 text-xs font-medium text-blue-700 dark:text-blue-400 uppercase">
+                  <th className="text-left py-2 pl-1 pr-0 sm:px-4 text-xs font-medium text-blue-700 dark:text-blue-400 uppercase">
                     Transfers / Savings
                   </th>
-                  <th className="hidden sm:table-cell w-44 text-right py-2 px-2 sm:px-4 text-xs font-medium text-blue-700 dark:text-blue-400 uppercase">
+                  <th className="hidden sm:table-cell w-44 text-right py-2 px-4 text-xs font-medium text-blue-700 dark:text-blue-400 uppercase">
                     Trend / Median
                   </th>
-                  <th className="w-36 sm:w-48 py-2 px-2 sm:px-4 text-xs font-medium text-blue-700 dark:text-blue-400 uppercase text-right">
+                  <th className="w-24 sm:w-48 py-2 pl-0.5 pr-1 sm:px-4 text-xs font-medium text-blue-700 dark:text-blue-400 uppercase text-right">
                     Amount
                   </th>
                 </tr>

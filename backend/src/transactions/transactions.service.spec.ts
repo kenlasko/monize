@@ -2,7 +2,6 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import {
   NotFoundException,
-  ForbiddenException,
   BadRequestException,
 } from "@nestjs/common";
 import { TransactionsService } from "./transactions.service";
@@ -321,14 +320,11 @@ describe("TransactionsService", () => {
       );
     });
 
-    it("throws ForbiddenException for wrong user", async () => {
-      transactionsRepository.findOne.mockResolvedValue({
-        id: "tx-1",
-        userId: "other-user",
-      });
+    it("throws NotFoundException for wrong user", async () => {
+      transactionsRepository.findOne.mockResolvedValue(null);
 
       await expect(service.findOne("user-1", "tx-1")).rejects.toThrow(
-        ForbiddenException,
+        NotFoundException,
       );
     });
   });
@@ -3406,14 +3402,11 @@ describe("TransactionsService", () => {
 
       transactionsRepository.findOne
         .mockResolvedValueOnce(mainTx)
-        .mockResolvedValueOnce({
-          id: "tx-2",
-          userId: "user-2", // different user
-        });
+        .mockResolvedValueOnce(null); // different user's tx not found by userId-scoped query
 
       const result = await service.getLinkedTransaction("user-1", "tx-1");
 
-      // findOne will throw ForbiddenException which is caught and returns null
+      // findOne will throw NotFoundException which is caught and returns null
       expect(result).toBeNull();
     });
 

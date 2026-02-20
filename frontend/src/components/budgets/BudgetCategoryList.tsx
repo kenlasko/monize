@@ -92,7 +92,7 @@ export function BudgetCategoryList({
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4 sm:p-6">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-4">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
           Category Budgets
         </h2>

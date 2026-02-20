@@ -70,7 +70,7 @@ export function BudgetWizardReview({
         name: state.budgetName,
         budgetType: state.budgetType,
         periodStart: state.periodStart,
-        strategy: state.strategy,
+        strategy: state.strategy ?? undefined,
         currencyCode: state.currencyCode,
         baseIncome: state.baseIncome ?? undefined,
         incomeLinked: state.incomeLinked,
@@ -112,7 +112,7 @@ export function BudgetWizardReview({
               Strategy
             </dt>
             <dd className="text-sm font-medium text-gray-900 dark:text-gray-100">
-              {STRATEGY_LABELS[state.strategy] ?? state.strategy}
+              {state.strategy ? (STRATEGY_LABELS[state.strategy] ?? state.strategy) : 'Not selected'}
             </dd>
           </div>
           <div>
@@ -214,14 +214,14 @@ export function BudgetWizardReview({
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
         <table className="w-full">
           <thead>
-            <tr className="bg-gray-50 dark:bg-gray-750 border-b border-gray-200 dark:border-gray-700">
-              <th className="text-left py-2 px-4 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+            <tr className="bg-gray-100 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
+              <th className="text-left py-2 px-2 sm:px-4 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                 Category
               </th>
-              <th className="text-right py-2 px-4 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+              <th className="text-right py-2 px-2 sm:px-4 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                 Amount
               </th>
-              <th className="text-right py-2 px-4 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+              <th className="hidden sm:table-cell text-right py-2 px-4 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                 Type
               </th>
             </tr>
@@ -232,13 +232,13 @@ export function BudgetWizardReview({
                 key={cat.categoryId}
                 className="border-b border-gray-100 dark:border-gray-700 last:border-0"
               >
-                <td className="py-2 px-4 text-sm text-gray-900 dark:text-gray-100">
+                <td className="py-2 px-2 sm:px-4 text-sm text-gray-900 dark:text-gray-100">
                   {getCategoryName(cat.categoryId)}
                 </td>
-                <td className="py-2 px-4 text-sm text-right text-green-600 dark:text-green-400">
+                <td className="py-2 px-2 sm:px-4 text-sm text-right text-green-600 dark:text-green-400">
                   {formatCurrency(cat.amount, state.currencyCode)}
                 </td>
-                <td className="py-2 px-4 text-sm text-right text-gray-500 dark:text-gray-400">
+                <td className="hidden sm:table-cell py-2 px-4 text-sm text-right text-gray-500 dark:text-gray-400">
                   Income
                 </td>
               </tr>
@@ -250,13 +250,13 @@ export function BudgetWizardReview({
                   key={cat.categoryId}
                   className="border-b border-gray-100 dark:border-gray-700 last:border-0"
                 >
-                  <td className="py-2 px-4 text-sm text-gray-900 dark:text-gray-100">
+                  <td className="py-2 px-2 sm:px-4 text-sm text-gray-900 dark:text-gray-100">
                     {getCategoryName(cat.categoryId)}
                   </td>
-                  <td className="py-2 px-4 text-sm text-right text-gray-900 dark:text-gray-100">
+                  <td className="py-2 px-2 sm:px-4 text-sm text-right text-gray-900 dark:text-gray-100">
                     {formatCurrency(cat.amount, state.currencyCode)}
                   </td>
-                  <td className="py-2 px-4 text-sm text-right text-gray-500 dark:text-gray-400">
+                  <td className="hidden sm:table-cell py-2 px-4 text-sm text-right text-gray-500 dark:text-gray-400">
                     Expense
                   </td>
                 </tr>
@@ -268,13 +268,13 @@ export function BudgetWizardReview({
                   key={t.transferAccountId}
                   className="border-b border-gray-100 dark:border-gray-700 last:border-0"
                 >
-                  <td className="py-2 px-4 text-sm text-gray-900 dark:text-gray-100">
+                  <td className="py-2 px-2 sm:px-4 text-sm text-gray-900 dark:text-gray-100">
                     {getTransferName(t.transferAccountId)}
                   </td>
-                  <td className="py-2 px-4 text-sm text-right text-blue-600 dark:text-blue-400">
+                  <td className="py-2 px-2 sm:px-4 text-sm text-right text-blue-600 dark:text-blue-400">
                     {formatCurrency(t.amount, state.currencyCode)}
                   </td>
-                  <td className="py-2 px-4 text-sm text-right text-blue-500 dark:text-blue-400">
+                  <td className="hidden sm:table-cell py-2 px-4 text-sm text-right text-blue-500 dark:text-blue-400">
                     Transfer
                   </td>
                 </tr>

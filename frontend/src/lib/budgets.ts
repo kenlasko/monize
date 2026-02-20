@@ -186,6 +186,10 @@ export const budgetsApi = {
     return response.data;
   },
 
+  deleteAlert: async (alertId: string): Promise<void> => {
+    await apiClient.delete(`/budgets/alerts/${alertId}`);
+  },
+
   // Reports
   getTrend: async (
     budgetId: string,

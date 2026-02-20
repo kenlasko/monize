@@ -57,10 +57,10 @@ describe('BudgetWizardAnalysis', () => {
       />,
     );
 
-    expect(screen.getByText('Fixed')).toBeInTheDocument();
-    expect(screen.getByText('Rollover')).toBeInTheDocument();
-    expect(screen.getByText('Zero-Based')).toBeInTheDocument();
-    expect(screen.getByText('50/30/20')).toBeInTheDocument();
+    expect(screen.getByTestId('strategy-FIXED')).toBeInTheDocument();
+    expect(screen.getByTestId('strategy-ROLLOVER')).toBeInTheDocument();
+    expect(screen.getByTestId('strategy-ZERO_BASED')).toBeInTheDocument();
+    expect(screen.getByTestId('strategy-FIFTY_THIRTY_TWENTY')).toBeInTheDocument();
   });
 
   it('renders analysis period options', () => {
@@ -106,7 +106,7 @@ describe('BudgetWizardAnalysis', () => {
       />,
     );
 
-    fireEvent.click(screen.getByText('Rollover'));
+    fireEvent.click(screen.getByTestId('strategy-ROLLOVER'));
     expect(mockUpdateState).toHaveBeenCalledWith({ strategy: 'ROLLOVER' });
   });
 

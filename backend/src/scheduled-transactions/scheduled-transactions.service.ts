@@ -1,7 +1,6 @@
 import {
   Injectable,
   NotFoundException,
-  ForbiddenException,
   BadRequestException,
   Inject,
   forwardRef,
@@ -282,7 +281,7 @@ export class ScheduledTransactionsService {
 
   async findOne(userId: string, id: string): Promise<ScheduledTransaction> {
     const scheduled = await this.scheduledTransactionsRepository.findOne({
-      where: { id },
+      where: { id, userId },
       relations: [
         "account",
         "payee",
@@ -297,12 +296,6 @@ export class ScheduledTransactionsService {
     if (!scheduled) {
       throw new NotFoundException(
         `Scheduled transaction with ID ${id} not found`,
-      );
-    }
-
-    if (scheduled.userId !== userId) {
-      throw new ForbiddenException(
-        "You do not have access to this scheduled transaction",
       );
     }
 

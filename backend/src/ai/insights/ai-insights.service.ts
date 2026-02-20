@@ -15,6 +15,7 @@ import {
   SpendingAggregates,
 } from "./insights-aggregator.service";
 import { INSIGHT_SYSTEM_PROMPT } from "../context/prompt-templates";
+import { sanitizePromptValue } from "../context/prompt-sanitize";
 import { UserPreference } from "../../users/entities/user-preference.entity";
 import { AiInsightResponse, InsightsListResponse } from "./dto/ai-insights.dto";
 
@@ -274,7 +275,7 @@ export class AiInsightsService {
       sections.push("\n--- CATEGORY SPENDING ---");
       for (const cat of aggregates.categorySpending.slice(0, 15)) {
         sections.push(
-          `${cat.categoryName}: current month=${cat.currentMonthTotal.toFixed(2)}, previous month=${cat.previousMonthTotal.toFixed(2)}, 6-month avg=${cat.averageMonthlyTotal.toFixed(2)}, months with data=${cat.monthCount}, transactions=${cat.transactionCount}`,
+          `${sanitizePromptValue(cat.categoryName)}: current month=${cat.currentMonthTotal.toFixed(2)}, previous month=${cat.previousMonthTotal.toFixed(2)}, 6-month avg=${cat.averageMonthlyTotal.toFixed(2)}, months with data=${cat.monthCount}, transactions=${cat.transactionCount}`,
         );
       }
     }
@@ -284,7 +285,7 @@ export class AiInsightsService {
       for (const month of aggregates.monthlySpending) {
         const top3 = month.categoryBreakdown
           .slice(0, 3)
-          .map((c) => `${c.categoryName}=${c.total.toFixed(2)}`)
+          .map((c) => `${sanitizePromptValue(c.categoryName)}=${c.total.toFixed(2)}`)
           .join(", ");
         sections.push(
           `${month.month}: total=${month.total.toFixed(2)} (top: ${top3})`,
@@ -304,7 +305,7 @@ export class AiInsightsService {
               ).toFixed(1)
             : "N/A";
         sections.push(
-          `${charge.payeeName} (${charge.frequency}): current=${charge.currentAmount.toFixed(2)}, previous=${charge.previousAmount.toFixed(2)}, change=${amountChange}%, category=${charge.categoryName || "unknown"}, occurrences=${charge.amounts.length}`,
+          `${sanitizePromptValue(charge.payeeName)} (${charge.frequency}): current=${charge.currentAmount.toFixed(2)}, previous=${charge.previousAmount.toFixed(2)}, change=${amountChange}%, category=${sanitizePromptValue(charge.categoryName || "unknown")}, occurrences=${charge.amounts.length}`,
         );
       }
     }

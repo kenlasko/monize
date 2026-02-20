@@ -20,7 +20,7 @@ export interface WizardState {
   // Step 1: Analysis
   analysisMonths: 3 | 6 | 12;
   profile: BudgetProfile;
-  strategy: BudgetStrategy;
+  strategy: BudgetStrategy | null;
   analysisResult: GenerateBudgetResponse | null;
 
   // Step 2: Categories
@@ -65,7 +65,9 @@ export function BudgetWizard({
   const [state, setState] = useState<WizardState>({
     analysisMonths: 6,
     profile: 'ON_TRACK',
-    strategy: 'FIXED',
+    strategy: typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches
+      ? 'FIXED'
+      : null,
     analysisResult: null,
     selectedCategories: new Map(),
     selectedTransfers: new Map(),
@@ -91,19 +93,22 @@ export function BudgetWizard({
 
   // Sync wizard steps with browser history so the back button works
   useEffect(() => {
-    // Replace current entry with step 0 state on mount
-    window.history.replaceState({ wizardStep: 0 }, '');
+    // Push a new entry so the Budgets page stays in history behind us
+    window.history.pushState({ wizardStep: 0 }, '');
 
     const handlePopState = (e: PopStateEvent) => {
       const step = e.state?.wizardStep;
       if (typeof step === 'number') {
         setCurrentStep(step);
+      } else {
+        // Navigated back past the wizard — return to the Budgets page
+        onCancel();
       }
     };
 
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
+  }, [onCancel]);
 
   const goNext = useCallback(() => {
     setCurrentStep((prev) => {

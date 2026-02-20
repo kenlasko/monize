@@ -3,8 +3,10 @@
 import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { Select } from '@/components/ui/Select';
 import { STRATEGY_LABELS } from './utils/budget-labels';
+import { getCurrencySymbol } from '@/lib/format';
 import type { WizardState } from './BudgetWizard';
 import type { RolloverType } from '@/types/budget';
 import type { Account } from '@/types/account';
@@ -168,7 +170,7 @@ export function BudgetWizardStrategy({
         {/* Strategy summary */}
         <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
           <div className="text-sm font-medium text-blue-700 dark:text-blue-300">
-            Strategy: {STRATEGY_LABELS[state.strategy] ?? state.strategy}
+            Strategy: {state.strategy ? (STRATEGY_LABELS[state.strategy] ?? state.strategy) : 'Not selected'}
           </div>
           <div className="text-sm text-blue-600 dark:text-blue-400 mt-1">
             {state.strategy === 'FIXED' &&
@@ -207,22 +209,19 @@ export function BudgetWizardStrategy({
         </label>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Input
+          <CurrencyInput
             label="Base Monthly Income"
-            type="number"
-            value={state.baseIncome?.toString() ?? ''}
-            onChange={(e) => {
-              const val = e.target.value;
-              updateState({ baseIncome: val ? parseFloat(val) : null });
-            }}
-            placeholder="e.g. 5000"
+            prefix={getCurrencySymbol(state.currencyCode)}
+            value={state.baseIncome ?? undefined}
+            onChange={(val) => updateState({ baseIncome: val ?? null })}
+            allowNegative={false}
           />
           {state.analysisResult && state.analysisResult.estimatedMonthlyIncome > 0 && (
             <div className="flex items-end pb-2">
               <span className="text-sm text-gray-500 dark:text-gray-400">
                 Estimated from analysis:{' '}
                 <span className="font-medium text-gray-700 dark:text-gray-300">
-                  ${state.analysisResult.estimatedMonthlyIncome.toFixed(2)}/mo
+                  {getCurrencySymbol(state.currencyCode)}{state.analysisResult.estimatedMonthlyIncome.toFixed(2)}/mo
                 </span>
               </span>
             </div>

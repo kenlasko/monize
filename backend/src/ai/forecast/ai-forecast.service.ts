@@ -9,6 +9,7 @@ import {
   ForecastAggregates,
 } from "./forecast-aggregator.service";
 import { FORECAST_SYSTEM_PROMPT } from "../context/prompt-templates";
+import { sanitizePromptValue } from "../context/prompt-sanitize";
 import { UserPreference } from "../../users/entities/user-preference.entity";
 import {
   ForecastResponse,
@@ -147,7 +148,7 @@ export class AiForecastService {
     );
     for (const acct of aggregates.accountBalances.accounts) {
       sections.push(
-        `${acct.name} (${acct.accountType}): ${acct.balance.toFixed(2)} ${acct.currencyCode}`,
+        `${sanitizePromptValue(acct.name)} (${acct.accountType}): ${acct.balance.toFixed(2)} ${acct.currencyCode}`,
       );
     }
 
@@ -156,7 +157,7 @@ export class AiForecastService {
       const topExpenses = month.categoryBreakdown
         .filter((c) => !c.isIncome)
         .slice(0, 5)
-        .map((c) => `${c.categoryName}=${c.total.toFixed(2)}`)
+        .map((c) => `${sanitizePromptValue(c.categoryName)}=${c.total.toFixed(2)}`)
         .join(", ");
       sections.push(
         `${month.month}: income=${month.totalIncome.toFixed(2)}, expenses=${month.totalExpenses.toFixed(2)}, net=${month.netCashFlow.toFixed(2)} (top expenses: ${topExpenses})`,
@@ -179,7 +180,7 @@ export class AiForecastService {
       const type = st.isIncome ? "INCOME" : "EXPENSE";
       if (!st.isTransfer) {
         sections.push(
-          `${st.name}: ${st.amount.toFixed(2)} (${st.frequency}, next: ${st.nextDueDate}, ${type}, category: ${st.categoryName || "unknown"})`,
+          `${sanitizePromptValue(st.name)}: ${st.amount.toFixed(2)} (${st.frequency}, next: ${st.nextDueDate}, ${type}, category: ${sanitizePromptValue(st.categoryName || "unknown")})`,
         );
       }
     }
@@ -188,7 +189,7 @@ export class AiForecastService {
       sections.push("\n--- DETECTED RECURRING CHARGES ---");
       for (const charge of aggregates.recurringCharges.slice(0, 15)) {
         sections.push(
-          `${charge.payeeName} (${charge.frequency}): latest=${charge.currentAmount.toFixed(2)}, category=${charge.categoryName || "unknown"}`,
+          `${sanitizePromptValue(charge.payeeName)} (${charge.frequency}): latest=${charge.currentAmount.toFixed(2)}, category=${sanitizePromptValue(charge.categoryName || "unknown")}`,
         );
       }
     }

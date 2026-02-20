@@ -101,7 +101,7 @@ export function StrategyDetailCard({ strategy }: StrategyDetailCardProps) {
       <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
         {detail.title}
       </h4>
-      <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+      <p className="mt-2 text-sm text-gray-600 dark:text-gray-400 min-h-[4.5rem]">
         {detail.description}
       </p>
 

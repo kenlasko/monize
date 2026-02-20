@@ -11,7 +11,8 @@ export type AlertType =
   | 'SEASONAL_SPIKE'
   | 'PROJECTED_OVERSPEND'
   | 'INCOME_SHORTFALL'
-  | 'POSITIVE_MILESTONE';
+  | 'POSITIVE_MILESTONE'
+  | 'BILL_DUE';
 export type AlertSeverity = 'info' | 'warning' | 'critical' | 'success';
 export type PeriodStatus = 'OPEN' | 'CLOSED' | 'PROJECTED';
 export type BudgetProfile = 'COMFORTABLE' | 'ON_TRACK' | 'AGGRESSIVE';

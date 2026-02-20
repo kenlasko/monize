@@ -594,8 +594,8 @@ export class BudgetAlertService {
 
       const subject =
         alerts.length === 1
-          ? `Monize: Budget alert - ${alerts[0].title}`
-          : `Monize: ${alerts.length} budget alerts need attention`;
+          ? `Monize: Alert - ${alerts[0].title}`
+          : `Monize: ${alerts.length} alerts need attention`;
 
       await this.emailService.sendMail(user.email, subject, html);
       return true;

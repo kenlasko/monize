@@ -225,7 +225,7 @@ export function AppHeader() {
               className="flex items-center gap-2 text-2xl font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
             >
               <Image src="/icons/monize-logo.svg" alt="Monize" width={32} height={32} className="rounded" priority />
-              Monize
+              <span className="hidden md:inline">Monize</span>
             </button>
             <nav className="hidden md:ml-8 md:flex md:space-x-4">
               {navLinks.map((link) => (
@@ -347,7 +347,7 @@ export function AppHeader() {
               )}
             </nav>
           </div>
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-1 sm:space-x-4">
             <BudgetAlertBadge />
             <button
               onClick={() => router.push('/settings')}

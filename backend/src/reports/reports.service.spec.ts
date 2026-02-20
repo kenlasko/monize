@@ -1,6 +1,6 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
-import { NotFoundException, ForbiddenException } from "@nestjs/common";
+import { NotFoundException } from "@nestjs/common";
 import { ReportsService } from "./reports.service";
 import {
   CustomReport,
@@ -303,7 +303,7 @@ describe("ReportsService", () => {
 
       expect(result).toEqual(mockReport);
       expect(reportsRepository.findOne).toHaveBeenCalledWith({
-        where: { id: "report-1" },
+        where: { id: "report-1", userId: "user-1" },
       });
     });
 
@@ -315,14 +315,11 @@ describe("ReportsService", () => {
       );
     });
 
-    it("throws ForbiddenException when report belongs to different user", async () => {
-      reportsRepository.findOne.mockResolvedValue({
-        ...mockReport,
-        userId: "other-user",
-      });
+    it("throws NotFoundException when report belongs to different user", async () => {
+      reportsRepository.findOne.mockResolvedValue(null);
 
       await expect(service.findOne("user-1", "report-1")).rejects.toThrow(
-        ForbiddenException,
+        NotFoundException,
       );
     });
   });
@@ -429,15 +426,12 @@ describe("ReportsService", () => {
       ).rejects.toThrow(NotFoundException);
     });
 
-    it("throws ForbiddenException when report belongs to different user", async () => {
-      reportsRepository.findOne.mockResolvedValue({
-        ...mockReport,
-        userId: "other-user",
-      });
+    it("throws NotFoundException when report belongs to different user", async () => {
+      reportsRepository.findOne.mockResolvedValue(null);
 
       await expect(
         service.update("user-1", "report-1", { name: "Hacked" }),
-      ).rejects.toThrow(ForbiddenException);
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -460,14 +454,11 @@ describe("ReportsService", () => {
       );
     });
 
-    it("throws ForbiddenException when report belongs to different user", async () => {
-      reportsRepository.findOne.mockResolvedValue({
-        ...mockReport,
-        userId: "other-user",
-      });
+    it("throws NotFoundException when report belongs to different user", async () => {
+      reportsRepository.findOne.mockResolvedValue(null);
 
       await expect(service.remove("user-1", "report-1")).rejects.toThrow(
-        ForbiddenException,
+        NotFoundException,
       );
     });
   });
@@ -563,14 +554,11 @@ describe("ReportsService", () => {
       );
     });
 
-    it("throws ForbiddenException when report belongs to different user", async () => {
-      reportsRepository.findOne.mockResolvedValue({
-        ...mockReport,
-        userId: "other-user",
-      });
+    it("throws NotFoundException when report belongs to different user", async () => {
+      reportsRepository.findOne.mockResolvedValue(null);
 
       await expect(service.execute("user-1", "report-1")).rejects.toThrow(
-        ForbiddenException,
+        NotFoundException,
       );
     });
 

@@ -1,7 +1,6 @@
 import {
   Injectable,
   NotFoundException,
-  ForbiddenException,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository, Brackets } from "typeorm";
@@ -90,14 +89,12 @@ export class ReportsService {
   }
 
   async findOne(userId: string, id: string): Promise<CustomReport> {
-    const report = await this.reportsRepository.findOne({ where: { id } });
+    const report = await this.reportsRepository.findOne({
+      where: { id, userId },
+    });
 
     if (!report) {
       throw new NotFoundException(`Report with ID ${id} not found`);
-    }
-
-    if (report.userId !== userId) {
-      throw new ForbiddenException("You do not have access to this report");
     }
 
     return report;

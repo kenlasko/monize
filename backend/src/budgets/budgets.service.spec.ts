@@ -2,7 +2,6 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import {
   NotFoundException,
-  ForbiddenException,
   BadRequestException,
 } from "@nestjs/common";
 import { BudgetsService } from "./budgets.service";
@@ -114,6 +113,7 @@ describe("BudgetsService", () => {
     andWhere: jest.fn().mockReturnThis(),
     orderBy: jest.fn().mockReturnThis(),
     leftJoin: jest.fn().mockReturnThis(),
+    leftJoinAndSelect: jest.fn().mockReturnThis(),
     innerJoin: jest.fn().mockReturnThis(),
     select: jest.fn().mockReturnThis(),
     addSelect: jest.fn().mockReturnThis(),
@@ -158,6 +158,7 @@ describe("BudgetsService", () => {
       findOne: jest.fn(),
       save: jest.fn().mockImplementation((data) => data),
       update: jest.fn().mockResolvedValue({ affected: 0 }),
+      remove: jest.fn().mockResolvedValue(undefined),
     };
 
     transactionsRepository = {
@@ -290,7 +291,7 @@ describe("BudgetsService", () => {
 
       expect(result).toEqual(mockBudget);
       expect(budgetsRepository.findOne).toHaveBeenCalledWith({
-        where: { id: "budget-1" },
+        where: { id: "budget-1", userId: "user-1" },
         relations: [
           "categories",
           "categories.category",
@@ -308,14 +309,11 @@ describe("BudgetsService", () => {
       );
     });
 
-    it("throws ForbiddenException when budget belongs to different user", async () => {
-      budgetsRepository.findOne.mockResolvedValue({
-        ...mockBudget,
-        userId: "other-user",
-      });
+    it("throws NotFoundException when budget belongs to different user", async () => {
+      budgetsRepository.findOne.mockResolvedValue(null);
 
       await expect(service.findOne("user-1", "budget-1")).rejects.toThrow(
-        ForbiddenException,
+        NotFoundException,
       );
     });
   });
@@ -371,15 +369,12 @@ describe("BudgetsService", () => {
       ).rejects.toThrow(NotFoundException);
     });
 
-    it("throws ForbiddenException when budget belongs to different user", async () => {
-      budgetsRepository.findOne.mockResolvedValue({
-        ...mockBudget,
-        userId: "other-user",
-      });
+    it("throws NotFoundException when budget belongs to different user", async () => {
+      budgetsRepository.findOne.mockResolvedValue(null);
 
       await expect(
         service.update("user-1", "budget-1", { name: "New" }),
-      ).rejects.toThrow(ForbiddenException);
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -440,19 +435,16 @@ describe("BudgetsService", () => {
       ).rejects.toThrow(NotFoundException);
     });
 
-    it("throws ForbiddenException when category belongs to different user", async () => {
+    it("throws NotFoundException when category belongs to different user", async () => {
       budgetsRepository.findOne.mockResolvedValue({ ...mockBudget });
-      categoriesRepository.findOne.mockResolvedValue({
-        ...mockCategory,
-        userId: "other-user",
-      });
+      categoriesRepository.findOne.mockResolvedValue(null);
 
       await expect(
         service.addCategory("user-1", "budget-1", {
           categoryId: "cat-1",
           amount: 100,
         }),
-      ).rejects.toThrow(ForbiddenException);
+      ).rejects.toThrow(NotFoundException);
     });
 
     it("throws BadRequestException when category already in budget", async () => {
@@ -791,7 +783,91 @@ describe("BudgetsService", () => {
 
       const result = await service.getAlerts("user-1");
 
-      expect(result).toEqual([]);
+      expect(result).toHaveLength(0);
+    });
+
+    it("includes upcoming manual bill alerts when unreadOnly is false", async () => {
+      budgetAlertsRepository.find.mockResolvedValue([]);
+
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      const billQb = createMockQueryBuilder({
+        getMany: jest.fn().mockResolvedValue([
+          {
+            id: "st-1",
+            userId: "user-1",
+            name: "Netflix",
+            payee: { name: "Netflix Inc" },
+            payeeName: null,
+            amount: -15.99,
+            currencyCode: "USD",
+            nextDueDate: tomorrow.toISOString().split("T")[0],
+            isActive: true,
+            autoPost: false,
+          },
+        ]),
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+      });
+      scheduledTransactionsRepository.createQueryBuilder.mockReturnValue(billQb);
+
+      const result = await service.getAlerts("user-1");
+
+      expect(result).toHaveLength(1);
+      expect(result[0].alertType).toBe(AlertType.BILL_DUE);
+      expect(result[0].id).toBe("bill-st-1");
+      expect(result[0].title).toContain("Netflix Inc");
+      expect(result[0].title).toContain("tomorrow");
+      expect(result[0].severity).toBe(AlertSeverity.WARNING);
+      expect(result[0].budgetId).toBe("");
+    });
+
+    it("does not include bill alerts when unreadOnly is true", async () => {
+      budgetAlertsRepository.find.mockResolvedValue([mockAlert]);
+
+      await service.getAlerts("user-1", true);
+
+      expect(
+        scheduledTransactionsRepository.createQueryBuilder,
+      ).not.toHaveBeenCalled();
+    });
+
+    it("merges and sorts bill alerts with budget alerts by date", async () => {
+      const olderDate = new Date();
+      olderDate.setDate(olderDate.getDate() - 1);
+
+      budgetAlertsRepository.find.mockResolvedValue([
+        { ...mockAlert, createdAt: olderDate },
+      ]);
+
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      const billQb = createMockQueryBuilder({
+        getMany: jest.fn().mockResolvedValue([
+          {
+            id: "st-1",
+            userId: "user-1",
+            name: "Rent",
+            payee: null,
+            payeeName: "Landlord",
+            amount: -1200,
+            currencyCode: "USD",
+            nextDueDate: tomorrow.toISOString().split("T")[0],
+            isActive: true,
+            autoPost: false,
+          },
+        ]),
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+      });
+      scheduledTransactionsRepository.createQueryBuilder.mockReturnValue(billQb);
+
+      const result = await service.getAlerts("user-1");
+
+      expect(result).toHaveLength(2);
+      // Bill alert (today's date) should come before older budget alert
+      expect(result[0].alertType).toBe(AlertType.BILL_DUE);
+      expect(result[1].alertType).toBe(AlertType.THRESHOLD_WARNING);
     });
   });
 
@@ -813,15 +889,41 @@ describe("BudgetsService", () => {
       ).rejects.toThrow(NotFoundException);
     });
 
-    it("throws ForbiddenException when alert belongs to different user", async () => {
-      budgetAlertsRepository.findOne.mockResolvedValue({
-        ...mockAlert,
-        userId: "other-user",
-      });
+    it("throws NotFoundException when alert belongs to different user", async () => {
+      budgetAlertsRepository.findOne.mockResolvedValue(null);
 
       await expect(service.markAlertRead("user-1", "alert-1")).rejects.toThrow(
-        ForbiddenException,
+        NotFoundException,
       );
+    });
+  });
+
+  describe("deleteAlert", () => {
+    it("deletes alert when found and belongs to user", async () => {
+      budgetAlertsRepository.findOne.mockResolvedValue({ ...mockAlert });
+      budgetAlertsRepository.remove.mockResolvedValue(undefined);
+
+      await service.deleteAlert("user-1", "alert-1");
+
+      expect(budgetAlertsRepository.remove).toHaveBeenCalledWith(
+        expect.objectContaining({ id: "alert-1" }),
+      );
+    });
+
+    it("throws NotFoundException when alert not found", async () => {
+      budgetAlertsRepository.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.deleteAlert("user-1", "nonexistent"),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it("throws NotFoundException when alert belongs to different user", async () => {
+      budgetAlertsRepository.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.deleteAlert("user-1", "alert-1"),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 

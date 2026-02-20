@@ -19,12 +19,14 @@ vi.mock('next/navigation', () => ({
 const mockGetAlerts = vi.fn();
 const mockMarkAlertRead = vi.fn();
 const mockMarkAllAlertsRead = vi.fn();
+const mockDeleteAlert = vi.fn();
 
 vi.mock('@/lib/budgets', () => ({
   budgetsApi: {
     getAlerts: (...args: any[]) => mockGetAlerts(...args),
     markAlertRead: (...args: any[]) => mockMarkAlertRead(...args),
     markAllAlertsRead: (...args: any[]) => mockMarkAllAlertsRead(...args),
+    deleteAlert: (...args: any[]) => mockDeleteAlert(...args),
   },
 }));
 
@@ -60,6 +62,7 @@ describe('BudgetAlertBadge', () => {
     mockGetAlerts.mockResolvedValue([]);
     mockMarkAlertRead.mockResolvedValue({});
     mockMarkAllAlertsRead.mockResolvedValue({ updated: 0 });
+    mockDeleteAlert.mockResolvedValue(undefined);
   });
 
   it('renders the bell icon button', async () => {
@@ -176,7 +179,7 @@ describe('BudgetAlertBadge', () => {
 
     fireEvent.click(screen.getByTestId('alert-badge-button'));
 
-    expect(screen.getByTestId('no-alerts')).toHaveTextContent('No budget alerts');
+    expect(screen.getByTestId('no-alerts')).toHaveTextContent('No alerts');
   });
 
   it('navigates to budget page when alert is clicked', async () => {
@@ -201,5 +204,49 @@ describe('BudgetAlertBadge', () => {
 
     // Should not throw, badge should render without count
     expect(screen.queryByTestId('unread-count')).not.toBeInTheDocument();
+  });
+
+  it('shows inline undo when dismiss is clicked', async () => {
+    mockGetAlerts.mockResolvedValue([
+      makeAlert({ id: 'a1', isRead: false }),
+      makeAlert({ id: 'a2', isRead: false }),
+    ]);
+
+    render(<BudgetAlertBadge />);
+    await act(async () => {});
+
+    fireEvent.click(screen.getByTestId('alert-badge-button'));
+    expect(screen.getByTestId('alert-item-a1')).toBeInTheDocument();
+    expect(screen.getByTestId('alert-item-a2')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('dismiss-alert-a1'));
+
+    // Alert content replaced with Undo
+    expect(screen.queryByTestId('alert-item-a1')).not.toBeInTheDocument();
+    expect(screen.getByTestId('undo-dismiss-a1')).toBeInTheDocument();
+    // Other alert remains normal
+    expect(screen.getByTestId('alert-item-a2')).toBeInTheDocument();
+  });
+
+  it('restores alert when undo is clicked', async () => {
+    mockGetAlerts.mockResolvedValue([
+      makeAlert({ id: 'a1', isRead: false }),
+    ]);
+
+    render(<BudgetAlertBadge />);
+    await act(async () => {});
+
+    fireEvent.click(screen.getByTestId('alert-badge-button'));
+    fireEvent.click(screen.getByTestId('dismiss-alert-a1'));
+
+    // Undo is shown
+    expect(screen.getByTestId('undo-dismiss-a1')).toBeInTheDocument();
+
+    // Click undo
+    fireEvent.click(screen.getByTestId('undo-dismiss-a1'));
+
+    // Alert is restored
+    expect(screen.getByTestId('alert-item-a1')).toBeInTheDocument();
+    expect(screen.queryByTestId('undo-dismiss-a1')).not.toBeInTheDocument();
   });
 });

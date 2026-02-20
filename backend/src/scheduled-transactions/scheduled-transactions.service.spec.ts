@@ -2,7 +2,6 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import {
   NotFoundException,
-  ForbiddenException,
   BadRequestException,
 } from "@nestjs/common";
 import { ScheduledTransactionsService } from "./scheduled-transactions.service";
@@ -341,10 +340,10 @@ describe("ScheduledTransactionsService", () => {
       );
     });
 
-    it("should throw ForbiddenException if userId does not match", async () => {
-      stubFindOne(makeScheduled({ userId: "other-user" }));
+    it("should throw NotFoundException if userId does not match", async () => {
+      scheduledRepo.findOne.mockResolvedValue(null);
       await expect(service.findOne(userId, stId)).rejects.toThrow(
-        ForbiddenException,
+        NotFoundException,
       );
     });
   });

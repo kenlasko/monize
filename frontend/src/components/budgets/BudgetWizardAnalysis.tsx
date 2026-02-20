@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
 import { budgetsApi } from '@/lib/budgets';
@@ -80,13 +80,21 @@ export function BudgetWizardAnalysis({
   onCancel,
 }: BudgetWizardAnalysisProps) {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const strategyRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
+
+  const handleStrategyClick = (value: BudgetStrategy) => {
+    // Toggle on mobile: tap again to deselect
+    const newStrategy = state.strategy === value ? null : value;
+    updateState({ strategy: newStrategy });
+  };
 
   const handleAnalyze = async () => {
+    if (!state.strategy) return;
     setIsAnalyzing(true);
     try {
       const result = await budgetsApi.generate({
         analysisMonths: state.analysisMonths,
-        strategy: state.strategy,
+        strategy: state.strategy ?? undefined,
         profile: state.profile,
       });
       onAnalysisComplete(result);
@@ -107,12 +115,52 @@ export function BudgetWizardAnalysis({
         </h3>
         <div className="flex flex-col lg:flex-row gap-4">
           {/* Strategy list - left side */}
-          <div className="flex flex-col gap-3 lg:w-[280px] lg:shrink-0">
-            {STRATEGIES.map((s) => (
-              <div key={s.value}>
+          <div className="lg:w-[560px] lg:shrink-0 space-y-3">
+            {/* Mobile: single column with detail card below selected */}
+            <div className="flex flex-col gap-3 lg:hidden">
+              {STRATEGIES.map((s) => {
+                const isSelected = state.strategy === s.value;
+                return (
+                  <div key={s.value}>
+                    <button
+                      ref={(el) => {
+                        if (el) strategyRefs.current.set(s.value, el);
+                      }}
+                      type="button"
+                      onClick={() => handleStrategyClick(s.value)}
+                      data-testid={`strategy-${s.value}-mobile`}
+                      className={`w-full p-4 rounded-lg border-2 text-left transition-colors ${
+                        isSelected
+                          ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 dark:border-blue-400'
+                          : 'border-gray-200 hover:border-gray-300 dark:border-gray-600 dark:hover:border-gray-500'
+                      }`}
+                    >
+                      <div className="font-medium text-gray-900 dark:text-gray-100">
+                        {s.label}
+                      </div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        {s.description}
+                      </div>
+                    </button>
+                    <div
+                      className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                        isSelected ? 'max-h-[800px] opacity-100 mt-3' : 'max-h-0 opacity-0'
+                      }`}
+                    >
+                      <StrategyDetailCard strategy={s.value} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            {/* Desktop: 2-column grid */}
+            <div className="hidden lg:grid grid-cols-2 gap-3">
+              {STRATEGIES.map((s) => (
                 <button
+                  key={s.value}
                   type="button"
                   onClick={() => updateState({ strategy: s.value })}
+                  data-testid={`strategy-${s.value}`}
                   className={`w-full p-4 rounded-lg border-2 text-left transition-colors ${
                     state.strategy === s.value
                       ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 dark:border-blue-400'
@@ -126,22 +174,18 @@ export function BudgetWizardAnalysis({
                     {s.description}
                   </div>
                 </button>
-                {/* Mobile: detail card slides out below selected strategy */}
-                {state.strategy === s.value && (
-                  <div className="mt-3 lg:hidden">
-                    <StrategyDetailCard strategy={s.value} />
-                  </div>
-                )}
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
 
           {/* Detail card - right side (desktop only) */}
-          <div className="hidden lg:block lg:flex-1 lg:min-w-0">
-            <div className="sticky top-4">
-              <StrategyDetailCard strategy={state.strategy} />
+          {state.strategy && (
+            <div className="hidden lg:block lg:flex-1 lg:min-w-0">
+              <div className="sticky top-4">
+                <StrategyDetailCard strategy={state.strategy} />
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
 
@@ -205,7 +249,7 @@ export function BudgetWizardAnalysis({
         <Button variant="outline" onClick={onCancel}>
           Cancel
         </Button>
-        <Button onClick={handleAnalyze} isLoading={isAnalyzing}>
+        <Button onClick={handleAnalyze} isLoading={isAnalyzing} disabled={!state.strategy}>
           Analyze My Spending
         </Button>
       </div>

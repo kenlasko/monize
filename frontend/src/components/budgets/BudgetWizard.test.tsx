@@ -216,7 +216,7 @@ describe('BudgetWizard', () => {
     expect(screen.getByTestId('step-strategy')).toBeInTheDocument();
   });
 
-  it('replaces history state on mount with step 0', () => {
+  it('pushes history state on mount with step 0', () => {
     render(
       <BudgetWizard
         onComplete={mockOnComplete}
@@ -225,7 +225,7 @@ describe('BudgetWizard', () => {
       />,
     );
 
-    expect(mockReplaceState).toHaveBeenCalledWith({ wizardStep: 0 }, '');
+    expect(mockPushState).toHaveBeenCalledWith({ wizardStep: 0 }, '');
   });
 
   it('pushes history state when advancing steps', () => {

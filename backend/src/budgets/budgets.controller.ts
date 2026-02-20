@@ -164,6 +164,16 @@ export class BudgetsController {
     return this.budgetsService.markAllAlertsRead(req.user.id);
   }
 
+  @Delete("alerts/:id")
+  @ApiOperation({ summary: "Delete an alert" })
+  @ApiParam({ name: "id", description: "Alert UUID" })
+  @ApiResponse({ status: 200, description: "Alert deleted" })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  @ApiResponse({ status: 404, description: "Alert not found" })
+  deleteAlert(@Request() req, @Param("id", ParseUUIDPipe) id: string) {
+    return this.budgetsService.deleteAlert(req.user.id, id);
+  }
+
   @Get(":id")
   @ApiOperation({ summary: "Get a specific budget with categories" })
   @ApiParam({ name: "id", description: "Budget UUID" })

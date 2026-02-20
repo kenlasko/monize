@@ -2,7 +2,6 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import {
   NotFoundException,
-  ForbiddenException,
   BadRequestException,
 } from "@nestjs/common";
 import { AccountsService } from "./accounts.service";
@@ -140,14 +139,11 @@ describe("AccountsService", () => {
       );
     });
 
-    it("throws ForbiddenException when account belongs to different user", async () => {
-      accountsRepository.findOne.mockResolvedValue({
-        ...mockAccount,
-        userId: "other-user",
-      });
+    it("throws NotFoundException when account belongs to different user", async () => {
+      accountsRepository.findOne.mockResolvedValue(null);
 
       await expect(service.findOne("user-1", "account-1")).rejects.toThrow(
-        ForbiddenException,
+        NotFoundException,
       );
     });
   });
@@ -823,15 +819,11 @@ describe("AccountsService", () => {
     });
 
     it("verifies source account belongs to user", async () => {
-      accountsRepository.findOne.mockResolvedValue({
-        ...mockAccount,
-        id: "source-1",
-        userId: "other-user",
-      });
+      accountsRepository.findOne.mockResolvedValue(null);
 
       await expect(
         service.createLoanAccount("user-1", baseLoanDto as any),
-      ).rejects.toThrow(ForbiddenException);
+      ).rejects.toThrow(NotFoundException);
     });
 
     it("fetches loan categories when interestCategoryId not provided", async () => {
@@ -988,15 +980,11 @@ describe("AccountsService", () => {
     });
 
     it("verifies source account belongs to user", async () => {
-      accountsRepository.findOne.mockResolvedValue({
-        ...mockAccount,
-        id: "source-1",
-        userId: "other-user",
-      });
+      accountsRepository.findOne.mockResolvedValue(null);
 
       await expect(
         service.createMortgageAccount("user-1", baseMortgageDto as any),
-      ).rejects.toThrow(ForbiddenException);
+      ).rejects.toThrow(NotFoundException);
     });
 
     it("fetches loan categories when interestCategoryId not provided", async () => {

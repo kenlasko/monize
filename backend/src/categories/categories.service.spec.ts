@@ -2,7 +2,6 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import {
   NotFoundException,
-  ForbiddenException,
   BadRequestException,
 } from "@nestjs/common";
 import { CategoriesService } from "./categories.service";
@@ -182,7 +181,7 @@ describe("CategoriesService", () => {
       await service.create("user-1", dto);
 
       expect(categoriesRepository.findOne).toHaveBeenCalledWith({
-        where: { id: "cat-1" },
+        where: { id: "cat-1", userId: "user-1" },
         relations: ["children"],
       });
       expect(categoriesRepository.create).toHaveBeenCalledWith({
@@ -221,15 +220,12 @@ describe("CategoriesService", () => {
       );
     });
 
-    it("throws ForbiddenException when parent belongs to different user", async () => {
+    it("throws NotFoundException when parent belongs to different user", async () => {
       const dto = { name: "Organic", parentId: "cat-1" };
-      categoriesRepository.findOne.mockResolvedValue({
-        ...mockCategory,
-        userId: "other-user",
-      });
+      categoriesRepository.findOne.mockResolvedValue(null);
 
       await expect(service.create("user-1", dto)).rejects.toThrow(
-        ForbiddenException,
+        NotFoundException,
       );
     });
   });
@@ -564,7 +560,7 @@ describe("CategoriesService", () => {
 
       expect(result).toEqual({ ...mockCategory, effectiveColor: null });
       expect(categoriesRepository.findOne).toHaveBeenCalledWith({
-        where: { id: "cat-1" },
+        where: { id: "cat-1", userId: "user-1" },
         relations: ["children"],
       });
     });
@@ -577,14 +573,11 @@ describe("CategoriesService", () => {
       );
     });
 
-    it("throws ForbiddenException when category belongs to different user", async () => {
-      categoriesRepository.findOne.mockResolvedValue({
-        ...mockCategory,
-        userId: "other-user",
-      });
+    it("throws NotFoundException when category belongs to different user", async () => {
+      categoriesRepository.findOne.mockResolvedValue(null);
 
       await expect(service.findOne("user-1", "cat-1")).rejects.toThrow(
-        ForbiddenException,
+        NotFoundException,
       );
     });
   });

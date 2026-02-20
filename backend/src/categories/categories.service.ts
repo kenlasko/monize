@@ -2,7 +2,6 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
-  ForbiddenException,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository, IsNull } from "typeorm";
@@ -200,16 +199,12 @@ export class CategoriesService {
     id: string,
   ): Promise<Category & { effectiveColor: string | null }> {
     const category = await this.categoriesRepository.findOne({
-      where: { id },
+      where: { id, userId },
       relations: ["children"],
     });
 
     if (!category) {
       throw new NotFoundException(`Category with ID ${id} not found`);
-    }
-
-    if (category.userId !== userId) {
-      throw new ForbiddenException("You do not have access to this category");
     }
 
     let effectiveColor = category.color;

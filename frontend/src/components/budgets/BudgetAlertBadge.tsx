@@ -9,9 +9,12 @@ export function BudgetAlertBadge() {
   const [alerts, setAlerts] = useState<BudgetAlert[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [dismissingIds, setDismissingIds] = useState<Set<string>>(new Set());
+  const [collapsingIds, setCollapsingIds] = useState<Set<string>>(new Set());
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const undoTimers = useRef<Map<string, NodeJS.Timeout>>(new Map());
 
-  const unreadCount = alerts.filter((a) => !a.isRead).length;
+  const unreadCount = alerts.filter((a) => !a.isRead && !dismissingIds.has(a.id)).length;
 
   const fetchAlerts = useCallback(async () => {
     try {
@@ -62,13 +65,68 @@ export function BudgetAlertBadge() {
     }
   };
 
+  // Clean up timers on unmount
+  useEffect(() => {
+    const timers = undoTimers.current;
+    return () => {
+      timers.forEach((timer) => clearTimeout(timer));
+    };
+  }, []);
+
+  const handleDismiss = (alertId: string) => {
+    const isBillAlert = alertId.startsWith('bill-');
+
+    // Enter undo phase - show "Undo" in place of the alert content
+    setDismissingIds((prev) => new Set(prev).add(alertId));
+
+    // After 5 seconds, start collapse animation then remove
+    const timer = setTimeout(() => {
+      undoTimers.current.delete(alertId);
+      setDismissingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(alertId);
+        return next;
+      });
+      setCollapsingIds((prev) => new Set(prev).add(alertId));
+
+      // After collapse animation completes, remove from array + API call
+      setTimeout(() => {
+        setCollapsingIds((prev) => {
+          const next = new Set(prev);
+          next.delete(alertId);
+          return next;
+        });
+        setAlerts((prev) => prev.filter((a) => a.id !== alertId));
+
+        if (!isBillAlert) {
+          budgetsApi.deleteAlert(alertId).catch(() => {});
+        }
+      }, 300);
+    }, 5000);
+
+    undoTimers.current.set(alertId, timer);
+  };
+
+  const handleUndoDismiss = (alertId: string) => {
+    const timer = undoTimers.current.get(alertId);
+    if (timer) {
+      clearTimeout(timer);
+      undoTimers.current.delete(alertId);
+    }
+    setDismissingIds((prev) => {
+      const next = new Set(prev);
+      next.delete(alertId);
+      return next;
+    });
+  };
+
   return (
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="relative p-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
-        title="Budget alerts"
-        aria-label="Budget alerts"
+        title="Alerts"
+        aria-label="Alerts"
         data-testid="alert-badge-button"
       >
         <svg
@@ -101,6 +159,10 @@ export function BudgetAlertBadge() {
           isLoading={isLoading}
           onMarkRead={handleMarkRead}
           onMarkAllRead={handleMarkAllRead}
+          onDismiss={handleDismiss}
+          onUndoDismiss={handleUndoDismiss}
+          dismissingIds={dismissingIds}
+          collapsingIds={collapsingIds}
           onClose={() => setIsOpen(false)}
         />
       )}

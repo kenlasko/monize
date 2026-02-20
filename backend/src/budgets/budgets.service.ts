@@ -1,14 +1,17 @@
 import {
   Injectable,
   NotFoundException,
-  ForbiddenException,
   BadRequestException,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { Budget } from "./entities/budget.entity";
 import { BudgetCategory } from "./entities/budget-category.entity";
-import { BudgetAlert } from "./entities/budget-alert.entity";
+import {
+  BudgetAlert,
+  AlertType,
+  AlertSeverity,
+} from "./entities/budget-alert.entity";
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
 import { Category } from "../categories/entities/category.entity";
@@ -72,7 +75,7 @@ export class BudgetsService {
 
   async findOne(userId: string, id: string): Promise<Budget> {
     const budget = await this.budgetsRepository.findOne({
-      where: { id },
+      where: { id, userId },
       relations: [
         "categories",
         "categories.category",
@@ -83,10 +86,6 @@ export class BudgetsService {
 
     if (!budget) {
       throw new NotFoundException(`Budget with ID ${id} not found`);
-    }
-
-    if (budget.userId !== userId) {
-      throw new ForbiddenException("You do not have access to this budget");
     }
 
     return budget;
@@ -135,17 +134,13 @@ export class BudgetsService {
     const budget = await this.findOne(userId, budgetId);
 
     const category = await this.categoriesRepository.findOne({
-      where: { id: dto.categoryId },
+      where: { id: dto.categoryId, userId },
     });
 
     if (!category) {
       throw new NotFoundException(
         `Category with ID ${dto.categoryId} not found`,
       );
-    }
-
-    if (category.userId !== userId) {
-      throw new ForbiddenException("You do not have access to this category");
     }
 
     const existing = await this.budgetCategoriesRepository.findOne({
@@ -442,28 +437,107 @@ export class BudgetsService {
       where.isRead = false;
     }
 
-    return this.budgetAlertsRepository.find({
+    const budgetAlerts = await this.budgetAlertsRepository.find({
       where,
       order: { createdAt: "DESC" },
       take: 50,
+    });
+
+    // Include upcoming manual bills (not auto-paid) due within 7 days
+    if (!unreadOnly) {
+      const billAlerts = await this.getUpcomingBillAlerts(userId);
+      const combined = [...billAlerts, ...budgetAlerts];
+      combined.sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      );
+      return combined.slice(0, 50);
+    }
+
+    return budgetAlerts;
+  }
+
+  private async getUpcomingBillAlerts(userId: string): Promise<BudgetAlert[]> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayStr = today.toISOString().split("T")[0];
+
+    const horizon = new Date(today);
+    horizon.setDate(horizon.getDate() + 7);
+    const horizonStr = horizon.toISOString().split("T")[0];
+
+    const manualBills = await this.scheduledTransactionsRepository
+      .createQueryBuilder("st")
+      .leftJoinAndSelect("st.payee", "payee")
+      .where("st.user_id = :userId", { userId })
+      .andWhere("st.is_active = true")
+      .andWhere("st.auto_post = false")
+      .andWhere("st.next_due_date >= :todayStr", { todayStr })
+      .andWhere("st.next_due_date <= :horizonStr", { horizonStr })
+      .orderBy("st.next_due_date", "ASC")
+      .getMany();
+
+    return manualBills.map((bill) => {
+      const dueDate =
+        typeof bill.nextDueDate === "string"
+          ? bill.nextDueDate
+          : (bill.nextDueDate as Date).toISOString().split("T")[0];
+      const payeeName = bill.payee?.name || bill.payeeName || bill.name;
+      const amount = Math.abs(Number(bill.amount));
+      const daysUntilDue = Math.ceil(
+        (new Date(dueDate).getTime() - today.getTime()) /
+          (1000 * 60 * 60 * 24),
+      );
+      const severity =
+        daysUntilDue <= 1 ? AlertSeverity.WARNING : AlertSeverity.INFO;
+
+      const alert = new BudgetAlert();
+      alert.id = `bill-${bill.id}`;
+      alert.userId = userId;
+      alert.budgetId = "";
+      alert.budgetCategoryId = null;
+      alert.alertType = AlertType.BILL_DUE;
+      alert.severity = severity;
+      alert.title = `${payeeName} due${daysUntilDue === 0 ? " today" : daysUntilDue === 1 ? " tomorrow" : ` in ${daysUntilDue} days`}`;
+      alert.message = `${bill.currencyCode} ${amount.toFixed(2)} due on ${dueDate}`;
+      alert.data = {
+        billId: bill.id,
+        payeeName,
+        amount,
+        dueDate,
+        currencyCode: bill.currencyCode,
+      };
+      alert.isRead = false;
+      alert.isEmailSent = false;
+      alert.periodStart = todayStr;
+      alert.createdAt = new Date();
+      return alert;
     });
   }
 
   async markAlertRead(userId: string, alertId: string): Promise<BudgetAlert> {
     const alert = await this.budgetAlertsRepository.findOne({
-      where: { id: alertId },
+      where: { id: alertId, userId },
     });
 
     if (!alert) {
       throw new NotFoundException(`Alert with ID ${alertId} not found`);
     }
 
-    if (alert.userId !== userId) {
-      throw new ForbiddenException("You do not have access to this alert");
-    }
-
     alert.isRead = true;
     return this.budgetAlertsRepository.save(alert);
+  }
+
+  async deleteAlert(userId: string, alertId: string): Promise<void> {
+    const alert = await this.budgetAlertsRepository.findOne({
+      where: { id: alertId, userId },
+    });
+
+    if (!alert) {
+      throw new NotFoundException(`Alert with ID ${alertId} not found`);
+    }
+
+    await this.budgetAlertsRepository.remove(alert);
   }
 
   async markAllAlertsRead(userId: string): Promise<{ updated: number }> {

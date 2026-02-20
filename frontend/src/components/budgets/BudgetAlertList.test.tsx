@@ -48,6 +48,10 @@ describe('BudgetAlertList', () => {
     isLoading: false,
     onMarkRead: vi.fn(),
     onMarkAllRead: vi.fn(),
+    onDismiss: vi.fn(),
+    onUndoDismiss: vi.fn(),
+    dismissingIds: new Set<string>(),
+    collapsingIds: new Set<string>(),
     onClose: vi.fn(),
   };
 
@@ -59,7 +63,7 @@ describe('BudgetAlertList', () => {
     render(<BudgetAlertList {...defaultProps} />);
 
     expect(screen.getByTestId('alert-list')).toBeInTheDocument();
-    expect(screen.getByText('Budget Alerts')).toBeInTheDocument();
+    expect(screen.getByText('Alerts')).toBeInTheDocument();
   });
 
   it('shows loading state', () => {
@@ -71,7 +75,7 @@ describe('BudgetAlertList', () => {
   it('shows empty state when no alerts', () => {
     render(<BudgetAlertList {...defaultProps} />);
 
-    expect(screen.getByTestId('no-alerts')).toHaveTextContent('No budget alerts');
+    expect(screen.getByTestId('no-alerts')).toHaveTextContent('No alerts');
   });
 
   it('renders alert items', () => {
@@ -203,30 +207,58 @@ describe('BudgetAlertList', () => {
     expect(mockPush).toHaveBeenCalledWith('/budgets/budget-456');
   });
 
-  it('shows View all budgets footer link when alerts exist', () => {
-    const alerts = [makeAlert()];
+  it('calls onDismiss when dismiss button is clicked', () => {
+    const onDismiss = vi.fn();
+    const alerts = [makeAlert({ id: 'a1' })];
 
-    render(<BudgetAlertList {...defaultProps} alerts={alerts} />);
+    render(<BudgetAlertList {...defaultProps} alerts={alerts} onDismiss={onDismiss} />);
 
-    expect(screen.getByTestId('view-all-link')).toHaveTextContent('View all budgets');
+    fireEvent.click(screen.getByTestId('dismiss-alert-a1'));
+
+    expect(onDismiss).toHaveBeenCalledWith('a1');
   });
 
-  it('navigates to budgets page when view all link is clicked', () => {
+  it('does not navigate when dismiss button is clicked', () => {
     const onClose = vi.fn();
-    const alerts = [makeAlert()];
+    const alerts = [makeAlert({ id: 'a1' })];
 
     render(<BudgetAlertList {...defaultProps} alerts={alerts} onClose={onClose} />);
 
-    fireEvent.click(screen.getByTestId('view-all-link'));
+    fireEvent.click(screen.getByTestId('dismiss-alert-a1'));
 
-    expect(onClose).toHaveBeenCalled();
-    expect(mockPush).toHaveBeenCalledWith('/budgets');
+    expect(onClose).not.toHaveBeenCalled();
+    expect(mockPush).not.toHaveBeenCalled();
   });
 
-  it('does not show footer when no alerts', () => {
-    render(<BudgetAlertList {...defaultProps} />);
+  it('navigates to bills page when BILL_DUE alert is clicked', () => {
+    const onMarkRead = vi.fn();
+    const onClose = vi.fn();
+    const alerts = [
+      makeAlert({
+        id: 'bill-st-1',
+        alertType: 'BILL_DUE',
+        severity: 'info',
+        title: 'Netflix due tomorrow',
+        message: 'USD 15.99 due on 2026-02-21',
+        budgetId: '',
+        isRead: false,
+      }),
+    ];
 
-    expect(screen.queryByTestId('view-all-link')).not.toBeInTheDocument();
+    render(
+      <BudgetAlertList
+        {...defaultProps}
+        alerts={alerts}
+        onMarkRead={onMarkRead}
+        onClose={onClose}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId('alert-item-bill-st-1'));
+
+    expect(onMarkRead).not.toHaveBeenCalled();
+    expect(onClose).toHaveBeenCalled();
+    expect(mockPush).toHaveBeenCalledWith('/bills');
   });
 
   it('displays alert message text', () => {
@@ -242,5 +274,61 @@ describe('BudgetAlertList', () => {
     expect(
       screen.getByText('You have used 85% of your Groceries budget ($425 of $500).'),
     ).toBeInTheDocument();
+  });
+
+  it('shows inline undo when alert is in dismissingIds', () => {
+    const alerts = [
+      makeAlert({ id: 'a1' }),
+      makeAlert({ id: 'a2', title: 'Second alert' }),
+    ];
+
+    render(
+      <BudgetAlertList
+        {...defaultProps}
+        alerts={alerts}
+        dismissingIds={new Set(['a1'])}
+      />,
+    );
+
+    // Dismissed alert shows undo, not normal content
+    expect(screen.queryByTestId('alert-item-a1')).not.toBeInTheDocument();
+    expect(screen.getByTestId('undo-dismiss-a1')).toBeInTheDocument();
+    // Other alert is still normal
+    expect(screen.getByTestId('alert-item-a2')).toBeInTheDocument();
+  });
+
+  it('calls onUndoDismiss when undo is clicked', () => {
+    const onUndoDismiss = vi.fn();
+    const alerts = [makeAlert({ id: 'a1' })];
+
+    render(
+      <BudgetAlertList
+        {...defaultProps}
+        alerts={alerts}
+        dismissingIds={new Set(['a1'])}
+        onUndoDismiss={onUndoDismiss}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId('undo-dismiss-a1'));
+
+    expect(onUndoDismiss).toHaveBeenCalledWith('a1');
+  });
+
+  it('excludes dismissing alerts from unread count', () => {
+    const alerts = [
+      makeAlert({ id: 'a1', isRead: false }),
+      makeAlert({ id: 'a2', isRead: false }),
+    ];
+
+    render(
+      <BudgetAlertList
+        {...defaultProps}
+        alerts={alerts}
+        dismissingIds={new Set(['a1'])}
+      />,
+    );
+
+    expect(screen.getByText('1 unread')).toBeInTheDocument();
   });
 });

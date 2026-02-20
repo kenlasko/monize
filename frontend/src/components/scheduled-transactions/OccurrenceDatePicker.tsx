@@ -93,13 +93,15 @@ export function OccurrenceDatePicker({
   }, [overrides]);
 
   // Calculate next dates based on frequency
+  // Use occurrencesRemaining if set (finite schedule), otherwise default to 5
   const calculatedDates = useMemo(() => {
+    const count = scheduledTransaction.occurrencesRemaining ?? 5;
     return calculateNextDates(
       scheduledTransaction.nextDueDate,
       scheduledTransaction.frequency,
-      5
+      count
     );
-  }, [scheduledTransaction.nextDueDate, scheduledTransaction.frequency]);
+  }, [scheduledTransaction.nextDueDate, scheduledTransaction.frequency, scheduledTransaction.occurrencesRemaining]);
 
   // Build the final list of dates to display:
   // - For each calculated date, if it has an override, show the override date instead
