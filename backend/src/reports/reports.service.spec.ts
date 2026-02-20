@@ -16,6 +16,7 @@ import {
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { Category } from "../categories/entities/category.entity";
 import { Payee } from "../payees/entities/payee.entity";
+import { BudgetsService } from "../budgets/budgets.service";
 
 describe("ReportsService", () => {
   let service: ReportsService;
@@ -156,6 +157,13 @@ describe("ReportsService", () => {
           useValue: categoriesRepository,
         },
         { provide: getRepositoryToken(Payee), useValue: payeesRepository },
+        {
+          provide: BudgetsService,
+          useValue: {
+            findAll: jest.fn().mockResolvedValue([]),
+            findOne: jest.fn().mockResolvedValue(null),
+          },
+        },
       ],
     }).compile();
 
