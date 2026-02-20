@@ -11,33 +11,50 @@ import {
   PaginatedInvestmentTransactions,
   TopMover,
 } from '@/types/investment';
+import { getCached, setCache, invalidateCache } from './apiCache';
 
 export const investmentsApi = {
   // Get portfolio summary
   getPortfolioSummary: async (accountIds?: string[]): Promise<PortfolioSummary> => {
+    const cacheKey = `investments:summary:${accountIds?.join(',') || 'all'}`;
+    const cached = getCached<PortfolioSummary>(cacheKey);
+    if (cached) return cached;
     const response = await apiClient.get<PortfolioSummary>('/portfolio/summary', {
       params: accountIds && accountIds.length > 0 ? { accountIds: accountIds.join(',') } : undefined,
     });
+    setCache(cacheKey, response.data, 60_000);
     return response.data;
   },
 
   // Get asset allocation
   getAssetAllocation: async (accountIds?: string[]): Promise<AssetAllocation> => {
+    const cacheKey = `investments:allocation:${accountIds?.join(',') || 'all'}`;
+    const cached = getCached<AssetAllocation>(cacheKey);
+    if (cached) return cached;
     const response = await apiClient.get<AssetAllocation>('/portfolio/allocation', {
       params: accountIds && accountIds.length > 0 ? { accountIds: accountIds.join(',') } : undefined,
     });
+    setCache(cacheKey, response.data, 60_000);
     return response.data;
   },
 
   // Get all investment accounts
   getInvestmentAccounts: async (): Promise<Account[]> => {
+    const cacheKey = 'investments:accounts';
+    const cached = getCached<Account[]>(cacheKey);
+    if (cached) return cached;
     const response = await apiClient.get<Account[]>('/portfolio/accounts');
+    setCache(cacheKey, response.data);
     return response.data;
   },
 
   // Get top movers (daily price changes)
   getTopMovers: async (): Promise<TopMover[]> => {
+    const cacheKey = 'investments:topMovers';
+    const cached = getCached<TopMover[]>(cacheKey);
+    if (cached) return cached;
     const response = await apiClient.get<TopMover[]>('/portfolio/top-movers');
+    setCache(cacheKey, response.data, 60_000);
     return response.data;
   },
 
@@ -74,6 +91,7 @@ export const investmentsApi = {
       '/investment-transactions',
       data,
     );
+    invalidateCache('investments:');
     return response.data;
   },
 
@@ -100,6 +118,7 @@ export const investmentsApi = {
   // Delete investment transaction
   deleteTransaction: async (id: string): Promise<void> => {
     await apiClient.delete(`/investment-transactions/${id}`);
+    invalidateCache('investments:');
   },
 
   // Get all securities
@@ -177,6 +196,7 @@ export const investmentsApi = {
     lastUpdated: string;
   }> => {
     const response = await apiClient.post('/securities/prices/refresh');
+    invalidateCache('investments:');
     return response.data;
   },
 
@@ -195,6 +215,7 @@ export const investmentsApi = {
     lastUpdated: string;
   }> => {
     const response = await apiClient.post('/securities/prices/refresh/selected', { securityIds });
+    invalidateCache('investments:');
     return response.data;
   },
 

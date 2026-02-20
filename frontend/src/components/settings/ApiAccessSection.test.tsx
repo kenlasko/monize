@@ -76,6 +76,16 @@ describe('ApiAccessSection', () => {
     expect(screen.getByText(/personal access tokens/)).toBeInTheDocument();
   });
 
+  it('displays the MCP Server URL', async () => {
+    render(<ApiAccessSection />);
+
+    await waitFor(() => {
+      expect(screen.getByText('MCP Server URL')).toBeInTheDocument();
+    });
+    expect(screen.getByDisplayValue(/\/api\/v1\/mcp$/)).toBeInTheDocument();
+    expect(screen.getByText(/Use this URL when configuring MCP clients/)).toBeInTheDocument();
+  });
+
   it('renders the Create Token button', async () => {
     render(<ApiAccessSection />);
 
@@ -180,7 +190,9 @@ describe('ApiAccessSection', () => {
       expect(screen.getByText('Token Created')).toBeInTheDocument();
     });
     expect(screen.getByDisplayValue('pat_abcdef1234567890')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Copy' })).toBeInTheDocument();
+    // Token copy button is inside the modal alongside the token input
+    const tokenInput = screen.getByDisplayValue('pat_abcdef1234567890');
+    expect(tokenInput.parentElement?.querySelector('button')).toHaveTextContent('Copy');
     expect(screen.getByRole('button', { name: 'Done' })).toBeInTheDocument();
   });
 
@@ -452,11 +464,12 @@ describe('ApiAccessSection', () => {
     fireEvent.change(screen.getByLabelText('Token Name'), { target: { value: 'Test' } });
     fireEvent.click(getFormSubmitButton());
 
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Copy' })).toBeInTheDocument();
-    });
+    // Click the Copy button next to the token input (not the MCP URL copy button)
+    const tokenInput = await waitFor(() => screen.getByDisplayValue('pat_abc123'));
+    const tokenCopyBtn = tokenInput.parentElement?.querySelector('button') as HTMLButtonElement;
+    expect(tokenCopyBtn).toHaveTextContent('Copy');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Copy' }));
+    fireEvent.click(tokenCopyBtn);
 
     await waitFor(() => {
       expect(navigator.clipboard.writeText).toHaveBeenCalledWith('pat_abc123');

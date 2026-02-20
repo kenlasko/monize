@@ -286,10 +286,15 @@ export const budgetsApi = {
     categoryIds: string[],
   ): Promise<Record<string, CategoryBudgetStatus>> => {
     if (categoryIds.length === 0) return {};
+    const sortedIds = [...categoryIds].sort();
+    const cacheKey = `budgets:cat-status:${sortedIds.join(',')}`;
+    const cached = getCached<Record<string, CategoryBudgetStatus>>(cacheKey);
+    if (cached) return cached;
     const response = await apiClient.post<Record<string, CategoryBudgetStatus>>(
       '/budgets/category-budget-status',
       { categoryIds },
     );
+    setCache(cacheKey, response.data, 60_000);
     return response.data;
   },
 };

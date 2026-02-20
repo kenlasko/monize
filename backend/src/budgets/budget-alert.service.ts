@@ -882,82 +882,94 @@ export class BudgetAlertService {
       .map((bc) => bc.categoryId as string);
 
     const spendingMap = new Map<string, number>();
-
-    if (categoryIds.length > 0) {
-      const directSpending = await this.transactionsRepository
-        .createQueryBuilder("t")
-        .select("t.category_id", "categoryId")
-        .addSelect("COALESCE(SUM(ABS(t.amount)), 0)", "total")
-        .where("t.user_id = :userId", { userId })
-        .andWhere("t.category_id IN (:...categoryIds)", { categoryIds })
-        .andWhere("t.transaction_date >= :periodStart", { periodStart })
-        .andWhere("t.transaction_date <= :periodEnd", { periodEnd })
-        .andWhere("t.status != :void", { void: "VOID" })
-        .andWhere("t.is_split = false")
-        .groupBy("t.category_id")
-        .getRawMany();
-
-      for (const row of directSpending) {
-        spendingMap.set(row.categoryId, parseFloat(row.total || "0"));
-      }
-
-      const splitSpending = await this.splitsRepository
-        .createQueryBuilder("s")
-        .innerJoin("s.transaction", "t")
-        .select("s.category_id", "categoryId")
-        .addSelect("COALESCE(SUM(ABS(s.amount)), 0)", "total")
-        .where("t.user_id = :userId", { userId })
-        .andWhere("s.category_id IN (:...categoryIds)", { categoryIds })
-        .andWhere("t.transaction_date >= :periodStart", { periodStart })
-        .andWhere("t.transaction_date <= :periodEnd", { periodEnd })
-        .andWhere("t.status != :void", { void: "VOID" })
-        .groupBy("s.category_id")
-        .getRawMany();
-
-      for (const row of splitSpending) {
-        const existing = spendingMap.get(row.categoryId) || 0;
-        spendingMap.set(
-          row.categoryId,
-          existing + parseFloat(row.total || "0"),
-        );
-      }
-    }
-
-    // Transfer actuals
     const transferSpendingMap = new Map<string, number>();
     const transferBudgetCategories = budgetCategories.filter(
       (bc) => bc.isTransfer && bc.transferAccountId,
     );
+
+    // Run all independent queries in parallel
+    const queries: Promise<void>[] = [];
+
+    if (categoryIds.length > 0) {
+      queries.push(
+        this.transactionsRepository
+          .createQueryBuilder("t")
+          .select("t.category_id", "categoryId")
+          .addSelect("COALESCE(SUM(ABS(t.amount)), 0)", "total")
+          .where("t.user_id = :userId", { userId })
+          .andWhere("t.category_id IN (:...categoryIds)", { categoryIds })
+          .andWhere("t.transaction_date >= :periodStart", { periodStart })
+          .andWhere("t.transaction_date <= :periodEnd", { periodEnd })
+          .andWhere("t.status != :void", { void: "VOID" })
+          .andWhere("t.is_split = false")
+          .groupBy("t.category_id")
+          .getRawMany()
+          .then((rows) => {
+            for (const row of rows) {
+              spendingMap.set(row.categoryId, parseFloat(row.total || "0"));
+            }
+          }),
+      );
+
+      queries.push(
+        this.splitsRepository
+          .createQueryBuilder("s")
+          .innerJoin("s.transaction", "t")
+          .select("s.category_id", "categoryId")
+          .addSelect("COALESCE(SUM(ABS(s.amount)), 0)", "total")
+          .where("t.user_id = :userId", { userId })
+          .andWhere("s.category_id IN (:...categoryIds)", { categoryIds })
+          .andWhere("t.transaction_date >= :periodStart", { periodStart })
+          .andWhere("t.transaction_date <= :periodEnd", { periodEnd })
+          .andWhere("t.status != :void", { void: "VOID" })
+          .groupBy("s.category_id")
+          .getRawMany()
+          .then((rows) => {
+            for (const row of rows) {
+              const existing = spendingMap.get(row.categoryId) || 0;
+              spendingMap.set(
+                row.categoryId,
+                existing + parseFloat(row.total || "0"),
+              );
+            }
+          }),
+      );
+    }
 
     if (transferBudgetCategories.length > 0) {
       const transferAccountIds = transferBudgetCategories.map(
         (bc) => bc.transferAccountId as string,
       );
 
-      const transferActuals = await this.transactionsRepository
-        .createQueryBuilder("t")
-        .innerJoin("t.linkedTransaction", "lt")
-        .select("lt.account_id", "destinationAccountId")
-        .addSelect("COALESCE(SUM(ABS(t.amount)), 0)", "total")
-        .where("t.user_id = :userId", { userId })
-        .andWhere("t.is_transfer = true")
-        .andWhere("t.amount < 0")
-        .andWhere("lt.account_id IN (:...transferAccountIds)", {
-          transferAccountIds,
-        })
-        .andWhere("t.transaction_date >= :periodStart", { periodStart })
-        .andWhere("t.transaction_date <= :periodEnd", { periodEnd })
-        .andWhere("t.status != :void", { void: "VOID" })
-        .groupBy("lt.account_id")
-        .getRawMany();
-
-      for (const row of transferActuals) {
-        transferSpendingMap.set(
-          row.destinationAccountId,
-          parseFloat(row.total || "0"),
-        );
-      }
+      queries.push(
+        this.transactionsRepository
+          .createQueryBuilder("t")
+          .innerJoin("t.linkedTransaction", "lt")
+          .select("lt.account_id", "destinationAccountId")
+          .addSelect("COALESCE(SUM(ABS(t.amount)), 0)", "total")
+          .where("t.user_id = :userId", { userId })
+          .andWhere("t.is_transfer = true")
+          .andWhere("t.amount < 0")
+          .andWhere("lt.account_id IN (:...transferAccountIds)", {
+            transferAccountIds,
+          })
+          .andWhere("t.transaction_date >= :periodStart", { periodStart })
+          .andWhere("t.transaction_date <= :periodEnd", { periodEnd })
+          .andWhere("t.status != :void", { void: "VOID" })
+          .groupBy("lt.account_id")
+          .getRawMany()
+          .then((rows) => {
+            for (const row of rows) {
+              transferSpendingMap.set(
+                row.destinationAccountId,
+                parseFloat(row.total || "0"),
+              );
+            }
+          }),
+      );
     }
+
+    await Promise.all(queries);
 
     return budgetCategories.map((bc) => {
       const budgeted = Number(bc.amount);

@@ -9,17 +9,22 @@ import {
   OverrideCheckResult,
   PostScheduledTransactionData,
 } from '@/types/scheduled-transaction';
+import { getCached, setCache, invalidateCache } from './apiCache';
 
 export const scheduledTransactionsApi = {
   // Create a new scheduled transaction
   create: async (data: CreateScheduledTransactionData): Promise<ScheduledTransaction> => {
     const response = await apiClient.post<ScheduledTransaction>('/scheduled-transactions', data);
+    invalidateCache('scheduled:');
     return response.data;
   },
 
   // Get all scheduled transactions
   getAll: async (): Promise<ScheduledTransaction[]> => {
+    const cached = getCached<ScheduledTransaction[]>('scheduled:all');
+    if (cached) return cached;
     const response = await apiClient.get<ScheduledTransaction[]>('/scheduled-transactions');
+    setCache('scheduled:all', response.data);
     return response.data;
   },
 
@@ -52,12 +57,14 @@ export const scheduledTransactionsApi = {
       `/scheduled-transactions/${id}`,
       data,
     );
+    invalidateCache('scheduled:');
     return response.data;
   },
 
   // Delete scheduled transaction
   delete: async (id: string): Promise<void> => {
     await apiClient.delete(`/scheduled-transactions/${id}`);
+    invalidateCache('scheduled:');
   },
 
   // Post scheduled transaction (create actual transaction and advance)
@@ -66,6 +73,7 @@ export const scheduledTransactionsApi = {
       `/scheduled-transactions/${id}/post`,
       data || {},
     );
+    invalidateCache('scheduled:');
     return response.data;
   },
 
@@ -74,6 +82,7 @@ export const scheduledTransactionsApi = {
     const response = await apiClient.post<ScheduledTransaction>(
       `/scheduled-transactions/${id}/skip`,
     );
+    invalidateCache('scheduled:');
     return response.data;
   },
 

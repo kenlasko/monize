@@ -11,6 +11,8 @@ import { authApi } from '@/lib/auth';
 import { PersonalAccessToken } from '@/types/auth';
 import { getErrorMessage } from '@/lib/errors';
 
+const MCP_SERVER_URL = `${process.env.PUBLIC_APP_URL || ''}/api/v1/mcp`;
+
 const SCOPE_OPTIONS = [
   { value: 'read', label: 'Read', description: 'View accounts, transactions, and categories' },
   { value: 'write', label: 'Write', description: 'Create transactions, payees, and categories' },
@@ -53,6 +55,7 @@ export function ApiAccessSection() {
   // Show token once state
   const [createdToken, setCreatedToken] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [mcpUrlCopied, setMcpUrlCopied] = useState(false);
 
   const loadTokens = useCallback(async () => {
     try {
@@ -168,6 +171,40 @@ export function ApiAccessSection() {
         >
           Create Token
         </Button>
+      </div>
+
+      {/* MCP Server URL */}
+      <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+        <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+          MCP Server URL
+        </label>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            readOnly
+            value={MCP_SERVER_URL}
+            className="flex-1 text-sm font-mono bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md px-3 py-1.5 text-gray-900 dark:text-gray-100"
+          />
+          <Button
+            variant={mcpUrlCopied ? 'secondary' : 'outline'}
+            size="sm"
+            onClick={async () => {
+              try {
+                await navigator.clipboard.writeText(MCP_SERVER_URL);
+                setMcpUrlCopied(true);
+                toast.success('MCP URL copied to clipboard');
+                setTimeout(() => setMcpUrlCopied(false), 2000);
+              } catch {
+                toast.error('Failed to copy URL');
+              }
+            }}
+          >
+            {mcpUrlCopied ? 'Copied' : 'Copy'}
+          </Button>
+        </div>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1.5">
+          Use this URL when configuring MCP clients such as Claude Code or Claude Desktop.
+        </p>
       </div>
 
       {isLoading ? (

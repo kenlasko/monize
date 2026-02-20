@@ -592,90 +592,160 @@ export class BudgetReportsService {
       .map((bc) => bc.categoryId as string);
 
     const today = new Date();
+
+    // Compute full date range for all months at once
+    const startD = new Date(today.getFullYear(), today.getMonth() - (months - 1), 1);
+    const rangeStart = `${startD.getFullYear()}-${String(startD.getMonth() + 1).padStart(2, "0")}-01`;
+    const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+    const rangeEnd = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+
+    // Batch queries: group by month across entire range
+    const incomeByMonth = new Map<string, number>();
+    const expenseByMonth = new Map<string, number>();
+
+    const queries: Promise<void>[] = [];
+
+    // Income query (batch)
+    if (incomeCategoryIds.length > 0) {
+      queries.push(
+        this.transactionsRepository
+          .createQueryBuilder("t")
+          .select(
+            "TO_CHAR(DATE_TRUNC('month', t.transaction_date), 'YYYY-MM')",
+            "month",
+          )
+          .addSelect("COALESCE(SUM(t.amount), 0)", "total")
+          .where("t.user_id = :userId", { userId })
+          .andWhere("t.category_id IN (:...incomeCategoryIds)", {
+            incomeCategoryIds,
+          })
+          .andWhere("t.transaction_date >= :start", { start: rangeStart })
+          .andWhere("t.transaction_date <= :end", { end: rangeEnd })
+          .andWhere("t.status != :void", { void: "VOID" })
+          .andWhere("t.is_split = false")
+          .groupBy(
+            "TO_CHAR(DATE_TRUNC('month', t.transaction_date), 'YYYY-MM')",
+          )
+          .getRawMany()
+          .then((rows) => {
+            for (const row of rows) {
+              incomeByMonth.set(
+                row.month,
+                (incomeByMonth.get(row.month) || 0) +
+                  Math.abs(parseFloat(row.total || "0")),
+              );
+            }
+          }),
+      );
+    } else {
+      // No income categories: use all positive non-transfer transactions
+      queries.push(
+        this.transactionsRepository
+          .createQueryBuilder("t")
+          .select(
+            "TO_CHAR(DATE_TRUNC('month', t.transaction_date), 'YYYY-MM')",
+            "month",
+          )
+          .addSelect("COALESCE(SUM(t.amount), 0)", "total")
+          .where("t.user_id = :userId", { userId })
+          .andWhere("t.amount > 0")
+          .andWhere("t.is_transfer = false")
+          .andWhere("t.transaction_date >= :start", { start: rangeStart })
+          .andWhere("t.transaction_date <= :end", { end: rangeEnd })
+          .andWhere("t.status != :void", { void: "VOID" })
+          .groupBy(
+            "TO_CHAR(DATE_TRUNC('month', t.transaction_date), 'YYYY-MM')",
+          )
+          .getRawMany()
+          .then((rows) => {
+            for (const row of rows) {
+              incomeByMonth.set(row.month, parseFloat(row.total || "0"));
+            }
+          }),
+      );
+    }
+
+    // Expense queries (batch: direct + splits in parallel)
+    if (expenseCategoryIds.length > 0) {
+      queries.push(
+        this.transactionsRepository
+          .createQueryBuilder("t")
+          .select(
+            "TO_CHAR(DATE_TRUNC('month', t.transaction_date), 'YYYY-MM')",
+            "month",
+          )
+          .addSelect("COALESCE(SUM(ABS(t.amount)), 0)", "total")
+          .where("t.user_id = :userId", { userId })
+          .andWhere("t.category_id IN (:...expenseCategoryIds)", {
+            expenseCategoryIds,
+          })
+          .andWhere("t.transaction_date >= :start", { start: rangeStart })
+          .andWhere("t.transaction_date <= :end", { end: rangeEnd })
+          .andWhere("t.status != :void", { void: "VOID" })
+          .andWhere("t.is_split = false")
+          .andWhere("t.amount < 0")
+          .groupBy(
+            "TO_CHAR(DATE_TRUNC('month', t.transaction_date), 'YYYY-MM')",
+          )
+          .getRawMany()
+          .then((rows) => {
+            for (const row of rows) {
+              expenseByMonth.set(
+                row.month,
+                (expenseByMonth.get(row.month) || 0) +
+                  parseFloat(row.total || "0"),
+              );
+            }
+          }),
+      );
+
+      queries.push(
+        this.splitsRepository
+          .createQueryBuilder("s")
+          .innerJoin("s.transaction", "t")
+          .select(
+            "TO_CHAR(DATE_TRUNC('month', t.transaction_date), 'YYYY-MM')",
+            "month",
+          )
+          .addSelect("COALESCE(SUM(ABS(s.amount)), 0)", "total")
+          .where("t.user_id = :userId", { userId })
+          .andWhere("s.category_id IN (:...expenseCategoryIds)", {
+            expenseCategoryIds,
+          })
+          .andWhere("t.transaction_date >= :start", { start: rangeStart })
+          .andWhere("t.transaction_date <= :end", { end: rangeEnd })
+          .andWhere("t.status != :void", { void: "VOID" })
+          .andWhere("s.amount < 0")
+          .groupBy(
+            "TO_CHAR(DATE_TRUNC('month', t.transaction_date), 'YYYY-MM')",
+          )
+          .getRawMany()
+          .then((rows) => {
+            for (const row of rows) {
+              expenseByMonth.set(
+                row.month,
+                (expenseByMonth.get(row.month) || 0) +
+                  parseFloat(row.total || "0"),
+              );
+            }
+          }),
+      );
+    }
+
+    await Promise.all(queries);
+
+    // Build result from aggregated monthly data
     const result: SavingsRatePoint[] = [];
 
     for (let i = months - 1; i >= 0; i--) {
       const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
       const year = d.getFullYear();
       const month = d.getMonth();
-
-      const periodStart = `${year}-${String(month + 1).padStart(2, "0")}-01`;
-      const lastDay = new Date(year, month + 1, 0).getDate();
-      const periodEnd = `${year}-${String(month + 1).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+      const monthKey = `${year}-${String(month + 1).padStart(2, "0")}`;
       const monthLabel = `${MONTH_NAMES[month].substring(0, 3)} ${year}`;
 
-      let income = 0;
-      let expenses = 0;
-
-      // Compute income from income-category transactions
-      if (incomeCategoryIds.length > 0) {
-        const incomeResult = await this.transactionsRepository
-          .createQueryBuilder("t")
-          .select("COALESCE(SUM(t.amount), 0)", "total")
-          .where("t.user_id = :userId", { userId })
-          .andWhere("t.category_id IN (:...incomeCategoryIds)", {
-            incomeCategoryIds,
-          })
-          .andWhere("t.transaction_date >= :start", { start: periodStart })
-          .andWhere("t.transaction_date <= :end", { end: periodEnd })
-          .andWhere("t.status != :void", { void: "VOID" })
-          .andWhere("t.is_split = false")
-          .getRawOne();
-
-        income += Math.abs(parseFloat(incomeResult?.total || "0"));
-      }
-
-      // Compute expenses from expense-category transactions
-      if (expenseCategoryIds.length > 0) {
-        const directResult = await this.transactionsRepository
-          .createQueryBuilder("t")
-          .select("COALESCE(SUM(ABS(t.amount)), 0)", "total")
-          .where("t.user_id = :userId", { userId })
-          .andWhere("t.category_id IN (:...expenseCategoryIds)", {
-            expenseCategoryIds,
-          })
-          .andWhere("t.transaction_date >= :start", { start: periodStart })
-          .andWhere("t.transaction_date <= :end", { end: periodEnd })
-          .andWhere("t.status != :void", { void: "VOID" })
-          .andWhere("t.is_split = false")
-          .andWhere("t.amount < 0")
-          .getRawOne();
-
-        const splitResult = await this.splitsRepository
-          .createQueryBuilder("s")
-          .innerJoin("s.transaction", "t")
-          .select("COALESCE(SUM(ABS(s.amount)), 0)", "total")
-          .where("t.user_id = :userId", { userId })
-          .andWhere("s.category_id IN (:...expenseCategoryIds)", {
-            expenseCategoryIds,
-          })
-          .andWhere("t.transaction_date >= :start", { start: periodStart })
-          .andWhere("t.transaction_date <= :end", { end: periodEnd })
-          .andWhere("t.status != :void", { void: "VOID" })
-          .andWhere("s.amount < 0")
-          .getRawOne();
-
-        expenses +=
-          parseFloat(directResult?.total || "0") +
-          parseFloat(splitResult?.total || "0");
-      }
-
-      // If no income categories in budget, compute income from all positive transactions
-      if (incomeCategoryIds.length === 0) {
-        const allIncomeResult = await this.transactionsRepository
-          .createQueryBuilder("t")
-          .select("COALESCE(SUM(t.amount), 0)", "total")
-          .where("t.user_id = :userId", { userId })
-          .andWhere("t.amount > 0")
-          .andWhere("t.is_transfer = false")
-          .andWhere("t.transaction_date >= :start", { start: periodStart })
-          .andWhere("t.transaction_date <= :end", { end: periodEnd })
-          .andWhere("t.status != :void", { void: "VOID" })
-          .getRawOne();
-
-        income = parseFloat(allIncomeResult?.total || "0");
-      }
-
+      const income = incomeByMonth.get(monthKey) || 0;
+      const expenses = expenseByMonth.get(monthKey) || 0;
       const savings = income - expenses;
       const savingsRate = income > 0 ? this.round((savings / income) * 100) : 0;
 
@@ -813,10 +883,12 @@ export class BudgetReportsService {
 
     const spendingMap = new Map<string, number>();
 
-    // Direct category transactions grouped by date
+    // Run all independent queries in parallel
+    const queries: Promise<Array<{ date: string; total: string }>>[] = [];
+
     if (categoryIds.length > 0) {
-      const directRows: Array<{ date: string; total: string }> =
-        await this.transactionsRepository
+      queries.push(
+        this.transactionsRepository
           .createQueryBuilder("t")
           .select("DATE(t.transaction_date)", "date")
           .addSelect("COALESCE(SUM(ABS(t.amount)), 0)", "total")
@@ -827,19 +899,11 @@ export class BudgetReportsService {
           .andWhere("t.status != :void", { void: "VOID" })
           .andWhere("t.is_split = false")
           .groupBy("DATE(t.transaction_date)")
-          .getRawMany();
+          .getRawMany(),
+      );
 
-      for (const row of directRows) {
-        const dateStr = String(row.date).substring(0, 10);
-        spendingMap.set(
-          dateStr,
-          (spendingMap.get(dateStr) || 0) + parseFloat(row.total || "0"),
-        );
-      }
-
-      // Split transactions
-      const splitRows: Array<{ date: string; total: string }> =
-        await this.splitsRepository
+      queries.push(
+        this.splitsRepository
           .createQueryBuilder("s")
           .innerJoin("s.transaction", "t")
           .select("DATE(t.transaction_date)", "date")
@@ -850,21 +914,13 @@ export class BudgetReportsService {
           .andWhere("t.transaction_date <= :end", { end: periodEnd })
           .andWhere("t.status != :void", { void: "VOID" })
           .groupBy("DATE(t.transaction_date)")
-          .getRawMany();
-
-      for (const row of splitRows) {
-        const dateStr = String(row.date).substring(0, 10);
-        spendingMap.set(
-          dateStr,
-          (spendingMap.get(dateStr) || 0) + parseFloat(row.total || "0"),
-        );
-      }
+          .getRawMany(),
+      );
     }
 
-    // Transfer transactions grouped by date
     if (transferAccountIds.length > 0) {
-      const transferRows: Array<{ date: string; total: string }> =
-        await this.transactionsRepository
+      queries.push(
+        this.transactionsRepository
           .createQueryBuilder("t")
           .innerJoin("t.linkedTransaction", "lt")
           .select("DATE(t.transaction_date)", "date")
@@ -879,9 +935,14 @@ export class BudgetReportsService {
           .andWhere("t.transaction_date <= :end", { end: periodEnd })
           .andWhere("t.status != :void", { void: "VOID" })
           .groupBy("DATE(t.transaction_date)")
-          .getRawMany();
+          .getRawMany(),
+      );
+    }
 
-      for (const row of transferRows) {
+    const allResults = await Promise.all(queries);
+
+    for (const rows of allResults) {
+      for (const row of rows) {
         const dateStr = String(row.date).substring(0, 10);
         spendingMap.set(
           dateStr,
@@ -927,58 +988,64 @@ export class BudgetReportsService {
       .filter((bc) => bc.categoryId !== null && !bc.isTransfer)
       .map((bc) => bc.categoryId as string);
 
-    let total = 0;
-
-    if (categoryIds.length > 0) {
-      const directResult = await this.transactionsRepository
-        .createQueryBuilder("t")
-        .select("COALESCE(SUM(ABS(t.amount)), 0)", "total")
-        .where("t.user_id = :userId", { userId })
-        .andWhere("t.category_id IN (:...categoryIds)", { categoryIds })
-        .andWhere("t.transaction_date >= :start", { start: period.periodStart })
-        .andWhere("t.transaction_date <= :end", { end: period.periodEnd })
-        .andWhere("t.status != :void", { void: "VOID" })
-        .andWhere("t.is_split = false")
-        .getRawOne();
-
-      const splitResult = await this.splitsRepository
-        .createQueryBuilder("s")
-        .innerJoin("s.transaction", "t")
-        .select("COALESCE(SUM(ABS(s.amount)), 0)", "total")
-        .where("t.user_id = :userId", { userId })
-        .andWhere("s.category_id IN (:...categoryIds)", { categoryIds })
-        .andWhere("t.transaction_date >= :start", { start: period.periodStart })
-        .andWhere("t.transaction_date <= :end", { end: period.periodEnd })
-        .andWhere("t.status != :void", { void: "VOID" })
-        .getRawOne();
-
-      total +=
-        parseFloat(directResult?.total || "0") +
-        parseFloat(splitResult?.total || "0");
-    }
-
-    // Transfer actuals
     const transferAccountIds = categories
       .filter((bc) => bc.isTransfer && bc.transferAccountId)
       .map((bc) => bc.transferAccountId as string);
 
-    if (transferAccountIds.length > 0) {
-      const transferResult = await this.transactionsRepository
-        .createQueryBuilder("t")
-        .innerJoin("t.linkedTransaction", "lt")
-        .select("COALESCE(SUM(ABS(t.amount)), 0)", "total")
-        .where("t.user_id = :userId", { userId })
-        .andWhere("t.is_transfer = true")
-        .andWhere("t.amount < 0")
-        .andWhere("lt.account_id IN (:...transferAccountIds)", {
-          transferAccountIds,
-        })
-        .andWhere("t.transaction_date >= :start", { start: period.periodStart })
-        .andWhere("t.transaction_date <= :end", { end: period.periodEnd })
-        .andWhere("t.status != :void", { void: "VOID" })
-        .getRawOne();
+    // Run all independent queries in parallel
+    const queries: Promise<{ total: string } | undefined>[] = [];
 
-      total += parseFloat(transferResult?.total || "0");
+    if (categoryIds.length > 0) {
+      queries.push(
+        this.transactionsRepository
+          .createQueryBuilder("t")
+          .select("COALESCE(SUM(ABS(t.amount)), 0)", "total")
+          .where("t.user_id = :userId", { userId })
+          .andWhere("t.category_id IN (:...categoryIds)", { categoryIds })
+          .andWhere("t.transaction_date >= :start", { start: period.periodStart })
+          .andWhere("t.transaction_date <= :end", { end: period.periodEnd })
+          .andWhere("t.status != :void", { void: "VOID" })
+          .andWhere("t.is_split = false")
+          .getRawOne(),
+      );
+
+      queries.push(
+        this.splitsRepository
+          .createQueryBuilder("s")
+          .innerJoin("s.transaction", "t")
+          .select("COALESCE(SUM(ABS(s.amount)), 0)", "total")
+          .where("t.user_id = :userId", { userId })
+          .andWhere("s.category_id IN (:...categoryIds)", { categoryIds })
+          .andWhere("t.transaction_date >= :start", { start: period.periodStart })
+          .andWhere("t.transaction_date <= :end", { end: period.periodEnd })
+          .andWhere("t.status != :void", { void: "VOID" })
+          .getRawOne(),
+      );
+    }
+
+    if (transferAccountIds.length > 0) {
+      queries.push(
+        this.transactionsRepository
+          .createQueryBuilder("t")
+          .innerJoin("t.linkedTransaction", "lt")
+          .select("COALESCE(SUM(ABS(t.amount)), 0)", "total")
+          .where("t.user_id = :userId", { userId })
+          .andWhere("t.is_transfer = true")
+          .andWhere("t.amount < 0")
+          .andWhere("lt.account_id IN (:...transferAccountIds)", {
+            transferAccountIds,
+          })
+          .andWhere("t.transaction_date >= :start", { start: period.periodStart })
+          .andWhere("t.transaction_date <= :end", { end: period.periodEnd })
+          .andWhere("t.status != :void", { void: "VOID" })
+          .getRawOne(),
+      );
+    }
+
+    const results = await Promise.all(queries);
+    let total = 0;
+    for (const result of results) {
+      total += parseFloat(result?.total || "0");
     }
 
     return total;
@@ -990,27 +1057,28 @@ export class BudgetReportsService {
     periodStart: string,
     periodEnd: string,
   ): Promise<number> {
-    const directResult = await this.transactionsRepository
-      .createQueryBuilder("t")
-      .select("COALESCE(SUM(ABS(t.amount)), 0)", "total")
-      .where("t.user_id = :userId", { userId })
-      .andWhere("t.category_id = :categoryId", { categoryId })
-      .andWhere("t.transaction_date >= :start", { start: periodStart })
-      .andWhere("t.transaction_date <= :end", { end: periodEnd })
-      .andWhere("t.status != :void", { void: "VOID" })
-      .andWhere("t.is_split = false")
-      .getRawOne();
-
-    const splitResult = await this.splitsRepository
-      .createQueryBuilder("s")
-      .innerJoin("s.transaction", "t")
-      .select("COALESCE(SUM(ABS(s.amount)), 0)", "total")
-      .where("t.user_id = :userId", { userId })
-      .andWhere("s.category_id = :categoryId", { categoryId })
-      .andWhere("t.transaction_date >= :start", { start: periodStart })
-      .andWhere("t.transaction_date <= :end", { end: periodEnd })
-      .andWhere("t.status != :void", { void: "VOID" })
-      .getRawOne();
+    const [directResult, splitResult] = await Promise.all([
+      this.transactionsRepository
+        .createQueryBuilder("t")
+        .select("COALESCE(SUM(ABS(t.amount)), 0)", "total")
+        .where("t.user_id = :userId", { userId })
+        .andWhere("t.category_id = :categoryId", { categoryId })
+        .andWhere("t.transaction_date >= :start", { start: periodStart })
+        .andWhere("t.transaction_date <= :end", { end: periodEnd })
+        .andWhere("t.status != :void", { void: "VOID" })
+        .andWhere("t.is_split = false")
+        .getRawOne(),
+      this.splitsRepository
+        .createQueryBuilder("s")
+        .innerJoin("s.transaction", "t")
+        .select("COALESCE(SUM(ABS(s.amount)), 0)", "total")
+        .where("t.user_id = :userId", { userId })
+        .andWhere("s.category_id = :categoryId", { categoryId })
+        .andWhere("t.transaction_date >= :start", { start: periodStart })
+        .andWhere("t.transaction_date <= :end", { end: periodEnd })
+        .andWhere("t.status != :void", { void: "VOID" })
+        .getRawOne(),
+    ]);
 
     return (
       parseFloat(directResult?.total || "0") +
@@ -1037,11 +1105,80 @@ export class BudgetReportsService {
 
     if (filtered.length === 0) return [];
 
+    const filteredCategoryIds = filtered.map((bc) => bc.categoryId as string);
     const today = new Date();
+
+    // Compute full date range
+    const startD = new Date(today.getFullYear(), today.getMonth() - (months - 1), 1);
+    const rangeStart = `${startD.getFullYear()}-${String(startD.getMonth() + 1).padStart(2, "0")}-01`;
+    const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+    const rangeEnd = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+
+    // Batch query: per-category, per-month actuals in 2 parallel queries
+    // Map<categoryId, Map<monthKey, amount>>
+    const actualMap = new Map<string, Map<string, number>>();
+
+    const [directRows, splitRows] = await Promise.all([
+      this.transactionsRepository
+        .createQueryBuilder("t")
+        .select("t.category_id", "categoryId")
+        .addSelect(
+          "TO_CHAR(DATE_TRUNC('month', t.transaction_date), 'YYYY-MM')",
+          "month",
+        )
+        .addSelect("COALESCE(SUM(ABS(t.amount)), 0)", "total")
+        .where("t.user_id = :userId", { userId })
+        .andWhere("t.category_id IN (:...filteredCategoryIds)", {
+          filteredCategoryIds,
+        })
+        .andWhere("t.transaction_date >= :start", { start: rangeStart })
+        .andWhere("t.transaction_date <= :end", { end: rangeEnd })
+        .andWhere("t.status != :void", { void: "VOID" })
+        .andWhere("t.is_split = false")
+        .groupBy("t.category_id")
+        .addGroupBy(
+          "TO_CHAR(DATE_TRUNC('month', t.transaction_date), 'YYYY-MM')",
+        )
+        .getRawMany(),
+      this.splitsRepository
+        .createQueryBuilder("s")
+        .innerJoin("s.transaction", "t")
+        .select("s.category_id", "categoryId")
+        .addSelect(
+          "TO_CHAR(DATE_TRUNC('month', t.transaction_date), 'YYYY-MM')",
+          "month",
+        )
+        .addSelect("COALESCE(SUM(ABS(s.amount)), 0)", "total")
+        .where("t.user_id = :userId", { userId })
+        .andWhere("s.category_id IN (:...filteredCategoryIds)", {
+          filteredCategoryIds,
+        })
+        .andWhere("t.transaction_date >= :start", { start: rangeStart })
+        .andWhere("t.transaction_date <= :end", { end: rangeEnd })
+        .andWhere("t.status != :void", { void: "VOID" })
+        .groupBy("s.category_id")
+        .addGroupBy(
+          "TO_CHAR(DATE_TRUNC('month', t.transaction_date), 'YYYY-MM')",
+        )
+        .getRawMany(),
+    ]);
+
+    for (const row of [...directRows, ...splitRows]) {
+      const catId = row.categoryId as string;
+      const monthKey = row.month as string;
+      const total = parseFloat(row.total || "0");
+      if (!actualMap.has(catId)) {
+        actualMap.set(catId, new Map());
+      }
+      const monthMap = actualMap.get(catId)!;
+      monthMap.set(monthKey, (monthMap.get(monthKey) || 0) + total);
+    }
+
+    // Build series
     const seriesMap = new Map<string, CategoryTrendSeries>();
 
-    // Initialize series for each category
     for (const bc of filtered) {
+      const catId = bc.categoryId as string;
       const cat = bc.category;
       const categoryName = cat
         ? cat.parent
@@ -1049,39 +1186,22 @@ export class BudgetReportsService {
           : cat.name
         : "Uncategorized";
 
-      seriesMap.set(bc.categoryId as string, {
-        categoryId: bc.categoryId as string,
-        categoryName,
-        data: [],
-      });
-    }
+      const data: CategoryTrendSeries["data"] = [];
 
-    // Compute per-category actuals for each month
-    for (let i = months - 1; i >= 0; i--) {
-      const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
-      const year = d.getFullYear();
-      const month = d.getMonth();
+      for (let i = months - 1; i >= 0; i--) {
+        const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+        const year = d.getFullYear();
+        const month = d.getMonth();
+        const monthKey = `${year}-${String(month + 1).padStart(2, "0")}`;
+        const monthLabel = `${MONTH_NAMES[month].substring(0, 3)} ${year}`;
 
-      const periodStart = `${year}-${String(month + 1).padStart(2, "0")}-01`;
-      const lastDay = new Date(year, month + 1, 0).getDate();
-      const periodEnd = `${year}-${String(month + 1).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
-      const monthLabel = `${MONTH_NAMES[month].substring(0, 3)} ${year}`;
-
-      for (const bc of filtered) {
-        const catId = bc.categoryId as string;
         const budgeted = Number(bc.amount) || 0;
-        const actual = await this.computeCategoryActual(
-          userId,
-          catId,
-          periodStart,
-          periodEnd,
-        );
-
+        const actual = actualMap.get(catId)?.get(monthKey) || 0;
         const variance = actual - budgeted;
         const percentUsed =
           budgeted > 0 ? this.round((actual / budgeted) * 100) : 0;
 
-        seriesMap.get(catId)!.data.push({
+        data.push({
           month: monthLabel,
           budgeted: this.round(budgeted),
           actual: this.round(actual),
@@ -1089,6 +1209,8 @@ export class BudgetReportsService {
           percentUsed,
         });
       }
+
+      seriesMap.set(catId, { categoryId: catId, categoryName, data });
     }
 
     return Array.from(seriesMap.values());
@@ -1117,71 +1239,128 @@ export class BudgetReportsService {
     );
 
     const today = new Date();
-    const result: BudgetTrendPoint[] = [];
 
-    for (let i = months - 1; i >= 0; i--) {
-      const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
-      const year = d.getFullYear();
-      const month = d.getMonth();
+    // Compute full date range
+    const startD = new Date(today.getFullYear(), today.getMonth() - (months - 1), 1);
+    const rangeStart = `${startD.getFullYear()}-${String(startD.getMonth() + 1).padStart(2, "0")}-01`;
+    const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+    const rangeEnd = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
 
-      const periodStart = `${year}-${String(month + 1).padStart(2, "0")}-01`;
-      const lastDay = new Date(year, month + 1, 0).getDate();
-      const periodEnd = `${year}-${String(month + 1).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+    // Batch queries grouped by month
+    const actualByMonth = new Map<string, number>();
+    const queries: Promise<void>[] = [];
 
-      let actual = 0;
-
-      if (categoryIds.length > 0) {
-        const directResult = await this.transactionsRepository
+    if (categoryIds.length > 0) {
+      queries.push(
+        this.transactionsRepository
           .createQueryBuilder("t")
-          .select("COALESCE(SUM(ABS(t.amount)), 0)", "total")
+          .select(
+            "TO_CHAR(DATE_TRUNC('month', t.transaction_date), 'YYYY-MM')",
+            "month",
+          )
+          .addSelect("COALESCE(SUM(ABS(t.amount)), 0)", "total")
           .where("t.user_id = :userId", { userId })
           .andWhere("t.category_id IN (:...categoryIds)", { categoryIds })
-          .andWhere("t.transaction_date >= :start", { start: periodStart })
-          .andWhere("t.transaction_date <= :end", { end: periodEnd })
+          .andWhere("t.transaction_date >= :start", { start: rangeStart })
+          .andWhere("t.transaction_date <= :end", { end: rangeEnd })
           .andWhere("t.status != :void", { void: "VOID" })
           .andWhere("t.is_split = false")
-          .getRawOne();
+          .groupBy(
+            "TO_CHAR(DATE_TRUNC('month', t.transaction_date), 'YYYY-MM')",
+          )
+          .getRawMany()
+          .then((rows) => {
+            for (const row of rows) {
+              actualByMonth.set(
+                row.month,
+                (actualByMonth.get(row.month) || 0) +
+                  parseFloat(row.total || "0"),
+              );
+            }
+          }),
+      );
 
-        const splitResult = await this.splitsRepository
+      queries.push(
+        this.splitsRepository
           .createQueryBuilder("s")
           .innerJoin("s.transaction", "t")
-          .select("COALESCE(SUM(ABS(s.amount)), 0)", "total")
+          .select(
+            "TO_CHAR(DATE_TRUNC('month', t.transaction_date), 'YYYY-MM')",
+            "month",
+          )
+          .addSelect("COALESCE(SUM(ABS(s.amount)), 0)", "total")
           .where("t.user_id = :userId", { userId })
           .andWhere("s.category_id IN (:...categoryIds)", { categoryIds })
-          .andWhere("t.transaction_date >= :start", { start: periodStart })
-          .andWhere("t.transaction_date <= :end", { end: periodEnd })
+          .andWhere("t.transaction_date >= :start", { start: rangeStart })
+          .andWhere("t.transaction_date <= :end", { end: rangeEnd })
           .andWhere("t.status != :void", { void: "VOID" })
-          .getRawOne();
+          .groupBy(
+            "TO_CHAR(DATE_TRUNC('month', t.transaction_date), 'YYYY-MM')",
+          )
+          .getRawMany()
+          .then((rows) => {
+            for (const row of rows) {
+              actualByMonth.set(
+                row.month,
+                (actualByMonth.get(row.month) || 0) +
+                  parseFloat(row.total || "0"),
+              );
+            }
+          }),
+      );
+    }
 
-        actual +=
-          parseFloat(directResult?.total || "0") +
-          parseFloat(splitResult?.total || "0");
-      }
-
-      if (transferAccountIds.length > 0) {
-        const transferResult = await this.transactionsRepository
+    if (transferAccountIds.length > 0) {
+      queries.push(
+        this.transactionsRepository
           .createQueryBuilder("t")
           .innerJoin("t.linkedTransaction", "lt")
-          .select("COALESCE(SUM(ABS(t.amount)), 0)", "total")
+          .select(
+            "TO_CHAR(DATE_TRUNC('month', t.transaction_date), 'YYYY-MM')",
+            "month",
+          )
+          .addSelect("COALESCE(SUM(ABS(t.amount)), 0)", "total")
           .where("t.user_id = :userId", { userId })
           .andWhere("t.is_transfer = true")
           .andWhere("t.amount < 0")
           .andWhere("lt.account_id IN (:...transferAccountIds)", {
             transferAccountIds,
           })
-          .andWhere("t.transaction_date >= :start", { start: periodStart })
-          .andWhere("t.transaction_date <= :end", { end: periodEnd })
+          .andWhere("t.transaction_date >= :start", { start: rangeStart })
+          .andWhere("t.transaction_date <= :end", { end: rangeEnd })
           .andWhere("t.status != :void", { void: "VOID" })
-          .getRawOne();
+          .groupBy(
+            "TO_CHAR(DATE_TRUNC('month', t.transaction_date), 'YYYY-MM')",
+          )
+          .getRawMany()
+          .then((rows) => {
+            for (const row of rows) {
+              actualByMonth.set(
+                row.month,
+                (actualByMonth.get(row.month) || 0) +
+                  parseFloat(row.total || "0"),
+              );
+            }
+          }),
+      );
+    }
 
-        actual += parseFloat(transferResult?.total || "0");
-      }
+    await Promise.all(queries);
 
+    // Build result from aggregated monthly data
+    const result: BudgetTrendPoint[] = [];
+
+    for (let i = months - 1; i >= 0; i--) {
+      const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      const year = d.getFullYear();
+      const month = d.getMonth();
+      const monthKey = `${year}-${String(month + 1).padStart(2, "0")}`;
+      const monthLabel = `${MONTH_NAMES[month].substring(0, 3)} ${year}`;
+
+      const actual = actualByMonth.get(monthKey) || 0;
       const variance = actual - totalBudgeted;
       const percentUsed =
         totalBudgeted > 0 ? this.round((actual / totalBudgeted) * 100) : 0;
-
-      const monthLabel = `${MONTH_NAMES[month].substring(0, 3)} ${year}`;
 
       result.push({
         month: monthLabel,

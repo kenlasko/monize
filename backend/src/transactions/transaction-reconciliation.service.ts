@@ -140,52 +140,55 @@ export class TransactionReconciliationService {
     clearedBalance: number;
     difference: number;
   }> {
-    const account = await this.accountsService.findOne(userId, accountId);
-
-    const transactions = await this.transactionsRepository
-      .createQueryBuilder("transaction")
-      .leftJoinAndSelect("transaction.payee", "payee")
-      .leftJoinAndSelect("transaction.category", "category")
-      .where("transaction.userId = :userId", { userId })
-      .andWhere("transaction.accountId = :accountId", { accountId })
-      .andWhere("transaction.parentTransactionId IS NULL")
-      .andWhere("transaction.status IN (:...statuses)", {
-        statuses: [TransactionStatus.UNRECONCILED, TransactionStatus.CLEARED],
-      })
-      .andWhere("transaction.transactionDate <= :statementDate", {
-        statementDate,
-      })
-      .orderBy("transaction.transactionDate", "ASC")
-      .addOrderBy("transaction.createdAt", "ASC")
-      .getMany();
-
-    const reconciledResult = await this.transactionsRepository
-      .createQueryBuilder("transaction")
-      .select("SUM(transaction.amount)", "sum")
-      .where("transaction.userId = :userId", { userId })
-      .andWhere("transaction.accountId = :accountId", { accountId })
-      .andWhere("transaction.parentTransactionId IS NULL")
-      .andWhere("transaction.status = :status", {
-        status: TransactionStatus.RECONCILED,
-      })
-      .getRawOne();
+    const [account, transactions, reconciledResult, clearedResult] =
+      await Promise.all([
+        this.accountsService.findOne(userId, accountId),
+        this.transactionsRepository
+          .createQueryBuilder("transaction")
+          .leftJoinAndSelect("transaction.payee", "payee")
+          .leftJoinAndSelect("transaction.category", "category")
+          .where("transaction.userId = :userId", { userId })
+          .andWhere("transaction.accountId = :accountId", { accountId })
+          .andWhere("transaction.parentTransactionId IS NULL")
+          .andWhere("transaction.status IN (:...statuses)", {
+            statuses: [
+              TransactionStatus.UNRECONCILED,
+              TransactionStatus.CLEARED,
+            ],
+          })
+          .andWhere("transaction.transactionDate <= :statementDate", {
+            statementDate,
+          })
+          .orderBy("transaction.transactionDate", "ASC")
+          .addOrderBy("transaction.createdAt", "ASC")
+          .getMany(),
+        this.transactionsRepository
+          .createQueryBuilder("transaction")
+          .select("SUM(transaction.amount)", "sum")
+          .where("transaction.userId = :userId", { userId })
+          .andWhere("transaction.accountId = :accountId", { accountId })
+          .andWhere("transaction.parentTransactionId IS NULL")
+          .andWhere("transaction.status = :status", {
+            status: TransactionStatus.RECONCILED,
+          })
+          .getRawOne(),
+        this.transactionsRepository
+          .createQueryBuilder("transaction")
+          .select("SUM(transaction.amount)", "sum")
+          .where("transaction.userId = :userId", { userId })
+          .andWhere("transaction.accountId = :accountId", { accountId })
+          .andWhere("transaction.parentTransactionId IS NULL")
+          .andWhere("transaction.status = :status", {
+            status: TransactionStatus.CLEARED,
+          })
+          .andWhere("transaction.transactionDate <= :statementDate", {
+            statementDate,
+          })
+          .getRawOne(),
+      ]);
 
     const reconciledSum = Number(reconciledResult?.sum) || 0;
     const reconciledBalance = Number(account.openingBalance) + reconciledSum;
-
-    const clearedResult = await this.transactionsRepository
-      .createQueryBuilder("transaction")
-      .select("SUM(transaction.amount)", "sum")
-      .where("transaction.userId = :userId", { userId })
-      .andWhere("transaction.accountId = :accountId", { accountId })
-      .andWhere("transaction.parentTransactionId IS NULL")
-      .andWhere("transaction.status = :status", {
-        status: TransactionStatus.CLEARED,
-      })
-      .andWhere("transaction.transactionDate <= :statementDate", {
-        statementDate,
-      })
-      .getRawOne();
 
     const clearedSum = Number(clearedResult?.sum) || 0;
     const clearedBalance = reconciledBalance + clearedSum;

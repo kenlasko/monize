@@ -6,6 +6,7 @@ import {
   ReportResult,
   TimeframeType,
 } from '@/types/custom-report';
+import { getCached, setCache, invalidateCache } from './apiCache';
 
 export interface ExecuteReportParams {
   timeframeType?: TimeframeType;
@@ -17,12 +18,16 @@ export const customReportsApi = {
   // Create a new custom report
   create: async (data: CreateCustomReportData): Promise<CustomReport> => {
     const response = await apiClient.post<CustomReport>('/reports/custom', data);
+    invalidateCache('reports:');
     return response.data;
   },
 
   // Get all custom reports for the current user
   getAll: async (): Promise<CustomReport[]> => {
+    const cached = getCached<CustomReport[]>('reports:all');
+    if (cached) return cached;
     const response = await apiClient.get<CustomReport[]>('/reports/custom');
+    setCache('reports:all', response.data, 300_000);
     return response.data;
   },
 
@@ -35,12 +40,14 @@ export const customReportsApi = {
   // Update a custom report
   update: async (id: string, data: UpdateCustomReportData): Promise<CustomReport> => {
     const response = await apiClient.patch<CustomReport>(`/reports/custom/${id}`, data);
+    invalidateCache('reports:');
     return response.data;
   },
 
   // Delete a custom report
   delete: async (id: string): Promise<void> => {
     await apiClient.delete(`/reports/custom/${id}`);
+    invalidateCache('reports:');
   },
 
   // Execute a custom report and get aggregated data
@@ -57,6 +64,7 @@ export const customReportsApi = {
     const response = await apiClient.patch<CustomReport>(`/reports/custom/${id}`, {
       isFavourite,
     });
+    invalidateCache('reports:');
     return response.data;
   },
 };

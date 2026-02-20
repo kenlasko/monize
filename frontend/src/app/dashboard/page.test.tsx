@@ -155,6 +155,10 @@ vi.mock('@/components/dashboard/InsightsWidget', () => ({
   InsightsWidget: ({ isLoading }: any) => <div data-testid="insights-widget">{isLoading ? 'loading' : 'loaded'}</div>,
 }));
 
+vi.mock('@/components/dashboard/BudgetStatusWidget', () => ({
+  BudgetStatusWidget: ({ isLoading }: any) => <div data-testid="budget-status">{isLoading ? 'loading' : 'loaded'}</div>,
+}));
+
 const mockTriggerAutoRefresh = vi.fn();
 vi.mock('@/hooks/usePriceRefresh', () => ({
   usePriceRefresh: () => ({
@@ -257,17 +261,7 @@ describe('DashboardPage', () => {
     });
   });
 
-  it('loads top movers when investment accounts exist', async () => {
-    mockGetAccounts.mockResolvedValue([
-      { id: 'acc-1', name: 'Brokerage', accountType: 'INVESTMENT', isClosed: false },
-    ]);
-    render(<DashboardPage />);
-    await waitFor(() => {
-      expect(mockGetTopMovers).toHaveBeenCalled();
-    });
-  });
-
-  it('triggers auto price refresh when investments exist', async () => {
+  it('triggers auto price refresh when investment accounts exist', async () => {
     mockGetAccounts.mockResolvedValue([
       { id: 'acc-1', name: 'Brokerage', accountType: 'INVESTMENT', isClosed: false },
     ]);

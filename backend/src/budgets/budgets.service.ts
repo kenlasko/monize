@@ -36,6 +36,23 @@ export interface UpcomingBill {
 
 @Injectable()
 export class BudgetsService {
+  // Short-lived cache to dedup concurrent computeCategoryActuals calls
+  // (e.g. getSummary + getVelocity fired in parallel from the frontend)
+  private categoryActualsCache = new Map<
+    string,
+    { data: Promise<Array<{
+      budgetCategoryId: string;
+      categoryId: string | null;
+      categoryName: string;
+      budgeted: number;
+      spent: number;
+      remaining: number;
+      percentUsed: number;
+      isIncome: boolean;
+      percentage: number | null;
+    }>>; timestamp: number }
+  >();
+
   constructor(
     @InjectRepository(Budget)
     private budgetsRepository: Repository<Budget>,
@@ -271,7 +288,7 @@ export class BudgetsService {
 
     const { periodStart, periodEnd } = this.getCurrentPeriodDates(budget);
 
-    const categoryBreakdown = await this.computeCategoryActuals(
+    const categoryBreakdown = await this.getCachedCategoryActuals(
       userId,
       budget,
       periodStart,
@@ -376,7 +393,7 @@ export class BudgetsService {
     );
     const daysRemaining = Math.max(0, totalDays - daysElapsed);
 
-    const categoryBreakdown = await this.computeCategoryActuals(
+    const categoryBreakdown = await this.getCachedCategoryActuals(
       userId,
       budget,
       periodStart,
@@ -583,7 +600,7 @@ export class BudgetsService {
     const budget = budgets[0];
     const { periodStart, periodEnd } = this.getCurrentPeriodDates(budget);
 
-    const categoryBreakdown = await this.computeCategoryActuals(
+    const categoryBreakdown = await this.getCachedCategoryActuals(
       userId,
       budget,
       periodStart,
@@ -683,7 +700,7 @@ export class BudgetsService {
     const budget = budgets[0];
     const { periodStart, periodEnd } = this.getCurrentPeriodDates(budget);
 
-    const categoryBreakdown = await this.computeCategoryActuals(
+    const categoryBreakdown = await this.getCachedCategoryActuals(
       userId,
       budget,
       periodStart,
@@ -712,6 +729,39 @@ export class BudgetsService {
     return getCurrentMonthPeriodDates();
   }
 
+  private getCachedCategoryActuals(
+    userId: string,
+    budget: Budget,
+    periodStart: string,
+    periodEnd: string,
+  ) {
+    const key = `${budget.id}:${periodStart}:${periodEnd}`;
+    const cached = this.categoryActualsCache.get(key);
+    const now = Date.now();
+
+    if (cached && now - cached.timestamp < 10_000) {
+      return cached.data;
+    }
+
+    // Store the promise itself so concurrent callers share the same in-flight request
+    const promise = this.computeCategoryActuals(
+      userId,
+      budget,
+      periodStart,
+      periodEnd,
+    );
+    this.categoryActualsCache.set(key, { data: promise, timestamp: now });
+
+    // Clean up stale entries
+    if (this.categoryActualsCache.size > 50) {
+      for (const [k, v] of this.categoryActualsCache) {
+        if (now - v.timestamp > 30_000) this.categoryActualsCache.delete(k);
+      }
+    }
+
+    return promise;
+  }
+
   async computeActualIncome(
     userId: string,
     budget: Budget,
@@ -728,31 +778,32 @@ export class BudgetsService {
       (bc) => bc.categoryId as string,
     );
 
-    const directResult = await this.transactionsRepository
-      .createQueryBuilder("t")
-      .select("COALESCE(SUM(ABS(t.amount)), 0)", "total")
-      .where("t.user_id = :userId", { userId })
-      .andWhere("t.category_id IN (:...incomeCategoryIds)", {
-        incomeCategoryIds,
-      })
-      .andWhere("t.transaction_date >= :periodStart", { periodStart })
-      .andWhere("t.transaction_date <= :periodEnd", { periodEnd })
-      .andWhere("t.status != :void", { void: "VOID" })
-      .andWhere("t.is_split = false")
-      .getRawOne();
-
-    const splitResult = await this.splitsRepository
-      .createQueryBuilder("s")
-      .innerJoin("s.transaction", "t")
-      .select("COALESCE(SUM(ABS(s.amount)), 0)", "total")
-      .where("t.user_id = :userId", { userId })
-      .andWhere("s.category_id IN (:...incomeCategoryIds)", {
-        incomeCategoryIds,
-      })
-      .andWhere("t.transaction_date >= :periodStart", { periodStart })
-      .andWhere("t.transaction_date <= :periodEnd", { periodEnd })
-      .andWhere("t.status != :void", { void: "VOID" })
-      .getRawOne();
+    const [directResult, splitResult] = await Promise.all([
+      this.transactionsRepository
+        .createQueryBuilder("t")
+        .select("COALESCE(SUM(ABS(t.amount)), 0)", "total")
+        .where("t.user_id = :userId", { userId })
+        .andWhere("t.category_id IN (:...incomeCategoryIds)", {
+          incomeCategoryIds,
+        })
+        .andWhere("t.transaction_date >= :periodStart", { periodStart })
+        .andWhere("t.transaction_date <= :periodEnd", { periodEnd })
+        .andWhere("t.status != :void", { void: "VOID" })
+        .andWhere("t.is_split = false")
+        .getRawOne(),
+      this.splitsRepository
+        .createQueryBuilder("s")
+        .innerJoin("s.transaction", "t")
+        .select("COALESCE(SUM(ABS(s.amount)), 0)", "total")
+        .where("t.user_id = :userId", { userId })
+        .andWhere("s.category_id IN (:...incomeCategoryIds)", {
+          incomeCategoryIds,
+        })
+        .andWhere("t.transaction_date >= :periodStart", { periodStart })
+        .andWhere("t.transaction_date <= :periodEnd", { periodEnd })
+        .andWhere("t.status != :void", { void: "VOID" })
+        .getRawOne(),
+    ]);
 
     return (
       parseFloat(directResult?.total || "0") +
@@ -800,82 +851,94 @@ export class BudgetsService {
       .map((bc) => bc.categoryId as string);
 
     const spendingMap = new Map<string, number>();
-
-    if (categoryIds.length > 0) {
-      const directSpending = await this.transactionsRepository
-        .createQueryBuilder("t")
-        .select("t.category_id", "categoryId")
-        .addSelect("COALESCE(SUM(ABS(t.amount)), 0)", "total")
-        .where("t.user_id = :userId", { userId })
-        .andWhere("t.category_id IN (:...categoryIds)", { categoryIds })
-        .andWhere("t.transaction_date >= :periodStart", { periodStart })
-        .andWhere("t.transaction_date <= :periodEnd", { periodEnd })
-        .andWhere("t.status != :void", { void: "VOID" })
-        .andWhere("t.is_split = false")
-        .groupBy("t.category_id")
-        .getRawMany();
-
-      for (const row of directSpending) {
-        spendingMap.set(row.categoryId, parseFloat(row.total || "0"));
-      }
-
-      const splitSpending = await this.splitsRepository
-        .createQueryBuilder("s")
-        .innerJoin("s.transaction", "t")
-        .select("s.category_id", "categoryId")
-        .addSelect("COALESCE(SUM(ABS(s.amount)), 0)", "total")
-        .where("t.user_id = :userId", { userId })
-        .andWhere("s.category_id IN (:...categoryIds)", { categoryIds })
-        .andWhere("t.transaction_date >= :periodStart", { periodStart })
-        .andWhere("t.transaction_date <= :periodEnd", { periodEnd })
-        .andWhere("t.status != :void", { void: "VOID" })
-        .groupBy("s.category_id")
-        .getRawMany();
-
-      for (const row of splitSpending) {
-        const existing = spendingMap.get(row.categoryId) || 0;
-        spendingMap.set(
-          row.categoryId,
-          existing + parseFloat(row.total || "0"),
-        );
-      }
-    }
-
-    // Transfer actuals
     const transferSpendingMap = new Map<string, number>();
     const transferBudgetCategories = budgetCategories.filter(
       (bc) => bc.isTransfer && bc.transferAccountId,
     );
+
+    // Run all independent queries in parallel
+    const queries: Promise<void>[] = [];
+
+    if (categoryIds.length > 0) {
+      queries.push(
+        this.transactionsRepository
+          .createQueryBuilder("t")
+          .select("t.category_id", "categoryId")
+          .addSelect("COALESCE(SUM(ABS(t.amount)), 0)", "total")
+          .where("t.user_id = :userId", { userId })
+          .andWhere("t.category_id IN (:...categoryIds)", { categoryIds })
+          .andWhere("t.transaction_date >= :periodStart", { periodStart })
+          .andWhere("t.transaction_date <= :periodEnd", { periodEnd })
+          .andWhere("t.status != :void", { void: "VOID" })
+          .andWhere("t.is_split = false")
+          .groupBy("t.category_id")
+          .getRawMany()
+          .then((rows) => {
+            for (const row of rows) {
+              spendingMap.set(row.categoryId, parseFloat(row.total || "0"));
+            }
+          }),
+      );
+
+      queries.push(
+        this.splitsRepository
+          .createQueryBuilder("s")
+          .innerJoin("s.transaction", "t")
+          .select("s.category_id", "categoryId")
+          .addSelect("COALESCE(SUM(ABS(s.amount)), 0)", "total")
+          .where("t.user_id = :userId", { userId })
+          .andWhere("s.category_id IN (:...categoryIds)", { categoryIds })
+          .andWhere("t.transaction_date >= :periodStart", { periodStart })
+          .andWhere("t.transaction_date <= :periodEnd", { periodEnd })
+          .andWhere("t.status != :void", { void: "VOID" })
+          .groupBy("s.category_id")
+          .getRawMany()
+          .then((rows) => {
+            for (const row of rows) {
+              const existing = spendingMap.get(row.categoryId) || 0;
+              spendingMap.set(
+                row.categoryId,
+                existing + parseFloat(row.total || "0"),
+              );
+            }
+          }),
+      );
+    }
 
     if (transferBudgetCategories.length > 0) {
       const transferAccountIds = transferBudgetCategories.map(
         (bc) => bc.transferAccountId as string,
       );
 
-      const transferActuals = await this.transactionsRepository
-        .createQueryBuilder("t")
-        .innerJoin("t.linkedTransaction", "lt")
-        .select("lt.account_id", "destinationAccountId")
-        .addSelect("COALESCE(SUM(ABS(t.amount)), 0)", "total")
-        .where("t.user_id = :userId", { userId })
-        .andWhere("t.is_transfer = true")
-        .andWhere("t.amount < 0")
-        .andWhere("lt.account_id IN (:...transferAccountIds)", {
-          transferAccountIds,
-        })
-        .andWhere("t.transaction_date >= :periodStart", { periodStart })
-        .andWhere("t.transaction_date <= :periodEnd", { periodEnd })
-        .andWhere("t.status != :void", { void: "VOID" })
-        .groupBy("lt.account_id")
-        .getRawMany();
-
-      for (const row of transferActuals) {
-        transferSpendingMap.set(
-          row.destinationAccountId,
-          parseFloat(row.total || "0"),
-        );
-      }
+      queries.push(
+        this.transactionsRepository
+          .createQueryBuilder("t")
+          .innerJoin("t.linkedTransaction", "lt")
+          .select("lt.account_id", "destinationAccountId")
+          .addSelect("COALESCE(SUM(ABS(t.amount)), 0)", "total")
+          .where("t.user_id = :userId", { userId })
+          .andWhere("t.is_transfer = true")
+          .andWhere("t.amount < 0")
+          .andWhere("lt.account_id IN (:...transferAccountIds)", {
+            transferAccountIds,
+          })
+          .andWhere("t.transaction_date >= :periodStart", { periodStart })
+          .andWhere("t.transaction_date <= :periodEnd", { periodEnd })
+          .andWhere("t.status != :void", { void: "VOID" })
+          .groupBy("lt.account_id")
+          .getRawMany()
+          .then((rows) => {
+            for (const row of rows) {
+              transferSpendingMap.set(
+                row.destinationAccountId,
+                parseFloat(row.total || "0"),
+              );
+            }
+          }),
+      );
     }
+
+    await Promise.all(queries);
 
     return budgetCategories.map((bc) => {
       const rawAmount = Number(bc.amount);

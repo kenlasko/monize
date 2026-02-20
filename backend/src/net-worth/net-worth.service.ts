@@ -65,19 +65,21 @@ export class NetWorthService {
     const accounts = await this.accountRepo.find({
       where: { userId },
     });
-    for (const account of accounts) {
-      try {
-        if (this.isBrokerageOrStandaloneInvestment(account)) {
-          await this.recalculateBrokerageAccount(userId, account);
-        } else {
-          await this.recalculateRegularAccount(userId, account);
+    await Promise.all(
+      accounts.map(async (account) => {
+        try {
+          if (this.isBrokerageOrStandaloneInvestment(account)) {
+            await this.recalculateBrokerageAccount(userId, account);
+          } else {
+            await this.recalculateRegularAccount(userId, account);
+          }
+        } catch (err) {
+          this.logger.warn(
+            `Failed to recalculate account ${account.id}: ${err.message}`,
+          );
         }
-      } catch (err) {
-        this.logger.warn(
-          `Failed to recalculate account ${account.id}: ${err.message}`,
-        );
-      }
-    }
+      }),
+    );
   }
 
   async ensurePopulated(userId: string): Promise<void> {
@@ -112,15 +114,17 @@ export class NetWorthService {
       })
       .getMany();
 
-    for (const account of accounts) {
-      try {
-        await this.recalculateBrokerageAccount(account.userId, account);
-      } catch (err) {
-        this.logger.warn(
-          `Failed to recalculate investment snapshot for account ${account.id}: ${err.message}`,
-        );
-      }
-    }
+    await Promise.all(
+      accounts.map(async (account) => {
+        try {
+          await this.recalculateBrokerageAccount(account.userId, account);
+        } catch (err) {
+          this.logger.warn(
+            `Failed to recalculate investment snapshot for account ${account.id}: ${err.message}`,
+          );
+        }
+      }),
+    );
   }
 
   async getMonthlyNetWorth(

@@ -99,27 +99,30 @@ export class TransactionsService {
     );
   }
 
-  private async getCategoryIdsWithChildren(
+  private async getAllCategoryIdsWithChildren(
     userId: string,
-    categoryId: string,
+    categoryIds: string[],
   ): Promise<string[]> {
     const categories = await this.categoriesRepository.find({
       where: { userId },
       select: ["id", "parentId"],
     });
 
-    const result: string[] = [categoryId];
-    const addChildren = (parentId: string) => {
+    const result = new Set<string>();
+    const addWithChildren = (parentId: string) => {
+      result.add(parentId);
       for (const cat of categories) {
-        if (cat.parentId === parentId) {
-          result.push(cat.id);
-          addChildren(cat.id);
+        if (cat.parentId === parentId && !result.has(cat.id)) {
+          addWithChildren(cat.id);
         }
       }
     };
-    addChildren(categoryId);
 
-    return result;
+    for (const catId of categoryIds) {
+      addWithChildren(catId);
+    }
+
+    return [...result];
   }
 
   async create(
@@ -338,15 +341,10 @@ export class TransactionsService {
     }
 
     if (regularCategoryIds.length > 0) {
-      const allCategoryIds: string[] = [];
-      for (const catId of regularCategoryIds) {
-        const idsWithChildren = await this.getCategoryIdsWithChildren(
-          userId,
-          catId,
-        );
-        allCategoryIds.push(...idsWithChildren);
-      }
-      const uniqueCategoryIds = [...new Set(allCategoryIds)];
+      const uniqueCategoryIds = await this.getAllCategoryIdsWithChildren(
+        userId,
+        regularCategoryIds,
+      );
 
       if (uniqueCategoryIds.length > 0) {
         conditions.push(

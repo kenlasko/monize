@@ -93,19 +93,12 @@ function DashboardContent() {
       setScheduledTransactions(scheduledData);
       setNetWorthData(netWorth);
 
-      // Load top movers if there are investment accounts
+      // Check if user has investment accounts — topMovers will be loaded
+      // by the triggerAutoRefresh effect to avoid duplicate API calls
       const investmentAccounts = accountsData.filter(
         (a: Account) => a.accountType === 'INVESTMENT' && !a.isClosed,
       );
       setHasInvestments(investmentAccounts.length > 0);
-      if (investmentAccounts.length > 0) {
-        try {
-          const moversData = await investmentsApi.getTopMovers();
-          setTopMovers(moversData);
-        } catch {
-          // Silently fail — investments widget is optional
-        }
-      }
     } catch (error) {
       logger.error('Failed to load dashboard data:', error);
     } finally {
