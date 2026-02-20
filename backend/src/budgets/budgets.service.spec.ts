@@ -19,6 +19,7 @@ import {
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
 import { Category } from "../categories/entities/category.entity";
+import { ScheduledTransaction } from "../scheduled-transactions/entities/scheduled-transaction.entity";
 
 describe("BudgetsService", () => {
   let service: BudgetsService;
@@ -28,6 +29,7 @@ describe("BudgetsService", () => {
   let transactionsRepository: Record<string, jest.Mock>;
   let splitsRepository: Record<string, jest.Mock>;
   let categoriesRepository: Record<string, jest.Mock>;
+  let scheduledTransactionsRepository: Record<string, jest.Mock>;
 
   const mockBudget: Budget = {
     id: "budget-1",
@@ -170,6 +172,10 @@ describe("BudgetsService", () => {
       findOne: jest.fn(),
     };
 
+    scheduledTransactionsRepository = {
+      createQueryBuilder: jest.fn(() => createMockQueryBuilder()),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         BudgetsService,
@@ -193,6 +199,10 @@ describe("BudgetsService", () => {
         {
           provide: getRepositoryToken(Category),
           useValue: categoriesRepository,
+        },
+        {
+          provide: getRepositoryToken(ScheduledTransaction),
+          useValue: scheduledTransactionsRepository,
         },
       ],
     }).compile();
@@ -1192,6 +1202,308 @@ describe("BudgetsService", () => {
       expect(result.has("cat-1")).toBe(true);
       expect(result.has("cat-2")).toBe(false);
       expect(result.has("cat-3")).toBe(false);
+    });
+  });
+
+  describe("income-linked percentage budgets", () => {
+    it("computes effective budget from percentage of actual income", async () => {
+      const incomeLinkedBudget = {
+        ...mockBudget,
+        incomeLinked: true,
+        baseIncome: null,
+        categories: [
+          {
+            ...mockBudgetCategory,
+            id: "bc-inc",
+            categoryId: "cat-inc",
+            amount: 5000,
+            isIncome: true,
+            category: { name: "Salary" },
+          },
+          {
+            ...mockBudgetCategory,
+            id: "bc-1",
+            categoryId: "cat-1",
+            amount: 30,
+            isIncome: false,
+            category: { name: "Groceries" },
+          },
+          {
+            ...mockBudgetCategory,
+            id: "bc-2",
+            categoryId: "cat-2",
+            amount: 50,
+            isIncome: false,
+            category: { name: "Rent" },
+          },
+        ],
+      };
+      budgetsRepository.findOne.mockResolvedValue(incomeLinkedBudget);
+
+      // Income query returns 4000
+      const incomeQb = createMockQueryBuilder({
+        getRawOne: jest.fn().mockResolvedValue({ total: "4000" }),
+        getRawMany: jest.fn().mockResolvedValue([
+          { categoryId: "cat-inc", total: "4000" },
+          { categoryId: "cat-1", total: "900" },
+          { categoryId: "cat-2", total: "1800" },
+        ]),
+      });
+      const splitQb = createMockQueryBuilder({
+        getRawMany: jest.fn().mockResolvedValue([]),
+        getRawOne: jest.fn().mockResolvedValue({ total: "0" }),
+      });
+      transactionsRepository.createQueryBuilder.mockReturnValue(incomeQb);
+      splitsRepository.createQueryBuilder.mockReturnValue(splitQb);
+
+      const result = await service.getSummary("user-1", "budget-1");
+
+      expect(result.incomeLinked).toBe(true);
+      expect(result.actualIncome).toBe(4000);
+
+      // Groceries: 30% of 4000 = 1200
+      const groceries = result.categoryBreakdown.find(
+        (c) => c.categoryName === "Groceries",
+      );
+      expect(groceries).toBeDefined();
+      expect(groceries!.budgeted).toBe(1200);
+      expect(groceries!.percentage).toBe(30);
+      expect(groceries!.spent).toBe(900);
+
+      // Rent: 50% of 4000 = 2000
+      const rent = result.categoryBreakdown.find(
+        (c) => c.categoryName === "Rent",
+      );
+      expect(rent).toBeDefined();
+      expect(rent!.budgeted).toBe(2000);
+      expect(rent!.percentage).toBe(50);
+    });
+
+    it("returns null percentage for non-income-linked budgets", async () => {
+      const normalBudget = {
+        ...mockBudget,
+        incomeLinked: false,
+        categories: [
+          {
+            ...mockBudgetCategory,
+            id: "bc-1",
+            categoryId: "cat-1",
+            amount: 500,
+            isIncome: false,
+            category: { name: "Groceries" },
+          },
+        ],
+      };
+      budgetsRepository.findOne.mockResolvedValue(normalBudget);
+
+      const directQb = createMockQueryBuilder({
+        getRawMany: jest
+          .fn()
+          .mockResolvedValue([{ categoryId: "cat-1", total: "200" }]),
+      });
+      const splitQb = createMockQueryBuilder({
+        getRawMany: jest.fn().mockResolvedValue([]),
+      });
+      transactionsRepository.createQueryBuilder.mockReturnValue(directQb);
+      splitsRepository.createQueryBuilder.mockReturnValue(splitQb);
+
+      const result = await service.getSummary("user-1", "budget-1");
+
+      expect(result.incomeLinked).toBe(false);
+      expect(result.actualIncome).toBeNull();
+
+      const groceries = result.categoryBreakdown.find(
+        (c) => c.categoryName === "Groceries",
+      );
+      expect(groceries!.percentage).toBeNull();
+      expect(groceries!.budgeted).toBe(500);
+    });
+
+    it("returns zero effective budget when no income recorded for income-linked budget", async () => {
+      const incomeLinkedBudget = {
+        ...mockBudget,
+        incomeLinked: true,
+        categories: [
+          {
+            ...mockBudgetCategory,
+            id: "bc-1",
+            categoryId: "cat-1",
+            amount: 30,
+            isIncome: false,
+            category: { name: "Groceries" },
+          },
+        ],
+      };
+      budgetsRepository.findOne.mockResolvedValue(incomeLinkedBudget);
+
+      const directQb = createMockQueryBuilder({
+        getRawMany: jest.fn().mockResolvedValue([]),
+        getRawOne: jest.fn().mockResolvedValue({ total: "0" }),
+      });
+      const splitQb = createMockQueryBuilder({
+        getRawMany: jest.fn().mockResolvedValue([]),
+        getRawOne: jest.fn().mockResolvedValue({ total: "0" }),
+      });
+      transactionsRepository.createQueryBuilder.mockReturnValue(directQb);
+      splitsRepository.createQueryBuilder.mockReturnValue(splitQb);
+
+      const result = await service.getSummary("user-1", "budget-1");
+
+      const groceries = result.categoryBreakdown.find(
+        (c) => c.categoryName === "Groceries",
+      );
+      expect(groceries!.budgeted).toBe(0);
+      expect(groceries!.percentage).toBe(30);
+    });
+  });
+
+  describe("upcoming bills awareness", () => {
+    it("getUpcomingBills returns scheduled transactions due in the period", async () => {
+      const today = new Date();
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      const stQb = createMockQueryBuilder({
+        getMany: jest.fn().mockResolvedValue([
+          {
+            id: "st-1",
+            name: "Netflix",
+            amount: -15.99,
+            nextDueDate: tomorrow.toISOString().split("T")[0],
+            categoryId: "cat-ent",
+          },
+          {
+            id: "st-2",
+            name: "Internet",
+            amount: -79.99,
+            nextDueDate: tomorrow.toISOString().split("T")[0],
+            categoryId: "cat-util",
+          },
+        ]),
+      });
+      scheduledTransactionsRepository.createQueryBuilder.mockReturnValue(stQb);
+
+      const result = await service.getUpcomingBills("user-1", "2026-02-28");
+
+      expect(result).toHaveLength(2);
+      expect(result[0].name).toBe("Netflix");
+      expect(result[0].amount).toBe(15.99);
+      expect(result[1].name).toBe("Internet");
+      expect(result[1].amount).toBe(79.99);
+    });
+
+    it("getUpcomingBills returns empty array when no bills are due", async () => {
+      const stQb = createMockQueryBuilder({
+        getMany: jest.fn().mockResolvedValue([]),
+      });
+      scheduledTransactionsRepository.createQueryBuilder.mockReturnValue(stQb);
+
+      const result = await service.getUpcomingBills("user-1", "2026-02-28");
+
+      expect(result).toHaveLength(0);
+    });
+
+    it("getVelocity includes upcoming bills and truly available", async () => {
+      const budgetWithCategories = {
+        ...mockBudget,
+        categories: [
+          {
+            ...mockBudgetCategory,
+            id: "bc-1",
+            categoryId: "cat-1",
+            amount: 1000,
+            isIncome: false,
+            category: { name: "Groceries" },
+          },
+        ],
+      };
+      budgetsRepository.findOne.mockResolvedValue(budgetWithCategories);
+
+      const directQb = createMockQueryBuilder({
+        getRawMany: jest
+          .fn()
+          .mockResolvedValue([{ categoryId: "cat-1", total: "400" }]),
+      });
+      const splitQb = createMockQueryBuilder({
+        getRawMany: jest.fn().mockResolvedValue([]),
+      });
+      transactionsRepository.createQueryBuilder.mockReturnValue(directQb);
+      splitsRepository.createQueryBuilder.mockReturnValue(splitQb);
+
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const stQb = createMockQueryBuilder({
+        getMany: jest.fn().mockResolvedValue([
+          {
+            id: "st-1",
+            name: "Rent",
+            amount: -200,
+            nextDueDate: tomorrow.toISOString().split("T")[0],
+            categoryId: "cat-rent",
+          },
+        ]),
+      });
+      scheduledTransactionsRepository.createQueryBuilder.mockReturnValue(stQb);
+
+      const result = await service.getVelocity("user-1", "budget-1");
+
+      expect(result.upcomingBills).toHaveLength(1);
+      expect(result.upcomingBills[0].name).toBe("Rent");
+      expect(result.upcomingBills[0].amount).toBe(200);
+      expect(result.totalUpcomingBills).toBe(200);
+      // truly available = (1000 - 400) - 200 = 400
+      expect(result.trulyAvailable).toBe(400);
+      expect(result.currentSpent).toBe(400);
+      expect(result.budgetTotal).toBe(1000);
+    });
+
+    it("getVelocity returns zero trulyAvailable when bills exceed remaining", async () => {
+      const budgetWithCategories = {
+        ...mockBudget,
+        categories: [
+          {
+            ...mockBudgetCategory,
+            id: "bc-1",
+            categoryId: "cat-1",
+            amount: 500,
+            isIncome: false,
+            category: { name: "Groceries" },
+          },
+        ],
+      };
+      budgetsRepository.findOne.mockResolvedValue(budgetWithCategories);
+
+      const directQb = createMockQueryBuilder({
+        getRawMany: jest
+          .fn()
+          .mockResolvedValue([{ categoryId: "cat-1", total: "400" }]),
+      });
+      const splitQb = createMockQueryBuilder({
+        getRawMany: jest.fn().mockResolvedValue([]),
+      });
+      transactionsRepository.createQueryBuilder.mockReturnValue(directQb);
+      splitsRepository.createQueryBuilder.mockReturnValue(splitQb);
+
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const stQb = createMockQueryBuilder({
+        getMany: jest.fn().mockResolvedValue([
+          {
+            id: "st-1",
+            name: "Large Bill",
+            amount: -200,
+            nextDueDate: tomorrow.toISOString().split("T")[0],
+            categoryId: null,
+          },
+        ]),
+      });
+      scheduledTransactionsRepository.createQueryBuilder.mockReturnValue(stQb);
+
+      const result = await service.getVelocity("user-1", "budget-1");
+
+      // remaining = 500 - 400 = 100, upcoming = 200
+      // truly available = 100 - 200 = -100
+      expect(result.trulyAvailable).toBe(-100);
     });
   });
 });

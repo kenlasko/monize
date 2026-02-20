@@ -67,6 +67,11 @@ export function BudgetCategoryRow({
           <span className="text-sm text-gray-400 dark:text-gray-500">/</span>
           <span className="text-sm text-gray-600 dark:text-gray-300">
             {formatCurrency(category.budgeted)}
+            {category.percentage != null && (
+              <span className="text-xs text-gray-400 dark:text-gray-500 ml-1">
+                ({category.percentage}%)
+              </span>
+            )}
           </span>
           <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${
             isOverBudget

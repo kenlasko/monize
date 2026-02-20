@@ -16,6 +16,9 @@ const baseVelocity: BudgetVelocity = {
   totalDays: 28,
   currentSpent: 2015,
   paceStatus: 'under',
+  upcomingBills: [],
+  totalUpcomingBills: 0,
+  trulyAvailable: 3185,
 };
 
 describe('BudgetVelocityWidget', () => {
@@ -96,5 +99,51 @@ describe('BudgetVelocityWidget', () => {
 
     expect(screen.getByText('Day 13 of 28')).toBeInTheDocument();
     expect(screen.getByText('15 days remaining')).toBeInTheDocument();
+  });
+
+  it('shows upcoming bills section when bills exist', () => {
+    const velocityWithBills: BudgetVelocity = {
+      ...baseVelocity,
+      upcomingBills: [
+        { id: 'st-1', name: 'Rent', amount: 1200, dueDate: '2026-02-25', categoryId: null },
+      ],
+      totalUpcomingBills: 1200,
+      trulyAvailable: 1985,
+    };
+
+    render(
+      <BudgetVelocityWidget velocity={velocityWithBills} formatCurrency={mockFormat} />,
+    );
+
+    expect(screen.getByText('Bills coming')).toBeInTheDocument();
+    expect(screen.getByText('$1200.00')).toBeInTheDocument();
+    expect(screen.getByText('Truly available')).toBeInTheDocument();
+    expect(screen.getByText('$1985.00')).toBeInTheDocument();
+  });
+
+  it('does not show upcoming bills section when no bills', () => {
+    render(
+      <BudgetVelocityWidget velocity={baseVelocity} formatCurrency={mockFormat} />,
+    );
+
+    expect(screen.queryByText('Bills coming')).not.toBeInTheDocument();
+    expect(screen.queryByText('Truly available')).not.toBeInTheDocument();
+  });
+
+  it('shows negative truly available as over', () => {
+    const velocityOverBudget: BudgetVelocity = {
+      ...baseVelocity,
+      upcomingBills: [
+        { id: 'st-1', name: 'Big Bill', amount: 5000, dueDate: '2026-02-25', categoryId: null },
+      ],
+      totalUpcomingBills: 5000,
+      trulyAvailable: -1815,
+    };
+
+    render(
+      <BudgetVelocityWidget velocity={velocityOverBudget} formatCurrency={mockFormat} />,
+    );
+
+    expect(screen.getByText('$1815.00 over')).toBeInTheDocument();
   });
 });
