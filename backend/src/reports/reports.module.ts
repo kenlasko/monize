@@ -7,6 +7,7 @@ import { Transaction } from "../transactions/entities/transaction.entity";
 import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
 import { Category } from "../categories/entities/category.entity";
 import { Payee } from "../payees/entities/payee.entity";
+import { BudgetsModule } from "../budgets/budgets.module";
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { Payee } from "../payees/entities/payee.entity";
       Category,
       Payee,
     ]),
+    BudgetsModule,
   ],
   providers: [ReportsService],
   controllers: [ReportsController],

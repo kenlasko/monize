@@ -39,6 +39,12 @@ const reportComponents: Record<string, React.LazyExoticComponent<React.Component
   'budget-vs-actual': lazy(() => import('@/components/reports/BudgetVsActualReport').then(m => ({ default: m.BudgetVsActualReport }))),
   'budget-health-score': lazy(() => import('@/components/reports/BudgetHealthScoreReport').then(m => ({ default: m.BudgetHealthScoreReport }))),
   'budget-seasonal-patterns': lazy(() => import('@/components/reports/BudgetSeasonalPatternsReport').then(m => ({ default: m.BudgetSeasonalPatternsReport }))),
+  'budget-trend': lazy(() => import('@/components/reports/BudgetTrendReport').then(m => ({ default: m.BudgetTrendReport }))),
+  'category-performance': lazy(() => import('@/components/reports/CategoryPerformanceReport').then(m => ({ default: m.CategoryPerformanceReport }))),
+  'savings-rate': lazy(() => import('@/components/reports/SavingsRateReport').then(m => ({ default: m.SavingsRateReport }))),
+  'health-score-history': lazy(() => import('@/components/reports/HealthScoreHistoryReport').then(m => ({ default: m.HealthScoreHistoryReport }))),
+  'flex-group-analysis': lazy(() => import('@/components/reports/FlexGroupAnalysisReport').then(m => ({ default: m.FlexGroupAnalysisReport }))),
+  'seasonal-spending-map': lazy(() => import('@/components/reports/SeasonalSpendingMapReport').then(m => ({ default: m.SeasonalSpendingMapReport }))),
 };
 
 const reportNames: Record<string, string> = {
@@ -72,6 +78,12 @@ const reportNames: Record<string, string> = {
   'budget-vs-actual': 'Budget vs Actual',
   'budget-health-score': 'Budget Health Score',
   'budget-seasonal-patterns': 'Seasonal Spending Patterns',
+  'budget-trend': 'Budget Trend',
+  'category-performance': 'Category Performance',
+  'savings-rate': 'Savings Rate',
+  'health-score-history': 'Health Score History',
+  'flex-group-analysis': 'Flex Group Analysis',
+  'seasonal-spending-map': 'Seasonal Spending Map',
 };
 
 const reportDescriptions: Record<string, string> = {
@@ -99,6 +111,12 @@ const reportDescriptions: Record<string, string> = {
   'budget-vs-actual': 'Compare your budgeted amounts to actual spending over time across all categories.',
   'budget-health-score': 'Get a 0-100 health score for your budget with detailed per-category impact analysis.',
   'budget-seasonal-patterns': 'Discover seasonal trends and high-spending months across your budget categories.',
+  'budget-trend': 'Line chart showing total budgeted vs total actual spending over 6-12 months to track improvement.',
+  'category-performance': 'Table showing each category budget performance over multiple months with trend indicators.',
+  'savings-rate': 'Track your savings rate (income minus expenses divided by income) over time vs your target.',
+  'health-score-history': 'Line chart of monthly budget health scores showing your financial trajectory over time.',
+  'flex-group-analysis': 'Stacked bar chart for each flex group showing component categories with group limit reference.',
+  'seasonal-spending-map': 'Heatmap grid showing 12 months across all categories to identify seasonal spending patterns.',
 };
 
 function ReportSkeleton() {

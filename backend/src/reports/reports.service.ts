@@ -27,6 +27,7 @@ import {
   AggregatedDataPoint,
   ReportSummary,
 } from "./dto/execute-report.dto";
+import { BudgetsService } from "../budgets/budgets.service";
 import {
   subDays,
   subMonths,
@@ -52,6 +53,7 @@ export class ReportsService {
     private categoriesRepository: Repository<Category>,
     @InjectRepository(Payee)
     private payeesRepository: Repository<Payee>,
+    private budgetsService: BudgetsService,
   ) {}
 
   async create(
@@ -191,6 +193,14 @@ export class ReportsService {
       categoryMap,
       payeeMap,
     );
+
+    // For BUDGET_VARIANCE metric with CATEGORY grouping, enrich with budget data
+    if (
+      report.config.metric === MetricType.BUDGET_VARIANCE &&
+      report.groupBy === GroupByType.CATEGORY
+    ) {
+      data = await this.enrichWithBudgetVariance(userId, data);
+    }
 
     // Apply custom sorting if configured
     if (report.config.sortBy) {
@@ -687,6 +697,41 @@ export class ReportsService {
         return Math.round(sum * 100) / 100;
       default:
         return sum;
+    }
+  }
+
+  private async enrichWithBudgetVariance(
+    userId: string,
+    data: AggregatedDataPoint[],
+  ): Promise<AggregatedDataPoint[]> {
+    try {
+      const budgets = await this.budgetsService.findAll(userId);
+      const activeBudget = budgets.find((b) => b.isActive) || budgets[0];
+      if (!activeBudget) return data;
+
+      const budget = await this.budgetsService.findOne(
+        userId,
+        activeBudget.id,
+      );
+      const budgetMap = new Map<string, number>();
+      for (const bc of budget.categories || []) {
+        if (bc.categoryId && !bc.isIncome) {
+          budgetMap.set(bc.categoryId, Number(bc.amount) || 0);
+        }
+      }
+
+      return data.map((point) => {
+        const budgeted = budgetMap.get(point.id || "") || 0;
+        const variance = point.value - budgeted;
+        return {
+          ...point,
+          value: Math.round(variance * 100) / 100,
+          budgeted: Math.round(budgeted * 100) / 100,
+          actual: Math.round(point.value * 100) / 100,
+        };
+      });
+    } catch {
+      return data;
     }
   }
 

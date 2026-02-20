@@ -141,6 +141,9 @@ export interface AggregatedDataPoint {
   memo?: string;
   category?: string;
   account?: string;
+  // Budget variance fields (for BUDGET_VARIANCE metric)
+  budgeted?: number;
+  actual?: number;
 }
 
 export interface ReportTimeframe {
