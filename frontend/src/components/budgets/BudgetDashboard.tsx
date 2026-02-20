@@ -10,6 +10,7 @@ import { BudgetHeatmap } from './BudgetHeatmap';
 import { BudgetTrendChart } from './BudgetTrendChart';
 import { BudgetZeroBasedBar } from './BudgetZeroBasedBar';
 import { Budget503020Summary } from './Budget503020Summary';
+import { BudgetScenarioPlanner } from './BudgetScenarioPlanner';
 import { STRATEGY_LABELS, STRATEGY_DESCRIPTIONS } from './utils/budget-labels';
 import type { BudgetSummary, BudgetVelocity } from '@/types/budget';
 import type { ScheduledTransaction } from '@/types/scheduled-transaction';
@@ -149,6 +150,13 @@ export function BudgetDashboard({
 
       {/* Trend Chart */}
       <BudgetTrendChart data={trendData} formatCurrency={formatCurrency} />
+
+      {/* What-If Scenario Planner */}
+      <BudgetScenarioPlanner
+        categories={summary.categoryBreakdown}
+        totalIncome={summary.totalIncome}
+        formatCurrency={formatCurrency}
+      />
     </div>
   );
 }
