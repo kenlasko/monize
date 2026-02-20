@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
 import { budgetsApi } from '@/lib/budgets';
 import { getErrorMessage } from '@/lib/errors';
+import { StrategyDetailCard } from './StrategyDetailCard';
 import type { WizardState } from './BudgetWizard';
 import type { BudgetProfile, BudgetStrategy, GenerateBudgetResponse } from '@/types/budget';
 
@@ -104,26 +105,43 @@ export function BudgetWizardAnalysis({
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
           Choose a Budget Strategy
         </h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {STRATEGIES.map((s) => (
-            <button
-              key={s.value}
-              type="button"
-              onClick={() => updateState({ strategy: s.value })}
-              className={`p-4 rounded-lg border-2 text-left transition-colors ${
-                state.strategy === s.value
-                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 dark:border-blue-400'
-                  : 'border-gray-200 hover:border-gray-300 dark:border-gray-600 dark:hover:border-gray-500'
-              }`}
-            >
-              <div className="font-medium text-gray-900 dark:text-gray-100">
-                {s.label}
+        <div className="flex flex-col lg:flex-row gap-4">
+          {/* Strategy list - left side */}
+          <div className="flex flex-col gap-3 lg:w-[280px] lg:shrink-0">
+            {STRATEGIES.map((s) => (
+              <div key={s.value}>
+                <button
+                  type="button"
+                  onClick={() => updateState({ strategy: s.value })}
+                  className={`w-full p-4 rounded-lg border-2 text-left transition-colors ${
+                    state.strategy === s.value
+                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 dark:border-blue-400'
+                      : 'border-gray-200 hover:border-gray-300 dark:border-gray-600 dark:hover:border-gray-500'
+                  }`}
+                >
+                  <div className="font-medium text-gray-900 dark:text-gray-100">
+                    {s.label}
+                  </div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                    {s.description}
+                  </div>
+                </button>
+                {/* Mobile: detail card slides out below selected strategy */}
+                {state.strategy === s.value && (
+                  <div className="mt-3 lg:hidden">
+                    <StrategyDetailCard strategy={s.value} />
+                  </div>
+                )}
               </div>
-              <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                {s.description}
-              </div>
-            </button>
-          ))}
+            ))}
+          </div>
+
+          {/* Detail card - right side (desktop only) */}
+          <div className="hidden lg:block lg:flex-1 lg:min-w-0">
+            <div className="sticky top-4">
+              <StrategyDetailCard strategy={state.strategy} />
+            </div>
+          </div>
         </div>
       </div>
 
