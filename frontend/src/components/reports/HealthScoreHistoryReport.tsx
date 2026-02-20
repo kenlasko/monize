@@ -196,8 +196,9 @@ export function HealthScoreHistoryReport() {
                   dataKey="score"
                   stroke="#6366f1"
                   strokeWidth={3}
-                  dot={(props: { cx: number; cy: number; payload: HealthScoreHistoryPoint }) => {
+                  dot={(props: { cx?: number; cy?: number; payload?: HealthScoreHistoryPoint }) => {
                     const { cx, cy, payload } = props;
+                    if (cx == null || cy == null || !payload) return <circle r={0} />;
                     return (
                       <circle
                         key={payload.month}
