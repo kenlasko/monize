@@ -88,6 +88,20 @@ export interface FlexGroupStatusResult {
   }>;
 }
 
+export interface SavingsRatePoint {
+  month: string;
+  income: number;
+  expenses: number;
+  savings: number;
+  savingsRate: number;
+}
+
+export interface HealthScoreHistoryPoint {
+  month: string;
+  score: number;
+  label: string;
+}
+
 const MONTH_NAMES = [
   "January",
   "February",
@@ -554,6 +568,216 @@ export class BudgetReportsService {
     results.sort((a, b) => b.percentUsed - a.percentUsed);
 
     return results;
+  }
+
+  async getSavingsRate(
+    userId: string,
+    budgetId: string,
+    months: number,
+  ): Promise<SavingsRatePoint[]> {
+    const budget = await this.budgetsService.findOne(userId, budgetId);
+
+    const incomeCategories = (budget.categories || []).filter(
+      (bc) => bc.isIncome,
+    );
+    const expenseCategories = (budget.categories || []).filter(
+      (bc) => !bc.isIncome,
+    );
+
+    const incomeCategoryIds = incomeCategories
+      .filter((bc) => bc.categoryId !== null)
+      .map((bc) => bc.categoryId as string);
+    const expenseCategoryIds = expenseCategories
+      .filter((bc) => bc.categoryId !== null && !bc.isTransfer)
+      .map((bc) => bc.categoryId as string);
+
+    const today = new Date();
+    const result: SavingsRatePoint[] = [];
+
+    for (let i = months - 1; i >= 0; i--) {
+      const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      const year = d.getFullYear();
+      const month = d.getMonth();
+
+      const periodStart = `${year}-${String(month + 1).padStart(2, "0")}-01`;
+      const lastDay = new Date(year, month + 1, 0).getDate();
+      const periodEnd = `${year}-${String(month + 1).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+      const monthLabel = `${MONTH_NAMES[month].substring(0, 3)} ${year}`;
+
+      let income = 0;
+      let expenses = 0;
+
+      // Compute income from income-category transactions
+      if (incomeCategoryIds.length > 0) {
+        const incomeResult = await this.transactionsRepository
+          .createQueryBuilder("t")
+          .select("COALESCE(SUM(t.amount), 0)", "total")
+          .where("t.user_id = :userId", { userId })
+          .andWhere("t.category_id IN (:...incomeCategoryIds)", {
+            incomeCategoryIds,
+          })
+          .andWhere("t.transaction_date >= :start", { start: periodStart })
+          .andWhere("t.transaction_date <= :end", { end: periodEnd })
+          .andWhere("t.status != :void", { void: "VOID" })
+          .andWhere("t.is_split = false")
+          .getRawOne();
+
+        income += Math.abs(parseFloat(incomeResult?.total || "0"));
+      }
+
+      // Compute expenses from expense-category transactions
+      if (expenseCategoryIds.length > 0) {
+        const directResult = await this.transactionsRepository
+          .createQueryBuilder("t")
+          .select("COALESCE(SUM(ABS(t.amount)), 0)", "total")
+          .where("t.user_id = :userId", { userId })
+          .andWhere("t.category_id IN (:...expenseCategoryIds)", {
+            expenseCategoryIds,
+          })
+          .andWhere("t.transaction_date >= :start", { start: periodStart })
+          .andWhere("t.transaction_date <= :end", { end: periodEnd })
+          .andWhere("t.status != :void", { void: "VOID" })
+          .andWhere("t.is_split = false")
+          .andWhere("t.amount < 0")
+          .getRawOne();
+
+        const splitResult = await this.splitsRepository
+          .createQueryBuilder("s")
+          .innerJoin("s.transaction", "t")
+          .select("COALESCE(SUM(ABS(s.amount)), 0)", "total")
+          .where("t.user_id = :userId", { userId })
+          .andWhere("s.category_id IN (:...expenseCategoryIds)", {
+            expenseCategoryIds,
+          })
+          .andWhere("t.transaction_date >= :start", { start: periodStart })
+          .andWhere("t.transaction_date <= :end", { end: periodEnd })
+          .andWhere("t.status != :void", { void: "VOID" })
+          .andWhere("s.amount < 0")
+          .getRawOne();
+
+        expenses +=
+          parseFloat(directResult?.total || "0") +
+          parseFloat(splitResult?.total || "0");
+      }
+
+      // If no income categories in budget, compute income from all positive transactions
+      if (incomeCategoryIds.length === 0) {
+        const allIncomeResult = await this.transactionsRepository
+          .createQueryBuilder("t")
+          .select("COALESCE(SUM(t.amount), 0)", "total")
+          .where("t.user_id = :userId", { userId })
+          .andWhere("t.amount > 0")
+          .andWhere("t.is_transfer = false")
+          .andWhere("t.transaction_date >= :start", { start: periodStart })
+          .andWhere("t.transaction_date <= :end", { end: periodEnd })
+          .andWhere("t.status != :void", { void: "VOID" })
+          .getRawOne();
+
+        income = parseFloat(allIncomeResult?.total || "0");
+      }
+
+      const savings = income - expenses;
+      const savingsRate =
+        income > 0 ? this.round((savings / income) * 100) : 0;
+
+      result.push({
+        month: monthLabel,
+        income: this.round(income),
+        expenses: this.round(expenses),
+        savings: this.round(savings),
+        savingsRate,
+      });
+    }
+
+    return result;
+  }
+
+  async getHealthScoreHistory(
+    userId: string,
+    budgetId: string,
+    months: number,
+  ): Promise<HealthScoreHistoryPoint[]> {
+    const budget = await this.budgetsService.findOne(userId, budgetId);
+
+    const periods = await this.periodsRepository.find({
+      where: { budgetId: budget.id },
+      order: { periodStart: "ASC" },
+      take: months,
+      relations: [
+        "periodCategories",
+        "periodCategories.budgetCategory",
+      ],
+    });
+
+    if (periods.length === 0) {
+      return [];
+    }
+
+    // Build a budget category lookup for categoryGroup
+    const bcMap = new Map<string, BudgetCategory>();
+    for (const bc of budget.categories || []) {
+      bcMap.set(bc.id, bc);
+    }
+
+    const result: HealthScoreHistoryPoint[] = [];
+
+    for (const period of periods) {
+      const cats = (period.periodCategories || []).filter(
+        (pc) => !pc.budgetCategory?.isIncome,
+      );
+
+      let overBudgetDeductions = 0;
+      let underBudgetBonus = 0;
+      let essentialWeightPenalty = 0;
+
+      for (const pc of cats) {
+        const budgeted = Number(pc.budgetedAmount) || 0;
+        if (budgeted <= 0) continue;
+
+        let actual = Number(pc.actualAmount) || 0;
+        // For open periods, compute actuals from transactions
+        if (period.status === PeriodStatus.OPEN && pc.categoryId) {
+          actual = await this.computeCategoryActual(
+            userId,
+            pc.categoryId,
+            period.periodStart,
+            period.periodEnd,
+          );
+        }
+
+        const percentUsed = (actual / budgeted) * 100;
+
+        const bc = pc.budgetCategory
+          ? bcMap.get(pc.budgetCategory.id)
+          : undefined;
+        const isEssential = bc?.categoryGroup === CategoryGroup.NEED;
+        const weight = isEssential ? 1.5 : 1.0;
+
+        if (percentUsed > 100) {
+          const overagePercent = percentUsed - 100;
+          const deduction = Math.min(overagePercent * 0.3 * weight, 15);
+          overBudgetDeductions += deduction;
+          if (isEssential) {
+            essentialWeightPenalty += Math.min(overagePercent * 0.1, 5);
+          }
+        } else if (percentUsed <= 80) {
+          const bonus = Math.min((100 - percentUsed) * 0.05, 3);
+          underBudgetBonus += bonus;
+        }
+      }
+
+      const rawScore =
+        100 - overBudgetDeductions - essentialWeightPenalty + underBudgetBonus;
+      const score = Math.min(100, Math.max(0, Math.round(rawScore)));
+
+      result.push({
+        month: this.formatPeriodMonth(period.periodStart),
+        score,
+        label: this.getScoreLabel(score),
+      });
+    }
+
+    return result;
   }
 
   async getDailySpending(

@@ -396,3 +396,19 @@ export interface CategoryBudgetStatus {
   remaining: number;
   percentUsed: number;
 }
+
+// Savings Rate report types
+export interface SavingsRatePoint {
+  month: string;
+  income: number;
+  expenses: number;
+  savings: number;
+  savingsRate: number;
+}
+
+// Health Score History report types
+export interface HealthScoreHistoryPoint {
+  month: string;
+  score: number;
+  label: string;
+}

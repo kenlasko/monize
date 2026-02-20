@@ -13,6 +13,8 @@ import {
   FlexGroupStatus,
   DashboardBudgetSummary,
   CategoryBudgetStatus,
+  SavingsRatePoint,
+  HealthScoreHistoryPoint,
   CreateBudgetData,
   UpdateBudgetData,
   CreateBudgetCategoryData,
@@ -238,6 +240,28 @@ export const budgetsApi = {
   ): Promise<Array<{ date: string; amount: number }>> => {
     const response = await apiClient.get<Array<{ date: string; amount: number }>>(
       `/budgets/${budgetId}/reports/daily-spending`,
+    );
+    return response.data;
+  },
+
+  getSavingsRate: async (
+    budgetId: string,
+    months = 12,
+  ): Promise<SavingsRatePoint[]> => {
+    const response = await apiClient.get<SavingsRatePoint[]>(
+      `/budgets/${budgetId}/reports/savings-rate`,
+      { params: { months } },
+    );
+    return response.data;
+  },
+
+  getHealthScoreHistory: async (
+    budgetId: string,
+    months = 12,
+  ): Promise<HealthScoreHistoryPoint[]> => {
+    const response = await apiClient.get<HealthScoreHistoryPoint[]>(
+      `/budgets/${budgetId}/reports/health-score-history`,
+      { params: { months } },
     );
     return response.data;
   },

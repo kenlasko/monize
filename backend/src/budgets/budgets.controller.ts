@@ -420,4 +420,55 @@ export class BudgetsController {
   getDailySpending(@Request() req, @Param("id", ParseUUIDPipe) id: string) {
     return this.budgetReportsService.getDailySpending(req.user.id, id);
   }
+
+  @Get(":id/reports/savings-rate")
+  @ApiOperation({ summary: "Get savings rate over N months" })
+  @ApiParam({ name: "id", description: "Budget UUID" })
+  @ApiQuery({
+    name: "months",
+    required: false,
+    type: Number,
+    description: "Number of months (default 12)",
+  })
+  @ApiResponse({ status: 200, description: "Savings rate data retrieved" })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  @ApiResponse({ status: 404, description: "Budget not found" })
+  getSavingsRate(
+    @Request() req,
+    @Param("id", ParseUUIDPipe) id: string,
+    @Query() query: BudgetReportQueryDto,
+  ) {
+    return this.budgetReportsService.getSavingsRate(
+      req.user.id,
+      id,
+      query.months || 12,
+    );
+  }
+
+  @Get(":id/reports/health-score-history")
+  @ApiOperation({ summary: "Get health score history over N months" })
+  @ApiParam({ name: "id", description: "Budget UUID" })
+  @ApiQuery({
+    name: "months",
+    required: false,
+    type: Number,
+    description: "Number of months (default 12)",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Health score history data retrieved",
+  })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  @ApiResponse({ status: 404, description: "Budget not found" })
+  getHealthScoreHistory(
+    @Request() req,
+    @Param("id", ParseUUIDPipe) id: string,
+    @Query() query: BudgetReportQueryDto,
+  ) {
+    return this.budgetReportsService.getHealthScoreHistory(
+      req.user.id,
+      id,
+      query.months || 12,
+    );
+  }
 }
