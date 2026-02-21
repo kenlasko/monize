@@ -445,8 +445,25 @@ export class TransactionsService {
     const account = await this.accountsService.findOne(userId, singleAccountId);
     const currentBalance = Number(account.currentBalance) || 0;
 
+    // currentBalance only reflects past transactions.  Future-dated non-VOID
+    // transactions are excluded by design, so we add them back to get the
+    // projected balance that the newest-first running balance starts from.
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+
+    const futureResult = await this.transactionsRepository
+      .createQueryBuilder("t")
+      .select("COALESCE(SUM(t.amount), 0)", "sum")
+      .where("t.userId = :userId", { userId })
+      .andWhere("t.accountId = :singleAccountId", { singleAccountId })
+      .andWhere("t.transactionDate > :today", { today })
+      .andWhere("t.status != :void", { void: TransactionStatus.VOID })
+      .getRawOne();
+
+    const projectedBalance = currentBalance + (Number(futureResult?.sum) || 0);
+
     if (safePage === 1) {
-      return currentBalance;
+      return projectedBalance;
     }
 
     const previousPagesQuery = this.transactionsRepository
@@ -467,7 +484,7 @@ export class TransactionsService {
       .getRawOne();
 
     const sumBefore = Number(sumResult?.sum) || 0;
-    return currentBalance - sumBefore;
+    return projectedBalance - sumBefore;
   }
 
   private async enrichWithInvestmentLinks(

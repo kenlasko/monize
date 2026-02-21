@@ -208,8 +208,9 @@ function isTransfer(transaction: ScheduledTransaction): boolean {
  * Build forecast data points for the cash flow chart.
  *
  * futureTransactions: already-posted transactions with a date after today.
- * These are already included in account.currentBalance, so we subtract them
- * to get today's real balance, then re-add them at their correct future dates.
+ * These are NOT included in account.currentBalance (the backend excludes
+ * future-dated transactions from currentBalance).  We start from
+ * currentBalance and add future transactions at their correct dates.
  */
 export function buildForecast(
   accounts: Account[],
@@ -237,18 +238,18 @@ export function buildForecast(
     return [];
   }
 
-  // currentBalance includes all transactions (even future-dated ones).
-  // Subtract future transactions to get the balance as of today.
+  // currentBalance excludes future-dated transactions (backend filters them
+  // out).  We use it directly as the starting balance, then layer future
+  // transactions onto their correct dates below.
   const targetAccountIds = new Set(targetAccounts.map(a => a.id));
   const relevantFuture = futureTransactions.filter(ft =>
     targetAccountIds.has(ft.accountId) && ft.date > todayKey
   );
-  const futureSum = relevantFuture.reduce((sum, ft) => sum + ft.amount, 0);
 
   const startingBalance = targetAccounts.reduce(
     (sum, acc) => sum + Number(acc.currentBalance),
     0
-  ) - futureSum;
+  );
 
   // Filter scheduled transactions by account
   const relevantTransactions = accountId === 'all'

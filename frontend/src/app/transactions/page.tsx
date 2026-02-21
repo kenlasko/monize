@@ -832,7 +832,6 @@ function TransactionsContent() {
           onClearFilters={() => {
             setCurrentPage(1);
             setFilterAccountIds([]);
-            setFilterAccountStatus('');
             setFilterCategoryIds([]);
             setFilterPayeeIds([]);
             setFilterStartDate('');
@@ -840,7 +839,6 @@ function TransactionsContent() {
             setFilterSearch('');
             setFilterTimePeriod('');
             localStorage.removeItem(STORAGE_KEYS.accountIds);
-            localStorage.removeItem(STORAGE_KEYS.accountStatus);
             localStorage.removeItem(STORAGE_KEYS.categoryIds);
             localStorage.removeItem(STORAGE_KEYS.payeeIds);
             localStorage.removeItem(STORAGE_KEYS.startDate);

@@ -1132,6 +1132,38 @@ describe("TransactionsService", () => {
       expect(result.startingBalance).toBe(950);
     });
 
+    it("includes future transaction amounts in starting balance for page 1", async () => {
+      const mockTx = {
+        id: "tx-1",
+        userId: "user-1",
+        accountId: "account-1",
+        amount: -50,
+        status: TransactionStatus.UNRECONCILED,
+        isCleared: false,
+        isReconciled: false,
+        isVoid: false,
+        splits: [],
+      };
+      const mockQb = createMockQueryBuilder();
+      mockQb.getManyAndCount.mockResolvedValue([[mockTx], 1]);
+      // Future sum query — simulate a future -10000 transfer
+      const futureQb = createMockQueryBuilder();
+      futureQb.getRawOne.mockResolvedValue({ sum: -10000 });
+      transactionsRepository.createQueryBuilder
+        .mockReturnValueOnce(mockQb)
+        .mockReturnValueOnce(futureQb);
+      investmentTxRepository.find.mockResolvedValue([]);
+      accountsService.findOne.mockResolvedValue({
+        ...mockAccount,
+        currentBalance: 13000,
+      });
+
+      const result = await service.findAll("user-1", ["account-1"]);
+
+      // projectedBalance = currentBalance + futureSum = 13000 + (-10000) = 3000
+      expect(result.startingBalance).toBe(3000);
+    });
+
     it("calculates starting balance for page > 1 using sum of previous pages", async () => {
       const mockTx = {
         id: "tx-2",
@@ -1146,8 +1178,11 @@ describe("TransactionsService", () => {
       };
       const mockQb = createMockQueryBuilder();
       mockQb.getManyAndCount.mockResolvedValue([[mockTx], 51]);
-      // For the sum of previous pages queries (two additional createQueryBuilder calls):
-      // 1st = main query, 2nd = previousPagesQuery, 3rd = sumResult query
+      // Future sum query (no future transactions)
+      const futureQb = createMockQueryBuilder();
+      futureQb.getRawOne.mockResolvedValue({ sum: 0 });
+      // For the sum of previous pages queries:
+      // 1st = main query, 2nd = futureQuery, 3rd = previousPagesQuery, 4th = sumResult query
       const sumQb = createMockQueryBuilder({
         setParameters: jest.fn().mockReturnThis(),
       });
@@ -1157,6 +1192,7 @@ describe("TransactionsService", () => {
       previousPagesQb.getParameters.mockReturnValue({ userId: "user-1" });
       transactionsRepository.createQueryBuilder
         .mockReturnValueOnce(mockQb)
+        .mockReturnValueOnce(futureQb)
         .mockReturnValueOnce(previousPagesQb)
         .mockReturnValueOnce(sumQb);
       investmentTxRepository.find.mockResolvedValue([]);
@@ -1176,7 +1212,7 @@ describe("TransactionsService", () => {
         50,
       );
 
-      // startingBalance = currentBalance - sumBefore = 800 - (-200) = 1000
+      // startingBalance = projectedBalance - sumBefore = 800 - (-200) = 1000
       expect(result.startingBalance).toBe(1000);
     });
 

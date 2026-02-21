@@ -704,14 +704,14 @@ describe('buildForecast', () => {
 
   // --- Future transactions support ---
   describe('future transactions', () => {
-    it('subtracts future transaction amounts from starting balance', () => {
+    it('uses currentBalance directly as starting balance (future transactions excluded by backend)', () => {
       const accounts = [makeAccount({ id: 'acc-1', currentBalance: 5000 })];
       const futureTransactions: FutureTransaction[] = [
         { id: 'ft-1', accountId: 'acc-1', name: 'Future Bill', amount: -1000, date: '2025-01-20' },
       ];
       const result = buildForecast(accounts, [], 'week', 'all', futureTransactions);
-      // currentBalance is 5000, but includes the future -1000, so real today balance = 5000 - (-1000) = 6000
-      expect(result[0].balance).toBe(6000);
+      // currentBalance excludes future transactions, so starting balance is 5000
+      expect(result[0].balance).toBe(5000);
     });
 
     it('adds future transactions at their correct dates', () => {
@@ -720,10 +720,10 @@ describe('buildForecast', () => {
         { id: 'ft-1', accountId: 'acc-1', name: 'Future Bill', amount: -1000, date: '2025-01-20' },
       ];
       const result = buildForecast(accounts, [], 'month', 'all', futureTransactions);
-      // Starting balance is 6000 (5000 - (-1000)), then -1000 applied on Jan 20
+      // Starting balance is 5000, then -1000 applied on Jan 20
       const jan20 = result.find(dp => dp.date === '2025-01-20');
       expect(jan20).toBeDefined();
-      expect(jan20?.balance).toBe(5000); // 6000 + (-1000) = 5000
+      expect(jan20?.balance).toBe(4000); // 5000 + (-1000) = 4000
       expect(jan20?.transactions.length).toBe(1);
       expect(jan20?.transactions[0].name).toBe('Future Bill');
     });
@@ -739,10 +739,10 @@ describe('buildForecast', () => {
       ];
       // Filter to acc-1 only
       const result = buildForecast(accounts, [], 'month', 'acc-1', futureTransactions);
-      // Starting: 3000 - (-500) = 3500, then -500 on Jan 20 = 3000
-      expect(result[0].balance).toBe(3500);
+      // Starting: 3000 (currentBalance), then -500 on Jan 20 = 2500
+      expect(result[0].balance).toBe(3000);
       const jan20 = result.find(dp => dp.date === '2025-01-20');
-      expect(jan20?.balance).toBe(3000);
+      expect(jan20?.balance).toBe(2500);
       // acc-2's future transaction should not appear
       expect(jan20?.transactions.length).toBe(1);
       expect(jan20?.transactions[0].name).toBe('Acc1 Future');
@@ -770,10 +770,10 @@ describe('buildForecast', () => {
         { id: 'ft-1', accountId: 'acc-1', name: 'Future Bill', amount: -1000, date: '2025-01-20' },
       ];
       const result = buildForecast(accounts, scheduled, 'month', 'all', futureTransactions);
-      // Starting: 5000 - (-1000) = 6000
-      // Jan 20: 6000 + (-1000) + (-200) = 4800
+      // Starting: 5000
+      // Jan 20: 5000 + (-1000) + (-200) = 3800
       const jan20 = result.find(dp => dp.date === '2025-01-20');
-      expect(jan20?.balance).toBe(4800);
+      expect(jan20?.balance).toBe(3800);
       expect(jan20?.transactions.length).toBe(2);
     });
 
