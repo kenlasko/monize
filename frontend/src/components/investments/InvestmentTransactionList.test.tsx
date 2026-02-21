@@ -218,8 +218,8 @@ describe('InvestmentTransactionList', () => {
       />
     );
     fireEvent.click(screen.getByText('Filter'));
-    expect(screen.getByText('Symbol')).toBeInTheDocument();
-    expect(screen.getByText('Action')).toBeInTheDocument();
+    expect(screen.getByText('Symbol', { selector: 'label' })).toBeInTheDocument();
+    expect(screen.getByText('Action', { selector: 'label' })).toBeInTheDocument();
     expect(screen.getByText('From')).toBeInTheDocument();
     expect(screen.getByText('To')).toBeInTheDocument();
   });
