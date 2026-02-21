@@ -8,6 +8,8 @@ import { AccountsService } from "../accounts/accounts.service";
 import { NetWorthService } from "../net-worth/net-worth.service";
 import { BulkUpdateDto } from "./dto/bulk-update.dto";
 
+jest.mock("../common/date-utils");
+
 describe("TransactionBulkUpdateService", () => {
   let service: TransactionBulkUpdateService;
   let transactionsRepository: Record<string, jest.Mock>;
@@ -78,6 +80,7 @@ describe("TransactionBulkUpdateService", () => {
 
     accountsService = {
       updateBalance: jest.fn().mockResolvedValue(undefined),
+      recalculateCurrentBalance: jest.fn().mockResolvedValue(undefined),
     };
 
     netWorthService = {
@@ -496,6 +499,124 @@ describe("TransactionBulkUpdateService", () => {
 
       expect(result.updated).toBe(0);
       expect(result.skipped).toBe(1);
+    });
+
+    it("excludes future-dated transactions from balance updates when changing status to VOID", async () => {
+      const pastTx = makeTransaction({
+        id: "tx-1",
+        accountId: "acc-1",
+        amount: 50,
+        transactionDate: "2026-01-15",
+      });
+      const futureTx = makeTransaction({
+        id: "tx-2",
+        accountId: "acc-1",
+        amount: 200,
+        transactionDate: "2027-06-15",
+      });
+
+      const resolveQb = createMockQueryBuilder({
+        getMany: jest.fn().mockResolvedValue([{ id: "tx-1" }, { id: "tx-2" }]),
+      });
+      const exclusionsQb = createMockQueryBuilder({
+        getMany: jest.fn().mockResolvedValue([pastTx, futureTx]),
+      });
+      // Balance deltas query - only returns the past-dated transaction's amount
+      // because the query filters with transactionDate <= today
+      const balanceQb = createMockQueryBuilder({
+        getRawMany: jest
+          .fn()
+          .mockResolvedValue([{ accountId: "acc-1", totalAmount: "50" }]),
+      });
+      const updateQb = createMockQueryBuilder({
+        execute: jest.fn().mockResolvedValue({ affected: 2 }),
+      });
+      const accountIdsQb = createMockQueryBuilder({
+        getRawMany: jest.fn().mockResolvedValue([{ accountId: "acc-1" }]),
+      });
+
+      transactionsRepository.createQueryBuilder
+        .mockReturnValueOnce(resolveQb)
+        .mockReturnValueOnce(exclusionsQb)
+        .mockReturnValueOnce(balanceQb)
+        .mockReturnValueOnce(updateQb)
+        .mockReturnValueOnce(accountIdsQb);
+
+      const dto: BulkUpdateDto = {
+        mode: "ids",
+        transactionIds: ["tx-1", "tx-2"],
+        status: TransactionStatus.VOID,
+      };
+
+      const result = await service.bulkUpdate(userId, dto);
+
+      expect(result.updated).toBe(2);
+      // The balance query should include the today filter via andWhere
+      expect(balanceQb.andWhere).toHaveBeenCalledWith(
+        "transaction.transactionDate <= :today",
+        expect.objectContaining({ today: expect.any(String) }),
+      );
+      // Only the past transaction's amount (50) should be used for balance update
+      expect(accountsService.updateBalance).toHaveBeenCalledWith("acc-1", -50);
+    });
+
+    it("excludes future-dated transactions from balance updates when unvoiding", async () => {
+      const pastTx = makeTransaction({
+        id: "tx-1",
+        accountId: "acc-1",
+        amount: 100,
+        status: TransactionStatus.VOID,
+        transactionDate: "2026-01-15",
+      });
+      const futureTx = makeTransaction({
+        id: "tx-2",
+        accountId: "acc-1",
+        amount: 300,
+        status: TransactionStatus.VOID,
+        transactionDate: "2027-06-15",
+      });
+
+      const resolveQb = createMockQueryBuilder({
+        getMany: jest.fn().mockResolvedValue([{ id: "tx-1" }, { id: "tx-2" }]),
+      });
+      const exclusionsQb = createMockQueryBuilder({
+        getMany: jest.fn().mockResolvedValue([pastTx, futureTx]),
+      });
+      // Balance deltas query - only the past transaction contributes
+      const balanceQb = createMockQueryBuilder({
+        getRawMany: jest
+          .fn()
+          .mockResolvedValue([{ accountId: "acc-1", totalAmount: "100" }]),
+      });
+      const updateQb = createMockQueryBuilder({
+        execute: jest.fn().mockResolvedValue({ affected: 2 }),
+      });
+      const accountIdsQb = createMockQueryBuilder({
+        getRawMany: jest.fn().mockResolvedValue([{ accountId: "acc-1" }]),
+      });
+
+      transactionsRepository.createQueryBuilder
+        .mockReturnValueOnce(resolveQb)
+        .mockReturnValueOnce(exclusionsQb)
+        .mockReturnValueOnce(balanceQb)
+        .mockReturnValueOnce(updateQb)
+        .mockReturnValueOnce(accountIdsQb);
+
+      const dto: BulkUpdateDto = {
+        mode: "ids",
+        transactionIds: ["tx-1", "tx-2"],
+        status: TransactionStatus.CLEARED,
+      };
+
+      const result = await service.bulkUpdate(userId, dto);
+
+      expect(result.updated).toBe(2);
+      expect(balanceQb.andWhere).toHaveBeenCalledWith(
+        "transaction.transactionDate <= :today",
+        expect.objectContaining({ today: expect.any(String) }),
+      );
+      // Only the past transaction's amount (100) should be added back
+      expect(accountsService.updateBalance).toHaveBeenCalledWith("acc-1", 100);
     });
   });
 });

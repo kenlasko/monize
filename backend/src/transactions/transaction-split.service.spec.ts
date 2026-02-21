@@ -5,6 +5,15 @@ import { TransactionSplitService } from "./transaction-split.service";
 import { Transaction } from "./entities/transaction.entity";
 import { TransactionSplit } from "./entities/transaction-split.entity";
 import { AccountsService } from "../accounts/accounts.service";
+import { isTransactionInFuture } from "../common/date-utils";
+
+jest.mock("../common/date-utils", () => ({
+  isTransactionInFuture: jest.fn().mockReturnValue(false),
+}));
+
+const mockedIsTransactionInFuture = isTransactionInFuture as jest.MockedFunction<
+  typeof isTransactionInFuture
+>;
 
 describe("TransactionSplitService", () => {
   let service: TransactionSplitService;
@@ -46,6 +55,8 @@ describe("TransactionSplitService", () => {
   };
 
   beforeEach(async () => {
+    mockedIsTransactionInFuture.mockReturnValue(false);
+
     transactionsRepository = {
       create: jest
         .fn()
@@ -80,6 +91,7 @@ describe("TransactionSplitService", () => {
         currencyCode: "USD",
       }),
       updateBalance: jest.fn().mockResolvedValue(undefined),
+      recalculateCurrentBalance: jest.fn().mockResolvedValue(undefined),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -980,6 +992,130 @@ describe("TransactionSplitService", () => {
 
       expect(accountsService.updateBalance).not.toHaveBeenCalled();
       expect(splitsRepository.remove).toHaveBeenCalledWith(transferSplit);
+    });
+  });
+
+  describe("future-dated transactions", () => {
+    describe("createSplits", () => {
+      it("does NOT call updateBalance on the transfer account for future-dated transactions", async () => {
+        mockedIsTransactionInFuture.mockReturnValue(true);
+
+        accountsService.findOne
+          .mockResolvedValueOnce({
+            id: "account-2",
+            name: "Savings",
+            currencyCode: "USD",
+          })
+          .mockResolvedValueOnce({
+            id: "account-1",
+            name: "Checking",
+            currencyCode: "USD",
+          });
+
+        transactionsRepository.save.mockResolvedValueOnce({
+          id: "linked-tx-1",
+          accountId: "account-2",
+          amount: 50,
+        });
+
+        splitsRepository.save.mockResolvedValueOnce({
+          id: "split-new",
+          transactionId: "tx-1",
+          transferAccountId: "account-2",
+          amount: -50,
+        });
+
+        const splits = [
+          { amount: -50, transferAccountId: "account-2", memo: "Transfer part" },
+        ];
+
+        await service.createSplits(
+          "tx-1",
+          splits,
+          "user-1",
+          "account-1",
+          new Date("2027-06-15"),
+          "Store",
+        );
+
+        expect(transactionsRepository.create).toHaveBeenCalled();
+        expect(transactionsRepository.save).toHaveBeenCalled();
+        expect(accountsService.updateBalance).not.toHaveBeenCalled();
+      });
+    });
+
+    describe("deleteTransferSplitLinkedTransactions", () => {
+      it("does NOT call updateBalance when deleting linked transactions with future dates", async () => {
+        mockedIsTransactionInFuture.mockReturnValue(true);
+
+        const transferSplit = {
+          id: "split-1",
+          transactionId: "tx-1",
+          linkedTransactionId: "linked-tx-1",
+          transferAccountId: "account-2",
+        };
+
+        splitsRepository.find.mockResolvedValue([transferSplit]);
+        transactionsRepository.findOne.mockResolvedValue({
+          id: "linked-tx-1",
+          accountId: "account-2",
+          amount: 50,
+          transactionDate: "2027-06-15",
+        });
+
+        await service.deleteTransferSplitLinkedTransactions("tx-1");
+
+        expect(transactionsRepository.findOne).toHaveBeenCalled();
+        expect(accountsService.updateBalance).not.toHaveBeenCalled();
+        expect(transactionsRepository.remove).toHaveBeenCalledWith(
+          expect.objectContaining({ id: "linked-tx-1" }),
+        );
+      });
+
+      it("calls updateBalance for past-dated linked transactions but not future-dated ones", async () => {
+        mockedIsTransactionInFuture
+          .mockReturnValueOnce(false)
+          .mockReturnValueOnce(true);
+
+        const splits = [
+          {
+            id: "split-1",
+            transactionId: "tx-1",
+            linkedTransactionId: "linked-tx-1",
+            transferAccountId: "account-2",
+          },
+          {
+            id: "split-2",
+            transactionId: "tx-1",
+            linkedTransactionId: "linked-tx-2",
+            transferAccountId: "account-3",
+          },
+        ];
+
+        splitsRepository.find.mockResolvedValue(splits);
+        transactionsRepository.findOne
+          .mockResolvedValueOnce({
+            id: "linked-tx-1",
+            accountId: "account-2",
+            amount: 30,
+            transactionDate: "2026-01-15",
+          })
+          .mockResolvedValueOnce({
+            id: "linked-tx-2",
+            accountId: "account-3",
+            amount: 70,
+            transactionDate: "2027-06-15",
+          });
+
+        await service.deleteTransferSplitLinkedTransactions("tx-1");
+
+        expect(accountsService.updateBalance).toHaveBeenCalledTimes(1);
+        expect(accountsService.updateBalance).toHaveBeenCalledWith(
+          "account-2",
+          -30,
+        );
+        expect(transactionsRepository.remove).toHaveBeenCalledTimes(2);
+      });
     });
   });
 });

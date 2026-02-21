@@ -288,7 +288,9 @@ describe("AnomalyReportsService", () => {
 
       const result = await service.getSpendingAnomalies(mockUserId);
 
-      const spike = result.anomalies.find((a) => a.type === "category_spike");
+      const spike = result.anomalies.find(
+        (a) => a.type === "category_spike" && a.categoryId === "cat-food",
+      );
       expect(spike).toBeDefined();
       expect(spike!.categoryName).toBe("Food & Dining");
       expect(spike!.percentChange).toBeGreaterThan(100);

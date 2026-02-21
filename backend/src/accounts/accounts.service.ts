@@ -26,6 +26,7 @@ import {
   MortgagePaymentFrequency,
   MortgageAmortizationResult,
 } from "./mortgage-amortization.util";
+import { Cron } from "@nestjs/schedule";
 
 @Injectable()
 export class AccountsService {
@@ -554,6 +555,40 @@ export class AccountsService {
   }
 
   /**
+   * Recalculate currentBalance from source-of-truth transactions,
+   * only including transactions dated on or before today.
+   * Used when future-dated transactions are created/modified/deleted
+   * to ensure the balance is always correct regardless of history.
+   */
+  async recalculateCurrentBalance(accountId: string): Promise<Account> {
+    const account = await this.accountsRepository.findOne({
+      where: { id: accountId },
+    });
+
+    if (!account) {
+      throw new NotFoundException(`Account with ID ${accountId} not found`);
+    }
+
+    const result: { balance: string }[] = await this.dataSource.query(
+      `SELECT COALESCE($2::NUMERIC, 0) + COALESCE(SUM(t.amount), 0) as balance
+       FROM transactions t
+       WHERE t.account_id = $1
+         AND (t.status IS NULL OR t.status != 'VOID')
+         AND t.parent_transaction_id IS NULL
+         AND t.transaction_date <= CURRENT_DATE`,
+      [accountId, account.openingBalance],
+    );
+
+    const newBalance =
+      result.length > 0
+        ? Math.round(Number(result[0].balance) * 100) / 100
+        : Math.round(Number(account.openingBalance) * 100) / 100;
+
+    account.currentBalance = newBalance;
+    return this.accountsRepository.save(account);
+  }
+
+  /**
    * Get account summary statistics for a user
    */
   async getSummary(userId: string): Promise<{
@@ -788,5 +823,62 @@ export class AccountsService {
       date: r.date,
       balance: Number(r.balance),
     }));
+  }
+
+  /**
+   * Daily cron job to apply balance effects for transactions whose dates
+   * have become due. Recalculates currentBalance from source of truth
+   * for any account that has transactions dated today.
+   */
+  @Cron("0 0 * * *")
+  async applyDueTransactionBalances(): Promise<void> {
+    this.logger.log("Running daily deferred transaction balance application");
+
+    try {
+      // Find all accounts that have non-void transactions dated today
+      const accountRows: { account_id: string }[] =
+        await this.dataSource.query(
+          `SELECT DISTINCT account_id
+           FROM transactions
+           WHERE transaction_date::DATE = CURRENT_DATE
+             AND (status IS NULL OR status != 'VOID')
+             AND parent_transaction_id IS NULL`,
+        );
+
+      if (accountRows.length === 0) {
+        this.logger.log("No accounts with transactions due today");
+        return;
+      }
+
+      for (const row of accountRows) {
+        const result: { balance: string }[] = await this.dataSource.query(
+          `SELECT COALESCE(a.opening_balance, 0) + COALESCE(SUM(t.amount), 0) as balance
+           FROM accounts a
+           LEFT JOIN transactions t ON t.account_id = a.id
+             AND (t.status IS NULL OR t.status != 'VOID')
+             AND t.parent_transaction_id IS NULL
+             AND t.transaction_date <= CURRENT_DATE
+           WHERE a.id = $1
+           GROUP BY a.opening_balance`,
+          [row.account_id],
+        );
+
+        if (result.length > 0) {
+          const newBalance =
+            Math.round(Number(result[0].balance) * 100) / 100;
+          await this.accountsRepository.update(row.account_id, {
+            currentBalance: newBalance,
+          });
+        }
+      }
+
+      this.logger.log(
+        `Applied deferred balances for ${accountRows.length} account(s)`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to apply deferred transaction balances: ${error.message}`,
+      );
+    }
   }
 }

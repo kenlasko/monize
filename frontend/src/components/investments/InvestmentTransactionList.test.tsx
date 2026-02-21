@@ -218,10 +218,10 @@ describe('InvestmentTransactionList', () => {
       />
     );
     fireEvent.click(screen.getByText('Filter'));
-    expect(screen.getByText('Symbol:')).toBeInTheDocument();
-    expect(screen.getByText('Action:')).toBeInTheDocument();
-    expect(screen.getByText('From:')).toBeInTheDocument();
-    expect(screen.getByText('To:')).toBeInTheDocument();
+    expect(screen.getByText('Symbol')).toBeInTheDocument();
+    expect(screen.getByText('Action')).toBeInTheDocument();
+    expect(screen.getByText('From')).toBeInTheDocument();
+    expect(screen.getByText('To')).toBeInTheDocument();
   });
 
   it('shows "(filtered)" and active filter count when filters are active', () => {
@@ -279,6 +279,48 @@ describe('InvestmentTransactionList', () => {
     render(<InvestmentTransactionList transactions={transactions} isLoading={false} />);
     const usdLabels = screen.getAllByText('USD');
     expect(usdLabels.length).toBeGreaterThan(0);
+  });
+
+  describe('viewToggle prop', () => {
+    it('renders viewToggle in loading state', () => {
+      render(
+        <InvestmentTransactionList
+          transactions={[]}
+          isLoading={true}
+          viewToggle={<div data-testid="view-toggle">Toggle</div>}
+        />
+      );
+      expect(screen.getByTestId('view-toggle')).toBeInTheDocument();
+    });
+
+    it('renders viewToggle in empty state', () => {
+      render(
+        <InvestmentTransactionList
+          transactions={[]}
+          isLoading={false}
+          viewToggle={<div data-testid="view-toggle">Toggle</div>}
+        />
+      );
+      expect(screen.getByTestId('view-toggle')).toBeInTheDocument();
+    });
+
+    it('renders viewToggle in main content state', () => {
+      const transactions = [makeTx()] as any[];
+      render(
+        <InvestmentTransactionList
+          transactions={transactions}
+          isLoading={false}
+          viewToggle={<div data-testid="view-toggle">Toggle</div>}
+        />
+      );
+      expect(screen.getByTestId('view-toggle')).toBeInTheDocument();
+    });
+
+    it('does not render viewToggle when not provided', () => {
+      const transactions = [makeTx()] as any[];
+      render(<InvestmentTransactionList transactions={transactions} isLoading={false} />);
+      expect(screen.queryByTestId('view-toggle')).not.toBeInTheDocument();
+    });
   });
 
   it('calls onEdit on row click', () => {

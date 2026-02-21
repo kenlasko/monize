@@ -4,6 +4,15 @@ import { BadRequestException } from "@nestjs/common";
 import { TransactionReconciliationService } from "./transaction-reconciliation.service";
 import { Transaction, TransactionStatus } from "./entities/transaction.entity";
 import { AccountsService } from "../accounts/accounts.service";
+import { isTransactionInFuture } from "../common/date-utils";
+
+jest.mock("../common/date-utils", () => ({
+  isTransactionInFuture: jest.fn().mockReturnValue(false),
+}));
+
+const mockedIsTransactionInFuture = isTransactionInFuture as jest.MockedFunction<
+  typeof isTransactionInFuture
+>;
 
 describe("TransactionReconciliationService", () => {
   let service: TransactionReconciliationService;
@@ -49,6 +58,8 @@ describe("TransactionReconciliationService", () => {
   };
 
   beforeEach(async () => {
+    mockedIsTransactionInFuture.mockReturnValue(false);
+
     transactionsRepository = {
       update: jest.fn().mockResolvedValue(undefined),
       createQueryBuilder: jest.fn(),
@@ -62,6 +73,7 @@ describe("TransactionReconciliationService", () => {
         currencyCode: "USD",
       }),
       updateBalance: jest.fn().mockResolvedValue(undefined),
+      recalculateCurrentBalance: jest.fn().mockResolvedValue(undefined),
     };
 
     mockFindOne.mockReset();
@@ -912,6 +924,100 @@ describe("TransactionReconciliationService", () => {
       );
 
       expect(result).toEqual({ reconciled: 1 });
+    });
+  });
+
+  describe("future-dated transactions", () => {
+    it("does NOT call updateBalance when voiding a future-dated transaction", async () => {
+      mockedIsTransactionInFuture.mockReturnValue(true);
+
+      const transaction = makeTransaction({
+        status: TransactionStatus.CLEARED,
+        amount: 300,
+        transactionDate: "2027-06-15",
+      });
+      const updatedTx = makeTransaction({
+        status: TransactionStatus.VOID,
+        amount: 300,
+        transactionDate: "2027-06-15",
+      });
+      mockFindOne.mockResolvedValue(updatedTx);
+
+      await service.updateStatus(
+        transaction,
+        TransactionStatus.VOID,
+        userId,
+        mockTriggerNetWorthRecalc,
+        mockFindOne,
+      );
+
+      expect(transactionsRepository.update).toHaveBeenCalledWith("tx-1", {
+        status: TransactionStatus.VOID,
+      });
+      expect(accountsService.updateBalance).not.toHaveBeenCalled();
+      // Net worth recalc is still triggered because void status changed
+      expect(mockTriggerNetWorthRecalc).toHaveBeenCalledWith(accountId, userId);
+    });
+
+    it("does NOT call updateBalance when unvoiding a future-dated transaction", async () => {
+      mockedIsTransactionInFuture.mockReturnValue(true);
+
+      const transaction = makeTransaction({
+        status: TransactionStatus.VOID,
+        amount: 250,
+        transactionDate: "2027-06-15",
+      });
+      const updatedTx = makeTransaction({
+        status: TransactionStatus.CLEARED,
+        amount: 250,
+        transactionDate: "2027-06-15",
+      });
+      mockFindOne.mockResolvedValue(updatedTx);
+
+      await service.updateStatus(
+        transaction,
+        TransactionStatus.CLEARED,
+        userId,
+        mockTriggerNetWorthRecalc,
+        mockFindOne,
+      );
+
+      expect(transactionsRepository.update).toHaveBeenCalledWith("tx-1", {
+        status: TransactionStatus.CLEARED,
+      });
+      expect(accountsService.updateBalance).not.toHaveBeenCalled();
+      // Net worth recalc is still triggered because void status changed
+      expect(mockTriggerNetWorthRecalc).toHaveBeenCalledWith(accountId, userId);
+    });
+
+    it("still updates the status even for future-dated transactions", async () => {
+      mockedIsTransactionInFuture.mockReturnValue(true);
+
+      const transaction = makeTransaction({
+        status: TransactionStatus.UNRECONCILED,
+        amount: -75.5,
+        transactionDate: "2027-06-15",
+      });
+      const updatedTx = makeTransaction({
+        status: TransactionStatus.VOID,
+        amount: -75.5,
+        transactionDate: "2027-06-15",
+      });
+      mockFindOne.mockResolvedValue(updatedTx);
+
+      const result = await service.updateStatus(
+        transaction,
+        TransactionStatus.VOID,
+        userId,
+        mockTriggerNetWorthRecalc,
+        mockFindOne,
+      );
+
+      expect(transactionsRepository.update).toHaveBeenCalledWith("tx-1", {
+        status: TransactionStatus.VOID,
+      });
+      expect(accountsService.updateBalance).not.toHaveBeenCalled();
+      expect(result).toEqual(updatedTx);
     });
   });
 });

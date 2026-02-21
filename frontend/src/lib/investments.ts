@@ -104,6 +104,7 @@ export const investmentsApi = {
       `/investment-transactions/${id}`,
       data,
     );
+    invalidateCache('investments:');
     return response.data;
   },
 

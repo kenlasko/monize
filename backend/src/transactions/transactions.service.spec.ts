@@ -14,6 +14,15 @@ import { TransactionTransferService } from "./transaction-transfer.service";
 import { TransactionReconciliationService } from "./transaction-reconciliation.service";
 import { TransactionAnalyticsService } from "./transaction-analytics.service";
 import { TransactionBulkUpdateService } from "./transaction-bulk-update.service";
+import { isTransactionInFuture } from "../common/date-utils";
+
+jest.mock("../common/date-utils", () => ({
+  isTransactionInFuture: jest.fn().mockReturnValue(false),
+}));
+
+const mockedIsTransactionInFuture = isTransactionInFuture as jest.MockedFunction<
+  typeof isTransactionInFuture
+>;
 
 describe("TransactionsService", () => {
   let service: TransactionsService;
@@ -73,6 +82,7 @@ describe("TransactionsService", () => {
     accountsService = {
       findOne: jest.fn().mockResolvedValue(mockAccount),
       updateBalance: jest.fn().mockResolvedValue(mockAccount),
+      recalculateCurrentBalance: jest.fn().mockResolvedValue(mockAccount),
     };
 
     payeesService = {
@@ -3509,6 +3519,166 @@ describe("TransactionsService", () => {
         200,
       );
       expect(transactionsRepository.remove).toHaveBeenCalledWith(tx);
+    });
+  });
+
+  describe("future-dated transactions", () => {
+    beforeEach(() => {
+      mockedIsTransactionInFuture.mockReset();
+      mockedIsTransactionInFuture.mockReturnValue(false);
+    });
+
+    it("does not call updateBalance when creating a future-dated transaction", async () => {
+      mockedIsTransactionInFuture.mockReturnValue(true);
+
+      transactionsRepository.findOne.mockResolvedValue({
+        id: "tx-1",
+        userId: "user-1",
+        accountId: "account-1",
+        amount: -50,
+        status: TransactionStatus.UNRECONCILED,
+        splits: [],
+      });
+
+      await service.create("user-1", {
+        accountId: "account-1",
+        transactionDate: "2099-12-31",
+        amount: -50,
+        currencyCode: "USD",
+      } as any);
+
+      expect(transactionsRepository.create).toHaveBeenCalled();
+      expect(transactionsRepository.save).toHaveBeenCalled();
+      expect(accountsService.updateBalance).not.toHaveBeenCalled();
+    });
+
+    it("does not call updateBalance when deleting a future-dated transaction", async () => {
+      mockedIsTransactionInFuture.mockReturnValue(true);
+
+      transactionsRepository.findOne.mockResolvedValue({
+        id: "tx-1",
+        userId: "user-1",
+        accountId: "account-1",
+        amount: -50,
+        transactionDate: "2099-12-31",
+        status: TransactionStatus.UNRECONCILED,
+        isSplit: false,
+        splits: [],
+      });
+      splitsRepository.findOne.mockResolvedValue(null);
+
+      await service.remove("user-1", "tx-1");
+
+      expect(accountsService.updateBalance).not.toHaveBeenCalled();
+      expect(transactionsRepository.remove).toHaveBeenCalled();
+    });
+
+    it("recalculates balance when updating a transaction from future to current date", async () => {
+      const mockTx = {
+        id: "tx-1",
+        userId: "user-1",
+        accountId: "account-1",
+        amount: -75,
+        transactionDate: "2099-12-31",
+        status: TransactionStatus.UNRECONCILED,
+        isSplit: false,
+        splits: [],
+      };
+
+      // First call (old transaction): future date
+      // Second call (saved transaction): current date
+      mockedIsTransactionInFuture
+        .mockReturnValueOnce(true)   // oldIsFuture = true
+        .mockReturnValueOnce(false); // newIsFuture = false
+
+      transactionsRepository.findOne
+        .mockResolvedValueOnce({ ...mockTx })
+        .mockResolvedValueOnce({
+          ...mockTx,
+          transactionDate: "2026-01-15",
+          amount: -75,
+        });
+
+      await service.update("user-1", "tx-1", {
+        transactionDate: "2026-01-15",
+      } as any);
+
+      // When any future date is involved, recalculate from scratch
+      expect(accountsService.recalculateCurrentBalance).toHaveBeenCalledWith(
+        "account-1",
+      );
+      expect(accountsService.updateBalance).not.toHaveBeenCalled();
+    });
+
+    it("recalculates balance when updating a transaction from current to future date", async () => {
+      const mockTx = {
+        id: "tx-1",
+        userId: "user-1",
+        accountId: "account-1",
+        amount: -75,
+        transactionDate: "2026-01-15",
+        status: TransactionStatus.UNRECONCILED,
+        isSplit: false,
+        splits: [],
+      };
+
+      // First call (old transaction): current date
+      // Second call (saved transaction): future date
+      mockedIsTransactionInFuture
+        .mockReturnValueOnce(false)  // oldIsFuture = false
+        .mockReturnValueOnce(true);  // newIsFuture = true
+
+      transactionsRepository.findOne
+        .mockResolvedValueOnce({ ...mockTx })
+        .mockResolvedValueOnce({
+          ...mockTx,
+          transactionDate: "2099-12-31",
+          amount: -75,
+        });
+
+      await service.update("user-1", "tx-1", {
+        transactionDate: "2099-12-31",
+      } as any);
+
+      // When any future date is involved, recalculate from scratch
+      expect(accountsService.recalculateCurrentBalance).toHaveBeenCalledWith(
+        "account-1",
+      );
+      expect(accountsService.updateBalance).not.toHaveBeenCalled();
+    });
+
+    it("does not affect balance when updating a future-dated transaction that stays future", async () => {
+      const mockTx = {
+        id: "tx-1",
+        userId: "user-1",
+        accountId: "account-1",
+        amount: -75,
+        transactionDate: "2099-06-15",
+        status: TransactionStatus.UNRECONCILED,
+        isSplit: false,
+        splits: [],
+      };
+
+      // Both old and new dates are in the future
+      mockedIsTransactionInFuture
+        .mockReturnValueOnce(true)   // oldIsFuture = true
+        .mockReturnValueOnce(true);  // newIsFuture = true
+
+      transactionsRepository.findOne
+        .mockResolvedValueOnce({ ...mockTx })
+        .mockResolvedValueOnce({
+          ...mockTx,
+          transactionDate: "2099-12-31",
+          amount: -100,
+        });
+
+      await service.update("user-1", "tx-1", {
+        transactionDate: "2099-12-31",
+        amount: -100,
+      } as any);
+
+      // Both dates are future, so no balance changes
+      expect(accountsService.updateBalance).not.toHaveBeenCalled();
     });
   });
 });

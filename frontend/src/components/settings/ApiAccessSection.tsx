@@ -11,7 +11,7 @@ import { authApi } from '@/lib/auth';
 import { PersonalAccessToken } from '@/types/auth';
 import { getErrorMessage } from '@/lib/errors';
 
-const MCP_SERVER_URL = `${process.env.PUBLIC_APP_URL || ''}/api/v1/mcp`;
+const MCP_PATH = '/api/v1/mcp';
 
 const SCOPE_OPTIONS = [
   { value: 'read', label: 'Read', description: 'View accounts, transactions, and categories' },
@@ -56,6 +56,10 @@ export function ApiAccessSection() {
   const [createdToken, setCreatedToken] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [mcpUrlCopied, setMcpUrlCopied] = useState(false);
+
+  const mcpServerUrl = typeof window !== 'undefined'
+    ? `${window.location.origin}${MCP_PATH}`
+    : MCP_PATH;
 
   const loadTokens = useCallback(async () => {
     try {
@@ -182,7 +186,7 @@ export function ApiAccessSection() {
           <input
             type="text"
             readOnly
-            value={MCP_SERVER_URL}
+            value={mcpServerUrl}
             className="flex-1 text-sm font-mono bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md px-3 py-1.5 text-gray-900 dark:text-gray-100"
           />
           <Button
@@ -190,7 +194,7 @@ export function ApiAccessSection() {
             size="sm"
             onClick={async () => {
               try {
-                await navigator.clipboard.writeText(MCP_SERVER_URL);
+                await navigator.clipboard.writeText(mcpServerUrl);
                 setMcpUrlCopied(true);
                 toast.success('MCP URL copied to clipboard');
                 setTimeout(() => setMcpUrlCopied(false), 2000);

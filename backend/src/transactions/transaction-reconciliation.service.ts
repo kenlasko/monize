@@ -8,6 +8,7 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { Transaction, TransactionStatus } from "./entities/transaction.entity";
 import { AccountsService } from "../accounts/accounts.service";
+import { isTransactionInFuture } from "../common/date-utils";
 
 @Injectable()
 export class TransactionReconciliationService {
@@ -29,19 +30,29 @@ export class TransactionReconciliationService {
     const wasVoid = oldStatus === TransactionStatus.VOID;
     const isVoid = status === TransactionStatus.VOID;
 
-    if (wasVoid && !isVoid) {
-      await this.accountsService.updateBalance(
-        transaction.accountId,
-        Number(transaction.amount),
-      );
-    } else if (!wasVoid && isVoid) {
-      await this.accountsService.updateBalance(
-        transaction.accountId,
-        -Number(transaction.amount),
-      );
+    if (isTransactionInFuture(transaction.transactionDate)) {
+      if (wasVoid !== isVoid) {
+        await this.transactionsRepository.update(transaction.id, { status });
+        await this.accountsService.recalculateCurrentBalance(
+          transaction.accountId,
+        );
+      } else {
+        await this.transactionsRepository.update(transaction.id, { status });
+      }
+    } else {
+      if (wasVoid && !isVoid) {
+        await this.accountsService.updateBalance(
+          transaction.accountId,
+          Number(transaction.amount),
+        );
+      } else if (!wasVoid && isVoid) {
+        await this.accountsService.updateBalance(
+          transaction.accountId,
+          -Number(transaction.amount),
+        );
+      }
+      await this.transactionsRepository.update(transaction.id, { status });
     }
-
-    await this.transactionsRepository.update(transaction.id, { status });
 
     if (wasVoid !== isVoid) {
       triggerNetWorthRecalc(transaction.accountId, userId);

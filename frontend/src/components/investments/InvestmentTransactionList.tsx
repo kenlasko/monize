@@ -28,6 +28,7 @@ interface InvestmentTransactionListProps {
   filters?: TransactionFilters;
   onFiltersChange?: (filters: TransactionFilters) => void;
   availableSymbols?: string[];
+  viewToggle?: React.ReactNode;
 }
 
 const ACTION_LABELS: Record<string, { label: string; shortLabel: string; color: string }> = {
@@ -178,6 +179,7 @@ export function InvestmentTransactionList({
   filters,
   onFiltersChange,
   availableSymbols = [],
+  viewToggle,
 }: InvestmentTransactionListProps) {
   const { formatCurrency, numberFormat } = useNumberFormat();
   const { formatDate } = useDateFormat();
@@ -295,10 +297,13 @@ export function InvestmentTransactionList({
 
   if (isLoading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-          Recent Transactions
-        </h3>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-4">
+        <div className="flex items-center gap-3 mb-3">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+            Recent Transactions
+          </h3>
+          {viewToggle}
+        </div>
         <div className="space-y-3">
           {[1, 2, 3, 4, 5].map((i) => (
             <div key={i} className="animate-pulse flex justify-between">
@@ -311,13 +316,16 @@ export function InvestmentTransactionList({
     );
   }
 
-  if (transactions.length === 0) {
+  if (transactions.length === 0 && !hasActiveFilters) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-            Recent Transactions
-          </h3>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-4">
+        <div className="flex flex-wrap justify-between items-center gap-2 mb-3">
+          <div className="flex items-center gap-3">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              Recent Transactions
+            </h3>
+            {viewToggle}
+          </div>
           {onNewTransaction && (
             <button
               onClick={onNewTransaction}
@@ -351,15 +359,18 @@ export function InvestmentTransactionList({
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 overflow-hidden">
-      <div className="p-3 sm:p-6 pb-0 flex flex-wrap justify-between items-center gap-2">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-          Recent Transactions
-          {hasActiveFilters && (
-            <span className="ml-2 text-sm font-normal text-gray-500 dark:text-gray-400">
-              (filtered)
-            </span>
-          )}
-        </h3>
+      <div className="px-3 pt-3 sm:px-4 sm:pt-4 flex flex-wrap justify-between items-center gap-2">
+        <div className="flex items-center gap-3">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+            Recent Transactions
+            {hasActiveFilters && (
+              <span className="ml-2 text-sm font-normal text-gray-500 dark:text-gray-400">
+                (filtered)
+              </span>
+            )}
+          </h3>
+          {viewToggle}
+        </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">
         {onNewTransaction && (
           <button
@@ -405,15 +416,15 @@ export function InvestmentTransactionList({
 
       {/* Filter Bar */}
       {showFilters && onFiltersChange && (
-        <div className="px-3 sm:px-6 py-3 bg-gray-50 dark:bg-gray-700/30 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex flex-wrap items-center gap-3">
+        <div className="px-3 sm:px-4 py-3 bg-gray-50 dark:bg-gray-700/30 border-b border-gray-200 dark:border-gray-700">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Symbol Filter */}
-            <div className="flex items-center gap-2">
-              <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Symbol:</label>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Symbol</label>
               <select
                 value={filters?.symbol || ''}
                 onChange={(e) => handleFilterChange('symbol', e.target.value)}
-                className="text-sm font-sans border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500 min-w-36"
+                className="w-full text-sm font-sans border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="">All Symbols</option>
                 {availableSymbols.map((symbol) => (
@@ -423,12 +434,12 @@ export function InvestmentTransactionList({
             </div>
 
             {/* Action Filter */}
-            <div className="flex items-center gap-2">
-              <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Action:</label>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Action</label>
               <select
                 value={filters?.action || ''}
                 onChange={(e) => handleFilterChange('action', e.target.value)}
-                className="text-sm font-sans border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500 min-w-36"
+                className="w-full text-sm font-sans border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500"
               >
                 {ACTION_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -437,40 +448,44 @@ export function InvestmentTransactionList({
             </div>
 
             {/* Date Range */}
-            <div className="flex items-center gap-2">
-              <label className="text-xs font-medium text-gray-500 dark:text-gray-400">From:</label>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">From</label>
               <input
                 type="date"
                 value={filters?.startDate || ''}
                 onChange={(e) => handleFilterChange('startDate', e.target.value)}
-                className="text-sm border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full text-sm border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
-            <div className="flex items-center gap-2">
-              <label className="text-xs font-medium text-gray-500 dark:text-gray-400">To:</label>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">To</label>
               <input
                 type="date"
                 value={filters?.endDate || ''}
                 onChange={(e) => handleFilterChange('endDate', e.target.value)}
-                className="text-sm border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full text-sm border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
+          </div>
 
-            {/* Clear Filters */}
-            {hasActiveFilters && (
+          {/* Clear Filters */}
+          {hasActiveFilters && (
+            <div className="mt-3 flex justify-end">
               <button
                 onClick={clearFilters}
                 className="text-sm text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 font-medium"
               >
                 Clear Filters
               </button>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       )}
 
+      {/* Spacer between controls and table */}
+      <div className="mt-3 sm:mt-4" />
 
-
+      {/* Brokerage Transactions Table */}
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
           <thead className="bg-gray-50 dark:bg-gray-700/50">
@@ -501,7 +516,13 @@ export function InvestmentTransactionList({
             </tr>
           </thead>
           <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-            {transactions.map((tx, index) => (
+            {transactions.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                  No transactions match your filters.
+                </td>
+              </tr>
+            ) : transactions.map((tx, index) => (
               <InvestmentTransactionRow
                 key={tx.id}
                 tx={tx}

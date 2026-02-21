@@ -222,11 +222,42 @@ export class PortfolioService {
       (a) => a.accountSubType === null || a.accountSubType === undefined,
     );
 
+    // Compute effective cash balances excluding future-dated transactions
+    const cashAndStandaloneIds = [
+      ...cashAccounts,
+      ...standaloneAccounts,
+    ].map((a) => a.id);
+    const effectiveBalances = new Map<string, number>();
+
+    if (cashAndStandaloneIds.length > 0) {
+      const balanceRows: { account_id: string; balance: string }[] =
+        await this.accountsRepository.query(
+          `SELECT a.id as account_id,
+                  COALESCE(a.opening_balance, 0) + COALESCE(SUM(t.amount), 0) as balance
+           FROM accounts a
+           LEFT JOIN transactions t ON t.account_id = a.id
+             AND (t.status IS NULL OR t.status != 'VOID')
+             AND t.parent_transaction_id IS NULL
+             AND t.transaction_date <= CURRENT_DATE
+           WHERE a.id = ANY($1)
+           GROUP BY a.id, a.opening_balance`,
+          [cashAndStandaloneIds],
+        );
+      for (const row of balanceRows) {
+        effectiveBalances.set(
+          row.account_id,
+          Math.round(Number(row.balance) * 100) / 100,
+        );
+      }
+    }
+
     // Calculate total cash value from cash accounts + standalone accounts (converted to default currency)
     let totalCashValue = 0;
     for (const a of [...cashAccounts, ...standaloneAccounts]) {
+      const balance =
+        effectiveBalances.get(a.id) ?? Number(a.currentBalance);
       totalCashValue += await this.convertToDefault(
-        Number(a.currentBalance),
+        balance,
         a.currencyCode,
         defaultCurrency,
         rateCache,
@@ -351,7 +382,8 @@ export class PortfolioService {
         currencyCode: brokerageAccount.currencyCode,
         cashAccountId: linkedCashAccount?.id ?? null,
         cashBalance: linkedCashAccount
-          ? Number(linkedCashAccount.currentBalance)
+          ? (effectiveBalances.get(linkedCashAccount.id) ??
+              Number(linkedCashAccount.currentBalance))
           : 0,
         holdings: accountHoldings.sort((a, b) => {
           if (a.marketValue === null && b.marketValue === null) return 0;
@@ -389,7 +421,9 @@ export class PortfolioService {
         accountName: standaloneAccount.name,
         currencyCode: standaloneAccount.currencyCode,
         cashAccountId: standaloneAccount.id, // Cash is on this same account
-        cashBalance: Number(standaloneAccount.currentBalance),
+        cashBalance:
+          effectiveBalances.get(standaloneAccount.id) ??
+          Number(standaloneAccount.currentBalance),
         holdings: accountHoldings.sort((a, b) => {
           if (a.marketValue === null && b.marketValue === null) return 0;
           if (a.marketValue === null) return 1;

@@ -4,7 +4,7 @@ import {
   ForbiddenException,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository, In } from "typeorm";
+import { Repository, In, LessThanOrEqual } from "typeorm";
 import { Holding } from "./entities/holding.entity";
 import {
   InvestmentTransaction,
@@ -229,11 +229,15 @@ export class HoldingsService {
 
     const brokerageAccountIds = brokerageAccounts.map((a) => a.id);
 
-    // Get all investment transactions for these accounts, ordered by date
+    // Get all investment transactions for these accounts up to today, ordered by date
+    // Future-dated transactions are excluded so they don't affect current holdings
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
     const transactions = await this.investmentTransactionsRepository.find({
       where: {
         userId,
         accountId: In(brokerageAccountIds),
+        transactionDate: LessThanOrEqual(today),
       },
       order: {
         transactionDate: "ASC",

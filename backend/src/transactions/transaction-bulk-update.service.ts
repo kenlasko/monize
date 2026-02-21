@@ -12,6 +12,8 @@ import { Category } from "../categories/entities/category.entity";
 import { AccountsService } from "../accounts/accounts.service";
 import { NetWorthService } from "../net-worth/net-worth.service";
 import { BulkUpdateDto, BulkUpdateFilterDto } from "./dto/bulk-update.dto";
+import { isTransactionInFuture } from "../common/date-utils";
+
 
 export interface BulkUpdateResult {
   updated: number;
@@ -221,6 +223,10 @@ export class TransactionBulkUpdateService {
       ? "transaction.status != :voidStatus"
       : "transaction.status = :voidStatus";
 
+    // Only include non-future transactions in balance changes
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+
     const balanceDeltas = await this.transactionsRepository
       .createQueryBuilder("transaction")
       .select("transaction.accountId", "accountId")
@@ -228,6 +234,7 @@ export class TransactionBulkUpdateService {
       .where("transaction.id IN (:...ids)", { ids: eligibleIds })
       .andWhere("transaction.userId = :userId", { userId })
       .andWhere(statusCondition, { voidStatus: TransactionStatus.VOID })
+      .andWhere("transaction.transactionDate <= :today", { today })
       .groupBy("transaction.accountId")
       .getRawMany();
 

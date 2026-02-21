@@ -313,7 +313,6 @@ function TransactionsContent() {
 
   // Load transaction data and chart data in parallel - runs when filters/page change
   const loadTransactions = useCallback(async (page: number) => {
-    setIsLoading(true);
     try {
       // Determine which account IDs to use for the query
       // If specific accounts are selected, use those
@@ -875,7 +874,7 @@ function TransactionsContent() {
 
         {/* Transactions List */}
         <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg overflow-hidden">
-          {isLoading ? (
+          {isLoading && transactions.length === 0 ? (
             <LoadingSpinner text="Loading transactions..." />
           ) : (
             <TransactionList

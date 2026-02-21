@@ -361,6 +361,8 @@ interface TransactionListProps {
   isAllOnPageSelected?: boolean;
   categoryColorMap?: Map<string, string | null>;
   budgetStatusMap?: Record<string, CategoryBudgetStatus>;
+  /** Hide the built-in density/pagination toolbar (when parent controls density externally) */
+  showToolbar?: boolean;
 }
 
 export function TransactionList({
@@ -391,6 +393,7 @@ export function TransactionList({
   isAllOnPageSelected,
   categoryColorMap,
   budgetStatusMap,
+  showToolbar = true,
 }: TransactionListProps) {
   const { formatDate } = useDateFormat();
   const { formatCurrency } = useNumberFormat();
@@ -679,7 +682,7 @@ export function TransactionList({
   return (
     <div>
       {/* Density toggle and top pagination */}
-      {(() => {
+      {showToolbar && (() => {
         const densityButton = (
           <button
             onClick={cycleDensity}

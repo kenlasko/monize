@@ -94,7 +94,7 @@ This is a comprehensive web-based personal finance management application design
 - [x] Removed unsafe-eval from CSP script-src
 - [x] Added Cross-Origin-Opener-Policy: same-origin
 - [x] Added Cross-Origin-Resource-Policy: same-origin
-- [ ] CSP unsafe-inline: Required by Next.js for hydration (nonce-based CSP is the only fix, complex)
+- [x] CSP unsafe-inline: Replaced with nonce-based CSP via proxy.ts; added object-src 'none'
 - [ ] Proxy disclosure: Infrastructure-level fix (reverse proxy config, not app code)
 
 ### Security Audit Round 2 (Feb 2026)

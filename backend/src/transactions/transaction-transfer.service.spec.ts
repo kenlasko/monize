@@ -6,6 +6,15 @@ import { Transaction, TransactionStatus } from "./entities/transaction.entity";
 import { TransactionSplit } from "./entities/transaction-split.entity";
 import { AccountsService } from "../accounts/accounts.service";
 import { NetWorthService } from "../net-worth/net-worth.service";
+import { isTransactionInFuture } from "../common/date-utils";
+
+jest.mock("../common/date-utils", () => ({
+  isTransactionInFuture: jest.fn().mockReturnValue(false),
+}));
+
+const mockedIsTransactionInFuture = isTransactionInFuture as jest.MockedFunction<
+  typeof isTransactionInFuture
+>;
 
 describe("TransactionTransferService", () => {
   let service: TransactionTransferService;
@@ -38,6 +47,7 @@ describe("TransactionTransferService", () => {
 
   beforeEach(async () => {
     jest.useFakeTimers();
+    mockedIsTransactionInFuture.mockReturnValue(false);
 
     transactionsRepository = {
       create: jest
@@ -80,6 +90,7 @@ describe("TransactionTransferService", () => {
           });
         }),
       updateBalance: jest.fn().mockResolvedValue(undefined),
+      recalculateCurrentBalance: jest.fn().mockResolvedValue(undefined),
     };
 
     netWorthService = {
@@ -856,6 +867,155 @@ describe("TransactionTransferService", () => {
 
       expect(transactionsRepository.update).not.toHaveBeenCalled();
       expect(accountsService.updateBalance).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("future-dated transfers", () => {
+    const futureDate = "2099-12-31";
+    const currentDate = "2026-01-15";
+
+    describe("createTransfer", () => {
+      it("does not call updateBalance when creating a future-dated transfer", async () => {
+        mockedIsTransactionInFuture.mockReturnValue(true);
+
+        const dto = { ...baseTransferDto, transactionDate: futureDate };
+
+        transactionsRepository.save
+          .mockReset()
+          .mockResolvedValueOnce({ id: "from-tx-id", ...dto, amount: -500 })
+          .mockResolvedValueOnce({ id: "to-tx-id", ...dto, amount: 500 });
+
+        mockFindOne
+          .mockResolvedValueOnce({ id: "from-tx-id", amount: -500 })
+          .mockResolvedValueOnce({ id: "to-tx-id", amount: 500 });
+
+        await service.createTransfer("user-1", dto, mockFindOne);
+
+        expect(accountsService.updateBalance).not.toHaveBeenCalled();
+      });
+    });
+
+    describe("removeTransfer", () => {
+      it("does not call updateBalance when removing a future-dated transfer", async () => {
+        mockedIsTransactionInFuture.mockReturnValue(true);
+
+        const fromTx = {
+          id: "from-tx",
+          isTransfer: true,
+          linkedTransactionId: "to-tx",
+          accountId: "from-account",
+          amount: -500,
+          transactionDate: futureDate,
+        };
+        const toTx = {
+          id: "to-tx",
+          accountId: "to-account",
+          amount: 500,
+          transactionDate: futureDate,
+        };
+
+        mockFindOne.mockResolvedValue(fromTx);
+        splitsRepository.findOne.mockResolvedValue(null);
+        transactionsRepository.findOne.mockResolvedValue(toTx);
+
+        await service.removeTransfer("user-1", "from-tx", mockFindOne);
+
+        expect(accountsService.updateBalance).not.toHaveBeenCalled();
+        expect(transactionsRepository.remove).toHaveBeenCalledWith(toTx);
+        expect(transactionsRepository.remove).toHaveBeenCalledWith(fromTx);
+      });
+    });
+
+    describe("updateTransfer", () => {
+      const fromTransaction = {
+        id: "from-tx",
+        accountId: "from-account",
+        amount: -500,
+        isTransfer: true,
+        linkedTransactionId: "to-tx",
+        exchangeRate: 1,
+        account: mockFromAccount,
+        transactionDate: currentDate,
+      } as unknown as Transaction;
+
+      const toTransaction = {
+        id: "to-tx",
+        accountId: "to-account",
+        amount: 500,
+        isTransfer: true,
+        linkedTransactionId: "from-tx",
+        exchangeRate: 1,
+        account: mockToAccount,
+        transactionDate: currentDate,
+      } as unknown as Transaction;
+
+      const futureFromTransaction = {
+        ...fromTransaction,
+        transactionDate: futureDate,
+      } as unknown as Transaction;
+
+      const futureToTransaction = {
+        ...toTransaction,
+        transactionDate: futureDate,
+      } as unknown as Transaction;
+
+      it("applies new balances when updating from future to current date", async () => {
+        // Old date is future, new date is current
+        mockedIsTransactionInFuture.mockImplementation(
+          (date: string) => date === futureDate,
+        );
+
+        mockFindOne
+          .mockResolvedValueOnce(futureFromTransaction)
+          .mockResolvedValueOnce(futureToTransaction)
+          .mockResolvedValueOnce({ ...fromTransaction })
+          .mockResolvedValueOnce({ ...toTransaction });
+
+        await service.updateTransfer(
+          "user-1",
+          "from-tx",
+          { transactionDate: currentDate },
+          mockFindOne,
+        );
+
+        // When any future date is involved, recalculate from scratch
+        expect(
+          accountsService.recalculateCurrentBalance,
+        ).toHaveBeenCalledWith("from-account");
+        expect(
+          accountsService.recalculateCurrentBalance,
+        ).toHaveBeenCalledWith("to-account");
+        expect(accountsService.updateBalance).not.toHaveBeenCalled();
+      });
+
+      it("reverses old balances when updating from current to future date", async () => {
+        // Old date is current, new date is future
+        mockedIsTransactionInFuture.mockImplementation(
+          (date: string) => date === futureDate,
+        );
+
+        mockFindOne
+          .mockResolvedValueOnce(fromTransaction)
+          .mockResolvedValueOnce(toTransaction)
+          .mockResolvedValueOnce({ ...futureFromTransaction })
+          .mockResolvedValueOnce({ ...futureToTransaction });
+
+        await service.updateTransfer(
+          "user-1",
+          "from-tx",
+          { transactionDate: futureDate },
+          mockFindOne,
+        );
+
+        // When any future date is involved, recalculate from scratch
+        expect(
+          accountsService.recalculateCurrentBalance,
+        ).toHaveBeenCalledWith("from-account");
+        expect(
+          accountsService.recalculateCurrentBalance,
+        ).toHaveBeenCalledWith("to-account");
+        expect(accountsService.updateBalance).not.toHaveBeenCalled();
+      });
     });
   });
 });

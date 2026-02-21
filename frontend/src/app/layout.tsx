@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import { headers } from 'next/headers';
 import { Inter } from 'next/font/google';
 import { Toaster } from 'react-hot-toast';
 import { ThemeProvider } from '@/contexts/ThemeContext';
@@ -37,11 +38,16 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // Reading headers forces dynamic rendering so the per-request CSP nonce
+  // from proxy.ts is available. Next.js automatically applies the nonce
+  // to its generated inline scripts.
+  await headers();
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>

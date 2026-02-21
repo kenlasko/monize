@@ -22,6 +22,7 @@ export const transactionsApi = {
   create: async (data: CreateTransactionData): Promise<Transaction> => {
     const response = await apiClient.post<Transaction>('/transactions', data);
     invalidateCache('accounts:');
+    invalidateCache('investments:');
     return response.data;
   },
 
@@ -89,6 +90,7 @@ export const transactionsApi = {
   update: async (id: string, data: UpdateTransactionData): Promise<Transaction> => {
     const response = await apiClient.patch<Transaction>(`/transactions/${id}`, data);
     invalidateCache('accounts:');
+    invalidateCache('investments:');
     return response.data;
   },
 
@@ -96,6 +98,7 @@ export const transactionsApi = {
   delete: async (id: string): Promise<void> => {
     await apiClient.delete(`/transactions/${id}`);
     invalidateCache('accounts:');
+    invalidateCache('investments:');
   },
 
   // Mark transaction as cleared/uncleared
@@ -124,6 +127,7 @@ export const transactionsApi = {
       status,
     });
     invalidateCache('accounts:');
+    invalidateCache('investments:');
     return response.data;
   },
 
@@ -220,6 +224,7 @@ export const transactionsApi = {
   createTransfer: async (data: CreateTransferData): Promise<TransferResult> => {
     const response = await apiClient.post<TransferResult>('/transactions/transfer', data);
     invalidateCache('accounts:');
+    invalidateCache('investments:');
     return response.data;
   },
 
@@ -235,6 +240,7 @@ export const transactionsApi = {
   deleteTransfer: async (transactionId: string): Promise<void> => {
     await apiClient.delete(`/transactions/${transactionId}/transfer`);
     invalidateCache('accounts:');
+    invalidateCache('investments:');
   },
 
   // Update a transfer (updates both linked transactions)
@@ -247,6 +253,7 @@ export const transactionsApi = {
       data,
     );
     invalidateCache('accounts:');
+    invalidateCache('investments:');
     return response.data;
   },
 
@@ -278,6 +285,7 @@ export const transactionsApi = {
       { transactionIds, reconciledDate },
     );
     invalidateCache('accounts:');
+    invalidateCache('investments:');
     return response.data;
   },
 
@@ -288,6 +296,7 @@ export const transactionsApi = {
       data,
     );
     invalidateCache('accounts:');
+    invalidateCache('investments:');
     return response.data;
   },
 };

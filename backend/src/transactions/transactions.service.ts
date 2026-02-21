@@ -30,6 +30,7 @@ import {
   BulkUpdateResult,
 } from "./transaction-bulk-update.service";
 import { BulkUpdateDto } from "./dto/bulk-update.dto";
+import { isTransactionInFuture } from "../common/date-utils";
 
 export interface TransactionWithInvestmentLink extends Transaction {
   linkedInvestmentTransactionId?: string | null;
@@ -176,10 +177,16 @@ export class TransactionsService {
     }
 
     if (savedTransaction.status !== TransactionStatus.VOID) {
-      await this.accountsService.updateBalance(
-        createTransactionDto.accountId,
-        Number(createTransactionDto.amount),
-      );
+      if (isTransactionInFuture(createTransactionDto.transactionDate)) {
+        await this.accountsService.recalculateCurrentBalance(
+          createTransactionDto.accountId,
+        );
+      } else {
+        await this.accountsService.updateBalance(
+          createTransactionDto.accountId,
+          Number(createTransactionDto.amount),
+        );
+      }
     }
 
     this.triggerNetWorthRecalc(createTransactionDto.accountId, userId);
@@ -522,6 +529,7 @@ export class TransactionsService {
     const transaction = await this.findOne(userId, id);
     const oldAmount = Number(transaction.amount);
     const oldAccountId = transaction.accountId;
+    const oldTransactionDate = transaction.transactionDate;
     const oldStatus = transaction.status;
     const wasVoid = oldStatus === TransactionStatus.VOID;
 
@@ -600,8 +608,18 @@ export class TransactionsService {
     const newAccountId = savedTransaction.accountId;
     const newStatus = savedTransaction.status;
     const isVoid = newStatus === TransactionStatus.VOID;
+    const oldIsFuture = isTransactionInFuture(oldTransactionDate);
+    const newIsFuture = isTransactionInFuture(savedTransaction.transactionDate);
+    const anyFuture = oldIsFuture || newIsFuture;
 
-    if (wasVoid && !isVoid) {
+    if (anyFuture) {
+      // When any future date is involved, recalculate from scratch
+      // to handle both pre-fix and post-fix transactions correctly
+      const affectedAccounts = new Set([oldAccountId, newAccountId]);
+      for (const accId of affectedAccounts) {
+        await this.accountsService.recalculateCurrentBalance(accId);
+      }
+    } else if (wasVoid && !isVoid) {
       await this.accountsService.updateBalance(newAccountId, newAmount);
     } else if (!wasVoid && isVoid) {
       await this.accountsService.updateBalance(oldAccountId, -oldAmount);
@@ -639,10 +657,20 @@ export class TransactionsService {
     }
 
     if (transaction.status !== TransactionStatus.VOID) {
-      await this.accountsService.updateBalance(
-        transaction.accountId,
-        -Number(transaction.amount),
-      );
+      if (isTransactionInFuture(transaction.transactionDate)) {
+        // Recalculate from scratch — handles both pre-fix and post-fix state
+        await this.transactionsRepository.remove(transaction);
+        await this.accountsService.recalculateCurrentBalance(
+          transaction.accountId,
+        );
+        this.triggerNetWorthRecalc(transaction.accountId, userId);
+        return;
+      } else {
+        await this.accountsService.updateBalance(
+          transaction.accountId,
+          -Number(transaction.amount),
+        );
+      }
     }
 
     this.triggerNetWorthRecalc(transaction.accountId, userId);
@@ -674,11 +702,20 @@ export class TransactionsService {
           });
 
           if (linkedTx) {
-            await this.accountsService.updateBalance(
-              linkedTx.accountId,
-              -Number(linkedTx.amount),
+            const linkedAccId = linkedTx.accountId;
+            const linkedIsFuture = isTransactionInFuture(
+              linkedTx.transactionDate,
             );
+            if (!linkedIsFuture) {
+              await this.accountsService.updateBalance(
+                linkedAccId,
+                -Number(linkedTx.amount),
+              );
+            }
             await this.transactionsRepository.remove(linkedTx);
+            if (linkedIsFuture) {
+              await this.accountsService.recalculateCurrentBalance(linkedAccId);
+            }
           }
         }
       }
@@ -686,6 +723,13 @@ export class TransactionsService {
       await this.splitsRepository.remove(allSplits);
 
       if (parentTransaction.status !== TransactionStatus.VOID) {
+        if (isTransactionInFuture(parentTransaction.transactionDate)) {
+          await this.transactionsRepository.remove(parentTransaction);
+          await this.accountsService.recalculateCurrentBalance(
+            parentTransaction.accountId,
+          );
+          return;
+        }
         await this.accountsService.updateBalance(
           parentTransaction.accountId,
           -Number(parentTransaction.amount),

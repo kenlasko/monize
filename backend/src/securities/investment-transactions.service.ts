@@ -22,6 +22,7 @@ import {
   TransactionStatus,
 } from "../transactions/entities/transaction.entity";
 import { Account, AccountSubType } from "../accounts/entities/account.entity";
+import { isTransactionInFuture } from "../common/date-utils";
 
 @Injectable()
 export class InvestmentTransactionsService {
@@ -313,6 +314,12 @@ export class InvestmentTransactionsService {
     userId: string,
     transaction: InvestmentTransaction,
   ): Promise<void> {
+    // Skip effects for future-dated transactions - they shouldn't affect
+    // current holdings or cash balances until their transaction date arrives
+    if (isTransactionInFuture(transaction.transactionDate)) {
+      return;
+    }
+
     const {
       action,
       accountId,
@@ -625,6 +632,11 @@ export class InvestmentTransactionsService {
     userId: string,
     transaction: InvestmentTransaction,
   ): Promise<void> {
+    // Skip reversal for future-dated transactions - their effects were never applied
+    if (isTransactionInFuture(transaction.transactionDate)) {
+      return;
+    }
+
     const { action, accountId, securityId, quantity, price, transactionId } =
       transaction;
 

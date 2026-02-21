@@ -1508,6 +1508,79 @@ describe('TransactionList', () => {
   });
 
   // =========================================================================
+  // showToolbar prop
+  // =========================================================================
+
+  describe('showToolbar prop', () => {
+    it('shows density toolbar by default', async () => {
+      render(
+        <TransactionList
+          transactions={[createTransaction()]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTitle('Toggle row density')).toBeInTheDocument();
+      });
+    });
+
+    it('hides density toolbar when showToolbar is false', async () => {
+      render(
+        <TransactionList
+          transactions={[createTransaction()]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+          showToolbar={false}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.queryByTitle('Toggle row density')).not.toBeInTheDocument();
+      });
+    });
+
+    it('hides pagination toolbar when showToolbar is false', async () => {
+      render(
+        <TransactionList
+          transactions={[createTransaction()]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+          showToolbar={false}
+          currentPage={1}
+          totalPages={3}
+          totalItems={75}
+          pageSize={25}
+          onPageChange={vi.fn()}
+        />
+      );
+
+      await waitFor(() => {
+        // The toolbar with pagination should not be present
+        expect(screen.queryByTitle('Toggle row density')).not.toBeInTheDocument();
+      });
+    });
+
+    it('still renders table content when showToolbar is false', async () => {
+      const tx = createTransaction();
+      render(
+        <TransactionList
+          transactions={[tx]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+          showToolbar={false}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Grocery Store')).toBeInTheDocument();
+        expect(screen.getByText('Date')).toBeInTheDocument();
+      });
+    });
+  });
+
+  // =========================================================================
   // Payee click interaction
   // =========================================================================
 

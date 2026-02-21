@@ -17,6 +17,15 @@ import { HoldingsService } from "./holdings.service";
 import { SecuritiesService } from "./securities.service";
 import { NetWorthService } from "../net-worth/net-worth.service";
 import { DataSource } from "typeorm";
+import { isTransactionInFuture } from "../common/date-utils";
+
+jest.mock("../common/date-utils", () => ({
+  isTransactionInFuture: jest.fn().mockReturnValue(false),
+}));
+
+const mockedIsTransactionInFuture = isTransactionInFuture as jest.MockedFunction<
+  typeof isTransactionInFuture
+>;
 
 describe("InvestmentTransactionsService", () => {
   let service: InvestmentTransactionsService;
@@ -161,6 +170,7 @@ describe("InvestmentTransactionsService", () => {
 
   beforeEach(async () => {
     jest.useFakeTimers();
+    mockedIsTransactionInFuture.mockReturnValue(false);
 
     investmentTransactionsRepository = {
       create: jest
@@ -2568,6 +2578,135 @@ describe("InvestmentTransactionsService", () => {
           transactionDate: "2025-06-15",
         }),
       );
+    });
+  });
+
+  describe("future-dated transactions", () => {
+    const createBuyDto = {
+      accountId,
+      securityId,
+      action: InvestmentAction.BUY,
+      transactionDate: "2027-06-15",
+      quantity: 10,
+      price: 150,
+      commission: 9.99,
+      description: "Future Buy AAPL",
+    };
+
+    beforeEach(() => {
+      mockedIsTransactionInFuture.mockReturnValue(true);
+
+      accountsService.findOne.mockImplementation((uid: string, aid: string) => {
+        if (aid === accountId) return Promise.resolve(mockInvestmentAccount);
+        if (aid === cashAccountId) return Promise.resolve(mockCashAccount);
+        if (aid === fundingAccountId)
+          return Promise.resolve(mockFundingAccount);
+        return Promise.reject(new NotFoundException("Account not found"));
+      });
+    });
+
+    it("does NOT update holdings for a future-dated BUY transaction", async () => {
+      const savedTx = {
+        ...mockBuyTransaction,
+        transactionDate: "2027-06-15",
+      };
+      investmentTransactionsRepository.save.mockResolvedValue(savedTx);
+
+      const findOneQB = createMockQueryBuilder(savedTx);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        findOneQB,
+      );
+
+      await service.create(userId, createBuyDto);
+
+      expect(holdingsService.updateHolding).not.toHaveBeenCalled();
+    });
+
+    it("does NOT create a cash transaction for a future-dated BUY", async () => {
+      const savedTx = {
+        ...mockBuyTransaction,
+        transactionDate: "2027-06-15",
+      };
+      investmentTransactionsRepository.save.mockResolvedValue(savedTx);
+
+      const findOneQB = createMockQueryBuilder(savedTx);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        findOneQB,
+      );
+
+      await service.create(userId, createBuyDto);
+
+      expect(transactionRepository.create).not.toHaveBeenCalled();
+      expect(transactionRepository.save).not.toHaveBeenCalled();
+      expect(accountsService.updateBalance).not.toHaveBeenCalled();
+    });
+
+    it("does NOT update holdings for a future-dated SELL transaction", async () => {
+      const sellDto = {
+        accountId,
+        securityId,
+        action: InvestmentAction.SELL,
+        transactionDate: "2027-06-15",
+        quantity: 5,
+        price: 160,
+        commission: 9.99,
+      };
+
+      const savedTx = {
+        ...mockSellTransaction,
+        transactionDate: "2027-06-15",
+      };
+      investmentTransactionsRepository.save.mockResolvedValue(savedTx);
+
+      const findOneQB = createMockQueryBuilder(savedTx);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        findOneQB,
+      );
+
+      await service.create(userId, sellDto);
+
+      expect(holdingsService.updateHolding).not.toHaveBeenCalled();
+      expect(transactionRepository.create).not.toHaveBeenCalled();
+    });
+
+    it("does NOT reverse effects when deleting a future-dated transaction", async () => {
+      const futureTx = {
+        ...mockBuyTransaction,
+        transactionDate: "2027-06-15",
+        transactionId: cashTransactionId,
+      };
+      const mockQB = createMockQueryBuilder(futureTx);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        mockQB,
+      );
+
+      await service.remove(userId, transactionId);
+
+      expect(holdingsService.updateHolding).not.toHaveBeenCalled();
+      expect(holdingsService.adjustQuantity).not.toHaveBeenCalled();
+      expect(accountsService.updateBalance).not.toHaveBeenCalled();
+      expect(investmentTransactionsRepository.remove).toHaveBeenCalledWith(
+        futureTx,
+      );
+    });
+
+    it("still saves the investment transaction record for future-dated BUY", async () => {
+      const savedTx = {
+        ...mockBuyTransaction,
+        transactionDate: "2027-06-15",
+      };
+      investmentTransactionsRepository.save.mockResolvedValue(savedTx);
+
+      const findOneQB = createMockQueryBuilder(savedTx);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        findOneQB,
+      );
+
+      const result = await service.create(userId, createBuyDto);
+
+      expect(investmentTransactionsRepository.create).toHaveBeenCalled();
+      expect(investmentTransactionsRepository.save).toHaveBeenCalled();
+      expect(result).toEqual(savedTx);
     });
   });
 });

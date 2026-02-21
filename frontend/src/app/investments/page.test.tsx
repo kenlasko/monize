@@ -93,6 +93,33 @@ vi.mock('@/lib/accounts', () => ({
   },
 }));
 
+const mockGetAllTransactions = vi.fn();
+const mockGetTransactionById = vi.fn();
+
+vi.mock('@/lib/transactions', () => ({
+  transactionsApi: {
+    getAll: (...args: any[]) => mockGetAllTransactions(...args),
+    getById: (...args: any[]) => mockGetTransactionById(...args),
+    delete: vi.fn(),
+    deleteTransfer: vi.fn(),
+    updateStatus: vi.fn(),
+  },
+}));
+
+const mockGetAllCategories = vi.fn();
+vi.mock('@/lib/categories', () => ({
+  categoriesApi: {
+    getAll: (...args: any[]) => mockGetAllCategories(...args),
+  },
+}));
+
+const mockGetAllPayees = vi.fn();
+vi.mock('@/lib/payees', () => ({
+  payeesApi: {
+    getAll: (...args: any[]) => mockGetAllPayees(...args),
+  },
+}));
+
 const mockOpenCreate = vi.fn();
 const mockOpenEdit = vi.fn();
 const mockClose = vi.fn();
@@ -201,8 +228,9 @@ vi.mock('@/components/investments/GroupedHoldingsList', () => ({
 }));
 
 vi.mock('@/components/investments/InvestmentTransactionList', () => ({
-  InvestmentTransactionList: ({ transactions, onDelete, onEdit, onNewTransaction, onFiltersChange, filters }: any) => (
+  InvestmentTransactionList: ({ transactions, onDelete, onEdit, onNewTransaction, onFiltersChange, filters, viewToggle }: any) => (
     <div data-testid="transaction-list">
+      {viewToggle}
       <span>{transactions.length} transactions</span>
       {transactions.map((t: any) => (
         <div key={t.id} data-testid={`itx-${t.id}`}>
@@ -215,6 +243,28 @@ vi.mock('@/components/investments/InvestmentTransactionList', () => ({
       {filters?.symbol && <span data-testid="symbol-filter">{filters.symbol}</span>}
     </div>
   ),
+}));
+
+vi.mock('@/components/transactions/TransactionList', () => ({
+  TransactionList: ({ transactions, onEdit, showToolbar }: any) => (
+    <div data-testid="cash-transaction-list">
+      <span>{transactions.length} cash transactions</span>
+      <span data-testid="cash-show-toolbar">{String(showToolbar)}</span>
+      {transactions.map((t: any) => (
+        <div key={t.id} data-testid={`cash-tx-${t.id}`}>
+          <button data-testid={`cash-edit-${t.id}`} onClick={() => onEdit(t)}>Edit</button>
+        </div>
+      ))}
+    </div>
+  ),
+}));
+
+vi.mock('@/components/transactions/TransactionForm', () => ({
+  TransactionForm: () => <div data-testid="cash-transaction-form">Cash Form</div>,
+}));
+
+vi.mock('@/components/ui/LoadingSpinner', () => ({
+  LoadingSpinner: ({ text }: any) => <div data-testid="loading-spinner">{text}</div>,
 }));
 
 vi.mock('@/components/investments/InvestmentTransactionForm', () => ({
@@ -267,6 +317,9 @@ describe('InvestmentsPage', () => {
     mockGetPortfolioSummary.mockResolvedValue(mockPortfolioSummary);
     mockGetTransactions.mockResolvedValue(mockTxResponse);
     mockGetPriceStatus.mockResolvedValue({ lastUpdated: null });
+    mockGetAllTransactions.mockResolvedValue({ data: [], pagination: { page: 1, totalPages: 1, total: 0 } });
+    mockGetAllCategories.mockResolvedValue([]);
+    mockGetAllPayees.mockResolvedValue([]);
   });
 
   describe('Rendering', () => {
@@ -767,6 +820,199 @@ describe('InvestmentsPage', () => {
         (call: any[]) => Array.isArray(call[0]),
       );
       expect(pruningCalls.length).toBe(0);
+    });
+  });
+
+  describe('Cash View', () => {
+    const switchToCashView = async () => {
+      render(<InvestmentsPage />);
+      // Wait for initial load
+      await waitFor(() => {
+        expect(screen.getByTestId('transaction-list')).toBeInTheDocument();
+      });
+      // The view toggle is rendered inside InvestmentTransactionList via viewToggle prop
+      // Find the Cash button inside the transaction-list container (not the GroupedHoldingsList one)
+      const txList = screen.getByTestId('transaction-list');
+      // The viewToggle renders Brokerage then Cash buttons — find Cash
+      const buttons = txList.querySelectorAll('button');
+      const cashBtn = Array.from(buttons).find(b => b.textContent === 'Cash')!;
+      fireEvent.click(cashBtn);
+    };
+
+    it('shows Brokerage/Cash toggle in brokerage view', async () => {
+      render(<InvestmentsPage />);
+      await waitFor(() => {
+        const txList = screen.getByTestId('transaction-list');
+        expect(txList.querySelector('button')).toBeInTheDocument();
+        // Verify both toggle buttons are present inside the transaction list
+        const buttons = Array.from(txList.querySelectorAll('button'));
+        expect(buttons.some(b => b.textContent === 'Brokerage')).toBe(true);
+        expect(buttons.some(b => b.textContent === 'Cash')).toBe(true);
+      });
+    });
+
+    it('switches to cash view when Cash button is clicked', async () => {
+      mockGetAllTransactions.mockResolvedValue({
+        data: [{ id: 'cash-tx-1', transactionDate: '2024-01-15', payeeName: 'Deposit', amount: 1000 }],
+        pagination: { page: 1, totalPages: 1, total: 1 },
+      });
+
+      await switchToCashView();
+
+      await waitFor(() => {
+        expect(screen.getByTestId('cash-transaction-list')).toBeInTheDocument();
+      });
+    });
+
+    it('loads cash transactions from linked cash accounts on switch to cash', async () => {
+      mockGetAllTransactions.mockResolvedValue({
+        data: [],
+        pagination: { page: 1, totalPages: 1, total: 0 },
+      });
+
+      await switchToCashView();
+
+      await waitFor(() => {
+        expect(mockGetAllTransactions).toHaveBeenCalledWith(
+          expect.objectContaining({
+            accountIds: expect.arrayContaining(['cash-1', 'cash-2']),
+            page: 1,
+          })
+        );
+      });
+    });
+
+    it('passes showToolbar={false} to TransactionList', async () => {
+      mockGetAllTransactions.mockResolvedValue({
+        data: [{ id: 'cash-tx-1', transactionDate: '2024-01-15', amount: 100 }],
+        pagination: { page: 1, totalPages: 1, total: 1 },
+      });
+
+      await switchToCashView();
+
+      await waitFor(() => {
+        expect(screen.getByTestId('cash-show-toolbar')).toHaveTextContent('false');
+      });
+    });
+
+    it('shows + New Transaction button in cash view', async () => {
+      mockGetAllTransactions.mockResolvedValue({
+        data: [],
+        pagination: { page: 1, totalPages: 1, total: 0 },
+      });
+
+      await switchToCashView();
+
+      await waitFor(() => {
+        // Cash view renders its own + New Transaction button (plus the page header one)
+        const newTxButtons = screen.getAllByText('+ New Transaction');
+        expect(newTxButtons.length).toBeGreaterThanOrEqual(1);
+      });
+    });
+
+    it('shows filter button in cash view', async () => {
+      mockGetAllTransactions.mockResolvedValue({
+        data: [],
+        pagination: { page: 1, totalPages: 1, total: 0 },
+      });
+
+      await switchToCashView();
+
+      await waitFor(() => {
+        expect(screen.getByText('Filter')).toBeInTheDocument();
+      });
+    });
+
+    it('shows density toggle in cash view', async () => {
+      mockGetAllTransactions.mockResolvedValue({
+        data: [],
+        pagination: { page: 1, totalPages: 1, total: 0 },
+      });
+
+      await switchToCashView();
+
+      await waitFor(() => {
+        expect(screen.getByTitle('Toggle row density')).toBeInTheDocument();
+      });
+    });
+
+    it('loads categories and payees on first switch to cash', async () => {
+      mockGetAllTransactions.mockResolvedValue({
+        data: [],
+        pagination: { page: 1, totalPages: 1, total: 0 },
+      });
+
+      await switchToCashView();
+
+      await waitFor(() => {
+        expect(mockGetAllCategories).toHaveBeenCalled();
+        expect(mockGetAllPayees).toHaveBeenCalled();
+      });
+    });
+
+    it('shows filter panel when Filter button is clicked', async () => {
+      mockGetAllTransactions.mockResolvedValue({
+        data: [],
+        pagination: { page: 1, totalPages: 1, total: 0 },
+      });
+      mockGetAllCategories.mockResolvedValue([
+        { id: 'cat-1', name: 'Groceries', parentId: null, children: [] },
+      ]);
+      mockGetAllPayees.mockResolvedValue([
+        { id: 'pay-1', name: 'Store A' },
+      ]);
+
+      await switchToCashView();
+
+      await waitFor(() => {
+        expect(screen.getByText('Filter')).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByText('Filter'));
+
+      await waitFor(() => {
+        // MultiSelect components should be rendered (mocked as multi-select divs)
+        expect(screen.getByText('All payees')).toBeInTheDocument();
+        expect(screen.getByText('All categories')).toBeInTheDocument();
+        expect(screen.getByText('From')).toBeInTheDocument();
+        expect(screen.getByText('To')).toBeInTheDocument();
+      });
+    });
+
+    it('switches back to brokerage view', async () => {
+      mockGetAllTransactions.mockResolvedValue({
+        data: [],
+        pagination: { page: 1, totalPages: 1, total: 0 },
+      });
+
+      await switchToCashView();
+
+      await waitFor(() => {
+        expect(screen.getByTestId('cash-transaction-list')).toBeInTheDocument();
+      });
+
+      // Click Brokerage to switch back
+      const brokerageButton = screen.getByText('Brokerage');
+      fireEvent.click(brokerageButton);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('transaction-list')).toBeInTheDocument();
+        expect(screen.queryByTestId('cash-transaction-list')).not.toBeInTheDocument();
+      });
+    });
+
+    it('hides brokerage transaction list when in cash view', async () => {
+      mockGetAllTransactions.mockResolvedValue({
+        data: [],
+        pagination: { page: 1, totalPages: 1, total: 0 },
+      });
+
+      await switchToCashView();
+
+      await waitFor(() => {
+        expect(screen.queryByTestId('transaction-list')).not.toBeInTheDocument();
+        expect(screen.getByTestId('cash-transaction-list')).toBeInTheDocument();
+      });
     });
   });
 });

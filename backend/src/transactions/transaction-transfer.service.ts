@@ -12,6 +12,7 @@ import { TransactionSplit } from "./entities/transaction-split.entity";
 import { CreateTransferDto } from "./dto/create-transfer.dto";
 import { AccountsService } from "../accounts/accounts.service";
 import { NetWorthService } from "../net-worth/net-worth.service";
+import { isTransactionInFuture } from "../common/date-utils";
 
 export interface TransferResult {
   fromTransaction: Transaction;
@@ -146,8 +147,13 @@ export class TransactionTransferService {
       linkedTransactionId: savedFromTransaction.id,
     });
 
-    await this.accountsService.updateBalance(fromAccountId, -amount);
-    await this.accountsService.updateBalance(toAccountId, toAmount);
+    if (isTransactionInFuture(transactionDate)) {
+      await this.accountsService.recalculateCurrentBalance(fromAccountId);
+      await this.accountsService.recalculateCurrentBalance(toAccountId);
+    } else {
+      await this.accountsService.updateBalance(fromAccountId, -amount);
+      await this.accountsService.updateBalance(toAccountId, toAmount);
+    }
 
     this.triggerNetWorthRecalc(fromAccountId, userId);
     this.triggerNetWorthRecalc(toAccountId, userId);
@@ -207,23 +213,42 @@ export class TransactionTransferService {
         })
       : null;
 
-    await this.accountsService.updateBalance(
-      transaction.accountId,
-      -Number(transaction.amount),
-    );
+    const txIsFuture = isTransactionInFuture(transaction.transactionDate);
+    const txAccountId = transaction.accountId;
 
-    if (linkedTransaction) {
+    if (!txIsFuture) {
       await this.accountsService.updateBalance(
-        linkedTransaction.accountId,
-        -Number(linkedTransaction.amount),
+        txAccountId,
+        -Number(transaction.amount),
       );
-      this.triggerNetWorthRecalc(linkedTransaction.accountId, userId);
-      await this.transactionsRepository.remove(linkedTransaction);
     }
 
-    this.triggerNetWorthRecalc(transaction.accountId, userId);
+    if (linkedTransaction) {
+      const linkedIsFuture = isTransactionInFuture(
+        linkedTransaction.transactionDate,
+      );
+      const linkedAccountId = linkedTransaction.accountId;
 
+      if (!linkedIsFuture) {
+        await this.accountsService.updateBalance(
+          linkedAccountId,
+          -Number(linkedTransaction.amount),
+        );
+      }
+      this.triggerNetWorthRecalc(linkedAccountId, userId);
+      await this.transactionsRepository.remove(linkedTransaction);
+
+      if (linkedIsFuture) {
+        await this.accountsService.recalculateCurrentBalance(linkedAccountId);
+      }
+    }
+
+    this.triggerNetWorthRecalc(txAccountId, userId);
     await this.transactionsRepository.remove(transaction);
+
+    if (txIsFuture) {
+      await this.accountsService.recalculateCurrentBalance(txAccountId);
+    }
   }
 
   private async removeTransferFromSplit(
@@ -252,30 +277,57 @@ export class TransactionTransferService {
           });
 
           if (linkedTx) {
-            await this.accountsService.updateBalance(
-              linkedTx.accountId,
-              -Number(linkedTx.amount),
+            const linkedIsFuture = isTransactionInFuture(
+              linkedTx.transactionDate,
             );
+            const linkedAccId = linkedTx.accountId;
+            if (!linkedIsFuture) {
+              await this.accountsService.updateBalance(
+                linkedAccId,
+                -Number(linkedTx.amount),
+              );
+            }
             await this.transactionsRepository.remove(linkedTx);
+            if (linkedIsFuture) {
+              await this.accountsService.recalculateCurrentBalance(linkedAccId);
+            }
           }
         }
       }
 
       await this.splitsRepository.remove(allSplits);
 
-      await this.accountsService.updateBalance(
-        parentTransaction.accountId,
-        -Number(parentTransaction.amount),
+      const parentIsFuture = isTransactionInFuture(
+        parentTransaction.transactionDate,
       );
+      if (!parentIsFuture) {
+        await this.accountsService.updateBalance(
+          parentTransaction.accountId,
+          -Number(parentTransaction.amount),
+        );
+      }
       await this.transactionsRepository.remove(parentTransaction);
+      if (parentIsFuture) {
+        await this.accountsService.recalculateCurrentBalance(
+          parentTransaction.accountId,
+        );
+      }
     }
 
-    await this.accountsService.updateBalance(
-      transaction.accountId,
-      -Number(transaction.amount),
-    );
+    const txIsFuture = isTransactionInFuture(transaction.transactionDate);
+    if (!txIsFuture) {
+      await this.accountsService.updateBalance(
+        transaction.accountId,
+        -Number(transaction.amount),
+      );
+    }
     this.triggerNetWorthRecalc(transaction.accountId, userId);
     await this.transactionsRepository.remove(transaction);
+    if (txIsFuture) {
+      await this.accountsService.recalculateCurrentBalance(
+        transaction.accountId,
+      );
+    }
   }
 
   async updateTransfer(
@@ -347,7 +399,14 @@ export class TransactionTransferService {
       updateDto.exchangeRate !== undefined ||
       updateDto.toAmount !== undefined;
 
-    if (accountsOrAmountsChanged) {
+    const oldDate = fromTransaction.transactionDate;
+    const newDate = updateDto.transactionDate ?? oldDate;
+    const oldIsFuture = isTransactionInFuture(oldDate);
+    const newIsFuture = isTransactionInFuture(newDate);
+    const dateChanged = oldDate !== newDate;
+    const anyFuture = oldIsFuture || newIsFuture;
+
+    if ((accountsOrAmountsChanged || dateChanged) && !anyFuture) {
       await this.accountsService.updateBalance(oldFromAccountId, oldFromAmount);
       await this.accountsService.updateBalance(oldToAccountId, -oldToAmount);
     }
@@ -380,9 +439,22 @@ export class TransactionTransferService {
       await this.transactionsRepository.update(toTransaction.id, toUpdateData);
     }
 
-    if (accountsOrAmountsChanged) {
-      await this.accountsService.updateBalance(newFromAccountId, -newAmount);
-      await this.accountsService.updateBalance(newToAccountId, newToAmount);
+    if (accountsOrAmountsChanged || dateChanged) {
+      if (anyFuture) {
+        // Recalculate from scratch for all affected accounts
+        const allAccounts = new Set([
+          oldFromAccountId,
+          oldToAccountId,
+          newFromAccountId,
+          newToAccountId,
+        ]);
+        for (const accId of allAccounts) {
+          await this.accountsService.recalculateCurrentBalance(accId);
+        }
+      } else {
+        await this.accountsService.updateBalance(newFromAccountId, -newAmount);
+        await this.accountsService.updateBalance(newToAccountId, newToAmount);
+      }
     }
 
     const affectedAccounts = new Set([

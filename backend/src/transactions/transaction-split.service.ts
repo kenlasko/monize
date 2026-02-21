@@ -11,6 +11,7 @@ import { Transaction } from "./entities/transaction.entity";
 import { TransactionSplit } from "./entities/transaction-split.entity";
 import { CreateTransactionSplitDto } from "./dto/create-transaction-split.dto";
 import { AccountsService } from "../accounts/accounts.service";
+import { isTransactionInFuture } from "../common/date-utils";
 
 @Injectable()
 export class TransactionSplitService {
@@ -109,10 +110,19 @@ export class TransactionSplitService {
           linkedTransactionId: transactionId,
         });
 
-        await this.accountsService.updateBalance(
-          split.transferAccountId,
-          -split.amount,
-        );
+        const dateStr = transactionDate
+          ? transactionDate.toISOString().substring(0, 10)
+          : "";
+        if (dateStr && isTransactionInFuture(dateStr)) {
+          await this.accountsService.recalculateCurrentBalance(
+            split.transferAccountId,
+          );
+        } else {
+          await this.accountsService.updateBalance(
+            split.transferAccountId,
+            -split.amount,
+          );
+        }
 
         savedSplit.linkedTransactionId = savedLinkedTransaction.id;
       }
@@ -138,11 +148,20 @@ export class TransactionSplitService {
         });
 
         if (linkedTx) {
-          await this.accountsService.updateBalance(
-            linkedTx.accountId,
-            -Number(linkedTx.amount),
+          const linkedIsFuture = isTransactionInFuture(
+            linkedTx.transactionDate,
           );
+          const linkedAccId = linkedTx.accountId;
+          if (!linkedIsFuture) {
+            await this.accountsService.updateBalance(
+              linkedAccId,
+              -Number(linkedTx.amount),
+            );
+          }
           await this.transactionsRepository.remove(linkedTx);
+          if (linkedIsFuture) {
+            await this.accountsService.recalculateCurrentBalance(linkedAccId);
+          }
         }
       }
     }
@@ -248,10 +267,16 @@ export class TransactionSplitService {
         linkedTransactionId: savedLinkedTransaction.id,
       });
 
-      await this.accountsService.updateBalance(
-        splitDto.transferAccountId,
-        -splitDto.amount,
-      );
+      if (isTransactionInFuture(transaction.transactionDate)) {
+        await this.accountsService.recalculateCurrentBalance(
+          splitDto.transferAccountId,
+        );
+      } else {
+        await this.accountsService.updateBalance(
+          splitDto.transferAccountId,
+          -splitDto.amount,
+        );
+      }
 
       savedSplit.linkedTransactionId = savedLinkedTransaction.id;
     }
@@ -295,11 +320,18 @@ export class TransactionSplitService {
       });
 
       if (linkedTx) {
-        await this.accountsService.updateBalance(
-          linkedTx.accountId,
-          -Number(linkedTx.amount),
-        );
+        const linkedIsFuture = isTransactionInFuture(linkedTx.transactionDate);
+        const linkedAccId = linkedTx.accountId;
+        if (!linkedIsFuture) {
+          await this.accountsService.updateBalance(
+            linkedAccId,
+            -Number(linkedTx.amount),
+          );
+        }
         await this.transactionsRepository.remove(linkedTx);
+        if (linkedIsFuture) {
+          await this.accountsService.recalculateCurrentBalance(linkedAccId);
+        }
       }
     }
 
@@ -316,11 +348,22 @@ export class TransactionSplitService {
           });
 
           if (linkedTx) {
-            await this.accountsService.updateBalance(
-              linkedTx.accountId,
-              -Number(linkedTx.amount),
+            const lastLinkedIsFuture = isTransactionInFuture(
+              linkedTx.transactionDate,
             );
+            const lastLinkedAccId = linkedTx.accountId;
+            if (!lastLinkedIsFuture) {
+              await this.accountsService.updateBalance(
+                lastLinkedAccId,
+                -Number(linkedTx.amount),
+              );
+            }
             await this.transactionsRepository.remove(linkedTx);
+            if (lastLinkedIsFuture) {
+              await this.accountsService.recalculateCurrentBalance(
+                lastLinkedAccId,
+              );
+            }
           }
         }
 

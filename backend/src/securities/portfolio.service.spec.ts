@@ -131,6 +131,7 @@ describe("PortfolioService", () => {
 
     accountsRepository = {
       find: jest.fn(),
+      query: jest.fn().mockResolvedValue([]),
     };
 
     prefRepository = {
@@ -885,6 +886,100 @@ describe("PortfolioService", () => {
         const result = await service.getPortfolioSummary(userId);
 
         expect(result.holdingsByAccount[0].accountName).toBe("My Portfolio");
+      });
+    });
+
+    describe("effective balance excluding future-dated transactions", () => {
+      it("uses computed balance from query instead of stale currentBalance", async () => {
+        prefRepository.findOne.mockResolvedValue(mockPref);
+        // Cash account has currentBalance=5000 but effective balance is 3000
+        // (e.g., a future-dated 2000 transfer inflated it)
+        accountsRepository.find.mockResolvedValue([
+          mockBrokerageAccount,
+          mockCashAccount,
+        ]);
+        accountsRepository.query.mockResolvedValue([
+          { account_id: "acct-cash-1", balance: "3000" },
+        ]);
+        holdingsRepository.find.mockResolvedValue([]);
+        securityPriceRepository.query.mockResolvedValue([]);
+        exchangeRateService.getLatestRate.mockResolvedValue(null);
+
+        const result = await service.getPortfolioSummary(userId);
+
+        // Should use 3000 from query, not 5000 from currentBalance
+        expect(result.totalCashValue).toBe(3000);
+        expect(result.holdingsByAccount[0].cashBalance).toBe(3000);
+      });
+
+      it("uses computed balance for standalone accounts", async () => {
+        prefRepository.findOne.mockResolvedValue(mockPref);
+        accountsRepository.find.mockResolvedValue([mockStandaloneAccount]);
+        accountsRepository.query.mockResolvedValue([
+          { account_id: "acct-standalone-1", balance: "1500" },
+        ]);
+        holdingsRepository.find.mockResolvedValue([]);
+        securityPriceRepository.query.mockResolvedValue([]);
+        exchangeRateService.getLatestRate.mockResolvedValue(null);
+
+        const result = await service.getPortfolioSummary(userId);
+
+        expect(result.totalCashValue).toBe(1500);
+        expect(result.holdingsByAccount[0].cashBalance).toBe(1500);
+      });
+
+      it("falls back to currentBalance when query returns no row for account", async () => {
+        prefRepository.findOne.mockResolvedValue(mockPref);
+        accountsRepository.find.mockResolvedValue([
+          mockBrokerageAccount,
+          mockCashAccount,
+        ]);
+        // Query returns empty — no effective balance computed
+        accountsRepository.query.mockResolvedValue([]);
+        holdingsRepository.find.mockResolvedValue([]);
+        securityPriceRepository.query.mockResolvedValue([]);
+        exchangeRateService.getLatestRate.mockResolvedValue(null);
+
+        const result = await service.getPortfolioSummary(userId);
+
+        // Falls back to currentBalance = 5000
+        expect(result.totalCashValue).toBe(5000);
+      });
+
+      it("passes correct SQL query to compute effective balance", async () => {
+        prefRepository.findOne.mockResolvedValue(mockPref);
+        accountsRepository.find.mockResolvedValue([
+          mockBrokerageAccount,
+          mockCashAccount,
+          mockStandaloneAccount,
+        ]);
+        accountsRepository.query.mockResolvedValue([]);
+        holdingsRepository.find.mockResolvedValue([]);
+        securityPriceRepository.query.mockResolvedValue([]);
+        exchangeRateService.getLatestRate.mockResolvedValue(null);
+
+        await service.getPortfolioSummary(userId);
+
+        expect(accountsRepository.query).toHaveBeenCalledWith(
+          expect.stringContaining("transaction_date <= CURRENT_DATE"),
+          [["acct-cash-1", "acct-standalone-1"]],
+        );
+      });
+
+      it("does not run balance query when no cash or standalone accounts exist", async () => {
+        prefRepository.findOne.mockResolvedValue(mockPref);
+        // Only a brokerage account with no linked cash
+        const brokerageOnly = {
+          ...mockBrokerageAccount,
+          linkedAccountId: null,
+        };
+        accountsRepository.find.mockResolvedValue([brokerageOnly]);
+        holdingsRepository.find.mockResolvedValue([]);
+        securityPriceRepository.query.mockResolvedValue([]);
+
+        await service.getPortfolioSummary(userId);
+
+        expect(accountsRepository.query).not.toHaveBeenCalled();
       });
     });
 

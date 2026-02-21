@@ -54,7 +54,7 @@ export function AssetAllocationChart({
   holdingsByAccount,
 }: AssetAllocationChartProps) {
   const { formatCurrencyCompact: formatCurrency } = useNumberFormat();
-  const { convertToDefault, defaultCurrency } = useExchangeRates();
+  const { defaultCurrency } = useExchangeRates();
 
   // When viewing a single foreign-currency account, show values in that currency
   const foreignCurrency = singleAccountCurrency && singleAccountCurrency !== defaultCurrency
@@ -70,17 +70,6 @@ export function AssetAllocationChart({
     }
     return total;
   }, [foreignCurrency, holdingsByAccount]);
-
-  // Compute default-currency total for the "approx" line
-  const defaultTotal = useMemo(() => {
-    if (!foreignCurrency || !holdingsByAccount) return null;
-    let total = 0;
-    for (const acct of holdingsByAccount) {
-      total += convertToDefault(acct.cashBalance, acct.currencyCode);
-      total += convertToDefault(acct.totalMarketValue, acct.currencyCode);
-    }
-    return total;
-  }, [foreignCurrency, holdingsByAccount, convertToDefault]);
 
   const fmtVal = (value: number) => {
     if (foreignCurrency) return `${formatCurrency(value, foreignCurrency)} ${foreignCurrency}`;
@@ -171,17 +160,6 @@ export function AssetAllocationChart({
             </div>
           );
         })}
-      </div>
-      <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 text-center">
-        <div className="text-sm text-gray-500 dark:text-gray-400">Total</div>
-        <div className="font-semibold text-gray-900 dark:text-gray-100">
-          {fmtVal(foreignCurrency ? foreignTotal : allocation.totalValue)}
-        </div>
-        {foreignCurrency && defaultTotal !== null && (
-          <div className="text-xs text-gray-400 dark:text-gray-500">
-            {'\u2248 '}{formatCurrency(defaultTotal, defaultCurrency)} {defaultCurrency}
-          </div>
-        )}
       </div>
     </div>
   );

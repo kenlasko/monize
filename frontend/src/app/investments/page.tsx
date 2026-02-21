@@ -1,14 +1,16 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { UnsavedChangesDialog } from '@/components/ui/UnsavedChangesDialog';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useFormModal } from '@/hooks/useFormModal';
-import { MultiSelect } from '@/components/ui/MultiSelect';
+import { MultiSelect, type MultiSelectOption } from '@/components/ui/MultiSelect';
 import { Pagination } from '@/components/ui/Pagination';
 import { PortfolioSummaryCard } from '@/components/investments/PortfolioSummaryCard';
 import { GroupedHoldingsList } from '@/components/investments/GroupedHoldingsList';
@@ -16,8 +18,12 @@ import { AssetAllocationChart } from '@/components/investments/AssetAllocationCh
 import { InvestmentTransactionList, type DensityLevel, type TransactionFilters } from '@/components/investments/InvestmentTransactionList';
 import { InvestmentTransactionForm } from '@/components/investments/InvestmentTransactionForm';
 import { InvestmentValueChart } from '@/components/investments/InvestmentValueChart';
+import { TransactionList } from '@/components/transactions/TransactionList';
 import { investmentsApi } from '@/lib/investments';
+import { transactionsApi } from '@/lib/transactions';
 import { accountsApi } from '@/lib/accounts';
+import { categoriesApi } from '@/lib/categories';
+import { payeesApi } from '@/lib/payees';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { Account } from '@/types/account';
 import {
@@ -25,10 +31,17 @@ import {
   InvestmentTransaction,
   InvestmentTransactionPaginationInfo,
 } from '@/types/investment';
+import { Transaction } from '@/types/transaction';
+import { Category } from '@/types/category';
+import { Payee } from '@/types/payee';
 import { usePriceRefresh, setRefreshInProgress } from '@/hooks/usePriceRefresh';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { createLogger } from '@/lib/logger';
 import { PAGE_SIZE } from '@/lib/constants';
+
+const TransactionForm = dynamic(() => import('@/components/transactions/TransactionForm').then(m => m.TransactionForm), { ssr: false });
+
+type TransactionViewType = 'brokerage' | 'cash';
 
 const logger = createLogger('Investments');
 
@@ -82,7 +95,20 @@ function InvestmentsContent() {
   } | null>(null);
   const [showRefreshDetails, setShowRefreshDetails] = useState(false);
   const [transactionFilters, setTransactionFilters] = useState<TransactionFilters>({});
+  const [transactionView, setTransactionView] = useState<TransactionViewType>('brokerage');
+  const [cashTransactions, setCashTransactions] = useState<Transaction[]>([]);
+  const [cashPagination, setCashPagination] = useState<{ page: number; totalPages: number; total: number } | null>(null);
+  const [cashCurrentPage, setCashCurrentPage] = useState(1);
+  const [cashTransactionsLoading, setCashTransactionsLoading] = useState(false);
+  const [showCashFilters, setShowCashFilters] = useState(false);
+  const [cashFilterPayeeIds, setCashFilterPayeeIds] = useState<string[]>([]);
+  const [cashFilterCategoryIds, setCashFilterCategoryIds] = useState<string[]>([]);
+  const [cashFilterStartDate, setCashFilterStartDate] = useState('');
+  const [cashFilterEndDate, setCashFilterEndDate] = useState('');
+  const [cashPayees, setCashPayees] = useState<Payee[]>([]);
+  const [cashCategories, setCashCategories] = useState<Category[]>([]);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+  const { showForm: showCashForm, editingItem: editingCashTransaction, openCreate: openCashCreate, openEdit: openCashEdit, close: closeCash, modalProps: cashModalProps, setFormDirty: setCashFormDirty, unsavedChangesDialog: cashUnsavedChangesDialog, formSubmitRef: cashFormSubmitRef } = useFormModal<Transaction>();
 
   const loadInvestmentAccounts = useCallback(async () => {
     try {
@@ -99,6 +125,19 @@ function InvestmentsContent() {
       setAllAccounts(accountsData);
     } catch (error) {
       logger.error('Failed to load all accounts:', error);
+    }
+  }, []);
+
+  const loadCashFilterData = useCallback(async () => {
+    try {
+      const [cats, pays] = await Promise.all([
+        categoriesApi.getAll(),
+        payeesApi.getAll(),
+      ]);
+      setCashCategories(cats);
+      setCashPayees(pays);
+    } catch (error) {
+      logger.error('Failed to load cash filter data:', error);
     }
   }, []);
 
@@ -186,7 +225,6 @@ function InvestmentsContent() {
     page: number = 1,
     filters: TransactionFilters = {},
   ) => {
-    setIsLoading(true);
     try {
       const ids = accountIds.length > 0 ? accountIds : undefined;
       const txResponse = await investmentsApi.getTransactions({
@@ -242,6 +280,57 @@ function InvestmentsContent() {
     }
   }, []);
 
+  // Derive cash account IDs from selected brokerage accounts
+  const cashAccountIds = useMemo(() => {
+    if (selectedAccountIds.length === 0) {
+      // When no specific accounts selected, get all cash accounts linked to brokerage accounts
+      return accounts
+        .filter(a => a.accountSubType === 'INVESTMENT_BROKERAGE' && a.linkedAccountId)
+        .map(a => a.linkedAccountId!);
+    }
+    // Get linked cash accounts for the selected brokerage accounts
+    return selectedAccountIds
+      .map(id => accounts.find(a => a.id === id))
+      .filter((a): a is Account => !!a && !!a.linkedAccountId)
+      .map(a => a.linkedAccountId!);
+  }, [selectedAccountIds, accounts]);
+
+  const loadCashTransactions = useCallback(async (
+    accountIds: string[],
+    page: number = 1,
+    filters: { payeeIds?: string[]; categoryIds?: string[]; startDate?: string; endDate?: string } = {},
+  ) => {
+    if (accountIds.length === 0) {
+      setCashTransactions([]);
+      setCashPagination(null);
+      return;
+    }
+    setCashTransactionsLoading(true);
+    try {
+      const response = await transactionsApi.getAll({
+        accountIds,
+        page,
+        limit: PAGE_SIZE,
+        payeeIds: filters.payeeIds?.length ? filters.payeeIds : undefined,
+        categoryIds: filters.categoryIds?.length ? filters.categoryIds : undefined,
+        startDate: filters.startDate || undefined,
+        endDate: filters.endDate || undefined,
+      });
+      setCashTransactions(response.data || []);
+      setCashPagination(response.pagination ? {
+        page: response.pagination.page,
+        totalPages: response.pagination.totalPages,
+        total: response.pagination.total,
+      } : null);
+    } catch (error) {
+      logger.error('Failed to load cash transactions:', error);
+      setCashTransactions([]);
+      setCashPagination(null);
+    } finally {
+      setCashTransactionsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     loadInvestmentAccounts();
     loadAllAccounts();
@@ -274,6 +363,21 @@ function InvestmentsContent() {
     loadTransactions(selectedAccountIds, currentPage, transactionFilters);
   }, [loadTransactions, selectedAccountIds, currentPage, transactionFilters]);
 
+  // Memoize cash filters object to avoid unnecessary re-renders
+  const cashFiltersObj = useMemo(() => ({
+    payeeIds: cashFilterPayeeIds,
+    categoryIds: cashFilterCategoryIds,
+    startDate: cashFilterStartDate,
+    endDate: cashFilterEndDate,
+  }), [cashFilterPayeeIds, cashFilterCategoryIds, cashFilterStartDate, cashFilterEndDate]);
+
+  // Load cash transactions when view switches to 'cash' or dependencies change
+  useEffect(() => {
+    if (transactionView === 'cash') {
+      loadCashTransactions(cashAccountIds, cashCurrentPage, cashFiltersObj);
+    }
+  }, [transactionView, cashAccountIds, cashCurrentPage, cashFiltersObj, loadCashTransactions]);
+
   useEffect(() => {
     if (!isLoading && !initialLoadComplete) {
       setInitialLoadComplete(true);
@@ -302,6 +406,18 @@ function InvestmentsContent() {
   const handleAccountChange = (values: string[]) => {
     setSelectedAccountIds(values);
     setCurrentPage(1);
+    setCashCurrentPage(1);
+  };
+
+  const handleTransactionViewChange = (view: TransactionViewType) => {
+    setTransactionView(view);
+    if (view === 'cash') {
+      setCashCurrentPage(1);
+      // Load filter dropdown data on first switch to cash
+      if (cashPayees.length === 0 && cashCategories.length === 0) {
+        loadCashFilterData();
+      }
+    }
   };
 
   const handleDeleteTransaction = async (id: string) => {
@@ -328,10 +444,86 @@ function InvestmentsContent() {
     loadAllPortfolioData(selectedAccountIds, currentPage, transactionFilters);
   };
 
+  // Cash transaction handlers
+  const handleEditCashTransaction = async (transaction: Transaction) => {
+    if (transaction.linkedInvestmentTransactionId) {
+      // Investment-linked cash transaction — redirect to investment edit
+      router.push(`/investments?edit=${transaction.linkedInvestmentTransactionId}`);
+      return;
+    }
+    if (transaction.isTransfer) {
+      try {
+        const fullTransaction = await transactionsApi.getById(transaction.id);
+        openCashEdit(fullTransaction);
+      } catch (error) {
+        logger.error('Failed to load transaction details:', error);
+        openCashEdit(transaction);
+      }
+    } else {
+      openCashEdit(transaction);
+    }
+  };
+
+  const handleCashTransactionUpdate = useCallback((updatedTx: Transaction) => {
+    setCashTransactions(prev => prev.map(tx => tx.id === updatedTx.id ? updatedTx : tx));
+  }, []);
+
+  const handleCashFormSuccess = () => {
+    closeCash();
+    loadCashTransactions(cashAccountIds, cashCurrentPage, cashFiltersObj);
+  };
+
+  const refreshCashTransactions = useCallback(() => {
+    loadCashTransactions(cashAccountIds, cashCurrentPage, cashFiltersObj);
+  }, [loadCashTransactions, cashAccountIds, cashCurrentPage, cashFiltersObj]);
+
   const handleFiltersChange = (newFilters: TransactionFilters) => {
     setTransactionFilters(newFilters);
     setCurrentPage(1); // Reset to page 1 when filters change
   };
+
+  const clearCashFilters = () => {
+    setCashFilterPayeeIds([]);
+    setCashFilterCategoryIds([]);
+    setCashFilterStartDate('');
+    setCashFilterEndDate('');
+    setCashCurrentPage(1);
+  };
+
+  const hasActiveCashFilters = cashFilterPayeeIds.length > 0 || cashFilterCategoryIds.length > 0 || !!cashFilterStartDate || !!cashFilterEndDate;
+  const activeCashFilterCount = (cashFilterPayeeIds.length > 0 ? 1 : 0) + (cashFilterCategoryIds.length > 0 ? 1 : 0) + (cashFilterStartDate ? 1 : 0) + (cashFilterEndDate ? 1 : 0);
+
+  // Build filter dropdown options
+  const cashCategoryFilterOptions = useMemo((): MultiSelectOption[] => {
+    const buildOptions = (parentId: string | null = null): MultiSelectOption[] => {
+      return cashCategories
+        .filter(c => c.parentId === parentId)
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .flatMap(cat => {
+          const children = buildOptions(cat.id);
+          return [{
+            value: cat.id,
+            label: cat.name,
+            parentId: cat.parentId,
+            children: children.length > 0 ? children : undefined,
+          }];
+        });
+    };
+    return buildOptions();
+  }, [cashCategories]);
+
+  const cashPayeeFilterOptions = useMemo((): MultiSelectOption[] => {
+    return cashPayees
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map(payee => ({
+        value: payee.id,
+        label: payee.name,
+      }));
+  }, [cashPayees]);
+
+  const cycleDensity = useCallback(() => {
+    setListDensity(d => d === 'normal' ? 'compact' : d === 'compact' ? 'dense' : 'normal');
+  }, [setListDensity]);
 
   const handleSymbolClick = (symbol: string) => {
     setTransactionFilters({ ...transactionFilters, symbol });
@@ -345,6 +537,12 @@ function InvestmentsContent() {
   const goToPage = (page: number) => {
     if (page >= 1 && (!pagination || page <= pagination.totalPages)) {
       setCurrentPage(page);
+    }
+  };
+
+  const goToCashPage = (page: number) => {
+    if (page >= 1 && (!cashPagination || page <= cashPagination.totalPages)) {
+      setCashCurrentPage(page);
     }
   };
 
@@ -520,40 +718,218 @@ function InvestmentsContent() {
           </div>
 
           {/* Recent Transactions */}
-          <div>
-            <InvestmentTransactionList
-              transactions={transactions}
-              isLoading={isLoading}
-              onDelete={handleDeleteTransaction}
-              onEdit={handleEditTransaction}
-              onNewTransaction={handleNewTransaction}
-              density={listDensity}
-              onDensityChange={setListDensity}
-              filters={transactionFilters}
-              onFiltersChange={handleFiltersChange}
-              availableSymbols={[...new Set(portfolioSummary?.holdings.map(h => h.symbol) || [])].sort()}
-            />
-          </div>
+          {transactionView === 'brokerage' && (
+            <>
+              <div>
+                <InvestmentTransactionList
+                  transactions={transactions}
+                  isLoading={isLoading}
+                  onDelete={handleDeleteTransaction}
+                  onEdit={handleEditTransaction}
+                  onNewTransaction={handleNewTransaction}
+                  density={listDensity}
+                  onDensityChange={setListDensity}
+                  filters={transactionFilters}
+                  onFiltersChange={handleFiltersChange}
+                  availableSymbols={[...new Set(portfolioSummary?.holdings.map(h => h.symbol) || [])].sort()}
+                  viewToggle={
+                    <div className="inline-flex rounded-md bg-gray-100 dark:bg-gray-700 p-0.5">
+                      <button
+                        onClick={() => handleTransactionViewChange('brokerage')}
+                        className="px-3 py-1 text-sm font-medium rounded transition-colors bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 shadow-sm"
+                      >
+                        Brokerage
+                      </button>
+                      <button
+                        onClick={() => handleTransactionViewChange('cash')}
+                        className="px-3 py-1 text-sm font-medium rounded transition-colors text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+                      >
+                        Cash
+                      </button>
+                    </div>
+                  }
+                />
+              </div>
 
-          {/* Pagination */}
-          {pagination && pagination.totalPages > 1 && (
-            <div className="mt-4">
-              <Pagination
-                currentPage={currentPage}
-                totalPages={pagination.totalPages}
-                totalItems={pagination.total}
-                pageSize={PAGE_SIZE}
-                onPageChange={goToPage}
-                itemName="transactions"
-              />
-            </div>
+              {/* Brokerage Pagination */}
+              {pagination && pagination.totalPages > 1 && (
+                <div className="mt-4">
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={pagination.totalPages}
+                    totalItems={pagination.total}
+                    pageSize={PAGE_SIZE}
+                    onPageChange={goToPage}
+                    itemName="transactions"
+                  />
+                </div>
+              )}
+              {pagination && pagination.totalPages <= 1 && pagination.total > 0 && (
+                <div className="mt-4 text-sm text-gray-500 dark:text-gray-400 text-center">
+                  {pagination.total} transaction{pagination.total !== 1 ? 's' : ''}
+                </div>
+              )}
+            </>
           )}
 
-          {/* Show total count when only one page */}
-          {pagination && pagination.totalPages <= 1 && pagination.total > 0 && (
-            <div className="mt-4 text-sm text-gray-500 dark:text-gray-400 text-center">
-              {pagination.total} transaction{pagination.total !== 1 ? 's' : ''}
+          {/* Cash Transactions */}
+          {transactionView === 'cash' && (
+            <>
+            <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg">
+              <div className="px-3 pt-3 sm:px-4 sm:pt-4 flex flex-wrap justify-between items-center gap-2">
+                <div className="flex items-center gap-3">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                    Recent Transactions
+                    {hasActiveCashFilters && (
+                      <span className="ml-2 text-sm font-normal text-gray-500 dark:text-gray-400">
+                        (filtered)
+                      </span>
+                    )}
+                  </h3>
+                  <div className="inline-flex rounded-md bg-gray-100 dark:bg-gray-700 p-0.5">
+                    <button
+                      onClick={() => handleTransactionViewChange('brokerage')}
+                      className="px-3 py-1 text-sm font-medium rounded transition-colors text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+                    >
+                      Brokerage
+                    </button>
+                    <button
+                      onClick={() => handleTransactionViewChange('cash')}
+                      className="px-3 py-1 text-sm font-medium rounded transition-colors bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 shadow-sm"
+                    >
+                      Cash
+                    </button>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <button
+                    onClick={openCashCreate}
+                    className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+                  >
+                    <span className="sm:hidden">+ New</span>
+                    <span className="hidden sm:inline">+ New Transaction</span>
+                  </button>
+                  <button
+                    onClick={() => setShowCashFilters(!showCashFilters)}
+                    className={`inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md ${
+                      hasActiveCashFilters
+                        ? 'text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30'
+                        : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    <svg className="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                    </svg>
+                    Filter
+                    {hasActiveCashFilters && (
+                      <span className="ml-1.5 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-blue-600 rounded-full">
+                        {activeCashFilterCount}
+                      </span>
+                    )}
+                  </button>
+                  <button
+                    onClick={cycleDensity}
+                    className="ml-auto inline-flex items-center px-2 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+                    title="Toggle row density"
+                  >
+                    <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                    {listDensity === 'normal' ? 'Normal' : listDensity === 'compact' ? 'Compact' : 'Dense'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Cash Filter Bar */}
+              {showCashFilters && (
+                <div className="px-3 sm:px-4 py-3 bg-gray-50 dark:bg-gray-700/30 border-b border-gray-200 dark:border-gray-700">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <MultiSelect
+                      label="Payees"
+                      options={cashPayeeFilterOptions}
+                      value={cashFilterPayeeIds}
+                      onChange={(values) => { setCashFilterPayeeIds(values); setCashCurrentPage(1); }}
+                      placeholder="All payees"
+                    />
+                    <MultiSelect
+                      label="Categories"
+                      options={cashCategoryFilterOptions}
+                      value={cashFilterCategoryIds}
+                      onChange={(values) => { setCashFilterCategoryIds(values); setCashCurrentPage(1); }}
+                      placeholder="All categories"
+                    />
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">From</label>
+                      <input
+                        type="date"
+                        value={cashFilterStartDate}
+                        onChange={(e) => { setCashFilterStartDate(e.target.value); setCashCurrentPage(1); }}
+                        className="w-full text-sm border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">To</label>
+                      <input
+                        type="date"
+                        value={cashFilterEndDate}
+                        onChange={(e) => { setCashFilterEndDate(e.target.value); setCashCurrentPage(1); }}
+                        className="w-full text-sm border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                  </div>
+                  {hasActiveCashFilters && (
+                    <div className="mt-3 flex justify-end">
+                      <button
+                        onClick={clearCashFilters}
+                        className="text-sm text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 font-medium"
+                      >
+                        Clear Filters
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="mt-3 sm:mt-4" />
+              {cashTransactionsLoading && cashTransactions.length === 0 ? (
+                <LoadingSpinner text="Loading cash transactions..." />
+              ) : (
+                <TransactionList
+                  transactions={cashTransactions}
+                  onEdit={handleEditCashTransaction}
+                  onRefresh={refreshCashTransactions}
+                  onTransactionUpdate={handleCashTransactionUpdate}
+                  density={listDensity}
+                  onDensityChange={setListDensity}
+                  currentPage={cashCurrentPage}
+                  totalPages={cashPagination?.totalPages ?? 1}
+                  totalItems={cashPagination?.total ?? 0}
+                  pageSize={PAGE_SIZE}
+                  onPageChange={goToCashPage}
+                  showToolbar={false}
+                />
+              )}
             </div>
+
+              {/* Cash Pagination */}
+              {cashPagination && cashPagination.totalPages > 1 && (
+                <div className="mt-4">
+                  <Pagination
+                    currentPage={cashCurrentPage}
+                    totalPages={cashPagination.totalPages}
+                    totalItems={cashPagination.total}
+                    pageSize={PAGE_SIZE}
+                    onPageChange={goToCashPage}
+                    itemName="transactions"
+                  />
+                </div>
+              )}
+              {cashPagination && cashPagination.totalPages <= 1 && cashPagination.total > 0 && (
+                <div className="mt-4 text-sm text-gray-500 dark:text-gray-400 text-center">
+                  {cashPagination.total} transaction{cashPagination.total !== 1 ? 's' : ''}
+                </div>
+              )}
+            </>
           )}
 
           {/* Footer note for auto-generated symbols */}
@@ -582,6 +958,23 @@ function InvestmentsContent() {
         />
       </Modal>
       <UnsavedChangesDialog {...unsavedChangesDialog} />
+
+      {/* Cash Transaction Form Modal */}
+      <Modal isOpen={showCashForm} onClose={closeCash} maxWidth="6xl" className="p-6" {...cashModalProps}>
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
+          {editingCashTransaction ? 'Edit Transaction' : 'New Transaction'}
+        </h2>
+        <TransactionForm
+          key={editingCashTransaction?.id || 'new-cash'}
+          transaction={editingCashTransaction}
+          defaultAccountId={cashAccountIds.length > 0 ? cashAccountIds[0] : undefined}
+          onSuccess={handleCashFormSuccess}
+          onCancel={closeCash}
+          onDirtyChange={setCashFormDirty}
+          submitRef={cashFormSubmitRef}
+        />
+      </Modal>
+      <UnsavedChangesDialog {...cashUnsavedChangesDialog} />
     </PageLayout>
   );
 }

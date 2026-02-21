@@ -1,6 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository, DataSource } from "typeorm";
+import { Repository, DataSource, LessThanOrEqual } from "typeorm";
 import { MonthlyAccountBalance } from "./entities/monthly-account-balance.entity";
 import {
   Account,
@@ -379,6 +379,7 @@ export class NetWorthService {
         WHERE account_id = $1
           AND (status IS NULL OR status != 'VOID')
           AND parent_transaction_id IS NULL
+          AND transaction_date <= CURRENT_DATE
         GROUP BY 1
       )
       SELECT m.month::DATE as month,
@@ -477,6 +478,7 @@ export class NetWorthService {
         WHERE account_id = $1
           AND (status IS NULL OR status != 'VOID')
           AND parent_transaction_id IS NULL
+          AND transaction_date <= CURRENT_DATE
         GROUP BY 1
       )
       SELECT m.month::DATE as month,
@@ -502,9 +504,14 @@ export class NetWorthService {
       months.push(monthStr);
     }
 
-    // Load investment transactions for holdings replay
+    // Load investment transactions for holdings replay (exclude future-dated)
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
     const invTxs = await this.invTxRepo.find({
-      where: { accountId: account.id },
+      where: {
+        accountId: account.id,
+        transactionDate: LessThanOrEqual(today),
+      },
       order: { transactionDate: "ASC" },
     });
 

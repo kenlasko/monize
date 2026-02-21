@@ -49,7 +49,6 @@ describe('AssetAllocationChart', () => {
     expect(screen.getByTestId('pie-chart')).toBeInTheDocument();
     expect(screen.getByText('AAPL')).toBeInTheDocument();
     expect(screen.getByText('MSFT')).toBeInTheDocument();
-    expect(screen.getByText('Total')).toBeInTheDocument();
   });
 
   it('shows percentages in legend', () => {
