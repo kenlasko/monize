@@ -82,7 +82,7 @@ describe('DividendIncomeReport', () => {
   });
 
   it('renders empty state when no income transactions', async () => {
-    mockGetTransactions.mockResolvedValue({ data: [] });
+    mockGetTransactions.mockResolvedValue({ data: [], pagination: { hasMore: false } });
     mockGetInvestmentAccounts.mockResolvedValue([]);
     render(<DividendIncomeReport />);
     await waitFor(() => {
@@ -110,6 +110,7 @@ describe('DividendIncomeReport', () => {
           security: { symbol: 'CASH', name: 'Cash Interest' },
         },
       ],
+      pagination: { hasMore: false },
     });
     mockGetInvestmentAccounts.mockResolvedValue([
       { id: 'acc-1', name: 'TFSA', currencyCode: 'CAD', accountSubType: 'INVESTMENT_CASH' },
@@ -124,7 +125,7 @@ describe('DividendIncomeReport', () => {
   });
 
   it('renders view type buttons', async () => {
-    mockGetTransactions.mockResolvedValue({ data: [] });
+    mockGetTransactions.mockResolvedValue({ data: [], pagination: { hasMore: false } });
     mockGetInvestmentAccounts.mockResolvedValue([]);
     render(<DividendIncomeReport />);
     await waitFor(() => {

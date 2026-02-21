@@ -88,18 +88,27 @@ export function DividendIncomeReport() {
       setIsLoading(true);
       try {
         const { start, end } = resolvedRange;
-        const [txData, accountsData] = await Promise.all([
-          investmentsApi.getTransactions({
+
+        // Paginate through all transactions (API limit is 200 per page)
+        const accountsData = await investmentsApi.getInvestmentAccounts();
+        let allTransactions: InvestmentTransaction[] = [];
+        let page = 1;
+        let hasMore = true;
+        while (hasMore) {
+          const result = await investmentsApi.getTransactions({
             accountIds: selectedAccountId || undefined,
             startDate: start || undefined,
             endDate: end,
-            limit: 10000,
-          }),
-          investmentsApi.getInvestmentAccounts(),
-        ]);
+            limit: 200,
+            page,
+          });
+          allTransactions = allTransactions.concat(result.data);
+          hasMore = result.pagination.hasMore;
+          page++;
+        }
 
         // Filter to only income transactions
-        const incomeTransactions = txData.data.filter(
+        const incomeTransactions = allTransactions.filter(
           (tx) => tx.action === 'DIVIDEND' || tx.action === 'INTEREST' || tx.action === 'CAPITAL_GAIN'
         );
 
