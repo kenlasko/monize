@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { PageLayout } from '@/components/layout/PageLayout';
@@ -385,10 +385,21 @@ function InvestmentsContent() {
     }
   }, [isLoading, initialLoadComplete, triggerAutoRefresh]);
 
+  // Track which edit ID we have already handled, so that a browser back
+  // navigation to /investments?edit=xxx (caused by the Modal's history.back()
+  // on cancel) does not re-open the form in an infinite loop.
+  const editHandledRef = useRef<string | null>(null);
+
   // Handle edit URL parameter (when redirected from transactions page)
   useEffect(() => {
     const editId = searchParams.get('edit');
     if (editId) {
+      if (editId === editHandledRef.current) {
+        // Already handled — just clean the URL without re-opening the form
+        router.replace('/investments', { scroll: false });
+        return;
+      }
+      editHandledRef.current = editId;
       // Load the transaction and open the edit form
       investmentsApi.getTransaction(editId)
         .then((transaction) => {
@@ -400,6 +411,10 @@ function InvestmentsContent() {
           logger.error('Failed to load investment transaction:', error);
           router.replace('/investments', { scroll: false });
         });
+    } else {
+      // Reset when the edit param is absent so a future navigation with the
+      // same transaction ID is handled normally.
+      editHandledRef.current = null;
     }
   }, [searchParams, router, openEdit]);
 
