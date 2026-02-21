@@ -12,9 +12,8 @@ jest.mock("../common/date-utils", () => ({
   isTransactionInFuture: jest.fn().mockReturnValue(false),
 }));
 
-const mockedIsTransactionInFuture = isTransactionInFuture as jest.MockedFunction<
-  typeof isTransactionInFuture
->;
+const mockedIsTransactionInFuture =
+  isTransactionInFuture as jest.MockedFunction<typeof isTransactionInFuture>;
 
 describe("TransactionTransferService", () => {
   let service: TransactionTransferService;
@@ -979,12 +978,12 @@ describe("TransactionTransferService", () => {
         );
 
         // When any future date is involved, recalculate from scratch
-        expect(
-          accountsService.recalculateCurrentBalance,
-        ).toHaveBeenCalledWith("from-account");
-        expect(
-          accountsService.recalculateCurrentBalance,
-        ).toHaveBeenCalledWith("to-account");
+        expect(accountsService.recalculateCurrentBalance).toHaveBeenCalledWith(
+          "from-account",
+        );
+        expect(accountsService.recalculateCurrentBalance).toHaveBeenCalledWith(
+          "to-account",
+        );
         expect(accountsService.updateBalance).not.toHaveBeenCalled();
       });
 
@@ -1008,12 +1007,12 @@ describe("TransactionTransferService", () => {
         );
 
         // When any future date is involved, recalculate from scratch
-        expect(
-          accountsService.recalculateCurrentBalance,
-        ).toHaveBeenCalledWith("from-account");
-        expect(
-          accountsService.recalculateCurrentBalance,
-        ).toHaveBeenCalledWith("to-account");
+        expect(accountsService.recalculateCurrentBalance).toHaveBeenCalledWith(
+          "from-account",
+        );
+        expect(accountsService.recalculateCurrentBalance).toHaveBeenCalledWith(
+          "to-account",
+        );
         expect(accountsService.updateBalance).not.toHaveBeenCalled();
       });
     });

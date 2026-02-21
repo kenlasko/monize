@@ -403,6 +403,7 @@ export class BudgetReportsService {
       .andWhere("t.transaction_date <= :endStr", { endStr })
       .andWhere("t.status != :void", { void: "VOID" })
       .andWhere("t.is_split = false")
+      .andWhere("t.amount < 0")
       .groupBy("t.category_id")
       .addGroupBy("EXTRACT(YEAR FROM t.transaction_date)")
       .addGroupBy("EXTRACT(MONTH FROM t.transaction_date)")
@@ -420,6 +421,7 @@ export class BudgetReportsService {
       .andWhere("t.transaction_date >= :startStr", { startStr })
       .andWhere("t.transaction_date <= :endStr", { endStr })
       .andWhere("t.status != :void", { void: "VOID" })
+      .andWhere("s.amount < 0")
       .groupBy("s.category_id")
       .addGroupBy("EXTRACT(YEAR FROM t.transaction_date)")
       .addGroupBy("EXTRACT(MONTH FROM t.transaction_date)")
@@ -594,9 +596,17 @@ export class BudgetReportsService {
     const today = new Date();
 
     // Compute full date range for all months at once
-    const startD = new Date(today.getFullYear(), today.getMonth() - (months - 1), 1);
+    const startD = new Date(
+      today.getFullYear(),
+      today.getMonth() - (months - 1),
+      1,
+    );
     const rangeStart = `${startD.getFullYear()}-${String(startD.getMonth() + 1).padStart(2, "0")}-01`;
-    const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+    const lastDay = new Date(
+      today.getFullYear(),
+      today.getMonth() + 1,
+      0,
+    ).getDate();
     const rangeEnd = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
 
     // Batch queries: group by month across entire range
@@ -623,6 +633,39 @@ export class BudgetReportsService {
           .andWhere("t.transaction_date <= :end", { end: rangeEnd })
           .andWhere("t.status != :void", { void: "VOID" })
           .andWhere("t.is_split = false")
+          .groupBy(
+            "TO_CHAR(DATE_TRUNC('month', t.transaction_date), 'YYYY-MM')",
+          )
+          .getRawMany()
+          .then((rows) => {
+            for (const row of rows) {
+              incomeByMonth.set(
+                row.month,
+                (incomeByMonth.get(row.month) || 0) +
+                  Math.abs(parseFloat(row.total || "0")),
+              );
+            }
+          }),
+      );
+
+      // Income splits query (batch)
+      queries.push(
+        this.splitsRepository
+          .createQueryBuilder("s")
+          .innerJoin("s.transaction", "t")
+          .select(
+            "TO_CHAR(DATE_TRUNC('month', t.transaction_date), 'YYYY-MM')",
+            "month",
+          )
+          .addSelect("COALESCE(SUM(s.amount), 0)", "total")
+          .where("t.user_id = :userId", { userId })
+          .andWhere("s.category_id IN (:...incomeCategoryIds)", {
+            incomeCategoryIds,
+          })
+          .andWhere("t.transaction_date >= :start", { start: rangeStart })
+          .andWhere("t.transaction_date <= :end", { end: rangeEnd })
+          .andWhere("t.status != :void", { void: "VOID" })
+          .andWhere("s.amount > 0")
           .groupBy(
             "TO_CHAR(DATE_TRUNC('month', t.transaction_date), 'YYYY-MM')",
           )
@@ -1002,7 +1045,9 @@ export class BudgetReportsService {
           .select("COALESCE(SUM(ABS(t.amount)), 0)", "total")
           .where("t.user_id = :userId", { userId })
           .andWhere("t.category_id IN (:...categoryIds)", { categoryIds })
-          .andWhere("t.transaction_date >= :start", { start: period.periodStart })
+          .andWhere("t.transaction_date >= :start", {
+            start: period.periodStart,
+          })
           .andWhere("t.transaction_date <= :end", { end: period.periodEnd })
           .andWhere("t.status != :void", { void: "VOID" })
           .andWhere("t.is_split = false")
@@ -1016,7 +1061,9 @@ export class BudgetReportsService {
           .select("COALESCE(SUM(ABS(s.amount)), 0)", "total")
           .where("t.user_id = :userId", { userId })
           .andWhere("s.category_id IN (:...categoryIds)", { categoryIds })
-          .andWhere("t.transaction_date >= :start", { start: period.periodStart })
+          .andWhere("t.transaction_date >= :start", {
+            start: period.periodStart,
+          })
           .andWhere("t.transaction_date <= :end", { end: period.periodEnd })
           .andWhere("t.status != :void", { void: "VOID" })
           .getRawOne(),
@@ -1035,7 +1082,9 @@ export class BudgetReportsService {
           .andWhere("lt.account_id IN (:...transferAccountIds)", {
             transferAccountIds,
           })
-          .andWhere("t.transaction_date >= :start", { start: period.periodStart })
+          .andWhere("t.transaction_date >= :start", {
+            start: period.periodStart,
+          })
           .andWhere("t.transaction_date <= :end", { end: period.periodEnd })
           .andWhere("t.status != :void", { void: "VOID" })
           .getRawOne(),
@@ -1109,9 +1158,17 @@ export class BudgetReportsService {
     const today = new Date();
 
     // Compute full date range
-    const startD = new Date(today.getFullYear(), today.getMonth() - (months - 1), 1);
+    const startD = new Date(
+      today.getFullYear(),
+      today.getMonth() - (months - 1),
+      1,
+    );
     const rangeStart = `${startD.getFullYear()}-${String(startD.getMonth() + 1).padStart(2, "0")}-01`;
-    const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+    const lastDay = new Date(
+      today.getFullYear(),
+      today.getMonth() + 1,
+      0,
+    ).getDate();
     const rangeEnd = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
 
     // Batch query: per-category, per-month actuals in 2 parallel queries
@@ -1241,9 +1298,17 @@ export class BudgetReportsService {
     const today = new Date();
 
     // Compute full date range
-    const startD = new Date(today.getFullYear(), today.getMonth() - (months - 1), 1);
+    const startD = new Date(
+      today.getFullYear(),
+      today.getMonth() - (months - 1),
+      1,
+    );
     const rangeStart = `${startD.getFullYear()}-${String(startD.getMonth() + 1).padStart(2, "0")}-01`;
-    const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+    const lastDay = new Date(
+      today.getFullYear(),
+      today.getMonth() + 1,
+      0,
+    ).getDate();
     const rangeEnd = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
 
     // Batch queries grouped by month

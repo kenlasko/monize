@@ -11,9 +11,8 @@ jest.mock("../common/date-utils", () => ({
   isTransactionInFuture: jest.fn().mockReturnValue(false),
 }));
 
-const mockedIsTransactionInFuture = isTransactionInFuture as jest.MockedFunction<
-  typeof isTransactionInFuture
->;
+const mockedIsTransactionInFuture =
+  isTransactionInFuture as jest.MockedFunction<typeof isTransactionInFuture>;
 
 describe("TransactionSplitService", () => {
   let service: TransactionSplitService;
@@ -1026,7 +1025,11 @@ describe("TransactionSplitService", () => {
         });
 
         const splits = [
-          { amount: -50, transferAccountId: "account-2", memo: "Transfer part" },
+          {
+            amount: -50,
+            transferAccountId: "account-2",
+            memo: "Transfer part",
+          },
         ];
 
         await service.createSplits(

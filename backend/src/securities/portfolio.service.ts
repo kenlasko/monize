@@ -223,10 +223,9 @@ export class PortfolioService {
     );
 
     // Compute effective cash balances excluding future-dated transactions
-    const cashAndStandaloneIds = [
-      ...cashAccounts,
-      ...standaloneAccounts,
-    ].map((a) => a.id);
+    const cashAndStandaloneIds = [...cashAccounts, ...standaloneAccounts].map(
+      (a) => a.id,
+    );
     const effectiveBalances = new Map<string, number>();
 
     if (cashAndStandaloneIds.length > 0) {
@@ -254,8 +253,7 @@ export class PortfolioService {
     // Calculate total cash value from cash accounts + standalone accounts (converted to default currency)
     let totalCashValue = 0;
     for (const a of [...cashAccounts, ...standaloneAccounts]) {
-      const balance =
-        effectiveBalances.get(a.id) ?? Number(a.currentBalance);
+      const balance = effectiveBalances.get(a.id) ?? Number(a.currentBalance);
       totalCashValue += await this.convertToDefault(
         balance,
         a.currencyCode,
@@ -383,7 +381,7 @@ export class PortfolioService {
         cashAccountId: linkedCashAccount?.id ?? null,
         cashBalance: linkedCashAccount
           ? (effectiveBalances.get(linkedCashAccount.id) ??
-              Number(linkedCashAccount.currentBalance))
+            Number(linkedCashAccount.currentBalance))
           : 0,
         holdings: accountHoldings.sort((a, b) => {
           if (a.marketValue === null && b.marketValue === null) return 0;

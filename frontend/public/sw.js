@@ -1,4 +1,4 @@
-const CACHE_NAME = 'monize-static-v1';
+const CACHE_NAME = 'monize-static-v2';
 
 const STATIC_EXTENSIONS = [
   '.js', '.css', '.png', '.jpg', '.jpeg', '.gif', '.svg',

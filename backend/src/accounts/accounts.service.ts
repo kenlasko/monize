@@ -836,14 +836,13 @@ export class AccountsService {
 
     try {
       // Find all accounts that have non-void transactions dated today
-      const accountRows: { account_id: string }[] =
-        await this.dataSource.query(
-          `SELECT DISTINCT account_id
+      const accountRows: { account_id: string }[] = await this.dataSource.query(
+        `SELECT DISTINCT account_id
            FROM transactions
            WHERE transaction_date::DATE = CURRENT_DATE
              AND (status IS NULL OR status != 'VOID')
              AND parent_transaction_id IS NULL`,
-        );
+      );
 
       if (accountRows.length === 0) {
         this.logger.log("No accounts with transactions due today");
@@ -864,8 +863,7 @@ export class AccountsService {
         );
 
         if (result.length > 0) {
-          const newBalance =
-            Math.round(Number(result[0].balance) * 100) / 100;
+          const newBalance = Math.round(Number(result[0].balance) * 100) / 100;
           await this.accountsRepository.update(row.account_id, {
             currentBalance: newBalance,
           });

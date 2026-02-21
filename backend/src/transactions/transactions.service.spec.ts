@@ -20,9 +20,8 @@ jest.mock("../common/date-utils", () => ({
   isTransactionInFuture: jest.fn().mockReturnValue(false),
 }));
 
-const mockedIsTransactionInFuture = isTransactionInFuture as jest.MockedFunction<
-  typeof isTransactionInFuture
->;
+const mockedIsTransactionInFuture =
+  isTransactionInFuture as jest.MockedFunction<typeof isTransactionInFuture>;
 
 describe("TransactionsService", () => {
   let service: TransactionsService;
@@ -3588,7 +3587,7 @@ describe("TransactionsService", () => {
       // First call (old transaction): future date
       // Second call (saved transaction): current date
       mockedIsTransactionInFuture
-        .mockReturnValueOnce(true)   // oldIsFuture = true
+        .mockReturnValueOnce(true) // oldIsFuture = true
         .mockReturnValueOnce(false); // newIsFuture = false
 
       transactionsRepository.findOne
@@ -3625,8 +3624,8 @@ describe("TransactionsService", () => {
       // First call (old transaction): current date
       // Second call (saved transaction): future date
       mockedIsTransactionInFuture
-        .mockReturnValueOnce(false)  // oldIsFuture = false
-        .mockReturnValueOnce(true);  // newIsFuture = true
+        .mockReturnValueOnce(false) // oldIsFuture = false
+        .mockReturnValueOnce(true); // newIsFuture = true
 
       transactionsRepository.findOne
         .mockResolvedValueOnce({ ...mockTx })
@@ -3661,8 +3660,8 @@ describe("TransactionsService", () => {
 
       // Both old and new dates are in the future
       mockedIsTransactionInFuture
-        .mockReturnValueOnce(true)   // oldIsFuture = true
-        .mockReturnValueOnce(true);  // newIsFuture = true
+        .mockReturnValueOnce(true) // oldIsFuture = true
+        .mockReturnValueOnce(true); // newIsFuture = true
 
       transactionsRepository.findOne
         .mockResolvedValueOnce({ ...mockTx })

@@ -12,8 +12,6 @@ import { Category } from "../categories/entities/category.entity";
 import { AccountsService } from "../accounts/accounts.service";
 import { NetWorthService } from "../net-worth/net-worth.service";
 import { BulkUpdateDto, BulkUpdateFilterDto } from "./dto/bulk-update.dto";
-import { isTransactionInFuture } from "../common/date-utils";
-
 
 export interface BulkUpdateResult {
   updated: number;

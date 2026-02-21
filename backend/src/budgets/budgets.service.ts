@@ -40,17 +40,22 @@ export class BudgetsService {
   // (e.g. getSummary + getVelocity fired in parallel from the frontend)
   private categoryActualsCache = new Map<
     string,
-    { data: Promise<Array<{
-      budgetCategoryId: string;
-      categoryId: string | null;
-      categoryName: string;
-      budgeted: number;
-      spent: number;
-      remaining: number;
-      percentUsed: number;
-      isIncome: boolean;
-      percentage: number | null;
-    }>>; timestamp: number }
+    {
+      data: Promise<
+        Array<{
+          budgetCategoryId: string;
+          categoryId: string | null;
+          categoryName: string;
+          budgeted: number;
+          spent: number;
+          remaining: number;
+          percentUsed: number;
+          isIncome: boolean;
+          percentage: number | null;
+        }>
+      >;
+      timestamp: number;
+    }
   >();
 
   constructor(

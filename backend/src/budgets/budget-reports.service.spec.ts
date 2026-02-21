@@ -919,6 +919,115 @@ describe("BudgetReportsService", () => {
     });
   });
 
+  describe("getSavingsRate", () => {
+    it("should return savings rate for each month", async () => {
+      const incomeRows = [{ month: "2026-02", total: "5000" }];
+      const expenseRows = [{ month: "2026-02", total: "3000" }];
+
+      let qbCallCount = 0;
+      transactionsRepository.createQueryBuilder.mockImplementation(() => {
+        qbCallCount++;
+        // 1st call = direct income, 3rd call = direct expenses
+        if (qbCallCount === 1) {
+          return createMockQueryBuilder({
+            getRawMany: jest.fn().mockResolvedValue(incomeRows),
+          });
+        }
+        if (qbCallCount === 2) {
+          return createMockQueryBuilder({
+            getRawMany: jest.fn().mockResolvedValue(expenseRows),
+          });
+        }
+        return createMockQueryBuilder();
+      });
+
+      // splits: income splits (1st) and expense splits (2nd)
+      splitsRepository.createQueryBuilder.mockImplementation(() =>
+        createMockQueryBuilder(),
+      );
+
+      const result = await service.getSavingsRate("user-1", "budget-1", 1);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].income).toBe(5000);
+      expect(result[0].expenses).toBe(3000);
+      expect(result[0].savings).toBe(2000);
+      expect(result[0].savingsRate).toBe(40);
+    });
+
+    it("should include split income in totals", async () => {
+      const directIncomeRows = [{ month: "2026-02", total: "2000" }];
+      const splitIncomeRows = [{ month: "2026-02", total: "3000" }];
+
+      let txCallCount = 0;
+      transactionsRepository.createQueryBuilder.mockImplementation(() => {
+        txCallCount++;
+        if (txCallCount === 1) {
+          // direct income
+          return createMockQueryBuilder({
+            getRawMany: jest.fn().mockResolvedValue(directIncomeRows),
+          });
+        }
+        // direct expenses
+        return createMockQueryBuilder();
+      });
+
+      let splitCallCount = 0;
+      splitsRepository.createQueryBuilder.mockImplementation(() => {
+        splitCallCount++;
+        if (splitCallCount === 1) {
+          // income splits
+          return createMockQueryBuilder({
+            getRawMany: jest.fn().mockResolvedValue(splitIncomeRows),
+          });
+        }
+        // expense splits
+        return createMockQueryBuilder();
+      });
+
+      const result = await service.getSavingsRate("user-1", "budget-1", 1);
+
+      // 2000 direct + 3000 split = 5000 total income
+      expect(result[0].income).toBe(5000);
+    });
+
+    it("should return zero savings rate when no income", async () => {
+      transactionsRepository.createQueryBuilder.mockImplementation(() =>
+        createMockQueryBuilder(),
+      );
+      splitsRepository.createQueryBuilder.mockImplementation(() =>
+        createMockQueryBuilder(),
+      );
+
+      const result = await service.getSavingsRate("user-1", "budget-1", 1);
+
+      expect(result[0].income).toBe(0);
+      expect(result[0].savingsRate).toBe(0);
+    });
+
+    it("should fall back to all positive transactions when no income categories", async () => {
+      budgetsService.findOne.mockResolvedValueOnce({
+        ...mockBudget,
+        categories: [mockBudgetCategory, mockBudgetCategory2],
+      });
+
+      const allPositiveRows = [{ month: "2026-02", total: "4000" }];
+
+      transactionsRepository.createQueryBuilder.mockImplementation(() =>
+        createMockQueryBuilder({
+          getRawMany: jest.fn().mockResolvedValue(allPositiveRows),
+        }),
+      );
+      splitsRepository.createQueryBuilder.mockImplementation(() =>
+        createMockQueryBuilder(),
+      );
+
+      const result = await service.getSavingsRate("user-1", "budget-1", 1);
+
+      expect(result[0].income).toBe(4000);
+    });
+  });
+
   describe("getFlexGroupStatus", () => {
     it("should return flex group aggregations", async () => {
       const result = await service.getFlexGroupStatus("user-1", "budget-1");

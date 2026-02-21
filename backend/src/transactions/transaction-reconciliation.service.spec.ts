@@ -10,9 +10,8 @@ jest.mock("../common/date-utils", () => ({
   isTransactionInFuture: jest.fn().mockReturnValue(false),
 }));
 
-const mockedIsTransactionInFuture = isTransactionInFuture as jest.MockedFunction<
-  typeof isTransactionInFuture
->;
+const mockedIsTransactionInFuture =
+  isTransactionInFuture as jest.MockedFunction<typeof isTransactionInFuture>;
 
 describe("TransactionReconciliationService", () => {
   let service: TransactionReconciliationService;

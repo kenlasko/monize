@@ -2,6 +2,7 @@ import nextConfig from "eslint-config-next";
 import tseslint from "typescript-eslint";
 
 const config = [
+  { ignores: ["coverage/**"] },
   ...nextConfig,
   {
     plugins: {
