@@ -2,6 +2,24 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@/test/render';
 import InvestmentsPage from './page';
 
+// --- next/navigation (must be before other mocks that may import it) ---
+const mockRouterPush = vi.fn();
+const mockRouterReplace = vi.fn();
+const mockRouterBack = vi.fn();
+let mockSearchParams = new URLSearchParams();
+
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({
+    push: mockRouterPush,
+    replace: mockRouterReplace,
+    back: mockRouterBack,
+    prefetch: vi.fn(),
+    refresh: vi.fn(),
+  }),
+  usePathname: () => '/investments',
+  useSearchParams: () => mockSearchParams,
+}));
+
 // Mock next/image
 vi.mock('next/image', () => ({
   default: ({ priority, fill, ...props }: any) => <img alt="" {...props} />,
@@ -123,18 +141,19 @@ vi.mock('@/lib/payees', () => ({
 const mockOpenCreate = vi.fn();
 const mockOpenEdit = vi.fn();
 const mockClose = vi.fn();
+let mockShowForm = false;
 
 vi.mock('@/hooks/useFormModal', () => ({
   useFormModal: () => ({
-    showForm: false,
+    showForm: mockShowForm,
     editingItem: null,
     openCreate: mockOpenCreate,
     openEdit: mockOpenEdit,
     close: mockClose,
     isEditing: false,
-    modalProps: {},
+    modalProps: { pushHistory: true, onBeforeClose: vi.fn() },
     setFormDirty: vi.fn(),
-    unsavedChangesDialog: { isOpen: false, onConfirm: vi.fn(), onCancel: vi.fn() },
+    unsavedChangesDialog: { isOpen: false, onSave: vi.fn(), onDiscard: vi.fn(), onCancel: vi.fn() },
     formSubmitRef: { current: null },
   }),
 }));
@@ -308,6 +327,8 @@ const mockTxResponse = {
 describe('InvestmentsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockSearchParams = new URLSearchParams();
+    mockShowForm = false;
     // Reset useLocalStorage mock state
     for (const key of Object.keys(mockLocalStorageState)) {
       delete mockLocalStorageState[key];
@@ -1012,6 +1033,125 @@ describe('InvestmentsPage', () => {
       await waitFor(() => {
         expect(screen.queryByTestId('transaction-list')).not.toBeInTheDocument();
         expect(screen.getByTestId('cash-transaction-list')).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('Edit URL parameter (?edit=xxx)', () => {
+    it('loads and opens transaction for editing when ?edit param is present', async () => {
+      const mockTx = { id: 'itx-1', date: '2026-02-01', action: 'BUY', amount: 100 };
+      mockGetTransaction.mockResolvedValue(mockTx);
+      mockSearchParams = new URLSearchParams('edit=itx-1');
+
+      render(<InvestmentsPage />);
+
+      await waitFor(() => {
+        expect(mockGetTransaction).toHaveBeenCalledWith('itx-1');
+        expect(mockOpenEdit).toHaveBeenCalledWith(mockTx);
+      });
+    });
+
+    it('cleans URL after opening the edit form', async () => {
+      const mockTx = { id: 'itx-1', date: '2026-02-01', action: 'BUY', amount: 100 };
+      mockGetTransaction.mockResolvedValue(mockTx);
+      mockSearchParams = new URLSearchParams('edit=itx-1');
+
+      render(<InvestmentsPage />);
+
+      await waitFor(() => {
+        expect(mockRouterReplace).toHaveBeenCalledWith('/investments', { scroll: false });
+      });
+    });
+
+    it('does not reopen form when same edit ID reappears after cancel (back-navigation guard)', async () => {
+      const mockTx = { id: 'itx-1', date: '2026-02-01', action: 'BUY', amount: 100 };
+      mockGetTransaction.mockResolvedValue(mockTx);
+      mockSearchParams = new URLSearchParams('edit=itx-1');
+
+      const { rerender } = render(<InvestmentsPage />);
+
+      // Wait for initial edit to be handled
+      await waitFor(() => {
+        expect(mockGetTransaction).toHaveBeenCalledWith('itx-1');
+        expect(mockOpenEdit).toHaveBeenCalledWith(mockTx);
+      });
+
+      // Simulate form being open after openEdit
+      mockShowForm = true;
+
+      // Simulate router.replace clearing the ?edit param
+      mockGetTransaction.mockClear();
+      mockOpenEdit.mockClear();
+      mockRouterReplace.mockClear();
+      mockSearchParams = new URLSearchParams();
+      rerender(<InvestmentsPage />);
+
+      // ref should NOT be reset because showForm is true
+      await waitFor(() => {
+        expect(mockGetTransaction).not.toHaveBeenCalled();
+        expect(mockOpenEdit).not.toHaveBeenCalled();
+      });
+
+      // Simulate cancel: form closes, Modal's history.back() restores ?edit=itx-1
+      mockShowForm = false;
+      mockSearchParams = new URLSearchParams('edit=itx-1');
+      rerender(<InvestmentsPage />);
+
+      await waitFor(() => {
+        // Guard should catch this — no reopen, just clean the URL
+        expect(mockGetTransaction).not.toHaveBeenCalled();
+        expect(mockOpenEdit).not.toHaveBeenCalled();
+        expect(mockRouterReplace).toHaveBeenCalledWith('/investments', { scroll: false });
+      });
+    });
+
+    it('allows re-editing same transaction after full URL cleanup', async () => {
+      const mockTx = { id: 'itx-1', date: '2026-02-01', action: 'BUY', amount: 100 };
+      mockGetTransaction.mockResolvedValue(mockTx);
+      mockSearchParams = new URLSearchParams('edit=itx-1');
+
+      const { rerender } = render(<InvestmentsPage />);
+
+      await waitFor(() => {
+        expect(mockGetTransaction).toHaveBeenCalledWith('itx-1');
+      });
+
+      // Form open → URL clears
+      mockShowForm = true;
+      mockSearchParams = new URLSearchParams();
+      rerender(<InvestmentsPage />);
+
+      // Cancel → back to ?edit → guard catches → replace fires
+      mockShowForm = false;
+      mockSearchParams = new URLSearchParams('edit=itx-1');
+      rerender(<InvestmentsPage />);
+
+      // URL fully cleaned → ref resets (showForm is false)
+      mockGetTransaction.mockClear();
+      mockOpenEdit.mockClear();
+      mockSearchParams = new URLSearchParams();
+      rerender(<InvestmentsPage />);
+
+      // Now navigate to same edit ID again — should work
+      mockSearchParams = new URLSearchParams('edit=itx-1');
+      rerender(<InvestmentsPage />);
+
+      await waitFor(() => {
+        expect(mockGetTransaction).toHaveBeenCalledWith('itx-1');
+        expect(mockOpenEdit).toHaveBeenCalledWith(mockTx);
+      });
+    });
+
+    it('cleans URL on load error without opening form', async () => {
+      mockGetTransaction.mockRejectedValue(new Error('Not found'));
+      mockSearchParams = new URLSearchParams('edit=itx-missing');
+
+      render(<InvestmentsPage />);
+
+      await waitFor(() => {
+        expect(mockGetTransaction).toHaveBeenCalledWith('itx-missing');
+        expect(mockOpenEdit).not.toHaveBeenCalled();
+        expect(mockRouterReplace).toHaveBeenCalledWith('/investments', { scroll: false });
       });
     });
   });

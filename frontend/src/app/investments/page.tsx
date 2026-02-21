@@ -411,11 +411,16 @@ function InvestmentsContent() {
           logger.error('Failed to load investment transaction:', error);
           router.replace('/investments', { scroll: false });
         });
-    } else {
-      // Reset when the edit param is absent so a future navigation with the
-      // same transaction ID is handled normally.
+    } else if (!showTransactionForm) {
+      // Only reset when the form is closed.  router.replace (which clears ?edit
+      // while the form is still open) must NOT reset the ref — otherwise Modal's
+      // history.back() on cancel lands back on ?edit=xxx with a null ref, causing
+      // an infinite reopen loop.  showTransactionForm is intentionally omitted
+      // from deps so that closing the form doesn't trigger a premature reset
+      // before history.back() has settled.
       editHandledRef.current = null;
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, router, openEdit]);
 
   const handleAccountChange = (values: string[]) => {
