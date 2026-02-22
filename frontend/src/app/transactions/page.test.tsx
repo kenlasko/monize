@@ -935,4 +935,108 @@ describe('TransactionsPage', () => {
       });
     });
   });
+
+  describe('Stale filter cleanup', () => {
+    beforeEach(() => {
+      localStorage.clear();
+    });
+
+    it('clears payee filter when selected payee no longer exists in loaded payees', async () => {
+      // Simulate stale filter: a previously-selected payee was deleted elsewhere
+      localStorage.setItem('transactions.filter.payeeIds', JSON.stringify(['deleted-payee']));
+
+      mockGetAllPayees.mockResolvedValue(mockPayees); // doesn't include 'deleted-payee'
+      mockGetAllAccounts.mockResolvedValue(mockAccounts);
+      mockGetAllCategories.mockResolvedValue(mockCategories);
+
+      render(<TransactionsPage />);
+
+      // Wait for static data to load so the cleanup effect can run
+      await waitFor(() => {
+        expect(mockGetAllPayees).toHaveBeenCalled();
+      });
+
+      // The stale payee filter should be automatically cleaned up
+      await waitFor(() => {
+        expect(screen.getByTestId('active-filter-count')).toHaveTextContent('0');
+      });
+    });
+
+    it('clears category filter when selected category no longer exists in loaded categories', async () => {
+      localStorage.setItem('transactions.filter.categoryIds', JSON.stringify(['deleted-cat']));
+
+      mockGetAllPayees.mockResolvedValue(mockPayees);
+      mockGetAllAccounts.mockResolvedValue(mockAccounts);
+      mockGetAllCategories.mockResolvedValue(mockCategories); // doesn't include 'deleted-cat'
+
+      render(<TransactionsPage />);
+
+      await waitFor(() => {
+        expect(mockGetAllCategories).toHaveBeenCalled();
+      });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('active-filter-count')).toHaveTextContent('0');
+      });
+    });
+
+    it('preserves special category IDs (uncategorized, transfer) during cleanup', async () => {
+      // 'uncategorized' is a valid virtual filter, 'deleted-cat' is stale
+      localStorage.setItem('transactions.filter.categoryIds', JSON.stringify(['uncategorized', 'deleted-cat']));
+
+      mockGetAllPayees.mockResolvedValue(mockPayees);
+      mockGetAllAccounts.mockResolvedValue(mockAccounts);
+      mockGetAllCategories.mockResolvedValue(mockCategories);
+
+      render(<TransactionsPage />);
+
+      await waitFor(() => {
+        expect(mockGetAllCategories).toHaveBeenCalled();
+      });
+
+      // 'uncategorized' should be preserved, 'deleted-cat' removed → 1 active filter
+      await waitFor(() => {
+        expect(screen.getByTestId('active-filter-count')).toHaveTextContent('1');
+      });
+    });
+
+    it('keeps valid payee filter when all selected payees still exist', async () => {
+      localStorage.setItem('transactions.filter.payeeIds', JSON.stringify(['payee-1']));
+
+      mockGetAllPayees.mockResolvedValue(mockPayees); // includes 'payee-1'
+      mockGetAllAccounts.mockResolvedValue(mockAccounts);
+      mockGetAllCategories.mockResolvedValue(mockCategories);
+
+      render(<TransactionsPage />);
+
+      await waitFor(() => {
+        expect(mockGetAllPayees).toHaveBeenCalled();
+      });
+
+      // payee-1 exists in mockPayees, so filter should remain active
+      await waitFor(() => {
+        expect(screen.getByTestId('active-filter-count')).toHaveTextContent('1');
+      });
+    });
+
+    it('partially clears filter keeping only valid payee IDs', async () => {
+      // One valid payee, one stale
+      localStorage.setItem('transactions.filter.payeeIds', JSON.stringify(['payee-1', 'deleted-payee']));
+
+      mockGetAllPayees.mockResolvedValue(mockPayees);
+      mockGetAllAccounts.mockResolvedValue(mockAccounts);
+      mockGetAllCategories.mockResolvedValue(mockCategories);
+
+      render(<TransactionsPage />);
+
+      await waitFor(() => {
+        expect(mockGetAllPayees).toHaveBeenCalled();
+      });
+
+      // Only payee-1 should remain → 1 active filter (down from 2)
+      await waitFor(() => {
+        expect(screen.getByTestId('active-filter-count')).toHaveTextContent('1');
+      });
+    });
+  });
 });

@@ -269,6 +269,27 @@ function TransactionsContent() {
     }
   }, [filterAccountStatus, filteredAccounts, filtersInitialized, accounts.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // When payees change (e.g. a payee is deleted), remove any selected payee filter IDs that no longer exist
+  useEffect(() => {
+    if (!filtersInitialized || filterPayeeIds.length === 0 || payees.length === 0) return;
+    const payeeIds = new Set(payees.map(p => p.id));
+    const validSelectedIds = filterPayeeIds.filter(id => payeeIds.has(id));
+    if (validSelectedIds.length !== filterPayeeIds.length) {
+      setFilterPayeeIds(validSelectedIds);
+    }
+  }, [payees, filtersInitialized]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // When categories change (e.g. a category is deleted), remove any selected category filter IDs that no longer exist
+  useEffect(() => {
+    if (!filtersInitialized || filterCategoryIds.length === 0 || categories.length === 0) return;
+    const specialIds = new Set(['uncategorized', 'transfer']);
+    const categoryIds = new Set(categories.map(c => c.id));
+    const validSelectedIds = filterCategoryIds.filter(id => specialIds.has(id) || categoryIds.has(id));
+    if (validSelectedIds.length !== filterCategoryIds.length) {
+      setFilterCategoryIds(validSelectedIds);
+    }
+  }, [categories, filtersInitialized]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Calculate active filter count
   const activeFilterCount = useMemo(() => {
     let count = 0;
