@@ -354,21 +354,68 @@ describe("ScheduledTransactionsService", () => {
       expect(result).toEqual([]);
     });
 
-    it("should return transactions with overrideCount and nextOverride", async () => {
+    it("should return transactions with overrideCount, nextOverride, and futureOverrides", async () => {
       const st = makeScheduled();
       const qb = mockQueryBuilder([st]);
       scheduledRepo.createQueryBuilder.mockReturnValue(qb);
 
-      const overrideQb = mockQueryBuilder(null);
-      overrideQb.getMany.mockResolvedValue([]);
-      overridesRepo.createQueryBuilder.mockReturnValue(overrideQb);
-      overridesRepo.query.mockResolvedValue([]);
+      const nextOverrideQb = mockQueryBuilder(null);
+      nextOverrideQb.getMany.mockResolvedValue([]);
+
+      const futureOverridesQb = mockQueryBuilder(null);
+      futureOverridesQb.getMany.mockResolvedValue([]);
+
+      overridesRepo.createQueryBuilder
+        .mockReturnValueOnce(nextOverrideQb) // first call: nextOverride query
+        .mockReturnValueOnce(futureOverridesQb); // second call: futureOverrides query
 
       const result = await service.findAll(userId);
 
       expect(result).toHaveLength(1);
       expect(result[0].overrideCount).toBe(0);
       expect(result[0].nextOverride).toBeNull();
+      expect(result[0].futureOverrides).toEqual([]);
+    });
+
+    it("should populate futureOverrides with overrides on or after nextDueDate", async () => {
+      const st = makeScheduled({ nextDueDate: new Date("2025-02-15") });
+      const qb = mockQueryBuilder([st]);
+      scheduledRepo.createQueryBuilder.mockReturnValue(qb);
+
+      const nextOverrideQb = mockQueryBuilder(null);
+      nextOverrideQb.getMany.mockResolvedValue([]);
+
+      const futureOverride = {
+        id: "ovr-1",
+        scheduledTransactionId: stId,
+        originalDate: "2025-03-15",
+        overrideDate: "2025-03-20",
+        amount: -999,
+      };
+      const pastOverride = {
+        id: "ovr-2",
+        scheduledTransactionId: stId,
+        originalDate: "2025-01-15",
+        overrideDate: "2025-01-15",
+        amount: -500,
+      };
+      const futureOverridesQb = mockQueryBuilder(null);
+      futureOverridesQb.getMany.mockResolvedValue([
+        pastOverride,
+        futureOverride,
+      ]);
+
+      overridesRepo.createQueryBuilder
+        .mockReturnValueOnce(nextOverrideQb)
+        .mockReturnValueOnce(futureOverridesQb);
+
+      const result = await service.findAll(userId);
+
+      expect(result).toHaveLength(1);
+      // Only the future override should be included (originalDate >= nextDueDate)
+      expect(result[0].futureOverrides).toHaveLength(1);
+      expect(result[0].futureOverrides![0].id).toBe("ovr-1");
+      expect(result[0].overrideCount).toBe(1);
     });
   });
 

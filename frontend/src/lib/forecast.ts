@@ -106,7 +106,7 @@ function addFrequencyInterval(date: Date, frequency: FrequencyType): Date {
 
 /**
  * Generate all occurrence dates for a scheduled transaction within a date range.
- * Uses override amount for the next due date if an override exists.
+ * Uses override data (amount, date) from futureOverrides for each occurrence.
  */
 function generateOccurrences(
   transaction: ScheduledTransaction,
@@ -124,25 +124,35 @@ function generateOccurrences(
 
   let currentDate = parseLocalDate(transaction.nextDueDate);
   let remainingOccurrences = transaction.occurrencesRemaining;
-
-  // Get the next due date key to check for override
-  const nextDueDateKey = formatDateKey(parseLocalDate(transaction.nextDueDate));
-
-  // Determine the amount to use for the next due date (with override if exists)
   const baseAmount = Number(transaction.amount);
-  const overrideAmount = transaction.nextOverride?.amount;
-  const nextDueAmount = overrideAmount !== null && overrideAmount !== undefined
-    ? Number(overrideAmount)
-    : baseAmount;
+
+  // Build override lookup map: originalDate -> override
+  const overrideMap = new Map<string, { overrideDate: string; amount: number | null }>();
+  if (transaction.futureOverrides) {
+    for (const o of transaction.futureOverrides) {
+      const origKey = o.originalDate.split('T')[0];
+      overrideMap.set(origKey, { overrideDate: o.overrideDate.split('T')[0], amount: o.amount });
+    }
+  }
+  // Also include nextOverride as fallback (in case futureOverrides is not populated)
+  if (transaction.nextOverride && !overrideMap.has(transaction.nextDueDate)) {
+    overrideMap.set(transaction.nextDueDate, {
+      overrideDate: transaction.nextOverride.overrideDate,
+      amount: transaction.nextOverride.amount,
+    });
+  }
 
   // For ONCE frequency, just check if it's in range
   if (transaction.frequency === 'ONCE') {
-    const currentTime = currentDate.getTime();
-    if (currentTime >= startTime && currentTime <= endTime) {
-      if (!txEndTime || currentTime <= txEndTime) {
+    const override = overrideMap.get(formatDateKey(currentDate));
+    const effectiveDate = override?.overrideDate ? parseLocalDate(override.overrideDate) : currentDate;
+    const effectiveAmount = override?.amount != null ? Number(override.amount) : baseAmount;
+    const effectiveTime = effectiveDate.getTime();
+    if (effectiveTime >= startTime && effectiveTime <= endTime) {
+      if (!txEndTime || effectiveTime <= txEndTime) {
         occurrences.push({
-          date: formatDateKey(currentDate),
-          amount: nextDueAmount,
+          date: formatDateKey(effectiveDate),
+          amount: effectiveAmount,
         });
       }
     }
@@ -150,35 +160,40 @@ function generateOccurrences(
   }
 
   // Generate occurrences until we pass the end date or run out of occurrences
-  // Limit iterations to prevent infinite loops
   let iterations = 0;
   const maxIterations = 1000;
 
   while (iterations < maxIterations) {
     iterations++;
-    const currentTime = currentDate.getTime();
     const currentDateKey = formatDateKey(currentDate);
 
     // Check if we've passed the forecast end date
-    if (currentTime > endTime) break;
+    if (currentDate.getTime() > endTime) break;
 
     // Check if we've exceeded the transaction's end date
-    if (txEndTime && currentTime > txEndTime) break;
+    if (txEndTime && currentDate.getTime() > txEndTime) break;
 
     // Check if we've used all occurrences
     if (remainingOccurrences !== null && remainingOccurrences <= 0) break;
 
-    // Only include if within our forecast range (on or after start date)
-    if (currentTime >= startTime) {
-      // Use override amount for the next due date, base amount for all others
-      const amount = currentDateKey === nextDueDateKey ? nextDueAmount : baseAmount;
+    // Check for override on this occurrence
+    const override = overrideMap.get(currentDateKey);
+    const effectiveDate = override?.overrideDate && override.overrideDate !== currentDateKey
+      ? parseLocalDate(override.overrideDate)
+      : currentDate;
+    const effectiveTime = effectiveDate.getTime();
+    const effectiveDateKey = override?.overrideDate && override.overrideDate !== currentDateKey
+      ? formatDateKey(effectiveDate)
+      : currentDateKey;
+    const effectiveAmount = override?.amount != null ? Number(override.amount) : baseAmount;
 
+    // Only include if effective date is within our forecast range
+    if (effectiveTime >= startTime && effectiveTime <= endTime) {
       occurrences.push({
-        date: currentDateKey,
-        amount,
+        date: effectiveDateKey,
+        amount: effectiveAmount,
       });
 
-      // Only decrement for occurrences we actually count
       if (remainingOccurrences !== null) {
         remainingOccurrences--;
       }

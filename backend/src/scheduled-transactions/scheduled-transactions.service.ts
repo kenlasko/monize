@@ -205,6 +205,7 @@ export class ScheduledTransactionsService {
     (ScheduledTransaction & {
       overrideCount?: number;
       nextOverride?: ScheduledTransactionOverride | null;
+      futureOverrides?: ScheduledTransactionOverride[];
     })[]
   > {
     const transactions = await this.scheduledTransactionsRepository
@@ -255,27 +256,40 @@ export class ScheduledTransactionsService {
       nextOverrideMap.set(o.scheduledTransactionId, o);
     }
 
-    const futureOverrideCounts = await this.overridesRepository.query(
-      `SELECT o.scheduled_transaction_id as "stId", COUNT(*) as cnt
-         FROM scheduled_transaction_overrides o
-         WHERE o.scheduled_transaction_id = ANY($1)
-           AND EXISTS (
-             SELECT 1 FROM (VALUES ${txIds.map((_, i) => `($${i * 2 + 2}::uuid, $${i * 2 + 3}::date)`).join(", ")}) AS v(id, due_date)
-             WHERE v.id = o.scheduled_transaction_id AND o.original_date >= v.due_date
-           )
-         GROUP BY o.scheduled_transaction_id`,
-      [txIds, ...txIds.flatMap((id) => [id, txDueDates.get(id)!])],
-    );
+    // Fetch ALL future overrides (on or after each transaction's nextDueDate)
+    const allFutureOverrides = await this.overridesRepository
+      .createQueryBuilder("override")
+      .leftJoinAndSelect("override.category", "category")
+      .where("override.scheduledTransactionId IN (:...txIds)", { txIds })
+      .orderBy("override.originalDate", "ASC")
+      .getMany();
 
+    // Group overrides by transaction and filter to future-only
+    const futureOverridesMap = new Map<
+      string,
+      ScheduledTransactionOverride[]
+    >();
     const countMap = new Map<string, number>();
-    for (const row of futureOverrideCounts) {
-      countMap.set(row.stId, parseInt(row.cnt, 10));
+    for (const o of allFutureOverrides) {
+      const dueDate = txDueDates.get(o.scheduledTransactionId);
+      if (!dueDate) continue;
+      const origDate = String(o.originalDate).split("T")[0];
+      if (origDate >= dueDate) {
+        const list = futureOverridesMap.get(o.scheduledTransactionId) || [];
+        list.push(o);
+        futureOverridesMap.set(o.scheduledTransactionId, list);
+        countMap.set(
+          o.scheduledTransactionId,
+          (countMap.get(o.scheduledTransactionId) || 0) + 1,
+        );
+      }
     }
 
     return transactions.map((transaction) => ({
       ...transaction,
       overrideCount: countMap.get(transaction.id) || 0,
       nextOverride: nextOverrideMap.get(transaction.id) || null,
+      futureOverrides: futureOverridesMap.get(transaction.id) || [],
     }));
   }
 

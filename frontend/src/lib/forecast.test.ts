@@ -674,6 +674,156 @@ describe('buildForecast', () => {
     });
   });
 
+  // --- Override date shifting ---
+  describe('override date shifting', () => {
+    it('moves next occurrence to override date on chart', () => {
+      const accounts = [makeAccount({ currentBalance: 5000 })];
+      const transactions = [makeScheduled({
+        nextDueDate: '2025-01-15',
+        amount: -500,
+        frequency: 'MONTHLY',
+        futureOverrides: [{
+          originalDate: '2025-01-15',
+          overrideDate: '2025-01-20',
+          amount: null,
+        }] as any,
+      })];
+      const result = buildForecast(accounts, transactions, 'month', 'all');
+      // Should NOT appear on Jan 15
+      const jan15 = result.find(dp => dp.date === '2025-01-15');
+      expect(jan15?.transactions.length ?? 0).toBe(0);
+      // Should appear on Jan 20 with base amount
+      const jan20 = result.find(dp => dp.date === '2025-01-20');
+      expect(jan20?.transactions.length).toBe(1);
+      expect(jan20?.balance).toBe(4500);
+    });
+
+    it('moves ONCE occurrence to override date', () => {
+      const accounts = [makeAccount({ currentBalance: 5000 })];
+      const transactions = [makeScheduled({
+        nextDueDate: '2025-01-15',
+        amount: -500,
+        frequency: 'ONCE',
+        futureOverrides: [{
+          originalDate: '2025-01-15',
+          overrideDate: '2025-01-25',
+          amount: null,
+        }] as any,
+      })];
+      const result = buildForecast(accounts, transactions, 'month', 'all');
+      const jan15 = result.find(dp => dp.date === '2025-01-15');
+      expect(jan15?.transactions.length ?? 0).toBe(0);
+      const jan25 = result.find(dp => dp.date === '2025-01-25');
+      expect(jan25?.transactions.length).toBe(1);
+      expect(jan25?.balance).toBe(4500);
+    });
+
+    it('applies both override date and amount', () => {
+      const accounts = [makeAccount({ currentBalance: 5000 })];
+      const transactions = [makeScheduled({
+        nextDueDate: '2025-01-15',
+        amount: -500,
+        frequency: 'MONTHLY',
+        futureOverrides: [{
+          originalDate: '2025-01-15',
+          overrideDate: '2025-01-20',
+          amount: -800,
+        }] as any,
+      })];
+      const result = buildForecast(accounts, transactions, 'month', 'all');
+      const jan20 = result.find(dp => dp.date === '2025-01-20');
+      expect(jan20?.transactions.length).toBe(1);
+      expect(jan20?.balance).toBe(4200); // 5000 - 800
+    });
+
+    it('does not shift subsequent occurrences (only the overridden one)', () => {
+      const accounts = [makeAccount({ currentBalance: 5000 })];
+      const transactions = [makeScheduled({
+        nextDueDate: '2025-01-15',
+        amount: -500,
+        frequency: 'MONTHLY',
+        futureOverrides: [{
+          originalDate: '2025-01-15',
+          overrideDate: '2025-01-20',
+          amount: null,
+        }] as any,
+      })];
+      const result = buildForecast(accounts, transactions, '90days', 'all');
+      // Feb 15 should still appear at its normal date
+      const feb15 = result.find(dp => dp.date === '2025-02-15');
+      expect(feb15?.transactions.length).toBe(1);
+    });
+  });
+
+  // --- futureOverrides for multiple occurrences ---
+  describe('futureOverrides for multiple occurrences', () => {
+    it('applies overrides to multiple future occurrences', () => {
+      const accounts = [makeAccount({ currentBalance: 10000 })];
+      const transactions = [makeScheduled({
+        nextDueDate: '2025-01-15',
+        amount: -500,
+        frequency: 'MONTHLY',
+        futureOverrides: [
+          { originalDate: '2025-01-15', overrideDate: '2025-01-15', amount: -300 },
+          { originalDate: '2025-02-15', overrideDate: '2025-02-15', amount: -700 },
+          { originalDate: '2025-03-15', overrideDate: '2025-03-20', amount: -100 },
+        ] as any,
+      })];
+      const result = buildForecast(accounts, transactions, '90days', 'all');
+      // Jan 15: override amount -300, balance = 9700
+      const jan15 = result.find(dp => dp.date === '2025-01-15');
+      expect(jan15?.balance).toBe(9700);
+      // Feb 15: override amount -700, balance = 9000
+      const feb15 = result.find(dp => dp.date === '2025-02-15');
+      expect(feb15?.balance).toBe(9000);
+      // Mar 15: moved to Mar 20, so no transaction on Mar 15
+      const mar15 = result.find(dp => dp.date === '2025-03-15');
+      expect(mar15?.transactions.length ?? 0).toBe(0);
+      // Mar 20: override amount -100, balance = 8900
+      const mar20 = result.find(dp => dp.date === '2025-03-20');
+      expect(mar20?.transactions.length).toBe(1);
+      expect(mar20?.balance).toBe(8900);
+    });
+
+    it('uses base amount for occurrences without overrides', () => {
+      const accounts = [makeAccount({ currentBalance: 5000 })];
+      const transactions = [makeScheduled({
+        nextDueDate: '2025-01-15',
+        amount: -500,
+        frequency: 'MONTHLY',
+        futureOverrides: [
+          { originalDate: '2025-01-15', overrideDate: '2025-01-15', amount: -200 },
+        ] as any,
+      })];
+      const result = buildForecast(accounts, transactions, '90days', 'all');
+      // Jan 15: override amount -200
+      const jan15 = result.find(dp => dp.date === '2025-01-15');
+      expect(jan15?.balance).toBe(4800);
+      // Feb 15: base amount -500 (no override)
+      const feb15 = result.find(dp => dp.date === '2025-02-15');
+      expect(feb15?.balance).toBe(4300);
+    });
+
+    it('falls back to nextOverride when futureOverrides is empty', () => {
+      const accounts = [makeAccount({ currentBalance: 5000 })];
+      const transactions = [makeScheduled({
+        nextDueDate: '2025-01-15',
+        amount: -500,
+        frequency: 'ONCE',
+        futureOverrides: [],
+        nextOverride: {
+          originalDate: '2025-01-15',
+          overrideDate: '2025-01-20',
+          amount: -300,
+        } as any,
+      })];
+      const result = buildForecast(accounts, transactions, 'month', 'all');
+      const jan20 = result.find(dp => dp.date === '2025-01-20');
+      expect(jan20?.transactions.length).toBe(1);
+      expect(jan20?.balance).toBe(4700);
+    });
+  });
+
   // --- ONCE frequency ---
   describe('ONCE frequency', () => {
     it('does not include ONCE transaction if before start date', () => {

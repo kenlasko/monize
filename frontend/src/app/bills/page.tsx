@@ -290,11 +290,15 @@ function BillsContent() {
     loadData();
   };
 
-  // Filter transactions based on type
+  // Filter transactions based on type, then sort by effective date (considering overrides)
   const filteredTransactions = scheduledTransactions.filter((t) => {
     if (filterType === 'bills') return t.amount < 0;
     if (filterType === 'deposits') return t.amount > 0;
     return true;
+  }).sort((a, b) => {
+    const dateA = a.nextOverride?.overrideDate || a.nextDueDate || '';
+    const dateB = b.nextOverride?.overrideDate || b.nextDueDate || '';
+    return dateA.localeCompare(dateB);
   });
 
   const categoryColorMap = useMemo(() => buildCategoryColorMap(categories), [categories]);
@@ -356,11 +360,30 @@ function BillsContent() {
     const startDate = subMonths(startOfMonth(calendarMonth), 1);
     const endDate = addMonths(endOfMonth(calendarMonth), 1);
     let nextDate = parseLocalDate(st.nextDueDate);
+
+    // Build override lookup map: originalDate -> overrideDate
+    const overrideMap = new Map<string, string>();
+    if (st.futureOverrides) {
+      for (const o of st.futureOverrides) {
+        overrideMap.set(o.originalDate.split('T')[0], o.overrideDate.split('T')[0]);
+      }
+    }
+    // Fallback to nextOverride if futureOverrides is not populated
+    if (st.nextOverride?.overrideDate && !overrideMap.has(st.nextDueDate)) {
+      overrideMap.set(st.nextDueDate, st.nextOverride.overrideDate);
+    }
+
     let count = 0;
 
     while (nextDate <= endDate && count < 100) {
-      if (nextDate >= startDate) {
-        occurrences.push(new Date(nextDate));
+      const dateKey = format(nextDate, 'yyyy-MM-dd');
+      const overrideDateStr = overrideMap.get(dateKey);
+      const effectiveDate = overrideDateStr && overrideDateStr !== dateKey
+        ? parseLocalDate(overrideDateStr)
+        : nextDate;
+
+      if (effectiveDate >= startDate && effectiveDate <= endDate) {
+        occurrences.push(new Date(effectiveDate));
       }
       switch (st.frequency) {
         case 'ONCE': return occurrences;

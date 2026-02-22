@@ -66,6 +66,7 @@ export interface ScheduledTransaction {
   splits?: ScheduledTransactionSplit[];
   overrideCount?: number;
   nextOverride?: ScheduledTransactionOverride | null;
+  futureOverrides?: ScheduledTransactionOverride[];
   createdAt: string;
   updatedAt: string;
 }
