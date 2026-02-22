@@ -1,6 +1,6 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
-import { NotFoundException } from "@nestjs/common";
+import { NotFoundException, BadRequestException } from "@nestjs/common";
 import { ReportsService } from "./reports.service";
 import {
   CustomReport,
@@ -256,6 +256,56 @@ describe("ReportsService", () => {
       );
     });
 
+    it("throws BadRequestException when creating with CUSTOM timeframe but no start date", async () => {
+      const dto = {
+        name: "Custom Report",
+        timeframeType: TimeframeType.CUSTOM,
+        config: { customEndDate: "2025-06-30" },
+      };
+
+      await expect(service.create("user-1", dto)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it("throws BadRequestException when creating with CUSTOM timeframe but no end date", async () => {
+      const dto = {
+        name: "Custom Report",
+        timeframeType: TimeframeType.CUSTOM,
+        config: { customStartDate: "2025-01-01" },
+      };
+
+      await expect(service.create("user-1", dto)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it("throws BadRequestException when creating with CUSTOM timeframe but no dates at all", async () => {
+      const dto = {
+        name: "Custom Report",
+        timeframeType: TimeframeType.CUSTOM,
+      };
+
+      await expect(service.create("user-1", dto)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it("allows creating with CUSTOM timeframe when both dates are provided", async () => {
+      const dto = {
+        name: "Custom Report",
+        timeframeType: TimeframeType.CUSTOM,
+        config: {
+          customStartDate: "2025-01-01",
+          customEndDate: "2025-06-30",
+        },
+      };
+
+      const result = await service.create("user-1", dto);
+      expect(result).toBeDefined();
+      expect(reportsRepository.save).toHaveBeenCalled();
+    });
+
     it("defaults includeTransfers to false when config.includeTransfers is undefined", async () => {
       const dto = {
         name: "Test",
@@ -416,6 +466,52 @@ describe("ReportsService", () => {
       expect(result.name).toBe("Original Name");
       expect(result.description).toBe("Keep me");
       expect(result.icon).toBe("new-icon");
+    });
+
+    it("throws BadRequestException when updating to CUSTOM timeframe without dates", async () => {
+      reportsRepository.findOne.mockResolvedValue({
+        ...mockReport,
+        timeframeType: TimeframeType.LAST_3_MONTHS,
+      });
+
+      await expect(
+        service.update("user-1", "report-1", {
+          timeframeType: TimeframeType.CUSTOM,
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it("throws BadRequestException when existing CUSTOM report has dates cleared via config update", async () => {
+      reportsRepository.findOne.mockResolvedValue({
+        ...mockReport,
+        timeframeType: TimeframeType.CUSTOM,
+        config: {
+          ...defaultConfig,
+          customStartDate: "2025-01-01",
+          customEndDate: "2025-06-30",
+        },
+      });
+
+      await expect(
+        service.update("user-1", "report-1", {
+          config: { customStartDate: undefined, customEndDate: undefined },
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it("allows updating to CUSTOM timeframe when both dates are provided", async () => {
+      reportsRepository.findOne.mockResolvedValue({ ...mockReport });
+
+      const result = await service.update("user-1", "report-1", {
+        timeframeType: TimeframeType.CUSTOM,
+        config: {
+          customStartDate: "2025-01-01",
+          customEndDate: "2025-06-30",
+        },
+      });
+
+      expect(result).toBeDefined();
+      expect(reportsRepository.save).toHaveBeenCalled();
     });
 
     it("throws NotFoundException when report does not exist", async () => {
@@ -1612,14 +1708,14 @@ describe("ReportsService", () => {
         expect(result.timeframe.label).toBe("Custom Range");
       });
 
-      it("throws error for CUSTOM timeframe without dates", async () => {
+      it("throws BadRequestException for CUSTOM timeframe without dates", async () => {
         setupExecuteMocks({
           timeframeType: TimeframeType.CUSTOM,
           config: { ...defaultConfig },
         });
 
         await expect(service.execute("user-1", "report-1")).rejects.toThrow(
-          "Custom timeframe requires start and end dates",
+          BadRequestException,
         );
       });
 
