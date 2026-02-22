@@ -267,9 +267,17 @@ export function buildForecast(
   );
 
   // Filter scheduled transactions by account
+  // For a specific account, include transfers where this account is the destination
+  // (transferAccountId) since those represent money coming IN to this account.
   const relevantTransactions = accountId === 'all'
     ? transactions.filter(t => t.isActive && !isTransfer(t))
-    : transactions.filter(t => t.isActive && t.accountId === accountId);
+    : transactions.filter(t => t.isActive && (t.accountId === accountId || (isTransfer(t) && t.transferAccountId === accountId)));
+
+  // Track which transactions are inbound transfers (destination account matches)
+  // so we can negate their amounts (source amount is negative, destination receives positive)
+  const inboundTransferIds = accountId !== 'all'
+    ? new Set(transactions.filter(t => t.isActive && isTransfer(t) && t.transferAccountId === accountId && t.accountId !== accountId).map(t => t.id))
+    : new Set<string>();
 
   // Generate all occurrences and group by date
   const transactionsByDate = new Map<string, ForecastTransaction[]>();
@@ -287,11 +295,12 @@ export function buildForecast(
 
   for (const tx of relevantTransactions) {
     const occurrences = generateOccurrences(tx, today, endDate);
+    const isInbound = inboundTransferIds.has(tx.id);
     for (const occ of occurrences) {
       const existing = transactionsByDate.get(occ.date) || [];
       existing.push({
         name: tx.name,
-        amount: occ.amount,
+        amount: isInbound ? -occ.amount : occ.amount,
         scheduledTransactionId: tx.id,
       });
       transactionsByDate.set(occ.date, existing);

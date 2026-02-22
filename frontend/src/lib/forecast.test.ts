@@ -602,7 +602,7 @@ describe('buildForecast', () => {
       expect(allBalances.every(b => b === 5000)).toBe(true);
     });
 
-    it('includes transfers when filtering by specific account', () => {
+    it('includes transfers when filtering by source account', () => {
       const accounts = [makeAccount({ currentBalance: 5000 })];
       const transactions = [makeScheduled({
         nextDueDate: '2025-01-20',
@@ -614,6 +614,57 @@ describe('buildForecast', () => {
       })];
       const result = buildForecast(accounts, transactions, 'month', 'acc-1');
       const afterTx = result.find(dp => dp.date === '2025-01-20');
+      expect(afterTx?.balance).toBe(4500);
+    });
+
+    it('includes transfers when filtering by destination account', () => {
+      const accounts = [makeAccount({ id: 'acc-2', currentBalance: 1000 })];
+      const transactions = [makeScheduled({
+        nextDueDate: '2025-01-20',
+        amount: -500,
+        frequency: 'ONCE',
+        isTransfer: true,
+        transferAccountId: 'acc-2',
+        accountId: 'acc-1',
+      })];
+      // Viewing VISA (acc-2): the $500 transfer should show as +500
+      const result = buildForecast(accounts, transactions, 'month', 'acc-2');
+      const afterTx = result.find(dp => dp.date === '2025-01-20');
+      expect(afterTx?.balance).toBe(1500); // 1000 + 500
+    });
+
+    it('includes recurring transfers for destination account', () => {
+      const accounts = [makeAccount({ id: 'acc-2', currentBalance: 1000 })];
+      const transactions = [makeScheduled({
+        nextDueDate: '2025-01-15',
+        amount: -200,
+        frequency: 'WEEKLY',
+        isTransfer: true,
+        transferAccountId: 'acc-2',
+        accountId: 'acc-1',
+      })];
+      const result = buildForecast(accounts, transactions, 'month', 'acc-2');
+      // Each weekly occurrence should add 200 to the destination account
+      const jan15 = result.find(dp => dp.date === '2025-01-15');
+      expect(jan15?.balance).toBe(1200); // 1000 + 200
+      const jan22 = result.find(dp => dp.date === '2025-01-22');
+      expect(jan22?.balance).toBe(1400); // 1200 + 200
+    });
+
+    it('does not double-count transfers between the same account', () => {
+      // Edge case: accountId and transferAccountId are the same
+      const accounts = [makeAccount({ currentBalance: 5000 })];
+      const transactions = [makeScheduled({
+        nextDueDate: '2025-01-20',
+        amount: -500,
+        frequency: 'ONCE',
+        isTransfer: true,
+        transferAccountId: 'acc-1',
+        accountId: 'acc-1',
+      })];
+      const result = buildForecast(accounts, transactions, 'month', 'acc-1');
+      const afterTx = result.find(dp => dp.date === '2025-01-20');
+      // Should only count once (as source), not also negate as inbound
       expect(afterTx?.balance).toBe(4500);
     });
   });
