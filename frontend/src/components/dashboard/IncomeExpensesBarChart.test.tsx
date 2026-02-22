@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@/test/render';
+import { render, screen, fireEvent } from '@/test/render';
 import { IncomeExpensesBarChart } from './IncomeExpensesBarChart';
 
 const mockPush = vi.fn();
@@ -10,7 +10,9 @@ vi.mock('next/navigation', () => ({
 vi.mock('recharts', () => ({
   ResponsiveContainer: ({ children }: any) => <div data-testid="responsive-container">{children}</div>,
   BarChart: ({ children }: any) => <div data-testid="bar-chart">{children}</div>,
-  Bar: () => null,
+  Bar: ({ dataKey, onClick }: any) => (
+    <button data-testid={`bar-${dataKey}`} onClick={() => onClick?.({ payload: { startDate: '2026-02-17', endDate: '2026-02-23' } })} />
+  ),
   XAxis: () => null,
   YAxis: () => null,
   CartesianGrid: () => null,
@@ -177,5 +179,17 @@ describe('IncomeExpensesBarChart', () => {
     render(<IncomeExpensesBarChart transactions={[]} isLoading={false} />);
     expect(screen.getByTestId('responsive-container')).toBeInTheDocument();
     expect(screen.getByTestId('bar-chart')).toBeInTheDocument();
+  });
+
+  it('navigates to transactions page with date range on bar click', () => {
+    render(<IncomeExpensesBarChart transactions={[]} isLoading={false} />);
+    fireEvent.click(screen.getByTestId('bar-Income'));
+    expect(mockPush).toHaveBeenCalledWith('/transactions?startDate=2026-02-17&endDate=2026-02-23');
+  });
+
+  it('navigates on Expenses bar click as well', () => {
+    render(<IncomeExpensesBarChart transactions={[]} isLoading={false} />);
+    fireEvent.click(screen.getByTestId('bar-Expenses'));
+    expect(mockPush).toHaveBeenCalledWith('/transactions?startDate=2026-02-17&endDate=2026-02-23');
   });
 });

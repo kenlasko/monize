@@ -271,6 +271,27 @@ describe('DashboardPage', () => {
     });
   });
 
+  it('loads top movers directly when investment accounts exist', async () => {
+    mockGetAccounts.mockResolvedValue([
+      { id: 'acc-1', name: 'Brokerage', accountType: 'INVESTMENT', isClosed: false },
+    ]);
+    render(<DashboardPage />);
+    await waitFor(() => {
+      expect(mockGetTopMovers).toHaveBeenCalled();
+    });
+  });
+
+  it('does not load top movers when no investment accounts', async () => {
+    mockGetAccounts.mockResolvedValue([
+      { id: 'acc-1', name: 'Checking', accountType: 'CHECKING', isClosed: false },
+    ]);
+    render(<DashboardPage />);
+    await waitFor(() => {
+      expect(screen.getByTestId('top-movers')).toHaveTextContent('no-investments');
+    });
+    expect(mockGetTopMovers).not.toHaveBeenCalled();
+  });
+
   it('shows loading state in child components while data loads', async () => {
     mockGetAccounts.mockReturnValue(new Promise(() => {}));
     render(<DashboardPage />);

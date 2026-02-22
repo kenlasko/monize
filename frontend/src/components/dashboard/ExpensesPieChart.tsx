@@ -3,6 +3,7 @@
 import { useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import { format, subDays } from 'date-fns';
 import { Transaction } from '@/types/transaction';
 import { Category } from '@/types/category';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
@@ -130,7 +131,9 @@ export function ExpensesPieChart({
 
   const handleCategoryClick = (categoryId: string) => {
     if (categoryId) {
-      router.push(`/transactions?categoryId=${categoryId}`);
+      const startDate = format(subDays(new Date(), 30), 'yyyy-MM-dd');
+      const endDate = format(new Date(), 'yyyy-MM-dd');
+      router.push(`/transactions?categoryIds=${categoryId}&startDate=${startDate}&endDate=${endDate}`);
     }
   };
 

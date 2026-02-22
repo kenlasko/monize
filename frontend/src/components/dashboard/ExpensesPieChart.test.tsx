@@ -192,7 +192,8 @@ describe('ExpensesPieChart', () => {
 
     render(<ExpensesPieChart transactions={transactions} categories={categories} isLoading={false} />);
     fireEvent.click(screen.getByTestId('pie-slice-Food'));
-    expect(mockPush).toHaveBeenCalledWith('/transactions?categoryId=cat1');
+    expect(mockPush).toHaveBeenCalledWith(expect.stringContaining('/transactions?categoryIds=cat1&startDate='));
+    expect(mockPush).toHaveBeenCalledWith(expect.stringContaining('&endDate='));
   });
 
   it('navigates on legend button click', () => {
@@ -210,7 +211,8 @@ describe('ExpensesPieChart', () => {
     const legendButtons = screen.getAllByRole('button');
     const foodButton = legendButtons.find(b => b.textContent?.includes('Food'));
     if (foodButton) fireEvent.click(foodButton);
-    expect(mockPush).toHaveBeenCalledWith('/transactions?categoryId=cat1');
+    expect(mockPush).toHaveBeenCalledWith(expect.stringContaining('/transactions?categoryIds=cat1&startDate='));
+    expect(mockPush).toHaveBeenCalledWith(expect.stringContaining('&endDate='));
   });
 
   it('aggregates multiple transactions in the same category', () => {

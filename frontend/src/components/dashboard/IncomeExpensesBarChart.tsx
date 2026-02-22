@@ -122,10 +122,10 @@ export function IncomeExpensesBarChart({
     }));
   }, [transactions, formatDate, convertToDefault, weekStartsOn]);
 
-  const handleChartClick = (state: unknown) => {
-    const chartState = state as { activePayload?: Array<{ payload: { startDate: string; endDate: string } }> } | null;
-    if (chartState?.activePayload?.[0]?.payload) {
-      const { startDate, endDate } = chartState.activePayload[0].payload;
+  const handleBarClick = (data: { payload?: { startDate?: string; endDate?: string } }) => {
+    const startDate = data.payload?.startDate;
+    const endDate = data.payload?.endDate;
+    if (startDate && endDate) {
       router.push(`/transactions?startDate=${startDate}&endDate=${endDate}`);
     }
   };
@@ -166,8 +166,7 @@ export function IncomeExpensesBarChart({
           <BarChart
             data={chartData}
             barGap={4}
-            onClick={handleChartClick}
-            style={{ cursor: 'pointer' }}
+            margin={{ top: 5, right: 5, left: -10, bottom: 0 }}
           >
             <CartesianGrid
               strokeDasharray="3 3"
@@ -198,12 +197,16 @@ export function IncomeExpensesBarChart({
               fill="#22c55e"
               radius={[4, 4, 0, 0]}
               maxBarSize={40}
+              cursor="pointer"
+              onClick={handleBarClick}
             />
             <Bar
               dataKey="Expenses"
               fill="#ef4444"
               radius={[4, 4, 0, 0]}
               maxBarSize={40}
+              cursor="pointer"
+              onClick={handleBarClick}
             />
           </BarChart>
         </ResponsiveContainer>

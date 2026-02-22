@@ -93,12 +93,17 @@ function DashboardContent() {
       setScheduledTransactions(scheduledData);
       setNetWorthData(netWorth);
 
-      // Check if user has investment accounts — topMovers will be loaded
-      // by the triggerAutoRefresh effect to avoid duplicate API calls
       const investmentAccounts = accountsData.filter(
         (a: Account) => a.accountType === 'INVESTMENT' && !a.isClosed,
       );
-      setHasInvestments(investmentAccounts.length > 0);
+      const hasInvestmentAccounts = investmentAccounts.length > 0;
+      setHasInvestments(hasInvestmentAccounts);
+
+      // Load top movers directly so they appear even when price refresh is
+      // skipped (outside market hours, cooldown active, etc.)
+      if (hasInvestmentAccounts) {
+        investmentsApi.getTopMovers().then(setTopMovers).catch(() => {});
+      }
     } catch (error) {
       logger.error('Failed to load dashboard data:', error);
     } finally {
