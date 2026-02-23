@@ -4,6 +4,7 @@ import type { ScheduledTransaction } from '@/types/scheduled-transaction';
 import {
   buildForecast,
   getForecastSummary,
+  getProjectedBalanceAtDate,
   FORECAST_PERIOD_DAYS,
   FORECAST_PERIOD_LABELS,
   FutureTransaction,
@@ -1036,5 +1037,93 @@ describe('getForecastSummary', () => {
     ];
     const summary = getForecastSummary(dataPoints);
     expect(summary.goesNegative).toBe(false);
+  });
+});
+
+describe('getProjectedBalanceAtDate', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2025, 0, 15)); // Jan 15, 2025
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('returns current balance when no transactions affect the account', () => {
+    const account = makeAccount({ currentBalance: 5000 });
+    const result = getProjectedBalanceAtDate(account, '2025-01-20', [], []);
+    expect(result).toBe(5000);
+  });
+
+  it('includes scheduled transaction occurrences up to target date', () => {
+    const account = makeAccount({ currentBalance: 5000 });
+    const scheduled = [makeScheduled({
+      nextDueDate: '2025-01-20',
+      amount: -500,
+      frequency: 'ONCE',
+    })];
+    const result = getProjectedBalanceAtDate(account, '2025-01-25', scheduled, []);
+    expect(result).toBe(4500);
+  });
+
+  it('excludes scheduled transactions for other accounts', () => {
+    const account = makeAccount({ id: 'acc-1', currentBalance: 5000 });
+    const scheduled = [makeScheduled({
+      accountId: 'acc-2',
+      nextDueDate: '2025-01-20',
+      amount: -500,
+      frequency: 'ONCE',
+    })];
+    const result = getProjectedBalanceAtDate(account, '2025-01-25', scheduled, []);
+    expect(result).toBe(5000);
+  });
+
+  it('excludes the specified scheduled transaction id', () => {
+    const account = makeAccount({ currentBalance: 5000 });
+    const scheduled = [
+      makeScheduled({ id: 'st-1', nextDueDate: '2025-01-20', amount: -500, frequency: 'ONCE' }),
+      makeScheduled({ id: 'st-2', nextDueDate: '2025-01-20', amount: -200, frequency: 'ONCE' }),
+    ];
+    const result = getProjectedBalanceAtDate(account, '2025-01-25', scheduled, [], 'st-1');
+    // Only st-2 is applied
+    expect(result).toBe(4800);
+  });
+
+  it('includes future posted transactions up to target date', () => {
+    const account = makeAccount({ id: 'acc-1', currentBalance: 5000 });
+    const futureTransactions: FutureTransaction[] = [
+      { id: 'ft-1', accountId: 'acc-1', name: 'Future Bill', amount: -1000, date: '2025-01-20' },
+    ];
+    const result = getProjectedBalanceAtDate(account, '2025-01-25', [], futureTransactions);
+    expect(result).toBe(4000);
+  });
+
+  it('includes inbound transfers for destination account', () => {
+    const account = makeAccount({ id: 'acc-2', currentBalance: 1000 });
+    const scheduled = [makeScheduled({
+      id: 'st-1',
+      accountId: 'acc-1',
+      nextDueDate: '2025-01-20',
+      amount: -500,
+      frequency: 'ONCE',
+      isTransfer: true,
+      transferAccountId: 'acc-2',
+    })];
+    const result = getProjectedBalanceAtDate(account, '2025-01-25', scheduled, []);
+    // Inbound transfer: negate the -500 to get +500
+    expect(result).toBe(1500);
+  });
+
+  it('handles multiple recurring occurrences within range', () => {
+    const account = makeAccount({ currentBalance: 5000 });
+    const scheduled = [makeScheduled({
+      nextDueDate: '2025-01-15',
+      amount: -200,
+      frequency: 'WEEKLY',
+    })];
+    // Jan 15, Jan 22, Jan 29 = 3 occurrences
+    const result = getProjectedBalanceAtDate(account, '2025-01-29', scheduled, []);
+    expect(result).toBe(4400); // 5000 - 3*200
   });
 });

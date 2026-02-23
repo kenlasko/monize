@@ -674,6 +674,8 @@ function BillsContent() {
           scheduledTransaction={postDialog.transaction}
           categories={categories}
           accounts={accounts}
+          scheduledTransactions={scheduledTransactions}
+          futureTransactions={futureTransactions}
           onClose={handlePostDialogClose}
           onPosted={handlePostDialogPosted}
         />

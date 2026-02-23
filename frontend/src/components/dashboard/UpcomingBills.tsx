@@ -11,9 +11,10 @@ import { useExchangeRates } from '@/hooks/useExchangeRates';
 interface UpcomingBillsProps {
   scheduledTransactions: ScheduledTransaction[];
   isLoading: boolean;
+  maxItems: number;
 }
 
-export function UpcomingBills({ scheduledTransactions, isLoading }: UpcomingBillsProps) {
+export function UpcomingBills({ scheduledTransactions, isLoading, maxItems }: UpcomingBillsProps) {
   const router = useRouter();
   const { formatDate } = useDateFormat();
   const { formatCurrency: formatCurrencyBase } = useNumberFormat();
@@ -28,7 +29,14 @@ export function UpcomingBills({ scheduledTransactions, isLoading }: UpcomingBill
       const daysUntil = differenceInDays(dueDate, today);
       return daysUntil >= 0 && daysUntil <= 7;
     })
-    .sort((a, b) => parseLocalDate(a.nextDueDate).getTime() - parseLocalDate(b.nextDueDate).getTime());
+    .sort((a, b) => {
+      const dateDiff = parseLocalDate(a.nextDueDate).getTime() - parseLocalDate(b.nextDueDate).getTime();
+      if (dateDiff !== 0) return dateDiff;
+      // On the same day, show manual items first so they're visible before truncation
+      if (!a.autoPost && b.autoPost) return -1;
+      if (a.autoPost && !b.autoPost) return 1;
+      return 0;
+    });
 
   const formatCurrency = (amount: number, currency: string) => {
     return formatCurrencyBase(Math.abs(amount), currency);
@@ -129,12 +137,16 @@ export function UpcomingBills({ scheduledTransactions, isLoading }: UpcomingBill
     );
   }
 
+  // Totals use the full list; display is capped at maxItems
   const totalDue = upcomingItems
     .filter((item) => !item.isTransfer && getEffectiveAmount(item) < 0)
     .reduce((sum, item) => sum + Math.abs(convertToDefault(getEffectiveAmount(item), item.currencyCode)), 0);
   const totalIncoming = upcomingItems
     .filter((item) => !item.isTransfer && getEffectiveAmount(item) > 0)
     .reduce((sum, item) => sum + convertToDefault(getEffectiveAmount(item), item.currencyCode), 0);
+
+  const visibleItems = upcomingItems.slice(0, maxItems);
+  const hiddenCount = upcomingItems.length - visibleItems.length;
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6">
@@ -148,7 +160,7 @@ export function UpcomingBills({ scheduledTransactions, isLoading }: UpcomingBill
         <span className="text-sm text-gray-500 dark:text-gray-400">Next 7 days</span>
       </div>
       <div className="space-y-2 sm:space-y-3">
-        {upcomingItems.map((item) => {
+        {visibleItems.map((item) => {
           const amountDisplay = getAmountDisplay(item);
           const type = getItemType(item);
           return (
@@ -190,6 +202,14 @@ export function UpcomingBills({ scheduledTransactions, isLoading }: UpcomingBill
           );
         })}
       </div>
+      {hiddenCount > 0 && (
+        <button
+          onClick={() => router.push('/bills')}
+          className="mt-2 w-full text-center text-sm text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-300"
+        >
+          +{hiddenCount} more
+        </button>
+      )}
       <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 space-y-1">
         {totalDue > 0 && (
           <div className="flex items-center justify-between">

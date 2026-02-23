@@ -158,11 +158,11 @@ const ScheduledTransactionRow = memo(function ScheduledTransactionRow({
           {transaction.nextOverride?.overrideDate &&
            transaction.nextDueDate &&
            transaction.nextOverride.overrideDate !== String(transaction.nextDueDate).split('T')[0] ? (
-            <span className="flex flex-col">
-              <span className="text-xs text-gray-400 dark:text-gray-500 line-through">
+            <span className="inline-flex flex-col align-middle">
+              <span className="text-xs text-gray-400 dark:text-gray-500 line-through leading-tight">
                 {formatDate(transaction.nextDueDate)}
               </span>
-              <span title="Date modified for this occurrence">
+              <span className="leading-tight" title="Date modified for this occurrence">
                 {formatDate(transaction.nextOverride.overrideDate)}
               </span>
             </span>

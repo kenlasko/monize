@@ -350,6 +350,64 @@ export function buildForecast(
 }
 
 /**
+ * Compute the projected balance for a single account at a specific date.
+ *
+ * Starts from account.currentBalance (which excludes future-dated posted
+ * transactions), then layers on future transactions and scheduled transaction
+ * occurrences up to and including targetDate.
+ *
+ * @param excludeScheduledId - Omit this scheduled transaction (e.g. the one
+ *   being posted) so the caller can add the user-edited amount separately.
+ */
+export function getProjectedBalanceAtDate(
+  account: Account,
+  targetDate: string,
+  scheduledTransactions: ScheduledTransaction[],
+  futureTransactions: FutureTransaction[] = [],
+  excludeScheduledId?: string
+): number {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayKey = formatDateKey(today);
+
+  const endDate = parseLocalDate(targetDate);
+  endDate.setHours(0, 0, 0, 0);
+
+  let balance = Number(account.currentBalance);
+
+  // Add future-dated posted transactions for this account up to targetDate
+  for (const ft of futureTransactions) {
+    if (ft.accountId === account.id && ft.date > todayKey && ft.date <= targetDate) {
+      balance += ft.amount;
+    }
+  }
+
+  // Include scheduled transactions for this account + inbound transfers
+  const relevant = scheduledTransactions.filter(t => {
+    if (!t.isActive) return false;
+    if (excludeScheduledId && t.id === excludeScheduledId) return false;
+    if (t.accountId === account.id) return true;
+    // Inbound transfer: this account is the destination
+    if (isTransfer(t) && t.transferAccountId === account.id && t.accountId !== account.id) return true;
+    return false;
+  });
+
+  const inboundTransferIds = new Set(
+    relevant.filter(t => isTransfer(t) && t.transferAccountId === account.id && t.accountId !== account.id).map(t => t.id)
+  );
+
+  for (const tx of relevant) {
+    const occurrences = generateOccurrences(tx, today, endDate);
+    const isInbound = inboundTransferIds.has(tx.id);
+    for (const occ of occurrences) {
+      balance += isInbound ? -occ.amount : occ.amount;
+    }
+  }
+
+  return Math.round(balance * 100) / 100;
+}
+
+/**
  * Get summary statistics from forecast data
  */
 export function getForecastSummary(dataPoints: ForecastDataPoint[]) {

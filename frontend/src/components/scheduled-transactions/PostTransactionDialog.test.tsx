@@ -33,6 +33,16 @@ vi.mock('@/lib/errors', () => ({
   getErrorMessage: (_error: unknown, fallback: string) => fallback,
 }));
 
+vi.mock('@/hooks/useNumberFormat', () => ({
+  useNumberFormat: () => ({
+    formatCurrency: (n: number, _c?: string) => `$${n.toFixed(2)}`,
+  }),
+}));
+
+vi.mock('@/lib/forecast', () => ({
+  getProjectedBalanceAtDate: (account: any) => Number(account.currentBalance) || 0,
+}));
+
 vi.mock('@/lib/categoryUtils', () => ({
   buildCategoryTree: (cats: any[]) => (cats || []).map((c: any) => ({ category: c })),
 }));
@@ -73,8 +83,9 @@ describe('PostTransactionDialog', () => {
     id: 's2', name: 'Savings Transfer', amount: -500, currencyCode: 'CAD',
     accountId: 'a1', categoryId: null, description: '',
     nextDueDate: '2025-02-15T00:00:00Z', isTransfer: true, isSplit: false,
-    account: { name: 'Checking' },
-    transferAccount: { name: 'Savings' },
+    account: { name: 'Checking', currentBalance: 5000 },
+    transferAccountId: 'a2',
+    transferAccount: { name: 'Savings', currentBalance: 10000 },
   } as any;
 
   const splitTransaction = {
@@ -104,8 +115,8 @@ describe('PostTransactionDialog', () => {
     { id: 'c2', name: 'Subscriptions', parentId: null },
   ] as any[];
   const accounts = [
-    { id: 'a1', name: 'Checking' },
-    { id: 'a2', name: 'Savings' },
+    { id: 'a1', name: 'Checking', currentBalance: 5000 },
+    { id: 'a2', name: 'Savings', currentBalance: 10000 },
   ] as any[];
 
   const defaultProps = {
@@ -113,6 +124,8 @@ describe('PostTransactionDialog', () => {
     scheduledTransaction,
     categories,
     accounts,
+    scheduledTransactions: [] as any[],
+    futureTransactions: [] as any[],
     onClose: vi.fn(),
     onPosted: vi.fn(),
   };
@@ -348,5 +361,72 @@ describe('PostTransactionDialog', () => {
         transactionDate: '2025-02-20',
       }));
     });
+  });
+
+  // --- Account balance info ---
+  it('shows account balance info for regular transactions', () => {
+    render(<PostTransactionDialog {...defaultProps} />);
+    // Account name and projected balance should appear
+    const checkingElements = screen.getAllByText(/Checking/);
+    expect(checkingElements.length).toBeGreaterThanOrEqual(1);
+    // Balance before (5000) and after (5000 + -15.99 = 4984.01) shown together
+    expect(screen.getByText(/\$5000\.00/)).toBeInTheDocument();
+    expect(screen.getByText('$4984.01')).toBeInTheDocument();
+  });
+
+  it('shows both account balances for transfer transactions', () => {
+    render(<PostTransactionDialog {...defaultProps} scheduledTransaction={transferTransaction} />);
+    // Both Checking and Savings should appear in the balance info
+    const checkingElements = screen.getAllByText(/Checking/);
+    expect(checkingElements.length).toBeGreaterThanOrEqual(2); // description + balance info
+    const savingsElements = screen.getAllByText(/Savings/);
+    expect(savingsElements.length).toBeGreaterThanOrEqual(2); // description + balance info
+  });
+
+  // --- Negative balance warning ---
+  it('shows warning when posting will make source account go negative', () => {
+    const lowBalanceAccounts = [
+      { id: 'a1', name: 'Checking', currentBalance: 10 },
+      { id: 'a2', name: 'Savings', currentBalance: 10000 },
+    ] as any[];
+    render(<PostTransactionDialog {...defaultProps} accounts={lowBalanceAccounts} />);
+    // Balance after: 10 + (-15.99) = -5.99
+    expect(screen.getByText(/below zero/)).toBeInTheDocument();
+  });
+
+  it('does not show warning when balance stays positive', () => {
+    render(<PostTransactionDialog {...defaultProps} />);
+    // Balance after: 5000 + (-15.99) = 4984.01
+    expect(screen.queryByText(/below zero/)).not.toBeInTheDocument();
+  });
+
+  it('shows warning for transfer when source account goes negative', () => {
+    const lowBalanceAccounts = [
+      { id: 'a1', name: 'Checking', currentBalance: 100 },
+      { id: 'a2', name: 'Savings', currentBalance: 10000 },
+    ] as any[];
+    const largeTx = {
+      ...transferTransaction,
+      amount: -500,
+    } as any;
+    render(<PostTransactionDialog {...defaultProps} accounts={lowBalanceAccounts} scheduledTransaction={largeTx} />);
+    // Source after: 100 + (-500) = -400
+    expect(screen.getByText(/below zero/)).toBeInTheDocument();
+  });
+
+  // --- Today button ---
+  it('shows Today button when date is not today', () => {
+    render(<PostTransactionDialog {...defaultProps} />);
+    // The date is 2025-02-15, which is not today
+    expect(screen.getByText('Today')).toBeInTheDocument();
+  });
+
+  it('sets date to today when Today button is clicked', () => {
+    render(<PostTransactionDialog {...defaultProps} />);
+    fireEvent.click(screen.getByText('Today'));
+    const today = new Date();
+    const expectedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    const dateInput = document.querySelector('input[type="date"]') as HTMLInputElement;
+    expect(dateInput.value).toBe(expectedDate);
   });
 });

@@ -143,6 +143,7 @@ function DashboardContent() {
             <UpcomingBills
               scheduledTransactions={scheduledTransactions}
               isLoading={isLoading}
+              maxItems={accounts.filter((a) => a.isFavourite && !a.isClosed).length + 2}
             />
           </div>
 
