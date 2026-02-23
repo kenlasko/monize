@@ -14,10 +14,9 @@ describe("McpHttpController", () => {
     };
 
     mcpServerService = {
-      getServer: jest.fn().mockReturnValue({
+      createServer: jest.fn().mockReturnValue({
         connect: jest.fn(),
       }),
-      setUserContextResolver: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({

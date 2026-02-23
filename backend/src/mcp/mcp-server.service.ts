@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { UserContextResolver } from "./mcp-context";
 import { McpAccountsTools } from "./tools/accounts.tool";
@@ -19,10 +19,7 @@ import { McpTransactionLookupPrompt } from "./prompts/transaction-lookup.prompt"
 import { McpSpendingAnalysisPrompt } from "./prompts/spending-analysis.prompt";
 
 @Injectable()
-export class McpServerService implements OnModuleInit {
-  private server: McpServer;
-  private userContextResolver: UserContextResolver = () => undefined;
-
+export class McpServerService {
   constructor(
     private readonly accountsTools: McpAccountsTools,
     private readonly transactionsTools: McpTransactionsTools,
@@ -42,8 +39,8 @@ export class McpServerService implements OnModuleInit {
     private readonly spendingAnalysisPrompt: McpSpendingAnalysisPrompt,
   ) {}
 
-  onModuleInit() {
-    this.server = new McpServer(
+  createServer(resolve: UserContextResolver): McpServer {
+    const server = new McpServer(
       { name: "monize", version: "1.0.0" },
       {
         capabilities: {
@@ -55,47 +52,25 @@ export class McpServerService implements OnModuleInit {
       },
     );
 
-    this.registerTools();
-    this.registerResources();
-    this.registerPrompts();
-  }
+    this.accountsTools.register(server, resolve);
+    this.transactionsTools.register(server, resolve);
+    this.categoriesTools.register(server, resolve);
+    this.payeesTools.register(server, resolve);
+    this.reportsTools.register(server, resolve);
+    this.investmentsTools.register(server, resolve);
+    this.netWorthTools.register(server, resolve);
+    this.scheduledTools.register(server, resolve);
 
-  getServer(): McpServer {
-    return this.server;
-  }
+    this.accountListResource.register(server, resolve);
+    this.categoryTreeResource.register(server, resolve);
+    this.recentTransactionsResource.register(server, resolve);
+    this.financialSummaryResource.register(server, resolve);
 
-  setUserContextResolver(resolver: UserContextResolver) {
-    this.userContextResolver = resolver;
-  }
+    this.financialReviewPrompt.register(server);
+    this.budgetCheckPrompt.register(server);
+    this.transactionLookupPrompt.register(server);
+    this.spendingAnalysisPrompt.register(server);
 
-  private registerTools() {
-    const resolverFn: UserContextResolver = (sessionId) =>
-      this.userContextResolver(sessionId);
-
-    this.accountsTools.register(this.server, resolverFn);
-    this.transactionsTools.register(this.server, resolverFn);
-    this.categoriesTools.register(this.server, resolverFn);
-    this.payeesTools.register(this.server, resolverFn);
-    this.reportsTools.register(this.server, resolverFn);
-    this.investmentsTools.register(this.server, resolverFn);
-    this.netWorthTools.register(this.server, resolverFn);
-    this.scheduledTools.register(this.server, resolverFn);
-  }
-
-  private registerResources() {
-    const resolverFn: UserContextResolver = (sessionId) =>
-      this.userContextResolver(sessionId);
-
-    this.accountListResource.register(this.server, resolverFn);
-    this.categoryTreeResource.register(this.server, resolverFn);
-    this.recentTransactionsResource.register(this.server, resolverFn);
-    this.financialSummaryResource.register(this.server, resolverFn);
-  }
-
-  private registerPrompts() {
-    this.financialReviewPrompt.register(this.server);
-    this.budgetCheckPrompt.register(this.server);
-    this.transactionLookupPrompt.register(this.server);
-    this.spendingAnalysisPrompt.register(this.server);
+    return server;
   }
 }

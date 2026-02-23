@@ -65,33 +65,34 @@ describe("McpServerService", () => {
     expect(service).toBeDefined();
   });
 
-  it("should create McpServer on init", () => {
-    service.onModuleInit();
-    expect(service.getServer()).toBeDefined();
+  it("should create a new McpServer instance", () => {
+    const resolver = jest.fn();
+    const server = service.createServer(resolver);
+    expect(server).toBeDefined();
   });
 
-  it("should register all tools on init", () => {
-    service.onModuleInit();
+  it("should register all tools", () => {
+    const resolver = jest.fn();
+    service.createServer(resolver);
     expect(mockToolProvider.register).toHaveBeenCalledTimes(8);
   });
 
-  it("should register all resources on init", () => {
-    service.onModuleInit();
+  it("should register all resources", () => {
+    const resolver = jest.fn();
+    service.createServer(resolver);
     expect(mockResourceProvider.register).toHaveBeenCalledTimes(4);
   });
 
-  it("should register all prompts on init", () => {
-    service.onModuleInit();
+  it("should register all prompts", () => {
+    const resolver = jest.fn();
+    service.createServer(resolver);
     expect(mockPromptProvider.register).toHaveBeenCalledTimes(4);
   });
 
-  it("should allow setting user context resolver", () => {
-    service.onModuleInit();
-    const resolver = jest.fn().mockReturnValue({
-      userId: "user-1",
-      scopes: "read",
-    });
-    service.setUserContextResolver(resolver);
-    expect(service.getServer()).toBeDefined();
+  it("should create independent server instances", () => {
+    const resolver = jest.fn();
+    const server1 = service.createServer(resolver);
+    const server2 = service.createServer(resolver);
+    expect(server1).not.toBe(server2);
   });
 });

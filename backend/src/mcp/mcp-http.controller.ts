@@ -11,6 +11,7 @@ import { ApiTags, ApiExcludeController } from "@nestjs/swagger";
 import { SkipThrottle } from "@nestjs/throttler";
 import { Request, Response } from "express";
 import { randomUUID } from "crypto";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { SkipCsrf } from "../common/decorators/skip-csrf.decorator";
 import { SetMetadata } from "@nestjs/common";
@@ -29,23 +30,20 @@ const SkipPasswordCheck = () => SetMetadata(SKIP_PASSWORD_CHECK_KEY, true);
 @Controller("mcp")
 export class McpHttpController implements OnModuleDestroy {
   private transports = new Map<string, StreamableHTTPServerTransport>();
+  private servers = new Map<string, McpServer>();
   private sessionUsers = new Map<string, McpUserContext>();
 
   constructor(
     private readonly mcpServerService: McpServerService,
     private readonly patService: PatService,
-  ) {
-    this.mcpServerService.setUserContextResolver((sessionId?: string) => {
-      if (!sessionId) return undefined;
-      return this.sessionUsers.get(sessionId);
-    });
-  }
+  ) {}
 
   onModuleDestroy() {
     for (const transport of this.transports.values()) {
       transport.close().catch(() => {});
     }
     this.transports.clear();
+    this.servers.clear();
     this.sessionUsers.clear();
   }
 
@@ -94,15 +92,22 @@ export class McpHttpController implements OnModuleDestroy {
       const sid = transport.sessionId;
       if (sid) {
         this.transports.delete(sid);
+        this.servers.delete(sid);
         this.sessionUsers.delete(sid);
       }
     };
 
-    await this.mcpServerService.getServer().connect(transport);
+    const resolve = (sessionId?: string) => {
+      if (!sessionId) return undefined;
+      return this.sessionUsers.get(sessionId);
+    };
+    const server = this.mcpServerService.createServer(resolve);
+    await server.connect(transport);
     await transport.handleRequest(req, res, req.body);
 
     if (transport.sessionId) {
       this.transports.set(transport.sessionId, transport);
+      this.servers.set(transport.sessionId, server);
       this.sessionUsers.set(transport.sessionId, {
         userId: authResult.userId,
         scopes: authResult.scopes,
@@ -159,6 +164,7 @@ export class McpHttpController implements OnModuleDestroy {
 
     await transport.handleRequest(req, res);
     this.transports.delete(sessionId);
+    this.servers.delete(sessionId);
     this.sessionUsers.delete(sessionId);
   }
 
