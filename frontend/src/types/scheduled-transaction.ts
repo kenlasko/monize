@@ -154,6 +154,7 @@ export interface PostScheduledTransactionData {
   amount?: number | null;
   categoryId?: string | null;
   description?: string | null;
+  referenceNumber?: string;
   isSplit?: boolean;
   splits?: OverrideSplit[];
 }

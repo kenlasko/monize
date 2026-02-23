@@ -47,6 +47,7 @@ export function PostTransactionDialog({
   const [isSplit, setIsSplit] = useState(false);
   const [splits, setSplits] = useState<SplitRow[]>([]);
   const [transactionDate, setTransactionDate] = useState<string>('');
+  const [referenceNumber, setReferenceNumber] = useState<string>('');
 
   const todayStr = useMemo(() => {
     const d = new Date();
@@ -89,6 +90,8 @@ export function PostTransactionDialog({
       setCategoryId(nextOverride?.categoryId ?? scheduledTransaction.categoryId ?? '');
       setDescription(nextOverride?.description ?? scheduledTransaction.description ?? '');
       setIsSplit(nextOverride?.isSplit ?? scheduledTransaction.isSplit);
+
+      setReferenceNumber('');
 
       // Set transaction date to next due date
       const nextDueDate = scheduledTransaction.nextDueDate.split('T')[0];
@@ -146,6 +149,7 @@ export function PostTransactionDialog({
         amount,
         categoryId: isSplit ? null : (categoryId || null),
         description: description || null,
+        referenceNumber: referenceNumber || undefined,
         isSplit,
         splits: isSplit ? splits.map(s => ({
           categoryId: s.splitType === 'category' ? (s.categoryId ?? null) : null,
@@ -358,17 +362,30 @@ export function PostTransactionDialog({
           </>
         )}
 
-        {/* Description */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Description (optional)
-          </label>
-          <Input
-            type="text"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Description..."
-          />
+        {/* Description and Reference Number */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Description (optional)
+            </label>
+            <Input
+              type="text"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Description..."
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Reference Number (optional)
+            </label>
+            <Input
+              type="text"
+              value={referenceNumber}
+              onChange={(e) => setReferenceNumber(e.target.value)}
+              placeholder="Cheque #, confirmation #..."
+            />
+          </div>
         </div>
       </div>
 

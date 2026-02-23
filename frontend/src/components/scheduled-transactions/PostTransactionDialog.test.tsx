@@ -429,4 +429,51 @@ describe('PostTransactionDialog', () => {
     const dateInput = document.querySelector('input[type="date"]') as HTMLInputElement;
     expect(dateInput.value).toBe(expectedDate);
   });
+
+  // --- Reference number ---
+  it('renders reference number field with placeholder', () => {
+    render(<PostTransactionDialog {...defaultProps} />);
+    expect(screen.getByText('Reference Number (optional)')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Cheque #, confirmation #...')).toBeInTheDocument();
+  });
+
+  it('allows changing reference number', () => {
+    render(<PostTransactionDialog {...defaultProps} />);
+    const refInput = screen.getByPlaceholderText('Cheque #, confirmation #...');
+    fireEvent.change(refInput, { target: { value: 'CHQ-1234' } });
+    expect((refInput as HTMLInputElement).value).toBe('CHQ-1234');
+  });
+
+  it('includes referenceNumber in post payload when provided', async () => {
+    const onPosted = vi.fn();
+    render(<PostTransactionDialog {...defaultProps} onPosted={onPosted} />);
+
+    const refInput = screen.getByPlaceholderText('Cheque #, confirmation #...');
+    fireEvent.change(refInput, { target: { value: 'REF-5678' } });
+
+    const buttons = screen.getAllByText('Post Transaction');
+    const postButton = buttons[buttons.length - 1];
+    fireEvent.click(postButton);
+
+    await waitFor(() => {
+      expect(mockPostApi).toHaveBeenCalledWith('s1', expect.objectContaining({
+        referenceNumber: 'REF-5678',
+      }));
+    });
+  });
+
+  it('omits referenceNumber from payload when empty', async () => {
+    const onPosted = vi.fn();
+    render(<PostTransactionDialog {...defaultProps} onPosted={onPosted} />);
+
+    const buttons = screen.getAllByText('Post Transaction');
+    const postButton = buttons[buttons.length - 1];
+    fireEvent.click(postButton);
+
+    await waitFor(() => {
+      expect(mockPostApi).toHaveBeenCalled();
+      const payload = mockPostApi.mock.calls[0][1];
+      expect(payload.referenceNumber).toBeUndefined();
+    });
+  });
 });

@@ -11,6 +11,7 @@ import {
   MaxLength,
 } from "class-validator";
 import { Type } from "class-transformer";
+import { SanitizeHtml } from "../../common/decorators/sanitize-html.decorator";
 
 class InlineSplitDto {
   @ApiPropertyOptional({ description: "Category ID for this split" })
@@ -61,6 +62,15 @@ export class PostScheduledTransactionDto {
   @IsString()
   @MaxLength(500)
   description?: string | null;
+
+  @ApiPropertyOptional({
+    description: "Reference number (e.g., cheque number)",
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  @SanitizeHtml()
+  referenceNumber?: string;
 
   @ApiPropertyOptional({ description: "Use splits for this posting" })
   @IsOptional()

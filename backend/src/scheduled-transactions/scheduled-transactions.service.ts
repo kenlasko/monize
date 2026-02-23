@@ -554,6 +554,7 @@ export class ScheduledTransactionsService {
       amount: finalAmount,
       currencyCode: scheduled.currencyCode,
       description: finalDescription,
+      referenceNumber: postDto?.referenceNumber || undefined,
       isCleared: false,
     };
 
@@ -605,6 +606,7 @@ export class ScheduledTransactionsService {
         transactionDate: postDate,
         fromCurrencyCode: scheduled.currencyCode,
         description: finalDescription || undefined,
+        referenceNumber: postDto?.referenceNumber || undefined,
         payeeId: scheduled.payeeId || undefined,
         payeeName: scheduled.payeeName || undefined,
       });

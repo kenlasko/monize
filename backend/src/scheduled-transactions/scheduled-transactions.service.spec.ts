@@ -1094,6 +1094,41 @@ describe("ScheduledTransactionsService", () => {
       // Loan account should have been looked up
       expect(accountsRepo.findOne).toHaveBeenCalled();
     });
+
+    it("should pass referenceNumber to created transaction when provided", async () => {
+      const scheduled = makeScheduled();
+      stubFindOne(scheduled);
+      const overrideQb = mockQueryBuilder(null);
+      overrideQb.getOne.mockResolvedValue(null);
+      overridesRepo.createQueryBuilder.mockReturnValue(overrideQb);
+      accountsRepo.findOne.mockResolvedValue(null);
+
+      await service.post(userId, stId, { referenceNumber: "CHQ-1234" });
+
+      expect(transactionsService.create).toHaveBeenCalledWith(
+        userId,
+        expect.objectContaining({ referenceNumber: "CHQ-1234" }),
+      );
+    });
+
+    it("should pass referenceNumber to createTransfer when provided", async () => {
+      const scheduled = makeScheduled({
+        isTransfer: true,
+        transferAccountId: "acc-2",
+      });
+      stubFindOne(scheduled);
+      const overrideQb = mockQueryBuilder(null);
+      overrideQb.getOne.mockResolvedValue(null);
+      overridesRepo.createQueryBuilder.mockReturnValue(overrideQb);
+      accountsRepo.findOne.mockResolvedValue(null);
+
+      await service.post(userId, stId, { referenceNumber: "REF-5678" });
+
+      expect(transactionsService.createTransfer).toHaveBeenCalledWith(
+        userId,
+        expect.objectContaining({ referenceNumber: "REF-5678" }),
+      );
+    });
   });
 
   // ==================== Override CRUD ====================
