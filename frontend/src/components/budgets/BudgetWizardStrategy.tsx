@@ -100,6 +100,39 @@ export function BudgetWizardStrategy({
     });
   };
 
+  const handleIncomeLinkToggle = (checked: boolean) => {
+    const income = state.baseIncome;
+    if (income && income > 0) {
+      // Convert category amounts between dollars and percentages
+      const convert = (amount: number) => {
+        if (checked) {
+          // Dollar → percentage of income
+          return Math.round((amount / income) * 10000) / 100;
+        }
+        // Percentage → dollar amount
+        return Math.round((amount * income) / 100 * 100) / 100;
+      };
+
+      const updatedCategories = new Map(state.selectedCategories);
+      for (const [key, cat] of updatedCategories) {
+        if (!cat.isIncome) {
+          updatedCategories.set(key, { ...cat, amount: convert(cat.amount) });
+        }
+      }
+      const updatedTransfers = new Map(state.selectedTransfers);
+      for (const [key, t] of updatedTransfers) {
+        updatedTransfers.set(key, { ...t, amount: convert(t.amount) });
+      }
+      updateState({
+        incomeLinked: checked,
+        selectedCategories: updatedCategories,
+        selectedTransfers: updatedTransfers,
+      });
+    } else {
+      updateState({ incomeLinked: checked });
+    }
+  };
+
   const handleFlexGroupChange = (categoryId: string, flexGroup: string) => {
     const updated = new Map(state.selectedCategories);
     const existing = updated.get(categoryId);
@@ -195,7 +228,7 @@ export function BudgetWizardStrategy({
           <input
             type="checkbox"
             checked={state.incomeLinked}
-            onChange={(e) => updateState({ incomeLinked: e.target.checked })}
+            onChange={(e) => handleIncomeLinkToggle(e.target.checked)}
             className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-500 dark:bg-gray-700"
           />
           <div>

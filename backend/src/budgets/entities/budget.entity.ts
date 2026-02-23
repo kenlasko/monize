@@ -34,6 +34,14 @@ export interface BudgetConfig {
   };
 }
 
+const decimalTransformer = {
+  from: (value: string | null): number | null => {
+    if (value === null || value === undefined) return null;
+    return parseFloat(value);
+  },
+  to: (value: number | null): number | null => value,
+};
+
 const dateTransformer = {
   from: (value: string | Date | null): string | null => {
     if (!value) return null;
@@ -99,6 +107,7 @@ export class Budget {
     scale: 4,
     name: "base_income",
     nullable: true,
+    transformer: decimalTransformer,
   })
   baseIncome: number | null;
 

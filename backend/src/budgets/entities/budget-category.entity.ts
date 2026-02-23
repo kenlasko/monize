@@ -11,6 +11,14 @@ import { Budget } from "./budget.entity";
 import { Category } from "../../categories/entities/category.entity";
 import { Account } from "../../accounts/entities/account.entity";
 
+const decimalTransformer = {
+  from: (value: string | null): number | null => {
+    if (value === null || value === undefined) return null;
+    return parseFloat(value);
+  },
+  to: (value: number | null): number | null => value,
+};
+
 export enum RolloverType {
   NONE = "NONE",
   MONTHLY = "MONTHLY",
@@ -61,7 +69,7 @@ export class BudgetCategory {
   })
   categoryGroup: CategoryGroup | null;
 
-  @Column({ type: "decimal", precision: 20, scale: 4 })
+  @Column({ type: "decimal", precision: 20, scale: 4, transformer: decimalTransformer })
   amount: number;
 
   @Column({ name: "is_income", default: false })
@@ -81,6 +89,7 @@ export class BudgetCategory {
     scale: 4,
     name: "rollover_cap",
     nullable: true,
+    transformer: decimalTransformer,
   })
   rolloverCap: number | null;
 

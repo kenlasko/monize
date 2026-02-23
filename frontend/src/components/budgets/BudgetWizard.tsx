@@ -129,6 +129,8 @@ export function BudgetWizard({
   const initCategoriesFromAnalysis = useCallback(
     (result: GenerateBudgetResponse) => {
       const is503020 = state.strategy === 'FIFTY_THIRTY_TWENTY';
+      const isRollover = state.strategy === 'ROLLOVER';
+      const defaultRollover: RolloverType = isRollover ? 'MONTHLY' : 'NONE';
       const categories = new Map<string, ApplyBudgetCategoryData>();
       for (const cat of result.categories) {
         // Skip expense categories with zero suggested amount (sporadic spending)
@@ -137,7 +139,7 @@ export function BudgetWizard({
           categoryId: cat.categoryId,
           amount: cat.suggested,
           isIncome: cat.isIncome,
-          rolloverType: 'NONE' as RolloverType,
+          rolloverType: defaultRollover,
           ...(is503020 && !cat.isIncome ? { categoryGroup: 'NEED' as CategoryGroup } : {}),
         });
       }
@@ -149,7 +151,7 @@ export function BudgetWizard({
           transferAccountId: t.accountId,
           isTransfer: true,
           amount: t.suggested,
-          rolloverType: 'NONE' as RolloverType,
+          rolloverType: defaultRollover,
           ...(is503020 ? { categoryGroup: 'SAVING' as CategoryGroup } : {}),
         });
       }
@@ -164,6 +166,7 @@ export function BudgetWizard({
         selectedCategories: categories,
         selectedTransfers: transfers,
         baseIncome: estimatedIncome,
+        defaultRolloverType: defaultRollover,
       });
     },
     [updateState, state.strategy],

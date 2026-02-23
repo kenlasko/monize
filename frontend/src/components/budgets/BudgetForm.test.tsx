@@ -134,7 +134,7 @@ describe('BudgetForm', () => {
     );
 
     const incomeInput = screen.getByLabelText('Base Income (optional)');
-    expect(incomeInput).toHaveValue(6000);
+    expect(incomeInput).toHaveValue('6,000.00');
   });
 
   it('renders active checkbox', () => {

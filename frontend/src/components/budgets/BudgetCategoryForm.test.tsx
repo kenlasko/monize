@@ -50,7 +50,7 @@ describe('BudgetCategoryForm', () => {
     );
 
     const amountInput = screen.getByLabelText('Budget Amount');
-    expect(amountInput).toHaveValue(600);
+    expect(amountInput).toHaveValue('600.00');
   });
 
   it('calls onSave with updated data on submit', async () => {

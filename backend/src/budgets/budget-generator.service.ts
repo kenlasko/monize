@@ -150,7 +150,7 @@ export class BudgetGeneratorService {
 
     const estimatedMonthlyIncome =
       incomeAnalysis.length > 0
-        ? this.mean(incomeAnalysis.map((i) => i.median))
+        ? incomeAnalysis.reduce((sum, i) => sum + i.median, 0)
         : 0;
 
     const totalBudgeted = expenseAnalysis.reduce(
