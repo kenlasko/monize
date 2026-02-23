@@ -117,18 +117,21 @@ export class BudgetGeneratorService {
     }));
 
     // Deduplicate: a category may appear in both income & expense results
-    // (e.g. refunds in an expense category). Keep the entry matching isIncome,
-    // or the one with the larger suggested amount as a fallback.
+    // (e.g. refunds in an expense category). For expense categories the
+    // expense query is authoritative; for income categories the income
+    // query is authoritative.
     const categoryMap = new Map<string, CategoryAnalysis>();
-    for (const cat of [...incomeAnalysis, ...expenseAnalysis]) {
+
+    for (const cat of incomeAnalysis) {
+      categoryMap.set(cat.categoryId, cat);
+    }
+
+    for (const cat of expenseAnalysis) {
       const existing = categoryMap.get(cat.categoryId);
-      if (!existing) {
+      if (!existing || !cat.isIncome) {
+        // New category, or an expense category — the expense query is
+        // the authoritative source for expense categories.
         categoryMap.set(cat.categoryId, cat);
-      } else if (existing.isIncome !== cat.isIncome) {
-        // Prefer the entry matching the category's isIncome flag
-        if (cat.suggested > existing.suggested) {
-          categoryMap.set(cat.categoryId, cat);
-        }
       }
     }
     const allCategories = Array.from(categoryMap.values());
@@ -251,6 +254,7 @@ export class BudgetGeneratorService {
       .andWhere("t.transaction_date <= :endDate", { endDate })
       .andWhere("t.status != :void", { void: "VOID" })
       .andWhere("t.is_split = false")
+      .andWhere("t.is_transfer = false")
       .andWhere("t.category_id IS NOT NULL")
       .andWhere(amountCondition)
       .groupBy("t.category_id")
@@ -279,6 +283,7 @@ export class BudgetGeneratorService {
       .andWhere("t.transaction_date >= :startDate", { startDate })
       .andWhere("t.transaction_date <= :endDate", { endDate })
       .andWhere("t.status != :void", { void: "VOID" })
+      .andWhere("t.is_transfer = false")
       .andWhere("s.category_id IS NOT NULL")
       .andWhere(isIncome ? "s.amount > 0" : "s.amount < 0")
       .groupBy("s.category_id")
@@ -373,15 +378,27 @@ export class BudgetGeneratorService {
     cat: Omit<CategoryAnalysis, "suggested">,
     profile: BudgetProfile,
   ): number {
+    let base: number;
     switch (profile) {
       case BudgetProfile.COMFORTABLE:
-        return this.round(cat.p75);
+        base = cat.p75;
+        break;
       case BudgetProfile.AGGRESSIVE:
-        return this.round(cat.p25);
+        base = cat.p25;
+        break;
       case BudgetProfile.ON_TRACK:
       default:
-        return this.round(cat.median);
+        base = cat.median;
     }
+
+    // Fall back to average when the percentile is zero but there is spending.
+    // This handles categories that don't occur every month -- the average
+    // distributes total spending across all months in the analysis window.
+    if (base === 0 && cat.average > 0) {
+      return this.round(cat.average);
+    }
+
+    return this.round(base);
   }
 
   percentile(sorted: number[], p: number): number {
@@ -542,18 +559,27 @@ export class BudgetGeneratorService {
   }
 
   private getSuggestedAmountFromStats(
-    stats: { p25: number; median: number; p75: number },
+    stats: { p25: number; median: number; p75: number; average: number },
     profile: BudgetProfile,
   ): number {
+    let base: number;
     switch (profile) {
       case BudgetProfile.COMFORTABLE:
-        return this.round(stats.p75);
+        base = stats.p75;
+        break;
       case BudgetProfile.AGGRESSIVE:
-        return this.round(stats.p25);
+        base = stats.p25;
+        break;
       case BudgetProfile.ON_TRACK:
       default:
-        return this.round(stats.median);
+        base = stats.median;
     }
+
+    if (base === 0 && stats.average > 0) {
+      return this.round(stats.average);
+    }
+
+    return this.round(base);
   }
 
   private round(value: number): number {

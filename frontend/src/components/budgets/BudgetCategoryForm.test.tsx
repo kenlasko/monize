@@ -30,6 +30,7 @@ describe('BudgetCategoryForm', () => {
     render(
       <BudgetCategoryForm
         category={mockCategory}
+        currencyCode="CAD"
         onSave={vi.fn()}
         onCancel={vi.fn()}
       />,
@@ -42,6 +43,7 @@ describe('BudgetCategoryForm', () => {
     render(
       <BudgetCategoryForm
         category={mockCategory}
+        currencyCode="CAD"
         onSave={vi.fn()}
         onCancel={vi.fn()}
       />,
@@ -56,6 +58,7 @@ describe('BudgetCategoryForm', () => {
     render(
       <BudgetCategoryForm
         category={mockCategory}
+        currencyCode="CAD"
         onSave={handleSave}
         onCancel={vi.fn()}
       />,
@@ -79,6 +82,7 @@ describe('BudgetCategoryForm', () => {
     render(
       <BudgetCategoryForm
         category={mockCategory}
+        currencyCode="CAD"
         onSave={vi.fn()}
         onCancel={handleCancel}
       />,
@@ -92,6 +96,7 @@ describe('BudgetCategoryForm', () => {
     render(
       <BudgetCategoryForm
         category={mockCategory}
+        currencyCode="CAD"
         onSave={vi.fn()}
         onCancel={vi.fn()}
         isSaving={true}
@@ -110,6 +115,7 @@ describe('BudgetCategoryForm', () => {
     render(
       <BudgetCategoryForm
         category={categoryWithRollover}
+        currencyCode="CAD"
         onSave={vi.fn()}
         onCancel={vi.fn()}
       />,
@@ -122,6 +128,7 @@ describe('BudgetCategoryForm', () => {
     render(
       <BudgetCategoryForm
         category={mockCategory}
+        currencyCode="CAD"
         onSave={vi.fn()}
         onCancel={vi.fn()}
       />,
@@ -134,6 +141,7 @@ describe('BudgetCategoryForm', () => {
     render(
       <BudgetCategoryForm
         category={mockCategory}
+        currencyCode="CAD"
         onSave={vi.fn()}
         onCancel={vi.fn()}
       />,
@@ -146,6 +154,7 @@ describe('BudgetCategoryForm', () => {
     render(
       <BudgetCategoryForm
         category={mockCategory}
+        currencyCode="CAD"
         onSave={vi.fn()}
         onCancel={vi.fn()}
       />,

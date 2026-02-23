@@ -177,6 +177,11 @@ export function BudgetWizardCategories({
           amount = cat.median;
       }
 
+      // Fall back to average for categories that don't occur every month
+      if (amount === 0 && cat.average > 0) {
+        amount = cat.average;
+      }
+
       updated.set(cat.categoryId, { ...existing, amount });
     }
 
@@ -195,6 +200,10 @@ export function BudgetWizardCategories({
           break;
         default:
           tAmount = t.median;
+      }
+
+      if (tAmount === 0 && t.average > 0) {
+        tAmount = t.average;
       }
 
       updatedTransfers.set(t.accountId, { ...existing, amount: tAmount });

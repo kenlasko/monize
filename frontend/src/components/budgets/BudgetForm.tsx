@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { CurrencyInput } from '@/components/ui/CurrencyInput';
+import { getCurrencySymbol } from '@/lib/format';
 import type {
   Budget,
   UpdateBudgetData,
@@ -40,8 +42,8 @@ export function BudgetForm({
   const [description, setDescription] = useState(budget.description ?? '');
   const [budgetType, setBudgetType] = useState<BudgetType>(budget.budgetType);
   const [strategy, setStrategy] = useState<BudgetStrategy>(budget.strategy);
-  const [baseIncome, setBaseIncome] = useState(
-    budget.baseIncome !== null ? String(budget.baseIncome) : '',
+  const [baseIncome, setBaseIncome] = useState<number | undefined>(
+    budget.baseIncome !== null ? budget.baseIncome : undefined,
   );
   const [isActive, setIsActive] = useState(budget.isActive);
 
@@ -54,7 +56,7 @@ export function BudgetForm({
       description: description.trim() || undefined,
       budgetType,
       strategy,
-      baseIncome: baseIncome ? parseFloat(baseIncome) : undefined,
+      baseIncome: baseIncome ?? undefined,
     };
 
     await onSave(data);
@@ -111,13 +113,12 @@ export function BudgetForm({
         </select>
       </div>
 
-      <Input
+      <CurrencyInput
         label="Base Income (optional)"
-        type="number"
         value={baseIncome}
-        onChange={(e) => setBaseIncome(e.target.value)}
-        min="0"
-        step="0.01"
+        onChange={setBaseIncome}
+        allowNegative={false}
+        prefix={getCurrencySymbol(budget.currencyCode)}
         placeholder="Expected monthly income"
       />
 

@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { CurrencyInput } from '@/components/ui/CurrencyInput';
+import { getCurrencySymbol } from '@/lib/format';
 import type {
   BudgetCategory,
   UpdateBudgetCategoryData,
@@ -12,6 +14,7 @@ import type {
 
 interface BudgetCategoryFormProps {
   category: BudgetCategory;
+  currencyCode: string;
   onSave: (data: UpdateBudgetCategoryData) => Promise<void>;
   onCancel: () => void;
   isSaving?: boolean;
@@ -33,11 +36,12 @@ const GROUP_OPTIONS: Array<{ value: CategoryGroup | ''; label: string }> = [
 
 export function BudgetCategoryForm({
   category,
+  currencyCode,
   onSave,
   onCancel,
   isSaving = false,
 }: BudgetCategoryFormProps) {
-  const [amount, setAmount] = useState(String(category.amount));
+  const [amount, setAmount] = useState<number | undefined>(category.amount);
   const [rolloverType, setRolloverType] = useState<RolloverType>(
     category.rolloverType,
   );
@@ -58,11 +62,10 @@ export function BudgetCategoryForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const parsedAmount = parseFloat(amount);
-    if (isNaN(parsedAmount) || parsedAmount < 0) return;
+    if (amount === undefined || amount < 0) return;
 
     const data: UpdateBudgetCategoryData = {
-      amount: parsedAmount,
+      amount,
       rolloverType,
       rolloverCap: rolloverCap ? parseFloat(rolloverCap) : undefined,
       flexGroup: flexGroup || undefined,
@@ -81,13 +84,12 @@ export function BudgetCategoryForm({
         Edit: {category.category?.name ?? 'Category'}
       </h3>
 
-      <Input
+      <CurrencyInput
         label="Budget Amount"
-        type="number"
         value={amount}
-        onChange={(e) => setAmount(e.target.value)}
-        min="0"
-        step="0.01"
+        onChange={setAmount}
+        allowNegative={false}
+        prefix={getCurrencySymbol(currencyCode)}
         required
       />
 

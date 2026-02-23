@@ -154,7 +154,7 @@ function BudgetEditContent() {
                   {incomeCategories.map((cat) => (
                     <button
                       key={cat.id}
-                      className="w-full text-left p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors"
+                      className="w-full text-left p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                       onClick={() => setEditingCategory(cat)}
                       type="button"
                     >
@@ -185,7 +185,7 @@ function BudgetEditContent() {
                 return (
                   <button
                     key={cat.id}
-                    className="w-full text-left p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors"
+                    className="w-full text-left p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                     onClick={() => setEditingCategory(cat)}
                     type="button"
                   >
@@ -232,6 +232,7 @@ function BudgetEditContent() {
             </h2>
             <BudgetCategoryForm
               category={editingCategory}
+              currencyCode={budget.currencyCode}
               onSave={handleSaveCategory}
               onCancel={() => setEditingCategory(null)}
               isSaving={isSaving}

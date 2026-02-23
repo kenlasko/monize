@@ -52,7 +52,7 @@ export function SummaryCard({ label, value, icon, valueColor = 'default', onClic
     return (
       <button
         onClick={onClick}
-        className={`${baseClasses} w-full text-left hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors`}
+        className={`${baseClasses} w-full text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors`}
       >
         {content}
       </button>

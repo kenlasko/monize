@@ -436,6 +436,71 @@ describe("BudgetGeneratorService", () => {
       }
     });
 
+    it("prefers expense data when a refund causes a category to appear in both queries", async () => {
+      const now = new Date();
+      const month1 = now.getMonth();
+      const year1 = now.getFullYear();
+      const prevMonth = month1 === 0 ? 12 : month1;
+      const prevYear = month1 === 0 ? year1 - 1 : year1;
+      const prevMonth2 = prevMonth === 1 ? 12 : prevMonth - 1;
+      const prevYear2 = prevMonth === 1 ? prevYear - 1 : prevYear;
+
+      // Expense query: real dining out spending across 3 months
+      const mockDirectExpenseData = [
+        { categoryId: "cat-dining", categoryName: "Food: Dining Out", isIncome: false, year: prevYear2, month: prevMonth2, total: "120.00" },
+        { categoryId: "cat-dining", categoryName: "Food: Dining Out", isIncome: false, year: prevYear, month: prevMonth, total: "150.00" },
+        { categoryId: "cat-dining", categoryName: "Food: Dining Out", isIncome: false, year: year1, month: month1 + 1, total: "130.00" },
+      ];
+
+      // Income query: a single refund appears for the same expense category
+      const mockDirectIncomeData = [
+        { categoryId: "cat-dining", categoryName: "Food: Dining Out", isIncome: false, year: prevYear, month: prevMonth, total: "15.00" },
+      ];
+
+      let expenseCallCount = 0;
+      let incomeCallCount = 0;
+
+      transactionsRepository.createQueryBuilder.mockImplementation(() => {
+        const qb = createMockQueryBuilder();
+        let isIncomeQuery = false;
+        let isTransferQuery = false;
+
+        qb.andWhere = jest.fn().mockImplementation((...args: unknown[]) => {
+          const arg = typeof args[0] === "string" ? (args[0] as string) : "";
+          if (arg.includes("t.amount > 0")) isIncomeQuery = true;
+          if (arg.includes("t.is_transfer = true")) isTransferQuery = true;
+          return qb;
+        });
+
+        qb.getRawMany = jest.fn().mockImplementation(() => {
+          if (isTransferQuery) return Promise.resolve([]);
+          if (isIncomeQuery) {
+            incomeCallCount++;
+            return Promise.resolve(incomeCallCount === 1 ? mockDirectIncomeData : []);
+          }
+          expenseCallCount++;
+          return Promise.resolve(expenseCallCount === 1 ? mockDirectExpenseData : []);
+        });
+
+        return qb;
+      });
+
+      splitsRepository.createQueryBuilder.mockImplementation(() => {
+        return createMockQueryBuilder({ getRawMany: jest.fn().mockResolvedValue([]) });
+      });
+
+      const result = await service.generate("user-1", {
+        analysisMonths: 3,
+        profile: BudgetProfile.ON_TRACK,
+      });
+
+      const dining = result.categories.find((c) => c.categoryName === "Food: Dining Out");
+      expect(dining).toBeDefined();
+      // The expense data should win — median of ~130 rather than the refund's ~5
+      expect(dining!.median).toBeGreaterThanOrEqual(100);
+      expect(dining!.suggested).toBeGreaterThanOrEqual(100);
+    });
+
     it("uses default ON_TRACK profile when not specified", async () => {
       const result = await service.generate("user-1", {
         analysisMonths: 6,
