@@ -340,6 +340,109 @@ export class TransactionsController {
     );
   }
 
+  @Get("monthly-totals")
+  @ApiOperation({ summary: "Get monthly transaction totals" })
+  @ApiQuery({
+    name: "accountIds",
+    required: false,
+    description: "Filter by account IDs (comma-separated)",
+  })
+  @ApiQuery({
+    name: "startDate",
+    required: false,
+    description: "Filter by start date (YYYY-MM-DD)",
+  })
+  @ApiQuery({
+    name: "endDate",
+    required: false,
+    description: "Filter by end date (YYYY-MM-DD)",
+  })
+  @ApiQuery({
+    name: "categoryIds",
+    required: false,
+    description:
+      "Filter by category IDs (comma-separated, supports 'uncategorized' and 'transfer')",
+  })
+  @ApiQuery({
+    name: "payeeIds",
+    required: false,
+    description: "Filter by payee IDs (comma-separated)",
+  })
+  @ApiQuery({
+    name: "search",
+    required: false,
+    description:
+      "Search text to filter by description, payee name, or split memo",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Monthly totals retrieved successfully",
+  })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  getMonthlyTotals(
+    @Request() req,
+    @Query("accountIds") accountIds?: string,
+    @Query("startDate") startDate?: string,
+    @Query("endDate") endDate?: string,
+    @Query("categoryIds") categoryIds?: string,
+    @Query("payeeIds") payeeIds?: string,
+    @Query("search") search?: string,
+  ) {
+    const uuidRegex =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    const specialCategoryIds = new Set(["uncategorized", "transfer"]);
+
+    if (startDate !== undefined && !dateRegex.test(startDate)) {
+      throw new BadRequestException(
+        "startDate must be a valid date in YYYY-MM-DD format",
+      );
+    }
+    if (endDate !== undefined && !dateRegex.test(endDate)) {
+      throw new BadRequestException(
+        "endDate must be a valid date in YYYY-MM-DD format",
+      );
+    }
+
+    const parseUuids = (value?: string): string[] | undefined => {
+      if (!value) return undefined;
+      const ids = value
+        .split(",")
+        .map((id) => id.trim())
+        .filter((id) => id);
+      for (const id of ids) {
+        if (!uuidRegex.test(id)) {
+          throw new BadRequestException(`Invalid UUID: ${id}`);
+        }
+      }
+      return ids.length > 0 ? ids : undefined;
+    };
+
+    const parseCategoryIds = (value?: string): string[] | undefined => {
+      if (!value) return undefined;
+      const ids = value
+        .split(",")
+        .map((id) => id.trim())
+        .filter((id) => id);
+      for (const id of ids) {
+        if (!specialCategoryIds.has(id) && !uuidRegex.test(id)) {
+          throw new BadRequestException(`Invalid category ID: ${id}`);
+        }
+      }
+      return ids.length > 0 ? ids : undefined;
+    };
+
+    return this.transactionsService.getMonthlyTotals(
+      req.user.id,
+      parseUuids(accountIds),
+      startDate,
+      endDate,
+      parseCategoryIds(categoryIds),
+      parseUuids(payeeIds),
+      search,
+    );
+  }
+
   // ==================== Reconciliation Endpoints ====================
   // NOTE: These static-segment routes MUST be declared before the generic
   // :id param route below, otherwise NestJS matches "reconcile" as an :id

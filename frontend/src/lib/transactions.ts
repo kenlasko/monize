@@ -14,6 +14,7 @@ import {
   BulkReconcileResult,
   BulkUpdateData,
   BulkUpdateResult,
+  MonthlyTotal,
 } from '@/types/transaction';
 import { invalidateCache } from './apiCache';
 
@@ -173,6 +174,38 @@ export const transactionsApi = {
 
     // Use a longer timeout for accounts with many transactions
     const response = await apiClient.get<TransactionSummary>('/transactions/summary', {
+      params: apiParams,
+      timeout: 60000,
+    });
+    return response.data;
+  },
+
+  // Get monthly transaction totals (for category/payee bar chart)
+  getMonthlyTotals: async (params?: {
+    accountIds?: string[];
+    startDate?: string;
+    endDate?: string;
+    categoryIds?: string[];
+    payeeIds?: string[];
+    search?: string;
+  }): Promise<MonthlyTotal[]> => {
+    const apiParams: Record<string, string | undefined> = {
+      startDate: params?.startDate,
+      endDate: params?.endDate,
+      search: params?.search,
+    };
+
+    if (params?.accountIds && params.accountIds.length > 0) {
+      apiParams.accountIds = params.accountIds.join(',');
+    }
+    if (params?.categoryIds && params.categoryIds.length > 0) {
+      apiParams.categoryIds = params.categoryIds.join(',');
+    }
+    if (params?.payeeIds && params.payeeIds.length > 0) {
+      apiParams.payeeIds = params.payeeIds.join(',');
+    }
+
+    const response = await apiClient.get<MonthlyTotal[]>('/transactions/monthly-totals', {
       params: apiParams,
       timeout: 60000,
     });

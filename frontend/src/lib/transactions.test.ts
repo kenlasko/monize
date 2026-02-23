@@ -113,6 +113,34 @@ describe('transactionsApi', () => {
     expect(params.payeeId).toBe('p1');
   });
 
+  it('getMonthlyTotals fetches /transactions/monthly-totals with array params', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: [{ month: '2025-01', total: -500, count: 10 }] });
+    await transactionsApi.getMonthlyTotals({
+      accountIds: ['a1'],
+      categoryIds: ['c1', 'uncategorized'],
+      payeeIds: ['p1'],
+      startDate: '2025-01-01',
+      endDate: '2025-12-31',
+      search: 'test',
+    });
+    const params = vi.mocked(apiClient.get).mock.calls[0][1]!.params;
+    expect(params.accountIds).toBe('a1');
+    expect(params.categoryIds).toBe('c1,uncategorized');
+    expect(params.payeeIds).toBe('p1');
+    expect(params.startDate).toBe('2025-01-01');
+    expect(params.endDate).toBe('2025-12-31');
+    expect(params.search).toBe('test');
+  });
+
+  it('getMonthlyTotals omits empty arrays from params', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: [] });
+    await transactionsApi.getMonthlyTotals({});
+    const params = vi.mocked(apiClient.get).mock.calls[0][1]!.params;
+    expect(params.accountIds).toBeUndefined();
+    expect(params.categoryIds).toBeUndefined();
+    expect(params.payeeIds).toBeUndefined();
+  });
+
   it('getSplits fetches /transactions/:id/splits', async () => {
     vi.mocked(apiClient.get).mockResolvedValue({ data: [{ id: 's1' }] });
     const result = await transactionsApi.getSplits('tx-1');

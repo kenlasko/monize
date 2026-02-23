@@ -98,6 +98,12 @@ export interface TransactionSummary {
   byCurrency?: Record<string, CurrencySummary>;
 }
 
+export interface MonthlyTotal {
+  month: string;
+  total: number;
+  count: number;
+}
+
 export interface TransactionFilters {
   accountId?: string;
   startDate?: string;

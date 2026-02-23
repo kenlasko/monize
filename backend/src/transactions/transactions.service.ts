@@ -855,6 +855,26 @@ export class TransactionsService {
     );
   }
 
+  async getMonthlyTotals(
+    userId: string,
+    accountIds?: string[],
+    startDate?: string,
+    endDate?: string,
+    categoryIds?: string[],
+    payeeIds?: string[],
+    search?: string,
+  ) {
+    return this.analyticsService.getMonthlyTotals(
+      userId,
+      accountIds,
+      startDate,
+      endDate,
+      categoryIds,
+      payeeIds,
+      search,
+    );
+  }
+
   async getSplits(userId: string, transactionId: string) {
     await this.findOne(userId, transactionId);
     return this.splitService.getSplits(transactionId);

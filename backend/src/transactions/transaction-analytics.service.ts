@@ -210,4 +210,118 @@ export class TransactionAnalyticsService {
       byCurrency,
     };
   }
+
+  async getMonthlyTotals(
+    userId: string,
+    accountIds?: string[],
+    startDate?: string,
+    endDate?: string,
+    categoryIds?: string[],
+    payeeIds?: string[],
+    search?: string,
+  ): Promise<Array<{ month: string; total: number; count: number }>> {
+    const queryBuilder = this.transactionsRepository
+      .createQueryBuilder("transaction")
+      .select("TO_CHAR(transaction.transactionDate, 'YYYY-MM')", "month")
+      .addSelect("SUM(transaction.amount)", "total")
+      .addSelect("COUNT(*)", "count")
+      .where("transaction.userId = :userId", { userId });
+
+    queryBuilder.leftJoin("transaction.account", "summaryAccount");
+
+    const wantsTransfers = categoryIds && categoryIds.includes("transfer");
+    if (!wantsTransfers) {
+      queryBuilder.andWhere("transaction.isTransfer = false");
+    }
+
+    if (!accountIds || accountIds.length === 0) {
+      queryBuilder.andWhere("summaryAccount.accountType != :investmentType", {
+        investmentType: "INVESTMENT",
+      });
+    }
+
+    if (accountIds && accountIds.length > 0) {
+      queryBuilder.andWhere("transaction.accountId IN (:...accountIds)", {
+        accountIds,
+      });
+    }
+
+    if (startDate) {
+      queryBuilder.andWhere("transaction.transactionDate >= :startDate", {
+        startDate,
+      });
+    }
+
+    if (endDate) {
+      queryBuilder.andWhere("transaction.transactionDate <= :endDate", {
+        endDate,
+      });
+    }
+
+    if (categoryIds && categoryIds.length > 0) {
+      const hasUncategorized = categoryIds.includes("uncategorized");
+      const hasTransfer = categoryIds.includes("transfer");
+      const regularCategoryIds = categoryIds.filter(
+        (id) => id !== "uncategorized" && id !== "transfer",
+      );
+
+      const conditions: string[] = [];
+
+      if (hasUncategorized) {
+        conditions.push(
+          "(transaction.categoryId IS NULL AND transaction.isSplit = false AND transaction.isTransfer = false AND summaryAccount.accountType != 'INVESTMENT')",
+        );
+      }
+
+      if (hasTransfer) {
+        conditions.push("transaction.isTransfer = true");
+      }
+
+      if (regularCategoryIds.length > 0) {
+        const uniqueCategoryIds = await this.getAllCategoryIdsWithChildren(
+          userId,
+          regularCategoryIds,
+        );
+
+        if (uniqueCategoryIds.length > 0) {
+          queryBuilder.leftJoin("transaction.splits", "splits");
+          conditions.push(
+            "(transaction.categoryId IN (:...monthlyCategoryIds) OR splits.categoryId IN (:...monthlyCategoryIds))",
+          );
+          queryBuilder.setParameter("monthlyCategoryIds", uniqueCategoryIds);
+        }
+      }
+
+      if (conditions.length > 0) {
+        queryBuilder.andWhere(`(${conditions.join(" OR ")})`);
+      }
+    }
+
+    if (payeeIds && payeeIds.length > 0) {
+      queryBuilder.andWhere("transaction.payeeId IN (:...payeeIds)", {
+        payeeIds,
+      });
+    }
+
+    if (search && search.trim()) {
+      const searchPattern = `%${search.trim()}%`;
+      if (!categoryIds || categoryIds.length === 0) {
+        queryBuilder.leftJoin("transaction.splits", "splits");
+      }
+      queryBuilder.andWhere(
+        "(transaction.description ILIKE :search OR transaction.payeeName ILIKE :search OR splits.memo ILIKE :search)",
+        { search: searchPattern },
+      );
+    }
+
+    queryBuilder.groupBy("month").orderBy("month", "ASC");
+
+    const rows = await queryBuilder.getRawMany();
+
+    return rows.map((row) => ({
+      month: row.month,
+      total: Math.round((Number(row.total) || 0) * 100) / 100,
+      count: Number(row.count) || 0,
+    }));
+  }
 }

@@ -21,6 +21,7 @@ describe("TransactionAnalyticsService", () => {
       andWhere: jest.fn().mockReturnThis(),
       leftJoin: jest.fn().mockReturnThis(),
       groupBy: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
       setParameter: jest.fn().mockReturnThis(),
       getRawMany: jest.fn().mockResolvedValue([]),
     };
@@ -757,6 +758,165 @@ describe("TransactionAnalyticsService", () => {
         expect(ids).not.toContain("cat-2");
         expect(ids).not.toContain("cat-2-child");
       });
+    });
+  });
+
+  describe("getMonthlyTotals", () => {
+    it("returns empty array when no transactions exist", async () => {
+      mockQueryBuilder.getRawMany.mockResolvedValue([]);
+
+      const result = await service.getMonthlyTotals(userId);
+
+      expect(result).toEqual([]);
+    });
+
+    it("returns monthly totals sorted by month", async () => {
+      mockQueryBuilder.getRawMany.mockResolvedValue([
+        { month: "2025-01", total: "-500.50", count: "10" },
+        { month: "2025-02", total: "-300.25", count: "8" },
+        { month: "2025-03", total: "200.00", count: "5" },
+      ]);
+
+      const result = await service.getMonthlyTotals(userId);
+
+      expect(result).toEqual([
+        { month: "2025-01", total: -500.5, count: 10 },
+        { month: "2025-02", total: -300.25, count: 8 },
+        { month: "2025-03", total: 200, count: 5 },
+      ]);
+    });
+
+    it("rounds totals to two decimal places", async () => {
+      mockQueryBuilder.getRawMany.mockResolvedValue([
+        { month: "2025-01", total: "-123.456", count: "3" },
+      ]);
+
+      const result = await service.getMonthlyTotals(userId);
+
+      expect(result[0].total).toBe(-123.46);
+    });
+
+    it("handles null values in raw query results", async () => {
+      mockQueryBuilder.getRawMany.mockResolvedValue([
+        { month: "2025-01", total: null, count: null },
+      ]);
+
+      const result = await service.getMonthlyTotals(userId);
+
+      expect(result[0]).toEqual({ month: "2025-01", total: 0, count: 0 });
+    });
+
+    it("always filters by userId", async () => {
+      await service.getMonthlyTotals(userId);
+
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith(
+        "transaction.userId = :userId",
+        { userId },
+      );
+    });
+
+    it("groups by month and orders ascending", async () => {
+      await service.getMonthlyTotals(userId);
+
+      expect(mockQueryBuilder.groupBy).toHaveBeenCalledWith("month");
+      expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith("month", "ASC");
+    });
+
+    it("excludes transfers by default", async () => {
+      await service.getMonthlyTotals(userId);
+
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        "transaction.isTransfer = false",
+      );
+    });
+
+    it("excludes investment accounts by default", async () => {
+      await service.getMonthlyTotals(userId);
+
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        "summaryAccount.accountType != :investmentType",
+        { investmentType: "INVESTMENT" },
+      );
+    });
+
+    it("applies accountIds filter when provided", async () => {
+      await service.getMonthlyTotals(userId, ["acc-1", "acc-2"]);
+
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        "transaction.accountId IN (:...accountIds)",
+        { accountIds: ["acc-1", "acc-2"] },
+      );
+    });
+
+    it("applies date range filters when provided", async () => {
+      await service.getMonthlyTotals(
+        userId,
+        undefined,
+        "2025-01-01",
+        "2025-12-31",
+      );
+
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        "transaction.transactionDate >= :startDate",
+        { startDate: "2025-01-01" },
+      );
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        "transaction.transactionDate <= :endDate",
+        { endDate: "2025-12-31" },
+      );
+    });
+
+    it("applies categoryIds filter with child resolution", async () => {
+      categoriesRepository.find.mockResolvedValue([
+        { id: "cat-1", parentId: null },
+        { id: "cat-child", parentId: "cat-1" },
+      ]);
+
+      await service.getMonthlyTotals(
+        userId,
+        undefined,
+        undefined,
+        undefined,
+        ["cat-1"],
+      );
+
+      expect(mockQueryBuilder.setParameter).toHaveBeenCalledWith(
+        "monthlyCategoryIds",
+        expect.arrayContaining(["cat-1", "cat-child"]),
+      );
+    });
+
+    it("applies payeeIds filter when provided", async () => {
+      await service.getMonthlyTotals(
+        userId,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        ["payee-1"],
+      );
+
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        "transaction.payeeId IN (:...payeeIds)",
+        { payeeIds: ["payee-1"] },
+      );
+    });
+
+    it("applies search filter with ILIKE pattern", async () => {
+      await service.getMonthlyTotals(
+        userId,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        "grocery",
+      );
+
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        "(transaction.description ILIKE :search OR transaction.payeeName ILIKE :search OR splits.memo ILIKE :search)",
+        { search: "%grocery%" },
+      );
     });
   });
 });

@@ -14,11 +14,12 @@ const TransactionForm = dynamic(() => import('@/components/transactions/Transact
 const PayeeForm = dynamic(() => import('@/components/payees/PayeeForm').then(m => m.PayeeForm), { ssr: false });
 const BulkUpdateModal = dynamic(() => import('@/components/transactions/BulkUpdateModal').then(m => m.BulkUpdateModal), { ssr: false });
 const BalanceHistoryChart = dynamic(() => import('@/components/transactions/BalanceHistoryChart').then(m => m.BalanceHistoryChart), { ssr: false });
+const CategoryPayeeBarChart = dynamic(() => import('@/components/transactions/CategoryPayeeBarChart').then(m => m.CategoryPayeeBarChart), { ssr: false });
 import { transactionsApi } from '@/lib/transactions';
 import { accountsApi } from '@/lib/accounts';
 import { categoriesApi } from '@/lib/categories';
 import { payeesApi } from '@/lib/payees';
-import { Transaction, PaginationInfo, BulkUpdateData, BulkUpdateFilters } from '@/types/transaction';
+import { Transaction, PaginationInfo, BulkUpdateData, BulkUpdateFilters, MonthlyTotal } from '@/types/transaction';
 import { useTransactionSelection } from '@/hooks/useTransactionSelection';
 import { BulkSelectionBanner } from '@/components/transactions/BulkSelectionBanner';
 import { Account } from '@/types/account';
@@ -118,6 +119,7 @@ function TransactionsContent() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [payees, setPayees] = useState<Payee[]>([]);
   const [dailyBalances, setDailyBalances] = useState<Array<{ date: string; balance: number }>>([]);
+  const [monthlyTotals, setMonthlyTotals] = useState<MonthlyTotal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { showForm, editingItem: editingTransaction, openCreate, openEdit, close, modalProps, setFormDirty, unsavedChangesDialog, formSubmitRef } = useFormModal<Transaction>();
   const [showPayeeForm, setShowPayeeForm] = useState(false);
@@ -350,14 +352,31 @@ function TransactionsContent() {
       const targetTransactionId = targetTransactionIdRef.current;
       targetTransactionIdRef.current = null; // Clear after reading
 
+      // When category or payee filters are active, show monthly totals bar chart
+      // instead of balance history (which ignores those filters)
+      const hasCategoryOrPayeeFilter = filterCategoryIds.length > 0 || filterPayeeIds.length > 0;
+
       // Build chart params (only filter accounts, not categories/payees/search)
       const chartParams: { startDate?: string; endDate?: string; accountIds?: string } = {};
       if (filterStartDate) chartParams.startDate = filterStartDate;
       if (filterEndDate) chartParams.endDate = filterEndDate;
       if (filterAccountIds.length > 0) chartParams.accountIds = filterAccountIds.join(',');
 
-      // Fetch transactions and daily balances in parallel
-      const [transactionsResponse, balancesResult] = await Promise.all([
+      // Fetch transactions and chart data in parallel
+      const chartPromise = hasCategoryOrPayeeFilter
+        ? transactionsApi.getMonthlyTotals({
+            accountIds: accountIdsForQuery,
+            startDate: filterStartDate || undefined,
+            endDate: filterEndDate || undefined,
+            categoryIds: filterCategoryIds.length > 0 ? filterCategoryIds : undefined,
+            payeeIds: filterPayeeIds.length > 0 ? filterPayeeIds : undefined,
+            search: filterSearch || undefined,
+          }).catch(() => [] as MonthlyTotal[])
+        : accountsApi.getDailyBalances(
+            Object.keys(chartParams).length > 0 ? chartParams : undefined,
+          ).catch(() => [] as Array<{ date: string; balance: number }>);
+
+      const [transactionsResponse, chartResult] = await Promise.all([
         transactionsApi.getAll({
           accountIds: accountIdsForQuery,
           startDate: filterStartDate || undefined,
@@ -369,15 +388,20 @@ function TransactionsContent() {
           limit: PAGE_SIZE,
           targetTransactionId: targetTransactionId || undefined,
         }),
-        accountsApi.getDailyBalances(
-          Object.keys(chartParams).length > 0 ? chartParams : undefined,
-        ).catch(() => [] as Array<{ date: string; balance: number }>),
+        chartPromise,
       ]);
 
       setTransactions(transactionsResponse.data);
       setPagination(transactionsResponse.pagination);
       setStartingBalance(transactionsResponse.startingBalance);
-      setDailyBalances(balancesResult);
+
+      if (hasCategoryOrPayeeFilter) {
+        setMonthlyTotals(chartResult as MonthlyTotal[]);
+        setDailyBalances([]);
+      } else {
+        setDailyBalances(chartResult as Array<{ date: string; balance: number }>);
+        setMonthlyTotals([]);
+      }
 
       // If we navigated to a specific transaction, update the page from the response
       if (targetTransactionId && transactionsResponse.pagination.page !== page) {
@@ -773,10 +797,17 @@ function TransactionsContent() {
           subtitle="Manage your income and expenses"
           actions={<Button onClick={handleCreateNew}>+ New Transaction</Button>}
         />
-        <BalanceHistoryChart
-          data={dailyBalances}
-          isLoading={isLoading}
-        />
+        {filterCategoryIds.length > 0 || filterPayeeIds.length > 0 ? (
+          <CategoryPayeeBarChart
+            data={monthlyTotals}
+            isLoading={isLoading}
+          />
+        ) : (
+          <BalanceHistoryChart
+            data={dailyBalances}
+            isLoading={isLoading}
+          />
+        )}
 
         {/* Form Modal */}
         <Modal isOpen={showForm} onClose={close} {...modalProps} maxWidth="6xl" className="p-6">

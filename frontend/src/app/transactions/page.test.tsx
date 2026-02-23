@@ -89,6 +89,7 @@ const mockGetAll = vi.fn();
 const mockGetSummary = vi.fn();
 const mockGetById = vi.fn();
 const mockBulkUpdate = vi.fn();
+const mockGetMonthlyTotals = vi.fn();
 
 vi.mock('@/lib/transactions', () => ({
   transactionsApi: {
@@ -96,6 +97,7 @@ vi.mock('@/lib/transactions', () => ({
     getSummary: (...args: any[]) => mockGetSummary(...args),
     getById: (...args: any[]) => mockGetById(...args),
     bulkUpdate: (...args: any[]) => mockBulkUpdate(...args),
+    getMonthlyTotals: (...args: any[]) => mockGetMonthlyTotals(...args),
   },
 }));
 
@@ -343,6 +345,7 @@ describe('TransactionsPage', () => {
     mockGetAllCategories.mockResolvedValue([]);
     mockGetAllPayees.mockResolvedValue([]);
     mockGetDailyBalances.mockResolvedValue([]);
+    mockGetMonthlyTotals.mockResolvedValue([]);
   });
 
   describe('Rendering', () => {
