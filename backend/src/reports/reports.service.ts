@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository, Brackets } from "typeorm";
 import {
@@ -56,6 +60,8 @@ export class ReportsService {
     userId: string,
     dto: CreateCustomReportDto,
   ): Promise<CustomReport> {
+    this.validateCustomTimeframe(dto.timeframeType, dto.config);
+
     // Set default config values if not provided
     const config: ReportConfig = {
       metric: dto.config?.metric || MetricType.TOTAL_AMOUNT,
@@ -103,6 +109,13 @@ export class ReportsService {
     dto: UpdateCustomReportDto,
   ): Promise<CustomReport> {
     const report = await this.findOne(userId, id);
+
+    // Validate custom timeframe using the effective values after merge
+    const effectiveTimeframe = dto.timeframeType ?? report.timeframeType;
+    const effectiveConfig = dto.config
+      ? { ...report.config, ...dto.config }
+      : report.config;
+    this.validateCustomTimeframe(effectiveTimeframe, effectiveConfig);
 
     // SECURITY: Explicit property mapping instead of Object.assign to prevent mass assignment
     if (dto.name !== undefined) report.name = dto.name;
@@ -224,6 +237,20 @@ export class ReportsService {
     };
   }
 
+  private validateCustomTimeframe(
+    timeframeType?: TimeframeType,
+    config?: Partial<ReportConfig>,
+  ): void {
+    if (timeframeType !== TimeframeType.CUSTOM) {
+      return;
+    }
+    if (!config?.customStartDate || !config?.customEndDate) {
+      throw new BadRequestException(
+        "Custom timeframe requires both start and end dates",
+      );
+    }
+  }
+
   private getDateRange(
     timeframeType: TimeframeType,
     customStart?: string,
@@ -275,7 +302,9 @@ export class ReportsService {
         break;
       case TimeframeType.CUSTOM:
         if (!customStart || !customEnd) {
-          throw new Error("Custom timeframe requires start and end dates");
+          throw new BadRequestException(
+            "Custom timeframe requires both start and end dates",
+          );
         }
         startDate = customStart;
         label = "Custom Range";

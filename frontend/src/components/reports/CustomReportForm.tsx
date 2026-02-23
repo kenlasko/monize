@@ -96,6 +96,23 @@ const customReportSchema = z.object({
   tableColumns: z.array(z.nativeEnum(TableColumn)).optional(),
   sortBy: z.nativeEnum(TableColumn).optional().nullable(),
   sortDirection: z.nativeEnum(SortDirection).optional(),
+}).superRefine((data, ctx) => {
+  if (data.timeframeType === TimeframeType.CUSTOM) {
+    if (!data.customStartDate) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Start date is required for custom timeframe',
+        path: ['customStartDate'],
+      });
+    }
+    if (!data.customEndDate) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'End date is required for custom timeframe',
+        path: ['customEndDate'],
+      });
+    }
+  }
 });
 
 type FormData = z.infer<typeof customReportSchema>;
