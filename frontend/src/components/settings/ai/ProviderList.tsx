@@ -17,9 +17,10 @@ interface ProviderListProps {
   hasSystemDefault?: boolean;
   systemDefaultProvider?: string | null;
   systemDefaultModel?: string | null;
+  disabled?: boolean;
 }
 
-export function ProviderList({ configs, encryptionAvailable, onConfigsChanged, hasSystemDefault, systemDefaultProvider, systemDefaultModel }: ProviderListProps) {
+export function ProviderList({ configs, encryptionAvailable, onConfigsChanged, hasSystemDefault, systemDefaultProvider, systemDefaultModel, disabled }: ProviderListProps) {
   const [showForm, setShowForm] = useState(false);
   const [editingConfig, setEditingConfig] = useState<AiProviderConfig | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -64,7 +65,7 @@ export function ProviderList({ configs, encryptionAvailable, onConfigsChanged, h
     <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-4 sm:p-6 mb-6">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white">AI Providers</h2>
-        <Button size="sm" onClick={() => setShowForm(true)}>
+        <Button size="sm" onClick={() => setShowForm(true)} disabled={disabled}>
           Add Provider
         </Button>
       </div>
@@ -140,11 +141,12 @@ export function ProviderList({ configs, encryptionAvailable, onConfigsChanged, h
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <ProviderTestButton configId={config.id} />
+                  <ProviderTestButton configId={config.id} disabled={disabled} />
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => handleToggleActive(config)}
+                    disabled={disabled}
                   >
                     {config.isActive ? 'Disable' : 'Enable'}
                   </Button>
@@ -152,6 +154,7 @@ export function ProviderList({ configs, encryptionAvailable, onConfigsChanged, h
                     variant="ghost"
                     size="sm"
                     onClick={() => setEditingConfig(config)}
+                    disabled={disabled}
                   >
                     Edit
                   </Button>
@@ -160,6 +163,7 @@ export function ProviderList({ configs, encryptionAvailable, onConfigsChanged, h
                     size="sm"
                     onClick={() => handleDelete(config.id)}
                     isLoading={deletingId === config.id}
+                    disabled={disabled}
                   >
                     Delete
                   </Button>

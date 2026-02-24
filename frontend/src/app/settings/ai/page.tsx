@@ -12,6 +12,7 @@ import { aiApi } from '@/lib/ai';
 import { getErrorMessage } from '@/lib/errors';
 import type { AiProviderConfig, AiUsageSummary, AiStatus } from '@/types/ai';
 import Link from 'next/link';
+import { useDemoMode } from '@/hooks/useDemoMode';
 
 export default function AiSettingsPage() {
   return (
@@ -22,6 +23,7 @@ export default function AiSettingsPage() {
 }
 
 function AiSettingsContent() {
+  const isDemoMode = useDemoMode();
   const [isLoading, setIsLoading] = useState(true);
   const [configs, setConfigs] = useState<AiProviderConfig[]>([]);
   const [usage, setUsage] = useState<AiUsageSummary | null>(null);
@@ -88,6 +90,17 @@ function AiSettingsContent() {
           subtitle="Configure AI providers for intelligent financial features"
         />
 
+        {isDemoMode && (
+          <div className="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-lg p-6 mb-6">
+            <h2 className="text-lg font-semibold text-amber-800 dark:text-amber-200 mb-2">
+              Restricted in Demo Mode
+            </h2>
+            <p className="text-sm text-amber-700 dark:text-amber-300">
+              AI provider configuration is disabled in demo mode.
+            </p>
+          </div>
+        )}
+
         <ProviderList
           configs={configs}
           encryptionAvailable={status?.encryptionAvailable ?? false}
@@ -95,6 +108,7 @@ function AiSettingsContent() {
           hasSystemDefault={status?.hasSystemDefault}
           systemDefaultProvider={status?.systemDefaultProvider}
           systemDefaultModel={status?.systemDefaultModel}
+          disabled={isDemoMode}
         />
 
         {usage && (

@@ -236,7 +236,6 @@ describe('MortgageFields', () => {
   });
 
   it('shows amortization preview when API returns data', async () => {
-    vi.useRealTimers();
     const mockPreview = {
       paymentAmount: 1500,
       effectiveAnnualRate: 5.06,
@@ -253,16 +252,18 @@ describe('MortgageFields', () => {
       mortgagePaymentFrequency="MONTHLY" paymentStartDate="2024-02-01"
     />);
 
+    await act(async () => { await vi.advanceTimersByTimeAsync(600); });
+    vi.useRealTimers();
+
     await waitFor(() => {
       expect(screen.getByText('Amortization Preview')).toBeInTheDocument();
-    }, { timeout: 3000 });
+    });
 
     expect(screen.getByText('Payment Amount:')).toBeInTheDocument();
     expect(screen.getByText('Effective Rate:')).toBeInTheDocument();
   });
 
   it('shows "Calculating preview..." while loading', async () => {
-    vi.useRealTimers();
     vi.mocked(accountsApi.previewMortgageAmortization).mockImplementation(() => new Promise(() => {}));
 
     render(<MortgageFields {...defaultProps}
@@ -270,9 +271,9 @@ describe('MortgageFields', () => {
       mortgagePaymentFrequency="MONTHLY" paymentStartDate="2024-02-01"
     />);
 
-    await waitFor(() => {
-      expect(screen.getByText('Calculating preview...')).toBeInTheDocument();
-    }, { timeout: 3000 });
+    await act(async () => { await vi.advanceTimersByTimeAsync(600); });
+
+    expect(screen.getByText('Calculating preview...')).toBeInTheDocument();
   });
 
   it('hides payment fields when isEditing is true', () => {
@@ -289,20 +290,17 @@ describe('MortgageFields', () => {
   });
 
   it('does not call preview API when isEditing is true', async () => {
-    vi.useRealTimers();
     render(<MortgageFields {...defaultProps}
       isEditing={true}
       openingBalance={400000} interestRate={5} amortizationMonths={300}
       mortgagePaymentFrequency="MONTHLY" paymentStartDate="2024-02-01"
     />);
 
-    // Wait a bit for any debounced calls
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await act(async () => { await vi.advanceTimersByTimeAsync(600); });
     expect(accountsApi.previewMortgageAmortization).not.toHaveBeenCalled();
   });
 
   it('handles API error gracefully (no preview shown)', async () => {
-    vi.useRealTimers();
     vi.mocked(accountsApi.previewMortgageAmortization).mockRejectedValue(new Error('API Error'));
 
     render(<MortgageFields {...defaultProps}
@@ -310,10 +308,9 @@ describe('MortgageFields', () => {
       mortgagePaymentFrequency="MONTHLY" paymentStartDate="2024-02-01"
     />);
 
-    await waitFor(() => {
-      expect(accountsApi.previewMortgageAmortization).toHaveBeenCalled();
-    }, { timeout: 3000 });
+    await act(async () => { await vi.advanceTimersByTimeAsync(600); });
 
+    expect(accountsApi.previewMortgageAmortization).toHaveBeenCalled();
     expect(screen.queryByText('Amortization Preview')).not.toBeInTheDocument();
   });
 
@@ -393,7 +390,6 @@ describe('MortgageFields', () => {
   });
 
   it('shows N/A for totalPayments and totalInterest when 0', async () => {
-    vi.useRealTimers();
     vi.mocked(accountsApi.previewMortgageAmortization).mockResolvedValue({
       paymentAmount: 100, effectiveAnnualRate: 5.0,
       principalPayment: 0, interestPayment: 100,
@@ -405,16 +401,18 @@ describe('MortgageFields', () => {
       mortgagePaymentFrequency="MONTHLY" paymentStartDate="2024-02-01"
     />);
 
+    await act(async () => { await vi.advanceTimersByTimeAsync(600); });
+    vi.useRealTimers();
+
     await waitFor(() => {
       expect(screen.getByText('Amortization Preview')).toBeInTheDocument();
-    }, { timeout: 3000 });
+    });
 
     const naElements = screen.getAllByText('N/A');
     expect(naElements.length).toBeGreaterThanOrEqual(2);
   });
 
   it('shows all preview fields when preview data is complete', async () => {
-    vi.useRealTimers();
     vi.mocked(accountsApi.previewMortgageAmortization).mockResolvedValue({
       paymentAmount: 1500, effectiveAnnualRate: 5.06,
       principalPayment: 1200, interestPayment: 300,
@@ -426,9 +424,12 @@ describe('MortgageFields', () => {
       mortgagePaymentFrequency="MONTHLY" paymentStartDate="2024-02-01"
     />);
 
+    await act(async () => { await vi.advanceTimersByTimeAsync(600); });
+    vi.useRealTimers();
+
     await waitFor(() => {
       expect(screen.getByText('Amortization Preview')).toBeInTheDocument();
-    }, { timeout: 3000 });
+    });
 
     expect(screen.getByText('Payment Amount:')).toBeInTheDocument();
     expect(screen.getByText('Effective Rate:')).toBeInTheDocument();

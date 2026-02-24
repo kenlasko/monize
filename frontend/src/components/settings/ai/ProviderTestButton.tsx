@@ -8,11 +8,12 @@ import { getErrorMessage } from '@/lib/errors';
 
 interface ProviderTestButtonProps {
   configId: string;
+  disabled?: boolean;
 }
 
 type TestStatus = 'idle' | 'testing' | 'success' | 'error';
 
-export function ProviderTestButton({ configId }: ProviderTestButtonProps) {
+export function ProviderTestButton({ configId, disabled }: ProviderTestButtonProps) {
   const [status, setStatus] = useState<TestStatus>('idle');
   const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -52,7 +53,7 @@ export function ProviderTestButton({ configId }: ProviderTestButtonProps) {
       variant="outline"
       size="sm"
       onClick={handleTest}
-      disabled={status === 'testing'}
+      disabled={disabled || status === 'testing'}
       className={`min-w-[3.5rem] sm:min-w-0 ${className}`}
     >
       {status === 'testing' && (
