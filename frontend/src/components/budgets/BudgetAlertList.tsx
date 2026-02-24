@@ -104,7 +104,7 @@ export function BudgetAlertList({
   const unreadCount = alerts.filter((a) => !a.isRead && !dismissingIds.has(a.id)).length;
 
   const handleAlertClick = (alert: BudgetAlert) => {
-    if (!alert.isRead && !alert.id.startsWith('bill-')) {
+    if (!alert.isRead) {
       onMarkRead(alert.id);
     }
     onClose();

@@ -228,6 +228,20 @@ export class AiInsightsService {
     if (result.affected && result.affected > 0) {
       this.logger.log(`Cleaned up ${result.affected} expired insights`);
     }
+
+    // Purge dismissed insights older than 30 days
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 30);
+    const dismissedResult = await this.insightRepo.delete({
+      isDismissed: true,
+      createdAt: LessThan(cutoff),
+    });
+
+    if (dismissedResult.affected && dismissedResult.affected > 0) {
+      this.logger.log(
+        `Purged ${dismissedResult.affected} old dismissed insights`,
+      );
+    }
   }
 
   private async getActiveUserIds(): Promise<string[]> {

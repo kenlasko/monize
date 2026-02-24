@@ -74,8 +74,6 @@ export function BudgetAlertBadge() {
   }, []);
 
   const handleDismiss = (alertId: string) => {
-    const isBillAlert = alertId.startsWith('bill-');
-
     // Enter undo phase - show "Undo" in place of the alert content
     setDismissingIds((prev) => new Set(prev).add(alertId));
 
@@ -97,10 +95,7 @@ export function BudgetAlertBadge() {
           return next;
         });
         setAlerts((prev) => prev.filter((a) => a.id !== alertId));
-
-        if (!isBillAlert) {
-          budgetsApi.deleteAlert(alertId).catch(() => {});
-        }
+        budgetsApi.deleteAlert(alertId).catch(() => {});
       }, 300);
     }, 5000);
 

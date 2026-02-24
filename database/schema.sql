@@ -706,7 +706,7 @@ CREATE INDEX idx_bpc_category ON budget_period_categories(category_id);
 CREATE TABLE budget_alerts (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    budget_id UUID NOT NULL REFERENCES budgets(id) ON DELETE CASCADE,
+    budget_id UUID REFERENCES budgets(id) ON DELETE CASCADE,
     budget_category_id UUID REFERENCES budget_categories(id) ON DELETE CASCADE,
     alert_type VARCHAR(30) NOT NULL,
     severity VARCHAR(20) NOT NULL,
@@ -716,7 +716,8 @@ CREATE TABLE budget_alerts (
     is_read BOOLEAN DEFAULT false,
     is_email_sent BOOLEAN DEFAULT false,
     period_start DATE NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    dismissed_at TIMESTAMP
 );
 
 CREATE INDEX idx_budget_alerts_user ON budget_alerts(user_id);

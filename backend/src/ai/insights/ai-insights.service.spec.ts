@@ -430,4 +430,32 @@ describe("AiInsightsService", () => {
       expect(mockInsightRepo.remove).toHaveBeenCalled();
     });
   });
+
+  describe("handleDailyInsightGeneration()", () => {
+    it("cleans up expired and old dismissed insights", async () => {
+      mockInsightRepo.delete
+        .mockResolvedValueOnce({ affected: 3 })
+        .mockResolvedValueOnce({ affected: 2 });
+
+      await service.handleDailyInsightGeneration();
+
+      expect(mockInsightRepo.delete).toHaveBeenCalledTimes(2);
+      // First call: expired insights
+      expect(mockInsightRepo.delete).toHaveBeenCalledWith(
+        expect.objectContaining({ expiresAt: expect.anything() }),
+      );
+      // Second call: dismissed insights older than 30 days
+      expect(mockInsightRepo.delete).toHaveBeenCalledWith(
+        expect.objectContaining({ isDismissed: true, createdAt: expect.anything() }),
+      );
+    });
+
+    it("continues generating insights even if cleanup fails", async () => {
+      mockInsightRepo.delete.mockRejectedValue(new Error("DB error"));
+
+      await expect(
+        service.handleDailyInsightGeneration(),
+      ).resolves.not.toThrow();
+    });
+  });
 });

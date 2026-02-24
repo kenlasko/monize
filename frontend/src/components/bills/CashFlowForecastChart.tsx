@@ -149,6 +149,12 @@ export function CashFlowForecastChart({
     return forecastData.reduce((sum, dp) => sum + dp.transactions.length, 0);
   }, [forecastData]);
 
+  // Index of the first data point at the minimum balance (for single callout)
+  const minBalanceIndex = useMemo(() => {
+    if (forecastData.length === 0) return -1;
+    return forecastData.findIndex((dp) => dp.balance === summary.minBalance);
+  }, [forecastData, summary.minBalance]);
+
   if (isLoading) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 mb-6">
@@ -286,7 +292,7 @@ export function CashFlowForecastChart({
                 strokeWidth={2}
                 dot={(props: any) => {
                   const { cx, cy, payload } = props;
-                  if (payload.balance === summary.minBalance) {
+                  if (props.index === minBalanceIndex) {
                     const color = summary.minBalance < 0 ? '#ef4444' : '#f59e0b';
                     const label = formatCurrencyAxis(summary.minBalance);
                     const labelWidth = label.length * 7 + 14;

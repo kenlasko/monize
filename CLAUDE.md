@@ -32,6 +32,27 @@ This is a comprehensive web-based personal finance management application design
 - Integration tests for APIs
 - E2E tests for critical flows
 
+#### React act() Warnings (Frontend)
+
+Components with async `useEffect` hooks (e.g., API calls on mount) will cause `act(...)` warnings if `render()` is called without flushing those updates. **Always wrap initial render in `act(async () => { ... })` for components that fetch data on mount.**
+
+Pattern: create a helper per test file and use it for every test:
+
+```typescript
+async function renderMyComponent() {
+  let result: ReturnType<typeof render>;
+  await act(async () => {
+    result = render(<MyComponent />);
+  });
+  return result!;
+}
+```
+
+- Use `await renderMyComponent()` instead of bare `render(<MyComponent />)` in every test
+- For user interactions that trigger async state updates (e.g., clicking a button that fetches data), wrap the event in `act(async () => { fireEvent.click(...); })`
+- The `afterEach` flush pattern (`await act(async () => {})`) does NOT fix warnings that occur during test execution — it only helps with cleanup-phase updates
+- Tests that intentionally check loading/skeleton states with never-resolving mocks still need the `act()` wrapper to flush other effects (like `getStatus()`)
+
 ### 4. Security
 
 - No hardcoded secrets

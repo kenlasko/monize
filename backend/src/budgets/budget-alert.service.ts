@@ -1,7 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { Cron } from "@nestjs/schedule";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { LessThan, Not, IsNull, Repository } from "typeorm";
 import { ConfigService } from "@nestjs/config";
 import { Budget } from "./entities/budget.entity";
 import {
@@ -1005,5 +1005,37 @@ export class BudgetAlertService {
         flexGroup: bc.flexGroup,
       };
     });
+  }
+
+  @Cron("0 3 * * *")
+  async purgeOldAlerts(): Promise<void> {
+    this.logger.log("Purging old alerts...");
+    try {
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - 30);
+
+      const result = await this.alertsRepository.delete({
+        dismissedAt: LessThan(cutoff),
+      });
+      const dismissed = result.affected || 0;
+
+      const readResult = await this.alertsRepository.delete({
+        isRead: true,
+        dismissedAt: IsNull(),
+        createdAt: LessThan(cutoff),
+      });
+      const read = readResult.affected || 0;
+
+      if (dismissed + read > 0) {
+        this.logger.log(
+          `Purged ${dismissed} dismissed and ${read} old read alerts`,
+        );
+      }
+    } catch (error) {
+      this.logger.error(
+        "Failed to purge old alerts",
+        error instanceof Error ? error.stack : error,
+      );
+    }
   }
 }

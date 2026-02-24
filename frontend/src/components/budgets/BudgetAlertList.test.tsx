@@ -235,7 +235,7 @@ describe('BudgetAlertList', () => {
     const onClose = vi.fn();
     const alerts = [
       makeAlert({
-        id: 'bill-st-1',
+        id: 'bill-alert-1',
         alertType: 'BILL_DUE',
         severity: 'info',
         title: 'Netflix due tomorrow',
@@ -254,9 +254,9 @@ describe('BudgetAlertList', () => {
       />,
     );
 
-    fireEvent.click(screen.getByTestId('alert-item-bill-st-1'));
+    fireEvent.click(screen.getByTestId('alert-item-bill-alert-1'));
 
-    expect(onMarkRead).not.toHaveBeenCalled();
+    expect(onMarkRead).toHaveBeenCalledWith('bill-alert-1');
     expect(onClose).toHaveBeenCalled();
     expect(mockPush).toHaveBeenCalledWith('/bills');
   });

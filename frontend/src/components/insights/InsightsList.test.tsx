@@ -24,6 +24,15 @@ vi.mock('@/lib/logger', () => ({
   }),
 }));
 
+// Render and flush all pending async state updates (e.g. useEffect API calls)
+async function renderInsights() {
+  let result: ReturnType<typeof render>;
+  await act(async () => {
+    result = render(<InsightsList />);
+  });
+  return result!;
+}
+
 describe('InsightsList', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -36,18 +45,24 @@ describe('InsightsList', () => {
     });
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     vi.useRealTimers();
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0));
+    });
   });
 
-  it('shows loading skeleton initially', () => {
+  it('shows loading skeleton initially', async () => {
     mockGetInsights.mockReturnValue(new Promise(() => {})); // never resolves
-    const { container } = render(<InsightsList />);
-    expect(container.querySelector('.animate-pulse')).toBeTruthy();
+    let container: HTMLElement;
+    await act(async () => {
+      ({ container } = render(<InsightsList />));
+    });
+    expect(container!.querySelector('.animate-pulse')).toBeTruthy();
   });
 
   it('shows empty state when no insights exist', async () => {
-    render(<InsightsList />);
+    await renderInsights();
 
     await waitFor(() => {
       expect(
@@ -57,7 +72,7 @@ describe('InsightsList', () => {
   });
 
   it('shows generate button in empty state', async () => {
-    render(<InsightsList />);
+    await renderInsights();
 
     await waitFor(() => {
       expect(screen.getByText('Generate Insights')).toBeInTheDocument();
@@ -85,7 +100,7 @@ describe('InsightsList', () => {
       isGenerating: false,
     });
 
-    render(<InsightsList />);
+    await renderInsights();
 
     await waitFor(() => {
       expect(screen.getByText('High Dining Spending')).toBeInTheDocument();
@@ -125,7 +140,7 @@ describe('InsightsList', () => {
       isGenerating: false,
     });
 
-    render(<InsightsList />);
+    await renderInsights();
 
     await waitFor(() => {
       expect(screen.getByText('1 alert')).toBeInTheDocument();
@@ -221,7 +236,7 @@ describe('InsightsList', () => {
         isGenerating: false,
       });
 
-    render(<InsightsList />);
+    await renderInsights();
 
     // Buttons should show "Generating..." after initial load detects isGenerating
     await waitFor(() => {
@@ -253,7 +268,7 @@ describe('InsightsList', () => {
     });
     mockDismissInsight.mockResolvedValue(undefined);
 
-    render(<InsightsList />);
+    await renderInsights();
 
     await waitFor(() => {
       expect(screen.getByText('Test Insight')).toBeInTheDocument();
@@ -269,7 +284,7 @@ describe('InsightsList', () => {
   it('shows error message on load failure', async () => {
     mockGetInsights.mockRejectedValue(new Error('Network error'));
 
-    render(<InsightsList />);
+    await renderInsights();
 
     await waitFor(() => {
       expect(
@@ -300,7 +315,7 @@ describe('InsightsList', () => {
     });
     mockGenerateInsights.mockRejectedValue(new Error('Provider error'));
 
-    render(<InsightsList />);
+    await renderInsights();
 
     await waitFor(() => {
       expect(screen.getByText('Refresh Insights')).toBeInTheDocument();
@@ -318,7 +333,7 @@ describe('InsightsList', () => {
   });
 
   it('passes filter parameters to API', async () => {
-    render(<InsightsList />);
+    await renderInsights();
 
     await waitFor(() => {
       expect(mockGetInsights).toHaveBeenCalledWith({

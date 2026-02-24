@@ -49,12 +49,12 @@ export class BudgetAlert {
   @Column({ type: "uuid", name: "user_id" })
   userId: string;
 
-  @Column({ type: "uuid", name: "budget_id" })
-  budgetId: string;
+  @Column({ type: "uuid", name: "budget_id", nullable: true })
+  budgetId: string | null;
 
-  @ManyToOne(() => Budget)
+  @ManyToOne(() => Budget, { nullable: true })
   @JoinColumn({ name: "budget_id" })
-  budget: Budget;
+  budget: Budget | null;
 
   @Column({ type: "uuid", name: "budget_category_id", nullable: true })
   budgetCategoryId: string | null;
@@ -93,4 +93,7 @@ export class BudgetAlert {
 
   @CreateDateColumn({ name: "created_at" })
   createdAt: Date;
+
+  @Column({ type: "timestamp", name: "dismissed_at", nullable: true })
+  dismissedAt: Date | null;
 }

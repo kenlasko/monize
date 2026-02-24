@@ -34,6 +34,7 @@ describe("AiUsageService", () => {
           Promise.resolve({ ...data, id: "log-1" }),
         ),
       find: jest.fn().mockResolvedValue([]),
+      delete: jest.fn().mockResolvedValue({ affected: 0 }),
       createQueryBuilder: jest.fn().mockReturnValue(mockQueryBuilder),
     };
 
@@ -189,6 +190,32 @@ describe("AiUsageService", () => {
           outputTokens: 150,
         },
       ]);
+    });
+  });
+
+  describe("purgeOldUsageLogs()", () => {
+    it("deletes usage logs older than 30 days", async () => {
+      mockRepository.delete.mockResolvedValue({ affected: 10 });
+
+      await service.purgeOldUsageLogs();
+
+      expect(mockRepository.delete).toHaveBeenCalledWith(
+        expect.objectContaining({ createdAt: expect.anything() }),
+      );
+    });
+
+    it("does not log when no logs purged", async () => {
+      mockRepository.delete.mockResolvedValue({ affected: 0 });
+
+      await service.purgeOldUsageLogs();
+
+      expect(mockRepository.delete).toHaveBeenCalled();
+    });
+
+    it("handles errors gracefully", async () => {
+      mockRepository.delete.mockRejectedValue(new Error("DB error"));
+
+      await expect(service.purgeOldUsageLogs()).resolves.not.toThrow();
     });
   });
 });

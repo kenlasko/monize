@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act } from '@/test/render';
 import { ChatInterface } from './ChatInterface';
 import type { StreamCallbacks } from '@/types/ai';
@@ -20,44 +20,53 @@ vi.mock('@/lib/ai', () => ({
 // jsdom doesn't implement scrollIntoView
 Element.prototype.scrollIntoView = vi.fn();
 
+// Render and flush all pending async state updates (e.g. useEffect API calls)
+async function renderChat() {
+  let result: ReturnType<typeof render>;
+  await act(async () => {
+    result = render(<ChatInterface />);
+  });
+  return result!;
+}
+
 describe('ChatInterface', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     capturedCallbacks = null;
   });
 
-  it('shows suggested queries when no messages', () => {
-    render(<ChatInterface />);
+  it('shows suggested queries when no messages', async () => {
+    await renderChat();
     expect(screen.getByText('Ask about your finances')).toBeInTheDocument();
   });
 
-  it('renders the input textarea', () => {
-    render(<ChatInterface />);
+  it('renders the input textarea', async () => {
+    await renderChat();
     expect(
       screen.getByPlaceholderText('Ask about your finances...'),
     ).toBeInTheDocument();
   });
 
-  it('renders the send button', () => {
-    render(<ChatInterface />);
+  it('renders the send button', async () => {
+    await renderChat();
     expect(screen.getByTitle('Send')).toBeInTheDocument();
   });
 
-  it('shows helper text for keyboard shortcuts', () => {
-    render(<ChatInterface />);
+  it('shows helper text for keyboard shortcuts', async () => {
+    await renderChat();
     expect(
       screen.getByText('Press Enter to send, Shift+Enter for new line'),
     ).toBeInTheDocument();
   });
 
-  it('disables send button when input is empty', () => {
-    render(<ChatInterface />);
+  it('disables send button when input is empty', async () => {
+    await renderChat();
     const sendButton = screen.getByTitle('Send');
     expect(sendButton).toBeDisabled();
   });
 
-  it('enables send button when input has text', () => {
-    render(<ChatInterface />);
+  it('enables send button when input has text', async () => {
+    await renderChat();
     const textarea = screen.getByPlaceholderText(
       'Ask about your finances...',
     );
@@ -69,7 +78,7 @@ describe('ChatInterface', () => {
 
   it('submits query when send button is clicked', async () => {
     const { aiApi } = await import('@/lib/ai');
-    render(<ChatInterface />);
+    await renderChat();
 
     const textarea = screen.getByPlaceholderText(
       'Ask about your finances...',
@@ -87,7 +96,7 @@ describe('ChatInterface', () => {
   });
 
   it('adds user message to the list on submit', async () => {
-    render(<ChatInterface />);
+    await renderChat();
 
     const textarea = screen.getByPlaceholderText(
       'Ask about your finances...',
@@ -101,7 +110,7 @@ describe('ChatInterface', () => {
   });
 
   it('clears input after submit', async () => {
-    render(<ChatInterface />);
+    await renderChat();
 
     const textarea = screen.getByPlaceholderText(
       'Ask about your finances...',
@@ -114,8 +123,8 @@ describe('ChatInterface', () => {
     expect(textarea.value).toBe('');
   });
 
-  it('hides suggested queries after first message', () => {
-    render(<ChatInterface />);
+  it('hides suggested queries after first message', async () => {
+    await renderChat();
 
     const textarea = screen.getByPlaceholderText(
       'Ask about your finances...',
@@ -130,8 +139,8 @@ describe('ChatInterface', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('shows thinking indicator while loading', () => {
-    render(<ChatInterface />);
+  it('shows thinking indicator while loading', async () => {
+    await renderChat();
 
     const textarea = screen.getByPlaceholderText(
       'Ask about your finances...',
@@ -146,8 +155,8 @@ describe('ChatInterface', () => {
     ).toBeInTheDocument();
   });
 
-  it('shows cancel button while loading', () => {
-    render(<ChatInterface />);
+  it('shows cancel button while loading', async () => {
+    await renderChat();
 
     const textarea = screen.getByPlaceholderText(
       'Ask about your finances...',
@@ -160,8 +169,8 @@ describe('ChatInterface', () => {
     expect(screen.getByTitle('Cancel')).toBeInTheDocument();
   });
 
-  it('aborts request when cancel is clicked', () => {
-    render(<ChatInterface />);
+  it('aborts request when cancel is clicked', async () => {
+    await renderChat();
 
     const textarea = screen.getByPlaceholderText(
       'Ask about your finances...',
@@ -176,8 +185,8 @@ describe('ChatInterface', () => {
     expect(mockAbortController.abort).toHaveBeenCalled();
   });
 
-  it('disables textarea while loading', () => {
-    render(<ChatInterface />);
+  it('disables textarea while loading', async () => {
+    await renderChat();
 
     const textarea = screen.getByPlaceholderText(
       'Ask about your finances...',
@@ -192,7 +201,7 @@ describe('ChatInterface', () => {
 
   it('submits on Enter key', async () => {
     const { aiApi } = await import('@/lib/ai');
-    render(<ChatInterface />);
+    await renderChat();
 
     const textarea = screen.getByPlaceholderText(
       'Ask about your finances...',
@@ -210,7 +219,7 @@ describe('ChatInterface', () => {
 
   it('does not submit on Shift+Enter', async () => {
     const { aiApi } = await import('@/lib/ai');
-    render(<ChatInterface />);
+    await renderChat();
 
     const textarea = screen.getByPlaceholderText(
       'Ask about your finances...',
@@ -225,7 +234,7 @@ describe('ChatInterface', () => {
 
   it('submits when a suggested query is clicked', async () => {
     const { aiApi } = await import('@/lib/ai');
-    render(<ChatInterface />);
+    await renderChat();
 
     fireEvent.click(screen.getByText('Monthly spending'));
 
@@ -237,7 +246,7 @@ describe('ChatInterface', () => {
 
   describe('stream event handling', () => {
     it('shows content from content events', async () => {
-      render(<ChatInterface />);
+      await renderChat();
 
       const textarea = screen.getByPlaceholderText(
         'Ask about your finances...',
@@ -260,7 +269,7 @@ describe('ChatInterface', () => {
     });
 
     it('shows tool progress in thinking indicator', async () => {
-      render(<ChatInterface />);
+      await renderChat();
 
       const textarea = screen.getByPlaceholderText(
         'Ask about your finances...',
@@ -286,7 +295,7 @@ describe('ChatInterface', () => {
     });
 
     it('shows error message from error events', async () => {
-      render(<ChatInterface />);
+      await renderChat();
 
       const textarea = screen.getByPlaceholderText(
         'Ask about your finances...',
@@ -311,7 +320,7 @@ describe('ChatInterface', () => {
     });
 
     it('finishes loading after done event', async () => {
-      render(<ChatInterface />);
+      await renderChat();
 
       const textarea = screen.getByPlaceholderText(
         'Ask about your finances...',
@@ -339,7 +348,7 @@ describe('ChatInterface', () => {
 
   it('does not submit empty or whitespace-only input', async () => {
     const { aiApi } = await import('@/lib/ai');
-    render(<ChatInterface />);
+    await renderChat();
 
     const textarea = screen.getByPlaceholderText(
       'Ask about your finances...',

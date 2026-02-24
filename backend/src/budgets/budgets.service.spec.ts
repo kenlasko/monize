@@ -16,6 +16,7 @@ import { Transaction } from "../transactions/entities/transaction.entity";
 import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
 import { Category } from "../categories/entities/category.entity";
 import { ScheduledTransaction } from "../scheduled-transactions/entities/scheduled-transaction.entity";
+import { ScheduledTransactionOverride } from "../scheduled-transactions/entities/scheduled-transaction-override.entity";
 
 describe("BudgetsService", () => {
   let service: BudgetsService;
@@ -26,6 +27,7 @@ describe("BudgetsService", () => {
   let splitsRepository: Record<string, jest.Mock>;
   let categoriesRepository: Record<string, jest.Mock>;
   let scheduledTransactionsRepository: Record<string, jest.Mock>;
+  let overridesRepository: Record<string, jest.Mock>;
 
   const mockBudget: Budget = {
     id: "budget-1",
@@ -101,6 +103,7 @@ describe("BudgetsService", () => {
     isEmailSent: false,
     periodStart: "2026-02-01",
     createdAt: new Date("2026-02-15"),
+    dismissedAt: null,
   };
 
   const createMockQueryBuilder = (
@@ -156,6 +159,7 @@ describe("BudgetsService", () => {
       save: jest.fn().mockImplementation((data) => data),
       update: jest.fn().mockResolvedValue({ affected: 0 }),
       remove: jest.fn().mockResolvedValue(undefined),
+      createQueryBuilder: jest.fn(() => createMockQueryBuilder()),
     };
 
     transactionsRepository = {
@@ -171,6 +175,10 @@ describe("BudgetsService", () => {
     };
 
     scheduledTransactionsRepository = {
+      createQueryBuilder: jest.fn(() => createMockQueryBuilder()),
+    };
+
+    overridesRepository = {
       createQueryBuilder: jest.fn(() => createMockQueryBuilder()),
     };
 
@@ -201,6 +209,10 @@ describe("BudgetsService", () => {
         {
           provide: getRepositoryToken(ScheduledTransaction),
           useValue: scheduledTransactionsRepository,
+        },
+        {
+          provide: getRepositoryToken(ScheduledTransactionOverride),
+          useValue: overridesRepository,
         },
       ],
     }).compile();
@@ -750,14 +762,22 @@ describe("BudgetsService", () => {
   });
 
   describe("getAlerts", () => {
+    // Helper to set up ensureBillAlerts mocks (ST query returns empty, overrides query returns empty)
+    const mockEmptyBillAlerts = () => {
+      scheduledTransactionsRepository.createQueryBuilder.mockReturnValue(
+        createMockQueryBuilder({ getMany: jest.fn().mockResolvedValue([]) }),
+      );
+    };
+
     it("returns alerts for the user", async () => {
+      mockEmptyBillAlerts();
       budgetAlertsRepository.find.mockResolvedValue([mockAlert]);
 
       const result = await service.getAlerts("user-1");
 
       expect(result).toHaveLength(1);
       expect(budgetAlertsRepository.find).toHaveBeenCalledWith({
-        where: { userId: "user-1" },
+        where: { userId: "user-1", dismissedAt: expect.anything() },
         order: { createdAt: "DESC" },
         take: 50,
       });
@@ -769,13 +789,14 @@ describe("BudgetsService", () => {
       await service.getAlerts("user-1", true);
 
       expect(budgetAlertsRepository.find).toHaveBeenCalledWith({
-        where: { userId: "user-1", isRead: false },
+        where: { userId: "user-1", isRead: false, dismissedAt: expect.anything() },
         order: { createdAt: "DESC" },
         take: 50,
       });
     });
 
     it("returns empty array when no alerts exist", async () => {
+      mockEmptyBillAlerts();
       budgetAlertsRepository.find.mockResolvedValue([]);
 
       const result = await service.getAlerts("user-1");
@@ -783,11 +804,10 @@ describe("BudgetsService", () => {
       expect(result).toHaveLength(0);
     });
 
-    it("includes upcoming manual bill alerts when unreadOnly is false", async () => {
-      budgetAlertsRepository.find.mockResolvedValue([]);
-
+    it("persists upcoming bill alerts with per-bill reminder window", async () => {
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
+      const tomorrowStr = tomorrow.toISOString().split("T")[0];
 
       const billQb = createMockQueryBuilder({
         getMany: jest.fn().mockResolvedValue([
@@ -799,29 +819,119 @@ describe("BudgetsService", () => {
             payeeName: null,
             amount: -15.99,
             currencyCode: "USD",
-            nextDueDate: tomorrow.toISOString().split("T")[0],
+            nextDueDate: tomorrowStr,
             isActive: true,
             autoPost: false,
+            reminderDaysBefore: 3,
           },
         ]),
         leftJoinAndSelect: jest.fn().mockReturnThis(),
       });
-      scheduledTransactionsRepository.createQueryBuilder.mockReturnValue(
-        billQb,
+      scheduledTransactionsRepository.createQueryBuilder.mockReturnValue(billQb);
+
+      // No existing alerts, no overrides
+      const alertQb = createMockQueryBuilder({ getMany: jest.fn().mockResolvedValue([]) });
+      budgetAlertsRepository.createQueryBuilder.mockReturnValue(alertQb);
+      overridesRepository.createQueryBuilder.mockReturnValue(
+        createMockQueryBuilder({ getMany: jest.fn().mockResolvedValue([]) }),
       );
+      budgetAlertsRepository.save.mockImplementation((data: BudgetAlert) => ({ ...data, id: "new-alert-1" }));
+      budgetAlertsRepository.find.mockResolvedValue([]);
 
-      const result = await service.getAlerts("user-1");
+      await service.getAlerts("user-1");
 
-      expect(result).toHaveLength(1);
-      expect(result[0].alertType).toBe(AlertType.BILL_DUE);
-      expect(result[0].id).toBe("bill-st-1");
-      expect(result[0].title).toContain("Netflix Inc");
-      expect(result[0].title).toContain("tomorrow");
-      expect(result[0].severity).toBe(AlertSeverity.WARNING);
-      expect(result[0].budgetId).toBe("");
+      expect(budgetAlertsRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          alertType: AlertType.BILL_DUE,
+          title: expect.stringContaining("Netflix Inc"),
+          message: expect.stringContaining("15.99"),
+          budgetId: null,
+        }),
+      );
     });
 
-    it("does not include bill alerts when unreadOnly is true", async () => {
+    it("uses override amount when instance override exists", async () => {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const tomorrowStr = tomorrow.toISOString().split("T")[0];
+
+      const billQb = createMockQueryBuilder({
+        getMany: jest.fn().mockResolvedValue([
+          {
+            id: "st-1",
+            userId: "user-1",
+            name: "Electric",
+            payee: { name: "Power Co" },
+            payeeName: null,
+            amount: -250.0,
+            currencyCode: "USD",
+            nextDueDate: tomorrowStr,
+            isActive: true,
+            autoPost: false,
+            reminderDaysBefore: 3,
+          },
+        ]),
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+      });
+      scheduledTransactionsRepository.createQueryBuilder.mockReturnValue(billQb);
+
+      const alertQb = createMockQueryBuilder({ getMany: jest.fn().mockResolvedValue([]) });
+      budgetAlertsRepository.createQueryBuilder.mockReturnValue(alertQb);
+      overridesRepository.createQueryBuilder.mockReturnValue(
+        createMockQueryBuilder({
+          getMany: jest.fn().mockResolvedValue([
+            {
+              scheduledTransactionId: "st-1",
+              overrideDate: tomorrowStr,
+              amount: -312.65,
+            },
+          ]),
+        }),
+      );
+      budgetAlertsRepository.save.mockImplementation((data: BudgetAlert) => ({ ...data, id: "new-alert-1" }));
+      budgetAlertsRepository.find.mockResolvedValue([]);
+
+      await service.getAlerts("user-1");
+
+      expect(budgetAlertsRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: expect.stringContaining("312.65"),
+        }),
+      );
+    });
+
+    it("skips bills outside their reminder window", async () => {
+      const in10Days = new Date();
+      in10Days.setDate(in10Days.getDate() + 10);
+
+      const billQb = createMockQueryBuilder({
+        getMany: jest.fn().mockResolvedValue([
+          {
+            id: "st-1",
+            userId: "user-1",
+            name: "Netflix",
+            payee: { name: "Netflix Inc" },
+            payeeName: null,
+            amount: -15.99,
+            currencyCode: "USD",
+            nextDueDate: in10Days.toISOString().split("T")[0],
+            isActive: true,
+            autoPost: false,
+            reminderDaysBefore: 3,
+          },
+        ]),
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+      });
+      scheduledTransactionsRepository.createQueryBuilder.mockReturnValue(billQb);
+      budgetAlertsRepository.find.mockResolvedValue([]);
+
+      await service.getAlerts("user-1");
+
+      // Bill is 10 days out but reminderDaysBefore is 3 — should not create an alert
+      expect(budgetAlertsRepository.save).not.toHaveBeenCalled();
+    });
+
+    it("does not call ensureBillAlerts when unreadOnly is true", async () => {
       budgetAlertsRepository.find.mockResolvedValue([mockAlert]);
 
       await service.getAlerts("user-1", true);
@@ -829,46 +939,6 @@ describe("BudgetsService", () => {
       expect(
         scheduledTransactionsRepository.createQueryBuilder,
       ).not.toHaveBeenCalled();
-    });
-
-    it("merges and sorts bill alerts with budget alerts by date", async () => {
-      const olderDate = new Date();
-      olderDate.setDate(olderDate.getDate() - 1);
-
-      budgetAlertsRepository.find.mockResolvedValue([
-        { ...mockAlert, createdAt: olderDate },
-      ]);
-
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-
-      const billQb = createMockQueryBuilder({
-        getMany: jest.fn().mockResolvedValue([
-          {
-            id: "st-1",
-            userId: "user-1",
-            name: "Rent",
-            payee: null,
-            payeeName: "Landlord",
-            amount: -1200,
-            currencyCode: "USD",
-            nextDueDate: tomorrow.toISOString().split("T")[0],
-            isActive: true,
-            autoPost: false,
-          },
-        ]),
-        leftJoinAndSelect: jest.fn().mockReturnThis(),
-      });
-      scheduledTransactionsRepository.createQueryBuilder.mockReturnValue(
-        billQb,
-      );
-
-      const result = await service.getAlerts("user-1");
-
-      expect(result).toHaveLength(2);
-      // Bill alert (today's date) should come before older budget alert
-      expect(result[0].alertType).toBe(AlertType.BILL_DUE);
-      expect(result[1].alertType).toBe(AlertType.THRESHOLD_WARNING);
     });
   });
 
@@ -900,14 +970,14 @@ describe("BudgetsService", () => {
   });
 
   describe("deleteAlert", () => {
-    it("deletes alert when found and belongs to user", async () => {
+    it("soft-deletes alert when found and belongs to user", async () => {
       budgetAlertsRepository.findOne.mockResolvedValue({ ...mockAlert });
-      budgetAlertsRepository.remove.mockResolvedValue(undefined);
+      budgetAlertsRepository.save.mockImplementation((data: BudgetAlert) => data);
 
       await service.deleteAlert("user-1", "alert-1");
 
-      expect(budgetAlertsRepository.remove).toHaveBeenCalledWith(
-        expect.objectContaining({ id: "alert-1" }),
+      expect(budgetAlertsRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({ id: "alert-1", dismissedAt: expect.any(Date) }),
       );
     });
 
@@ -936,7 +1006,7 @@ describe("BudgetsService", () => {
 
       expect(result.updated).toBe(5);
       expect(budgetAlertsRepository.update).toHaveBeenCalledWith(
-        { userId: "user-1", isRead: false },
+        { userId: "user-1", isRead: false, dismissedAt: expect.anything() },
         { isRead: true },
       );
     });

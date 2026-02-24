@@ -1,6 +1,7 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { LessThan, Repository } from "typeorm";
+import { Cron } from "@nestjs/schedule";
 import { AiUsageLog } from "./entities/ai-usage-log.entity";
 import { AiUsageSummary } from "./dto/ai-response.dto";
 
@@ -17,10 +18,33 @@ interface LogUsageParams {
 
 @Injectable()
 export class AiUsageService {
+  private readonly logger = new Logger(AiUsageService.name);
+
   constructor(
     @InjectRepository(AiUsageLog)
     private readonly usageLogRepository: Repository<AiUsageLog>,
   ) {}
+
+  @Cron("0 4 * * *")
+  async purgeOldUsageLogs(): Promise<void> {
+    try {
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - 30);
+
+      const result = await this.usageLogRepository.delete({
+        createdAt: LessThan(cutoff),
+      });
+
+      if (result.affected && result.affected > 0) {
+        this.logger.log(`Purged ${result.affected} old AI usage logs`);
+      }
+    } catch (error) {
+      this.logger.error(
+        "Failed to purge old usage logs",
+        error instanceof Error ? error.stack : error,
+      );
+    }
+  }
 
   async logUsage(params: LogUsageParams): Promise<AiUsageLog> {
     const log = this.usageLogRepository.create({

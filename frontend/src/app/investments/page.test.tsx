@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@/test/render';
+import { render, screen, waitFor, fireEvent, act } from '@/test/render';
 import InvestmentsPage from './page';
 
 // --- next/navigation (must be before other mocks that may import it) ---
@@ -324,6 +324,15 @@ const mockTxResponse = {
   pagination: { page: 1, totalPages: 1, total: 1 },
 };
 
+// Render and flush all pending async state updates (e.g. useEffect API calls)
+async function renderPage() {
+  let result: ReturnType<typeof render>;
+  await act(async () => {
+    result = render(<InvestmentsPage />);
+  });
+  return result!;
+}
+
 describe('InvestmentsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -345,7 +354,7 @@ describe('InvestmentsPage', () => {
 
   describe('Rendering', () => {
     it('renders page title and subtitle', async () => {
-      render(<InvestmentsPage />);
+      await renderPage();
       await waitFor(() => {
         expect(screen.getByText('Investments')).toBeInTheDocument();
         expect(screen.getByText('Track your investment portfolio')).toBeInTheDocument();
@@ -353,63 +362,63 @@ describe('InvestmentsPage', () => {
     });
 
     it('renders within page layout', async () => {
-      render(<InvestmentsPage />);
+      await renderPage();
       await waitFor(() => {
         expect(screen.getByTestId('page-layout')).toBeInTheDocument();
       });
     });
 
     it('renders portfolio summary card', async () => {
-      render(<InvestmentsPage />);
+      await renderPage();
       await waitFor(() => {
         expect(screen.getByTestId('portfolio-summary')).toBeInTheDocument();
       });
     });
 
     it('renders asset allocation chart', async () => {
-      render(<InvestmentsPage />);
+      await renderPage();
       await waitFor(() => {
         expect(screen.getByTestId('asset-allocation-chart')).toBeInTheDocument();
       });
     });
 
     it('renders investment value chart', async () => {
-      render(<InvestmentsPage />);
+      await renderPage();
       await waitFor(() => {
         expect(screen.getByTestId('value-chart')).toBeInTheDocument();
       });
     });
 
     it('renders grouped holdings list', async () => {
-      render(<InvestmentsPage />);
+      await renderPage();
       await waitFor(() => {
         expect(screen.getByTestId('grouped-holdings')).toBeInTheDocument();
       });
     });
 
     it('renders transaction list', async () => {
-      render(<InvestmentsPage />);
+      await renderPage();
       await waitFor(() => {
         expect(screen.getByTestId('transaction-list')).toBeInTheDocument();
       });
     });
 
     it('renders New Transaction button', async () => {
-      render(<InvestmentsPage />);
+      await renderPage();
       await waitFor(() => {
         expect(screen.getByText('+ New Transaction')).toBeInTheDocument();
       });
     });
 
     it('renders Refresh button', async () => {
-      render(<InvestmentsPage />);
+      await renderPage();
       await waitFor(() => {
         expect(screen.getByText(/Refresh/)).toBeInTheDocument();
       });
     });
 
     it('renders auto-generated symbol note', async () => {
-      render(<InvestmentsPage />);
+      await renderPage();
       await waitFor(() => {
         expect(screen.getByText(/Auto-generated symbol name/)).toBeInTheDocument();
       });
@@ -418,14 +427,14 @@ describe('InvestmentsPage', () => {
 
   describe('Account Filter', () => {
     it('renders account filter with placeholder', async () => {
-      render(<InvestmentsPage />);
+      await renderPage();
       await waitFor(() => {
         expect(screen.getByText('All Investment Accounts')).toBeInTheDocument();
       });
     });
 
     it('displays account names without " - Brokerage" suffix', async () => {
-      render(<InvestmentsPage />);
+      await renderPage();
       await waitFor(() => {
         expect(screen.getByText('RRSP')).toBeInTheDocument();
         expect(screen.getByText('TFSA')).toBeInTheDocument();
@@ -435,7 +444,7 @@ describe('InvestmentsPage', () => {
 
   describe('Data Loading', () => {
     it('loads investment accounts, all accounts, and price status on mount', async () => {
-      render(<InvestmentsPage />);
+      await renderPage();
       await waitFor(() => {
         expect(mockGetInvestmentAccounts).toHaveBeenCalled();
         expect(mockGetAllAccounts).toHaveBeenCalled();
@@ -444,7 +453,7 @@ describe('InvestmentsPage', () => {
     });
 
     it('loads portfolio summary and transactions', async () => {
-      render(<InvestmentsPage />);
+      await renderPage();
       await waitFor(() => {
         expect(mockGetPortfolioSummary).toHaveBeenCalled();
         expect(mockGetTransactions).toHaveBeenCalled();
@@ -453,7 +462,7 @@ describe('InvestmentsPage', () => {
 
     it('handles portfolio summary load failure gracefully', async () => {
       mockGetPortfolioSummary.mockRejectedValue(new Error('Failed'));
-      render(<InvestmentsPage />);
+      await renderPage();
       await waitFor(() => {
         expect(screen.getByTestId('portfolio-summary')).toHaveTextContent('No data');
       });
@@ -461,7 +470,7 @@ describe('InvestmentsPage', () => {
 
     it('handles transaction load failure gracefully', async () => {
       mockGetTransactions.mockRejectedValue(new Error('Failed'));
-      render(<InvestmentsPage />);
+      await renderPage();
       await waitFor(() => {
         expect(screen.getByTestId('transaction-list')).toHaveTextContent('0 transactions');
       });
@@ -469,7 +478,7 @@ describe('InvestmentsPage', () => {
 
     it('handles investment accounts load failure gracefully', async () => {
       mockGetInvestmentAccounts.mockRejectedValue(new Error('Failed'));
-      render(<InvestmentsPage />);
+      await renderPage();
       // Should still render the page
       await waitFor(() => {
         expect(screen.getByText('Investments')).toBeInTheDocument();
@@ -478,7 +487,7 @@ describe('InvestmentsPage', () => {
 
     it('handles price status load failure gracefully', async () => {
       mockGetPriceStatus.mockRejectedValue(new Error('Failed'));
-      render(<InvestmentsPage />);
+      await renderPage();
       await waitFor(() => {
         expect(screen.getByText(/Refresh/)).toBeInTheDocument();
       });
@@ -490,7 +499,7 @@ describe('InvestmentsPage', () => {
       mockRefreshSelectedPrices.mockResolvedValue({
         updated: 2, failed: 0, results: [], lastUpdated: '2026-02-14T12:00:00Z',
       });
-      render(<InvestmentsPage />);
+      await renderPage();
       await waitFor(() => expect(screen.getByText(/Refresh/)).toBeInTheDocument());
       fireEvent.click(screen.getByText(/Refresh/));
       await waitFor(() => {
@@ -504,7 +513,7 @@ describe('InvestmentsPage', () => {
         .mockResolvedValueOnce(mockPortfolioSummary) // initial load
         .mockResolvedValueOnce(mockPortfolioSummary) // account change load
         .mockResolvedValueOnce({ ...mockPortfolioSummary, holdings: [] }); // refresh click
-      render(<InvestmentsPage />);
+      await renderPage();
       await waitFor(() => expect(screen.getByText(/Refresh/)).toBeInTheDocument());
       fireEvent.click(screen.getByText(/Refresh/));
       await waitFor(() => {
@@ -522,7 +531,7 @@ describe('InvestmentsPage', () => {
         ],
         lastUpdated: '2026-02-14T12:00:00Z',
       });
-      render(<InvestmentsPage />);
+      await renderPage();
       await waitFor(() => expect(screen.getByText(/Refresh/)).toBeInTheDocument());
       fireEvent.click(screen.getByText(/Refresh/));
       await waitFor(() => {
@@ -533,7 +542,7 @@ describe('InvestmentsPage', () => {
     it('handles refresh API error', async () => {
       mockRefreshSelectedPrices.mockRejectedValue(new Error('API Error'));
       // Need initial summary to get holdings for refresh
-      render(<InvestmentsPage />);
+      await renderPage();
       await waitFor(() => expect(screen.getByText(/Refresh/)).toBeInTheDocument());
       fireEvent.click(screen.getByText(/Refresh/));
       await waitFor(() => {
@@ -543,7 +552,7 @@ describe('InvestmentsPage', () => {
 
     it('shows last update time on refresh button', async () => {
       mockGetPriceStatus.mockResolvedValue({ lastUpdated: '2026-02-14T11:00:00Z' });
-      render(<InvestmentsPage />);
+      await renderPage();
       await waitFor(() => {
         const refreshBtn = screen.getByText(/Refresh/);
         expect(refreshBtn).toBeInTheDocument();
@@ -553,7 +562,7 @@ describe('InvestmentsPage', () => {
 
   describe('Symbol Click', () => {
     it('filters transactions by symbol when clicked in holdings', async () => {
-      render(<InvestmentsPage />);
+      await renderPage();
       await waitFor(() => {
         expect(screen.getByTestId('symbol-click')).toBeInTheDocument();
       });
@@ -568,7 +577,7 @@ describe('InvestmentsPage', () => {
 
   describe('Cash Click', () => {
     it('navigates to transactions page for cash account', async () => {
-      render(<InvestmentsPage />);
+      await renderPage();
       await waitFor(() => {
         expect(screen.getByTestId('cash-click')).toBeInTheDocument();
       });
@@ -580,7 +589,7 @@ describe('InvestmentsPage', () => {
 
   describe('Transaction Actions', () => {
     it('opens new transaction form when button clicked', async () => {
-      render(<InvestmentsPage />);
+      await renderPage();
       await waitFor(() => {
         expect(screen.getByText('+ New Transaction')).toBeInTheDocument();
       });
@@ -591,7 +600,7 @@ describe('InvestmentsPage', () => {
     });
 
     it('opens edit form when transaction edit button is clicked', async () => {
-      render(<InvestmentsPage />);
+      await renderPage();
       await waitFor(() => {
         expect(screen.getByTestId('edit-itx-1')).toBeInTheDocument();
       });
@@ -605,7 +614,7 @@ describe('InvestmentsPage', () => {
       vi.spyOn(window, 'confirm').mockReturnValue(true);
       mockDeleteTransaction.mockResolvedValue(undefined);
 
-      render(<InvestmentsPage />);
+      await renderPage();
       await waitFor(() => {
         expect(screen.getByTestId('delete-itx-1')).toBeInTheDocument();
       });
@@ -622,7 +631,7 @@ describe('InvestmentsPage', () => {
     it('does not delete transaction when cancelled', async () => {
       vi.spyOn(window, 'confirm').mockReturnValue(false);
 
-      render(<InvestmentsPage />);
+      await renderPage();
       await waitFor(() => {
         expect(screen.getByTestId('delete-itx-1')).toBeInTheDocument();
       });
@@ -639,7 +648,7 @@ describe('InvestmentsPage', () => {
       vi.spyOn(window, 'alert').mockImplementation(() => {});
       mockDeleteTransaction.mockRejectedValue(new Error('Delete failed'));
 
-      render(<InvestmentsPage />);
+      await renderPage();
       await waitFor(() => {
         expect(screen.getByTestId('delete-itx-1')).toBeInTheDocument();
       });
@@ -656,7 +665,7 @@ describe('InvestmentsPage', () => {
 
   describe('Transaction Filters', () => {
     it('clears transaction filters and resets to page 1', async () => {
-      render(<InvestmentsPage />);
+      await renderPage();
       await waitFor(() => {
         expect(screen.getByTestId('clear-filters')).toBeInTheDocument();
       });
@@ -677,7 +686,7 @@ describe('InvestmentsPage', () => {
 
   describe('Pagination', () => {
     it('shows single page count when only one page', async () => {
-      render(<InvestmentsPage />);
+      await renderPage();
       await waitFor(() => {
         expect(screen.getByText('1 transaction')).toBeInTheDocument();
       });
@@ -688,7 +697,7 @@ describe('InvestmentsPage', () => {
         data: Array.from({ length: 25 }, (_, i) => ({ id: `tx-${i}`, action: 'BUY' })),
         pagination: { page: 1, totalPages: 3, total: 75 },
       });
-      render(<InvestmentsPage />);
+      await renderPage();
       await waitFor(() => {
         expect(screen.getByTestId('pagination')).toBeInTheDocument();
         expect(screen.getByText('Page 1 of 3')).toBeInTheDocument();
@@ -703,7 +712,7 @@ describe('InvestmentsPage', () => {
         ],
         pagination: { page: 1, totalPages: 1, total: 2 },
       });
-      render(<InvestmentsPage />);
+      await renderPage();
       await waitFor(() => {
         // The page renders a total count div separate from the mock transaction list.
         // Match the page's own total count div specifically (the one with the class for styling).
@@ -716,14 +725,14 @@ describe('InvestmentsPage', () => {
 
   describe('Portfolio Data Display', () => {
     it('shows portfolio summary with total value', async () => {
-      render(<InvestmentsPage />);
+      await renderPage();
       await waitFor(() => {
         expect(screen.getByTestId('portfolio-summary')).toHaveTextContent('Total: 50000');
       });
     });
 
     it('passes allocation data to asset allocation chart', async () => {
-      render(<InvestmentsPage />);
+      await renderPage();
       await waitFor(() => {
         expect(screen.getByTestId('asset-allocation-chart')).toHaveTextContent('Value: 50000');
       });
@@ -732,7 +741,7 @@ describe('InvestmentsPage', () => {
 
   describe('New Transaction from list', () => {
     it('opens create form when new transaction button clicked in list', async () => {
-      render(<InvestmentsPage />);
+      await renderPage();
       await waitFor(() => {
         expect(screen.getByTestId('new-tx-btn')).toBeInTheDocument();
       });
@@ -754,7 +763,7 @@ describe('InvestmentsPage', () => {
         }),
       };
 
-      render(<InvestmentsPage />);
+      await renderPage();
 
       await waitFor(() => {
         const setter = mockLocalStorageState['monize-investments-accounts'].setter;
@@ -772,7 +781,7 @@ describe('InvestmentsPage', () => {
         }),
       };
 
-      render(<InvestmentsPage />);
+      await renderPage();
 
       await waitFor(() => {
         const setter = mockLocalStorageState['monize-investments-accounts'].setter;
@@ -790,7 +799,7 @@ describe('InvestmentsPage', () => {
         }),
       };
 
-      render(<InvestmentsPage />);
+      await renderPage();
 
       await waitFor(() => {
         const setter = mockLocalStorageState['monize-investments-accounts'].setter;
@@ -805,7 +814,7 @@ describe('InvestmentsPage', () => {
         setter: vi.fn(),
       };
 
-      render(<InvestmentsPage />);
+      await renderPage();
 
       // Wait for accounts to load
       await waitFor(() => {
@@ -829,7 +838,7 @@ describe('InvestmentsPage', () => {
         setter: vi.fn(),
       };
 
-      render(<InvestmentsPage />);
+      await renderPage();
 
       await waitFor(() => {
         expect(mockGetInvestmentAccounts).toHaveBeenCalled();
@@ -846,7 +855,7 @@ describe('InvestmentsPage', () => {
 
   describe('Cash View', () => {
     const switchToCashView = async () => {
-      render(<InvestmentsPage />);
+      await renderPage();
       // Wait for initial load
       await waitFor(() => {
         expect(screen.getByTestId('transaction-list')).toBeInTheDocument();
@@ -857,11 +866,13 @@ describe('InvestmentsPage', () => {
       // The viewToggle renders Brokerage then Cash buttons — find Cash
       const buttons = txList.querySelectorAll('button');
       const cashBtn = Array.from(buttons).find(b => b.textContent === 'Cash')!;
-      fireEvent.click(cashBtn);
+      await act(async () => {
+        fireEvent.click(cashBtn);
+      });
     };
 
     it('shows Brokerage/Cash toggle in brokerage view', async () => {
-      render(<InvestmentsPage />);
+      await renderPage();
       await waitFor(() => {
         const txList = screen.getByTestId('transaction-list');
         expect(txList.querySelector('button')).toBeInTheDocument();
@@ -1043,7 +1054,7 @@ describe('InvestmentsPage', () => {
       mockGetTransaction.mockResolvedValue(mockTx);
       mockSearchParams = new URLSearchParams('edit=itx-1');
 
-      render(<InvestmentsPage />);
+      await renderPage();
 
       await waitFor(() => {
         expect(mockGetTransaction).toHaveBeenCalledWith('itx-1');
@@ -1056,7 +1067,7 @@ describe('InvestmentsPage', () => {
       mockGetTransaction.mockResolvedValue(mockTx);
       mockSearchParams = new URLSearchParams('edit=itx-1');
 
-      render(<InvestmentsPage />);
+      await renderPage();
 
       await waitFor(() => {
         expect(mockRouterReplace).toHaveBeenCalledWith('/investments', { scroll: false });
@@ -1068,7 +1079,7 @@ describe('InvestmentsPage', () => {
       mockGetTransaction.mockResolvedValue(mockTx);
       mockSearchParams = new URLSearchParams('edit=itx-1');
 
-      const { rerender } = render(<InvestmentsPage />);
+      const { rerender } = await renderPage();
 
       // Wait for initial edit to be handled
       await waitFor(() => {
@@ -1110,7 +1121,7 @@ describe('InvestmentsPage', () => {
       mockGetTransaction.mockResolvedValue(mockTx);
       mockSearchParams = new URLSearchParams('edit=itx-1');
 
-      const { rerender } = render(<InvestmentsPage />);
+      const { rerender } = await renderPage();
 
       await waitFor(() => {
         expect(mockGetTransaction).toHaveBeenCalledWith('itx-1');
@@ -1146,7 +1157,7 @@ describe('InvestmentsPage', () => {
       mockGetTransaction.mockRejectedValue(new Error('Not found'));
       mockSearchParams = new URLSearchParams('edit=itx-missing');
 
-      render(<InvestmentsPage />);
+      await renderPage();
 
       await waitFor(() => {
         expect(mockGetTransaction).toHaveBeenCalledWith('itx-missing');

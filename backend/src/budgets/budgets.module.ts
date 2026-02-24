@@ -10,6 +10,7 @@ import { TransactionSplit } from "../transactions/entities/transaction-split.ent
 import { Category } from "../categories/entities/category.entity";
 import { Account } from "../accounts/entities/account.entity";
 import { ScheduledTransaction } from "../scheduled-transactions/entities/scheduled-transaction.entity";
+import { ScheduledTransactionOverride } from "../scheduled-transactions/entities/scheduled-transaction-override.entity";
 import { User } from "../users/entities/user.entity";
 import { UserPreference } from "../users/entities/user-preference.entity";
 import { BudgetsService } from "./budgets.service";
@@ -34,6 +35,7 @@ import { NotificationsModule } from "../notifications/notifications.module";
       Category,
       Account,
       ScheduledTransaction,
+      ScheduledTransactionOverride,
       User,
       UserPreference,
     ]),

@@ -4,7 +4,7 @@ import {
   BadRequestException,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { IsNull, Repository } from "typeorm";
 import { Budget } from "./entities/budget.entity";
 import { BudgetCategory } from "./entities/budget-category.entity";
 import {
@@ -16,6 +16,7 @@ import { Transaction } from "../transactions/entities/transaction.entity";
 import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
 import { Category } from "../categories/entities/category.entity";
 import { ScheduledTransaction } from "../scheduled-transactions/entities/scheduled-transaction.entity";
+import { ScheduledTransactionOverride } from "../scheduled-transactions/entities/scheduled-transaction-override.entity";
 import { CreateBudgetDto } from "./dto/create-budget.dto";
 import { UpdateBudgetDto } from "./dto/update-budget.dto";
 import { CreateBudgetCategoryDto } from "./dto/create-budget-category.dto";
@@ -73,6 +74,8 @@ export class BudgetsService {
     private categoriesRepository: Repository<Category>,
     @InjectRepository(ScheduledTransaction)
     private scheduledTransactionsRepository: Repository<ScheduledTransaction>,
+    @InjectRepository(ScheduledTransactionOverride)
+    private overridesRepository: Repository<ScheduledTransactionOverride>,
   ) {}
 
   async create(
@@ -454,38 +457,33 @@ export class BudgetsService {
   }
 
   async getAlerts(userId: string, unreadOnly = false): Promise<BudgetAlert[]> {
-    const where: Record<string, unknown> = { userId };
+    // Ensure upcoming bill alerts are persisted before querying
+    if (!unreadOnly) {
+      await this.ensureBillAlerts(userId);
+    }
+
+    const where: Record<string, unknown> = { userId, dismissedAt: IsNull() };
     if (unreadOnly) {
       where.isRead = false;
     }
 
-    const budgetAlerts = await this.budgetAlertsRepository.find({
+    const alerts = await this.budgetAlertsRepository.find({
       where,
       order: { createdAt: "DESC" },
       take: 50,
     });
 
-    // Include upcoming manual bills (not auto-paid) due within 7 days
-    if (!unreadOnly) {
-      const billAlerts = await this.getUpcomingBillAlerts(userId);
-      const combined = [...billAlerts, ...budgetAlerts];
-      combined.sort(
-        (a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-      );
-      return combined.slice(0, 50);
-    }
-
-    return budgetAlerts;
+    return alerts;
   }
 
-  private async getUpcomingBillAlerts(userId: string): Promise<BudgetAlert[]> {
+  private async ensureBillAlerts(userId: string): Promise<void> {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const todayStr = today.toISOString().split("T")[0];
 
+    // Use a 30-day DB-level cap, then filter per-bill by reminderDaysBefore
     const horizon = new Date(today);
-    horizon.setDate(horizon.getDate() + 7);
+    horizon.setDate(horizon.getDate() + 30);
     const horizonStr = horizon.toISOString().split("T")[0];
 
     const manualBills = await this.scheduledTransactionsRepository
@@ -499,13 +497,65 @@ export class BudgetsService {
       .orderBy("st.next_due_date", "ASC")
       .getMany();
 
-    return manualBills.map((bill) => {
+    if (manualBills.length === 0) return;
+
+    // Filter bills to only those within their own reminder window
+    const eligibleBills = manualBills.filter((bill) => {
       const dueDate =
         typeof bill.nextDueDate === "string"
           ? bill.nextDueDate
           : (bill.nextDueDate as Date).toISOString().split("T")[0];
+      const daysUntilDue = Math.ceil(
+        (new Date(dueDate).getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
+      );
+      return daysUntilDue <= bill.reminderDaysBefore;
+    });
+
+    if (eligibleBills.length === 0) return;
+
+    // Fetch ALL existing BILL_DUE alerts (including dismissed) to prevent re-creation
+    const existingAlerts = await this.budgetAlertsRepository
+      .createQueryBuilder("ba")
+      .where("ba.user_id = :userId", { userId })
+      .andWhere("ba.alert_type = :alertType", { alertType: AlertType.BILL_DUE })
+      .getMany();
+
+    const existingBillKeys = new Set(
+      existingAlerts.map(
+        (a) => `${(a.data as Record<string, unknown>).billId}:${a.periodStart}`,
+      ),
+    );
+
+    // Batch-fetch instance overrides for eligible bills
+    const billIds = eligibleBills.map((b) => b.id);
+    const overrides = await this.overridesRepository
+      .createQueryBuilder("o")
+      .where("o.scheduled_transaction_id IN (:...billIds)", { billIds })
+      .getMany();
+
+    const overrideMap = new Map<string, ScheduledTransactionOverride>();
+    for (const o of overrides) {
+      // Key by billId:overrideDate to match against nextDueDate
+      const overrideDate =
+        typeof o.overrideDate === "string"
+          ? o.overrideDate
+          : (o.overrideDate as unknown as Date).toISOString().split("T")[0];
+      overrideMap.set(`${o.scheduledTransactionId}:${overrideDate}`, o);
+    }
+
+    for (const bill of eligibleBills) {
+      const dueDate =
+        typeof bill.nextDueDate === "string"
+          ? bill.nextDueDate
+          : (bill.nextDueDate as Date).toISOString().split("T")[0];
+
+      if (existingBillKeys.has(`${bill.id}:${dueDate}`)) continue;
+
       const payeeName = bill.payee?.name || bill.payeeName || bill.name;
-      const amount = Math.abs(Number(bill.amount));
+      const override = overrideMap.get(`${bill.id}:${dueDate}`);
+      const amount = Math.abs(
+        Number(override?.amount != null ? override.amount : bill.amount),
+      );
       const daysUntilDue = Math.ceil(
         (new Date(dueDate).getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
       );
@@ -513,9 +563,8 @@ export class BudgetsService {
         daysUntilDue <= 1 ? AlertSeverity.WARNING : AlertSeverity.INFO;
 
       const alert = new BudgetAlert();
-      alert.id = `bill-${bill.id}`;
       alert.userId = userId;
-      alert.budgetId = "";
+      alert.budgetId = null;
       alert.budgetCategoryId = null;
       alert.alertType = AlertType.BILL_DUE;
       alert.severity = severity;
@@ -530,15 +579,16 @@ export class BudgetsService {
       };
       alert.isRead = false;
       alert.isEmailSent = false;
-      alert.periodStart = todayStr;
-      alert.createdAt = new Date();
-      return alert;
-    });
+      alert.periodStart = dueDate;
+      alert.dismissedAt = null;
+
+      await this.budgetAlertsRepository.save(alert);
+    }
   }
 
   async markAlertRead(userId: string, alertId: string): Promise<BudgetAlert> {
     const alert = await this.budgetAlertsRepository.findOne({
-      where: { id: alertId, userId },
+      where: { id: alertId, userId, dismissedAt: IsNull() },
     });
 
     if (!alert) {
@@ -551,19 +601,20 @@ export class BudgetsService {
 
   async deleteAlert(userId: string, alertId: string): Promise<void> {
     const alert = await this.budgetAlertsRepository.findOne({
-      where: { id: alertId, userId },
+      where: { id: alertId, userId, dismissedAt: IsNull() },
     });
 
     if (!alert) {
       throw new NotFoundException(`Alert with ID ${alertId} not found`);
     }
 
-    await this.budgetAlertsRepository.remove(alert);
+    alert.dismissedAt = new Date();
+    await this.budgetAlertsRepository.save(alert);
   }
 
   async markAllAlertsRead(userId: string): Promise<{ updated: number }> {
     const result = await this.budgetAlertsRepository.update(
-      { userId, isRead: false },
+      { userId, isRead: false, dismissedAt: IsNull() },
       { isRead: true },
     );
 

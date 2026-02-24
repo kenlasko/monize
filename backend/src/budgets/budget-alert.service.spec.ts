@@ -84,6 +84,7 @@ function makeAlert(overrides: Partial<BudgetAlert> = {}): BudgetAlert {
     isEmailSent: false,
     periodStart: "2026-02-01",
     createdAt: new Date(),
+    dismissedAt: null,
     ...overrides,
   };
 }
@@ -124,6 +125,7 @@ describe("BudgetAlertService", () => {
         .mockImplementation((data) =>
           Promise.resolve({ ...data, id: data.id || "new-alert-id" }),
         ),
+      delete: jest.fn().mockResolvedValue({ affected: 0 }),
     };
 
     transactionsRepository = {
@@ -1438,6 +1440,37 @@ describe("BudgetAlertService", () => {
       expect(periodEnd).toBe(
         `${year}-${month}-${String(lastDay).padStart(2, "0")}`,
       );
+    });
+  });
+
+  describe("purgeOldAlerts", () => {
+    it("deletes dismissed alerts older than 30 days", async () => {
+      alertsRepository.delete.mockResolvedValue({ affected: 5 });
+
+      await service.purgeOldAlerts();
+
+      expect(alertsRepository.delete).toHaveBeenCalledWith(
+        expect.objectContaining({ dismissedAt: expect.anything() }),
+      );
+    });
+
+    it("deletes read alerts older than 30 days", async () => {
+      alertsRepository.delete
+        .mockResolvedValueOnce({ affected: 0 })
+        .mockResolvedValueOnce({ affected: 3 });
+
+      await service.purgeOldAlerts();
+
+      expect(alertsRepository.delete).toHaveBeenCalledTimes(2);
+      expect(alertsRepository.delete).toHaveBeenCalledWith(
+        expect.objectContaining({ isRead: true }),
+      );
+    });
+
+    it("handles errors gracefully", async () => {
+      alertsRepository.delete.mockRejectedValue(new Error("DB error"));
+
+      await expect(service.purgeOldAlerts()).resolves.not.toThrow();
     });
   });
 });
