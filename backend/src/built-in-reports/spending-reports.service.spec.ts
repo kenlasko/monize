@@ -322,6 +322,95 @@ describe("SpendingReportsService", () => {
       // 136 CAD / 1.36 = 100 USD
       expect(result.data[0].total).toBe(100);
     });
+
+    describe("rollupToParent = false", () => {
+      it("keeps subcategories separate with 'Parent: Child' name format", async () => {
+        transactionsRepository.query.mockResolvedValue([
+          { category_id: "cat-child", currency_code: "USD", total: "150.00" },
+          { category_id: "cat-parent", currency_code: "USD", total: "50.00" },
+        ]);
+        categoriesRepository.find.mockResolvedValue([
+          mockParentCategory,
+          mockChildCategory,
+        ]);
+
+        const result = await service.getSpendingByCategory(
+          mockUserId,
+          "2025-01-01",
+          "2025-12-31",
+          false,
+        );
+
+        expect(result.data).toHaveLength(2);
+        const child = result.data.find((d) => d.categoryId === "cat-child");
+        const parent = result.data.find((d) => d.categoryId === "cat-parent");
+        expect(child).toBeDefined();
+        expect(child!.categoryName).toBe("Food & Dining: Groceries");
+        expect(child!.total).toBe(150);
+        expect(parent).toBeDefined();
+        expect(parent!.categoryName).toBe("Food & Dining");
+        expect(parent!.total).toBe(50);
+      });
+
+      it("keeps parent-only categories with their own name", async () => {
+        transactionsRepository.query.mockResolvedValue([
+          { category_id: "cat-parent", currency_code: "USD", total: "200.00" },
+        ]);
+        categoriesRepository.find.mockResolvedValue([mockParentCategory]);
+
+        const result = await service.getSpendingByCategory(
+          mockUserId,
+          "2025-01-01",
+          "2025-12-31",
+          false,
+        );
+
+        expect(result.data).toHaveLength(1);
+        expect(result.data[0].categoryName).toBe("Food & Dining");
+      });
+
+      it("uses the subcategory's own color", async () => {
+        transactionsRepository.query.mockResolvedValue([
+          { category_id: "cat-child", currency_code: "USD", total: "100.00" },
+        ]);
+        categoriesRepository.find.mockResolvedValue([
+          mockParentCategory,
+          mockChildCategory,
+        ]);
+
+        const result = await service.getSpendingByCategory(
+          mockUserId,
+          "2025-01-01",
+          "2025-12-31",
+          false,
+        );
+
+        expect(result.data[0].color).toBe("#33FF57");
+      });
+
+      it("merges multi-currency rows for the same subcategory", async () => {
+        transactionsRepository.query.mockResolvedValue([
+          { category_id: "cat-child", currency_code: "USD", total: "100.00" },
+          { category_id: "cat-child", currency_code: "EUR", total: "50.00" },
+        ]);
+        categoriesRepository.find.mockResolvedValue([
+          mockParentCategory,
+          mockChildCategory,
+        ]);
+
+        const result = await service.getSpendingByCategory(
+          mockUserId,
+          "2025-01-01",
+          "2025-12-31",
+          false,
+        );
+
+        expect(result.data).toHaveLength(1);
+        expect(result.data[0].categoryId).toBe("cat-child");
+        // 100 USD + 50 EUR * 1.1 = 155
+        expect(result.data[0].total).toBe(155);
+      });
+    });
   });
 
   // ---------------------------------------------------------------------------

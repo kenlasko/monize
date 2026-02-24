@@ -5,6 +5,7 @@ import { ComparisonReportsService } from "./comparison-reports.service";
 import { AnomalyReportsService } from "./anomaly-reports.service";
 import { TaxRecurringReportsService } from "./tax-recurring-reports.service";
 import { DataQualityReportsService } from "./data-quality-reports.service";
+import { MonthlyComparisonService } from "./monthly-comparison.service";
 import {
   SpendingByCategoryResponse,
   SpendingByPayeeResponse,
@@ -19,6 +20,7 @@ import {
   BillPaymentHistoryResponse,
   UncategorizedTransactionsResponse,
   DuplicateTransactionsResponse,
+  MonthlyComparisonResponse,
 } from "./dto";
 
 @Injectable()
@@ -30,6 +32,7 @@ export class BuiltInReportsService {
     private anomalyReports: AnomalyReportsService,
     private taxRecurringReports: TaxRecurringReportsService,
     private dataQualityReports: DataQualityReportsService,
+    private monthlyComparison: MonthlyComparisonService,
   ) {}
 
   getSpendingByCategory(
@@ -158,5 +161,12 @@ export class BuiltInReportsService {
       endDate,
       sensitivity,
     );
+  }
+
+  getMonthlyComparison(
+    userId: string,
+    month: string,
+  ): Promise<MonthlyComparisonResponse> {
+    return this.monthlyComparison.getMonthlyComparison(userId, month);
   }
 }

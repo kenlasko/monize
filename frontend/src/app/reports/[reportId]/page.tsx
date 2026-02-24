@@ -29,6 +29,7 @@ const reportComponents: Record<string, React.LazyExoticComponent<React.Component
   'recurring-expenses': lazy(() => import('@/components/reports/RecurringExpensesReport').then(m => ({ default: m.RecurringExpensesReport }))),
   'spending-anomalies': lazy(() => import('@/components/reports/SpendingAnomaliesReport').then(m => ({ default: m.SpendingAnomaliesReport }))),
   'weekend-weekday-spending': lazy(() => import('@/components/reports/WeekendVsWeekdayReport').then(m => ({ default: m.WeekendVsWeekdayReport }))),
+  'monthly-comparison': lazy(() => import('@/components/reports/MonthlyComparisonReport').then(m => ({ default: m.MonthlyComparisonReport }))),
   // Maintenance & Cleanup
   'uncategorized-transactions': lazy(() => import('@/components/reports/UncategorizedTransactionsReport').then(m => ({ default: m.UncategorizedTransactionsReport }))),
   'duplicate-transactions': lazy(() => import('@/components/reports/DuplicateTransactionReport').then(m => ({ default: m.DuplicateTransactionReport }))),
@@ -68,6 +69,7 @@ const reportNames: Record<string, string> = {
   'recurring-expenses': 'Recurring Expenses Tracker',
   'spending-anomalies': 'Spending Anomalies',
   'weekend-weekday-spending': 'Weekend vs Weekday Spending',
+  'monthly-comparison': 'Monthly Comparison',
   // Maintenance & Cleanup
   'uncategorized-transactions': 'Uncategorized Transactions',
   'duplicate-transactions': 'Duplicate Transaction Finder',
@@ -104,6 +106,7 @@ const reportDescriptions: Record<string, string> = {
   'recurring-expenses': 'Identify and monitor subscriptions, memberships, and recurring charges.',
   'spending-anomalies': 'Detect unusually large transactions and spending spikes that need attention.',
   'weekend-weekday-spending': 'Analyze your spending patterns based on day of week to understand habits.',
+  'monthly-comparison': 'Compare any month to the previous month across income, expenses, net worth, and investments.',
   'uncategorized-transactions': 'Find and categorize transactions that are missing categories.',
   'duplicate-transactions': 'Identify potential duplicate entries that may need review or deletion.',
   'upcoming-bills': 'Visual calendar of scheduled transactions and upcoming bill due dates.',

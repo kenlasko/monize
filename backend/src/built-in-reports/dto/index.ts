@@ -14,3 +14,5 @@ export * from "./uncategorized-transactions.dto";
 export * from "./uncategorized-transactions-query.dto";
 export * from "./duplicate-transactions.dto";
 export * from "./duplicate-transactions-query.dto";
+export * from "./monthly-comparison.dto";
+export * from "./monthly-comparison-query.dto";

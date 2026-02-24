@@ -16,6 +16,9 @@ import { Payee } from "../payees/entities/payee.entity";
 import { Account } from "../accounts/entities/account.entity";
 import { UserPreference } from "../users/entities/user-preference.entity";
 import { CurrenciesModule } from "../currencies/currencies.module";
+import { NetWorthModule } from "../net-worth/net-worth.module";
+import { SecuritiesModule } from "../securities/securities.module";
+import { MonthlyComparisonService } from "./monthly-comparison.service";
 
 @Module({
   imports: [
@@ -28,6 +31,8 @@ import { CurrenciesModule } from "../currencies/currencies.module";
       UserPreference,
     ]),
     CurrenciesModule,
+    NetWorthModule,
+    SecuritiesModule,
   ],
   controllers: [BuiltInReportsController],
   providers: [
@@ -39,7 +44,8 @@ import { CurrenciesModule } from "../currencies/currencies.module";
     AnomalyReportsService,
     TaxRecurringReportsService,
     DataQualityReportsService,
+    MonthlyComparisonService,
   ],
-  exports: [BuiltInReportsService],
+  exports: [BuiltInReportsService, MonthlyComparisonService],
 })
 export class BuiltInReportsModule {}

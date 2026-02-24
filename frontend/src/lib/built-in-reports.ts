@@ -15,6 +15,7 @@ import {
   UncategorizedTransactionsResponse,
   DuplicateTransactionsResponse,
 } from '@/types/built-in-reports';
+import { MonthlyComparisonResponse } from '@/types/monthly-comparison';
 
 export const builtInReportsApi = {
   getSpendingByCategory: async (
@@ -153,6 +154,16 @@ export const builtInReportsApi = {
     const response = await apiClient.get<DuplicateTransactionsResponse>(
       '/built-in-reports/duplicate-transactions',
       { params },
+    );
+    return response.data;
+  },
+
+  getMonthlyComparison: async (
+    month: string,
+  ): Promise<MonthlyComparisonResponse> => {
+    const response = await apiClient.get<MonthlyComparisonResponse>(
+      '/built-in-reports/monthly-comparison',
+      { params: { month } },
     );
     return response.data;
   },

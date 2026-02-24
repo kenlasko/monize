@@ -1283,6 +1283,141 @@ describe("PortfolioService", () => {
         expect(result[0].marketValue).toBe(36 * 100);
       });
     });
+
+  });
+
+  describe("getMonthOverMonthMovers", () => {
+    describe("when user has active holdings with prices in both months", () => {
+      beforeEach(() => {
+        accountsRepository.find.mockResolvedValue([
+          mockBrokerageAccount,
+          mockCashAccount,
+        ]);
+        holdingsRepository.find.mockResolvedValue([
+          mockHoldingAAPL,
+          mockHoldingVFV,
+        ]);
+      });
+
+      it("compares end-of-month prices and returns sorted movers", async () => {
+        securityPriceRepository.query.mockResolvedValue([
+          // AAPL: current month-end=190, previous month-end=180 => +5.56%
+          { security_id: "sec-1", close_price: "190", period: "current" },
+          { security_id: "sec-1", close_price: "180", period: "previous" },
+          // VFV: current month-end=85, previous month-end=95 => -10.53%
+          { security_id: "sec-2", close_price: "85", period: "current" },
+          { security_id: "sec-2", close_price: "95", period: "previous" },
+        ]);
+
+        const result = await service.getMonthOverMonthMovers(
+          userId,
+          "2026-01-31",
+          "2025-12-31",
+        );
+
+        expect(result).toHaveLength(2);
+        // VFV has larger absolute change
+        expect(result[0].symbol).toBe("VFV.TO");
+        expect(result[0].currentPrice).toBe(85);
+        expect(result[0].previousPrice).toBe(95);
+        expect(result[0].dailyChangePercent).toBeCloseTo(-10.53, 1);
+        expect(result[1].symbol).toBe("AAPL");
+        expect(result[1].currentPrice).toBe(190);
+        expect(result[1].previousPrice).toBe(180);
+      });
+
+      it("passes both date bounds to the price query", async () => {
+        securityPriceRepository.query.mockResolvedValue([]);
+
+        await service.getMonthOverMonthMovers(userId, "2026-01-31", "2025-12-31");
+
+        const queryCall = securityPriceRepository.query.mock.calls[0];
+        expect(queryCall[0]).toContain("price_date <= $2::DATE");
+        expect(queryCall[0]).toContain("price_date <= $3::DATE");
+        expect(queryCall[1][1]).toBe("2026-01-31");
+        expect(queryCall[1][2]).toBe("2025-12-31");
+      });
+
+      it("skips securities missing a price in either month", async () => {
+        securityPriceRepository.query.mockResolvedValue([
+          // Only current month price for AAPL, no previous
+          { security_id: "sec-1", close_price: "190", period: "current" },
+          // Both months for VFV
+          { security_id: "sec-2", close_price: "90", period: "current" },
+          { security_id: "sec-2", close_price: "85", period: "previous" },
+        ]);
+
+        const result = await service.getMonthOverMonthMovers(
+          userId,
+          "2026-01-31",
+          "2025-12-31",
+        );
+
+        expect(result).toHaveLength(1);
+        expect(result[0].symbol).toBe("VFV.TO");
+      });
+
+      it("skips securities where previous price is zero", async () => {
+        securityPriceRepository.query.mockResolvedValue([
+          { security_id: "sec-1", close_price: "190", period: "current" },
+          { security_id: "sec-1", close_price: "0", period: "previous" },
+        ]);
+
+        const result = await service.getMonthOverMonthMovers(
+          userId,
+          "2026-01-31",
+          "2025-12-31",
+        );
+
+        expect(result).toHaveLength(0);
+      });
+
+      it("calculates market value using current price and total quantity", async () => {
+        securityPriceRepository.query.mockResolvedValue([
+          { security_id: "sec-1", close_price: "200", period: "current" },
+          { security_id: "sec-1", close_price: "180", period: "previous" },
+        ]);
+
+        const result = await service.getMonthOverMonthMovers(
+          userId,
+          "2026-01-31",
+          "2025-12-31",
+        );
+
+        expect(result[0].marketValue).toBe(200 * 10); // currentPrice * quantity
+      });
+    });
+
+    describe("when user has no investment accounts", () => {
+      it("returns empty array", async () => {
+        accountsRepository.find.mockResolvedValue([]);
+
+        const result = await service.getMonthOverMonthMovers(
+          userId,
+          "2026-01-31",
+          "2025-12-31",
+        );
+
+        expect(result).toEqual([]);
+      });
+    });
+
+    describe("when all holdings have zero quantity", () => {
+      it("returns empty array", async () => {
+        accountsRepository.find.mockResolvedValue([mockBrokerageAccount]);
+        holdingsRepository.find.mockResolvedValue([
+          { ...mockHoldingAAPL, quantity: 0 },
+        ]);
+
+        const result = await service.getMonthOverMonthMovers(
+          userId,
+          "2026-01-31",
+          "2025-12-31",
+        );
+
+        expect(result).toEqual([]);
+      });
+    });
   });
 
   describe("getAssetAllocation", () => {

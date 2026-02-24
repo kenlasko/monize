@@ -22,6 +22,7 @@ describe("BuiltInReportsController", () => {
       getBillPaymentHistory: jest.fn(),
       getUncategorizedTransactions: jest.fn(),
       getDuplicateTransactions: jest.fn(),
+      getMonthlyComparison: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -376,6 +377,25 @@ describe("BuiltInReportsController", () => {
         "2024-01-01",
         "2024-12-31",
         "medium",
+      );
+    });
+  });
+
+  describe("getMonthlyComparison()", () => {
+    it("delegates to service with userId and month", async () => {
+      const query = { month: "2026-01" };
+      const expected = { currentMonth: "2026-01", previousMonth: "2025-12" };
+      mockService.getMonthlyComparison.mockResolvedValue(expected);
+
+      const result = await controller.getMonthlyComparison(
+        mockReq,
+        query as any,
+      );
+
+      expect(result).toEqual(expected);
+      expect(mockService.getMonthlyComparison).toHaveBeenCalledWith(
+        "user-1",
+        "2026-01",
       );
     });
   });

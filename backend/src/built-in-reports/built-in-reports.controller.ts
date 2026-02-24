@@ -24,6 +24,8 @@ import {
   UncategorizedTransactionsQueryDto,
   DuplicateTransactionsResponse,
   DuplicateTransactionsQueryDto,
+  MonthlyComparisonResponse,
+  MonthlyComparisonQueryDto,
 } from "./dto";
 
 @ApiTags("Built-in Reports")
@@ -226,5 +228,17 @@ export class BuiltInReportsController {
       query.endDate,
       query.sensitivity || "medium",
     );
+  }
+
+  @Get("monthly-comparison")
+  @ApiOperation({
+    summary: "Get monthly comparison report (month vs previous month)",
+  })
+  @ApiResponse({ status: 200, type: MonthlyComparisonResponse })
+  getMonthlyComparison(
+    @Request() req,
+    @Query() query: MonthlyComparisonQueryDto,
+  ): Promise<MonthlyComparisonResponse> {
+    return this.reportsService.getMonthlyComparison(req.user.id, query.month);
   }
 }

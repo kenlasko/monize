@@ -36,6 +36,7 @@ export class SpendingReportsService {
     userId: string,
     startDate: string | undefined,
     endDate: string,
+    rollupToParent: boolean = true,
   ): Promise<SpendingByCategoryResponse> {
     const defaultCurrency =
       await this.currencyService.getDefaultCurrency(userId);
@@ -111,17 +112,37 @@ export class SpendingReportsService {
         continue;
       }
 
-      const parentCategory = category.parentId
-        ? categoryMap.get(category.parentId)
-        : null;
-      const displayCategory = parentCategory || category;
-      const displayId = displayCategory.id;
+      if (rollupToParent) {
+        const parentCategory = category.parentId
+          ? categoryMap.get(category.parentId)
+          : null;
+        const displayCategory = parentCategory || category;
+        const displayId = displayCategory.id;
 
-      const existing = parentTotals.get(displayId);
-      if (existing) {
-        existing.total += total;
+        const existing = parentTotals.get(displayId);
+        if (existing) {
+          existing.total += total;
+        } else {
+          parentTotals.set(displayId, { total, category: displayCategory });
+        }
       } else {
-        parentTotals.set(displayId, { total, category: displayCategory });
+        // Keep subcategory detail — format name as "Parent: Child"
+        const parentCategory = category.parentId
+          ? categoryMap.get(category.parentId)
+          : null;
+        const displayName = parentCategory
+          ? `${parentCategory.name}: ${category.name}`
+          : category.name;
+
+        const existing = parentTotals.get(category.id);
+        if (existing) {
+          existing.total += total;
+        } else {
+          parentTotals.set(category.id, {
+            total,
+            category: { ...category, name: displayName } as Category,
+          });
+        }
       }
     }
 

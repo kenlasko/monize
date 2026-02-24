@@ -627,6 +627,118 @@ export class PortfolioService {
   }
 
   /**
+   * Get month-over-month price movers for held securities.
+   * Compares the latest price on or before currentEnd to the latest price
+   * on or before previousEnd for each security.
+   */
+  async getMonthOverMonthMovers(
+    userId: string,
+    currentEnd: string,
+    previousEnd: string,
+  ): Promise<TopMover[]> {
+    const accounts = await this.getInvestmentAccounts(userId);
+    const brokerageAccounts = accounts.filter(
+      (a) => a.accountSubType === AccountSubType.INVESTMENT_BROKERAGE,
+    );
+    const standaloneAccounts = accounts.filter(
+      (a) => a.accountSubType === null || a.accountSubType === undefined,
+    );
+    const holdingsAccountIds = [
+      ...brokerageAccounts.map((a) => a.id),
+      ...standaloneAccounts.map((a) => a.id),
+    ];
+
+    if (holdingsAccountIds.length === 0) return [];
+
+    const holdings = await this.holdingsRepository.find({
+      where: { accountId: In(holdingsAccountIds) },
+      relations: ["security"],
+    });
+    const activeHoldings = holdings.filter(
+      (h) => Number(h.quantity) !== 0 && h.security?.isActive !== false,
+    );
+    if (activeHoldings.length === 0) return [];
+
+    const securityIds = [...new Set(activeHoldings.map((h) => h.securityId))];
+
+    // For each security, get the latest price on or before each month-end
+    const priceRows: Array<{
+      security_id: string;
+      close_price: string;
+      period: string;
+    }> = await this.securityPriceRepository.query(
+      `SELECT security_id, close_price, period FROM (
+         SELECT security_id, close_price, 'current' as period,
+                ROW_NUMBER() OVER (PARTITION BY security_id ORDER BY price_date DESC) as rn
+         FROM security_prices
+         WHERE security_id = ANY($1)
+           AND price_date <= $2::DATE
+       ) sub WHERE rn = 1
+       UNION ALL
+       SELECT security_id, close_price, period FROM (
+         SELECT security_id, close_price, 'previous' as period,
+                ROW_NUMBER() OVER (PARTITION BY security_id ORDER BY price_date DESC) as rn
+         FROM security_prices
+         WHERE security_id = ANY($1)
+           AND price_date <= $3::DATE
+       ) sub WHERE rn = 1`,
+      [securityIds, currentEnd, previousEnd],
+    );
+
+    // Build price maps per security
+    const currentPriceMap = new Map<string, number>();
+    const previousPriceMap = new Map<string, number>();
+    for (const row of priceRows) {
+      if (row.period === "current") {
+        currentPriceMap.set(row.security_id, Number(row.close_price));
+      } else {
+        previousPriceMap.set(row.security_id, Number(row.close_price));
+      }
+    }
+
+    // Aggregate quantity per security
+    const quantityMap = new Map<string, number>();
+    for (const h of activeHoldings) {
+      const qty = quantityMap.get(h.securityId) || 0;
+      quantityMap.set(h.securityId, qty + Number(h.quantity));
+    }
+
+    const securityLookup = new Map(
+      activeHoldings.map((h) => [h.securityId, h.security]),
+    );
+
+    const movers: TopMover[] = [];
+    for (const securityId of securityIds) {
+      const currentPrice = currentPriceMap.get(securityId);
+      const previousPrice = previousPriceMap.get(securityId);
+      if (currentPrice == null || previousPrice == null || previousPrice === 0) continue;
+
+      const dailyChange = currentPrice - previousPrice;
+      const dailyChangePercent = (dailyChange / previousPrice) * 100;
+      const security = securityLookup.get(securityId);
+      const totalQty = quantityMap.get(securityId) || 0;
+
+      movers.push({
+        securityId,
+        symbol: security?.symbol || "Unknown",
+        name: security?.name || "Unknown",
+        currencyCode: security?.currencyCode || "USD",
+        currentPrice,
+        previousPrice,
+        dailyChange,
+        dailyChangePercent,
+        marketValue: currentPrice * totalQty,
+      });
+    }
+
+    movers.sort(
+      (a, b) => Math.abs(b.dailyChangePercent) - Math.abs(a.dailyChangePercent),
+    );
+
+    return movers;
+  }
+
+  /**
    * Get asset allocation breakdown
    * Note: This now just extracts the pre-computed allocation from getPortfolioSummary
    * to maintain backwards compatibility. Prefer using summary.allocation directly.

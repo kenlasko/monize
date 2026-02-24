@@ -85,6 +85,35 @@ export class McpReportsTools {
     );
 
     server.registerTool(
+      "monthly_comparison",
+      {
+        description:
+          "Generate a monthly comparison report comparing one month to the previous month. Includes income vs expenses, category spending breakdown, net worth, and investment performance.",
+        inputSchema: {
+          month: z
+            .string()
+            .describe("Month to compare in YYYY-MM format (e.g., 2026-01)"),
+        },
+      },
+      async (args, extra) => {
+        const ctx = resolve(extra.sessionId);
+        if (!ctx) return toolError("No user context");
+        const check = requireScope(ctx.scopes, "reports");
+        if (check.error) return check.result;
+
+        try {
+          const data = await this.reportsService.getMonthlyComparison(
+            ctx.userId,
+            args.month,
+          );
+          return toolResult(data);
+        } catch (err: any) {
+          return toolError(err.message);
+        }
+      },
+    );
+
+    server.registerTool(
       "get_anomalies",
       {
         description: "Find unusual transactions or spending patterns",

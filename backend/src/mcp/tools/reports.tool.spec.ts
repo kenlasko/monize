@@ -15,6 +15,7 @@ describe("McpReportsTools", () => {
       getIncomeVsExpenses: jest.fn(),
       getMonthlySpendingTrend: jest.fn(),
       getIncomeBySource: jest.fn(),
+      getMonthlyComparison: jest.fn(),
       getSpendingAnomalies: jest.fn(),
     };
 
@@ -30,8 +31,8 @@ describe("McpReportsTools", () => {
     tool.register(server as any, resolve);
   });
 
-  it("should register 2 tools", () => {
-    expect(server.registerTool).toHaveBeenCalledTimes(2);
+  it("should register 3 tools", () => {
+    expect(server.registerTool).toHaveBeenCalledTimes(3);
   });
 
   describe("generate_report", () => {
@@ -127,6 +128,63 @@ describe("McpReportsTools", () => {
         { sessionId: "s1" },
       );
       expect(reportsService.getIncomeBySource).toHaveBeenCalled();
+    });
+  });
+
+  describe("monthly_comparison", () => {
+    it("should return error when no user context", async () => {
+      resolve.mockReturnValue(undefined);
+
+      const result = await handlers["monthly_comparison"](
+        { month: "2026-01" },
+        { sessionId: "s1" },
+      );
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain("No user context");
+    });
+
+    it("should require reports scope", async () => {
+      resolve.mockReturnValue({ userId: "u1", scopes: "read,write" });
+
+      const result = await handlers["monthly_comparison"](
+        { month: "2026-01" },
+        { sessionId: "s1" },
+      );
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain("reports");
+    });
+
+    it("should call getMonthlyComparison and return data", async () => {
+      resolve.mockReturnValue({ userId: "u1", scopes: "reports" });
+      const mockData = { currentMonth: "2026-01", previousMonth: "2025-12" };
+      reportsService.getMonthlyComparison.mockResolvedValue(mockData);
+
+      const result = await handlers["monthly_comparison"](
+        { month: "2026-01" },
+        { sessionId: "s1" },
+      );
+
+      expect(result.isError).toBeUndefined();
+      expect(reportsService.getMonthlyComparison).toHaveBeenCalledWith(
+        "u1",
+        "2026-01",
+      );
+      const parsed = JSON.parse(result.content[0].text);
+      expect(parsed.currentMonth).toBe("2026-01");
+    });
+
+    it("should return error on service exception", async () => {
+      resolve.mockReturnValue({ userId: "u1", scopes: "reports" });
+      reportsService.getMonthlyComparison.mockRejectedValue(
+        new Error("Service failure"),
+      );
+
+      const result = await handlers["monthly_comparison"](
+        { month: "2026-01" },
+        { sessionId: "s1" },
+      );
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain("Service failure");
     });
   });
 
