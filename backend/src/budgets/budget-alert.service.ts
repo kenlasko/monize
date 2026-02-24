@@ -784,7 +784,7 @@ export class BudgetAlertService {
         const cat = bc.category;
         const name = cat
           ? cat.parent
-            ? `${cat.parent.name} > ${cat.name}`
+            ? `${cat.parent.name}: ${cat.name}`
             : cat.name
           : "Uncategorized";
         categoryNameMap.set(bc.categoryId, { name, bcId: bc.id });
@@ -984,7 +984,7 @@ export class BudgetAlertService {
         const cat = bc.category;
         categoryName = cat
           ? cat.parent
-            ? `${cat.parent.name} > ${cat.name}`
+            ? `${cat.parent.name}: ${cat.name}`
             : cat.name
           : "Uncategorized";
       }

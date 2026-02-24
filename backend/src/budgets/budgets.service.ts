@@ -968,7 +968,7 @@ export class BudgetsService {
         const cat = bc.category;
         categoryName = cat
           ? cat.parent
-            ? `${cat.parent.name} > ${cat.name}`
+            ? `${cat.parent.name}: ${cat.name}`
             : cat.name
           : "Uncategorized";
       }

@@ -237,7 +237,7 @@ export class BudgetReportsService {
         const cat = pc.category;
         const categoryName = cat
           ? cat.parent
-            ? `${cat.parent.name} > ${cat.name}`
+            ? `${cat.parent.name}: ${cat.name}`
             : cat.name
           : "Uncategorized";
 
@@ -449,7 +449,7 @@ export class BudgetReportsService {
         const cat = bc.category;
         const name = cat
           ? cat.parent
-            ? `${cat.parent.name} > ${cat.name}`
+            ? `${cat.parent.name}: ${cat.name}`
             : cat.name
           : "Uncategorized";
         categoryNameMap.set(bc.categoryId, name);
@@ -1239,7 +1239,7 @@ export class BudgetReportsService {
       const cat = bc.category;
       const categoryName = cat
         ? cat.parent
-          ? `${cat.parent.name} > ${cat.name}`
+          ? `${cat.parent.name}: ${cat.name}`
           : cat.name
         : "Uncategorized";
 
