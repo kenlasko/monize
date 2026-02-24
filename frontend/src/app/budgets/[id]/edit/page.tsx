@@ -23,6 +23,12 @@ import type {
   UpdateBudgetCategoryData,
 } from '@/types/budget';
 
+function getCategoryDisplayName(cat: BudgetCategory): string {
+  if (!cat.category) return 'Unknown';
+  const { name, parent } = cat.category;
+  return parent ? `${parent.name}: ${name}` : name;
+}
+
 export default function BudgetEditPage() {
   return (
     <ProtectedRoute>
@@ -160,7 +166,7 @@ function BudgetEditContent() {
                     >
                       <div className="flex items-center justify-between">
                         <span className="font-medium text-gray-900 dark:text-gray-100">
-                          {cat.category?.name ?? 'Unknown'}
+                          {getCategoryDisplayName(cat)}
                         </span>
                         <span className="text-sm text-green-600 dark:text-green-400">
                           {formatCurrency(cat.amount, budget.currencyCode)}
@@ -192,7 +198,7 @@ function BudgetEditContent() {
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-2">
                         <span className="font-medium text-gray-900 dark:text-gray-100">
-                          {cat.category?.name ?? 'Unknown'}
+                          {getCategoryDisplayName(cat)}
                         </span>
                         {cat.flexGroup && (
                           <span className="px-1.5 py-0.5 bg-purple-50 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400 text-xs rounded font-medium">
@@ -228,7 +234,7 @@ function BudgetEditContent() {
             className="p-6"
           >
             <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
-              Edit {editingCategory.category?.name ?? 'Category'}
+              Edit {getCategoryDisplayName(editingCategory)}
             </h2>
             <BudgetCategoryForm
               category={editingCategory}

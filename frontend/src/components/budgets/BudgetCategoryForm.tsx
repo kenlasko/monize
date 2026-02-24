@@ -81,7 +81,7 @@ export function BudgetCategoryForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-        Edit: {category.category?.name ?? 'Category'}
+        Edit: {category.category?.parent ? `${category.category.parent.name}: ${category.category.name}` : category.category?.name ?? 'Category'}
       </h3>
 
       <CurrencyInput

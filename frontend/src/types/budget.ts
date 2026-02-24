@@ -56,6 +56,8 @@ export interface BudgetCategory {
     id: string;
     name: string;
     isIncome: boolean;
+    parentId?: string | null;
+    parent?: { id: string; name: string } | null;
   } | null;
   transferAccountId: string | null;
   transferAccount: {
