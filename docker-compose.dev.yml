@@ -69,7 +69,6 @@ services:
       AI_DEFAULT_MODEL: ${AI_DEFAULT_MODEL:-}
       AI_DEFAULT_API_KEY: ${AI_DEFAULT_API_KEY:-}
       AI_DEFAULT_BASE_URL: ${AI_DEFAULT_BASE_URL:-}
-      AI_RATE_LIMIT_PER_MINUTE: ${AI_RATE_LIMIT_PER_MINUTE:-10}
     volumes:
       - ./backend:/app
       - ./database/schema.sql:/app/schema.sql:ro

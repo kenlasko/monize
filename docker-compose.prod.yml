@@ -20,10 +20,7 @@ services:
 
   # Backend API (NestJS)
   backend:
-    build:
-      context: .
-      dockerfile: backend/Dockerfile
-      target: production
+    image: ghcr.io/kenlasko/monize-backend:latest
     container_name: monize-backend
     restart: unless-stopped
     read_only: true
@@ -72,7 +69,6 @@ services:
       AI_DEFAULT_MODEL: ${AI_DEFAULT_MODEL:-}
       AI_DEFAULT_API_KEY: ${AI_DEFAULT_API_KEY:-}
       AI_DEFAULT_BASE_URL: ${AI_DEFAULT_BASE_URL:-}
-      AI_RATE_LIMIT_PER_MINUTE: ${AI_RATE_LIMIT_PER_MINUTE:-10}
     networks:
       - monize-network
     healthcheck:
@@ -84,10 +80,7 @@ services:
 
   # Frontend (Next.js)
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-      target: production
+    image: ghcr.io/kenlasko/monize-frontend:latest
     container_name: monize-frontend
     restart: unless-stopped
     read_only: true

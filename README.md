@@ -6,6 +6,23 @@
 > [!CAUTION] 
 > This project is 100% written by AI. I've done practically zero manual changes. I have spent hours prompting Claude Code for features, updates, fixes and tweaks. I have taken steps to ensure this is secure as it can be. I've performed numerous security audits and have implemented best-practice security measures as much as I can (including 2FA and OIDC support), but I can't personally guarantee the security of this code. YOU HAVE BEEN WARNED. 
 
+<div align="center">
+<table>
+<tr>
+<td align="center"><a href="https://raw.githubusercontent.com/wiki/kenlasko/monize/images/dashboard-overview.png"><img src="https://raw.githubusercontent.com/wiki/kenlasko/monize/images/dashboard-overview.png" width="400" alt="Dashboard Overview"/></a></td>
+<td align="center"><a href="https://raw.githubusercontent.com/wiki/kenlasko/monize/images/transactions-page.png"><img src="https://raw.githubusercontent.com/wiki/kenlasko/monize/images/transactions-page.png" width="400" alt="Transactions"/></a></td>
+<td align="center"><a href="https://raw.githubusercontent.com/wiki/kenlasko/monize/images/bills-deposits-page.png"><img src="https://raw.githubusercontent.com/wiki/kenlasko/monize/images/bills-deposits-page.png" width="400" alt="Bills & Deposits"/></a></td>
+<td align="center"><a href="https://raw.githubusercontent.com/wiki/kenlasko/monize/images/investments-page.png"><img src="https://raw.githubusercontent.com/wiki/kenlasko/monize/images/investments-page.png" width="400" alt="Investments"/></a></td>
+</tr>
+<tr>
+<td align="center"><b>Dashboard</b></td>
+<td align="center"><b>Transactions</b></td>
+<td align="center"><b>Bills & Deposits</b></td>
+<td align="center"><b>Investments</b></td>
+</tr>
+</table>
+</div>
+
 A comprehensive personal finance management application built with NestJS and Next.js. Designed as a replacement for Microsoft Money. 100% built using farm-fresh, free-range Claude Code.
 
 **[Live Demo](https://monize-demo.ucdialplans.com)**
@@ -73,7 +90,7 @@ I could easily add import capabilities for other filetypes, but I would need exa
 - Historical price backfill
 
 ### Multi-Currency Support
-- Support for multiple currencies (USD, CAD, EUR, GBP, JPY, CHF, AUD, CNY)
+- Support for multiple currencies (USD, CAD, EUR, GBP, JPY, CHF, AUD, CNY and others for starters)
 - Daily exchange rate updates
 - Automatic currency conversion for reporting
 - Per-account currency settings
@@ -103,6 +120,12 @@ I could easily add import capabilities for other filetypes, but I would need exa
 - **Custom Reports**: Build your own reports with flexible filters
 - Visual charts (pie, bar, line, area)
 
+### Budget Planner
+- Create and manage budgets with per-category allocations
+- Track spending against budget targets
+- Budget period snapshots and historical tracking
+- Budget alerts for threshold notifications
+
 ### AI Financial Assistant
 - **Natural language queries** about your finances ("How much did I spend on dining last month?", "What are my top expense categories?")
 - **Multi-provider support**: Anthropic (Claude), OpenAI (GPT), Ollama (local models), and any OpenAI-compatible endpoint
@@ -113,6 +136,7 @@ I could easily add import capabilities for other filetypes, but I would need exa
 - **Provider fallback chain** with priority-based ordering
 - **Connection testing** to verify provider setup before use
 - **Suggested queries** for quick exploration of your financial data
+- **MCP (Model Context Protocol)** server for integration with AI-powered tools
 - No financial data is sent to AI providers beyond what is needed to answer the specific query
 
 ### Security
@@ -120,25 +144,27 @@ I could easily add import capabilities for other filetypes, but I would need exa
 - Local credential authentication with bcrypt hashing
 - JWT-based session management with httpOnly cookies
 - TOTP two-factor authentication with trusted device support
+- Personal access tokens (PAT) for API and MCP access
 - Admin user management with role-based access (admin/user)
 - Password reset via email with temporary passwords
 - Forced password change and forced 2FA policies
 - Rate limiting and request throttling
 - Helmet security headers
 - CORS protection
+- Demo mode with sample data and daily resets
 
 ## Technology Stack
 
 ### Backend
 - **Framework**: NestJS (Node.js/TypeScript)
-- **Database**: PostgreSQL 16
+- **Database**: PostgreSQL 16+ (developed against PG16, daily usage with PG18)
 - **Authentication**: Passport.js (Local & OIDC strategies)
 - **API Documentation**: Swagger/OpenAPI (development only)
 - **ORM**: TypeORM
 - **Validation**: class-validator & class-transformer
 
 ### Frontend
-- **Framework**: Next.js 14 (React/TypeScript)
+- **Framework**: Next.js 16 (React 19/TypeScript)
 - **Styling**: Tailwind CSS
 - **State Management**: Zustand
 - **Charts**: Recharts
@@ -157,7 +183,7 @@ I could easily add import capabilities for other filetypes, but I would need exa
 monize/
 ├── backend/                    # NestJS backend application
 │   ├── src/
-│   │   ├── auth/              # Authentication (Local, OIDC, 2FA, trusted devices)
+│   │   ├── auth/              # Authentication (Local, OIDC, 2FA, trusted devices, PAT)
 │   │   ├── users/             # User management & preferences
 │   │   ├── admin/             # Admin user management (roles, status, password reset)
 │   │   ├── accounts/          # Account management
@@ -167,11 +193,13 @@ monize/
 │   │   ├── currencies/        # Currency & exchange rates
 │   │   ├── securities/        # Stock/security management & portfolio
 │   │   ├── scheduled-transactions/   # Recurring payments
+│   │   ├── budgets/           # Budget planner & tracking
 │   │   ├── notifications/     # Email notifications (SMTP)
 │   │   ├── net-worth/         # Net worth calculations
 │   │   ├── built-in-reports/  # Server-side report aggregation
-│   │   ├── custom-reports/    # User-defined custom reports
+│   │   ├── reports/           # User-defined custom reports
 │   │   ├── ai/                # AI assistant (providers, query engine, usage tracking)
+│   │   ├── mcp/               # Model Context Protocol server
 │   │   ├── import/            # QIF file import
 │   │   ├── health/            # Health check endpoints
 │   │   └── main.ts            # Application entry point
@@ -180,15 +208,20 @@ monize/
 │   ├── src/
 │   │   ├── app/               # Next.js App Router pages
 │   │   ├── components/        # React components
+│   │   ├── contexts/          # React contexts
 │   │   ├── lib/               # API clients and utilities
 │   │   ├── hooks/             # Custom React hooks
 │   │   ├── store/             # Zustand state stores
 │   │   └── types/             # TypeScript type definitions
 │   └── Dockerfile
 ├── database/
-│   └── schema.sql             # Complete PostgreSQL schema
+│   ├── schema.sql             # Complete PostgreSQL schema
+│   └── migrations/            # Incremental schema migrations
+├── e2e/                       # End-to-end tests
+├── helm/                      # Helm charts for Kubernetes
 ├── docker-compose.yml         # Development environment
 ├── docker-compose.prod.yml    # Production environment
+├── docker-compose.demo.yml    # Demo environment
 ├── .env.example               # Environment variables template
 └── README.md
 ```
@@ -283,7 +316,7 @@ npm run dev
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `INTERNAL_API_URL` | Backend URL for server-side calls | `http://localhost:3001` |
+| `INTERNAL_API_URL` | Backend URL for server-side calls | `http://localhost:3000` |
 | `CORS_ORIGIN` | Additional CORS origin | - |
 | `LOCAL_AUTH_ENABLED` | Enable local auth | `true` |
 | `REGISTRATION_ENABLED` | Allow new user registration | `true` |
@@ -295,14 +328,16 @@ npm run dev
 | `SMTP_HOST` | SMTP server host | - |
 | `SMTP_PORT` | SMTP server port | `587` |
 | `SMTP_USER` | SMTP username | - |
-| `SMTP_PASS` | SMTP password | - |
-| `SMTP_FROM` | Email sender address | - |
+| `SMTP_PASSWORD` | SMTP password | - |
+| `EMAIL_FROM` | Email sender address | - |
 | `AI_ENCRYPTION_KEY` | Encryption key for AI API keys (`openssl rand -hex 32`) | - |
 | `AI_DEFAULT_PROVIDER` | System-level default AI provider | - |
 | `AI_DEFAULT_MODEL` | Default model for the provider | - |
 | `AI_DEFAULT_API_KEY` | System-wide AI API key | - |
 | `AI_DEFAULT_BASE_URL` | Base URL for Ollama or compatible endpoints | - |
-| `AI_RATE_LIMIT_PER_MINUTE` | Rate limit for AI endpoints | `10` |
+| `JWT_EXPIRATION` | JWT token expiration time | `15m` |
+| `DEMO_MODE` | Enable demo mode with sample data | `false` |
+| `SMTP_SECURE` | Use TLS for SMTP | `false` |
 
 
 ## Deployment
@@ -365,6 +400,9 @@ Swagger UI is available at `/api/docs` in **development mode only** (disabled in
 - `GET /api/v1/ai/usage` - AI usage summary
 - `GET /api/v1/ai/status` - AI feature availability
 - `GET /api/v1/built-in-reports/*` - Pre-aggregated reports
+- `POST /api/v1/mcp` - MCP (Model Context Protocol) endpoint
+- `GET /api/v1/auth/tokens` - List personal access tokens
+- `POST /api/v1/auth/tokens` - Create personal access token
 - `GET /api/v1/health/live` - Liveness probe
 - `GET /api/v1/health/ready` - Readiness probe
 
@@ -373,23 +411,29 @@ Swagger UI is available at `/api/docs` in **development mode only** (disabled in
 Main tables:
 - **users** / **user_preferences**: User accounts and settings
 - **trusted_devices**: 2FA trusted browser tokens
+- **refresh_tokens**: JWT refresh token rotation
+- **personal_access_tokens**: API tokens for MCP and programmatic access
 - **accounts**: Financial accounts (bank, credit, investment)
 - **transactions** / **transaction_splits**: Financial transactions
 - **categories**: Hierarchical transaction categories
 - **payees**: Payees with default category auto-assignment
+- **currencies** / **exchange_rates**: Currency definitions and historical rates
 - **scheduled_transactions** / **scheduled_transaction_overrides**: Recurring payments
 - **securities** / **security_prices** / **holdings**: Stocks, price history, and positions
 - **investment_transactions**: Buy/sell/dividend transactions
+- **budgets** / **budget_categories** / **budget_periods**: Budget planner and tracking
 - **monthly_account_balances**: Net worth snapshots
 - **custom_reports**: User-defined report configurations
 - **ai_provider_configs**: Per-user AI provider settings (encrypted API keys)
 - **ai_usage_logs**: AI query usage tracking (tokens, duration, provider)
+- **ai_insights**: AI-generated spending insights and anomaly detection
 
 ## Security Notes
 
 - Swagger/OpenAPI is **disabled in production**
-- JWT tokens stored in httpOnly cookies (not accessible to JavaScript)
+- JWT tokens stored in httpOnly cookies with refresh token rotation
 - TOTP 2FA with trusted device tokens (SHA256-hashed, httpOnly cookies)
+- Personal access tokens for API/MCP integration
 - Rate limiting enabled on authentication endpoints
 - Admin role required for user management operations
 - Always use HTTPS in production
