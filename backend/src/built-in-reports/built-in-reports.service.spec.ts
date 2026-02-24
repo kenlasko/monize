@@ -13,6 +13,7 @@ import { ComparisonReportsService } from "./comparison-reports.service";
 import { AnomalyReportsService } from "./anomaly-reports.service";
 import { TaxRecurringReportsService } from "./tax-recurring-reports.service";
 import { DataQualityReportsService } from "./data-quality-reports.service";
+import { MonthlyComparisonService } from "./monthly-comparison.service";
 
 describe("BuiltInReportsService", () => {
   let service: BuiltInReportsService;
@@ -146,6 +147,10 @@ describe("BuiltInReportsService", () => {
         AnomalyReportsService,
         TaxRecurringReportsService,
         DataQualityReportsService,
+        {
+          provide: MonthlyComparisonService,
+          useValue: { getMonthlyComparison: jest.fn() },
+        },
       ],
     }).compile();
 
