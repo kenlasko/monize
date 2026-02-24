@@ -52,7 +52,7 @@ describe('UpcomingBills', () => {
 
   it('renders empty state when no upcoming items', () => {
     render(<UpcomingBills scheduledTransactions={[]} isLoading={false} maxItems={defaultMaxItems} />);
-    expect(screen.getByText('No bills, deposits, or transfers due in the next 7 days.')).toBeInTheDocument();
+    expect(screen.getByText('No upcoming bills, deposits, or transfers within their reminder windows.')).toBeInTheDocument();
   });
 
   it('renders upcoming bill with Tomorrow label', () => {
@@ -88,6 +88,7 @@ describe('UpcomingBills', () => {
       {
         id: '1', name: 'Insurance', amount: -200, currencyCode: 'CAD',
         nextDueDate: futureDateStr(5), isActive: true, autoPost: true,
+        reminderDaysBefore: 7,
       },
     ] as any[];
 
@@ -139,13 +140,13 @@ describe('UpcomingBills', () => {
     expect(screen.queryByText('Inactive Bill')).not.toBeInTheDocument();
   });
 
-  it('filters out transactions beyond 7 days', () => {
+  it('filters out transactions beyond their reminder window', () => {
     const transactions = [
-      { id: '1', name: 'Far Future Bill', amount: -50, currencyCode: 'CAD', nextDueDate: futureDateStr(10), isActive: true, autoPost: true },
+      { id: '1', name: 'Far Future Bill', amount: -50, currencyCode: 'CAD', nextDueDate: futureDateStr(10), isActive: true, autoPost: true, reminderDaysBefore: 3 },
     ] as any[];
 
     render(<UpcomingBills scheduledTransactions={transactions} isLoading={false} maxItems={defaultMaxItems} />);
-    expect(screen.getByText('No bills, deposits, or transfers due in the next 7 days.')).toBeInTheDocument();
+    expect(screen.getByText('No upcoming bills, deposits, or transfers within their reminder windows.')).toBeInTheDocument();
   });
 
   it('navigates to bills page on title click', () => {

@@ -20,14 +20,14 @@ export function UpcomingBills({ scheduledTransactions, isLoading, maxItems }: Up
   const { formatCurrency: formatCurrencyBase } = useNumberFormat();
   const { convertToDefault } = useExchangeRates();
 
-  // Filter to active bills, deposits, and transfers in the next 7 days
+  // Filter to active bills, deposits, and transfers within each item's reminder window
   const today = startOfDay(new Date());
   const upcomingItems = scheduledTransactions
     .filter((st) => {
       if (!st.isActive) return false;
       const dueDate = parseLocalDate(st.nextDueDate);
       const daysUntil = differenceInDays(dueDate, today);
-      return daysUntil >= 0 && daysUntil <= 7;
+      return daysUntil >= 0 && daysUntil <= (st.reminderDaysBefore ?? 3);
     })
     .sort((a, b) => {
       const dateDiff = parseLocalDate(a.nextDueDate).getTime() - parseLocalDate(b.nextDueDate).getTime();
@@ -47,7 +47,7 @@ export function UpcomingBills({ scheduledTransactions, isLoading, maxItems }: Up
     if (isToday(date)) return 'Today';
     if (isTomorrow(date)) return 'Tomorrow';
     const days = differenceInDays(date, today);
-    if (days <= 7) return `${days} days`;
+    if (days <= 14) return `${days} days`;
     return formatDate(dateStr);
   };
 
@@ -131,7 +131,7 @@ export function UpcomingBills({ scheduledTransactions, isLoading, maxItems }: Up
           {sectionTitle}
         </button>
         <p className="text-gray-500 dark:text-gray-400 text-sm">
-          No bills, deposits, or transfers due in the next 7 days.
+          No upcoming bills, deposits, or transfers within their reminder windows.
         </p>
       </div>
     );
@@ -157,7 +157,7 @@ export function UpcomingBills({ scheduledTransactions, isLoading, maxItems }: Up
         >
           {sectionTitle}
         </button>
-        <span className="text-sm text-gray-500 dark:text-gray-400">Next 7 days</span>
+        <span className="text-sm text-gray-500 dark:text-gray-400">Per reminder settings</span>
       </div>
       <div className="space-y-2 sm:space-y-3">
         {visibleItems.map((item) => {
