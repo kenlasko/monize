@@ -89,8 +89,32 @@ describe("McpHttpController", () => {
   });
 
   describe("handleGet", () => {
-    it("should reject requests without session ID", async () => {
+    it("should reject requests without PAT", async () => {
       const req = { headers: {} } as any;
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      } as any;
+
+      await controller.handleGet(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(401);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          error: expect.objectContaining({ message: "Unauthorized" }),
+        }),
+      );
+    });
+
+    it("should reject requests without session ID", async () => {
+      patService.validateToken.mockResolvedValue({
+        userId: "user-1",
+        scopes: "read",
+      });
+
+      const req = {
+        headers: { authorization: "Bearer pat_test" },
+      } as any;
       const res = {
         status: jest.fn().mockReturnThis(),
         json: jest.fn(),
@@ -102,8 +126,16 @@ describe("McpHttpController", () => {
     });
 
     it("should reject requests with unknown session ID", async () => {
+      patService.validateToken.mockResolvedValue({
+        userId: "user-1",
+        scopes: "read",
+      });
+
       const req = {
-        headers: { "mcp-session-id": "unknown-session" },
+        headers: {
+          authorization: "Bearer pat_test",
+          "mcp-session-id": "unknown-session",
+        },
       } as any;
       const res = {
         status: jest.fn().mockReturnThis(),
@@ -114,10 +146,60 @@ describe("McpHttpController", () => {
 
       expect(res.status).toHaveBeenCalledWith(404);
     });
+
+    it("should reject when session user does not match authenticated user", async () => {
+      // First, set up a session by calling handlePost with user-1
+      patService.validateToken.mockResolvedValue({
+        userId: "user-1",
+        scopes: "read",
+      });
+
+      const sessionId = "test-session-id";
+      const mockTransport = {
+        sessionId,
+        onclose: null as any,
+        handleRequest: jest.fn(),
+        close: jest.fn().mockResolvedValue(undefined),
+      };
+
+      // Directly populate the private maps via any-cast
+      (controller as any).transports.set(sessionId, mockTransport);
+      (controller as any).servers.set(sessionId, {});
+      (controller as any).sessionUsers.set(sessionId, {
+        userId: "user-1",
+        scopes: "read",
+      });
+
+      // Now try GET with a different user
+      patService.validateToken.mockResolvedValue({
+        userId: "user-2",
+        scopes: "read",
+      });
+
+      const req = {
+        headers: {
+          authorization: "Bearer pat_test",
+          "mcp-session-id": sessionId,
+        },
+      } as any;
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      } as any;
+
+      await controller.handleGet(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          error: expect.objectContaining({ message: "Session user mismatch" }),
+        }),
+      );
+    });
   });
 
   describe("handleDelete", () => {
-    it("should reject requests without session ID", async () => {
+    it("should reject requests without PAT", async () => {
       const req = { headers: {} } as any;
       const res = {
         status: jest.fn().mockReturnThis(),
@@ -126,7 +208,80 @@ describe("McpHttpController", () => {
 
       await controller.handleDelete(req, res);
 
+      expect(res.status).toHaveBeenCalledWith(401);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          error: expect.objectContaining({ message: "Unauthorized" }),
+        }),
+      );
+    });
+
+    it("should reject requests without session ID", async () => {
+      patService.validateToken.mockResolvedValue({
+        userId: "user-1",
+        scopes: "read",
+      });
+
+      const req = {
+        headers: { authorization: "Bearer pat_test" },
+      } as any;
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      } as any;
+
+      await controller.handleDelete(req, res);
+
       expect(res.status).toHaveBeenCalledWith(400);
+    });
+
+    it("should reject when session user does not match authenticated user", async () => {
+      patService.validateToken.mockResolvedValue({
+        userId: "user-1",
+        scopes: "read",
+      });
+
+      const sessionId = "delete-session-id";
+      const mockTransport = {
+        sessionId,
+        onclose: null as any,
+        handleRequest: jest.fn(),
+        close: jest.fn().mockResolvedValue(undefined),
+      };
+
+      // Directly populate the private maps via any-cast
+      (controller as any).transports.set(sessionId, mockTransport);
+      (controller as any).servers.set(sessionId, {});
+      (controller as any).sessionUsers.set(sessionId, {
+        userId: "user-1",
+        scopes: "read",
+      });
+
+      // Now try DELETE with a different user
+      patService.validateToken.mockResolvedValue({
+        userId: "user-2",
+        scopes: "read",
+      });
+
+      const req = {
+        headers: {
+          authorization: "Bearer pat_test",
+          "mcp-session-id": sessionId,
+        },
+      } as any;
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      } as any;
+
+      await controller.handleDelete(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          error: expect.objectContaining({ message: "Session user mismatch" }),
+        }),
+      );
     });
   });
 

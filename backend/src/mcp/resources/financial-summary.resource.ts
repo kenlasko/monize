@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { AccountsService } from "../../accounts/accounts.service";
 import { TransactionAnalyticsService } from "../../transactions/transaction-analytics.service";
-import { UserContextResolver } from "../mcp-context";
+import { UserContextResolver, hasScope } from "../mcp-context";
 
 @Injectable()
 export class McpFinancialSummaryResource {
@@ -27,6 +27,16 @@ export class McpFinancialSummaryResource {
               {
                 uri: "monize://financial-summary",
                 text: "Error: No user context",
+              },
+            ],
+          };
+        }
+        if (!hasScope(ctx.scopes, "read")) {
+          return {
+            contents: [
+              {
+                uri: "monize://financial-summary",
+                text: 'Error: Insufficient scope. Requires "read" scope.',
               },
             ],
           };

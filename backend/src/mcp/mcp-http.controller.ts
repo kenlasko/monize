@@ -8,7 +8,7 @@ import {
   OnModuleDestroy,
 } from "@nestjs/common";
 import { ApiTags, ApiExcludeController } from "@nestjs/swagger";
-import { SkipThrottle } from "@nestjs/throttler";
+import { SkipThrottle, Throttle } from "@nestjs/throttler";
 import { Request, Response } from "express";
 import { randomUUID } from "crypto";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -25,7 +25,6 @@ const SkipPasswordCheck = () => SetMetadata(SKIP_PASSWORD_CHECK_KEY, true);
 @ApiExcludeController()
 @ApiTags("MCP")
 @SkipCsrf()
-@SkipThrottle()
 @SkipPasswordCheck()
 @Controller("mcp")
 export class McpHttpController implements OnModuleDestroy {
@@ -48,6 +47,7 @@ export class McpHttpController implements OnModuleDestroy {
   }
 
   @Post()
+  @Throttle({ default: { ttl: 60000, limit: 30 } })
   async handlePost(@Req() req: Request, @Res() res: Response) {
     const authResult = await this.validatePat(req);
     if (!authResult) {
@@ -116,7 +116,18 @@ export class McpHttpController implements OnModuleDestroy {
   }
 
   @Get()
+  @SkipThrottle()
   async handleGet(@Req() req: Request, @Res() res: Response) {
+    const authResult = await this.validatePat(req);
+    if (!authResult) {
+      res.status(401).json({
+        jsonrpc: "2.0",
+        error: { code: -32001, message: "Unauthorized" },
+        id: null,
+      });
+      return;
+    }
+
     const sessionId = req.headers["mcp-session-id"] as string | undefined;
     if (!sessionId) {
       res.status(400).json({
@@ -132,6 +143,16 @@ export class McpHttpController implements OnModuleDestroy {
       res.status(404).json({
         jsonrpc: "2.0",
         error: { code: -32004, message: "Session not found" },
+        id: null,
+      });
+      return;
+    }
+
+    const sessionUser = this.sessionUsers.get(sessionId);
+    if (sessionUser?.userId !== authResult.userId) {
+      res.status(403).json({
+        jsonrpc: "2.0",
+        error: { code: -32003, message: "Session user mismatch" },
         id: null,
       });
       return;
@@ -141,7 +162,18 @@ export class McpHttpController implements OnModuleDestroy {
   }
 
   @Delete()
+  @Throttle({ default: { ttl: 60000, limit: 30 } })
   async handleDelete(@Req() req: Request, @Res() res: Response) {
+    const authResult = await this.validatePat(req);
+    if (!authResult) {
+      res.status(401).json({
+        jsonrpc: "2.0",
+        error: { code: -32001, message: "Unauthorized" },
+        id: null,
+      });
+      return;
+    }
+
     const sessionId = req.headers["mcp-session-id"] as string | undefined;
     if (!sessionId) {
       res.status(400).json({
@@ -157,6 +189,16 @@ export class McpHttpController implements OnModuleDestroy {
       res.status(404).json({
         jsonrpc: "2.0",
         error: { code: -32004, message: "Session not found" },
+        id: null,
+      });
+      return;
+    }
+
+    const sessionUser = this.sessionUsers.get(sessionId);
+    if (sessionUser?.userId !== authResult.userId) {
+      res.status(403).json({
+        jsonrpc: "2.0",
+        error: { code: -32003, message: "Session user mismatch" },
         id: null,
       });
       return;

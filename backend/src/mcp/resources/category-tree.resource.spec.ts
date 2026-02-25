@@ -40,6 +40,12 @@ describe("McpCategoryTreeResource", () => {
     expect(result.contents[0].text).toContain("Error");
   });
 
+  it("should return error when scope check fails", async () => {
+    resolve.mockReturnValue({ userId: "u1", scopes: "write" });
+    const result = await handler("monize://categories", { sessionId: "s1" });
+    expect(result.contents[0].text).toContain("Insufficient scope");
+  });
+
   it("should return category tree", async () => {
     resolve.mockReturnValue({ userId: "u1", scopes: "read" });
     categoriesService.getTree.mockResolvedValue([

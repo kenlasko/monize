@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { CategoriesService } from "../../categories/categories.service";
-import { UserContextResolver } from "../mcp-context";
+import { UserContextResolver, hasScope } from "../mcp-context";
 
 @Injectable()
 export class McpCategoryTreeResource {
@@ -20,6 +20,16 @@ export class McpCategoryTreeResource {
           return {
             contents: [
               { uri: "monize://categories", text: "Error: No user context" },
+            ],
+          };
+        }
+        if (!hasScope(ctx.scopes, "read")) {
+          return {
+            contents: [
+              {
+                uri: "monize://categories",
+                text: 'Error: Insufficient scope. Requires "read" scope.',
+              },
             ],
           };
         }

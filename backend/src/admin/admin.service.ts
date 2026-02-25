@@ -10,6 +10,7 @@ import * as bcrypt from "bcryptjs";
 import { User } from "../users/entities/user.entity";
 import { UserPreference } from "../users/entities/user-preference.entity";
 import { RefreshToken } from "../auth/entities/refresh-token.entity";
+import { PersonalAccessToken } from "../auth/entities/personal-access-token.entity";
 import { generateReadablePassword } from "./utils/password-generator";
 
 @Injectable()
@@ -21,6 +22,8 @@ export class AdminService {
     private preferencesRepository: Repository<UserPreference>,
     @InjectRepository(RefreshToken)
     private refreshTokensRepository: Repository<RefreshToken>,
+    @InjectRepository(PersonalAccessToken)
+    private patRepository: Repository<PersonalAccessToken>,
   ) {}
 
   async findAllUsers() {
@@ -103,10 +106,14 @@ export class AdminService {
     targetUser.isActive = isActive;
     const saved = await this.usersRepository.save(targetUser);
 
-    // SECURITY: Revoke all refresh tokens when deactivating a user to
-    // immediately invalidate all sessions
+    // SECURITY: Revoke all refresh tokens and PATs when deactivating a user
+    // to immediately invalidate all sessions and API access
     if (!isActive) {
       await this.refreshTokensRepository.update(
+        { userId: targetUserId, isRevoked: false },
+        { isRevoked: true },
+      );
+      await this.patRepository.update(
         { userId: targetUserId, isRevoked: false },
         { isRevoked: true },
       );
@@ -173,8 +180,12 @@ export class AdminService {
     targetUser.resetTokenExpiry = null;
     await this.usersRepository.save(targetUser);
 
-    // SECURITY: Revoke all refresh tokens to force re-login on all devices
+    // SECURITY: Revoke all refresh tokens and PATs to force re-login on all devices
     await this.refreshTokensRepository.update(
+      { userId: targetUserId, isRevoked: false },
+      { isRevoked: true },
+    );
+    await this.patRepository.update(
       { userId: targetUserId, isRevoked: false },
       { isRevoked: true },
     );

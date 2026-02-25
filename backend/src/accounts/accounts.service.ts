@@ -531,7 +531,8 @@ export class AccountsService {
   }
 
   /**
-   * Update account balance (called internally by transactions)
+   * Update account balance (called internally by transactions).
+   * Uses atomic SQL UPDATE to prevent race conditions from concurrent requests.
    */
   async updateBalance(accountId: string, amount: number): Promise<Account> {
     const account = await this.accountsRepository.findOne({
@@ -548,10 +549,13 @@ export class AccountsService {
       );
     }
 
-    // Round to 2 decimal places to avoid floating-point precision errors
-    account.currentBalance =
-      Math.round((Number(account.currentBalance) + Number(amount)) * 100) / 100;
-    return this.accountsRepository.save(account);
+    // Atomic update at the database level to avoid read-modify-write race conditions
+    await this.accountsRepository.query(
+      `UPDATE accounts SET current_balance = ROUND(CAST(current_balance AS numeric) + $1, 2) WHERE id = $2`,
+      [amount, accountId],
+    );
+
+    return this.accountsRepository.findOneOrFail({ where: { id: accountId } });
   }
 
   /**

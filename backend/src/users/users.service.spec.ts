@@ -10,12 +10,14 @@ import { UsersService } from "./users.service";
 import { User } from "./entities/user.entity";
 import { UserPreference } from "./entities/user-preference.entity";
 import { RefreshToken } from "../auth/entities/refresh-token.entity";
+import { PersonalAccessToken } from "../auth/entities/personal-access-token.entity";
 
 describe("UsersService", () => {
   let service: UsersService;
   let usersRepository: Record<string, jest.Mock>;
   let preferencesRepository: Record<string, jest.Mock>;
   let refreshTokensRepository: Record<string, jest.Mock>;
+  let patRepository: Record<string, jest.Mock>;
 
   const mockUser = {
     id: "user-1",
@@ -66,6 +68,10 @@ describe("UsersService", () => {
       update: jest.fn(),
     };
 
+    patRepository = {
+      update: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         UsersService,
@@ -77,6 +83,10 @@ describe("UsersService", () => {
         {
           provide: getRepositoryToken(RefreshToken),
           useValue: refreshTokensRepository,
+        },
+        {
+          provide: getRepositoryToken(PersonalAccessToken),
+          useValue: patRepository,
         },
       ],
     }).compile();
@@ -346,6 +356,24 @@ describe("UsersService", () => {
       );
     });
 
+    it("revokes all PATs on password change", async () => {
+      const hashedPassword = await bcrypt.hash("OldPass123!", 10);
+      usersRepository.findOne.mockResolvedValue({
+        ...mockUser,
+        passwordHash: hashedPassword,
+      });
+
+      await service.changePassword("user-1", {
+        currentPassword: "OldPass123!",
+        newPassword: "NewPass456!",
+      });
+
+      expect(patRepository.update).toHaveBeenCalledWith(
+        { userId: "user-1", isRevoked: false },
+        { isRevoked: true },
+      );
+    });
+
     it("throws when current password is incorrect", async () => {
       const hashedPassword = await bcrypt.hash("CorrectPass", 10);
       usersRepository.findOne.mockResolvedValue({
@@ -401,6 +429,17 @@ describe("UsersService", () => {
         { isRevoked: true },
       );
       expect(usersRepository.remove).toHaveBeenCalled();
+    });
+
+    it("revokes all PATs before deletion", async () => {
+      usersRepository.findOne.mockResolvedValue({ ...mockUser });
+
+      await service.deleteAccount("user-1");
+
+      expect(patRepository.update).toHaveBeenCalledWith(
+        { userId: "user-1", isRevoked: false },
+        { isRevoked: true },
+      );
     });
 
     it("throws when user not found", async () => {

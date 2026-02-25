@@ -10,6 +10,7 @@ import * as bcrypt from "bcryptjs";
 import { User } from "./entities/user.entity";
 import { UserPreference } from "./entities/user-preference.entity";
 import { RefreshToken } from "../auth/entities/refresh-token.entity";
+import { PersonalAccessToken } from "../auth/entities/personal-access-token.entity";
 import { UpdateProfileDto } from "./dto/update-profile.dto";
 import { UpdatePreferencesDto } from "./dto/update-preferences.dto";
 import { ChangePasswordDto } from "./dto/change-password.dto";
@@ -23,6 +24,8 @@ export class UsersService {
     private preferencesRepository: Repository<UserPreference>,
     @InjectRepository(RefreshToken)
     private refreshTokensRepository: Repository<RefreshToken>,
+    @InjectRepository(PersonalAccessToken)
+    private patRepository: Repository<PersonalAccessToken>,
   ) {}
 
   async findById(id: string): Promise<User | null> {
@@ -188,6 +191,12 @@ export class UsersService {
       { userId, isRevoked: false },
       { isRevoked: true },
     );
+
+    // SECURITY: Revoke all PATs — credential change invalidates API access
+    await this.patRepository.update(
+      { userId, isRevoked: false },
+      { isRevoked: true },
+    );
   }
 
   async deleteAccount(userId: string): Promise<void> {
@@ -212,8 +221,12 @@ export class UsersService {
     // Delete preferences first (due to FK constraint)
     await this.preferencesRepository.delete({ userId });
 
-    // Revoke all refresh tokens before deletion
+    // Revoke all refresh tokens and PATs before deletion
     await this.refreshTokensRepository.update(
+      { userId, isRevoked: false },
+      { isRevoked: true },
+    );
+    await this.patRepository.update(
       { userId, isRevoked: false },
       { isRevoked: true },
     );

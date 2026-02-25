@@ -50,6 +50,14 @@ describe("McpFinancialSummaryResource", () => {
     expect(result.contents[0].text).toContain("Error");
   });
 
+  it("should return error when scope check fails", async () => {
+    resolve.mockReturnValue({ userId: "u1", scopes: "write" });
+    const result = await handler("monize://financial-summary", {
+      sessionId: "s1",
+    });
+    expect(result.contents[0].text).toContain("Insufficient scope");
+  });
+
   it("should return financial summary with net worth and current month", async () => {
     resolve.mockReturnValue({ userId: "u1", scopes: "read" });
     accountsService.getSummary.mockResolvedValue({

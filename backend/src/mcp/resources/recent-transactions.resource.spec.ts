@@ -50,6 +50,14 @@ describe("McpRecentTransactionsResource", () => {
     expect(result.contents[0].text).toContain("Error");
   });
 
+  it("should return error when scope check fails", async () => {
+    resolve.mockReturnValue({ userId: "u1", scopes: "write" });
+    const result = await handler("monize://recent-transactions", {
+      sessionId: "s1",
+    });
+    expect(result.contents[0].text).toContain("Insufficient scope");
+  });
+
   it("should return recent transactions with summary", async () => {
     resolve.mockReturnValue({ userId: "u1", scopes: "read" });
     transactionsService.findAll.mockResolvedValue({

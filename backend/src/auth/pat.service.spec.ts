@@ -4,10 +4,12 @@ import { NotFoundException, UnauthorizedException } from "@nestjs/common";
 import * as crypto from "crypto";
 import { PatService } from "./pat.service";
 import { PersonalAccessToken } from "./entities/personal-access-token.entity";
+import { User } from "../users/entities/user.entity";
 
 describe("PatService", () => {
   let service: PatService;
   let repository: Record<string, jest.Mock>;
+  let userRepository: Record<string, jest.Mock>;
 
   const mockToken = {
     id: "token-1",
@@ -33,12 +35,20 @@ describe("PatService", () => {
       update: jest.fn(),
     };
 
+    userRepository = {
+      findOne: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         PatService,
         {
           provide: getRepositoryToken(PersonalAccessToken),
           useValue: repository,
+        },
+        {
+          provide: getRepositoryToken(User),
+          useValue: userRepository,
         },
       ],
     }).compile();
@@ -166,6 +176,14 @@ describe("PatService", () => {
   });
 
   describe("validateToken", () => {
+    beforeEach(() => {
+      userRepository.findOne.mockResolvedValue({
+        id: "user-1",
+        isActive: true,
+        mustChangePassword: false,
+      });
+    });
+
     it("should validate a correct token", async () => {
       const rawToken = "pat_" + crypto.randomBytes(32).toString("hex");
       const tokenHash = crypto
@@ -234,6 +252,74 @@ describe("PatService", () => {
       await expect(
         service.validateToken("pat_" + "a".repeat(64)),
       ).rejects.toThrow("Token has expired");
+    });
+
+    it("should reject token when user is inactive", async () => {
+      const rawToken = "pat_" + crypto.randomBytes(32).toString("hex");
+      const tokenHash = crypto
+        .createHash("sha256")
+        .update(rawToken)
+        .digest("hex");
+
+      repository.findOne.mockResolvedValue({
+        ...mockToken,
+        tokenHash,
+        isRevoked: false,
+        expiresAt: null,
+      });
+      userRepository.findOne.mockResolvedValue({
+        id: "user-1",
+        isActive: false,
+        mustChangePassword: false,
+      });
+
+      await expect(service.validateToken(rawToken)).rejects.toThrow(
+        "User account is inactive",
+      );
+    });
+
+    it("should reject token when user must change password", async () => {
+      const rawToken = "pat_" + crypto.randomBytes(32).toString("hex");
+      const tokenHash = crypto
+        .createHash("sha256")
+        .update(rawToken)
+        .digest("hex");
+
+      repository.findOne.mockResolvedValue({
+        ...mockToken,
+        tokenHash,
+        isRevoked: false,
+        expiresAt: null,
+      });
+      userRepository.findOne.mockResolvedValue({
+        id: "user-1",
+        isActive: true,
+        mustChangePassword: true,
+      });
+
+      await expect(service.validateToken(rawToken)).rejects.toThrow(
+        "Password change required",
+      );
+    });
+
+    it("should reject token when user not found", async () => {
+      const rawToken = "pat_" + crypto.randomBytes(32).toString("hex");
+      const tokenHash = crypto
+        .createHash("sha256")
+        .update(rawToken)
+        .digest("hex");
+
+      repository.findOne.mockResolvedValue({
+        ...mockToken,
+        tokenHash,
+        isRevoked: false,
+        expiresAt: null,
+      });
+      userRepository.findOne.mockResolvedValue(null);
+
+      await expect(service.validateToken(rawToken)).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
   });
 

@@ -46,9 +46,11 @@ describe("AccountsService", () => {
         .mockImplementation((data) => ({ ...data, id: "new-account" })),
       save: jest.fn().mockImplementation((data) => data),
       findOne: jest.fn(),
+      findOneOrFail: jest.fn(),
       find: jest.fn(),
       remove: jest.fn(),
       count: jest.fn(),
+      query: jest.fn(),
       createQueryBuilder: jest.fn(() => ({
         where: jest.fn().mockReturnThis(),
         andWhere: jest.fn().mockReturnThis(),
@@ -182,11 +184,19 @@ describe("AccountsService", () => {
         ...mockAccount,
         currentBalance: 1000,
       });
+      accountsRepository.query.mockResolvedValue(undefined);
+      accountsRepository.findOneOrFail.mockResolvedValue({
+        ...mockAccount,
+        currentBalance: 1500,
+      });
 
-      await service.updateBalance("account-1", 500);
+      const result = await service.updateBalance("account-1", 500);
 
-      const savedAccount = accountsRepository.save.mock.calls[0][0];
-      expect(savedAccount.currentBalance).toBe(1500);
+      expect(accountsRepository.query).toHaveBeenCalledWith(
+        `UPDATE accounts SET current_balance = ROUND(CAST(current_balance AS numeric) + $1, 2) WHERE id = $2`,
+        [500, "account-1"],
+      );
+      expect(result.currentBalance).toBe(1500);
     });
 
     it("subtracts negative amount from balance", async () => {
@@ -194,11 +204,19 @@ describe("AccountsService", () => {
         ...mockAccount,
         currentBalance: 1000,
       });
+      accountsRepository.query.mockResolvedValue(undefined);
+      accountsRepository.findOneOrFail.mockResolvedValue({
+        ...mockAccount,
+        currentBalance: 700,
+      });
 
-      await service.updateBalance("account-1", -300);
+      const result = await service.updateBalance("account-1", -300);
 
-      const savedAccount = accountsRepository.save.mock.calls[0][0];
-      expect(savedAccount.currentBalance).toBe(700);
+      expect(accountsRepository.query).toHaveBeenCalledWith(
+        `UPDATE accounts SET current_balance = ROUND(CAST(current_balance AS numeric) + $1, 2) WHERE id = $2`,
+        [-300, "account-1"],
+      );
+      expect(result.currentBalance).toBe(700);
     });
 
     it("throws NotFoundException when account not found", async () => {
@@ -225,11 +243,38 @@ describe("AccountsService", () => {
         ...mockAccount,
         currentBalance: 10.1,
       });
+      accountsRepository.query.mockResolvedValue(undefined);
+      accountsRepository.findOneOrFail.mockResolvedValue({
+        ...mockAccount,
+        currentBalance: 20.3,
+      });
 
-      await service.updateBalance("account-1", 10.2);
+      const result = await service.updateBalance("account-1", 10.2);
 
-      const savedAccount = accountsRepository.save.mock.calls[0][0];
-      expect(savedAccount.currentBalance).toBe(20.3);
+      expect(accountsRepository.query).toHaveBeenCalledWith(
+        `UPDATE accounts SET current_balance = ROUND(CAST(current_balance AS numeric) + $1, 2) WHERE id = $2`,
+        [10.2, "account-1"],
+      );
+      expect(result.currentBalance).toBe(20.3);
+    });
+
+    it("uses atomic SQL UPDATE to prevent race conditions", async () => {
+      accountsRepository.findOne.mockResolvedValue({
+        ...mockAccount,
+        currentBalance: 1000,
+      });
+      accountsRepository.query.mockResolvedValue(undefined);
+      accountsRepository.findOneOrFail.mockResolvedValue({
+        ...mockAccount,
+        currentBalance: 1100,
+      });
+
+      await service.updateBalance("account-1", 100);
+
+      expect(accountsRepository.query).toHaveBeenCalledWith(
+        expect.stringContaining("UPDATE accounts"),
+        [100, "account-1"],
+      );
     });
   });
 

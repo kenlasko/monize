@@ -7,6 +7,7 @@ import {
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { PersonalAccessToken } from "./entities/personal-access-token.entity";
+import { User } from "../users/entities/user.entity";
 import { CreatePatDto } from "./dto/create-pat.dto";
 
 const MAX_TOKENS_PER_USER = 10;
@@ -21,6 +22,8 @@ export class PatService {
   constructor(
     @InjectRepository(PersonalAccessToken)
     private readonly patRepository: Repository<PersonalAccessToken>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
   ) {}
 
   async create(
@@ -90,6 +93,18 @@ export class PatService {
 
     if (token.expiresAt && token.expiresAt < new Date()) {
       throw new UnauthorizedException("Token has expired");
+    }
+
+    // SECURITY: Verify user account is active and not flagged for password change
+    const user = await this.userRepository.findOne({
+      where: { id: token.userId },
+      select: ["id", "isActive", "mustChangePassword"],
+    });
+    if (!user || !user.isActive) {
+      throw new UnauthorizedException("User account is inactive");
+    }
+    if (user.mustChangePassword) {
+      throw new UnauthorizedException("Password change required");
     }
 
     await this.patRepository.update(token.id, {
