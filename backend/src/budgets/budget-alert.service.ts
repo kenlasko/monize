@@ -1,7 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { Cron } from "@nestjs/schedule";
 import { InjectRepository } from "@nestjs/typeorm";
-import { LessThan, Not, IsNull, Repository } from "typeorm";
+import { LessThan, IsNull, Repository } from "typeorm";
 import { ConfigService } from "@nestjs/config";
 import { Budget } from "./entities/budget.entity";
 import {

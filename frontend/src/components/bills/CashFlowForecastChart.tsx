@@ -291,7 +291,7 @@ export function CashFlowForecastChart({
                 stroke="#3b82f6"
                 strokeWidth={2}
                 dot={(props: any) => {
-                  const { cx, cy, payload } = props;
+                  const { cx, cy } = props;
                   if (props.index === minBalanceIndex) {
                     const color = summary.minBalance < 0 ? '#ef4444' : '#f59e0b';
                     const label = formatCurrencyAxis(summary.minBalance);

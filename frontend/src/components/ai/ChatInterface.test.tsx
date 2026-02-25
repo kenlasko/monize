@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act } from '@/test/render';
 import { ChatInterface } from './ChatInterface';
 import type { StreamCallbacks } from '@/types/ai';
