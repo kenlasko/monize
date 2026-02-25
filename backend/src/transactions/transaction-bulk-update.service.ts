@@ -161,7 +161,6 @@ export class TransactionBulkUpdateService {
       .createQueryBuilder("transaction")
       .select([
         "transaction.id",
-        "transaction.status",
         "transaction.isTransfer",
         "transaction.isSplit",
       ])
@@ -170,16 +169,11 @@ export class TransactionBulkUpdateService {
       .getMany();
 
     const skippedReasons: string[] = [];
-    let reconciledCount = 0;
     let transferCount = 0;
     let splitCount = 0;
 
     const eligibleIds = transactions
       .filter((t) => {
-        if (t.status === TransactionStatus.RECONCILED) {
-          reconciledCount++;
-          return false;
-        }
         if ((isUpdatingPayee || isUpdatingCategory) && t.isTransfer) {
           transferCount++;
           return false;
@@ -192,9 +186,6 @@ export class TransactionBulkUpdateService {
       })
       .map((t) => t.id);
 
-    if (reconciledCount > 0) {
-      skippedReasons.push(`${reconciledCount} reconciled`);
-    }
     if (transferCount > 0) {
       skippedReasons.push(`${transferCount} transfer`);
     }
@@ -204,7 +195,7 @@ export class TransactionBulkUpdateService {
 
     return {
       eligibleIds,
-      skipped: reconciledCount + transferCount + splitCount,
+      skipped: transferCount + splitCount,
       skippedReasons,
     };
   }

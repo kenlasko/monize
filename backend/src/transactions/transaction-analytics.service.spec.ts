@@ -233,6 +233,22 @@ describe("TransactionAnalyticsService", () => {
           "transaction.isTransfer = false",
         );
       });
+
+      it("does not exclude transfers when search filter is provided", async () => {
+        await service.getSummary(
+          userId,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          "grocery",
+        );
+
+        expect(mockQueryBuilder.andWhere).not.toHaveBeenCalledWith(
+          "transaction.isTransfer = false",
+        );
+      });
     });
 
     describe("investment account exclusion", () => {
@@ -826,6 +842,22 @@ describe("TransactionAnalyticsService", () => {
       await service.getMonthlyTotals(userId);
 
       expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        "transaction.isTransfer = false",
+      );
+    });
+
+    it("does not exclude transfers when search filter is provided", async () => {
+      await service.getMonthlyTotals(
+        userId,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        "grocery",
+      );
+
+      expect(mockQueryBuilder.andWhere).not.toHaveBeenCalledWith(
         "transaction.isTransfer = false",
       );
     });

@@ -648,6 +648,23 @@ describe('TransactionsPage', () => {
         expect(mockGetAll).toHaveBeenCalled();
       }, { timeout: 3000 });
     });
+
+    it('fetches monthly totals instead of daily balances when search filter is active', async () => {
+      render(<TransactionsPage />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('filter-panel')).toBeInTheDocument();
+      });
+
+      mockGetMonthlyTotals.mockClear();
+      mockGetDailyBalances.mockClear();
+
+      fireEvent.click(screen.getByTestId('set-search'));
+
+      await waitFor(() => {
+        expect(mockGetMonthlyTotals).toHaveBeenCalled();
+      }, { timeout: 3000 });
+    });
   });
 
   describe('Transaction Editing', () => {

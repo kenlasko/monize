@@ -234,21 +234,20 @@ export function BulkUpdateModal({
         </div>
 
         {/* Info notes */}
-        <div className="mt-4 space-y-1">
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            Reconciled transactions will be skipped.
-          </p>
-          {showTransferNote && (
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              Transfer transactions will be skipped for payee/category changes.
-            </p>
-          )}
-          {showSplitNote && (
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              Split transactions will be skipped for category changes.
-            </p>
-          )}
-        </div>
+        {(showTransferNote || showSplitNote) && (
+          <div className="mt-4 space-y-1">
+            {showTransferNote && (
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Transfer transactions will be skipped for payee/category changes.
+              </p>
+            )}
+            {showSplitNote && (
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Split transactions will be skipped for category changes.
+              </p>
+            )}
+          </div>
+        )}
 
         <FormActions
           onCancel={onClose}

@@ -201,18 +201,21 @@ export function InvestmentTransactionForm({
     return watchedPrice; // For amount-only actions, price is used as the amount
   }, [watchedAction, watchedQuantity, watchedPrice, watchedCommission]);
 
-  // Load securities
+  // Load securities — ensure the transaction's security is included even if inactive
   useEffect(() => {
     const loadSecurities = async () => {
       try {
         const data = await investmentsApi.getSecurities();
+        if (transaction?.security && !data.some((s) => s.id === transaction.security!.id)) {
+          data.push(transaction.security);
+        }
         setSecurities(data);
       } catch (error) {
         logger.error('Failed to load securities:', error);
       }
     };
     loadSecurities();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Re-sync form values when editing and securities are loaded
   useEffect(() => {

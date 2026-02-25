@@ -63,15 +63,19 @@ export interface AccountHoldings {
   totalMarketValue: number;
   totalGainLoss: number;
   totalGainLossPercent: number;
+  netInvested: number;
 }
 
 export interface PortfolioSummary {
   totalCashValue: number;
   totalHoldingsValue: number;
   totalCostBasis: number;
+  totalNetInvested: number;
   totalPortfolioValue: number;
   totalGainLoss: number;
   totalGainLossPercent: number;
+  timeWeightedReturn: number | null;
+  cagr: number | null;
   holdings: HoldingWithMarketValue[];
   holdingsByAccount: AccountHoldings[];
   allocation: AllocationItem[];  // Included to avoid duplicate API call

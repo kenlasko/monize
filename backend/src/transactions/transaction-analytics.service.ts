@@ -80,8 +80,12 @@ export class TransactionAnalyticsService {
     queryBuilder.leftJoin("transaction.account", "summaryAccount");
 
     // Exclude transfers by default — they are not real income/expenses.
-    // Only include them when the user explicitly filters for "transfer" category.
-    const wantsTransfers = categoryIds && categoryIds.includes("transfer");
+    // Include them when the user explicitly filters for "transfer" category,
+    // searches by description, or filters by payee.
+    const wantsTransfers =
+      (categoryIds && categoryIds.includes("transfer")) ||
+      !!search ||
+      (payeeIds && payeeIds.length > 0);
     if (!wantsTransfers) {
       queryBuilder.andWhere("transaction.isTransfer = false");
     }
@@ -229,7 +233,10 @@ export class TransactionAnalyticsService {
 
     queryBuilder.leftJoin("transaction.account", "summaryAccount");
 
-    const wantsTransfers = categoryIds && categoryIds.includes("transfer");
+    const wantsTransfers =
+      (categoryIds && categoryIds.includes("transfer")) ||
+      !!search ||
+      (payeeIds && payeeIds.length > 0);
     if (!wantsTransfers) {
       queryBuilder.andWhere("transaction.isTransfer = false");
     }

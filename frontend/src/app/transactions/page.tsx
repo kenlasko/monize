@@ -352,9 +352,9 @@ function TransactionsContent() {
       const targetTransactionId = targetTransactionIdRef.current;
       targetTransactionIdRef.current = null; // Clear after reading
 
-      // When category or payee filters are active, show monthly totals bar chart
+      // When category, payee, or description filters are active, show monthly totals bar chart
       // instead of balance history (which ignores those filters)
-      const hasCategoryOrPayeeFilter = filterCategoryIds.length > 0 || filterPayeeIds.length > 0;
+      const hasCategoryOrPayeeFilter = filterCategoryIds.length > 0 || filterPayeeIds.length > 0 || filterSearch.length > 0;
 
       // Build chart params (only filter accounts, not categories/payees/search)
       const chartParams: { startDate?: string; endDate?: string; accountIds?: string } = {};
@@ -797,7 +797,7 @@ function TransactionsContent() {
           subtitle="Manage your income and expenses"
           actions={<Button onClick={handleCreateNew}>+ New Transaction</Button>}
         />
-        {filterCategoryIds.length > 0 || filterPayeeIds.length > 0 ? (
+        {filterCategoryIds.length > 0 || filterPayeeIds.length > 0 || filterSearch.length > 0 ? (
           <CategoryPayeeBarChart
             data={monthlyTotals}
             isLoading={isLoading}

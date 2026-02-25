@@ -67,7 +67,7 @@ export function CategoryPayeeBarChart({
   data,
   isLoading,
 }: CategoryPayeeBarChartProps) {
-  const { formatCurrencyCompact: formatCurrency, formatCurrencyAxis } = useNumberFormat();
+  const { formatCurrency, formatCurrencyCompact, formatCurrencyAxis } = useNumberFormat();
 
   const chartData = useMemo(() => {
     return data.map((d) => {
@@ -150,7 +150,7 @@ export function CategoryPayeeBarChart({
               tickFormatter={formatCurrencyAxis}
               width={45}
             />
-            <Tooltip content={<MonthlyTotalTooltip formatCurrency={formatCurrency} />} />
+            <Tooltip content={<MonthlyTotalTooltip formatCurrency={formatCurrencyCompact} />} />
             <Bar
               dataKey="absTotal"
               radius={[4, 4, 0, 0]}
@@ -165,7 +165,7 @@ export function CategoryPayeeBarChart({
               <LabelList
                 dataKey="total"
                 position="top"
-                formatter={(value: unknown) => formatCurrencyAxis(Number(value))}
+                formatter={(value: unknown) => formatCurrency(Number(value))}
                 style={{ fill: '#6b7280', fontSize: 11, fontWeight: 500 }}
               />
             </Bar>
@@ -185,7 +185,7 @@ export function CategoryPayeeBarChart({
                   : predominantlyNegative ? 'text-blue-600 dark:text-blue-400' : 'text-red-600 dark:text-red-400'
               }`}
             >
-              {formatCurrency(summary.monthlyAvg)}
+              {formatCurrencyCompact(summary.monthlyAvg)}
             </div>
           </div>
           <div>
@@ -197,7 +197,7 @@ export function CategoryPayeeBarChart({
                   : predominantlyNegative ? 'text-blue-600 dark:text-blue-400' : 'text-red-600 dark:text-red-400'
               }`}
             >
-              {formatCurrency(summary.total)}
+              {formatCurrencyCompact(summary.total)}
             </div>
           </div>
           <div>

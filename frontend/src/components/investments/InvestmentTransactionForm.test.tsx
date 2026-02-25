@@ -305,4 +305,41 @@ describe('InvestmentTransactionForm', () => {
       expect(screen.getByText(/Total Amount/)).toBeInTheDocument();
     });
   });
+
+  it('includes inactive security in dropdown when editing a transaction', async () => {
+    const inactiveSecurity = {
+      id: 'sec-inactive',
+      symbol: 'OLD',
+      name: 'Old Corp',
+      securityType: 'STOCK',
+      currencyCode: 'CAD',
+      isActive: false,
+    };
+    const editTransaction = {
+      id: 'tx-1',
+      accountId: 'a2',
+      action: 'BUY',
+      transactionDate: '2026-01-15',
+      securityId: 'sec-inactive',
+      security: inactiveSecurity,
+      quantity: 10,
+      price: 50,
+      commission: 0,
+      totalAmount: 500,
+      description: '',
+    } as any;
+
+    render(
+      <InvestmentTransactionForm accounts={accounts} transaction={editTransaction} />
+    );
+
+    await waitFor(() => {
+      const securitySelect = screen.getByLabelText('Security');
+      const options = securitySelect.querySelectorAll('option');
+      const optionTexts = Array.from(options).map(o => o.textContent);
+      // Should include both the active security (AAPL) and the inactive one (OLD)
+      expect(optionTexts).toContain('AAPL - Apple Inc. (USD)');
+      expect(optionTexts).toContain('OLD - Old Corp (CAD)');
+    });
+  });
 });

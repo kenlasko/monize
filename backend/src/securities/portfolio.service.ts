@@ -4,6 +4,10 @@ import { Repository, In } from "typeorm";
 import { Holding } from "./entities/holding.entity";
 import { SecurityPrice } from "./entities/security-price.entity";
 import {
+  InvestmentTransaction,
+  InvestmentAction,
+} from "./entities/investment-transaction.entity";
+import {
   Account,
   AccountType,
   AccountSubType,
@@ -51,15 +55,19 @@ export interface AccountHoldings {
   totalMarketValue: number;
   totalGainLoss: number;
   totalGainLossPercent: number;
+  netInvested: number;
 }
 
 export interface PortfolioSummary {
   totalCashValue: number;
   totalHoldingsValue: number;
   totalCostBasis: number;
+  totalNetInvested: number;
   totalPortfolioValue: number;
   totalGainLoss: number;
   totalGainLossPercent: number;
+  timeWeightedReturn: number | null;
+  cagr: number | null;
   holdings: HoldingWithMarketValue[];
   holdingsByAccount: AccountHoldings[];
   allocation: AllocationItem[]; // Include allocation to avoid duplicate API call
@@ -87,6 +95,8 @@ export class PortfolioService {
     private holdingsRepository: Repository<Holding>,
     @InjectRepository(SecurityPrice)
     private securityPriceRepository: Repository<SecurityPrice>,
+    @InjectRepository(InvestmentTransaction)
+    private investmentTransactionRepository: Repository<InvestmentTransaction>,
     @InjectRepository(Account)
     private accountsRepository: Repository<Account>,
     @InjectRepository(UserPreference)
@@ -125,6 +135,223 @@ export class PortfolioService {
       rateCache.set(cacheKey, rate);
     }
     return amount * rate;
+  }
+
+  /**
+   * Get all historical prices for a list of security IDs, ordered by date.
+   * Returns a map of securityId -> sorted array of { date, price }.
+   */
+  private async getAllPricesForSecurities(
+    securityIds: string[],
+  ): Promise<Map<string, { date: string; price: number }[]>> {
+    if (securityIds.length === 0) return new Map();
+
+    const rows: {
+      security_id: string;
+      price_date: string;
+      close_price: string;
+    }[] = await this.securityPriceRepository.query(
+      `SELECT security_id, price_date::text AS price_date, close_price
+         FROM security_prices
+         WHERE security_id = ANY($1)
+         ORDER BY security_id, price_date ASC`,
+      [securityIds],
+    );
+
+    const result = new Map<string, { date: string; price: number }[]>();
+    for (const row of rows) {
+      let arr = result.get(row.security_id);
+      if (!arr) {
+        arr = [];
+        result.set(row.security_id, arr);
+      }
+      arr.push({ date: row.price_date, price: Number(row.close_price) });
+    }
+    return result;
+  }
+
+  /**
+   * Look up the price for a security on or before a given date using binary search.
+   */
+  private lookupPrice(
+    securityId: string,
+    date: string,
+    allPrices: Map<string, { date: string; price: number }[]>,
+  ): number | null {
+    const prices = allPrices.get(securityId);
+    if (!prices || prices.length === 0) return null;
+
+    // Binary search for the last entry with date <= target
+    let lo = 0;
+    let hi = prices.length - 1;
+    let best = -1;
+    while (lo <= hi) {
+      const mid = (lo + hi) >> 1;
+      if (prices[mid].date <= date) {
+        best = mid;
+        lo = mid + 1;
+      } else {
+        hi = mid - 1;
+      }
+    }
+    return best >= 0 ? prices[best].price : null;
+  }
+
+  /**
+   * Calculate Time-Weighted Return (TWR) for a set of investment accounts.
+   * Forward-simulates holdings at each transaction date boundary and chains
+   * sub-period returns to produce a cumulative TWR percentage.
+   */
+  private async calculateTWR(
+    userId: string,
+    holdingsAccountIds: string[],
+    defaultCurrency: string,
+    rateCache: Map<string, number>,
+  ): Promise<number | null> {
+    if (holdingsAccountIds.length === 0) return null;
+
+    // Fetch all investment transactions for these accounts, ordered by date
+    const transactions = await this.investmentTransactionRepository.find({
+      where: { userId, accountId: In(holdingsAccountIds) },
+      relations: ["security"],
+      order: { transactionDate: "ASC", createdAt: "ASC" },
+    });
+
+    if (transactions.length === 0) return null;
+
+    // Gather all referenced security IDs and fetch their full price history
+    const securityIds = [
+      ...new Set(
+        transactions.filter((t) => t.securityId).map((t) => t.securityId!),
+      ),
+    ];
+    const allPrices = await this.getAllPricesForSecurities(securityIds);
+
+    // Build a map of securityId -> currencyCode from transactions
+    const currencyMap = new Map<string, string>();
+    for (const tx of transactions) {
+      if (tx.securityId && tx.security) {
+        currencyMap.set(tx.securityId, tx.security.currencyCode);
+      }
+    }
+
+    // Group transactions by date
+    const txByDate = new Map<string, InvestmentTransaction[]>();
+    for (const tx of transactions) {
+      let arr = txByDate.get(tx.transactionDate);
+      if (!arr) {
+        arr = [];
+        txByDate.set(tx.transactionDate, arr);
+      }
+      arr.push(tx);
+    }
+
+    const sortedDates = [...txByDate.keys()].sort();
+
+    // Helper: compute portfolio value from holdings state
+    const computeValue = async (
+      holdings: Map<string, number>,
+    ): Promise<number> => {
+      let total = 0;
+      for (const [secId, qty] of holdings) {
+        if (qty === 0) continue;
+        const latestPriceMap = await this.getLatestPrices([secId]);
+        const price = latestPriceMap.get(secId);
+        if (price != null) {
+          const currency = currencyMap.get(secId) || defaultCurrency;
+          total += await this.convertToDefault(
+            qty * price,
+            currency,
+            defaultCurrency,
+            rateCache,
+          );
+        }
+      }
+      return total;
+    };
+
+    const computeValueAtDate = async (
+      holdings: Map<string, number>,
+      date: string,
+    ): Promise<number> => {
+      let total = 0;
+      for (const [secId, qty] of holdings) {
+        if (qty === 0) continue;
+        const price = this.lookupPrice(secId, date, allPrices);
+        if (price != null) {
+          const currency = currencyMap.get(secId) || defaultCurrency;
+          total += await this.convertToDefault(
+            qty * price,
+            currency,
+            defaultCurrency,
+            rateCache,
+          );
+        }
+      }
+      return total;
+    };
+
+    // Forward-simulate holdings and chain sub-period returns
+    const holdings = new Map<string, number>(); // securityId -> quantity
+    const subPeriodFactors: number[] = [];
+    let previousValue = 0;
+    let previousDate: string | null = null;
+
+    for (const date of sortedDates) {
+      const dayTxs = txByDate.get(date)!;
+
+      if (previousDate !== null && previousValue > 0) {
+        // Value of existing holdings at this date's prices (before applying today's transactions)
+        const currentValue = await computeValueAtDate(holdings, date);
+        if (currentValue >= 0) {
+          subPeriodFactors.push(currentValue / previousValue);
+        }
+      }
+
+      // Apply today's transactions to holdings
+      for (const tx of dayTxs) {
+        if (!tx.securityId) continue;
+        const current = holdings.get(tx.securityId) || 0;
+        const qty = Number(tx.quantity || 0);
+
+        switch (tx.action) {
+          case InvestmentAction.BUY:
+          case InvestmentAction.REINVEST:
+          case InvestmentAction.TRANSFER_IN:
+          case InvestmentAction.ADD_SHARES:
+            holdings.set(tx.securityId, current + qty);
+            break;
+          case InvestmentAction.SELL:
+          case InvestmentAction.TRANSFER_OUT:
+          case InvestmentAction.REMOVE_SHARES:
+            holdings.set(tx.securityId, current - qty);
+            break;
+          // DIVIDEND, INTEREST, CAPITAL_GAIN, SPLIT: no quantity change
+        }
+      }
+
+      // Compute portfolio value after today's transactions
+      previousValue = await computeValueAtDate(holdings, date);
+      previousDate = date;
+    }
+
+    // Final sub-period: from last transaction date to today
+    if (previousValue > 0) {
+      const todayValue = await computeValue(holdings);
+      if (todayValue >= 0) {
+        subPeriodFactors.push(todayValue / previousValue);
+      }
+    }
+
+    if (subPeriodFactors.length === 0) return null;
+
+    // Chain: TWR = product of all factors - 1
+    let product = 1;
+    for (const factor of subPeriodFactors) {
+      product *= factor;
+    }
+
+    return (product - 1) * 100;
   }
 
   /**
@@ -262,11 +489,46 @@ export class PortfolioService {
       );
     }
 
-    // Get holdings for brokerage accounts AND standalone accounts
-    const holdingsAccountIds = [
+    // Compute per-account investment transaction sums for Net Invested calculation
+    // Net Invested = Cash Balance + BUYs - SELLs - Income (DIVIDEND/INTEREST/CAPITAL_GAIN)
+    // This algebraically equals the net external cash contributed to the account
+    const investmentFlows = new Map<
+      string,
+      { buys: number; sells: number; income: number }
+    >();
+    const allInvestmentAccountIds = [
       ...brokerageAccounts.map((a) => a.id),
       ...standaloneAccounts.map((a) => a.id),
     ];
+    if (allInvestmentAccountIds.length > 0) {
+      const flowRows: {
+        account_id: string;
+        buys: string;
+        sells: string;
+        income: string;
+      }[] = await this.accountsRepository.query(
+        `SELECT account_id,
+                  COALESCE(SUM(CASE WHEN action = 'BUY' THEN total_amount ELSE 0 END), 0) as buys,
+                  COALESCE(SUM(CASE WHEN action = 'SELL' THEN total_amount ELSE 0 END), 0) as sells,
+                  COALESCE(SUM(CASE WHEN action IN ('DIVIDEND','INTEREST','CAPITAL_GAIN') THEN total_amount ELSE 0 END), 0) as income
+           FROM investment_transactions
+           WHERE user_id = $1
+             AND account_id = ANY($2)
+             AND transaction_date <= CURRENT_DATE
+           GROUP BY account_id`,
+        [userId, allInvestmentAccountIds],
+      );
+      for (const row of flowRows) {
+        investmentFlows.set(row.account_id, {
+          buys: Number(row.buys),
+          sells: Number(row.sells),
+          income: Number(row.income),
+        });
+      }
+    }
+
+    // Get holdings for brokerage accounts AND standalone accounts
+    const holdingsAccountIds = allInvestmentAccountIds;
     let holdings: Holding[] = [];
     if (holdingsAccountIds.length > 0) {
       holdings = await this.holdingsRepository.find({
@@ -374,15 +636,24 @@ export class PortfolioService {
       // Get display name (remove " - Brokerage" suffix if present)
       const accountName = brokerageAccount.name.replace(" - Brokerage", "");
 
+      const cashBalance = linkedCashAccount
+        ? (effectiveBalances.get(linkedCashAccount.id) ??
+          Number(linkedCashAccount.currentBalance))
+        : 0;
+      const flows = investmentFlows.get(brokerageAccount.id) ?? {
+        buys: 0,
+        sells: 0,
+        income: 0,
+      };
+      const accountNetInvested =
+        cashBalance + flows.buys - flows.sells - flows.income;
+
       holdingsByAccount.push({
         accountId: brokerageAccount.id,
         accountName,
         currencyCode: brokerageAccount.currencyCode,
         cashAccountId: linkedCashAccount?.id ?? null,
-        cashBalance: linkedCashAccount
-          ? (effectiveBalances.get(linkedCashAccount.id) ??
-            Number(linkedCashAccount.currentBalance))
-          : 0,
+        cashBalance,
         holdings: accountHoldings.sort((a, b) => {
           if (a.marketValue === null && b.marketValue === null) return 0;
           if (a.marketValue === null) return 1;
@@ -393,6 +664,7 @@ export class PortfolioService {
         totalMarketValue: accountMarketValue,
         totalGainLoss: accountGainLoss,
         totalGainLossPercent: accountGainLossPercent,
+        netInvested: Math.round(accountNetInvested * 100) / 100,
       });
     }
 
@@ -414,14 +686,26 @@ export class PortfolioService {
       const accountGainLossPercent =
         accountCostBasis > 0 ? (accountGainLoss / accountCostBasis) * 100 : 0;
 
+      const standaloneCashBalance =
+        effectiveBalances.get(standaloneAccount.id) ??
+        Number(standaloneAccount.currentBalance);
+      const standaloneFlows = investmentFlows.get(standaloneAccount.id) ?? {
+        buys: 0,
+        sells: 0,
+        income: 0,
+      };
+      const standaloneNetInvested =
+        standaloneCashBalance +
+        standaloneFlows.buys -
+        standaloneFlows.sells -
+        standaloneFlows.income;
+
       holdingsByAccount.push({
         accountId: standaloneAccount.id,
         accountName: standaloneAccount.name,
         currencyCode: standaloneAccount.currencyCode,
         cashAccountId: standaloneAccount.id, // Cash is on this same account
-        cashBalance:
-          effectiveBalances.get(standaloneAccount.id) ??
-          Number(standaloneAccount.currentBalance),
+        cashBalance: standaloneCashBalance,
         holdings: accountHoldings.sort((a, b) => {
           if (a.marketValue === null && b.marketValue === null) return 0;
           if (a.marketValue === null) return 1;
@@ -432,6 +716,7 @@ export class PortfolioService {
         totalMarketValue: accountMarketValue,
         totalGainLoss: accountGainLoss,
         totalGainLossPercent: accountGainLossPercent,
+        netInvested: Math.round(standaloneNetInvested * 100) / 100,
       });
     }
 
@@ -442,6 +727,17 @@ export class PortfolioService {
     const totalGainLoss = totalHoldingsValue - totalCostBasis;
     const totalGainLossPercent =
       totalCostBasis > 0 ? (totalGainLoss / totalCostBasis) * 100 : 0;
+
+    // Calculate total net invested (converted to default currency)
+    let totalNetInvested = 0;
+    for (const acct of holdingsByAccount) {
+      totalNetInvested += await this.convertToDefault(
+        acct.netInvested,
+        acct.currencyCode,
+        defaultCurrency,
+        rateCache,
+      );
+    }
 
     // Sort holdings by market value
     const sortedHoldings = holdingsWithValues.sort((a, b) => {
@@ -509,13 +805,55 @@ export class PortfolioService {
 
     allocation.sort((a, b) => b.value - a.value);
 
+    // Calculate Time-Weighted Return
+    const timeWeightedReturn = await this.calculateTWR(
+      userId,
+      holdingsAccountIds,
+      defaultCurrency,
+      rateCache,
+    );
+
+    // Calculate CAGR (Compound Annual Growth Rate)
+    // CAGR = (Portfolio Value / Net Invested) ^ (1/years) - 1
+    let cagr: number | null = null;
+    if (
+      totalNetInvested > 0 &&
+      totalPortfolioValue > 0 &&
+      allInvestmentAccountIds.length > 0
+    ) {
+      const earliestRow: { earliest: string }[] =
+        await this.accountsRepository.query(
+          `SELECT MIN(transaction_date) as earliest
+         FROM investment_transactions
+         WHERE user_id = $1
+           AND account_id = ANY($2)
+           AND transaction_date <= CURRENT_DATE`,
+          [userId, allInvestmentAccountIds],
+        );
+      if (earliestRow[0]?.earliest) {
+        const earliest = new Date(earliestRow[0].earliest);
+        const now = new Date();
+        const years =
+          (now.getTime() - earliest.getTime()) / (365.25 * 24 * 60 * 60 * 1000);
+        if (years >= 1 / 365.25) {
+          // At least 1 day of history
+          cagr =
+            (Math.pow(totalPortfolioValue / totalNetInvested, 1 / years) - 1) *
+            100;
+        }
+      }
+    }
+
     return {
       totalCashValue,
       totalHoldingsValue,
       totalCostBasis,
+      totalNetInvested,
       totalPortfolioValue,
       totalGainLoss,
       totalGainLossPercent,
+      timeWeightedReturn,
+      cagr,
       holdings: sortedHoldings,
       holdingsByAccount,
       allocation,
@@ -711,7 +1049,8 @@ export class PortfolioService {
     for (const securityId of securityIds) {
       const currentPrice = currentPriceMap.get(securityId);
       const previousPrice = previousPriceMap.get(securityId);
-      if (currentPrice == null || previousPrice == null || previousPrice === 0) continue;
+      if (currentPrice == null || previousPrice == null || previousPrice === 0)
+        continue;
 
       const dailyChange = currentPrice - previousPrice;
       const dailyChangePercent = (dailyChange / previousPrice) * 100;

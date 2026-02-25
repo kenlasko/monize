@@ -174,7 +174,7 @@ describe("TransactionBulkUpdateService", () => {
       );
     });
 
-    it("skips reconciled transactions", async () => {
+    it("includes reconciled transactions in bulk updates", async () => {
       const tx1 = makeTransaction({ id: "tx-1" });
       const tx2 = makeTransaction({
         id: "tx-2",
@@ -188,7 +188,7 @@ describe("TransactionBulkUpdateService", () => {
         getMany: jest.fn().mockResolvedValue([tx1, tx2]),
       });
       const updateQb = createMockQueryBuilder({
-        execute: jest.fn().mockResolvedValue({ affected: 1 }),
+        execute: jest.fn().mockResolvedValue({ affected: 2 }),
       });
 
       transactionsRepository.createQueryBuilder
@@ -204,9 +204,8 @@ describe("TransactionBulkUpdateService", () => {
 
       const result = await service.bulkUpdate(userId, dto);
 
-      expect(result.updated).toBe(1);
-      expect(result.skipped).toBe(1);
-      expect(result.skippedReasons).toContain("1 reconciled");
+      expect(result.updated).toBe(2);
+      expect(result.skipped).toBe(0);
     });
 
     it("skips transfers when updating payee", async () => {
@@ -475,7 +474,7 @@ describe("TransactionBulkUpdateService", () => {
     it("returns zero when all transactions are excluded", async () => {
       const tx = makeTransaction({
         id: "tx-1",
-        status: TransactionStatus.RECONCILED,
+        isTransfer: true,
       });
 
       const resolveQb = createMockQueryBuilder({
@@ -492,7 +491,7 @@ describe("TransactionBulkUpdateService", () => {
       const dto: BulkUpdateDto = {
         mode: "ids",
         transactionIds: ["tx-1"],
-        description: "test",
+        payeeId: "some-payee-id",
       };
 
       const result = await service.bulkUpdate(userId, dto);

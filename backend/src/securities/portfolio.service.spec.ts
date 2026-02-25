@@ -4,6 +4,10 @@ import { PortfolioService } from "./portfolio.service";
 import { Holding } from "./entities/holding.entity";
 import { SecurityPrice } from "./entities/security-price.entity";
 import {
+  InvestmentTransaction,
+  InvestmentAction,
+} from "./entities/investment-transaction.entity";
+import {
   Account,
   AccountType,
   AccountSubType,
@@ -15,6 +19,7 @@ describe("PortfolioService", () => {
   let service: PortfolioService;
   let holdingsRepository: Record<string, jest.Mock>;
   let securityPriceRepository: Record<string, jest.Mock>;
+  let investmentTransactionRepository: Record<string, jest.Mock>;
   let accountsRepository: Record<string, jest.Mock>;
   let prefRepository: Record<string, jest.Mock>;
   let exchangeRateService: Record<string, jest.Mock>;
@@ -129,6 +134,10 @@ describe("PortfolioService", () => {
       query: jest.fn(),
     };
 
+    investmentTransactionRepository = {
+      find: jest.fn().mockResolvedValue([]),
+    };
+
     accountsRepository = {
       find: jest.fn(),
       query: jest.fn().mockResolvedValue([]),
@@ -152,6 +161,10 @@ describe("PortfolioService", () => {
         {
           provide: getRepositoryToken(SecurityPrice),
           useValue: securityPriceRepository,
+        },
+        {
+          provide: getRepositoryToken(InvestmentTransaction),
+          useValue: investmentTransactionRepository,
         },
         {
           provide: getRepositoryToken(Account),
@@ -699,9 +712,11 @@ describe("PortfolioService", () => {
         expect(result.totalCashValue).toBe(0);
         expect(result.totalHoldingsValue).toBe(0);
         expect(result.totalCostBasis).toBe(0);
+        expect(result.totalNetInvested).toBe(0);
         expect(result.totalPortfolioValue).toBe(0);
         expect(result.totalGainLoss).toBe(0);
         expect(result.totalGainLossPercent).toBe(0);
+        expect(result.cagr).toBeNull();
         expect(result.holdings).toHaveLength(0);
         expect(result.holdingsByAccount).toHaveLength(0);
         expect(result.allocation).toHaveLength(0);
@@ -979,7 +994,12 @@ describe("PortfolioService", () => {
 
         await service.getPortfolioSummary(userId);
 
-        expect(accountsRepository.query).not.toHaveBeenCalled();
+        // Balance query should not run, but investment flows query will run
+        // Verify no call contains the balance SQL (opening_balance)
+        const balanceCalls = accountsRepository.query.mock.calls.filter(
+          ([sql]: [string]) => sql.includes("opening_balance"),
+        );
+        expect(balanceCalls).toHaveLength(0);
       });
     });
 
@@ -1283,7 +1303,6 @@ describe("PortfolioService", () => {
         expect(result[0].marketValue).toBe(36 * 100);
       });
     });
-
   });
 
   describe("getMonthOverMonthMovers", () => {
@@ -1329,7 +1348,11 @@ describe("PortfolioService", () => {
       it("passes both date bounds to the price query", async () => {
         securityPriceRepository.query.mockResolvedValue([]);
 
-        await service.getMonthOverMonthMovers(userId, "2026-01-31", "2025-12-31");
+        await service.getMonthOverMonthMovers(
+          userId,
+          "2026-01-31",
+          "2025-12-31",
+        );
 
         const queryCall = securityPriceRepository.query.mock.calls[0];
         expect(queryCall[0]).toContain("price_date <= $2::DATE");
@@ -1477,6 +1500,476 @@ describe("PortfolioService", () => {
           where: expect.objectContaining({ userId }),
         }),
       );
+    });
+  });
+
+  describe("TWR calculation (via getPortfolioSummary)", () => {
+    beforeEach(() => {
+      prefRepository.findOne.mockResolvedValue(mockPref);
+      exchangeRateService.getLatestRate.mockResolvedValue(null);
+    });
+
+    it("returns null when no investment transactions exist", async () => {
+      accountsRepository.find.mockResolvedValue([
+        mockBrokerageAccount,
+        mockCashAccount,
+      ]);
+      accountsRepository.query.mockResolvedValue([
+        { account_id: "acct-cash-1", balance: "5000" },
+      ]);
+      holdingsRepository.find.mockResolvedValue([]);
+      securityPriceRepository.query.mockResolvedValue([]);
+      investmentTransactionRepository.find.mockResolvedValue([]);
+
+      const result = await service.getPortfolioSummary(userId);
+
+      expect(result.timeWeightedReturn).toBeNull();
+    });
+
+    it("calculates TWR for simple buy-and-hold scenario", async () => {
+      accountsRepository.find.mockResolvedValue([
+        mockBrokerageAccount,
+        mockCashAccount,
+      ]);
+      accountsRepository.query.mockResolvedValue([
+        { account_id: "acct-cash-1", balance: "0" },
+      ]);
+      holdingsRepository.find.mockResolvedValue([mockHoldingVFV]);
+
+      // Mock transactions: bought VFV at $80
+      investmentTransactionRepository.find.mockResolvedValue([
+        {
+          id: "tx-1",
+          userId,
+          accountId: "acct-brokerage-1",
+          securityId: "sec-2",
+          action: InvestmentAction.BUY,
+          transactionDate: "2025-06-15",
+          quantity: 50,
+          price: 80,
+          totalAmount: 4000,
+          commission: 0,
+          security: mockSecurityVFV,
+          createdAt: new Date("2025-06-15"),
+        },
+      ]);
+
+      // Handle different query calls: getLatestPrices vs getAllPricesForSecurities
+      securityPriceRepository.query.mockImplementation((sql: string) => {
+        if (sql.includes("DISTINCT ON")) {
+          // getLatestPrices - current price is $100
+          return [
+            {
+              security_id: "sec-2",
+              close_price: "100",
+              price_date: "2026-02-24",
+            },
+          ];
+        }
+        // getAllPricesForSecurities - full price history
+        return [
+          { security_id: "sec-2", price_date: "2025-06-15", close_price: "80" },
+          {
+            security_id: "sec-2",
+            price_date: "2026-02-24",
+            close_price: "100",
+          },
+        ];
+      });
+
+      const result = await service.getPortfolioSummary(userId);
+
+      // Bought at $80, now $100 => 25% return
+      expect(result.timeWeightedReturn).not.toBeNull();
+      expect(result.timeWeightedReturn).toBeCloseTo(25, 0);
+    });
+
+    it("calculates TWR with multiple buys at different prices", async () => {
+      accountsRepository.find.mockResolvedValue([
+        mockBrokerageAccount,
+        mockCashAccount,
+      ]);
+      accountsRepository.query.mockResolvedValue([
+        { account_id: "acct-cash-1", balance: "0" },
+      ]);
+      // Current state: 20 shares of VFV
+      holdingsRepository.find.mockResolvedValue([
+        { ...mockHoldingVFV, quantity: 20 as any },
+      ]);
+
+      investmentTransactionRepository.find.mockResolvedValue([
+        {
+          id: "tx-1",
+          userId,
+          accountId: "acct-brokerage-1",
+          securityId: "sec-2",
+          action: InvestmentAction.BUY,
+          transactionDate: "2025-01-15",
+          quantity: 10,
+          price: 80,
+          totalAmount: 800,
+          commission: 0,
+          security: mockSecurityVFV,
+          createdAt: new Date("2025-01-15"),
+        },
+        {
+          id: "tx-2",
+          userId,
+          accountId: "acct-brokerage-1",
+          securityId: "sec-2",
+          action: InvestmentAction.BUY,
+          transactionDate: "2025-07-15",
+          quantity: 10,
+          price: 100,
+          totalAmount: 1000,
+          commission: 0,
+          security: mockSecurityVFV,
+          createdAt: new Date("2025-07-15"),
+        },
+      ]);
+
+      securityPriceRepository.query.mockImplementation((sql: string) => {
+        if (sql.includes("DISTINCT ON")) {
+          return [
+            {
+              security_id: "sec-2",
+              close_price: "120",
+              price_date: "2026-02-24",
+            },
+          ];
+        }
+        return [
+          { security_id: "sec-2", price_date: "2025-01-15", close_price: "80" },
+          {
+            security_id: "sec-2",
+            price_date: "2025-07-15",
+            close_price: "100",
+          },
+          {
+            security_id: "sec-2",
+            price_date: "2026-02-24",
+            close_price: "120",
+          },
+        ];
+      });
+
+      const result = await service.getPortfolioSummary(userId);
+
+      // Sub-period 1: 10 shares, $80 -> $100 = 25% (factor 1.25)
+      // Sub-period 2: 20 shares at $100 -> 20 shares at $120 = 20% (factor 1.20)
+      // TWR = 1.25 * 1.20 - 1 = 0.50 = 50%
+      expect(result.timeWeightedReturn).not.toBeNull();
+      expect(result.timeWeightedReturn).toBeCloseTo(50, 0);
+    });
+
+    it("returns null when price data is missing for all securities", async () => {
+      accountsRepository.find.mockResolvedValue([
+        mockBrokerageAccount,
+        mockCashAccount,
+      ]);
+      accountsRepository.query.mockResolvedValue([
+        { account_id: "acct-cash-1", balance: "0" },
+      ]);
+      holdingsRepository.find.mockResolvedValue([mockHoldingVFV]);
+
+      investmentTransactionRepository.find.mockResolvedValue([
+        {
+          id: "tx-1",
+          userId,
+          accountId: "acct-brokerage-1",
+          securityId: "sec-2",
+          action: InvestmentAction.BUY,
+          transactionDate: "2025-06-15",
+          quantity: 50,
+          price: 80,
+          totalAmount: 4000,
+          commission: 0,
+          security: mockSecurityVFV,
+          createdAt: new Date("2025-06-15"),
+        },
+      ]);
+
+      // No price data at all
+      securityPriceRepository.query.mockResolvedValue([]);
+
+      const result = await service.getPortfolioSummary(userId);
+
+      expect(result.timeWeightedReturn).toBeNull();
+    });
+
+    it("includes timeWeightedReturn field in response", async () => {
+      accountsRepository.find.mockResolvedValue([]);
+      holdingsRepository.find.mockResolvedValue([]);
+      securityPriceRepository.query.mockResolvedValue([]);
+      investmentTransactionRepository.find.mockResolvedValue([]);
+
+      const result = await service.getPortfolioSummary(userId);
+
+      expect(result).toHaveProperty("timeWeightedReturn");
+    });
+  });
+
+  describe("Net Invested calculation (via getPortfolioSummary)", () => {
+    beforeEach(() => {
+      prefRepository.findOne.mockResolvedValue(mockPref);
+      exchangeRateService.getLatestRate.mockResolvedValue(null);
+    });
+
+    it("computes netInvested as cashBalance + buys - sells - income per account", async () => {
+      accountsRepository.find.mockResolvedValue([
+        mockBrokerageAccount,
+        mockCashAccount,
+      ]);
+      holdingsRepository.find.mockResolvedValue([mockHoldingVFV]);
+      securityPriceRepository.query.mockResolvedValue([
+        { security_id: "sec-2", close_price: "95", price_date: "2026-02-07" },
+      ]);
+
+      // First call: balance query, second call: investment flows, third: CAGR earliest
+      let queryCallCount = 0;
+      accountsRepository.query.mockImplementation(() => {
+        queryCallCount++;
+        if (queryCallCount === 1) {
+          // Balance query: cash account has 2000 effective balance
+          return [{ account_id: "acct-cash-1", balance: "2000" }];
+        }
+        if (queryCallCount === 2) {
+          // Investment flows: bought 5000, sold 1000, received 500 income
+          return [
+            {
+              account_id: "acct-brokerage-1",
+              buys: "5000",
+              sells: "1000",
+              income: "500",
+            },
+          ];
+        }
+        // CAGR earliest date
+        return [{ earliest: "2024-01-15" }];
+      });
+
+      const result = await service.getPortfolioSummary(userId);
+
+      // netInvested = cashBalance(2000) + buys(5000) - sells(1000) - income(500) = 5500
+      expect(result.holdingsByAccount[0].netInvested).toBe(5500);
+      expect(result.totalNetInvested).toBe(5500);
+    });
+
+    it("returns 0 netInvested when no investment flows exist", async () => {
+      accountsRepository.find.mockResolvedValue([
+        mockBrokerageAccount,
+        mockCashAccount,
+      ]);
+      holdingsRepository.find.mockResolvedValue([]);
+      securityPriceRepository.query.mockResolvedValue([]);
+      accountsRepository.query.mockResolvedValue([]);
+
+      const result = await service.getPortfolioSummary(userId);
+
+      // No flows, cash falls back to currentBalance=5000, so netInvested=5000
+      expect(result.holdingsByAccount[0].netInvested).toBe(5000);
+    });
+
+    it("computes netInvested for standalone accounts", async () => {
+      accountsRepository.find.mockResolvedValue([mockStandaloneAccount]);
+      holdingsRepository.find.mockResolvedValue([mockHoldingXIC]);
+      securityPriceRepository.query.mockResolvedValue([
+        { security_id: "sec-3", close_price: "35", price_date: "2026-02-07" },
+      ]);
+
+      let queryCallCount = 0;
+      accountsRepository.query.mockImplementation(() => {
+        queryCallCount++;
+        if (queryCallCount === 1) {
+          return [{ account_id: "acct-standalone-1", balance: "1000" }];
+        }
+        if (queryCallCount === 2) {
+          return [
+            {
+              account_id: "acct-standalone-1",
+              buys: "3000",
+              sells: "0",
+              income: "200",
+            },
+          ];
+        }
+        return [{ earliest: "2025-01-15" }];
+      });
+
+      const result = await service.getPortfolioSummary(userId);
+
+      // netInvested = cashBalance(1000) + buys(3000) - sells(0) - income(200) = 3800
+      expect(result.holdingsByAccount[0].netInvested).toBe(3800);
+    });
+
+    it("includes totalNetInvested and cagr fields in response", async () => {
+      accountsRepository.find.mockResolvedValue([]);
+      holdingsRepository.find.mockResolvedValue([]);
+      securityPriceRepository.query.mockResolvedValue([]);
+
+      const result = await service.getPortfolioSummary(userId);
+
+      expect(result).toHaveProperty("totalNetInvested");
+      expect(result).toHaveProperty("cagr");
+    });
+  });
+
+  describe("CAGR calculation (via getPortfolioSummary)", () => {
+    beforeEach(() => {
+      prefRepository.findOne.mockResolvedValue(mockPref);
+      exchangeRateService.getLatestRate.mockResolvedValue(null);
+    });
+
+    it("returns null when no accounts exist", async () => {
+      accountsRepository.find.mockResolvedValue([]);
+      holdingsRepository.find.mockResolvedValue([]);
+      securityPriceRepository.query.mockResolvedValue([]);
+
+      const result = await service.getPortfolioSummary(userId);
+
+      expect(result.cagr).toBeNull();
+    });
+
+    it("returns null when net invested is zero", async () => {
+      accountsRepository.find.mockResolvedValue([
+        mockBrokerageAccount,
+        mockCashAccount,
+      ]);
+      holdingsRepository.find.mockResolvedValue([]);
+      securityPriceRepository.query.mockResolvedValue([]);
+
+      // Cash balance 0, no flows → netInvested=0
+      let queryCallCount = 0;
+      accountsRepository.query.mockImplementation(() => {
+        queryCallCount++;
+        if (queryCallCount === 1) {
+          return [{ account_id: "acct-cash-1", balance: "0" }];
+        }
+        return [];
+      });
+
+      const result = await service.getPortfolioSummary(userId);
+
+      expect(result.cagr).toBeNull();
+    });
+
+    it("returns null when no earliest transaction date exists", async () => {
+      accountsRepository.find.mockResolvedValue([
+        mockBrokerageAccount,
+        mockCashAccount,
+      ]);
+      holdingsRepository.find.mockResolvedValue([]);
+      securityPriceRepository.query.mockResolvedValue([]);
+
+      let queryCallCount = 0;
+      accountsRepository.query.mockImplementation(() => {
+        queryCallCount++;
+        if (queryCallCount === 1) {
+          return [{ account_id: "acct-cash-1", balance: "5000" }];
+        }
+        if (queryCallCount === 2) {
+          // No investment flows
+          return [];
+        }
+        // No earliest date
+        return [{ earliest: null }];
+      });
+
+      const result = await service.getPortfolioSummary(userId);
+
+      expect(result.cagr).toBeNull();
+    });
+
+    it("calculates CAGR correctly for a known scenario", async () => {
+      accountsRepository.find.mockResolvedValue([
+        mockBrokerageAccount,
+        mockCashAccount,
+      ]);
+      holdingsRepository.find.mockResolvedValue([mockHoldingVFV]);
+      securityPriceRepository.query.mockResolvedValue([
+        { security_id: "sec-2", close_price: "100", price_date: "2026-02-07" },
+      ]);
+
+      // Set up: portfolio=5000+5000=10000, netInvested=5000
+      // Earliest transaction 2 years ago
+      const twoYearsAgo = new Date();
+      twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
+      const earliestDate = twoYearsAgo.toISOString().split("T")[0];
+
+      let queryCallCount = 0;
+      accountsRepository.query.mockImplementation(() => {
+        queryCallCount++;
+        if (queryCallCount === 1) {
+          return [{ account_id: "acct-cash-1", balance: "0" }];
+        }
+        if (queryCallCount === 2) {
+          // buys=5000, sells=0, income=0 → netInvested = 0 + 5000 - 0 - 0 = 5000
+          return [
+            {
+              account_id: "acct-brokerage-1",
+              buys: "5000",
+              sells: "0",
+              income: "0",
+            },
+          ];
+        }
+        return [{ earliest: earliestDate }];
+      });
+
+      const result = await service.getPortfolioSummary(userId);
+
+      // Portfolio = 0 (cash) + 5000 (holdings) = 5000
+      // Net invested = 0 + 5000 - 0 - 0 = 5000
+      // CAGR = (5000/5000)^(1/2) - 1 = 0%
+      expect(result.cagr).not.toBeNull();
+      expect(result.cagr).toBeCloseTo(0, 0);
+    });
+
+    it("calculates positive CAGR when portfolio exceeds net invested", async () => {
+      accountsRepository.find.mockResolvedValue([
+        mockBrokerageAccount,
+        mockCashAccount,
+      ]);
+      // VFV: 50 shares at $100 = $5000 market value
+      holdingsRepository.find.mockResolvedValue([mockHoldingVFV]);
+      securityPriceRepository.query.mockResolvedValue([
+        { security_id: "sec-2", close_price: "100", price_date: "2026-02-07" },
+      ]);
+
+      const twoYearsAgo = new Date();
+      twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
+      const earliestDate = twoYearsAgo.toISOString().split("T")[0];
+
+      let queryCallCount = 0;
+      accountsRepository.query.mockImplementation(() => {
+        queryCallCount++;
+        if (queryCallCount === 1) {
+          // Cash: 5000
+          return [{ account_id: "acct-cash-1", balance: "5000" }];
+        }
+        if (queryCallCount === 2) {
+          // buys=4000, sells=0, income=0 → netInvested = 5000 + 4000 = 9000
+          return [
+            {
+              account_id: "acct-brokerage-1",
+              buys: "4000",
+              sells: "0",
+              income: "0",
+            },
+          ];
+        }
+        return [{ earliest: earliestDate }];
+      });
+
+      const result = await service.getPortfolioSummary(userId);
+
+      // Portfolio = 5000 + 5000 = 10000
+      // Net invested = 5000 + 4000 = 9000
+      // CAGR = (10000/9000)^(1/2) - 1 ≈ 5.41%
+      expect(result.cagr).not.toBeNull();
+      expect(result.cagr!).toBeGreaterThan(0);
+      const expectedCagr = (Math.pow(10000 / 9000, 1 / 2) - 1) * 100;
+      expect(result.cagr).toBeCloseTo(expectedCagr, 1);
     });
   });
 });
