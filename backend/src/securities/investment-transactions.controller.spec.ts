@@ -1,4 +1,5 @@
 import { Test, TestingModule } from "@nestjs/testing";
+import { BadRequestException } from "@nestjs/common";
 import { InvestmentTransactionsController } from "./investment-transactions.controller";
 import { InvestmentTransactionsService } from "./investment-transactions.service";
 
@@ -7,11 +8,13 @@ describe("InvestmentTransactionsController", () => {
   let service: Record<string, jest.Mock>;
 
   const req = { user: { id: "user-1" } };
+  const UUID1 = "00000000-0000-0000-0000-000000000001";
+  const UUID2 = "00000000-0000-0000-0000-000000000002";
 
   const mockTransaction = {
     id: "txn-1",
     userId: "user-1",
-    accountId: "acc-1",
+    accountId: UUID1,
     securityId: "sec-1",
     action: "BUY",
     quantity: 10,
@@ -52,7 +55,7 @@ describe("InvestmentTransactionsController", () => {
   describe("create", () => {
     it("delegates to service.create with userId and dto", async () => {
       const dto = {
-        accountId: "acc-1",
+        accountId: UUID1,
         securityId: "sec-1",
         action: "BUY",
         quantity: 10,
@@ -95,11 +98,11 @@ describe("InvestmentTransactionsController", () => {
     it("parses accountIds CSV into array", async () => {
       service.findAll.mockResolvedValue({ data: [], total: 0 });
 
-      await controller.findAll(req, "acc-1,acc-2");
+      await controller.findAll(req, `${UUID1},${UUID2}`);
 
       expect(service.findAll).toHaveBeenCalledWith(
         "user-1",
-        ["acc-1", "acc-2"],
+        [UUID1, UUID2],
         undefined,
         undefined,
         undefined,
@@ -107,6 +110,30 @@ describe("InvestmentTransactionsController", () => {
         undefined,
         undefined,
       );
+    });
+
+    it("rejects invalid UUIDs in accountIds", () => {
+      expect(() =>
+        controller.findAll(req, "not-a-uuid"),
+      ).toThrow(BadRequestException);
+    });
+
+    it("rejects invalid date format for startDate", () => {
+      expect(() =>
+        controller.findAll(req, undefined, "01-01-2025"),
+      ).toThrow(BadRequestException);
+    });
+
+    it("rejects invalid page parameter", () => {
+      expect(() =>
+        controller.findAll(req, undefined, undefined, undefined, "abc"),
+      ).toThrow(BadRequestException);
+    });
+
+    it("rejects limit exceeding 200", () => {
+      expect(() =>
+        controller.findAll(req, undefined, undefined, undefined, undefined, "500"),
+      ).toThrow(BadRequestException);
     });
 
     it("parses page and limit as integers", async () => {
@@ -150,11 +177,11 @@ describe("InvestmentTransactionsController", () => {
     it("parses accountIds CSV and passes to service", async () => {
       service.getSummary.mockResolvedValue({});
 
-      await controller.getSummary(req, "acc-1,acc-2");
+      await controller.getSummary(req, `${UUID1},${UUID2}`);
 
       expect(service.getSummary).toHaveBeenCalledWith("user-1", [
-        "acc-1",
-        "acc-2",
+        UUID1,
+        UUID2,
       ]);
     });
   });

@@ -208,6 +208,9 @@ export class TransactionsController {
       throw new BadRequestException("targetTransactionId must be a valid UUID");
     }
 
+    // Truncate search to prevent excessive ILIKE query length
+    const sanitizedSearch = search ? search.slice(0, 200) : undefined;
+
     return this.transactionsService.findAll(
       req.user.id,
       parseIds(accountIds, accountId),
@@ -218,7 +221,7 @@ export class TransactionsController {
       page ? parseInt(page, 10) : undefined,
       limit ? parseInt(limit, 10) : undefined,
       includeInvestmentBrokerage === "true",
-      search,
+      sanitizedSearch,
       targetTransactionId,
     );
   }

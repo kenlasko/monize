@@ -9,6 +9,7 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { Transaction } from "./entities/transaction.entity";
 import { TransactionSplit } from "./entities/transaction-split.entity";
+import { Category } from "../categories/entities/category.entity";
 import { CreateTransactionSplitDto } from "./dto/create-transaction-split.dto";
 import { AccountsService } from "../accounts/accounts.service";
 import { isTransactionInFuture } from "../common/date-utils";
@@ -20,9 +21,23 @@ export class TransactionSplitService {
     private transactionsRepository: Repository<Transaction>,
     @InjectRepository(TransactionSplit)
     private splitsRepository: Repository<TransactionSplit>,
+    @InjectRepository(Category)
+    private categoriesRepository: Repository<Category>,
     @Inject(forwardRef(() => AccountsService))
     private accountsService: AccountsService,
   ) {}
+
+  private async validateCategoryOwnership(
+    userId: string,
+    categoryId: string,
+  ): Promise<void> {
+    const category = await this.categoriesRepository.findOne({
+      where: { id: categoryId, userId },
+    });
+    if (!category) {
+      throw new NotFoundException("Category not found");
+    }
+  }
 
   validateSplits(
     splits: CreateTransactionSplitDto[],
@@ -67,6 +82,10 @@ export class TransactionSplitService {
     const savedSplits: TransactionSplit[] = [];
 
     for (const split of splits) {
+      if (split.categoryId && userId) {
+        await this.validateCategoryOwnership(userId, split.categoryId);
+      }
+
       const splitEntity = this.splitsRepository.create({
         transactionId,
         categoryId: split.categoryId || null,
@@ -208,6 +227,10 @@ export class TransactionSplitService {
     splitDto: CreateTransactionSplitDto,
     userId: string,
   ): Promise<TransactionSplit> {
+    if (splitDto.categoryId) {
+      await this.validateCategoryOwnership(userId, splitDto.categoryId);
+    }
+
     const existingSplits = await this.getSplits(transaction.id);
     const existingTotal = existingSplits.reduce(
       (sum, s) => sum + Number(s.amount),

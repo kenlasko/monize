@@ -4,6 +4,7 @@ import { BadRequestException, NotFoundException } from "@nestjs/common";
 import { TransactionSplitService } from "./transaction-split.service";
 import { Transaction } from "./entities/transaction.entity";
 import { TransactionSplit } from "./entities/transaction-split.entity";
+import { Category } from "../categories/entities/category.entity";
 import { AccountsService } from "../accounts/accounts.service";
 import { isTransactionInFuture } from "../common/date-utils";
 
@@ -18,6 +19,7 @@ describe("TransactionSplitService", () => {
   let service: TransactionSplitService;
   let transactionsRepository: Record<string, jest.Mock>;
   let splitsRepository: Record<string, jest.Mock>;
+  let categoriesRepository: Record<string, jest.Mock>;
   let accountsService: Record<string, jest.Mock>;
 
   const mockTransaction: Partial<Transaction> = {
@@ -83,6 +85,10 @@ describe("TransactionSplitService", () => {
       remove: jest.fn().mockResolvedValue(undefined),
     };
 
+    categoriesRepository = {
+      findOne: jest.fn().mockResolvedValue({ id: "cat-1", userId: "user-1" }),
+    };
+
     accountsService = {
       findOne: jest.fn().mockResolvedValue({
         id: "account-2",
@@ -103,6 +109,10 @@ describe("TransactionSplitService", () => {
         {
           provide: getRepositoryToken(TransactionSplit),
           useValue: splitsRepository,
+        },
+        {
+          provide: getRepositoryToken(Category),
+          useValue: categoriesRepository,
         },
         { provide: AccountsService, useValue: accountsService },
       ],

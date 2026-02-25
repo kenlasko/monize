@@ -10,6 +10,7 @@ import {
   UseGuards,
   Request,
   ParseUUIDPipe,
+  BadRequestException,
 } from "@nestjs/common";
 import {
   ApiTags,
@@ -103,7 +104,46 @@ export class InvestmentTransactionsController {
     @Query("symbol") symbol?: string,
     @Query("action") action?: string,
   ) {
+    const uuidRegex =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+
     const ids = accountIds ? accountIds.split(",").filter(Boolean) : undefined;
+    if (ids) {
+      for (const id of ids) {
+        if (!uuidRegex.test(id)) {
+          throw new BadRequestException(`Invalid account UUID: ${id}`);
+        }
+      }
+    }
+
+    if (startDate !== undefined && !dateRegex.test(startDate)) {
+      throw new BadRequestException(
+        "startDate must be in YYYY-MM-DD format",
+      );
+    }
+    if (endDate !== undefined && !dateRegex.test(endDate)) {
+      throw new BadRequestException(
+        "endDate must be in YYYY-MM-DD format",
+      );
+    }
+
+    if (page !== undefined) {
+      const pageNum = parseInt(page, 10);
+      if (isNaN(pageNum) || pageNum < 1) {
+        throw new BadRequestException("page must be a positive integer");
+      }
+    }
+    if (limit !== undefined) {
+      const limitNum = parseInt(limit, 10);
+      if (isNaN(limitNum) || limitNum < 1) {
+        throw new BadRequestException("limit must be a positive integer");
+      }
+      if (limitNum > 200) {
+        throw new BadRequestException("limit must not exceed 200");
+      }
+    }
+
     return this.investmentTransactionsService.findAll(
       req.user.id,
       ids,

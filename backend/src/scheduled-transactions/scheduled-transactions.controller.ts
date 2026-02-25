@@ -12,6 +12,7 @@ import {
   ParseUUIDPipe,
   ParseIntPipe,
   DefaultValuePipe,
+  BadRequestException,
 } from "@nestjs/common";
 import {
   ApiTags,
@@ -222,6 +223,11 @@ export class ScheduledTransactionsController {
     @Param("id", ParseUUIDPipe) id: string,
     @Param("date") date: string,
   ) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      throw new BadRequestException(
+        "date must be in YYYY-MM-DD format",
+      );
+    }
     return this.scheduledTransactionsService.findOverrideByDate(
       req.user.id,
       id,

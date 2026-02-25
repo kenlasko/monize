@@ -28,3 +28,7 @@ export function invalidateCache(keyPrefix: string): void {
     }
   }
 }
+
+export function clearAllCache(): void {
+  cache.clear();
+}

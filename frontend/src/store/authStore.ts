@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { User } from '@/types/auth';
+import { clearAllCache } from '@/lib/apiCache';
 
 interface AuthState {
   user: User | null;
@@ -51,6 +52,7 @@ export const useAuthStore = create<AuthState>()(
 
       logout: () => {
         // Backend clears httpOnly cookies via /auth/logout; we only clear Zustand state
+        clearAllCache();
         set({
           user: null,
           token: null,
@@ -69,14 +71,28 @@ export const useAuthStore = create<AuthState>()(
     {
       name: 'auth-storage',
       storage: createJSONStorage(() => localStorage),
-      // SECURITY: Do NOT persist token to localStorage - XSS vulnerable
-      // Token should only be in httpOnly cookies managed by backend
+      // SECURITY: Only persist isAuthenticated flag to localStorage.
+      // User PII (email, name, role) is fetched from API on page load.
+      // Token is in httpOnly cookies managed by backend.
       partialize: (state) => ({
-        user: state.user,
         isAuthenticated: state.isAuthenticated,
       }),
       onRehydrateStorage: () => (state) => {
-        state?.setHasHydrated(true);
+        if (state?.isAuthenticated) {
+          // Fetch user profile from API to restore user object without persisting PII
+          import('@/lib/auth').then(({ authApi }) => {
+            authApi.getProfile().then((user: User) => {
+              state.setUser(user);
+              state.setHasHydrated(true);
+            }).catch(() => {
+              // Profile fetch failed (session expired) — log out
+              state.logout();
+              state.setHasHydrated(true);
+            });
+          });
+        } else {
+          state?.setHasHydrated(true);
+        }
       },
     }
   )

@@ -8,6 +8,10 @@ import {
   MaxLength,
   IsNotEmpty,
   IsIn,
+  IsBoolean,
+  IsNumber,
+  Min,
+  Max,
 } from "class-validator";
 import { Type } from "class-transformer";
 
@@ -45,6 +49,7 @@ export class CategoryMappingDto {
     description: "Whether this category represents a loan payment",
   })
   @IsOptional()
+  @IsBoolean()
   isLoanCategory?: boolean;
 
   @ApiPropertyOptional({
@@ -64,6 +69,9 @@ export class CategoryMappingDto {
     description: "Initial loan amount for new loan account",
   })
   @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(100_000_000)
   newLoanAmount?: number;
 
   @ApiPropertyOptional({ description: "Institution name for new loan account" })

@@ -1,4 +1,5 @@
 import { Test, TestingModule } from "@nestjs/testing";
+import { BadRequestException } from "@nestjs/common";
 import { PortfolioController } from "./portfolio.controller";
 import { PortfolioService } from "./portfolio.service";
 
@@ -7,6 +8,8 @@ describe("PortfolioController", () => {
   let portfolioService: Record<string, jest.Mock>;
 
   const req = { user: { id: "user-1" } };
+  const UUID1 = "00000000-0000-0000-0000-000000000001";
+  const UUID2 = "00000000-0000-0000-0000-000000000002";
 
   beforeEach(async () => {
     portfolioService = {
@@ -50,22 +53,28 @@ describe("PortfolioController", () => {
     it("parses accountIds CSV and passes to service", async () => {
       portfolioService.getPortfolioSummary.mockResolvedValue({});
 
-      await controller.getSummary(req, "acc-1,acc-2");
+      await controller.getSummary(req, `${UUID1},${UUID2}`);
 
       expect(portfolioService.getPortfolioSummary).toHaveBeenCalledWith(
         "user-1",
-        ["acc-1", "acc-2"],
+        [UUID1, UUID2],
       );
     });
 
     it("filters out empty strings from CSV", async () => {
       portfolioService.getPortfolioSummary.mockResolvedValue({});
 
-      await controller.getSummary(req, "acc-1,,acc-2,");
+      await controller.getSummary(req, `${UUID1},,${UUID2},`);
 
       expect(portfolioService.getPortfolioSummary).toHaveBeenCalledWith(
         "user-1",
-        ["acc-1", "acc-2"],
+        [UUID1, UUID2],
+      );
+    });
+
+    it("rejects invalid UUIDs in accountIds", () => {
+      expect(() => controller.getSummary(req, "not-a-uuid")).toThrow(
+        BadRequestException,
       );
     });
   });
@@ -90,11 +99,17 @@ describe("PortfolioController", () => {
     it("parses accountIds CSV and passes to service", async () => {
       portfolioService.getAssetAllocation.mockResolvedValue([]);
 
-      await controller.getAllocation(req, "acc-1");
+      await controller.getAllocation(req, UUID1);
 
       expect(portfolioService.getAssetAllocation).toHaveBeenCalledWith(
         "user-1",
-        ["acc-1"],
+        [UUID1],
+      );
+    });
+
+    it("rejects invalid UUIDs in accountIds", () => {
+      expect(() => controller.getAllocation(req, "not-a-uuid")).toThrow(
+        BadRequestException,
       );
     });
   });
@@ -116,7 +131,7 @@ describe("PortfolioController", () => {
 
   describe("getInvestmentAccounts", () => {
     it("delegates to portfolioService.getInvestmentAccounts", async () => {
-      const accounts = [{ id: "acc-1", name: "Brokerage", type: "INVESTMENT" }];
+      const accounts = [{ id: UUID1, name: "Brokerage", type: "INVESTMENT" }];
       portfolioService.getInvestmentAccounts.mockResolvedValue(accounts);
 
       const result = await controller.getInvestmentAccounts(req);
