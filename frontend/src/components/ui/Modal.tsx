@@ -2,6 +2,11 @@
 
 import { ReactNode, useEffect, useRef, useCallback } from 'react';
 
+// Tracks programmatic history.back() calls from modal cleanup.
+// When a nested modal closes programmatically, it pops its history entry which fires popstate.
+// Parent modals must skip that popstate to avoid cascading closes.
+let pendingProgrammaticPops = 0;
+
 const FOCUSABLE_SELECTOR = [
   'a[href]',
   'button:not([disabled])',
@@ -89,8 +94,10 @@ export function Modal({
     }
 
     if (!isOpen && historyPushedRef.current) {
-      // Modal closed programmatically (save/cancel) — pop our history entry
+      // Modal closed programmatically (save/cancel) — pop our history entry.
+      // Signal other modals to ignore the resulting popstate event.
       historyPushedRef.current = false;
+      pendingProgrammaticPops++;
       window.history.back();
     }
 
@@ -104,7 +111,16 @@ export function Modal({
     if (!isOpen || !pushHistory || !historyPushedRef.current) return;
 
     const handlePopstate = () => {
+      // Skip popstate events caused by programmatic modal cleanup (not user back button)
+      if (pendingProgrammaticPops > 0) {
+        pendingProgrammaticPops--;
+        return;
+      }
       if (historyPushedRef.current) {
+        // Skip if a nested child modal is open (it should handle this popstate)
+        if (modalRef.current?.querySelector('[role="dialog"]')) {
+          return;
+        }
         attemptClose('popstate');
       }
     };
@@ -118,6 +134,7 @@ export function Modal({
     return () => {
       if (historyPushedRef.current) {
         historyPushedRef.current = false;
+        pendingProgrammaticPops++;
         window.history.back();
       }
     };
@@ -160,11 +177,11 @@ export function Modal({
     if (!isOpen) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Skip if focus is in a different modal (stacked modals scenario).
-      // This prevents a background modal from stealing focus when a dialog is on top.
+      // Skip if focus is in a different modal (stacked or nested modals).
+      // This prevents a parent modal from handling events meant for a child modal.
       if (modalRef.current) {
         const active = document.activeElement as HTMLElement | null;
-        if (active && !modalRef.current.contains(active)) {
+        if (active) {
           const closestDialog = active.closest?.('[role="dialog"]');
           if (closestDialog && closestDialog !== modalRef.current) {
             return;

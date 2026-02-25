@@ -134,4 +134,136 @@ describe('CurrencyInput', () => {
     const prefixSpan = container.querySelector('.pointer-events-none');
     expect(prefixSpan).toBeNull();
   });
+
+  describe('calculator modal', () => {
+    it('shows calculator icon when allowCalculator is true', () => {
+      render(<CurrencyInput label="Amount" value={0} onChange={vi.fn()} />);
+      expect(screen.getByLabelText('Open calculator')).toBeInTheDocument();
+    });
+
+    it('does not show calculator icon when allowCalculator is false', () => {
+      render(<CurrencyInput label="Amount" value={0} onChange={vi.fn()} allowCalculator={false} />);
+      expect(screen.queryByLabelText('Open calculator')).not.toBeInTheDocument();
+    });
+
+    it('opens modal when calculator icon is clicked', () => {
+      render(<CurrencyInput label="Amount" value={0} onChange={vi.fn()} />);
+      fireEvent.click(screen.getByLabelText('Open calculator'));
+      expect(screen.getByText('Calculator')).toBeInTheDocument();
+    });
+
+    it('pre-fills expression with current value', () => {
+      render(<CurrencyInput label="Amount" value={50} onChange={vi.fn()} />);
+      fireEvent.click(screen.getByLabelText('Open calculator'));
+      const calcInput = screen.getByPlaceholderText('e.g. 100*1.13');
+      expect(calcInput).toHaveValue('50.00');
+    });
+
+    it('pre-fills empty for zero value', () => {
+      render(<CurrencyInput label="Amount" value={0} onChange={vi.fn()} />);
+      fireEvent.click(screen.getByLabelText('Open calculator'));
+      const calcInput = screen.getByPlaceholderText('e.g. 100*1.13');
+      expect(calcInput).toHaveValue('');
+    });
+
+    it('renders all 4 operator buttons in modal', () => {
+      render(<CurrencyInput label="Amount" value={0} onChange={vi.fn()} />);
+      fireEvent.click(screen.getByLabelText('Open calculator'));
+
+      expect(screen.getByLabelText('Add plus operator')).toBeInTheDocument();
+      expect(screen.getByLabelText('Add minus operator')).toBeInTheDocument();
+      expect(screen.getByLabelText('Add multiply operator')).toBeInTheDocument();
+      expect(screen.getByLabelText('Add divide operator')).toBeInTheDocument();
+    });
+
+    it('inserts operator into expression via button', () => {
+      render(<CurrencyInput label="Amount" value={0} onChange={vi.fn()} />);
+      fireEvent.click(screen.getByLabelText('Open calculator'));
+      const calcInput = screen.getByPlaceholderText('e.g. 100*1.13');
+      fireEvent.change(calcInput, { target: { value: '100' } });
+      fireEvent.mouseDown(screen.getByLabelText('Add plus operator'));
+      expect((calcInput as HTMLInputElement).value).toContain('+');
+    });
+
+    it('shows preview for valid expression', () => {
+      render(<CurrencyInput label="Amount" value={0} onChange={vi.fn()} />);
+      fireEvent.click(screen.getByLabelText('Open calculator'));
+      const calcInput = screen.getByPlaceholderText('e.g. 100*1.13');
+      fireEvent.change(calcInput, { target: { value: '100+50' } });
+      expect(screen.getByText('150.00')).toBeInTheDocument();
+    });
+
+    it('applies result and closes modal', () => {
+      const onChange = vi.fn();
+      render(<CurrencyInput label="Amount" value={0} onChange={onChange} />);
+      fireEvent.click(screen.getByLabelText('Open calculator'));
+      const calcInput = screen.getByPlaceholderText('e.g. 100*1.13');
+      fireEvent.change(calcInput, { target: { value: '100*1.13' } });
+      fireEvent.click(screen.getByText('Apply'));
+      expect(onChange).toHaveBeenCalledWith(113);
+      expect(screen.queryByText('Calculator')).not.toBeInTheDocument();
+    });
+
+    it('applies result on Enter key', () => {
+      const onChange = vi.fn();
+      render(<CurrencyInput label="Amount" value={0} onChange={onChange} />);
+      fireEvent.click(screen.getByLabelText('Open calculator'));
+      const calcInput = screen.getByPlaceholderText('e.g. 100*1.13');
+      fireEvent.change(calcInput, { target: { value: '200+50' } });
+      fireEvent.keyDown(calcInput, { key: 'Enter' });
+      expect(onChange).toHaveBeenCalledWith(250);
+    });
+
+    it('closes modal on Cancel without applying', () => {
+      const onChange = vi.fn();
+      render(<CurrencyInput label="Amount" value={100} onChange={onChange} />);
+      fireEvent.click(screen.getByLabelText('Open calculator'));
+      fireEvent.change(screen.getByPlaceholderText('e.g. 100*1.13'), { target: { value: '999' } });
+      fireEvent.click(screen.getByText('Cancel'));
+      expect(screen.queryByText('Calculator')).not.toBeInTheDocument();
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('disables Apply when expression is empty', () => {
+      render(<CurrencyInput label="Amount" value={0} onChange={vi.fn()} />);
+      fireEvent.click(screen.getByLabelText('Open calculator'));
+      expect(screen.getByText('Apply')).toBeDisabled();
+    });
+
+    it('closes modal on Escape key without applying', () => {
+      const onChange = vi.fn();
+      render(<CurrencyInput label="Amount" value={100} onChange={onChange} />);
+      fireEvent.click(screen.getByLabelText('Open calculator'));
+      expect(screen.getByText('Calculator')).toBeInTheDocument();
+      const calcInput = screen.getByPlaceholderText('e.g. 100*1.13');
+      fireEvent.change(calcInput, { target: { value: '999' } });
+      fireEvent.keyDown(calcInput, { key: 'Escape' });
+      expect(screen.queryByText('Calculator')).not.toBeInTheDocument();
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('closes modal on Enter key', () => {
+      render(<CurrencyInput label="Amount" value={0} onChange={vi.fn()} />);
+      fireEvent.click(screen.getByLabelText('Open calculator'));
+      const calcInput = screen.getByPlaceholderText('e.g. 100*1.13');
+      fireEvent.change(calcInput, { target: { value: '100+50' } });
+      fireEvent.keyDown(calcInput, { key: 'Enter' });
+      expect(screen.queryByText('Calculator')).not.toBeInTheDocument();
+    });
+
+    it('applies plain number without expression', () => {
+      const onChange = vi.fn();
+      render(<CurrencyInput label="Amount" value={0} onChange={onChange} />);
+      fireEvent.click(screen.getByLabelText('Open calculator'));
+      const calcInput = screen.getByPlaceholderText('e.g. 100*1.13');
+      fireEvent.change(calcInput, { target: { value: '75' } });
+      fireEvent.click(screen.getByText('Apply'));
+      expect(onChange).toHaveBeenCalledWith(75);
+    });
+
+    it('disables calculator icon when input is disabled', () => {
+      render(<CurrencyInput label="Amount" value={0} onChange={vi.fn()} disabled />);
+      expect(screen.getByLabelText('Open calculator')).toBeDisabled();
+    });
+  });
 });
