@@ -140,7 +140,7 @@ function AccountsContent() {
           actions={<Button onClick={openCreate}>+ New Account</Button>}
         />
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 sm:gap-6 mb-4 sm:mb-6">
           <SummaryCard
             label="Total Accounts"
             value={summary.accountCount}

@@ -4,6 +4,7 @@ import { ConfigService } from "@nestjs/config";
 import { BillReminderService } from "./bill-reminder.service";
 import { EmailService } from "./email.service";
 import { ScheduledTransaction } from "../scheduled-transactions/entities/scheduled-transaction.entity";
+import { ScheduledTransactionOverride } from "../scheduled-transactions/entities/scheduled-transaction-override.entity";
 import { User } from "../users/entities/user.entity";
 import { UserPreference } from "../users/entities/user-preference.entity";
 
@@ -101,6 +102,24 @@ describe("BillReminderService", () => {
         isActive: true,
         autoPost: false,
         reminderDaysBefore: 3,
+        overrides: [],
+        ...overrides,
+      };
+    }
+
+    function makeOverride(
+      overrides: Partial<ScheduledTransactionOverride>,
+    ): Partial<ScheduledTransactionOverride> {
+      return {
+        id: "override-uuid-1",
+        scheduledTransactionId: "bill-uuid-1",
+        originalDate: daysFromNow(1).toISOString().split("T")[0],
+        overrideDate: daysFromNow(1).toISOString().split("T")[0],
+        amount: null,
+        categoryId: null,
+        description: null,
+        isSplit: null,
+        splits: null,
         ...overrides,
       };
     }
@@ -137,7 +156,7 @@ describe("BillReminderService", () => {
 
         expect(scheduledTransactionsRepo.find).toHaveBeenCalledWith({
           where: { isActive: true, autoPost: false },
-          relations: ["payee"],
+          relations: ["payee", "overrides"],
         });
         expect(emailService.sendMail).not.toHaveBeenCalled();
       });
@@ -725,6 +744,185 @@ describe("BillReminderService", () => {
             "Monize: 2 upcoming bills need attention",
             expect.any(String),
           );
+        });
+      });
+
+      describe("occurrence overrides", () => {
+        it("uses overridden amount instead of base amount in email", async () => {
+          const dueDateStr = daysFromNow(1).toISOString().split("T")[0];
+          const bill = makeBill({
+            userId: userId1,
+            nextDueDate: dueDateStr as any,
+            reminderDaysBefore: 3,
+            amount: -150.0,
+            overrides: [
+              makeOverride({
+                originalDate: dueDateStr,
+                overrideDate: dueDateStr,
+                amount: -200.0,
+              }) as any,
+            ],
+          });
+
+          scheduledTransactionsRepo.find.mockResolvedValue([bill]);
+          preferencesRepo.findOne.mockResolvedValue(mockPrefsEmailEnabled);
+          usersRepo.findOne.mockResolvedValue(mockUser1);
+
+          await service.sendBillReminders();
+
+          expect(emailService.sendMail).toHaveBeenCalledTimes(1);
+          const htmlArg = emailService.sendMail.mock.calls[0][2];
+          expect(htmlArg).toContain("200.00");
+          expect(htmlArg).not.toContain("150.00");
+        });
+
+        it("uses overridden date instead of base date in email", async () => {
+          const baseDateStr = daysFromNow(1).toISOString().split("T")[0];
+          const overrideDateStr = daysFromNow(2).toISOString().split("T")[0];
+          const bill = makeBill({
+            userId: userId1,
+            nextDueDate: baseDateStr as any,
+            reminderDaysBefore: 3,
+            overrides: [
+              makeOverride({
+                originalDate: baseDateStr,
+                overrideDate: overrideDateStr,
+              }) as any,
+            ],
+          });
+
+          scheduledTransactionsRepo.find.mockResolvedValue([bill]);
+          preferencesRepo.findOne.mockResolvedValue(mockPrefsEmailEnabled);
+          usersRepo.findOne.mockResolvedValue(mockUser1);
+
+          await service.sendBillReminders();
+
+          expect(emailService.sendMail).toHaveBeenCalledTimes(1);
+          const htmlArg = emailService.sendMail.mock.calls[0][2];
+          expect(htmlArg).toContain(overrideDateStr);
+        });
+
+        it("uses base amount when override amount is null", async () => {
+          const dueDateStr = daysFromNow(1).toISOString().split("T")[0];
+          const bill = makeBill({
+            userId: userId1,
+            nextDueDate: dueDateStr as any,
+            reminderDaysBefore: 3,
+            amount: -150.0,
+            overrides: [
+              makeOverride({
+                originalDate: dueDateStr,
+                overrideDate: dueDateStr,
+                amount: null,
+              }) as any,
+            ],
+          });
+
+          scheduledTransactionsRepo.find.mockResolvedValue([bill]);
+          preferencesRepo.findOne.mockResolvedValue(mockPrefsEmailEnabled);
+          usersRepo.findOne.mockResolvedValue(mockUser1);
+
+          await service.sendBillReminders();
+
+          expect(emailService.sendMail).toHaveBeenCalledTimes(1);
+          const htmlArg = emailService.sendMail.mock.calls[0][2];
+          expect(htmlArg).toContain("150.00");
+        });
+
+        it("uses overridden date for reminder window calculation", async () => {
+          // Base date is within window, but override pushes it far out
+          const baseDateStr = daysFromNow(1).toISOString().split("T")[0];
+          const overrideDateStr = daysFromNow(30).toISOString().split("T")[0];
+          const bill = makeBill({
+            userId: userId1,
+            nextDueDate: baseDateStr as any,
+            reminderDaysBefore: 3,
+            overrides: [
+              makeOverride({
+                originalDate: baseDateStr,
+                overrideDate: overrideDateStr,
+              }) as any,
+            ],
+          });
+
+          scheduledTransactionsRepo.find.mockResolvedValue([bill]);
+
+          await service.sendBillReminders();
+
+          // Should not send — the effective date is 30 days out, beyond the 3-day window
+          expect(emailService.sendMail).not.toHaveBeenCalled();
+        });
+
+        it("uses overridden date to bring bill into reminder window", async () => {
+          // Base date is far out, but override brings it within window
+          const baseDateStr = daysFromNow(30).toISOString().split("T")[0];
+          const overrideDateStr = daysFromNow(1).toISOString().split("T")[0];
+          const bill = makeBill({
+            userId: userId1,
+            nextDueDate: baseDateStr as any,
+            reminderDaysBefore: 3,
+            overrides: [
+              makeOverride({
+                originalDate: baseDateStr,
+                overrideDate: overrideDateStr,
+              }) as any,
+            ],
+          });
+
+          scheduledTransactionsRepo.find.mockResolvedValue([bill]);
+          preferencesRepo.findOne.mockResolvedValue(mockPrefsEmailEnabled);
+          usersRepo.findOne.mockResolvedValue(mockUser1);
+
+          await service.sendBillReminders();
+
+          expect(emailService.sendMail).toHaveBeenCalledTimes(1);
+        });
+
+        it("ignores overrides for non-matching dates", async () => {
+          const dueDateStr = daysFromNow(1).toISOString().split("T")[0];
+          const otherDateStr = daysFromNow(15).toISOString().split("T")[0];
+          const bill = makeBill({
+            userId: userId1,
+            nextDueDate: dueDateStr as any,
+            reminderDaysBefore: 3,
+            amount: -150.0,
+            overrides: [
+              makeOverride({
+                originalDate: otherDateStr,
+                overrideDate: otherDateStr,
+                amount: -999.0,
+              }) as any,
+            ],
+          });
+
+          scheduledTransactionsRepo.find.mockResolvedValue([bill]);
+          preferencesRepo.findOne.mockResolvedValue(mockPrefsEmailEnabled);
+          usersRepo.findOne.mockResolvedValue(mockUser1);
+
+          await service.sendBillReminders();
+
+          expect(emailService.sendMail).toHaveBeenCalledTimes(1);
+          const htmlArg = emailService.sendMail.mock.calls[0][2];
+          // Should use base amount since override doesn't match nextDueDate
+          expect(htmlArg).toContain("150.00");
+          expect(htmlArg).not.toContain("999.00");
+        });
+
+        it("works when overrides array is undefined", async () => {
+          const bill = makeBill({
+            userId: userId1,
+            nextDueDate: daysFromNow(1) as any,
+            reminderDaysBefore: 3,
+            overrides: undefined as any,
+          });
+
+          scheduledTransactionsRepo.find.mockResolvedValue([bill]);
+          preferencesRepo.findOne.mockResolvedValue(mockPrefsEmailEnabled);
+          usersRepo.findOne.mockResolvedValue(mockUser1);
+
+          await service.sendBillReminders();
+
+          expect(emailService.sendMail).toHaveBeenCalledTimes(1);
         });
       });
 

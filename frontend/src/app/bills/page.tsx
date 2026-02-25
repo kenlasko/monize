@@ -88,7 +88,7 @@ function BillsContent() {
   const [datePicker, setDatePicker] = useState<{
     isOpen: boolean;
     transaction: ScheduledTransaction | null;
-    overrides: Array<{ originalDate: string; overrideDate: string }>;
+    overrides: ScheduledTransactionOverride[];
   }>({ isOpen: false, transaction: null, overrides: [] });
   const [postDialog, setPostDialog] = useState<{
     isOpen: boolean;
@@ -194,14 +194,10 @@ function BillsContent() {
 
 
   const handleEditOccurrence = async (transaction: ScheduledTransaction) => {
-    // Fetch existing overrides to show which dates are modified
-    let overrides: Array<{ originalDate: string; overrideDate: string }> = [];
+    // Fetch existing overrides to show which dates are modified (and what changed)
+    let overrides: ScheduledTransactionOverride[] = [];
     try {
-      const fetchedOverrides = await scheduledTransactionsApi.getOverrides(transaction.id);
-      overrides = fetchedOverrides.map(o => ({
-        originalDate: o.originalDate,
-        overrideDate: o.overrideDate,
-      }));
+      overrides = await scheduledTransactionsApi.getOverrides(transaction.id);
     } catch (error) {
       logger.error('Failed to fetch overrides:', error);
     }

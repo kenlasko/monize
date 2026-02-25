@@ -1,6 +1,6 @@
 'use client';
 
-import { UseFormRegister, FieldErrors, UseFormSetValue } from 'react-hook-form';
+import { UseFormRegister, FieldErrors } from 'react-hook-form';
 import { Input } from '@/components/ui/Input';
 import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { Select } from '@/components/ui/Select';
@@ -21,7 +21,7 @@ interface SplitTransactionFieldsProps {
   payees: Payee[];
   handlePayeeChange: (payeeId: string, payeeName: string) => void;
   handlePayeeCreate: (name: string) => void;
-  setValue: UseFormSetValue<any>;
+  handleAmountChange: (value: number | undefined) => void;
   transaction?: Transaction;
 }
 
@@ -36,7 +36,7 @@ export function SplitTransactionFields({
   payees,
   handlePayeeChange,
   handlePayeeCreate,
-  setValue,
+  handleAmountChange,
   transaction,
 }: SplitTransactionFieldsProps) {
   return (
@@ -92,7 +92,7 @@ export function SplitTransactionFields({
           label="Total Amount"
           prefix={getCurrencySymbol(watchedCurrencyCode)}
           value={watchedAmount}
-          onChange={(value) => setValue('amount', value ?? 0, { shouldValidate: true })}
+          onChange={handleAmountChange}
           error={errors.amount?.message as string | undefined}
         />
       </div>

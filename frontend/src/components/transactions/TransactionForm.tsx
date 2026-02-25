@@ -381,6 +381,40 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
     setValue('amount', value, { shouldValidate: true });
   };
 
+  // Handle split total amount change - same pattern as handleAmountChange
+  // Auto-adjust sign based on first split's category, but respect explicit sign changes
+  const handleSplitTotalChange = (value: number | undefined) => {
+    if (value === undefined || value === 0) {
+      setValue('amount', value ?? 0, { shouldValidate: true });
+      return;
+    }
+
+    // Check if user is just changing the sign (same absolute value)
+    const currentAbsAmount = watchedAmount !== undefined ? Math.abs(watchedAmount) : 0;
+    const newAbsAmount = Math.abs(value);
+    const isJustSignChange = currentAbsAmount === newAbsAmount && currentAbsAmount !== 0;
+
+    // If user explicitly changed the sign, respect their choice
+    if (isJustSignChange) {
+      setValue('amount', value, { shouldValidate: true });
+      return;
+    }
+
+    // Infer sign from first split's category
+    if (splits.length > 0 && splits[0].categoryId) {
+      const category = categories.find(c => c.id === splits[0].categoryId);
+      if (category) {
+        const absAmount = Math.abs(value);
+        const newAmount = category.isIncome ? absAmount : -absAmount;
+        setValue('amount', newAmount, { shouldValidate: true });
+        return;
+      }
+    }
+
+    // No category on first split, use value as-is
+    setValue('amount', value, { shouldValidate: true });
+  };
+
   // Convert string to title case (capitalize first letter of each word)
   const toTitleCase = (str: string): string => {
     return str
@@ -630,7 +664,7 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
           payees={payees}
           handlePayeeChange={handlePayeeChange}
           handlePayeeCreate={handlePayeeCreate}
-          setValue={setValue}
+          handleAmountChange={handleSplitTotalChange}
           transaction={transaction}
         />
       )}

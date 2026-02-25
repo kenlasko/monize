@@ -625,6 +625,258 @@ describe('SplitEditor', () => {
     // Desktop shows "Need $-50.00 (remaining: $-10.00)"
     expect(screen.getByText(/remaining: \$-10.00/)).toBeInTheDocument();
   });
+
+  describe('transaction total sign inference from first split category', () => {
+    it('flips positive total to negative when expense category is selected on first split', () => {
+      const mockOnAmountChange = vi.fn();
+      const splits: SplitRow[] = [
+        createSplitRow({ id: 'split-1', amount: 50 }),
+        createSplitRow({ id: 'split-2', amount: 50 }),
+      ];
+
+      render(
+        <SplitEditor
+          splits={splits}
+          onChange={mockOnChange}
+          categories={mockCategories}
+          transactionAmount={100}
+          onTransactionAmountChange={mockOnAmountChange}
+        />
+      );
+
+      // Open category dropdown on first split and select expense category
+      const categoryInputs = screen.getAllByPlaceholderText('Select category...');
+      fireEvent.click(categoryInputs[0]);
+      fireEvent.click(screen.getByText('Groceries'));
+
+      // Total should be flipped to negative
+      expect(mockOnAmountChange).toHaveBeenCalledWith(-100);
+
+      // Splits should be updated
+      expect(mockOnChange).toHaveBeenCalled();
+      const newSplits = mockOnChange.mock.calls[0][0];
+      // First split: expense category → negative
+      expect(newSplits[0].amount).toBe(-50);
+      // Second split: no category, flipped to match new total sign
+      expect(newSplits[1].amount).toBe(-50);
+    });
+
+    it('keeps positive total when income category is selected on first split', () => {
+      const mockOnAmountChange = vi.fn();
+      const splits: SplitRow[] = [
+        createSplitRow({ id: 'split-1', amount: 50 }),
+        createSplitRow({ id: 'split-2', amount: 50 }),
+      ];
+
+      render(
+        <SplitEditor
+          splits={splits}
+          onChange={mockOnChange}
+          categories={mockCategories}
+          transactionAmount={100}
+          onTransactionAmountChange={mockOnAmountChange}
+        />
+      );
+
+      const categoryInputs = screen.getAllByPlaceholderText('Select category...');
+      fireEvent.click(categoryInputs[0]);
+      fireEvent.click(screen.getByText('Salary'));
+
+      // Total already positive, income category → no change needed
+      expect(mockOnAmountChange).not.toHaveBeenCalled();
+    });
+
+    it('flips negative total to positive when income category is selected on first split', () => {
+      const mockOnAmountChange = vi.fn();
+      const splits: SplitRow[] = [
+        createSplitRow({ id: 'split-1', amount: -50 }),
+        createSplitRow({ id: 'split-2', amount: -50 }),
+      ];
+
+      render(
+        <SplitEditor
+          splits={splits}
+          onChange={mockOnChange}
+          categories={mockCategories}
+          transactionAmount={-100}
+          onTransactionAmountChange={mockOnAmountChange}
+        />
+      );
+
+      const categoryInputs = screen.getAllByPlaceholderText('Select category...');
+      fireEvent.click(categoryInputs[0]);
+      fireEvent.click(screen.getByText('Salary'));
+
+      // Total should be flipped to positive (income)
+      expect(mockOnAmountChange).toHaveBeenCalledWith(100);
+
+      const newSplits = mockOnChange.mock.calls[0][0];
+      // First split: income → positive
+      expect(newSplits[0].amount).toBe(50);
+      // Second split: no category, flipped to match
+      expect(newSplits[1].amount).toBe(50);
+    });
+
+    it('does not flip total when category is set on non-first split', () => {
+      const mockOnAmountChange = vi.fn();
+      const splits: SplitRow[] = [
+        createSplitRow({ id: 'split-1', amount: 50 }),
+        createSplitRow({ id: 'split-2', amount: 50 }),
+      ];
+
+      render(
+        <SplitEditor
+          splits={splits}
+          onChange={mockOnChange}
+          categories={mockCategories}
+          transactionAmount={100}
+          onTransactionAmountChange={mockOnAmountChange}
+        />
+      );
+
+      // Select category on second split (index 1 in mobile layout)
+      const categoryInputs = screen.getAllByPlaceholderText('Select category...');
+      fireEvent.click(categoryInputs[1]);
+      fireEvent.click(screen.getByText('Groceries'));
+
+      // Total should NOT be flipped (only first split triggers this)
+      expect(mockOnAmountChange).not.toHaveBeenCalled();
+    });
+
+    it('does not flip total when sign already matches category type', () => {
+      const mockOnAmountChange = vi.fn();
+      const splits: SplitRow[] = [
+        createSplitRow({ id: 'split-1', amount: -50 }),
+        createSplitRow({ id: 'split-2', amount: -50 }),
+      ];
+
+      render(
+        <SplitEditor
+          splits={splits}
+          onChange={mockOnChange}
+          categories={mockCategories}
+          transactionAmount={-100}
+          onTransactionAmountChange={mockOnAmountChange}
+        />
+      );
+
+      const categoryInputs = screen.getAllByPlaceholderText('Select category...');
+      fireEvent.click(categoryInputs[0]);
+      fireEvent.click(screen.getByText('Groceries'));
+
+      // Total is already negative, expense category → no change needed
+      expect(mockOnAmountChange).not.toHaveBeenCalled();
+    });
+
+    it('only flips uncategorized splits when total sign changes', () => {
+      const mockOnAmountChange = vi.fn();
+      const splits: SplitRow[] = [
+        createSplitRow({ id: 'split-1', amount: 50 }),
+        createSplitRow({ id: 'split-2', amount: 50, categoryId: 'cat-2' }),
+      ];
+
+      render(
+        <SplitEditor
+          splits={splits}
+          onChange={mockOnChange}
+          categories={mockCategories}
+          transactionAmount={100}
+          onTransactionAmountChange={mockOnAmountChange}
+        />
+      );
+
+      const categoryInputs = screen.getAllByPlaceholderText('Select category...');
+      fireEvent.click(categoryInputs[0]);
+      fireEvent.click(screen.getByText('Groceries'));
+
+      expect(mockOnAmountChange).toHaveBeenCalledWith(-100);
+
+      const newSplits = mockOnChange.mock.calls[0][0];
+      // First split: expense → negative
+      expect(newSplits[0].amount).toBe(-50);
+      // Second split: already has category, should NOT be flipped
+      expect(newSplits[1].amount).toBe(50);
+    });
+
+    it('respects explicit sign override on split amount after auto-sign', () => {
+      const splits: SplitRow[] = [
+        createSplitRow({ id: 'split-1', categoryId: 'cat-1', amount: -50 }),
+        createSplitRow({ id: 'split-2', amount: -50 }),
+      ];
+
+      render(
+        <SplitEditor
+          splits={splits}
+          onChange={mockOnChange}
+          categories={mockCategories}
+          transactionAmount={-100}
+        />
+      );
+
+      // Find the amount input for the first split (showing -50.00)
+      const amountInputs = screen.getAllByDisplayValue('-50.00');
+      // Change to positive 50 (explicit sign change — same absolute value)
+      fireEvent.change(amountInputs[0], { target: { value: '50.00' } });
+
+      // The onChange should be called with the explicit sign override respected
+      expect(mockOnChange).toHaveBeenCalled();
+      const newSplits = mockOnChange.mock.calls[0][0];
+      // User explicitly changed from -50 to 50, should be respected even though category is expense
+      expect(newSplits[0].amount).toBe(50);
+    });
+
+    it('still auto-adjusts sign on split amount when value magnitude changes', () => {
+      const splits: SplitRow[] = [
+        createSplitRow({ id: 'split-1', categoryId: 'cat-1', amount: -50 }),
+        createSplitRow({ id: 'split-2', amount: -50 }),
+      ];
+
+      render(
+        <SplitEditor
+          splits={splits}
+          onChange={mockOnChange}
+          categories={mockCategories}
+          transactionAmount={-100}
+        />
+      );
+
+      // Find the amount input for the first split and change to a different magnitude
+      const amountInputs = screen.getAllByDisplayValue('-50.00');
+      fireEvent.change(amountInputs[0], { target: { value: '75' } });
+
+      expect(mockOnChange).toHaveBeenCalled();
+      const newSplits = mockOnChange.mock.calls[0][0];
+      // Different magnitude: auto-sign should apply (expense → negative)
+      expect(newSplits[0].amount).toBe(-75);
+    });
+
+    it('does not flip total when onTransactionAmountChange is not provided', () => {
+      const splits: SplitRow[] = [
+        createSplitRow({ id: 'split-1', amount: 50 }),
+        createSplitRow({ id: 'split-2', amount: 50 }),
+      ];
+
+      render(
+        <SplitEditor
+          splits={splits}
+          onChange={mockOnChange}
+          categories={mockCategories}
+          transactionAmount={100}
+        />
+      );
+
+      const categoryInputs = screen.getAllByPlaceholderText('Select category...');
+      fireEvent.click(categoryInputs[0]);
+      fireEvent.click(screen.getByText('Groceries'));
+
+      // Split amount adjusted but no total change
+      expect(mockOnChange).toHaveBeenCalled();
+      const newSplits = mockOnChange.mock.calls[0][0];
+      expect(newSplits[0].amount).toBe(-50);
+      // Second split NOT flipped (no total change triggered)
+      expect(newSplits[1].amount).toBe(50);
+    });
+  });
 });
 
 describe('createEmptySplits', () => {

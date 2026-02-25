@@ -6,6 +6,12 @@ vi.mock('@/hooks/useDateFormat', () => ({
   useDateFormat: () => ({ formatDate: (d: string) => d }),
 }));
 
+vi.mock('@/hooks/useNumberFormat', () => ({
+  useNumberFormat: () => ({
+    formatCurrency: (amount: number, currency: string) => `${currency} ${amount.toFixed(2)}`,
+  }),
+}));
+
 vi.mock('@/lib/utils', () => ({
   parseLocalDate: (d: string) => {
     const dateStr = d.includes('T') ? d.split('T')[0] : d;
@@ -19,6 +25,11 @@ describe('OccurrenceDatePicker', () => {
     name: 'Rent',
     nextDueDate: '2025-03-01',
     frequency: 'MONTHLY' as const,
+    amount: -1200,
+    currencyCode: 'USD',
+    categoryId: 'cat1',
+    description: null,
+    isSplit: false,
   } as any;
 
   const onSelect = vi.fn();
@@ -305,5 +316,188 @@ describe('OccurrenceDatePicker', () => {
     );
     // The component splits on 'T' to get the date part for nextDueDate badge
     expect(screen.getByText('Next Due')).toBeInTheDocument();
+  });
+
+  // --- Modification details ---
+  it('shows date moved detail when override changes the date', () => {
+    const overrides = [{
+      id: 'o1', scheduledTransactionId: 's1',
+      originalDate: '2025-03-01', overrideDate: '2025-03-05',
+      amount: null, categoryId: null, category: null,
+      description: null, isSplit: null, splits: null,
+      createdAt: '', updatedAt: '',
+    }];
+    render(
+      <OccurrenceDatePicker isOpen={true} scheduledTransaction={scheduledTransaction} overrides={overrides} onSelect={onSelect} onClose={onClose} />
+    );
+    expect(screen.getByText('Date moved from 2025-03-01')).toBeInTheDocument();
+  });
+
+  it('shows overridden amount when different from base', () => {
+    const overrides = [{
+      id: 'o1', scheduledTransactionId: 's1',
+      originalDate: '2025-03-01', overrideDate: '2025-03-01',
+      amount: -75.50, categoryId: null, category: null,
+      description: null, isSplit: null, splits: null,
+      createdAt: '', updatedAt: '',
+    }];
+    render(
+      <OccurrenceDatePicker isOpen={true} scheduledTransaction={scheduledTransaction} overrides={overrides} onSelect={onSelect} onClose={onClose} />
+    );
+    expect(screen.getByText('Amount: USD 75.50')).toBeInTheDocument();
+  });
+
+  it('does not show amount when override amount matches base', () => {
+    const overrides = [{
+      id: 'o1', scheduledTransactionId: 's1',
+      originalDate: '2025-03-01', overrideDate: '2025-03-05',
+      amount: -1200, categoryId: null, category: null,
+      description: null, isSplit: null, splits: null,
+      createdAt: '', updatedAt: '',
+    }];
+    render(
+      <OccurrenceDatePicker isOpen={true} scheduledTransaction={scheduledTransaction} overrides={overrides} onSelect={onSelect} onClose={onClose} />
+    );
+    expect(screen.getByText('Date moved from 2025-03-01')).toBeInTheDocument();
+    expect(screen.queryByText(/Amount:/)).not.toBeInTheDocument();
+  });
+
+  it('shows overridden category when different from base', () => {
+    const overrides = [{
+      id: 'o1', scheduledTransactionId: 's1',
+      originalDate: '2025-03-01', overrideDate: '2025-03-01',
+      amount: null, categoryId: 'c2', category: { id: 'c2', name: 'Utilities' } as any,
+      description: null, isSplit: null, splits: null,
+      createdAt: '', updatedAt: '',
+    }];
+    render(
+      <OccurrenceDatePicker isOpen={true} scheduledTransaction={scheduledTransaction} overrides={overrides} onSelect={onSelect} onClose={onClose} />
+    );
+    expect(screen.getByText('Category: Utilities')).toBeInTheDocument();
+  });
+
+  it('does not show category when override category matches base', () => {
+    const overrides = [{
+      id: 'o1', scheduledTransactionId: 's1',
+      originalDate: '2025-03-01', overrideDate: '2025-03-05',
+      amount: null, categoryId: 'cat1', category: { id: 'cat1', name: 'Rent' } as any,
+      description: null, isSplit: null, splits: null,
+      createdAt: '', updatedAt: '',
+    }];
+    render(
+      <OccurrenceDatePicker isOpen={true} scheduledTransaction={scheduledTransaction} overrides={overrides} onSelect={onSelect} onClose={onClose} />
+    );
+    expect(screen.getByText('Date moved from 2025-03-01')).toBeInTheDocument();
+    expect(screen.queryByText(/Category:/)).not.toBeInTheDocument();
+  });
+
+  it('shows overridden description', () => {
+    const overrides = [{
+      id: 'o1', scheduledTransactionId: 's1',
+      originalDate: '2025-03-01', overrideDate: '2025-03-01',
+      amount: null, categoryId: null, category: null,
+      description: 'Partial payment', isSplit: null, splits: null,
+      createdAt: '', updatedAt: '',
+    }];
+    render(
+      <OccurrenceDatePicker isOpen={true} scheduledTransaction={scheduledTransaction} overrides={overrides} onSelect={onSelect} onClose={onClose} />
+    );
+    expect(screen.getByText('Note: Partial payment')).toBeInTheDocument();
+  });
+
+  it('shows split modified when override isSplit differs from base', () => {
+    const overrides = [{
+      id: 'o1', scheduledTransactionId: 's1',
+      originalDate: '2025-03-01', overrideDate: '2025-03-01',
+      amount: null, categoryId: null, category: null,
+      description: null, isSplit: true, splits: [{ categoryId: 'c1', amount: 50 }],
+      createdAt: '', updatedAt: '',
+    }];
+    render(
+      <OccurrenceDatePicker isOpen={true} scheduledTransaction={scheduledTransaction} overrides={overrides} onSelect={onSelect} onClose={onClose} />
+    );
+    expect(screen.getByText('Split modified')).toBeInTheDocument();
+  });
+
+  it('does not show split modified when override isSplit matches base', () => {
+    const overrides = [{
+      id: 'o1', scheduledTransactionId: 's1',
+      originalDate: '2025-03-01', overrideDate: '2025-03-05',
+      amount: null, categoryId: null, category: null,
+      description: null, isSplit: false, splits: null,
+      createdAt: '', updatedAt: '',
+    }];
+    render(
+      <OccurrenceDatePicker isOpen={true} scheduledTransaction={scheduledTransaction} overrides={overrides} onSelect={onSelect} onClose={onClose} />
+    );
+    expect(screen.getByText('Date moved from 2025-03-01')).toBeInTheDocument();
+    expect(screen.queryByText('Split modified')).not.toBeInTheDocument();
+  });
+
+  it('shows multiple modification details at once', () => {
+    const overrides = [{
+      id: 'o1', scheduledTransactionId: 's1',
+      originalDate: '2025-03-01', overrideDate: '2025-03-10',
+      amount: -200, categoryId: 'c2', category: { id: 'c2', name: 'Insurance' } as any,
+      description: 'Annual premium', isSplit: null, splits: null,
+      createdAt: '', updatedAt: '',
+    }];
+    render(
+      <OccurrenceDatePicker isOpen={true} scheduledTransaction={scheduledTransaction} overrides={overrides} onSelect={onSelect} onClose={onClose} />
+    );
+    expect(screen.getByText('Date moved from 2025-03-01')).toBeInTheDocument();
+    expect(screen.getByText('Amount: USD 200.00')).toBeInTheDocument();
+    expect(screen.getByText('Category: Insurance')).toBeInTheDocument();
+    expect(screen.getByText('Note: Annual premium')).toBeInTheDocument();
+  });
+
+  it('does not show modification details for non-overridden dates', () => {
+    const overrides = [{
+      id: 'o1', scheduledTransactionId: 's1',
+      originalDate: '2025-03-01', overrideDate: '2025-03-05',
+      amount: -100, categoryId: null, category: null,
+      description: null, isSplit: null, splits: null,
+      createdAt: '', updatedAt: '',
+    }];
+    render(
+      <OccurrenceDatePicker isOpen={true} scheduledTransaction={{ ...scheduledTransaction, currencyCode: 'USD' }} overrides={overrides} onSelect={onSelect} onClose={onClose} />
+    );
+    // Only one "Amount:" detail should exist (for the overridden date)
+    const amountDetails = screen.getAllByText(/Amount:/);
+    expect(amountDetails.length).toBe(1);
+  });
+
+  it('only shows date moved when override copies all base values but changes date', () => {
+    const overrides = [{
+      id: 'o1', scheduledTransactionId: 's1',
+      originalDate: '2025-03-01', overrideDate: '2025-03-05',
+      amount: -1200, categoryId: 'cat1', category: { id: 'cat1', name: 'Rent' } as any,
+      description: null, isSplit: false, splits: null,
+      createdAt: '', updatedAt: '',
+    }];
+    render(
+      <OccurrenceDatePicker isOpen={true} scheduledTransaction={scheduledTransaction} overrides={overrides} onSelect={onSelect} onClose={onClose} />
+    );
+    expect(screen.getByText('Modified')).toBeInTheDocument();
+    expect(screen.getByText('Date moved from 2025-03-01')).toBeInTheDocument();
+    expect(screen.queryByText(/Amount:/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Category:/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Note:/)).not.toBeInTheDocument();
+    expect(screen.queryByText('Split modified')).not.toBeInTheDocument();
+  });
+
+  it('does not show date moved when original and override dates are the same', () => {
+    const overrides = [{
+      id: 'o1', scheduledTransactionId: 's1',
+      originalDate: '2025-03-01', overrideDate: '2025-03-01',
+      amount: -50, categoryId: null, category: null,
+      description: null, isSplit: null, splits: null,
+      createdAt: '', updatedAt: '',
+    }];
+    render(
+      <OccurrenceDatePicker isOpen={true} scheduledTransaction={{ ...scheduledTransaction, currencyCode: 'USD' }} overrides={overrides} onSelect={onSelect} onClose={onClose} />
+    );
+    expect(screen.queryByText(/Date moved/)).not.toBeInTheDocument();
+    expect(screen.getByText('Amount: USD 50.00')).toBeInTheDocument();
   });
 });

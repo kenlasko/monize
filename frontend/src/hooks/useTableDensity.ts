@@ -11,7 +11,7 @@ export function useTableDensity(density: DensityLevel) {
     switch (density) {
       case 'dense': return 'px-3 py-1';
       case 'compact': return 'px-4 py-2';
-      default: return 'px-6 py-4';
+      default: return 'px-3 sm:px-6 py-4';
     }
   }, [density]);
 
@@ -19,7 +19,7 @@ export function useTableDensity(density: DensityLevel) {
     switch (density) {
       case 'dense': return 'px-3 py-2';
       case 'compact': return 'px-4 py-2';
-      default: return 'px-6 py-3';
+      default: return 'px-3 sm:px-6 py-3';
     }
   }, [density]);
 

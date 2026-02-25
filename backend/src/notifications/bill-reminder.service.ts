@@ -36,7 +36,7 @@ export class BillReminderService {
     // Only manual bills (autoPost = false) that are active
     const manualBills = await this.scheduledTransactionsRepo.find({
       where: { isActive: true, autoPost: false },
-      relations: ["payee"],
+      relations: ["payee", "overrides"],
     });
 
     if (manualBills.length === 0) {
@@ -51,11 +51,18 @@ export class BillReminderService {
     const billsByUser = new Map<string, ScheduledTransaction[]>();
 
     for (const bill of manualBills) {
-      const dueDate = new Date(bill.nextDueDate);
-      dueDate.setHours(0, 0, 0, 0);
+      // Check for an override matching the next due date (user may have changed the date)
+      const nextDueDateStr = String(bill.nextDueDate).split("T")[0];
+      const override = bill.overrides?.find(
+        (o) => String(o.originalDate).split("T")[0] === nextDueDateStr,
+      );
+      const effectiveDueDate = override
+        ? new Date(override.overrideDate)
+        : new Date(bill.nextDueDate);
+      effectiveDueDate.setHours(0, 0, 0, 0);
 
       const daysUntilDue = Math.ceil(
-        (dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
+        (effectiveDueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
       );
 
       if (daysUntilDue >= 0 && daysUntilDue <= bill.reminderDaysBefore) {
@@ -94,12 +101,20 @@ export class BillReminderService {
           continue;
         }
 
-        const billData = bills.map((b) => ({
-          payee: b.payee?.name || b.payeeName || b.name,
-          amount: Math.abs(Number(b.amount)),
-          dueDate: String(b.nextDueDate).split("T")[0],
-          currencyCode: b.currencyCode,
-        }));
+        const billData = bills.map((b) => {
+          const dueDateStr = String(b.nextDueDate).split("T")[0];
+          const ov = b.overrides?.find(
+            (o) => String(o.originalDate).split("T")[0] === dueDateStr,
+          );
+          return {
+            payee: b.payee?.name || b.payeeName || b.name,
+            amount: Math.abs(Number(ov?.amount ?? b.amount)),
+            dueDate: ov
+              ? String(ov.overrideDate).split("T")[0]
+              : dueDateStr,
+            currencyCode: b.currencyCode,
+          };
+        });
 
         const html = billReminderTemplate(
           user.firstName || "",

@@ -111,10 +111,30 @@ export function SplitEditor({
             newSplits[index] = { ...newSplits[index], amount: newAmount };
           }
         }
+
+        // When the first split's category is set, adjust the transaction total sign
+        // to match (analogous to how normal transactions infer sign from category)
+        if (index === 0 && onTransactionAmountChange && transactionAmount !== 0) {
+          const absTotal = Math.abs(transactionAmount);
+          const newTotal = category.isIncome ? absTotal : -absTotal;
+          if (newTotal !== transactionAmount) {
+            onTransactionAmountChange(newTotal);
+            // Flip uncategorized splits to keep them consistent with the new sign
+            for (let i = 0; i < newSplits.length; i++) {
+              if (i !== index && !newSplits[i].categoryId) {
+                const amt = Number(newSplits[i].amount) || 0;
+                if (amt !== 0) {
+                  newSplits[i] = { ...newSplits[i], amount: -amt };
+                }
+              }
+            }
+          }
+        }
       }
     }
 
     // If changing amount, adjust sign based on selected category
+    // But respect explicit sign changes (same pattern as handleAmountChange)
     if (field === 'amount') {
       const categoryId = newSplits[index].categoryId;
       if (categoryId) {
@@ -122,8 +142,14 @@ export function SplitEditor({
         if (category) {
           const newAmount = Number(value) || 0;
           if (newAmount !== 0) {
-            const absAmount = Math.abs(newAmount);
-            value = category.isIncome ? absAmount : -absAmount;
+            // Check if user is just changing the sign (same absolute value)
+            const currentAmount = Number(newSplits[index].amount) || 0;
+            const isJustSignChange = Math.abs(currentAmount) === Math.abs(newAmount) && Math.abs(currentAmount) !== 0;
+
+            if (!isJustSignChange) {
+              const absAmount = Math.abs(newAmount);
+              value = category.isIncome ? absAmount : -absAmount;
+            }
           }
         }
       }

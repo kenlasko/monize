@@ -1,20 +1,16 @@
 'use client';
 
 import { useMemo } from 'react';
-import { ScheduledTransaction, FrequencyType } from '@/types/scheduled-transaction';
+import { ScheduledTransaction, ScheduledTransactionOverride, FrequencyType } from '@/types/scheduled-transaction';
 import { useDateFormat } from '@/hooks/useDateFormat';
+import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { parseLocalDate } from '@/lib/utils';
 import { Modal } from '@/components/ui/Modal';
-
-interface Override {
-  originalDate: string;
-  overrideDate: string;
-}
 
 interface OccurrenceDatePickerProps {
   isOpen: boolean;
   scheduledTransaction: ScheduledTransaction;
-  overrides?: Override[]; // Full override objects with originalDate and overrideDate
+  overrides?: ScheduledTransactionOverride[];
   onSelect: (date: string) => void;
   onClose: () => void;
 }
@@ -79,17 +75,22 @@ export function OccurrenceDatePicker({
 }: OccurrenceDatePickerProps) {
   const { formatDate } = useDateFormat();
 
+  const { formatCurrency } = useNumberFormat();
+
   // Create maps for O(1) lookups
   // originalDateToOverrideDate: maps original calculated dates to their override dates
   // overrideDateSet: set of all override dates (to mark them as "modified")
-  const { originalDateToOverrideDate, overrideDateSet } = useMemo(() => {
+  // overrideByDate: maps override dates to full override objects (to show what changed)
+  const { originalDateToOverrideDate, overrideDateSet, overrideByDate } = useMemo(() => {
     const dateMap = new Map<string, string>();
     const dateSet = new Set<string>();
+    const byDate = new Map<string, ScheduledTransactionOverride>();
     for (const override of overrides) {
       dateMap.set(override.originalDate, override.overrideDate);
       dateSet.add(override.overrideDate);
+      byDate.set(override.overrideDate, override);
     }
-    return { originalDateToOverrideDate: dateMap, overrideDateSet: dateSet };
+    return { originalDateToOverrideDate: dateMap, overrideDateSet: dateSet, overrideByDate: byDate };
   }, [overrides]);
 
   // Calculate next dates based on frequency
@@ -160,6 +161,25 @@ export function OccurrenceDatePicker({
         {nextDates.map((date) => {
           const hasOverride = overrideDateSet.has(date);
           const isNextDue = date === nextDueDate;
+          const override = hasOverride ? overrideByDate.get(date) : undefined;
+          const changes: string[] = [];
+          if (override) {
+            if (override.originalDate !== override.overrideDate) {
+              changes.push(`Date moved from ${formatDate(override.originalDate)}`);
+            }
+            if (override.amount != null && Number(override.amount) !== Number(scheduledTransaction.amount)) {
+              changes.push(`Amount: ${formatCurrency(Math.abs(override.amount), scheduledTransaction.currencyCode)}`);
+            }
+            if (override.category && override.categoryId !== scheduledTransaction.categoryId) {
+              changes.push(`Category: ${override.category.name}`);
+            }
+            if (override.description != null && override.description !== (scheduledTransaction.description ?? '')) {
+              changes.push(`Note: ${override.description}`);
+            }
+            if (override.isSplit != null && override.isSplit !== scheduledTransaction.isSplit) {
+              changes.push('Split modified');
+            }
+          }
           return (
             <button
               key={date}
@@ -187,6 +207,13 @@ export function OccurrenceDatePicker({
                   )}
                 </div>
               </div>
+              {changes.length > 0 && (
+                <div className="mt-1.5 text-xs text-purple-700 dark:text-purple-300 space-y-0.5">
+                  {changes.map((change) => (
+                    <div key={change}>{change}</div>
+                  ))}
+                </div>
+              )}
             </button>
           );
         })}

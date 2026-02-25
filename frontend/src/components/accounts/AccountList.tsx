@@ -380,7 +380,7 @@ export function AccountList({ accounts, brokerageMarketValues, onEdit, onRefresh
   return (
     <div>
       {/* Filter Bar */}
-      <div className="px-6 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+      <div className="px-3 sm:px-6 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-4">
             {/* Type dropdown and Status segmented control - grouped together */}
