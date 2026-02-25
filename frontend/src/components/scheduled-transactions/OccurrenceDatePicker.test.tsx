@@ -198,8 +198,16 @@ describe('OccurrenceDatePicker', () => {
   });
 
   // --- Override dates ---
+  const makeOverride = (original: string, override: string) => ({
+    id: `o-${original}`, scheduledTransactionId: 's1',
+    originalDate: original, overrideDate: override,
+    amount: null, categoryId: null, category: null,
+    description: null, isSplit: null, splits: null,
+    createdAt: '', updatedAt: '',
+  });
+
   it('marks overridden dates as modified', () => {
-    const overrides = [{ originalDate: '2025-03-01', overrideDate: '2025-03-05' }];
+    const overrides = [makeOverride('2025-03-01', '2025-03-05')];
     render(
       <OccurrenceDatePicker isOpen={true} scheduledTransaction={scheduledTransaction} overrides={overrides} onSelect={onSelect} onClose={onClose} />
     );
@@ -207,7 +215,7 @@ describe('OccurrenceDatePicker', () => {
   });
 
   it('shows override date instead of original calculated date', () => {
-    const overrides = [{ originalDate: '2025-03-01', overrideDate: '2025-03-05' }];
+    const overrides = [makeOverride('2025-03-01', '2025-03-05')];
     render(
       <OccurrenceDatePicker isOpen={true} scheduledTransaction={scheduledTransaction} overrides={overrides} onSelect={onSelect} onClose={onClose} />
     );
@@ -220,8 +228,8 @@ describe('OccurrenceDatePicker', () => {
 
   it('handles multiple overrides', () => {
     const overrides = [
-      { originalDate: '2025-03-01', overrideDate: '2025-03-05' },
-      { originalDate: '2025-04-01', overrideDate: '2025-04-10' },
+      makeOverride('2025-03-01', '2025-03-05'),
+      makeOverride('2025-04-01', '2025-04-10'),
     ];
     render(
       <OccurrenceDatePicker isOpen={true} scheduledTransaction={scheduledTransaction} overrides={overrides} onSelect={onSelect} onClose={onClose} />
@@ -233,7 +241,7 @@ describe('OccurrenceDatePicker', () => {
   });
 
   it('calls onSelect with override date when override date button is clicked', () => {
-    const overrides = [{ originalDate: '2025-03-01', overrideDate: '2025-03-05' }];
+    const overrides = [makeOverride('2025-03-01', '2025-03-05')];
     render(
       <OccurrenceDatePicker isOpen={true} scheduledTransaction={scheduledTransaction} overrides={overrides} onSelect={onSelect} onClose={onClose} />
     );

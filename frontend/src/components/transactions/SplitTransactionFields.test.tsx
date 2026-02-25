@@ -125,7 +125,7 @@ describe('SplitTransactionFields', () => {
     payees: [] as Payee[],
     handlePayeeChange: vi.fn(),
     handlePayeeCreate: vi.fn(),
-    setValue: vi.fn(),
+    handleAmountChange: vi.fn(),
   };
 
   beforeEach(() => {
@@ -277,30 +277,22 @@ describe('SplitTransactionFields', () => {
     expect(defaultProps.handlePayeeCreate).toHaveBeenCalledWith('New Item');
   });
 
-  it('calls setValue when Total Amount changes', () => {
+  it('calls handleAmountChange when Total Amount changes', () => {
     render(<SplitTransactionFields {...defaultProps} />);
 
     const amountInput = screen.getByTestId('currency-input-field-Total Amount');
     fireEvent.change(amountInput, { target: { value: '150.00' } });
 
-    expect(defaultProps.setValue).toHaveBeenCalledWith(
-      'amount',
-      150,
-      { shouldValidate: true }
-    );
+    expect(defaultProps.handleAmountChange).toHaveBeenCalledWith(150);
   });
 
-  it('calls setValue with 0 when Total Amount is cleared', () => {
+  it('calls handleAmountChange with undefined when Total Amount is cleared', () => {
     render(<SplitTransactionFields {...defaultProps} watchedAmount={100} />);
 
     const amountInput = screen.getByTestId('currency-input-field-Total Amount');
     fireEvent.change(amountInput, { target: { value: '' } });
 
-    expect(defaultProps.setValue).toHaveBeenCalledWith(
-      'amount',
-      0,
-      { shouldValidate: true }
-    );
+    expect(defaultProps.handleAmountChange).toHaveBeenCalledWith(undefined);
   });
 
   it('passes watchedAmount as value to Total Amount CurrencyInput', () => {
