@@ -67,7 +67,7 @@ describe('PortfolioSummaryCard', () => {
   it('renders return metrics section', () => {
     render(<PortfolioSummaryCard summary={makeSummary()} isLoading={false} />);
     expect(screen.getByText('Simple Return')).toBeInTheDocument();
-    expect(screen.getByText('Time-Weighted Return')).toBeInTheDocument();
+    expect(screen.getByText(/TWR/)).toBeInTheDocument();
     expect(screen.getByText('CAGR')).toBeInTheDocument();
   });
 

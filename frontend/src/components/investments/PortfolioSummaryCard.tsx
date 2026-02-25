@@ -172,60 +172,58 @@ export function PortfolioSummaryCard({
           <div className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">
             Values
           </div>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-3">
             <div>
-              <div className="text-sm text-gray-500 dark:text-gray-400 flex items-center">
+              <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 flex items-center">
                 Holdings Value
                 <InfoTooltip text="The current market value of all securities you hold, based on the latest available prices." />
               </div>
-              <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              <div className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">
                 {fmtVal(converted?.holdings ?? summary.totalHoldingsValue)}
               </div>
             </div>
             <div>
-              <div className="text-sm text-gray-500 dark:text-gray-400 flex items-center">
+              <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 flex items-center">
                 Cash Balance
                 <InfoTooltip text="Uninvested cash sitting in your investment accounts, available for purchasing securities." />
               </div>
-              <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              <div className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">
                 {fmtVal(converted?.cash ?? summary.totalCashValue)}
               </div>
             </div>
             <div>
-              <div className="text-sm text-gray-500 dark:text-gray-400 flex items-center">
+              <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 flex items-center">
                 Total Gain
                 <InfoTooltip text="The total profit or loss across all your investments: Portfolio Value minus Net Invested. Includes realized gains, unrealized gains, dividends, and interest." />
               </div>
-              <div className={`text-lg font-semibold ${returnColorClass((converted?.portfolio ?? summary.totalPortfolioValue) - (converted?.netInvested ?? summary.totalNetInvested))}`}>
+              <div className={`text-base sm:text-lg font-semibold ${returnColorClass((converted?.portfolio ?? summary.totalPortfolioValue) - (converted?.netInvested ?? summary.totalNetInvested))}`}>
                 {fmtVal((converted?.portfolio ?? summary.totalPortfolioValue) - (converted?.netInvested ?? summary.totalNetInvested))}
               </div>
             </div>
-          </div>
-          <div className="grid grid-cols-3 gap-4 mt-3">
             <div>
-              <div className="text-sm text-gray-500 dark:text-gray-400 flex items-center">
+              <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 flex items-center">
                 Net Invested
                 <InfoTooltip text="The net amount of your own money deposited into your investment accounts. This is total contributions minus withdrawals, excluding any investment gains, dividends, or interest earned." />
               </div>
-              <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              <div className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">
                 {fmtVal(converted?.netInvested ?? summary.totalNetInvested)}
               </div>
             </div>
             <div>
-              <div className="text-sm text-gray-500 dark:text-gray-400 flex items-center">
+              <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 flex items-center">
                 Cost Basis
                 <InfoTooltip text="The total amount you originally paid to acquire your investments, including purchase prices and transaction fees. Used to calculate your gains and losses." />
               </div>
-              <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              <div className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">
                 {fmtVal(converted?.costBasis ?? summary.totalCostBasis)}
               </div>
             </div>
             <div>
-              <div className="text-sm text-gray-500 dark:text-gray-400 flex items-center">
+              <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 flex items-center">
                 Gain/Loss
                 <InfoTooltip text="Unrealized gain or loss on your current holdings: Market Value minus Cost Basis. Does not include realized gains from past sales or income received." />
               </div>
-              <div className={`text-lg font-semibold ${returnColorClass(gainLossVal)}`}>
+              <div className={`text-base sm:text-lg font-semibold ${returnColorClass(gainLossVal)}`}>
                 {fmtVal(gainLossVal)}
               </div>
             </div>
@@ -237,33 +235,34 @@ export function PortfolioSummaryCard({
           <div className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">
             Returns
           </div>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-3">
             <div>
-              <div className="text-sm text-gray-500 dark:text-gray-400 flex items-center">
+              <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 flex items-center">
                 Simple Return
                 <InfoTooltip text="Total percentage gain or loss on your holdings, calculated as (Market Value − Cost Basis) ÷ Cost Basis. Does not account for the timing of contributions or withdrawals." />
               </div>
-              <div className={`text-lg font-semibold ${returnColorClass(gainLossPercentVal)}`}>
+              <div className={`text-base sm:text-lg font-semibold ${returnColorClass(gainLossPercentVal)}`}>
                 {formatPercent(gainLossPercentVal)}
               </div>
             </div>
             <div>
-              <div className="text-sm text-gray-500 dark:text-gray-400 flex items-center">
-                Time-Weighted Return
+              <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 flex items-center">
+                TWR
+                <span className="hidden sm:inline">&nbsp;(Time-Weighted)</span>
                 <InfoTooltip text="Measures how well your investments performed regardless of when you added or removed money. Eliminates the impact of cash flow timing to show pure investment performance." />
               </div>
-              <div className={`text-lg font-semibold ${returnColorClass(twr)}`}>
+              <div className={`text-base sm:text-lg font-semibold ${returnColorClass(twr)}`}>
                 {twr != null ? formatPercent(twr) : (
                   <span className="text-gray-400 dark:text-gray-500 text-sm font-normal">N/A</span>
                 )}
               </div>
             </div>
             <div>
-              <div className="text-sm text-gray-500 dark:text-gray-400 flex items-center">
+              <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 flex items-center">
                 CAGR
                 <InfoTooltip text="Compound Annual Growth Rate. Your annualized return based on Net Invested vs. current portfolio value, as if growth had been perfectly steady each year." />
               </div>
-              <div className={`text-lg font-semibold ${returnColorClass(cagrVal)}`}>
+              <div className={`text-base sm:text-lg font-semibold ${returnColorClass(cagrVal)}`}>
                 {cagrVal != null ? formatPercent(cagrVal) : (
                   <span className="text-gray-400 dark:text-gray-500 text-sm font-normal">N/A</span>
                 )}
