@@ -89,7 +89,11 @@ export class MonthlyComparisonService {
         false,
       ),
       this.netWorthService.getMonthlyNetWorth(userId, historyStart, currentEnd),
-      this.portfolioService.getMonthOverMonthMovers(userId, currentEnd, previousEnd),
+      this.portfolioService.getMonthOverMonthMovers(
+        userId,
+        currentEnd,
+        previousEnd,
+      ),
     ]);
 
     // Extract single-month income/expenses from the responses
@@ -197,7 +201,8 @@ export class MonthlyComparisonService {
     previousLabel: string,
     currency: string,
   ): MonthlyComparisonNotes {
-    const fmt = (amount: number) => this.formatCurrencyWithSymbol(amount, currency);
+    const fmt = (amount: number) =>
+      this.formatCurrencyWithSymbol(amount, currency);
 
     const savingsDirection =
       ie.savingsChange >= 0
@@ -215,8 +220,18 @@ export class MonthlyComparisonService {
   }
 
   private buildExpenseComparison(
-    currentData: { categoryId: string | null; categoryName: string; color: string | null; total: number }[],
-    previousData: { categoryId: string | null; categoryName: string; color: string | null; total: number }[],
+    currentData: {
+      categoryId: string | null;
+      categoryName: string;
+      color: string | null;
+      total: number;
+    }[],
+    previousData: {
+      categoryId: string | null;
+      categoryName: string;
+      color: string | null;
+      total: number;
+    }[],
   ): MonthlyComparisonExpenses {
     const currentMonth: CategorySpendingSnapshot[] = currentData.map((c) => ({
       categoryId: c.categoryId,
@@ -224,14 +239,12 @@ export class MonthlyComparisonService {
       color: c.color,
       total: c.total,
     }));
-    const previousMonth: CategorySpendingSnapshot[] = previousData.map(
-      (c) => ({
-        categoryId: c.categoryId,
-        categoryName: c.categoryName,
-        color: c.color,
-        total: c.total,
-      }),
-    );
+    const previousMonth: CategorySpendingSnapshot[] = previousData.map((c) => ({
+      categoryId: c.categoryId,
+      categoryName: c.categoryName,
+      color: c.color,
+      total: c.total,
+    }));
 
     // Merge into comparison table
     const allCategories = new Map<
@@ -298,7 +311,12 @@ export class MonthlyComparisonService {
   }
 
   private buildNetWorth(
-    history: { month: string; assets: number; liabilities: number; netWorth: number }[],
+    history: {
+      month: string;
+      assets: number;
+      liabilities: number;
+      netWorth: number;
+    }[],
     currentMonth: string,
     previousMonth: string,
   ): MonthlyComparisonNetWorth {
@@ -439,10 +457,15 @@ export class MonthlyComparisonService {
 
   private percentChange(previous: number, current: number): number {
     if (previous === 0) return current === 0 ? 0 : 100;
-    return Math.round(((current - previous) / Math.abs(previous)) * 10000) / 100;
+    return (
+      Math.round(((current - previous) / Math.abs(previous)) * 10000) / 100
+    );
   }
 
-  private formatCurrencyWithSymbol(amount: number, currencyCode: string): string {
+  private formatCurrencyWithSymbol(
+    amount: number,
+    currencyCode: string,
+  ): string {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: currencyCode,

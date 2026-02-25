@@ -17,36 +17,77 @@ const mockUserId = "user-1";
 const mockMonth = "2026-01";
 
 const mockIncomeVsExpensesCurrentResponse = {
-  data: [
-    { month: "2026-01", income: 5000, expenses: 3000, net: 2000 },
-  ],
+  data: [{ month: "2026-01", income: 5000, expenses: 3000, net: 2000 }],
   totals: { income: 5000, expenses: 3000, net: 2000 },
 };
 
 const mockIncomeVsExpensesPreviousResponse = {
-  data: [
-    { month: "2025-12", income: 4500, expenses: 3500, net: 1000 },
-  ],
+  data: [{ month: "2025-12", income: 4500, expenses: 3500, net: 1000 }],
   totals: { income: 4500, expenses: 3500, net: 1000 },
 };
 
 const mockCurrentSpending = {
   data: [
-    { categoryId: "cat-1", categoryName: "Groceries", color: "#ff0000", total: 800 },
-    { categoryId: "cat-2", categoryName: "Utilities", color: "#00ff00", total: 400 },
-    { categoryId: "cat-3", categoryName: "Rent", color: "#0000ff", total: 1500 },
-    { categoryId: "cat-4", categoryName: "Transport", color: "#ffff00", total: 200 },
-    { categoryId: "cat-5", categoryName: "Entertainment", color: "#ff00ff", total: 100 },
+    {
+      categoryId: "cat-1",
+      categoryName: "Groceries",
+      color: "#ff0000",
+      total: 800,
+    },
+    {
+      categoryId: "cat-2",
+      categoryName: "Utilities",
+      color: "#00ff00",
+      total: 400,
+    },
+    {
+      categoryId: "cat-3",
+      categoryName: "Rent",
+      color: "#0000ff",
+      total: 1500,
+    },
+    {
+      categoryId: "cat-4",
+      categoryName: "Transport",
+      color: "#ffff00",
+      total: 200,
+    },
+    {
+      categoryId: "cat-5",
+      categoryName: "Entertainment",
+      color: "#ff00ff",
+      total: 100,
+    },
   ],
   totalSpending: 3000,
 };
 
 const mockPreviousSpending = {
   data: [
-    { categoryId: "cat-1", categoryName: "Groceries", color: "#ff0000", total: 700 },
-    { categoryId: "cat-2", categoryName: "Utilities", color: "#00ff00", total: 350 },
-    { categoryId: "cat-3", categoryName: "Rent", color: "#0000ff", total: 1500 },
-    { categoryId: "cat-6", categoryName: "Insurance", color: "#aabbcc", total: 200 },
+    {
+      categoryId: "cat-1",
+      categoryName: "Groceries",
+      color: "#ff0000",
+      total: 700,
+    },
+    {
+      categoryId: "cat-2",
+      categoryName: "Utilities",
+      color: "#00ff00",
+      total: 350,
+    },
+    {
+      categoryId: "cat-3",
+      categoryName: "Rent",
+      color: "#0000ff",
+      total: 1500,
+    },
+    {
+      categoryId: "cat-6",
+      categoryName: "Insurance",
+      color: "#aabbcc",
+      total: 200,
+    },
   ],
   totalSpending: 2750,
 };
@@ -131,34 +172,27 @@ describe("MonthlyComparisonService", () => {
       mockNetWorthService.getMonthlyNetWorth.mockResolvedValue(
         mockNetWorthHistory,
       );
-      mockPortfolioService.getMonthOverMonthMovers.mockResolvedValue(mockTopMovers);
+      mockPortfolioService.getMonthOverMonthMovers.mockResolvedValue(
+        mockTopMovers,
+      );
     });
 
     it("returns correct currentMonth and previousMonth strings", async () => {
-      const result = await service.getMonthlyComparison(
-        mockUserId,
-        mockMonth,
-      );
+      const result = await service.getMonthlyComparison(mockUserId, mockMonth);
 
       expect(result.currentMonth).toBe("2026-01");
       expect(result.previousMonth).toBe("2025-12");
     });
 
     it("returns correct month labels", async () => {
-      const result = await service.getMonthlyComparison(
-        mockUserId,
-        mockMonth,
-      );
+      const result = await service.getMonthlyComparison(mockUserId, mockMonth);
 
       expect(result.currentMonthLabel).toBe("January 2026");
       expect(result.previousMonthLabel).toBe("December 2025");
     });
 
     it("returns user's default currency", async () => {
-      const result = await service.getMonthlyComparison(
-        mockUserId,
-        mockMonth,
-      );
+      const result = await service.getMonthlyComparison(mockUserId, mockMonth);
 
       expect(result.currency).toBe("CAD");
       expect(mockCurrencyService.getDefaultCurrency).toHaveBeenCalledWith(
@@ -167,10 +201,7 @@ describe("MonthlyComparisonService", () => {
     });
 
     it("computes income/expenses values and deltas correctly", async () => {
-      const result = await service.getMonthlyComparison(
-        mockUserId,
-        mockMonth,
-      );
+      const result = await service.getMonthlyComparison(mockUserId, mockMonth);
 
       const ie = result.incomeExpenses;
       expect(ie.currentIncome).toBe(5000);
@@ -190,10 +221,7 @@ describe("MonthlyComparisonService", () => {
     });
 
     it("builds summary notes with explicit month names and currency symbols", async () => {
-      const result = await service.getMonthlyComparison(
-        mockUserId,
-        mockMonth,
-      );
+      const result = await service.getMonthlyComparison(mockUserId, mockMonth);
 
       expect(result.notes.savingsNote).toContain("January 2026");
       expect(result.notes.savingsNote).toContain("December 2025");
@@ -208,10 +236,7 @@ describe("MonthlyComparisonService", () => {
     });
 
     it("merges category spending from both months into comparison table", async () => {
-      const result = await service.getMonthlyComparison(
-        mockUserId,
-        mockMonth,
-      );
+      const result = await service.getMonthlyComparison(mockUserId, mockMonth);
 
       const comparison = result.expenses.comparison;
       // All unique categories: 6 (5 current + 1 only in previous: Insurance)
@@ -238,10 +263,7 @@ describe("MonthlyComparisonService", () => {
     });
 
     it("comparison table is sorted by currentTotal descending", async () => {
-      const result = await service.getMonthlyComparison(
-        mockUserId,
-        mockMonth,
-      );
+      const result = await service.getMonthlyComparison(mockUserId, mockMonth);
 
       const totals = result.expenses.comparison.map((c) => c.currentTotal);
       for (let i = 1; i < totals.length; i++) {
@@ -250,30 +272,21 @@ describe("MonthlyComparisonService", () => {
     });
 
     it("computes expense totals", async () => {
-      const result = await service.getMonthlyComparison(
-        mockUserId,
-        mockMonth,
-      );
+      const result = await service.getMonthlyComparison(mockUserId, mockMonth);
 
       expect(result.expenses.currentTotal).toBe(3000);
       expect(result.expenses.previousTotal).toBe(2750);
     });
 
     it("returns top 5 categories for each month", async () => {
-      const result = await service.getMonthlyComparison(
-        mockUserId,
-        mockMonth,
-      );
+      const result = await service.getMonthlyComparison(mockUserId, mockMonth);
 
       expect(result.topCategories.currentMonth.length).toBe(5);
       expect(result.topCategories.previousMonth.length).toBe(4); // only 4 categories in previous
     });
 
     it("builds net worth section with history and delta", async () => {
-      const result = await service.getMonthlyComparison(
-        mockUserId,
-        mockMonth,
-      );
+      const result = await service.getMonthlyComparison(mockUserId, mockMonth);
 
       expect(result.netWorth.monthlyHistory.length).toBe(4);
       expect(result.netWorth.currentNetWorth).toBe(52000);
@@ -283,10 +296,7 @@ describe("MonthlyComparisonService", () => {
     });
 
     it("maps top movers correctly", async () => {
-      const result = await service.getMonthlyComparison(
-        mockUserId,
-        mockMonth,
-      );
+      const result = await service.getMonthlyComparison(mockUserId, mockMonth);
 
       expect(result.investments.topMovers.length).toBe(1);
       const mover = result.investments.topMovers[0];
@@ -353,8 +363,14 @@ describe("MonthlyComparisonService", () => {
   describe("getMonthlyComparison() - edge cases", () => {
     it("handles zero values without division errors", async () => {
       mockIncomeReports.getIncomeVsExpenses
-        .mockResolvedValueOnce({ data: [{ month: "2026-01", income: 0, expenses: 0, net: 0 }], totals: { income: 0, expenses: 0, net: 0 } })
-        .mockResolvedValueOnce({ data: [{ month: "2025-12", income: 0, expenses: 0, net: 0 }], totals: { income: 0, expenses: 0, net: 0 } });
+        .mockResolvedValueOnce({
+          data: [{ month: "2026-01", income: 0, expenses: 0, net: 0 }],
+          totals: { income: 0, expenses: 0, net: 0 },
+        })
+        .mockResolvedValueOnce({
+          data: [{ month: "2025-12", income: 0, expenses: 0, net: 0 }],
+          totals: { income: 0, expenses: 0, net: 0 },
+        });
       mockSpendingReports.getSpendingByCategory
         .mockResolvedValueOnce({ data: [], totalSpending: 0 })
         .mockResolvedValueOnce({ data: [], totalSpending: 0 });
@@ -371,8 +387,14 @@ describe("MonthlyComparisonService", () => {
 
     it("handles missing month data in income/expenses response", async () => {
       mockIncomeReports.getIncomeVsExpenses
-        .mockResolvedValueOnce({ data: [], totals: { income: 0, expenses: 0, net: 0 } })
-        .mockResolvedValueOnce({ data: [], totals: { income: 0, expenses: 0, net: 0 } });
+        .mockResolvedValueOnce({
+          data: [],
+          totals: { income: 0, expenses: 0, net: 0 },
+        })
+        .mockResolvedValueOnce({
+          data: [],
+          totals: { income: 0, expenses: 0, net: 0 },
+        });
       mockSpendingReports.getSpendingByCategory
         .mockResolvedValueOnce({ data: [], totalSpending: 0 })
         .mockResolvedValueOnce({ data: [], totalSpending: 0 });
@@ -387,8 +409,14 @@ describe("MonthlyComparisonService", () => {
 
     it("handles previous month correctly when current is January", async () => {
       mockIncomeReports.getIncomeVsExpenses
-        .mockResolvedValueOnce({ data: [], totals: { income: 0, expenses: 0, net: 0 } })
-        .mockResolvedValueOnce({ data: [], totals: { income: 0, expenses: 0, net: 0 } });
+        .mockResolvedValueOnce({
+          data: [],
+          totals: { income: 0, expenses: 0, net: 0 },
+        })
+        .mockResolvedValueOnce({
+          data: [],
+          totals: { income: 0, expenses: 0, net: 0 },
+        });
       mockSpendingReports.getSpendingByCategory
         .mockResolvedValueOnce({ data: [], totalSpending: 0 })
         .mockResolvedValueOnce({ data: [], totalSpending: 0 });
@@ -404,8 +432,14 @@ describe("MonthlyComparisonService", () => {
 
     it("computes investment performance from account snapshots", async () => {
       mockIncomeReports.getIncomeVsExpenses
-        .mockResolvedValueOnce({ data: [], totals: { income: 0, expenses: 0, net: 0 } })
-        .mockResolvedValueOnce({ data: [], totals: { income: 0, expenses: 0, net: 0 } });
+        .mockResolvedValueOnce({
+          data: [],
+          totals: { income: 0, expenses: 0, net: 0 },
+        })
+        .mockResolvedValueOnce({
+          data: [],
+          totals: { income: 0, expenses: 0, net: 0 },
+        });
       mockSpendingReports.getSpendingByCategory
         .mockResolvedValueOnce({ data: [], totalSpending: 0 })
         .mockResolvedValueOnce({ data: [], totalSpending: 0 });
@@ -426,8 +460,22 @@ describe("MonthlyComparisonService", () => {
 
       // Mock monthly snapshots
       mockDataSource.query.mockResolvedValue([
-        { account_id: "acc-1", month: "2025-02-01", balance: 0, market_value: 10000, name: "My Brokerage", account_sub_type: "INVESTMENT_BROKERAGE" },
-        { account_id: "acc-1", month: "2026-01-01", balance: 0, market_value: 12000, name: "My Brokerage", account_sub_type: "INVESTMENT_BROKERAGE" },
+        {
+          account_id: "acc-1",
+          month: "2025-02-01",
+          balance: 0,
+          market_value: 10000,
+          name: "My Brokerage",
+          account_sub_type: "INVESTMENT_BROKERAGE",
+        },
+        {
+          account_id: "acc-1",
+          month: "2026-01-01",
+          balance: 0,
+          market_value: 12000,
+          name: "My Brokerage",
+          account_sub_type: "INVESTMENT_BROKERAGE",
+        },
       ]);
 
       const result = await service.getMonthlyComparison(mockUserId, "2026-01");
@@ -437,13 +485,21 @@ describe("MonthlyComparisonService", () => {
       expect(result.investments.accountPerformance[0].startValue).toBe(10000);
       expect(result.investments.accountPerformance[0].currentValue).toBe(12000);
       // Annualized: ((12000/10000)^(12/1) - 1) * 100
-      expect(result.investments.accountPerformance[0].annualizedReturn).toBeGreaterThan(0);
+      expect(
+        result.investments.accountPerformance[0].annualizedReturn,
+      ).toBeGreaterThan(0);
     });
 
     it("percent change returns 100 when previous is 0 and current is non-zero", async () => {
       mockIncomeReports.getIncomeVsExpenses
-        .mockResolvedValueOnce({ data: [{ month: "2026-01", income: 1000, expenses: 0, net: 1000 }], totals: { income: 1000, expenses: 0, net: 1000 } })
-        .mockResolvedValueOnce({ data: [{ month: "2025-12", income: 0, expenses: 0, net: 0 }], totals: { income: 0, expenses: 0, net: 0 } });
+        .mockResolvedValueOnce({
+          data: [{ month: "2026-01", income: 1000, expenses: 0, net: 1000 }],
+          totals: { income: 1000, expenses: 0, net: 1000 },
+        })
+        .mockResolvedValueOnce({
+          data: [{ month: "2025-12", income: 0, expenses: 0, net: 0 }],
+          totals: { income: 0, expenses: 0, net: 0 },
+        });
       mockSpendingReports.getSpendingByCategory
         .mockResolvedValueOnce({ data: [], totalSpending: 0 })
         .mockResolvedValueOnce({ data: [], totalSpending: 0 });

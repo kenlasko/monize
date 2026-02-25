@@ -1,4 +1,10 @@
-import { hasScope, requireScope, toolError, toolResult } from "./mcp-context";
+import {
+  hasScope,
+  requireScope,
+  safeToolError,
+  toolError,
+  toolResult,
+} from "./mcp-context";
 
 describe("mcp-context", () => {
   describe("hasScope", () => {
@@ -55,6 +61,67 @@ describe("mcp-context", () => {
       expect(result.content[0].type).toBe("text");
       expect(result.content[0].text).toContain("Something went wrong");
       expect(result.content[0].text).toContain("Error:");
+    });
+  });
+
+  describe("safeToolError", () => {
+    it("should pass through message for a 404 NotFoundException", () => {
+      const notFoundErr = {
+        getStatus: () => 404,
+        getResponse: () => ({ message: "Category not found" }),
+      };
+      const result = safeToolError(notFoundErr);
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain("Category not found");
+    });
+
+    it("should pass through message for a 400 BadRequestException", () => {
+      const badRequestErr = {
+        getStatus: () => 400,
+        getResponse: () => ({ message: "Invalid account ID" }),
+      };
+      const result = safeToolError(badRequestErr);
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain("Invalid account ID");
+    });
+
+    it("should return generic message for a plain Error without getStatus", () => {
+      const plainErr = new Error("Something broke internally");
+      const result = safeToolError(plainErr);
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain(
+        "An error occurred while processing your request",
+      );
+      expect(result.content[0].text).not.toContain(
+        "Something broke internally",
+      );
+    });
+
+    it("should return generic message for null or undefined", () => {
+      const nullResult = safeToolError(null);
+      expect(nullResult.isError).toBe(true);
+      expect(nullResult.content[0].text).toContain(
+        "An error occurred while processing your request",
+      );
+
+      const undefinedResult = safeToolError(undefined);
+      expect(undefinedResult.isError).toBe(true);
+      expect(undefinedResult.content[0].text).toContain(
+        "An error occurred while processing your request",
+      );
+    });
+
+    it("should return generic message for a 500 InternalServerError", () => {
+      const serverErr = {
+        getStatus: () => 500,
+        getResponse: () => ({ message: "Internal server error" }),
+      };
+      const result = safeToolError(serverErr);
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain(
+        "An error occurred while processing your request",
+      );
+      expect(result.content[0].text).not.toContain("Internal server error");
     });
   });
 

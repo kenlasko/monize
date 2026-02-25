@@ -789,7 +789,11 @@ describe("BudgetsService", () => {
       await service.getAlerts("user-1", true);
 
       expect(budgetAlertsRepository.find).toHaveBeenCalledWith({
-        where: { userId: "user-1", isRead: false, dismissedAt: expect.anything() },
+        where: {
+          userId: "user-1",
+          isRead: false,
+          dismissedAt: expect.anything(),
+        },
         order: { createdAt: "DESC" },
         take: 50,
       });
@@ -827,15 +831,22 @@ describe("BudgetsService", () => {
         ]),
         leftJoinAndSelect: jest.fn().mockReturnThis(),
       });
-      scheduledTransactionsRepository.createQueryBuilder.mockReturnValue(billQb);
+      scheduledTransactionsRepository.createQueryBuilder.mockReturnValue(
+        billQb,
+      );
 
       // No existing alerts, no overrides
-      const alertQb = createMockQueryBuilder({ getMany: jest.fn().mockResolvedValue([]) });
+      const alertQb = createMockQueryBuilder({
+        getMany: jest.fn().mockResolvedValue([]),
+      });
       budgetAlertsRepository.createQueryBuilder.mockReturnValue(alertQb);
       overridesRepository.createQueryBuilder.mockReturnValue(
         createMockQueryBuilder({ getMany: jest.fn().mockResolvedValue([]) }),
       );
-      budgetAlertsRepository.save.mockImplementation((data: BudgetAlert) => ({ ...data, id: "new-alert-1" }));
+      budgetAlertsRepository.save.mockImplementation((data: BudgetAlert) => ({
+        ...data,
+        id: "new-alert-1",
+      }));
       budgetAlertsRepository.find.mockResolvedValue([]);
 
       await service.getAlerts("user-1");
@@ -873,9 +884,13 @@ describe("BudgetsService", () => {
         ]),
         leftJoinAndSelect: jest.fn().mockReturnThis(),
       });
-      scheduledTransactionsRepository.createQueryBuilder.mockReturnValue(billQb);
+      scheduledTransactionsRepository.createQueryBuilder.mockReturnValue(
+        billQb,
+      );
 
-      const alertQb = createMockQueryBuilder({ getMany: jest.fn().mockResolvedValue([]) });
+      const alertQb = createMockQueryBuilder({
+        getMany: jest.fn().mockResolvedValue([]),
+      });
       budgetAlertsRepository.createQueryBuilder.mockReturnValue(alertQb);
       overridesRepository.createQueryBuilder.mockReturnValue(
         createMockQueryBuilder({
@@ -888,7 +903,10 @@ describe("BudgetsService", () => {
           ]),
         }),
       );
-      budgetAlertsRepository.save.mockImplementation((data: BudgetAlert) => ({ ...data, id: "new-alert-1" }));
+      budgetAlertsRepository.save.mockImplementation((data: BudgetAlert) => ({
+        ...data,
+        id: "new-alert-1",
+      }));
       budgetAlertsRepository.find.mockResolvedValue([]);
 
       await service.getAlerts("user-1");
@@ -922,7 +940,9 @@ describe("BudgetsService", () => {
         ]),
         leftJoinAndSelect: jest.fn().mockReturnThis(),
       });
-      scheduledTransactionsRepository.createQueryBuilder.mockReturnValue(billQb);
+      scheduledTransactionsRepository.createQueryBuilder.mockReturnValue(
+        billQb,
+      );
       budgetAlertsRepository.find.mockResolvedValue([]);
 
       await service.getAlerts("user-1");
@@ -972,12 +992,17 @@ describe("BudgetsService", () => {
   describe("deleteAlert", () => {
     it("soft-deletes alert when found and belongs to user", async () => {
       budgetAlertsRepository.findOne.mockResolvedValue({ ...mockAlert });
-      budgetAlertsRepository.save.mockImplementation((data: BudgetAlert) => data);
+      budgetAlertsRepository.save.mockImplementation(
+        (data: BudgetAlert) => data,
+      );
 
       await service.deleteAlert("user-1", "alert-1");
 
       expect(budgetAlertsRepository.save).toHaveBeenCalledWith(
-        expect.objectContaining({ id: "alert-1", dismissedAt: expect.any(Date) }),
+        expect.objectContaining({
+          id: "alert-1",
+          dismissedAt: expect.any(Date),
+        }),
       );
     });
 

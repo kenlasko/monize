@@ -8,6 +8,7 @@ import {
   requireScope,
   toolResult,
   toolError,
+  safeToolError,
 } from "../mcp-context";
 
 @Injectable()
@@ -36,8 +37,8 @@ export class McpInvestmentsTools {
             ctx.userId,
           );
           return toolResult(summary);
-        } catch (err: any) {
-          return toolError(err.message);
+        } catch (err: unknown) {
+          return safeToolError(err);
         }
       },
     );
@@ -66,8 +67,8 @@ export class McpInvestmentsTools {
             args.accountId,
           );
           return toolResult(holdings);
-        } catch (err: any) {
-          return toolError(err.message);
+        } catch (err: unknown) {
+          return safeToolError(err);
         }
       },
     );

@@ -183,9 +183,12 @@ export function TransactionFilterPanel({
                   {account.name}
                   <button
                     onClick={() => handleArrayFilterChange(setFilterAccountIds, filterAccountIds.filter(id => id !== account.id))}
-                    className="hover:text-emerald-600 dark:hover:text-emerald-100"
+                    className="ml-0.5 -mr-1 p-0.5 rounded-full inline-flex items-center justify-center hover:bg-emerald-200 dark:hover:bg-emerald-800"
+                    aria-label={`Remove ${account.name} filter`}
                   >
-                    ×
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
                   </button>
                 </span>
               ))}
@@ -204,9 +207,12 @@ export function TransactionFilterPanel({
                   {cat.name}
                   <button
                     onClick={() => handleArrayFilterChange(setFilterCategoryIds, filterCategoryIds.filter(id => id !== cat.id))}
-                    className="hover:text-blue-600 dark:hover:text-blue-100"
+                    className="ml-0.5 -mr-1 p-0.5 rounded-full inline-flex items-center justify-center hover:bg-blue-200 dark:hover:bg-blue-800"
+                    aria-label={`Remove ${cat.name} filter`}
                   >
-                    ×
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
                   </button>
                 </span>
               ))}
@@ -219,9 +225,12 @@ export function TransactionFilterPanel({
                   {payee.name}
                   <button
                     onClick={() => handleArrayFilterChange(setFilterPayeeIds, filterPayeeIds.filter(id => id !== payee.id))}
-                    className="hover:text-purple-600 dark:hover:text-purple-100"
+                    className="ml-0.5 -mr-1 p-0.5 rounded-full inline-flex items-center justify-center hover:bg-purple-200 dark:hover:bg-purple-800"
+                    aria-label={`Remove ${payee.name} filter`}
                   >
-                    ×
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
                   </button>
                 </span>
               ))}
@@ -238,9 +247,12 @@ export function TransactionFilterPanel({
                       handleFilterChange(setFilterStartDate, '');
                       handleFilterChange(setFilterEndDate, '');
                     }}
-                    className="hover:text-amber-600 dark:hover:text-amber-100"
+                    className="ml-0.5 -mr-1 p-0.5 rounded-full inline-flex items-center justify-center hover:bg-amber-200 dark:hover:bg-amber-800"
+                    aria-label="Remove date filter"
                   >
-                    ×
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
                   </button>
                 </span>
               )}
@@ -250,9 +262,12 @@ export function TransactionFilterPanel({
                   &quot;{filterSearch}&quot;
                   <button
                     onClick={() => handleFilterChange(setFilterSearch, '')}
-                    className="hover:text-gray-600 dark:hover:text-gray-100"
+                    className="ml-0.5 -mr-1 p-0.5 rounded-full inline-flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-600"
+                    aria-label="Remove search filter"
                   >
-                    ×
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
                   </button>
                 </span>
               )}

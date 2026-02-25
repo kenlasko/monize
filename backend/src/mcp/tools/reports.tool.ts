@@ -7,6 +7,7 @@ import {
   requireScope,
   toolResult,
   toolError,
+  safeToolError,
 } from "../mcp-context";
 
 @Injectable()
@@ -28,8 +29,8 @@ export class McpReportsTools {
               "income_by_source",
             ])
             .describe("Report type"),
-          startDate: z.string().describe("Start date (YYYY-MM-DD)"),
-          endDate: z.string().describe("End date (YYYY-MM-DD)"),
+          startDate: z.string().max(10).describe("Start date (YYYY-MM-DD)"),
+          endDate: z.string().max(10).describe("End date (YYYY-MM-DD)"),
         },
       },
       async (args, extra) => {
@@ -78,8 +79,8 @@ export class McpReportsTools {
               break;
           }
           return toolResult(data);
-        } catch (err: any) {
-          return toolError(err.message);
+        } catch (err: unknown) {
+          return safeToolError(err);
         }
       },
     );
@@ -92,6 +93,7 @@ export class McpReportsTools {
         inputSchema: {
           month: z
             .string()
+            .max(7)
             .describe("Month to compare in YYYY-MM format (e.g., 2026-01)"),
         },
       },
@@ -107,8 +109,8 @@ export class McpReportsTools {
             args.month,
           );
           return toolResult(data);
-        } catch (err: any) {
-          return toolError(err.message);
+        } catch (err: unknown) {
+          return safeToolError(err);
         }
       },
     );
@@ -120,6 +122,8 @@ export class McpReportsTools {
         inputSchema: {
           months: z
             .number()
+            .min(1)
+            .max(24)
             .optional()
             .default(3)
             .describe("Number of months to analyze (default 3)"),
@@ -137,8 +141,8 @@ export class McpReportsTools {
             args.months || 3,
           );
           return toolResult(anomalies);
-        } catch (err: any) {
-          return toolError(err.message);
+        } catch (err: unknown) {
+          return safeToolError(err);
         }
       },
     );

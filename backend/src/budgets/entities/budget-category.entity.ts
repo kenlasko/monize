@@ -69,7 +69,12 @@ export class BudgetCategory {
   })
   categoryGroup: CategoryGroup | null;
 
-  @Column({ type: "decimal", precision: 20, scale: 4, transformer: decimalTransformer })
+  @Column({
+    type: "decimal",
+    precision: 20,
+    scale: 4,
+    transformer: decimalTransformer,
+  })
   amount: number;
 
   @Column({ name: "is_income", default: false })

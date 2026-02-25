@@ -184,7 +184,7 @@ describe("McpReportsTools", () => {
         { sessionId: "s1" },
       );
       expect(result.isError).toBe(true);
-      expect(result.content[0].text).toContain("Service failure");
+      expect(result.content[0].text).toContain("An error occurred");
     });
   });
 

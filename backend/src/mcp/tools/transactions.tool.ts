@@ -8,6 +8,7 @@ import {
   requireScope,
   toolResult,
   toolError,
+  safeToolError,
 } from "../mcp-context";
 
 @Injectable()
@@ -23,7 +24,7 @@ export class McpTransactionsTools {
       {
         description: "Search and filter transactions",
         inputSchema: {
-          query: z.string().optional().describe("Search text"),
+          query: z.string().max(200).optional().describe("Search text"),
           accountId: z
             .string()
             .uuid()
@@ -35,12 +36,32 @@ export class McpTransactionsTools {
             .optional()
             .describe("Filter by category ID"),
           payeeId: z.string().uuid().optional().describe("Filter by payee ID"),
-          startDate: z.string().optional().describe("Start date (YYYY-MM-DD)"),
-          endDate: z.string().optional().describe("End date (YYYY-MM-DD)"),
-          minAmount: z.number().optional().describe("Minimum amount"),
-          maxAmount: z.number().optional().describe("Maximum amount"),
+          startDate: z
+            .string()
+            .max(10)
+            .optional()
+            .describe("Start date (YYYY-MM-DD)"),
+          endDate: z
+            .string()
+            .max(10)
+            .optional()
+            .describe("End date (YYYY-MM-DD)"),
+          minAmount: z
+            .number()
+            .min(-999999999999)
+            .max(999999999999)
+            .optional()
+            .describe("Minimum amount"),
+          maxAmount: z
+            .number()
+            .min(-999999999999)
+            .max(999999999999)
+            .optional()
+            .describe("Maximum amount"),
           limit: z
             .number()
+            .min(1)
+            .max(100)
             .optional()
             .default(50)
             .describe("Max results (default 50, max 100)"),
@@ -89,8 +110,8 @@ export class McpTransactionsTools {
             total: result.pagination.total,
             hasMore: result.pagination.hasMore,
           });
-        } catch (err: any) {
-          return toolError(err.message);
+        } catch (err: unknown) {
+          return safeToolError(err);
         }
       },
     );
@@ -103,11 +124,17 @@ export class McpTransactionsTools {
           accountId: z.string().uuid().describe("Account ID"),
           amount: z
             .number()
+            .min(-999999999999)
+            .max(999999999999)
             .describe("Amount (positive for income, negative for expenses)"),
-          date: z.string().describe("Transaction date (YYYY-MM-DD)"),
-          payeeName: z.string().optional().describe("Payee name"),
+          date: z.string().max(10).describe("Transaction date (YYYY-MM-DD)"),
+          payeeName: z.string().max(100).optional().describe("Payee name"),
           categoryId: z.string().uuid().optional().describe("Category ID"),
-          description: z.string().optional().describe("Description or memo"),
+          description: z
+            .string()
+            .max(500)
+            .optional()
+            .describe("Description or memo"),
         },
       },
       async (args, extra) => {
@@ -140,8 +167,8 @@ export class McpTransactionsTools {
             payeeName: transaction.payeeName,
             status: transaction.status,
           });
-        } catch (err: any) {
-          return toolError(err.message);
+        } catch (err: unknown) {
+          return safeToolError(err);
         }
       },
     );
@@ -172,8 +199,8 @@ export class McpTransactionsTools {
             categoryId: transaction.categoryId,
             message: "Transaction categorized successfully",
           });
-        } catch (err: any) {
-          return toolError(err.message);
+        } catch (err: unknown) {
+          return safeToolError(err);
         }
       },
     );

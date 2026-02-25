@@ -18,7 +18,6 @@ import {
   ApiOperation,
   ApiResponse,
   ApiQuery,
-  ApiBody,
 } from "@nestjs/swagger";
 import { AuthGuard } from "@nestjs/passport";
 import { RolesGuard } from "../auth/guards/roles.guard";
@@ -33,6 +32,7 @@ import {
 import { NetWorthService } from "../net-worth/net-worth.service";
 import { CreateSecurityDto } from "./dto/create-security.dto";
 import { UpdateSecurityDto } from "./dto/update-security.dto";
+import { RefreshSecurityPricesDto } from "./dto/refresh-security-prices.dto";
 import { Security } from "./entities/security.entity";
 
 @ApiTags("securities")
@@ -226,29 +226,18 @@ export class SecuritiesController {
     description:
       "Fetches latest prices from Yahoo Finance for specific securities",
   })
-  @ApiBody({
-    schema: {
-      type: "object",
-      properties: {
-        securityIds: {
-          type: "array",
-          items: { type: "string", format: "uuid" },
-        },
-      },
-      required: ["securityIds"],
-    },
-  })
   @ApiResponse({ status: 200, description: "Price refresh completed" })
   async refreshSelectedPrices(
     @Req() req,
-    @Body("securityIds") securityIds: string[],
+    @Body() dto: RefreshSecurityPricesDto,
   ): Promise<PriceRefreshSummary> {
     // Verify all security IDs belong to the requesting user
-    for (const id of securityIds) {
+    for (const id of dto.securityIds) {
       await this.securitiesService.findOne(req.user.id, id);
     }
-    const result =
-      await this.securityPriceService.refreshPricesForSecurities(securityIds);
+    const result = await this.securityPriceService.refreshPricesForSecurities(
+      dto.securityIds,
+    );
     if (result.updated > 0) {
       // Fire-and-forget: recalculate this user's investment snapshots
       this.netWorthService.recalculateAllAccounts(req.user.id).catch(() => {});

@@ -7,6 +7,7 @@ import {
   requireScope,
   toolResult,
   toolError,
+  safeToolError,
 } from "../mcp-context";
 
 @Injectable()
@@ -21,6 +22,7 @@ export class McpPayeesTools {
         inputSchema: {
           search: z
             .string()
+            .max(200)
             .optional()
             .describe("Search query to filter payees"),
         },
@@ -42,8 +44,8 @@ export class McpPayeesTools {
           }
           const payees = await this.payeesService.findAll(ctx.userId);
           return toolResult(payees);
-        } catch (err: any) {
-          return toolError(err.message);
+        } catch (err: unknown) {
+          return safeToolError(err);
         }
       },
     );
@@ -53,7 +55,7 @@ export class McpPayeesTools {
       {
         description: "Create a new payee",
         inputSchema: {
-          name: z.string().describe("Payee name"),
+          name: z.string().max(100).describe("Payee name"),
           defaultCategoryId: z
             .string()
             .uuid()
@@ -77,8 +79,8 @@ export class McpPayeesTools {
             name: payee.name,
             message: "Payee created successfully",
           });
-        } catch (err: any) {
-          return toolError(err.message);
+        } catch (err: unknown) {
+          return safeToolError(err);
         }
       },
     );

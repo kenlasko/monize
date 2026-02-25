@@ -253,15 +253,15 @@ describe("SecuritiesController", () => {
         summary,
       );
 
-      const securityIds = ["sec-1", "sec-2"];
-      const result = await controller.refreshSelectedPrices(req, securityIds);
+      const dto = { securityIds: ["sec-1", "sec-2"] };
+      const result = await controller.refreshSelectedPrices(req, dto as any);
 
       expect(securitiesService.findOne).toHaveBeenCalledWith("user-1", "sec-1");
       expect(securitiesService.findOne).toHaveBeenCalledWith("user-1", "sec-2");
       expect(securitiesService.findOne).toHaveBeenCalledTimes(2);
       expect(
         securityPriceService.refreshPricesForSecurities,
-      ).toHaveBeenCalledWith(securityIds);
+      ).toHaveBeenCalledWith(dto.securityIds);
       expect(result).toEqual(summary);
     });
 
@@ -269,7 +269,9 @@ describe("SecuritiesController", () => {
       securitiesService.findOne.mockRejectedValue(new Error("Not found"));
 
       await expect(
-        controller.refreshSelectedPrices(req, ["bad-id"]),
+        controller.refreshSelectedPrices(req, {
+          securityIds: ["bad-id"],
+        } as any),
       ).rejects.toThrow("Not found");
       expect(
         securityPriceService.refreshPricesForSecurities,

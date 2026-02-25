@@ -29,6 +29,15 @@ async function bootstrap() {
   app.use(
     helmet({
       frameguard: { action: "deny" },
+      hsts: { maxAge: 63072000, includeSubDomains: true, preload: true },
+      crossOriginOpenerPolicy: { policy: "same-origin" },
+      crossOriginResourcePolicy: { policy: "same-origin" },
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'none'"],
+          frameAncestors: ["'none'"],
+        },
+      },
     }),
   );
 

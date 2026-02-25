@@ -7,6 +7,7 @@ import {
   requireScope,
   toolResult,
   toolError,
+  safeToolError,
 } from "../mcp-context";
 
 @Injectable()
@@ -23,6 +24,8 @@ export class McpScheduledTools {
         inputSchema: {
           days: z
             .number()
+            .min(1)
+            .max(365)
             .optional()
             .default(30)
             .describe("Number of days to look ahead (default 30)"),
@@ -40,8 +43,8 @@ export class McpScheduledTools {
             args.days || 30,
           );
           return toolResult(upcoming);
-        } catch (err: any) {
-          return toolError(err.message);
+        } catch (err: unknown) {
+          return safeToolError(err);
         }
       },
     );
@@ -61,8 +64,8 @@ export class McpScheduledTools {
         try {
           const scheduled = await this.scheduledService.findAll(ctx.userId);
           return toolResult(scheduled);
-        } catch (err: any) {
-          return toolError(err.message);
+        } catch (err: unknown) {
+          return safeToolError(err);
         }
       },
     );

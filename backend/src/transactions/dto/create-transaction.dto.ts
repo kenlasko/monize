@@ -8,6 +8,7 @@ import {
   IsEnum,
   MaxLength,
   Min,
+  Max,
   IsArray,
   ValidateNested,
 } from "class-validator";
@@ -53,6 +54,8 @@ export class CreateTransactionDto {
       "Transaction amount (positive for income, negative for expense)",
   })
   @IsNumber({ maxDecimalPlaces: 4 })
+  @Min(-999999999999)
+  @Max(999999999999)
   amount: number;
 
   @ApiProperty({ description: "Currency code (e.g., CAD, USD)" })

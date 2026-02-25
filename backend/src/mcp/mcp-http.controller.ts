@@ -28,22 +28,63 @@ const SkipPasswordCheck = () => SetMetadata(SKIP_PASSWORD_CHECK_KEY, true);
 @SkipPasswordCheck()
 @Controller("mcp")
 export class McpHttpController implements OnModuleDestroy {
+  private static readonly SESSION_TTL_MS = 3_600_000; // 1 hour
+  private static readonly MAX_SESSIONS_PER_USER = 10;
+  private static readonly CLEANUP_INTERVAL_MS = 300_000; // 5 minutes
+
   private transports = new Map<string, StreamableHTTPServerTransport>();
   private servers = new Map<string, McpServer>();
   private sessionUsers = new Map<string, McpUserContext>();
+  private sessionCreatedAt = new Map<string, number>();
+  private cleanupTimer: ReturnType<typeof setInterval>;
 
   constructor(
     private readonly mcpServerService: McpServerService,
     private readonly patService: PatService,
-  ) {}
+  ) {
+    this.cleanupTimer = setInterval(
+      () => this.cleanupExpiredSessions(),
+      McpHttpController.CLEANUP_INTERVAL_MS,
+    );
+  }
 
   onModuleDestroy() {
+    clearInterval(this.cleanupTimer);
     for (const transport of this.transports.values()) {
       transport.close().catch(() => {});
     }
     this.transports.clear();
     this.servers.clear();
     this.sessionUsers.clear();
+    this.sessionCreatedAt.clear();
+  }
+
+  private cleanupExpiredSessions() {
+    const now = Date.now();
+    for (const [sid, createdAt] of this.sessionCreatedAt.entries()) {
+      if (now - createdAt > McpHttpController.SESSION_TTL_MS) {
+        const transport = this.transports.get(sid);
+        if (transport) transport.close().catch(() => {});
+        this.transports.delete(sid);
+        this.servers.delete(sid);
+        this.sessionUsers.delete(sid);
+        this.sessionCreatedAt.delete(sid);
+      }
+    }
+  }
+
+  private getUserSessionCount(userId: string): number {
+    let count = 0;
+    for (const ctx of this.sessionUsers.values()) {
+      if (ctx.userId === userId) count++;
+    }
+    return count;
+  }
+
+  private isSessionExpired(sessionId: string): boolean {
+    const createdAt = this.sessionCreatedAt.get(sessionId);
+    if (!createdAt) return true;
+    return Date.now() - createdAt > McpHttpController.SESSION_TTL_MS;
   }
 
   @Post()
@@ -71,6 +112,15 @@ export class McpHttpController implements OnModuleDestroy {
         });
         return;
       }
+      if (this.isSessionExpired(sessionId)) {
+        this.destroySession(sessionId);
+        res.status(404).json({
+          jsonrpc: "2.0",
+          error: { code: -32004, message: "Session expired" },
+          id: null,
+        });
+        return;
+      }
       const sessionUser = this.sessionUsers.get(sessionId);
       if (sessionUser?.userId !== authResult.userId) {
         res.status(403).json({
@@ -84,6 +134,22 @@ export class McpHttpController implements OnModuleDestroy {
       return;
     }
 
+    // Enforce per-user session limit
+    if (
+      this.getUserSessionCount(authResult.userId) >=
+      McpHttpController.MAX_SESSIONS_PER_USER
+    ) {
+      res.status(429).json({
+        jsonrpc: "2.0",
+        error: {
+          code: -32005,
+          message: "Too many active sessions. Close existing sessions first.",
+        },
+        id: null,
+      });
+      return;
+    }
+
     const transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: () => randomUUID(),
     });
@@ -91,9 +157,7 @@ export class McpHttpController implements OnModuleDestroy {
     transport.onclose = () => {
       const sid = transport.sessionId;
       if (sid) {
-        this.transports.delete(sid);
-        this.servers.delete(sid);
-        this.sessionUsers.delete(sid);
+        this.destroySession(sid);
       }
     };
 
@@ -112,6 +176,7 @@ export class McpHttpController implements OnModuleDestroy {
         userId: authResult.userId,
         scopes: authResult.scopes,
       });
+      this.sessionCreatedAt.set(transport.sessionId, Date.now());
     }
   }
 
@@ -143,6 +208,16 @@ export class McpHttpController implements OnModuleDestroy {
       res.status(404).json({
         jsonrpc: "2.0",
         error: { code: -32004, message: "Session not found" },
+        id: null,
+      });
+      return;
+    }
+
+    if (this.isSessionExpired(sessionId)) {
+      this.destroySession(sessionId);
+      res.status(404).json({
+        jsonrpc: "2.0",
+        error: { code: -32004, message: "Session expired" },
         id: null,
       });
       return;
@@ -194,6 +269,16 @@ export class McpHttpController implements OnModuleDestroy {
       return;
     }
 
+    if (this.isSessionExpired(sessionId)) {
+      this.destroySession(sessionId);
+      res.status(404).json({
+        jsonrpc: "2.0",
+        error: { code: -32004, message: "Session expired" },
+        id: null,
+      });
+      return;
+    }
+
     const sessionUser = this.sessionUsers.get(sessionId);
     if (sessionUser?.userId !== authResult.userId) {
       res.status(403).json({
@@ -205,9 +290,16 @@ export class McpHttpController implements OnModuleDestroy {
     }
 
     await transport.handleRequest(req, res);
+    this.destroySession(sessionId);
+  }
+
+  private destroySession(sessionId: string) {
+    const transport = this.transports.get(sessionId);
+    if (transport) transport.close().catch(() => {});
     this.transports.delete(sessionId);
     this.servers.delete(sessionId);
     this.sessionUsers.delete(sessionId);
+    this.sessionCreatedAt.delete(sessionId);
   }
 
   private async validatePat(req: Request): Promise<McpUserContext | null> {

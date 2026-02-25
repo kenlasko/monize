@@ -75,7 +75,7 @@ services:
       - /app/node_modules
       - /app/dist
     ports:
-      - "${BACKEND_PORT:-3000}:3000"
+      - "127.0.0.1:${BACKEND_PORT:-3000}:3000"
     networks:
       - finance-network
     command: sh -c "node dist/db-init.js && if [ \"$$DEMO_MODE\" = 'true' ]; then node dist/database/seed.js; fi && npm run start:dev"
@@ -99,7 +99,7 @@ services:
       - /app/node_modules
       - /app/.next
     ports:
-      - "${FRONTEND_PORT:-3001}:3000"
+      - "127.0.0.1:${FRONTEND_PORT:-3001}:3000"
     networks:
       - finance-network
     command: npm run dev

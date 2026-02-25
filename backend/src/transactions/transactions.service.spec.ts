@@ -72,6 +72,7 @@ describe("TransactionsService", () => {
 
     categoriesRepository = {
       find: jest.fn().mockResolvedValue([]),
+      findOne: jest.fn().mockResolvedValue({ id: "cat-1", userId: "user-1" }),
     };
 
     investmentTxRepository = {
@@ -300,6 +301,36 @@ describe("TransactionsService", () => {
         "account-1",
       );
     });
+
+    it("rejects payeeId not owned by user", async () => {
+      payeesService.findOne.mockRejectedValue(
+        new NotFoundException("Payee not found"),
+      );
+
+      await expect(
+        service.create("user-1", {
+          accountId: "account-1",
+          transactionDate: "2026-01-15",
+          amount: -50,
+          currencyCode: "USD",
+          payeeId: "bad-payee-id",
+        } as any),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it("rejects categoryId not owned by user", async () => {
+      categoriesRepository.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.create("user-1", {
+          accountId: "account-1",
+          transactionDate: "2026-01-15",
+          amount: -50,
+          currencyCode: "USD",
+          categoryId: "bad-cat-id",
+        } as any),
+      ).rejects.toThrow("Category not found");
+    });
   });
 
   describe("findOne", () => {
@@ -408,6 +439,28 @@ describe("TransactionsService", () => {
         "user-1",
         "account-2",
       );
+    });
+
+    it("rejects payeeId not owned by user", async () => {
+      transactionsRepository.findOne.mockResolvedValue({ ...mockTx });
+      payeesService.findOne.mockRejectedValue(
+        new NotFoundException("Payee not found"),
+      );
+
+      await expect(
+        service.update("user-1", "tx-1", { payeeId: "bad-payee-id" } as any),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it("rejects categoryId not owned by user", async () => {
+      transactionsRepository.findOne.mockResolvedValue({ ...mockTx });
+      categoriesRepository.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.update("user-1", "tx-1", {
+          categoryId: "bad-cat-id",
+        } as any),
+      ).rejects.toThrow("Category not found");
     });
   });
 

@@ -904,13 +904,9 @@ describe("TransactionAnalyticsService", () => {
         { id: "cat-child", parentId: "cat-1" },
       ]);
 
-      await service.getMonthlyTotals(
-        userId,
-        undefined,
-        undefined,
-        undefined,
-        ["cat-1"],
-      );
+      await service.getMonthlyTotals(userId, undefined, undefined, undefined, [
+        "cat-1",
+      ]);
 
       expect(mockQueryBuilder.setParameter).toHaveBeenCalledWith(
         "monthlyCategoryIds",

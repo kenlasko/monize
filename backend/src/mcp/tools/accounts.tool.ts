@@ -7,6 +7,7 @@ import {
   requireScope,
   toolResult,
   toolError,
+  safeToolError,
 } from "../mcp-context";
 
 @Injectable()
@@ -37,8 +38,8 @@ export class McpAccountsTools {
             args.includeInactive || false,
           );
           return toolResult(accounts);
-        } catch (err: any) {
-          return toolError(err.message);
+        } catch (err: unknown) {
+          return safeToolError(err);
         }
       },
     );
@@ -70,8 +71,8 @@ export class McpAccountsTools {
             creditLimit: account.creditLimit,
             currencyCode: account.currencyCode,
           });
-        } catch (err: any) {
-          return toolError(err.message);
+        } catch (err: unknown) {
+          return safeToolError(err);
         }
       },
     );
@@ -92,8 +93,8 @@ export class McpAccountsTools {
         try {
           const summary = await this.accountsService.getSummary(ctx.userId);
           return toolResult(summary);
-        } catch (err: any) {
-          return toolError(err.message);
+        } catch (err: unknown) {
+          return safeToolError(err);
         }
       },
     );

@@ -8,6 +8,7 @@ import {
   requireScope,
   toolResult,
   toolError,
+  safeToolError,
 } from "../mcp-context";
 
 @Injectable()
@@ -33,8 +34,8 @@ export class McpNetWorthTools {
         try {
           const summary = await this.accountsService.getSummary(ctx.userId);
           return toolResult(summary);
-        } catch (err: any) {
-          return toolError(err.message);
+        } catch (err: unknown) {
+          return safeToolError(err);
         }
       },
     );
@@ -46,6 +47,8 @@ export class McpNetWorthTools {
         inputSchema: {
           months: z
             .number()
+            .min(1)
+            .max(120)
             .optional()
             .default(12)
             .describe("Number of months of history (default 12)"),
@@ -69,8 +72,8 @@ export class McpNetWorthTools {
             endDate.toISOString().split("T")[0],
           );
           return toolResult(history);
-        } catch (err: any) {
-          return toolError(err.message);
+        } catch (err: unknown) {
+          return safeToolError(err);
         }
       },
     );

@@ -139,6 +139,19 @@ export class TransactionsService {
       this.splitService.validateSplits(splits, createTransactionDto.amount);
     }
 
+    // Validate ownership of referenced payee and category
+    if (transactionData.payeeId) {
+      await this.payeesService.findOne(userId, transactionData.payeeId);
+    }
+    if (transactionData.categoryId) {
+      const cat = await this.categoriesRepository.findOne({
+        where: { id: transactionData.categoryId, userId },
+      });
+      if (!cat) {
+        throw new NotFoundException("Category not found");
+      }
+    }
+
     let categoryId = transactionData.categoryId;
     if (!hasSplits && !categoryId && transactionData.payeeId) {
       try {
@@ -150,7 +163,7 @@ export class TransactionsService {
           categoryId = payee.defaultCategoryId;
         }
       } catch {
-        // If payee not found or error, continue without category
+        // Payee already validated above; this is for default category lookup
       }
     }
 
@@ -554,6 +567,19 @@ export class TransactionsService {
 
     if (updateData.accountId && updateData.accountId !== oldAccountId) {
       await this.accountsService.findOne(userId, updateData.accountId);
+    }
+
+    // Validate ownership of referenced payee and category
+    if (updateData.payeeId) {
+      await this.payeesService.findOne(userId, updateData.payeeId);
+    }
+    if ("categoryId" in updateData && updateData.categoryId) {
+      const cat = await this.categoriesRepository.findOne({
+        where: { id: updateData.categoryId, userId },
+      });
+      if (!cat) {
+        throw new NotFoundException("Category not found");
+      }
     }
 
     if (splits !== undefined) {

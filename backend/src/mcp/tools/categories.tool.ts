@@ -7,6 +7,7 @@ import {
   requireScope,
   toolResult,
   toolError,
+  safeToolError,
 } from "../mcp-context";
 
 @Injectable()
@@ -41,8 +42,8 @@ export class McpCategoriesTools {
           }
           const tree = await this.categoriesService.getTree(ctx.userId);
           return toolResult(tree);
-        } catch (err: any) {
-          return toolError(err.message);
+        } catch (err: unknown) {
+          return safeToolError(err);
         }
       },
     );

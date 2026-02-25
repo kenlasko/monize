@@ -447,14 +447,42 @@ describe("BudgetGeneratorService", () => {
 
       // Expense query: real dining out spending across 3 months
       const mockDirectExpenseData = [
-        { categoryId: "cat-dining", categoryName: "Food: Dining Out", isIncome: false, year: prevYear2, month: prevMonth2, total: "120.00" },
-        { categoryId: "cat-dining", categoryName: "Food: Dining Out", isIncome: false, year: prevYear, month: prevMonth, total: "150.00" },
-        { categoryId: "cat-dining", categoryName: "Food: Dining Out", isIncome: false, year: year1, month: month1 + 1, total: "130.00" },
+        {
+          categoryId: "cat-dining",
+          categoryName: "Food: Dining Out",
+          isIncome: false,
+          year: prevYear2,
+          month: prevMonth2,
+          total: "120.00",
+        },
+        {
+          categoryId: "cat-dining",
+          categoryName: "Food: Dining Out",
+          isIncome: false,
+          year: prevYear,
+          month: prevMonth,
+          total: "150.00",
+        },
+        {
+          categoryId: "cat-dining",
+          categoryName: "Food: Dining Out",
+          isIncome: false,
+          year: year1,
+          month: month1 + 1,
+          total: "130.00",
+        },
       ];
 
       // Income query: a single refund appears for the same expense category
       const mockDirectIncomeData = [
-        { categoryId: "cat-dining", categoryName: "Food: Dining Out", isIncome: false, year: prevYear, month: prevMonth, total: "15.00" },
+        {
+          categoryId: "cat-dining",
+          categoryName: "Food: Dining Out",
+          isIncome: false,
+          year: prevYear,
+          month: prevMonth,
+          total: "15.00",
+        },
       ];
 
       let expenseCallCount = 0;
@@ -476,17 +504,23 @@ describe("BudgetGeneratorService", () => {
           if (isTransferQuery) return Promise.resolve([]);
           if (isIncomeQuery) {
             incomeCallCount++;
-            return Promise.resolve(incomeCallCount === 1 ? mockDirectIncomeData : []);
+            return Promise.resolve(
+              incomeCallCount === 1 ? mockDirectIncomeData : [],
+            );
           }
           expenseCallCount++;
-          return Promise.resolve(expenseCallCount === 1 ? mockDirectExpenseData : []);
+          return Promise.resolve(
+            expenseCallCount === 1 ? mockDirectExpenseData : [],
+          );
         });
 
         return qb;
       });
 
       splitsRepository.createQueryBuilder.mockImplementation(() => {
-        return createMockQueryBuilder({ getRawMany: jest.fn().mockResolvedValue([]) });
+        return createMockQueryBuilder({
+          getRawMany: jest.fn().mockResolvedValue([]),
+        });
       });
 
       const result = await service.generate("user-1", {
@@ -494,7 +528,9 @@ describe("BudgetGeneratorService", () => {
         profile: BudgetProfile.ON_TRACK,
       });
 
-      const dining = result.categories.find((c) => c.categoryName === "Food: Dining Out");
+      const dining = result.categories.find(
+        (c) => c.categoryName === "Food: Dining Out",
+      );
       expect(dining).toBeDefined();
       // The expense data should win — median of ~130 rather than the refund's ~5
       expect(dining!.median).toBeGreaterThanOrEqual(100);

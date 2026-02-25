@@ -45,6 +45,10 @@ export async function proxy(request: NextRequest) {
 
     const headers = new Headers(request.headers);
     headers.delete('host');
+    // Overwrite X-Forwarded-For with the actual connecting client IP
+    // to prevent spoofing via client-supplied headers
+    const clientIp = request.headers.get('x-real-ip') || '127.0.0.1';
+    headers.set('x-forwarded-for', clientIp);
 
     try {
       const response = await fetch(url.toString(), {

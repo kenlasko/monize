@@ -54,8 +54,9 @@ ENV NODE_ENV=production
 COPY --from=deps /app/node_modules ./node_modules
 COPY backend/package*.json ./
 
-# Copy built application from development stage
+# Copy built application from development stage (strip source maps)
 COPY --from=development /app/dist ./dist
+RUN find ./dist -name '*.js.map' -delete
 
 # Copy schema.sql for auto-initialization
 COPY --from=development /app/schema.sql ./schema.sql

@@ -446,7 +446,10 @@ describe("AiInsightsService", () => {
       );
       // Second call: dismissed insights older than 30 days
       expect(mockInsightRepo.delete).toHaveBeenCalledWith(
-        expect.objectContaining({ isDismissed: true, createdAt: expect.anything() }),
+        expect.objectContaining({
+          isDismissed: true,
+          createdAt: expect.anything(),
+        }),
       );
     });
 

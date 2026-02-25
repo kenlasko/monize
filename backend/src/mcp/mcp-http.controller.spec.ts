@@ -30,6 +30,10 @@ describe("McpHttpController", () => {
     controller = module.get<McpHttpController>(McpHttpController);
   });
 
+  afterEach(() => {
+    controller.onModuleDestroy();
+  });
+
   it("should be defined", () => {
     expect(controller).toBeDefined();
   });
@@ -85,6 +89,99 @@ describe("McpHttpController", () => {
       await controller.handlePost(req, res);
 
       expect(res.status).toHaveBeenCalledWith(401);
+    });
+
+    it("should return 404 for an expired session", async () => {
+      patService.validateToken.mockResolvedValue({
+        userId: "user-1",
+        scopes: "read",
+      });
+
+      const sessionId = "expired-post-session";
+      const mockTransport = {
+        sessionId,
+        onclose: null as any,
+        handleRequest: jest.fn(),
+        close: jest.fn().mockResolvedValue(undefined),
+      };
+
+      (controller as any).transports.set(sessionId, mockTransport);
+      (controller as any).servers.set(sessionId, {});
+      (controller as any).sessionUsers.set(sessionId, {
+        userId: "user-1",
+        scopes: "read",
+      });
+      (controller as any).sessionCreatedAt.set(
+        sessionId,
+        Date.now() - 3_600_001,
+      );
+
+      const req = {
+        headers: {
+          authorization: "Bearer pat_test",
+          "mcp-session-id": sessionId,
+        },
+        body: {},
+      } as any;
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      } as any;
+
+      await controller.handlePost(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          error: expect.objectContaining({ message: "Session expired" }),
+        }),
+      );
+    });
+
+    it("should return 429 when per-user session limit is reached", async () => {
+      patService.validateToken.mockResolvedValue({
+        userId: "user-flood",
+        scopes: "read",
+      });
+
+      // Populate 10 active sessions for the same user
+      for (let i = 0; i < 10; i++) {
+        const sid = `flood-session-${i}`;
+        const mockTransport = {
+          sessionId: sid,
+          onclose: null as any,
+          handleRequest: jest.fn(),
+          close: jest.fn().mockResolvedValue(undefined),
+        };
+        (controller as any).transports.set(sid, mockTransport);
+        (controller as any).servers.set(sid, {});
+        (controller as any).sessionUsers.set(sid, {
+          userId: "user-flood",
+          scopes: "read",
+        });
+        (controller as any).sessionCreatedAt.set(sid, Date.now());
+      }
+
+      // Attempt to create an 11th session (POST without mcp-session-id)
+      const req = {
+        headers: { authorization: "Bearer pat_test" },
+        body: {},
+      } as any;
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      } as any;
+
+      await controller.handlePost(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(429);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          error: expect.objectContaining({
+            message: "Too many active sessions. Close existing sessions first.",
+          }),
+        }),
+      );
     });
   });
 
@@ -147,6 +244,52 @@ describe("McpHttpController", () => {
       expect(res.status).toHaveBeenCalledWith(404);
     });
 
+    it("should return 404 for an expired session", async () => {
+      patService.validateToken.mockResolvedValue({
+        userId: "user-1",
+        scopes: "read",
+      });
+
+      const sessionId = "expired-get-session";
+      const mockTransport = {
+        sessionId,
+        onclose: null as any,
+        handleRequest: jest.fn(),
+        close: jest.fn().mockResolvedValue(undefined),
+      };
+
+      (controller as any).transports.set(sessionId, mockTransport);
+      (controller as any).servers.set(sessionId, {});
+      (controller as any).sessionUsers.set(sessionId, {
+        userId: "user-1",
+        scopes: "read",
+      });
+      (controller as any).sessionCreatedAt.set(
+        sessionId,
+        Date.now() - 3_600_001,
+      );
+
+      const req = {
+        headers: {
+          authorization: "Bearer pat_test",
+          "mcp-session-id": sessionId,
+        },
+      } as any;
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      } as any;
+
+      await controller.handleGet(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          error: expect.objectContaining({ message: "Session expired" }),
+        }),
+      );
+    });
+
     it("should reject when session user does not match authenticated user", async () => {
       // First, set up a session by calling handlePost with user-1
       patService.validateToken.mockResolvedValue({
@@ -169,6 +312,7 @@ describe("McpHttpController", () => {
         userId: "user-1",
         scopes: "read",
       });
+      (controller as any).sessionCreatedAt.set(sessionId, Date.now());
 
       // Now try GET with a different user
       patService.validateToken.mockResolvedValue({
@@ -235,6 +379,52 @@ describe("McpHttpController", () => {
       expect(res.status).toHaveBeenCalledWith(400);
     });
 
+    it("should return 404 for an expired session", async () => {
+      patService.validateToken.mockResolvedValue({
+        userId: "user-1",
+        scopes: "read",
+      });
+
+      const sessionId = "expired-delete-session";
+      const mockTransport = {
+        sessionId,
+        onclose: null as any,
+        handleRequest: jest.fn(),
+        close: jest.fn().mockResolvedValue(undefined),
+      };
+
+      (controller as any).transports.set(sessionId, mockTransport);
+      (controller as any).servers.set(sessionId, {});
+      (controller as any).sessionUsers.set(sessionId, {
+        userId: "user-1",
+        scopes: "read",
+      });
+      (controller as any).sessionCreatedAt.set(
+        sessionId,
+        Date.now() - 3_600_001,
+      );
+
+      const req = {
+        headers: {
+          authorization: "Bearer pat_test",
+          "mcp-session-id": sessionId,
+        },
+      } as any;
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      } as any;
+
+      await controller.handleDelete(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          error: expect.objectContaining({ message: "Session expired" }),
+        }),
+      );
+    });
+
     it("should reject when session user does not match authenticated user", async () => {
       patService.validateToken.mockResolvedValue({
         userId: "user-1",
@@ -256,6 +446,7 @@ describe("McpHttpController", () => {
         userId: "user-1",
         scopes: "read",
       });
+      (controller as any).sessionCreatedAt.set(sessionId, Date.now());
 
       // Now try DELETE with a different user
       patService.validateToken.mockResolvedValue({

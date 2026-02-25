@@ -76,7 +76,7 @@ describe("McpAccountsTools", () => {
 
       const result = await handlers["get_accounts"]({}, { sessionId: "s1" });
       expect(result.isError).toBe(true);
-      expect(result.content[0].text).toContain("DB error");
+      expect(result.content[0].text).toContain("An error occurred");
     });
   });
 

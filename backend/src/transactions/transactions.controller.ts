@@ -27,6 +27,7 @@ import { CreateTransactionDto } from "./dto/create-transaction.dto";
 import { UpdateTransactionDto } from "./dto/update-transaction.dto";
 import { CreateTransactionSplitDto } from "./dto/create-transaction-split.dto";
 import { CreateTransferDto } from "./dto/create-transfer.dto";
+import { UpdateTransferDto } from "./dto/update-transfer.dto";
 import { BulkReconcileDto } from "./dto/bulk-reconcile.dto";
 import { BulkUpdateDto } from "./dto/bulk-update.dto";
 import { MarkClearedDto } from "./dto/mark-cleared.dto";
@@ -765,7 +766,7 @@ export class TransactionsController {
   updateTransfer(
     @Request() req,
     @Param("id", ParseUUIDPipe) id: string,
-    @Body() updateTransferDto: Partial<CreateTransferDto>,
+    @Body() updateTransferDto: UpdateTransferDto,
   ) {
     return this.transactionsService.updateTransfer(
       req.user.id,
