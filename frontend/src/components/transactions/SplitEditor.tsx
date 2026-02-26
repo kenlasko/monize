@@ -437,17 +437,17 @@ export function SplitEditor({
           <thead className="bg-gray-50 dark:bg-gray-800 rounded-t-lg">
             <tr>
               {supportsTransfers && (
-                <th className="px-1 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase" style={{ width: '13%' }}>
+                <th className="px-1 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase" style={{ width: '14%' }}>
                   Type
                 </th>
               )}
               <th className="px-1 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase" style={{ width: supportsTransfers ? '34%' : '45%' }}>
                 {supportsTransfers ? 'Category / Account' : 'Category'}
               </th>
-              <th className="px-1 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase" style={{ width: supportsTransfers ? '15%' : '15%' }}>
+              <th className="px-1 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase" style={{ width: supportsTransfers ? '17%' : '15%' }}>
                 Amount
               </th>
-              <th className="px-1 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase" style={{ width: '31%' }}>
+              <th className="px-1 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase" style={{ width: '28%' }}>
                 Memo
               </th>
               <th className="px-1 py-2" style={{ width: '5%' }}></th>
