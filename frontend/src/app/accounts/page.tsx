@@ -142,7 +142,7 @@ function AccountsContent() {
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 sm:gap-6 mb-4 sm:mb-6">
           <SummaryCard
-            label="Total Accounts"
+            label="Total Active Accounts"
             value={summary.accountCount}
             icon={SummaryIcons.accounts}
           />

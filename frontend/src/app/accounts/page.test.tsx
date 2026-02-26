@@ -215,7 +215,7 @@ describe('AccountsPage', () => {
   it('renders summary cards', async () => {
     render(<AccountsPage />);
     await waitFor(() => {
-      expect(screen.getByTestId('summary-Total Accounts')).toBeInTheDocument();
+      expect(screen.getByTestId('summary-Total Active Accounts')).toBeInTheDocument();
     });
   });
 
@@ -271,7 +271,7 @@ describe('AccountsPage', () => {
     render(<AccountsPage />);
     await waitFor(() => {
       // 4 active accounts (excluding the closed one)
-      expect(screen.getByTestId('summary-Total Accounts')).toHaveTextContent('4');
+      expect(screen.getByTestId('summary-Total Active Accounts')).toHaveTextContent('4');
     });
   });
 

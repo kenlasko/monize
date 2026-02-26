@@ -6,9 +6,9 @@ import { useRouter, usePathname } from 'next/navigation';
 const SWIPE_PAGES = [
   { href: '/dashboard', label: 'Dashboard' },
   { href: '/transactions', label: 'Transactions' },
-  { href: '/accounts', label: 'Accounts' },
-  { href: '/investments', label: 'Investments' },
   { href: '/bills', label: 'Bills & Deposits' },
+  { href: '/investments', label: 'Investments' },
+  { href: '/accounts', label: 'Accounts' },
   { href: '/budgets', label: 'Budgets' },
   { href: '/reports', label: 'Reports' },
 ] as const;
