@@ -7,6 +7,7 @@ import {
   IsDateString,
   IsEnum,
   IsArray,
+  ArrayMaxSize,
   ValidateNested,
   Min,
   MaxLength,
@@ -104,6 +105,7 @@ export class CreateScheduledTransactionDto {
 
   @IsOptional()
   @IsArray()
+  @ArrayMaxSize(100)
   @ValidateNested({ each: true })
   @Type(() => CreateScheduledTransactionSplitDto)
   splits?: CreateScheduledTransactionSplitDto[];

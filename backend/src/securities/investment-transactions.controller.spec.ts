@@ -113,15 +113,15 @@ describe("InvestmentTransactionsController", () => {
     });
 
     it("rejects invalid UUIDs in accountIds", () => {
-      expect(() =>
-        controller.findAll(req, "not-a-uuid"),
-      ).toThrow(BadRequestException);
+      expect(() => controller.findAll(req, "not-a-uuid")).toThrow(
+        BadRequestException,
+      );
     });
 
     it("rejects invalid date format for startDate", () => {
-      expect(() =>
-        controller.findAll(req, undefined, "01-01-2025"),
-      ).toThrow(BadRequestException);
+      expect(() => controller.findAll(req, undefined, "01-01-2025")).toThrow(
+        BadRequestException,
+      );
     });
 
     it("rejects invalid page parameter", () => {
@@ -132,7 +132,14 @@ describe("InvestmentTransactionsController", () => {
 
     it("rejects limit exceeding 200", () => {
       expect(() =>
-        controller.findAll(req, undefined, undefined, undefined, undefined, "500"),
+        controller.findAll(
+          req,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          "500",
+        ),
       ).toThrow(BadRequestException);
     });
 
@@ -179,10 +186,7 @@ describe("InvestmentTransactionsController", () => {
 
       await controller.getSummary(req, `${UUID1},${UUID2}`);
 
-      expect(service.getSummary).toHaveBeenCalledWith("user-1", [
-        UUID1,
-        UUID2,
-      ]);
+      expect(service.getSummary).toHaveBeenCalledWith("user-1", [UUID1, UUID2]);
     });
   });
 

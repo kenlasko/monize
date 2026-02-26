@@ -118,14 +118,10 @@ export class InvestmentTransactionsController {
     }
 
     if (startDate !== undefined && !dateRegex.test(startDate)) {
-      throw new BadRequestException(
-        "startDate must be in YYYY-MM-DD format",
-      );
+      throw new BadRequestException("startDate must be in YYYY-MM-DD format");
     }
     if (endDate !== undefined && !dateRegex.test(endDate)) {
-      throw new BadRequestException(
-        "endDate must be in YYYY-MM-DD format",
-      );
+      throw new BadRequestException("endDate must be in YYYY-MM-DD format");
     }
 
     if (page !== undefined) {

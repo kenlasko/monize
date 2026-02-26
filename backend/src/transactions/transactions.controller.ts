@@ -26,6 +26,7 @@ import { TransactionsService } from "./transactions.service";
 import { CreateTransactionDto } from "./dto/create-transaction.dto";
 import { UpdateTransactionDto } from "./dto/update-transaction.dto";
 import { CreateTransactionSplitDto } from "./dto/create-transaction-split.dto";
+import { UpdateSplitsDto } from "./dto/update-splits.dto";
 import { CreateTransferDto } from "./dto/create-transfer.dto";
 import { UpdateTransferDto } from "./dto/update-transfer.dto";
 import { BulkReconcileDto } from "./dto/bulk-reconcile.dto";
@@ -477,11 +478,19 @@ export class TransactionsController {
     @Query("statementDate") statementDate: string,
     @Query("statementBalance") statementBalance: string,
   ) {
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!statementDate || !dateRegex.test(statementDate)) {
+      throw new BadRequestException("statementDate must be YYYY-MM-DD");
+    }
+    const balance = parseFloat(statementBalance);
+    if (isNaN(balance)) {
+      throw new BadRequestException("statementBalance must be a number");
+    }
     return this.transactionsService.getReconciliationData(
       req.user.id,
       accountId,
       statementDate,
-      parseFloat(statementBalance),
+      balance,
     );
   }
 
@@ -693,9 +702,9 @@ export class TransactionsController {
   updateSplits(
     @Request() req,
     @Param("id", ParseUUIDPipe) id: string,
-    @Body() splits: CreateTransactionSplitDto[],
+    @Body() dto: UpdateSplitsDto,
   ) {
-    return this.transactionsService.updateSplits(req.user.id, id, splits);
+    return this.transactionsService.updateSplits(req.user.id, id, dto.splits);
   }
 
   @Post(":id/splits")

@@ -10,6 +10,7 @@ import {
   Min,
   Max,
   IsArray,
+  ArrayMaxSize,
   ValidateNested,
 } from "class-validator";
 import { Type } from "class-transformer";
@@ -123,6 +124,7 @@ export class CreateTransactionDto {
   })
   @IsOptional()
   @IsArray()
+  @ArrayMaxSize(100)
   @ValidateNested({ each: true })
   @Type(() => CreateTransactionSplitDto)
   splits?: CreateTransactionSplitDto[];

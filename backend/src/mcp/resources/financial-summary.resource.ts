@@ -42,41 +42,52 @@ export class McpFinancialSummaryResource {
           };
         }
 
-        const now = new Date();
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-          .toISOString()
-          .split("T")[0];
-        const endDate = now.toISOString().split("T")[0];
+        try {
+          const now = new Date();
+          const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+            .toISOString()
+            .split("T")[0];
+          const endDate = now.toISOString().split("T")[0];
 
-        const [accountSummary, monthSummary] = await Promise.all([
-          this.accountsService.getSummary(ctx.userId),
-          this.analyticsService.getSummary(
-            ctx.userId,
-            undefined,
-            startOfMonth,
-            endDate,
-          ),
-        ]);
+          const [accountSummary, monthSummary] = await Promise.all([
+            this.accountsService.getSummary(ctx.userId),
+            this.analyticsService.getSummary(
+              ctx.userId,
+              undefined,
+              startOfMonth,
+              endDate,
+            ),
+          ]);
 
-        return {
-          contents: [
-            {
-              uri: "monize://financial-summary",
-              mimeType: "application/json",
-              text: JSON.stringify(
-                {
-                  netWorth: accountSummary,
-                  currentMonth: {
-                    period: { startDate: startOfMonth, endDate },
-                    ...monthSummary,
+          return {
+            contents: [
+              {
+                uri: "monize://financial-summary",
+                mimeType: "application/json",
+                text: JSON.stringify(
+                  {
+                    netWorth: accountSummary,
+                    currentMonth: {
+                      period: { startDate: startOfMonth, endDate },
+                      ...monthSummary,
+                    },
                   },
-                },
-                null,
-                2,
-              ),
-            },
-          ],
-        };
+                  null,
+                  2,
+                ),
+              },
+            ],
+          };
+        } catch {
+          return {
+            contents: [
+              {
+                uri: "monize://financial-summary",
+                text: "Error: An error occurred while loading financial summary",
+              },
+            ],
+          };
+        }
       },
     );
   }

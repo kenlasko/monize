@@ -1,4 +1,4 @@
-import { IsArray, IsUUID, ValidateNested } from "class-validator";
+import { IsArray, ArrayMaxSize, IsUUID, ValidateNested } from "class-validator";
 import { Type } from "class-transformer";
 import { ApiProperty } from "@nestjs/swagger";
 
@@ -18,6 +18,7 @@ export class ApplyCategorySuggestionsDto {
     type: [CategorySuggestionAssignmentDto],
   })
   @IsArray()
+  @ArrayMaxSize(500)
   @ValidateNested({ each: true })
   @Type(() => CategorySuggestionAssignmentDto)
   assignments: CategorySuggestionAssignmentDto[];

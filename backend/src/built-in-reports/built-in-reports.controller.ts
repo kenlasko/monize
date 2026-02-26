@@ -127,10 +127,8 @@ export class BuiltInReportsController {
     @Request() req,
     @Query("yearsToCompare") yearsToCompare: string = "2",
   ): Promise<YearOverYearResponse> {
-    return this.reportsService.getYearOverYear(
-      req.user.id,
-      parseInt(yearsToCompare, 10) || 2,
-    );
+    const years = Math.min(Math.max(parseInt(yearsToCompare, 10) || 2, 1), 10);
+    return this.reportsService.getYearOverYear(req.user.id, years);
   }
 
   @Get("weekend-vs-weekday")
@@ -154,10 +152,11 @@ export class BuiltInReportsController {
     @Request() req,
     @Query("threshold") threshold: string = "2",
   ): Promise<SpendingAnomaliesResponse> {
-    return this.reportsService.getSpendingAnomalies(
-      req.user.id,
-      parseFloat(threshold) || 2,
+    const safeThreshold = Math.min(
+      Math.max(parseFloat(threshold) || 2, 0.5),
+      10,
     );
+    return this.reportsService.getSpendingAnomalies(req.user.id, safeThreshold);
   }
 
   @Get("tax-summary")
@@ -167,10 +166,11 @@ export class BuiltInReportsController {
     @Request() req,
     @Query("year") year: string,
   ): Promise<TaxSummaryResponse> {
-    return this.reportsService.getTaxSummary(
-      req.user.id,
-      parseInt(year, 10) || new Date().getFullYear(),
+    const safeYear = Math.min(
+      Math.max(parseInt(year, 10) || new Date().getFullYear(), 1900),
+      2100,
     );
+    return this.reportsService.getTaxSummary(req.user.id, safeYear);
   }
 
   @Get("recurring-expenses")
@@ -180,9 +180,13 @@ export class BuiltInReportsController {
     @Request() req,
     @Query("minOccurrences") minOccurrences: string = "3",
   ): Promise<RecurringExpensesResponse> {
+    const safeMinOccurrences = Math.min(
+      Math.max(parseInt(minOccurrences, 10) || 3, 1),
+      100,
+    );
     return this.reportsService.getRecurringExpenses(
       req.user.id,
-      parseInt(minOccurrences, 10) || 3,
+      safeMinOccurrences,
     );
   }
 

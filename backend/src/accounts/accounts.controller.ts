@@ -11,6 +11,7 @@ import {
   Query,
   ParseBoolPipe,
   ParseUUIDPipe,
+  BadRequestException,
 } from "@nestjs/common";
 import {
   ApiTags,
@@ -97,6 +98,11 @@ export class AccountsController {
     @Query("endDate") endDate?: string,
     @Query("accountIds") accountIds?: string,
   ) {
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (startDate && !dateRegex.test(startDate))
+      throw new BadRequestException("startDate must be YYYY-MM-DD");
+    if (endDate && !dateRegex.test(endDate))
+      throw new BadRequestException("endDate must be YYYY-MM-DD");
     const ids = accountIds ? accountIds.split(",").filter(Boolean) : undefined;
     return this.accountsService.getDailyBalances(
       req.user.id,

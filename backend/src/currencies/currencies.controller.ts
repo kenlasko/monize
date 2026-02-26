@@ -20,6 +20,7 @@ import {
   ApiQuery,
 } from "@nestjs/swagger";
 import { AuthGuard } from "@nestjs/passport";
+import { ParseCurrencyCodePipe } from "../common/pipes/parse-currency-code.pipe";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
 import {
@@ -157,7 +158,9 @@ export class CurrenciesController {
   @Get(":code")
   @ApiOperation({ summary: "Get a single currency by code" })
   @ApiResponse({ status: 200, description: "Currency details", type: Currency })
-  findOne(@Param("code") code: string): Promise<Currency> {
+  findOne(
+    @Param("code", ParseCurrencyCodePipe) code: string,
+  ): Promise<Currency> {
     return this.currenciesService.findOne(code);
   }
 
@@ -176,7 +179,7 @@ export class CurrenciesController {
   @ApiOperation({ summary: "Update a currency" })
   @ApiResponse({ status: 200, description: "Currency updated", type: Currency })
   update(
-    @Param("code") code: string,
+    @Param("code", ParseCurrencyCodePipe) code: string,
     @Body() dto: UpdateCurrencyDto,
   ): Promise<Currency> {
     return this.currenciesService.update(code, dto);
@@ -189,7 +192,9 @@ export class CurrenciesController {
     description: "Currency deactivated",
     type: Currency,
   })
-  deactivate(@Param("code") code: string): Promise<Currency> {
+  deactivate(
+    @Param("code", ParseCurrencyCodePipe) code: string,
+  ): Promise<Currency> {
     return this.currenciesService.deactivate(code);
   }
 
@@ -200,7 +205,9 @@ export class CurrenciesController {
     description: "Currency activated",
     type: Currency,
   })
-  activate(@Param("code") code: string): Promise<Currency> {
+  activate(
+    @Param("code", ParseCurrencyCodePipe) code: string,
+  ): Promise<Currency> {
     return this.currenciesService.activate(code);
   }
 
@@ -211,7 +218,7 @@ export class CurrenciesController {
     status: 409,
     description: "Currency is in use and cannot be deleted",
   })
-  remove(@Param("code") code: string): Promise<void> {
+  remove(@Param("code", ParseCurrencyCodePipe) code: string): Promise<void> {
     return this.currenciesService.remove(code);
   }
 }

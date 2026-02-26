@@ -34,20 +34,31 @@ export class McpAccountListResource {
           };
         }
 
-        const [accounts, summary] = await Promise.all([
-          this.accountsService.findAll(ctx.userId, false),
-          this.accountsService.getSummary(ctx.userId),
-        ]);
+        try {
+          const [accounts, summary] = await Promise.all([
+            this.accountsService.findAll(ctx.userId, false),
+            this.accountsService.getSummary(ctx.userId),
+          ]);
 
-        return {
-          contents: [
-            {
-              uri: "monize://accounts",
-              mimeType: "application/json",
-              text: JSON.stringify({ accounts, summary }, null, 2),
-            },
-          ],
-        };
+          return {
+            contents: [
+              {
+                uri: "monize://accounts",
+                mimeType: "application/json",
+                text: JSON.stringify({ accounts, summary }, null, 2),
+              },
+            ],
+          };
+        } catch {
+          return {
+            contents: [
+              {
+                uri: "monize://accounts",
+                text: "Error: An error occurred while loading accounts",
+              },
+            ],
+          };
+        }
       },
     );
   }

@@ -5,6 +5,7 @@ import {
   Query,
   UseGuards,
   Request,
+  BadRequestException,
 } from "@nestjs/common";
 import { AuthGuard } from "@nestjs/passport";
 import {
@@ -34,6 +35,11 @@ export class NetWorthController {
     @Query("startDate") startDate?: string,
     @Query("endDate") endDate?: string,
   ) {
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (startDate && !dateRegex.test(startDate))
+      throw new BadRequestException("startDate must be YYYY-MM-DD");
+    if (endDate && !dateRegex.test(endDate))
+      throw new BadRequestException("endDate must be YYYY-MM-DD");
     return this.netWorthService.getMonthlyNetWorth(
       req.user.id,
       startDate,
@@ -66,13 +72,31 @@ export class NetWorthController {
     @Query("accountIds") accountIds?: string,
     @Query("displayCurrency") displayCurrency?: string,
   ) {
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (startDate && !dateRegex.test(startDate))
+      throw new BadRequestException("startDate must be YYYY-MM-DD");
+    if (endDate && !dateRegex.test(endDate))
+      throw new BadRequestException("endDate must be YYYY-MM-DD");
+    const uuidRegex =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     const ids = accountIds ? accountIds.split(",").filter(Boolean) : undefined;
+    if (ids) {
+      for (const id of ids) {
+        if (!uuidRegex.test(id))
+          throw new BadRequestException(
+            "accountIds must be comma-separated UUIDs",
+          );
+      }
+    }
+    const safeCurrency = displayCurrency
+      ? displayCurrency.slice(0, 3).toUpperCase()
+      : undefined;
     return this.netWorthService.getMonthlyInvestments(
       req.user.id,
       startDate,
       endDate,
       ids,
-      displayCurrency,
+      safeCurrency,
     );
   }
 

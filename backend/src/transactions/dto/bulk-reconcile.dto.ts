@@ -1,4 +1,4 @@
-import { IsArray, IsDateString, IsUUID } from "class-validator";
+import { IsArray, ArrayMaxSize, IsDateString, IsUUID } from "class-validator";
 import { ApiProperty } from "@nestjs/swagger";
 
 export class BulkReconcileDto {
@@ -7,6 +7,7 @@ export class BulkReconcileDto {
     type: [String],
   })
   @IsArray()
+  @ArrayMaxSize(1000)
   @IsUUID("4", { each: true })
   transactionIds: string[];
 

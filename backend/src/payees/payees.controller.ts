@@ -71,7 +71,9 @@ export class PayeesController {
     @Query("q") query: string,
     @Query("limit", new DefaultValuePipe(10), ParseIntPipe) limit: number,
   ): Promise<Payee[]> {
-    return this.payeesService.search(req.user.id, query, limit);
+    const safeQuery = query ? query.slice(0, 200) : "";
+    const safeLimit = Math.min(Math.max(limit, 1), 200);
+    return this.payeesService.search(req.user.id, safeQuery, safeLimit);
   }
 
   @Get("autocomplete")
@@ -87,7 +89,8 @@ export class PayeesController {
     type: [Payee],
   })
   autocomplete(@Request() req, @Query("q") query: string): Promise<Payee[]> {
-    return this.payeesService.autocomplete(req.user.id, query);
+    const safeQuery = query ? query.slice(0, 200) : "";
+    return this.payeesService.autocomplete(req.user.id, safeQuery);
   }
 
   @Get("most-used")
@@ -103,7 +106,8 @@ export class PayeesController {
     @Request() req,
     @Query("limit", new DefaultValuePipe(10), ParseIntPipe) limit: number,
   ): Promise<Payee[]> {
-    return this.payeesService.getMostUsed(req.user.id, limit);
+    const safeLimit = Math.min(Math.max(limit, 1), 200);
+    return this.payeesService.getMostUsed(req.user.id, safeLimit);
   }
 
   @Get("recently-used")
@@ -123,7 +127,8 @@ export class PayeesController {
     @Request() req,
     @Query("limit", new DefaultValuePipe(10), ParseIntPipe) limit: number,
   ): Promise<Payee[]> {
-    return this.payeesService.getRecentlyUsed(req.user.id, limit);
+    const safeLimit = Math.min(Math.max(limit, 1), 200);
+    return this.payeesService.getRecentlyUsed(req.user.id, safeLimit);
   }
 
   @Get("summary")

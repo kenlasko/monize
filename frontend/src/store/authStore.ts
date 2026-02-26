@@ -53,6 +53,10 @@ export const useAuthStore = create<AuthState>()(
       logout: () => {
         // Backend clears httpOnly cookies via /auth/logout; we only clear Zustand state
         clearAllCache();
+        // SECURITY: Clear preferences store to remove userId from localStorage
+        import('@/store/preferencesStore').then(({ usePreferencesStore }) => {
+          usePreferencesStore.getState().clearPreferences();
+        });
         set({
           user: null,
           token: null,

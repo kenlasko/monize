@@ -34,17 +34,28 @@ export class McpCategoryTreeResource {
           };
         }
 
-        const tree = await this.categoriesService.getTree(ctx.userId);
+        try {
+          const tree = await this.categoriesService.getTree(ctx.userId);
 
-        return {
-          contents: [
-            {
-              uri: "monize://categories",
-              mimeType: "application/json",
-              text: JSON.stringify(tree, null, 2),
-            },
-          ],
-        };
+          return {
+            contents: [
+              {
+                uri: "monize://categories",
+                mimeType: "application/json",
+                text: JSON.stringify(tree, null, 2),
+              },
+            ],
+          };
+        } catch {
+          return {
+            contents: [
+              {
+                uri: "monize://categories",
+                text: "Error: An error occurred while loading categories",
+              },
+            ],
+          };
+        }
       },
     );
   }

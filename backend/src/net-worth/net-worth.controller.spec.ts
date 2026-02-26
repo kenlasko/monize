@@ -66,7 +66,7 @@ describe("NetWorthController", () => {
         mockReq,
         "2024-01-01",
         "2024-12-31",
-        "acc-1,acc-2",
+        "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d,b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e",
         undefined,
       );
 
@@ -75,7 +75,10 @@ describe("NetWorthController", () => {
         "user-1",
         "2024-01-01",
         "2024-12-31",
-        ["acc-1", "acc-2"],
+        [
+          "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+          "b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e",
+        ],
         undefined,
       );
     });

@@ -39,56 +39,67 @@ export class McpRecentTransactionsResource {
           };
         }
 
-        const endDate = new Date().toISOString().split("T")[0];
-        const startDate = new Date();
-        startDate.setDate(startDate.getDate() - 30);
-        const startDateStr = startDate.toISOString().split("T")[0];
+        try {
+          const endDate = new Date().toISOString().split("T")[0];
+          const startDate = new Date();
+          startDate.setDate(startDate.getDate() - 30);
+          const startDateStr = startDate.toISOString().split("T")[0];
 
-        const [result, summary] = await Promise.all([
-          this.transactionsService.findAll(
-            ctx.userId,
-            undefined,
-            startDateStr,
-            endDate,
-            undefined,
-            undefined,
-            1,
-            100,
-          ),
-          this.analyticsService.getSummary(
-            ctx.userId,
-            undefined,
-            startDateStr,
-            endDate,
-          ),
-        ]);
+          const [result, summary] = await Promise.all([
+            this.transactionsService.findAll(
+              ctx.userId,
+              undefined,
+              startDateStr,
+              endDate,
+              undefined,
+              undefined,
+              1,
+              100,
+            ),
+            this.analyticsService.getSummary(
+              ctx.userId,
+              undefined,
+              startDateStr,
+              endDate,
+            ),
+          ]);
 
-        return {
-          contents: [
-            {
-              uri: "monize://recent-transactions",
-              mimeType: "application/json",
-              text: JSON.stringify(
-                {
-                  period: { startDate: startDateStr, endDate },
-                  summary,
-                  recentTransactions: result.data
-                    .slice(0, 50)
-                    .map((t: any) => ({
-                      date: t.transactionDate,
-                      payeeName: t.payeeName,
-                      categoryName: t.category?.name,
-                      amount: t.amount,
-                      accountName: t.account?.name,
-                    })),
-                  total: result.pagination.total,
-                },
-                null,
-                2,
-              ),
-            },
-          ],
-        };
+          return {
+            contents: [
+              {
+                uri: "monize://recent-transactions",
+                mimeType: "application/json",
+                text: JSON.stringify(
+                  {
+                    period: { startDate: startDateStr, endDate },
+                    summary,
+                    recentTransactions: result.data
+                      .slice(0, 50)
+                      .map((t: any) => ({
+                        date: t.transactionDate,
+                        payeeName: t.payeeName,
+                        categoryName: t.category?.name,
+                        amount: t.amount,
+                        accountName: t.account?.name,
+                      })),
+                    total: result.pagination.total,
+                  },
+                  null,
+                  2,
+                ),
+              },
+            ],
+          };
+        } catch {
+          return {
+            contents: [
+              {
+                uri: "monize://recent-transactions",
+                text: "Error: An error occurred while loading recent transactions",
+              },
+            ],
+          };
+        }
       },
     );
   }

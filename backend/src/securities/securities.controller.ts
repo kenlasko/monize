@@ -20,6 +20,7 @@ import {
   ApiQuery,
 } from "@nestjs/swagger";
 import { AuthGuard } from "@nestjs/passport";
+import { ParseSymbolPipe } from "../common/pipes/parse-symbol.pipe";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
 import { SecuritiesService } from "./securities.service";
@@ -85,7 +86,8 @@ export class SecuritiesController {
   @ApiQuery({ name: "q", required: true, description: "Search query" })
   @ApiResponse({ status: 200, description: "Search results", type: [Security] })
   search(@Req() req, @Query("q") query: string): Promise<Security[]> {
-    return this.securitiesService.search(req.user.id, query);
+    const safeQuery = query ? query.slice(0, 200) : "";
+    return this.securitiesService.search(req.user.id, safeQuery);
   }
 
   @Get("lookup")
@@ -111,7 +113,8 @@ export class SecuritiesController {
     },
   })
   lookup(@Query("q") query: string): Promise<SecurityLookupResult | null> {
-    return this.securityPriceService.lookupSecurity(query);
+    const safeQuery = query ? query.slice(0, 200) : "";
+    return this.securityPriceService.lookupSecurity(safeQuery);
   }
 
   @Get(":id")
@@ -129,7 +132,10 @@ export class SecuritiesController {
   @ApiOperation({ summary: "Get a security by symbol" })
   @ApiResponse({ status: 200, description: "Security details", type: Security })
   @ApiResponse({ status: 404, description: "Security not found" })
-  findBySymbol(@Req() req, @Param("symbol") symbol: string): Promise<Security> {
+  findBySymbol(
+    @Req() req,
+    @Param("symbol", ParseSymbolPipe) symbol: string,
+  ): Promise<Security> {
     return this.securitiesService.findBySymbol(req.user.id, symbol);
   }
 

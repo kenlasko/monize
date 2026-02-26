@@ -12,6 +12,7 @@ import {
   IsNumber,
   Min,
   Max,
+  ArrayMaxSize,
 } from "class-validator";
 import { Type } from "class-transformer";
 
@@ -184,6 +185,7 @@ export class ImportQifDto {
 
   @ApiProperty({ description: "Category mappings", type: [CategoryMappingDto] })
   @IsArray()
+  @ArrayMaxSize(500)
   @ValidateNested({ each: true })
   @Type(() => CategoryMappingDto)
   categoryMappings: CategoryMappingDto[];
@@ -193,6 +195,7 @@ export class ImportQifDto {
     type: [AccountMappingDto],
   })
   @IsArray()
+  @ArrayMaxSize(500)
   @ValidateNested({ each: true })
   @Type(() => AccountMappingDto)
   accountMappings: AccountMappingDto[];
@@ -203,6 +206,7 @@ export class ImportQifDto {
   })
   @IsOptional()
   @IsArray()
+  @ArrayMaxSize(500)
   @ValidateNested({ each: true })
   @Type(() => SecurityMappingDto)
   securityMappings?: SecurityMappingDto[];

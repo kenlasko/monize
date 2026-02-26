@@ -556,11 +556,9 @@ describe("TransactionsController", () => {
       const expected = [{ id: "split-1" }, { id: "split-2" }];
       mockService.updateSplits.mockResolvedValue(expected);
 
-      const result = await controller.updateSplits(
-        mockReq,
-        "tx-1",
-        splits as any,
-      );
+      const result = await controller.updateSplits(mockReq, "tx-1", {
+        splits,
+      } as any);
 
       expect(result).toEqual(expected);
       expect(mockService.updateSplits).toHaveBeenCalledWith(

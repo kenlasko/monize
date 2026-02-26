@@ -109,9 +109,7 @@ export class BillReminderService {
           return {
             payee: b.payee?.name || b.payeeName || b.name,
             amount: Math.abs(Number(ov?.amount ?? b.amount)),
-            dueDate: ov
-              ? String(ov.overrideDate).split("T")[0]
-              : dueDateStr,
+            dueDate: ov ? String(ov.overrideDate).split("T")[0] : dueDateStr,
             currencyCode: b.currencyCode,
           };
         });

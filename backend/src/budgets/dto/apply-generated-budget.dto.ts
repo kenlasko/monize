@@ -15,6 +15,7 @@ import {
   IsObject,
   ValidateNested,
   ArrayMinSize,
+  ArrayMaxSize,
 } from "class-validator";
 import { Type } from "class-transformer";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
@@ -208,6 +209,7 @@ export class ApplyGeneratedBudgetDto {
   })
   @IsArray()
   @ArrayMinSize(1)
+  @ArrayMaxSize(500)
   @ValidateNested({ each: true })
   @Type(() => ApplyBudgetCategoryDto)
   categories: ApplyBudgetCategoryDto[];
