@@ -1,6 +1,6 @@
 {
   "name": "monize-frontend",
-  "version": "1.3.39",
+  "version": "1.3.40",
   "private": true,
   "scripts": {
     "dev": "next dev",
