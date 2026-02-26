@@ -10,6 +10,7 @@ import {
   toolError,
   safeToolError,
 } from "../mcp-context";
+import { formatDateYMD } from "../../common/date-utils";
 
 @Injectable()
 export class McpNetWorthTools {
@@ -68,8 +69,8 @@ export class McpNetWorthTools {
 
           const history = await this.netWorthService.getMonthlyNetWorth(
             ctx.userId,
-            startDate.toISOString().split("T")[0],
-            endDate.toISOString().split("T")[0],
+            formatDateYMD(startDate),
+            formatDateYMD(endDate),
           );
           return toolResult(history);
         } catch (err: unknown) {

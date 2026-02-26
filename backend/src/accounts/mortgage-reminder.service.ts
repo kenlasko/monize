@@ -3,6 +3,7 @@ import { Cron, CronExpression } from "@nestjs/schedule";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository, IsNull, Not } from "typeorm";
 import { Account, AccountType } from "./entities/account.entity";
+import { formatDateYMD } from "../common/date-utils";
 
 /**
  * Service for handling mortgage term renewal reminders
@@ -38,7 +39,7 @@ export class MortgageReminderService {
       const daysUntilRenewal = this.getDaysUntilDate(mortgage.termEndDate!);
       this.logger.warn(
         `Mortgage renewal reminder: ${mortgage.name} (User: ${mortgage.userId}) ` +
-          `- Term ends in ${daysUntilRenewal} days on ${mortgage.termEndDate!.toISOString().split("T")[0]}`,
+          `- Term ends in ${daysUntilRenewal} days on ${formatDateYMD(mortgage.termEndDate!)}`,
       );
 
       // TODO: When notification system is implemented, create a notification here
@@ -116,7 +117,7 @@ export class MortgageReminderService {
       mortgages: upcomingRenewals.map((m) => ({
         id: m.id,
         name: m.name,
-        termEndDate: m.termEndDate!.toISOString().split("T")[0],
+        termEndDate: formatDateYMD(m.termEndDate!),
         daysUntilRenewal: this.getDaysUntilDate(m.termEndDate!),
       })),
     };

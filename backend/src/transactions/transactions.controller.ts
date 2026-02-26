@@ -11,6 +11,7 @@ import {
   Request,
   Query,
   ParseUUIDPipe,
+  ParseBoolPipe,
   BadRequestException,
 } from "@nestjs/common";
 import {
@@ -33,6 +34,14 @@ import { BulkReconcileDto } from "./dto/bulk-reconcile.dto";
 import { BulkUpdateDto } from "./dto/bulk-update.dto";
 import { MarkClearedDto } from "./dto/mark-cleared.dto";
 import { UpdateTransactionStatusDto } from "./dto/update-transaction-status.dto";
+import {
+  parseIds,
+  parseUuids,
+  parseCategoryIds,
+  validateDateParam,
+  UUID_REGEX,
+  DATE_REGEX,
+} from "../common/query-param-utils";
 
 @ApiTags("Transactions")
 @Controller("transactions")
@@ -140,15 +149,12 @@ export class TransactionsController {
     @Query("payeeIds") payeeIds?: string,
     @Query("page") page?: string,
     @Query("limit") limit?: string,
-    @Query("includeInvestmentBrokerage") includeInvestmentBrokerage?: string,
+    @Query("includeInvestmentBrokerage", new ParseBoolPipe({ optional: true }))
+    includeInvestmentBrokerage?: boolean,
     @Query("search") search?: string,
     @Query("targetTransactionId") targetTransactionId?: string,
   ) {
     // Validate pagination parameters
-    const uuidRegex =
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-
     if (page !== undefined) {
       const pageNum = parseInt(page, 10);
       if (isNaN(pageNum) || pageNum < 1) {
@@ -166,46 +172,10 @@ export class TransactionsController {
       }
     }
 
-    // Validate date parameters
-    if (startDate !== undefined && !dateRegex.test(startDate)) {
-      throw new BadRequestException(
-        "startDate must be a valid date in YYYY-MM-DD format",
-      );
-    }
-    if (endDate !== undefined && !dateRegex.test(endDate)) {
-      throw new BadRequestException(
-        "endDate must be a valid date in YYYY-MM-DD format",
-      );
-    }
+    validateDateParam(startDate, "startDate");
+    validateDateParam(endDate, "endDate");
 
-    // Parse comma-separated IDs into arrays, with backward compatibility for singular params
-    const parseIds = (
-      plural?: string,
-      singular?: string,
-    ): string[] | undefined => {
-      if (plural) {
-        const ids = plural
-          .split(",")
-          .map((id) => id.trim())
-          .filter((id) => id);
-        for (const id of ids) {
-          if (!uuidRegex.test(id)) {
-            throw new BadRequestException(`Invalid UUID: ${id}`);
-          }
-        }
-        return ids;
-      }
-      if (singular) {
-        if (!uuidRegex.test(singular)) {
-          throw new BadRequestException(`Invalid UUID: ${singular}`);
-        }
-        return [singular];
-      }
-      return undefined;
-    };
-
-    // Validate targetTransactionId
-    if (targetTransactionId && !uuidRegex.test(targetTransactionId)) {
+    if (targetTransactionId && !UUID_REGEX.test(targetTransactionId)) {
       throw new BadRequestException("targetTransactionId must be a valid UUID");
     }
 
@@ -221,7 +191,7 @@ export class TransactionsController {
       parseIds(payeeIds, payeeId),
       page ? parseInt(page, 10) : undefined,
       limit ? parseInt(limit, 10) : undefined,
-      includeInvestmentBrokerage === "true",
+      includeInvestmentBrokerage === true,
       sanitizedSearch,
       targetTransactionId,
     );
@@ -292,47 +262,8 @@ export class TransactionsController {
     @Query("payeeIds") payeeIds?: string,
     @Query("search") search?: string,
   ) {
-    const uuidRegex =
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-
-    // Validate date parameters
-    if (startDate !== undefined && !dateRegex.test(startDate)) {
-      throw new BadRequestException(
-        "startDate must be a valid date in YYYY-MM-DD format",
-      );
-    }
-    if (endDate !== undefined && !dateRegex.test(endDate)) {
-      throw new BadRequestException(
-        "endDate must be a valid date in YYYY-MM-DD format",
-      );
-    }
-
-    // Parse comma-separated IDs into arrays, with backward compatibility for singular params
-    const parseIds = (
-      plural?: string,
-      singular?: string,
-    ): string[] | undefined => {
-      if (plural) {
-        const ids = plural
-          .split(",")
-          .map((id) => id.trim())
-          .filter((id) => id);
-        for (const id of ids) {
-          if (!uuidRegex.test(id)) {
-            throw new BadRequestException(`Invalid UUID: ${id}`);
-          }
-        }
-        return ids;
-      }
-      if (singular) {
-        if (!uuidRegex.test(singular)) {
-          throw new BadRequestException(`Invalid UUID: ${singular}`);
-        }
-        return [singular];
-      }
-      return undefined;
-    };
+    validateDateParam(startDate, "startDate");
+    validateDateParam(endDate, "endDate");
 
     return this.transactionsService.getSummary(
       req.user.id,
@@ -393,49 +324,8 @@ export class TransactionsController {
     @Query("payeeIds") payeeIds?: string,
     @Query("search") search?: string,
   ) {
-    const uuidRegex =
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-    const specialCategoryIds = new Set(["uncategorized", "transfer"]);
-
-    if (startDate !== undefined && !dateRegex.test(startDate)) {
-      throw new BadRequestException(
-        "startDate must be a valid date in YYYY-MM-DD format",
-      );
-    }
-    if (endDate !== undefined && !dateRegex.test(endDate)) {
-      throw new BadRequestException(
-        "endDate must be a valid date in YYYY-MM-DD format",
-      );
-    }
-
-    const parseUuids = (value?: string): string[] | undefined => {
-      if (!value) return undefined;
-      const ids = value
-        .split(",")
-        .map((id) => id.trim())
-        .filter((id) => id);
-      for (const id of ids) {
-        if (!uuidRegex.test(id)) {
-          throw new BadRequestException(`Invalid UUID: ${id}`);
-        }
-      }
-      return ids.length > 0 ? ids : undefined;
-    };
-
-    const parseCategoryIds = (value?: string): string[] | undefined => {
-      if (!value) return undefined;
-      const ids = value
-        .split(",")
-        .map((id) => id.trim())
-        .filter((id) => id);
-      for (const id of ids) {
-        if (!specialCategoryIds.has(id) && !uuidRegex.test(id)) {
-          throw new BadRequestException(`Invalid category ID: ${id}`);
-        }
-      }
-      return ids.length > 0 ? ids : undefined;
-    };
+    validateDateParam(startDate, "startDate");
+    validateDateParam(endDate, "endDate");
 
     return this.transactionsService.getMonthlyTotals(
       req.user.id,
@@ -478,8 +368,7 @@ export class TransactionsController {
     @Query("statementDate") statementDate: string,
     @Query("statementBalance") statementBalance: string,
   ) {
-    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-    if (!statementDate || !dateRegex.test(statementDate)) {
+    if (!statementDate || !DATE_REGEX.test(statementDate)) {
       throw new BadRequestException("statementDate must be YYYY-MM-DD");
     }
     const balance = parseFloat(statementBalance);

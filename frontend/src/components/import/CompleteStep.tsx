@@ -2,34 +2,9 @@
 
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
-import { ImportResult, ParsedQifResponse } from '@/lib/import';
+import { ImportResult } from '@/lib/import';
 import { Account } from '@/types/account';
-
-interface BulkImportResult {
-  totalImported: number;
-  totalSkipped: number;
-  totalErrors: number;
-  categoriesCreated: number;
-  accountsCreated: number;
-  payeesCreated: number;
-  securitiesCreated: number;
-  fileResults: Array<{
-    fileName: string;
-    accountName: string;
-    imported: number;
-    skipped: number;
-    errors: number;
-    errorMessages: string[];
-  }>;
-}
-
-interface ImportFileData {
-  fileName: string;
-  fileContent: string;
-  parsedData: ParsedQifResponse;
-  selectedAccountId: string;
-  matchConfidence: string;
-}
+import { ImportFileData, BulkImportResult } from '@/app/import/import-utils';
 
 interface CompleteStepProps {
   importFiles: ImportFileData[];

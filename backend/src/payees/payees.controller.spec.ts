@@ -142,7 +142,7 @@ describe("PayeesController", () => {
         mockReq,
         5,
         75,
-        "true",
+        true,
       );
 
       expect(result).toEqual(expected);
@@ -151,10 +151,10 @@ describe("PayeesController", () => {
       ).toHaveBeenCalledWith("user-1", 5, 75, true);
     });
 
-    it("passes false for onlyWithoutCategory when string is not 'true'", async () => {
+    it("passes false for onlyWithoutCategory when false", async () => {
       mockPayeesService.calculateCategorySuggestions.mockResolvedValue([]);
 
-      await controller.getCategorySuggestions(mockReq, 3, 80, "false");
+      await controller.getCategorySuggestions(mockReq, 3, 80, false);
 
       expect(
         mockPayeesService.calculateCategorySuggestions,

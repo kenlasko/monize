@@ -4,7 +4,7 @@ import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
 import { budgetsApi } from '@/lib/budgets';
-import { formatCurrency } from '@/lib/format';
+import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { getErrorMessage } from '@/lib/errors';
 import { STRATEGY_LABELS, BUDGET_TYPE_LABELS } from './utils/budget-labels';
 import type { WizardState } from './BudgetWizard';
@@ -21,6 +21,7 @@ export function BudgetWizardReview({
   onComplete,
   onBack,
 }: BudgetWizardReviewProps) {
+  const { formatCurrency } = useNumberFormat();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const incomeCategories = Array.from(state.selectedCategories.values()).filter(

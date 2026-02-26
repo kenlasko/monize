@@ -252,13 +252,7 @@ export class TransactionBulkUpdateService {
       .getRawMany();
 
     for (const row of accountIds) {
-      this.netWorthService
-        .recalculateAccount(userId, row.accountId)
-        .catch((err) =>
-          this.logger.warn(
-            `Net worth recalc failed for account ${row.accountId}: ${err.message}`,
-          ),
-        );
+      this.netWorthService.triggerDebouncedRecalc(row.accountId, userId);
     }
   }
 

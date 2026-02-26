@@ -5,6 +5,7 @@ import { ConfigService } from "@nestjs/config";
 import {
   UnauthorizedException,
   BadRequestException,
+  NotFoundException,
   ForbiddenException,
 } from "@nestjs/common";
 import { DataSource } from "typeorm";
@@ -455,11 +456,11 @@ describe("AuthService", () => {
       expect(savedUser.twoFactorSecret).not.toBe("TESTSECRET"); // should be encrypted
     });
 
-    it("throws BadRequestException when user not found", async () => {
+    it("throws NotFoundException when user not found", async () => {
       usersRepository.findOne.mockResolvedValue(null);
 
       await expect(service.setup2FA("nonexistent")).rejects.toThrow(
-        BadRequestException,
+        NotFoundException,
       );
       await expect(service.setup2FA("nonexistent")).rejects.toThrow(
         "User not found",
@@ -1570,12 +1571,12 @@ describe("AuthService", () => {
       expect(trustedDevicesRepository.remove).toHaveBeenCalledWith(device);
     });
 
-    it("throws BadRequestException when device not found", async () => {
+    it("throws NotFoundException when device not found", async () => {
       trustedDevicesRepository.findOne.mockResolvedValue(null);
 
       await expect(
         service.revokeTrustedDevice("user-1", "nonexistent"),
-      ).rejects.toThrow(BadRequestException);
+      ).rejects.toThrow(NotFoundException);
       await expect(
         service.revokeTrustedDevice("user-1", "nonexistent"),
       ).rejects.toThrow("Device not found");

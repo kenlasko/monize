@@ -25,7 +25,7 @@ import { CreateInvestmentTransactionDto } from "./dto/create-investment-transact
 import { UpdateInvestmentTransactionDto } from "./dto/update-investment-transaction.dto";
 import { InvestmentTransaction } from "./entities/investment-transaction.entity";
 
-@ApiTags("investment-transactions")
+@ApiTags("Investment Transactions")
 @ApiBearerAuth()
 @UseGuards(AuthGuard("jwt"))
 @Controller("investment-transactions")

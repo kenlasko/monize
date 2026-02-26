@@ -1,22 +1,7 @@
 'use client';
 
-import { Account, AccountType } from '@/types/account';
-
-const formatAccountType = (type: AccountType): string => {
-  const labels: Record<AccountType, string> = {
-    CHEQUING: 'Chequing',
-    SAVINGS: 'Savings',
-    CREDIT_CARD: 'Credit Card',
-    INVESTMENT: 'Investment',
-    LOAN: 'Loan',
-    MORTGAGE: 'Mortgage',
-    CASH: 'Cash',
-    LINE_OF_CREDIT: 'Line of Credit',
-    ASSET: 'Asset',
-    OTHER: 'Other',
-  };
-  return labels[type] || type;
-};
+import { Account } from '@/types/account';
+import { formatAccountType } from '@/lib/account-utils';
 
 interface UploadStepProps {
   preselectedAccount: Account | undefined;

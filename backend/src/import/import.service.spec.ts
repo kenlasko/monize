@@ -1,6 +1,6 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
-import { BadRequestException } from "@nestjs/common";
+import { BadRequestException, NotFoundException } from "@nestjs/common";
 import { DataSource } from "typeorm";
 import { ImportService } from "./import.service";
 import {
@@ -531,12 +531,12 @@ describe("ImportService", () => {
         ).rejects.toThrow(BadRequestException);
       });
 
-      it("throws BadRequestException when account not found", async () => {
+      it("throws NotFoundException when account not found", async () => {
         accountsRepository.findOne.mockResolvedValue(null);
 
         await expect(
           service.importQifFile(userId, makeBaseDto()),
-        ).rejects.toThrow(BadRequestException);
+        ).rejects.toThrow(NotFoundException);
         await expect(
           service.importQifFile(userId, makeBaseDto()),
         ).rejects.toThrow("Account not found");

@@ -3,7 +3,8 @@
 import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Sparkline } from './Sparkline';
-import { formatCurrency, getCurrencySymbol } from '@/lib/format';
+import { getCurrencySymbol } from '@/lib/format';
+import { useNumberFormat } from '@/hooks/useNumberFormat';
 import type { WizardState } from './BudgetWizard';
 import type { BudgetProfile, CategoryGroup, TransferAnalysis } from '@/types/budget';
 
@@ -110,6 +111,7 @@ export function BudgetWizardCategories({
   onNext,
   onBack,
 }: BudgetWizardCategoriesProps) {
+  const { formatCurrency } = useNumberFormat();
   const { analysisResult, selectedCategories, selectedTransfers = new Map(), profile, strategy, currencyCode } = state;
   const is503020 = strategy === 'FIFTY_THIRTY_TWENTY';
 

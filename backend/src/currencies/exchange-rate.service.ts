@@ -1,4 +1,10 @@
-import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
+import {
+  Injectable,
+  Logger,
+  OnModuleInit,
+  Inject,
+  forwardRef,
+} from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import {
   Repository,
@@ -12,6 +18,7 @@ import { ExchangeRate } from "./entities/exchange-rate.entity";
 import { Currency } from "./entities/currency.entity";
 import { Account } from "../accounts/entities/account.entity";
 import { UserPreference } from "../users/entities/user-preference.entity";
+import { YahooFinanceService } from "../securities/yahoo-finance.service";
 
 export interface RateUpdateResult {
   pair: string;
@@ -57,6 +64,8 @@ export class ExchangeRateService implements OnModuleInit {
     @InjectRepository(UserPreference)
     private userPreferenceRepository: Repository<UserPreference>,
     private dataSource: DataSource,
+    @Inject(forwardRef(() => YahooFinanceService))
+    private yahooFinanceService: YahooFinanceService,
   ) {}
 
   /**
@@ -123,8 +132,8 @@ export class ExchangeRateService implements OnModuleInit {
   }
 
   /**
-   * Fetch exchange rate from Yahoo Finance for a currency pair
-   * Uses the same v8 chart API as SecurityPriceService
+   * Fetch exchange rate from Yahoo Finance for a currency pair.
+   * Delegates to YahooFinanceService to avoid duplicating the v8 chart API logic.
    */
   private async fetchYahooRate(
     from: string,
@@ -132,42 +141,14 @@ export class ExchangeRateService implements OnModuleInit {
   ): Promise<number | null> {
     if (from === to) return 1.0;
 
-    try {
-      const symbol = `${from}${to}=X`;
-      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=1d`;
-
-      const response = await fetch(url, {
-        headers: {
-          "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-        },
-      });
-
-      if (!response.ok) {
-        this.logger.warn(
-          `Yahoo Finance API returned ${response.status} for ${symbol}`,
-        );
-        return null;
-      }
-
-      const data = await response.json();
-
-      if (data.chart?.result?.[0]?.meta?.regularMarketPrice) {
-        return data.chart.result[0].meta.regularMarketPrice;
-      }
-
-      return null;
-    } catch (error) {
-      this.logger.error(
-        `Failed to fetch exchange rate for ${from}/${to}: ${error.message}`,
-      );
-      return null;
-    }
+    const symbol = `${from}${to}=X`;
+    const quote = await this.yahooFinanceService.fetchQuote(symbol);
+    return quote?.regularMarketPrice ?? null;
   }
 
   /**
    * Fetch historical daily exchange rates from Yahoo Finance for a currency pair.
-   * Uses the same v8 chart API with range=max to get all available history.
+   * Delegates to YahooFinanceService to avoid duplicating the v8 chart API logic.
    */
   private async fetchYahooHistoricalRates(
     from: string,
@@ -175,51 +156,11 @@ export class ExchangeRateService implements OnModuleInit {
   ): Promise<Array<{ date: Date; rate: number }> | null> {
     if (from === to) return [];
 
-    try {
-      const symbol = `${from}${to}=X`;
-      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=max`;
+    const symbol = `${from}${to}=X`;
+    const prices = await this.yahooFinanceService.fetchHistorical(symbol);
+    if (!prices) return null;
 
-      const response = await fetch(url, {
-        headers: {
-          "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-        },
-      });
-
-      if (!response.ok) {
-        this.logger.warn(
-          `Yahoo Finance API returned ${response.status} for historical ${symbol}`,
-        );
-        return null;
-      }
-
-      const data = await response.json();
-      const result = data.chart?.result?.[0];
-      if (!result?.timestamp || !result?.indicators?.quote?.[0]) {
-        return null;
-      }
-
-      const timestamps: number[] = result.timestamp;
-      const quote = result.indicators.quote[0];
-      const rates: Array<{ date: Date; rate: number }> = [];
-
-      for (let i = 0; i < timestamps.length; i++) {
-        const close = quote.close?.[i];
-        if (close == null || isNaN(close)) continue;
-
-        const date = new Date(timestamps[i] * 1000);
-        date.setHours(0, 0, 0, 0);
-
-        rates.push({ date, rate: close });
-      }
-
-      return rates;
-    } catch (error) {
-      this.logger.error(
-        `Failed to fetch historical rates for ${from}/${to}: ${error.message}`,
-      );
-      return null;
-    }
+    return prices.map((p) => ({ date: p.date, rate: p.close }));
   }
 
   /**

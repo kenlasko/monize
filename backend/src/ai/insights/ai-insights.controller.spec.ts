@@ -58,7 +58,7 @@ describe("AiInsightsController", () => {
       await controller.getInsights(req, {
         type: "anomaly",
         severity: "warning",
-        includeDismissed: "true",
+        includeDismissed: true,
       });
 
       expect(mockInsightsService.getInsights).toHaveBeenCalledWith(
@@ -70,7 +70,7 @@ describe("AiInsightsController", () => {
     });
 
     it("handles includeDismissed=false", async () => {
-      await controller.getInsights(req, { includeDismissed: "false" });
+      await controller.getInsights(req, { includeDismissed: false });
 
       expect(mockInsightsService.getInsights).toHaveBeenCalledWith(
         userId,

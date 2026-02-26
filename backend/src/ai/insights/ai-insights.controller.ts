@@ -45,7 +45,7 @@ export class AiInsightsController {
       req.user.id,
       query.type as InsightType | undefined,
       query.severity,
-      query.includeDismissed === "true",
+      query.includeDismissed === true,
     );
   }
 

@@ -18,6 +18,38 @@ import {
 } from '@/types/transaction';
 import { invalidateCache } from './apiCache';
 
+/** Convert array filter params to comma-separated strings for the API. */
+function buildFilterParams(params?: {
+  accountId?: string;
+  accountIds?: string[];
+  categoryId?: string;
+  categoryIds?: string[];
+  payeeId?: string;
+  payeeIds?: string[];
+}): Record<string, string | undefined> {
+  const result: Record<string, string | undefined> = {};
+
+  if (params?.accountIds && params.accountIds.length > 0) {
+    result.accountIds = params.accountIds.join(',');
+  } else if (params?.accountId) {
+    result.accountId = params.accountId;
+  }
+
+  if (params?.categoryIds && params.categoryIds.length > 0) {
+    result.categoryIds = params.categoryIds.join(',');
+  } else if (params?.categoryId) {
+    result.categoryId = params.categoryId;
+  }
+
+  if (params?.payeeIds && params.payeeIds.length > 0) {
+    result.payeeIds = params.payeeIds.join(',');
+  } else if (params?.payeeId) {
+    result.payeeId = params.payeeId;
+  }
+
+  return result;
+}
+
 export const transactionsApi = {
   // Create a new transaction
   create: async (data: CreateTransactionData): Promise<Transaction> => {
@@ -42,8 +74,8 @@ export const transactionsApi = {
     search?: string;
     targetTransactionId?: string;
   }): Promise<PaginatedTransactions> => {
-    // Convert arrays to comma-separated strings for API
-    const apiParams: Record<string, string | number | undefined> = {
+    const apiParams = {
+      ...buildFilterParams(params),
       startDate: params?.startDate,
       endDate: params?.endDate,
       page: params?.page,
@@ -52,28 +84,6 @@ export const transactionsApi = {
       targetTransactionId: params?.targetTransactionId,
     };
 
-    // Handle accountId/accountIds (prefer array)
-    if (params?.accountIds && params.accountIds.length > 0) {
-      apiParams.accountIds = params.accountIds.join(',');
-    } else if (params?.accountId) {
-      apiParams.accountId = params.accountId;
-    }
-
-    // Handle categoryId/categoryIds (prefer array)
-    if (params?.categoryIds && params.categoryIds.length > 0) {
-      apiParams.categoryIds = params.categoryIds.join(',');
-    } else if (params?.categoryId) {
-      apiParams.categoryId = params.categoryId;
-    }
-
-    // Handle payeeId/payeeIds (prefer array)
-    if (params?.payeeIds && params.payeeIds.length > 0) {
-      apiParams.payeeIds = params.payeeIds.join(',');
-    } else if (params?.payeeId) {
-      apiParams.payeeId = params.payeeId;
-    }
-
-    // Use a longer timeout for accounts with many transactions
     const response = await apiClient.get<PaginatedTransactions>('/transactions', {
       params: apiParams,
       timeout: 60000,
@@ -144,35 +154,13 @@ export const transactionsApi = {
     payeeIds?: string[];
     search?: string;
   }): Promise<TransactionSummary> => {
-    // Convert arrays to comma-separated strings for API
-    const apiParams: Record<string, string | undefined> = {
+    const apiParams = {
+      ...buildFilterParams(params),
       startDate: params?.startDate,
       endDate: params?.endDate,
       search: params?.search,
     };
 
-    // Handle accountId/accountIds (prefer array)
-    if (params?.accountIds && params.accountIds.length > 0) {
-      apiParams.accountIds = params.accountIds.join(',');
-    } else if (params?.accountId) {
-      apiParams.accountId = params.accountId;
-    }
-
-    // Handle categoryId/categoryIds (prefer array)
-    if (params?.categoryIds && params.categoryIds.length > 0) {
-      apiParams.categoryIds = params.categoryIds.join(',');
-    } else if (params?.categoryId) {
-      apiParams.categoryId = params.categoryId;
-    }
-
-    // Handle payeeId/payeeIds (prefer array)
-    if (params?.payeeIds && params.payeeIds.length > 0) {
-      apiParams.payeeIds = params.payeeIds.join(',');
-    } else if (params?.payeeId) {
-      apiParams.payeeId = params.payeeId;
-    }
-
-    // Use a longer timeout for accounts with many transactions
     const response = await apiClient.get<TransactionSummary>('/transactions/summary', {
       params: apiParams,
       timeout: 60000,
@@ -189,21 +177,12 @@ export const transactionsApi = {
     payeeIds?: string[];
     search?: string;
   }): Promise<MonthlyTotal[]> => {
-    const apiParams: Record<string, string | undefined> = {
+    const apiParams = {
+      ...buildFilterParams(params),
       startDate: params?.startDate,
       endDate: params?.endDate,
       search: params?.search,
     };
-
-    if (params?.accountIds && params.accountIds.length > 0) {
-      apiParams.accountIds = params.accountIds.join(',');
-    }
-    if (params?.categoryIds && params.categoryIds.length > 0) {
-      apiParams.categoryIds = params.categoryIds.join(',');
-    }
-    if (params?.payeeIds && params.payeeIds.length > 0) {
-      apiParams.payeeIds = params.payeeIds.join(',');
-    }
 
     const response = await apiClient.get<MonthlyTotal[]>('/transactions/monthly-totals', {
       params: apiParams,

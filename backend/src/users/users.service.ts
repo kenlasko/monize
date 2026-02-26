@@ -1,6 +1,7 @@
 import {
   Injectable,
   BadRequestException,
+  NotFoundException,
   ConflictException,
   ForbiddenException,
 } from "@nestjs/common";
@@ -43,7 +44,7 @@ export class UsersService {
   async updateProfile(userId: string, dto: UpdateProfileDto) {
     const user = await this.usersRepository.findOne({ where: { id: userId } });
     if (!user) {
-      throw new BadRequestException("User not found");
+      throw new NotFoundException("User not found");
     }
 
     // SECURITY: Require password confirmation when changing email to prevent
@@ -164,7 +165,7 @@ export class UsersService {
   async changePassword(userId: string, dto: ChangePasswordDto): Promise<void> {
     const user = await this.usersRepository.findOne({ where: { id: userId } });
     if (!user) {
-      throw new BadRequestException("User not found");
+      throw new NotFoundException("User not found");
     }
 
     if (!user.passwordHash) {
@@ -202,7 +203,7 @@ export class UsersService {
   async deleteAccount(userId: string): Promise<void> {
     const user = await this.usersRepository.findOne({ where: { id: userId } });
     if (!user) {
-      throw new BadRequestException("User not found");
+      throw new NotFoundException("User not found");
     }
 
     // SECURITY: Prevent the last admin from self-deleting, which would leave

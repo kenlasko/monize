@@ -13,6 +13,7 @@ import { getErrorMessage } from '@/lib/errors';
 import { AccountRow } from './AccountRow';
 import { useTableDensity, nextDensity, type DensityLevel } from '@/hooks/useTableDensity';
 import { SortIcon } from '@/components/ui/SortIcon';
+import { formatAccountType } from '@/lib/account-utils';
 
 type SortField = 'name' | 'type' | 'balance' | 'status';
 type SortDirection = 'asc' | 'desc';
@@ -38,23 +39,6 @@ function getStoredValue<T>(key: string, defaultValue: T): T {
     return defaultValue;
   }
 }
-
-// Pure functions moved outside component to avoid re-creation on every render
-const formatAccountType = (type: AccountType) => {
-  const labels: Record<AccountType, string> = {
-    CHEQUING: 'Chequing',
-    SAVINGS: 'Savings',
-    CREDIT_CARD: 'Credit Card',
-    INVESTMENT: 'Investment',
-    LOAN: 'Loan',
-    MORTGAGE: 'Mortgage',
-    CASH: 'Cash',
-    LINE_OF_CREDIT: 'Line of Credit',
-    ASSET: 'Asset',
-    OTHER: 'Other',
-  };
-  return labels[type] || type;
-};
 
 const getAccountTypeColor = (type: AccountType) => {
   switch (type) {

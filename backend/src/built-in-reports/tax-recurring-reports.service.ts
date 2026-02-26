@@ -12,6 +12,7 @@ import {
   BillPaymentItem,
   MonthlyBillTotal,
 } from "./dto";
+import { formatDateYMD } from "../common/date-utils";
 
 @Injectable()
 export class TaxRecurringReportsService {
@@ -186,8 +187,8 @@ export class TaxRecurringReportsService {
     const now = new Date();
     const sixMonthsAgo = new Date(now);
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-    const startDate = sixMonthsAgo.toISOString().split("T")[0];
-    const endDate = now.toISOString().split("T")[0];
+    const startDate = formatDateYMD(sixMonthsAgo);
+    const endDate = formatDateYMD(now);
 
     const query = `
       SELECT
@@ -291,9 +292,7 @@ export class TaxRecurringReportsService {
           occurrences,
           totalAmount: Math.round(totalAmount * 100) / 100,
           averageAmount: Math.round((totalAmount / occurrences) * 100) / 100,
-          lastTransactionDate: row.lastTransactionDate
-            .toISOString()
-            .split("T")[0],
+          lastTransactionDate: formatDateYMD(row.lastTransactionDate),
           frequency,
           categoryName: row.categoryName || "Uncategorized",
         };
@@ -470,8 +469,9 @@ export class TaxRecurringReportsService {
           paymentCount: bp.payments.length,
           averagePayment:
             Math.round((totalPaid / bp.payments.length) * 100) / 100,
-          lastPaymentDate:
-            sortedPayments[0]?.date.toISOString().split("T")[0] || null,
+          lastPaymentDate: sortedPayments[0]
+            ? formatDateYMD(sortedPayments[0].date)
+            : null,
         };
       })
       .sort((a, b) => b.totalPaid - a.totalPaid);

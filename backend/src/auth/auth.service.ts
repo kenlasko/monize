@@ -3,6 +3,7 @@ import {
   UnauthorizedException,
   ForbiddenException,
   BadRequestException,
+  NotFoundException,
   Logger,
 } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
@@ -215,7 +216,7 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new BadRequestException("User not found");
+      throw new NotFoundException("User not found");
     }
 
     const secret = otplib.generateSecret();
@@ -741,7 +742,7 @@ export class AuthService {
     });
 
     if (!device) {
-      throw new BadRequestException("Device not found");
+      throw new NotFoundException("Device not found");
     }
 
     await this.trustedDevicesRepository.remove(device);

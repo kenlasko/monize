@@ -180,7 +180,7 @@ describe("TransactionsController", () => {
         undefined,
         undefined,
         undefined,
-        "true",
+        true,
       );
 
       expect(mockService.findAll).toHaveBeenCalledWith(

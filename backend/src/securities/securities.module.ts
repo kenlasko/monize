@@ -1,4 +1,4 @@
-import { Module } from "@nestjs/common";
+import { Module, forwardRef } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { Security } from "./entities/security.entity";
 import { Holding } from "./entities/holding.entity";
@@ -13,6 +13,7 @@ import { YahooFinanceService } from "./yahoo-finance.service";
 import { HoldingsService } from "./holdings.service";
 import { InvestmentTransactionsService } from "./investment-transactions.service";
 import { PortfolioService } from "./portfolio.service";
+import { PortfolioCalculationService } from "./portfolio-calculation.service";
 import { SecuritiesController } from "./securities.controller";
 import { HoldingsController } from "./holdings.controller";
 import { InvestmentTransactionsController } from "./investment-transactions.controller";
@@ -35,7 +36,7 @@ import { NetWorthModule } from "../net-worth/net-worth.module";
     ]),
     AccountsModule,
     TransactionsModule,
-    CurrenciesModule,
+    forwardRef(() => CurrenciesModule),
     NetWorthModule,
   ],
   providers: [
@@ -44,6 +45,7 @@ import { NetWorthModule } from "../net-worth/net-worth.module";
     YahooFinanceService,
     HoldingsService,
     InvestmentTransactionsService,
+    PortfolioCalculationService,
     PortfolioService,
   ],
   controllers: [
@@ -55,6 +57,7 @@ import { NetWorthModule } from "../net-worth/net-worth.module";
   exports: [
     SecuritiesService,
     SecurityPriceService,
+    YahooFinanceService,
     HoldingsService,
     InvestmentTransactionsService,
     PortfolioService,

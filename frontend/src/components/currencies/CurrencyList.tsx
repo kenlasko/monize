@@ -10,9 +10,9 @@ import toast from 'react-hot-toast';
 import { createLogger } from '@/lib/logger';
 import { getErrorMessage } from '@/lib/errors';
 
-const logger = createLogger('CurrencyList');
+import { DensityLevel, nextDensity } from '@/hooks/useTableDensity';
 
-export type DensityLevel = 'normal' | 'compact' | 'dense';
+const logger = createLogger('CurrencyList');
 
 interface CurrencyListProps {
   currencies: CurrencyInfo[];
@@ -254,11 +254,11 @@ export function CurrencyList({
   }, [density]);
 
   const cycleDensity = useCallback(() => {
-    const nextDensity = density === 'normal' ? 'compact' : density === 'compact' ? 'dense' : 'normal';
+    const next = nextDensity(density);
     if (onDensityChange) {
-      onDensityChange(nextDensity);
+      onDensityChange(next);
     } else {
-      setLocalDensity(nextDensity);
+      setLocalDensity(next);
     }
   }, [density, onDensityChange]);
 

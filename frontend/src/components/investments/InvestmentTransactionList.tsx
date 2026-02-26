@@ -6,9 +6,7 @@ import { InvestmentTransaction } from '@/types/investment';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
-
-// Density levels: 'normal' | 'compact' | 'dense'
-export type DensityLevel = 'normal' | 'compact' | 'dense';
+import { DensityLevel, nextDensity } from '@/hooks/useTableDensity';
 
 export interface TransactionFilters {
   symbol?: string;
@@ -279,11 +277,11 @@ export function InvestmentTransactionList({
   }, [density]);
 
   const cycleDensity = useCallback(() => {
-    const nextDensity = density === 'normal' ? 'compact' : density === 'compact' ? 'dense' : 'normal';
+    const next = nextDensity(density);
     if (onDensityChange) {
-      onDensityChange(nextDensity);
+      onDensityChange(next);
     } else {
-      setLocalDensity(nextDensity);
+      setLocalDensity(next);
     }
   }, [density, onDensityChange]);
 

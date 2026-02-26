@@ -1,4 +1,4 @@
-import api from './api';
+import apiClient from './api';
 
 export type DateFormat = 'MM/DD/YYYY' | 'DD/MM/YYYY' | 'YYYY-MM-DD' | 'YYYY-DD-MM';
 
@@ -76,13 +76,13 @@ export interface ImportResult {
 export const importApi = {
   parseQif: async (content: string): Promise<ParsedQifResponse> => {
     // Longer timeout for parsing large files (1 minute)
-    const response = await api.post('/import/qif/parse', { content }, { timeout: 60000 });
+    const response = await apiClient.post('/import/qif/parse', { content }, { timeout: 60000 });
     return response.data;
   },
 
   importQif: async (data: ImportQifRequest): Promise<ImportResult> => {
     // Longer timeout for large imports (5 minutes)
-    const response = await api.post('/import/qif', data, { timeout: 300000 });
+    const response = await apiClient.post('/import/qif', data, { timeout: 300000 });
     return response.data;
   },
 };

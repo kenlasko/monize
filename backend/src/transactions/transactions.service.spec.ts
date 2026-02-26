@@ -91,6 +91,7 @@ describe("TransactionsService", () => {
 
     netWorthService = {
       recalculateAccount: jest.fn().mockResolvedValue(undefined),
+      triggerDebouncedRecalc: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -3258,106 +3259,6 @@ describe("TransactionsService", () => {
         "account-2",
         100,
       );
-    });
-  });
-
-  describe("triggerNetWorthRecalc", () => {
-    it("debounces multiple calls for the same account", () => {
-      jest.useFakeTimers();
-
-      const mockTx = {
-        id: "tx-1",
-        userId: "user-1",
-        accountId: "account-1",
-        amount: -50,
-        status: TransactionStatus.UNRECONCILED,
-        splits: [],
-      };
-      transactionsRepository.findOne.mockResolvedValue(mockTx);
-
-      // Access the private method indirectly by calling create multiple times
-      // Since triggerNetWorthRecalc is private, we test via the public API
-      // We'll use the fact that create calls triggerNetWorthRecalc
-      // But for direct testing, we can access it via bracket notation
-      (service as any).triggerNetWorthRecalc("account-1", "user-1");
-      (service as any).triggerNetWorthRecalc("account-1", "user-1");
-      (service as any).triggerNetWorthRecalc("account-1", "user-1");
-
-      // Should not have called recalculate yet (debounced)
-      expect(netWorthService.recalculateAccount).not.toHaveBeenCalled();
-
-      // Advance timer past debounce
-      jest.advanceTimersByTime(2500);
-
-      // Should have called only once
-      expect(netWorthService.recalculateAccount).toHaveBeenCalledTimes(1);
-      expect(netWorthService.recalculateAccount).toHaveBeenCalledWith(
-        "user-1",
-        "account-1",
-      );
-
-      jest.useRealTimers();
-    });
-
-    it("calls separately for different accounts", () => {
-      jest.useFakeTimers();
-
-      (service as any).triggerNetWorthRecalc("account-1", "user-1");
-      (service as any).triggerNetWorthRecalc("account-2", "user-1");
-
-      jest.advanceTimersByTime(2500);
-
-      expect(netWorthService.recalculateAccount).toHaveBeenCalledTimes(2);
-      expect(netWorthService.recalculateAccount).toHaveBeenCalledWith(
-        "user-1",
-        "account-1",
-      );
-      expect(netWorthService.recalculateAccount).toHaveBeenCalledWith(
-        "user-1",
-        "account-2",
-      );
-
-      jest.useRealTimers();
-    });
-
-    it("replaces previous timer on repeated calls", () => {
-      jest.useFakeTimers();
-
-      (service as any).triggerNetWorthRecalc("account-1", "user-1");
-
-      // Advance partially
-      jest.advanceTimersByTime(1000);
-
-      // Call again - should reset the timer
-      (service as any).triggerNetWorthRecalc("account-1", "user-1");
-
-      // Advance another 1500ms (total 2500ms from start, but only 1500 from last call)
-      jest.advanceTimersByTime(1500);
-
-      // Should not have fired yet (only 1500ms since last call, need 2000ms)
-      expect(netWorthService.recalculateAccount).not.toHaveBeenCalled();
-
-      // Advance the remaining 500ms
-      jest.advanceTimersByTime(500);
-
-      expect(netWorthService.recalculateAccount).toHaveBeenCalledTimes(1);
-
-      jest.useRealTimers();
-    });
-
-    it("handles recalculation failure gracefully", () => {
-      jest.useFakeTimers();
-
-      netWorthService.recalculateAccount.mockRejectedValue(
-        new Error("DB connection failed"),
-      );
-
-      (service as any).triggerNetWorthRecalc("account-1", "user-1");
-
-      // Should not throw even if recalculation fails
-      expect(() => jest.advanceTimersByTime(2500)).not.toThrow();
-
-      jest.useRealTimers();
     });
   });
 

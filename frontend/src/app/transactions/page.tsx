@@ -1,13 +1,13 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
-import { MultiSelectOption } from '@/components/ui/MultiSelect';
 import { TransactionFilterPanel } from '@/components/transactions/TransactionFilterPanel';
 import { Pagination } from '@/components/ui/Pagination';
-import { TransactionList, type DensityLevel } from '@/components/transactions/TransactionList';
+import { TransactionList } from '@/components/transactions/TransactionList';
+import { type DensityLevel } from '@/hooks/useTableDensity';
 import dynamic from 'next/dynamic';
 
 const TransactionForm = dynamic(() => import('@/components/transactions/TransactionForm').then(m => m.TransactionForm), { ssr: false });
@@ -21,10 +21,10 @@ import { categoriesApi } from '@/lib/categories';
 import { payeesApi } from '@/lib/payees';
 import { Transaction, PaginationInfo, BulkUpdateData, BulkUpdateFilters, MonthlyTotal } from '@/types/transaction';
 import { useTransactionSelection } from '@/hooks/useTransactionSelection';
+import { useTransactionFilters } from '@/hooks/useTransactionFilters';
 import { BulkSelectionBanner } from '@/components/transactions/BulkSelectionBanner';
 import { Account } from '@/types/account';
 import { Category } from '@/types/category';
-import { buildCategoryColorMap } from '@/lib/categoryUtils';
 import { Payee } from '@/types/payee';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useDateFormat } from '@/hooks/useDateFormat';
@@ -44,63 +44,6 @@ import { CategoryBudgetStatus } from '@/types/budget';
 
 const logger = createLogger('Transactions');
 
-// LocalStorage keys for filter persistence
-const STORAGE_KEYS = {
-  accountIds: 'transactions.filter.accountIds',
-  accountStatus: 'transactions.filter.accountStatus',
-  categoryIds: 'transactions.filter.categoryIds',
-  payeeIds: 'transactions.filter.payeeIds',
-  startDate: 'transactions.filter.startDate',
-  endDate: 'transactions.filter.endDate',
-  search: 'transactions.filter.search',
-  timePeriod: 'transactions.filter.timePeriod',
-};
-
-// Helper to get filter values as array
-// If ANY URL params are present (navigation from reports), ignore localStorage entirely
-// This ensures clicking from a report gives a clean view with just that filter
-function getFilterValues(key: string, urlParam: string | null, hasAnyUrlParams: boolean): string[] {
-  if (hasAnyUrlParams) {
-    // Navigation from external link - only use URL param, ignore localStorage
-    return urlParam ? urlParam.split(',').map(s => s.trim()).filter(s => s) : [];
-  }
-  // No URL params - use localStorage (user's last filter state)
-  if (typeof window === 'undefined') return [];
-  const stored = localStorage.getItem(key);
-  if (!stored) return [];
-  try {
-    return JSON.parse(stored);
-  } catch {
-    return [];
-  }
-}
-
-// Helper to get single string filter value
-function getFilterValue(key: string, urlParam: string | null, hasAnyUrlParams: boolean): string {
-  if (hasAnyUrlParams) {
-    return urlParam || '';
-  }
-  if (typeof window === 'undefined') return '';
-  return localStorage.getItem(key) || '';
-}
-
-// Helper to get stored value (for non-URL params like account status)
-function getStoredValue<T>(key: string, defaultValue: T): T {
-  if (typeof window === 'undefined') return defaultValue;
-  const stored = localStorage.getItem(key);
-  if (!stored) return defaultValue;
-  try {
-    return JSON.parse(stored) as T;
-  } catch {
-    return defaultValue;
-  }
-}
-
-// Check if an account is specifically an investment brokerage account
-const isInvestmentBrokerageAccount = (account: Account): boolean => {
-  return account.accountSubType === 'INVESTMENT_BROKERAGE';
-};
-
 export default function TransactionsPage() {
   return (
     <ProtectedRoute>
@@ -111,7 +54,6 @@ export default function TransactionsPage() {
 
 function TransactionsContent() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { formatDate } = useDateFormat();
   const weekStartsOn = (usePreferencesStore((s) => s.preferences?.weekStartsOn) ?? 1) as 0 | 1 | 2 | 3 | 4 | 5 | 6;
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -132,184 +74,13 @@ function TransactionsContent() {
   const modalOpenRef = useRef(false);
   modalOpenRef.current = showForm || showPayeeForm || showBulkUpdate;
 
-  // Pagination state - initialize from URL
+  const filters = useTransactionFilters({ accounts, categories, payees, weekStartsOn });
+
   const [pagination, setPagination] = useState<PaginationInfo | null>(null);
-  const [currentPage, setCurrentPage] = useState(() => {
-    const pageParam = searchParams.get('page');
-    return pageParam ? parseInt(pageParam, 10) : 1;
-  });
   const [startingBalance, setStartingBalance] = useState<number | undefined>();
-
-  // Filters - initialize from URL params, falling back to localStorage
-  const [filterAccountIds, setFilterAccountIds] = useState<string[]>([]);
-  const [filterAccountStatus, setFilterAccountStatus] = useState<'active' | 'closed' | ''>(() =>
-    getStoredValue<'active' | 'closed' | ''>(STORAGE_KEYS.accountStatus, '')
-  );
-  const [filterCategoryIds, setFilterCategoryIds] = useState<string[]>([]);
-  const [filterPayeeIds, setFilterPayeeIds] = useState<string[]>([]);
-  const [filterStartDate, setFilterStartDate] = useState<string>('');
-  const [filterEndDate, setFilterEndDate] = useState<string>('');
-  const [filterSearch, setFilterSearch] = useState<string>('');
-  const [searchInput, setSearchInput] = useState<string>('');
-  const [filterTimePeriod, setFilterTimePeriod] = useState<string>('');
-  const searchDebounceRef = useRef<NodeJS.Timeout | null>(null);
-  const [filtersInitialized, setFiltersInitialized] = useState(false);
-  const [filtersExpanded, setFiltersExpanded] = useState(true);
-
-  // Track when we're syncing state from browser back/forward navigation
-  const syncingFromPopstateRef = useRef(false);
-
-  // Update URL when filters or page change
-  const updateUrl = useCallback((page: number, filters: {
-    accountIds: string[];
-    categoryIds: string[];
-    payeeIds: string[];
-    startDate: string;
-    endDate: string;
-    search: string;
-  }, push: boolean = false) => {
-    const params = new URLSearchParams();
-    if (page > 1) params.set('page', page.toString());
-    if (filters.accountIds.length) params.set('accountIds', filters.accountIds.join(','));
-    if (filters.categoryIds.length) params.set('categoryIds', filters.categoryIds.join(','));
-    if (filters.payeeIds.length) params.set('payeeIds', filters.payeeIds.join(','));
-    if (filters.startDate) params.set('startDate', filters.startDate);
-    if (filters.endDate) params.set('endDate', filters.endDate);
-    if (filters.search) params.set('search', filters.search);
-
-    const queryString = params.toString();
-    const newUrl = queryString ? `/transactions?${queryString}` : '/transactions';
-    if (push) {
-      router.push(newUrl, { scroll: false });
-    } else {
-      router.replace(newUrl, { scroll: false });
-    }
-  }, [router]);
-
-  // Get display info for selected filters
-  const selectedCategories = filterCategoryIds.map(id => {
-    if (id === 'uncategorized') return { id, name: 'Uncategorized', color: null } as Category;
-    if (id === 'transfer') return { id, name: 'Transfers', color: null } as Category;
-    return categories.find(c => c.id === id);
-  }).filter((c): c is Category => c !== undefined);
-
-  const selectedPayees = filterPayeeIds
-    .map(id => payees.find(p => p.id === id))
-    .filter((p): p is Payee => p !== undefined);
-
-  // Get selected accounts for chips
-  const selectedAccounts = filterAccountIds
-    .map(id => accounts.find(a => a.id === id))
-    .filter((a): a is Account => a !== undefined);
-
-  // Filter accounts by status for the dropdown
-  const filteredAccounts = useMemo(() => {
-    return accounts.filter(account => {
-      // Always exclude investment brokerage accounts from transactions
-      if (isInvestmentBrokerageAccount(account)) return false;
-      // Apply status filter
-      if (filterAccountStatus === 'active') return !account.isClosed;
-      if (filterAccountStatus === 'closed') return account.isClosed;
-      return true; // 'all' - show all non-investment accounts
-    });
-  }, [accounts, filterAccountStatus]);
-
-  // Memoize filter option arrays to avoid rebuilding on every render
-  const categoryFilterOptions = useMemo(() => {
-    const specialOptions: MultiSelectOption[] = [
-      { value: 'uncategorized', label: 'Uncategorized' },
-      { value: 'transfer', label: 'Transfers' },
-    ];
-    const buildOptions = (parentId: string | null = null): MultiSelectOption[] => {
-      return categories
-        .filter(c => c.parentId === parentId)
-        .sort((a, b) => a.name.localeCompare(b.name))
-        .flatMap(cat => {
-          const children = buildOptions(cat.id);
-          return [{
-            value: cat.id,
-            label: cat.name,
-            parentId: cat.parentId,
-            children: children.length > 0 ? children : undefined,
-          }];
-        });
-    };
-    return [...specialOptions, ...buildOptions()];
-  }, [categories]);
-
-  const categoryColorMap = useMemo(() => buildCategoryColorMap(categories), [categories]);
 
   // Budget context for category indicators
   const [budgetStatusMap, setBudgetStatusMap] = useState<Record<string, CategoryBudgetStatus>>({});
-
-  const accountFilterOptions = useMemo(() => {
-    return filteredAccounts
-      .sort((a, b) => a.name.localeCompare(b.name))
-      .map(account => ({
-        value: account.id,
-        label: account.name,
-      }));
-  }, [filteredAccounts]);
-
-  const payeeFilterOptions = useMemo(() => {
-    return payees
-      .sort((a, b) => a.name.localeCompare(b.name))
-      .map(payee => ({
-        value: payee.id,
-        label: payee.name,
-      }));
-  }, [payees]);
-
-  // When account status filter changes, remove any selected accounts that no longer match
-  // But only after accounts have loaded - otherwise we'd clear selections before we can validate them
-  useEffect(() => {
-    if (!filtersInitialized || filterAccountIds.length === 0 || accounts.length === 0) return;
-    const filteredIds = new Set(filteredAccounts.map(a => a.id));
-    const validSelectedIds = filterAccountIds.filter(id => filteredIds.has(id));
-    if (validSelectedIds.length !== filterAccountIds.length) {
-      setFilterAccountIds(validSelectedIds);
-    }
-  }, [filterAccountStatus, filteredAccounts, filtersInitialized, accounts.length]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // When payees change (e.g. a payee is deleted), remove any selected payee filter IDs that no longer exist
-  useEffect(() => {
-    if (!filtersInitialized || filterPayeeIds.length === 0 || payees.length === 0) return;
-    const payeeIds = new Set(payees.map(p => p.id));
-    const validSelectedIds = filterPayeeIds.filter(id => payeeIds.has(id));
-    if (validSelectedIds.length !== filterPayeeIds.length) {
-      setFilterPayeeIds(validSelectedIds);
-    }
-  }, [payees, filtersInitialized]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // When categories change (e.g. a category is deleted), remove any selected category filter IDs that no longer exist
-  useEffect(() => {
-    if (!filtersInitialized || filterCategoryIds.length === 0 || categories.length === 0) return;
-    const specialIds = new Set(['uncategorized', 'transfer']);
-    const categoryIds = new Set(categories.map(c => c.id));
-    const validSelectedIds = filterCategoryIds.filter(id => specialIds.has(id) || categoryIds.has(id));
-    if (validSelectedIds.length !== filterCategoryIds.length) {
-      setFilterCategoryIds(validSelectedIds);
-    }
-  }, [categories, filtersInitialized]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Calculate active filter count
-  const activeFilterCount = useMemo(() => {
-    let count = 0;
-    count += filterAccountIds.length;
-    count += filterCategoryIds.length;
-    count += filterPayeeIds.length;
-    if (filterStartDate) count++;
-    if (filterEndDate) count++;
-    if (filterSearch) count++;
-    return count;
-  }, [filterAccountIds, filterCategoryIds, filterPayeeIds, filterStartDate, filterEndDate, filterSearch]);
-
-  // Auto-collapse filters when there are active filters, expand when none
-  useEffect(() => {
-    if (filtersInitialized) {
-      setFiltersExpanded(activeFilterCount === 0);
-    }
-  }, [filtersInitialized]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Track if static data has been loaded
   const staticDataLoaded = useRef(false);
@@ -317,10 +88,9 @@ function TransactionsContent() {
   // Load static data (accounts, categories, payees) - only runs once
   const loadStaticData = useCallback(async () => {
     if (staticDataLoaded.current) return;
-
     try {
       const [accountsData, categoriesData, payeesData] = await Promise.all([
-        accountsApi.getAll(true), // Include closed accounts for status filter
+        accountsApi.getAll(true),
         categoriesApi.getAll(),
         payeesApi.getAll(),
       ]);
@@ -334,43 +104,34 @@ function TransactionsContent() {
     }
   }, []);
 
-  // Load transaction data and chart data in parallel - runs when filters/page change
+  // Load transaction data and chart data in parallel
   const loadTransactions = useCallback(async (page: number) => {
     try {
-      // Determine which account IDs to use for the query
-      // If specific accounts are selected, use those
-      // Otherwise, if a status filter is active, use all accounts matching that status
       let accountIdsForQuery: string[] | undefined;
-      if (filterAccountIds.length > 0) {
-        accountIdsForQuery = filterAccountIds;
-      } else if (filterAccountStatus && filteredAccounts.length > 0) {
-        // Status filter is active but no specific accounts selected - use all filtered accounts
-        accountIdsForQuery = filteredAccounts.map(a => a.id);
+      if (filters.filterAccountIds.length > 0) {
+        accountIdsForQuery = filters.filterAccountIds;
+      } else if (filters.filterAccountStatus && filters.filteredAccounts.length > 0) {
+        accountIdsForQuery = filters.filteredAccounts.map(a => a.id);
       }
 
-      // Check if we need to navigate to a specific transaction
-      const targetTransactionId = targetTransactionIdRef.current;
-      targetTransactionIdRef.current = null; // Clear after reading
+      const targetTransactionId = filters.targetTransactionIdRef.current;
+      filters.targetTransactionIdRef.current = null;
 
-      // When category, payee, or description filters are active, show monthly totals bar chart
-      // instead of balance history (which ignores those filters)
-      const hasCategoryOrPayeeFilter = filterCategoryIds.length > 0 || filterPayeeIds.length > 0 || filterSearch.length > 0;
+      const hasCategoryOrPayeeFilter = filters.filterCategoryIds.length > 0 || filters.filterPayeeIds.length > 0 || filters.filterSearch.length > 0;
 
-      // Build chart params (only filter accounts, not categories/payees/search)
       const chartParams: { startDate?: string; endDate?: string; accountIds?: string } = {};
-      if (filterStartDate) chartParams.startDate = filterStartDate;
-      if (filterEndDate) chartParams.endDate = filterEndDate;
-      if (filterAccountIds.length > 0) chartParams.accountIds = filterAccountIds.join(',');
+      if (filters.filterStartDate) chartParams.startDate = filters.filterStartDate;
+      if (filters.filterEndDate) chartParams.endDate = filters.filterEndDate;
+      if (filters.filterAccountIds.length > 0) chartParams.accountIds = filters.filterAccountIds.join(',');
 
-      // Fetch transactions and chart data in parallel
       const chartPromise = hasCategoryOrPayeeFilter
         ? transactionsApi.getMonthlyTotals({
             accountIds: accountIdsForQuery,
-            startDate: filterStartDate || undefined,
-            endDate: filterEndDate || undefined,
-            categoryIds: filterCategoryIds.length > 0 ? filterCategoryIds : undefined,
-            payeeIds: filterPayeeIds.length > 0 ? filterPayeeIds : undefined,
-            search: filterSearch || undefined,
+            startDate: filters.filterStartDate || undefined,
+            endDate: filters.filterEndDate || undefined,
+            categoryIds: filters.filterCategoryIds.length > 0 ? filters.filterCategoryIds : undefined,
+            payeeIds: filters.filterPayeeIds.length > 0 ? filters.filterPayeeIds : undefined,
+            search: filters.filterSearch || undefined,
           }).catch(() => [] as MonthlyTotal[])
         : accountsApi.getDailyBalances(
             Object.keys(chartParams).length > 0 ? chartParams : undefined,
@@ -379,11 +140,11 @@ function TransactionsContent() {
       const [transactionsResponse, chartResult] = await Promise.all([
         transactionsApi.getAll({
           accountIds: accountIdsForQuery,
-          startDate: filterStartDate || undefined,
-          endDate: filterEndDate || undefined,
-          categoryIds: filterCategoryIds.length > 0 ? filterCategoryIds : undefined,
-          payeeIds: filterPayeeIds.length > 0 ? filterPayeeIds : undefined,
-          search: filterSearch || undefined,
+          startDate: filters.filterStartDate || undefined,
+          endDate: filters.filterEndDate || undefined,
+          categoryIds: filters.filterCategoryIds.length > 0 ? filters.filterCategoryIds : undefined,
+          payeeIds: filters.filterPayeeIds.length > 0 ? filters.filterPayeeIds : undefined,
+          search: filters.filterSearch || undefined,
           page,
           limit: PAGE_SIZE,
           targetTransactionId: targetTransactionId || undefined,
@@ -403,9 +164,8 @@ function TransactionsContent() {
         setMonthlyTotals([]);
       }
 
-      // If we navigated to a specific transaction, update the page from the response
       if (targetTransactionId && transactionsResponse.pagination.page !== page) {
-        setCurrentPage(transactionsResponse.pagination.page);
+        filters.setCurrentPage(transactionsResponse.pagination.page);
       }
 
       // Fetch budget status for visible categories (non-blocking)
@@ -425,219 +185,81 @@ function TransactionsContent() {
     } finally {
       setIsLoading(false);
     }
-  }, [filterAccountIds, filterAccountStatus, filteredAccounts, filterCategoryIds, filterPayeeIds, filterStartDate, filterEndDate, filterSearch]);
+  }, [filters.filterAccountIds, filters.filterAccountStatus, filters.filteredAccounts, filters.filterCategoryIds, filters.filterPayeeIds, filters.filterStartDate, filters.filterEndDate, filters.filterSearch]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Refresh transaction data only (called after form submission - static data created
-  // in the form is already in apiCache so will be picked up on next full load)
-  const loadData = useCallback(async (page: number = currentPage) => {
+  const loadData = useCallback(async (page: number = filters.currentPage) => {
     await loadTransactions(page);
-  }, [currentPage, loadTransactions]);
+  }, [filters.currentPage, loadTransactions]);
 
-  // Full refresh including static data (called after bulk operations like inline edits)
-  const loadAllData = useCallback(async (page: number = currentPage) => {
+  const loadAllData = useCallback(async (page: number = filters.currentPage) => {
     staticDataLoaded.current = false;
     loadStaticData();
     await loadTransactions(page);
-  }, [currentPage, loadStaticData, loadTransactions]);
+  }, [filters.currentPage, loadStaticData, loadTransactions]);
 
   // Load static data once on mount
   useEffect(() => {
     loadStaticData();
   }, [loadStaticData]);
 
-  // Initialize filters on mount
-  // If ANY URL params are present (navigation from reports/links), ignore localStorage
-  // This ensures clicking from a report gives a clean view with just that filter
-  useEffect(() => {
-    const hasAnyUrlParams = searchParams.has('accountId') ||
-      searchParams.has('accountIds') ||
-      searchParams.has('categoryId') ||
-      searchParams.has('categoryIds') ||
-      searchParams.has('payeeId') ||
-      searchParams.has('payeeIds') ||
-      searchParams.has('startDate') ||
-      searchParams.has('endDate') ||
-      searchParams.has('search');
-
-    // Handle backward compatibility with single-value params
-    const getAccountIds = () => {
-      const ids = searchParams.get('accountIds');
-      const id = searchParams.get('accountId');
-      return getFilterValues(STORAGE_KEYS.accountIds, ids || id, hasAnyUrlParams);
-    };
-
-    const getCategoryIds = () => {
-      const ids = searchParams.get('categoryIds');
-      const id = searchParams.get('categoryId');
-      return getFilterValues(STORAGE_KEYS.categoryIds, ids || id, hasAnyUrlParams);
-    };
-
-    const getPayeeIds = () => {
-      const ids = searchParams.get('payeeIds');
-      const id = searchParams.get('payeeId');
-      return getFilterValues(STORAGE_KEYS.payeeIds, ids || id, hasAnyUrlParams);
-    };
-
-    setFilterAccountIds(getAccountIds());
-    setFilterCategoryIds(getCategoryIds());
-    setFilterPayeeIds(getPayeeIds());
-    const initialStartDate = getFilterValue(STORAGE_KEYS.startDate, searchParams.get('startDate'), hasAnyUrlParams);
-    const initialEndDate = getFilterValue(STORAGE_KEYS.endDate, searchParams.get('endDate'), hasAnyUrlParams);
-    setFilterStartDate(initialStartDate);
-    setFilterEndDate(initialEndDate);
-    const initialSearch = getFilterValue(STORAGE_KEYS.search, searchParams.get('search'), hasAnyUrlParams);
-    setFilterSearch(initialSearch);
-    setSearchInput(initialSearch);
-    // Restore time period from localStorage, or set to 'custom' if dates came from URL
-    if (hasAnyUrlParams) {
-      setFilterTimePeriod((initialStartDate || initialEndDate) ? 'custom' : '');
-    } else {
-      setFilterTimePeriod(getFilterValue(STORAGE_KEYS.timePeriod, null, false));
-    }
-    setFiltersInitialized(true);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Persist filter changes to localStorage (single effect instead of 7 separate ones)
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.accountStatus, JSON.stringify(filterAccountStatus));
-  }, [filterAccountStatus]);
-
-  useEffect(() => {
-    if (!filtersInitialized) return;
-    localStorage.setItem(STORAGE_KEYS.accountIds, JSON.stringify(filterAccountIds));
-    localStorage.setItem(STORAGE_KEYS.categoryIds, JSON.stringify(filterCategoryIds));
-    localStorage.setItem(STORAGE_KEYS.payeeIds, JSON.stringify(filterPayeeIds));
-    localStorage.setItem(STORAGE_KEYS.startDate, filterStartDate);
-    localStorage.setItem(STORAGE_KEYS.endDate, filterEndDate);
-    localStorage.setItem(STORAGE_KEYS.search, filterSearch);
-    localStorage.setItem(STORAGE_KEYS.timePeriod, filterTimePeriod);
-  }, [filterAccountIds, filterCategoryIds, filterPayeeIds, filterStartDate, filterEndDate, filterSearch, filterTimePeriod, filtersInitialized]);
-
-  // Track if this is a filter-triggered change (to reset page to 1)
-  const isFilterChange = useRef(false);
-  // Target transaction ID for navigating to a specific transaction (e.g., from transfer click)
-  const targetTransactionIdRef = useRef<string | null>(null);
-  // Debounce timer for filter-triggered loads (prevents rapid consecutive API calls)
-  const filterDebounceRef = useRef<NodeJS.Timeout | null>(null);
-
   // Update URL and load transactions when page or filters change
   useEffect(() => {
-    // Wait for filters to be initialized from localStorage
-    if (!filtersInitialized) return;
+    if (!filters.filtersInitialized) return;
 
-    const page = isFilterChange.current ? 1 : currentPage;
-    const wasFilterChange = isFilterChange.current;
-    if (isFilterChange.current) {
-      setCurrentPage(1);
-      isFilterChange.current = false;
+    const page = filters.isFilterChange.current ? 1 : filters.currentPage;
+    const wasFilterChange = filters.isFilterChange.current;
+    if (filters.isFilterChange.current) {
+      filters.setCurrentPage(1);
+      filters.isFilterChange.current = false;
     }
 
-    // Skip URL update when syncing from browser back/forward (URL is already correct)
-    if (syncingFromPopstateRef.current) {
-      syncingFromPopstateRef.current = false;
+    if (filters.syncingFromPopstateRef.current) {
+      filters.syncingFromPopstateRef.current = false;
     } else {
-      updateUrl(page, {
-        accountIds: filterAccountIds,
-        categoryIds: filterCategoryIds,
-        payeeIds: filterPayeeIds,
-        startDate: filterStartDate,
-        endDate: filterEndDate,
-        search: filterSearch,
+      filters.updateUrl(page, {
+        accountIds: filters.filterAccountIds,
+        categoryIds: filters.filterCategoryIds,
+        payeeIds: filters.filterPayeeIds,
+        startDate: filters.filterStartDate,
+        endDate: filters.filterEndDate,
+        search: filters.filterSearch,
       }, wasFilterChange);
     }
 
-    // Debounce filter changes to prevent rapid consecutive API calls
-    // (e.g., quickly changing category then payee). Page changes load immediately.
-    if (filterDebounceRef.current) clearTimeout(filterDebounceRef.current);
+    if (filters.filterDebounceRef.current) clearTimeout(filters.filterDebounceRef.current);
     if (wasFilterChange) {
-      filterDebounceRef.current = setTimeout(() => {
+      filters.filterDebounceRef.current = setTimeout(() => {
         loadTransactions(page);
       }, 150);
     } else {
       loadTransactions(page);
     }
-  }, [currentPage, filterAccountIds, filterCategoryIds, filterPayeeIds, filterStartDate, filterEndDate, filterSearch, updateUrl, loadTransactions, filtersInitialized]);
+  }, [filters.currentPage, filters.filterAccountIds, filters.filterCategoryIds, filters.filterPayeeIds, filters.filterStartDate, filters.filterEndDate, filters.filterSearch, filters.updateUrl, loadTransactions, filters.filtersInitialized]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Helper to update array filter and mark as filter change
-  const handleArrayFilterChange = useCallback(<T,>(setter: (value: T) => void, value: T) => {
-    isFilterChange.current = true;
-    setter(value);
-  }, []);
-
-  // Helper to update string filter and mark as filter change
-  const handleFilterChange = useCallback((setter: (value: string) => void, value: string) => {
-    isFilterChange.current = true;
-    setter(value);
-  }, []);
-
-  // Debounced search handler - updates input immediately, delays API call
-  const handleSearchChange = useCallback((value: string) => {
-    setSearchInput(value);
-    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
-    searchDebounceRef.current = setTimeout(() => {
-      isFilterChange.current = true;
-      setFilterSearch(value);
-    }, 300);
-  }, []);
-
-  // Cleanup debounce timers on unmount
+  // Patch popstate handler to skip when modals open
   useEffect(() => {
-    return () => {
-      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
-      if (filterDebounceRef.current) clearTimeout(filterDebounceRef.current);
-    };
-  }, []);
-
-  // Re-sync filter state when browser back/forward is pressed
-  // Skip when a modal is open — the Modal component handles its own history entries
-  useEffect(() => {
-    const handlePopstate = () => {
+    const origHandler = (_e: PopStateEvent) => {
       if (modalOpenRef.current) return;
-
-      const params = new URLSearchParams(window.location.search);
-      syncingFromPopstateRef.current = true;
-
-      setFilterAccountIds(params.get('accountIds')?.split(',').filter(Boolean) || []);
-      setFilterCategoryIds(params.get('categoryIds')?.split(',').filter(Boolean) || []);
-      setFilterPayeeIds(params.get('payeeIds')?.split(',').filter(Boolean) || []);
-      setFilterStartDate(params.get('startDate') || '');
-      setFilterEndDate(params.get('endDate') || '');
-      const search = params.get('search') || '';
-      setFilterSearch(search);
-      setSearchInput(search);
-      // Reset time period to custom if dates exist, otherwise empty
-      const hasDateParams = params.has('startDate') || params.has('endDate');
-      setFilterTimePeriod(hasDateParams ? 'custom' : '');
-      const pageParam = params.get('page');
-      setCurrentPage(pageParam ? parseInt(pageParam, 10) : 1);
+      // The popstate handler in the hook runs separately
     };
-
-    window.addEventListener('popstate', handlePopstate);
-    return () => window.removeEventListener('popstate', handlePopstate);
+    window.addEventListener('popstate', origHandler);
+    return () => window.removeEventListener('popstate', origHandler);
   }, []);
 
-  const handleCreateNew = () => {
-    openCreate();
-  };
+  const handleCreateNew = () => openCreate();
 
   const handleEdit = async (transaction: Transaction) => {
-    // For investment-linked transactions, redirect to the investments page with the transaction ID
     if (transaction.linkedInvestmentTransactionId) {
-      toast('This transaction is linked to an investment. Opening in Investments page.', {
-        icon: '📈',
-      });
+      toast('This transaction is linked to an investment. Opening in Investments page.', { icon: '📈' });
       router.push(`/investments?edit=${transaction.linkedInvestmentTransactionId}`);
       return;
     }
-
-    // For transfers, fetch the full transaction with linkedTransaction relation
     if (transaction.isTransfer) {
       try {
         const fullTransaction = await transactionsApi.getById(transaction.id);
         openEdit(fullTransaction);
       } catch (error) {
         logger.error('Failed to load transaction details:', error);
-        // Fall back to using the list transaction
         openEdit(transaction);
       }
     } else {
@@ -649,10 +271,9 @@ function TransactionsContent() {
 
   const handleFormSuccess = () => {
     close();
-    setFormKey(prev => prev + 1); // Force form re-creation on next open
+    setFormKey(prev => prev + 1);
     loadData();
   };
-
 
   const handlePayeeClick = async (payeeId: string) => {
     try {
@@ -664,43 +285,6 @@ function TransactionsContent() {
       logger.error(error);
     }
   };
-
-  const handleCategoryClick = useCallback((categoryId: string) => {
-    // Clear account filter to show across all accounts, then set category filter
-    isFilterChange.current = true;
-    setFilterAccountIds([]);
-    setFilterAccountStatus('');
-    setFilterCategoryIds([categoryId]);
-  }, []);
-
-  const handleDateFilterClick = useCallback((date: string) => {
-    isFilterChange.current = true;
-    setFilterStartDate(date);
-    setFilterEndDate(date);
-    setFilterTimePeriod('custom');
-  }, []);
-
-  const handleAccountFilterClick = useCallback((accountId: string) => {
-    isFilterChange.current = true;
-    setFilterAccountStatus('');
-    setFilterAccountIds([accountId]);
-  }, []);
-
-  const handlePayeeFilterClick = useCallback((payeeId: string) => {
-    isFilterChange.current = true;
-    setFilterPayeeIds([payeeId]);
-  }, []);
-
-  const handleTransferClick = useCallback((linkedAccountId: string, linkedTransactionId: string) => {
-    // Navigate to the linked account and jump to the page containing the linked transaction
-    // Store the target transaction ID so loadTransactions can request the correct page
-    targetTransactionIdRef.current = linkedTransactionId;
-    // Reset account status filter to show all accounts (in case the linked account doesn't match current status filter)
-    setFilterAccountStatus('');
-    // Set the account filter to the linked account
-    isFilterChange.current = true;
-    setFilterAccountIds([linkedAccountId]);
-  }, []);
 
   const handlePayeeFormSubmit = async (data: any) => {
     if (!editingPayee) return;
@@ -714,7 +298,6 @@ function TransactionsContent() {
       toast.success('Payee updated successfully');
       setShowPayeeForm(false);
       setEditingPayee(undefined);
-      // Update payee in-place instead of refetching all payees
       setPayees(prev => prev.map(p => p.id === updated.id ? updated : p));
     } catch (error) {
       toast.error(getErrorMessage(error, 'Failed to update payee'));
@@ -726,14 +309,6 @@ function TransactionsContent() {
     setEditingPayee(undefined);
   };
 
-  const goToPage = (page: number) => {
-    if (page >= 1 && (!pagination || page <= pagination.totalPages)) {
-      setCurrentPage(page);
-    }
-  };
-
-  // Handle in-place transaction update (e.g., clearing status) without full refresh
-  // Preserve linkedInvestmentTransactionId since it's only computed in findAll
   const handleTransactionUpdate = useCallback((updatedTransaction: Transaction) => {
     setTransactions(prev =>
       prev.map(tx => tx.id === updatedTransaction.id
@@ -745,21 +320,20 @@ function TransactionsContent() {
 
   // Build current filters for bulk update selection
   const bulkUpdateFilters = useMemo((): BulkUpdateFilters => {
-    const filters: BulkUpdateFilters = {};
-    if (filterAccountIds.length > 0) {
-      filters.accountIds = filterAccountIds;
-    } else if (filterAccountStatus && filteredAccounts.length > 0) {
-      filters.accountIds = filteredAccounts.map(a => a.id);
+    const f: BulkUpdateFilters = {};
+    if (filters.filterAccountIds.length > 0) {
+      f.accountIds = filters.filterAccountIds;
+    } else if (filters.filterAccountStatus && filters.filteredAccounts.length > 0) {
+      f.accountIds = filters.filteredAccounts.map(a => a.id);
     }
-    if (filterCategoryIds.length > 0) filters.categoryIds = filterCategoryIds;
-    if (filterPayeeIds.length > 0) filters.payeeIds = filterPayeeIds;
-    if (filterStartDate) filters.startDate = filterStartDate;
-    if (filterEndDate) filters.endDate = filterEndDate;
-    if (filterSearch) filters.search = filterSearch;
-    return filters;
-  }, [filterAccountIds, filterAccountStatus, filteredAccounts, filterCategoryIds, filterPayeeIds, filterStartDate, filterEndDate, filterSearch]);
+    if (filters.filterCategoryIds.length > 0) f.categoryIds = filters.filterCategoryIds;
+    if (filters.filterPayeeIds.length > 0) f.payeeIds = filters.filterPayeeIds;
+    if (filters.filterStartDate) f.startDate = filters.filterStartDate;
+    if (filters.filterEndDate) f.endDate = filters.filterEndDate;
+    if (filters.filterSearch) f.search = filters.filterSearch;
+    return f;
+  }, [filters.filterAccountIds, filters.filterAccountStatus, filters.filteredAccounts, filters.filterCategoryIds, filters.filterPayeeIds, filters.filterStartDate, filters.filterEndDate, filters.filterSearch]);
 
-  // Transaction selection for bulk operations
   const selection = useTransactionSelection(
     transactions,
     pagination?.total ?? 0,
@@ -768,15 +342,10 @@ function TransactionsContent() {
 
   const handleBulkUpdate = useCallback(async (updateFields: Partial<Pick<BulkUpdateData, 'payeeId' | 'payeeName' | 'categoryId' | 'description' | 'status'>>) => {
     const payload = selection.buildSelectionPayload();
-    const result = await transactionsApi.bulkUpdate({
-      ...payload,
-      ...updateFields,
-    } as BulkUpdateData);
+    const result = await transactionsApi.bulkUpdate({ ...payload, ...updateFields } as BulkUpdateData);
 
     const parts = [`${result.updated} transaction${result.updated !== 1 ? 's' : ''} updated`];
-    if (result.skipped > 0) {
-      parts.push(`${result.skipped} skipped`);
-    }
+    if (result.skipped > 0) parts.push(`${result.skipped} skipped`);
     toast.success(parts.join(', '));
     if (result.skippedReasons.length > 0) {
       result.skippedReasons.forEach(reason => toast(reason, { icon: 'ℹ️' }));
@@ -797,16 +366,10 @@ function TransactionsContent() {
           subtitle="Manage your income and expenses"
           actions={<Button onClick={handleCreateNew}>+ New Transaction</Button>}
         />
-        {filterCategoryIds.length > 0 || filterPayeeIds.length > 0 || filterSearch.length > 0 ? (
-          <CategoryPayeeBarChart
-            data={monthlyTotals}
-            isLoading={isLoading}
-          />
+        {filters.filterCategoryIds.length > 0 || filters.filterPayeeIds.length > 0 || filters.filterSearch.length > 0 ? (
+          <CategoryPayeeBarChart data={monthlyTotals} isLoading={isLoading} />
         ) : (
-          <BalanceHistoryChart
-            data={dailyBalances}
-            isLoading={isLoading}
-          />
+          <BalanceHistoryChart data={dailyBalances} isLoading={isLoading} />
         )}
 
         {/* Form Modal */}
@@ -815,9 +378,9 @@ function TransactionsContent() {
             {editingTransaction ? 'Edit Transaction' : 'New Transaction'}
           </h2>
           <TransactionForm
-            key={`${editingTransaction?.id || 'new'}-${filterAccountIds.join(',')}-${formKey}`}
+            key={`${editingTransaction?.id || 'new'}-${filters.filterAccountIds.join(',')}-${formKey}`}
             transaction={editingTransaction}
-            defaultAccountId={filterAccountIds.length === 1 ? filterAccountIds[0] : undefined}
+            defaultAccountId={filters.filterAccountIds.length === 1 ? filters.filterAccountIds[0] : undefined}
             onSuccess={handleFormSuccess}
             onCancel={close}
             onDirtyChange={setFormDirty}
@@ -829,9 +392,7 @@ function TransactionsContent() {
         {/* Payee Edit Modal */}
         {editingPayee && (
           <Modal isOpen={showPayeeForm} onClose={handlePayeeFormCancel} maxWidth="lg" className="p-6" pushHistory>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
-              Edit Payee
-            </h2>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">Edit Payee</h2>
             <PayeeForm
               payee={editingPayee}
               categories={categories}
@@ -842,63 +403,44 @@ function TransactionsContent() {
         )}
 
         <TransactionFilterPanel
-          filterAccountIds={filterAccountIds}
-          filterCategoryIds={filterCategoryIds}
-          filterPayeeIds={filterPayeeIds}
-          filterStartDate={filterStartDate}
-          filterEndDate={filterEndDate}
-          filterSearch={filterSearch}
-          searchInput={searchInput}
-          filterAccountStatus={filterAccountStatus}
-          filterTimePeriod={filterTimePeriod}
+          filterAccountIds={filters.filterAccountIds}
+          filterCategoryIds={filters.filterCategoryIds}
+          filterPayeeIds={filters.filterPayeeIds}
+          filterStartDate={filters.filterStartDate}
+          filterEndDate={filters.filterEndDate}
+          filterSearch={filters.filterSearch}
+          searchInput={filters.searchInput}
+          filterAccountStatus={filters.filterAccountStatus}
+          filterTimePeriod={filters.filterTimePeriod}
           weekStartsOn={weekStartsOn}
-          handleArrayFilterChange={handleArrayFilterChange}
-          handleFilterChange={handleFilterChange}
-          handleSearchChange={handleSearchChange}
-          setFilterAccountStatus={setFilterAccountStatus}
-          setFilterAccountIds={setFilterAccountIds}
-          setFilterCategoryIds={setFilterCategoryIds}
-          setFilterPayeeIds={setFilterPayeeIds}
-          setFilterStartDate={setFilterStartDate}
-          setFilterEndDate={setFilterEndDate}
-          setFilterSearch={setFilterSearch}
-          setFilterTimePeriod={setFilterTimePeriod}
-          filtersExpanded={filtersExpanded}
-          setFiltersExpanded={setFiltersExpanded}
-          activeFilterCount={activeFilterCount}
-          filteredAccounts={filteredAccounts}
-          selectedAccounts={selectedAccounts}
-          selectedCategories={selectedCategories}
-          selectedPayees={selectedPayees}
-          accountFilterOptions={accountFilterOptions}
-          categoryFilterOptions={categoryFilterOptions}
-          payeeFilterOptions={payeeFilterOptions}
+          handleArrayFilterChange={filters.handleArrayFilterChange}
+          handleFilterChange={filters.handleFilterChange}
+          handleSearchChange={filters.handleSearchChange}
+          setFilterAccountStatus={filters.setFilterAccountStatus}
+          setFilterAccountIds={filters.setFilterAccountIds}
+          setFilterCategoryIds={filters.setFilterCategoryIds}
+          setFilterPayeeIds={filters.setFilterPayeeIds}
+          setFilterStartDate={filters.setFilterStartDate}
+          setFilterEndDate={filters.setFilterEndDate}
+          setFilterSearch={filters.setFilterSearch}
+          setFilterTimePeriod={filters.setFilterTimePeriod}
+          filtersExpanded={filters.filtersExpanded}
+          setFiltersExpanded={filters.setFiltersExpanded}
+          activeFilterCount={filters.activeFilterCount}
+          filteredAccounts={filters.filteredAccounts}
+          selectedAccounts={filters.selectedAccounts}
+          selectedCategories={filters.selectedCategories}
+          selectedPayees={filters.selectedPayees}
+          accountFilterOptions={filters.accountFilterOptions}
+          categoryFilterOptions={filters.categoryFilterOptions}
+          payeeFilterOptions={filters.payeeFilterOptions}
           formatDate={formatDate}
           bulkSelectMode={bulkSelectMode}
           onToggleBulkSelectMode={() => {
-            if (bulkSelectMode) {
-              selection.clearSelection();
-            }
+            if (bulkSelectMode) selection.clearSelection();
             setBulkSelectMode(!bulkSelectMode);
           }}
-          onClearFilters={() => {
-            setCurrentPage(1);
-            setFilterAccountIds([]);
-            setFilterCategoryIds([]);
-            setFilterPayeeIds([]);
-            setFilterStartDate('');
-            setFilterEndDate('');
-            setFilterSearch('');
-            setFilterTimePeriod('');
-            localStorage.removeItem(STORAGE_KEYS.accountIds);
-            localStorage.removeItem(STORAGE_KEYS.categoryIds);
-            localStorage.removeItem(STORAGE_KEYS.payeeIds);
-            localStorage.removeItem(STORAGE_KEYS.startDate);
-            localStorage.removeItem(STORAGE_KEYS.endDate);
-            localStorage.removeItem(STORAGE_KEYS.search);
-            localStorage.removeItem(STORAGE_KEYS.timePeriod);
-            router.replace('/transactions', { scroll: false });
-          }}
+          onClearFilters={filters.clearFilters}
         />
 
         {/* Bulk Selection Banner */}
@@ -933,26 +475,26 @@ function TransactionsContent() {
               onRefresh={loadAllData}
               onTransactionUpdate={handleTransactionUpdate}
               onPayeeClick={handlePayeeClick}
-              onTransferClick={handleTransferClick}
-              onCategoryClick={handleCategoryClick}
-              onDateFilterClick={handleDateFilterClick}
-              onAccountFilterClick={handleAccountFilterClick}
-              onPayeeFilterClick={handlePayeeFilterClick}
+              onTransferClick={filters.handleTransferClick}
+              onCategoryClick={filters.handleCategoryClick}
+              onDateFilterClick={filters.handleDateFilterClick}
+              onAccountFilterClick={filters.handleAccountFilterClick}
+              onPayeeFilterClick={filters.handlePayeeFilterClick}
               density={listDensity}
               onDensityChange={setListDensity}
-              isSingleAccountView={filterAccountIds.length === 1}
+              isSingleAccountView={filters.filterAccountIds.length === 1}
               selectionMode={bulkSelectMode}
               selectedIds={selection.selectedIds}
               onToggleSelection={selection.toggleTransaction}
               onToggleAllOnPage={selection.toggleAllOnPage}
               isAllOnPageSelected={selection.isAllOnPageSelected}
               startingBalance={startingBalance}
-              currentPage={currentPage}
+              currentPage={filters.currentPage}
               totalPages={pagination?.totalPages ?? 1}
               totalItems={pagination?.total ?? 0}
               pageSize={PAGE_SIZE}
-              onPageChange={goToPage}
-              categoryColorMap={categoryColorMap}
+              onPageChange={filters.goToPage}
+              categoryColorMap={filters.categoryColorMap}
               budgetStatusMap={budgetStatusMap}
             />
           )}
@@ -962,11 +504,11 @@ function TransactionsContent() {
         {pagination && pagination.totalPages > 1 && (
           <div className="mt-4">
             <Pagination
-              currentPage={currentPage}
+              currentPage={filters.currentPage}
               totalPages={pagination.totalPages}
               totalItems={pagination.total}
               pageSize={PAGE_SIZE}
-              onPageChange={goToPage}
+              onPageChange={filters.goToPage}
               itemName="transactions"
             />
           </div>

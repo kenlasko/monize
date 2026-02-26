@@ -1,7 +1,7 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import {
-  BadRequestException,
+  NotFoundException,
   ConflictException,
   ForbiddenException,
 } from "@nestjs/common";
@@ -213,12 +213,12 @@ describe("UsersService", () => {
       ).rejects.toThrow(ConflictException);
     });
 
-    it("throws BadRequestException when user not found", async () => {
+    it("throws NotFoundException when user not found", async () => {
       usersRepository.findOne.mockResolvedValue(null);
 
       await expect(
         service.updateProfile("nonexistent", { firstName: "Test" }),
-      ).rejects.toThrow(BadRequestException);
+      ).rejects.toThrow(NotFoundException);
     });
 
     it("strips sensitive fields from result", async () => {
@@ -411,7 +411,7 @@ describe("UsersService", () => {
           currentPassword: "pass",
           newPassword: "NewPass456!",
         }),
-      ).rejects.toThrow(BadRequestException);
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -446,7 +446,7 @@ describe("UsersService", () => {
       usersRepository.findOne.mockResolvedValue(null);
 
       await expect(service.deleteAccount("nonexistent")).rejects.toThrow(
-        BadRequestException,
+        NotFoundException,
       );
     });
 

@@ -6,6 +6,7 @@ import { ExchangeRate } from "./entities/exchange-rate.entity";
 import { Currency } from "./entities/currency.entity";
 import { Account } from "../accounts/entities/account.entity";
 import { UserPreference } from "../users/entities/user-preference.entity";
+import { YahooFinanceService } from "../securities/yahoo-finance.service";
 
 describe("ExchangeRateService", () => {
   let service: ExchangeRateService;
@@ -14,8 +15,7 @@ describe("ExchangeRateService", () => {
   let accountRepository: Record<string, jest.Mock>;
   let userPreferenceRepository: Record<string, jest.Mock>;
   let dataSource: Record<string, jest.Mock>;
-
-  const originalFetch = global.fetch;
+  let yahooFinanceService: Record<string, jest.Mock>;
 
   const mockExchangeRate: ExchangeRate = {
     id: 1,
@@ -75,6 +75,11 @@ describe("ExchangeRateService", () => {
       query: jest.fn(),
     };
 
+    yahooFinanceService = {
+      fetchQuote: jest.fn(),
+      fetchHistorical: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ExchangeRateService,
@@ -89,14 +94,11 @@ describe("ExchangeRateService", () => {
           useValue: userPreferenceRepository,
         },
         { provide: DataSource, useValue: dataSource },
+        { provide: YahooFinanceService, useValue: yahooFinanceService },
       ],
     }).compile();
 
     service = module.get<ExchangeRateService>(ExchangeRateService);
-  });
-
-  afterEach(() => {
-    global.fetch = originalFetch;
   });
 
   describe("onModuleInit", () => {
@@ -190,14 +192,9 @@ describe("ExchangeRateService", () => {
         { code: "EUR" },
       ]);
 
-      // Mock fetchYahooRate via global.fetch
-      global.fetch = jest.fn().mockResolvedValue({
-        ok: true,
-        json: jest.fn().mockResolvedValue({
-          chart: {
-            result: [{ meta: { regularMarketPrice: 1.365 } }],
-          },
-        }),
+      // Mock fetchQuote via yahooFinanceService
+      yahooFinanceService.fetchQuote.mockResolvedValue({
+        regularMarketPrice: 1.365,
       });
 
       // saveRate: no existing rate found, then save
@@ -214,16 +211,14 @@ describe("ExchangeRateService", () => {
       expect(result.updated).toBe(3);
       expect(result.failed).toBe(0);
       expect(result.results).toHaveLength(3);
-      expect(global.fetch).toHaveBeenCalledTimes(3);
+      expect(yahooFinanceService.fetchQuote).toHaveBeenCalledTimes(3);
     });
 
     it("handles failed Yahoo API calls gracefully", async () => {
       dataSource.query.mockResolvedValue([{ code: "USD" }, { code: "CAD" }]);
 
-      global.fetch = jest.fn().mockResolvedValue({
-        ok: false,
-        status: 500,
-      });
+      // fetchQuote returns null when Yahoo API fails
+      yahooFinanceService.fetchQuote.mockResolvedValue(null);
 
       const result = await service.refreshAllRates();
 
@@ -237,7 +232,8 @@ describe("ExchangeRateService", () => {
     it("handles fetch network errors gracefully", async () => {
       dataSource.query.mockResolvedValue([{ code: "USD" }, { code: "CAD" }]);
 
-      global.fetch = jest.fn().mockRejectedValue(new Error("Network error"));
+      // fetchQuote returns null when network error occurs (YahooFinanceService catches internally)
+      yahooFinanceService.fetchQuote.mockResolvedValue(null);
 
       const result = await service.refreshAllRates();
 
@@ -249,12 +245,8 @@ describe("ExchangeRateService", () => {
     it("handles missing rate data in Yahoo response", async () => {
       dataSource.query.mockResolvedValue([{ code: "USD" }, { code: "CAD" }]);
 
-      global.fetch = jest.fn().mockResolvedValue({
-        ok: true,
-        json: jest.fn().mockResolvedValue({
-          chart: { result: [{ meta: {} }] },
-        }),
-      });
+      // fetchQuote returns result without regularMarketPrice
+      yahooFinanceService.fetchQuote.mockResolvedValue({});
 
       const result = await service.refreshAllRates();
 
@@ -265,13 +257,8 @@ describe("ExchangeRateService", () => {
     it("updates existing rate when one already exists for the date", async () => {
       dataSource.query.mockResolvedValue([{ code: "USD" }, { code: "CAD" }]);
 
-      global.fetch = jest.fn().mockResolvedValue({
-        ok: true,
-        json: jest.fn().mockResolvedValue({
-          chart: {
-            result: [{ meta: { regularMarketPrice: 1.4 } }],
-          },
-        }),
+      yahooFinanceService.fetchQuote.mockResolvedValue({
+        regularMarketPrice: 1.4,
       });
 
       const existingRate = { ...mockExchangeRate };
@@ -290,13 +277,8 @@ describe("ExchangeRateService", () => {
     it("handles saveRate failure gracefully", async () => {
       dataSource.query.mockResolvedValue([{ code: "USD" }, { code: "CAD" }]);
 
-      global.fetch = jest.fn().mockResolvedValue({
-        ok: true,
-        json: jest.fn().mockResolvedValue({
-          chart: {
-            result: [{ meta: { regularMarketPrice: 1.365 } }],
-          },
-        }),
+      yahooFinanceService.fetchQuote.mockResolvedValue({
+        regularMarketPrice: 1.365,
       });
 
       exchangeRateRepository.findOne.mockResolvedValue(null);
@@ -320,13 +302,8 @@ describe("ExchangeRateService", () => {
         { code: "GBP" },
       ]);
 
-      global.fetch = jest.fn().mockResolvedValue({
-        ok: true,
-        json: jest.fn().mockResolvedValue({
-          chart: {
-            result: [{ meta: { regularMarketPrice: 1.0 } }],
-          },
-        }),
+      yahooFinanceService.fetchQuote.mockResolvedValue({
+        regularMarketPrice: 1.0,
       });
 
       exchangeRateRepository.findOne.mockResolvedValue(null);
@@ -436,9 +413,6 @@ describe("ExchangeRateService", () => {
         defaultCurrency: "USD",
       });
 
-      const ts1 = new Date("2025-06-01").getTime() / 1000;
-      const ts2 = new Date("2025-06-02").getTime() / 1000;
-
       dataSource.query
         .mockResolvedValueOnce([
           { currency_code: "CAD", earliest: "2025-06-01" },
@@ -447,21 +421,24 @@ describe("ExchangeRateService", () => {
         .mockResolvedValueOnce([{ count: 0 }]) // no existing rates
         .mockResolvedValueOnce(undefined); // bulk upsert INSERT
 
-      global.fetch = jest.fn().mockResolvedValue({
-        ok: true,
-        json: jest.fn().mockResolvedValue({
-          chart: {
-            result: [
-              {
-                timestamp: [ts1, ts2],
-                indicators: {
-                  quote: [{ close: [1.365, 1.37] }],
-                },
-              },
-            ],
-          },
-        }),
-      });
+      yahooFinanceService.fetchHistorical.mockResolvedValue([
+        {
+          date: new Date("2025-06-01"),
+          open: null,
+          high: null,
+          low: null,
+          close: 1.365,
+          volume: null,
+        },
+        {
+          date: new Date("2025-06-02"),
+          open: null,
+          high: null,
+          low: null,
+          close: 1.37,
+          volume: null,
+        },
+      ]);
 
       const result = await service.backfillHistoricalRates("user-1");
 
@@ -478,11 +455,6 @@ describe("ExchangeRateService", () => {
         defaultCurrency: "USD",
       });
 
-      // The earliest transaction is 2025-06-15, so rates before that should be filtered out
-      const ts1 = new Date("2025-06-01").getTime() / 1000; // before cutoff
-      const ts2 = new Date("2025-06-15").getTime() / 1000; // on cutoff
-      const ts3 = new Date("2025-06-20").getTime() / 1000; // after cutoff
-
       dataSource.query
         .mockResolvedValueOnce([
           { currency_code: "EUR", earliest: "2025-06-15" },
@@ -491,21 +463,32 @@ describe("ExchangeRateService", () => {
         .mockResolvedValueOnce([{ count: 0 }])
         .mockResolvedValueOnce(undefined); // bulk upsert
 
-      global.fetch = jest.fn().mockResolvedValue({
-        ok: true,
-        json: jest.fn().mockResolvedValue({
-          chart: {
-            result: [
-              {
-                timestamp: [ts1, ts2, ts3],
-                indicators: {
-                  quote: [{ close: [1.1, 1.2, 1.3] }],
-                },
-              },
-            ],
-          },
-        }),
-      });
+      yahooFinanceService.fetchHistorical.mockResolvedValue([
+        {
+          date: new Date("2025-06-01"),
+          open: null,
+          high: null,
+          low: null,
+          close: 1.1,
+          volume: null,
+        }, // before cutoff
+        {
+          date: new Date("2025-06-15"),
+          open: null,
+          high: null,
+          low: null,
+          close: 1.2,
+          volume: null,
+        }, // on cutoff
+        {
+          date: new Date("2025-06-20"),
+          open: null,
+          high: null,
+          low: null,
+          close: 1.3,
+          volume: null,
+        }, // after cutoff
+      ]);
 
       const result = await service.backfillHistoricalRates("user-1");
 
@@ -520,10 +503,13 @@ describe("ExchangeRateService", () => {
         defaultCurrency: "USD",
       });
 
-      // Two timestamps that resolve to the same date
-      const ts1 = new Date("2025-07-01T10:00:00Z").getTime() / 1000;
-      const ts2 = new Date("2025-07-01T20:00:00Z").getTime() / 1000;
-      const ts3 = new Date("2025-07-02T10:00:00Z").getTime() / 1000;
+      // YahooFinanceService already normalizes dates to midnight, so two entries with same date
+      const date1 = new Date("2025-07-01");
+      date1.setHours(0, 0, 0, 0);
+      const date2 = new Date("2025-07-01");
+      date2.setHours(0, 0, 0, 0);
+      const date3 = new Date("2025-07-02");
+      date3.setHours(0, 0, 0, 0);
 
       dataSource.query
         .mockResolvedValueOnce([
@@ -533,25 +519,36 @@ describe("ExchangeRateService", () => {
         .mockResolvedValueOnce([{ count: 0 }])
         .mockResolvedValueOnce(undefined); // bulk upsert
 
-      global.fetch = jest.fn().mockResolvedValue({
-        ok: true,
-        json: jest.fn().mockResolvedValue({
-          chart: {
-            result: [
-              {
-                timestamp: [ts1, ts2, ts3],
-                indicators: {
-                  quote: [{ close: [1.25, 1.26, 1.27] }],
-                },
-              },
-            ],
-          },
-        }),
-      });
+      yahooFinanceService.fetchHistorical.mockResolvedValue([
+        {
+          date: date1,
+          open: null,
+          high: null,
+          low: null,
+          close: 1.25,
+          volume: null,
+        },
+        {
+          date: date2,
+          open: null,
+          high: null,
+          low: null,
+          close: 1.26,
+          volume: null,
+        },
+        {
+          date: date3,
+          open: null,
+          high: null,
+          low: null,
+          close: 1.27,
+          volume: null,
+        },
+      ]);
 
       const result = await service.backfillHistoricalRates("user-1");
 
-      // ts1 and ts2 are the same date after setHours(0,0,0,0), so one is deduped
+      // date1 and date2 are the same date, so one is deduped
       expect(result.results[0].ratesLoaded).toBe(2);
     });
 
@@ -561,10 +558,6 @@ describe("ExchangeRateService", () => {
         defaultCurrency: "USD",
       });
 
-      const ts1 = new Date("2025-08-01").getTime() / 1000;
-      const ts2 = new Date("2025-08-02").getTime() / 1000;
-      const ts3 = new Date("2025-08-03").getTime() / 1000;
-
       dataSource.query
         .mockResolvedValueOnce([
           { currency_code: "JPY", earliest: "2025-08-01" },
@@ -573,25 +566,21 @@ describe("ExchangeRateService", () => {
         .mockResolvedValueOnce([{ count: 0 }])
         .mockResolvedValueOnce(undefined); // bulk upsert
 
-      global.fetch = jest.fn().mockResolvedValue({
-        ok: true,
-        json: jest.fn().mockResolvedValue({
-          chart: {
-            result: [
-              {
-                timestamp: [ts1, ts2, ts3],
-                indicators: {
-                  quote: [{ close: [null, NaN, 150.5] }],
-                },
-              },
-            ],
-          },
-        }),
-      });
+      // YahooFinanceService.fetchHistorical already filters null/NaN, so only valid entries returned
+      yahooFinanceService.fetchHistorical.mockResolvedValue([
+        {
+          date: new Date("2025-08-03"),
+          open: null,
+          high: null,
+          low: null,
+          close: 150.5,
+          volume: null,
+        },
+      ]);
 
       const result = await service.backfillHistoricalRates("user-1");
 
-      // Only the third rate with value 150.5 should be included
+      // Only the rate with value 150.5 should be included
       expect(result.results[0].ratesLoaded).toBe(1);
     });
 
@@ -608,10 +597,8 @@ describe("ExchangeRateService", () => {
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([{ count: 0 }]);
 
-      global.fetch = jest.fn().mockResolvedValue({
-        ok: false,
-        status: 404,
-      });
+      // YahooFinanceService returns null on API failure
+      yahooFinanceService.fetchHistorical.mockResolvedValue(null);
 
       const result = await service.backfillHistoricalRates("user-1");
 
@@ -634,7 +621,8 @@ describe("ExchangeRateService", () => {
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([{ count: 0 }]);
 
-      global.fetch = jest.fn().mockRejectedValue(new Error("Network error"));
+      // YahooFinanceService returns null on network error
+      yahooFinanceService.fetchHistorical.mockResolvedValue(null);
 
       const result = await service.backfillHistoricalRates("user-1");
 
@@ -648,8 +636,6 @@ describe("ExchangeRateService", () => {
         defaultCurrency: "USD",
       });
 
-      const ts1 = new Date("2025-09-01").getTime() / 1000;
-
       dataSource.query
         .mockResolvedValueOnce([
           { currency_code: "CHF", earliest: "2025-09-01" },
@@ -658,21 +644,16 @@ describe("ExchangeRateService", () => {
         .mockResolvedValueOnce([{ count: 0 }])
         .mockRejectedValueOnce(new Error("Constraint violation"));
 
-      global.fetch = jest.fn().mockResolvedValue({
-        ok: true,
-        json: jest.fn().mockResolvedValue({
-          chart: {
-            result: [
-              {
-                timestamp: [ts1],
-                indicators: {
-                  quote: [{ close: [0.92] }],
-                },
-              },
-            ],
-          },
-        }),
-      });
+      yahooFinanceService.fetchHistorical.mockResolvedValue([
+        {
+          date: new Date("2025-09-01"),
+          open: null,
+          high: null,
+          low: null,
+          close: 0.92,
+          volume: null,
+        },
+      ]);
 
       const result = await service.backfillHistoricalRates("user-1");
 
@@ -705,10 +686,6 @@ describe("ExchangeRateService", () => {
         defaultCurrency: "USD",
       });
 
-      // Earliest transaction is 2026-01-01, but rates are all from 2025
-      const ts1 = new Date("2025-01-01").getTime() / 1000;
-      const ts2 = new Date("2025-06-01").getTime() / 1000;
-
       dataSource.query
         .mockResolvedValueOnce([
           { currency_code: "MXN", earliest: "2026-01-01" },
@@ -716,21 +693,25 @@ describe("ExchangeRateService", () => {
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([{ count: 0 }]);
 
-      global.fetch = jest.fn().mockResolvedValue({
-        ok: true,
-        json: jest.fn().mockResolvedValue({
-          chart: {
-            result: [
-              {
-                timestamp: [ts1, ts2],
-                indicators: {
-                  quote: [{ close: [17.0, 17.5] }],
-                },
-              },
-            ],
-          },
-        }),
-      });
+      // Earliest transaction is 2026-01-01, but rates are all from 2025
+      yahooFinanceService.fetchHistorical.mockResolvedValue([
+        {
+          date: new Date("2025-01-01"),
+          open: null,
+          high: null,
+          low: null,
+          close: 17.0,
+          volume: null,
+        },
+        {
+          date: new Date("2025-06-01"),
+          open: null,
+          high: null,
+          low: null,
+          close: 17.5,
+          volume: null,
+        },
+      ]);
 
       const result = await service.backfillHistoricalRates("user-1");
 
@@ -773,14 +754,8 @@ describe("ExchangeRateService", () => {
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([{ count: 0 }]);
 
-      global.fetch = jest.fn().mockResolvedValue({
-        ok: true,
-        json: jest.fn().mockResolvedValue({
-          chart: {
-            result: [{ meta: { regularMarketPrice: 10.5 } }], // no timestamp/indicators
-          },
-        }),
-      });
+      // YahooFinanceService returns null when response has no timestamp/indicators
+      yahooFinanceService.fetchHistorical.mockResolvedValue(null);
 
       const result = await service.backfillHistoricalRates("user-1");
 

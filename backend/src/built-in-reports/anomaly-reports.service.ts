@@ -9,6 +9,7 @@ import {
   SpendingAnomaly,
   AnomalySeverity,
 } from "./dto";
+import { formatDateYMD } from "../common/date-utils";
 
 @Injectable()
 export class AnomalyReportsService {
@@ -31,8 +32,8 @@ export class AnomalyReportsService {
     const now = new Date();
     const sixMonthsAgo = new Date(now);
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-    const startDate = sixMonthsAgo.toISOString().split("T")[0];
-    const endDate = now.toISOString().split("T")[0];
+    const startDate = formatDateYMD(sixMonthsAgo);
+    const endDate = formatDateYMD(now);
 
     const query = `
       SELECT

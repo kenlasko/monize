@@ -36,6 +36,7 @@ import {
 } from "./dto/update-mortgage-rate.dto";
 import { PaymentFrequency } from "./loan-amortization.util";
 import { MortgagePaymentFrequency } from "./mortgage-amortization.util";
+import { formatDateYMD } from "../common/date-utils";
 
 @ApiTags("Accounts")
 @Controller("accounts")
@@ -178,7 +179,7 @@ export class AccountsController {
     );
     return {
       ...result,
-      endDate: result.endDate.toISOString().split("T")[0],
+      endDate: formatDateYMD(result.endDate),
     };
   }
 

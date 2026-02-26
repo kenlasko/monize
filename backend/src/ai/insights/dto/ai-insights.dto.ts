@@ -1,4 +1,5 @@
-import { IsOptional, IsString, IsIn } from "class-validator";
+import { IsOptional, IsString, IsIn, IsBoolean } from "class-validator";
+import { Transform } from "class-transformer";
 import {
   INSIGHT_TYPES,
   INSIGHT_SEVERITIES,
@@ -18,9 +19,9 @@ export class GetInsightsQueryDto {
   severity?: InsightSeverity;
 
   @IsOptional()
-  @IsString()
-  @IsIn(["true", "false"])
-  includeDismissed?: string;
+  @IsBoolean()
+  @Transform(({ value }) => value === "true" || value === true)
+  includeDismissed?: boolean;
 }
 
 export interface AiInsightResponse {

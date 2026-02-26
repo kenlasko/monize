@@ -11,6 +11,7 @@ import {
   Request,
   ParseUUIDPipe,
   ParseIntPipe,
+  ParseBoolPipe,
   DefaultValuePipe,
 } from "@nestjs/common";
 import {
@@ -27,7 +28,7 @@ import { UpdatePayeeDto } from "./dto/update-payee.dto";
 import { ApplyCategorySuggestionsDto } from "./dto/apply-category-suggestions.dto";
 import { Payee } from "./entities/payee.entity";
 
-@ApiTags("payees")
+@ApiTags("Payees")
 @ApiBearerAuth()
 @UseGuards(AuthGuard("jwt"))
 @Controller("payees")
@@ -171,14 +172,14 @@ export class PayeesController {
     minTransactions: number,
     @Query("minPercentage", new DefaultValuePipe(75), ParseIntPipe)
     minPercentage: number,
-    @Query("onlyWithoutCategory", new DefaultValuePipe("true"))
-    onlyWithoutCategory: string,
+    @Query("onlyWithoutCategory", new DefaultValuePipe(true), ParseBoolPipe)
+    onlyWithoutCategory: boolean,
   ) {
     return this.payeesService.calculateCategorySuggestions(
       req.user.id,
       minTransactions,
       minPercentage,
-      onlyWithoutCategory === "true",
+      onlyWithoutCategory,
     );
   }
 

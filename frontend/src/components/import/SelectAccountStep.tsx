@@ -4,38 +4,9 @@ import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { Input } from '@/components/ui/Input';
 import { ParsedQifResponse } from '@/lib/import';
-import { Account, AccountType } from '@/types/account';
-
-type ImportStep = 'upload' | 'selectAccount' | 'mapCategories' | 'mapSecurities' | 'mapAccounts' | 'review' | 'complete';
-type MatchConfidence = 'exact' | 'partial' | 'type' | 'none';
-
-interface ImportFileData {
-  fileName: string;
-  fileContent: string;
-  parsedData: ParsedQifResponse;
-  selectedAccountId: string;
-  matchConfidence: MatchConfidence;
-}
-
-const formatAccountType = (type: AccountType): string => {
-  const labels: Record<AccountType, string> = {
-    CHEQUING: 'Chequing',
-    SAVINGS: 'Savings',
-    CREDIT_CARD: 'Credit Card',
-    INVESTMENT: 'Investment',
-    LOAN: 'Loan',
-    MORTGAGE: 'Mortgage',
-    CASH: 'Cash',
-    LINE_OF_CREDIT: 'Line of Credit',
-    ASSET: 'Asset',
-    OTHER: 'Other',
-  };
-  return labels[type] || type;
-};
-
-const isInvestmentBrokerageAccount = (account: Account): boolean => {
-  return account.accountSubType === 'INVESTMENT_BROKERAGE';
-};
+import { Account } from '@/types/account';
+import { formatAccountType, isInvestmentBrokerageAccount } from '@/lib/account-utils';
+import { ImportFileData, ImportStep } from '@/app/import/import-utils';
 
 interface SelectAccountStepProps {
   accounts: Account[];

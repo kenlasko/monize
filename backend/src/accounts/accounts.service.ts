@@ -27,6 +27,7 @@ import {
   MortgageAmortizationResult,
 } from "./mortgage-amortization.util";
 import { Cron } from "@nestjs/schedule";
+import { formatDateYMD, todayYMD } from "../common/date-utils";
 
 @Injectable()
 export class AccountsService {
@@ -760,13 +761,13 @@ export class AccountsService {
     endDate?: string,
     accountIds?: string[],
   ): Promise<Array<{ date: string; balance: number }>> {
-    const end = endDate || new Date().toISOString().split("T")[0];
+    const end = endDate || todayYMD();
     const start =
       startDate ||
       (() => {
         const d = new Date();
         d.setFullYear(d.getFullYear() - 1);
-        return d.toISOString().split("T")[0];
+        return formatDateYMD(d);
       })();
 
     const accountIdsParam =

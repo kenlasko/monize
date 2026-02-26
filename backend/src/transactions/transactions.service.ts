@@ -53,11 +53,6 @@ export { TransferResult };
 @Injectable()
 export class TransactionsService {
   private readonly logger = new Logger(TransactionsService.name);
-  private readonly recalcTimers = new Map<
-    string,
-    ReturnType<typeof setTimeout>
-  >();
-  private static readonly RECALC_DEBOUNCE_MS = 2000;
 
   constructor(
     @InjectRepository(Transaction)
@@ -79,26 +74,6 @@ export class TransactionsService {
     private analyticsService: TransactionAnalyticsService,
     private bulkUpdateService: TransactionBulkUpdateService,
   ) {}
-
-  private triggerNetWorthRecalc(accountId: string, userId: string): void {
-    const key = `${userId}:${accountId}`;
-    const existing = this.recalcTimers.get(key);
-    if (existing) clearTimeout(existing);
-
-    this.recalcTimers.set(
-      key,
-      setTimeout(() => {
-        this.recalcTimers.delete(key);
-        this.netWorthService
-          .recalculateAccount(userId, accountId)
-          .catch((err) =>
-            this.logger.warn(
-              `Net worth recalc failed for account ${accountId}: ${err.message}`,
-            ),
-          );
-      }, TransactionsService.RECALC_DEBOUNCE_MS),
-    );
-  }
 
   private async getAllCategoryIdsWithChildren(
     userId: string,
@@ -202,7 +177,10 @@ export class TransactionsService {
       }
     }
 
-    this.triggerNetWorthRecalc(createTransactionDto.accountId, userId);
+    this.netWorthService.triggerDebouncedRecalc(
+      createTransactionDto.accountId,
+      userId,
+    );
 
     return this.findOne(userId, savedTransaction.id);
   }
@@ -676,9 +654,9 @@ export class TransactionsService {
       }
     }
 
-    this.triggerNetWorthRecalc(newAccountId, userId);
+    this.netWorthService.triggerDebouncedRecalc(newAccountId, userId);
     if (oldAccountId !== newAccountId) {
-      this.triggerNetWorthRecalc(oldAccountId, userId);
+      this.netWorthService.triggerDebouncedRecalc(oldAccountId, userId);
     }
 
     return savedTransaction;
@@ -706,7 +684,10 @@ export class TransactionsService {
         await this.accountsService.recalculateCurrentBalance(
           transaction.accountId,
         );
-        this.triggerNetWorthRecalc(transaction.accountId, userId);
+        this.netWorthService.triggerDebouncedRecalc(
+          transaction.accountId,
+          userId,
+        );
         return;
       } else {
         await this.accountsService.updateBalance(
@@ -716,7 +697,7 @@ export class TransactionsService {
       }
     }
 
-    this.triggerNetWorthRecalc(transaction.accountId, userId);
+    this.netWorthService.triggerDebouncedRecalc(transaction.accountId, userId);
 
     await this.transactionsRepository.remove(transaction);
   }
@@ -794,7 +775,8 @@ export class TransactionsService {
       transaction,
       status,
       userId,
-      this.triggerNetWorthRecalc.bind(this),
+      (accountId: string, userId: string) =>
+        this.netWorthService.triggerDebouncedRecalc(accountId, userId),
       this.findOne.bind(this),
     );
   }
@@ -809,7 +791,8 @@ export class TransactionsService {
       transaction,
       isCleared,
       userId,
-      this.triggerNetWorthRecalc.bind(this),
+      (accountId: string, userId: string) =>
+        this.netWorthService.triggerDebouncedRecalc(accountId, userId),
       this.findOne.bind(this),
     );
   }
@@ -819,7 +802,8 @@ export class TransactionsService {
     return this.reconciliationService.reconcile(
       transaction,
       userId,
-      this.triggerNetWorthRecalc.bind(this),
+      (accountId: string, userId: string) =>
+        this.netWorthService.triggerDebouncedRecalc(accountId, userId),
       this.findOne.bind(this),
     );
   }

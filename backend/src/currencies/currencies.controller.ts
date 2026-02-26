@@ -38,7 +38,7 @@ import { Currency } from "./entities/currency.entity";
 import { CreateCurrencyDto } from "./dto/create-currency.dto";
 import { UpdateCurrencyDto } from "./dto/update-currency.dto";
 
-@ApiTags("currencies")
+@ApiTags("Currencies")
 @ApiBearerAuth()
 @UseGuards(AuthGuard("jwt"))
 @Controller("currencies")

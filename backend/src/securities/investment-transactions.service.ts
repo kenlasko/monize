@@ -27,11 +27,6 @@ import { isTransactionInFuture } from "../common/date-utils";
 @Injectable()
 export class InvestmentTransactionsService {
   private readonly logger = new Logger(InvestmentTransactionsService.name);
-  private readonly recalcTimers = new Map<
-    string,
-    ReturnType<typeof setTimeout>
-  >();
-  private static readonly RECALC_DEBOUNCE_MS = 2000;
 
   constructor(
     @InjectRepository(InvestmentTransaction)
@@ -45,26 +40,6 @@ export class InvestmentTransactionsService {
     private securitiesService: SecuritiesService,
     private netWorthService: NetWorthService,
   ) {}
-
-  private triggerNetWorthRecalc(accountId: string, userId: string): void {
-    const key = `${userId}:${accountId}`;
-    const existing = this.recalcTimers.get(key);
-    if (existing) clearTimeout(existing);
-
-    this.recalcTimers.set(
-      key,
-      setTimeout(() => {
-        this.recalcTimers.delete(key);
-        this.netWorthService
-          .recalculateAccount(userId, accountId)
-          .catch((err) =>
-            this.logger.warn(
-              `Net worth recalc failed for account ${accountId}: ${err.message}`,
-            ),
-          );
-      }, InvestmentTransactionsService.RECALC_DEBOUNCE_MS),
-    );
-  }
 
   /**
    * Find the appropriate cash account for an investment transaction.
@@ -277,7 +252,7 @@ export class InvestmentTransactionsService {
     await this.processTransactionEffects(userId, saved);
 
     // Trigger net worth recalculation for the brokerage account
-    this.triggerNetWorthRecalc(saved.accountId, userId);
+    this.netWorthService.triggerDebouncedRecalc(saved.accountId, userId);
 
     return this.findOne(userId, saved.id);
   }
@@ -623,7 +598,7 @@ export class InvestmentTransactionsService {
     await this.processTransactionEffects(userId, saved);
 
     // Trigger net worth recalculation for the brokerage account
-    this.triggerNetWorthRecalc(saved.accountId, userId);
+    this.netWorthService.triggerDebouncedRecalc(saved.accountId, userId);
 
     return this.findOne(userId, saved.id);
   }
@@ -760,7 +735,7 @@ export class InvestmentTransactionsService {
     await this.investmentTransactionsRepository.remove(transaction);
 
     // Trigger net worth recalculation for the brokerage account
-    this.triggerNetWorthRecalc(accountId, userId);
+    this.netWorthService.triggerDebouncedRecalc(accountId, userId);
   }
 
   async getSummary(userId: string, accountIds?: string[]) {

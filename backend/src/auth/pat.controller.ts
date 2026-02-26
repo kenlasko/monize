@@ -6,7 +6,7 @@ import {
   Body,
   Param,
   UseGuards,
-  Req,
+  Request,
   ParseUUIDPipe,
 } from "@nestjs/common";
 import { AuthGuard } from "@nestjs/passport";
@@ -24,14 +24,14 @@ export class PatController {
 
   @Get()
   @ApiOperation({ summary: "List all personal access tokens" })
-  async list(@Req() req: any) {
+  async list(@Request() req: any) {
     return this.patService.findAllByUser(req.user.id);
   }
 
   @Post()
   @ApiOperation({ summary: "Create a new personal access token" })
   @Throttle({ default: { limit: 10, ttl: 60000 } })
-  async create(@Req() req: any, @Body() dto: CreatePatDto) {
+  async create(@Request() req: any, @Body() dto: CreatePatDto) {
     const { token, rawToken } = await this.patService.create(req.user.id, dto);
     return {
       id: token.id,
@@ -46,7 +46,7 @@ export class PatController {
 
   @Delete(":id")
   @ApiOperation({ summary: "Revoke a personal access token" })
-  async revoke(@Req() req: any, @Param("id", ParseUUIDPipe) id: string) {
+  async revoke(@Request() req: any, @Param("id", ParseUUIDPipe) id: string) {
     await this.patService.revoke(req.user.id, id);
     return { message: "Token revoked" };
   }

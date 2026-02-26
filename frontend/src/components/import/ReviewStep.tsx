@@ -3,16 +3,7 @@
 import { Button } from '@/components/ui/Button';
 import { CategoryMapping, AccountMapping, SecurityMapping, ParsedQifResponse } from '@/lib/import';
 import { Account } from '@/types/account';
-
-type ImportStep = 'upload' | 'selectAccount' | 'mapCategories' | 'mapSecurities' | 'mapAccounts' | 'review' | 'complete';
-
-interface ImportFileData {
-  fileName: string;
-  fileContent: string;
-  parsedData: ParsedQifResponse;
-  selectedAccountId: string;
-  matchConfidence: string;
-}
+import { ImportFileData, ImportStep } from '@/app/import/import-utils';
 
 interface ReviewStepProps {
   importFiles: ImportFileData[];

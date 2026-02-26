@@ -1,5 +1,5 @@
 import { ParsedQifResponse } from '@/lib/import';
-import { Account, AccountType } from '@/types/account';
+export { formatAccountType, isInvestmentBrokerageAccount } from '@/lib/account-utils';
 
 export type ImportStep = 'upload' | 'selectAccount' | 'mapCategories' | 'mapSecurities' | 'mapAccounts' | 'review' | 'complete';
 export type MatchConfidence = 'exact' | 'partial' | 'type' | 'none';
@@ -43,28 +43,8 @@ export function suggestAccountType(name: string): string {
   return 'CHEQUING';
 }
 
-export const formatAccountType = (type: AccountType): string => {
-  const labels: Record<AccountType, string> = {
-    CHEQUING: 'Chequing',
-    SAVINGS: 'Savings',
-    CREDIT_CARD: 'Credit Card',
-    INVESTMENT: 'Investment',
-    LOAN: 'Loan',
-    MORTGAGE: 'Mortgage',
-    CASH: 'Cash',
-    LINE_OF_CREDIT: 'Line of Credit',
-    ASSET: 'Asset',
-    OTHER: 'Other',
-  };
-  return labels[type] || type;
-};
-
 export const formatCategoryPath = (path: string): string => {
   return path.replace(/:/g, ': ').replace(/:  /g, ': ');
-};
-
-export const isInvestmentBrokerageAccount = (account: Account): boolean => {
-  return account.accountSubType === 'INVESTMENT_BROKERAGE';
 };
 
 export const ACCOUNT_TYPE_OPTIONS = [

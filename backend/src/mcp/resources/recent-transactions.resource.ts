@@ -3,6 +3,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { TransactionsService } from "../../transactions/transactions.service";
 import { TransactionAnalyticsService } from "../../transactions/transaction-analytics.service";
 import { UserContextResolver, hasScope } from "../mcp-context";
+import { formatDateYMD, todayYMD } from "../../common/date-utils";
 
 @Injectable()
 export class McpRecentTransactionsResource {
@@ -40,10 +41,10 @@ export class McpRecentTransactionsResource {
         }
 
         try {
-          const endDate = new Date().toISOString().split("T")[0];
+          const endDate = todayYMD();
           const startDate = new Date();
           startDate.setDate(startDate.getDate() - 30);
-          const startDateStr = startDate.toISOString().split("T")[0];
+          const startDateStr = formatDateYMD(startDate);
 
           const [result, summary] = await Promise.all([
             this.transactionsService.findAll(

@@ -27,6 +27,7 @@ import { AccountsService } from "../accounts/accounts.service";
 import { TransactionsService } from "../transactions/transactions.service";
 import { ScheduledTransactionOverrideService } from "./scheduled-transaction-override.service";
 import { ScheduledTransactionLoanService } from "./scheduled-transaction-loan.service";
+import { formatDateYMD } from "../common/date-utils";
 
 @Injectable()
 export class ScheduledTransactionsService {
@@ -229,7 +230,7 @@ export class ScheduledTransactionsService {
     const txIds = transactions.map((t) => {
       const d =
         t.nextDueDate instanceof Date
-          ? t.nextDueDate.toISOString().split("T")[0]
+          ? formatDateYMD(t.nextDueDate)
           : String(t.nextDueDate).split("T")[0];
       txDueDates.set(t.id, d);
       return t.id;
@@ -469,7 +470,7 @@ export class ScheduledTransactionsService {
 
     const nextDueDateStr =
       scheduled.nextDueDate instanceof Date
-        ? scheduled.nextDueDate.toISOString().split("T")[0]
+        ? formatDateYMD(scheduled.nextDueDate)
         : String(scheduled.nextDueDate).split("T")[0];
 
     await this.overridesRepository.delete({
@@ -514,7 +515,7 @@ export class ScheduledTransactionsService {
 
     const nextDueDateStr =
       scheduled.nextDueDate instanceof Date
-        ? scheduled.nextDueDate.toISOString().split("T")[0]
+        ? formatDateYMD(scheduled.nextDueDate)
         : String(scheduled.nextDueDate).split("T")[0];
 
     const postDate = postDto?.transactionDate || nextDueDateStr;
@@ -627,7 +628,7 @@ export class ScheduledTransactionsService {
           );
 
     if (newNextDueDate) {
-      const newNextDueDateStr = newNextDueDate.toISOString().split("T")[0];
+      const newNextDueDateStr = formatDateYMD(newNextDueDate);
       await this.overridesRepository
         .createQueryBuilder()
         .delete()

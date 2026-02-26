@@ -3,6 +3,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { AccountsService } from "../../accounts/accounts.service";
 import { TransactionAnalyticsService } from "../../transactions/transaction-analytics.service";
 import { UserContextResolver, hasScope } from "../mcp-context";
+import { formatDateYMD, todayYMD } from "../../common/date-utils";
 
 @Injectable()
 export class McpFinancialSummaryResource {
@@ -44,10 +45,10 @@ export class McpFinancialSummaryResource {
 
         try {
           const now = new Date();
-          const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-            .toISOString()
-            .split("T")[0];
-          const endDate = now.toISOString().split("T")[0];
+          const startOfMonth = formatDateYMD(
+            new Date(now.getFullYear(), now.getMonth(), 1),
+          );
+          const endDate = todayYMD();
 
           const [accountSummary, monthSummary] = await Promise.all([
             this.accountsService.getSummary(ctx.userId),

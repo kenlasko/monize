@@ -360,7 +360,7 @@ describe('useSwipeNavigation', () => {
         vi.advanceTimersByTime(300);
       });
 
-      expect(mockPush).toHaveBeenCalledWith('/accounts');
+      expect(mockPush).toHaveBeenCalledWith('/bills');
       vi.useRealTimers();
     });
   });

@@ -6,11 +6,12 @@ import {
   Patch,
   Param,
   Query,
-  Req,
+  Request,
   UseGuards,
   ParseUUIDPipe,
   ParseBoolPipe,
   DefaultValuePipe,
+  Logger,
 } from "@nestjs/common";
 import {
   ApiTags,
@@ -36,11 +37,13 @@ import { UpdateSecurityDto } from "./dto/update-security.dto";
 import { RefreshSecurityPricesDto } from "./dto/refresh-security-prices.dto";
 import { Security } from "./entities/security.entity";
 
-@ApiTags("securities")
+@ApiTags("Securities")
 @ApiBearerAuth()
 @UseGuards(AuthGuard("jwt"))
 @Controller("securities")
 export class SecuritiesController {
+  private readonly logger = new Logger(SecuritiesController.name);
+
   constructor(
     private readonly securitiesService: SecuritiesService,
     private readonly securityPriceService: SecurityPriceService,
@@ -59,7 +62,7 @@ export class SecuritiesController {
     description: "Security with symbol already exists",
   })
   create(
-    @Req() req,
+    @Request() req,
     @Body() createSecurityDto: CreateSecurityDto,
   ): Promise<Security> {
     return this.securitiesService.create(req.user.id, createSecurityDto);
@@ -74,7 +77,7 @@ export class SecuritiesController {
     type: [Security],
   })
   findAll(
-    @Req() req,
+    @Request() req,
     @Query("includeInactive", new DefaultValuePipe(false), ParseBoolPipe)
     includeInactive: boolean,
   ): Promise<Security[]> {
@@ -85,7 +88,7 @@ export class SecuritiesController {
   @ApiOperation({ summary: "Search securities by symbol or name" })
   @ApiQuery({ name: "q", required: true, description: "Search query" })
   @ApiResponse({ status: 200, description: "Search results", type: [Security] })
-  search(@Req() req, @Query("q") query: string): Promise<Security[]> {
+  search(@Request() req, @Query("q") query: string): Promise<Security[]> {
     const safeQuery = query ? query.slice(0, 200) : "";
     return this.securitiesService.search(req.user.id, safeQuery);
   }
@@ -122,7 +125,7 @@ export class SecuritiesController {
   @ApiResponse({ status: 200, description: "Security details", type: Security })
   @ApiResponse({ status: 404, description: "Security not found" })
   findOne(
-    @Req() req,
+    @Request() req,
     @Param("id", ParseUUIDPipe) id: string,
   ): Promise<Security> {
     return this.securitiesService.findOne(req.user.id, id);
@@ -133,7 +136,7 @@ export class SecuritiesController {
   @ApiResponse({ status: 200, description: "Security details", type: Security })
   @ApiResponse({ status: 404, description: "Security not found" })
   findBySymbol(
-    @Req() req,
+    @Request() req,
     @Param("symbol", ParseSymbolPipe) symbol: string,
   ): Promise<Security> {
     return this.securitiesService.findBySymbol(req.user.id, symbol);
@@ -148,7 +151,7 @@ export class SecuritiesController {
   })
   @ApiResponse({ status: 404, description: "Security not found" })
   update(
-    @Req() req,
+    @Request() req,
     @Param("id", ParseUUIDPipe) id: string,
     @Body() updateSecurityDto: UpdateSecurityDto,
   ): Promise<Security> {
@@ -163,7 +166,7 @@ export class SecuritiesController {
     type: Security,
   })
   deactivate(
-    @Req() req,
+    @Request() req,
     @Param("id", ParseUUIDPipe) id: string,
   ): Promise<Security> {
     return this.securitiesService.deactivate(req.user.id, id);
@@ -177,7 +180,7 @@ export class SecuritiesController {
     type: Security,
   })
   activate(
-    @Req() req,
+    @Request() req,
     @Param("id", ParseUUIDPipe) id: string,
   ): Promise<Security> {
     return this.securitiesService.activate(req.user.id, id);
@@ -221,7 +224,13 @@ export class SecuritiesController {
     const result = await this.securityPriceService.refreshAllPrices();
     if (result.updated > 0) {
       // Fire-and-forget: recalculate investment snapshots so charts reflect new prices
-      this.netWorthService.recalculateAllInvestmentSnapshots().catch(() => {});
+      this.netWorthService
+        .recalculateAllInvestmentSnapshots()
+        .catch((err) =>
+          this.logger.warn(
+            `Background investment snapshot recalculation failed: ${err.message}`,
+          ),
+        );
     }
     return result;
   }
@@ -234,7 +243,7 @@ export class SecuritiesController {
   })
   @ApiResponse({ status: 200, description: "Price refresh completed" })
   async refreshSelectedPrices(
-    @Req() req,
+    @Request() req,
     @Body() dto: RefreshSecurityPricesDto,
   ): Promise<PriceRefreshSummary> {
     // Verify all security IDs belong to the requesting user
@@ -246,7 +255,13 @@ export class SecuritiesController {
     );
     if (result.updated > 0) {
       // Fire-and-forget: recalculate this user's investment snapshots
-      this.netWorthService.recalculateAllAccounts(req.user.id).catch(() => {});
+      this.netWorthService
+        .recalculateAllAccounts(req.user.id)
+        .catch((err) =>
+          this.logger.warn(
+            `Background account recalculation failed: ${err.message}`,
+          ),
+        );
     }
     return result;
   }
@@ -291,7 +306,7 @@ export class SecuritiesController {
   })
   @ApiResponse({ status: 200, description: "Price history" })
   async getPriceHistory(
-    @Req() req,
+    @Request() req,
     @Param("id", ParseUUIDPipe) id: string,
     @Query("limit", new DefaultValuePipe(365)) limit: number,
   ) {

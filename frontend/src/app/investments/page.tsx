@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -9,59 +8,26 @@ import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { UnsavedChangesDialog } from '@/components/ui/UnsavedChangesDialog';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { useFormModal } from '@/hooks/useFormModal';
 import { MultiSelect, type MultiSelectOption } from '@/components/ui/MultiSelect';
 import { Pagination } from '@/components/ui/Pagination';
 import { PortfolioSummaryCard } from '@/components/investments/PortfolioSummaryCard';
 import { GroupedHoldingsList } from '@/components/investments/GroupedHoldingsList';
 import { AssetAllocationChart } from '@/components/investments/AssetAllocationChart';
-import { InvestmentTransactionList, type DensityLevel, type TransactionFilters } from '@/components/investments/InvestmentTransactionList';
+import { InvestmentTransactionList } from '@/components/investments/InvestmentTransactionList';
+import { DensityLevel, nextDensity } from '@/hooks/useTableDensity';
 import { InvestmentTransactionForm } from '@/components/investments/InvestmentTransactionForm';
 import { InvestmentValueChart } from '@/components/investments/InvestmentValueChart';
 import { TransactionList } from '@/components/transactions/TransactionList';
-import { investmentsApi } from '@/lib/investments';
-import { transactionsApi } from '@/lib/transactions';
-import { accountsApi } from '@/lib/accounts';
-import { categoriesApi } from '@/lib/categories';
-import { payeesApi } from '@/lib/payees';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { useInvestmentData } from '@/hooks/useInvestmentData';
 import { Account } from '@/types/account';
-import {
-  PortfolioSummary,
-  InvestmentTransaction,
-  InvestmentTransactionPaginationInfo,
-} from '@/types/investment';
-import { Transaction } from '@/types/transaction';
-import { Category } from '@/types/category';
-import { Payee } from '@/types/payee';
-import { usePriceRefresh, setRefreshInProgress } from '@/hooks/usePriceRefresh';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
-import { createLogger } from '@/lib/logger';
 import { PAGE_SIZE } from '@/lib/constants';
+import { formatRelativeTime } from '@/lib/format';
 
 const TransactionForm = dynamic(() => import('@/components/transactions/TransactionForm').then(m => m.TransactionForm), { ssr: false });
 
 type TransactionViewType = 'brokerage' | 'cash';
-
-const logger = createLogger('Investments');
-
-// Helper to format relative time
-function formatRelativeTime(dateString: string | null): string {
-  if (!dateString) return 'Never';
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMins / 60);
-  const diffDays = Math.floor(diffHours / 24);
-
-  if (diffMins < 1) return 'Just now';
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays === 1) return 'Yesterday';
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return date.toLocaleDateString();
-}
 
 export default function InvestmentsPage() {
   return (
@@ -72,451 +38,29 @@ export default function InvestmentsPage() {
 }
 
 function InvestmentsContent() {
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [allAccounts, setAllAccounts] = useState<Account[]>([]);
-  const [selectedAccountIds, setSelectedAccountIds] = useLocalStorage<string[]>('monize-investments-accounts', []);
-  const [portfolioSummary, setPortfolioSummary] = useState<PortfolioSummary | null>(
-    null,
-  );
-  const [transactions, setTransactions] = useState<InvestmentTransaction[]>([]);
-  const [pagination, setPagination] = useState<InvestmentTransactionPaginationInfo | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [isLoading, setIsLoading] = useState(true);
-  const { showForm: showTransactionForm, editingItem: editingTransaction, openCreate, openEdit, close, isEditing: _isEditing, modalProps, setFormDirty, unsavedChangesDialog, formSubmitRef } = useFormModal<InvestmentTransaction>();
+  const data = useInvestmentData();
   const [listDensity, setListDensity] = useLocalStorage<DensityLevel>('monize-investments-density', 'normal');
-  const [isRefreshingPrices, setIsRefreshingPrices] = useState(false);
-  const [lastPriceUpdate, setLastPriceUpdate] = useState<string | null>(null);
-  const [refreshResult, setRefreshResult] = useState<{
-    updated: number;
-    failed: number;
-    results?: Array<{ symbol: string; success: boolean; price?: number; error?: string }>;
-  } | null>(null);
-  const [showRefreshDetails, setShowRefreshDetails] = useState(false);
-  const [transactionFilters, setTransactionFilters] = useState<TransactionFilters>({});
   const [transactionView, setTransactionView] = useState<TransactionViewType>('brokerage');
-  const [cashTransactions, setCashTransactions] = useState<Transaction[]>([]);
-  const [cashPagination, setCashPagination] = useState<{ page: number; totalPages: number; total: number } | null>(null);
-  const [cashCurrentPage, setCashCurrentPage] = useState(1);
-  const [cashTransactionsLoading, setCashTransactionsLoading] = useState(false);
-  const [showCashFilters, setShowCashFilters] = useState(false);
-  const [cashFilterPayeeIds, setCashFilterPayeeIds] = useState<string[]>([]);
-  const [cashFilterCategoryIds, setCashFilterCategoryIds] = useState<string[]>([]);
-  const [cashFilterStartDate, setCashFilterStartDate] = useState('');
-  const [cashFilterEndDate, setCashFilterEndDate] = useState('');
-  const [cashPayees, setCashPayees] = useState<Payee[]>([]);
-  const [cashCategories, setCashCategories] = useState<Category[]>([]);
-  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
-  const { showForm: showCashForm, editingItem: editingCashTransaction, openCreate: openCashCreate, openEdit: openCashEdit, close: closeCash, modalProps: cashModalProps, setFormDirty: setCashFormDirty, unsavedChangesDialog: cashUnsavedChangesDialog, formSubmitRef: cashFormSubmitRef } = useFormModal<Transaction>();
 
-  const loadInvestmentAccounts = useCallback(async () => {
-    try {
-      const accountsData = await investmentsApi.getInvestmentAccounts();
-      setAccounts(accountsData);
-    } catch (error) {
-      logger.error('Failed to load investment accounts:', error);
-    }
-  }, []);
-
-  const loadAllAccounts = useCallback(async () => {
-    try {
-      const accountsData = await accountsApi.getAll();
-      setAllAccounts(accountsData);
-    } catch (error) {
-      logger.error('Failed to load all accounts:', error);
-    }
-  }, []);
-
-  const loadCashFilterData = useCallback(async () => {
-    try {
-      const [cats, pays] = await Promise.all([
-        categoriesApi.getAll(),
-        payeesApi.getAll(),
-      ]);
-      setCashCategories(cats);
-      setCashPayees(pays);
-    } catch (error) {
-      logger.error('Failed to load cash filter data:', error);
-    }
-  }, []);
-
-  const loadPriceStatus = useCallback(async () => {
-    try {
-      const status = await investmentsApi.getPriceStatus();
-      setLastPriceUpdate(status.lastUpdated);
-    } catch (error) {
-      logger.error('Failed to load price status:', error);
-    }
-  }, []);
-
-  const { triggerAutoRefresh } = usePriceRefresh({
-    onRefreshComplete: () => {
-      loadAllPortfolioData(selectedAccountIds, currentPage, transactionFilters);
-      loadPriceStatus();
-    },
-  });
-
-  const handleRefreshPrices = async () => {
-    setIsRefreshingPrices(true);
-    setRefreshInProgress(true);
-    setRefreshResult(null);
-    setShowRefreshDetails(false);
-    try {
-      // Get portfolio summary to find holdings in open accounts
-      // The backend already filters to only open investment accounts
-      const summary = await investmentsApi.getPortfolioSummary();
-
-      // Extract unique security IDs from holdings with non-zero quantities
-      const securityIds = [...new Set(
-        summary.holdings
-          .filter(h => h.quantity !== 0)
-          .map(h => h.securityId)
-      )];
-
-      if (securityIds.length === 0) {
-        setRefreshResult({ updated: 0, failed: 0, results: [] });
-        setTimeout(() => setRefreshResult(null), 3000);
-        return;
-      }
-
-      // Refresh only the securities we have holdings in
-      const result = await investmentsApi.refreshSelectedPrices(securityIds);
-      setRefreshResult({
-        updated: result.updated,
-        failed: result.failed,
-        results: result.results,
-      });
-      setLastPriceUpdate(result.lastUpdated);
-      // Reload portfolio data to show updated prices
-      loadAllPortfolioData(selectedAccountIds, currentPage, transactionFilters);
-      // Auto-show details if there are failures
-      if (result.failed > 0) {
-        setShowRefreshDetails(true);
-      }
-      // Clear result after 10 seconds (longer if there are failures)
-      setTimeout(() => {
-        setRefreshResult(null);
-        setShowRefreshDetails(false);
-      }, result.failed > 0 ? 15000 : 5000);
-    } catch (error) {
-      logger.error('Failed to refresh prices:', error);
-      setRefreshResult({ updated: 0, failed: -1 }); // -1 indicates API error
-      setTimeout(() => setRefreshResult(null), 5000);
-    } finally {
-      setRefreshInProgress(false);
-      setIsRefreshingPrices(false);
-    }
-  };
-
-  const loadPortfolioSummary = useCallback(async (accountIds: string[]) => {
-    try {
-      const ids = accountIds.length > 0 ? accountIds : undefined;
-      const summaryData = await investmentsApi.getPortfolioSummary(ids);
-      setPortfolioSummary(summaryData);
-    } catch (error) {
-      logger.error('Failed to load portfolio summary:', error);
-      setPortfolioSummary(null);
-    }
-  }, []);
-
-  const loadTransactions = useCallback(async (
-    accountIds: string[],
-    page: number = 1,
-    filters: TransactionFilters = {},
-  ) => {
-    try {
-      const ids = accountIds.length > 0 ? accountIds : undefined;
-      const txResponse = await investmentsApi.getTransactions({
-        accountIds: ids ? ids.join(',') : undefined,
-        page,
-        limit: PAGE_SIZE,
-        symbol: filters.symbol,
-        action: filters.action,
-        startDate: filters.startDate,
-        endDate: filters.endDate,
-      });
-      setTransactions(txResponse.data || []);
-      setPagination(txResponse.pagination);
-    } catch (error) {
-      logger.error('Failed to load transactions:', error);
-      setTransactions([]);
-      setPagination(null);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  const loadAllPortfolioData = useCallback(async (
-    accountIds: string[],
-    page: number = 1,
-    filters: TransactionFilters = {},
-  ) => {
-    setIsLoading(true);
-    try {
-      const ids = accountIds.length > 0 ? accountIds : undefined;
-      const [summaryData, txResponse] = await Promise.all([
-        investmentsApi.getPortfolioSummary(ids),
-        investmentsApi.getTransactions({
-          accountIds: ids ? ids.join(',') : undefined,
-          page,
-          limit: PAGE_SIZE,
-          symbol: filters.symbol,
-          action: filters.action,
-          startDate: filters.startDate,
-          endDate: filters.endDate,
-        }),
-      ]);
-      setPortfolioSummary(summaryData);
-      setTransactions(txResponse.data || []);
-      setPagination(txResponse.pagination);
-    } catch (error) {
-      logger.error('Failed to load portfolio data:', error);
-      setPortfolioSummary(null);
-      setTransactions([]);
-      setPagination(null);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  // Derive cash account IDs from selected brokerage accounts
-  const cashAccountIds = useMemo(() => {
-    if (selectedAccountIds.length === 0) {
-      // When no specific accounts selected, get all cash accounts linked to brokerage accounts
-      return accounts
-        .filter(a => a.accountSubType === 'INVESTMENT_BROKERAGE' && a.linkedAccountId)
-        .map(a => a.linkedAccountId!);
-    }
-    // Get linked cash accounts for the selected brokerage accounts
-    return selectedAccountIds
-      .map(id => accounts.find(a => a.id === id))
-      .filter((a): a is Account => !!a && !!a.linkedAccountId)
-      .map(a => a.linkedAccountId!);
-  }, [selectedAccountIds, accounts]);
-
-  const loadCashTransactions = useCallback(async (
-    accountIds: string[],
-    page: number = 1,
-    filters: { payeeIds?: string[]; categoryIds?: string[]; startDate?: string; endDate?: string } = {},
-  ) => {
-    if (accountIds.length === 0) {
-      setCashTransactions([]);
-      setCashPagination(null);
-      return;
-    }
-    setCashTransactionsLoading(true);
-    try {
-      const response = await transactionsApi.getAll({
-        accountIds,
-        page,
-        limit: PAGE_SIZE,
-        payeeIds: filters.payeeIds?.length ? filters.payeeIds : undefined,
-        categoryIds: filters.categoryIds?.length ? filters.categoryIds : undefined,
-        startDate: filters.startDate || undefined,
-        endDate: filters.endDate || undefined,
-      });
-      setCashTransactions(response.data || []);
-      setCashPagination(response.pagination ? {
-        page: response.pagination.page,
-        totalPages: response.pagination.totalPages,
-        total: response.pagination.total,
-      } : null);
-    } catch (error) {
-      logger.error('Failed to load cash transactions:', error);
-      setCashTransactions([]);
-      setCashPagination(null);
-    } finally {
-      setCashTransactionsLoading(false);
-    }
-  }, []);
-
+  // Load cash transactions when view changes
   useEffect(() => {
-    loadInvestmentAccounts();
-    loadAllAccounts();
-    loadPriceStatus();
-  }, [loadInvestmentAccounts, loadAllAccounts, loadPriceStatus]);
-
-  // Prune stale/non-selectable account IDs from localStorage when accounts load
-  useEffect(() => {
-    if (accounts.length > 0 && selectedAccountIds.length > 0) {
-      // Only keep IDs that appear in the dropdown (brokerage + standalone)
-      const selectableIds = new Set(
-        accounts
-          .filter((a) => a.accountSubType === 'INVESTMENT_BROKERAGE' || !a.accountSubType)
-          .map((a) => a.id),
-      );
-      const pruned = selectedAccountIds.filter((id) => selectableIds.has(id));
-      if (pruned.length !== selectedAccountIds.length) {
-        setSelectedAccountIds(pruned);
-      }
-    }
-  }, [accounts]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Load summary when account selection changes
-  useEffect(() => {
-    loadPortfolioSummary(selectedAccountIds);
-  }, [loadPortfolioSummary, selectedAccountIds]);
-
-  // Load transactions when page, filters, or account selection changes
-  useEffect(() => {
-    loadTransactions(selectedAccountIds, currentPage, transactionFilters);
-  }, [loadTransactions, selectedAccountIds, currentPage, transactionFilters]);
-
-  // Memoize cash filters object to avoid unnecessary re-renders
-  const cashFiltersObj = useMemo(() => ({
-    payeeIds: cashFilterPayeeIds,
-    categoryIds: cashFilterCategoryIds,
-    startDate: cashFilterStartDate,
-    endDate: cashFilterEndDate,
-  }), [cashFilterPayeeIds, cashFilterCategoryIds, cashFilterStartDate, cashFilterEndDate]);
-
-  // Load cash transactions when view switches to 'cash' or dependencies change
-  useEffect(() => {
-    if (transactionView === 'cash') {
-      loadCashTransactions(cashAccountIds, cashCurrentPage, cashFiltersObj);
-    }
-  }, [transactionView, cashAccountIds, cashCurrentPage, cashFiltersObj, loadCashTransactions]);
-
-  useEffect(() => {
-    if (!isLoading && !initialLoadComplete) {
-      setInitialLoadComplete(true);
-      triggerAutoRefresh();
-    }
-  }, [isLoading, initialLoadComplete, triggerAutoRefresh]);
-
-  // Track which edit ID we have already handled, so that a browser back
-  // navigation to /investments?edit=xxx (caused by the Modal's history.back()
-  // on cancel) does not re-open the form in an infinite loop.
-  const editHandledRef = useRef<string | null>(null);
-
-  // Handle edit URL parameter (when redirected from transactions page)
-  useEffect(() => {
-    const editId = searchParams.get('edit');
-    if (editId) {
-      if (editId === editHandledRef.current) {
-        // Already handled — just clean the URL without re-opening the form
-        router.replace('/investments', { scroll: false });
-        return;
-      }
-      editHandledRef.current = editId;
-      // Load the transaction and open the edit form
-      investmentsApi.getTransaction(editId)
-        .then((transaction) => {
-          openEdit(transaction);
-          // Clear the URL parameter
-          router.replace('/investments', { scroll: false });
-        })
-        .catch((error) => {
-          logger.error('Failed to load investment transaction:', error);
-          router.replace('/investments', { scroll: false });
-        });
-    } else if (!showTransactionForm) {
-      // Only reset when the form is closed.  router.replace (which clears ?edit
-      // while the form is still open) must NOT reset the ref — otherwise Modal's
-      // history.back() on cancel lands back on ?edit=xxx with a null ref, causing
-      // an infinite reopen loop.  showTransactionForm is intentionally omitted
-      // from deps so that closing the form doesn't trigger a premature reset
-      // before history.back() has settled.
-      editHandledRef.current = null;
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams, router, openEdit]);
-
-  const handleAccountChange = (values: string[]) => {
-    setSelectedAccountIds(values);
-    setCurrentPage(1);
-    setCashCurrentPage(1);
-  };
+    data.loadCashTransactionsIfNeeded(transactionView);
+  }, [transactionView, data.loadCashTransactionsIfNeeded]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleTransactionViewChange = (view: TransactionViewType) => {
     setTransactionView(view);
     if (view === 'cash') {
-      setCashCurrentPage(1);
-      // Load filter dropdown data on first switch to cash
-      if (cashPayees.length === 0 && cashCategories.length === 0) {
-        loadCashFilterData();
+      data.setCashCurrentPage(1);
+      if (data.cashPayees.length === 0 && data.cashCategories.length === 0) {
+        data.loadCashFilterData();
       }
     }
   };
-
-  const handleDeleteTransaction = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this transaction?')) return;
-    try {
-      await investmentsApi.deleteTransaction(id);
-      loadAllPortfolioData(selectedAccountIds, currentPage, transactionFilters);
-    } catch (error) {
-      logger.error('Failed to delete transaction:', error);
-      alert('Failed to delete transaction');
-    }
-  };
-
-  const handleNewTransaction = () => {
-    openCreate();
-  };
-
-  const handleEditTransaction = (transaction: InvestmentTransaction) => {
-    openEdit(transaction);
-  };
-
-  const handleFormSuccess = () => {
-    close();
-    loadAllPortfolioData(selectedAccountIds, currentPage, transactionFilters);
-  };
-
-  // Cash transaction handlers
-  const handleEditCashTransaction = async (transaction: Transaction) => {
-    if (transaction.linkedInvestmentTransactionId) {
-      // Investment-linked cash transaction — redirect to investment edit
-      router.push(`/investments?edit=${transaction.linkedInvestmentTransactionId}`);
-      return;
-    }
-    if (transaction.isTransfer) {
-      try {
-        const fullTransaction = await transactionsApi.getById(transaction.id);
-        openCashEdit(fullTransaction);
-      } catch (error) {
-        logger.error('Failed to load transaction details:', error);
-        openCashEdit(transaction);
-      }
-    } else {
-      openCashEdit(transaction);
-    }
-  };
-
-  const handleCashTransactionUpdate = useCallback((updatedTx: Transaction) => {
-    setCashTransactions(prev => prev.map(tx => tx.id === updatedTx.id ? updatedTx : tx));
-  }, []);
-
-  const handleCashFormSuccess = () => {
-    closeCash();
-    loadCashTransactions(cashAccountIds, cashCurrentPage, cashFiltersObj);
-  };
-
-  const refreshCashTransactions = useCallback(() => {
-    loadCashTransactions(cashAccountIds, cashCurrentPage, cashFiltersObj);
-  }, [loadCashTransactions, cashAccountIds, cashCurrentPage, cashFiltersObj]);
-
-  const handleFiltersChange = (newFilters: TransactionFilters) => {
-    setTransactionFilters(newFilters);
-    setCurrentPage(1); // Reset to page 1 when filters change
-  };
-
-  const clearCashFilters = () => {
-    setCashFilterPayeeIds([]);
-    setCashFilterCategoryIds([]);
-    setCashFilterStartDate('');
-    setCashFilterEndDate('');
-    setCashCurrentPage(1);
-  };
-
-  const hasActiveCashFilters = cashFilterPayeeIds.length > 0 || cashFilterCategoryIds.length > 0 || !!cashFilterStartDate || !!cashFilterEndDate;
-  const activeCashFilterCount = (cashFilterPayeeIds.length > 0 ? 1 : 0) + (cashFilterCategoryIds.length > 0 ? 1 : 0) + (cashFilterStartDate ? 1 : 0) + (cashFilterEndDate ? 1 : 0);
 
   // Build filter dropdown options
   const cashCategoryFilterOptions = useMemo((): MultiSelectOption[] => {
     const buildOptions = (parentId: string | null = null): MultiSelectOption[] => {
-      return cashCategories
+      return data.cashCategories
         .filter(c => c.parentId === parentId)
         .sort((a, b) => a.name.localeCompare(b.name))
         .flatMap(cat => {
@@ -530,47 +74,17 @@ function InvestmentsContent() {
         });
     };
     return buildOptions();
-  }, [cashCategories]);
+  }, [data.cashCategories]);
 
   const cashPayeeFilterOptions = useMemo((): MultiSelectOption[] => {
-    return cashPayees
+    return data.cashPayees
       .sort((a, b) => a.name.localeCompare(b.name))
-      .map(payee => ({
-        value: payee.id,
-        label: payee.name,
-      }));
-  }, [cashPayees]);
+      .map(payee => ({ value: payee.id, label: payee.name }));
+  }, [data.cashPayees]);
 
   const cycleDensity = useCallback(() => {
-    setListDensity(d => d === 'normal' ? 'compact' : d === 'compact' ? 'dense' : 'normal');
+    setListDensity(d => nextDensity(d));
   }, [setListDensity]);
-
-  const handleSymbolClick = (symbol: string) => {
-    setTransactionFilters({ ...transactionFilters, symbol });
-    setCurrentPage(1);
-  };
-
-  const handleCashClick = (cashAccountId: string) => {
-    router.push(`/transactions?accountId=${cashAccountId}`);
-  };
-
-  const goToPage = (page: number) => {
-    if (page >= 1 && (!pagination || page <= pagination.totalPages)) {
-      setCurrentPage(page);
-    }
-  };
-
-  const goToCashPage = (page: number) => {
-    if (page >= 1 && (!cashPagination || page <= cashPagination.totalPages)) {
-      setCashCurrentPage(page);
-    }
-  };
-
-  // Get brokerage account for the first selected account (for new transaction default)
-  const getSelectedBrokerageAccountId = () => {
-    if (selectedAccountIds.length === 0) return undefined;
-    return selectedAccountIds[0];
-  };
 
   // Display name for account selector (strip " - Brokerage" suffix)
   const getAccountDisplayName = (account: Account) => {
@@ -580,14 +94,8 @@ function InvestmentsContent() {
     return account.name;
   };
 
-  // Get selectable investment accounts (brokerage and standalone)
-  const selectableAccounts = accounts.filter(
-    (a) => a.accountSubType === 'INVESTMENT_BROKERAGE' || !a.accountSubType,
-  );
-
   return (
     <PageLayout>
-
       <main className="px-4 sm:px-6 lg:px-12 pt-6 pb-8">
         <div className="sm:px-0">
           <PageHeader
@@ -598,11 +106,11 @@ function InvestmentsContent() {
                 <div className="flex items-stretch gap-3 w-full sm:w-auto">
                   <div className="flex-1 sm:flex-none sm:w-64 min-w-0">
                     <MultiSelect
-                      value={selectedAccountIds}
-                      onChange={handleAccountChange}
+                      value={data.selectedAccountIds}
+                      onChange={data.handleAccountChange}
                       placeholder="All Investment Accounts"
                       showSearch={false}
-                      options={selectableAccounts.map((account: Account) => ({
+                      options={data.selectableAccounts.map((account: Account) => ({
                         value: account.id,
                         label: getAccountDisplayName(account),
                       }))}
@@ -611,12 +119,12 @@ function InvestmentsContent() {
                   <div className="relative">
                     <Button
                       variant="outline"
-                      onClick={handleRefreshPrices}
-                      disabled={isRefreshingPrices}
+                      onClick={data.handleRefreshPrices}
+                      disabled={data.isRefreshingPrices}
                       className="whitespace-nowrap h-full"
-                      title={lastPriceUpdate ? `Last updated: ${formatRelativeTime(lastPriceUpdate)}` : 'Never updated'}
+                      title={data.lastPriceUpdate ? `Last updated: ${formatRelativeTime(data.lastPriceUpdate)}` : 'Never updated'}
                     >
-                      {isRefreshingPrices ? (
+                      {data.isRefreshingPrices ? (
                         <>
                           <svg className="animate-spin sm:-ml-1 sm:mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -630,52 +138,52 @@ function InvestmentsContent() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                           </svg>
                           <span className="hidden sm:inline">Refresh</span>
-                          {!refreshResult && lastPriceUpdate && (
+                          {!data.refreshResult && data.lastPriceUpdate && (
                             <span className="hidden sm:inline ml-1.5 text-xs text-gray-500 dark:text-gray-400">
-                              ({formatRelativeTime(lastPriceUpdate)})
+                              ({formatRelativeTime(data.lastPriceUpdate)})
                             </span>
                           )}
                         </>
                       )}
                     </Button>
-                    {refreshResult && (
+                    {data.refreshResult && (
                       <div className="absolute top-full right-0 mt-1 z-50">
                         <button
-                          onClick={() => refreshResult.failed > 0 && setShowRefreshDetails(!showRefreshDetails)}
-                          className={`text-xs whitespace-nowrap ${refreshResult.failed === -1 ? 'text-red-600 dark:text-red-400' : refreshResult.failed > 0 ? 'text-yellow-600 dark:text-yellow-400 hover:underline cursor-pointer' : 'text-green-600 dark:text-green-400'}`}
+                          onClick={() => data.refreshResult!.failed > 0 && data.setShowRefreshDetails(!data.showRefreshDetails)}
+                          className={`text-xs whitespace-nowrap ${data.refreshResult.failed === -1 ? 'text-red-600 dark:text-red-400' : data.refreshResult.failed > 0 ? 'text-yellow-600 dark:text-yellow-400 hover:underline cursor-pointer' : 'text-green-600 dark:text-green-400'}`}
                         >
-                          {refreshResult.failed === -1 ? 'Error refreshing' : `${refreshResult.updated} updated${refreshResult.failed > 0 ? `, ${refreshResult.failed} failed` : ''}`}
-                          {refreshResult.failed > 0 && (
+                          {data.refreshResult.failed === -1 ? 'Error refreshing' : `${data.refreshResult.updated} updated${data.refreshResult.failed > 0 ? `, ${data.refreshResult.failed} failed` : ''}`}
+                          {data.refreshResult.failed > 0 && (
                             <svg className="inline-block ml-1 h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={showRefreshDetails ? "M5 15l7-7 7 7" : "M19 9l-7 7-7-7"} />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={data.showRefreshDetails ? "M5 15l7-7 7 7" : "M19 9l-7 7-7-7"} />
                             </svg>
                           )}
                         </button>
-                        {showRefreshDetails && refreshResult.results && (
+                        {data.showRefreshDetails && data.refreshResult.results && (
                           <div className="absolute top-full right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3 min-w-64 max-w-md">
                             <div className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">Price Update Results</div>
                             <div className="max-h-48 overflow-y-auto space-y-1">
-                              {refreshResult.results
+                              {data.refreshResult.results
                                 .filter(r => !r.success)
                                 .map((r, i) => (
                                   <div key={i} className="flex items-start gap-2 text-xs">
-                                    <span className="text-red-500 dark:text-red-400 flex-shrink-0">✗</span>
+                                    <span className="text-red-500 dark:text-red-400 flex-shrink-0">&#10007;</span>
                                     <span className="font-medium text-gray-800 dark:text-gray-200">{r.symbol}</span>
                                     <span className="text-gray-500 dark:text-gray-400 truncate">{r.error}</span>
                                   </div>
                                 ))}
-                              {refreshResult.results
+                              {data.refreshResult.results
                                 .filter(r => r.success)
                                 .map((r, i) => (
                                   <div key={i} className="flex items-start gap-2 text-xs">
-                                    <span className="text-green-500 dark:text-green-400 flex-shrink-0">✓</span>
+                                    <span className="text-green-500 dark:text-green-400 flex-shrink-0">&#10003;</span>
                                     <span className="font-medium text-gray-800 dark:text-gray-200">{r.symbol}</span>
                                     <span className="text-gray-500 dark:text-gray-400">${r.price?.toFixed(2)}</span>
                                   </div>
                                 ))}
                             </div>
                             <button
-                              onClick={() => setShowRefreshDetails(false)}
+                              onClick={() => data.setShowRefreshDetails(false)}
                               className="mt-2 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                             >
                               Close
@@ -686,7 +194,7 @@ function InvestmentsContent() {
                     )}
                   </div>
                 </div>
-                <Button onClick={handleNewTransaction} className="whitespace-nowrap">+ New Transaction</Button>
+                <Button onClick={data.handleNewTransaction} className="whitespace-nowrap">+ New Transaction</Button>
               </>
             }
           />
@@ -694,33 +202,33 @@ function InvestmentsContent() {
           {/* Summary and Allocation Row */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
             <PortfolioSummaryCard
-              summary={portfolioSummary}
-              isLoading={isLoading}
+              summary={data.portfolioSummary}
+              isLoading={data.isLoading}
               singleAccountCurrency={
-                selectedAccountIds.length === 1
-                  ? accounts.find(a => a.id === selectedAccountIds[0])?.currencyCode ?? null
+                data.selectedAccountIds.length === 1
+                  ? data.accounts.find(a => a.id === data.selectedAccountIds[0])?.currencyCode ?? null
                   : null
               }
             />
             <AssetAllocationChart
-              allocation={portfolioSummary ? { allocation: portfolioSummary.allocation, totalValue: portfolioSummary.totalPortfolioValue } : null}
-              isLoading={isLoading}
+              allocation={data.portfolioSummary ? { allocation: data.portfolioSummary.allocation, totalValue: data.portfolioSummary.totalPortfolioValue } : null}
+              isLoading={data.isLoading}
               singleAccountCurrency={
-                selectedAccountIds.length === 1
-                  ? accounts.find(a => a.id === selectedAccountIds[0])?.currencyCode ?? null
+                data.selectedAccountIds.length === 1
+                  ? data.accounts.find(a => a.id === data.selectedAccountIds[0])?.currencyCode ?? null
                   : null
               }
-              holdingsByAccount={portfolioSummary?.holdingsByAccount}
+              holdingsByAccount={data.portfolioSummary?.holdingsByAccount}
             />
           </div>
 
           {/* Portfolio Value Over Time */}
           <div className="mb-6">
             <InvestmentValueChart
-              accountIds={selectedAccountIds}
+              accountIds={data.selectedAccountIds}
               displayCurrency={
-                selectedAccountIds.length === 1
-                  ? accounts.find(a => a.id === selectedAccountIds[0])?.currencyCode ?? null
+                data.selectedAccountIds.length === 1
+                  ? data.accounts.find(a => a.id === data.selectedAccountIds[0])?.currencyCode ?? null
                   : null
               }
             />
@@ -729,29 +237,29 @@ function InvestmentsContent() {
           {/* Holdings List */}
           <div className="mb-6">
             <GroupedHoldingsList
-              holdingsByAccount={portfolioSummary?.holdingsByAccount || []}
-              isLoading={isLoading}
-              totalPortfolioValue={portfolioSummary?.totalPortfolioValue || 0}
-              onSymbolClick={handleSymbolClick}
-              onCashClick={handleCashClick}
+              holdingsByAccount={data.portfolioSummary?.holdingsByAccount || []}
+              isLoading={data.isLoading}
+              totalPortfolioValue={data.portfolioSummary?.totalPortfolioValue || 0}
+              onSymbolClick={data.handleSymbolClick}
+              onCashClick={data.handleCashClick}
             />
           </div>
 
-          {/* Recent Transactions */}
+          {/* Brokerage Transactions */}
           {transactionView === 'brokerage' && (
             <>
               <div>
                 <InvestmentTransactionList
-                  transactions={transactions}
-                  isLoading={isLoading}
-                  onDelete={handleDeleteTransaction}
-                  onEdit={handleEditTransaction}
-                  onNewTransaction={handleNewTransaction}
+                  transactions={data.transactions}
+                  isLoading={data.isLoading}
+                  onDelete={data.handleDeleteTransaction}
+                  onEdit={data.handleEditTransaction}
+                  onNewTransaction={data.handleNewTransaction}
                   density={listDensity}
                   onDensityChange={setListDensity}
-                  filters={transactionFilters}
-                  onFiltersChange={handleFiltersChange}
-                  availableSymbols={[...new Set(portfolioSummary?.holdings.map(h => h.symbol) || [])].sort()}
+                  filters={data.transactionFilters}
+                  onFiltersChange={data.handleFiltersChange}
+                  availableSymbols={[...new Set(data.portfolioSummary?.holdings.map(h => h.symbol) || [])].sort()}
                   viewToggle={
                     <div className="inline-flex rounded-md bg-gray-100 dark:bg-gray-700 p-0.5">
                       <button
@@ -771,22 +279,21 @@ function InvestmentsContent() {
                 />
               </div>
 
-              {/* Brokerage Pagination */}
-              {pagination && pagination.totalPages > 1 && (
+              {data.pagination && data.pagination.totalPages > 1 && (
                 <div className="mt-4">
                   <Pagination
-                    currentPage={currentPage}
-                    totalPages={pagination.totalPages}
-                    totalItems={pagination.total}
+                    currentPage={data.currentPage}
+                    totalPages={data.pagination.totalPages}
+                    totalItems={data.pagination.total}
                     pageSize={PAGE_SIZE}
-                    onPageChange={goToPage}
+                    onPageChange={data.goToPage}
                     itemName="transactions"
                   />
                 </div>
               )}
-              {pagination && pagination.totalPages <= 1 && pagination.total > 0 && (
+              {data.pagination && data.pagination.totalPages <= 1 && data.pagination.total > 0 && (
                 <div className="mt-4 text-sm text-gray-500 dark:text-gray-400 text-center">
-                  {pagination.total} transaction{pagination.total !== 1 ? 's' : ''}
+                  {data.pagination.total} transaction{data.pagination.total !== 1 ? 's' : ''}
                 </div>
               )}
             </>
@@ -800,39 +307,24 @@ function InvestmentsContent() {
                 <div className="flex items-center gap-3">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                     Recent Transactions
-                    {hasActiveCashFilters && (
-                      <span className="ml-2 text-sm font-normal text-gray-500 dark:text-gray-400">
-                        (filtered)
-                      </span>
+                    {data.hasActiveCashFilters && (
+                      <span className="ml-2 text-sm font-normal text-gray-500 dark:text-gray-400">(filtered)</span>
                     )}
                   </h3>
                   <div className="inline-flex rounded-md bg-gray-100 dark:bg-gray-700 p-0.5">
-                    <button
-                      onClick={() => handleTransactionViewChange('brokerage')}
-                      className="px-3 py-1 text-sm font-medium rounded transition-colors text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
-                    >
-                      Brokerage
-                    </button>
-                    <button
-                      onClick={() => handleTransactionViewChange('cash')}
-                      className="px-3 py-1 text-sm font-medium rounded transition-colors bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 shadow-sm"
-                    >
-                      Cash
-                    </button>
+                    <button onClick={() => handleTransactionViewChange('brokerage')} className="px-3 py-1 text-sm font-medium rounded transition-colors text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200">Brokerage</button>
+                    <button onClick={() => handleTransactionViewChange('cash')} className="px-3 py-1 text-sm font-medium rounded transition-colors bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 shadow-sm">Cash</button>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 w-full sm:w-auto">
-                  <button
-                    onClick={openCashCreate}
-                    className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
-                  >
+                  <button onClick={data.openCashCreate} className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600">
                     <span className="sm:hidden">+ New</span>
                     <span className="hidden sm:inline">+ New Transaction</span>
                   </button>
                   <button
-                    onClick={() => setShowCashFilters(!showCashFilters)}
+                    onClick={() => data.setShowCashFilters(!data.showCashFilters)}
                     className={`inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md ${
-                      hasActiveCashFilters
+                      data.hasActiveCashFilters
                         ? 'text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30'
                         : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                     }`}
@@ -841,17 +333,11 @@ function InvestmentsContent() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
                     </svg>
                     Filter
-                    {hasActiveCashFilters && (
-                      <span className="ml-1.5 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-blue-600 rounded-full">
-                        {activeCashFilterCount}
-                      </span>
+                    {data.hasActiveCashFilters && (
+                      <span className="ml-1.5 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-blue-600 rounded-full">{data.activeCashFilterCount}</span>
                     )}
                   </button>
-                  <button
-                    onClick={cycleDensity}
-                    className="ml-auto inline-flex items-center px-2 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
-                    title="Toggle row density"
-                  >
+                  <button onClick={cycleDensity} className="ml-auto inline-flex items-center px-2 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md" title="Toggle row density">
                     <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                     </svg>
@@ -861,92 +347,57 @@ function InvestmentsContent() {
               </div>
 
               {/* Cash Filter Bar */}
-              {showCashFilters && (
+              {data.showCashFilters && (
                 <div className="px-3 sm:px-4 py-3 bg-gray-50 dark:bg-gray-700/30 border-b border-gray-200 dark:border-gray-700">
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <MultiSelect
-                      label="Payees"
-                      options={cashPayeeFilterOptions}
-                      value={cashFilterPayeeIds}
-                      onChange={(values) => { setCashFilterPayeeIds(values); setCashCurrentPage(1); }}
-                      placeholder="All payees"
-                    />
-                    <MultiSelect
-                      label="Categories"
-                      options={cashCategoryFilterOptions}
-                      value={cashFilterCategoryIds}
-                      onChange={(values) => { setCashFilterCategoryIds(values); setCashCurrentPage(1); }}
-                      placeholder="All categories"
-                    />
+                    <MultiSelect label="Payees" options={cashPayeeFilterOptions} value={data.cashFilterPayeeIds} onChange={(values) => { data.setCashFilterPayeeIds(values); data.setCashCurrentPage(1); }} placeholder="All payees" />
+                    <MultiSelect label="Categories" options={cashCategoryFilterOptions} value={data.cashFilterCategoryIds} onChange={(values) => { data.setCashFilterCategoryIds(values); data.setCashCurrentPage(1); }} placeholder="All categories" />
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">From</label>
-                      <input
-                        type="date"
-                        value={cashFilterStartDate}
-                        onChange={(e) => { setCashFilterStartDate(e.target.value); setCashCurrentPage(1); }}
-                        className="w-full text-sm border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500"
-                      />
+                      <input type="date" value={data.cashFilterStartDate} onChange={(e) => { data.setCashFilterStartDate(e.target.value); data.setCashCurrentPage(1); }} className="w-full text-sm border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500" />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">To</label>
-                      <input
-                        type="date"
-                        value={cashFilterEndDate}
-                        onChange={(e) => { setCashFilterEndDate(e.target.value); setCashCurrentPage(1); }}
-                        className="w-full text-sm border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500"
-                      />
+                      <input type="date" value={data.cashFilterEndDate} onChange={(e) => { data.setCashFilterEndDate(e.target.value); data.setCashCurrentPage(1); }} className="w-full text-sm border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500" />
                     </div>
                   </div>
-                  {hasActiveCashFilters && (
+                  {data.hasActiveCashFilters && (
                     <div className="mt-3 flex justify-end">
-                      <button
-                        onClick={clearCashFilters}
-                        className="text-sm text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 font-medium"
-                      >
-                        Clear Filters
-                      </button>
+                      <button onClick={data.clearCashFilters} className="text-sm text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 font-medium">Clear Filters</button>
                     </div>
                   )}
                 </div>
               )}
 
               <div className="mt-3 sm:mt-4" />
-              {cashTransactionsLoading && cashTransactions.length === 0 ? (
+              {data.cashTransactionsLoading && data.cashTransactions.length === 0 ? (
                 <LoadingSpinner text="Loading cash transactions..." />
               ) : (
                 <TransactionList
-                  transactions={cashTransactions}
-                  onEdit={handleEditCashTransaction}
-                  onRefresh={refreshCashTransactions}
-                  onTransactionUpdate={handleCashTransactionUpdate}
+                  transactions={data.cashTransactions}
+                  onEdit={data.handleEditCashTransaction}
+                  onRefresh={data.refreshCashTransactions}
+                  onTransactionUpdate={data.handleCashTransactionUpdate}
                   density={listDensity}
                   onDensityChange={setListDensity}
-                  currentPage={cashCurrentPage}
-                  totalPages={cashPagination?.totalPages ?? 1}
-                  totalItems={cashPagination?.total ?? 0}
+                  currentPage={data.cashCurrentPage}
+                  totalPages={data.cashPagination?.totalPages ?? 1}
+                  totalItems={data.cashPagination?.total ?? 0}
                   pageSize={PAGE_SIZE}
-                  onPageChange={goToCashPage}
+                  onPageChange={data.goToCashPage}
                   showToolbar={false}
                 />
               )}
             </div>
 
-              {/* Cash Pagination */}
-              {cashPagination && cashPagination.totalPages > 1 && (
+              {data.cashPagination && data.cashPagination.totalPages > 1 && (
                 <div className="mt-4">
-                  <Pagination
-                    currentPage={cashCurrentPage}
-                    totalPages={cashPagination.totalPages}
-                    totalItems={cashPagination.total}
-                    pageSize={PAGE_SIZE}
-                    onPageChange={goToCashPage}
-                    itemName="transactions"
-                  />
+                  <Pagination currentPage={data.cashCurrentPage} totalPages={data.cashPagination.totalPages} totalItems={data.cashPagination.total} pageSize={PAGE_SIZE} onPageChange={data.goToCashPage} itemName="transactions" />
                 </div>
               )}
-              {cashPagination && cashPagination.totalPages <= 1 && cashPagination.total > 0 && (
+              {data.cashPagination && data.cashPagination.totalPages <= 1 && data.cashPagination.total > 0 && (
                 <div className="mt-4 text-sm text-gray-500 dark:text-gray-400 text-center">
-                  {cashPagination.total} transaction{cashPagination.total !== 1 ? 's' : ''}
+                  {data.cashPagination.total} transaction{data.cashPagination.total !== 1 ? 's' : ''}
                 </div>
               )}
             </>
@@ -962,39 +413,39 @@ function InvestmentsContent() {
       </main>
 
       {/* Transaction Form Modal */}
-      <Modal isOpen={showTransactionForm} onClose={close} maxWidth="xl" className="p-6" {...modalProps}>
+      <Modal isOpen={data.showTransactionForm} onClose={data.close} maxWidth="xl" className="p-6" {...data.modalProps}>
         <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
-          {editingTransaction ? 'Edit Transaction' : 'New Investment Transaction'}
+          {data.editingTransaction ? 'Edit Transaction' : 'New Investment Transaction'}
         </h2>
         <InvestmentTransactionForm
-          accounts={accounts}
-          allAccounts={allAccounts}
-          transaction={editingTransaction}
-          defaultAccountId={getSelectedBrokerageAccountId()}
-          onSuccess={handleFormSuccess}
-          onCancel={close}
-          onDirtyChange={setFormDirty}
-          submitRef={formSubmitRef}
+          accounts={data.accounts}
+          allAccounts={data.allAccounts}
+          transaction={data.editingTransaction}
+          defaultAccountId={data.getSelectedBrokerageAccountId()}
+          onSuccess={data.handleFormSuccess}
+          onCancel={data.close}
+          onDirtyChange={data.setFormDirty}
+          submitRef={data.formSubmitRef}
         />
       </Modal>
-      <UnsavedChangesDialog {...unsavedChangesDialog} />
+      <UnsavedChangesDialog {...data.unsavedChangesDialog} />
 
       {/* Cash Transaction Form Modal */}
-      <Modal isOpen={showCashForm} onClose={closeCash} maxWidth="6xl" className="p-6" {...cashModalProps}>
+      <Modal isOpen={data.showCashForm} onClose={data.closeCash} maxWidth="6xl" className="p-6" {...data.cashModalProps}>
         <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
-          {editingCashTransaction ? 'Edit Transaction' : 'New Transaction'}
+          {data.editingCashTransaction ? 'Edit Transaction' : 'New Transaction'}
         </h2>
         <TransactionForm
-          key={editingCashTransaction?.id || 'new-cash'}
-          transaction={editingCashTransaction}
-          defaultAccountId={cashAccountIds.length > 0 ? cashAccountIds[0] : undefined}
-          onSuccess={handleCashFormSuccess}
-          onCancel={closeCash}
-          onDirtyChange={setCashFormDirty}
-          submitRef={cashFormSubmitRef}
+          key={data.editingCashTransaction?.id || 'new-cash'}
+          transaction={data.editingCashTransaction}
+          defaultAccountId={data.cashAccountIds.length > 0 ? data.cashAccountIds[0] : undefined}
+          onSuccess={data.handleCashFormSuccess}
+          onCancel={data.closeCash}
+          onDirtyChange={data.setCashFormDirty}
+          submitRef={data.cashFormSubmitRef}
         />
       </Modal>
-      <UnsavedChangesDialog {...cashUnsavedChangesDialog} />
+      <UnsavedChangesDialog {...data.cashUnsavedChangesDialog} />
     </PageLayout>
   );
 }

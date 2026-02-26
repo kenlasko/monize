@@ -26,6 +26,12 @@ import {
   getCurrentMonthPeriodDates,
   PeriodDateRange,
 } from "./budget-date.utils";
+import {
+  queryCategorySpending,
+  resolveCategoryName,
+  resolveCategorySpent,
+} from "./budget-spending.util";
+import { formatDateYMD, todayYMD } from "../common/date-utils";
 
 export interface UpcomingBill {
   id: string;
@@ -340,8 +346,7 @@ export class BudgetsService {
     userId: string,
     periodEnd: string,
   ): Promise<UpcomingBill[]> {
-    const today = new Date();
-    const todayStr = today.toISOString().split("T")[0];
+    const todayStr = todayYMD();
 
     const scheduledTransactions = await this.scheduledTransactionsRepository
       .createQueryBuilder("st")
@@ -360,7 +365,7 @@ export class BudgetsService {
       dueDate:
         typeof st.nextDueDate === "string"
           ? st.nextDueDate
-          : (st.nextDueDate as Date).toISOString().split("T")[0],
+          : formatDateYMD(st.nextDueDate as Date),
       categoryId: st.categoryId,
     }));
   }
@@ -479,12 +484,12 @@ export class BudgetsService {
   private async ensureBillAlerts(userId: string): Promise<void> {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const todayStr = today.toISOString().split("T")[0];
+    const todayStr = todayYMD();
 
     // Use a 30-day DB-level cap, then filter per-bill by reminderDaysBefore
     const horizon = new Date(today);
     horizon.setDate(horizon.getDate() + 30);
-    const horizonStr = horizon.toISOString().split("T")[0];
+    const horizonStr = formatDateYMD(horizon);
 
     const manualBills = await this.scheduledTransactionsRepository
       .createQueryBuilder("st")
@@ -504,7 +509,7 @@ export class BudgetsService {
       const dueDate =
         typeof bill.nextDueDate === "string"
           ? bill.nextDueDate
-          : (bill.nextDueDate as Date).toISOString().split("T")[0];
+          : formatDateYMD(bill.nextDueDate as Date);
       const daysUntilDue = Math.ceil(
         (new Date(dueDate).getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
       );
@@ -539,7 +544,7 @@ export class BudgetsService {
       const overrideDate =
         typeof o.overrideDate === "string"
           ? o.overrideDate
-          : (o.overrideDate as unknown as Date).toISOString().split("T")[0];
+          : formatDateYMD(o.overrideDate as unknown as Date);
       overrideMap.set(`${o.scheduledTransactionId}:${overrideDate}`, o);
     }
 
@@ -547,7 +552,7 @@ export class BudgetsService {
       const dueDate =
         typeof bill.nextDueDate === "string"
           ? bill.nextDueDate
-          : (bill.nextDueDate as Date).toISOString().split("T")[0];
+          : formatDateYMD(bill.nextDueDate as Date);
 
       if (existingBillKeys.has(`${bill.id}:${dueDate}`)) continue;
 
@@ -902,99 +907,14 @@ export class BudgetsService {
       );
     }
 
-    const categoryIds = budgetCategories
-      .filter((bc) => bc.categoryId !== null)
-      .map((bc) => bc.categoryId as string);
-
-    const spendingMap = new Map<string, number>();
-    const transferSpendingMap = new Map<string, number>();
-    const transferBudgetCategories = budgetCategories.filter(
-      (bc) => bc.isTransfer && bc.transferAccountId,
+    const { spendingMap, transferSpendingMap } = await queryCategorySpending(
+      this.transactionsRepository,
+      this.splitsRepository,
+      userId,
+      budgetCategories,
+      periodStart,
+      periodEnd,
     );
-
-    // Run all independent queries in parallel
-    const queries: Promise<void>[] = [];
-
-    if (categoryIds.length > 0) {
-      queries.push(
-        this.transactionsRepository
-          .createQueryBuilder("t")
-          .select("t.category_id", "categoryId")
-          .addSelect("COALESCE(SUM(ABS(t.amount)), 0)", "total")
-          .where("t.user_id = :userId", { userId })
-          .andWhere("t.category_id IN (:...categoryIds)", { categoryIds })
-          .andWhere("t.transaction_date >= :periodStart", { periodStart })
-          .andWhere("t.transaction_date <= :periodEnd", { periodEnd })
-          .andWhere("t.status != :void", { void: "VOID" })
-          .andWhere("t.is_split = false")
-          .groupBy("t.category_id")
-          .getRawMany()
-          .then((rows) => {
-            for (const row of rows) {
-              spendingMap.set(row.categoryId, parseFloat(row.total || "0"));
-            }
-          }),
-      );
-
-      queries.push(
-        this.splitsRepository
-          .createQueryBuilder("s")
-          .innerJoin("s.transaction", "t")
-          .select("s.category_id", "categoryId")
-          .addSelect("COALESCE(SUM(ABS(s.amount)), 0)", "total")
-          .where("t.user_id = :userId", { userId })
-          .andWhere("s.category_id IN (:...categoryIds)", { categoryIds })
-          .andWhere("t.transaction_date >= :periodStart", { periodStart })
-          .andWhere("t.transaction_date <= :periodEnd", { periodEnd })
-          .andWhere("t.status != :void", { void: "VOID" })
-          .groupBy("s.category_id")
-          .getRawMany()
-          .then((rows) => {
-            for (const row of rows) {
-              const existing = spendingMap.get(row.categoryId) || 0;
-              spendingMap.set(
-                row.categoryId,
-                existing + parseFloat(row.total || "0"),
-              );
-            }
-          }),
-      );
-    }
-
-    if (transferBudgetCategories.length > 0) {
-      const transferAccountIds = transferBudgetCategories.map(
-        (bc) => bc.transferAccountId as string,
-      );
-
-      queries.push(
-        this.transactionsRepository
-          .createQueryBuilder("t")
-          .innerJoin("t.linkedTransaction", "lt")
-          .select("lt.account_id", "destinationAccountId")
-          .addSelect("COALESCE(SUM(ABS(t.amount)), 0)", "total")
-          .where("t.user_id = :userId", { userId })
-          .andWhere("t.is_transfer = true")
-          .andWhere("t.amount < 0")
-          .andWhere("lt.account_id IN (:...transferAccountIds)", {
-            transferAccountIds,
-          })
-          .andWhere("t.transaction_date >= :periodStart", { periodStart })
-          .andWhere("t.transaction_date <= :periodEnd", { periodEnd })
-          .andWhere("t.status != :void", { void: "VOID" })
-          .groupBy("lt.account_id")
-          .getRawMany()
-          .then((rows) => {
-            for (const row of rows) {
-              transferSpendingMap.set(
-                row.destinationAccountId,
-                parseFloat(row.total || "0"),
-              );
-            }
-          }),
-      );
-    }
-
-    await Promise.all(queries);
 
     return budgetCategories.map((bc) => {
       const rawAmount = Number(bc.amount);
@@ -1008,22 +928,8 @@ export class BudgetsService {
         budgeted = rawAmount;
       }
 
-      let spent = 0;
-      let categoryName: string;
-
-      if (bc.isTransfer && bc.transferAccountId) {
-        spent = transferSpendingMap.get(bc.transferAccountId) || 0;
-        categoryName = bc.transferAccount?.name || "Transfer";
-      } else {
-        spent = bc.categoryId ? spendingMap.get(bc.categoryId) || 0 : 0;
-        const cat = bc.category;
-        categoryName = cat
-          ? cat.parent
-            ? `${cat.parent.name}: ${cat.name}`
-            : cat.name
-          : "Uncategorized";
-      }
-
+      const spent = resolveCategorySpent(bc, spendingMap, transferSpendingMap);
+      const categoryName = resolveCategoryName(bc);
       const remaining = budgeted - spent;
       const percentUsed =
         budgeted > 0 ? Math.round((spent / budgeted) * 10000) / 100 : 0;

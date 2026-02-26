@@ -94,6 +94,7 @@ describe("TransactionTransferService", () => {
 
     netWorthService = {
       recalculateAccount: jest.fn().mockResolvedValue(undefined),
+      triggerDebouncedRecalc: jest.fn(),
     };
 
     mockFindOne.mockReset();
@@ -296,19 +297,13 @@ describe("TransactionTransferService", () => {
 
       await service.createTransfer("user-1", baseTransferDto, mockFindOne);
 
-      // Before timer fires, recalc should not have been called
-      expect(netWorthService.recalculateAccount).not.toHaveBeenCalled();
-
-      // Advance timers
-      jest.advanceTimersByTime(2000);
-
-      expect(netWorthService.recalculateAccount).toHaveBeenCalledWith(
-        "user-1",
+      expect(netWorthService.triggerDebouncedRecalc).toHaveBeenCalledWith(
         "from-account",
-      );
-      expect(netWorthService.recalculateAccount).toHaveBeenCalledWith(
         "user-1",
+      );
+      expect(netWorthService.triggerDebouncedRecalc).toHaveBeenCalledWith(
         "to-account",
+        "user-1",
       );
     });
 
@@ -525,15 +520,13 @@ describe("TransactionTransferService", () => {
 
       await service.removeTransfer("user-1", "from-tx", mockFindOne);
 
-      jest.advanceTimersByTime(2000);
-
-      expect(netWorthService.recalculateAccount).toHaveBeenCalledWith(
-        "user-1",
+      expect(netWorthService.triggerDebouncedRecalc).toHaveBeenCalledWith(
         "from-account",
-      );
-      expect(netWorthService.recalculateAccount).toHaveBeenCalledWith(
         "user-1",
+      );
+      expect(netWorthService.triggerDebouncedRecalc).toHaveBeenCalledWith(
         "to-account",
+        "user-1",
       );
     });
   });
@@ -838,20 +831,18 @@ describe("TransactionTransferService", () => {
         mockFindOne,
       );
 
-      jest.advanceTimersByTime(2000);
-
       // Old and new accounts should all get recalculated
-      expect(netWorthService.recalculateAccount).toHaveBeenCalledWith(
-        "user-1",
+      expect(netWorthService.triggerDebouncedRecalc).toHaveBeenCalledWith(
         "from-account",
-      );
-      expect(netWorthService.recalculateAccount).toHaveBeenCalledWith(
         "user-1",
+      );
+      expect(netWorthService.triggerDebouncedRecalc).toHaveBeenCalledWith(
         "to-account",
-      );
-      expect(netWorthService.recalculateAccount).toHaveBeenCalledWith(
         "user-1",
+      );
+      expect(netWorthService.triggerDebouncedRecalc).toHaveBeenCalledWith(
         "new-to-account",
+        "user-1",
       );
     });
 

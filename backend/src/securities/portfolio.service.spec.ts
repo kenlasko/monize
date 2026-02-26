@@ -1,6 +1,7 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { PortfolioService } from "./portfolio.service";
+import { PortfolioCalculationService } from "./portfolio-calculation.service";
 import { Holding } from "./entities/holding.entity";
 import { SecurityPrice } from "./entities/security-price.entity";
 import {
@@ -154,6 +155,7 @@ describe("PortfolioService", () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         PortfolioService,
+        PortfolioCalculationService,
         {
           provide: getRepositoryToken(Holding),
           useValue: holdingsRepository,

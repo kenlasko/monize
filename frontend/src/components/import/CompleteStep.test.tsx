@@ -112,7 +112,7 @@ describe('CompleteStep', () => {
           sampleDates: [],
         },
         selectedAccountId: 'acc-1',
-        matchConfidence: 'exact',
+        matchConfidence: 'exact' as const,
       },
     ];
     render(<CompleteStep {...defaultProps} importFiles={importFiles} />);

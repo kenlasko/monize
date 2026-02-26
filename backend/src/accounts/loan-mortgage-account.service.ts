@@ -24,6 +24,7 @@ import {
   MortgageAmortizationInput,
   MortgageAmortizationResult,
 } from "./mortgage-amortization.util";
+import { formatDateYMD } from "../common/date-utils";
 
 @Injectable()
 export class LoanMortgageAccountService {
@@ -110,7 +111,7 @@ export class LoanMortgageAccountService {
 
     const endDateStr =
       amortization.totalPayments > 0 && amortization.totalPayments < 10000
-        ? amortization.endDate.toISOString().split("T")[0]
+        ? formatDateYMD(amortization.endDate)
         : undefined;
 
     const scheduledTransaction = await this.scheduledTransactionsService.create(
@@ -251,7 +252,7 @@ export class LoanMortgageAccountService {
 
     const endDateStr =
       amortization.totalPayments > 0 && amortization.totalPayments < 10000
-        ? amortization.endDate.toISOString().split("T")[0]
+        ? formatDateYMD(amortization.endDate)
         : undefined;
 
     const scheduledTransaction = await this.scheduledTransactionsService.create(
@@ -435,7 +436,7 @@ export class LoanMortgageAccountService {
       paymentAmount,
       principalPayment,
       interestPayment,
-      effectiveDate: effectiveDate.toISOString().split("T")[0],
+      effectiveDate: formatDateYMD(effectiveDate),
     };
   }
 }

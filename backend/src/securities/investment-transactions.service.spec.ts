@@ -220,6 +220,7 @@ describe("InvestmentTransactionsService", () => {
 
     netWorthService = {
       recalculateAccount: jest.fn().mockResolvedValue(undefined),
+      triggerDebouncedRecalc: jest.fn(),
     };
 
     dataSource = {};
@@ -1004,12 +1005,9 @@ describe("InvestmentTransactionsService", () => {
     it("triggers net worth recalculation after create", async () => {
       await service.create(userId, createBuyDto);
 
-      // Advance timers to trigger the debounced recalc
-      jest.advanceTimersByTime(2000);
-
-      expect(netWorthService.recalculateAccount).toHaveBeenCalledWith(
-        userId,
+      expect(netWorthService.triggerDebouncedRecalc).toHaveBeenCalledWith(
         accountId,
+        userId,
       );
     });
 
@@ -1565,11 +1563,9 @@ describe("InvestmentTransactionsService", () => {
 
       await service.update(userId, transactionId, { description: "Updated" });
 
-      jest.advanceTimersByTime(2000);
-
-      expect(netWorthService.recalculateAccount).toHaveBeenCalledWith(
-        userId,
+      expect(netWorthService.triggerDebouncedRecalc).toHaveBeenCalledWith(
         accountId,
+        userId,
       );
     });
 
@@ -1842,11 +1838,9 @@ describe("InvestmentTransactionsService", () => {
 
       await service.remove(userId, transactionId);
 
-      jest.advanceTimersByTime(2000);
-
-      expect(netWorthService.recalculateAccount).toHaveBeenCalledWith(
-        userId,
+      expect(netWorthService.triggerDebouncedRecalc).toHaveBeenCalledWith(
         accountId,
+        userId,
       );
     });
 
@@ -1993,76 +1987,6 @@ describe("InvestmentTransactionsService", () => {
       expect(accountsService.resetBrokerageBalances).toHaveBeenCalledWith(
         userId,
       );
-    });
-  });
-
-  describe("triggerNetWorthRecalc (debounce behavior)", () => {
-    beforeEach(() => {
-      accountsService.findOne.mockImplementation((uid: string, aid: string) => {
-        if (aid === accountId) return Promise.resolve(mockInvestmentAccount);
-        if (aid === cashAccountId) return Promise.resolve(mockCashAccount);
-        return Promise.reject(new NotFoundException("Account not found"));
-      });
-    });
-
-    it("debounces multiple recalc triggers for the same account", async () => {
-      // Create two transactions in quick succession to trigger net worth recalc twice
-      const savedTx = { ...mockBuyTransaction, transactionId: null };
-      investmentTransactionsRepository.save.mockResolvedValue(savedTx);
-
-      const findOneQB = createMockQueryBuilder(savedTx);
-      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
-        findOneQB,
-      );
-
-      const createDto = {
-        accountId,
-        securityId,
-        action: InvestmentAction.DIVIDEND,
-        transactionDate: "2025-01-15",
-        price: 10,
-      };
-
-      await service.create(userId, createDto);
-      await service.create(userId, createDto);
-
-      // Before the debounce period, recalc should not have been called
-      expect(netWorthService.recalculateAccount).not.toHaveBeenCalled();
-
-      // Advance timers past debounce
-      jest.advanceTimersByTime(2000);
-
-      // Should only be called once despite two triggers
-      expect(netWorthService.recalculateAccount).toHaveBeenCalledTimes(1);
-    });
-
-    it("handles net worth recalc failure gracefully", async () => {
-      netWorthService.recalculateAccount.mockRejectedValue(
-        new Error("Recalc failed"),
-      );
-
-      const savedTx = { ...mockBuyTransaction, transactionId: null };
-      investmentTransactionsRepository.save.mockResolvedValue(savedTx);
-
-      const findOneQB = createMockQueryBuilder(savedTx);
-      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
-        findOneQB,
-      );
-
-      const createDto = {
-        accountId,
-        securityId,
-        action: InvestmentAction.DIVIDEND,
-        transactionDate: "2025-01-15",
-        price: 10,
-      };
-
-      await service.create(userId, createDto);
-
-      // Advance timers and flush microtasks - should not throw
-      jest.advanceTimersByTime(2000);
-      // Let the promise rejection be handled
-      await Promise.resolve();
     });
   });
 

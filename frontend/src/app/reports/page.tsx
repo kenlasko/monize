@@ -12,9 +12,9 @@ import { getIconComponent } from '@/components/ui/IconPicker';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { createLogger } from '@/lib/logger';
 
-const logger = createLogger('Reports');
+import { DensityLevel, nextDensity } from '@/hooks/useTableDensity';
 
-type DensityLevel = 'normal' | 'compact' | 'dense';
+const logger = createLogger('Reports');
 type ReportCategory = 'spending' | 'income' | 'networth' | 'tax' | 'debt' | 'investment' | 'insights' | 'maintenance' | 'bills' | 'budget' | 'custom';
 
 interface Report {
@@ -466,12 +466,7 @@ function ReportsContent() {
     loadCustomReports();
   }, []);
 
-  const cycleDensity = () => {
-    const levels: DensityLevel[] = ['normal', 'compact', 'dense'];
-    const currentIndex = levels.indexOf(density);
-    const nextIndex = (currentIndex + 1) % levels.length;
-    setDensity(levels[nextIndex]);
-  };
+  const cycleDensity = () => setDensity(nextDensity(density));
 
   const densityLabels: Record<DensityLevel, string> = {
     normal: 'Normal',
@@ -528,7 +523,7 @@ function ReportsContent() {
               <button
                 onClick={cycleDensity}
                 className="inline-flex items-center justify-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                title={`Switch to ${densityLabels[density === 'normal' ? 'compact' : density === 'compact' ? 'dense' : 'normal']} view`}
+                title={`Switch to ${densityLabels[nextDensity(density)]} view`}
               >
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />

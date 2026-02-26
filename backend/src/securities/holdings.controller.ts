@@ -20,7 +20,7 @@ import { AuthGuard } from "@nestjs/passport";
 import { HoldingsService } from "./holdings.service";
 import { Holding } from "./entities/holding.entity";
 
-@ApiTags("holdings")
+@ApiTags("Holdings")
 @ApiBearerAuth()
 @UseGuards(AuthGuard("jwt"))
 @Controller("holdings")

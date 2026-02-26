@@ -1,6 +1,7 @@
 import {
   Injectable,
   BadRequestException,
+  NotFoundException,
   Logger,
   Inject,
   forwardRef,
@@ -102,7 +103,7 @@ export class ImportService {
       where: { id: dto.accountId, userId },
     });
     if (!account) {
-      throw new BadRequestException("Account not found");
+      throw new NotFoundException("Account not found");
     }
 
     const result = parseQif(dto.content, dto.dateFormat as DateFormat);

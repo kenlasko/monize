@@ -28,6 +28,11 @@ type RateIndex = Map<string, Array<{ date: string; rate: number }>>;
 @Injectable()
 export class NetWorthService {
   private readonly logger = new Logger(NetWorthService.name);
+  private readonly recalcTimers = new Map<
+    string,
+    ReturnType<typeof setTimeout>
+  >();
+  private static readonly RECALC_DEBOUNCE_MS = 2000;
 
   constructor(
     @InjectRepository(MonthlyAccountBalance)
@@ -46,6 +51,25 @@ export class NetWorthService {
     private prefRepo: Repository<UserPreference>,
     private dataSource: DataSource,
   ) {}
+
+  /** Debounced trigger for recalculating a single account's net worth snapshots. */
+  triggerDebouncedRecalc(accountId: string, userId: string): void {
+    const key = `${userId}:${accountId}`;
+    const existing = this.recalcTimers.get(key);
+    if (existing) clearTimeout(existing);
+
+    this.recalcTimers.set(
+      key,
+      setTimeout(() => {
+        this.recalcTimers.delete(key);
+        this.recalculateAccount(userId, accountId).catch((err) =>
+          this.logger.warn(
+            `Net worth recalc failed for account ${accountId}: ${err.message}`,
+          ),
+        );
+      }, NetWorthService.RECALC_DEBOUNCE_MS),
+    );
+  }
 
   async recalculateAccount(userId: string, accountId: string): Promise<void> {
     const account = await this.accountRepo.findOne({

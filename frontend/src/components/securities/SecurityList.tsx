@@ -4,9 +4,7 @@ import { useState, useMemo, useCallback, useRef, memo } from 'react';
 import { Security } from '@/types/investment';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
-
-// Density levels: 'normal' | 'compact' | 'dense'
-export type DensityLevel = 'normal' | 'compact' | 'dense';
+import { DensityLevel, nextDensity } from '@/hooks/useTableDensity';
 
 // Map of securityId -> total quantity across all accounts
 export type SecurityHoldings = Record<string, number>;
@@ -236,11 +234,11 @@ export function SecurityList({
   }, [density]);
 
   const cycleDensity = useCallback(() => {
-    const nextDensity = density === 'normal' ? 'compact' : density === 'compact' ? 'dense' : 'normal';
+    const next = nextDensity(density);
     if (onDensityChange) {
-      onDensityChange(nextDensity);
+      onDensityChange(next);
     } else {
-      setLocalDensity(nextDensity);
+      setLocalDensity(next);
     }
   }, [density, onDensityChange]);
 

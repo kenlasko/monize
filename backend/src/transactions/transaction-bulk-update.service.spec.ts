@@ -85,6 +85,7 @@ describe("TransactionBulkUpdateService", () => {
 
     netWorthService = {
       recalculateAccount: jest.fn().mockResolvedValue(undefined),
+      triggerDebouncedRecalc: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -322,9 +323,9 @@ describe("TransactionBulkUpdateService", () => {
 
       expect(result.updated).toBe(2);
       expect(accountsService.updateBalance).toHaveBeenCalledWith("acc-1", -20);
-      expect(netWorthService.recalculateAccount).toHaveBeenCalledWith(
-        userId,
+      expect(netWorthService.triggerDebouncedRecalc).toHaveBeenCalledWith(
         "acc-1",
+        userId,
       );
     });
 

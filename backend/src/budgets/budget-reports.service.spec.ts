@@ -1,6 +1,9 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { BudgetReportsService } from "./budget-reports.service";
+import { BudgetTrendReportsService } from "./budget-trend-reports.service";
+import { BudgetHealthReportsService } from "./budget-health-reports.service";
+import { BudgetActivityReportsService } from "./budget-activity-reports.service";
 import { BudgetsService } from "./budgets.service";
 import { Budget, BudgetType, BudgetStrategy } from "./entities/budget.entity";
 import {
@@ -223,6 +226,9 @@ describe("BudgetReportsService", () => {
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
+        BudgetTrendReportsService,
+        BudgetHealthReportsService,
+        BudgetActivityReportsService,
         BudgetReportsService,
         {
           provide: getRepositoryToken(BudgetPeriod),
