@@ -719,20 +719,22 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
         </div>
       )}
 
-      {/* Description */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          Description
-        </label>
-        <textarea
-          rows={3}
-          className="block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-100 dark:focus:border-blue-400 dark:focus:ring-blue-400"
-          {...register('description')}
-        />
-        {errors.description && (
-          <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.description.message}</p>
-        )}
-      </div>
+      {/* Description - only shown when not in split mode (split mode has it inline with Reference Number) */}
+      {!isSplitMode && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Description
+          </label>
+          <textarea
+            rows={3}
+            className="block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-100 dark:focus:border-blue-400 dark:focus:ring-blue-400"
+            {...register('description')}
+          />
+          {errors.description && (
+            <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.description.message}</p>
+          )}
+        </div>
+      )}
 
       {/* Status selector */}
       <Select

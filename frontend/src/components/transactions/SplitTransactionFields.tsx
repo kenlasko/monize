@@ -97,7 +97,7 @@ export function SplitTransactionFields({
         />
       </div>
 
-      {/* Row 3: Reference Number */}
+      {/* Row 3: Reference Number and Description */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Input
           label="Reference Number"
@@ -105,6 +105,13 @@ export function SplitTransactionFields({
           placeholder="Cheque #, confirmation #..."
           error={errors.referenceNumber?.message as string | undefined}
           {...register('referenceNumber')}
+        />
+        <Input
+          label="Description"
+          type="text"
+          placeholder="Optional description..."
+          error={errors.description?.message as string | undefined}
+          {...register('description')}
         />
       </div>
     </div>
