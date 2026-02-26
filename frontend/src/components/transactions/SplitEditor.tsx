@@ -45,8 +45,8 @@ export function SplitEditor({
   const currencySymbol = getCurrencySymbol(currencyCode);
   const [localSplits, setLocalSplits] = useState<SplitRow[]>(splits);
 
-  // Transfer support is only available when accounts are provided
-  const supportsTransfers = accounts.length > 0 && sourceAccountId;
+  // Always show Type column since a transaction will always have an account
+  const supportsTransfers = true;
 
   // Memoize category options to avoid rebuilding on every render
   const categoryOptions = useMemo(() => buildCategoryTree(categories).map(({ category }) => {
@@ -437,20 +437,20 @@ export function SplitEditor({
           <thead className="bg-gray-50 dark:bg-gray-800 rounded-t-lg">
             <tr>
               {supportsTransfers && (
-                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase" style={{ width: '10%' }}>
+                <th className="px-1 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase" style={{ width: '13%' }}>
                   Type
                 </th>
               )}
-              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase" style={{ width: supportsTransfers ? '35%' : '45%' }}>
+              <th className="px-1 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase" style={{ width: supportsTransfers ? '34%' : '45%' }}>
                 {supportsTransfers ? 'Category / Account' : 'Category'}
               </th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase" style={{ width: supportsTransfers ? '20%' : '15%' }}>
+              <th className="px-1 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase" style={{ width: supportsTransfers ? '15%' : '15%' }}>
                 Amount
               </th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase" style={{ width: '30%' }}>
+              <th className="px-1 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase" style={{ width: '31%' }}>
                 Memo
               </th>
-              <th className="px-3 py-2" style={{ width: '5%' }}></th>
+              <th className="px-1 py-2" style={{ width: '5%' }}></th>
             </tr>
           </thead>
           <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
@@ -463,7 +463,7 @@ export function SplitEditor({
               return (
               <tr key={split.id}>
                 {supportsTransfers && (
-                  <td className="px-3 py-2">
+                  <td className="px-1 py-2">
                     <Select
                       options={[
                         { value: 'category', label: 'Category' },
@@ -476,7 +476,7 @@ export function SplitEditor({
                     />
                   </td>
                 )}
-                <td className="px-3 py-2">
+                <td className="px-1 py-2">
                   {split.splitType === 'category' || !supportsTransfers ? (
                     <Combobox
                       placeholder="Select category..."
@@ -503,7 +503,7 @@ export function SplitEditor({
                     />
                   )}
                 </td>
-                <td className="px-3 py-2">
+                <td className="px-1 py-2">
                   <CurrencyInput
                     prefix={currencySymbol}
                     value={split.amount}
@@ -512,7 +512,7 @@ export function SplitEditor({
                     className="w-full"
                   />
                 </td>
-                <td className="px-3 py-2">
+                <td className="px-1 py-2">
                   <Input
                     type="text"
                     value={split.memo || ''}
@@ -522,7 +522,7 @@ export function SplitEditor({
                     className="w-full"
                   />
                 </td>
-                <td className="px-3 py-2">
+                <td className="px-1 py-2">
                   <div className="flex space-x-1 justify-end">
                     <button
                       type="button"

@@ -467,7 +467,7 @@ function BillsContent() {
         </ErrorBoundary>
 
         {/* Form Modal */}
-        <Modal isOpen={showForm} onClose={close} {...modalProps} maxWidth="5xl" className="p-6">
+        <Modal isOpen={showForm} onClose={close} {...modalProps} maxWidth="6xl" className="p-6 !max-w-[69rem]">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
             {isEditing ? 'Edit Scheduled Transaction' : 'New Scheduled Transaction'}
           </h2>

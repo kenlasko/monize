@@ -18,6 +18,28 @@ import { getErrorMessage } from '@/lib/errors';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { getProjectedBalanceAtDate, FutureTransaction } from '@/lib/forecast';
 
+// Liability accounts normally carry negative balances — only warn if over credit limit
+const LIABILITY_TYPES = new Set(['CREDIT_CARD', 'LOAN', 'MORTGAGE', 'LINE_OF_CREDIT']);
+
+function isLiabilityAccount(account: Account): boolean {
+  return LIABILITY_TYPES.has(account.accountType);
+}
+
+/** Returns true when a projected balance should trigger a warning for the given account. */
+function shouldWarnBalance(account: Account, projectedBalance: number): boolean {
+  if (isLiabilityAccount(account)) {
+    // Liability accounts: only warn if the balance exceeds the credit limit (if set)
+    if (account.creditLimit != null && account.creditLimit > 0) {
+      // Balance is negative, credit limit is positive — warn when balance is more negative than -creditLimit
+      return projectedBalance < -account.creditLimit;
+    }
+    // No credit limit set — no warning for liability accounts
+    return false;
+  }
+  // Asset accounts: warn if balance goes negative
+  return projectedBalance < 0;
+}
+
 interface PostTransactionDialogProps {
   isOpen: boolean;
   scheduledTransaction: ScheduledTransaction;
@@ -236,37 +258,44 @@ export function PostTransactionDialog({
         </div>
       )}
 
-      {/* Negative balance warning */}
-      {projectedBalances && (
-        (projectedBalances.sourceAfter != null && projectedBalances.sourceAfter < 0) ||
-        (projectedBalances.transferAfter != null && projectedBalances.transferAfter < 0)
-      ) && (
-        <div className="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded-lg p-3 mb-4 flex items-start gap-2">
-          <svg className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-          </svg>
-          <div className="text-sm text-amber-700 dark:text-amber-300">
-            {projectedBalances.sourceAfter != null && projectedBalances.sourceAfter < 0 && projectedBalances.transferAfter != null && projectedBalances.transferAfter < 0 ? (
-              <>
-                Posting on this date will bring <span className="font-medium">{sourceAccount?.name}</span> to{' '}
-                <span className="font-medium">{formatCurrency(projectedBalances.sourceAfter, scheduledTransaction.currencyCode)}</span> and{' '}
-                <span className="font-medium">{transferAccount?.name}</span> to{' '}
-                <span className="font-medium">{formatCurrency(projectedBalances.transferAfter, scheduledTransaction.currencyCode)}</span>, below zero.
-              </>
-            ) : projectedBalances.sourceAfter != null && projectedBalances.sourceAfter < 0 ? (
-              <>
-                Posting on this date will bring <span className="font-medium">{sourceAccount?.name}</span> to{' '}
-                <span className="font-medium">{formatCurrency(projectedBalances.sourceAfter, scheduledTransaction.currencyCode)}</span>, below zero.
-              </>
-            ) : (
-              <>
-                Posting on this date will bring <span className="font-medium">{transferAccount?.name}</span> to{' '}
-                <span className="font-medium">{formatCurrency(projectedBalances.transferAfter!, scheduledTransaction.currencyCode)}</span>, below zero.
-              </>
-            )}
+      {/* Balance warning — for asset accounts: below zero; for liability accounts: over credit limit */}
+      {(() => {
+        if (!projectedBalances) return null;
+        const sourceWarn = sourceAccount && projectedBalances.sourceAfter != null && shouldWarnBalance(sourceAccount, projectedBalances.sourceAfter);
+        const transferWarn = transferAccount && projectedBalances.transferAfter != null && shouldWarnBalance(transferAccount, projectedBalances.transferAfter);
+        if (!sourceWarn && !transferWarn) return null;
+
+        const warningLabel = (account: Account) =>
+          isLiabilityAccount(account) ? 'over the credit limit' : 'below zero';
+
+        return (
+          <div className="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded-lg p-3 mb-4 flex items-start gap-2">
+            <svg className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <div className="text-sm text-amber-700 dark:text-amber-300">
+              {sourceWarn && transferWarn ? (
+                <>
+                  Posting on this date will bring <span className="font-medium">{sourceAccount?.name}</span> to{' '}
+                  <span className="font-medium">{formatCurrency(projectedBalances.sourceAfter!, scheduledTransaction.currencyCode)}</span> ({warningLabel(sourceAccount!)}) and{' '}
+                  <span className="font-medium">{transferAccount?.name}</span> to{' '}
+                  <span className="font-medium">{formatCurrency(projectedBalances.transferAfter!, scheduledTransaction.currencyCode)}</span> ({warningLabel(transferAccount!)}).
+                </>
+              ) : sourceWarn ? (
+                <>
+                  Posting on this date will bring <span className="font-medium">{sourceAccount?.name}</span> to{' '}
+                  <span className="font-medium">{formatCurrency(projectedBalances.sourceAfter!, scheduledTransaction.currencyCode)}</span>, {warningLabel(sourceAccount!)}.
+                </>
+              ) : (
+                <>
+                  Posting on this date will bring <span className="font-medium">{transferAccount?.name}</span> to{' '}
+                  <span className="font-medium">{formatCurrency(projectedBalances.transferAfter!, scheduledTransaction.currencyCode)}</span>, {warningLabel(transferAccount!)}.
+                </>
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       <div className="space-y-4">
         {/* Transaction Date */}

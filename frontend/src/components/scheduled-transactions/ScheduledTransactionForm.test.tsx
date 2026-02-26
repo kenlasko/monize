@@ -186,11 +186,12 @@ describe('ScheduledTransactionForm', () => {
   });
 
   // --- Basic rendering ---
-  it('renders form with payment and transfer toggle', async () => {
+  it('renders form with Transaction, Split, and Transfer tabs', async () => {
     render(<ScheduledTransactionForm />);
     await waitFor(() => {
-      expect(screen.getByText('Bill / Deposit')).toBeInTheDocument();
+      expect(screen.getByText('Transaction')).toBeInTheDocument();
     });
+    expect(screen.getByText('Split')).toBeInTheDocument();
     expect(screen.getByText('Transfer')).toBeInTheDocument();
   });
 
@@ -440,7 +441,7 @@ describe('ScheduledTransactionForm', () => {
     });
   });
 
-  it('switches back to payment mode from transfer mode', async () => {
+  it('switches back to transaction mode from transfer mode', async () => {
     render(<ScheduledTransactionForm />);
     await waitFor(() => {
       expect(screen.getByText('Transfer')).toBeInTheDocument();
@@ -448,7 +449,7 @@ describe('ScheduledTransactionForm', () => {
     fireEvent.click(screen.getByText('Transfer'));
     expect(screen.getByText('From Account')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByText('Bill / Deposit'));
+    fireEvent.click(screen.getByText('Transaction'));
     expect(screen.getByText('Account')).toBeInTheDocument();
   });
 
@@ -574,7 +575,7 @@ describe('ScheduledTransactionForm', () => {
   it('does not render cancel button when onCancel is not provided', async () => {
     render(<ScheduledTransactionForm />);
     await waitFor(() => {
-      expect(screen.getByText('Bill / Deposit')).toBeInTheDocument();
+      expect(screen.getByText('Transaction')).toBeInTheDocument();
     });
     expect(screen.queryByText('Cancel')).not.toBeInTheDocument();
   });
@@ -663,24 +664,23 @@ describe('ScheduledTransactionForm', () => {
     });
   });
 
-  // --- Split toggle in payment mode ---
-  it('renders split checkbox in payment mode', async () => {
+  // --- Split tab in tab bar ---
+  it('renders Split tab in tab bar', async () => {
     render(<ScheduledTransactionForm />);
     await waitFor(() => {
       expect(screen.getByText('Split')).toBeInTheDocument();
     });
   });
 
-  // --- Transfer hides category and split ---
-  it('hides category and split in transfer mode', async () => {
+  // --- Transfer hides category ---
+  it('hides category in transfer mode', async () => {
     render(<ScheduledTransactionForm />);
     await waitFor(() => {
       expect(screen.getByText('Transfer')).toBeInTheDocument();
     });
     fireEvent.click(screen.getByText('Transfer'));
-    // Category section should not be shown in transfer mode
-    // The category Combobox is only rendered for payment mode
-    expect(screen.queryByText('Split')).not.toBeInTheDocument();
+    // Category Combobox should not be shown in transfer mode
+    expect(screen.queryByTestId('combobox-Category')).not.toBeInTheDocument();
   });
 
   // ============================================================
@@ -882,17 +882,14 @@ describe('ScheduledTransactionForm', () => {
       expect(screen.getByText('Split')).toBeInTheDocument();
     });
 
-    // Enable split first
-    const splitCheckbox = screen.getByText('Split').closest('label')?.querySelector('input');
-    if (splitCheckbox) {
-      await act(async () => { fireEvent.click(splitCheckbox); });
-    }
+    // Switch to split tab first
+    await act(async () => { fireEvent.click(screen.getByText('Split')); });
+    expect(screen.getByTestId('split-editor')).toBeInTheDocument();
 
     // Switch to transfer
     await act(async () => { fireEvent.click(screen.getByText('Transfer')); });
 
-    // Split should not be visible
-    expect(screen.queryByText('Split')).not.toBeInTheDocument();
+    // Split editor should not be visible in transfer mode
     expect(screen.queryByTestId('split-editor')).not.toBeInTheDocument();
   });
 
@@ -930,13 +927,13 @@ describe('ScheduledTransactionForm', () => {
       expect(mockAccountsGetAll).toHaveBeenCalled();
     });
 
-    // Select source account first
+    // Select source account in transaction mode first
     await waitFor(() => {
       const accountSelect = screen.getByLabelText('Account');
       fireEvent.change(accountSelect, { target: { value: 'acc-1' } });
     });
 
-    // Switch to transfer
+    // Switch to transfer mode
     fireEvent.click(screen.getByText('Transfer'));
 
     await waitFor(() => {
@@ -946,50 +943,46 @@ describe('ScheduledTransactionForm', () => {
   });
 
   // ============================================================
-  // NEW TESTS: Split toggle
+  // NEW TESTS: Split tab
   // ============================================================
 
-  it('shows split editor when split checkbox is checked in payment mode', async () => {
+  it('shows split editor when Split tab is clicked', async () => {
     render(<ScheduledTransactionForm />);
 
     await waitFor(() => {
       expect(screen.getByText('Split')).toBeInTheDocument();
     });
 
-    const splitCheckbox = screen.getByText('Split').closest('label')?.querySelector('input');
-    expect(splitCheckbox).toBeTruthy();
-    await act(async () => { fireEvent.click(splitCheckbox!); });
+    await act(async () => { fireEvent.click(screen.getByText('Split')); });
 
     expect(screen.getByTestId('split-editor')).toBeInTheDocument();
   });
 
-  it('hides category combobox when split is enabled', async () => {
+  it('hides category combobox in split mode', async () => {
     render(<ScheduledTransactionForm />);
 
-    // Category combobox should be present initially
+    // Category combobox should be present in transaction mode
     await waitFor(() => {
-      expect(screen.getByTestId('combobox-unnamed')).toBeInTheDocument();
+      expect(screen.getByTestId('combobox-Category')).toBeInTheDocument();
     });
 
-    const splitCheckbox = screen.getByText('Split').closest('label')?.querySelector('input');
-    await act(async () => { fireEvent.click(splitCheckbox!); });
+    await act(async () => { fireEvent.click(screen.getByText('Split')); });
 
-    // Should show split info instead
-    expect(screen.getByText(/categories/)).toBeInTheDocument();
+    // Category combobox should not be visible in split mode
+    expect(screen.queryByTestId('combobox-Category')).not.toBeInTheDocument();
   });
 
-  it('removes split editor when split checkbox is unchecked', async () => {
+  it('removes split editor when switching back to transaction tab', async () => {
     render(<ScheduledTransactionForm />);
 
     await waitFor(() => {
       expect(screen.getByText('Split')).toBeInTheDocument();
     });
 
-    const splitCheckbox = screen.getByText('Split').closest('label')?.querySelector('input');
-    await act(async () => { fireEvent.click(splitCheckbox!); });
+    await act(async () => { fireEvent.click(screen.getByText('Split')); });
     expect(screen.getByTestId('split-editor')).toBeInTheDocument();
 
-    await act(async () => { fireEvent.click(splitCheckbox!); });
+    await act(async () => { fireEvent.click(screen.getByText('Transaction')); });
     expect(screen.queryByTestId('split-editor')).not.toBeInTheDocument();
   });
 
@@ -1012,7 +1005,7 @@ describe('ScheduledTransactionForm', () => {
     // The category should be auto-set (payee-1 has defaultCategoryId: cat-1)
     // We can verify the form state changed by checking the category combobox
     await waitFor(() => {
-      expect(screen.getByTestId('combobox-unnamed')).toBeInTheDocument();
+      expect(screen.getByTestId('combobox-Category')).toBeInTheDocument();
     });
   });
 
@@ -1090,8 +1083,8 @@ describe('ScheduledTransactionForm', () => {
     await act(async () => { fireEvent.click(catOption); });
 
     // Clear selection by clicking with empty value
-    // Use the unnamed combobox (category combobox doesn't have a label prop in this component)
-    const comboboxInput = screen.getByTestId('combobox-input-unnamed');
+    // Use the Category combobox
+    const comboboxInput = screen.getByTestId('combobox-input-Category');
     fireEvent.change(comboboxInput, { target: { value: '' } });
 
     const submitButton = container.querySelector('button[type="submit"]');
@@ -1142,7 +1135,7 @@ describe('ScheduledTransactionForm', () => {
       expect(mockCategoriesGetAll).toHaveBeenCalled();
     });
 
-    const createButton = screen.getByTestId('combobox-create-unnamed');
+    const createButton = screen.getByTestId('combobox-create-Category');
     fireEvent.click(createButton);
 
     await waitFor(() => {
@@ -1159,7 +1152,7 @@ describe('ScheduledTransactionForm', () => {
       expect(mockCategoriesGetAll).toHaveBeenCalled();
     });
 
-    const createButton = screen.getByTestId('combobox-create-unnamed');
+    const createButton = screen.getByTestId('combobox-create-Category');
     fireEvent.click(createButton);
 
     await waitFor(() => {
@@ -1168,18 +1161,17 @@ describe('ScheduledTransactionForm', () => {
   });
 
   // ============================================================
-  // NEW TESTS: Amount label changes when split is enabled
+  // NEW TESTS: Amount label changes in split mode
   // ============================================================
 
-  it('changes amount label to Total Amount when split is enabled', async () => {
+  it('changes amount label to Total Amount when Split tab is active', async () => {
     render(<ScheduledTransactionForm />);
 
     await waitFor(() => {
       expect(screen.getByText('Amount')).toBeInTheDocument();
     });
 
-    const splitCheckbox = screen.getByText('Split').closest('label')?.querySelector('input');
-    await act(async () => { fireEvent.click(splitCheckbox!); });
+    await act(async () => { fireEvent.click(screen.getByText('Split')); });
 
     expect(screen.getByText('Total Amount')).toBeInTheDocument();
     expect(screen.queryByText('Amount')).not.toBeInTheDocument();
@@ -1230,7 +1222,7 @@ describe('ScheduledTransactionForm', () => {
   // NEW TESTS: Name placeholder changes based on transaction type
   // ============================================================
 
-  it('shows payment placeholder for name field in payment mode', async () => {
+  it('shows payment placeholder for name field in transaction mode', async () => {
     render(<ScheduledTransactionForm />);
     await waitFor(() => {
       expect(screen.getByLabelText('Name')).toBeInTheDocument();
@@ -1247,6 +1239,134 @@ describe('ScheduledTransactionForm', () => {
     fireEvent.click(screen.getByText('Transfer'));
     const nameInput = screen.getByLabelText('Name') as HTMLInputElement;
     expect(nameInput.placeholder).toContain('Savings Transfer');
+  });
+
+  // ============================================================
+  // NEW TESTS: Split tab specific features
+  // ============================================================
+
+  it('shows Split Transaction header and Cancel Split button in split mode', async () => {
+    render(<ScheduledTransactionForm />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Split')).toBeInTheDocument();
+    });
+
+    await act(async () => { fireEvent.click(screen.getByText('Split')); });
+
+    expect(screen.getByText('Split Transaction')).toBeInTheDocument();
+    expect(screen.getByText('Cancel Split')).toBeInTheDocument();
+  });
+
+  it('Cancel Split button switches back to transaction mode', async () => {
+    render(<ScheduledTransactionForm />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Split')).toBeInTheDocument();
+    });
+
+    await act(async () => { fireEvent.click(screen.getByText('Split')); });
+    expect(screen.getByTestId('split-editor')).toBeInTheDocument();
+
+    await act(async () => { fireEvent.click(screen.getByText('Cancel Split')); });
+    expect(screen.queryByTestId('split-editor')).not.toBeInTheDocument();
+    // Should be back in transaction mode with Category visible
+    expect(screen.getByTestId('combobox-Category')).toBeInTheDocument();
+  });
+
+  it('Split Transaction button on transaction tab switches to split mode', async () => {
+    render(<ScheduledTransactionForm />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Transaction')).toBeInTheDocument();
+    });
+
+    // Find the "Split Transaction" button (there are desktop and mobile versions)
+    const splitButtons = screen.getAllByText('Split Transaction');
+    expect(splitButtons.length).toBeGreaterThan(0);
+
+    await act(async () => { fireEvent.click(splitButtons[0]); });
+
+    expect(screen.getByTestId('split-editor')).toBeInTheDocument();
+  });
+
+  // ============================================================
+  // NEW TESTS: Reference Number field
+  // ============================================================
+
+  it('renders Reference Number field in transaction mode', async () => {
+    render(<ScheduledTransactionForm />);
+    await waitFor(() => {
+      expect(screen.getByText('Reference Number')).toBeInTheDocument();
+    });
+  });
+
+  it('renders Reference Number field in transfer mode', async () => {
+    render(<ScheduledTransactionForm />);
+    await waitFor(() => {
+      expect(screen.getByText('Transfer')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText('Transfer'));
+    expect(screen.getByText('Reference Number')).toBeInTheDocument();
+  });
+
+  // ============================================================
+  // NEW TESTS: Tab switching state management
+  // ============================================================
+
+  it('clears category when switching to split mode', async () => {
+    render(<ScheduledTransactionForm />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('option-cat-1')).toBeInTheDocument();
+    });
+
+    // Select a category in transaction mode
+    await act(async () => { fireEvent.click(screen.getByTestId('option-cat-1')); });
+
+    // Switch to split mode
+    await act(async () => { fireEvent.click(screen.getByText('Split')); });
+
+    // Switch back to transaction mode
+    await act(async () => { fireEvent.click(screen.getByText('Transaction')); });
+
+    // Form should still render correctly
+    expect(screen.getByTestId('combobox-Category')).toBeInTheDocument();
+  });
+
+  it('makes transfer amount positive when switching to transfer mode', async () => {
+    render(<ScheduledTransactionForm />);
+    await waitFor(() => {
+      expect(screen.getByText('Transfer')).toBeInTheDocument();
+    });
+
+    // Switch to transfer mode
+    await act(async () => { fireEvent.click(screen.getByText('Transfer')); });
+
+    // Transfer Amount label should be present
+    expect(screen.getByText('Transfer Amount')).toBeInTheDocument();
+  });
+
+  it('renders existing split transaction in split mode', async () => {
+    const splitSt = {
+      id: 's1', accountId: 'acc-1', name: 'Split Bill',
+      amount: -100, currencyCode: 'CAD', frequency: 'MONTHLY' as const,
+      nextDueDate: '2024-02-01', isActive: true, autoPost: false,
+      reminderDaysBefore: 3, isTransfer: false, isSplit: true,
+      transferAccountId: null,
+      splits: [
+        { id: 'sp1', categoryId: 'cat-1', amount: -60, memo: 'Part 1', transferAccountId: null },
+        { id: 'sp2', categoryId: 'cat-2', amount: -40, memo: 'Part 2', transferAccountId: null },
+      ],
+    } as any;
+
+    render(<ScheduledTransactionForm scheduledTransaction={splitSt} />);
+    await waitFor(() => {
+      // Should render in split mode
+      expect(screen.getByTestId('split-editor')).toBeInTheDocument();
+    });
+    expect(screen.getByText('Split Transaction')).toBeInTheDocument();
+    expect(screen.getByText('Cancel Split')).toBeInTheDocument();
   });
 
   // ============================================================

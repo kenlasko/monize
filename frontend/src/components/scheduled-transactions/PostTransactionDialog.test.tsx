@@ -414,6 +414,95 @@ describe('PostTransactionDialog', () => {
     expect(screen.getByText(/below zero/)).toBeInTheDocument();
   });
 
+  // --- Liability account balance warnings ---
+  it('does not warn for credit card going negative (normal behavior)', () => {
+    const ccAccounts = [
+      { id: 'a1', name: 'Visa', currentBalance: -200, accountType: 'CREDIT_CARD', creditLimit: null },
+    ] as any[];
+    const ccTransaction = {
+      ...scheduledTransaction,
+      accountId: 'a1',
+      account: { name: 'Visa', currentBalance: -200 },
+    } as any;
+    render(<PostTransactionDialog {...defaultProps} accounts={ccAccounts} scheduledTransaction={ccTransaction} />);
+    // Balance after: -200 + (-15.99) = -215.99, but credit card is a liability — no warning without credit limit
+    expect(screen.queryByText(/below zero/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/credit limit/)).not.toBeInTheDocument();
+  });
+
+  it('does not warn for credit card under credit limit', () => {
+    const ccAccounts = [
+      { id: 'a1', name: 'Visa', currentBalance: -200, accountType: 'CREDIT_CARD', creditLimit: 5000 },
+    ] as any[];
+    const ccTransaction = {
+      ...scheduledTransaction,
+      accountId: 'a1',
+      account: { name: 'Visa', currentBalance: -200 },
+    } as any;
+    render(<PostTransactionDialog {...defaultProps} accounts={ccAccounts} scheduledTransaction={ccTransaction} />);
+    // Balance after: -200 + (-15.99) = -215.99, limit is 5000 — well under limit
+    expect(screen.queryByText(/below zero/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/credit limit/)).not.toBeInTheDocument();
+  });
+
+  it('warns when credit card exceeds credit limit', () => {
+    const ccAccounts = [
+      { id: 'a1', name: 'Visa', currentBalance: -4990, accountType: 'CREDIT_CARD', creditLimit: 5000 },
+    ] as any[];
+    const ccTransaction = {
+      ...scheduledTransaction,
+      accountId: 'a1',
+      account: { name: 'Visa', currentBalance: -4990 },
+    } as any;
+    render(<PostTransactionDialog {...defaultProps} accounts={ccAccounts} scheduledTransaction={ccTransaction} />);
+    // Balance after: -4990 + (-15.99) = -5005.99, exceeds limit of 5000
+    expect(screen.getByText(/over the credit limit/)).toBeInTheDocument();
+  });
+
+  it('does not warn for loan going more negative without credit limit', () => {
+    const loanAccounts = [
+      { id: 'a1', name: 'Car Loan', currentBalance: -15000, accountType: 'LOAN', creditLimit: null },
+    ] as any[];
+    const loanTransaction = {
+      ...scheduledTransaction,
+      accountId: 'a1',
+      account: { name: 'Car Loan', currentBalance: -15000 },
+    } as any;
+    render(<PostTransactionDialog {...defaultProps} accounts={loanAccounts} scheduledTransaction={loanTransaction} />);
+    // Loan without credit limit — no warning
+    expect(screen.queryByText(/below zero/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/credit limit/)).not.toBeInTheDocument();
+  });
+
+  it('does not warn for line of credit under limit', () => {
+    const locAccounts = [
+      { id: 'a1', name: 'LOC', currentBalance: -8000, accountType: 'LINE_OF_CREDIT', creditLimit: 25000 },
+    ] as any[];
+    const locTransaction = {
+      ...scheduledTransaction,
+      accountId: 'a1',
+      account: { name: 'LOC', currentBalance: -8000 },
+    } as any;
+    render(<PostTransactionDialog {...defaultProps} accounts={locAccounts} scheduledTransaction={locTransaction} />);
+    // Balance after: -8000 + (-15.99) = -8015.99, limit is 25000 — under limit
+    expect(screen.queryByText(/below zero/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/credit limit/)).not.toBeInTheDocument();
+  });
+
+  it('warns for line of credit exceeding credit limit', () => {
+    const locAccounts = [
+      { id: 'a1', name: 'LOC', currentBalance: -24990, accountType: 'LINE_OF_CREDIT', creditLimit: 25000 },
+    ] as any[];
+    const locTransaction = {
+      ...scheduledTransaction,
+      accountId: 'a1',
+      account: { name: 'LOC', currentBalance: -24990 },
+    } as any;
+    render(<PostTransactionDialog {...defaultProps} accounts={locAccounts} scheduledTransaction={locTransaction} />);
+    // Balance after: -24990 + (-15.99) = -25005.99, exceeds limit of 25000
+    expect(screen.getByText(/over the credit limit/)).toBeInTheDocument();
+  });
+
   // --- Today button ---
   it('shows Today button when date is not today', () => {
     render(<PostTransactionDialog {...defaultProps} />);

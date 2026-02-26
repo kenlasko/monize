@@ -463,7 +463,7 @@ describe('SplitEditor', () => {
     expect(screen.getByText('Type')).toBeInTheDocument();
   });
 
-  it('does not show type selector when no accounts provided', () => {
+  it('always shows type selector even when no accounts provided', () => {
     const splits: SplitRow[] = [
       createSplitRow({ id: 'split-1', amount: -30 }),
       createSplitRow({ id: 'split-2', amount: -20 }),
@@ -478,7 +478,8 @@ describe('SplitEditor', () => {
       />
     );
 
-    expect(screen.queryByText('Type')).not.toBeInTheDocument();
+    // Type column is always shown since supportsTransfers is always true
+    expect(screen.getByText('Type')).toBeInTheDocument();
   });
 
   it('displays currency total in the footer', () => {
