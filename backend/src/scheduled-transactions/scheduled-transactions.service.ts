@@ -475,7 +475,7 @@ export class ScheduledTransactionsService {
 
     await this.overridesRepository.delete({
       scheduledTransactionId: id,
-      overrideDate: nextDueDateStr,
+      originalDate: nextDueDateStr,
     });
 
     const nextDate = this.calculateNextDueDate(
@@ -484,7 +484,7 @@ export class ScheduledTransactionsService {
     );
 
     const updateFields: Record<string, any> = {
-      nextDueDate: nextDate,
+      nextDueDate: formatDateYMD(nextDate),
     };
 
     if (
@@ -523,7 +523,7 @@ export class ScheduledTransactionsService {
     const storedOverride = await this.overridesRepository
       .createQueryBuilder("override")
       .where("override.scheduledTransactionId = :id", { id })
-      .andWhere("override.overrideDate = :postDate", { postDate })
+      .andWhere("override.originalDate = :nextDueDateStr", { nextDueDateStr })
       .getOne();
 
     const hasInlineAmount =
@@ -633,7 +633,7 @@ export class ScheduledTransactionsService {
         .createQueryBuilder()
         .delete()
         .where("scheduledTransactionId = :id", { id })
-        .andWhere("overrideDate < :newNextDueDate", {
+        .andWhere("originalDate < :newNextDueDate", {
           newNextDueDate: newNextDueDateStr,
         })
         .execute();
@@ -650,7 +650,7 @@ export class ScheduledTransactionsService {
         new Date(scheduled.nextDueDate),
         scheduled.frequency,
       );
-      updateFields.nextDueDate = nextDate;
+      updateFields.nextDueDate = formatDateYMD(nextDate);
 
       if (
         scheduled.occurrencesRemaining !== null &&

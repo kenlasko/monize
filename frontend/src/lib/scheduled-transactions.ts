@@ -124,6 +124,7 @@ export const scheduledTransactionsApi = {
       `/scheduled-transactions/${scheduledTransactionId}/overrides`,
       data,
     );
+    invalidateCache('scheduled:');
     return response.data;
   },
 
@@ -148,12 +149,14 @@ export const scheduledTransactionsApi = {
       `/scheduled-transactions/${scheduledTransactionId}/overrides/${overrideId}`,
       data,
     );
+    invalidateCache('scheduled:');
     return response.data;
   },
 
   // Delete an override
   deleteOverride: async (scheduledTransactionId: string, overrideId: string): Promise<void> => {
     await apiClient.delete(`/scheduled-transactions/${scheduledTransactionId}/overrides/${overrideId}`);
+    invalidateCache('scheduled:');
   },
 
   // Delete all overrides for a scheduled transaction
@@ -161,6 +164,7 @@ export const scheduledTransactionsApi = {
     const response = await apiClient.delete<number>(
       `/scheduled-transactions/${scheduledTransactionId}/overrides`,
     );
+    invalidateCache('scheduled:');
     return response.data;
   },
 };

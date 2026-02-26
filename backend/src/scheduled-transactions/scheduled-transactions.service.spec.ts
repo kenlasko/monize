@@ -710,7 +710,7 @@ describe("ScheduledTransactionsService", () => {
 
       expect(overridesRepo.delete).toHaveBeenCalledWith({
         scheduledTransactionId: stId,
-        overrideDate: "2025-02-15",
+        originalDate: "2025-02-15",
       });
     });
 
@@ -757,6 +757,20 @@ describe("ScheduledTransactionsService", () => {
 
       const updateArg = scheduledRepo.update.mock.calls[0][1];
       expect(updateArg.occurrencesRemaining).toBeUndefined();
+    });
+
+    it("should store nextDueDate as YYYY-MM-DD string to prevent timezone drift", async () => {
+      const scheduled = makeScheduled({
+        frequency: "MONTHLY",
+        nextDueDate: utcDate(2025, 2, 15),
+      });
+      stubFindOne(scheduled);
+
+      await service.skip(userId, stId);
+
+      const updateArg = scheduledRepo.update.mock.calls[0][1];
+      expect(typeof updateArg.nextDueDate).toBe("string");
+      expect(updateArg.nextDueDate).toBe("2025-03-15");
     });
   });
 
@@ -958,6 +972,24 @@ describe("ScheduledTransactionsService", () => {
 
       const updateArg = scheduledRepo.update.mock.calls[0][1];
       expect(toUTCDateStr(new Date(updateArg.nextDueDate))).toBe("2025-03-15");
+    });
+
+    it("should store nextDueDate as YYYY-MM-DD string to prevent timezone drift", async () => {
+      const scheduled = makeScheduled({
+        frequency: "MONTHLY",
+        nextDueDate: utcDate(2025, 2, 15),
+      });
+      stubFindOne(scheduled);
+      const overrideQb = mockQueryBuilder(null);
+      overrideQb.getOne.mockResolvedValue(null);
+      overridesRepo.createQueryBuilder.mockReturnValue(overrideQb);
+      accountsRepo.findOne.mockResolvedValue(null);
+
+      await service.post(userId, stId);
+
+      const updateArg = scheduledRepo.update.mock.calls[0][1];
+      expect(typeof updateArg.nextDueDate).toBe("string");
+      expect(updateArg.nextDueDate).toBe("2025-03-15");
     });
 
     it("should decrement occurrencesRemaining and deactivate at 0", async () => {
