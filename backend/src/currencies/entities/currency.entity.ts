@@ -23,6 +23,9 @@ export class Currency {
   @Column({ type: "boolean", name: "is_active", default: true })
   isActive: boolean;
 
+  @Column({ type: "uuid", name: "created_by_user_id", nullable: true })
+  createdByUserId: string | null;
+
   @ApiProperty()
   @CreateDateColumn({ name: "created_at" })
   createdAt: Date;

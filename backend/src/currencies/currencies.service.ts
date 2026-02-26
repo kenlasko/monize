@@ -3,10 +3,12 @@ import {
   Logger,
   ConflictException,
   NotFoundException,
+  ForbiddenException,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository, DataSource } from "typeorm";
 import { Currency } from "./entities/currency.entity";
+import { UserCurrencyPreference } from "./entities/user-currency-preference.entity";
 import { CreateCurrencyDto } from "./dto/create-currency.dto";
 import { UpdateCurrencyDto } from "./dto/update-currency.dto";
 
@@ -19,6 +21,16 @@ export interface CurrencyLookupResult {
 
 export interface CurrencyUsageMap {
   [code: string]: { accounts: number; securities: number };
+}
+
+export interface UserCurrencyView {
+  code: string;
+  name: string;
+  symbol: string;
+  decimalPlaces: number;
+  isActive: boolean;
+  isSystem: boolean;
+  createdAt: Date;
 }
 
 // Known currency metadata for lookup (Yahoo Finance doesn't return symbol/name directly)
@@ -79,37 +91,86 @@ export class CurrenciesService {
   constructor(
     @InjectRepository(Currency)
     private currencyRepository: Repository<Currency>,
+    @InjectRepository(UserCurrencyPreference)
+    private userCurrencyPrefRepository: Repository<UserCurrencyPreference>,
     private dataSource: DataSource,
   ) {}
 
-  async create(dto: CreateCurrencyDto): Promise<Currency> {
+  async create(
+    userId: string,
+    dto: CreateCurrencyDto,
+  ): Promise<UserCurrencyView> {
     const code = dto.code.toUpperCase();
 
     const existing = await this.currencyRepository.findOne({
       where: { code },
     });
+
     if (existing) {
-      throw new ConflictException(
-        `Currency with code "${code}" already exists`,
+      // Check if this user already has this currency in their list
+      const existingPref = await this.userCurrencyPrefRepository.findOne({
+        where: { userId, currencyCode: code },
+      });
+      if (existingPref) {
+        throw new ConflictException(
+          `Currency "${code}" is already in your list`,
+        );
+      }
+
+      // Add preference row so user can see/use the existing currency
+      await this.dataSource.query(
+        `INSERT INTO user_currency_preferences (user_id, currency_code, is_active)
+         VALUES ($1, $2, true)
+         ON CONFLICT (user_id, currency_code) DO NOTHING`,
+        [userId, code],
       );
+
+      return this.buildUserCurrencyView(existing, true);
     }
 
+    // Currency doesn't exist — create it as a user-created currency
     const currency = this.currencyRepository.create({
       ...dto,
       code,
       decimalPlaces: dto.decimalPlaces ?? 2,
-      isActive: dto.isActive ?? true,
+      isActive: true,
+      createdByUserId: userId,
     });
+    await this.currencyRepository.save(currency);
 
-    return this.currencyRepository.save(currency);
+    // Add preference row for the creator
+    await this.dataSource.query(
+      `INSERT INTO user_currency_preferences (user_id, currency_code, is_active)
+       VALUES ($1, $2, true)
+       ON CONFLICT (user_id, currency_code) DO NOTHING`,
+      [userId, code],
+    );
+
+    return this.buildUserCurrencyView(currency, true);
   }
 
-  async findAll(includeInactive = false): Promise<Currency[]> {
-    const where = includeInactive ? {} : { isActive: true };
-    return this.currencyRepository.find({
-      where,
-      order: { code: "ASC" },
-    });
+  async findAll(
+    userId: string,
+    includeInactive = false,
+  ): Promise<UserCurrencyView[]> {
+    let query = `
+      SELECT c.code, c.name, c.symbol,
+             c.decimal_places AS "decimalPlaces",
+             COALESCE(ucp.is_active, c.is_active) AS "isActive",
+             (c.created_by_user_id IS NULL) AS "isSystem",
+             c.created_at AS "createdAt"
+      FROM currencies c
+      LEFT JOIN user_currency_preferences ucp
+        ON ucp.currency_code = c.code AND ucp.user_id = $1
+      WHERE (c.created_by_user_id IS NULL OR ucp.user_id IS NOT NULL)`;
+
+    if (!includeInactive) {
+      query += ` AND COALESCE(ucp.is_active, c.is_active) = true`;
+    }
+
+    query += ` ORDER BY c.code ASC`;
+
+    return this.dataSource.query(query, [userId]);
   }
 
   async findOne(code: string): Promise<Currency> {
@@ -122,50 +183,107 @@ export class CurrenciesService {
     return currency;
   }
 
-  async update(code: string, dto: UpdateCurrencyDto): Promise<Currency> {
+  async update(
+    userId: string,
+    code: string,
+    dto: UpdateCurrencyDto,
+  ): Promise<UserCurrencyView> {
     const currency = await this.findOne(code);
-    Object.assign(currency, dto);
-    return this.currencyRepository.save(currency);
+
+    // System currencies: cannot modify metadata
+    if (currency.createdByUserId === null) {
+      throw new ForbiddenException("Cannot modify system currency metadata");
+    }
+
+    // Non-system currencies: only the creator can modify metadata
+    if (currency.createdByUserId !== userId) {
+      throw new ForbiddenException("Cannot modify another user's currency");
+    }
+
+    // Handle isActive separately via preference row
+    const { isActive, ...metadataUpdates } = dto;
+
+    if (Object.keys(metadataUpdates).length > 0) {
+      Object.assign(currency, metadataUpdates);
+      await this.currencyRepository.save(currency);
+    }
+
+    if (isActive !== undefined) {
+      await this.upsertPreference(userId, currency.code, isActive);
+    }
+
+    const pref = await this.userCurrencyPrefRepository.findOne({
+      where: { userId, currencyCode: currency.code },
+    });
+
+    return this.buildUserCurrencyView(
+      currency,
+      pref ? pref.isActive : currency.isActive,
+    );
   }
 
-  async deactivate(code: string): Promise<Currency> {
+  async deactivate(userId: string, code: string): Promise<UserCurrencyView> {
     const currency = await this.findOne(code);
-    currency.isActive = false;
-    return this.currencyRepository.save(currency);
+    await this.upsertPreference(userId, currency.code, false);
+    return this.buildUserCurrencyView(currency, false);
   }
 
-  async activate(code: string): Promise<Currency> {
+  async activate(userId: string, code: string): Promise<UserCurrencyView> {
     const currency = await this.findOne(code);
-    currency.isActive = true;
-    return this.currencyRepository.save(currency);
+    await this.upsertPreference(userId, currency.code, true);
+    return this.buildUserCurrencyView(currency, true);
   }
 
-  async remove(code: string): Promise<void> {
-    const currency = await this.findOne(code);
-    const inUse = await this.isInUse(currency.code);
+  async remove(userId: string, code: string): Promise<void> {
+    const upperCode = code.toUpperCase();
+    const currency = await this.findOne(upperCode);
+
+    // Check if in use by this user
+    const inUse = await this.isInUse(userId, upperCode);
     if (inUse) {
       throw new ConflictException(
-        `Currency "${code}" is in use by accounts, securities, or other records. Deactivate it instead.`,
+        `Currency "${code}" is in use by your accounts, securities, or other records. Deactivate it instead.`,
       );
     }
-    await this.currencyRepository.remove(currency);
+
+    // Remove this user's preference row
+    await this.userCurrencyPrefRepository.delete({
+      userId,
+      currencyCode: upperCode,
+    });
+
+    // If non-system currency and no other users reference it, clean up the currency row
+    if (currency.createdByUserId !== null) {
+      const remainingPrefs = await this.userCurrencyPrefRepository.count({
+        where: { currencyCode: upperCode },
+      });
+
+      if (remainingPrefs === 0) {
+        // Also check no global references (accounts, securities, transactions from any user)
+        const globallyInUse = await this.isInUseGlobally(upperCode);
+        if (!globallyInUse) {
+          await this.currencyRepository.remove(currency);
+        }
+      }
+    }
   }
 
-  async isInUse(code: string): Promise<boolean> {
+  async isInUse(userId: string, code: string): Promise<boolean> {
     const result = await this.dataSource.query(
       `SELECT EXISTS (
-        SELECT 1 FROM accounts WHERE currency_code = $1
-        UNION ALL SELECT 1 FROM securities WHERE currency_code = $1
-        UNION ALL SELECT 1 FROM transactions WHERE currency_code = $1
-        UNION ALL SELECT 1 FROM exchange_rates WHERE from_currency = $1 OR to_currency = $1
-        UNION ALL SELECT 1 FROM user_preferences WHERE default_currency = $1
+        SELECT 1 FROM accounts WHERE currency_code = $1 AND user_id = $2
+        UNION ALL SELECT 1 FROM securities WHERE currency_code = $1 AND user_id = $2
+        UNION ALL SELECT 1 FROM transactions t
+          JOIN accounts a ON a.id = t.account_id
+          WHERE t.currency_code = $1 AND a.user_id = $2
+        UNION ALL SELECT 1 FROM user_preferences WHERE default_currency = $1 AND user_id = $2
       ) AS "inUse"`,
-      [code.toUpperCase()],
+      [code.toUpperCase(), userId],
     );
     return result[0]?.inUse === true;
   }
 
-  async getUsage(): Promise<CurrencyUsageMap> {
+  async getUsage(userId: string): Promise<CurrencyUsageMap> {
     const rows: Array<{
       code: string;
       accounts: string;
@@ -175,16 +293,20 @@ export class CurrenciesService {
         COALESCE(a.cnt, 0)::text AS accounts,
         COALESCE(s.cnt, 0)::text AS securities
       FROM currencies c
+      LEFT JOIN user_currency_preferences ucp
+        ON ucp.currency_code = c.code AND ucp.user_id = $1
       LEFT JOIN (
         SELECT currency_code, COUNT(*) AS cnt
-        FROM accounts WHERE is_closed = false
+        FROM accounts WHERE is_closed = false AND user_id = $1
         GROUP BY currency_code
       ) a ON a.currency_code = c.code
       LEFT JOIN (
         SELECT currency_code, COUNT(*) AS cnt
-        FROM securities WHERE is_active = true
+        FROM securities WHERE is_active = true AND user_id = $1
         GROUP BY currency_code
-      ) s ON s.currency_code = c.code`,
+      ) s ON s.currency_code = c.code
+      WHERE c.created_by_user_id IS NULL OR ucp.user_id IS NOT NULL`,
+      [userId],
     );
 
     const usage: CurrencyUsageMap = {};
@@ -266,6 +388,50 @@ export class CurrenciesService {
       this.logger.error(`Failed to lookup currency: ${error.message}`);
       return null;
     }
+  }
+
+  // ── Private helpers ─────────────────────────────────────────────
+
+  private async upsertPreference(
+    userId: string,
+    code: string,
+    isActive: boolean,
+  ): Promise<void> {
+    await this.dataSource.query(
+      `INSERT INTO user_currency_preferences (user_id, currency_code, is_active)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (user_id, currency_code)
+       DO UPDATE SET is_active = $3`,
+      [userId, code.toUpperCase(), isActive],
+    );
+  }
+
+  private async isInUseGlobally(code: string): Promise<boolean> {
+    const result = await this.dataSource.query(
+      `SELECT EXISTS (
+        SELECT 1 FROM accounts WHERE currency_code = $1
+        UNION ALL SELECT 1 FROM securities WHERE currency_code = $1
+        UNION ALL SELECT 1 FROM transactions WHERE currency_code = $1
+        UNION ALL SELECT 1 FROM user_preferences WHERE default_currency = $1
+      ) AS "inUse"`,
+      [code.toUpperCase()],
+    );
+    return result[0]?.inUse === true;
+  }
+
+  private buildUserCurrencyView(
+    currency: Currency,
+    isActive: boolean,
+  ): UserCurrencyView {
+    return {
+      code: currency.code,
+      name: currency.name,
+      symbol: currency.symbol,
+      decimalPlaces: currency.decimalPlaces,
+      isActive,
+      isSystem: currency.createdByUserId === null,
+      createdAt: currency.createdAt,
+    };
   }
 
   /**

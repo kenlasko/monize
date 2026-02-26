@@ -32,9 +32,9 @@ import {
   CurrenciesService,
   CurrencyLookupResult,
   CurrencyUsageMap,
+  UserCurrencyView,
 } from "./currencies.service";
 import { ExchangeRate } from "./entities/exchange-rate.entity";
-import { Currency } from "./entities/currency.entity";
 import { CreateCurrencyDto } from "./dto/create-currency.dto";
 import { UpdateCurrencyDto } from "./dto/update-currency.dto";
 
@@ -61,13 +61,13 @@ export class CurrenciesController {
   @ApiResponse({
     status: 200,
     description: "List of currencies",
-    type: [Currency],
   })
   getCurrencies(
+    @Request() req,
     @Query("includeInactive", new DefaultValuePipe(false), ParseBoolPipe)
     includeInactive: boolean,
-  ): Promise<Currency[]> {
-    return this.currenciesService.findAll(includeInactive);
+  ): Promise<UserCurrencyView[]> {
+    return this.currenciesService.findAll(req.user.id, includeInactive);
   }
 
   // ── Static-segment routes (must be BEFORE :code param route) ────
@@ -90,8 +90,8 @@ export class CurrenciesController {
     status: 200,
     description: "Map of currency code to account/security counts",
   })
-  getUsage(): Promise<CurrencyUsageMap> {
-    return this.currenciesService.getUsage();
+  getUsage(@Request() req): Promise<CurrencyUsageMap> {
+    return this.currenciesService.getUsage(req.user.id);
   }
 
   @Get("exchange-rates")
@@ -157,10 +157,8 @@ export class CurrenciesController {
 
   @Get(":code")
   @ApiOperation({ summary: "Get a single currency by code" })
-  @ApiResponse({ status: 200, description: "Currency details", type: Currency })
-  findOne(
-    @Param("code", ParseCurrencyCodePipe) code: string,
-  ): Promise<Currency> {
+  @ApiResponse({ status: 200, description: "Currency details" })
+  findOne(@Param("code", ParseCurrencyCodePipe) code: string) {
     return this.currenciesService.findOne(code);
   }
 
@@ -169,20 +167,23 @@ export class CurrenciesController {
   @ApiResponse({
     status: 201,
     description: "Currency created",
-    type: Currency,
   })
-  create(@Body() dto: CreateCurrencyDto): Promise<Currency> {
-    return this.currenciesService.create(dto);
+  create(
+    @Request() req,
+    @Body() dto: CreateCurrencyDto,
+  ): Promise<UserCurrencyView> {
+    return this.currenciesService.create(req.user.id, dto);
   }
 
   @Patch(":code")
   @ApiOperation({ summary: "Update a currency" })
-  @ApiResponse({ status: 200, description: "Currency updated", type: Currency })
+  @ApiResponse({ status: 200, description: "Currency updated" })
   update(
+    @Request() req,
     @Param("code", ParseCurrencyCodePipe) code: string,
     @Body() dto: UpdateCurrencyDto,
-  ): Promise<Currency> {
-    return this.currenciesService.update(code, dto);
+  ): Promise<UserCurrencyView> {
+    return this.currenciesService.update(req.user.id, code, dto);
   }
 
   @Post(":code/deactivate")
@@ -190,12 +191,12 @@ export class CurrenciesController {
   @ApiResponse({
     status: 201,
     description: "Currency deactivated",
-    type: Currency,
   })
   deactivate(
+    @Request() req,
     @Param("code", ParseCurrencyCodePipe) code: string,
-  ): Promise<Currency> {
-    return this.currenciesService.deactivate(code);
+  ): Promise<UserCurrencyView> {
+    return this.currenciesService.deactivate(req.user.id, code);
   }
 
   @Post(":code/activate")
@@ -203,12 +204,12 @@ export class CurrenciesController {
   @ApiResponse({
     status: 201,
     description: "Currency activated",
-    type: Currency,
   })
   activate(
+    @Request() req,
     @Param("code", ParseCurrencyCodePipe) code: string,
-  ): Promise<Currency> {
-    return this.currenciesService.activate(code);
+  ): Promise<UserCurrencyView> {
+    return this.currenciesService.activate(req.user.id, code);
   }
 
   @Delete(":code")
@@ -218,7 +219,10 @@ export class CurrenciesController {
     status: 409,
     description: "Currency is in use and cannot be deleted",
   })
-  remove(@Param("code", ParseCurrencyCodePipe) code: string): Promise<void> {
-    return this.currenciesService.remove(code);
+  remove(
+    @Request() req,
+    @Param("code", ParseCurrencyCodePipe) code: string,
+  ): Promise<void> {
+    return this.currenciesService.remove(req.user.id, code);
   }
 }

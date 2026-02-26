@@ -10,8 +10,9 @@ RUN npm ci
 # Copy source code
 COPY backend/ .
 
-# Copy schema.sql for db:init
+# Copy schema.sql for db-init and migrations for db-migrate
 COPY database/schema.sql ./schema.sql
+COPY database/migrations ./migrations
 
 # Build application
 RUN npm run build
@@ -58,8 +59,9 @@ COPY backend/package*.json ./
 COPY --from=development /app/dist ./dist
 RUN find ./dist -name '*.js.map' -delete
 
-# Copy schema.sql for auto-initialization
+# Copy schema.sql and migrations for auto-initialization
 COPY --from=development /app/schema.sql ./schema.sql
+COPY --from=development /app/migrations ./migrations
 
 # Copy and prepare entrypoint script
 COPY --from=development /app/docker-entrypoint.sh ./docker-entrypoint.sh
@@ -68,7 +70,8 @@ COPY --from=development /app/docker-entrypoint.sh ./docker-entrypoint.sh
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nestjs -u 1001 && \
     chmod +x ./docker-entrypoint.sh && \
-    chown nestjs:nodejs ./docker-entrypoint.sh ./schema.sql
+    chown nestjs:nodejs ./docker-entrypoint.sh ./schema.sql && \
+    chown -R nestjs:nodejs ./migrations
 
 USER nestjs
 

@@ -35,6 +35,7 @@ describe("ExchangeRateService", () => {
     symbol: "$",
     decimalPlaces: 2,
     isActive: true,
+    createdByUserId: null,
     createdAt: new Date("2025-01-01"),
   };
 

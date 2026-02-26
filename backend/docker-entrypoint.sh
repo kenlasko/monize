@@ -4,6 +4,9 @@ set -e
 echo "Checking database initialization..."
 node dist/db-init.js
 
+echo "Running database migrations..."
+node dist/db-migrate.js
+
 # In demo mode, seed the demo user and data if not already present
 if [ "$DEMO_MODE" = "true" ]; then
   echo "Demo mode detected — checking if demo user exists..."

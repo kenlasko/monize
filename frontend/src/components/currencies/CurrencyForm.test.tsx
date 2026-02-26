@@ -40,6 +40,7 @@ describe('CurrencyForm', () => {
       symbol: '$',
       decimalPlaces: 2,
       isActive: true,
+      isSystem: false,
       createdAt: '2025-01-01T00:00:00Z',
     } as any;
     render(<CurrencyForm currency={currency} onSubmit={onSubmit} onCancel={onCancel} />);
@@ -58,6 +59,7 @@ describe('CurrencyForm', () => {
       symbol: '\u20ac',
       decimalPlaces: 2,
       isActive: true,
+      isSystem: true,
       createdAt: '2025-01-01T00:00:00Z',
     } as any;
     render(<CurrencyForm currency={currency} onSubmit={onSubmit} onCancel={onCancel} />);
@@ -77,6 +79,7 @@ describe('CurrencyForm', () => {
       symbol: '$',
       decimalPlaces: 2,
       isActive: true,
+      isSystem: true,
       createdAt: '2025-01-01T00:00:00Z',
     } as any;
     render(<CurrencyForm currency={currency} onSubmit={onSubmit} onCancel={onCancel} />);

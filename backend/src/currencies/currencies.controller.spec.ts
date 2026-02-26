@@ -55,22 +55,28 @@ describe("CurrenciesController", () => {
   // ── Currency CRUD ──────────────────────────────────────────────
 
   describe("getCurrencies()", () => {
-    it("delegates to currenciesService.findAll with includeInactive", () => {
+    it("delegates to currenciesService.findAll with userId and includeInactive", () => {
       mockCurrenciesService.findAll!.mockReturnValue("currencies");
 
-      const result = controller.getCurrencies(false);
+      const result = controller.getCurrencies(mockReq, false);
 
       expect(result).toBe("currencies");
-      expect(mockCurrenciesService.findAll).toHaveBeenCalledWith(false);
+      expect(mockCurrenciesService.findAll).toHaveBeenCalledWith(
+        "user-1",
+        false,
+      );
     });
 
     it("passes includeInactive=true when requested", () => {
       mockCurrenciesService.findAll!.mockReturnValue("allCurrencies");
 
-      const result = controller.getCurrencies(true);
+      const result = controller.getCurrencies(mockReq, true);
 
       expect(result).toBe("allCurrencies");
-      expect(mockCurrenciesService.findAll).toHaveBeenCalledWith(true);
+      expect(mockCurrenciesService.findAll).toHaveBeenCalledWith(
+        "user-1",
+        true,
+      );
     });
   });
 
@@ -92,17 +98,17 @@ describe("CurrenciesController", () => {
   });
 
   describe("getUsage()", () => {
-    it("delegates to currenciesService.getUsage", () => {
+    it("delegates to currenciesService.getUsage with userId", () => {
       const usageResult = {
         CAD: { accounts: 3, securities: 5 },
         USD: { accounts: 1, securities: 2 },
       };
       mockCurrenciesService.getUsage!.mockReturnValue(usageResult);
 
-      const result = controller.getUsage();
+      const result = controller.getUsage(mockReq);
 
       expect(result).toEqual(usageResult);
-      expect(mockCurrenciesService.getUsage).toHaveBeenCalled();
+      expect(mockCurrenciesService.getUsage).toHaveBeenCalledWith("user-1");
     });
   });
 
@@ -119,69 +125,86 @@ describe("CurrenciesController", () => {
   });
 
   describe("create()", () => {
-    it("delegates to currenciesService.create", () => {
+    it("delegates to currenciesService.create with userId", () => {
       const dto = {
         code: "NZD",
         name: "New Zealand Dollar",
         symbol: "NZ$",
       };
-      mockCurrenciesService.create!.mockReturnValue({ ...dto, isActive: true });
+      mockCurrenciesService.create!.mockReturnValue({
+        ...dto,
+        isActive: true,
+        isSystem: false,
+      });
 
-      const result = controller.create(dto as any);
+      const result = controller.create(mockReq, dto as any);
 
-      expect(result).toEqual({ ...dto, isActive: true });
-      expect(mockCurrenciesService.create).toHaveBeenCalledWith(dto);
+      expect(result).toEqual({ ...dto, isActive: true, isSystem: false });
+      expect(mockCurrenciesService.create).toHaveBeenCalledWith("user-1", dto);
     });
   });
 
   describe("update()", () => {
-    it("delegates to currenciesService.update", () => {
+    it("delegates to currenciesService.update with userId", () => {
       const dto = { name: "New Zealand Dollar (Updated)" };
       mockCurrenciesService.update!.mockReturnValue({ code: "NZD", ...dto });
 
-      const result = controller.update("NZD", dto);
+      const result = controller.update(mockReq, "NZD", dto);
 
       expect(result).toEqual({ code: "NZD", ...dto });
-      expect(mockCurrenciesService.update).toHaveBeenCalledWith("NZD", dto);
+      expect(mockCurrenciesService.update).toHaveBeenCalledWith(
+        "user-1",
+        "NZD",
+        dto,
+      );
     });
   });
 
   describe("deactivate()", () => {
-    it("delegates to currenciesService.deactivate", () => {
+    it("delegates to currenciesService.deactivate with userId", () => {
       mockCurrenciesService.deactivate!.mockReturnValue({
         code: "NZD",
         isActive: false,
       });
 
-      const result = controller.deactivate("NZD");
+      const result = controller.deactivate(mockReq, "NZD");
 
       expect(result).toEqual({ code: "NZD", isActive: false });
-      expect(mockCurrenciesService.deactivate).toHaveBeenCalledWith("NZD");
+      expect(mockCurrenciesService.deactivate).toHaveBeenCalledWith(
+        "user-1",
+        "NZD",
+      );
     });
   });
 
   describe("activate()", () => {
-    it("delegates to currenciesService.activate", () => {
+    it("delegates to currenciesService.activate with userId", () => {
       mockCurrenciesService.activate!.mockReturnValue({
         code: "NZD",
         isActive: true,
       });
 
-      const result = controller.activate("NZD");
+      const result = controller.activate(mockReq, "NZD");
 
       expect(result).toEqual({ code: "NZD", isActive: true });
-      expect(mockCurrenciesService.activate).toHaveBeenCalledWith("NZD");
+      expect(mockCurrenciesService.activate).toHaveBeenCalledWith(
+        "user-1",
+        "NZD",
+      );
     });
   });
 
   describe("remove()", () => {
-    it("delegates to currenciesService.remove", () => {
+    it("delegates to currenciesService.remove with userId", () => {
       mockCurrenciesService.remove!.mockReturnValue(undefined);
 
-      const result = controller.remove("NZD");
+      const result = controller.remove(mockReq, "NZD");
 
       expect(result).toBeUndefined();
-      expect(mockCurrenciesService.remove).toHaveBeenCalledWith("NZD");
+      expect(mockCurrenciesService.remove).toHaveBeenCalledWith(
+        "user-1",
+        "NZD",
+      );
     });
   });
 

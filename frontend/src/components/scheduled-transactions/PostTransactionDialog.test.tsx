@@ -105,6 +105,7 @@ describe('PostTransactionDialog', () => {
       amount: -19.99,
       categoryId: 'c2',
       description: 'Price increased',
+      overrideDate: '2025-02-20',
       isSplit: false,
       splits: null,
     },
@@ -340,6 +341,21 @@ describe('PostTransactionDialog', () => {
     // Description from override
     const descInput = screen.getByPlaceholderText('Description...');
     expect((descInput as HTMLInputElement).value).toBe('Price increased');
+  });
+
+  it('initializes transaction date to override date when override exists', () => {
+    render(<PostTransactionDialog {...defaultProps} scheduledTransaction={transactionWithOverride} />);
+
+    // Should use overrideDate (2025-02-20), not nextDueDate (2025-02-15)
+    const dateInput = document.querySelector('input[type="date"]') as HTMLInputElement;
+    expect(dateInput.value).toBe('2025-02-20');
+  });
+
+  it('initializes transaction date to nextDueDate when no override exists', () => {
+    render(<PostTransactionDialog {...defaultProps} />);
+
+    const dateInput = document.querySelector('input[type="date"]') as HTMLInputElement;
+    expect(dateInput.value).toBe('2025-02-15');
   });
 
   // --- Post with modified date ---

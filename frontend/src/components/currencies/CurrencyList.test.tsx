@@ -37,6 +37,7 @@ describe('CurrencyList', () => {
     symbol: '$',
     decimalPlaces: 2,
     isActive: true,
+    isSystem: false,
     createdAt: '2025-01-01T00:00:00Z',
     ...overrides,
   });
@@ -101,6 +102,65 @@ describe('CurrencyList', () => {
     render(<CurrencyList currencies={currencies} {...defaultProps} usage={usage} />);
     expect(screen.queryByText('Deactivate')).not.toBeInTheDocument();
     expect(screen.getByText('Edit')).toBeInTheDocument();
+  });
+
+  describe('isSystem flag', () => {
+    it('hides Edit button for system currencies in row actions', () => {
+      const currencies = [makeCurrency({ code: 'USD', isSystem: true })];
+
+      render(<CurrencyList currencies={currencies} {...defaultProps} />);
+      expect(screen.queryByText('Edit')).not.toBeInTheDocument();
+    });
+
+    it('shows Edit button for non-system currencies', () => {
+      const currencies = [makeCurrency({ code: 'USD', isSystem: false })];
+
+      render(<CurrencyList currencies={currencies} {...defaultProps} />);
+      expect(screen.getByText('Edit')).toBeInTheDocument();
+    });
+
+    it('shows Edit for non-system but hides for system in mixed list', () => {
+      const currencies = [
+        makeCurrency({ code: 'CAD', name: 'Canadian Dollar', isSystem: true }),
+        makeCurrency({ code: 'XYZ', name: 'Custom Currency', symbol: 'X', isSystem: false }),
+      ];
+
+      render(<CurrencyList currencies={currencies} {...defaultProps} />);
+      const editButtons = screen.getAllByText('Edit');
+      expect(editButtons).toHaveLength(1);
+    });
+
+    it('hides Edit Currency in context menu for system currencies', async () => {
+      vi.useFakeTimers();
+      const currencies = [makeCurrency({ code: 'USD', isSystem: true })];
+
+      render(<CurrencyList currencies={currencies} {...defaultProps} />);
+      const row = screen.getByText('USD').closest('tr')!;
+
+      await act(async () => {
+        fireEvent.mouseDown(row);
+        vi.advanceTimersByTime(750);
+      });
+
+      expect(screen.queryByText('Edit Currency')).not.toBeInTheDocument();
+      vi.useRealTimers();
+    });
+
+    it('shows Edit Currency in context menu for non-system currencies', async () => {
+      vi.useFakeTimers();
+      const currencies = [makeCurrency({ code: 'USD', isSystem: false })];
+
+      render(<CurrencyList currencies={currencies} {...defaultProps} />);
+      const row = screen.getByText('USD').closest('tr')!;
+
+      await act(async () => {
+        fireEvent.mouseDown(row);
+        vi.advanceTimersByTime(750);
+      });
+
+      expect(screen.getByText('Edit Currency')).toBeInTheDocument();
+      vi.useRealTimers();
+    });
   });
 
   it('shows Default badge for default currency', () => {

@@ -143,14 +143,16 @@ const CurrencyRow = memo(function CurrencyRow({
       </td>
       {/* Actions - hidden on mobile */}
       <td className={`${cellPadding} whitespace-nowrap text-right text-sm font-medium hidden sm:table-cell`}>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleEdit}
-          className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300 mr-1"
-        >
-          {density === 'dense' ? '✎' : 'Edit'}
-        </Button>
+        {!currency.isSystem && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleEdit}
+            className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300 mr-1"
+          >
+            {density === 'dense' ? '✎' : 'Edit'}
+          </Button>
+        )}
         {!isDefault && totalUsage === 0 && (
           <Button
             variant="ghost"
@@ -383,15 +385,17 @@ export function CurrencyList({
               <p className="text-sm text-gray-500 dark:text-gray-400">{contextCurrency.name}</p>
             </div>
             <div className="py-2">
-              <button
-                onClick={() => { setContextCurrency(null); onEdit(contextCurrency); }}
-                className="w-full text-left px-5 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3"
-              >
-                <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                </svg>
-                Edit Currency
-              </button>
+              {!contextCurrency.isSystem && (
+                <button
+                  onClick={() => { setContextCurrency(null); onEdit(contextCurrency); }}
+                  className="w-full text-left px-5 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3"
+                >
+                  <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                  Edit Currency
+                </button>
+              )}
               {canDeactivateOrDelete && (
                 <button
                   onClick={() => { setContextCurrency(null); onToggleActive(contextCurrency); }}

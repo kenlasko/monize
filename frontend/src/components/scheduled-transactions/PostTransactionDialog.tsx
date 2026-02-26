@@ -115,8 +115,8 @@ export function PostTransactionDialog({
 
       setReferenceNumber('');
 
-      // Set transaction date to next due date
-      const nextDueDate = scheduledTransaction.nextDueDate.split('T')[0];
+      // Set transaction date: use override date if modified, otherwise next due date
+      const nextDueDate = (nextOverride?.overrideDate ?? scheduledTransaction.nextDueDate).split('T')[0];
       setTransactionDate(nextDueDate);
 
       // Initialize splits

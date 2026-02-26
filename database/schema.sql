@@ -5,6 +5,12 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
+-- Schema migration tracking (used by db-migrate to track applied migrations)
+CREATE TABLE IF NOT EXISTS schema_migrations (
+    filename VARCHAR(255) PRIMARY KEY,
+    applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Users and Authentication
 CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -34,8 +40,21 @@ CREATE TABLE currencies (
     symbol VARCHAR(10) NOT NULL,
     decimal_places SMALLINT DEFAULT 2,
     is_active BOOLEAN DEFAULT true,
+    created_by_user_id UUID REFERENCES users(id) ON DELETE SET NULL, -- NULL = system currency
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Per-user currency preferences (visibility + is_active)
+CREATE TABLE user_currency_preferences (
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    currency_code VARCHAR(3) NOT NULL REFERENCES currencies(code) ON DELETE CASCADE,
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, currency_code)
+);
+
+CREATE INDEX idx_ucp_user ON user_currency_preferences(user_id);
+CREATE INDEX idx_ucp_currency ON user_currency_preferences(currency_code);
 
 -- Exchange Rates (historical data)
 CREATE TABLE exchange_rates (

@@ -16,6 +16,7 @@ export interface CurrencyInfo {
   symbol: string;
   decimalPlaces: number;
   isActive: boolean;
+  isSystem: boolean;
   createdAt: string;
 }
 
