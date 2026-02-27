@@ -1114,9 +1114,7 @@ describe("ScheduledTransactionsService", () => {
       await service.post(userId, stId);
 
       // Stale override cleanup now uses queryRunner.manager.createQueryBuilder
-      expect(
-        mockQueryRunner.manager.createQueryBuilder,
-      ).toHaveBeenCalled();
+      expect(mockQueryRunner.manager.createQueryBuilder).toHaveBeenCalled();
     });
 
     it("should trigger loan payment recalculation for split transactions", async () => {

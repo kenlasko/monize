@@ -676,11 +676,7 @@ export class ScheduledTransactionsService {
         }
       }
 
-      await queryRunner.manager.update(
-        ScheduledTransaction,
-        id,
-        updateFields,
-      );
+      await queryRunner.manager.update(ScheduledTransaction, id, updateFields);
 
       await queryRunner.commitTransaction();
     } catch (error) {
