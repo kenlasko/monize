@@ -51,9 +51,12 @@ export class AuthService {
   async register(registerDto: RegisterDto) {
     const { email, password, firstName, lastName } = registerDto;
 
+    // H7: Normalize email before lookups
+    const normalizedEmail = email.toLowerCase().trim();
+
     // Check if user exists
     const existingUser = await this.usersRepository.findOne({
-      where: { email },
+      where: { email: normalizedEmail },
     });
 
     if (existingUser) {
@@ -65,22 +68,22 @@ export class AuthService {
     const saltRounds = 10;
     const passwordHash = await bcrypt.hash(password, saltRounds);
 
-    // Create user
-    const user = this.usersRepository.create({
-      email,
-      passwordHash,
-      firstName,
-      lastName,
-      authProvider: "local",
-    });
-
-    // First registered user automatically becomes admin
-    const userCount = await this.usersRepository.count();
-    if (userCount === 0) {
-      user.role = "admin";
-    }
-
-    await this.usersRepository.save(user);
+    // C9: Use serializable transaction to prevent race condition on first-user admin
+    const user = await this.dataSource.transaction(
+      "SERIALIZABLE",
+      async (manager) => {
+        const userCount = await manager.count(User);
+        const newUser = manager.create(User, {
+          email: normalizedEmail,
+          passwordHash,
+          firstName,
+          lastName,
+          authProvider: "local",
+          role: userCount === 0 ? "admin" : "user",
+        });
+        return manager.save(newUser);
+      },
+    );
 
     const { accessToken, refreshToken } = await this.generateTokenPair(user);
 
@@ -92,7 +95,8 @@ export class AuthService {
   }
 
   async login(loginDto: LoginDto, trustedDeviceToken?: string) {
-    const { email, password } = loginDto;
+    const { email: rawEmail, password } = loginDto;
+    const email = rawEmail.toLowerCase().trim();
 
     const user = await this.usersRepository.findOne({
       where: { email },
@@ -227,8 +231,8 @@ export class AuthService {
     });
     const qrCodeDataUrl = await QRCode.toDataURL(otpauthUrl);
 
-    // Store encrypted secret (pending confirmation)
-    user.twoFactorSecret = encrypt(secret, this.jwtSecret);
+    // H5: Store in pending field, only commit after confirmation
+    user.pendingTwoFactorSecret = encrypt(secret, this.jwtSecret);
     await this.usersRepository.save(user);
 
     return { secret, qrCodeDataUrl, otpauthUrl };
@@ -239,16 +243,21 @@ export class AuthService {
       where: { id: userId },
     });
 
-    if (!user || !user.twoFactorSecret) {
+    if (!user || !user.pendingTwoFactorSecret) {
       throw new BadRequestException("2FA setup not initiated");
     }
 
-    const secret = decrypt(user.twoFactorSecret, this.jwtSecret);
+    const secret = decrypt(user.pendingTwoFactorSecret, this.jwtSecret);
     const isValid = otplib.verifySync({ token: code, secret }).valid;
 
     if (!isValid) {
       throw new BadRequestException("Invalid verification code");
     }
+
+    // H5: Promote pending secret to active secret on successful confirmation
+    user.twoFactorSecret = user.pendingTwoFactorSecret;
+    user.pendingTwoFactorSecret = null;
+    await this.usersRepository.save(user);
 
     // Enable 2FA in preferences
     let preferences = await this.preferencesRepository.findOne({
@@ -311,7 +320,7 @@ export class AuthService {
 
   async validateUser(email: string, password: string): Promise<any> {
     const user = await this.usersRepository.findOne({
-      where: { email },
+      where: { email: email.toLowerCase().trim() },
     });
 
     if (user && user.passwordHash) {
@@ -329,7 +338,9 @@ export class AuthService {
   ) {
     // Standard OIDC claims
     const sub = userInfo.sub as string;
-    const email = userInfo.email as string | undefined;
+    const rawEmail = userInfo.email as string | undefined;
+    // H7: Normalize email before lookups
+    const email = rawEmail?.toLowerCase().trim();
     // SECURITY: Only trust email if verified by the OIDC provider
     const emailVerified = userInfo.email_verified === true;
     const trustedEmail = emailVerified ? email : undefined;
@@ -377,26 +388,24 @@ export class AuthService {
         if (!registrationEnabled) {
           throw new ForbiddenException("New account registration is disabled.");
         }
-        // Create new user (no existing account found)
-        // Use trusted email if verified, otherwise store raw email but don't link accounts
-        const userData: DeepPartial<User> = {
-          email: trustedEmail ?? email ?? null,
-          firstName: firstName ?? null,
-          lastName: lastName ?? null,
-          oidcSubject: sub,
-          authProvider: "oidc",
-        };
-
-        // First registered user automatically becomes admin
-        const userCount = await this.usersRepository.count();
-        if (userCount === 0) {
-          userData.role = "admin";
-        }
-
-        user = this.usersRepository.create(userData);
-
+        // C9: Use serializable transaction for first-user admin race prevention
         try {
-          await this.usersRepository.save(user);
+          user = await this.dataSource.transaction(
+            "SERIALIZABLE",
+            async (manager) => {
+              const userCount = await manager.count(User);
+              const userData: DeepPartial<User> = {
+                email: trustedEmail ?? email ?? null,
+                firstName: firstName ?? null,
+                lastName: lastName ?? null,
+                oidcSubject: sub,
+                authProvider: "oidc",
+                role: userCount === 0 ? "admin" : "user",
+              };
+              const newUser = manager.create(User, userData);
+              return manager.save(newUser);
+            },
+          );
         } catch (err: any) {
           // Handle duplicate email: link OIDC to the existing account
           // SECURITY: Only link accounts when the OIDC provider has verified the email

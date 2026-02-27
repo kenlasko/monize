@@ -140,17 +140,31 @@ describe("AuthService", () => {
   });
 
   describe("register", () => {
+    /**
+     * Helper: set up dataSource.transaction mock for register()'s
+     * SERIALIZABLE transaction pattern: dataSource.transaction("SERIALIZABLE", async (manager) => {...})
+     */
+    function setupRegisterTransactionMock(userCount: number) {
+      const txManager = {
+        count: jest.fn().mockResolvedValue(userCount),
+        create: jest.fn().mockImplementation((_entity, data) => ({
+          ...data,
+          id: "new-user",
+        })),
+        save: jest.fn().mockImplementation((user) => ({
+          ...user,
+          id: user.id || "new-user",
+        })),
+      };
+      dataSource.transaction.mockImplementation(
+        async (_isolation: string, cb: any) => cb(txManager),
+      );
+      return txManager;
+    }
+
     it("creates a new user and returns token pair", async () => {
       usersRepository.findOne.mockResolvedValue(null);
-      usersRepository.count.mockResolvedValue(1); // not first user
-      usersRepository.create.mockImplementation((data) => ({
-        ...data,
-        id: "new-user",
-      }));
-      usersRepository.save.mockImplementation((user) => ({
-        ...user,
-        id: "new-user",
-      }));
+      setupRegisterTransactionMock(1); // not first user
 
       const result = await service.register({
         email: "new@example.com",
@@ -168,19 +182,14 @@ describe("AuthService", () => {
 
     it("makes first user an admin", async () => {
       usersRepository.findOne.mockResolvedValue(null);
-      usersRepository.count.mockResolvedValue(0); // first user
-      usersRepository.create.mockImplementation((data) => ({
-        ...data,
-        id: "first-user",
-      }));
-      usersRepository.save.mockImplementation((user) => user);
+      const txManager = setupRegisterTransactionMock(0); // first user
 
       await service.register({
         email: "admin@example.com",
         password: "StrongPass123!",
       });
 
-      const createdUser = usersRepository.save.mock.calls[0][0];
+      const createdUser = txManager.save.mock.calls[0][0];
       expect(createdUser.role).toBe("admin");
     });
 
@@ -295,16 +304,21 @@ describe("AuthService", () => {
   describe("sanitizeUser", () => {
     it("strips sensitive fields from user", async () => {
       usersRepository.findOne.mockResolvedValue(null);
-      usersRepository.count.mockResolvedValue(1);
-      usersRepository.create.mockImplementation((data) => ({
-        ...data,
-        id: "user-1",
-        passwordHash: "$2a$10$hash",
-        resetToken: "reset",
-        resetTokenExpiry: new Date(),
-        twoFactorSecret: "secret",
-      }));
-      usersRepository.save.mockImplementation((user) => user);
+      const txManager = {
+        count: jest.fn().mockResolvedValue(1),
+        create: jest.fn().mockImplementation((_entity, data) => ({
+          ...data,
+          id: "user-1",
+          passwordHash: "$2a$10$hash",
+          resetToken: "reset",
+          resetTokenExpiry: new Date(),
+          twoFactorSecret: "secret",
+        })),
+        save: jest.fn().mockImplementation((user) => user),
+      };
+      dataSource.transaction.mockImplementation(
+        async (_isolation: string, cb: any) => cb(txManager),
+      );
 
       const result = await service.register({
         email: "test@example.com",
@@ -452,8 +466,8 @@ describe("AuthService", () => {
       expect(QRCode.toDataURL).toHaveBeenCalled();
 
       const savedUser = usersRepository.save.mock.calls[0][0];
-      expect(savedUser.twoFactorSecret).toBeTruthy();
-      expect(savedUser.twoFactorSecret).not.toBe("TESTSECRET"); // should be encrypted
+      expect(savedUser.pendingTwoFactorSecret).toBeTruthy();
+      expect(savedUser.pendingTwoFactorSecret).not.toBe("TESTSECRET"); // should be encrypted
     });
 
     it("throws NotFoundException when user not found", async () => {
@@ -479,9 +493,10 @@ describe("AuthService", () => {
       const encryptedSecret = encrypt("TESTSECRET", jwtSecret);
       usersRepository.findOne.mockResolvedValue({
         ...mockUser,
-        twoFactorSecret: encryptedSecret,
+        pendingTwoFactorSecret: encryptedSecret,
       });
       (otplib.verifySync as jest.Mock).mockReturnValue({ valid: true });
+      usersRepository.save.mockImplementation((u) => u);
       preferencesRepository.findOne.mockResolvedValue({
         userId: "user-1",
         twoFactorEnabled: false,
@@ -494,6 +509,10 @@ describe("AuthService", () => {
       expect(otplib.verifySync).toHaveBeenCalledWith(
         expect.objectContaining({ token: "123456", secret: "TESTSECRET" }),
       );
+      // H5: pending secret promoted to active, pending cleared
+      const savedUser = usersRepository.save.mock.calls[0][0];
+      expect(savedUser.twoFactorSecret).toBe(encryptedSecret);
+      expect(savedUser.pendingTwoFactorSecret).toBeNull();
       const savedPrefs = preferencesRepository.save.mock.calls[0][0];
       expect(savedPrefs.twoFactorEnabled).toBe(true);
     });
@@ -502,9 +521,10 @@ describe("AuthService", () => {
       const encryptedSecret = encrypt("TESTSECRET", jwtSecret);
       usersRepository.findOne.mockResolvedValue({
         ...mockUser,
-        twoFactorSecret: encryptedSecret,
+        pendingTwoFactorSecret: encryptedSecret,
       });
       (otplib.verifySync as jest.Mock).mockReturnValue({ valid: true });
+      usersRepository.save.mockImplementation((u) => u);
       preferencesRepository.findOne.mockResolvedValue(null);
       preferencesRepository.create.mockImplementation((data) => ({
         ...data,
@@ -525,7 +545,7 @@ describe("AuthService", () => {
       const encryptedSecret = encrypt("TESTSECRET", jwtSecret);
       usersRepository.findOne.mockResolvedValue({
         ...mockUser,
-        twoFactorSecret: encryptedSecret,
+        pendingTwoFactorSecret: encryptedSecret,
       });
       (otplib.verifySync as jest.Mock).mockReturnValue({ valid: false });
 
@@ -548,7 +568,7 @@ describe("AuthService", () => {
     it("throws when 2FA setup not initiated (no secret)", async () => {
       usersRepository.findOne.mockResolvedValue({
         ...mockUser,
-        twoFactorSecret: null,
+        pendingTwoFactorSecret: null,
       });
 
       await expect(service.confirmSetup2FA("user-1", "123456")).rejects.toThrow(
@@ -792,10 +812,36 @@ describe("AuthService", () => {
   // ---------------------------------------------------------------
 
   describe("findOrCreateOidcUser", () => {
+    /**
+     * Helper: set up dataSource.transaction mock for findOrCreateOidcUser's
+     * SERIALIZABLE transaction: dataSource.transaction("SERIALIZABLE", async (manager) => {...})
+     */
+    function setupOidcTransactionMock(
+      userCount: number,
+      overrides: Record<string, jest.Mock> = {},
+    ) {
+      const txManager = {
+        count: jest.fn().mockResolvedValue(userCount),
+        create: jest.fn().mockImplementation((_entity, data) => ({
+          ...data,
+          id: "oidc-new",
+        })),
+        save: jest.fn().mockImplementation((user) => user),
+        findOne: jest.fn(),
+        ...overrides,
+      };
+      dataSource.transaction.mockImplementation(
+        async (_isolation: string, cb: any) => cb(txManager),
+      );
+      return txManager;
+    }
+
     it("creates new user with verified email", async () => {
-      usersRepository.findOne.mockResolvedValue(null); // no existing by subject
-      usersRepository.count.mockResolvedValue(1); // not first user
-      usersRepository.create.mockImplementation((data) => ({
+      usersRepository.findOne
+        .mockResolvedValueOnce(null) // no existing by oidcSubject
+        .mockResolvedValueOnce(null); // no existing by email
+      const txManager = setupOidcTransactionMock(1); // not first user
+      txManager.create.mockImplementation((_entity, data) => ({
         ...data,
         id: "oidc-user-1",
       }));
@@ -817,9 +863,9 @@ describe("AuthService", () => {
     });
 
     it("creates new user with unverified email (email stored but not linked)", async () => {
-      usersRepository.findOne.mockResolvedValue(null); // no existing by subject or email
-      usersRepository.count.mockResolvedValue(1);
-      usersRepository.create.mockImplementation((data) => ({
+      usersRepository.findOne.mockResolvedValue(null); // no existing by subject
+      const txManager = setupOidcTransactionMock(1);
+      txManager.create.mockImplementation((_entity, data) => ({
         ...data,
         id: "oidc-user-2",
       }));
@@ -862,8 +908,8 @@ describe("AuthService", () => {
 
     it("does NOT link to existing user when email is unverified", async () => {
       usersRepository.findOne.mockResolvedValue(null); // no existing by oidcSubject
-      usersRepository.count.mockResolvedValue(1);
-      usersRepository.create.mockImplementation((data) => ({
+      const txManager = setupOidcTransactionMock(1);
+      txManager.create.mockImplementation((_entity, data) => ({
         ...data,
         id: "new-oidc",
       }));
@@ -954,14 +1000,11 @@ describe("AuthService", () => {
         .mockResolvedValueOnce(null) // no existing by oidcSubject
         .mockResolvedValueOnce(null) // no existing by email (race condition)
         .mockResolvedValueOnce(existingUser); // found after duplicate error
-      usersRepository.count.mockResolvedValue(1);
-      usersRepository.create.mockImplementation((data) => ({
-        ...data,
-        id: "new-oidc",
-      }));
-      usersRepository.save
-        .mockRejectedValueOnce(duplicateError) // first save fails
-        .mockImplementation((u) => u); // subsequent saves succeed
+
+      // C9: transaction throws duplicate error
+      dataSource.transaction.mockRejectedValue(duplicateError);
+
+      usersRepository.save.mockImplementation((u) => u); // subsequent saves succeed
 
       const result = await service.findOrCreateOidcUser({
         sub: "oidc-sub-dup",
@@ -978,12 +1021,9 @@ describe("AuthService", () => {
       duplicateError.code = "23505";
 
       usersRepository.findOne.mockResolvedValue(null);
-      usersRepository.count.mockResolvedValue(1);
-      usersRepository.create.mockImplementation((data) => ({
-        ...data,
-        id: "new-oidc",
-      }));
-      usersRepository.save.mockRejectedValue(duplicateError);
+
+      // C9: transaction throws duplicate error
+      dataSource.transaction.mockRejectedValue(duplicateError);
 
       await expect(
         service.findOrCreateOidcUser({
@@ -996,8 +1036,8 @@ describe("AuthService", () => {
 
     it("first OIDC user becomes admin", async () => {
       usersRepository.findOne.mockResolvedValue(null);
-      usersRepository.count.mockResolvedValue(0); // first user
-      usersRepository.create.mockImplementation((data) => ({
+      const txManager = setupOidcTransactionMock(0); // first user
+      txManager.create.mockImplementation((_entity, data) => ({
         ...data,
         id: "first-oidc",
       }));
@@ -1023,8 +1063,8 @@ describe("AuthService", () => {
 
     it("uses preferred_username as firstName fallback", async () => {
       usersRepository.findOne.mockResolvedValue(null);
-      usersRepository.count.mockResolvedValue(1);
-      usersRepository.create.mockImplementation((data) => ({
+      const txManager = setupOidcTransactionMock(1);
+      txManager.create.mockImplementation((_entity, data) => ({
         ...data,
         id: "oidc-pref",
       }));
@@ -1041,8 +1081,8 @@ describe("AuthService", () => {
 
     it("uses full name split for firstName/lastName when specific claims absent", async () => {
       usersRepository.findOne.mockResolvedValue(null);
-      usersRepository.count.mockResolvedValue(1);
-      usersRepository.create.mockImplementation((data) => ({
+      const txManager = setupOidcTransactionMock(1);
+      txManager.create.mockImplementation((_entity, data) => ({
         ...data,
         id: "oidc-name",
       }));
@@ -1065,16 +1105,25 @@ describe("AuthService", () => {
 
   describe("validateOidcUser", () => {
     it("delegates to findOrCreateOidcUser and sanitizes", async () => {
-      usersRepository.findOne.mockResolvedValue(null);
-      usersRepository.count.mockResolvedValue(1);
-      usersRepository.create.mockImplementation((data) => ({
-        ...data,
-        id: "oidc-val",
-        passwordHash: "$2a$10$hash",
-        resetToken: "reset",
-        resetTokenExpiry: new Date(),
-        twoFactorSecret: "secret",
-      }));
+      usersRepository.findOne
+        .mockResolvedValueOnce(null) // no existing by oidcSubject
+        .mockResolvedValueOnce(null); // no existing by email
+      const txManager = {
+        count: jest.fn().mockResolvedValue(1),
+        create: jest.fn().mockImplementation((_entity, data) => ({
+          ...data,
+          id: "oidc-val",
+          passwordHash: "$2a$10$hash",
+          resetToken: "reset",
+          resetTokenExpiry: new Date(),
+          twoFactorSecret: "secret",
+        })),
+        save: jest.fn().mockImplementation((user) => user),
+        findOne: jest.fn(),
+      };
+      dataSource.transaction.mockImplementation(
+        async (_isolation: string, cb: any) => cb(txManager),
+      );
       usersRepository.save.mockImplementation((u) => u);
 
       const result = await service.validateOidcUser({

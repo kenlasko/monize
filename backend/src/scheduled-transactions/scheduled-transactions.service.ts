@@ -626,6 +626,7 @@ export class ScheduledTransactionsService {
         await queryRunner.manager.remove(storedOverride);
       }
 
+      // H10: Calculate next due date once and reuse
       const newNextDueDate =
         scheduled.frequency === "ONCE"
           ? null
@@ -653,12 +654,8 @@ export class ScheduledTransactionsService {
 
       if (scheduled.frequency === "ONCE") {
         updateFields.isActive = false;
-      } else {
-        const nextDate = this.calculateNextDueDate(
-          new Date(scheduled.nextDueDate),
-          scheduled.frequency,
-        );
-        updateFields.nextDueDate = formatDateYMD(nextDate);
+      } else if (newNextDueDate) {
+        updateFields.nextDueDate = formatDateYMD(newNextDueDate);
 
         if (
           scheduled.occurrencesRemaining !== null &&
@@ -671,7 +668,7 @@ export class ScheduledTransactionsService {
           }
         }
 
-        if (scheduled.endDate && nextDate > new Date(scheduled.endDate)) {
+        if (scheduled.endDate && newNextDueDate > new Date(scheduled.endDate)) {
           updateFields.isActive = false;
         }
       }

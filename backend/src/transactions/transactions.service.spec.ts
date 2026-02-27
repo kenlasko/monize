@@ -7,6 +7,7 @@ import { Transaction, TransactionStatus } from "./entities/transaction.entity";
 import { TransactionSplit } from "./entities/transaction-split.entity";
 import { Category } from "../categories/entities/category.entity";
 import { InvestmentTransaction } from "../securities/entities/investment-transaction.entity";
+import { Payee } from "../payees/entities/payee.entity";
 import { AccountsService } from "../accounts/accounts.service";
 import { PayeesService } from "../payees/payees.service";
 import { NetWorthService } from "../net-worth/net-worth.service";
@@ -127,22 +128,30 @@ describe("TransactionsService", () => {
               return splitsRepository.update(id, data);
             return transactionsRepository.update(id, data);
           }),
-        findOne: jest
-          .fn()
-          .mockImplementation((_Entity: any, opts: any) =>
-            transactionsRepository.findOne(opts),
-          ),
-        find: jest
-          .fn()
-          .mockImplementation((_Entity: any, opts: any) =>
-            splitsRepository.find(opts),
-          ),
+        delete: jest.fn().mockImplementation((_Entity: any, criteria: any) => {
+          if (_Entity === TransactionSplit)
+            return splitsRepository.delete(criteria);
+          return Promise.resolve(undefined);
+        }),
+        findOne: jest.fn().mockImplementation((_Entity: any, opts: any) => {
+          if (_Entity === TransactionSplit)
+            return splitsRepository.findOne(opts);
+          return transactionsRepository.findOne(opts);
+        }),
+        find: jest.fn().mockImplementation((_Entity: any, opts: any) => {
+          if (_Entity === TransactionSplit) return splitsRepository.find(opts);
+          return transactionsRepository.find(opts);
+        }),
         remove: jest.fn().mockImplementation((data: any) => {
           const item = Array.isArray(data) ? data[0] : data;
           if (item && "transactionId" in item && !("accountId" in item)) {
             return splitsRepository.remove(data);
           }
           return transactionsRepository.remove(data);
+        }),
+        getRepository: jest.fn().mockImplementation((_Entity: any) => {
+          if (_Entity === TransactionSplit) return splitsRepository;
+          return transactionsRepository;
         }),
       },
     };
@@ -169,6 +178,10 @@ describe("TransactionsService", () => {
         {
           provide: getRepositoryToken(InvestmentTransaction),
           useValue: investmentTxRepository,
+        },
+        {
+          provide: getRepositoryToken(Payee),
+          useValue: { findOne: jest.fn().mockResolvedValue(null) },
         },
         { provide: AccountsService, useValue: accountsService },
         { provide: PayeesService, useValue: payeesService },
@@ -439,10 +452,15 @@ describe("TransactionsService", () => {
 
     it("updates transaction amount and adjusts balance", async () => {
       transactionsRepository.findOne.mockResolvedValue({ ...mockTx });
+      mockQueryRunner.manager.findOne.mockResolvedValueOnce({
+        ...mockTx,
+        amount: -80,
+      });
 
       await service.update("user-1", "tx-1", { amount: -80 } as any);
 
-      expect(transactionsRepository.update).toHaveBeenCalledWith(
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+        Transaction,
         "tx-1",
         expect.objectContaining({ amount: -80 }),
       );
@@ -459,6 +477,11 @@ describe("TransactionsService", () => {
           status: TransactionStatus.UNRECONCILED,
           amount: -50,
         });
+      mockQueryRunner.manager.findOne.mockResolvedValueOnce({
+        ...mockTx,
+        status: TransactionStatus.UNRECONCILED,
+        amount: -50,
+      });
 
       await service.update("user-1", "tx-1", {
         status: TransactionStatus.UNRECONCILED,
@@ -467,6 +490,7 @@ describe("TransactionsService", () => {
       expect(accountsService.updateBalance).toHaveBeenCalledWith(
         "account-1",
         -50,
+        expect.anything(),
       );
     });
 
@@ -477,6 +501,10 @@ describe("TransactionsService", () => {
           ...mockTx,
           status: TransactionStatus.VOID,
         });
+      mockQueryRunner.manager.findOne.mockResolvedValueOnce({
+        ...mockTx,
+        status: TransactionStatus.VOID,
+      });
 
       await service.update("user-1", "tx-1", {
         status: TransactionStatus.VOID,
@@ -485,11 +513,16 @@ describe("TransactionsService", () => {
       expect(accountsService.updateBalance).toHaveBeenCalledWith(
         "account-1",
         50,
+        expect.anything(),
       );
     });
 
     it("verifies new account when account changes", async () => {
       transactionsRepository.findOne.mockResolvedValue({ ...mockTx });
+      mockQueryRunner.manager.findOne.mockResolvedValueOnce({
+        ...mockTx,
+        accountId: "account-2",
+      });
 
       await service.update("user-1", "tx-1", {
         accountId: "account-2",
@@ -535,15 +568,17 @@ describe("TransactionsService", () => {
         isSplit: false,
         splits: [],
       });
-      splitsRepository.findOne.mockResolvedValue(null);
+      // parentSplit lookup via queryRunner.manager.findOne(TransactionSplit, ...)
+      mockQueryRunner.manager.findOne.mockResolvedValueOnce(null);
 
       await service.remove("user-1", "tx-1");
 
       expect(accountsService.updateBalance).toHaveBeenCalledWith(
         "account-1",
         50,
+        expect.anything(),
       );
-      expect(transactionsRepository.remove).toHaveBeenCalled();
+      expect(mockQueryRunner.manager.remove).toHaveBeenCalled();
     });
 
     it("does not revert balance for VOID transactions", async () => {
@@ -556,7 +591,8 @@ describe("TransactionsService", () => {
         isSplit: false,
         splits: [],
       });
-      splitsRepository.findOne.mockResolvedValue(null);
+      // parentSplit lookup via queryRunner.manager.findOne(TransactionSplit, ...)
+      mockQueryRunner.manager.findOne.mockResolvedValueOnce(null);
 
       await service.remove("user-1", "tx-1");
 
@@ -2157,6 +2193,7 @@ describe("TransactionsService", () => {
       expect(accountsService.updateBalance).toHaveBeenCalledWith(
         "account-2",
         -60,
+        expect.anything(),
       );
       expect(transactionsRepository.remove).toHaveBeenCalledWith(oldLinkedTx);
     });
@@ -2251,7 +2288,7 @@ describe("TransactionsService", () => {
       };
       splitsRepository.save.mockResolvedValue(savedSplit);
 
-      const linkedTx = { id: "linked-tx-1" };
+      const linkedTx = { id: "linked-tx-1", userId: "user-1" };
       transactionsRepository.save.mockResolvedValue(linkedTx);
       transactionsRepository.create.mockReturnValue(linkedTx);
 
@@ -2292,6 +2329,7 @@ describe("TransactionsService", () => {
       expect(accountsService.updateBalance).toHaveBeenCalledWith(
         "account-2",
         40,
+        expect.anything(),
       );
       expect(splitsRepository.update).toHaveBeenCalledWith("split-new", {
         linkedTransactionId: "linked-tx-1",
@@ -2462,6 +2500,7 @@ describe("TransactionsService", () => {
       expect(accountsService.updateBalance).toHaveBeenCalledWith(
         "account-2",
         -40,
+        expect.anything(),
       );
       expect(transactionsRepository.remove).toHaveBeenCalledWith(linkedTx);
     });
@@ -2579,6 +2618,7 @@ describe("TransactionsService", () => {
       expect(accountsService.updateBalance).toHaveBeenCalledWith(
         "account-2",
         -50,
+        expect.anything(),
       );
       expect(transactionsRepository.remove).toHaveBeenCalledWith(
         lastSplitLinkedTx,
@@ -2660,15 +2700,19 @@ describe("TransactionsService", () => {
         splits: [],
       };
 
-      // First findOne: get existing transaction
-      // Second findOne: return updated transaction (new account)
+      const updatedTx = {
+        ...mockTx,
+        accountId: "account-2",
+        amount: -50,
+      };
+
+      // First findOne: get existing transaction (update entry)
+      // Second findOne: queryRunner.manager.findOne inside transaction
+      // Third findOne: this.findOne after commit
       transactionsRepository.findOne
         .mockResolvedValueOnce({ ...mockTx })
-        .mockResolvedValueOnce({
-          ...mockTx,
-          accountId: "account-2",
-          amount: -50,
-        });
+        .mockResolvedValueOnce(updatedTx)
+        .mockResolvedValueOnce(updatedTx);
 
       const newAccount = { ...mockAccount, id: "account-2", name: "Savings" };
       accountsService.findOne
@@ -2683,10 +2727,12 @@ describe("TransactionsService", () => {
       expect(accountsService.updateBalance).toHaveBeenCalledWith(
         "account-1",
         50,
+        expect.anything(),
       ); // remove from old
       expect(accountsService.updateBalance).toHaveBeenCalledWith(
         "account-2",
         -50,
+        expect.anything(),
       ); // add to new
     });
   });
@@ -3064,6 +3110,7 @@ describe("TransactionsService", () => {
       expect(accountsService.updateBalance).toHaveBeenCalledWith(
         "account-2",
         -40,
+        expect.anything(),
       );
       expect(transactionsRepository.remove).toHaveBeenCalledWith(linkedTx);
 
@@ -3071,6 +3118,7 @@ describe("TransactionsService", () => {
       expect(accountsService.updateBalance).toHaveBeenCalledWith(
         "account-1",
         100,
+        expect.anything(),
       );
     });
   });
@@ -3137,6 +3185,7 @@ describe("TransactionsService", () => {
       expect(accountsService.updateBalance).toHaveBeenCalledWith(
         "account-3",
         -60,
+        expect.anything(),
       );
       expect(transactionsRepository.remove).toHaveBeenCalledWith(
         anotherChildTx,
@@ -3149,6 +3198,7 @@ describe("TransactionsService", () => {
       expect(accountsService.updateBalance).toHaveBeenCalledWith(
         "account-1",
         100,
+        expect.anything(),
       );
       expect(transactionsRepository.remove).toHaveBeenCalledWith(parentTx);
 
@@ -3156,6 +3206,7 @@ describe("TransactionsService", () => {
       expect(accountsService.updateBalance).toHaveBeenCalledWith(
         "account-2",
         -40,
+        expect.anything(),
       );
       expect(transactionsRepository.remove).toHaveBeenCalledWith(childTx);
     });
@@ -3348,10 +3399,12 @@ describe("TransactionsService", () => {
       expect(accountsService.updateBalance).toHaveBeenCalledWith(
         "account-2",
         -60,
+        undefined,
       );
       expect(accountsService.updateBalance).toHaveBeenCalledWith(
         "account-3",
         -40,
+        undefined,
       );
       expect(transactionsRepository.remove).toHaveBeenCalledWith(linkedTx1);
       expect(transactionsRepository.remove).toHaveBeenCalledWith(linkedTx2);
@@ -3625,19 +3678,23 @@ describe("TransactionsService", () => {
         splits: [],
       };
 
+      const updatedTx = {
+        ...mockTx,
+        transactionDate: "2026-01-15",
+        amount: -75,
+      };
+
       // First call (old transaction): future date
       // Second call (saved transaction): current date
       mockedIsTransactionInFuture
         .mockReturnValueOnce(true) // oldIsFuture = true
         .mockReturnValueOnce(false); // newIsFuture = false
 
+      // 1st: findOne (entry), 2nd: queryRunner.manager.findOne (inside tx), 3rd: findOne (after commit)
       transactionsRepository.findOne
         .mockResolvedValueOnce({ ...mockTx })
-        .mockResolvedValueOnce({
-          ...mockTx,
-          transactionDate: "2026-01-15",
-          amount: -75,
-        });
+        .mockResolvedValueOnce(updatedTx)
+        .mockResolvedValueOnce(updatedTx);
 
       await service.update("user-1", "tx-1", {
         transactionDate: "2026-01-15",
@@ -3646,6 +3703,7 @@ describe("TransactionsService", () => {
       // When any future date is involved, recalculate from scratch
       expect(accountsService.recalculateCurrentBalance).toHaveBeenCalledWith(
         "account-1",
+        expect.anything(),
       );
       expect(accountsService.updateBalance).not.toHaveBeenCalled();
     });
@@ -3662,19 +3720,23 @@ describe("TransactionsService", () => {
         splits: [],
       };
 
+      const updatedTx = {
+        ...mockTx,
+        transactionDate: "2099-12-31",
+        amount: -75,
+      };
+
       // First call (old transaction): current date
       // Second call (saved transaction): future date
       mockedIsTransactionInFuture
         .mockReturnValueOnce(false) // oldIsFuture = false
         .mockReturnValueOnce(true); // newIsFuture = true
 
+      // 1st: findOne (entry), 2nd: queryRunner.manager.findOne (inside tx), 3rd: findOne (after commit)
       transactionsRepository.findOne
         .mockResolvedValueOnce({ ...mockTx })
-        .mockResolvedValueOnce({
-          ...mockTx,
-          transactionDate: "2099-12-31",
-          amount: -75,
-        });
+        .mockResolvedValueOnce(updatedTx)
+        .mockResolvedValueOnce(updatedTx);
 
       await service.update("user-1", "tx-1", {
         transactionDate: "2099-12-31",
@@ -3683,6 +3745,7 @@ describe("TransactionsService", () => {
       // When any future date is involved, recalculate from scratch
       expect(accountsService.recalculateCurrentBalance).toHaveBeenCalledWith(
         "account-1",
+        expect.anything(),
       );
       expect(accountsService.updateBalance).not.toHaveBeenCalled();
     });
@@ -3699,18 +3762,22 @@ describe("TransactionsService", () => {
         splits: [],
       };
 
+      const updatedTx = {
+        ...mockTx,
+        transactionDate: "2099-12-31",
+        amount: -100,
+      };
+
       // Both old and new dates are in the future
       mockedIsTransactionInFuture
         .mockReturnValueOnce(true) // oldIsFuture = true
         .mockReturnValueOnce(true); // newIsFuture = true
 
+      // 1st: findOne (entry), 2nd: queryRunner.manager.findOne (inside tx), 3rd: findOne (after commit)
       transactionsRepository.findOne
         .mockResolvedValueOnce({ ...mockTx })
-        .mockResolvedValueOnce({
-          ...mockTx,
-          transactionDate: "2099-12-31",
-          amount: -100,
-        });
+        .mockResolvedValueOnce(updatedTx)
+        .mockResolvedValueOnce(updatedTx);
 
       await service.update("user-1", "tx-1", {
         transactionDate: "2099-12-31",

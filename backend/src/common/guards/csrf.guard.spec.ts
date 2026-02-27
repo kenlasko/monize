@@ -1,5 +1,6 @@
 import { ExecutionContext, ForbiddenException } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
+import { ConfigService } from "@nestjs/config";
 import { Test, TestingModule } from "@nestjs/testing";
 import { CsrfGuard } from "./csrf.guard";
 import { SKIP_CSRF_KEY } from "../decorators/skip-csrf.decorator";
@@ -16,6 +17,12 @@ describe("CsrfGuard", () => {
           provide: Reflector,
           useValue: {
             getAllAndOverride: jest.fn().mockReturnValue(false),
+          },
+        },
+        {
+          provide: ConfigService,
+          useValue: {
+            get: jest.fn().mockReturnValue(undefined),
           },
         },
       ],

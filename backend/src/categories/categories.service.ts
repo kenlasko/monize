@@ -243,6 +243,23 @@ export class CategoriesService {
         throw new BadRequestException("Category cannot be its own parent");
       }
       await this.findOne(userId, updateCategoryDto.parentId);
+
+      // H16: Check for circular parent reference through the hierarchy
+      const allCategories = await this.categoriesRepository.find({
+        where: { userId },
+        select: ["id", "parentId"],
+      });
+      const categoryMap = new Map(allCategories.map((c) => [c.id, c.parentId]));
+      categoryMap.set(id, updateCategoryDto.parentId);
+      let current: string | null | undefined = updateCategoryDto.parentId;
+      const visited = new Set<string>([id]);
+      while (current) {
+        if (visited.has(current)) {
+          throw new BadRequestException("Circular parent reference detected");
+        }
+        visited.add(current);
+        current = categoryMap.get(current) ?? null;
+      }
     }
 
     // SECURITY: Explicit property mapping instead of Object.assign to prevent mass assignment

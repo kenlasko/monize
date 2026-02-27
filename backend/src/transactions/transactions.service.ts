@@ -6,7 +6,7 @@ import {
   Logger,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository, In, DataSource } from "typeorm";
+import { Repository, In, DataSource, QueryRunner } from "typeorm";
 import { Transaction, TransactionStatus } from "./entities/transaction.entity";
 import { TransactionSplit } from "./entities/transaction-split.entity";
 import { Category } from "../categories/entities/category.entity";
@@ -579,159 +579,242 @@ export class TransactionsService {
       }
     }
 
-    if (splits !== undefined) {
-      if (Array.isArray(splits) && splits.length > 0) {
-        const amount = updateData.amount ?? transaction.amount;
-        this.splitService.validateSplits(splits, amount);
+    // Validate splits before starting the transaction
+    if (splits !== undefined && Array.isArray(splits) && splits.length > 0) {
+      const amount = updateData.amount ?? transaction.amount;
+      this.splitService.validateSplits(splits, amount);
+    }
 
-        await this.splitService.deleteTransferSplitLinkedTransactions(id);
-        await this.splitsRepository.delete({ transactionId: id });
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-        const accountId = updateData.accountId ?? transaction.accountId;
-        const txDate =
-          updateData.transactionDate ?? transaction.transactionDate;
-        await this.splitService.createSplits(
+    try {
+      if (splits !== undefined) {
+        if (Array.isArray(splits) && splits.length > 0) {
+          await this.splitService.deleteTransferSplitLinkedTransactions(
+            id,
+            queryRunner,
+          );
+          await queryRunner.manager.delete(TransactionSplit, {
+            transactionId: id,
+          });
+
+          const accountId = updateData.accountId ?? transaction.accountId;
+          const txDate =
+            updateData.transactionDate ?? transaction.transactionDate;
+          await this.splitService.createSplits(
+            id,
+            splits,
+            userId,
+            accountId,
+            new Date(txDate),
+            updateData.payeeName ?? transaction.payeeName,
+            queryRunner,
+          );
+        } else if (Array.isArray(splits) && splits.length === 0) {
+          await this.splitService.deleteTransferSplitLinkedTransactions(
+            id,
+            queryRunner,
+          );
+          await queryRunner.manager.delete(TransactionSplit, {
+            transactionId: id,
+          });
+          await queryRunner.manager.update(Transaction, id, {
+            isSplit: false,
+          });
+        }
+      }
+
+      const transactionUpdateData: Partial<Transaction> = {};
+
+      if ("accountId" in updateData)
+        transactionUpdateData.accountId = updateData.accountId;
+      if ("transactionDate" in updateData)
+        transactionUpdateData.transactionDate =
+          updateData.transactionDate as any;
+      if ("payeeId" in updateData)
+        transactionUpdateData.payeeId = updateData.payeeId ?? null;
+      if ("payeeName" in updateData)
+        transactionUpdateData.payeeName = updateData.payeeName ?? null;
+      if ("categoryId" in updateData)
+        transactionUpdateData.categoryId = updateData.categoryId ?? null;
+      if ("amount" in updateData)
+        transactionUpdateData.amount = updateData.amount;
+      if ("currencyCode" in updateData)
+        transactionUpdateData.currencyCode = updateData.currencyCode;
+      if ("exchangeRate" in updateData)
+        transactionUpdateData.exchangeRate = updateData.exchangeRate;
+      if ("description" in updateData)
+        transactionUpdateData.description = updateData.description ?? null;
+      if ("referenceNumber" in updateData)
+        transactionUpdateData.referenceNumber =
+          updateData.referenceNumber ?? null;
+      if ("status" in updateData)
+        transactionUpdateData.status = updateData.status;
+      if ("reconciledDate" in updateData)
+        transactionUpdateData.reconciledDate = updateData.reconciledDate as any;
+
+      if (splits && splits.length > 0) {
+        transactionUpdateData.categoryId = null;
+        transactionUpdateData.isSplit = true;
+      }
+
+      if (Object.keys(transactionUpdateData).length > 0) {
+        await queryRunner.manager.update(
+          Transaction,
           id,
-          splits,
-          userId,
-          accountId,
-          new Date(txDate),
-          updateData.payeeName ?? transaction.payeeName,
+          transactionUpdateData,
         );
-      } else if (Array.isArray(splits) && splits.length === 0) {
-        await this.splitService.deleteTransferSplitLinkedTransactions(id);
-        await this.splitsRepository.delete({ transactionId: id });
-        await this.transactionsRepository.update(id, { isSplit: false });
       }
-    }
 
-    const transactionUpdateData: Partial<Transaction> = {};
-
-    if ("accountId" in updateData)
-      transactionUpdateData.accountId = updateData.accountId;
-    if ("transactionDate" in updateData)
-      transactionUpdateData.transactionDate = updateData.transactionDate as any;
-    if ("payeeId" in updateData)
-      transactionUpdateData.payeeId = updateData.payeeId ?? null;
-    if ("payeeName" in updateData)
-      transactionUpdateData.payeeName = updateData.payeeName ?? null;
-    if ("categoryId" in updateData)
-      transactionUpdateData.categoryId = updateData.categoryId ?? null;
-    if ("amount" in updateData)
-      transactionUpdateData.amount = updateData.amount;
-    if ("currencyCode" in updateData)
-      transactionUpdateData.currencyCode = updateData.currencyCode;
-    if ("exchangeRate" in updateData)
-      transactionUpdateData.exchangeRate = updateData.exchangeRate;
-    if ("description" in updateData)
-      transactionUpdateData.description = updateData.description ?? null;
-    if ("referenceNumber" in updateData)
-      transactionUpdateData.referenceNumber =
-        updateData.referenceNumber ?? null;
-    if ("status" in updateData)
-      transactionUpdateData.status = updateData.status;
-    if ("reconciledDate" in updateData)
-      transactionUpdateData.reconciledDate = updateData.reconciledDate as any;
-
-    if (splits && splits.length > 0) {
-      transactionUpdateData.categoryId = null;
-      transactionUpdateData.isSplit = true;
-    }
-
-    if (Object.keys(transactionUpdateData).length > 0) {
-      await this.transactionsRepository.update(id, transactionUpdateData);
-    }
-
-    const savedTransaction = await this.findOne(userId, id);
-
-    const newAmount = Number(savedTransaction.amount);
-    const newAccountId = savedTransaction.accountId;
-    const newStatus = savedTransaction.status;
-    const isVoid = newStatus === TransactionStatus.VOID;
-    const oldIsFuture = isTransactionInFuture(oldTransactionDate);
-    const newIsFuture = isTransactionInFuture(savedTransaction.transactionDate);
-    const anyFuture = oldIsFuture || newIsFuture;
-
-    if (anyFuture) {
-      // When any future date is involved, recalculate from scratch
-      // to handle both pre-fix and post-fix transactions correctly
-      const affectedAccounts = new Set([oldAccountId, newAccountId]);
-      for (const accId of affectedAccounts) {
-        await this.accountsService.recalculateCurrentBalance(accId);
+      const savedTransaction = await queryRunner.manager.findOne(Transaction, {
+        where: { id, userId },
+      });
+      if (!savedTransaction) {
+        throw new NotFoundException(`Transaction with ID ${id} not found`);
       }
-    } else if (wasVoid && !isVoid) {
-      await this.accountsService.updateBalance(newAccountId, newAmount);
-    } else if (!wasVoid && isVoid) {
-      await this.accountsService.updateBalance(oldAccountId, -oldAmount);
-    } else if (!wasVoid && !isVoid) {
-      if (newAccountId !== oldAccountId) {
-        await this.accountsService.updateBalance(oldAccountId, -oldAmount);
-        await this.accountsService.updateBalance(newAccountId, newAmount);
-      } else if (newAmount !== oldAmount) {
-        const balanceChange = newAmount - oldAmount;
-        await this.accountsService.updateBalance(newAccountId, balanceChange);
+
+      const newAmount = Number(savedTransaction.amount);
+      const newAccountId = savedTransaction.accountId;
+      const newStatus = savedTransaction.status;
+      const isVoid = newStatus === TransactionStatus.VOID;
+      const oldIsFuture = isTransactionInFuture(oldTransactionDate);
+      const newIsFuture = isTransactionInFuture(
+        savedTransaction.transactionDate,
+      );
+      const anyFuture = oldIsFuture || newIsFuture;
+
+      if (anyFuture) {
+        const affectedAccounts = new Set([oldAccountId, newAccountId]);
+        for (const accId of affectedAccounts) {
+          await this.accountsService.recalculateCurrentBalance(
+            accId,
+            queryRunner,
+          );
+        }
+      } else if (wasVoid && !isVoid) {
+        await this.accountsService.updateBalance(
+          newAccountId,
+          newAmount,
+          queryRunner,
+        );
+      } else if (!wasVoid && isVoid) {
+        await this.accountsService.updateBalance(
+          oldAccountId,
+          -oldAmount,
+          queryRunner,
+        );
+      } else if (!wasVoid && !isVoid) {
+        if (newAccountId !== oldAccountId) {
+          await this.accountsService.updateBalance(
+            oldAccountId,
+            -oldAmount,
+            queryRunner,
+          );
+          await this.accountsService.updateBalance(
+            newAccountId,
+            newAmount,
+            queryRunner,
+          );
+        } else if (newAmount !== oldAmount) {
+          const balanceChange = newAmount - oldAmount;
+          await this.accountsService.updateBalance(
+            newAccountId,
+            balanceChange,
+            queryRunner,
+          );
+        }
       }
+
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
     }
 
-    this.netWorthService.triggerDebouncedRecalc(newAccountId, userId);
-    if (oldAccountId !== newAccountId) {
+    const finalTransaction = await this.findOne(userId, id);
+
+    this.netWorthService.triggerDebouncedRecalc(
+      finalTransaction.accountId,
+      userId,
+    );
+    if (oldAccountId !== finalTransaction.accountId) {
       this.netWorthService.triggerDebouncedRecalc(oldAccountId, userId);
     }
 
-    return savedTransaction;
+    return finalTransaction;
   }
 
   async remove(userId: string, id: string): Promise<void> {
     const transaction = await this.findOne(userId, id);
+    const accountId = transaction.accountId;
 
-    if (transaction.isSplit) {
-      await this.splitService.deleteTransferSplitLinkedTransactions(id);
-    }
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-    const parentSplit = await this.splitsRepository.findOne({
-      where: { linkedTransactionId: id },
-    });
-
-    if (parentSplit) {
-      await this.removeParentTransaction(parentSplit, id);
-    }
-
-    if (transaction.status !== TransactionStatus.VOID) {
-      if (isTransactionInFuture(transaction.transactionDate)) {
-        // Recalculate from scratch — handles both pre-fix and post-fix state
-        await this.transactionsRepository.remove(transaction);
-        await this.accountsService.recalculateCurrentBalance(
-          transaction.accountId,
-        );
-        this.netWorthService.triggerDebouncedRecalc(
-          transaction.accountId,
-          userId,
-        );
-        return;
-      } else {
-        await this.accountsService.updateBalance(
-          transaction.accountId,
-          -Number(transaction.amount),
+    try {
+      if (transaction.isSplit) {
+        await this.splitService.deleteTransferSplitLinkedTransactions(
+          id,
+          queryRunner,
         );
       }
+
+      const parentSplit = await queryRunner.manager.findOne(TransactionSplit, {
+        where: { linkedTransactionId: id },
+      });
+
+      if (parentSplit) {
+        await this.removeParentTransaction(parentSplit, id, queryRunner);
+      }
+
+      if (transaction.status !== TransactionStatus.VOID) {
+        if (isTransactionInFuture(transaction.transactionDate)) {
+          await queryRunner.manager.remove(transaction);
+          await this.accountsService.recalculateCurrentBalance(
+            accountId,
+            queryRunner,
+          );
+          await queryRunner.commitTransaction();
+          this.netWorthService.triggerDebouncedRecalc(accountId, userId);
+          return;
+        } else {
+          await this.accountsService.updateBalance(
+            accountId,
+            -Number(transaction.amount),
+            queryRunner,
+          );
+        }
+      }
+
+      await queryRunner.manager.remove(transaction);
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
     }
 
-    this.netWorthService.triggerDebouncedRecalc(transaction.accountId, userId);
-
-    await this.transactionsRepository.remove(transaction);
+    this.netWorthService.triggerDebouncedRecalc(accountId, userId);
   }
 
   private async removeParentTransaction(
     parentSplit: TransactionSplit,
     linkedTransactionId: string,
+    queryRunner: QueryRunner,
   ): Promise<void> {
     const parentTransactionId = parentSplit.transactionId;
-    const parentTransaction = await this.transactionsRepository.findOne({
+    const parentTransaction = await queryRunner.manager.findOne(Transaction, {
       where: { id: parentTransactionId },
     });
 
     if (parentTransaction) {
-      const allSplits = await this.splitsRepository.find({
+      const allSplits = await queryRunner.manager.find(TransactionSplit, {
         where: { transactionId: parentTransactionId },
       });
 
@@ -740,7 +823,7 @@ export class TransactionsService {
           split.linkedTransactionId &&
           split.linkedTransactionId !== linkedTransactionId
         ) {
-          const linkedTx = await this.transactionsRepository.findOne({
+          const linkedTx = await queryRunner.manager.findOne(Transaction, {
             where: { id: split.linkedTransactionId },
           });
 
@@ -753,32 +836,38 @@ export class TransactionsService {
               await this.accountsService.updateBalance(
                 linkedAccId,
                 -Number(linkedTx.amount),
+                queryRunner,
               );
             }
-            await this.transactionsRepository.remove(linkedTx);
+            await queryRunner.manager.remove(linkedTx);
             if (linkedIsFuture) {
-              await this.accountsService.recalculateCurrentBalance(linkedAccId);
+              await this.accountsService.recalculateCurrentBalance(
+                linkedAccId,
+                queryRunner,
+              );
             }
           }
         }
       }
 
-      await this.splitsRepository.remove(allSplits);
+      await queryRunner.manager.remove(allSplits);
 
       if (parentTransaction.status !== TransactionStatus.VOID) {
         if (isTransactionInFuture(parentTransaction.transactionDate)) {
-          await this.transactionsRepository.remove(parentTransaction);
+          await queryRunner.manager.remove(parentTransaction);
           await this.accountsService.recalculateCurrentBalance(
             parentTransaction.accountId,
+            queryRunner,
           );
           return;
         }
         await this.accountsService.updateBalance(
           parentTransaction.accountId,
           -Number(parentTransaction.amount),
+          queryRunner,
         );
       }
-      await this.transactionsRepository.remove(parentTransaction);
+      await queryRunner.manager.remove(parentTransaction);
     }
   }
 

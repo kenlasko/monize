@@ -8,7 +8,7 @@ import {
   OnModuleDestroy,
 } from "@nestjs/common";
 import { ApiTags, ApiExcludeController } from "@nestjs/swagger";
-import { SkipThrottle, Throttle } from "@nestjs/throttler";
+import { Throttle } from "@nestjs/throttler";
 import { Request, Response } from "express";
 import { randomUUID } from "crypto";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -181,7 +181,7 @@ export class McpHttpController implements OnModuleDestroy {
   }
 
   @Get()
-  @SkipThrottle()
+  @Throttle({ default: { ttl: 60000, limit: 30 } })
   async handleGet(@Req() req: Request, @Res() res: Response) {
     const authResult = await this.validatePat(req);
     if (!authResult) {

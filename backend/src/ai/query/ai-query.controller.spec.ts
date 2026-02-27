@@ -90,6 +90,7 @@ describe("AiQueryController", () => {
         flushHeaders: jest.fn(),
         write: jest.fn((data: string) => written.push(data)),
         end: jest.fn(),
+        on: jest.fn(),
       };
 
       await controller.streamQuery(
@@ -129,6 +130,7 @@ describe("AiQueryController", () => {
         flushHeaders: jest.fn(),
         write: jest.fn((data: string) => written.push(data)),
         end: jest.fn(),
+        on: jest.fn(),
       };
 
       await controller.streamQuery(
@@ -162,6 +164,7 @@ describe("AiQueryController", () => {
         flushHeaders: jest.fn(),
         write: jest.fn((data: string) => written.push(data)),
         end: jest.fn(),
+        on: jest.fn(),
       };
 
       await controller.streamQuery(
@@ -189,6 +192,7 @@ describe("AiQueryController", () => {
         flushHeaders: jest.fn(),
         write: jest.fn(),
         end: jest.fn(),
+        on: jest.fn(),
       };
 
       await controller.streamQuery(

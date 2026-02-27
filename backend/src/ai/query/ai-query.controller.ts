@@ -49,24 +49,32 @@ export class AiQueryController {
     res.setHeader("X-Accel-Buffering", "no");
     res.flushHeaders();
 
+    const abortController = new AbortController();
+    res.on("close", () => abortController.abort());
+
     try {
       for await (const event of this.queryService.executeQueryStream(
         req.user.id,
         dto.query,
       )) {
+        if (abortController.signal.aborted) break;
         if (event) {
           res.write(`data: ${JSON.stringify(event)}\n\n`);
         }
       }
     } catch (error) {
-      const rawMessage =
-        error instanceof Error ? error.message : "Unknown error";
-      this.logger.error(`SSE query stream error: ${rawMessage}`);
-      res.write(
-        `data: ${JSON.stringify({ type: "error", message: "An unexpected error occurred while processing your query." })}\n\n`,
-      );
+      if (!abortController.signal.aborted) {
+        const rawMessage =
+          error instanceof Error ? error.message : "Unknown error";
+        this.logger.error(`SSE query stream error: ${rawMessage}`);
+        res.write(
+          `data: ${JSON.stringify({ type: "error", message: "An unexpected error occurred while processing your query." })}\n\n`,
+        );
+      }
     }
 
-    res.end();
+    if (!abortController.signal.aborted) {
+      res.end();
+    }
   }
 }

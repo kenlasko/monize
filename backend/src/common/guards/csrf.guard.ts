@@ -5,12 +5,17 @@ import {
   Injectable,
 } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
+import { ConfigService } from "@nestjs/config";
 import * as crypto from "crypto";
 import { SKIP_CSRF_KEY } from "../decorators/skip-csrf.decorator";
+import { verifyCsrfToken } from "../csrf.util";
 
 @Injectable()
 export class CsrfGuard implements CanActivate {
-  constructor(private reflector: Reflector) {}
+  constructor(
+    private reflector: Reflector,
+    private configService: ConfigService,
+  ) {}
 
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest();
@@ -51,6 +56,15 @@ export class CsrfGuard implements CanActivate {
     } catch (error) {
       if (error instanceof ForbiddenException) throw error;
       throw new ForbiddenException("Invalid CSRF token");
+    }
+
+    // H8: Verify HMAC binding to session if token includes signature
+    const sessionId = request.user?.id;
+    const jwtSecret = this.configService.get<string>("JWT_SECRET");
+    if (sessionId && jwtSecret && headerToken.includes(":")) {
+      if (!verifyCsrfToken(headerToken, sessionId, jwtSecret)) {
+        throw new ForbiddenException("Invalid CSRF token");
+      }
     }
 
     return true;

@@ -42,6 +42,8 @@ export class YahooFinanceService {
   /**
    * Fetch quote data from Yahoo Finance for a single symbol using v8 chart API
    */
+  private static readonly FETCH_TIMEOUT_MS = 30000;
+
   async fetchQuote(symbol: string): Promise<YahooQuoteResult | null> {
     try {
       const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=1d`;
@@ -51,6 +53,7 @@ export class YahooFinanceService {
           "User-Agent":
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
         },
+        signal: AbortSignal.timeout(YahooFinanceService.FETCH_TIMEOUT_MS),
       });
 
       if (!response.ok) {
@@ -67,7 +70,7 @@ export class YahooFinanceService {
         return {
           symbol: meta.symbol,
           regularMarketPrice: meta.regularMarketPrice,
-          regularMarketOpen: meta.regularMarketDayHigh ? undefined : undefined,
+          regularMarketOpen: meta.regularMarketOpen,
           regularMarketDayHigh: meta.regularMarketDayHigh,
           regularMarketDayLow: meta.regularMarketDayLow,
           regularMarketVolume: meta.regularMarketVolume,
@@ -118,6 +121,7 @@ export class YahooFinanceService {
           "User-Agent":
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
         },
+        signal: AbortSignal.timeout(60000),
       });
 
       if (!response.ok) {
@@ -175,6 +179,7 @@ export class YahooFinanceService {
           "User-Agent":
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
         },
+        signal: AbortSignal.timeout(YahooFinanceService.FETCH_TIMEOUT_MS),
       });
 
       if (!response.ok) {

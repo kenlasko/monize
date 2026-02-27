@@ -46,11 +46,12 @@ export class OllamaProvider implements AiProvider {
       request.systemPrompt,
     );
 
+    // H14: Timeout covers both fetch and stream consumption
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10 * 60 * 1000); // 10 minutes for CPU inference
-    let response: Response;
+
     try {
-      response = await fetch(`${this.baseUrl}/api/chat`, {
+      const response = await fetch(`${this.baseUrl}/api/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         signal: controller.signal,
@@ -64,66 +65,66 @@ export class OllamaProvider implements AiProvider {
           }),
         }),
       });
+
+      if (!response.ok) {
+        throw new Error(
+          `Ollama request failed: ${response.status} ${response.statusText}`,
+        );
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error("No response body from Ollama");
+      }
+
+      const decoder = new TextDecoder();
+      let buffer = "";
+      const contentParts: string[] = [];
+      let promptTokens = 0;
+      let outputTokens = 0;
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() || "";
+
+          for (const line of lines) {
+            if (!line.trim()) continue;
+            let chunk: OllamaChatResponse;
+            try {
+              chunk = JSON.parse(line) as OllamaChatResponse;
+            } catch {
+              continue;
+            }
+            if (chunk.message?.content) {
+              contentParts.push(chunk.message.content);
+            }
+            if (chunk.done) {
+              promptTokens = chunk.prompt_eval_count || 0;
+              outputTokens = chunk.eval_count || 0;
+            }
+          }
+        }
+      } finally {
+        reader.releaseLock();
+      }
+
+      return {
+        content: contentParts.join(""),
+        usage: {
+          inputTokens: promptTokens,
+          outputTokens,
+        },
+        model: this.modelId,
+        provider: this.name,
+      };
     } finally {
       clearTimeout(timeout);
     }
-
-    if (!response.ok) {
-      throw new Error(
-        `Ollama request failed: ${response.status} ${response.statusText}`,
-      );
-    }
-
-    const reader = response.body?.getReader();
-    if (!reader) {
-      throw new Error("No response body from Ollama");
-    }
-
-    const decoder = new TextDecoder();
-    let buffer = "";
-    const contentParts: string[] = [];
-    let promptTokens = 0;
-    let outputTokens = 0;
-
-    try {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() || "";
-
-        for (const line of lines) {
-          if (!line.trim()) continue;
-          let chunk: OllamaChatResponse;
-          try {
-            chunk = JSON.parse(line) as OllamaChatResponse;
-          } catch {
-            continue;
-          }
-          if (chunk.message?.content) {
-            contentParts.push(chunk.message.content);
-          }
-          if (chunk.done) {
-            promptTokens = chunk.prompt_eval_count || 0;
-            outputTokens = chunk.eval_count || 0;
-          }
-        }
-      }
-    } finally {
-      reader.releaseLock();
-    }
-
-    return {
-      content: contentParts.join(""),
-      usage: {
-        inputTokens: promptTokens,
-        outputTokens,
-      },
-      model: this.modelId,
-      provider: this.name,
-    };
   }
 
   async *stream(request: AiCompletionRequest): AsyncIterable<AiStreamChunk> {
@@ -132,11 +133,12 @@ export class OllamaProvider implements AiProvider {
       request.systemPrompt,
     );
 
+    // H14: Timeout covers both fetch and stream consumption
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10 * 60 * 1000); // 10 minutes for CPU inference
-    let response: Response;
+    const timeout = setTimeout(() => controller.abort(), 10 * 60 * 1000);
+
     try {
-      response = await fetch(`${this.baseUrl}/api/chat`, {
+      const response = await fetch(`${this.baseUrl}/api/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         signal: controller.signal,
@@ -149,54 +151,54 @@ export class OllamaProvider implements AiProvider {
           }),
         }),
       });
+
+      if (!response.ok) {
+        throw new Error(
+          `Ollama request failed: ${response.status} ${response.statusText}`,
+        );
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error("No response body from Ollama");
+      }
+
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() || "";
+
+          for (const line of lines) {
+            if (!line.trim()) continue;
+            let chunk: OllamaChatResponse;
+            try {
+              chunk = JSON.parse(line) as OllamaChatResponse;
+            } catch {
+              continue;
+            }
+            if (chunk.message?.content) {
+              yield { content: chunk.message.content, done: chunk.done };
+            }
+            if (chunk.done) {
+              return;
+            }
+          }
+        }
+      } finally {
+        reader.releaseLock();
+      }
+
+      yield { content: "", done: true };
     } finally {
       clearTimeout(timeout);
     }
-
-    if (!response.ok) {
-      throw new Error(
-        `Ollama request failed: ${response.status} ${response.statusText}`,
-      );
-    }
-
-    const reader = response.body?.getReader();
-    if (!reader) {
-      throw new Error("No response body from Ollama");
-    }
-
-    const decoder = new TextDecoder();
-    let buffer = "";
-
-    try {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() || "";
-
-        for (const line of lines) {
-          if (!line.trim()) continue;
-          let chunk: OllamaChatResponse;
-          try {
-            chunk = JSON.parse(line) as OllamaChatResponse;
-          } catch {
-            continue;
-          }
-          if (chunk.message?.content) {
-            yield { content: chunk.message.content, done: chunk.done };
-          }
-          if (chunk.done) {
-            return;
-          }
-        }
-      }
-    } finally {
-      reader.releaseLock();
-    }
-
-    yield { content: "", done: true };
   }
 
   async completeWithTools(

@@ -136,9 +136,15 @@ describe("TransactionSplitService", () => {
               return transactionsRepository.update(id, data);
             return Promise.resolve(undefined);
           }),
+        delete: jest.fn().mockResolvedValue(undefined),
         findOne: jest.fn().mockResolvedValue(null),
         find: jest.fn().mockResolvedValue([]),
         remove: jest.fn().mockResolvedValue(undefined),
+        getRepository: jest.fn().mockImplementation((entity: any) => {
+          if (entity === TransactionSplit) return splitsRepository;
+          if (entity === Transaction) return transactionsRepository;
+          return {};
+        }),
       },
     };
 
@@ -444,6 +450,7 @@ describe("TransactionSplitService", () => {
       expect(accountsService.updateBalance).toHaveBeenCalledWith(
         "account-2",
         -50,
+        undefined,
       );
       expect(transactionsRepository.remove).toHaveBeenCalledWith(
         expect.objectContaining({ id: "linked-tx-1" }),
@@ -561,15 +568,17 @@ describe("TransactionSplitService", () => {
         "user-1",
       );
 
-      expect(splitsRepository.delete).toHaveBeenCalledWith({
-        transactionId: "tx-1",
-      });
+      expect(mockQueryRunner.manager.delete).toHaveBeenCalledWith(
+        TransactionSplit,
+        { transactionId: "tx-1" },
+      );
       // Regular splits are batch-created via queryRunner
       expect(mockQueryRunner.manager.create).toHaveBeenCalledTimes(2);
-      expect(transactionsRepository.update).toHaveBeenCalledWith("tx-1", {
-        isSplit: true,
-        categoryId: null,
-      });
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+        Transaction,
+        "tx-1",
+        { isSplit: true, categoryId: null },
+      );
       expect(result).toHaveLength(2);
     });
 
@@ -614,6 +623,7 @@ describe("TransactionSplitService", () => {
       expect(accountsService.updateBalance).toHaveBeenCalledWith(
         "account-2",
         -100,
+        mockQueryRunner,
       );
       expect(transactionsRepository.remove).toHaveBeenCalledWith(
         expect.objectContaining({ id: "old-linked-tx" }),
@@ -807,6 +817,7 @@ describe("TransactionSplitService", () => {
       expect(accountsService.updateBalance).toHaveBeenCalledWith(
         "account-2",
         40,
+        mockQueryRunner,
       );
       expect(result.linkedTransactionId).toBe("linked-tx-new");
     });
@@ -846,7 +857,7 @@ describe("TransactionSplitService", () => {
       };
 
       splitsRepository.findOne.mockResolvedValue(splitToRemove);
-      splitsRepository.find.mockResolvedValue([
+      mockQueryRunner.manager.find.mockResolvedValue([
         { ...mockSplit2 },
         {
           id: "split-3",
@@ -858,8 +869,14 @@ describe("TransactionSplitService", () => {
 
       await service.removeSplit(transaction, "split-1", "user-1");
 
-      expect(splitsRepository.remove).toHaveBeenCalledWith(splitToRemove);
-      expect(transactionsRepository.update).not.toHaveBeenCalled();
+      expect(mockQueryRunner.manager.remove).toHaveBeenCalledWith(
+        splitToRemove,
+      );
+      expect(mockQueryRunner.manager.update).not.toHaveBeenCalledWith(
+        Transaction,
+        expect.anything(),
+        expect.anything(),
+      );
     });
 
     it("throws NotFoundException when split not found", async () => {
@@ -882,13 +899,13 @@ describe("TransactionSplitService", () => {
       };
 
       splitsRepository.findOne.mockResolvedValue(transferSplit);
-      transactionsRepository.findOne.mockResolvedValue({
+      mockQueryRunner.manager.findOne.mockResolvedValue({
         id: "linked-tx-1",
         accountId: "account-2",
         amount: 50,
       });
       // remaining splits after removal -- still 2+
-      splitsRepository.find.mockResolvedValue([
+      mockQueryRunner.manager.find.mockResolvedValue([
         {
           id: "split-2",
           transactionId: "tx-1",
@@ -908,8 +925,9 @@ describe("TransactionSplitService", () => {
       expect(accountsService.updateBalance).toHaveBeenCalledWith(
         "account-2",
         -50,
+        mockQueryRunner,
       );
-      expect(transactionsRepository.remove).toHaveBeenCalledWith(
+      expect(mockQueryRunner.manager.remove).toHaveBeenCalledWith(
         expect.objectContaining({ id: "linked-tx-1" }),
       );
     });
@@ -932,15 +950,16 @@ describe("TransactionSplitService", () => {
         transferAccountId: null,
         amount: -40,
       };
-      splitsRepository.find.mockResolvedValue([lastSplit]);
+      mockQueryRunner.manager.find.mockResolvedValue([lastSplit]);
 
       await service.removeSplit(transaction, "split-1", "user-1");
 
-      expect(transactionsRepository.update).toHaveBeenCalledWith("tx-1", {
-        isSplit: false,
-        categoryId: "cat-2",
-      });
-      expect(splitsRepository.remove).toHaveBeenCalledWith(lastSplit);
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+        Transaction,
+        "tx-1",
+        { isSplit: false, categoryId: "cat-2" },
+      );
+      expect(mockQueryRunner.manager.remove).toHaveBeenCalledWith(lastSplit);
     });
 
     it("collapses to non-split and removes linked transaction when last split is a transfer", async () => {
@@ -961,8 +980,8 @@ describe("TransactionSplitService", () => {
         transferAccountId: "account-3",
         amount: -40,
       };
-      splitsRepository.find.mockResolvedValue([lastSplit]);
-      transactionsRepository.findOne.mockResolvedValue({
+      mockQueryRunner.manager.find.mockResolvedValue([lastSplit]);
+      mockQueryRunner.manager.findOne.mockResolvedValue({
         id: "linked-tx-2",
         accountId: "account-3",
         amount: 40,
@@ -973,15 +992,17 @@ describe("TransactionSplitService", () => {
       expect(accountsService.updateBalance).toHaveBeenCalledWith(
         "account-3",
         -40,
+        mockQueryRunner,
       );
-      expect(transactionsRepository.remove).toHaveBeenCalledWith(
+      expect(mockQueryRunner.manager.remove).toHaveBeenCalledWith(
         expect.objectContaining({ id: "linked-tx-2" }),
       );
-      expect(transactionsRepository.update).toHaveBeenCalledWith("tx-1", {
-        isSplit: false,
-        categoryId: null,
-      });
-      expect(splitsRepository.remove).toHaveBeenCalledWith(lastSplit);
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+        Transaction,
+        "tx-1",
+        { isSplit: false, categoryId: null },
+      );
+      expect(mockQueryRunner.manager.remove).toHaveBeenCalledWith(lastSplit);
     });
 
     it("sets isSplit false when no splits remain", async () => {
@@ -1013,8 +1034,8 @@ describe("TransactionSplitService", () => {
       };
 
       splitsRepository.findOne.mockResolvedValue(transferSplit);
-      transactionsRepository.findOne.mockResolvedValue(null);
-      splitsRepository.find.mockResolvedValue([
+      mockQueryRunner.manager.findOne.mockResolvedValue(null);
+      mockQueryRunner.manager.find.mockResolvedValue([
         {
           id: "split-2",
           transactionId: "tx-1",
@@ -1032,7 +1053,9 @@ describe("TransactionSplitService", () => {
       await service.removeSplit(transaction, "split-1", "user-1");
 
       expect(accountsService.updateBalance).not.toHaveBeenCalled();
-      expect(splitsRepository.remove).toHaveBeenCalledWith(transferSplit);
+      expect(mockQueryRunner.manager.remove).toHaveBeenCalledWith(
+        transferSplit,
+      );
     });
   });
 
@@ -1161,6 +1184,7 @@ describe("TransactionSplitService", () => {
         expect(accountsService.updateBalance).toHaveBeenCalledWith(
           "account-2",
           -30,
+          undefined,
         );
         expect(transactionsRepository.remove).toHaveBeenCalledTimes(2);
       });

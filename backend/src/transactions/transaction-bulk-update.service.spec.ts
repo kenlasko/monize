@@ -4,9 +4,11 @@ import { BadRequestException } from "@nestjs/common";
 import { TransactionBulkUpdateService } from "./transaction-bulk-update.service";
 import { Transaction, TransactionStatus } from "./entities/transaction.entity";
 import { Category } from "../categories/entities/category.entity";
+import { Payee } from "../payees/entities/payee.entity";
 import { AccountsService } from "../accounts/accounts.service";
 import { NetWorthService } from "../net-worth/net-worth.service";
 import { BulkUpdateDto } from "./dto/bulk-update.dto";
+import { DataSource } from "typeorm";
 
 jest.mock("../common/date-utils");
 
@@ -14,8 +16,12 @@ describe("TransactionBulkUpdateService", () => {
   let service: TransactionBulkUpdateService;
   let transactionsRepository: Record<string, jest.Mock>;
   let categoriesRepository: Record<string, jest.Mock>;
+  let payeesRepository: Record<string, jest.Mock>;
   let accountsService: Record<string, jest.Mock>;
   let netWorthService: Record<string, jest.Mock>;
+  let mockQueryRunner: Record<string, any>;
+  let mockManagerCreateQueryBuilder: jest.Mock;
+  let mockManagerGetRepository: jest.Mock;
 
   const userId = "user-1";
 
@@ -76,6 +82,11 @@ describe("TransactionBulkUpdateService", () => {
 
     categoriesRepository = {
       find: jest.fn().mockResolvedValue([]),
+      findOne: jest.fn().mockResolvedValue(null),
+    };
+
+    payeesRepository = {
+      findOne: jest.fn().mockResolvedValue(null),
     };
 
     accountsService = {
@@ -86,6 +97,26 @@ describe("TransactionBulkUpdateService", () => {
     netWorthService = {
       recalculateAccount: jest.fn().mockResolvedValue(undefined),
       triggerDebouncedRecalc: jest.fn(),
+    };
+
+    // Mock QueryRunner with manager that has createQueryBuilder and getRepository
+    mockManagerCreateQueryBuilder = jest.fn();
+    mockManagerGetRepository = jest.fn();
+
+    mockQueryRunner = {
+      connect: jest.fn().mockResolvedValue(undefined),
+      startTransaction: jest.fn().mockResolvedValue(undefined),
+      commitTransaction: jest.fn().mockResolvedValue(undefined),
+      rollbackTransaction: jest.fn().mockResolvedValue(undefined),
+      release: jest.fn().mockResolvedValue(undefined),
+      manager: {
+        createQueryBuilder: mockManagerCreateQueryBuilder,
+        getRepository: mockManagerGetRepository,
+      },
+    };
+
+    const mockDataSource = {
+      createQueryRunner: jest.fn().mockReturnValue(mockQueryRunner),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -99,8 +130,13 @@ describe("TransactionBulkUpdateService", () => {
           provide: getRepositoryToken(Category),
           useValue: categoriesRepository,
         },
+        {
+          provide: getRepositoryToken(Payee),
+          useValue: payeesRepository,
+        },
         { provide: AccountsService, useValue: accountsService },
         { provide: NetWorthService, useValue: netWorthService },
+        { provide: DataSource, useValue: mockDataSource },
       ],
     }).compile();
 
@@ -150,15 +186,16 @@ describe("TransactionBulkUpdateService", () => {
       const exclusionsQb = createMockQueryBuilder({
         getMany: jest.fn().mockResolvedValue([tx1, tx2]),
       });
-      // Third call: batch update
-      const updateQb = createMockQueryBuilder({
-        execute: jest.fn().mockResolvedValue({ affected: 2 }),
-      });
 
       transactionsRepository.createQueryBuilder
         .mockReturnValueOnce(resolveQb)
-        .mockReturnValueOnce(exclusionsQb)
-        .mockReturnValueOnce(updateQb);
+        .mockReturnValueOnce(exclusionsQb);
+
+      // Batch update goes through queryRunner.manager.createQueryBuilder()
+      const updateQb = createMockQueryBuilder({
+        execute: jest.fn().mockResolvedValue({ affected: 2 }),
+      });
+      mockManagerCreateQueryBuilder.mockReturnValueOnce(updateQb);
 
       const dto: BulkUpdateDto = {
         mode: "ids",
@@ -188,14 +225,16 @@ describe("TransactionBulkUpdateService", () => {
       const exclusionsQb = createMockQueryBuilder({
         getMany: jest.fn().mockResolvedValue([tx1, tx2]),
       });
-      const updateQb = createMockQueryBuilder({
-        execute: jest.fn().mockResolvedValue({ affected: 2 }),
-      });
 
       transactionsRepository.createQueryBuilder
         .mockReturnValueOnce(resolveQb)
-        .mockReturnValueOnce(exclusionsQb)
-        .mockReturnValueOnce(updateQb);
+        .mockReturnValueOnce(exclusionsQb);
+
+      // Batch update via queryRunner.manager
+      const updateQb = createMockQueryBuilder({
+        execute: jest.fn().mockResolvedValue({ affected: 2 }),
+      });
+      mockManagerCreateQueryBuilder.mockReturnValueOnce(updateQb);
 
       const dto: BulkUpdateDto = {
         mode: "ids",
@@ -213,20 +252,25 @@ describe("TransactionBulkUpdateService", () => {
       const tx1 = makeTransaction({ id: "tx-1" });
       const tx2 = makeTransaction({ id: "tx-2", isTransfer: true });
 
+      // IDOR validation: payeeId is non-null so payeesRepository.findOne must return a match
+      payeesRepository.findOne.mockResolvedValue({ id: "payee-1", userId });
+
       const resolveQb = createMockQueryBuilder({
         getMany: jest.fn().mockResolvedValue([{ id: "tx-1" }, { id: "tx-2" }]),
       });
       const exclusionsQb = createMockQueryBuilder({
         getMany: jest.fn().mockResolvedValue([tx1, tx2]),
       });
-      const updateQb = createMockQueryBuilder({
-        execute: jest.fn().mockResolvedValue({ affected: 1 }),
-      });
 
       transactionsRepository.createQueryBuilder
         .mockReturnValueOnce(resolveQb)
-        .mockReturnValueOnce(exclusionsQb)
-        .mockReturnValueOnce(updateQb);
+        .mockReturnValueOnce(exclusionsQb);
+
+      // Batch update via queryRunner.manager
+      const updateQb = createMockQueryBuilder({
+        execute: jest.fn().mockResolvedValue({ affected: 1 }),
+      });
+      mockManagerCreateQueryBuilder.mockReturnValueOnce(updateQb);
 
       const dto: BulkUpdateDto = {
         mode: "ids",
@@ -246,20 +290,25 @@ describe("TransactionBulkUpdateService", () => {
       const tx1 = makeTransaction({ id: "tx-1" });
       const tx2 = makeTransaction({ id: "tx-2", isSplit: true });
 
+      // IDOR validation: categoryId is non-null so categoriesRepository.findOne must return a match
+      categoriesRepository.findOne.mockResolvedValue({ id: "cat-1", userId });
+
       const resolveQb = createMockQueryBuilder({
         getMany: jest.fn().mockResolvedValue([{ id: "tx-1" }, { id: "tx-2" }]),
       });
       const exclusionsQb = createMockQueryBuilder({
         getMany: jest.fn().mockResolvedValue([tx1, tx2]),
       });
-      const updateQb = createMockQueryBuilder({
-        execute: jest.fn().mockResolvedValue({ affected: 1 }),
-      });
 
       transactionsRepository.createQueryBuilder
         .mockReturnValueOnce(resolveQb)
-        .mockReturnValueOnce(exclusionsQb)
-        .mockReturnValueOnce(updateQb);
+        .mockReturnValueOnce(exclusionsQb);
+
+      // Batch update via queryRunner.manager
+      const updateQb = createMockQueryBuilder({
+        execute: jest.fn().mockResolvedValue({ affected: 1 }),
+      });
+      mockManagerCreateQueryBuilder.mockReturnValueOnce(updateQb);
 
       const dto: BulkUpdateDto = {
         mode: "ids",
@@ -292,16 +341,7 @@ describe("TransactionBulkUpdateService", () => {
       const exclusionsQb = createMockQueryBuilder({
         getMany: jest.fn().mockResolvedValue([tx1, tx2]),
       });
-      // Balance deltas query
-      const balanceQb = createMockQueryBuilder({
-        getRawMany: jest
-          .fn()
-          .mockResolvedValue([{ accountId: "acc-1", totalAmount: "20" }]),
-      });
-      const updateQb = createMockQueryBuilder({
-        execute: jest.fn().mockResolvedValue({ affected: 2 }),
-      });
-      // Net worth recalc query
+      // Net worth recalc query (after commit, uses transactionsRepository)
       const accountIdsQb = createMockQueryBuilder({
         getRawMany: jest.fn().mockResolvedValue([{ accountId: "acc-1" }]),
       });
@@ -309,9 +349,24 @@ describe("TransactionBulkUpdateService", () => {
       transactionsRepository.createQueryBuilder
         .mockReturnValueOnce(resolveQb)
         .mockReturnValueOnce(exclusionsQb)
-        .mockReturnValueOnce(balanceQb)
-        .mockReturnValueOnce(updateQb)
         .mockReturnValueOnce(accountIdsQb);
+
+      // Balance deltas query goes through queryRunner.manager.getRepository(Transaction).createQueryBuilder()
+      const balanceQb = createMockQueryBuilder({
+        getRawMany: jest
+          .fn()
+          .mockResolvedValue([{ accountId: "acc-1", totalAmount: "20" }]),
+      });
+      const mockTxRepo = {
+        createQueryBuilder: jest.fn().mockReturnValue(balanceQb),
+      };
+      mockManagerGetRepository.mockReturnValue(mockTxRepo);
+
+      // Batch update goes through queryRunner.manager.createQueryBuilder()
+      const updateQb = createMockQueryBuilder({
+        execute: jest.fn().mockResolvedValue({ affected: 2 }),
+      });
+      mockManagerCreateQueryBuilder.mockReturnValueOnce(updateQb);
 
       const dto: BulkUpdateDto = {
         mode: "ids",
@@ -322,7 +377,11 @@ describe("TransactionBulkUpdateService", () => {
       const result = await service.bulkUpdate(userId, dto);
 
       expect(result.updated).toBe(2);
-      expect(accountsService.updateBalance).toHaveBeenCalledWith("acc-1", -20);
+      expect(accountsService.updateBalance).toHaveBeenCalledWith(
+        "acc-1",
+        -20,
+        expect.anything(),
+      );
       expect(netWorthService.triggerDebouncedRecalc).toHaveBeenCalledWith(
         "acc-1",
         userId,
@@ -343,14 +402,7 @@ describe("TransactionBulkUpdateService", () => {
       const exclusionsQb = createMockQueryBuilder({
         getMany: jest.fn().mockResolvedValue([tx1]),
       });
-      const balanceQb = createMockQueryBuilder({
-        getRawMany: jest
-          .fn()
-          .mockResolvedValue([{ accountId: "acc-1", totalAmount: "100" }]),
-      });
-      const updateQb = createMockQueryBuilder({
-        execute: jest.fn().mockResolvedValue({ affected: 1 }),
-      });
+      // Net worth recalc query (after commit)
       const accountIdsQb = createMockQueryBuilder({
         getRawMany: jest.fn().mockResolvedValue([{ accountId: "acc-1" }]),
       });
@@ -358,9 +410,24 @@ describe("TransactionBulkUpdateService", () => {
       transactionsRepository.createQueryBuilder
         .mockReturnValueOnce(resolveQb)
         .mockReturnValueOnce(exclusionsQb)
-        .mockReturnValueOnce(balanceQb)
-        .mockReturnValueOnce(updateQb)
         .mockReturnValueOnce(accountIdsQb);
+
+      // Balance deltas via queryRunner.manager.getRepository
+      const balanceQb = createMockQueryBuilder({
+        getRawMany: jest
+          .fn()
+          .mockResolvedValue([{ accountId: "acc-1", totalAmount: "100" }]),
+      });
+      const mockTxRepo = {
+        createQueryBuilder: jest.fn().mockReturnValue(balanceQb),
+      };
+      mockManagerGetRepository.mockReturnValue(mockTxRepo);
+
+      // Batch update via queryRunner.manager.createQueryBuilder
+      const updateQb = createMockQueryBuilder({
+        execute: jest.fn().mockResolvedValue({ affected: 1 }),
+      });
+      mockManagerCreateQueryBuilder.mockReturnValueOnce(updateQb);
 
       const dto: BulkUpdateDto = {
         mode: "ids",
@@ -371,11 +438,18 @@ describe("TransactionBulkUpdateService", () => {
       const result = await service.bulkUpdate(userId, dto);
 
       expect(result.updated).toBe(1);
-      expect(accountsService.updateBalance).toHaveBeenCalledWith("acc-1", 100);
+      expect(accountsService.updateBalance).toHaveBeenCalledWith(
+        "acc-1",
+        100,
+        expect.anything(),
+      );
     });
 
     it("only updates specified fields (partial update)", async () => {
       const tx = makeTransaction({ id: "tx-1" });
+
+      // IDOR validation: categoryId is non-null
+      categoriesRepository.findOne.mockResolvedValue({ id: "cat-1", userId });
 
       const resolveQb = createMockQueryBuilder({
         getMany: jest.fn().mockResolvedValue([{ id: "tx-1" }]),
@@ -383,14 +457,16 @@ describe("TransactionBulkUpdateService", () => {
       const exclusionsQb = createMockQueryBuilder({
         getMany: jest.fn().mockResolvedValue([tx]),
       });
-      const updateQb = createMockQueryBuilder({
-        execute: jest.fn().mockResolvedValue({ affected: 1 }),
-      });
 
       transactionsRepository.createQueryBuilder
         .mockReturnValueOnce(resolveQb)
-        .mockReturnValueOnce(exclusionsQb)
-        .mockReturnValueOnce(updateQb);
+        .mockReturnValueOnce(exclusionsQb);
+
+      // Batch update via queryRunner.manager.createQueryBuilder
+      const updateQb = createMockQueryBuilder({
+        execute: jest.fn().mockResolvedValue({ affected: 1 }),
+      });
+      mockManagerCreateQueryBuilder.mockReturnValueOnce(updateQb);
 
       const dto: BulkUpdateDto = {
         mode: "ids",
@@ -416,14 +492,16 @@ describe("TransactionBulkUpdateService", () => {
       const exclusionsQb = createMockQueryBuilder({
         getMany: jest.fn().mockResolvedValue([tx]),
       });
-      const updateQb = createMockQueryBuilder({
-        execute: jest.fn().mockResolvedValue({ affected: 1 }),
-      });
 
       transactionsRepository.createQueryBuilder
         .mockReturnValueOnce(resolveQb)
-        .mockReturnValueOnce(exclusionsQb)
-        .mockReturnValueOnce(updateQb);
+        .mockReturnValueOnce(exclusionsQb);
+
+      // Batch update via queryRunner.manager.createQueryBuilder
+      const updateQb = createMockQueryBuilder({
+        execute: jest.fn().mockResolvedValue({ affected: 1 }),
+      });
+      mockManagerCreateQueryBuilder.mockReturnValueOnce(updateQb);
 
       const dto: BulkUpdateDto = {
         mode: "ids",
@@ -447,14 +525,16 @@ describe("TransactionBulkUpdateService", () => {
       const exclusionsQb = createMockQueryBuilder({
         getMany: jest.fn().mockResolvedValue([tx]),
       });
-      const updateQb = createMockQueryBuilder({
-        execute: jest.fn().mockResolvedValue({ affected: 1 }),
-      });
 
       transactionsRepository.createQueryBuilder
         .mockReturnValueOnce(resolveQb)
-        .mockReturnValueOnce(exclusionsQb)
-        .mockReturnValueOnce(updateQb);
+        .mockReturnValueOnce(exclusionsQb);
+
+      // Batch update via queryRunner.manager.createQueryBuilder
+      const updateQb = createMockQueryBuilder({
+        execute: jest.fn().mockResolvedValue({ affected: 1 }),
+      });
+      mockManagerCreateQueryBuilder.mockReturnValueOnce(updateQb);
 
       const dto: BulkUpdateDto = {
         mode: "filter",
@@ -476,6 +556,12 @@ describe("TransactionBulkUpdateService", () => {
       const tx = makeTransaction({
         id: "tx-1",
         isTransfer: true,
+      });
+
+      // IDOR validation: payeeId is non-null
+      payeesRepository.findOne.mockResolvedValue({
+        id: "some-payee-id",
+        userId,
       });
 
       const resolveQb = createMockQueryBuilder({
@@ -521,16 +607,7 @@ describe("TransactionBulkUpdateService", () => {
       const exclusionsQb = createMockQueryBuilder({
         getMany: jest.fn().mockResolvedValue([pastTx, futureTx]),
       });
-      // Balance deltas query - only returns the past-dated transaction's amount
-      // because the query filters with transactionDate <= today
-      const balanceQb = createMockQueryBuilder({
-        getRawMany: jest
-          .fn()
-          .mockResolvedValue([{ accountId: "acc-1", totalAmount: "50" }]),
-      });
-      const updateQb = createMockQueryBuilder({
-        execute: jest.fn().mockResolvedValue({ affected: 2 }),
-      });
+      // Net worth recalc query (after commit)
       const accountIdsQb = createMockQueryBuilder({
         getRawMany: jest.fn().mockResolvedValue([{ accountId: "acc-1" }]),
       });
@@ -538,9 +615,24 @@ describe("TransactionBulkUpdateService", () => {
       transactionsRepository.createQueryBuilder
         .mockReturnValueOnce(resolveQb)
         .mockReturnValueOnce(exclusionsQb)
-        .mockReturnValueOnce(balanceQb)
-        .mockReturnValueOnce(updateQb)
         .mockReturnValueOnce(accountIdsQb);
+
+      // Balance deltas query via queryRunner.manager.getRepository
+      const balanceQb = createMockQueryBuilder({
+        getRawMany: jest
+          .fn()
+          .mockResolvedValue([{ accountId: "acc-1", totalAmount: "50" }]),
+      });
+      const mockTxRepo = {
+        createQueryBuilder: jest.fn().mockReturnValue(balanceQb),
+      };
+      mockManagerGetRepository.mockReturnValue(mockTxRepo);
+
+      // Batch update via queryRunner.manager.createQueryBuilder
+      const updateQb = createMockQueryBuilder({
+        execute: jest.fn().mockResolvedValue({ affected: 2 }),
+      });
+      mockManagerCreateQueryBuilder.mockReturnValueOnce(updateQb);
 
       const dto: BulkUpdateDto = {
         mode: "ids",
@@ -557,7 +649,11 @@ describe("TransactionBulkUpdateService", () => {
         expect.objectContaining({ today: expect.any(String) }),
       );
       // Only the past transaction's amount (50) should be used for balance update
-      expect(accountsService.updateBalance).toHaveBeenCalledWith("acc-1", -50);
+      expect(accountsService.updateBalance).toHaveBeenCalledWith(
+        "acc-1",
+        -50,
+        expect.anything(),
+      );
     });
 
     it("excludes future-dated transactions from balance updates when unvoiding", async () => {
@@ -582,15 +678,7 @@ describe("TransactionBulkUpdateService", () => {
       const exclusionsQb = createMockQueryBuilder({
         getMany: jest.fn().mockResolvedValue([pastTx, futureTx]),
       });
-      // Balance deltas query - only the past transaction contributes
-      const balanceQb = createMockQueryBuilder({
-        getRawMany: jest
-          .fn()
-          .mockResolvedValue([{ accountId: "acc-1", totalAmount: "100" }]),
-      });
-      const updateQb = createMockQueryBuilder({
-        execute: jest.fn().mockResolvedValue({ affected: 2 }),
-      });
+      // Net worth recalc query (after commit)
       const accountIdsQb = createMockQueryBuilder({
         getRawMany: jest.fn().mockResolvedValue([{ accountId: "acc-1" }]),
       });
@@ -598,9 +686,24 @@ describe("TransactionBulkUpdateService", () => {
       transactionsRepository.createQueryBuilder
         .mockReturnValueOnce(resolveQb)
         .mockReturnValueOnce(exclusionsQb)
-        .mockReturnValueOnce(balanceQb)
-        .mockReturnValueOnce(updateQb)
         .mockReturnValueOnce(accountIdsQb);
+
+      // Balance deltas via queryRunner.manager.getRepository
+      const balanceQb = createMockQueryBuilder({
+        getRawMany: jest
+          .fn()
+          .mockResolvedValue([{ accountId: "acc-1", totalAmount: "100" }]),
+      });
+      const mockTxRepo = {
+        createQueryBuilder: jest.fn().mockReturnValue(balanceQb),
+      };
+      mockManagerGetRepository.mockReturnValue(mockTxRepo);
+
+      // Batch update via queryRunner.manager.createQueryBuilder
+      const updateQb = createMockQueryBuilder({
+        execute: jest.fn().mockResolvedValue({ affected: 2 }),
+      });
+      mockManagerCreateQueryBuilder.mockReturnValueOnce(updateQb);
 
       const dto: BulkUpdateDto = {
         mode: "ids",
@@ -616,7 +719,11 @@ describe("TransactionBulkUpdateService", () => {
         expect.objectContaining({ today: expect.any(String) }),
       );
       // Only the past transaction's amount (100) should be added back
-      expect(accountsService.updateBalance).toHaveBeenCalledWith("acc-1", 100);
+      expect(accountsService.updateBalance).toHaveBeenCalledWith(
+        "acc-1",
+        100,
+        expect.anything(),
+      );
     });
   });
 });

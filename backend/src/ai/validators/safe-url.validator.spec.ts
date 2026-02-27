@@ -243,11 +243,11 @@ describe("IsSafeUrl validator", () => {
       await expectInvalid("https://multi.example.com/api");
     });
 
-    it("allows when at least one resolved IP is public (mixed)", async () => {
+    it("rejects when any resolved IP is private (mixed public + private)", async () => {
       mockResolve4.mockImplementation((_h, cb) =>
         cb(null, ["93.184.216.34", "10.0.0.1"]),
       );
-      await expectValid("https://mixed.example.com/api");
+      await expectInvalid("https://mixed.example.com/api");
     });
 
     it("skips DNS check for direct IP addresses", async () => {

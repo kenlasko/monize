@@ -5,7 +5,7 @@ import {
   Logger,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository, DataSource, QueryRunner } from "typeorm";
+import { Repository, DataSource, QueryRunner, In } from "typeorm";
 import {
   InvestmentTransaction,
   InvestmentAction,
@@ -372,6 +372,29 @@ export class InvestmentTransactionsService {
         break;
 
       case InvestmentAction.SPLIT:
+        // H13: Apply stock split ratio to adjust holdings quantity
+        if (securityId && quantity) {
+          const splitRatio = Number(quantity);
+          const holding = await this.holdingsService.findByAccountAndSecurity(
+            accountId,
+            securityId,
+            queryRunner,
+          );
+          if (holding) {
+            const currentQty = Number(holding.quantity);
+            const newQty = currentQty * splitRatio;
+            const additionalShares = newQty - currentQty;
+            if (Math.abs(additionalShares) > 0.00000001) {
+              await this.holdingsService.adjustQuantity(
+                userId,
+                accountId,
+                securityId,
+                additionalShares,
+                queryRunner,
+              );
+            }
+          }
+        }
         break;
 
       case InvestmentAction.TRANSFER_IN:
@@ -800,24 +823,64 @@ export class InvestmentTransactionsService {
     holdingsDeleted: number;
     accountsReset: number;
   }> {
-    const transactions = await this.investmentTransactionsRepository.find({
-      where: { userId },
-    });
-    const transactionsDeleted = transactions.length;
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-    if (transactions.length > 0) {
-      await this.investmentTransactionsRepository.remove(transactions);
+    try {
+      const transactions = await queryRunner.manager.find(
+        InvestmentTransaction,
+        { where: { userId } },
+      );
+      const transactionsDeleted = transactions.length;
+
+      // Delete linked cash transactions and reverse their balance effects
+      const linkedCashTxIds = transactions
+        .map((t) => t.transactionId)
+        .filter((id): id is string => !!id);
+
+      if (linkedCashTxIds.length > 0) {
+        const cashTransactions = await queryRunner.manager.find(Transaction, {
+          where: { id: In(linkedCashTxIds) },
+        });
+
+        for (const cashTx of cashTransactions) {
+          if (cashTx.status !== TransactionStatus.VOID) {
+            await this.accountsService.updateBalance(
+              cashTx.accountId,
+              -Number(cashTx.amount),
+              queryRunner,
+            );
+          }
+        }
+
+        if (cashTransactions.length > 0) {
+          await queryRunner.manager.remove(cashTransactions);
+        }
+      }
+
+      if (transactions.length > 0) {
+        await queryRunner.manager.remove(transactions);
+      }
+
+      const holdingsResult =
+        await this.holdingsService.removeAllForUser(userId);
+
+      const accountsReset =
+        await this.accountsService.resetBrokerageBalances(userId);
+
+      await queryRunner.commitTransaction();
+
+      return {
+        transactionsDeleted,
+        holdingsDeleted: holdingsResult,
+        accountsReset,
+      };
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
     }
-
-    const holdingsResult = await this.holdingsService.removeAllForUser(userId);
-
-    const accountsReset =
-      await this.accountsService.resetBrokerageBalances(userId);
-
-    return {
-      transactionsDeleted,
-      holdingsDeleted: holdingsResult,
-      accountsReset,
-    };
   }
 }
