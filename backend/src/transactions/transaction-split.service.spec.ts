@@ -140,13 +140,11 @@ describe("TransactionSplitService", () => {
         findOne: jest.fn().mockResolvedValue(null),
         find: jest.fn().mockImplementation((_Entity: any, _opts?: any) => {
           if (_Entity === Category) {
-            return Promise.resolve(
-              [
-                { id: "cat-1" },
-                { id: "cat-2" },
-                { id: "cat-3" },
-              ],
-            );
+            return Promise.resolve([
+              { id: "cat-1" },
+              { id: "cat-2" },
+              { id: "cat-3" },
+            ]);
           }
           return Promise.resolve([]);
         }),
@@ -1252,10 +1250,7 @@ describe("TransactionSplitService", () => {
           update: jest.fn().mockResolvedValue(undefined),
           find: jest.fn().mockImplementation((_Entity: any) => {
             if (_Entity === Category) {
-              return Promise.resolve([
-                { id: "cat-1" },
-                { id: "cat-2" },
-              ]);
+              return Promise.resolve([{ id: "cat-1" }, { id: "cat-2" }]);
             }
             return Promise.resolve([]);
           }),

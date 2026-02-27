@@ -134,9 +134,10 @@ describe("CategoriesService", () => {
             .fn()
             .mockImplementation((_entity: unknown, data: unknown) => data),
           getRepository: jest.fn().mockReturnValue({
-            create: jest
-              .fn()
-              .mockImplementation((data: unknown) => ({ ...(data as Record<string, unknown>), id: `gen-${Date.now()}-${Math.random()}` })),
+            create: jest.fn().mockImplementation((data: unknown) => ({
+              ...(data as Record<string, unknown>),
+              id: `gen-${Date.now()}-${Math.random()}`,
+            })),
             save: jest
               .fn()
               .mockImplementation((data: unknown) => Promise.resolve(data)),
@@ -1187,9 +1188,7 @@ describe("CategoriesService", () => {
         ...(data as Record<string, unknown>),
         id: `gen-${++idCounter}`,
       }));
-      qrRepo.save.mockImplementation((data: unknown) =>
-        Promise.resolve(data),
-      );
+      qrRepo.save.mockImplementation((data: unknown) => Promise.resolve(data));
 
       const result = await service.importDefaults("user-1");
 
@@ -1215,15 +1214,11 @@ describe("CategoriesService", () => {
         ...(data as Record<string, unknown>),
         id: `gen-${++idCounter}`,
       }));
-      qrRepo.save.mockImplementation((data: unknown) =>
-        Promise.resolve(data),
-      );
+      qrRepo.save.mockImplementation((data: unknown) => Promise.resolve(data));
 
       await service.importDefaults("user-1");
 
-      const createCalls = qrRepo.create.mock.calls.map(
-        (c: unknown[]) => c[0],
-      );
+      const createCalls = qrRepo.create.mock.calls.map((c: unknown[]) => c[0]);
       const incomeParents = createCalls.filter(
         (c: Record<string, unknown>) => c.isIncome === true && !c.parentId,
       );
@@ -1244,15 +1239,11 @@ describe("CategoriesService", () => {
         ...(data as Record<string, unknown>),
         id: `gen-${++idCounter}`,
       }));
-      qrRepo.save.mockImplementation((data: unknown) =>
-        Promise.resolve(data),
-      );
+      qrRepo.save.mockImplementation((data: unknown) => Promise.resolve(data));
 
       await service.importDefaults("user-1");
 
-      const createCalls = qrRepo.create.mock.calls.map(
-        (c: unknown[]) => c[0],
-      );
+      const createCalls = qrRepo.create.mock.calls.map((c: unknown[]) => c[0]);
       const subcategories = createCalls.filter(
         (c: Record<string, unknown>) => c.parentId,
       );

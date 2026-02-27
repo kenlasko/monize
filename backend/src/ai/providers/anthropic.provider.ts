@@ -117,15 +117,18 @@ export class AnthropicProvider implements AiProvider {
     const timeout = setTimeout(() => controller.abort(), 120000);
 
     try {
-      const stream = this.client.messages.stream({
-        model: this.modelId,
-        max_tokens: request.maxTokens || 1024,
-        system: request.systemPrompt,
-        messages: this.toSimpleMessages(request.messages),
-        ...(request.temperature !== undefined && {
-          temperature: request.temperature,
-        }),
-      }, { signal: controller.signal });
+      const stream = this.client.messages.stream(
+        {
+          model: this.modelId,
+          max_tokens: request.maxTokens || 1024,
+          system: request.systemPrompt,
+          messages: this.toSimpleMessages(request.messages),
+          ...(request.temperature !== undefined && {
+            temperature: request.temperature,
+          }),
+        },
+        { signal: controller.signal },
+      );
 
       for await (const event of stream) {
         if (

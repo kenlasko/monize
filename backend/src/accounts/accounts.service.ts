@@ -377,7 +377,8 @@ export class AccountsService {
 
       // Adjust currentBalance by the difference
       account.currentBalance =
-        Math.round((Number(account.currentBalance) + difference) * 10000) / 10000;
+        Math.round((Number(account.currentBalance) + difference) * 10000) /
+        10000;
     }
 
     // SECURITY: Explicit property mapping instead of Object.assign to prevent mass assignment

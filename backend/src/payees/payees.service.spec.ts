@@ -897,8 +897,14 @@ describe("PayeesService", () => {
       expect(payeesRepository.save).toHaveBeenCalledTimes(1);
       expect(payeesRepository.save).toHaveBeenCalledWith(
         expect.arrayContaining([
-          expect.objectContaining({ id: "payee-2", defaultCategoryId: "cat-food" }),
-          expect.objectContaining({ id: "payee-1", defaultCategoryId: "cat-coffee" }),
+          expect.objectContaining({
+            id: "payee-2",
+            defaultCategoryId: "cat-food",
+          }),
+          expect.objectContaining({
+            id: "payee-1",
+            defaultCategoryId: "cat-coffee",
+          }),
         ]),
       );
     });
@@ -925,7 +931,10 @@ describe("PayeesService", () => {
       expect(payeesRepository.save).toHaveBeenCalledTimes(1);
       expect(payeesRepository.save).toHaveBeenCalledWith(
         expect.arrayContaining([
-          expect.objectContaining({ id: "payee-1", defaultCategoryId: "cat-2" }),
+          expect.objectContaining({
+            id: "payee-1",
+            defaultCategoryId: "cat-2",
+          }),
         ]),
       );
     });

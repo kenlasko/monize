@@ -33,7 +33,8 @@ export enum AccountSubType {
 
 const numericTransformer = {
   to: (value: number | null): number | null => value,
-  from: (value: string | null): number | null => value === null ? null : Number(value),
+  from: (value: string | null): number | null =>
+    value === null ? null : Number(value),
 };
 
 @Entity("accounts")

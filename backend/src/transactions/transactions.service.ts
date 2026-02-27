@@ -427,7 +427,10 @@ export class TransactionsService {
       const countBefore = await countQuery.getCount();
       return Math.floor(countBefore / safeLimit) + 1;
     } catch (error) {
-      this.logger.error("Failed to find target transaction page:", error instanceof Error ? error.stack : String(error));
+      this.logger.error(
+        "Failed to find target transaction page:",
+        error instanceof Error ? error.stack : String(error),
+      );
       return fallbackPage;
     }
   }

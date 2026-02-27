@@ -410,5 +410,4 @@ export class TransactionBulkUpdateService {
       queryBuilder.andWhere(`(${conditions.join(" OR ")})`);
     }
   }
-
 }
