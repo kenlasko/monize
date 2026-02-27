@@ -181,7 +181,7 @@ export function parseQif(
 
       case "T": // Amount
       case "U": // Amount (alternative)
-        currentTransaction.amount = parseQifAmount(value);
+        currentTransaction.amount = parseQifAmount(value) ?? 0;
         break;
 
       case "P": // Payee
@@ -269,7 +269,7 @@ export function parseQif(
 
       case "$": // Split amount
         if (currentSplit) {
-          currentSplit.amount = parseQifAmount(value);
+          currentSplit.amount = parseQifAmount(value) ?? 0;
         }
         break;
 
@@ -282,15 +282,15 @@ export function parseQif(
         break;
 
       case "I": // Price per share
-        currentTransaction.price = parseQifAmount(value);
+        currentTransaction.price = parseQifAmount(value) ?? 0;
         break;
 
       case "Q": // Quantity (number of shares)
-        currentTransaction.quantity = parseQifAmount(value);
+        currentTransaction.quantity = parseQifAmount(value) ?? 0;
         break;
 
       case "O": // Commission
-        currentTransaction.commission = parseQifAmount(value);
+        currentTransaction.commission = parseQifAmount(value) ?? 0;
         break;
 
       case "^": // End of record
@@ -472,11 +472,11 @@ function parseQifDate(dateStr: string, format?: DateFormat): string {
   return dateStr;
 }
 
-function parseQifAmount(amountStr: string): number {
+function parseQifAmount(amountStr: string): number | null {
   // Remove currency symbols, spaces, and commas
   const cleaned = amountStr.replace(/[$£€,\s]/g, "");
   const amount = parseFloat(cleaned);
-  return isNaN(amount) ? 0 : amount;
+  return isNaN(amount) ? null : amount;
 }
 
 function parseCategoryOrTransfer(value: string): {

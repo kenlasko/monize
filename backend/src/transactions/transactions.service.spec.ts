@@ -139,6 +139,13 @@ describe("TransactionsService", () => {
           return transactionsRepository.findOne(opts);
         }),
         find: jest.fn().mockImplementation((_Entity: any, opts: any) => {
+          if (_Entity === Category) {
+            return Promise.resolve([
+              { id: "cat-1" },
+              { id: "cat-2" },
+              { id: "cat-3" },
+            ]);
+          }
           if (_Entity === TransactionSplit) return splitsRepository.find(opts);
           return transactionsRepository.find(opts);
         }),

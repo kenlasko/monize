@@ -222,7 +222,7 @@ describe("AccountsService", () => {
       const result = await service.updateBalance("account-1", 500);
 
       expect(accountsRepository.query).toHaveBeenCalledWith(
-        `UPDATE accounts SET current_balance = ROUND(CAST(current_balance AS numeric) + $1, 2) WHERE id = $2`,
+        `UPDATE accounts SET current_balance = ROUND(CAST(current_balance AS numeric) + $1, 4) WHERE id = $2`,
         [500, "account-1"],
       );
       expect(result.currentBalance).toBe(1500);
@@ -242,7 +242,7 @@ describe("AccountsService", () => {
       const result = await service.updateBalance("account-1", -300);
 
       expect(accountsRepository.query).toHaveBeenCalledWith(
-        `UPDATE accounts SET current_balance = ROUND(CAST(current_balance AS numeric) + $1, 2) WHERE id = $2`,
+        `UPDATE accounts SET current_balance = ROUND(CAST(current_balance AS numeric) + $1, 4) WHERE id = $2`,
         [-300, "account-1"],
       );
       expect(result.currentBalance).toBe(700);
@@ -267,7 +267,7 @@ describe("AccountsService", () => {
       );
     });
 
-    it("rounds to 2 decimal places to avoid floating point errors", async () => {
+    it("rounds to 4 decimal places to match DB schema precision", async () => {
       accountsRepository.findOne.mockResolvedValue({
         ...mockAccount,
         currentBalance: 10.1,
@@ -281,7 +281,7 @@ describe("AccountsService", () => {
       const result = await service.updateBalance("account-1", 10.2);
 
       expect(accountsRepository.query).toHaveBeenCalledWith(
-        `UPDATE accounts SET current_balance = ROUND(CAST(current_balance AS numeric) + $1, 2) WHERE id = $2`,
+        `UPDATE accounts SET current_balance = ROUND(CAST(current_balance AS numeric) + $1, 4) WHERE id = $2`,
         [10.2, "account-1"],
       );
       expect(result.currentBalance).toBe(20.3);

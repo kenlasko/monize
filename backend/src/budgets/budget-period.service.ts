@@ -179,12 +179,12 @@ export class BudgetPeriodService {
 
     const savedPeriod = await periodsRepo.save(period);
 
-    for (const bc of budgetCategories) {
+    const periodCategories = budgetCategories.map((bc) => {
       const rolloverIn = rolloverMap?.get(bc.id) || 0;
       const budgetedAmount = Number(bc.amount);
       const effectiveBudget = budgetedAmount + rolloverIn;
 
-      const periodCategory = periodCatsRepo.create({
+      return periodCatsRepo.create({
         budgetPeriodId: savedPeriod.id,
         budgetCategoryId: bc.id,
         categoryId: bc.categoryId,
@@ -194,8 +194,10 @@ export class BudgetPeriodService {
         actualAmount: 0,
         rolloverOut: 0,
       });
+    });
 
-      await periodCatsRepo.save(periodCategory);
+    if (periodCategories.length > 0) {
+      await periodCatsRepo.save(periodCategories);
     }
 
     return savedPeriod;

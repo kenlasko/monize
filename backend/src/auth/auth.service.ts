@@ -3,6 +3,7 @@ import {
   UnauthorizedException,
   ForbiddenException,
   BadRequestException,
+  ConflictException,
   NotFoundException,
   Logger,
 } from "@nestjs/common";
@@ -60,12 +61,11 @@ export class AuthService {
     });
 
     if (existingUser) {
-      // SECURITY: Generic message to prevent account enumeration
-      throw new UnauthorizedException("Unable to complete registration");
+      throw new ConflictException("Unable to complete registration");
     }
 
     // Hash password
-    const saltRounds = 10;
+    const saltRounds = 12;
     const passwordHash = await bcrypt.hash(password, saltRounds);
 
     // C9: Use serializable transaction to prevent race condition on first-user admin
@@ -467,16 +467,6 @@ export class AuthService {
     return this.sanitizeUser(user);
   }
 
-  generateToken(user: User): string {
-    const payload = {
-      sub: user.id,
-      email: user.email,
-      authProvider: user.authProvider,
-      role: user.role,
-    };
-    return this.jwtService.sign(payload);
-  }
-
   async generateTokenPair(
     user: User,
   ): Promise<{ accessToken: string; refreshToken: string }> {
@@ -612,11 +602,18 @@ export class AuthService {
 
   @Cron(CronExpression.EVERY_DAY_AT_3AM)
   async purgeExpiredRefreshTokens(): Promise<void> {
-    const result = await this.refreshTokensRepository.delete({
+    const expiredResult = await this.refreshTokensRepository.delete({
       expiresAt: LessThan(new Date()),
     });
-    if (result.affected && result.affected > 0) {
-      this.logger.log(`Purged ${result.affected} expired refresh tokens`);
+
+    const revokedResult = await this.refreshTokensRepository.delete({
+      isRevoked: true,
+    });
+
+    const totalPurged =
+      (expiredResult.affected || 0) + (revokedResult.affected || 0);
+    if (totalPurged > 0) {
+      this.logger.log(`Purged ${totalPurged} expired/revoked refresh tokens`);
     }
   }
 
@@ -648,7 +645,7 @@ export class AuthService {
     // SECURITY: Hash the incoming token to compare against stored hash
     const hashedToken = this.hashToken(token);
 
-    const saltRounds = 10;
+    const saltRounds = 12;
     const passwordHash = await bcrypt.hash(newPassword, saltRounds);
 
     // M11: Atomic UPDATE...WHERE to prevent TOCTOU race condition.

@@ -118,7 +118,7 @@ describe("AiService", () => {
       const result = await service.getConfigs(userId);
 
       expect(result).toHaveLength(1);
-      expect(result[0].apiKeyMasked).toBe("****dkey");
+      expect(result[0].apiKeyMasked).toBe("****");
       expect(result[0].provider).toBe("anthropic");
       expect(mockConfigRepository.find).toHaveBeenCalledWith({
         where: { userId },

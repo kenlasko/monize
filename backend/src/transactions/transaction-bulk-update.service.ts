@@ -14,6 +14,7 @@ import { Payee } from "../payees/entities/payee.entity";
 import { AccountsService } from "../accounts/accounts.service";
 import { NetWorthService } from "../net-worth/net-worth.service";
 import { BulkUpdateDto, BulkUpdateFilterDto } from "./dto/bulk-update.dto";
+import { getAllCategoryIdsWithChildren } from "../common/category-tree.util";
 
 export interface BulkUpdateResult {
   updated: number;
@@ -390,7 +391,8 @@ export class TransactionBulkUpdateService {
     }
 
     if (regularCategoryIds.length > 0) {
-      const uniqueCategoryIds = await this.getAllCategoryIdsWithChildren(
+      const uniqueCategoryIds = await getAllCategoryIdsWithChildren(
+        this.categoriesRepository,
         userId,
         regularCategoryIds,
       );
@@ -407,31 +409,5 @@ export class TransactionBulkUpdateService {
     if (conditions.length > 0) {
       queryBuilder.andWhere(`(${conditions.join(" OR ")})`);
     }
-  }
-
-  private async getAllCategoryIdsWithChildren(
-    userId: string,
-    categoryIds: string[],
-  ): Promise<string[]> {
-    const categories = await this.categoriesRepository.find({
-      where: { userId },
-      select: ["id", "parentId"],
-    });
-
-    const result = new Set<string>();
-    const addWithChildren = (parentId: string) => {
-      result.add(parentId);
-      for (const cat of categories) {
-        if (cat.parentId === parentId && !result.has(cat.id)) {
-          addWithChildren(cat.id);
-        }
-      }
-    };
-
-    for (const catId of categoryIds) {
-      addWithChildren(catId);
-    }
-
-    return [...result];
   }
 }

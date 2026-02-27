@@ -5,6 +5,7 @@ import { ConfigService } from "@nestjs/config";
 import {
   UnauthorizedException,
   BadRequestException,
+  ConflictException,
   NotFoundException,
   ForbiddenException,
 } from "@nestjs/common";
@@ -202,7 +203,7 @@ describe("AuthService", () => {
           email: "test@example.com",
           password: "StrongPass123!",
         }),
-      ).rejects.toThrow(UnauthorizedException);
+      ).rejects.toThrow(ConflictException);
     });
   });
 
@@ -408,20 +409,6 @@ describe("AuthService", () => {
         { userId: "user-1", isRevoked: false },
         { isRevoked: true },
       );
-    });
-  });
-
-  describe("generateToken", () => {
-    it("returns a JWT string", () => {
-      const token = service.generateToken(mockUser as any);
-      expect(jwtService.sign).toHaveBeenCalledWith(
-        expect.objectContaining({
-          sub: mockUser.id,
-          email: mockUser.email,
-          role: mockUser.role,
-        }),
-      );
-      expect(token).toBe("mock-jwt-token");
     });
   });
 
@@ -1319,8 +1306,10 @@ describe("AuthService", () => {
   // ---------------------------------------------------------------
 
   describe("purgeExpiredRefreshTokens", () => {
-    it("deletes expired tokens", async () => {
-      refreshTokensRepository.delete.mockResolvedValue({ affected: 5 });
+    it("deletes expired and revoked tokens", async () => {
+      refreshTokensRepository.delete
+        .mockResolvedValueOnce({ affected: 5 })
+        .mockResolvedValueOnce({ affected: 3 });
 
       await service.purgeExpiredRefreshTokens();
 
@@ -1329,14 +1318,21 @@ describe("AuthService", () => {
           expiresAt: expect.anything(),
         }),
       );
+      expect(refreshTokensRepository.delete).toHaveBeenCalledWith(
+        expect.objectContaining({
+          isRevoked: true,
+        }),
+      );
     });
 
     it("does not log when no tokens purged", async () => {
-      refreshTokensRepository.delete.mockResolvedValue({ affected: 0 });
+      refreshTokensRepository.delete
+        .mockResolvedValueOnce({ affected: 0 })
+        .mockResolvedValueOnce({ affected: 0 });
 
       await service.purgeExpiredRefreshTokens();
 
-      expect(refreshTokensRepository.delete).toHaveBeenCalled();
+      expect(refreshTokensRepository.delete).toHaveBeenCalledTimes(2);
     });
   });
 

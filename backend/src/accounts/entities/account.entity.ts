@@ -31,6 +31,12 @@ export enum AccountSubType {
   INVESTMENT_BROKERAGE = "INVESTMENT_BROKERAGE",
 }
 
+const numericTransformer = {
+  to: (value: number | null): number | null => value,
+  from: (value: string | null): number | null =>
+    value === null ? null : Number(value),
+};
+
 @Entity("accounts")
 export class Account {
   @PrimaryGeneratedColumn("uuid")
@@ -69,6 +75,7 @@ export class Account {
     scale: 4,
     name: "opening_balance",
     default: 0,
+    transformer: numericTransformer,
   })
   openingBalance: number;
 
@@ -78,6 +85,7 @@ export class Account {
     scale: 4,
     name: "current_balance",
     default: 0,
+    transformer: numericTransformer,
   })
   currentBalance: number;
 
@@ -87,6 +95,7 @@ export class Account {
     scale: 4,
     name: "credit_limit",
     nullable: true,
+    transformer: numericTransformer,
   })
   creditLimit: number | null;
 
@@ -96,6 +105,7 @@ export class Account {
     scale: 4,
     name: "interest_rate",
     nullable: true,
+    transformer: numericTransformer,
   })
   interestRate: number | null;
 
@@ -130,6 +140,7 @@ export class Account {
     scale: 4,
     name: "payment_amount",
     nullable: true,
+    transformer: numericTransformer,
   })
   paymentAmount: number | null;
 
@@ -198,6 +209,7 @@ export class Account {
     scale: 4,
     name: "original_principal",
     nullable: true,
+    transformer: numericTransformer,
   })
   originalPrincipal: number | null;
 

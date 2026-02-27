@@ -127,12 +127,21 @@ describe("CategoriesService", () => {
         release: jest.fn(),
         manager: {
           update: jest.fn().mockResolvedValue({ affected: 0 }),
-          createQueryBuilder: jest.fn((...args: unknown[]) =>
+          createQueryBuilder: jest.fn((..._args: unknown[]) =>
             createMockQueryBuilder(),
           ),
           save: jest
             .fn()
             .mockImplementation((_entity: unknown, data: unknown) => data),
+          getRepository: jest.fn().mockReturnValue({
+            create: jest.fn().mockImplementation((data: unknown) => ({
+              ...(data as Record<string, unknown>),
+              id: `gen-${Date.now()}-${Math.random()}`,
+            })),
+            save: jest
+              .fn()
+              .mockImplementation((data: unknown) => Promise.resolve(data)),
+          }),
         },
       }),
     };
@@ -893,7 +902,7 @@ describe("CategoriesService", () => {
           .mockResolvedValueOnce({ affected: 1 }), // ScheduledTransaction update
         createQueryBuilder: jest
           .fn()
-          .mockImplementation((...args: unknown[]) => {
+          .mockImplementation((..._args: unknown[]) => {
             createQbCallCount++;
             // Call 1: get user transaction IDs (with entity arg)
             if (createQbCallCount === 1) return txQb;
@@ -944,7 +953,7 @@ describe("CategoriesService", () => {
           .mockResolvedValueOnce({ affected: 0 }), // ScheduledTransaction update
         createQueryBuilder: jest
           .fn()
-          .mockImplementation((...args: unknown[]) => {
+          .mockImplementation((..._args: unknown[]) => {
             createQbCallCount++;
             if (createQbCallCount === 1) return txQb;
             return stQb;
@@ -991,7 +1000,7 @@ describe("CategoriesService", () => {
           .mockResolvedValueOnce({ affected: 0 }), // ScheduledTransaction update
         createQueryBuilder: jest
           .fn()
-          .mockImplementation((...args: unknown[]) => {
+          .mockImplementation((..._args: unknown[]) => {
             createQbCallCount++;
             if (createQbCallCount === 1) return txQb;
             return stQb;
@@ -1173,19 +1182,19 @@ describe("CategoriesService", () => {
     it("imports default categories when user has none", async () => {
       categoriesRepository.count.mockResolvedValue(0);
       let idCounter = 0;
-      categoriesRepository.create.mockImplementation((data) => ({
-        ...data,
+      const qr = mockDataSource.createQueryRunner();
+      const qrRepo = qr.manager.getRepository();
+      qrRepo.create.mockImplementation((data: unknown) => ({
+        ...(data as Record<string, unknown>),
         id: `gen-${++idCounter}`,
       }));
-      categoriesRepository.save.mockImplementation((data) =>
-        Promise.resolve(data),
-      );
+      qrRepo.save.mockImplementation((data: unknown) => Promise.resolve(data));
 
       const result = await service.importDefaults("user-1");
 
       expect(result.categoriesCreated).toBeGreaterThan(100);
-      expect(categoriesRepository.create).toHaveBeenCalled();
-      expect(categoriesRepository.save).toHaveBeenCalled();
+      expect(qrRepo.create).toHaveBeenCalled();
+      expect(qrRepo.save).toHaveBeenCalled();
     });
 
     it("throws BadRequestException when user already has categories", async () => {
@@ -1199,19 +1208,17 @@ describe("CategoriesService", () => {
     it("creates both income and expense parent categories", async () => {
       categoriesRepository.count.mockResolvedValue(0);
       let idCounter = 0;
-      categoriesRepository.create.mockImplementation((data) => ({
-        ...data,
+      const qr = mockDataSource.createQueryRunner();
+      const qrRepo = qr.manager.getRepository();
+      qrRepo.create.mockImplementation((data: unknown) => ({
+        ...(data as Record<string, unknown>),
         id: `gen-${++idCounter}`,
       }));
-      categoriesRepository.save.mockImplementation((data) =>
-        Promise.resolve(data),
-      );
+      qrRepo.save.mockImplementation((data: unknown) => Promise.resolve(data));
 
       await service.importDefaults("user-1");
 
-      const createCalls = categoriesRepository.create.mock.calls.map(
-        (c: unknown[]) => c[0],
-      );
+      const createCalls = qrRepo.create.mock.calls.map((c: unknown[]) => c[0]);
       const incomeParents = createCalls.filter(
         (c: Record<string, unknown>) => c.isIncome === true && !c.parentId,
       );
@@ -1226,19 +1233,17 @@ describe("CategoriesService", () => {
     it("sets correct parentId on subcategories", async () => {
       categoriesRepository.count.mockResolvedValue(0);
       let idCounter = 0;
-      categoriesRepository.create.mockImplementation((data) => ({
-        ...data,
+      const qr = mockDataSource.createQueryRunner();
+      const qrRepo = qr.manager.getRepository();
+      qrRepo.create.mockImplementation((data: unknown) => ({
+        ...(data as Record<string, unknown>),
         id: `gen-${++idCounter}`,
       }));
-      categoriesRepository.save.mockImplementation((data) =>
-        Promise.resolve(data),
-      );
+      qrRepo.save.mockImplementation((data: unknown) => Promise.resolve(data));
 
       await service.importDefaults("user-1");
 
-      const createCalls = categoriesRepository.create.mock.calls.map(
-        (c: unknown[]) => c[0],
-      );
+      const createCalls = qrRepo.create.mock.calls.map((c: unknown[]) => c[0]);
       const subcategories = createCalls.filter(
         (c: Record<string, unknown>) => c.parentId,
       );

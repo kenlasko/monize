@@ -128,10 +128,25 @@ export class TransactionSplitService {
     transactionDate?: Date,
     parentPayeeName?: string | null,
   ): Promise<TransactionSplit[]> {
-    // Validate all categories up front
-    for (const split of splits) {
-      if (split.categoryId && userId) {
-        await this.validateCategoryOwnership(userId, split.categoryId);
+    // L1: Batch-validate all category IDs in a single query
+    if (userId) {
+      const categoryIds = [
+        ...new Set(
+          splits.map((s) => s.categoryId).filter((id): id is string => !!id),
+        ),
+      ];
+      if (categoryIds.length > 0) {
+        const found = await queryRunner.manager.find(Category, {
+          where: { id: In(categoryIds), userId },
+          select: ["id"],
+        });
+        const foundIds = new Set(found.map((c) => c.id));
+        const invalid = categoryIds.filter((id) => !foundIds.has(id));
+        if (invalid.length > 0) {
+          throw new NotFoundException(
+            `Categories not found: ${invalid.join(", ")}`,
+          );
+        }
       }
     }
 

@@ -1,5 +1,6 @@
 import * as crypto from "crypto";
 import {
+  BadRequestException,
   Injectable,
   NotFoundException,
   UnauthorizedException,
@@ -34,7 +35,7 @@ export class PatService {
       where: { userId, isRevoked: false },
     });
     if (count >= MAX_TOKENS_PER_USER) {
-      throw new Error(
+      throw new BadRequestException(
         `Maximum of ${MAX_TOKENS_PER_USER} active tokens per user`,
       );
     }

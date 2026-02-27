@@ -1,5 +1,6 @@
 import {
   IsArray,
+  IsDateString,
   IsEnum,
   IsOptional,
   IsString,
@@ -21,12 +22,12 @@ export class BulkUpdateFilterDto {
 
   @ApiPropertyOptional({ description: "Start date (YYYY-MM-DD)" })
   @IsOptional()
-  @IsString()
+  @IsDateString()
   startDate?: string;
 
   @ApiPropertyOptional({ description: "End date (YYYY-MM-DD)" })
   @IsOptional()
-  @IsString()
+  @IsDateString()
   endDate?: string;
 
   @ApiPropertyOptional({ description: "Filter by category IDs" })

@@ -95,58 +95,56 @@ export class SecurityPriceService {
       symbolGroups.set(key, group);
     }
 
-    await Promise.all(
-      Array.from(symbolGroups.values()).map(async (group) => {
-        const representative = group[0];
-        const yahooSymbol = this.yahooFinance.getYahooSymbol(
+    for (const group of symbolGroups.values()) {
+      const representative = group[0];
+      const yahooSymbol = this.yahooFinance.getYahooSymbol(
+        representative.symbol,
+        representative.exchange,
+      );
+      let quote = await this.yahooFinance.fetchQuote(yahooSymbol);
+
+      if (!quote && yahooSymbol === representative.symbol) {
+        const alternateSymbols = this.yahooFinance.getAlternateSymbols(
           representative.symbol,
-          representative.exchange,
         );
-        let quote = await this.yahooFinance.fetchQuote(yahooSymbol);
-
-        if (!quote && yahooSymbol === representative.symbol) {
-          const alternateSymbols = this.yahooFinance.getAlternateSymbols(
-            representative.symbol,
-          );
-          for (const altSymbol of alternateSymbols) {
-            quote = await this.yahooFinance.fetchQuote(altSymbol);
-            if (quote) break;
-          }
+        for (const altSymbol of alternateSymbols) {
+          quote = await this.yahooFinance.fetchQuote(altSymbol);
+          if (quote) break;
         }
+      }
 
-        if (!quote || quote.regularMarketPrice === undefined) {
-          for (const security of group) {
-            results.push({
-              symbol: security.symbol,
-              success: false,
-              error: "No price data available",
-            });
-            failed++;
-          }
-          return;
-        }
-
-        const tradingDate = this.yahooFinance.getTradingDate(quote);
+      if (!quote || quote.regularMarketPrice === undefined) {
         for (const security of group) {
-          try {
-            await this.savePriceData(security.id, tradingDate, quote);
-            results.push({
-              symbol: security.symbol,
-              success: true,
-              price: quote.regularMarketPrice,
-            });
-            updated++;
-          } catch (error) {
-            results.push({
-              symbol: security.symbol,
-              success: false,
-              error: error.message,
-            });
-            failed++;
-          }
+          results.push({
+            symbol: security.symbol,
+            success: false,
+            error: "No price data available",
+          });
+          failed++;
         }
-      }),
-    );
+        continue;
+      }
+
+      const tradingDate = this.yahooFinance.getTradingDate(quote);
+      for (const security of group) {
+        try {
+          await this.savePriceData(security.id, tradingDate, quote);
+          results.push({
+            symbol: security.symbol,
+            success: true,
+            price: quote.regularMarketPrice,
+          });
+          updated++;
+        } catch (error) {
+          results.push({
+            symbol: security.symbol,
+            success: false,
+            error: error.message,
+          });
+          failed++;
+        }
+      }
+    }
 
     const duration = Date.now() - startTime;
     this.logger.log(
@@ -188,53 +186,51 @@ export class SecurityPriceService {
     let updated = 0;
     let failed = 0;
 
-    await Promise.all(
-      securities.map(async (security) => {
-        const yahooSymbol = this.yahooFinance.getYahooSymbol(
+    for (const security of securities) {
+      const yahooSymbol = this.yahooFinance.getYahooSymbol(
+        security.symbol,
+        security.exchange,
+      );
+      let quote = await this.yahooFinance.fetchQuote(yahooSymbol);
+
+      if (!quote && yahooSymbol === security.symbol) {
+        const alternateSymbols = this.yahooFinance.getAlternateSymbols(
           security.symbol,
-          security.exchange,
         );
-        let quote = await this.yahooFinance.fetchQuote(yahooSymbol);
-
-        if (!quote && yahooSymbol === security.symbol) {
-          const alternateSymbols = this.yahooFinance.getAlternateSymbols(
-            security.symbol,
-          );
-          for (const altSymbol of alternateSymbols) {
-            quote = await this.yahooFinance.fetchQuote(altSymbol);
-            if (quote) break;
-          }
+        for (const altSymbol of alternateSymbols) {
+          quote = await this.yahooFinance.fetchQuote(altSymbol);
+          if (quote) break;
         }
+      }
 
-        if (!quote || quote.regularMarketPrice === undefined) {
-          results.push({
-            symbol: security.symbol,
-            success: false,
-            error: "No price data available",
-          });
-          failed++;
-          return;
-        }
+      if (!quote || quote.regularMarketPrice === undefined) {
+        results.push({
+          symbol: security.symbol,
+          success: false,
+          error: "No price data available",
+        });
+        failed++;
+        continue;
+      }
 
-        try {
-          const tradingDate = this.yahooFinance.getTradingDate(quote);
-          await this.savePriceData(security.id, tradingDate, quote);
-          results.push({
-            symbol: security.symbol,
-            success: true,
-            price: quote.regularMarketPrice,
-          });
-          updated++;
-        } catch (error) {
-          results.push({
-            symbol: security.symbol,
-            success: false,
-            error: error.message,
-          });
-          failed++;
-        }
-      }),
-    );
+      try {
+        const tradingDate = this.yahooFinance.getTradingDate(quote);
+        await this.savePriceData(security.id, tradingDate, quote);
+        results.push({
+          symbol: security.symbol,
+          success: true,
+          price: quote.regularMarketPrice,
+        });
+        updated++;
+      } catch (error) {
+        results.push({
+          symbol: security.symbol,
+          success: false,
+          error: error.message,
+        });
+        failed++;
+      }
+    }
 
     return {
       totalSecurities: securities.length,

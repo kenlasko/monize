@@ -63,11 +63,12 @@ export class InvestmentTransactionsService {
     quantity: number | null,
     price: number | null,
     totalAmount: number,
+    currencyCode: string = "USD",
   ): string {
     const formatPrice = (value: number) => {
       return value.toLocaleString("en-US", {
         style: "currency",
-        currency: "USD",
+        currency: currencyCode,
         minimumFractionDigits: 2,
         maximumFractionDigits: 4,
       });
@@ -127,6 +128,7 @@ export class InvestmentTransactionsService {
       investmentTransaction.quantity,
       investmentTransaction.price,
       Math.abs(investmentTransaction.totalAmount),
+      cashAccount.currencyCode,
     );
 
     const cashTransaction = queryRunner.manager.create(Transaction, {
@@ -814,15 +816,23 @@ export class InvestmentTransactionsService {
   }
 
   async getSummary(userId: string, accountIds?: string[]) {
-    const result = await this.findAll(
-      userId,
-      accountIds,
-      undefined,
-      undefined,
-      1,
-      10000,
-    );
-    const transactions = result.data;
+    const query = this.investmentTransactionsRepository
+      .createQueryBuilder("it")
+      .where("it.userId = :userId", { userId });
+
+    if (accountIds && accountIds.length > 0) {
+      const resolvedIds = new Set<string>(accountIds);
+      const accounts = await this.accountsService.findByIds(userId, accountIds);
+      for (const acct of accounts) {
+        if (acct.linkedAccountId) {
+          resolvedIds.add(acct.linkedAccountId);
+        }
+      }
+      const allIds = [...resolvedIds];
+      query.andWhere("it.accountId IN (:...allIds)", { allIds });
+    }
+
+    const transactions = await query.getMany();
 
     const summary = {
       totalTransactions: transactions.length,

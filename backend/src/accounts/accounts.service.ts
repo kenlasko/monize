@@ -377,7 +377,8 @@ export class AccountsService {
 
       // Adjust currentBalance by the difference
       account.currentBalance =
-        Math.round((Number(account.currentBalance) + difference) * 100) / 100;
+        Math.round((Number(account.currentBalance) + difference) * 10000) /
+        10000;
     }
 
     // SECURITY: Explicit property mapping instead of Object.assign to prevent mass assignment
@@ -602,7 +603,7 @@ export class AccountsService {
       );
     }
 
-    const sql = `UPDATE accounts SET current_balance = ROUND(CAST(current_balance AS numeric) + $1, 2) WHERE id = $2`;
+    const sql = `UPDATE accounts SET current_balance = ROUND(CAST(current_balance AS numeric) + $1, 4) WHERE id = $2`;
 
     if (queryRunner) {
       await queryRunner.query(sql, [amount, accountId]);
@@ -653,8 +654,8 @@ export class AccountsService {
 
     const newBalance =
       result.length > 0
-        ? Math.round(Number(result[0].balance) * 100) / 100
-        : Math.round(Number(account.openingBalance) * 100) / 100;
+        ? Math.round(Number(result[0].balance) * 10000) / 10000
+        : Math.round(Number(account.openingBalance) * 10000) / 10000;
 
     if (queryRunner) {
       await queryRunner.query(
@@ -941,7 +942,7 @@ export class AccountsService {
         );
 
       for (const row of balances) {
-        const newBalance = Math.round(Number(row.balance) * 100) / 100;
+        const newBalance = Math.round(Number(row.balance) * 10000) / 10000;
         await this.accountsRepository.update(row.account_id, {
           currentBalance: newBalance,
         });
