@@ -14,7 +14,7 @@ export interface PeriodDateRange {
  */
 export function getCurrentMonthPeriodDates(): PeriodDateRange {
   const today = new Date();
-  return getMonthPeriodDates(today.getFullYear(), today.getMonth());
+  return getMonthPeriodDates(today.getUTCFullYear(), today.getUTCMonth());
 }
 
 /**
@@ -41,8 +41,13 @@ export function getMonthPeriodDates(
  */
 export function getPreviousMonthPeriodDates(): PeriodDateRange {
   const today = new Date();
-  const prevMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-  return getMonthPeriodDates(prevMonth.getFullYear(), prevMonth.getMonth());
+  const prevMonth = new Date(
+    Date.UTC(today.getUTCFullYear(), today.getUTCMonth() - 1, 1),
+  );
+  return getMonthPeriodDates(
+    prevMonth.getUTCFullYear(),
+    prevMonth.getUTCMonth(),
+  );
 }
 
 /**

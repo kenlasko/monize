@@ -1,14 +1,16 @@
 import {
   Injectable,
   BadRequestException,
+  NotFoundException,
   Inject,
   forwardRef,
   Logger,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository, SelectQueryBuilder } from "typeorm";
+import { Repository, SelectQueryBuilder, DataSource } from "typeorm";
 import { Transaction, TransactionStatus } from "./entities/transaction.entity";
 import { Category } from "../categories/entities/category.entity";
+import { Payee } from "../payees/entities/payee.entity";
 import { AccountsService } from "../accounts/accounts.service";
 import { NetWorthService } from "../net-worth/net-worth.service";
 import { BulkUpdateDto, BulkUpdateFilterDto } from "./dto/bulk-update.dto";
@@ -28,10 +30,13 @@ export class TransactionBulkUpdateService {
     private transactionsRepository: Repository<Transaction>,
     @InjectRepository(Category)
     private categoriesRepository: Repository<Category>,
+    @InjectRepository(Payee)
+    private payeesRepository: Repository<Payee>,
     @Inject(forwardRef(() => AccountsService))
     private accountsService: AccountsService,
     @Inject(forwardRef(() => NetWorthService))
     private netWorthService: NetWorthService,
+    private dataSource: DataSource,
   ) {}
 
   async bulkUpdate(
@@ -43,6 +48,24 @@ export class TransactionBulkUpdateService {
       throw new BadRequestException(
         "At least one update field must be provided",
       );
+    }
+
+    // H4: Validate ownership of categoryId and payeeId before applying
+    if ("categoryId" in dto && dto.categoryId) {
+      const cat = await this.categoriesRepository.findOne({
+        where: { id: dto.categoryId, userId },
+      });
+      if (!cat) {
+        throw new NotFoundException("Category not found");
+      }
+    }
+    if ("payeeId" in dto && dto.payeeId) {
+      const payee = await this.payeesRepository.findOne({
+        where: { id: dto.payeeId, userId },
+      });
+      if (!payee) {
+        throw new NotFoundException("Payee not found");
+      }
     }
 
     const isUpdatingPayee = "payeeId" in dto || "payeeName" in dto;
@@ -67,21 +90,40 @@ export class TransactionBulkUpdateService {
       return { updated: 0, skipped, skippedReasons };
     }
 
-    // Step 3: Handle balance adjustments for VOID status changes
-    if (isUpdatingStatus) {
-      await this.handleStatusBalanceChanges(userId, eligibleIds, dto.status!);
+    // Wrap balance changes and batch update in a single transaction
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // Step 3: Handle balance adjustments for VOID status changes
+      if (isUpdatingStatus) {
+        await this.handleStatusBalanceChanges(
+          userId,
+          eligibleIds,
+          dto.status!,
+          queryRunner,
+        );
+      }
+
+      // Step 4: Execute batch update
+      await queryRunner.manager
+        .createQueryBuilder()
+        .update(Transaction)
+        .set(updateFields)
+        .where("id IN (:...ids)", { ids: eligibleIds })
+        .andWhere("userId = :userId", { userId })
+        .execute();
+
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
     }
 
-    // Step 4: Execute batch update
-    await this.transactionsRepository
-      .createQueryBuilder()
-      .update(Transaction)
-      .set(updateFields)
-      .where("id IN (:...ids)", { ids: eligibleIds })
-      .andWhere("userId = :userId", { userId })
-      .execute();
-
-    // Step 5: Trigger net worth recalc for affected accounts
+    // Step 5: Trigger net worth recalc for affected accounts (after commit)
     if (isUpdatingStatus) {
       await this.triggerNetWorthRecalcForTransactions(userId, eligibleIds);
     }
@@ -204,6 +246,7 @@ export class TransactionBulkUpdateService {
     userId: string,
     eligibleIds: string[],
     newStatus: TransactionStatus,
+    queryRunner?: import("typeorm").QueryRunner,
   ): Promise<void> {
     const isNewVoid = newStatus === TransactionStatus.VOID;
 
@@ -216,7 +259,11 @@ export class TransactionBulkUpdateService {
     const now = new Date();
     const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 
-    const balanceDeltas = await this.transactionsRepository
+    const repo = queryRunner
+      ? queryRunner.manager.getRepository(Transaction)
+      : this.transactionsRepository;
+
+    const balanceDeltas = await repo
       .createQueryBuilder("transaction")
       .select("transaction.accountId", "accountId")
       .addSelect("SUM(transaction.amount)", "totalAmount")
@@ -233,10 +280,18 @@ export class TransactionBulkUpdateService {
 
       if (isNewVoid) {
         // Becoming VOID: subtract amounts from balances
-        await this.accountsService.updateBalance(row.accountId, -amount);
+        await this.accountsService.updateBalance(
+          row.accountId,
+          -amount,
+          queryRunner,
+        );
       } else {
         // Leaving VOID: add amounts to balances
-        await this.accountsService.updateBalance(row.accountId, amount);
+        await this.accountsService.updateBalance(
+          row.accountId,
+          amount,
+          queryRunner,
+        );
       }
     }
   }

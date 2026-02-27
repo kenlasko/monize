@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  BadRequestException,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import {
@@ -130,6 +131,13 @@ export class HoldingsService {
       } else {
         // Selling shares - keep same average cost
         // Average cost doesn't change when selling
+      }
+
+      // Guard against negative holdings from overselling
+      if (newQuantity < -0.00000001) {
+        throw new BadRequestException(
+          `Insufficient shares: cannot reduce by ${Math.abs(quantityChange)}, only ${currentQuantity} held`,
+        );
       }
 
       holding.quantity = newQuantity;

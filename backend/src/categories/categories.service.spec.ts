@@ -614,6 +614,10 @@ describe("CategoriesService", () => {
         .mockResolvedValueOnce({ ...mockCategory })
         .mockResolvedValueOnce(parentCat)
         .mockResolvedValueOnce(parentCat);
+      categoriesRepository.find.mockResolvedValue([
+        { id: "cat-1", parentId: null },
+        { id: "parent-1", parentId: null },
+      ]);
       categoriesRepository.save.mockImplementation((data) => data);
 
       const result = await service.update("user-1", "cat-1", {
@@ -633,6 +637,10 @@ describe("CategoriesService", () => {
         .mockResolvedValueOnce({ ...mockCategory, isIncome: false })
         .mockResolvedValueOnce(incomeParent)
         .mockResolvedValueOnce(incomeParent);
+      categoriesRepository.find.mockResolvedValue([
+        { id: "cat-1", parentId: null },
+        { id: "income-parent", parentId: null },
+      ]);
       categoriesRepository.save.mockImplementation((data) => data);
 
       const result = await service.update("user-1", "cat-1", {
@@ -673,6 +681,24 @@ describe("CategoriesService", () => {
       await expect(
         service.update("user-1", "cat-1", { parentId: "cat-1" }),
       ).rejects.toThrow(BadRequestException);
+    });
+
+    it("throws BadRequestException for circular parent reference", async () => {
+      // Setup: cat-1 -> cat-2 -> cat-3, and we try to set cat-1's parent to cat-3
+      // This would create: cat-1 -> cat-3 -> cat-2 -> cat-1 (cycle)
+      const cat3 = { ...mockCategory, id: "cat-3" };
+      categoriesRepository.findOne
+        .mockResolvedValueOnce({ ...mockCategory, id: "cat-1" }) // findOne: load cat-1
+        .mockResolvedValueOnce(cat3); // findOne: validate cat-3 exists
+      categoriesRepository.find.mockResolvedValue([
+        { id: "cat-1", parentId: null },
+        { id: "cat-2", parentId: "cat-1" },
+        { id: "cat-3", parentId: "cat-2" },
+      ]);
+
+      await expect(
+        service.update("user-1", "cat-1", { parentId: "cat-3" }),
+      ).rejects.toThrow("Circular parent reference detected");
     });
 
     it("throws NotFoundException when category does not exist", async () => {

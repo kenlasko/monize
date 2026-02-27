@@ -1,6 +1,7 @@
 import {
   IsString,
   Length,
+  Matches,
   IsBoolean,
   IsOptional,
   MaxLength,
@@ -16,6 +17,7 @@ export class VerifyTotpDto {
   @ApiProperty({ description: "6-digit TOTP code from authenticator app" })
   @IsString()
   @Length(6, 6)
+  @Matches(/^\d{6}$/, { message: "Code must be exactly 6 digits" })
   code: string;
 
   @ApiProperty({

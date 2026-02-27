@@ -158,7 +158,8 @@ export class IsSafeUrlConstraint implements ValidatorConstraintInterface {
           dnsResolve6(hostname),
         ]);
         const allAddrs = [...ipv4Addrs, ...ipv6Addrs];
-        if (allAddrs.length > 0 && allAddrs.every((ip) => isPrivateIp(ip))) {
+        // Reject if ANY resolved address is private (prevents DNS rebinding)
+        if (allAddrs.length > 0 && allAddrs.some((ip) => isPrivateIp(ip))) {
           return false;
         }
       } catch {

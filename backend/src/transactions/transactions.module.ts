@@ -3,6 +3,7 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 import { Transaction } from "./entities/transaction.entity";
 import { TransactionSplit } from "./entities/transaction-split.entity";
 import { Category } from "../categories/entities/category.entity";
+import { Payee } from "../payees/entities/payee.entity";
 import { InvestmentTransaction } from "../securities/entities/investment-transaction.entity";
 import { TransactionsService } from "./transactions.service";
 import { TransactionSplitService } from "./transaction-split.service";
@@ -21,6 +22,7 @@ import { NetWorthModule } from "../net-worth/net-worth.module";
       Transaction,
       TransactionSplit,
       Category,
+      Payee,
       InvestmentTransaction,
     ]),
     forwardRef(() => AccountsModule),

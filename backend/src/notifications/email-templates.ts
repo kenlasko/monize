@@ -359,13 +359,14 @@ export function passwordResetTemplate(
   resetUrl: string,
 ): string {
   const safeName = escapeHtml(firstName || "there");
+  const safeUrl = escapeHtml(resetUrl);
   return `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
       <h2 style="color: #1f2937;">Password Reset Request</h2>
       <p style="color: #374151;">Hi ${safeName},</p>
       <p style="color: #374151;">We received a request to reset your password. Click the button below to set a new password:</p>
       <p style="margin: 24px 0;">
-        <a href="${resetUrl}" style="display: inline-block; padding: 12px 24px; background: #2563eb; color: #ffffff; border-radius: 6px; text-decoration: none; font-weight: 500;">Reset Password</a>
+        <a href="${safeUrl}" style="display: inline-block; padding: 12px 24px; background: #2563eb; color: #ffffff; border-radius: 6px; text-decoration: none; font-weight: 500;">Reset Password</a>
       </p>
       <p style="color: #374151;">This link will expire in 1 hour. If you did not request a password reset, you can safely ignore this email.</p>
       <p style="color: #6b7280; font-size: 14px; margin-top: 24px;">-- Monize</p>

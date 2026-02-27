@@ -68,6 +68,14 @@ export class User {
   @Exclude()
   twoFactorSecret: string | null;
 
+  @Column({
+    name: "pending_two_factor_secret",
+    type: "varchar",
+    nullable: true,
+  })
+  @Exclude()
+  pendingTwoFactorSecret: string | null;
+
   @OneToOne(() => UserPreference, (preference) => preference.user)
   preferences: UserPreference;
 }

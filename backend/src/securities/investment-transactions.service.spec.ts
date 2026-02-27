@@ -2031,16 +2031,55 @@ describe("InvestmentTransactionsService", () => {
   describe("removeAll", () => {
     it("deletes all transactions, holdings, and resets account balances", async () => {
       const transactions = [mockBuyTransaction, mockSellTransaction];
-      investmentTransactionsRepository.find.mockResolvedValue(transactions);
+      const cashTx1 = {
+        id: cashTransactionId,
+        userId,
+        accountId: cashAccountId,
+        amount: -1509.99,
+        status: TransactionStatus.CLEARED,
+      };
+      const cashTx2 = {
+        id: "cash-tx-2",
+        userId,
+        accountId: cashAccountId,
+        amount: 790.01,
+        status: TransactionStatus.CLEARED,
+      };
+
+      mockQueryRunner.manager.find.mockImplementation(
+        (entity: any, _opts: any) => {
+          if (entity === InvestmentTransaction)
+            return Promise.resolve(transactions);
+          if (entity === Transaction)
+            return Promise.resolve([cashTx1, cashTx2]);
+          return Promise.resolve([]);
+        },
+      );
 
       const result = await service.removeAll(userId);
 
-      expect(investmentTransactionsRepository.find).toHaveBeenCalledWith({
-        where: { userId },
-      });
-      expect(investmentTransactionsRepository.remove).toHaveBeenCalledWith(
-        transactions,
+      expect(mockQueryRunner.manager.find).toHaveBeenCalledWith(
+        InvestmentTransaction,
+        { where: { userId } },
       );
+      // Should reverse balance for each cash transaction
+      expect(accountsService.updateBalance).toHaveBeenCalledWith(
+        cashAccountId,
+        1509.99,
+        mockQueryRunner,
+      );
+      expect(accountsService.updateBalance).toHaveBeenCalledWith(
+        cashAccountId,
+        -790.01,
+        mockQueryRunner,
+      );
+      // Should remove cash transactions
+      expect(mockQueryRunner.manager.remove).toHaveBeenCalledWith([
+        cashTx1,
+        cashTx2,
+      ]);
+      // Should remove investment transactions
+      expect(mockQueryRunner.manager.remove).toHaveBeenCalledWith(transactions);
       expect(holdingsService.removeAllForUser).toHaveBeenCalledWith(userId);
       expect(accountsService.resetBrokerageBalances).toHaveBeenCalledWith(
         userId,
@@ -2053,16 +2092,16 @@ describe("InvestmentTransactionsService", () => {
     });
 
     it("handles zero transactions gracefully", async () => {
-      investmentTransactionsRepository.find.mockResolvedValue([]);
+      mockQueryRunner.manager.find.mockResolvedValue([]);
 
       const result = await service.removeAll(userId);
 
-      expect(investmentTransactionsRepository.remove).not.toHaveBeenCalled();
+      expect(mockQueryRunner.manager.remove).not.toHaveBeenCalled();
       expect(result.transactionsDeleted).toBe(0);
     });
 
     it("still deletes holdings and resets accounts even with no transactions", async () => {
-      investmentTransactionsRepository.find.mockResolvedValue([]);
+      mockQueryRunner.manager.find.mockResolvedValue([]);
 
       await service.removeAll(userId);
 
