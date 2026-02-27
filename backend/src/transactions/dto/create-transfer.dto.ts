@@ -6,6 +6,8 @@ import {
   IsUUID,
   IsEnum,
   MaxLength,
+  Min,
+  Max,
 } from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { TransactionStatus } from "../entities/transaction.entity";
@@ -30,6 +32,8 @@ export class CreateTransferDto {
 
   @ApiProperty({ description: "Transfer amount (must be positive)" })
   @IsNumber({ maxDecimalPlaces: 4 })
+  @Min(0.0001)
+  @Max(999999999999)
   amount: number;
 
   @ApiProperty({

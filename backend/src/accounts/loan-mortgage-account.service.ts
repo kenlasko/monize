@@ -351,9 +351,11 @@ export class LoanMortgageAccountService {
 
     const currentBalance = Math.abs(Number(account.currentBalance));
     const startDate = account.paymentStartDate || new Date();
-    const monthsElapsed = Math.floor(
-      (effectiveDate.getTime() - startDate.getTime()) /
-        (30 * 24 * 60 * 60 * 1000),
+    // M21: Use calendar months instead of 30-day approximation
+    const monthsElapsed = Math.max(
+      0,
+      (effectiveDate.getFullYear() - startDate.getFullYear()) * 12 +
+        (effectiveDate.getMonth() - startDate.getMonth()),
     );
     const remainingAmortizationMonths = Math.max(
       12,

@@ -198,7 +198,7 @@ export class AuthController {
     // Store state/nonce in secure cookies for validation
     const cookieOptions = {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: this.isProduction,
       sameSite: "lax" as const,
       maxAge: 600000, // 10 minutes
     };
@@ -217,7 +217,10 @@ export class AuthController {
     @Request() req: ExpressRequest,
     @Res() res: Response,
   ) {
-    const frontendUrl = process.env.PUBLIC_APP_URL || "http://localhost:3000";
+    const frontendUrl = this.configService.get<string>(
+      "PUBLIC_APP_URL",
+      "http://localhost:3000",
+    );
 
     try {
       const state = req.cookies?.["oidc_state"];
@@ -396,7 +399,7 @@ export class AuthController {
     if (result.trustedDeviceToken) {
       res.cookie("trusted_device", result.trustedDeviceToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
+        secure: this.isProduction,
         sameSite: "lax",
         maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       });

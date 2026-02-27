@@ -111,8 +111,12 @@ describe("AccountsService", () => {
       commitTransaction: jest.fn().mockResolvedValue(undefined),
       rollbackTransaction: jest.fn().mockResolvedValue(undefined),
       release: jest.fn().mockResolvedValue(undefined),
+      query: jest.fn().mockResolvedValue(undefined),
       manager: {
         getRepository: jest.fn().mockReturnValue(mockQrRepo),
+        findOne: jest.fn(),
+        findOneOrFail: jest.fn(),
+        save: jest.fn().mockImplementation((data) => data),
       },
     };
 
@@ -422,7 +426,7 @@ describe("AccountsService", () => {
 
   describe("close", () => {
     it("closes account with zero balance", async () => {
-      accountsRepository.findOne.mockResolvedValue({
+      mockQueryRunner.manager.findOne.mockResolvedValue({
         ...mockAccount,
         currentBalance: 0,
       });
@@ -431,10 +435,12 @@ describe("AccountsService", () => {
 
       expect(result.isClosed).toBe(true);
       expect(result.closedDate).toBeDefined();
+      expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
+      expect(mockQueryRunner.release).toHaveBeenCalled();
     });
 
     it("throws when account already closed", async () => {
-      accountsRepository.findOne.mockResolvedValue({
+      mockQueryRunner.manager.findOne.mockResolvedValue({
         ...mockAccount,
         isClosed: true,
       });
@@ -442,10 +448,12 @@ describe("AccountsService", () => {
       await expect(service.close("user-1", "account-1")).rejects.toThrow(
         "Account is already closed",
       );
+      expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
+      expect(mockQueryRunner.release).toHaveBeenCalled();
     });
 
     it("throws when balance is non-zero", async () => {
-      accountsRepository.findOne.mockResolvedValue({
+      mockQueryRunner.manager.findOne.mockResolvedValue({
         ...mockAccount,
         currentBalance: 500,
       });
@@ -453,10 +461,22 @@ describe("AccountsService", () => {
       await expect(service.close("user-1", "account-1")).rejects.toThrow(
         "Cannot close account with non-zero balance",
       );
+      expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
+      expect(mockQueryRunner.release).toHaveBeenCalled();
+    });
+
+    it("throws NotFoundException when account not found", async () => {
+      mockQueryRunner.manager.findOne.mockResolvedValue(null);
+
+      await expect(service.close("user-1", "nonexistent")).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
+      expect(mockQueryRunner.release).toHaveBeenCalled();
     });
 
     it("also closes linked brokerage account for investment cash", async () => {
-      accountsRepository.findOne
+      mockQueryRunner.manager.findOne
         .mockResolvedValueOnce({
           ...mockAccount,
           currentBalance: 0,
@@ -471,7 +491,8 @@ describe("AccountsService", () => {
 
       await service.close("user-1", "account-1");
 
-      expect(accountsRepository.save).toHaveBeenCalledTimes(2);
+      expect(mockQueryRunner.manager.save).toHaveBeenCalledTimes(2);
+      expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
     });
   });
 
@@ -1700,7 +1721,7 @@ describe("AccountsService", () => {
 
   describe("close - investment cash account linked behavior", () => {
     it("also closes linked brokerage account for investment cash", async () => {
-      accountsRepository.findOne
+      mockQueryRunner.manager.findOne
         .mockResolvedValueOnce({
           ...mockAccount,
           currentBalance: 0,
@@ -1712,19 +1733,20 @@ describe("AccountsService", () => {
           userId: "user-1",
           isClosed: false,
         });
-      accountsRepository.save.mockImplementation((data) => data);
+      mockQueryRunner.manager.save.mockImplementation((data) => data);
 
       await service.close("user-1", "account-1");
 
       // Two saves: one for the cash account, one for the brokerage
-      expect(accountsRepository.save).toHaveBeenCalledTimes(2);
-      const brokerageSave = accountsRepository.save.mock.calls[1][0];
+      expect(mockQueryRunner.manager.save).toHaveBeenCalledTimes(2);
+      const brokerageSave = mockQueryRunner.manager.save.mock.calls[1][0];
       expect(brokerageSave.isClosed).toBe(true);
       expect(brokerageSave.closedDate).toBeDefined();
+      expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
     });
 
     it("does not close brokerage if already closed", async () => {
-      accountsRepository.findOne
+      mockQueryRunner.manager.findOne
         .mockResolvedValueOnce({
           ...mockAccount,
           currentBalance: 0,
@@ -1736,26 +1758,28 @@ describe("AccountsService", () => {
           userId: "user-1",
           isClosed: true,
         });
-      accountsRepository.save.mockImplementation((data) => data);
+      mockQueryRunner.manager.save.mockImplementation((data) => data);
 
       await service.close("user-1", "account-1");
 
       // Only one save for the cash account
-      expect(accountsRepository.save).toHaveBeenCalledTimes(1);
+      expect(mockQueryRunner.manager.save).toHaveBeenCalledTimes(1);
+      expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
     });
 
     it("does not attempt to close linked account for non-investment account", async () => {
-      accountsRepository.findOne.mockResolvedValue({
+      mockQueryRunner.manager.findOne.mockResolvedValue({
         ...mockAccount,
         currentBalance: 0,
         accountSubType: null,
         linkedAccountId: null,
       });
-      accountsRepository.save.mockImplementation((data) => data);
+      mockQueryRunner.manager.save.mockImplementation((data) => data);
 
       await service.close("user-1", "account-1");
 
-      expect(accountsRepository.save).toHaveBeenCalledTimes(1);
+      expect(mockQueryRunner.manager.save).toHaveBeenCalledTimes(1);
+      expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
     });
   });
 

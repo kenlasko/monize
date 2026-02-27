@@ -1,6 +1,7 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { ConfigService } from "@nestjs/config";
+import { DataSource } from "typeorm";
 import { BudgetPeriodService } from "./budget-period.service";
 import { BudgetPeriodCronService } from "./budget-period-cron.service";
 import { BudgetReportsService } from "./budget-reports.service";
@@ -118,6 +119,28 @@ describe("Budget Period Lifecycle Integration", () => {
     ...overrides,
   });
 
+  const mockDataSource = {
+    createQueryRunner: jest.fn().mockReturnValue({
+      connect: jest.fn(),
+      startTransaction: jest.fn(),
+      commitTransaction: jest.fn(),
+      rollbackTransaction: jest.fn(),
+      release: jest.fn(),
+      manager: {
+        save: jest.fn().mockImplementation((_entity, data) => data || _entity),
+        getRepository: jest.fn().mockReturnValue({
+          create: jest
+            .fn()
+            .mockImplementation((data) => ({ ...data, id: "new-id" })),
+          save: jest.fn().mockImplementation((data) => ({
+            ...data,
+            id: data.id || "new-id",
+          })),
+        }),
+      },
+    }),
+  };
+
   beforeEach(async () => {
     const savedPeriods: BudgetPeriod[] = [];
 
@@ -188,6 +211,7 @@ describe("Budget Period Lifecycle Integration", () => {
           useValue: splitsRepository,
         },
         { provide: BudgetsService, useValue: budgetsService },
+        { provide: DataSource, useValue: mockDataSource },
         {
           provide: getRepositoryToken(Budget),
           useValue: budgetsRepository,
@@ -427,8 +451,13 @@ describe("Budget Period Lifecycle Integration", () => {
       expect(travelPc!.actualAmount).toBe(50);
       expect(travelPc!.rolloverOut).toBe(150);
 
-      // 4 saves for closing period categories + 4 saves for next period categories
-      expect(periodCategoriesRepository.save).toHaveBeenCalledTimes(8);
+      // closePeriod now uses queryRunner for atomicity:
+      // 4 saves for closing period categories + 1 save for the period itself via queryRunner.manager.save
+      const qr = mockDataSource.createQueryRunner();
+      expect(qr.manager.save).toHaveBeenCalledTimes(5);
+      // 4 saves for next period categories + 1 save for the next period via queryRunner.manager.getRepository().save
+      const repoSave = qr.manager.getRepository().save;
+      expect(repoSave).toHaveBeenCalledTimes(5);
     });
 
     it("respects rollover cap when computing rollover", () => {

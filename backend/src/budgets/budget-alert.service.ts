@@ -553,11 +553,25 @@ export class BudgetAlertService {
     candidates: AlertCandidate[],
     existing: BudgetAlert[],
   ): AlertCandidate[] {
+    // M25: Allow severity escalation (e.g., WARNING -> CRITICAL)
+    const severityRank: Record<string, number> = {
+      info: 0,
+      success: 0,
+      warning: 1,
+      critical: 2,
+    };
+
     return candidates.filter((candidate) => {
-      return !existing.some(
+      const match = existing.find(
         (e) =>
           e.alertType === candidate.alertType &&
           e.budgetCategoryId === candidate.budgetCategoryId,
+      );
+      if (!match) return true;
+      // Allow if candidate severity is higher than existing
+      return (
+        (severityRank[candidate.severity] || 0) >
+        (severityRank[match.severity] || 0)
       );
     });
   }

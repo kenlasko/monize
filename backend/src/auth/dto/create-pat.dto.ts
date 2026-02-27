@@ -7,6 +7,7 @@ import {
   IsDateString,
 } from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { IsFutureDate } from "../../common/validators/is-future-date.validator";
 
 export class CreatePatDto {
   @ApiProperty({ description: "User-assigned label for the token" })
@@ -30,5 +31,6 @@ export class CreatePatDto {
   @ApiPropertyOptional({ description: "Token expiration date (ISO 8601)" })
   @IsOptional()
   @IsDateString()
+  @IsFutureDate({ message: "Expiration date must be in the future" })
   expiresAt?: string;
 }

@@ -4,7 +4,7 @@ import {
   BadRequestException,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository, IsNull } from "typeorm";
+import { Repository, IsNull, DataSource } from "typeorm";
 import { Category } from "./entities/category.entity";
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
@@ -33,6 +33,7 @@ export class CategoriesService {
     private scheduledTransactionsRepository: Repository<ScheduledTransaction>,
     @InjectRepository(ScheduledTransactionSplit)
     private scheduledSplitsRepository: Repository<ScheduledTransactionSplit>,
+    private dataSource: DataSource,
   ) {}
 
   async create(
@@ -302,6 +303,14 @@ export class CategoriesService {
       );
     }
 
+    // M23: Check for referencing transactions before deletion
+    const transactionCount = await this.getTransactionCount(userId, id);
+    if (transactionCount > 0) {
+      throw new BadRequestException(
+        `Cannot delete category with ${transactionCount} referencing transaction(s). Reassign transactions first.`,
+      );
+    }
+
     await this.payeesRepository.update(
       { userId, defaultCategoryId: id },
       { defaultCategoryId: null },
@@ -365,61 +374,77 @@ export class CategoriesService {
       await this.findOne(userId, toCategoryId);
     }
 
-    const transactionResult = await this.transactionsRepository.update(
-      { userId, categoryId: fromCategoryId },
-      { categoryId: toCategoryId },
-    );
+    // M22: Wrap all UPDATE operations in a single QueryRunner transaction
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-    const userTransactionIds = await this.transactionsRepository
-      .createQueryBuilder("t")
-      .select("t.id")
-      .where("t.userId = :userId", { userId })
-      .getMany();
+    try {
+      const transactionResult = await queryRunner.manager.update(
+        Transaction,
+        { userId, categoryId: fromCategoryId },
+        { categoryId: toCategoryId },
+      );
 
-    const transactionIds = userTransactionIds.map((t) => t.id);
+      const userTransactionIds = await queryRunner.manager
+        .createQueryBuilder(Transaction, "t")
+        .select("t.id")
+        .where("t.userId = :userId", { userId })
+        .getMany();
 
-    let splitsUpdated = 0;
-    if (transactionIds.length > 0) {
-      const splitResult = await this.splitsRepository
-        .createQueryBuilder()
-        .update(TransactionSplit)
-        .set({ categoryId: toCategoryId })
-        .where("categoryId = :fromCategoryId", { fromCategoryId })
-        .andWhere("transactionId IN (:...transactionIds)", { transactionIds })
-        .execute();
+      const transactionIds = userTransactionIds.map((t) => t.id);
 
-      splitsUpdated = splitResult.affected || 0;
+      let splitsUpdated = 0;
+      if (transactionIds.length > 0) {
+        const splitResult = await queryRunner.manager
+          .createQueryBuilder()
+          .update(TransactionSplit)
+          .set({ categoryId: toCategoryId })
+          .where("categoryId = :fromCategoryId", { fromCategoryId })
+          .andWhere("transactionId IN (:...transactionIds)", { transactionIds })
+          .execute();
+
+        splitsUpdated = splitResult.affected || 0;
+      }
+
+      const scheduledResult = await queryRunner.manager.update(
+        ScheduledTransaction,
+        { userId, categoryId: fromCategoryId },
+        { categoryId: toCategoryId },
+      );
+
+      const userScheduledTxIds = await queryRunner.manager
+        .createQueryBuilder(ScheduledTransaction, "st")
+        .select("st.id")
+        .where("st.userId = :userId", { userId })
+        .getMany();
+
+      if (userScheduledTxIds.length > 0) {
+        const scheduledTxIds = userScheduledTxIds.map((st) => st.id);
+        await queryRunner.manager
+          .createQueryBuilder()
+          .update(ScheduledTransactionSplit)
+          .set({ categoryId: toCategoryId })
+          .where("categoryId = :fromCategoryId", { fromCategoryId })
+          .andWhere("scheduledTransactionId IN (:...scheduledTxIds)", {
+            scheduledTxIds,
+          })
+          .execute();
+      }
+
+      await queryRunner.commitTransaction();
+
+      return {
+        transactionsUpdated: transactionResult.affected || 0,
+        splitsUpdated,
+        scheduledUpdated: scheduledResult.affected || 0,
+      };
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
     }
-
-    const scheduledResult = await this.scheduledTransactionsRepository.update(
-      { userId, categoryId: fromCategoryId },
-      { categoryId: toCategoryId },
-    );
-
-    const userScheduledTxIds = await this.scheduledTransactionsRepository
-      .createQueryBuilder("st")
-      .select("st.id")
-      .where("st.userId = :userId", { userId })
-      .getMany();
-
-    if (userScheduledTxIds.length > 0) {
-      const scheduledTxIds = userScheduledTxIds.map((st) => st.id);
-      await this.scheduledSplitsRepository
-        .createQueryBuilder()
-        .update(ScheduledTransactionSplit)
-        .set({ categoryId: toCategoryId })
-        .where("categoryId = :fromCategoryId", { fromCategoryId })
-        .andWhere("scheduledTransactionId IN (:...scheduledTxIds)", {
-          scheduledTxIds,
-        })
-        .execute();
-    }
-
-    return {
-      transactionsUpdated: transactionResult.affected || 0,
-      splitsUpdated,
-      scheduledUpdated: scheduledResult.affected || 0,
-    };
   }
 
   async getStats(userId: string): Promise<{

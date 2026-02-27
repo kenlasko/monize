@@ -239,6 +239,13 @@ export class TransactionReconciliationService {
       );
     }
 
+    const voidTransactions = transactions.filter(
+      (t) => t.status === TransactionStatus.VOID,
+    );
+    if (voidTransactions.length > 0) {
+      throw new BadRequestException("Cannot reconcile void transactions");
+    }
+
     await this.transactionsRepository
       .createQueryBuilder()
       .update(Transaction)

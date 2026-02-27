@@ -303,15 +303,16 @@ export class YahooFinanceService {
   getTradingDate(quote: YahooQuoteResult): Date {
     if (quote.regularMarketTime) {
       const marketDate = new Date(quote.regularMarketTime * 1000);
-      marketDate.setHours(0, 0, 0, 0);
+      // M17: Use UTC consistently to avoid timezone-dependent date drift
+      marketDate.setUTCHours(0, 0, 0, 0);
       return marketDate;
     }
 
     const date = new Date();
-    date.setHours(0, 0, 0, 0);
-    const day = date.getDay();
-    if (day === 0) date.setDate(date.getDate() - 2);
-    else if (day === 6) date.setDate(date.getDate() - 1);
+    date.setUTCHours(0, 0, 0, 0);
+    const day = date.getUTCDay();
+    if (day === 0) date.setUTCDate(date.getUTCDate() - 2);
+    else if (day === 6) date.setUTCDate(date.getUTCDate() - 1);
     return date;
   }
 

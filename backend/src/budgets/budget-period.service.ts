@@ -4,7 +4,7 @@ import {
   BadRequestException,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { Repository, DataSource } from "typeorm";
 import { Budget } from "./entities/budget.entity";
 import { RolloverType } from "./entities/budget-category.entity";
 import { BudgetPeriod, PeriodStatus } from "./entities/budget-period.entity";
@@ -26,6 +26,7 @@ export class BudgetPeriodService {
     @InjectRepository(TransactionSplit)
     private splitsRepository: Repository<TransactionSplit>,
     private budgetsService: BudgetsService,
+    private dataSource: DataSource,
   ) {}
 
   async findAll(userId: string, budgetId: string): Promise<BudgetPeriod[]> {
@@ -81,37 +82,53 @@ export class BudgetPeriodService {
       openPeriod.periodEnd,
     );
 
-    let totalIncome = 0;
-    let totalExpenses = 0;
+    // M26: Wrap period close in QueryRunner transaction for atomicity
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-    for (const pc of openPeriod.periodCategories) {
-      const actual = actuals.get(pc.budgetCategoryId) || 0;
-      pc.actualAmount = actual;
+    try {
+      let totalIncome = 0;
+      let totalExpenses = 0;
 
-      const rollover = this.computeRollover(pc, actual);
-      pc.rolloverOut = rollover;
+      for (const pc of openPeriod.periodCategories) {
+        const actual = actuals.get(pc.budgetCategoryId) || 0;
+        pc.actualAmount = actual;
 
-      const bcEntry = budget.categories?.find(
-        (c) => c.id === pc.budgetCategoryId,
-      );
-      if (bcEntry?.isIncome) {
-        totalIncome += actual;
-      } else {
-        totalExpenses += actual;
+        const rollover = this.computeRollover(pc, actual);
+        pc.rolloverOut = rollover;
+
+        const bcEntry = budget.categories?.find(
+          (c) => c.id === pc.budgetCategoryId,
+        );
+        if (bcEntry?.isIncome) {
+          totalIncome += actual;
+        } else {
+          totalExpenses += actual;
+        }
+
+        await queryRunner.manager.save(BudgetPeriodCategory, pc);
       }
 
-      await this.periodCategoriesRepository.save(pc);
+      openPeriod.actualIncome = totalIncome;
+      openPeriod.actualExpenses = totalExpenses;
+      openPeriod.status = PeriodStatus.CLOSED;
+
+      const closedPeriod = await queryRunner.manager.save(
+        BudgetPeriod,
+        openPeriod,
+      );
+
+      await this.createNextPeriod(budget, openPeriod, queryRunner);
+
+      await queryRunner.commitTransaction();
+      return closedPeriod;
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
     }
-
-    openPeriod.actualIncome = totalIncome;
-    openPeriod.actualExpenses = totalExpenses;
-    openPeriod.status = PeriodStatus.CLOSED;
-
-    const closedPeriod = await this.periodsRepository.save(openPeriod);
-
-    await this.createNextPeriod(budget, openPeriod);
-
-    return closedPeriod;
   }
 
   async getOrCreateCurrentPeriod(
@@ -135,6 +152,7 @@ export class BudgetPeriodService {
   async createPeriodForBudget(
     budget: Budget,
     rolloverMap?: Map<string, number>,
+    queryRunner?: import("typeorm").QueryRunner,
   ): Promise<BudgetPeriod> {
     const { periodStart, periodEnd } = getCurrentMonthPeriodDates();
 
@@ -144,7 +162,14 @@ export class BudgetPeriodService {
       .filter((bc) => !bc.isIncome)
       .reduce((sum, bc) => sum + Number(bc.amount), 0);
 
-    const period = this.periodsRepository.create({
+    const periodsRepo = queryRunner
+      ? queryRunner.manager.getRepository(BudgetPeriod)
+      : this.periodsRepository;
+    const periodCatsRepo = queryRunner
+      ? queryRunner.manager.getRepository(BudgetPeriodCategory)
+      : this.periodCategoriesRepository;
+
+    const period = periodsRepo.create({
       budgetId: budget.id,
       periodStart,
       periodEnd,
@@ -152,14 +177,14 @@ export class BudgetPeriodService {
       status: PeriodStatus.OPEN,
     });
 
-    const savedPeriod = await this.periodsRepository.save(period);
+    const savedPeriod = await periodsRepo.save(period);
 
     for (const bc of budgetCategories) {
       const rolloverIn = rolloverMap?.get(bc.id) || 0;
       const budgetedAmount = Number(bc.amount);
       const effectiveBudget = budgetedAmount + rolloverIn;
 
-      const periodCategory = this.periodCategoriesRepository.create({
+      const periodCategory = periodCatsRepo.create({
         budgetPeriodId: savedPeriod.id,
         budgetCategoryId: bc.id,
         categoryId: bc.categoryId,
@@ -170,7 +195,7 @@ export class BudgetPeriodService {
         rolloverOut: 0,
       });
 
-      await this.periodCategoriesRepository.save(periodCategory);
+      await periodCatsRepo.save(periodCategory);
     }
 
     return savedPeriod;
@@ -207,6 +232,7 @@ export class BudgetPeriodService {
   private async createNextPeriod(
     budget: Budget,
     closedPeriod: BudgetPeriod,
+    queryRunner?: import("typeorm").QueryRunner,
   ): Promise<BudgetPeriod> {
     const rolloverMap = new Map<string, number>();
 
@@ -218,7 +244,7 @@ export class BudgetPeriodService {
       }
     }
 
-    return this.createPeriodForBudget(budget, rolloverMap);
+    return this.createPeriodForBudget(budget, rolloverMap, queryRunner);
   }
 
   private async computePeriodActuals(

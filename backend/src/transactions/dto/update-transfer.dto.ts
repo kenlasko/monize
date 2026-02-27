@@ -32,7 +32,7 @@ export class UpdateTransferDto {
   @ApiPropertyOptional({ description: "Transfer amount (must be positive)" })
   @IsOptional()
   @IsNumber({ maxDecimalPlaces: 4 })
-  @Min(0)
+  @Min(0.0001)
   @Max(999999999999)
   amount?: number;
 
@@ -51,13 +51,13 @@ export class UpdateTransferDto {
   @ApiPropertyOptional({ description: "Exchange rate" })
   @IsOptional()
   @IsNumber({ maxDecimalPlaces: 10 })
-  @Min(0)
+  @Min(0.0001)
   exchangeRate?: number;
 
   @ApiPropertyOptional({ description: "Destination amount" })
   @IsOptional()
   @IsNumber({ maxDecimalPlaces: 4 })
-  @Min(0)
+  @Min(0.0001)
   @Max(999999999999)
   toAmount?: number;
 

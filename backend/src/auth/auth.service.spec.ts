@@ -67,6 +67,7 @@ describe("AuthService", () => {
       create: jest.fn(),
       save: jest.fn(),
       count: jest.fn(),
+      createQueryBuilder: jest.fn(),
     };
 
     preferencesRepository = {
@@ -334,8 +335,21 @@ describe("AuthService", () => {
   });
 
   describe("resetPassword", () => {
+    function mockQueryBuilder(executeResult: { affected: number; raw: any[] }) {
+      const builder = {
+        update: jest.fn().mockReturnThis(),
+        set: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        returning: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue(executeResult),
+      };
+      usersRepository.createQueryBuilder.mockReturnValue(builder);
+      return builder;
+    }
+
     it("throws for invalid token", async () => {
-      usersRepository.findOne.mockResolvedValue(null);
+      mockQueryBuilder({ affected: 0, raw: [] });
 
       await expect(
         service.resetPassword("invalid-token", "NewPass123!"),
@@ -343,10 +357,7 @@ describe("AuthService", () => {
     });
 
     it("throws for expired token", async () => {
-      usersRepository.findOne.mockResolvedValue({
-        ...mockUser,
-        resetTokenExpiry: new Date(Date.now() - 1000), // expired
-      });
+      mockQueryBuilder({ affected: 0, raw: [] });
 
       await expect(
         service.resetPassword("expired-token", "NewPass123!"),
@@ -354,12 +365,7 @@ describe("AuthService", () => {
     });
 
     it("revokes all refresh tokens after password reset", async () => {
-      const futureDate = new Date(Date.now() + 3600000);
-      usersRepository.findOne.mockResolvedValue({
-        ...mockUser,
-        resetTokenExpiry: futureDate,
-      });
-      usersRepository.save.mockResolvedValue(mockUser);
+      mockQueryBuilder({ affected: 1, raw: [{ id: mockUser.id }] });
       refreshTokensRepository.update.mockResolvedValue({ affected: 1 });
 
       await service.resetPassword("valid-token", "NewPass123!");
@@ -1386,40 +1392,44 @@ describe("AuthService", () => {
 
   describe("resetPassword - success path", () => {
     it("updates password hash, clears token, revokes all refresh tokens", async () => {
-      // Generate a known raw token and its hash
-      const crypto = await import("crypto");
       const rawToken = "test-reset-token-hex-value";
-      const hashedToken = crypto
-        .createHash("sha256")
-        .update(rawToken)
-        .digest("hex");
 
-      const futureDate = new Date(Date.now() + 3600000);
-      usersRepository.findOne.mockResolvedValue({
-        ...mockUser,
-        resetToken: hashedToken,
-        resetTokenExpiry: futureDate,
+      const mockExecute = jest.fn().mockResolvedValue({
+        affected: 1,
+        raw: [{ id: mockUser.id }],
       });
-      usersRepository.save.mockImplementation((u) => u);
+      const builder = {
+        update: jest.fn().mockReturnThis(),
+        set: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        returning: jest.fn().mockReturnThis(),
+        execute: mockExecute,
+      };
+      usersRepository.createQueryBuilder.mockReturnValue(builder);
       refreshTokensRepository.update.mockResolvedValue({ affected: 2 });
 
       await service.resetPassword(rawToken, "NewSecurePass123!");
 
-      // Password should be hashed (not plaintext)
-      const savedUser = usersRepository.save.mock.calls[0][0];
-      expect(savedUser.passwordHash).toBeTruthy();
-      expect(savedUser.passwordHash).not.toBe("NewSecurePass123!");
+      // The query builder should have been used to update the user
+      expect(usersRepository.createQueryBuilder).toHaveBeenCalled();
+      expect(builder.update).toHaveBeenCalled();
+
+      // Password hash should have been set (not plaintext)
+      const setArg = builder.set.mock.calls[0][0];
+      expect(setArg.passwordHash).toBeTruthy();
+      expect(setArg.passwordHash).not.toBe("NewSecurePass123!");
       const isPasswordValid = await bcrypt.compare(
         "NewSecurePass123!",
-        savedUser.passwordHash,
+        setArg.passwordHash,
       );
       expect(isPasswordValid).toBe(true);
 
       // Token fields should be cleared
-      expect(savedUser.resetToken).toBeNull();
-      expect(savedUser.resetTokenExpiry).toBeNull();
+      expect(setArg.resetToken).toBeNull();
+      expect(setArg.resetTokenExpiry).toBeNull();
 
-      // All refresh tokens should be revoked
+      // All refresh tokens should be revoked using the userId from the result
       expect(refreshTokensRepository.update).toHaveBeenCalledWith(
         { userId: mockUser.id, isRevoked: false },
         { isRevoked: true },

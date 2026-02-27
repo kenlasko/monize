@@ -381,7 +381,11 @@ export class ReportsService {
       queryBuilder.andWhere("transaction.isTransfer = false");
     }
 
-    return queryBuilder.orderBy("transaction.transactionDate", "ASC").getMany();
+    // M29: Limit result set to prevent unbounded memory consumption
+    return queryBuilder
+      .orderBy("transaction.transactionDate", "ASC")
+      .take(50000)
+      .getMany();
   }
 
   private applyFilterGroups(

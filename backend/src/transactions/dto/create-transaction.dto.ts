@@ -67,7 +67,7 @@ export class CreateTransactionDto {
   @ApiPropertyOptional({ description: "Exchange rate (defaults to 1.0)" })
   @IsOptional()
   @IsNumber({ maxDecimalPlaces: 10 })
-  @Min(0)
+  @Min(0.000001)
   exchangeRate?: number;
 
   @ApiPropertyOptional({ description: "Transaction description/notes" })

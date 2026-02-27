@@ -23,7 +23,10 @@ import { AuthGuard } from "@nestjs/passport";
 import { InvestmentTransactionsService } from "./investment-transactions.service";
 import { CreateInvestmentTransactionDto } from "./dto/create-investment-transaction.dto";
 import { UpdateInvestmentTransactionDto } from "./dto/update-investment-transaction.dto";
-import { InvestmentTransaction } from "./entities/investment-transaction.entity";
+import {
+  InvestmentTransaction,
+  InvestmentAction,
+} from "./entities/investment-transaction.entity";
 
 @ApiTags("Investment Transactions")
 @ApiBearerAuth()
@@ -137,6 +140,16 @@ export class InvestmentTransactionsController {
       }
       if (limitNum > 200) {
         throw new BadRequestException("limit must not exceed 200");
+      }
+    }
+
+    // M15: Validate action against enum values
+    if (action !== undefined) {
+      const validActions = Object.values(InvestmentAction);
+      if (!validActions.includes(action as InvestmentAction)) {
+        throw new BadRequestException(
+          `Invalid action: ${action}. Must be one of: ${validActions.join(", ")}`,
+        );
       }
     }
 

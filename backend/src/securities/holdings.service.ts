@@ -254,20 +254,26 @@ export class HoldingsService {
     holdingsUpdated: number;
     holdingsDeleted: number;
   }> {
-    // Get all brokerage accounts for the user
-    const brokerageAccounts = await this.accountsRepository.find({
+    // M14: Get all investment accounts (brokerage + standalone) for the user
+    const investmentAccounts = await this.accountsRepository.find({
       where: {
         userId,
         accountType: AccountType.INVESTMENT,
-        accountSubType: AccountSubType.INVESTMENT_BROKERAGE,
       },
     });
 
-    if (brokerageAccounts.length === 0) {
+    // Include brokerage accounts and standalone investment accounts (null subType)
+    const eligibleAccounts = investmentAccounts.filter(
+      (a) =>
+        a.accountSubType === AccountSubType.INVESTMENT_BROKERAGE ||
+        !a.accountSubType,
+    );
+
+    if (eligibleAccounts.length === 0) {
       return { holdingsCreated: 0, holdingsUpdated: 0, holdingsDeleted: 0 };
     }
 
-    const brokerageAccountIds = brokerageAccounts.map((a) => a.id);
+    const brokerageAccountIds = eligibleAccounts.map((a) => a.id);
 
     // Get all investment transactions for these accounts up to today, ordered by date
     // Future-dated transactions are excluded so they don't affect current holdings

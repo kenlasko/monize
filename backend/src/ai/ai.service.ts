@@ -30,6 +30,8 @@ const DEFAULT_MAX_AI_PROVIDERS_PER_USER = 10;
 export class AiService {
   private readonly logger = new Logger(AiService.name);
   private readonly maxProvidersPerUser: number;
+  // M28: Cache the encrypted default API key to avoid re-encrypting on every call
+  private cachedDefaultApiKeyEnc: string | null = null;
 
   constructor(
     @InjectRepository(AiProviderConfig)
@@ -292,7 +294,11 @@ export class AiService {
 
     const defaultApiKey = this.configService.get<string>("AI_DEFAULT_API_KEY");
     if (defaultApiKey && this.encryptionService.isConfigured()) {
-      config.apiKeyEnc = this.encryptionService.encrypt(defaultApiKey);
+      if (!this.cachedDefaultApiKeyEnc) {
+        this.cachedDefaultApiKeyEnc =
+          this.encryptionService.encrypt(defaultApiKey);
+      }
+      config.apiKeyEnc = this.cachedDefaultApiKeyEnc;
     }
 
     return config;
