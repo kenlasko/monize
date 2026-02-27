@@ -8,6 +8,7 @@ import {
 } from "typeorm";
 import { Budget } from "./budget.entity";
 import { BudgetCategory } from "./budget-category.entity";
+import { User } from "../../users/entities/user.entity";
 
 export enum AlertType {
   PACE_WARNING = "PACE_WARNING",
@@ -48,6 +49,10 @@ export class BudgetAlert {
 
   @Column({ type: "uuid", name: "user_id" })
   userId: string;
+
+  @ManyToOne(() => User)
+  @JoinColumn({ name: "user_id" })
+  user?: User;
 
   @Column({ type: "uuid", name: "budget_id", nullable: true })
   budgetId: string | null;

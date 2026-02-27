@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
-import { APP_GUARD, APP_INTERCEPTOR } from "@nestjs/core";
+import { APP_GUARD, APP_INTERCEPTOR, Reflector } from "@nestjs/core";
+import { ClassSerializerInterceptor } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { ScheduleModule } from "@nestjs/schedule";
@@ -107,6 +108,12 @@ import { BudgetsModule } from "./budgets/budgets.module";
     { provide: APP_GUARD, useClass: MustChangePasswordGuard },
     { provide: APP_GUARD, useClass: DemoModeGuard },
     { provide: APP_INTERCEPTOR, useClass: CsrfRefreshInterceptor },
+    {
+      provide: APP_INTERCEPTOR,
+      useFactory: (reflector: Reflector) =>
+        new ClassSerializerInterceptor(reflector),
+      inject: [Reflector],
+    },
   ],
 })
 export class AppModule {}

@@ -214,82 +214,50 @@ Each split saved individually in a loop. Transfer-type splits create linked tran
 
 ## LOW Findings
 
-### 19. N+1: Brokerage Balance Reset
+### 19. ~~N+1: Brokerage Balance Reset~~ FIXED
 
-- **File:** `backend/src/accounts/accounts.service.ts`, lines 737-752
+- **File:** `backend/src/accounts/accounts.service.ts`
 - **Severity:** LOW
-
-Individual saves per account.
-
-**Fix:** Single `UPDATE accounts SET balance = 0 WHERE account_type = 'INVESTMENT' AND account_sub_type = 'INVESTMENT_BROKERAGE' AND user_id = :userId`.
+- **Status:** FIXED -- Replaced find+loop+save with single `accountsRepository.update()` query.
 
 ---
 
-### 20. N+1: Scheduled Transaction Auto-Post
+### 20. ~~N+1: Scheduled Transaction Auto-Post~~ FIXED
 
-- **File:** `backend/src/scheduled-transactions/scheduled-transactions.service.ts`, lines 88-102
+- **File:** `backend/src/scheduled-transactions/scheduled-transactions.service.ts`
 - **Severity:** LOW
-
-Individual processing per due transaction. Hard to fully batch due to different accounts/amounts/splits per posting.
-
-**Fix:** Wrap in a single `QueryRunner` transaction for atomicity. Individual inserts may remain.
+- **Status:** FIXED -- Post-creation bookkeeping (override removal, next date calculation, scheduled transaction update) wrapped in `QueryRunner` transaction for atomicity.
 
 ---
 
-### 21. N+1: Per-Account Balance Recalculation
+### 21. ~~N+1: Per-Account Balance Recalculation~~ FIXED
 
-- **File:** `backend/src/accounts/accounts.service.ts`, lines 857-876
+- **File:** `backend/src/accounts/accounts.service.ts`
 - **Severity:** LOW
-
-Individual aggregate query per account.
-
-**Fix:** Single SQL with `GROUP BY account_id`.
+- **Status:** FIXED -- Replaced per-account aggregate queries with single SQL using `GROUP BY` via `ANY($1)` array parameter.
 
 ---
 
-### 22. Missing FK Relations on 13 Entities
+### 22. ~~Missing FK Relations on 13 Entities~~ FIXED
 
-DB-level FK constraints exist, so this is a code consistency issue, not a security one.
-
-| Entity | File | userId Line |
-|--------|------|-------------|
-| Transaction | `backend/src/transactions/entities/transaction.entity.ts` | 29 |
-| Account | `backend/src/accounts/entities/account.entity.ts` | 217 |
-| Category | `backend/src/categories/entities/category.entity.ts` | 17 |
-| Payee | `backend/src/payees/entities/payee.entity.ts` | 22 |
-| ScheduledTransaction | `backend/src/scheduled-transactions/entities/scheduled-transaction.entity.ts` | 33 |
-| InvestmentTransaction | `backend/src/securities/entities/investment-transaction.entity.ts` | 37 |
-| MonthlyAccountBalance | `backend/src/net-worth/entities/monthly-account-balance.entity.ts` | 20 |
-| Budget | `backend/src/budgets/entities/budget.entity.ts` | 62 |
-| BudgetAlert | `backend/src/budgets/entities/budget-alert.entity.ts` | 49 |
-| CustomReport | `backend/src/reports/entities/custom-report.entity.ts` | 112 |
-| AiProviderConfig | `backend/src/ai/entities/ai-provider-config.entity.ts` | 23 |
-| AiUsageLog | `backend/src/ai/entities/ai-usage-log.entity.ts` | 14 |
-| AiInsight | `backend/src/ai/entities/ai-insight.entity.ts` | 29 |
-
-**Fix:** Add `@ManyToOne(() => User)` + `@JoinColumn({ name: 'user_id' })` to each entity.
-
----
-
-### 23. @Exclude() Without ClassSerializerInterceptor
-
-- **File:** `backend/src/users/entities/user.entity.ts`
 - **Severity:** LOW
-
-`@Exclude()` decorators exist on sensitive fields (`passwordHash`, `resetToken`, `resetTokenExpiry`, `twoFactorSecret`) but `ClassSerializerInterceptor` is not registered globally. Not a vulnerability because all code manually sanitizes User objects, but the decorators give a false sense of security.
-
-**Fix:** Either register `ClassSerializerInterceptor` globally for defense-in-depth, or remove the `@Exclude()` decorators.
+- **Status:** FIXED -- Added `@ManyToOne(() => User)` + `@JoinColumn({ name: 'user_id' })` to all 13 entities: Transaction, Account, Category, Payee, ScheduledTransaction, InvestmentTransaction, MonthlyAccountBalance, Budget, BudgetAlert, CustomReport, AiProviderConfig, AiUsageLog, AiInsight.
 
 ---
 
-### 24. ProfileSection Missing Client-Side Validation
+### 23. ~~@Exclude() Without ClassSerializerInterceptor~~ FIXED
+
+- **File:** `backend/src/app.module.ts`
+- **Severity:** LOW
+- **Status:** FIXED -- Registered `ClassSerializerInterceptor` globally as `APP_INTERCEPTOR` for defense-in-depth.
+
+---
+
+### 24. ~~ProfileSection Missing Client-Side Validation~~ FIXED
 
 - **File:** `frontend/src/components/settings/ProfileSection.tsx`
 - **Severity:** LOW
-
-Uses `useState` instead of Zod/react-hook-form. No client-side email format or length validation. Backend DTOs catch everything, so this is a UX gap not a security issue.
-
-**Fix:** Migrate to Zod + react-hook-form pattern consistent with other forms.
+- **Status:** FIXED -- Migrated from `useState` to Zod + react-hook-form with email format/length validation, name length validation, and password length validation.
 
 ---
 

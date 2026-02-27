@@ -51,6 +51,7 @@ describe("AccountsService", () => {
       findOneOrFail: jest.fn(),
       find: jest.fn(),
       remove: jest.fn(),
+      update: jest.fn(),
       count: jest.fn(),
       query: jest.fn(),
       createQueryBuilder: jest.fn(() => ({
@@ -606,21 +607,62 @@ describe("AccountsService", () => {
     });
   });
 
+  describe("findByIds", () => {
+    it("returns accounts matching provided IDs for the user", async () => {
+      const accounts = [
+        { id: "acc-1", userId: "user-1" },
+        { id: "acc-2", userId: "user-1" },
+      ];
+      accountsRepository.find.mockResolvedValue(accounts);
+
+      const result = await service.findByIds("user-1", ["acc-1", "acc-2"]);
+
+      expect(accountsRepository.find).toHaveBeenCalledWith({
+        where: { id: expect.anything(), userId: "user-1" },
+      });
+      expect(result).toHaveLength(2);
+    });
+
+    it("returns empty array when no IDs provided", async () => {
+      const result = await service.findByIds("user-1", []);
+
+      expect(accountsRepository.find).not.toHaveBeenCalled();
+      expect(result).toEqual([]);
+    });
+
+    it("silently skips IDs that do not belong to user", async () => {
+      accountsRepository.find.mockResolvedValue([
+        { id: "acc-1", userId: "user-1" },
+      ]);
+
+      const result = await service.findByIds("user-1", [
+        "acc-1",
+        "acc-other-user",
+      ]);
+
+      expect(result).toHaveLength(1);
+    });
+  });
+
   describe("resetBrokerageBalances", () => {
     it("resets all brokerage account balances to 0", async () => {
-      accountsRepository.find.mockResolvedValue([
-        { id: "brk-1", currentBalance: 5000 },
-        { id: "brk-2", currentBalance: 3000 },
-      ]);
+      accountsRepository.update.mockResolvedValue({ affected: 2 });
 
       const result = await service.resetBrokerageBalances("user-1");
 
       expect(result).toBe(2);
-      expect(accountsRepository.save).toHaveBeenCalledTimes(2);
+      expect(accountsRepository.update).toHaveBeenCalledWith(
+        {
+          userId: "user-1",
+          accountType: AccountType.INVESTMENT,
+          accountSubType: AccountSubType.INVESTMENT_BROKERAGE,
+        },
+        { currentBalance: 0 },
+      );
     });
 
     it("returns 0 when no brokerage accounts", async () => {
-      accountsRepository.find.mockResolvedValue([]);
+      accountsRepository.update.mockResolvedValue({ affected: 0 });
 
       const result = await service.resetBrokerageBalances("user-1");
 

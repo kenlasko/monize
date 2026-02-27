@@ -7,6 +7,7 @@ import {
   OneToMany,
   JoinColumn,
 } from "typeorm";
+import { User } from "../../users/entities/user.entity";
 
 @Entity("categories")
 export class Category {
@@ -15,6 +16,10 @@ export class Category {
 
   @Column({ type: "uuid", name: "user_id" })
   userId: string;
+
+  @ManyToOne(() => User)
+  @JoinColumn({ name: "user_id" })
+  user?: User;
 
   @Column({ type: "uuid", name: "parent_id", nullable: true })
   parentId: string | null;

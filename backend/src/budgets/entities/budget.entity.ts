@@ -5,9 +5,12 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   OneToMany,
+  ManyToOne,
+  JoinColumn,
 } from "typeorm";
 import { BudgetCategory } from "./budget-category.entity";
 import { BudgetPeriod } from "./budget-period.entity";
+import { User } from "../../users/entities/user.entity";
 
 export enum BudgetType {
   MONTHLY = "MONTHLY",
@@ -61,6 +64,10 @@ export class Budget {
 
   @Column({ type: "uuid", name: "user_id" })
   userId: string;
+
+  @ManyToOne(() => User)
+  @JoinColumn({ name: "user_id" })
+  user?: User;
 
   @Column({ type: "varchar", length: 255 })
   name: string;

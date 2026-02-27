@@ -785,20 +785,16 @@ export class AccountsService {
    * Used when clearing investment data for re-import.
    */
   async resetBrokerageBalances(userId: string): Promise<number> {
-    const brokerageAccounts = await this.accountsRepository.find({
-      where: {
+    const result = await this.accountsRepository.update(
+      {
         userId,
         accountType: AccountType.INVESTMENT,
         accountSubType: AccountSubType.INVESTMENT_BROKERAGE,
       },
-    });
+      { currentBalance: 0 },
+    );
 
-    for (const account of brokerageAccounts) {
-      account.currentBalance = 0;
-      await this.accountsRepository.save(account);
-    }
-
-    return brokerageAccounts.length;
+    return result.affected ?? 0;
   }
 
   /**
@@ -904,25 +900,26 @@ export class AccountsService {
         return;
       }
 
-      for (const row of accountRows) {
-        const result: { balance: string }[] = await this.dataSource.query(
-          `SELECT COALESCE(a.opening_balance, 0) + COALESCE(SUM(t.amount), 0) as balance
+      const accountIds = accountRows.map((r) => r.account_id);
+      const balances: { account_id: string; balance: string }[] =
+        await this.dataSource.query(
+          `SELECT a.id as account_id,
+                  COALESCE(a.opening_balance, 0) + COALESCE(SUM(t.amount), 0) as balance
            FROM accounts a
            LEFT JOIN transactions t ON t.account_id = a.id
              AND (t.status IS NULL OR t.status != 'VOID')
              AND t.parent_transaction_id IS NULL
              AND t.transaction_date <= CURRENT_DATE
-           WHERE a.id = $1
-           GROUP BY a.opening_balance`,
-          [row.account_id],
+           WHERE a.id = ANY($1)
+           GROUP BY a.id, a.opening_balance`,
+          [accountIds],
         );
 
-        if (result.length > 0) {
-          const newBalance = Math.round(Number(result[0].balance) * 100) / 100;
-          await this.accountsRepository.update(row.account_id, {
-            currentBalance: newBalance,
-          });
-        }
+      for (const row of balances) {
+        const newBalance = Math.round(Number(row.balance) * 100) / 100;
+        await this.accountsRepository.update(row.account_id, {
+          currentBalance: newBalance,
+        });
       }
 
       this.logger.log(

@@ -11,6 +11,7 @@ import { ApiProperty } from "@nestjs/swagger";
 import { Account } from "../../accounts/entities/account.entity";
 import { Transaction } from "../../transactions/entities/transaction.entity";
 import { Security } from "./security.entity";
+import { User } from "../../users/entities/user.entity";
 
 export enum InvestmentAction {
   BUY = "BUY",
@@ -35,6 +36,10 @@ export class InvestmentTransaction {
   @ApiProperty()
   @Column({ type: "uuid", name: "user_id" })
   userId: string;
+
+  @ManyToOne(() => User)
+  @JoinColumn({ name: "user_id" })
+  user?: User;
 
   @ApiProperty()
   @Column({ type: "uuid", name: "account_id" })

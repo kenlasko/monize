@@ -11,6 +11,7 @@ import {
 import { Transaction } from "../../transactions/entities/transaction.entity";
 import { Category } from "../../categories/entities/category.entity";
 import { ScheduledTransaction } from "../../scheduled-transactions/entities/scheduled-transaction.entity";
+import { User } from "../../users/entities/user.entity";
 
 export enum AccountType {
   CHEQUING = "CHEQUING",
@@ -215,6 +216,10 @@ export class Account {
 
   @Column({ type: "uuid", name: "user_id" })
   userId: string;
+
+  @ManyToOne(() => User)
+  @JoinColumn({ name: "user_id" })
+  user?: User;
 
   @OneToMany(() => Transaction, (transaction) => transaction.account)
   transactions: Transaction[];
