@@ -22,6 +22,7 @@ describe("TransactionSplitService", () => {
   let splitsRepository: Record<string, jest.Mock>;
   let categoriesRepository: Record<string, jest.Mock>;
   let accountsService: Record<string, jest.Mock>;
+  let mockQueryRunner: Record<string, any>;
 
   const mockTransaction: Partial<Transaction> = {
     id: "tx-1",
@@ -100,7 +101,7 @@ describe("TransactionSplitService", () => {
       recalculateCurrentBalance: jest.fn().mockResolvedValue(undefined),
     };
 
-    const mockQueryRunner = {
+    mockQueryRunner = {
       connect: jest.fn(),
       startTransaction: jest.fn(),
       commitTransaction: jest.fn(),
@@ -1170,6 +1171,80 @@ describe("TransactionSplitService", () => {
         );
         expect(transactionsRepository.remove).toHaveBeenCalledTimes(2);
       });
+    });
+  });
+
+  describe("createSplits atomicity", () => {
+    it("commits own transaction when no external queryRunner provided", async () => {
+      const splits = [
+        { amount: -60, categoryId: "cat-1", memo: "Food" },
+        { amount: -40, categoryId: "cat-2", memo: "Drinks" },
+      ];
+
+      await service.createSplits("tx-1", splits, "user-1", "account-1");
+
+      expect(mockQueryRunner.connect).toHaveBeenCalled();
+      expect(mockQueryRunner.startTransaction).toHaveBeenCalled();
+      expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
+      expect(mockQueryRunner.rollbackTransaction).not.toHaveBeenCalled();
+      expect(mockQueryRunner.release).toHaveBeenCalled();
+    });
+
+    it("rolls back own transaction on error and releases queryRunner", async () => {
+      splitsRepository.save.mockRejectedValue(new Error("Split save error"));
+
+      const splits = [{ amount: -60, categoryId: "cat-1", memo: "Food" }];
+
+      await expect(
+        service.createSplits("tx-1", splits, "user-1", "account-1"),
+      ).rejects.toThrow("Split save error");
+
+      expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
+      expect(mockQueryRunner.commitTransaction).not.toHaveBeenCalled();
+      expect(mockQueryRunner.release).toHaveBeenCalled();
+    });
+
+    it("does not manage transaction lifecycle when external queryRunner provided", async () => {
+      const externalQr = {
+        connect: jest.fn(),
+        startTransaction: jest.fn(),
+        commitTransaction: jest.fn(),
+        rollbackTransaction: jest.fn(),
+        release: jest.fn(),
+        manager: {
+          create: jest
+            .fn()
+            .mockImplementation((_Entity: any, data: any) =>
+              splitsRepository.create(data),
+            ),
+          save: jest
+            .fn()
+            .mockImplementation((data: any) => splitsRepository.save(data)),
+          update: jest.fn().mockResolvedValue(undefined),
+        },
+      } as any;
+
+      const splits = [
+        { amount: -60, categoryId: "cat-1", memo: "Food" },
+        { amount: -40, categoryId: "cat-2", memo: "Drinks" },
+      ];
+
+      await service.createSplits(
+        "tx-1",
+        splits,
+        "user-1",
+        "account-1",
+        new Date("2026-01-15"),
+        null,
+        externalQr,
+      );
+
+      // Should NOT manage transaction lifecycle for external queryRunner
+      expect(externalQr.connect).not.toHaveBeenCalled();
+      expect(externalQr.startTransaction).not.toHaveBeenCalled();
+      expect(externalQr.commitTransaction).not.toHaveBeenCalled();
+      expect(externalQr.rollbackTransaction).not.toHaveBeenCalled();
+      expect(externalQr.release).not.toHaveBeenCalled();
     });
   });
 });

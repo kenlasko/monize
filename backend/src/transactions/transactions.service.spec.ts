@@ -3734,4 +3734,50 @@ describe("TransactionsService", () => {
       expect(accountsService.updateBalance).not.toHaveBeenCalled();
     });
   });
+
+  describe("create transaction atomicity", () => {
+    it("commits transaction on success and releases queryRunner", async () => {
+      transactionsRepository.findOne.mockResolvedValue({
+        id: "tx-1",
+        userId: "user-1",
+        accountId: "account-1",
+        amount: -50,
+        status: "UNRECONCILED",
+        isSplit: false,
+        transactionDate: "2026-01-15",
+        account: mockAccount,
+      });
+
+      await service.create("user-1", {
+        accountId: "account-1",
+        transactionDate: "2026-01-15",
+        amount: -50,
+        currencyCode: "USD",
+      } as any);
+
+      expect(mockQueryRunner.connect).toHaveBeenCalled();
+      expect(mockQueryRunner.startTransaction).toHaveBeenCalled();
+      expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
+      expect(mockQueryRunner.rollbackTransaction).not.toHaveBeenCalled();
+      expect(mockQueryRunner.release).toHaveBeenCalled();
+    });
+
+    it("rolls back on error and releases queryRunner", async () => {
+      transactionsRepository.save.mockRejectedValue(new Error("DB save error"));
+
+      await expect(
+        service.create("user-1", {
+          accountId: "account-1",
+          transactionDate: "2026-01-15",
+          amount: -50,
+          currencyCode: "USD",
+        } as any),
+      ).rejects.toThrow("DB save error");
+
+      expect(mockQueryRunner.startTransaction).toHaveBeenCalled();
+      expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
+      expect(mockQueryRunner.commitTransaction).not.toHaveBeenCalled();
+      expect(mockQueryRunner.release).toHaveBeenCalled();
+    });
+  });
 });

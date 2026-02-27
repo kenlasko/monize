@@ -1256,4 +1256,61 @@ describe("HoldingsService", () => {
       expect(accountIdOperator._value).toEqual(["acc-1", "acc-2"]);
     });
   });
+
+  describe("rebuildFromTransactions atomicity", () => {
+    it("commits transaction on success and releases queryRunner", async () => {
+      accountsRepository.find.mockResolvedValue([mockAccount]);
+      investmentTransactionsRepository.find.mockResolvedValue([]);
+
+      await service.rebuildFromTransactions("user-1");
+
+      expect(mockQueryRunner.connect).toHaveBeenCalled();
+      expect(mockQueryRunner.startTransaction).toHaveBeenCalled();
+      expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
+      expect(mockQueryRunner.rollbackTransaction).not.toHaveBeenCalled();
+      expect(mockQueryRunner.release).toHaveBeenCalled();
+    });
+
+    it("rolls back on error during delete and releases queryRunner", async () => {
+      accountsRepository.find.mockResolvedValue([mockAccount]);
+      investmentTransactionsRepository.find.mockResolvedValue([]);
+      mockQueryRunner.manager.find.mockResolvedValue([{ id: "old-hold" }]);
+      mockQueryRunner.manager.remove.mockRejectedValue(
+        new Error("Delete failed"),
+      );
+
+      await expect(service.rebuildFromTransactions("user-1")).rejects.toThrow(
+        "Delete failed",
+      );
+
+      expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
+      expect(mockQueryRunner.commitTransaction).not.toHaveBeenCalled();
+      expect(mockQueryRunner.release).toHaveBeenCalled();
+    });
+
+    it("rolls back on error during save and releases queryRunner", async () => {
+      accountsRepository.find.mockResolvedValue([mockAccount]);
+      const transactions = [
+        {
+          accountId: "acc-1",
+          securityId: "sec-1",
+          action: InvestmentAction.BUY,
+          quantity: 100,
+          price: 150,
+          transactionDate: "2025-01-01",
+          createdAt: new Date("2025-01-01"),
+        },
+      ];
+      investmentTransactionsRepository.find.mockResolvedValue(transactions);
+      mockQrRepo.save.mockRejectedValue(new Error("Save failed"));
+
+      await expect(service.rebuildFromTransactions("user-1")).rejects.toThrow(
+        "Save failed",
+      );
+
+      expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
+      expect(mockQueryRunner.commitTransaction).not.toHaveBeenCalled();
+      expect(mockQueryRunner.release).toHaveBeenCalled();
+    });
+  });
 });

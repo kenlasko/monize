@@ -1072,4 +1072,171 @@ describe("TransactionTransferService", () => {
       });
     });
   });
+
+  describe("transaction atomicity", () => {
+    it("createTransfer commits transaction on success and releases queryRunner", async () => {
+      transactionsRepository.save
+        .mockReset()
+        .mockResolvedValueOnce({ id: "from-tx-id" })
+        .mockResolvedValueOnce({ id: "to-tx-id" });
+
+      mockFindOne
+        .mockResolvedValueOnce({ id: "from-tx-id" })
+        .mockResolvedValueOnce({ id: "to-tx-id" });
+
+      await service.createTransfer("user-1", baseTransferDto, mockFindOne);
+
+      expect(mockQueryRunner.connect).toHaveBeenCalled();
+      expect(mockQueryRunner.startTransaction).toHaveBeenCalled();
+      expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
+      expect(mockQueryRunner.rollbackTransaction).not.toHaveBeenCalled();
+      expect(mockQueryRunner.release).toHaveBeenCalled();
+    });
+
+    it("createTransfer rolls back on error and releases queryRunner", async () => {
+      transactionsRepository.save
+        .mockReset()
+        .mockRejectedValue(new Error("DB error"));
+
+      await expect(
+        service.createTransfer("user-1", baseTransferDto, mockFindOne),
+      ).rejects.toThrow("DB error");
+
+      expect(mockQueryRunner.startTransaction).toHaveBeenCalled();
+      expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
+      expect(mockQueryRunner.commitTransaction).not.toHaveBeenCalled();
+      expect(mockQueryRunner.release).toHaveBeenCalled();
+    });
+
+    it("removeTransfer commits transaction on success and releases queryRunner", async () => {
+      const fromTx = {
+        id: "from-tx",
+        isTransfer: true,
+        linkedTransactionId: null,
+        accountId: "from-account",
+        amount: -500,
+      };
+
+      mockFindOne.mockResolvedValue(fromTx);
+      splitsRepository.findOne.mockResolvedValue(null);
+
+      await service.removeTransfer("user-1", "from-tx", mockFindOne);
+
+      expect(mockQueryRunner.connect).toHaveBeenCalled();
+      expect(mockQueryRunner.startTransaction).toHaveBeenCalled();
+      expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
+      expect(mockQueryRunner.rollbackTransaction).not.toHaveBeenCalled();
+      expect(mockQueryRunner.release).toHaveBeenCalled();
+    });
+
+    it("removeTransfer rolls back on error and releases queryRunner", async () => {
+      const fromTx = {
+        id: "from-tx",
+        isTransfer: true,
+        linkedTransactionId: null,
+        accountId: "from-account",
+        amount: -500,
+      };
+
+      mockFindOne.mockResolvedValue(fromTx);
+      splitsRepository.findOne.mockResolvedValue(null);
+      accountsService.updateBalance.mockRejectedValueOnce(
+        new Error("Balance error"),
+      );
+
+      await expect(
+        service.removeTransfer("user-1", "from-tx", mockFindOne),
+      ).rejects.toThrow("Balance error");
+
+      expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
+      expect(mockQueryRunner.commitTransaction).not.toHaveBeenCalled();
+      expect(mockQueryRunner.release).toHaveBeenCalled();
+    });
+
+    it("updateTransfer commits transaction on success and releases queryRunner", async () => {
+      const fromTx = {
+        id: "from-tx",
+        accountId: "from-account",
+        amount: -500,
+        isTransfer: true,
+        linkedTransactionId: "to-tx",
+        exchangeRate: 1,
+        account: mockFromAccount,
+        transactionDate: "2026-01-15",
+      } as unknown as Transaction;
+
+      const toTx = {
+        id: "to-tx",
+        accountId: "to-account",
+        amount: 500,
+        isTransfer: true,
+        linkedTransactionId: "from-tx",
+        exchangeRate: 1,
+        account: mockToAccount,
+        transactionDate: "2026-01-15",
+      } as unknown as Transaction;
+
+      mockFindOne
+        .mockResolvedValueOnce(fromTx)
+        .mockResolvedValueOnce(toTx)
+        .mockResolvedValueOnce({ ...fromTx, amount: -600 })
+        .mockResolvedValueOnce({ ...toTx, amount: 600 });
+
+      await service.updateTransfer(
+        "user-1",
+        "from-tx",
+        { amount: 600 },
+        mockFindOne,
+      );
+
+      expect(mockQueryRunner.connect).toHaveBeenCalled();
+      expect(mockQueryRunner.startTransaction).toHaveBeenCalled();
+      expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
+      expect(mockQueryRunner.rollbackTransaction).not.toHaveBeenCalled();
+      expect(mockQueryRunner.release).toHaveBeenCalled();
+    });
+
+    it("updateTransfer rolls back on error and releases queryRunner", async () => {
+      const fromTx = {
+        id: "from-tx",
+        accountId: "from-account",
+        amount: -500,
+        isTransfer: true,
+        linkedTransactionId: "to-tx",
+        exchangeRate: 1,
+        account: mockFromAccount,
+        transactionDate: "2026-01-15",
+      } as unknown as Transaction;
+
+      const toTx = {
+        id: "to-tx",
+        accountId: "to-account",
+        amount: 500,
+        isTransfer: true,
+        linkedTransactionId: "from-tx",
+        exchangeRate: 1,
+        account: mockToAccount,
+        transactionDate: "2026-01-15",
+      } as unknown as Transaction;
+
+      mockFindOne.mockResolvedValueOnce(fromTx).mockResolvedValueOnce(toTx);
+
+      accountsService.updateBalance.mockRejectedValueOnce(
+        new Error("DB error"),
+      );
+
+      await expect(
+        service.updateTransfer(
+          "user-1",
+          "from-tx",
+          { amount: 600 },
+          mockFindOne,
+        ),
+      ).rejects.toThrow("DB error");
+
+      expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
+      expect(mockQueryRunner.commitTransaction).not.toHaveBeenCalled();
+      expect(mockQueryRunner.release).toHaveBeenCalled();
+    });
+  });
 });

@@ -36,6 +36,7 @@ describe("InvestmentTransactionsService", () => {
   let securitiesService: Record<string, jest.Mock>;
   let netWorthService: Record<string, jest.Mock>;
   let dataSource: Record<string, jest.Mock>;
+  let mockQueryRunner: Record<string, any>;
 
   const userId = "user-1";
   const accountId = "account-1";
@@ -223,47 +224,49 @@ describe("InvestmentTransactionsService", () => {
       triggerDebouncedRecalc: jest.fn(),
     };
 
-    dataSource = {
-      createQueryRunner: jest.fn().mockReturnValue({
-        connect: jest.fn(),
-        startTransaction: jest.fn(),
-        commitTransaction: jest.fn(),
-        rollbackTransaction: jest.fn(),
-        release: jest.fn(),
-        query: jest.fn().mockResolvedValue([]),
-        manager: {
-          create: jest.fn().mockImplementation((_Entity: any, data: any) => {
+    mockQueryRunner = {
+      connect: jest.fn(),
+      startTransaction: jest.fn(),
+      commitTransaction: jest.fn(),
+      rollbackTransaction: jest.fn(),
+      release: jest.fn(),
+      query: jest.fn().mockResolvedValue([]),
+      manager: {
+        create: jest.fn().mockImplementation((_Entity: any, data: any) => {
+          if (_Entity === InvestmentTransaction)
+            return investmentTransactionsRepository.create(data);
+          if (_Entity === Transaction)
+            return transactionRepository.create(data);
+          return { ...data };
+        }),
+        save: jest.fn().mockImplementation((data: any) => {
+          if ("securityId" in data && "action" in data)
+            return investmentTransactionsRepository.save(data);
+          return transactionRepository.save(data);
+        }),
+        update: jest
+          .fn()
+          .mockImplementation((_Entity: any, id: any, data: any) => {
             if (_Entity === InvestmentTransaction)
-              return investmentTransactionsRepository.create(data);
-            if (_Entity === Transaction)
-              return transactionRepository.create(data);
-            return { ...data };
+              return investmentTransactionsRepository.update(id, data);
+            return Promise.resolve(undefined);
           }),
-          save: jest.fn().mockImplementation((data: any) => {
-            if ("securityId" in data && "action" in data)
-              return investmentTransactionsRepository.save(data);
-            return transactionRepository.save(data);
-          }),
-          update: jest
-            .fn()
-            .mockImplementation((_Entity: any, id: any, data: any) => {
-              if (_Entity === InvestmentTransaction)
-                return investmentTransactionsRepository.update(id, data);
-              return Promise.resolve(undefined);
-            }),
-          findOne: jest.fn().mockImplementation((_Entity: any, opts: any) => {
-            if (_Entity === Transaction)
-              return transactionRepository.findOne(opts);
-            return investmentTransactionsRepository.findOne(opts);
-          }),
-          find: jest.fn().mockResolvedValue([]),
-          remove: jest.fn().mockImplementation((data: any) => {
-            if ("securityId" in data && "action" in data)
-              return investmentTransactionsRepository.remove(data);
-            return transactionRepository.remove(data);
-          }),
-        },
-      }),
+        findOne: jest.fn().mockImplementation((_Entity: any, opts: any) => {
+          if (_Entity === Transaction)
+            return transactionRepository.findOne(opts);
+          return investmentTransactionsRepository.findOne(opts);
+        }),
+        find: jest.fn().mockResolvedValue([]),
+        remove: jest.fn().mockImplementation((data: any) => {
+          if ("securityId" in data && "action" in data)
+            return investmentTransactionsRepository.remove(data);
+          return transactionRepository.remove(data);
+        }),
+      },
+    };
+
+    dataSource = {
+      createQueryRunner: jest.fn().mockReturnValue(mockQueryRunner),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -2691,6 +2694,183 @@ describe("InvestmentTransactionsService", () => {
       expect(investmentTransactionsRepository.create).toHaveBeenCalled();
       expect(investmentTransactionsRepository.save).toHaveBeenCalled();
       expect(result).toEqual(savedTx);
+    });
+  });
+
+  describe("transaction atomicity", () => {
+    const createBuyDto = {
+      accountId,
+      securityId,
+      action: InvestmentAction.BUY,
+      transactionDate: "2025-01-15",
+      quantity: 10,
+      price: 150,
+    };
+
+    beforeEach(() => {
+      accountsService.findOne.mockImplementation((uid: string, aid: string) => {
+        if (aid === accountId) return Promise.resolve(mockInvestmentAccount);
+        if (aid === cashAccountId) return Promise.resolve(mockCashAccount);
+        if (aid === fundingAccountId)
+          return Promise.resolve(mockFundingAccount);
+        return Promise.reject(new NotFoundException("Account not found"));
+      });
+    });
+
+    it("create commits transaction on success and releases queryRunner", async () => {
+      const savedTx = {
+        id: "inv-tx-1",
+        ...createBuyDto,
+        userId,
+        totalAmount: 1500,
+        commission: 0,
+        fundingAccountId: null,
+        transactionId: "cash-tx-1",
+        account: mockInvestmentAccount,
+        security: mockSecurity,
+      };
+
+      investmentTransactionsRepository.save.mockResolvedValue(savedTx);
+      transactionRepository.save.mockResolvedValue({
+        id: "cash-tx-1",
+        amount: -1500,
+      });
+
+      const findOneQB = createMockQueryBuilder(savedTx);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        findOneQB,
+      );
+
+      await service.create(userId, createBuyDto);
+
+      expect(mockQueryRunner.connect).toHaveBeenCalled();
+      expect(mockQueryRunner.startTransaction).toHaveBeenCalled();
+      expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
+      expect(mockQueryRunner.rollbackTransaction).not.toHaveBeenCalled();
+      expect(mockQueryRunner.release).toHaveBeenCalled();
+    });
+
+    it("create rolls back on error and releases queryRunner", async () => {
+      investmentTransactionsRepository.save.mockRejectedValue(
+        new Error("DB error"),
+      );
+
+      await expect(service.create(userId, createBuyDto)).rejects.toThrow(
+        "DB error",
+      );
+
+      expect(mockQueryRunner.startTransaction).toHaveBeenCalled();
+      expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
+      expect(mockQueryRunner.commitTransaction).not.toHaveBeenCalled();
+      expect(mockQueryRunner.release).toHaveBeenCalled();
+    });
+
+    it("update commits transaction on success and releases queryRunner", async () => {
+      const existingTx = {
+        id: "inv-tx-1",
+        userId,
+        accountId,
+        securityId,
+        action: InvestmentAction.BUY,
+        transactionDate: "2025-01-15",
+        quantity: 10,
+        price: 150,
+        totalAmount: 1500,
+        commission: 0,
+        fundingAccountId: null,
+        transactionId: null,
+        account: mockInvestmentAccount,
+        security: mockSecurity,
+      };
+
+      const findOneQB = createMockQueryBuilder(existingTx);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        findOneQB,
+      );
+      investmentTransactionsRepository.save.mockResolvedValue(existingTx);
+
+      await service.update(userId, "inv-tx-1", { quantity: 20 });
+
+      expect(mockQueryRunner.connect).toHaveBeenCalled();
+      expect(mockQueryRunner.startTransaction).toHaveBeenCalled();
+      expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
+      expect(mockQueryRunner.rollbackTransaction).not.toHaveBeenCalled();
+      expect(mockQueryRunner.release).toHaveBeenCalled();
+    });
+
+    it("remove commits transaction on success and releases queryRunner", async () => {
+      const existingTx = {
+        id: "inv-tx-1",
+        userId,
+        accountId,
+        securityId,
+        action: InvestmentAction.BUY,
+        transactionDate: "2025-01-15",
+        quantity: 10,
+        price: 150,
+        totalAmount: 1500,
+        commission: 0,
+        fundingAccountId: null,
+        transactionId: null,
+        account: mockInvestmentAccount,
+        security: mockSecurity,
+      };
+
+      const findOneQB = createMockQueryBuilder(existingTx);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        findOneQB,
+      );
+
+      await service.remove(userId, "inv-tx-1");
+
+      expect(mockQueryRunner.connect).toHaveBeenCalled();
+      expect(mockQueryRunner.startTransaction).toHaveBeenCalled();
+      expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
+      expect(mockQueryRunner.rollbackTransaction).not.toHaveBeenCalled();
+      expect(mockQueryRunner.release).toHaveBeenCalled();
+    });
+
+    it("remove rolls back on error and releases queryRunner", async () => {
+      const existingTx = {
+        id: "inv-tx-1",
+        userId,
+        accountId,
+        securityId,
+        action: InvestmentAction.BUY,
+        transactionDate: "2025-01-15",
+        quantity: 10,
+        price: 150,
+        totalAmount: 1500,
+        commission: 0,
+        fundingAccountId: null,
+        transactionId: "cash-tx-1",
+        account: mockInvestmentAccount,
+        security: mockSecurity,
+      };
+
+      const findOneQB = createMockQueryBuilder(existingTx);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        findOneQB,
+      );
+
+      // Make the cash transaction deletion fail
+      transactionRepository.findOne.mockResolvedValue({
+        id: "cash-tx-1",
+        userId,
+        accountId: "cash-acc",
+        amount: -1500,
+      });
+      accountsService.updateBalance.mockRejectedValueOnce(
+        new Error("Balance error"),
+      );
+
+      await expect(service.remove(userId, "inv-tx-1")).rejects.toThrow(
+        "Balance error",
+      );
+
+      expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
+      expect(mockQueryRunner.commitTransaction).not.toHaveBeenCalled();
+      expect(mockQueryRunner.release).toHaveBeenCalled();
     });
   });
 });

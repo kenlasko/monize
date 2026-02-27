@@ -1118,4 +1118,65 @@ describe("CategoriesService", () => {
       });
     });
   });
+
+  describe("cross-user data isolation", () => {
+    it("getTransactionCount split count query joins through transaction to filter by userId", async () => {
+      categoriesRepository.findOne.mockResolvedValue(mockCategory);
+      transactionsRepository.count.mockResolvedValue(0);
+
+      const splitQb = createMockQueryBuilder({
+        getCount: jest.fn().mockResolvedValue(0),
+      });
+      splitsRepository.createQueryBuilder.mockReturnValue(splitQb);
+
+      const scheduledQb = createMockQueryBuilder({
+        getMany: jest.fn().mockResolvedValue([]),
+      });
+      scheduledTransactionsRepository.count.mockResolvedValue(0);
+      scheduledTransactionsRepository.createQueryBuilder.mockReturnValue(
+        scheduledQb,
+      );
+
+      await service.getTransactionCount("user-1", "cat-1");
+
+      // Verify split count joins through transaction table to filter by userId
+      expect(splitQb.innerJoin).toHaveBeenCalledWith(
+        "split.transaction",
+        "transaction",
+      );
+      expect(splitQb.andWhere).toHaveBeenCalledWith(
+        "transaction.userId = :userId",
+        { userId: "user-1" },
+      );
+    });
+
+    it("findAll split count query joins through transaction to filter by userId", async () => {
+      const categories = [{ ...mockCategory, id: "cat-1" }];
+      const catQb = createMockQueryBuilder({
+        getMany: jest.fn().mockResolvedValue(categories),
+      });
+      categoriesRepository.createQueryBuilder.mockReturnValue(catQb);
+
+      const directCountsQb = createMockQueryBuilder({
+        getRawMany: jest.fn().mockResolvedValue([]),
+      });
+      transactionsRepository.createQueryBuilder.mockReturnValue(directCountsQb);
+
+      const splitCountsQb = createMockQueryBuilder({
+        getRawMany: jest.fn().mockResolvedValue([]),
+      });
+      splitsRepository.createQueryBuilder.mockReturnValue(splitCountsQb);
+
+      await service.findAll("user-1");
+
+      // Verify split count in findAll joins through transaction for user isolation
+      expect(splitCountsQb.innerJoin).toHaveBeenCalledWith(
+        "s.transaction",
+        "t",
+      );
+      expect(splitCountsQb.where).toHaveBeenCalledWith("t.user_id = :userId", {
+        userId: "user-1",
+      });
+    });
+  });
 });
