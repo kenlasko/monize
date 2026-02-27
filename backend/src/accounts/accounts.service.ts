@@ -7,7 +7,7 @@ import {
   Logger,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository, DataSource } from "typeorm";
+import { Repository, DataSource, QueryRunner } from "typeorm";
 import {
   Account,
   AccountType,
@@ -535,7 +535,11 @@ export class AccountsService {
    * Update account balance (called internally by transactions).
    * Uses atomic SQL UPDATE to prevent race conditions from concurrent requests.
    */
-  async updateBalance(accountId: string, amount: number): Promise<Account> {
+  async updateBalance(
+    accountId: string,
+    amount: number,
+    queryRunner?: QueryRunner,
+  ): Promise<Account> {
     const account = await this.accountsRepository.findOne({
       where: { id: accountId },
     });
@@ -550,11 +554,15 @@ export class AccountsService {
       );
     }
 
+    const sql = `UPDATE accounts SET current_balance = ROUND(CAST(current_balance AS numeric) + $1, 2) WHERE id = $2`;
+
+    if (queryRunner) {
+      await queryRunner.query(sql, [amount, accountId]);
+      return account;
+    }
+
     // Atomic update at the database level to avoid read-modify-write race conditions
-    await this.accountsRepository.query(
-      `UPDATE accounts SET current_balance = ROUND(CAST(current_balance AS numeric) + $1, 2) WHERE id = $2`,
-      [amount, accountId],
-    );
+    await this.accountsRepository.query(sql, [amount, accountId]);
 
     return this.accountsRepository.findOneOrFail({ where: { id: accountId } });
   }
@@ -565,7 +573,10 @@ export class AccountsService {
    * Used when future-dated transactions are created/modified/deleted
    * to ensure the balance is always correct regardless of history.
    */
-  async recalculateCurrentBalance(accountId: string): Promise<Account> {
+  async recalculateCurrentBalance(
+    accountId: string,
+    queryRunner?: QueryRunner,
+  ): Promise<Account> {
     const account = await this.accountsRepository.findOne({
       where: { id: accountId },
     });
@@ -574,20 +585,32 @@ export class AccountsService {
       throw new NotFoundException(`Account with ID ${accountId} not found`);
     }
 
-    const result: { balance: string }[] = await this.dataSource.query(
-      `SELECT COALESCE($2::NUMERIC, 0) + COALESCE(SUM(t.amount), 0) as balance
+    const balanceSql = `SELECT COALESCE($2::NUMERIC, 0) + COALESCE(SUM(t.amount), 0) as balance
        FROM transactions t
        WHERE t.account_id = $1
          AND (t.status IS NULL OR t.status != 'VOID')
          AND t.parent_transaction_id IS NULL
-         AND t.transaction_date <= CURRENT_DATE`,
-      [accountId, account.openingBalance],
-    );
+         AND t.transaction_date <= CURRENT_DATE`;
+
+    const result: { balance: string }[] = queryRunner
+      ? await queryRunner.query(balanceSql, [accountId, account.openingBalance])
+      : await this.dataSource.query(balanceSql, [
+          accountId,
+          account.openingBalance,
+        ]);
 
     const newBalance =
       result.length > 0
         ? Math.round(Number(result[0].balance) * 100) / 100
         : Math.round(Number(account.openingBalance) * 100) / 100;
+
+    if (queryRunner) {
+      await queryRunner.query(
+        `UPDATE accounts SET current_balance = $1 WHERE id = $2`,
+        [newBalance, accountId],
+      );
+      return { ...account, currentBalance: newBalance } as Account;
+    }
 
     account.currentBalance = newBalance;
     return this.accountsRepository.save(account);

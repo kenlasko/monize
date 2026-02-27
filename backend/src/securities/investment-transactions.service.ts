@@ -5,7 +5,7 @@ import {
   Logger,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository, DataSource } from "typeorm";
+import { Repository, DataSource, QueryRunner } from "typeorm";
 import {
   InvestmentTransaction,
   InvestmentAction,
@@ -41,18 +41,12 @@ export class InvestmentTransactionsService {
     private netWorthService: NetWorthService,
   ) {}
 
-  /**
-   * Find the appropriate cash account for an investment transaction.
-   * For paired accounts (cash + brokerage), returns the linked cash account.
-   * For standalone accounts, returns the same account.
-   */
   private async findCashAccount(
     userId: string,
     accountId: string,
   ): Promise<Account> {
     const account = await this.accountsService.findOne(userId, accountId);
 
-    // If this is a brokerage account with a linked cash account, return the cash account
     if (
       account.accountSubType === AccountSubType.INVESTMENT_BROKERAGE &&
       account.linkedAccountId
@@ -60,14 +54,9 @@ export class InvestmentTransactionsService {
       return this.accountsService.findOne(userId, account.linkedAccountId);
     }
 
-    // For standalone accounts or cash accounts, return the same account
     return account;
   }
 
-  /**
-   * Format the payee name for a cash transaction created from an investment transaction.
-   * Format: "Action: SYMBOL Vol @ $Price" for buy/sell, "Action: SYMBOL $Amount" for dividends, etc.
-   */
   private formatCashTransactionPayeeName(
     action: InvestmentAction,
     symbol: string | null,
@@ -85,11 +74,9 @@ export class InvestmentTransactionsService {
     };
 
     const formatQuantity = (value: number) => {
-      // Show up to 4 decimal places, but trim trailing zeros
       return Number(value.toFixed(4)).toString();
     };
 
-    // Convert action to title case (e.g., "BUY" -> "Buy", "CAPITAL_GAIN" -> "Capital Gain")
     const formatAction = (act: string) => {
       return act
         .split("_")
@@ -118,17 +105,13 @@ export class InvestmentTransactionsService {
     }
   }
 
-  /**
-   * Create a cash transaction in the cash account to record the cash effect of an investment transaction.
-   * Returns the created transaction ID.
-   */
-  private async createCashTransaction(
+  private async createCashTransactionInTransaction(
+    queryRunner: QueryRunner,
     userId: string,
     cashAccount: Account,
     investmentTransaction: InvestmentTransaction,
-    amount: number, // Positive for inflows (sell, dividend), negative for outflows (buy)
+    amount: number,
   ): Promise<string> {
-    // Get the security for the symbol
     let symbol: string | null = null;
     if (investmentTransaction.securityId) {
       const security = await this.securitiesService.findOne(
@@ -146,47 +129,48 @@ export class InvestmentTransactionsService {
       Math.abs(investmentTransaction.totalAmount),
     );
 
-    const cashTransaction = this.transactionRepository.create({
+    const cashTransaction = queryRunner.manager.create(Transaction, {
       userId,
       accountId: cashAccount.id,
       transactionDate: investmentTransaction.transactionDate,
       amount,
       currencyCode: cashAccount.currencyCode,
       exchangeRate: 1,
-      payeeName, // Display-only payee, not linked to a Payee entity
+      payeeName,
       payeeId: null,
       description: investmentTransaction.description,
       status: TransactionStatus.CLEARED,
     });
 
-    const saved = await this.transactionRepository.save(cashTransaction);
+    const saved = await queryRunner.manager.save(cashTransaction);
 
-    // Update the cash account balance
-    await this.accountsService.updateBalance(cashAccount.id, amount);
+    await this.accountsService.updateBalance(
+      cashAccount.id,
+      amount,
+      queryRunner,
+    );
 
     return saved.id;
   }
 
-  /**
-   * Delete the cash transaction associated with an investment transaction
-   */
-  private async deleteCashTransaction(
+  private async deleteCashTransactionInTransaction(
+    queryRunner: QueryRunner,
     userId: string,
     transactionId: string | null,
   ): Promise<void> {
     if (!transactionId) return;
 
-    const cashTransaction = await this.transactionRepository.findOne({
+    const cashTransaction = await queryRunner.manager.findOne(Transaction, {
       where: { id: transactionId, userId },
     });
 
     if (cashTransaction) {
-      // Reverse the balance change
       await this.accountsService.updateBalance(
         cashTransaction.accountId,
         -Number(cashTransaction.amount),
+        queryRunner,
       );
-      await this.transactionRepository.remove(cashTransaction);
+      await queryRunner.manager.remove(cashTransaction);
     }
   }
 
@@ -194,7 +178,6 @@ export class InvestmentTransactionsService {
     userId: string,
     createDto: CreateInvestmentTransactionDto,
   ): Promise<InvestmentTransaction> {
-    // Verify account ownership and that it's an investment account
     const account = await this.accountsService.findOne(
       userId,
       createDto.accountId,
@@ -204,7 +187,6 @@ export class InvestmentTransactionsService {
       throw new BadRequestException("Account must be of type INVESTMENT");
     }
 
-    // Validate that security is provided for buy/sell transactions
     if (
       [
         InvestmentAction.BUY,
@@ -221,40 +203,56 @@ export class InvestmentTransactionsService {
       );
     }
 
-    // Verify security exists and belongs to user if provided
     if (createDto.securityId) {
       await this.securitiesService.findOne(userId, createDto.securityId);
     }
 
-    // Calculate total amount based on action type
     const totalAmount = this.calculateTotalAmount(createDto);
 
-    // Create the investment transaction
-    const investmentTransaction = this.investmentTransactionsRepository.create({
-      userId,
-      accountId: createDto.accountId,
-      securityId: createDto.securityId,
-      fundingAccountId: createDto.fundingAccountId || null,
-      action: createDto.action,
-      transactionDate: createDto.transactionDate,
-      quantity: createDto.quantity ?? 0,
-      price: createDto.price ?? 0,
-      commission: createDto.commission || 0,
-      totalAmount,
-      description: createDto.description,
-    });
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-    const saved = await this.investmentTransactionsRepository.save(
-      investmentTransaction,
-    );
+    let savedId: string;
 
-    // Process the transaction effects
-    await this.processTransactionEffects(userId, saved);
+    try {
+      const investmentTransaction = queryRunner.manager.create(
+        InvestmentTransaction,
+        {
+          userId,
+          accountId: createDto.accountId,
+          securityId: createDto.securityId,
+          fundingAccountId: createDto.fundingAccountId || null,
+          action: createDto.action,
+          transactionDate: createDto.transactionDate,
+          quantity: createDto.quantity ?? 0,
+          price: createDto.price ?? 0,
+          commission: createDto.commission || 0,
+          totalAmount,
+          description: createDto.description,
+        },
+      );
 
-    // Trigger net worth recalculation for the brokerage account
-    this.netWorthService.triggerDebouncedRecalc(saved.accountId, userId);
+      const saved = await queryRunner.manager.save(investmentTransaction);
+      savedId = saved.id;
 
-    return this.findOne(userId, saved.id);
+      await this.processTransactionEffectsInTransaction(
+        queryRunner,
+        userId,
+        saved,
+      );
+
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+
+    this.netWorthService.triggerDebouncedRecalc(createDto.accountId, userId);
+
+    return this.findOne(userId, savedId);
   }
 
   private calculateTotalAmount(dto: CreateInvestmentTransactionDto): number {
@@ -262,22 +260,18 @@ export class InvestmentTransactionsService {
 
     switch (action) {
       case InvestmentAction.BUY:
-        // Total = (quantity * price) + commission
         return (quantity || 0) * (price || 0) + (commission || 0);
 
       case InvestmentAction.SELL:
-        // Total = (quantity * price) - commission
         return (quantity || 0) * (price || 0) - (commission || 0);
 
       case InvestmentAction.DIVIDEND:
       case InvestmentAction.INTEREST:
       case InvestmentAction.CAPITAL_GAIN:
-        // Total = amount received (quantity defaults to 1 so price acts as the amount)
         return (quantity || 1) * (price || 0);
 
       case InvestmentAction.ADD_SHARES:
       case InvestmentAction.REMOVE_SHARES:
-        // Pure quantity adjustment, no monetary value
         return 0;
 
       default:
@@ -285,12 +279,11 @@ export class InvestmentTransactionsService {
     }
   }
 
-  private async processTransactionEffects(
+  private async processTransactionEffectsInTransaction(
+    queryRunner: QueryRunner,
     userId: string,
     transaction: InvestmentTransaction,
   ): Promise<void> {
-    // Skip effects for future-dated transactions - they shouldn't affect
-    // current holdings or cash balances until their transaction date arrives
     if (isTransactionInFuture(transaction.transactionDate)) {
       return;
     }
@@ -305,8 +298,6 @@ export class InvestmentTransactionsService {
       fundingAccountId,
     } = transaction;
 
-    // Find the appropriate cash account for cash-affecting transactions
-    // If fundingAccountId is specified, use that; otherwise use the default linked cash account
     let cashAccount: Account;
     if (fundingAccountId) {
       cashAccount = await this.accountsService.findOne(
@@ -320,17 +311,16 @@ export class InvestmentTransactionsService {
 
     switch (action) {
       case InvestmentAction.BUY:
-        // Add shares to holdings
         await this.holdingsService.updateHolding(
           userId,
           accountId,
           securityId!,
           Number(quantity),
           Number(price),
+          queryRunner,
         );
-
-        // Create cash transaction (negative amount for outflow)
-        cashTransactionId = await this.createCashTransaction(
+        cashTransactionId = await this.createCashTransactionInTransaction(
+          queryRunner,
           userId,
           cashAccount,
           transaction,
@@ -339,17 +329,16 @@ export class InvestmentTransactionsService {
         break;
 
       case InvestmentAction.SELL:
-        // Remove shares from holdings
         await this.holdingsService.updateHolding(
           userId,
           accountId,
           securityId!,
           -Number(quantity),
           Number(price),
+          queryRunner,
         );
-
-        // Create cash transaction (positive amount for inflow)
-        cashTransactionId = await this.createCashTransaction(
+        cashTransactionId = await this.createCashTransactionInTransaction(
+          queryRunner,
           userId,
           cashAccount,
           transaction,
@@ -360,8 +349,8 @@ export class InvestmentTransactionsService {
       case InvestmentAction.DIVIDEND:
       case InvestmentAction.INTEREST:
       case InvestmentAction.CAPITAL_GAIN:
-        // Create cash transaction (positive amount for inflow)
-        cashTransactionId = await this.createCashTransaction(
+        cashTransactionId = await this.createCashTransactionInTransaction(
+          queryRunner,
           userId,
           cashAccount,
           transaction,
@@ -370,7 +359,6 @@ export class InvestmentTransactionsService {
         break;
 
       case InvestmentAction.REINVEST:
-        // Use dividends to buy more shares (no cash change)
         if (securityId && quantity && price) {
           await this.holdingsService.updateHolding(
             userId,
@@ -378,17 +366,15 @@ export class InvestmentTransactionsService {
             securityId,
             Number(quantity),
             Number(price),
+            queryRunner,
           );
         }
         break;
 
       case InvestmentAction.SPLIT:
-        // Handle stock split - this would need special logic
-        // For now, just log it
         break;
 
       case InvestmentAction.TRANSFER_IN:
-        // Add shares without affecting cash
         if (securityId && quantity && price) {
           await this.holdingsService.updateHolding(
             userId,
@@ -396,12 +382,12 @@ export class InvestmentTransactionsService {
             securityId,
             Number(quantity),
             Number(price),
+            queryRunner,
           );
         }
         break;
 
       case InvestmentAction.TRANSFER_OUT:
-        // Remove shares without affecting cash
         if (securityId && quantity && price) {
           await this.holdingsService.updateHolding(
             userId,
@@ -409,38 +395,38 @@ export class InvestmentTransactionsService {
             securityId,
             -Number(quantity),
             Number(price),
+            queryRunner,
           );
         }
         break;
 
       case InvestmentAction.ADD_SHARES:
-        // Add shares without affecting cost basis or cash
         if (securityId && quantity) {
           await this.holdingsService.adjustQuantity(
             userId,
             accountId,
             securityId,
             Number(quantity),
+            queryRunner,
           );
         }
         break;
 
       case InvestmentAction.REMOVE_SHARES:
-        // Remove shares without affecting cost basis or cash
         if (securityId && quantity) {
           await this.holdingsService.adjustQuantity(
             userId,
             accountId,
             securityId,
             -Number(quantity),
+            queryRunner,
           );
         }
         break;
     }
 
-    // Update the investment transaction with the cash transaction ID if one was created
     if (cashTransactionId) {
-      await this.investmentTransactionsRepository.update(transaction.id, {
+      await queryRunner.manager.update(InvestmentTransaction, transaction.id, {
         transactionId: cashTransactionId,
       });
     }
@@ -476,13 +462,12 @@ export class InvestmentTransactionsService {
       .where("it.userId = :userId", { userId });
 
     if (accountIds && accountIds.length > 0) {
-      // Resolve linked accounts for each provided ID
       const resolvedIds = new Set<string>(accountIds);
       for (const id of accountIds) {
         try {
-          const account = await this.accountsService.findOne(userId, id);
-          if (account.linkedAccountId) {
-            resolvedIds.add(account.linkedAccountId);
+          const acct = await this.accountsService.findOne(userId, id);
+          if (acct.linkedAccountId) {
+            resolvedIds.add(acct.linkedAccountId);
           }
         } catch {
           // Account not found, keep the original ID
@@ -508,10 +493,8 @@ export class InvestmentTransactionsService {
       query.andWhere("it.action = :action", { action });
     }
 
-    // Get total count for pagination
     const total = await query.getCount();
 
-    // Apply pagination
     const data = await query
       .orderBy("it.transactionDate", "DESC")
       .skip((pageNum - 1) * pageSize)
@@ -557,57 +540,84 @@ export class InvestmentTransactionsService {
     updateDto: UpdateInvestmentTransactionDto,
   ): Promise<InvestmentTransaction> {
     const transaction = await this.findOne(userId, id);
+    const accountId = transaction.accountId;
 
-    // Reverse the original transaction effects
-    await this.reverseTransactionEffects(userId, transaction);
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-    // Update entity properties directly
-    if (updateDto.accountId !== undefined)
-      transaction.accountId = updateDto.accountId;
-    if (updateDto.action !== undefined) transaction.action = updateDto.action;
-    if (updateDto.transactionDate !== undefined)
-      transaction.transactionDate = updateDto.transactionDate;
-    if (updateDto.securityId !== undefined)
-      transaction.securityId = updateDto.securityId;
-    if (updateDto.fundingAccountId !== undefined)
-      transaction.fundingAccountId = updateDto.fundingAccountId || null;
-    if (updateDto.quantity !== undefined)
-      transaction.quantity = updateDto.quantity;
-    if (updateDto.price !== undefined) transaction.price = updateDto.price;
-    if (updateDto.commission !== undefined)
-      transaction.commission = updateDto.commission;
-    if (updateDto.description !== undefined)
-      transaction.description = updateDto.description;
+    let savedId: string;
 
-    if (
-      updateDto.quantity !== undefined ||
-      updateDto.price !== undefined ||
-      updateDto.commission !== undefined
-    ) {
-      transaction.totalAmount = this.calculateTotalAmount({
-        action: transaction.action,
-        quantity: transaction.quantity,
-        price: transaction.price,
-        commission: transaction.commission,
-      } as any);
+    try {
+      // Reverse the original transaction effects
+      await this.reverseTransactionEffectsInTransaction(
+        queryRunner,
+        userId,
+        transaction,
+      );
+
+      // Update entity properties directly
+      if (updateDto.accountId !== undefined)
+        transaction.accountId = updateDto.accountId;
+      if (updateDto.action !== undefined) transaction.action = updateDto.action;
+      if (updateDto.transactionDate !== undefined)
+        transaction.transactionDate = updateDto.transactionDate;
+      if (updateDto.securityId !== undefined)
+        transaction.securityId = updateDto.securityId;
+      if (updateDto.fundingAccountId !== undefined)
+        transaction.fundingAccountId = updateDto.fundingAccountId || null;
+      if (updateDto.quantity !== undefined)
+        transaction.quantity = updateDto.quantity;
+      if (updateDto.price !== undefined) transaction.price = updateDto.price;
+      if (updateDto.commission !== undefined)
+        transaction.commission = updateDto.commission;
+      if (updateDto.description !== undefined)
+        transaction.description = updateDto.description;
+
+      if (
+        updateDto.quantity !== undefined ||
+        updateDto.price !== undefined ||
+        updateDto.commission !== undefined
+      ) {
+        transaction.totalAmount = this.calculateTotalAmount({
+          action: transaction.action,
+          quantity: transaction.quantity,
+          price: transaction.price,
+          commission: transaction.commission,
+        } as any);
+      }
+
+      const saved = await queryRunner.manager.save(transaction);
+      savedId = saved.id;
+
+      // Apply the new transaction effects
+      await this.processTransactionEffectsInTransaction(
+        queryRunner,
+        userId,
+        saved,
+      );
+
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
     }
 
-    const saved = await this.investmentTransactionsRepository.save(transaction);
+    this.netWorthService.triggerDebouncedRecalc(
+      updateDto.accountId ?? accountId,
+      userId,
+    );
 
-    // Apply the new transaction effects
-    await this.processTransactionEffects(userId, saved);
-
-    // Trigger net worth recalculation for the brokerage account
-    this.netWorthService.triggerDebouncedRecalc(saved.accountId, userId);
-
-    return this.findOne(userId, saved.id);
+    return this.findOne(userId, savedId);
   }
 
-  private async reverseTransactionEffects(
+  private async reverseTransactionEffectsInTransaction(
+    queryRunner: QueryRunner,
     userId: string,
     transaction: InvestmentTransaction,
   ): Promise<void> {
-    // Skip reversal for future-dated transactions - their effects were never applied
     if (isTransactionInFuture(transaction.transactionDate)) {
       return;
     }
@@ -615,20 +625,21 @@ export class InvestmentTransactionsService {
     const { action, accountId, securityId, quantity, price, transactionId } =
       transaction;
 
-    // Delete the linked cash transaction if it exists (this also reverses the balance)
     if (transactionId) {
-      // Clear the FK reference in the database BEFORE deleting the cash transaction
-      // to avoid TypeORM entity tracking conflicts from ON DELETE SET NULL
-      await this.investmentTransactionsRepository.update(transaction.id, {
+      // Clear the FK reference BEFORE deleting the cash transaction
+      await queryRunner.manager.update(InvestmentTransaction, transaction.id, {
         transactionId: null,
       });
       transaction.transactionId = null;
-      await this.deleteCashTransaction(userId, transactionId);
+      await this.deleteCashTransactionInTransaction(
+        queryRunner,
+        userId,
+        transactionId,
+      );
     }
 
     switch (action) {
       case InvestmentAction.BUY:
-        // Reverse: remove shares
         if (securityId) {
           await this.holdingsService.updateHolding(
             userId,
@@ -636,12 +647,12 @@ export class InvestmentTransactionsService {
             securityId,
             -Number(quantity),
             Number(price),
+            queryRunner,
           );
         }
         break;
 
       case InvestmentAction.SELL:
-        // Reverse: add shares back
         if (securityId) {
           await this.holdingsService.updateHolding(
             userId,
@@ -649,6 +660,7 @@ export class InvestmentTransactionsService {
             securityId,
             Number(quantity),
             Number(price),
+            queryRunner,
           );
         }
         break;
@@ -656,11 +668,9 @@ export class InvestmentTransactionsService {
       case InvestmentAction.DIVIDEND:
       case InvestmentAction.INTEREST:
       case InvestmentAction.CAPITAL_GAIN:
-        // Cash transaction deletion already handled above
         break;
 
       case InvestmentAction.REINVEST:
-        // Reverse: remove shares
         if (securityId && quantity) {
           await this.holdingsService.updateHolding(
             userId,
@@ -668,12 +678,12 @@ export class InvestmentTransactionsService {
             securityId,
             -Number(quantity),
             Number(price),
+            queryRunner,
           );
         }
         break;
 
       case InvestmentAction.TRANSFER_IN:
-        // Reverse: remove shares
         if (securityId && quantity) {
           await this.holdingsService.updateHolding(
             userId,
@@ -681,12 +691,12 @@ export class InvestmentTransactionsService {
             securityId,
             -Number(quantity),
             Number(price),
+            queryRunner,
           );
         }
         break;
 
       case InvestmentAction.TRANSFER_OUT:
-        // Reverse: add shares back
         if (securityId && quantity) {
           await this.holdingsService.updateHolding(
             userId,
@@ -694,30 +704,31 @@ export class InvestmentTransactionsService {
             securityId,
             Number(quantity),
             Number(price),
+            queryRunner,
           );
         }
         break;
 
       case InvestmentAction.ADD_SHARES:
-        // Reverse: remove the added shares
         if (securityId && quantity) {
           await this.holdingsService.adjustQuantity(
             userId,
             accountId,
             securityId,
             -Number(quantity),
+            queryRunner,
           );
         }
         break;
 
       case InvestmentAction.REMOVE_SHARES:
-        // Reverse: add the removed shares back
         if (securityId && quantity) {
           await this.holdingsService.adjustQuantity(
             userId,
             accountId,
             securityId,
             Number(quantity),
+            queryRunner,
           );
         }
         break;
@@ -728,18 +739,31 @@ export class InvestmentTransactionsService {
     const transaction = await this.findOne(userId, id);
     const { accountId } = transaction;
 
-    // Reverse the transaction effects
-    await this.reverseTransactionEffects(userId, transaction);
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-    // Delete the transaction
-    await this.investmentTransactionsRepository.remove(transaction);
+    try {
+      await this.reverseTransactionEffectsInTransaction(
+        queryRunner,
+        userId,
+        transaction,
+      );
 
-    // Trigger net worth recalculation for the brokerage account
+      await queryRunner.manager.remove(transaction);
+
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+
     this.netWorthService.triggerDebouncedRecalc(accountId, userId);
   }
 
   async getSummary(userId: string, accountIds?: string[]) {
-    // Get all transactions (no pagination for summary)
     const result = await this.findAll(
       userId,
       accountIds,
@@ -774,31 +798,22 @@ export class InvestmentTransactionsService {
     return summary;
   }
 
-  /**
-   * Delete all investment transactions and holdings for a user.
-   * Also resets brokerage account balances to 0.
-   * USE WITH CAUTION - this is destructive!
-   */
   async removeAll(userId: string): Promise<{
     transactionsDeleted: number;
     holdingsDeleted: number;
     accountsReset: number;
   }> {
-    // Get all investment transactions for the user
     const transactions = await this.investmentTransactionsRepository.find({
       where: { userId },
     });
     const transactionsDeleted = transactions.length;
 
-    // Delete all transactions (without reversing effects since we'll reset balances)
     if (transactions.length > 0) {
       await this.investmentTransactionsRepository.remove(transactions);
     }
 
-    // Delete all holdings via the holdings service
     const holdingsResult = await this.holdingsService.removeAllForUser(userId);
 
-    // Reset brokerage account balances to 0
     const accountsReset =
       await this.accountsService.resetBrokerageBalances(userId);
 

@@ -6,7 +6,7 @@ import {
   Logger,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { Repository, DataSource, QueryRunner } from "typeorm";
 import { Transaction, TransactionStatus } from "./entities/transaction.entity";
 import { TransactionSplit } from "./entities/transaction-split.entity";
 import { CreateTransferDto } from "./dto/create-transfer.dto";
@@ -32,6 +32,7 @@ export class TransactionTransferService {
     private accountsService: AccountsService,
     @Inject(forwardRef(() => NetWorthService))
     private netWorthService: NetWorthService,
+    private dataSource: DataSource,
   ) {}
 
   private triggerNetWorthRecalc(accountId: string, userId: string): void {
@@ -84,62 +85,94 @@ export class TransactionTransferService {
     const fromPayeeName = customPayeeName || `Transfer to ${toAccount.name}`;
     const toPayeeName = customPayeeName || `Transfer from ${fromAccount.name}`;
 
-    const fromTransaction = this.transactionsRepository.create({
-      userId,
-      accountId: fromAccountId,
-      transactionDate: transactionDate as any,
-      amount: -amount,
-      currencyCode: fromCurrencyCode,
-      exchangeRate: 1,
-      description: description || `Transfer to ${toAccount.name}`,
-      referenceNumber,
-      status,
-      isTransfer: true,
-      payeeId: payeeId || null,
-      payeeName: fromPayeeName,
-    });
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-    const toTransaction = this.transactionsRepository.create({
-      userId,
-      accountId: toAccountId,
-      transactionDate: transactionDate as any,
-      amount: toAmount,
-      currencyCode: destinationCurrency,
-      exchangeRate: exchangeRate,
-      description: description || `Transfer from ${fromAccount.name}`,
-      referenceNumber,
-      status,
-      isTransfer: true,
-      payeeId: payeeId || null,
-      payeeName: toPayeeName,
-    });
+    let savedFromId: string;
+    let savedToId: string;
 
-    const savedFromTransaction =
-      await this.transactionsRepository.save(fromTransaction);
-    const savedToTransaction =
-      await this.transactionsRepository.save(toTransaction);
+    try {
+      const fromTransaction = queryRunner.manager.create(Transaction, {
+        userId,
+        accountId: fromAccountId,
+        transactionDate: transactionDate as any,
+        amount: -amount,
+        currencyCode: fromCurrencyCode,
+        exchangeRate: 1,
+        description: description || `Transfer to ${toAccount.name}`,
+        referenceNumber,
+        status,
+        isTransfer: true,
+        payeeId: payeeId || null,
+        payeeName: fromPayeeName,
+      });
 
-    await this.transactionsRepository.update(savedFromTransaction.id, {
-      linkedTransactionId: savedToTransaction.id,
-    });
-    await this.transactionsRepository.update(savedToTransaction.id, {
-      linkedTransactionId: savedFromTransaction.id,
-    });
+      const toTransaction = queryRunner.manager.create(Transaction, {
+        userId,
+        accountId: toAccountId,
+        transactionDate: transactionDate as any,
+        amount: toAmount,
+        currencyCode: destinationCurrency,
+        exchangeRate: exchangeRate,
+        description: description || `Transfer from ${fromAccount.name}`,
+        referenceNumber,
+        status,
+        isTransfer: true,
+        payeeId: payeeId || null,
+        payeeName: toPayeeName,
+      });
 
-    if (isTransactionInFuture(transactionDate)) {
-      await this.accountsService.recalculateCurrentBalance(fromAccountId);
-      await this.accountsService.recalculateCurrentBalance(toAccountId);
-    } else {
-      await this.accountsService.updateBalance(fromAccountId, -amount);
-      await this.accountsService.updateBalance(toAccountId, toAmount);
+      const savedFromTransaction =
+        await queryRunner.manager.save(fromTransaction);
+      const savedToTransaction = await queryRunner.manager.save(toTransaction);
+
+      savedFromId = savedFromTransaction.id;
+      savedToId = savedToTransaction.id;
+
+      await queryRunner.manager.update(Transaction, savedFromId, {
+        linkedTransactionId: savedToId,
+      });
+      await queryRunner.manager.update(Transaction, savedToId, {
+        linkedTransactionId: savedFromId,
+      });
+
+      if (isTransactionInFuture(transactionDate)) {
+        await this.accountsService.recalculateCurrentBalance(
+          fromAccountId,
+          queryRunner,
+        );
+        await this.accountsService.recalculateCurrentBalance(
+          toAccountId,
+          queryRunner,
+        );
+      } else {
+        await this.accountsService.updateBalance(
+          fromAccountId,
+          -amount,
+          queryRunner,
+        );
+        await this.accountsService.updateBalance(
+          toAccountId,
+          toAmount,
+          queryRunner,
+        );
+      }
+
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
     }
 
     this.triggerNetWorthRecalc(fromAccountId, userId);
     this.triggerNetWorthRecalc(toAccountId, userId);
 
     return {
-      fromTransaction: await findOne(userId, savedFromTransaction.id),
-      toTransaction: await findOne(userId, savedToTransaction.id),
+      fromTransaction: await findOne(userId, savedFromId),
+      toTransaction: await findOne(userId, savedToId),
     };
   }
 
@@ -176,73 +209,99 @@ export class TransactionTransferService {
       where: { linkedTransactionId: transactionId },
     });
 
-    if (parentSplit) {
-      await this.removeTransferFromSplit(
-        parentSplit,
-        transaction,
-        transactionId,
-        userId,
-      );
-      return;
-    }
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-    const linkedTransaction = transaction.linkedTransactionId
-      ? await this.transactionsRepository.findOne({
-          where: { id: transaction.linkedTransactionId },
-        })
-      : null;
+    const affectedAccountIds = new Set<string>();
 
-    const txIsFuture = isTransactionInFuture(transaction.transactionDate);
-    const txAccountId = transaction.accountId;
-
-    if (!txIsFuture) {
-      await this.accountsService.updateBalance(
-        txAccountId,
-        -Number(transaction.amount),
-      );
-    }
-
-    if (linkedTransaction) {
-      const linkedIsFuture = isTransactionInFuture(
-        linkedTransaction.transactionDate,
-      );
-      const linkedAccountId = linkedTransaction.accountId;
-
-      if (!linkedIsFuture) {
-        await this.accountsService.updateBalance(
-          linkedAccountId,
-          -Number(linkedTransaction.amount),
+    try {
+      if (parentSplit) {
+        await this.removeTransferFromSplitInTransaction(
+          queryRunner,
+          parentSplit,
+          transaction,
+          transactionId,
+          affectedAccountIds,
         );
-      }
-      this.triggerNetWorthRecalc(linkedAccountId, userId);
-      await this.transactionsRepository.remove(linkedTransaction);
+      } else {
+        const linkedTransaction = transaction.linkedTransactionId
+          ? await queryRunner.manager.findOne(Transaction, {
+              where: { id: transaction.linkedTransactionId },
+            })
+          : null;
 
-      if (linkedIsFuture) {
-        await this.accountsService.recalculateCurrentBalance(linkedAccountId);
+        const txIsFuture = isTransactionInFuture(transaction.transactionDate);
+        const txAccountId = transaction.accountId;
+        affectedAccountIds.add(txAccountId);
+
+        if (!txIsFuture) {
+          await this.accountsService.updateBalance(
+            txAccountId,
+            -Number(transaction.amount),
+            queryRunner,
+          );
+        }
+
+        if (linkedTransaction) {
+          const linkedIsFuture = isTransactionInFuture(
+            linkedTransaction.transactionDate,
+          );
+          const linkedAccountId = linkedTransaction.accountId;
+          affectedAccountIds.add(linkedAccountId);
+
+          if (!linkedIsFuture) {
+            await this.accountsService.updateBalance(
+              linkedAccountId,
+              -Number(linkedTransaction.amount),
+              queryRunner,
+            );
+          }
+          await queryRunner.manager.remove(linkedTransaction);
+          if (linkedIsFuture) {
+            await this.accountsService.recalculateCurrentBalance(
+              linkedAccountId,
+              queryRunner,
+            );
+          }
+        }
+
+        await queryRunner.manager.remove(transaction);
+        if (txIsFuture) {
+          await this.accountsService.recalculateCurrentBalance(
+            txAccountId,
+            queryRunner,
+          );
+        }
       }
+
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
     }
 
-    this.triggerNetWorthRecalc(txAccountId, userId);
-    await this.transactionsRepository.remove(transaction);
-
-    if (txIsFuture) {
-      await this.accountsService.recalculateCurrentBalance(txAccountId);
+    for (const accId of affectedAccountIds) {
+      this.triggerNetWorthRecalc(accId, userId);
     }
   }
 
-  private async removeTransferFromSplit(
+  private async removeTransferFromSplitInTransaction(
+    queryRunner: QueryRunner,
     parentSplit: TransactionSplit,
     transaction: Transaction,
     transactionId: string,
-    userId: string,
+    affectedAccountIds: Set<string>,
   ): Promise<void> {
     const parentTransactionId = parentSplit.transactionId;
-    const parentTransaction = await this.transactionsRepository.findOne({
+    const parentTransaction = await queryRunner.manager.findOne(Transaction, {
       where: { id: parentTransactionId },
     });
 
     if (parentTransaction) {
-      const allSplits = await this.splitsRepository.find({
+      const allSplits = await queryRunner.manager.find(TransactionSplit, {
         where: { transactionId: parentTransactionId },
       });
 
@@ -251,7 +310,7 @@ export class TransactionTransferService {
           split.linkedTransactionId &&
           split.linkedTransactionId !== transactionId
         ) {
-          const linkedTx = await this.transactionsRepository.findOne({
+          const linkedTx = await queryRunner.manager.findOne(Transaction, {
             where: { id: split.linkedTransactionId },
           });
 
@@ -260,51 +319,61 @@ export class TransactionTransferService {
               linkedTx.transactionDate,
             );
             const linkedAccId = linkedTx.accountId;
+            affectedAccountIds.add(linkedAccId);
             if (!linkedIsFuture) {
               await this.accountsService.updateBalance(
                 linkedAccId,
                 -Number(linkedTx.amount),
+                queryRunner,
               );
             }
-            await this.transactionsRepository.remove(linkedTx);
+            await queryRunner.manager.remove(linkedTx);
             if (linkedIsFuture) {
-              await this.accountsService.recalculateCurrentBalance(linkedAccId);
+              await this.accountsService.recalculateCurrentBalance(
+                linkedAccId,
+                queryRunner,
+              );
             }
           }
         }
       }
 
-      await this.splitsRepository.remove(allSplits);
+      await queryRunner.manager.remove(allSplits);
 
       const parentIsFuture = isTransactionInFuture(
         parentTransaction.transactionDate,
       );
+      affectedAccountIds.add(parentTransaction.accountId);
       if (!parentIsFuture) {
         await this.accountsService.updateBalance(
           parentTransaction.accountId,
           -Number(parentTransaction.amount),
+          queryRunner,
         );
       }
-      await this.transactionsRepository.remove(parentTransaction);
+      await queryRunner.manager.remove(parentTransaction);
       if (parentIsFuture) {
         await this.accountsService.recalculateCurrentBalance(
           parentTransaction.accountId,
+          queryRunner,
         );
       }
     }
 
     const txIsFuture = isTransactionInFuture(transaction.transactionDate);
+    affectedAccountIds.add(transaction.accountId);
     if (!txIsFuture) {
       await this.accountsService.updateBalance(
         transaction.accountId,
         -Number(transaction.amount),
+        queryRunner,
       );
     }
-    this.triggerNetWorthRecalc(transaction.accountId, userId);
-    await this.transactionsRepository.remove(transaction);
+    await queryRunner.manager.remove(transaction);
     if (txIsFuture) {
       await this.accountsService.recalculateCurrentBalance(
         transaction.accountId,
+        queryRunner,
       );
     }
   }
@@ -385,11 +454,6 @@ export class TransactionTransferService {
     const dateChanged = oldDate !== newDate;
     const anyFuture = oldIsFuture || newIsFuture;
 
-    if ((accountsOrAmountsChanged || dateChanged) && !anyFuture) {
-      await this.accountsService.updateBalance(oldFromAccountId, oldFromAmount);
-      await this.accountsService.updateBalance(oldToAccountId, -oldToAmount);
-    }
-
     const fromUpdateData = this.buildFromUpdateData(
       updateDto,
       newAmount,
@@ -397,13 +461,6 @@ export class TransactionTransferService {
       oldToAccountId,
       newToAccount,
     );
-
-    if (Object.keys(fromUpdateData).length > 0) {
-      await this.transactionsRepository.update(
-        fromTransaction.id,
-        fromUpdateData,
-      );
-    }
 
     const toUpdateData = this.buildToUpdateData(
       updateDto,
@@ -414,26 +471,74 @@ export class TransactionTransferService {
       newFromAccount,
     );
 
-    if (Object.keys(toUpdateData).length > 0) {
-      await this.transactionsRepository.update(toTransaction.id, toUpdateData);
-    }
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-    if (accountsOrAmountsChanged || dateChanged) {
-      if (anyFuture) {
-        // Recalculate from scratch for all affected accounts
-        const allAccounts = new Set([
+    try {
+      if ((accountsOrAmountsChanged || dateChanged) && !anyFuture) {
+        await this.accountsService.updateBalance(
           oldFromAccountId,
+          oldFromAmount,
+          queryRunner,
+        );
+        await this.accountsService.updateBalance(
           oldToAccountId,
-          newFromAccountId,
-          newToAccountId,
-        ]);
-        for (const accId of allAccounts) {
-          await this.accountsService.recalculateCurrentBalance(accId);
-        }
-      } else {
-        await this.accountsService.updateBalance(newFromAccountId, -newAmount);
-        await this.accountsService.updateBalance(newToAccountId, newToAmount);
+          -oldToAmount,
+          queryRunner,
+        );
       }
+
+      if (Object.keys(fromUpdateData).length > 0) {
+        await queryRunner.manager.update(
+          Transaction,
+          fromTransaction.id,
+          fromUpdateData,
+        );
+      }
+
+      if (Object.keys(toUpdateData).length > 0) {
+        await queryRunner.manager.update(
+          Transaction,
+          toTransaction.id,
+          toUpdateData,
+        );
+      }
+
+      if (accountsOrAmountsChanged || dateChanged) {
+        if (anyFuture) {
+          const allAccounts = new Set([
+            oldFromAccountId,
+            oldToAccountId,
+            newFromAccountId,
+            newToAccountId,
+          ]);
+          for (const accId of allAccounts) {
+            await this.accountsService.recalculateCurrentBalance(
+              accId,
+              queryRunner,
+            );
+          }
+        } else {
+          await this.accountsService.updateBalance(
+            newFromAccountId,
+            -newAmount,
+            queryRunner,
+          );
+          await this.accountsService.updateBalance(
+            newToAccountId,
+            newToAmount,
+            queryRunner,
+          );
+        }
+      }
+
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
     }
 
     const affectedAccounts = new Set([
