@@ -52,6 +52,7 @@ describe("BudgetGeneratorService", () => {
     };
 
     categoriesRepository = {
+      find: jest.fn().mockResolvedValue([{ id: "cat-1" }, { id: "cat-2" }]),
       findOne: jest.fn(),
     };
 

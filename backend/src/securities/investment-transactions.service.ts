@@ -258,17 +258,21 @@ export class InvestmentTransactionsService {
   private calculateTotalAmount(dto: CreateInvestmentTransactionDto): number {
     const { action, quantity, price, commission } = dto;
 
+    let result: number;
     switch (action) {
       case InvestmentAction.BUY:
-        return (quantity || 0) * (price || 0) + (commission || 0);
+        result = (quantity || 0) * (price || 0) + (commission || 0);
+        break;
 
       case InvestmentAction.SELL:
-        return (quantity || 0) * (price || 0) - (commission || 0);
+        result = (quantity || 0) * (price || 0) - (commission || 0);
+        break;
 
       case InvestmentAction.DIVIDEND:
       case InvestmentAction.INTEREST:
       case InvestmentAction.CAPITAL_GAIN:
-        return (quantity || 1) * (price || 0);
+        result = (quantity || 1) * (price || 0);
+        break;
 
       case InvestmentAction.ADD_SHARES:
       case InvestmentAction.REMOVE_SHARES:
@@ -277,6 +281,9 @@ export class InvestmentTransactionsService {
       default:
         return 0;
     }
+
+    // M13: Round to 4 decimal places to avoid floating-point drift
+    return Math.round(result * 10000) / 10000;
   }
 
   private async processTransactionEffectsInTransaction(
@@ -579,7 +586,30 @@ export class InvestmentTransactionsService {
       // Update entity properties directly
       if (updateDto.accountId !== undefined)
         transaction.accountId = updateDto.accountId;
-      if (updateDto.action !== undefined) transaction.action = updateDto.action;
+      if (updateDto.action !== undefined) {
+        // M18: Re-validate security requirement when action changes
+        const securityRequiredActions = [
+          InvestmentAction.BUY,
+          InvestmentAction.SELL,
+          InvestmentAction.SPLIT,
+          InvestmentAction.REINVEST,
+          InvestmentAction.ADD_SHARES,
+          InvestmentAction.REMOVE_SHARES,
+        ];
+        const effectiveSecurityId =
+          updateDto.securityId !== undefined
+            ? updateDto.securityId
+            : transaction.securityId;
+        if (
+          securityRequiredActions.includes(updateDto.action) &&
+          !effectiveSecurityId
+        ) {
+          throw new BadRequestException(
+            `Security ID is required for ${updateDto.action} transactions`,
+          );
+        }
+        transaction.action = updateDto.action;
+      }
       if (updateDto.transactionDate !== undefined)
         transaction.transactionDate = updateDto.transactionDate;
       if (updateDto.securityId !== undefined)

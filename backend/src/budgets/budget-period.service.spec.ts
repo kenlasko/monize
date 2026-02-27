@@ -1,5 +1,6 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
+import { DataSource } from "typeorm";
 import { NotFoundException, BadRequestException } from "@nestjs/common";
 import { BudgetPeriodService } from "./budget-period.service";
 import { BudgetsService } from "./budgets.service";
@@ -20,6 +21,28 @@ describe("BudgetPeriodService", () => {
   let transactionsRepository: Record<string, jest.Mock>;
   let splitsRepository: Record<string, jest.Mock>;
   let budgetsService: Record<string, jest.Mock>;
+
+  const mockDataSource = {
+    createQueryRunner: jest.fn().mockReturnValue({
+      connect: jest.fn(),
+      startTransaction: jest.fn(),
+      commitTransaction: jest.fn(),
+      rollbackTransaction: jest.fn(),
+      release: jest.fn(),
+      manager: {
+        save: jest.fn().mockImplementation((entity, data) => data || entity),
+        getRepository: jest.fn().mockReturnValue({
+          create: jest
+            .fn()
+            .mockImplementation((data) => ({ ...data, id: "new-id" })),
+          save: jest.fn().mockImplementation((data) => ({
+            ...data,
+            id: data.id || "new-id",
+          })),
+        }),
+      },
+    }),
+  };
 
   const mockBudget: Budget = {
     id: "budget-1",
@@ -165,6 +188,7 @@ describe("BudgetPeriodService", () => {
           useValue: splitsRepository,
         },
         { provide: BudgetsService, useValue: budgetsService },
+        { provide: DataSource, useValue: mockDataSource },
       ],
     }).compile();
 
@@ -262,8 +286,10 @@ describe("BudgetPeriodService", () => {
       const result = await service.closePeriod("user-1", "budget-1");
 
       expect(result.status).toBe(PeriodStatus.CLOSED);
-      expect(periodCategoriesRepository.save).toHaveBeenCalled();
-      expect(periodsRepository.save).toHaveBeenCalled();
+      // closePeriod now uses queryRunner.manager.save instead of direct repos
+      const qr = mockDataSource.createQueryRunner();
+      expect(qr.manager.save).toHaveBeenCalled();
+      expect(qr.commitTransaction).toHaveBeenCalled();
     });
 
     it("throws BadRequestException when no open period", async () => {

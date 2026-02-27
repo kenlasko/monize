@@ -5,12 +5,14 @@ import { PayeesService } from "./payees.service";
 import { Payee } from "./entities/payee.entity";
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { ScheduledTransaction } from "../scheduled-transactions/entities/scheduled-transaction.entity";
+import { Category } from "../categories/entities/category.entity";
 
 describe("PayeesService", () => {
   let service: PayeesService;
   let payeesRepository: Record<string, jest.Mock>;
   let transactionsRepository: Record<string, jest.Mock>;
   let scheduledTransactionsRepository: Record<string, jest.Mock>;
+  let categoriesRepository: Record<string, jest.Mock>;
 
   const userId = "user-1";
 
@@ -75,6 +77,11 @@ describe("PayeesService", () => {
       update: jest.fn(),
     };
 
+    categoriesRepository = {
+      find: jest.fn().mockResolvedValue([]),
+      findOne: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         PayeesService,
@@ -86,6 +93,10 @@ describe("PayeesService", () => {
         {
           provide: getRepositoryToken(ScheduledTransaction),
           useValue: scheduledTransactionsRepository,
+        },
+        {
+          provide: getRepositoryToken(Category),
+          useValue: categoriesRepository,
         },
       ],
     }).compile();
@@ -866,6 +877,10 @@ describe("PayeesService", () => {
       payeesRepository.findOne
         .mockResolvedValueOnce({ ...mockPayeeNoCategory })
         .mockResolvedValueOnce({ ...mockPayee });
+      categoriesRepository.find.mockResolvedValue([
+        { id: "cat-food" },
+        { id: "cat-coffee" },
+      ]);
 
       const assignments = [
         { payeeId: "payee-2", categoryId: "cat-food" },
@@ -885,6 +900,10 @@ describe("PayeesService", () => {
       payeesRepository.findOne
         .mockResolvedValueOnce(null)
         .mockResolvedValueOnce({ ...mockPayee });
+      categoriesRepository.find.mockResolvedValue([
+        { id: "cat-1" },
+        { id: "cat-2" },
+      ]);
 
       const assignments = [
         { payeeId: "other-user-payee", categoryId: "cat-1" },
@@ -902,6 +921,7 @@ describe("PayeesService", () => {
 
     it("should return zero updated when no valid assignments", async () => {
       payeesRepository.findOne.mockResolvedValue(null);
+      categoriesRepository.find.mockResolvedValue([{ id: "cat-1" }]);
 
       const result = await service.applyCategorySuggestions(userId, [
         { payeeId: "bad-1", categoryId: "cat-1" },
@@ -921,6 +941,7 @@ describe("PayeesService", () => {
     it("should set defaultCategoryId on the payee entity before saving", async () => {
       const payee = { ...mockPayeeNoCategory, defaultCategoryId: null };
       payeesRepository.findOne.mockResolvedValue(payee);
+      categoriesRepository.find.mockResolvedValue([{ id: "cat-new" }]);
 
       await service.applyCategorySuggestions(userId, [
         { payeeId: "payee-2", categoryId: "cat-new" },

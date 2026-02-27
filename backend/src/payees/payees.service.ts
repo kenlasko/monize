@@ -2,12 +2,14 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  BadRequestException,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository, Like } from "typeorm";
+import { Repository, Like, In } from "typeorm";
 import { Payee } from "./entities/payee.entity";
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { ScheduledTransaction } from "../scheduled-transactions/entities/scheduled-transaction.entity";
+import { Category } from "../categories/entities/category.entity";
 import { CreatePayeeDto } from "./dto/create-payee.dto";
 import { UpdatePayeeDto } from "./dto/update-payee.dto";
 
@@ -20,6 +22,8 @@ export class PayeesService {
     private transactionsRepository: Repository<Transaction>,
     @InjectRepository(ScheduledTransaction)
     private scheduledTransactionsRepository: Repository<ScheduledTransaction>,
+    @InjectRepository(Category)
+    private categoriesRepository: Repository<Category>,
   ) {}
 
   async create(userId: string, createPayeeDto: CreatePayeeDto): Promise<Payee> {
@@ -453,6 +457,26 @@ export class PayeesService {
     userId: string,
     assignments: Array<{ payeeId: string; categoryId: string }>,
   ): Promise<{ updated: number }> {
+    // M24: Batch-verify all categoryIds belong to the user
+    const uniqueCategoryIds = [
+      ...new Set(assignments.map((a) => a.categoryId)),
+    ];
+    if (uniqueCategoryIds.length > 0) {
+      const ownedCategories = await this.categoriesRepository.find({
+        where: { id: In(uniqueCategoryIds), userId },
+        select: ["id"],
+      });
+      const ownedCategoryIds = new Set(ownedCategories.map((c) => c.id));
+      const invalidIds = uniqueCategoryIds.filter(
+        (id) => !ownedCategoryIds.has(id),
+      );
+      if (invalidIds.length > 0) {
+        throw new BadRequestException(
+          `Category IDs not found or not owned by user: ${invalidIds.join(", ")}`,
+        );
+      }
+    }
+
     let updated = 0;
 
     for (const assignment of assignments) {

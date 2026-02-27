@@ -4,6 +4,8 @@ import {
   IsOptional,
   IsUUID,
   MaxLength,
+  Min,
+  Max,
 } from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { SanitizeHtml } from "../../common/decorators/sanitize-html.decorator";
@@ -30,6 +32,8 @@ export class CreateTransactionSplitDto {
       "Amount for this split (must be same sign as parent transaction)",
   })
   @IsNumber({ maxDecimalPlaces: 4 })
+  @Min(-999999999999)
+  @Max(999999999999)
   amount: number;
 
   @ApiPropertyOptional({ description: "Memo/note for this split" })

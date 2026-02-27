@@ -1,6 +1,7 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { NotFoundException, BadRequestException } from "@nestjs/common";
+import { DataSource } from "typeorm";
 import { CategoriesService } from "./categories.service";
 import { Category } from "./entities/category.entity";
 import { Transaction } from "../transactions/entities/transaction.entity";
@@ -17,6 +18,7 @@ describe("CategoriesService", () => {
   let payeesRepository: Record<string, jest.Mock>;
   let scheduledTransactionsRepository: Record<string, jest.Mock>;
   let scheduledSplitsRepository: Record<string, jest.Mock>;
+  let mockDataSource: Record<string, jest.Mock>;
 
   const mockCategory: Category = {
     id: "cat-1",
@@ -116,6 +118,25 @@ describe("CategoriesService", () => {
       createQueryBuilder: jest.fn(() => createMockQueryBuilder()),
     };
 
+    mockDataSource = {
+      createQueryRunner: jest.fn().mockReturnValue({
+        connect: jest.fn(),
+        startTransaction: jest.fn(),
+        commitTransaction: jest.fn(),
+        rollbackTransaction: jest.fn(),
+        release: jest.fn(),
+        manager: {
+          update: jest.fn().mockResolvedValue({ affected: 0 }),
+          createQueryBuilder: jest.fn((...args: unknown[]) =>
+            createMockQueryBuilder(),
+          ),
+          save: jest
+            .fn()
+            .mockImplementation((_entity: unknown, data: unknown) => data),
+        },
+      }),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         CategoriesService,
@@ -140,6 +161,7 @@ describe("CategoriesService", () => {
           provide: getRepositoryToken(ScheduledTransactionSplit),
           useValue: scheduledSplitsRepository,
         },
+        { provide: DataSource, useValue: mockDataSource },
       ],
     }).compile();
 
@@ -732,6 +754,20 @@ describe("CategoriesService", () => {
       categoriesRepository.findOne.mockResolvedValue({ ...mockCategory });
       categoriesRepository.count.mockResolvedValue(0);
 
+      // Mock getTransactionCount to return 0 so remove() proceeds
+      transactionsRepository.count.mockResolvedValue(0);
+      splitsRepository.createQueryBuilder.mockReturnValue(
+        createMockQueryBuilder({
+          getCount: jest.fn().mockResolvedValue(0),
+        }),
+      );
+      scheduledTransactionsRepository.count.mockResolvedValue(0);
+      scheduledTransactionsRepository.createQueryBuilder.mockReturnValue(
+        createMockQueryBuilder({
+          getMany: jest.fn().mockResolvedValue([]),
+        }),
+      );
+
       await service.remove("user-1", "cat-1");
 
       expect(payeesRepository.update).toHaveBeenCalledWith(
@@ -837,27 +873,47 @@ describe("CategoriesService", () => {
       categoriesRepository.findOne
         .mockResolvedValueOnce(mockCategory)
         .mockResolvedValueOnce({ ...mockCategory, id: "cat-target" });
-      transactionsRepository.update.mockResolvedValue({ affected: 5 });
 
       const txQb = createMockQueryBuilder({
         getMany: jest.fn().mockResolvedValue([{ id: "tx-1" }, { id: "tx-2" }]),
       });
-      transactionsRepository.createQueryBuilder.mockReturnValue(txQb);
-
       const splitQb = createMockQueryBuilder({
         execute: jest.fn().mockResolvedValue({ affected: 2 }),
       });
-      splitsRepository.createQueryBuilder.mockReturnValue(splitQb);
-
-      scheduledTransactionsRepository.update.mockResolvedValue({ affected: 1 });
-
       const stQb = createMockQueryBuilder({
         getMany: jest.fn().mockResolvedValue([{ id: "st-1" }]),
       });
-      scheduledTransactionsRepository.createQueryBuilder.mockReturnValue(stQb);
-
       const ssQb = createMockQueryBuilder();
-      scheduledSplitsRepository.createQueryBuilder.mockReturnValue(ssQb);
+
+      let createQbCallCount = 0;
+      const mockManager = {
+        update: jest
+          .fn()
+          .mockResolvedValueOnce({ affected: 5 }) // Transaction update
+          .mockResolvedValueOnce({ affected: 1 }), // ScheduledTransaction update
+        createQueryBuilder: jest
+          .fn()
+          .mockImplementation((...args: unknown[]) => {
+            createQbCallCount++;
+            // Call 1: get user transaction IDs (with entity arg)
+            if (createQbCallCount === 1) return txQb;
+            // Call 2: update splits (no entity arg)
+            if (createQbCallCount === 2) return splitQb;
+            // Call 3: get user scheduled transaction IDs (with entity arg)
+            if (createQbCallCount === 3) return stQb;
+            // Call 4: update scheduled splits (no entity arg)
+            return ssQb;
+          }),
+        save: jest.fn(),
+      };
+      mockDataSource.createQueryRunner.mockReturnValue({
+        connect: jest.fn(),
+        startTransaction: jest.fn(),
+        commitTransaction: jest.fn(),
+        rollbackTransaction: jest.fn(),
+        release: jest.fn(),
+        manager: mockManager,
+      });
 
       const result = await service.reassignTransactions(
         "user-1",
@@ -872,19 +928,37 @@ describe("CategoriesService", () => {
 
     it("reassigns to null category", async () => {
       categoriesRepository.findOne.mockResolvedValue(mockCategory);
-      transactionsRepository.update.mockResolvedValue({ affected: 3 });
 
       const txQb = createMockQueryBuilder({
         getMany: jest.fn().mockResolvedValue([]),
       });
-      transactionsRepository.createQueryBuilder.mockReturnValue(txQb);
-
-      scheduledTransactionsRepository.update.mockResolvedValue({ affected: 0 });
-
       const stQb = createMockQueryBuilder({
         getMany: jest.fn().mockResolvedValue([]),
       });
-      scheduledTransactionsRepository.createQueryBuilder.mockReturnValue(stQb);
+
+      let createQbCallCount = 0;
+      const mockManager = {
+        update: jest
+          .fn()
+          .mockResolvedValueOnce({ affected: 3 }) // Transaction update
+          .mockResolvedValueOnce({ affected: 0 }), // ScheduledTransaction update
+        createQueryBuilder: jest
+          .fn()
+          .mockImplementation((...args: unknown[]) => {
+            createQbCallCount++;
+            if (createQbCallCount === 1) return txQb;
+            return stQb;
+          }),
+        save: jest.fn(),
+      };
+      mockDataSource.createQueryRunner.mockReturnValue({
+        connect: jest.fn(),
+        startTransaction: jest.fn(),
+        commitTransaction: jest.fn(),
+        rollbackTransaction: jest.fn(),
+        release: jest.fn(),
+        manager: mockManager,
+      });
 
       const result = await service.reassignTransactions(
         "user-1",
@@ -901,19 +975,37 @@ describe("CategoriesService", () => {
       categoriesRepository.findOne
         .mockResolvedValueOnce(mockCategory)
         .mockResolvedValueOnce({ ...mockCategory, id: "cat-target" });
-      transactionsRepository.update.mockResolvedValue({ affected: 0 });
 
       const txQb = createMockQueryBuilder({
         getMany: jest.fn().mockResolvedValue([]),
       });
-      transactionsRepository.createQueryBuilder.mockReturnValue(txQb);
-
-      scheduledTransactionsRepository.update.mockResolvedValue({ affected: 0 });
-
       const stQb = createMockQueryBuilder({
         getMany: jest.fn().mockResolvedValue([]),
       });
-      scheduledTransactionsRepository.createQueryBuilder.mockReturnValue(stQb);
+
+      let createQbCallCount = 0;
+      const mockManager = {
+        update: jest
+          .fn()
+          .mockResolvedValueOnce({ affected: 0 }) // Transaction update
+          .mockResolvedValueOnce({ affected: 0 }), // ScheduledTransaction update
+        createQueryBuilder: jest
+          .fn()
+          .mockImplementation((...args: unknown[]) => {
+            createQbCallCount++;
+            if (createQbCallCount === 1) return txQb;
+            return stQb;
+          }),
+        save: jest.fn(),
+      };
+      mockDataSource.createQueryRunner.mockReturnValue({
+        connect: jest.fn(),
+        startTransaction: jest.fn(),
+        commitTransaction: jest.fn(),
+        rollbackTransaction: jest.fn(),
+        release: jest.fn(),
+        manager: mockManager,
+      });
 
       const result = await service.reassignTransactions(
         "user-1",
@@ -922,7 +1014,8 @@ describe("CategoriesService", () => {
       );
 
       expect(result.splitsUpdated).toBe(0);
-      expect(splitsRepository.createQueryBuilder).not.toHaveBeenCalled();
+      // createQueryBuilder is called twice (txIds + scheduledTxIds) but never for splits
+      expect(mockManager.createQueryBuilder).toHaveBeenCalledTimes(2);
     });
 
     it("throws NotFoundException when source category does not exist", async () => {

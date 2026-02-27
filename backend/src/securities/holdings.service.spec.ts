@@ -1103,7 +1103,7 @@ describe("HoldingsService", () => {
       expect(mockQrRepo.create).toHaveBeenCalledTimes(3);
     });
 
-    it("queries only brokerage accounts", async () => {
+    it("queries only investment accounts", async () => {
       accountsRepository.find.mockResolvedValue([]);
 
       await service.rebuildFromTransactions("user-1");
@@ -1112,7 +1112,6 @@ describe("HoldingsService", () => {
         where: {
           userId: "user-1",
           accountType: AccountType.INVESTMENT,
-          accountSubType: AccountSubType.INVESTMENT_BROKERAGE,
         },
       });
     });

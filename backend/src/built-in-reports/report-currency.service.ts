@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { UserPreference } from "../users/entities/user-preference.entity";
@@ -35,6 +35,8 @@ export type RateMap = Map<string, number>;
 
 @Injectable()
 export class ReportCurrencyService {
+  private readonly logger = new Logger(ReportCurrencyService.name);
+
   constructor(
     @InjectRepository(UserPreference)
     private userPreferenceRepository: Repository<UserPreference>,
@@ -73,6 +75,10 @@ export class ReportCurrencyService {
     const inverseKey = `${defaultCurrency}->${fromCurrency}`;
     const inverseRate = rateMap.get(inverseKey);
     if (inverseRate && inverseRate !== 0) return amount / inverseRate;
+    // M30: Log warning when no conversion rate is found instead of silently returning unconverted amount
+    this.logger.warn(
+      `No exchange rate found for ${fromCurrency} -> ${defaultCurrency}, returning unconverted amount`,
+    );
     return amount;
   }
 }

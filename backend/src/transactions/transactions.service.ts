@@ -276,7 +276,12 @@ export class TransactionsService {
     }
 
     if (search && search.trim()) {
-      const searchPattern = `%${search.trim()}%`;
+      const escaped = search
+        .trim()
+        .replace(/\\/g, "\\\\")
+        .replace(/%/g, "\\%")
+        .replace(/_/g, "\\_");
+      const searchPattern = `%${escaped}%`;
       queryBuilder.andWhere(
         "(transaction.description ILIKE :search OR transaction.payeeName ILIKE :search OR splits.memo ILIKE :search)",
         { search: searchPattern },
@@ -420,7 +425,12 @@ export class TransactionsService {
         countQuery.andWhere("t.payeeId IN (:...payeeIds)", { payeeIds });
       }
       if (search && search.trim()) {
-        const searchPattern = `%${search.trim()}%`;
+        const escaped = search
+          .trim()
+          .replace(/\\/g, "\\\\")
+          .replace(/%/g, "\\%")
+          .replace(/_/g, "\\_");
+        const searchPattern = `%${escaped}%`;
         countQuery.andWhere(
           "(t.description ILIKE :search OR t.payeeName ILIKE :search OR s.memo ILIKE :search)",
           { search: searchPattern },
@@ -769,7 +779,12 @@ export class TransactionsService {
       });
 
       if (parentSplit) {
-        await this.removeParentTransaction(parentSplit, id, queryRunner);
+        await this.removeParentTransaction(
+          parentSplit,
+          id,
+          queryRunner,
+          userId,
+        );
       }
 
       if (transaction.status !== TransactionStatus.VOID) {
@@ -807,10 +822,11 @@ export class TransactionsService {
     parentSplit: TransactionSplit,
     linkedTransactionId: string,
     queryRunner: QueryRunner,
+    userId: string,
   ): Promise<void> {
     const parentTransactionId = parentSplit.transactionId;
     const parentTransaction = await queryRunner.manager.findOne(Transaction, {
-      where: { id: parentTransactionId },
+      where: { id: parentTransactionId, userId },
     });
 
     if (parentTransaction) {
@@ -824,7 +840,7 @@ export class TransactionsService {
           split.linkedTransactionId !== linkedTransactionId
         ) {
           const linkedTx = await queryRunner.manager.findOne(Transaction, {
-            where: { id: split.linkedTransactionId },
+            where: { id: split.linkedTransactionId, userId },
           });
 
           if (linkedTx) {

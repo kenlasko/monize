@@ -480,41 +480,62 @@ export class AccountsService {
    * Close an account (soft delete)
    */
   async close(userId: string, id: string): Promise<Account> {
-    const account = await this.findOne(userId, id);
+    // M19: Use pessimistic_write lock to prevent race condition
+    // between balance check and close
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-    if (account.isClosed) {
-      throw new BadRequestException("Account is already closed");
-    }
-
-    // Check if balance is not zero
-    if (Number(account.currentBalance) !== 0) {
-      throw new BadRequestException(
-        "Cannot close account with non-zero balance. Current balance: " +
-          account.currentBalance,
-      );
-    }
-
-    account.isClosed = true;
-    account.closedDate = new Date();
-
-    const saved = await this.accountsRepository.save(account);
-
-    // If this is an investment cash account, also close the linked brokerage account
-    if (
-      account.accountSubType === AccountSubType.INVESTMENT_CASH &&
-      account.linkedAccountId
-    ) {
-      const brokerageAccount = await this.accountsRepository.findOne({
-        where: { id: account.linkedAccountId, userId },
+    try {
+      const account = await queryRunner.manager.findOne(Account, {
+        where: { id, userId },
+        lock: { mode: "pessimistic_write" },
       });
-      if (brokerageAccount && !brokerageAccount.isClosed) {
-        brokerageAccount.isClosed = true;
-        brokerageAccount.closedDate = new Date();
-        await this.accountsRepository.save(brokerageAccount);
-      }
-    }
 
-    return saved;
+      if (!account) {
+        throw new NotFoundException(`Account with ID ${id} not found`);
+      }
+
+      if (account.isClosed) {
+        throw new BadRequestException("Account is already closed");
+      }
+
+      // Check if balance is not zero (under lock, so no race)
+      if (Number(account.currentBalance) !== 0) {
+        throw new BadRequestException(
+          "Cannot close account with non-zero balance. Current balance: " +
+            account.currentBalance,
+        );
+      }
+
+      account.isClosed = true;
+      account.closedDate = new Date();
+
+      const saved = await queryRunner.manager.save(account);
+
+      // If this is an investment cash account, also close the linked brokerage account
+      if (
+        account.accountSubType === AccountSubType.INVESTMENT_CASH &&
+        account.linkedAccountId
+      ) {
+        const brokerageAccount = await queryRunner.manager.findOne(Account, {
+          where: { id: account.linkedAccountId, userId },
+        });
+        if (brokerageAccount && !brokerageAccount.isClosed) {
+          brokerageAccount.isClosed = true;
+          brokerageAccount.closedDate = new Date();
+          await queryRunner.manager.save(brokerageAccount);
+        }
+      }
+
+      await queryRunner.commitTransaction();
+      return saved;
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   /**
@@ -585,7 +606,11 @@ export class AccountsService {
 
     if (queryRunner) {
       await queryRunner.query(sql, [amount, accountId]);
-      return account;
+      // M20: Re-query within transaction to return fresh balance
+      const updated = await queryRunner.manager.findOneOrFail(Account, {
+        where: { id: accountId },
+      });
+      return updated;
     }
 
     // Atomic update at the database level to avoid read-modify-write race conditions

@@ -691,6 +691,9 @@ export class PortfolioCalculationService {
 
     const sortedDates = [...txByDate.keys()].sort();
 
+    // M16: Batch-fetch all latest prices once to avoid N+1 queries
+    const latestPriceCache = await getLatestPrices(securityIds);
+
     // Helper: compute portfolio value from holdings state (current prices)
     const computeValue = async (
       holdings: Map<string, number>,
@@ -698,8 +701,7 @@ export class PortfolioCalculationService {
       let total = 0;
       for (const [secId, qty] of holdings) {
         if (qty === 0) continue;
-        const latestPriceMap = await getLatestPrices([secId]);
-        const price = latestPriceMap.get(secId);
+        const price = latestPriceCache.get(secId);
         if (price != null) {
           const currency = currencyMap.get(secId) || defaultCurrency;
           total += await this.convertToDefault(

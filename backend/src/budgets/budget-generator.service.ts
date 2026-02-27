@@ -1,6 +1,6 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, BadRequestException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { Repository, In } from "typeorm";
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
 import { Category } from "../categories/entities/category.entity";
@@ -195,6 +195,25 @@ export class BudgetGeneratorService {
     const savedBudget = await this.budgetsRepository.save(budget);
 
     if (dto.categories && dto.categories.length > 0) {
+      // M27: Validate that all categoryIds belong to the user
+      const categoryIds = dto.categories
+        .filter((cat) => cat.categoryId && !cat.transferAccountId)
+        .map((cat) => cat.categoryId as string);
+      if (categoryIds.length > 0) {
+        const uniqueIds = [...new Set(categoryIds)];
+        const ownedCategories = await this.categoriesRepository.find({
+          where: { id: In(uniqueIds), userId },
+          select: ["id"],
+        });
+        const ownedIds = new Set(ownedCategories.map((c) => c.id));
+        const invalidIds = uniqueIds.filter((id) => !ownedIds.has(id));
+        if (invalidIds.length > 0) {
+          throw new BadRequestException(
+            `Category IDs not found or not owned by user: ${invalidIds.join(", ")}`,
+          );
+        }
+      }
+
       const budgetCategories = dto.categories.map((cat) =>
         this.budgetCategoriesRepository.create({
           budgetId: savedBudget.id,

@@ -647,22 +647,35 @@ export class AuthService {
   async resetPassword(token: string, newPassword: string): Promise<void> {
     // SECURITY: Hash the incoming token to compare against stored hash
     const hashedToken = this.hashToken(token);
-    const user = await this.usersRepository.findOne({
-      where: { resetToken: hashedToken },
-    });
 
-    if (!user || !user.resetTokenExpiry || user.resetTokenExpiry < new Date()) {
+    const saltRounds = 10;
+    const passwordHash = await bcrypt.hash(newPassword, saltRounds);
+
+    // M11: Atomic UPDATE...WHERE to prevent TOCTOU race condition.
+    // Only one concurrent request can match the resetToken; the second will
+    // find affected === 0 because the first already cleared it.
+    const result = await this.usersRepository
+      .createQueryBuilder()
+      .update(User)
+      .set({
+        passwordHash,
+        resetToken: null,
+        resetTokenExpiry: null,
+      })
+      .where("resetToken = :hashedToken", { hashedToken })
+      .andWhere("resetTokenExpiry > :now", { now: new Date() })
+      .returning("id")
+      .execute();
+
+    if (!result.affected || result.affected === 0) {
       throw new BadRequestException("Invalid or expired reset token");
     }
 
-    const saltRounds = 10;
-    user.passwordHash = await bcrypt.hash(newPassword, saltRounds);
-    user.resetToken = null;
-    user.resetTokenExpiry = null;
-    await this.usersRepository.save(user);
-
     // Revoke all refresh tokens to force re-login on all devices
-    await this.revokeAllUserRefreshTokens(user.id);
+    const userId = result.raw?.[0]?.id;
+    if (userId) {
+      await this.revokeAllUserRefreshTokens(userId);
+    }
   }
 
   // Trusted device methods

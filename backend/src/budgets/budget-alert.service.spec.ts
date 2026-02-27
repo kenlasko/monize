@@ -1036,18 +1036,74 @@ describe("BudgetAlertService", () => {
         getRawMany: jest.fn().mockResolvedValue([]),
       });
 
-      // Existing alert for same type+category
+      // Existing alert for same type+category at WARNING severity
+      // (M25: dedup now allows severity escalation, so CRITICAL candidate passes through)
       alertsRepository.find.mockResolvedValue([
         makeAlert({
           alertType: AlertType.OVER_BUDGET,
           budgetCategoryId: "bc-1",
+          severity: AlertSeverity.WARNING,
         }),
       ]);
 
       await service.processAlerts(budget);
 
-      // The OVER_BUDGET alert was deduped, but PROJECTED_OVERSPEND might still be created
-      // depending on velocity. The point is the OVER_BUDGET alert specifically was deduped
+      // The OVER_BUDGET candidate has CRITICAL severity which is higher than the
+      // existing WARNING, so severity escalation allows it through
+      const createdAlerts = alertsRepository.create.mock.calls.map(
+        (call: any[]) => call[0].alertType,
+      );
+      expect(createdAlerts).toContain(AlertType.OVER_BUDGET);
+    });
+
+    it("suppresses alert when existing alert has same or higher severity", async () => {
+      const budget = makeBudget({
+        categories: [
+          makeCategory({
+            id: "bc-1",
+            categoryId: "cat-1",
+            category: {
+              id: "cat-1",
+              name: "Groceries",
+              isIncome: false,
+            } as any,
+            amount: 500,
+          }),
+        ],
+      });
+
+      const qb = {
+        select: jest.fn().mockReturnThis(),
+        addSelect: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        innerJoin: jest.fn().mockReturnThis(),
+        groupBy: jest.fn().mockReturnThis(),
+        getRawMany: jest
+          .fn()
+          .mockResolvedValue([{ categoryId: "cat-1", total: "600" }]),
+      };
+
+      transactionsRepository.createQueryBuilder.mockReturnValue(qb);
+      splitsRepository.createQueryBuilder.mockReturnValue({
+        ...qb,
+        getRawMany: jest.fn().mockResolvedValue([]),
+      });
+
+      // Existing alert for same type+category already at CRITICAL severity
+      // (M25: same-or-higher severity still suppresses the candidate)
+      alertsRepository.find.mockResolvedValue([
+        makeAlert({
+          alertType: AlertType.OVER_BUDGET,
+          budgetCategoryId: "bc-1",
+          severity: AlertSeverity.CRITICAL,
+        }),
+      ]);
+
+      await service.processAlerts(budget);
+
+      // The OVER_BUDGET candidate has CRITICAL severity which equals the existing
+      // CRITICAL, so no escalation -- the candidate is suppressed
       const createdAlerts = alertsRepository.create.mock.calls.map(
         (call: any[]) => call[0].alertType,
       );
