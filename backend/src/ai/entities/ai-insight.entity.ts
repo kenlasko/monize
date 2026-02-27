@@ -3,7 +3,10 @@ import {
   Column,
   PrimaryGeneratedColumn,
   CreateDateColumn,
+  ManyToOne,
+  JoinColumn,
 } from "typeorm";
+import { User } from "../../users/entities/user.entity";
 
 export const INSIGHT_TYPES = [
   "anomaly",
@@ -27,6 +30,10 @@ export class AiInsight {
 
   @Column({ type: "uuid", name: "user_id" })
   userId: string;
+
+  @ManyToOne(() => User)
+  @JoinColumn({ name: "user_id" })
+  user?: User;
 
   @Column({ type: "varchar", length: 50 })
   type: InsightType;

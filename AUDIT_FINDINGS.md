@@ -148,180 +148,116 @@ Each split saved individually in a loop. Transfer-type splits create linked tran
 
 ## MEDIUM Findings
 
-### 11. N+1: Holdings Rebuild -- Individual Saves
+### 11. ~~N+1: Holdings Rebuild -- Individual Saves~~ FIXED
 
-- **File:** `backend/src/securities/holdings.service.ts`, lines 330-346
+- **File:** `backend/src/securities/holdings.service.ts`
 - **Severity:** MEDIUM
-
-20 securities = 20 INSERT queries instead of 1 batch.
-
-**Fix:** Collect into array, use `this.holdingsRepository.save(holdingsArray)`.
+- **Status:** FIXED -- Collected into array, single batch `holdingsRepo.save(holdingsToCreate)`.
 
 ---
 
-### 12. N+1: Split Creation -- Per-Split Saves
+### 12. ~~N+1: Split Creation -- Per-Split Saves~~ FIXED
 
-- **File:** `backend/src/transactions/transaction-split.service.ts`, lines 84-150
+- **File:** `backend/src/transactions/transaction-split.service.ts`
 - **Severity:** MEDIUM
-
-5 splits = 5+ saves.
-
-**Fix:** Batch regular splits; wrap transfer splits in single transaction.
+- **Status:** FIXED -- Regular (non-transfer) splits batch-saved in one call. Transfer splits remain individual (require linked transaction creation).
 
 ---
 
-### 13. N+1: Investment Transaction Account Resolution
+### 13. ~~N+1: Investment Transaction Account Resolution~~ FIXED
 
-- **File:** `backend/src/securities/investment-transactions.service.ts`, lines 481-489
+- **File:** `backend/src/securities/investment-transactions.service.ts`
 - **Severity:** MEDIUM
-
-Calls `findOne()` per account in a loop.
-
-**Fix:** Single `find({ where: { id: In(accountIds), userId } })`.
+- **Status:** FIXED -- Replaced per-account `findOne()` loop with batch `accountsService.findByIds(userId, accountIds)`.
 
 ---
 
-### 14. N+1: Import Validation -- Per-Entity Lookups
+### 14. ~~N+1: Import Validation -- Per-Entity Lookups~~ FIXED
 
-- **File:** `backend/src/import/import.service.ts`, lines 361-410
+- **File:** `backend/src/import/import.service.ts`
 - **Severity:** MEDIUM
-
-18 individual `findOne` queries instead of 3 batch queries.
-
-**Fix:** Collect unique IDs, batch with `WHERE id IN (...)`.
+- **Status:** FIXED -- Replaced per-entity `findOne` with batch `find({ where: { id: In(ids) } })` for accounts, categories, and securities.
 
 ---
 
-### 15. N+1: Delete Transfer Split Linked Transactions
+### 15. ~~N+1: Delete Transfer Split Linked Transactions~~ FIXED
 
-- **File:** `backend/src/transactions/transaction-split.service.ts`, lines 155-187
+- **File:** `backend/src/transactions/transaction-split.service.ts`
 - **Severity:** MEDIUM
-
-5 transfer splits = 10 queries (5 finds + 5 removes).
-
-**Fix:** Batch find with `In(ids)`, batch remove.
+- **Status:** FIXED -- Replaced per-split `findOne` with batch `find({ where: { id: In(linkedTxIds) } })`.
 
 ---
 
-### 16. Missing Index: investment_transactions.transaction_id
+### 16. ~~Missing Index: investment_transactions.transaction_id~~ FIXED
 
 - **File:** `database/schema.sql`
 - **Severity:** MEDIUM
-
-Used on every transaction list page load to enrich with investment links.
-
-**Fix:**
-```sql
-CREATE INDEX IF NOT EXISTS idx_investment_transactions_transaction
-  ON investment_transactions(transaction_id);
-```
+- **Status:** FIXED -- Added `idx_investment_transactions_transaction` index. Migration: `019_add_missing_indexes.sql`.
 
 ---
 
-### 17. Missing Index: scheduled_transaction_overrides.original_date
+### 17. ~~Missing Index: scheduled_transaction_overrides.original_date~~ FIXED
 
 - **File:** `database/schema.sql`
 - **Severity:** MEDIUM
-
-Queried on every scheduled transaction view. Only `override_date` is indexed.
-
-**Fix:**
-```sql
-CREATE INDEX IF NOT EXISTS idx_sched_txn_overrides_orig
-  ON scheduled_transaction_overrides(scheduled_transaction_id, original_date);
-```
+- **Status:** FIXED -- Added composite `idx_sched_txn_overrides_orig(scheduled_transaction_id, original_date)` index. Migration: `019_add_missing_indexes.sql`.
 
 ---
 
-### 18. Race Condition: Investment Account Pair Creation
+### 18. ~~Race Condition: Investment Account Pair Creation~~ FIXED
 
-- **File:** `backend/src/accounts/accounts.service.ts`, lines 109-145
+- **File:** `backend/src/accounts/accounts.service.ts`
 - **Severity:** MEDIUM
-
-Creates cash sub-account + brokerage + links them -- 3 operations, no transaction. Lower impact (one-time setup).
-
-**Fix:** Wrap in `QueryRunner` transaction.
+- **Status:** FIXED -- Wrapped in `QueryRunner` transaction with commit/rollback/release.
 
 ---
 
 ## LOW Findings
 
-### 19. N+1: Brokerage Balance Reset
+### 19. ~~N+1: Brokerage Balance Reset~~ FIXED
 
-- **File:** `backend/src/accounts/accounts.service.ts`, lines 737-752
+- **File:** `backend/src/accounts/accounts.service.ts`
 - **Severity:** LOW
-
-Individual saves per account.
-
-**Fix:** Single `UPDATE accounts SET balance = 0 WHERE account_type = 'INVESTMENT' AND account_sub_type = 'INVESTMENT_BROKERAGE' AND user_id = :userId`.
+- **Status:** FIXED -- Replaced find+loop+save with single `accountsRepository.update()` query.
 
 ---
 
-### 20. N+1: Scheduled Transaction Auto-Post
+### 20. ~~N+1: Scheduled Transaction Auto-Post~~ FIXED
 
-- **File:** `backend/src/scheduled-transactions/scheduled-transactions.service.ts`, lines 88-102
+- **File:** `backend/src/scheduled-transactions/scheduled-transactions.service.ts`
 - **Severity:** LOW
-
-Individual processing per due transaction. Hard to fully batch due to different accounts/amounts/splits per posting.
-
-**Fix:** Wrap in a single `QueryRunner` transaction for atomicity. Individual inserts may remain.
+- **Status:** FIXED -- Post-creation bookkeeping (override removal, next date calculation, scheduled transaction update) wrapped in `QueryRunner` transaction for atomicity.
 
 ---
 
-### 21. N+1: Per-Account Balance Recalculation
+### 21. ~~N+1: Per-Account Balance Recalculation~~ FIXED
 
-- **File:** `backend/src/accounts/accounts.service.ts`, lines 857-876
+- **File:** `backend/src/accounts/accounts.service.ts`
 - **Severity:** LOW
-
-Individual aggregate query per account.
-
-**Fix:** Single SQL with `GROUP BY account_id`.
+- **Status:** FIXED -- Replaced per-account aggregate queries with single SQL using `GROUP BY` via `ANY($1)` array parameter.
 
 ---
 
-### 22. Missing FK Relations on 13 Entities
+### 22. ~~Missing FK Relations on 13 Entities~~ FIXED
 
-DB-level FK constraints exist, so this is a code consistency issue, not a security one.
-
-| Entity | File | userId Line |
-|--------|------|-------------|
-| Transaction | `backend/src/transactions/entities/transaction.entity.ts` | 29 |
-| Account | `backend/src/accounts/entities/account.entity.ts` | 217 |
-| Category | `backend/src/categories/entities/category.entity.ts` | 17 |
-| Payee | `backend/src/payees/entities/payee.entity.ts` | 22 |
-| ScheduledTransaction | `backend/src/scheduled-transactions/entities/scheduled-transaction.entity.ts` | 33 |
-| InvestmentTransaction | `backend/src/securities/entities/investment-transaction.entity.ts` | 37 |
-| MonthlyAccountBalance | `backend/src/net-worth/entities/monthly-account-balance.entity.ts` | 20 |
-| Budget | `backend/src/budgets/entities/budget.entity.ts` | 62 |
-| BudgetAlert | `backend/src/budgets/entities/budget-alert.entity.ts` | 49 |
-| CustomReport | `backend/src/reports/entities/custom-report.entity.ts` | 112 |
-| AiProviderConfig | `backend/src/ai/entities/ai-provider-config.entity.ts` | 23 |
-| AiUsageLog | `backend/src/ai/entities/ai-usage-log.entity.ts` | 14 |
-| AiInsight | `backend/src/ai/entities/ai-insight.entity.ts` | 29 |
-
-**Fix:** Add `@ManyToOne(() => User)` + `@JoinColumn({ name: 'user_id' })` to each entity.
-
----
-
-### 23. @Exclude() Without ClassSerializerInterceptor
-
-- **File:** `backend/src/users/entities/user.entity.ts`
 - **Severity:** LOW
-
-`@Exclude()` decorators exist on sensitive fields (`passwordHash`, `resetToken`, `resetTokenExpiry`, `twoFactorSecret`) but `ClassSerializerInterceptor` is not registered globally. Not a vulnerability because all code manually sanitizes User objects, but the decorators give a false sense of security.
-
-**Fix:** Either register `ClassSerializerInterceptor` globally for defense-in-depth, or remove the `@Exclude()` decorators.
+- **Status:** FIXED -- Added `@ManyToOne(() => User)` + `@JoinColumn({ name: 'user_id' })` to all 13 entities: Transaction, Account, Category, Payee, ScheduledTransaction, InvestmentTransaction, MonthlyAccountBalance, Budget, BudgetAlert, CustomReport, AiProviderConfig, AiUsageLog, AiInsight.
 
 ---
 
-### 24. ProfileSection Missing Client-Side Validation
+### 23. ~~@Exclude() Without ClassSerializerInterceptor~~ FIXED
+
+- **File:** `backend/src/app.module.ts`
+- **Severity:** LOW
+- **Status:** FIXED -- Registered `ClassSerializerInterceptor` globally as `APP_INTERCEPTOR` for defense-in-depth.
+
+---
+
+### 24. ~~ProfileSection Missing Client-Side Validation~~ FIXED
 
 - **File:** `frontend/src/components/settings/ProfileSection.tsx`
 - **Severity:** LOW
-
-Uses `useState` instead of Zod/react-hook-form. No client-side email format or length validation. Backend DTOs catch everything, so this is a UX gap not a security issue.
-
-**Fix:** Migrate to Zod + react-hook-form pattern consistent with other forms.
+- **Status:** FIXED -- Migrated from `useState` to Zod + react-hook-form with email format/length validation, name length validation, and password length validation.
 
 ---
 

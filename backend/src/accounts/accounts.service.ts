@@ -7,7 +7,7 @@ import {
   Logger,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository, DataSource, QueryRunner } from "typeorm";
+import { Repository, DataSource, QueryRunner, In } from "typeorm";
 import {
   Account,
   AccountType,
@@ -104,7 +104,8 @@ export class AccountsService {
   }
 
   /**
-   * Create a linked investment account pair (cash + brokerage)
+   * Create a linked investment account pair (cash + brokerage).
+   * Wrapped in a QueryRunner transaction for atomicity.
    */
   async createInvestmentAccountPair(
     userId: string,
@@ -112,36 +113,51 @@ export class AccountsService {
   ): Promise<{ cashAccount: Account; brokerageAccount: Account }> {
     const { openingBalance = 0, name, ...accountData } = createAccountDto;
 
-    // Create the cash account first
-    const cashAccount = this.accountsRepository.create({
-      ...accountData,
-      name: `${name} - Cash`,
-      userId,
-      openingBalance,
-      currentBalance: openingBalance,
-      accountType: AccountType.INVESTMENT,
-      accountSubType: AccountSubType.INVESTMENT_CASH,
-    });
-    await this.accountsRepository.save(cashAccount);
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-    // Create the brokerage account linked to the cash account
-    const brokerageAccount = this.accountsRepository.create({
-      ...accountData,
-      name: `${name} - Brokerage`,
-      userId,
-      openingBalance: 0,
-      currentBalance: 0,
-      accountType: AccountType.INVESTMENT,
-      accountSubType: AccountSubType.INVESTMENT_BROKERAGE,
-      linkedAccountId: cashAccount.id,
-    });
-    await this.accountsRepository.save(brokerageAccount);
+    try {
+      const repo = queryRunner.manager.getRepository(Account);
 
-    // Update cash account to link back to brokerage
-    cashAccount.linkedAccountId = brokerageAccount.id;
-    await this.accountsRepository.save(cashAccount);
+      // Create the cash account first
+      const cashAccount = repo.create({
+        ...accountData,
+        name: `${name} - Cash`,
+        userId,
+        openingBalance,
+        currentBalance: openingBalance,
+        accountType: AccountType.INVESTMENT,
+        accountSubType: AccountSubType.INVESTMENT_CASH,
+      });
+      await repo.save(cashAccount);
 
-    return { cashAccount, brokerageAccount };
+      // Create the brokerage account linked to the cash account
+      const brokerageAccount = repo.create({
+        ...accountData,
+        name: `${name} - Brokerage`,
+        userId,
+        openingBalance: 0,
+        currentBalance: 0,
+        accountType: AccountType.INVESTMENT,
+        accountSubType: AccountSubType.INVESTMENT_BROKERAGE,
+        linkedAccountId: cashAccount.id,
+      });
+      await repo.save(brokerageAccount);
+
+      // Update cash account to link back to brokerage
+      cashAccount.linkedAccountId = brokerageAccount.id;
+      await repo.save(cashAccount);
+
+      await queryRunner.commitTransaction();
+
+      return { cashAccount, brokerageAccount };
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   /**
@@ -214,6 +230,17 @@ export class AccountsService {
     }
 
     return account;
+  }
+
+  /**
+   * Find multiple accounts by IDs for a user (batch lookup).
+   * Silently skips IDs that don't belong to the user.
+   */
+  async findByIds(userId: string, ids: string[]): Promise<Account[]> {
+    if (ids.length === 0) return [];
+    return this.accountsRepository.find({
+      where: { id: In(ids), userId },
+    });
   }
 
   /**
@@ -758,20 +785,16 @@ export class AccountsService {
    * Used when clearing investment data for re-import.
    */
   async resetBrokerageBalances(userId: string): Promise<number> {
-    const brokerageAccounts = await this.accountsRepository.find({
-      where: {
+    const result = await this.accountsRepository.update(
+      {
         userId,
         accountType: AccountType.INVESTMENT,
         accountSubType: AccountSubType.INVESTMENT_BROKERAGE,
       },
-    });
+      { currentBalance: 0 },
+    );
 
-    for (const account of brokerageAccounts) {
-      account.currentBalance = 0;
-      await this.accountsRepository.save(account);
-    }
-
-    return brokerageAccounts.length;
+    return result.affected ?? 0;
   }
 
   /**
@@ -877,25 +900,26 @@ export class AccountsService {
         return;
       }
 
-      for (const row of accountRows) {
-        const result: { balance: string }[] = await this.dataSource.query(
-          `SELECT COALESCE(a.opening_balance, 0) + COALESCE(SUM(t.amount), 0) as balance
+      const accountIds = accountRows.map((r) => r.account_id);
+      const balances: { account_id: string; balance: string }[] =
+        await this.dataSource.query(
+          `SELECT a.id as account_id,
+                  COALESCE(a.opening_balance, 0) + COALESCE(SUM(t.amount), 0) as balance
            FROM accounts a
            LEFT JOIN transactions t ON t.account_id = a.id
              AND (t.status IS NULL OR t.status != 'VOID')
              AND t.parent_transaction_id IS NULL
              AND t.transaction_date <= CURRENT_DATE
-           WHERE a.id = $1
-           GROUP BY a.opening_balance`,
-          [row.account_id],
+           WHERE a.id = ANY($1)
+           GROUP BY a.id, a.opening_balance`,
+          [accountIds],
         );
 
-        if (result.length > 0) {
-          const newBalance = Math.round(Number(result[0].balance) * 100) / 100;
-          await this.accountsRepository.update(row.account_id, {
-            currentBalance: newBalance,
-          });
-        }
+      for (const row of balances) {
+        const newBalance = Math.round(Number(row.balance) * 100) / 100;
+        await this.accountsRepository.update(row.account_id, {
+          currentBalance: newBalance,
+        });
       }
 
       this.logger.log(

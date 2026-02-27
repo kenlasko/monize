@@ -53,7 +53,7 @@ describe("TransactionsService", () => {
         .fn()
         .mockImplementation((data) => ({ ...data, id: data.id || "tx-1" })),
       findOne: jest.fn(),
-      find: jest.fn(),
+      find: jest.fn().mockResolvedValue([]),
       remove: jest.fn(),
       update: jest.fn(),
       count: jest.fn(),
@@ -62,9 +62,15 @@ describe("TransactionsService", () => {
 
     splitsRepository = {
       create: jest.fn().mockImplementation((data) => data),
-      save: jest
-        .fn()
-        .mockImplementation((data) => ({ ...data, id: "split-1" })),
+      save: jest.fn().mockImplementation((data) => {
+        if (Array.isArray(data)) {
+          return data.map((d: any, i: number) => ({
+            ...d,
+            id: d.id || `split-${i + 1}`,
+          }));
+        }
+        return { ...data, id: data.id || "split-1" };
+      }),
       findOne: jest.fn().mockResolvedValue(null),
       find: jest.fn().mockResolvedValue([]),
       update: jest.fn(),
@@ -110,6 +116,7 @@ describe("TransactionsService", () => {
           return transactionsRepository.create(data);
         }),
         save: jest.fn().mockImplementation((data: any) => {
+          if (Array.isArray(data)) return splitsRepository.save(data);
           if ("userId" in data) return transactionsRepository.save(data);
           return splitsRepository.save(data);
         }),
@@ -2078,10 +2085,6 @@ describe("TransactionsService", () => {
       };
       transactionsRepository.findOne.mockResolvedValue(mockTx);
       splitsRepository.find.mockResolvedValue([]); // deleteTransferSplitLinkedTransactions finds none
-      splitsRepository.save.mockImplementation((data) => ({
-        ...data,
-        id: `split-${Math.random().toString(36).slice(2, 8)}`,
-      }));
 
       const newSplits = [
         { amount: -60, categoryId: "cat-1" },
@@ -2143,14 +2146,8 @@ describe("TransactionsService", () => {
           transferAccountId: "account-2",
         },
       ]);
-      transactionsRepository.findOne
-        .mockResolvedValueOnce(mockTx) // findOne for the transaction
-        .mockResolvedValueOnce(oldLinkedTx); // findOne for linked tx in deleteTransferSplitLinkedTransactions
-
-      splitsRepository.save.mockImplementation((data) => ({
-        ...data,
-        id: "new-split-1",
-      }));
+      transactionsRepository.findOne.mockResolvedValue(mockTx);
+      transactionsRepository.find.mockResolvedValue([oldLinkedTx]);
 
       await service.updateSplits("user-1", "tx-1", [
         { amount: -60, categoryId: "cat-1" },
@@ -2609,10 +2606,6 @@ describe("TransactionsService", () => {
     it("creates splits when providing new splits array", async () => {
       transactionsRepository.findOne.mockResolvedValue({ ...mockTx });
       splitsRepository.find.mockResolvedValue([]); // deleteTransferSplitLinkedTransactions
-      splitsRepository.save.mockImplementation((data) => ({
-        ...data,
-        id: `split-${Math.random().toString(36).slice(2, 8)}`,
-      }));
 
       await service.update("user-1", "tx-1", {
         splits: [
@@ -3060,7 +3053,7 @@ describe("TransactionsService", () => {
         accountId: "account-2",
         amount: 40,
       };
-      transactionsRepository.findOne.mockResolvedValueOnce(linkedTx); // linked tx lookup
+      transactionsRepository.find.mockResolvedValue([linkedTx]); // batch fetch linked txs
 
       // No parent split (this is the parent itself)
       splitsRepository.findOne.mockResolvedValue(null);
@@ -3228,10 +3221,6 @@ describe("TransactionsService", () => {
           { id: "split-2", amount: -40 },
         ],
       });
-      splitsRepository.save.mockImplementation((data) => ({
-        ...data,
-        id: `split-${Math.random().toString(36).slice(2, 8)}`,
-      }));
 
       const result = await service.create("user-1", {
         accountId: "account-1",
@@ -3352,9 +3341,7 @@ describe("TransactionsService", () => {
         },
       ]);
 
-      transactionsRepository.findOne
-        .mockResolvedValueOnce(linkedTx1)
-        .mockResolvedValueOnce(linkedTx2);
+      transactionsRepository.find.mockResolvedValue([linkedTx1, linkedTx2]);
 
       await (splitService as any).deleteTransferSplitLinkedTransactions("tx-1");
 
@@ -3382,7 +3369,7 @@ describe("TransactionsService", () => {
 
       await (splitService as any).deleteTransferSplitLinkedTransactions("tx-1");
 
-      expect(transactionsRepository.findOne).not.toHaveBeenCalled();
+      expect(transactionsRepository.find).not.toHaveBeenCalled();
       expect(accountsService.updateBalance).not.toHaveBeenCalled();
     });
 
@@ -3396,7 +3383,7 @@ describe("TransactionsService", () => {
         },
       ]);
 
-      transactionsRepository.findOne.mockResolvedValue(null);
+      transactionsRepository.find.mockResolvedValue([]);
 
       await (splitService as any).deleteTransferSplitLinkedTransactions("tx-1");
 

@@ -7,7 +7,7 @@ import {
   forwardRef,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository, DataSource } from "typeorm";
+import { Repository, DataSource, In } from "typeorm";
 import { NetWorthService } from "../net-worth/net-worth.service";
 import { SecurityPriceService } from "../securities/security-price.service";
 import { ExchangeRateService } from "../currencies/exchange-rate.service";
@@ -365,46 +365,66 @@ export class ImportService {
     categoryMap: Map<string, string | null>,
     securityMap: Map<string, string | null>,
   ): Promise<void> {
+    // Batch-validate accounts
     const mappedAccountIds = [
-      ...accountMap.values(),
-      ...Array.from(loanCategoryMap.values()),
-    ].filter(Boolean) as string[];
-    for (const accId of mappedAccountIds) {
-      const acc = await this.accountsRepository.findOne({
-        where: { id: accId, userId },
+      ...new Set(
+        [
+          ...accountMap.values(),
+          ...Array.from(loanCategoryMap.values()),
+        ].filter(Boolean) as string[],
+      ),
+    ];
+    if (mappedAccountIds.length > 0) {
+      const foundAccounts = await this.accountsRepository.find({
+        where: { id: In(mappedAccountIds), userId },
+        select: ["id"],
       });
-      if (!acc) {
-        throw new BadRequestException(
-          `Account mapping references an invalid account: ${accId}`,
-        );
+      const foundAccountIdSet = new Set(foundAccounts.map((a) => a.id));
+      for (const accId of mappedAccountIds) {
+        if (!foundAccountIdSet.has(accId)) {
+          throw new BadRequestException(
+            `Account mapping references an invalid account: ${accId}`,
+          );
+        }
       }
     }
 
-    const mappedCategoryIds = [...categoryMap.values()].filter(
-      Boolean,
-    ) as string[];
-    for (const catId of mappedCategoryIds) {
-      const cat = await this.dataSource
-        .getRepository("Category")
-        .findOne({ where: { id: catId, userId } });
-      if (!cat) {
-        throw new BadRequestException(
-          `Category mapping references an invalid category: ${catId}`,
-        );
+    // Batch-validate categories
+    const mappedCategoryIds = [
+      ...new Set([...categoryMap.values()].filter(Boolean) as string[]),
+    ];
+    if (mappedCategoryIds.length > 0) {
+      const foundCategories = await this.categoriesRepository.find({
+        where: { id: In(mappedCategoryIds), userId },
+        select: ["id"],
+      });
+      const foundCategoryIdSet = new Set(foundCategories.map((c) => c.id));
+      for (const catId of mappedCategoryIds) {
+        if (!foundCategoryIdSet.has(catId)) {
+          throw new BadRequestException(
+            `Category mapping references an invalid category: ${catId}`,
+          );
+        }
       }
     }
 
-    const mappedSecurityIds = [...securityMap.values()].filter(
-      Boolean,
-    ) as string[];
-    for (const secId of mappedSecurityIds) {
-      const sec = await this.dataSource
+    // Batch-validate securities
+    const mappedSecurityIds = [
+      ...new Set([...securityMap.values()].filter(Boolean) as string[]),
+    ];
+    if (mappedSecurityIds.length > 0) {
+      const foundSecurities = await this.dataSource
         .getRepository("Security")
-        .findOne({ where: { id: secId, userId } });
-      if (!sec) {
-        throw new BadRequestException(
-          `Security mapping references an invalid security: ${secId}`,
-        );
+        .find({ where: { id: In(mappedSecurityIds), userId }, select: ["id"] });
+      const foundSecurityIdSet = new Set(
+        foundSecurities.map((s: { id: string }) => s.id),
+      );
+      for (const secId of mappedSecurityIds) {
+        if (!foundSecurityIdSet.has(secId)) {
+          throw new BadRequestException(
+            `Security mapping references an invalid security: ${secId}`,
+          );
+        }
       }
     }
   }

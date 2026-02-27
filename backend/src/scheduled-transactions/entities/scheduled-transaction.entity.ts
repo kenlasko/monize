@@ -13,6 +13,7 @@ import { Payee } from "../../payees/entities/payee.entity";
 import { Category } from "../../categories/entities/category.entity";
 import { ScheduledTransactionSplit } from "./scheduled-transaction-split.entity";
 import { ScheduledTransactionOverride } from "./scheduled-transaction-override.entity";
+import { User } from "../../users/entities/user.entity";
 
 export type FrequencyType =
   | "ONCE"
@@ -31,6 +32,10 @@ export class ScheduledTransaction {
 
   @Column({ type: "uuid", name: "user_id" })
   userId: string;
+
+  @ManyToOne(() => User)
+  @JoinColumn({ name: "user_id" })
+  user?: User;
 
   @Column({ type: "uuid", name: "account_id" })
   accountId: string;

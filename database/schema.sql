@@ -299,6 +299,7 @@ CREATE TABLE scheduled_transaction_overrides (
 
 CREATE INDEX idx_sched_txn_overrides_sched_txn_id ON scheduled_transaction_overrides(scheduled_transaction_id);
 CREATE INDEX idx_sched_txn_overrides_date ON scheduled_transaction_overrides(override_date);
+CREATE INDEX idx_sched_txn_overrides_orig ON scheduled_transaction_overrides(scheduled_transaction_id, original_date);
 
 -- Securities (stocks, bonds, mutual funds, ETFs)
 CREATE TABLE securities (
@@ -390,6 +391,7 @@ CREATE INDEX idx_investment_transactions_user ON investment_transactions(user_id
 CREATE INDEX idx_investment_transactions_account ON investment_transactions(account_id);
 CREATE INDEX idx_investment_transactions_security ON investment_transactions(security_id);
 CREATE INDEX idx_investment_transactions_date ON investment_transactions(transaction_date DESC);
+CREATE INDEX idx_investment_transactions_transaction ON investment_transactions(transaction_id);
 
 -- User Preferences
 CREATE TABLE user_preferences (

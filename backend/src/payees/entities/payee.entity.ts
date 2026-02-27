@@ -9,6 +9,7 @@ import {
 } from "typeorm";
 import { ApiProperty } from "@nestjs/swagger";
 import { Category } from "../../categories/entities/category.entity";
+import { User } from "../../users/entities/user.entity";
 
 @Entity("payees")
 @Unique(["userId", "name"])
@@ -20,6 +21,10 @@ export class Payee {
   @ApiProperty({ example: "user-uuid" })
   @Column({ type: "uuid", name: "user_id" })
   userId: string;
+
+  @ManyToOne(() => User)
+  @JoinColumn({ name: "user_id" })
+  user?: User;
 
   @ApiProperty({ example: "Starbucks", description: "Name of the payee" })
   @Column({ type: "varchar", length: 255 })

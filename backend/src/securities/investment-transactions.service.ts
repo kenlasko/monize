@@ -463,14 +463,11 @@ export class InvestmentTransactionsService {
 
     if (accountIds && accountIds.length > 0) {
       const resolvedIds = new Set<string>(accountIds);
-      for (const id of accountIds) {
-        try {
-          const acct = await this.accountsService.findOne(userId, id);
-          if (acct.linkedAccountId) {
-            resolvedIds.add(acct.linkedAccountId);
-          }
-        } catch {
-          // Account not found, keep the original ID
+      // Batch-fetch accounts to resolve linked account IDs
+      const accounts = await this.accountsService.findByIds(userId, accountIds);
+      for (const acct of accounts) {
+        if (acct.linkedAccountId) {
+          resolvedIds.add(acct.linkedAccountId);
         }
       }
       const allIds = [...resolvedIds];

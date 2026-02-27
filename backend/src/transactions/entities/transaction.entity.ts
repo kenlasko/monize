@@ -12,6 +12,7 @@ import { Account } from "../../accounts/entities/account.entity";
 import { Payee } from "../../payees/entities/payee.entity";
 import { Category } from "../../categories/entities/category.entity";
 import { TransactionSplit } from "./transaction-split.entity";
+import { User } from "../../users/entities/user.entity";
 
 export enum TransactionStatus {
   UNRECONCILED = "UNRECONCILED",
@@ -27,6 +28,10 @@ export class Transaction {
 
   @Column({ type: "uuid", name: "user_id" })
   userId: string;
+
+  @ManyToOne(() => User)
+  @JoinColumn({ name: "user_id" })
+  user?: User;
 
   @Column({ type: "uuid", name: "account_id" })
   accountId: string;

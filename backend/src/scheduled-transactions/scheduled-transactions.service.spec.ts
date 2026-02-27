@@ -1,6 +1,7 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { NotFoundException, BadRequestException } from "@nestjs/common";
+import { DataSource } from "typeorm";
 import { ScheduledTransactionsService } from "./scheduled-transactions.service";
 import { ScheduledTransaction } from "./entities/scheduled-transaction.entity";
 import { ScheduledTransactionSplit } from "./entities/scheduled-transaction-split.entity";
@@ -19,6 +20,8 @@ describe("ScheduledTransactionsService", () => {
   let accountsRepo: Record<string, jest.Mock>;
   let accountsService: Record<string, jest.Mock>;
   let transactionsService: Record<string, jest.Mock>;
+  let mockQueryRunner: Record<string, any>;
+  let mockDataSource: Record<string, jest.Mock>;
 
   const userId = "user-1";
   const stId = "st-1";
@@ -128,6 +131,29 @@ describe("ScheduledTransactionsService", () => {
         .mockResolvedValue([{ id: "tx-1" }, { id: "tx-2" }]),
     };
 
+    mockQueryRunner = {
+      connect: jest.fn(),
+      startTransaction: jest.fn(),
+      commitTransaction: jest.fn(),
+      rollbackTransaction: jest.fn(),
+      release: jest.fn(),
+      manager: {
+        remove: jest.fn(),
+        update: jest.fn(),
+        createQueryBuilder: jest.fn(() => ({
+          delete: jest.fn().mockReturnThis(),
+          from: jest.fn().mockReturnThis(),
+          where: jest.fn().mockReturnThis(),
+          andWhere: jest.fn().mockReturnThis(),
+          execute: jest.fn().mockResolvedValue({ affected: 0 }),
+        })),
+      },
+    };
+
+    mockDataSource = {
+      createQueryRunner: jest.fn().mockReturnValue(mockQueryRunner),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ScheduledTransactionsService,
@@ -146,6 +172,7 @@ describe("ScheduledTransactionsService", () => {
         { provide: getRepositoryToken(Account), useValue: accountsRepo },
         { provide: AccountsService, useValue: accountsService },
         { provide: TransactionsService, useValue: transactionsService },
+        { provide: DataSource, useValue: mockDataSource },
         ScheduledTransactionOverrideService,
         ScheduledTransactionLoanService,
       ],
@@ -938,7 +965,9 @@ describe("ScheduledTransactionsService", () => {
 
       await service.post(userId, stId);
 
-      expect(overridesRepo.remove).toHaveBeenCalledWith(storedOverride);
+      expect(mockQueryRunner.manager.remove).toHaveBeenCalledWith(
+        storedOverride,
+      );
     });
 
     it("should deactivate ONCE frequency after posting", async () => {
@@ -951,7 +980,8 @@ describe("ScheduledTransactionsService", () => {
 
       await service.post(userId, stId);
 
-      expect(scheduledRepo.update).toHaveBeenCalledWith(
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+        ScheduledTransaction,
         stId,
         expect.objectContaining({ isActive: false }),
       );
@@ -970,7 +1000,11 @@ describe("ScheduledTransactionsService", () => {
 
       await service.post(userId, stId);
 
-      const updateArg = scheduledRepo.update.mock.calls[0][1];
+      const updateCall = mockQueryRunner.manager.update.mock.calls.find(
+        (c: any[]) => c[0] === ScheduledTransaction,
+      );
+      expect(updateCall).toBeTruthy();
+      const updateArg = updateCall[2];
       expect(toUTCDateStr(new Date(updateArg.nextDueDate))).toBe("2025-03-15");
     });
 
@@ -987,7 +1021,11 @@ describe("ScheduledTransactionsService", () => {
 
       await service.post(userId, stId);
 
-      const updateArg = scheduledRepo.update.mock.calls[0][1];
+      const updateCall = mockQueryRunner.manager.update.mock.calls.find(
+        (c: any[]) => c[0] === ScheduledTransaction,
+      );
+      expect(updateCall).toBeTruthy();
+      const updateArg = updateCall[2];
       expect(typeof updateArg.nextDueDate).toBe("string");
       expect(updateArg.nextDueDate).toBe("2025-03-15");
     });
@@ -1002,7 +1040,11 @@ describe("ScheduledTransactionsService", () => {
 
       await service.post(userId, stId);
 
-      const updateArg = scheduledRepo.update.mock.calls[0][1];
+      const updateCall = mockQueryRunner.manager.update.mock.calls.find(
+        (c: any[]) => c[0] === ScheduledTransaction,
+      );
+      expect(updateCall).toBeTruthy();
+      const updateArg = updateCall[2];
       expect(updateArg.occurrencesRemaining).toBe(0);
       expect(updateArg.isActive).toBe(false);
     });
@@ -1066,17 +1108,13 @@ describe("ScheduledTransactionsService", () => {
       stubFindOne(scheduled);
       const overrideQb = mockQueryBuilder(null);
       overrideQb.getOne.mockResolvedValue(null);
-      // For stale override cleanup, createQueryBuilder returns a delete chain
-      const deleteQb = mockQueryBuilder(null);
-      overridesRepo.createQueryBuilder
-        .mockReturnValueOnce(overrideQb) // first call: find stored override
-        .mockReturnValueOnce(deleteQb); // second call: delete stale
+      overridesRepo.createQueryBuilder.mockReturnValue(overrideQb);
       accountsRepo.findOne.mockResolvedValue(null);
 
       await service.post(userId, stId);
 
-      // The second createQueryBuilder call should be for stale cleanup
-      expect(overridesRepo.createQueryBuilder).toHaveBeenCalledTimes(2);
+      // Stale override cleanup now uses queryRunner.manager.createQueryBuilder
+      expect(mockQueryRunner.manager.createQueryBuilder).toHaveBeenCalled();
     });
 
     it("should trigger loan payment recalculation for split transactions", async () => {

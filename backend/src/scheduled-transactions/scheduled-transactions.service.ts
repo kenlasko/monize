@@ -7,7 +7,7 @@ import {
   Logger,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository, LessThanOrEqual } from "typeorm";
+import { Repository, LessThanOrEqual, DataSource } from "typeorm";
 import { Cron } from "@nestjs/schedule";
 import {
   ScheduledTransaction,
@@ -45,6 +45,7 @@ export class ScheduledTransactionsService {
     private transactionsService: TransactionsService,
     private overrideService: ScheduledTransactionOverrideService,
     private loanService: ScheduledTransactionLoanService,
+    private dataSource: DataSource,
   ) {}
 
   @Cron("5 * * * *")
@@ -615,60 +616,75 @@ export class ScheduledTransactionsService {
       await this.transactionsService.create(userId, transactionPayload);
     }
 
-    if (storedOverride) {
-      await this.overridesRepository.remove(storedOverride);
-    }
+    // Wrap all bookkeeping in a transaction for atomicity
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-    const newNextDueDate =
-      scheduled.frequency === "ONCE"
-        ? null
-        : this.calculateNextDueDate(
-            new Date(scheduled.nextDueDate),
-            scheduled.frequency,
-          );
+    try {
+      if (storedOverride) {
+        await queryRunner.manager.remove(storedOverride);
+      }
 
-    if (newNextDueDate) {
-      const newNextDueDateStr = formatDateYMD(newNextDueDate);
-      await this.overridesRepository
-        .createQueryBuilder()
-        .delete()
-        .where("scheduledTransactionId = :id", { id })
-        .andWhere("originalDate < :newNextDueDate", {
-          newNextDueDate: newNextDueDateStr,
-        })
-        .execute();
-    }
+      const newNextDueDate =
+        scheduled.frequency === "ONCE"
+          ? null
+          : this.calculateNextDueDate(
+              new Date(scheduled.nextDueDate),
+              scheduled.frequency,
+            );
 
-    const updateFields: Record<string, any> = {
-      lastPostedDate: new Date(),
-    };
+      if (newNextDueDate) {
+        const newNextDueDateStr = formatDateYMD(newNextDueDate);
+        await queryRunner.manager
+          .createQueryBuilder()
+          .delete()
+          .from(ScheduledTransactionOverride)
+          .where("scheduledTransactionId = :id", { id })
+          .andWhere("originalDate < :newNextDueDate", {
+            newNextDueDate: newNextDueDateStr,
+          })
+          .execute();
+      }
 
-    if (scheduled.frequency === "ONCE") {
-      updateFields.isActive = false;
-    } else {
-      const nextDate = this.calculateNextDueDate(
-        new Date(scheduled.nextDueDate),
-        scheduled.frequency,
-      );
-      updateFields.nextDueDate = formatDateYMD(nextDate);
+      const updateFields: Record<string, any> = {
+        lastPostedDate: new Date(),
+      };
 
-      if (
-        scheduled.occurrencesRemaining !== null &&
-        scheduled.occurrencesRemaining > 0
-      ) {
-        const newRemaining = scheduled.occurrencesRemaining - 1;
-        updateFields.occurrencesRemaining = newRemaining;
-        if (newRemaining === 0) {
+      if (scheduled.frequency === "ONCE") {
+        updateFields.isActive = false;
+      } else {
+        const nextDate = this.calculateNextDueDate(
+          new Date(scheduled.nextDueDate),
+          scheduled.frequency,
+        );
+        updateFields.nextDueDate = formatDateYMD(nextDate);
+
+        if (
+          scheduled.occurrencesRemaining !== null &&
+          scheduled.occurrencesRemaining > 0
+        ) {
+          const newRemaining = scheduled.occurrencesRemaining - 1;
+          updateFields.occurrencesRemaining = newRemaining;
+          if (newRemaining === 0) {
+            updateFields.isActive = false;
+          }
+        }
+
+        if (scheduled.endDate && nextDate > new Date(scheduled.endDate)) {
           updateFields.isActive = false;
         }
       }
 
-      if (scheduled.endDate && nextDate > new Date(scheduled.endDate)) {
-        updateFields.isActive = false;
-      }
-    }
+      await queryRunner.manager.update(ScheduledTransaction, id, updateFields);
 
-    await this.scheduledTransactionsRepository.update(id, updateFields);
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
 
     if (scheduled.splits && scheduled.splits.length > 0) {
       const loanAccountId = await this.loanService.findLoanAccountFromSplits(

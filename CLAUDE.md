@@ -103,6 +103,14 @@ async function renderMyComponent() {
 - [x] Report execute: conditional category/payee fetch based on groupBy (avoids over-fetching both)
 - [x] Portfolio account batch loading: N individual findOne calls replaced with batch In() query
 - [x] Account findAll: canDelete computed via batch GROUP BY queries (eliminated N per-account API calls)
+- [x] Holdings rebuild: N individual saves replaced with single batch save
+- [x] Split creation: Regular (non-transfer) splits batch-saved in one call; transfer splits still individual (need linked transactions)
+- [x] Investment transaction account resolution: N findOne calls replaced with batch findByIds query
+- [x] Import validation: Per-entity findOne lookups replaced with batch find(In()) queries for accounts, categories, and securities
+- [x] Delete transfer split linked transactions: N individual findOne calls replaced with batch find(In()) query
+- [x] Missing index: Added idx_investment_transactions_transaction on investment_transactions(transaction_id)
+- [x] Missing index: Added idx_sched_txn_overrides_orig composite on scheduled_transaction_overrides(scheduled_transaction_id, original_date)
+- [x] Investment account pair creation: Wrapped in QueryRunner transaction for atomicity (prevents orphaned partial pairs)
 
 #### Frontend
 - [x] HoldingRow memoized with React.memo in GroupedHoldingsList
@@ -277,3 +285,21 @@ async function renderMyComponent() {
 - [x] H3: Race condition in holdings rebuild: rebuildFromTransactions wraps delete-all + rebuild in a QueryRunner transaction
 - [x] H4: Race condition in transaction create with splits: create wraps transaction creation, split creation, and balance update in a QueryRunner transaction; splits use the same QueryRunner
 - [x] H5: Race condition in split creation loop: createSplits manages its own QueryRunner transaction when no external one is provided, or delegates to the caller's QueryRunner for atomic composition
+
+#### Fixed (Medium)
+- [x] M1: N+1 holdings rebuild individual saves: Batch-saved via single holdingsRepo.save(array)
+- [x] M2: N+1 split creation per-split saves: Regular splits batch-saved; transfer splits remain individual (need linked transactions)
+- [x] M3: N+1 investment transaction account resolution: Replaced per-account findOne loop with batch findByIds
+- [x] M4: N+1 import validation per-entity lookups: Replaced individual findOne with batch find({ where: { id: In(ids) } })
+- [x] M5: N+1 delete transfer split linked transactions: Replaced per-split findOne with batch find
+- [x] M6: Missing index investment_transactions.transaction_id: Added index via migration 019
+- [x] M7: Missing index scheduled_transaction_overrides(scheduled_transaction_id, original_date): Added composite index via migration 019
+- [x] M8: Race condition investment account pair creation: Wrapped in QueryRunner transaction
+
+#### Fixed (Low)
+- [x] L1: N+1 brokerage balance reset: Replaced find+loop+save with single accountsRepository.update()
+- [x] L2: N+1 scheduled transaction auto-post: Post bookkeeping wrapped in QueryRunner transaction for atomicity
+- [x] L3: N+1 per-account balance recalculation: Replaced per-account queries with single SQL using GROUP BY via ANY($1)
+- [x] L4: Missing FK relations on 13 entities: Added @ManyToOne(() => User) + @JoinColumn to Transaction, Account, Category, Payee, ScheduledTransaction, InvestmentTransaction, MonthlyAccountBalance, Budget, BudgetAlert, CustomReport, AiProviderConfig, AiUsageLog, AiInsight
+- [x] L5: @Exclude() without ClassSerializerInterceptor: Registered ClassSerializerInterceptor globally as APP_INTERCEPTOR
+- [x] L6: ProfileSection missing client-side validation: Migrated to Zod + react-hook-form with email/name/password length validation
