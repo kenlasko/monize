@@ -103,6 +103,14 @@ async function renderMyComponent() {
 - [x] Report execute: conditional category/payee fetch based on groupBy (avoids over-fetching both)
 - [x] Portfolio account batch loading: N individual findOne calls replaced with batch In() query
 - [x] Account findAll: canDelete computed via batch GROUP BY queries (eliminated N per-account API calls)
+- [x] Holdings rebuild: N individual saves replaced with single batch save
+- [x] Split creation: Regular (non-transfer) splits batch-saved in one call; transfer splits still individual (need linked transactions)
+- [x] Investment transaction account resolution: N findOne calls replaced with batch findByIds query
+- [x] Import validation: Per-entity findOne lookups replaced with batch find(In()) queries for accounts, categories, and securities
+- [x] Delete transfer split linked transactions: N individual findOne calls replaced with batch find(In()) query
+- [x] Missing index: Added idx_investment_transactions_transaction on investment_transactions(transaction_id)
+- [x] Missing index: Added idx_sched_txn_overrides_orig composite on scheduled_transaction_overrides(scheduled_transaction_id, original_date)
+- [x] Investment account pair creation: Wrapped in QueryRunner transaction for atomicity (prevents orphaned partial pairs)
 
 #### Frontend
 - [x] HoldingRow memoized with React.memo in GroupedHoldingsList

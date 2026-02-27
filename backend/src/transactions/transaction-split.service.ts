@@ -6,7 +6,7 @@ import {
   forwardRef,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository, DataSource, QueryRunner } from "typeorm";
+import { Repository, DataSource, QueryRunner, In } from "typeorm";
 import { Transaction } from "./entities/transaction.entity";
 import { TransactionSplit } from "./entities/transaction-split.entity";
 import { Category } from "../categories/entities/category.entity";
@@ -128,13 +128,40 @@ export class TransactionSplitService {
     transactionDate?: Date,
     parentPayeeName?: string | null,
   ): Promise<TransactionSplit[]> {
-    const savedSplits: TransactionSplit[] = [];
-
+    // Validate all categories up front
     for (const split of splits) {
       if (split.categoryId && userId) {
         await this.validateCategoryOwnership(userId, split.categoryId);
       }
+    }
 
+    // Separate regular splits from transfer splits
+    const regularSplits = splits.filter(
+      (s) => !s.transferAccountId || !userId || !sourceAccountId,
+    );
+    const transferSplits = splits.filter(
+      (s) => s.transferAccountId && userId && sourceAccountId,
+    );
+
+    const savedSplits: TransactionSplit[] = [];
+
+    // Batch-save regular (non-transfer) splits
+    if (regularSplits.length > 0) {
+      const regularEntities = regularSplits.map((split) =>
+        queryRunner.manager.create(TransactionSplit, {
+          transactionId,
+          categoryId: split.categoryId || null,
+          transferAccountId: split.transferAccountId || null,
+          amount: split.amount,
+          memo: split.memo || null,
+        }),
+      );
+      const batchSaved = await queryRunner.manager.save(regularEntities);
+      savedSplits.push(...batchSaved);
+    }
+
+    // Process transfer splits individually (they need linked transactions)
+    for (const split of transferSplits) {
       const splitEntity = queryRunner.manager.create(TransactionSplit, {
         transactionId,
         categoryId: split.categoryId || null,
@@ -145,60 +172,55 @@ export class TransactionSplitService {
 
       const savedSplit = await queryRunner.manager.save(splitEntity);
 
-      if (split.transferAccountId && userId && sourceAccountId) {
-        const targetAccount = await this.accountsService.findOne(
-          userId,
-          split.transferAccountId,
+      const targetAccount = await this.accountsService.findOne(
+        userId!,
+        split.transferAccountId!,
+      );
+      const sourceAccount = await this.accountsService.findOne(
+        userId!,
+        sourceAccountId!,
+      );
+
+      const linkedTransaction = queryRunner.manager.create(Transaction, {
+        userId,
+        accountId: split.transferAccountId,
+        transactionDate: transactionDate as any,
+        amount: -split.amount,
+        currencyCode: targetAccount.currencyCode,
+        exchangeRate: 1,
+        description: split.memo || null,
+        isTransfer: true,
+        payeeName: parentPayeeName || `Transfer from ${sourceAccount.name}`,
+      });
+
+      const savedLinkedTransaction =
+        await queryRunner.manager.save(linkedTransaction);
+
+      await queryRunner.manager.update(TransactionSplit, savedSplit.id, {
+        linkedTransactionId: savedLinkedTransaction.id,
+      });
+
+      await queryRunner.manager.update(Transaction, savedLinkedTransaction.id, {
+        linkedTransactionId: transactionId,
+      });
+
+      const dateStr = transactionDate
+        ? transactionDate.toISOString().substring(0, 10)
+        : "";
+      if (dateStr && isTransactionInFuture(dateStr)) {
+        await this.accountsService.recalculateCurrentBalance(
+          split.transferAccountId!,
+          queryRunner,
         );
-        const sourceAccount = await this.accountsService.findOne(
-          userId,
-          sourceAccountId,
+      } else {
+        await this.accountsService.updateBalance(
+          split.transferAccountId!,
+          -split.amount,
+          queryRunner,
         );
-
-        const linkedTransaction = queryRunner.manager.create(Transaction, {
-          userId,
-          accountId: split.transferAccountId,
-          transactionDate: transactionDate as any,
-          amount: -split.amount,
-          currencyCode: targetAccount.currencyCode,
-          exchangeRate: 1,
-          description: split.memo || null,
-          isTransfer: true,
-          payeeName: parentPayeeName || `Transfer from ${sourceAccount.name}`,
-        });
-
-        const savedLinkedTransaction =
-          await queryRunner.manager.save(linkedTransaction);
-
-        await queryRunner.manager.update(TransactionSplit, savedSplit.id, {
-          linkedTransactionId: savedLinkedTransaction.id,
-        });
-
-        await queryRunner.manager.update(
-          Transaction,
-          savedLinkedTransaction.id,
-          { linkedTransactionId: transactionId },
-        );
-
-        const dateStr = transactionDate
-          ? transactionDate.toISOString().substring(0, 10)
-          : "";
-        if (dateStr && isTransactionInFuture(dateStr)) {
-          await this.accountsService.recalculateCurrentBalance(
-            split.transferAccountId,
-            queryRunner,
-          );
-        } else {
-          await this.accountsService.updateBalance(
-            split.transferAccountId,
-            -split.amount,
-            queryRunner,
-          );
-        }
-
-        savedSplit.linkedTransactionId = savedLinkedTransaction.id;
       }
 
+      savedSplit.linkedTransactionId = savedLinkedTransaction.id;
       savedSplits.push(savedSplit);
     }
 
@@ -213,28 +235,31 @@ export class TransactionSplitService {
       relations: ["linkedTransaction"],
     });
 
-    for (const split of transferSplits) {
-      if (split.linkedTransactionId && split.transferAccountId) {
-        const linkedTx = await this.transactionsRepository.findOne({
-          where: { id: split.linkedTransactionId },
-        });
+    // Collect linked transaction IDs for batch fetch
+    const linkedTxIds = transferSplits
+      .filter((s) => s.linkedTransactionId && s.transferAccountId)
+      .map((s) => s.linkedTransactionId!);
 
-        if (linkedTx) {
-          const linkedIsFuture = isTransactionInFuture(
-            linkedTx.transactionDate,
-          );
-          const linkedAccId = linkedTx.accountId;
-          if (!linkedIsFuture) {
-            await this.accountsService.updateBalance(
-              linkedAccId,
-              -Number(linkedTx.amount),
-            );
-          }
-          await this.transactionsRepository.remove(linkedTx);
-          if (linkedIsFuture) {
-            await this.accountsService.recalculateCurrentBalance(linkedAccId);
-          }
-        }
+    if (linkedTxIds.length === 0) return;
+
+    // Batch-fetch all linked transactions in one query
+    const linkedTransactions = await this.transactionsRepository.find({
+      where: { id: In(linkedTxIds) },
+    });
+
+    // Process balance reversals and removals
+    for (const linkedTx of linkedTransactions) {
+      const linkedIsFuture = isTransactionInFuture(linkedTx.transactionDate);
+      const linkedAccId = linkedTx.accountId;
+      if (!linkedIsFuture) {
+        await this.accountsService.updateBalance(
+          linkedAccId,
+          -Number(linkedTx.amount),
+        );
+      }
+      await this.transactionsRepository.remove(linkedTx);
+      if (linkedIsFuture) {
+        await this.accountsService.recalculateCurrentBalance(linkedAccId);
       }
     }
   }

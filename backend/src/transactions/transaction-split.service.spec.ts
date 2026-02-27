@@ -69,6 +69,7 @@ describe("TransactionSplitService", () => {
         .mockImplementation((data) => ({ ...data, id: data.id || "new-tx" })),
       update: jest.fn().mockResolvedValue(undefined),
       findOne: jest.fn(),
+      find: jest.fn().mockResolvedValue([]),
       remove: jest.fn().mockResolvedValue(undefined),
     };
 
@@ -76,10 +77,15 @@ describe("TransactionSplitService", () => {
       create: jest
         .fn()
         .mockImplementation((data) => ({ ...data, id: "new-split" })),
-      save: jest.fn().mockImplementation((data) => ({
-        ...data,
-        id: data.id || "new-split",
-      })),
+      save: jest.fn().mockImplementation((data) => {
+        if (Array.isArray(data)) {
+          return data.map((d: any, i: number) => ({
+            ...d,
+            id: d.id || `new-split-${i + 1}`,
+          }));
+        }
+        return { ...data, id: data.id || "new-split" };
+      }),
       find: jest.fn().mockResolvedValue([]),
       findOne: jest.fn(),
       update: jest.fn().mockResolvedValue(undefined),
@@ -117,6 +123,7 @@ describe("TransactionSplitService", () => {
           return { ...data, id: "new-entity" };
         }),
         save: jest.fn().mockImplementation((data: any) => {
+          if (Array.isArray(data)) return splitsRepository.save(data);
           if ("userId" in data) return transactionsRepository.save(data);
           return splitsRepository.save(data);
         }),
@@ -240,17 +247,21 @@ describe("TransactionSplitService", () => {
 
       const result = await service.createSplits("tx-1", splits);
 
-      expect(splitsRepository.create).toHaveBeenCalledTimes(2);
-      expect(splitsRepository.save).toHaveBeenCalledTimes(2);
+      // Regular splits are batch-created and batch-saved
+      expect(mockQueryRunner.manager.create).toHaveBeenCalledTimes(2);
+      expect(mockQueryRunner.manager.save).toHaveBeenCalledTimes(1);
       expect(result).toHaveLength(2);
 
-      expect(splitsRepository.create).toHaveBeenCalledWith({
-        transactionId: "tx-1",
-        categoryId: "cat-1",
-        transferAccountId: null,
-        amount: -60,
-        memo: "Food",
-      });
+      expect(mockQueryRunner.manager.create).toHaveBeenCalledWith(
+        TransactionSplit,
+        {
+          transactionId: "tx-1",
+          categoryId: "cat-1",
+          transferAccountId: null,
+          amount: -60,
+          memo: "Food",
+        },
+      );
     });
 
     it("creates a transfer split with linked transaction when userId and sourceAccountId provided", async () => {
@@ -373,12 +384,14 @@ describe("TransactionSplitService", () => {
     it("skips transfer logic when userId is not provided", async () => {
       const splits = [{ amount: -100, transferAccountId: "account-2" }];
 
-      splitsRepository.save.mockResolvedValueOnce({
-        id: "split-new",
-        transactionId: "tx-1",
-        transferAccountId: "account-2",
-        amount: -100,
-      });
+      splitsRepository.save.mockResolvedValueOnce([
+        {
+          id: "split-new",
+          transactionId: "tx-1",
+          transferAccountId: "account-2",
+          amount: -100,
+        },
+      ]);
 
       const result = await service.createSplits("tx-1", splits);
 
@@ -392,13 +405,16 @@ describe("TransactionSplitService", () => {
 
       await service.createSplits("tx-1", splits);
 
-      expect(splitsRepository.create).toHaveBeenCalledWith({
-        transactionId: "tx-1",
-        categoryId: null,
-        transferAccountId: null,
-        amount: -60,
-        memo: null,
-      });
+      expect(mockQueryRunner.manager.create).toHaveBeenCalledWith(
+        TransactionSplit,
+        {
+          transactionId: "tx-1",
+          categoryId: null,
+          transferAccountId: null,
+          amount: -60,
+          memo: null,
+        },
+      );
     });
   });
 
@@ -412,17 +428,18 @@ describe("TransactionSplitService", () => {
       };
 
       splitsRepository.find.mockResolvedValue([transferSplit]);
-      transactionsRepository.findOne.mockResolvedValue({
-        id: "linked-tx-1",
-        accountId: "account-2",
-        amount: 50,
-      });
+      transactionsRepository.find.mockResolvedValue([
+        { id: "linked-tx-1", accountId: "account-2", amount: 50 },
+      ]);
 
       await service.deleteTransferSplitLinkedTransactions("tx-1");
 
       expect(splitsRepository.find).toHaveBeenCalledWith({
         where: { transactionId: "tx-1" },
         relations: ["linkedTransaction"],
+      });
+      expect(transactionsRepository.find).toHaveBeenCalledWith({
+        where: { id: expect.anything() },
       });
       expect(accountsService.updateBalance).toHaveBeenCalledWith(
         "account-2",
@@ -445,7 +462,7 @@ describe("TransactionSplitService", () => {
 
       await service.deleteTransferSplitLinkedTransactions("tx-1");
 
-      expect(transactionsRepository.findOne).not.toHaveBeenCalled();
+      expect(transactionsRepository.find).not.toHaveBeenCalled();
       expect(accountsService.updateBalance).not.toHaveBeenCalled();
       expect(transactionsRepository.remove).not.toHaveBeenCalled();
     });
@@ -459,7 +476,7 @@ describe("TransactionSplitService", () => {
       };
 
       splitsRepository.find.mockResolvedValue([transferSplit]);
-      transactionsRepository.findOne.mockResolvedValue(null);
+      transactionsRepository.find.mockResolvedValue([]);
 
       await service.deleteTransferSplitLinkedTransactions("tx-1");
 
@@ -472,7 +489,7 @@ describe("TransactionSplitService", () => {
 
       await service.deleteTransferSplitLinkedTransactions("tx-1");
 
-      expect(transactionsRepository.findOne).not.toHaveBeenCalled();
+      expect(transactionsRepository.find).not.toHaveBeenCalled();
     });
 
     it("handles multiple transfer splits", async () => {
@@ -492,17 +509,10 @@ describe("TransactionSplitService", () => {
       ];
 
       splitsRepository.find.mockResolvedValue(splits);
-      transactionsRepository.findOne
-        .mockResolvedValueOnce({
-          id: "linked-tx-1",
-          accountId: "account-2",
-          amount: 30,
-        })
-        .mockResolvedValueOnce({
-          id: "linked-tx-2",
-          accountId: "account-3",
-          amount: 70,
-        });
+      transactionsRepository.find.mockResolvedValue([
+        { id: "linked-tx-1", accountId: "account-2", amount: 30 },
+        { id: "linked-tx-2", accountId: "account-3", amount: 70 },
+      ]);
 
       await service.deleteTransferSplitLinkedTransactions("tx-1");
 
@@ -542,19 +552,7 @@ describe("TransactionSplitService", () => {
         { amount: -30, categoryId: "cat-2" },
       ];
 
-      splitsRepository.save
-        .mockResolvedValueOnce({
-          id: "new-split-1",
-          ...newSplits[0],
-          transactionId: "tx-1",
-        })
-        .mockResolvedValueOnce({
-          id: "new-split-2",
-          ...newSplits[1],
-          transactionId: "tx-1",
-        });
-
-      // deleteTransferSplitLinkedTransactions mock
+      // deleteTransferSplitLinkedTransactions mock - no transfer splits
       splitsRepository.find.mockResolvedValue([]);
 
       const result = await service.updateSplits(
@@ -566,7 +564,8 @@ describe("TransactionSplitService", () => {
       expect(splitsRepository.delete).toHaveBeenCalledWith({
         transactionId: "tx-1",
       });
-      expect(splitsRepository.create).toHaveBeenCalledTimes(2);
+      // Regular splits are batch-created via queryRunner
+      expect(mockQueryRunner.manager.create).toHaveBeenCalledTimes(2);
       expect(transactionsRepository.update).toHaveBeenCalledWith("tx-1", {
         isSplit: true,
         categoryId: null,
@@ -596,28 +595,19 @@ describe("TransactionSplitService", () => {
       };
 
       splitsRepository.find.mockResolvedValue([oldTransferSplit]);
-      transactionsRepository.findOne.mockResolvedValue({
-        id: "old-linked-tx",
-        accountId: "account-2",
-        amount: 100,
-      });
+      transactionsRepository.find.mockResolvedValue([
+        { id: "old-linked-tx", accountId: "account-2", amount: 100 },
+      ]);
 
       const newSplits = [
         { amount: -60, categoryId: "cat-1" },
         { amount: -40, categoryId: "cat-2" },
       ];
 
-      splitsRepository.save
-        .mockResolvedValueOnce({
-          id: "s1",
-          ...newSplits[0],
-          transactionId: "tx-1",
-        })
-        .mockResolvedValueOnce({
-          id: "s2",
-          ...newSplits[1],
-          transactionId: "tx-1",
-        });
+      splitsRepository.save.mockResolvedValueOnce([
+        { id: "s1", ...newSplits[0], transactionId: "tx-1" },
+        { id: "s2", ...newSplits[1], transactionId: "tx-1" },
+      ]);
 
       await service.updateSplits(transaction, newSplits, "user-1");
 
@@ -1111,16 +1101,18 @@ describe("TransactionSplitService", () => {
         };
 
         splitsRepository.find.mockResolvedValue([transferSplit]);
-        transactionsRepository.findOne.mockResolvedValue({
-          id: "linked-tx-1",
-          accountId: "account-2",
-          amount: 50,
-          transactionDate: "2027-06-15",
-        });
+        transactionsRepository.find.mockResolvedValue([
+          {
+            id: "linked-tx-1",
+            accountId: "account-2",
+            amount: 50,
+            transactionDate: "2027-06-15",
+          },
+        ]);
 
         await service.deleteTransferSplitLinkedTransactions("tx-1");
 
-        expect(transactionsRepository.findOne).toHaveBeenCalled();
+        expect(transactionsRepository.find).toHaveBeenCalled();
         expect(accountsService.updateBalance).not.toHaveBeenCalled();
         expect(transactionsRepository.remove).toHaveBeenCalledWith(
           expect.objectContaining({ id: "linked-tx-1" }),
@@ -1148,19 +1140,20 @@ describe("TransactionSplitService", () => {
         ];
 
         splitsRepository.find.mockResolvedValue(splits);
-        transactionsRepository.findOne
-          .mockResolvedValueOnce({
+        transactionsRepository.find.mockResolvedValue([
+          {
             id: "linked-tx-1",
             accountId: "account-2",
             amount: 30,
             transactionDate: "2026-01-15",
-          })
-          .mockResolvedValueOnce({
+          },
+          {
             id: "linked-tx-2",
             accountId: "account-3",
             amount: 70,
             transactionDate: "2027-06-15",
-          });
+          },
+        ]);
 
         await service.deleteTransferSplitLinkedTransactions("tx-1");
 
@@ -1217,9 +1210,10 @@ describe("TransactionSplitService", () => {
             .mockImplementation((_Entity: any, data: any) =>
               splitsRepository.create(data),
             ),
-          save: jest
-            .fn()
-            .mockImplementation((data: any) => splitsRepository.save(data)),
+          save: jest.fn().mockImplementation((data: any) => {
+            if (Array.isArray(data)) return splitsRepository.save(data);
+            return splitsRepository.save(data);
+          }),
           update: jest.fn().mockResolvedValue(undefined),
         },
       } as any;

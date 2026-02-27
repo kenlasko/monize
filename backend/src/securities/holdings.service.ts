@@ -366,25 +366,30 @@ export class HoldingsService {
         await queryRunner.manager.remove(existingHoldings);
       }
 
-      // Create new holdings from the calculated values
+      // Create new holdings from the calculated values (batched)
       const holdingsRepo = queryRunner.manager.getRepository(Holding);
+      const holdingsToCreate: Holding[] = [];
       for (const [accountId, securities] of holdingsMap) {
         for (const [securityId, data] of securities) {
           // Only create holding if there's a non-zero quantity
           if (Math.abs(data.quantity) > 0.00000001) {
             const avgCost =
               data.quantity > 0 ? data.totalCost / data.quantity : 0;
-            const holding = holdingsRepo.create({
-              accountId,
-              securityId,
-              quantity: data.quantity,
-              averageCost: avgCost,
-            });
-            await holdingsRepo.save(holding);
-            holdingsCreated++;
+            holdingsToCreate.push(
+              holdingsRepo.create({
+                accountId,
+                securityId,
+                quantity: data.quantity,
+                averageCost: avgCost,
+              }),
+            );
           }
         }
       }
+      if (holdingsToCreate.length > 0) {
+        await holdingsRepo.save(holdingsToCreate);
+      }
+      holdingsCreated = holdingsToCreate.length;
 
       await queryRunner.commitTransaction();
     } catch (error) {

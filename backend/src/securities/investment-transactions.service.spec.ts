@@ -203,6 +203,7 @@ describe("InvestmentTransactionsService", () => {
 
     accountsService = {
       findOne: jest.fn(),
+      findByIds: jest.fn().mockResolvedValue([]),
       updateBalance: jest.fn().mockResolvedValue(undefined),
       resetBrokerageBalances: jest.fn().mockResolvedValue(2),
     };
@@ -1099,6 +1100,20 @@ describe("InvestmentTransactionsService", () => {
           linkedAccountId: null,
         });
       });
+      accountsService.findByIds.mockImplementation(
+        (uid: string, ids: string[]) => {
+          return Promise.resolve(
+            ids.map((aid) => {
+              if (aid === accountId) return mockInvestmentAccount;
+              return {
+                ...mockInvestmentAccount,
+                id: aid,
+                linkedAccountId: null,
+              };
+            }),
+          );
+        },
+      );
     });
 
     it("returns paginated transactions for a user", async () => {
@@ -1127,8 +1142,10 @@ describe("InvestmentTransactionsService", () => {
 
       await service.findAll(userId, [accountId]);
 
-      // Should resolve linked accounts
-      expect(accountsService.findOne).toHaveBeenCalledWith(userId, accountId);
+      // Should batch-resolve linked accounts via findByIds
+      expect(accountsService.findByIds).toHaveBeenCalledWith(userId, [
+        accountId,
+      ]);
       // andWhere should be called with the expanded account IDs
       expect(mockQB.andWhere).toHaveBeenCalledWith(
         "it.accountId IN (:...allIds)",
@@ -1274,9 +1291,7 @@ describe("InvestmentTransactionsService", () => {
     });
 
     it("handles account not found gracefully when resolving linked accounts", async () => {
-      accountsService.findOne.mockRejectedValue(
-        new NotFoundException("Not found"),
-      );
+      accountsService.findByIds.mockResolvedValue([]);
 
       const mockQB = createMockQueryBuilder([], 0);
       investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
@@ -1999,6 +2014,7 @@ describe("InvestmentTransactionsService", () => {
       investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
         mockQB,
       );
+      accountsService.findByIds.mockResolvedValue([mockInvestmentAccount]);
 
       await service.getSummary(userId, [accountId]);
 
@@ -2006,6 +2022,9 @@ describe("InvestmentTransactionsService", () => {
       expect(
         investmentTransactionsRepository.createQueryBuilder,
       ).toHaveBeenCalled();
+      expect(accountsService.findByIds).toHaveBeenCalledWith(userId, [
+        accountId,
+      ]);
     });
   });
 

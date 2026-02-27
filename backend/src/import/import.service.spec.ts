@@ -163,13 +163,13 @@ describe("ImportService", () => {
 
     accountsRepository = {
       findOne: jest.fn(),
-      find: jest.fn(),
+      find: jest.fn().mockResolvedValue([]),
       save: jest.fn(),
     };
 
     categoriesRepository = {
       findOne: jest.fn(),
-      find: jest.fn(),
+      find: jest.fn().mockResolvedValue([]),
       save: jest.fn(),
     };
 
@@ -201,6 +201,7 @@ describe("ImportService", () => {
       createQueryRunner: jest.fn().mockReturnValue(mockQueryRunner),
       getRepository: jest.fn().mockReturnValue({
         findOne: jest.fn().mockResolvedValue(null),
+        find: jest.fn().mockResolvedValue([]),
       }),
     };
 
@@ -602,10 +603,8 @@ describe("ImportService", () => {
           ],
         });
 
-        // dataSource.getRepository("Category").findOne returns null for validation
-        mockDataSource.getRepository.mockReturnValue({
-          findOne: jest.fn().mockResolvedValue(null),
-        });
+        // categoriesRepository.find returns empty for validation (no matching category)
+        categoriesRepository.find.mockResolvedValue([]);
 
         await expect(service.importQifFile(userId, dto)).rejects.toThrow(
           "invalid category",
@@ -621,6 +620,7 @@ describe("ImportService", () => {
 
         mockDataSource.getRepository.mockReturnValue({
           findOne: jest.fn().mockResolvedValue(null),
+          find: jest.fn().mockResolvedValue([]),
         });
 
         await expect(service.importQifFile(userId, dto)).rejects.toThrow(
@@ -870,10 +870,10 @@ describe("ImportService", () => {
           categoryMappings: [{ originalName: "Food", categoryId: "cat-food" }],
         });
 
-        // Validate category ownership
-        mockDataSource.getRepository.mockReturnValue({
-          findOne: jest.fn().mockResolvedValue({ id: "cat-food", userId }),
-        });
+        // Validate category ownership via batch find
+        categoriesRepository.find.mockResolvedValue([
+          { id: "cat-food", userId },
+        ]);
 
         await service.importQifFile(userId, dto);
 
@@ -1342,6 +1342,9 @@ describe("ImportService", () => {
           },
         );
 
+        // Batch validation of mapped account IDs (loan account)
+        accountsRepository.find.mockResolvedValue([{ id: "loan-acct-1" }]);
+
         mockedParseQif.mockReturnValue({
           accountType: "CHEQUING",
           accountName: "",
@@ -1465,6 +1468,9 @@ describe("ImportService", () => {
           },
         );
 
+        // Batch validation of mapped account IDs
+        accountsRepository.find.mockResolvedValue([{ id: "savings-acct" }]);
+
         mockQueryRunner.manager.findOne.mockImplementation(
           (entity: unknown, options: { where?: { id?: string } }) => {
             if (entity === Account && options?.where?.id === "acct-1") {
@@ -1534,6 +1540,9 @@ describe("ImportService", () => {
           },
         );
 
+        // Batch validation of mapped account IDs
+        accountsRepository.find.mockResolvedValue([{ id: "savings-acct" }]);
+
         // Simulate an existing linked transfer found via createQueryBuilder
         const mockQb = createMockQueryBuilder({
           getOne: jest.fn().mockResolvedValue({ id: "existing-transfer" }),
@@ -1556,10 +1565,11 @@ describe("ImportService", () => {
           ],
         });
 
-        // Validate category ownership
-        mockDataSource.getRepository.mockReturnValue({
-          findOne: jest.fn().mockResolvedValue({ id: "cat-food", userId }),
-        });
+        // Validate category ownership via batch find
+        categoriesRepository.find.mockResolvedValue([
+          { id: "cat-food", userId },
+          { id: "cat-household", userId },
+        ]);
 
         mockedParseQif.mockReturnValue({
           accountType: "CHEQUING",
@@ -1902,9 +1912,10 @@ describe("ImportService", () => {
       beforeEach(() => {
         accountsRepository.findOne.mockResolvedValue(mockBrokerageAccount);
 
-        // Validate security ownership
+        // Validate security ownership via batch find
         mockDataSource.getRepository.mockReturnValue({
           findOne: jest.fn().mockResolvedValue({ id: "sec-aapl", userId }),
+          find: jest.fn().mockResolvedValue([{ id: "sec-aapl" }]),
         });
 
         mockQueryRunner.manager.findOne.mockImplementation(
@@ -2422,6 +2433,7 @@ describe("ImportService", () => {
 
         mockDataSource.getRepository.mockReturnValue({
           findOne: jest.fn().mockResolvedValue({ id: "sec-aapl", userId }),
+          find: jest.fn().mockResolvedValue([{ id: "sec-aapl" }]),
         });
 
         mockQueryRunner.manager.findOne.mockImplementation(

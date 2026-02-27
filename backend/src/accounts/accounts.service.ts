@@ -7,7 +7,7 @@ import {
   Logger,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository, DataSource, QueryRunner } from "typeorm";
+import { Repository, DataSource, QueryRunner, In } from "typeorm";
 import {
   Account,
   AccountType,
@@ -104,7 +104,8 @@ export class AccountsService {
   }
 
   /**
-   * Create a linked investment account pair (cash + brokerage)
+   * Create a linked investment account pair (cash + brokerage).
+   * Wrapped in a QueryRunner transaction for atomicity.
    */
   async createInvestmentAccountPair(
     userId: string,
@@ -112,36 +113,51 @@ export class AccountsService {
   ): Promise<{ cashAccount: Account; brokerageAccount: Account }> {
     const { openingBalance = 0, name, ...accountData } = createAccountDto;
 
-    // Create the cash account first
-    const cashAccount = this.accountsRepository.create({
-      ...accountData,
-      name: `${name} - Cash`,
-      userId,
-      openingBalance,
-      currentBalance: openingBalance,
-      accountType: AccountType.INVESTMENT,
-      accountSubType: AccountSubType.INVESTMENT_CASH,
-    });
-    await this.accountsRepository.save(cashAccount);
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-    // Create the brokerage account linked to the cash account
-    const brokerageAccount = this.accountsRepository.create({
-      ...accountData,
-      name: `${name} - Brokerage`,
-      userId,
-      openingBalance: 0,
-      currentBalance: 0,
-      accountType: AccountType.INVESTMENT,
-      accountSubType: AccountSubType.INVESTMENT_BROKERAGE,
-      linkedAccountId: cashAccount.id,
-    });
-    await this.accountsRepository.save(brokerageAccount);
+    try {
+      const repo = queryRunner.manager.getRepository(Account);
 
-    // Update cash account to link back to brokerage
-    cashAccount.linkedAccountId = brokerageAccount.id;
-    await this.accountsRepository.save(cashAccount);
+      // Create the cash account first
+      const cashAccount = repo.create({
+        ...accountData,
+        name: `${name} - Cash`,
+        userId,
+        openingBalance,
+        currentBalance: openingBalance,
+        accountType: AccountType.INVESTMENT,
+        accountSubType: AccountSubType.INVESTMENT_CASH,
+      });
+      await repo.save(cashAccount);
 
-    return { cashAccount, brokerageAccount };
+      // Create the brokerage account linked to the cash account
+      const brokerageAccount = repo.create({
+        ...accountData,
+        name: `${name} - Brokerage`,
+        userId,
+        openingBalance: 0,
+        currentBalance: 0,
+        accountType: AccountType.INVESTMENT,
+        accountSubType: AccountSubType.INVESTMENT_BROKERAGE,
+        linkedAccountId: cashAccount.id,
+      });
+      await repo.save(brokerageAccount);
+
+      // Update cash account to link back to brokerage
+      cashAccount.linkedAccountId = brokerageAccount.id;
+      await repo.save(cashAccount);
+
+      await queryRunner.commitTransaction();
+
+      return { cashAccount, brokerageAccount };
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   /**
@@ -214,6 +230,17 @@ export class AccountsService {
     }
 
     return account;
+  }
+
+  /**
+   * Find multiple accounts by IDs for a user (batch lookup).
+   * Silently skips IDs that don't belong to the user.
+   */
+  async findByIds(userId: string, ids: string[]): Promise<Account[]> {
+    if (ids.length === 0) return [];
+    return this.accountsRepository.find({
+      where: { id: In(ids), userId },
+    });
   }
 
   /**
