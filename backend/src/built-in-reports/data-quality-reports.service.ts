@@ -246,75 +246,97 @@ export class DataQualityReportsService {
     const groups: DuplicateGroup[] = [];
     const processed = new Set<string>();
 
-    for (let i = 0; i < transactions.length; i++) {
-      const tx1 = transactions[i];
-      if (processed.has(tx1.id)) continue;
-
-      const date1 = new Date(tx1.transactionDate);
-      const payee1 = (tx1.payeeName || "").toLowerCase().trim();
-
-      const matches: DuplicateTransactionItem[] = [tx1];
-
-      for (let j = i + 1; j < transactions.length; j++) {
-        const tx2 = transactions[j];
-        if (processed.has(tx2.id)) continue;
-
-        const date2 = new Date(tx2.transactionDate);
-        const payee2 = (tx2.payeeName || "").toLowerCase().trim();
-
-        const daysDiff = Math.abs(
-          Math.floor(
-            (date1.getTime() - date2.getTime()) / (1000 * 60 * 60 * 24),
-          ),
-        );
-        if (daysDiff > maxDaysDiff) {
-          if (daysDiff > 7) break;
-          continue;
-        }
-
-        if (Math.abs(tx1.amount - tx2.amount) > 0.01) continue;
-
-        if (checkPayee && payee1 && payee2 && payee1 !== payee2) continue;
-
-        if (tx1.id === tx2.id) continue;
-
-        matches.push(tx2);
+    // Group transactions by rounded amount so we only compare transactions
+    // that could actually be duplicates (same amount). This reduces the
+    // comparison space from O(n^2) to O(n * k) where k is the size of each
+    // amount group, which is typically very small.
+    const amountGroups = new Map<string, DuplicateTransactionItem[]>();
+    for (const tx of transactions) {
+      const key = tx.amount.toFixed(2);
+      const group = amountGroups.get(key);
+      if (group) {
+        group.push(tx);
+      } else {
+        amountGroups.set(key, [tx]);
       }
+    }
 
-      if (matches.length > 1) {
-        matches.forEach((m) => processed.add(m.id));
+    for (const [, amountGroup] of amountGroups) {
+      if (amountGroup.length < 2) continue;
 
-        const allSameDate = matches.every(
-          (m) => m.transactionDate === matches[0].transactionDate,
-        );
-        const allSamePayee = matches.every(
-          (m) =>
-            (m.payeeName || "").toLowerCase().trim() ===
-            (matches[0].payeeName || "").toLowerCase().trim(),
-        );
+      // Sort by date within each amount group for the early-break optimisation
+      amountGroup.sort((a, b) =>
+        a.transactionDate.localeCompare(b.transactionDate),
+      );
 
-        let confidence: "high" | "medium" | "low" = "low";
-        let reason = "Same amount";
+      for (let i = 0; i < amountGroup.length; i++) {
+        const tx1 = amountGroup[i];
+        if (processed.has(tx1.id)) continue;
 
-        if (allSameDate && allSamePayee) {
-          confidence = "high";
-          reason = "Same date, amount, and payee";
-        } else if (allSameDate) {
-          confidence = "medium";
-          reason = "Same date and amount";
-        } else if (allSamePayee) {
-          confidence = "medium";
-          reason = `Same payee and amount within ${maxDaysDiff} day(s)`;
-        } else {
-          reason = `Same amount within ${maxDaysDiff} day(s)`;
+        const date1 = new Date(tx1.transactionDate);
+        const payee1 = (tx1.payeeName || "").toLowerCase().trim();
+
+        const matches: DuplicateTransactionItem[] = [tx1];
+
+        for (let j = i + 1; j < amountGroup.length; j++) {
+          const tx2 = amountGroup[j];
+          if (processed.has(tx2.id)) continue;
+
+          const date2 = new Date(tx2.transactionDate);
+          const payee2 = (tx2.payeeName || "").toLowerCase().trim();
+
+          const daysDiff = Math.abs(
+            Math.floor(
+              (date1.getTime() - date2.getTime()) / (1000 * 60 * 60 * 24),
+            ),
+          );
+          if (daysDiff > maxDaysDiff) {
+            if (daysDiff > 7) break;
+            continue;
+          }
+
+          if (checkPayee && payee1 && payee2 && payee1 !== payee2) continue;
+
+          if (tx1.id === tx2.id) continue;
+
+          matches.push(tx2);
         }
 
-        groups.push({
-          key: `${matches[0].id}-${matches.length}`,
-          transactions: matches,
-          reason,
-          confidence,
-        });
+        if (matches.length > 1) {
+          matches.forEach((m) => processed.add(m.id));
+
+          const allSameDate = matches.every(
+            (m) => m.transactionDate === matches[0].transactionDate,
+          );
+          const allSamePayee = matches.every(
+            (m) =>
+              (m.payeeName || "").toLowerCase().trim() ===
+              (matches[0].payeeName || "").toLowerCase().trim(),
+          );
+
+          let confidence: "high" | "medium" | "low" = "low";
+          let reason = "Same amount";
+
+          if (allSameDate && allSamePayee) {
+            confidence = "high";
+            reason = "Same date, amount, and payee";
+          } else if (allSameDate) {
+            confidence = "medium";
+            reason = "Same date and amount";
+          } else if (allSamePayee) {
+            confidence = "medium";
+            reason = `Same payee and amount within ${maxDaysDiff} day(s)`;
+          } else {
+            reason = `Same amount within ${maxDaysDiff} day(s)`;
+          }
+
+          groups.push({
+            key: `${matches[0].id}-${matches.length}`,
+            transactions: matches,
+            reason,
+            confidence,
+          });
+        }
       }
     }
 

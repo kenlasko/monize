@@ -128,13 +128,45 @@ export class DemoResetService {
       this.logger.log("Demo data cleared successfully");
 
       // 4. Re-seed demo data
-      await this.demoSeedService.seedDemoData(userId);
-      this.logger.log("Demo data re-seeded successfully");
+      // seedDemoData runs outside the transaction because it uses
+      // this.dataSource directly. If seeding fails, retry once before
+      // giving up so the database is not left empty.
+      let seeded = false;
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        try {
+          await this.demoSeedService.seedDemoData(userId);
+          seeded = true;
+          break;
+        } catch (seedError) {
+          this.logger.error(
+            `Demo re-seed attempt ${attempt} failed`,
+            seedError instanceof Error ? seedError.stack : String(seedError),
+          );
+          if (attempt === 2) {
+            throw seedError;
+          }
+        }
+      }
+
+      if (seeded) {
+        this.logger.log("Demo data re-seeded successfully");
+      }
     } catch (error) {
-      await queryRunner.rollbackTransaction();
-      this.logger.error("Demo reset failed", error.stack);
+      if (!queryRunner.isReleased) {
+        try {
+          await queryRunner.rollbackTransaction();
+        } catch {
+          // Transaction may already be committed; ignore rollback errors
+        }
+      }
+      this.logger.error(
+        "Demo reset failed",
+        error instanceof Error ? error.stack : String(error),
+      );
     } finally {
-      await queryRunner.release();
+      if (!queryRunner.isReleased) {
+        await queryRunner.release();
+      }
     }
   }
 }
