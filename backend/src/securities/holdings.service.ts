@@ -4,7 +4,13 @@ import {
   ForbiddenException,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository, In, LessThanOrEqual } from "typeorm";
+import {
+  Repository,
+  In,
+  LessThanOrEqual,
+  DataSource,
+  QueryRunner,
+} from "typeorm";
 import { Holding } from "./entities/holding.entity";
 import {
   InvestmentTransaction,
@@ -29,6 +35,7 @@ export class HoldingsService {
     private accountsRepository: Repository<Account>,
     private accountsService: AccountsService,
     private securitiesService: SecuritiesService,
+    private dataSource: DataSource,
   ) {}
 
   async findAll(userId: string, accountId?: string): Promise<Holding[]> {
@@ -64,8 +71,12 @@ export class HoldingsService {
   async findByAccountAndSecurity(
     accountId: string,
     securityId: string,
+    queryRunner?: QueryRunner,
   ): Promise<Holding | null> {
-    return this.holdingsRepository.findOne({
+    const repo = queryRunner
+      ? queryRunner.manager.getRepository(Holding)
+      : this.holdingsRepository;
+    return repo.findOne({
       where: { accountId, securityId },
       relations: ["account", "security"],
     });
@@ -77,6 +88,7 @@ export class HoldingsService {
     securityId: string,
     quantityChange: number,
     pricePerShare: number,
+    queryRunner?: QueryRunner,
   ): Promise<Holding> {
     // Verify account ownership
     await this.accountsService.findOne(userId, accountId);
@@ -84,12 +96,20 @@ export class HoldingsService {
     // Verify security exists and belongs to user
     await this.securitiesService.findOne(userId, securityId);
 
+    const repo = queryRunner
+      ? queryRunner.manager.getRepository(Holding)
+      : this.holdingsRepository;
+
     // Find existing holding
-    let holding = await this.findByAccountAndSecurity(accountId, securityId);
+    let holding = await this.findByAccountAndSecurity(
+      accountId,
+      securityId,
+      queryRunner,
+    );
 
     if (!holding) {
       // Create new holding
-      holding = this.holdingsRepository.create({
+      holding = repo.create({
         accountId,
         securityId,
         quantity: quantityChange,
@@ -115,7 +135,7 @@ export class HoldingsService {
       holding.quantity = newQuantity;
     }
 
-    return this.holdingsRepository.save(holding);
+    return repo.save(holding);
   }
 
   async updateHolding(
@@ -124,6 +144,7 @@ export class HoldingsService {
     securityId: string,
     quantityDelta: number,
     price: number,
+    queryRunner?: QueryRunner,
   ): Promise<Holding> {
     return this.createOrUpdate(
       userId,
@@ -131,6 +152,7 @@ export class HoldingsService {
       securityId,
       quantityDelta,
       price,
+      queryRunner,
     );
   }
 
@@ -143,11 +165,20 @@ export class HoldingsService {
     accountId: string,
     securityId: string,
     quantityChange: number,
+    queryRunner?: QueryRunner,
   ): Promise<Holding> {
     await this.accountsService.findOne(userId, accountId);
     await this.securitiesService.findOne(userId, securityId);
 
-    let holding = await this.findByAccountAndSecurity(accountId, securityId);
+    const repo = queryRunner
+      ? queryRunner.manager.getRepository(Holding)
+      : this.holdingsRepository;
+
+    let holding = await this.findByAccountAndSecurity(
+      accountId,
+      securityId,
+      queryRunner,
+    );
 
     if (!holding) {
       if (quantityChange < 0) {
@@ -155,7 +186,7 @@ export class HoldingsService {
           "Cannot remove shares from a non-existent holding",
         );
       }
-      holding = this.holdingsRepository.create({
+      holding = repo.create({
         accountId,
         securityId,
         quantity: quantityChange,
@@ -165,7 +196,7 @@ export class HoldingsService {
       holding.quantity = Number(holding.quantity) + quantityChange;
     }
 
-    return this.holdingsRepository.save(holding);
+    return repo.save(holding);
   }
 
   async getHoldingsSummary(userId: string, accountId: string) {
@@ -208,6 +239,7 @@ export class HoldingsService {
    * Rebuild all holdings from existing investment transactions.
    * This recalculates all holdings based on transaction history,
    * useful for fixing data after imports that didn't create holdings.
+   * Wrapped in a QueryRunner transaction for atomicity.
    */
   async rebuildFromTransactions(userId: string): Promise<{
     holdingsCreated: number;
@@ -244,15 +276,6 @@ export class HoldingsService {
         createdAt: "ASC",
       },
     });
-
-    // Delete all existing holdings for these accounts
-    const existingHoldings = await this.holdingsRepository.find({
-      where: { accountId: In(brokerageAccountIds) },
-    });
-    const holdingsDeleted = existingHoldings.length;
-    if (existingHoldings.length > 0) {
-      await this.holdingsRepository.remove(existingHoldings);
-    }
 
     // Actions that affect holdings
     const holdingsActions = [
@@ -325,24 +348,50 @@ export class HoldingsService {
       }
     }
 
-    // Create new holdings from the calculated values
+    // Wrap delete-all + rebuild in a transaction for atomicity
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    let holdingsDeleted = 0;
     let holdingsCreated = 0;
-    for (const [accountId, securities] of holdingsMap) {
-      for (const [securityId, data] of securities) {
-        // Only create holding if there's a non-zero quantity
-        if (Math.abs(data.quantity) > 0.00000001) {
-          const avgCost =
-            data.quantity > 0 ? data.totalCost / data.quantity : 0;
-          const holding = this.holdingsRepository.create({
-            accountId,
-            securityId,
-            quantity: data.quantity,
-            averageCost: avgCost,
-          });
-          await this.holdingsRepository.save(holding);
-          holdingsCreated++;
+
+    try {
+      // Delete all existing holdings for these accounts
+      const existingHoldings = await queryRunner.manager.find(Holding, {
+        where: { accountId: In(brokerageAccountIds) },
+      });
+      holdingsDeleted = existingHoldings.length;
+      if (existingHoldings.length > 0) {
+        await queryRunner.manager.remove(existingHoldings);
+      }
+
+      // Create new holdings from the calculated values
+      const holdingsRepo = queryRunner.manager.getRepository(Holding);
+      for (const [accountId, securities] of holdingsMap) {
+        for (const [securityId, data] of securities) {
+          // Only create holding if there's a non-zero quantity
+          if (Math.abs(data.quantity) > 0.00000001) {
+            const avgCost =
+              data.quantity > 0 ? data.totalCost / data.quantity : 0;
+            const holding = holdingsRepo.create({
+              accountId,
+              securityId,
+              quantity: data.quantity,
+              averageCost: avgCost,
+            });
+            await holdingsRepo.save(holding);
+            holdingsCreated++;
+          }
         }
       }
+
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
     }
 
     return {

@@ -6,7 +6,7 @@ import {
   Logger,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository, In } from "typeorm";
+import { Repository, In, DataSource } from "typeorm";
 import { Transaction, TransactionStatus } from "./entities/transaction.entity";
 import { TransactionSplit } from "./entities/transaction-split.entity";
 import { Category } from "../categories/entities/category.entity";
@@ -73,6 +73,7 @@ export class TransactionsService {
     private reconciliationService: TransactionReconciliationService,
     private analyticsService: TransactionAnalyticsService,
     private bulkUpdateService: TransactionBulkUpdateService,
+    private dataSource: DataSource,
   ) {}
 
   private async getAllCategoryIdsWithChildren(
@@ -142,39 +143,57 @@ export class TransactionsService {
       }
     }
 
-    const transaction = this.transactionsRepository.create({
-      ...transactionData,
-      categoryId: hasSplits ? null : categoryId,
-      isSplit: hasSplits,
-      userId,
-      exchangeRate: transactionData.exchangeRate || 1,
-    });
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-    const savedTransaction =
-      await this.transactionsRepository.save(transaction);
+    let savedTransactionId: string;
 
-    if (hasSplits) {
-      await this.splitService.createSplits(
-        savedTransaction.id,
-        splits,
+    try {
+      const transaction = queryRunner.manager.create(Transaction, {
+        ...transactionData,
+        categoryId: hasSplits ? null : categoryId,
+        isSplit: hasSplits,
         userId,
-        createTransactionDto.accountId,
-        new Date(createTransactionDto.transactionDate),
-        transactionData.payeeName,
-      );
-    }
+        exchangeRate: transactionData.exchangeRate || 1,
+      });
 
-    if (savedTransaction.status !== TransactionStatus.VOID) {
-      if (isTransactionInFuture(createTransactionDto.transactionDate)) {
-        await this.accountsService.recalculateCurrentBalance(
+      const savedTransaction = await queryRunner.manager.save(transaction);
+      savedTransactionId = savedTransaction.id;
+
+      if (hasSplits) {
+        await this.splitService.createSplits(
+          savedTransaction.id,
+          splits,
+          userId,
           createTransactionDto.accountId,
-        );
-      } else {
-        await this.accountsService.updateBalance(
-          createTransactionDto.accountId,
-          Number(createTransactionDto.amount),
+          new Date(createTransactionDto.transactionDate),
+          transactionData.payeeName,
+          queryRunner,
         );
       }
+
+      if (savedTransaction.status !== TransactionStatus.VOID) {
+        if (isTransactionInFuture(createTransactionDto.transactionDate)) {
+          await this.accountsService.recalculateCurrentBalance(
+            createTransactionDto.accountId,
+            queryRunner,
+          );
+        } else {
+          await this.accountsService.updateBalance(
+            createTransactionDto.accountId,
+            Number(createTransactionDto.amount),
+            queryRunner,
+          );
+        }
+      }
+
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
     }
 
     this.netWorthService.triggerDebouncedRecalc(
@@ -182,7 +201,7 @@ export class TransactionsService {
       userId,
     );
 
-    return this.findOne(userId, savedTransaction.id);
+    return this.findOne(userId, savedTransactionId);
   }
 
   async findAll(

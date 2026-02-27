@@ -302,7 +302,12 @@ export class CategoriesService {
     const [transactionCount, splitCount, scheduledCount, userScheduledTxIds] =
       await Promise.all([
         this.transactionsRepository.count({ where: { userId, categoryId } }),
-        this.splitsRepository.count({ where: { categoryId } }),
+        this.splitsRepository
+          .createQueryBuilder("split")
+          .innerJoin("split.transaction", "transaction")
+          .where("split.categoryId = :categoryId", { categoryId })
+          .andWhere("transaction.userId = :userId", { userId })
+          .getCount(),
         this.scheduledTransactionsRepository.count({
           where: { userId, categoryId },
         }),

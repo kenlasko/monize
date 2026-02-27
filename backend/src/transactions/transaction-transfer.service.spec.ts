@@ -1,6 +1,7 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { BadRequestException } from "@nestjs/common";
+import { DataSource } from "typeorm";
 import { TransactionTransferService } from "./transaction-transfer.service";
 import { Transaction, TransactionStatus } from "./entities/transaction.entity";
 import { TransactionSplit } from "./entities/transaction-split.entity";
@@ -21,6 +22,8 @@ describe("TransactionTransferService", () => {
   let splitsRepository: Record<string, jest.Mock>;
   let accountsService: Record<string, jest.Mock>;
   let netWorthService: Record<string, jest.Mock>;
+  let mockQueryRunner: Record<string, any>;
+  let mockDataSource: Record<string, jest.Mock>;
 
   const mockFindOne = jest.fn();
 
@@ -99,6 +102,51 @@ describe("TransactionTransferService", () => {
 
     mockFindOne.mockReset();
 
+    mockQueryRunner = {
+      connect: jest.fn(),
+      startTransaction: jest.fn(),
+      commitTransaction: jest.fn(),
+      rollbackTransaction: jest.fn(),
+      release: jest.fn(),
+      query: jest.fn().mockResolvedValue([]),
+      manager: {
+        create: jest
+          .fn()
+          .mockImplementation((_Entity: any, data: any) =>
+            transactionsRepository.create(data),
+          ),
+        save: jest
+          .fn()
+          .mockImplementation((data: any) => transactionsRepository.save(data)),
+        update: jest
+          .fn()
+          .mockImplementation((_Entity: any, id: any, data: any) =>
+            transactionsRepository.update(id, data),
+          ),
+        findOne: jest
+          .fn()
+          .mockImplementation((_Entity: any, opts: any) =>
+            transactionsRepository.findOne(opts),
+          ),
+        find: jest
+          .fn()
+          .mockImplementation((_Entity: any, opts: any) =>
+            splitsRepository.find(opts),
+          ),
+        remove: jest.fn().mockImplementation((data: any) => {
+          const item = Array.isArray(data) ? data[0] : data;
+          if (item && "transactionId" in item && !("accountId" in item)) {
+            return splitsRepository.remove(data);
+          }
+          return transactionsRepository.remove(data);
+        }),
+      },
+    };
+
+    mockDataSource = {
+      createQueryRunner: jest.fn().mockReturnValue(mockQueryRunner),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         TransactionTransferService,
@@ -112,6 +160,7 @@ describe("TransactionTransferService", () => {
         },
         { provide: AccountsService, useValue: accountsService },
         { provide: NetWorthService, useValue: netWorthService },
+        { provide: DataSource, useValue: mockDataSource },
       ],
     }).compile();
 
@@ -164,10 +213,12 @@ describe("TransactionTransferService", () => {
       expect(accountsService.updateBalance).toHaveBeenCalledWith(
         "from-account",
         -500,
+        expect.anything(),
       );
       expect(accountsService.updateBalance).toHaveBeenCalledWith(
         "to-account",
         500,
+        expect.anything(),
       );
 
       expect(result.fromTransaction.id).toBe("from-tx-id");
@@ -221,6 +272,7 @@ describe("TransactionTransferService", () => {
       expect(accountsService.updateBalance).toHaveBeenCalledWith(
         "to-account",
         680,
+        expect.anything(),
       );
     });
 
@@ -420,11 +472,13 @@ describe("TransactionTransferService", () => {
       expect(accountsService.updateBalance).toHaveBeenCalledWith(
         "from-account",
         500,
+        expect.anything(),
       );
       // Reverse to transaction balance
       expect(accountsService.updateBalance).toHaveBeenCalledWith(
         "to-account",
         -500,
+        expect.anything(),
       );
       // Both transactions removed
       expect(transactionsRepository.remove).toHaveBeenCalledWith(toTx);
@@ -462,6 +516,7 @@ describe("TransactionTransferService", () => {
       expect(accountsService.updateBalance).toHaveBeenCalledWith(
         "from-account",
         500,
+        expect.anything(),
       );
       expect(transactionsRepository.remove).toHaveBeenCalledTimes(1);
       expect(transactionsRepository.remove).toHaveBeenCalledWith(tx);
@@ -601,19 +656,23 @@ describe("TransactionTransferService", () => {
       expect(accountsService.updateBalance).toHaveBeenCalledWith(
         "from-account",
         500,
+        expect.anything(),
       );
       expect(accountsService.updateBalance).toHaveBeenCalledWith(
         "to-account",
         -500,
+        expect.anything(),
       );
       // New balances applied
       expect(accountsService.updateBalance).toHaveBeenCalledWith(
         "from-account",
         -750,
+        expect.anything(),
       );
       expect(accountsService.updateBalance).toHaveBeenCalledWith(
         "to-account",
         750,
+        expect.anything(),
       );
 
       expect(transactionsRepository.update).toHaveBeenCalledWith(
@@ -727,6 +786,7 @@ describe("TransactionTransferService", () => {
       expect(accountsService.updateBalance).toHaveBeenCalledWith(
         "to-account",
         675,
+        expect.anything(),
       );
     });
 
@@ -971,9 +1031,11 @@ describe("TransactionTransferService", () => {
         // When any future date is involved, recalculate from scratch
         expect(accountsService.recalculateCurrentBalance).toHaveBeenCalledWith(
           "from-account",
+          expect.anything(),
         );
         expect(accountsService.recalculateCurrentBalance).toHaveBeenCalledWith(
           "to-account",
+          expect.anything(),
         );
         expect(accountsService.updateBalance).not.toHaveBeenCalled();
       });
@@ -1000,9 +1062,11 @@ describe("TransactionTransferService", () => {
         // When any future date is involved, recalculate from scratch
         expect(accountsService.recalculateCurrentBalance).toHaveBeenCalledWith(
           "from-account",
+          expect.anything(),
         );
         expect(accountsService.recalculateCurrentBalance).toHaveBeenCalledWith(
           "to-account",
+          expect.anything(),
         );
         expect(accountsService.updateBalance).not.toHaveBeenCalled();
       });

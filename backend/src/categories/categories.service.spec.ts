@@ -738,7 +738,11 @@ describe("CategoriesService", () => {
     it("returns sum of all transaction types", async () => {
       categoriesRepository.findOne.mockResolvedValue(mockCategory);
       transactionsRepository.count.mockResolvedValue(5);
-      splitsRepository.count.mockResolvedValue(3);
+      splitsRepository.createQueryBuilder.mockReturnValue(
+        createMockQueryBuilder({
+          getCount: jest.fn().mockResolvedValue(3),
+        }),
+      );
       scheduledTransactionsRepository.count.mockResolvedValue(2);
 
       const scheduledQb = createMockQueryBuilder({

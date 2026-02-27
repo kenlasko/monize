@@ -1,6 +1,7 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { BadRequestException, NotFoundException } from "@nestjs/common";
+import { DataSource } from "typeorm";
 import { TransactionSplitService } from "./transaction-split.service";
 import { Transaction } from "./entities/transaction.entity";
 import { TransactionSplit } from "./entities/transaction-split.entity";
@@ -99,6 +100,44 @@ describe("TransactionSplitService", () => {
       recalculateCurrentBalance: jest.fn().mockResolvedValue(undefined),
     };
 
+    const mockQueryRunner = {
+      connect: jest.fn(),
+      startTransaction: jest.fn(),
+      commitTransaction: jest.fn(),
+      rollbackTransaction: jest.fn(),
+      release: jest.fn(),
+      query: jest.fn().mockResolvedValue([]),
+      manager: {
+        create: jest.fn().mockImplementation((_Entity: any, data: any) => {
+          if (_Entity === TransactionSplit)
+            return splitsRepository.create(data);
+          if (_Entity === Transaction)
+            return transactionsRepository.create(data);
+          return { ...data, id: "new-entity" };
+        }),
+        save: jest.fn().mockImplementation((data: any) => {
+          if ("userId" in data) return transactionsRepository.save(data);
+          return splitsRepository.save(data);
+        }),
+        update: jest
+          .fn()
+          .mockImplementation((_Entity: any, id: any, data: any) => {
+            if (_Entity === TransactionSplit)
+              return splitsRepository.update(id, data);
+            if (_Entity === Transaction)
+              return transactionsRepository.update(id, data);
+            return Promise.resolve(undefined);
+          }),
+        findOne: jest.fn().mockResolvedValue(null),
+        find: jest.fn().mockResolvedValue([]),
+        remove: jest.fn().mockResolvedValue(undefined),
+      },
+    };
+
+    const mockDataSource = {
+      createQueryRunner: jest.fn().mockReturnValue(mockQueryRunner),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         TransactionSplitService,
@@ -115,6 +154,7 @@ describe("TransactionSplitService", () => {
           useValue: categoriesRepository,
         },
         { provide: AccountsService, useValue: accountsService },
+        { provide: DataSource, useValue: mockDataSource },
       ],
     }).compile();
 
@@ -281,6 +321,7 @@ describe("TransactionSplitService", () => {
       expect(accountsService.updateBalance).toHaveBeenCalledWith(
         "account-2",
         50,
+        expect.anything(),
       );
       expect(result).toHaveLength(1);
       expect(result[0].linkedTransactionId).toBe("linked-tx-1");

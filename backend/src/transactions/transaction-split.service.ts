@@ -6,7 +6,7 @@ import {
   forwardRef,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { Repository, DataSource, QueryRunner } from "typeorm";
 import { Transaction } from "./entities/transaction.entity";
 import { TransactionSplit } from "./entities/transaction-split.entity";
 import { Category } from "../categories/entities/category.entity";
@@ -25,6 +25,7 @@ export class TransactionSplitService {
     private categoriesRepository: Repository<Category>,
     @Inject(forwardRef(() => AccountsService))
     private accountsService: AccountsService,
+    private dataSource: DataSource,
   ) {}
 
   private async validateCategoryOwnership(
@@ -78,6 +79,54 @@ export class TransactionSplitService {
     sourceAccountId?: string,
     transactionDate?: Date,
     parentPayeeName?: string | null,
+    externalQueryRunner?: QueryRunner,
+  ): Promise<TransactionSplit[]> {
+    // Use provided queryRunner or create our own transaction
+    const ownTransaction = !externalQueryRunner;
+    const queryRunner =
+      externalQueryRunner ?? this.dataSource.createQueryRunner();
+
+    if (ownTransaction) {
+      await queryRunner.connect();
+      await queryRunner.startTransaction();
+    }
+
+    try {
+      const savedSplits = await this.createSplitsInternal(
+        queryRunner,
+        transactionId,
+        splits,
+        userId,
+        sourceAccountId,
+        transactionDate,
+        parentPayeeName,
+      );
+
+      if (ownTransaction) {
+        await queryRunner.commitTransaction();
+      }
+
+      return savedSplits;
+    } catch (error) {
+      if (ownTransaction) {
+        await queryRunner.rollbackTransaction();
+      }
+      throw error;
+    } finally {
+      if (ownTransaction) {
+        await queryRunner.release();
+      }
+    }
+  }
+
+  private async createSplitsInternal(
+    queryRunner: QueryRunner,
+    transactionId: string,
+    splits: CreateTransactionSplitDto[],
+    userId?: string,
+    sourceAccountId?: string,
+    transactionDate?: Date,
+    parentPayeeName?: string | null,
   ): Promise<TransactionSplit[]> {
     const savedSplits: TransactionSplit[] = [];
 
@@ -86,7 +135,7 @@ export class TransactionSplitService {
         await this.validateCategoryOwnership(userId, split.categoryId);
       }
 
-      const splitEntity = this.splitsRepository.create({
+      const splitEntity = queryRunner.manager.create(TransactionSplit, {
         transactionId,
         categoryId: split.categoryId || null,
         transferAccountId: split.transferAccountId || null,
@@ -94,7 +143,7 @@ export class TransactionSplitService {
         memo: split.memo || null,
       });
 
-      const savedSplit = await this.splitsRepository.save(splitEntity);
+      const savedSplit = await queryRunner.manager.save(splitEntity);
 
       if (split.transferAccountId && userId && sourceAccountId) {
         const targetAccount = await this.accountsService.findOne(
@@ -106,7 +155,7 @@ export class TransactionSplitService {
           sourceAccountId,
         );
 
-        const linkedTransaction = this.transactionsRepository.create({
+        const linkedTransaction = queryRunner.manager.create(Transaction, {
           userId,
           accountId: split.transferAccountId,
           transactionDate: transactionDate as any,
@@ -119,15 +168,17 @@ export class TransactionSplitService {
         });
 
         const savedLinkedTransaction =
-          await this.transactionsRepository.save(linkedTransaction);
+          await queryRunner.manager.save(linkedTransaction);
 
-        await this.splitsRepository.update(savedSplit.id, {
+        await queryRunner.manager.update(TransactionSplit, savedSplit.id, {
           linkedTransactionId: savedLinkedTransaction.id,
         });
 
-        await this.transactionsRepository.update(savedLinkedTransaction.id, {
-          linkedTransactionId: transactionId,
-        });
+        await queryRunner.manager.update(
+          Transaction,
+          savedLinkedTransaction.id,
+          { linkedTransactionId: transactionId },
+        );
 
         const dateStr = transactionDate
           ? transactionDate.toISOString().substring(0, 10)
@@ -135,11 +186,13 @@ export class TransactionSplitService {
         if (dateStr && isTransactionInFuture(dateStr)) {
           await this.accountsService.recalculateCurrentBalance(
             split.transferAccountId,
+            queryRunner,
           );
         } else {
           await this.accountsService.updateBalance(
             split.transferAccountId,
             -split.amount,
+            queryRunner,
           );
         }
 

@@ -223,7 +223,48 @@ describe("InvestmentTransactionsService", () => {
       triggerDebouncedRecalc: jest.fn(),
     };
 
-    dataSource = {};
+    dataSource = {
+      createQueryRunner: jest.fn().mockReturnValue({
+        connect: jest.fn(),
+        startTransaction: jest.fn(),
+        commitTransaction: jest.fn(),
+        rollbackTransaction: jest.fn(),
+        release: jest.fn(),
+        query: jest.fn().mockResolvedValue([]),
+        manager: {
+          create: jest.fn().mockImplementation((_Entity: any, data: any) => {
+            if (_Entity === InvestmentTransaction)
+              return investmentTransactionsRepository.create(data);
+            if (_Entity === Transaction)
+              return transactionRepository.create(data);
+            return { ...data };
+          }),
+          save: jest.fn().mockImplementation((data: any) => {
+            if ("securityId" in data && "action" in data)
+              return investmentTransactionsRepository.save(data);
+            return transactionRepository.save(data);
+          }),
+          update: jest
+            .fn()
+            .mockImplementation((_Entity: any, id: any, data: any) => {
+              if (_Entity === InvestmentTransaction)
+                return investmentTransactionsRepository.update(id, data);
+              return Promise.resolve(undefined);
+            }),
+          findOne: jest.fn().mockImplementation((_Entity: any, opts: any) => {
+            if (_Entity === Transaction)
+              return transactionRepository.findOne(opts);
+            return investmentTransactionsRepository.findOne(opts);
+          }),
+          find: jest.fn().mockResolvedValue([]),
+          remove: jest.fn().mockImplementation((data: any) => {
+            if ("securityId" in data && "action" in data)
+              return investmentTransactionsRepository.remove(data);
+            return transactionRepository.remove(data);
+          }),
+        },
+      }),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -330,6 +371,7 @@ describe("InvestmentTransactionsService", () => {
         securityId,
         10,
         150,
+        expect.anything(),
       );
     });
 
@@ -348,6 +390,7 @@ describe("InvestmentTransactionsService", () => {
       expect(accountsService.updateBalance).toHaveBeenCalledWith(
         cashAccountId,
         -1509.99,
+        expect.anything(),
       );
     });
 
@@ -420,6 +463,7 @@ describe("InvestmentTransactionsService", () => {
         securityId,
         -5,
         160,
+        expect.anything(),
       );
     });
 
@@ -630,6 +674,7 @@ describe("InvestmentTransactionsService", () => {
         securityId,
         2,
         150,
+        expect.anything(),
       );
       // No cash transaction for REINVEST
       expect(transactionRepository.create).not.toHaveBeenCalled();
@@ -675,6 +720,7 @@ describe("InvestmentTransactionsService", () => {
         securityId,
         20,
         100,
+        expect.anything(),
       );
       expect(transactionRepository.create).not.toHaveBeenCalled();
     });
@@ -718,6 +764,7 @@ describe("InvestmentTransactionsService", () => {
         securityId,
         -10,
         100,
+        expect.anything(),
       );
       expect(transactionRepository.create).not.toHaveBeenCalled();
     });
@@ -759,6 +806,7 @@ describe("InvestmentTransactionsService", () => {
         accountId,
         securityId,
         5,
+        expect.anything(),
       );
       expect(holdingsService.updateHolding).not.toHaveBeenCalled();
       expect(transactionRepository.create).not.toHaveBeenCalled();
@@ -801,6 +849,7 @@ describe("InvestmentTransactionsService", () => {
         accountId,
         securityId,
         -3,
+        expect.anything(),
       );
     });
 
@@ -827,6 +876,7 @@ describe("InvestmentTransactionsService", () => {
       expect(accountsService.updateBalance).toHaveBeenCalledWith(
         fundingAccountId,
         expect.any(Number),
+        expect.anything(),
       );
     });
 
@@ -1351,6 +1401,7 @@ describe("InvestmentTransactionsService", () => {
         securityId,
         -10, // Reverse: remove original 10 shares
         150,
+        expect.anything(),
       );
 
       // Then apply new effects
@@ -1360,6 +1411,7 @@ describe("InvestmentTransactionsService", () => {
         securityId,
         expect.any(Number), // New quantity applied
         expect.any(Number),
+        expect.anything(),
       );
     });
 
@@ -1546,6 +1598,7 @@ describe("InvestmentTransactionsService", () => {
       expect(accountsService.updateBalance).toHaveBeenCalledWith(
         cashAccountId,
         1509.99, // Reverse of -1509.99
+        expect.anything(),
       );
 
       // Should remove the cash transaction
@@ -1636,12 +1689,14 @@ describe("InvestmentTransactionsService", () => {
         securityId,
         -10,
         150,
+        expect.anything(),
       );
 
       // Should delete cash transaction and reverse balance
       expect(accountsService.updateBalance).toHaveBeenCalledWith(
         cashAccountId,
         1509.99,
+        expect.anything(),
       );
       expect(transactionRepository.remove).toHaveBeenCalled();
 
@@ -1672,6 +1727,7 @@ describe("InvestmentTransactionsService", () => {
         securityId,
         5, // Add back the sold shares
         160,
+        expect.anything(),
       );
     });
 
@@ -1697,6 +1753,7 @@ describe("InvestmentTransactionsService", () => {
         securityId,
         -3,
         150,
+        expect.anything(),
       );
     });
 
@@ -1722,6 +1779,7 @@ describe("InvestmentTransactionsService", () => {
         securityId,
         -20,
         100,
+        expect.anything(),
       );
     });
 
@@ -1747,6 +1805,7 @@ describe("InvestmentTransactionsService", () => {
         securityId,
         10,
         100,
+        expect.anything(),
       );
     });
 
@@ -1771,6 +1830,7 @@ describe("InvestmentTransactionsService", () => {
         accountId,
         securityId,
         -5,
+        expect.anything(),
       );
     });
 
@@ -1795,6 +1855,7 @@ describe("InvestmentTransactionsService", () => {
         accountId,
         securityId,
         3,
+        expect.anything(),
       );
     });
 
