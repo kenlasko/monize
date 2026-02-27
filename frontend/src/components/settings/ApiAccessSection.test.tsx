@@ -164,7 +164,7 @@ describe('ApiAccessSection', () => {
     fireEvent.click(getFormSubmitButton());
 
     await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith('Token name is required');
+      expect(screen.getByText('Token name is required')).toBeInTheDocument();
     });
   });
 

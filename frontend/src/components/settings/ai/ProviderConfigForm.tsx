@@ -1,12 +1,29 @@
 'use client';
 
 import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import '@/lib/zodConfig';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Modal } from '@/components/ui/Modal';
 import type { AiProviderConfig, AiProviderType, CreateAiProviderConfig, UpdateAiProviderConfig } from '@/types/ai';
 import { AI_PROVIDER_LABELS, AI_PROVIDER_DEFAULT_MODELS } from '@/types/ai';
+
+const AI_PROVIDER_TYPES = ['anthropic', 'openai', 'ollama', 'openai-compatible'] as const;
+
+const providerConfigSchema = z.object({
+  provider: z.enum(AI_PROVIDER_TYPES),
+  displayName: z.string().max(100, 'Display name must be 100 characters or less').optional().or(z.literal('')),
+  model: z.string().max(200).optional().or(z.literal('')),
+  apiKey: z.string().max(500).optional().or(z.literal('')),
+  baseUrl: z.string().max(500).optional().or(z.literal('')),
+  priority: z.string().regex(/^\d*$/, 'Must be a number'),
+});
+
+type ProviderConfigFormData = z.infer<typeof providerConfigSchema>;
 
 interface ProviderConfigFormProps {
   isOpen: boolean;
@@ -20,55 +37,63 @@ const PROVIDER_OPTIONS = (Object.entries(AI_PROVIDER_LABELS) as [AiProviderType,
 );
 
 export function ProviderConfigForm({ isOpen, onClose, onSubmit, editConfig }: ProviderConfigFormProps) {
-  const [provider, setProvider] = useState<AiProviderType>(editConfig?.provider || 'anthropic');
-  const [displayName, setDisplayName] = useState(editConfig?.displayName || '');
-  const [model, setModel] = useState(editConfig?.model || '');
-  const [apiKey, setApiKey] = useState('');
-  const [baseUrl, setBaseUrl] = useState(editConfig?.baseUrl || '');
-  const [priority, setPriority] = useState(String(editConfig?.priority ?? 0));
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setValue,
+    formState: { errors, isSubmitting },
+  } = useForm<ProviderConfigFormData>({
+    resolver: zodResolver(providerConfigSchema),
+    defaultValues: {
+      provider: editConfig?.provider || 'anthropic',
+      displayName: editConfig?.displayName || '',
+      model: editConfig?.model || '',
+      apiKey: '',
+      baseUrl: editConfig?.baseUrl || '',
+      priority: String(editConfig?.priority ?? 0),
+    },
+  });
+
+  const provider = watch('provider');
   const needsBaseUrl = provider === 'ollama' || provider === 'openai-compatible';
   const needsApiKey = provider !== 'ollama';
   const modelSuggestions = AI_PROVIDER_DEFAULT_MODELS[provider] || [];
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onFormSubmit = async (formData: ProviderConfigFormData) => {
     setError('');
-    setIsSubmitting(true);
 
     try {
       if (editConfig) {
         const data: UpdateAiProviderConfig = {};
-        if (displayName !== (editConfig.displayName || '')) data.displayName = displayName || undefined;
-        if (model !== (editConfig.model || '')) data.model = model || undefined;
-        if (apiKey) data.apiKey = apiKey;
-        if (baseUrl !== (editConfig.baseUrl || '')) data.baseUrl = baseUrl || undefined;
-        if (priority !== String(editConfig.priority)) data.priority = parseInt(priority, 10) || 0;
+        if (formData.displayName !== (editConfig.displayName || '')) data.displayName = formData.displayName || undefined;
+        if (formData.model !== (editConfig.model || '')) data.model = formData.model || undefined;
+        if (formData.apiKey) data.apiKey = formData.apiKey;
+        if (formData.baseUrl !== (editConfig.baseUrl || '')) data.baseUrl = formData.baseUrl || undefined;
+        if (formData.priority !== String(editConfig.priority)) data.priority = parseInt(formData.priority, 10) || 0;
         await onSubmit(data);
       } else {
         const data: CreateAiProviderConfig = {
-          provider,
-          ...(displayName && { displayName }),
-          ...(model && { model }),
-          ...(apiKey && { apiKey }),
-          ...(baseUrl && { baseUrl }),
-          priority: parseInt(priority, 10) || 0,
+          provider: formData.provider,
+          ...(formData.displayName && { displayName: formData.displayName }),
+          ...(formData.model && { model: formData.model }),
+          ...(formData.apiKey && { apiKey: formData.apiKey }),
+          ...(formData.baseUrl && { baseUrl: formData.baseUrl }),
+          priority: parseInt(formData.priority, 10) || 0,
         };
         await onSubmit(data);
       }
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save configuration');
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} maxWidth="lg">
-      <form onSubmit={handleSubmit} className="p-6">
+      <form onSubmit={handleSubmit(onFormSubmit)} className="p-6">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
           {editConfig ? 'Edit Provider' : 'Add AI Provider'}
         </h2>
@@ -77,16 +102,16 @@ export function ProviderConfigForm({ isOpen, onClose, onSubmit, editConfig }: Pr
           {!editConfig && (
             <Select
               label="Provider"
-              value={provider}
-              onChange={(e) => setProvider(e.target.value as AiProviderType)}
+              {...register('provider')}
               options={PROVIDER_OPTIONS}
+              error={errors.provider?.message}
             />
           )}
 
           <Input
             label="Display Name"
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
+            {...register('displayName')}
+            error={errors.displayName?.message}
             placeholder={AI_PROVIDER_LABELS[provider]}
             maxLength={100}
           />
@@ -94,8 +119,8 @@ export function ProviderConfigForm({ isOpen, onClose, onSubmit, editConfig }: Pr
           <div>
             <Input
               label="Model"
-              value={model}
-              onChange={(e) => setModel(e.target.value)}
+              {...register('model')}
+              error={errors.model?.message}
               placeholder={modelSuggestions[0] || 'Enter model name'}
             />
             {modelSuggestions.length > 0 && (
@@ -104,7 +129,7 @@ export function ProviderConfigForm({ isOpen, onClose, onSubmit, editConfig }: Pr
                   <button
                     key={m}
                     type="button"
-                    onClick={() => setModel(m)}
+                    onClick={() => setValue('model', m)}
                     className="text-xs px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
                   >
                     {m}
@@ -118,8 +143,8 @@ export function ProviderConfigForm({ isOpen, onClose, onSubmit, editConfig }: Pr
             <Input
               label="API Key"
               type="password"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
+              {...register('apiKey')}
+              error={errors.apiKey?.message}
               placeholder={editConfig?.apiKeyMasked || 'Enter API key'}
             />
           )}
@@ -127,8 +152,8 @@ export function ProviderConfigForm({ isOpen, onClose, onSubmit, editConfig }: Pr
           {needsBaseUrl && (
             <Input
               label="Base URL"
-              value={baseUrl}
-              onChange={(e) => setBaseUrl(e.target.value)}
+              {...register('baseUrl')}
+              error={errors.baseUrl?.message}
               placeholder={provider === 'ollama' ? 'http://localhost:11434' : 'https://api.example.com/v1'}
             />
           )}
@@ -136,8 +161,8 @@ export function ProviderConfigForm({ isOpen, onClose, onSubmit, editConfig }: Pr
           <Input
             label="Priority"
             type="number"
-            value={priority}
-            onChange={(e) => setPriority(e.target.value)}
+            {...register('priority')}
+            error={errors.priority?.message}
             min={0}
           />
           <p className="text-xs text-gray-500 dark:text-gray-400 -mt-3">

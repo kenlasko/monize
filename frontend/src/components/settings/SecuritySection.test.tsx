@@ -128,7 +128,7 @@ describe('SecuritySection', () => {
     fireEvent.submit(screen.getByRole('button', { name: 'Change Password' }));
 
     await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith('New passwords do not match');
+      expect(screen.getByText('New passwords do not match')).toBeInTheDocument();
     });
   });
 
@@ -243,7 +243,7 @@ describe('SecuritySection', () => {
     fireEvent.submit(screen.getByRole('button', { name: 'Change Password' }));
 
     await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith('Password must be at least 8 characters');
+      expect(screen.getByText('Password must be at least 8 characters')).toBeInTheDocument();
     });
   });
 
