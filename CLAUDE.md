@@ -261,3 +261,19 @@ async function renderMyComponent() {
 - [ ] AI response content is rendered as plain text: If markdown rendering is added later, content sanitization will be needed to prevent stored XSS from LLM outputs
 - [ ] Ollama baseUrl defaults to http://localhost:11434: The default is only used when no explicit config exists. In Docker deployments, this typically points to a sibling container. The SSRF validator does not apply to the env-based AI_DEFAULT_BASE_URL (admin-controlled)
 - [ ] config JSONB field stores provider settings in plaintext: Values like temperature/maxTokens are non-sensitive. If sensitive values are added in future, they should use the encryption service
+
+### Financial Operations Audit (Feb 2026)
+
+#### Fixed (Critical)
+- [x] C1: Cross-user data leakage in split counting: Both getTransactionCount and findAll in categories.service join through the transaction table with userId filter to prevent counting splits belonging to other users
+- [x] C2: Race condition in transfer create: createTransfer wraps all operations (create from/to transactions, link IDs, update balances) in a QueryRunner transaction with commit/rollback
+- [x] C3: Race condition in transfer update: updateTransfer wraps reverse old balances + apply new balances + update records in a QueryRunner transaction
+- [x] C4: Race condition in investment transaction create: create wraps investment record creation, cash transaction creation, holdings update, and balance update in a QueryRunner transaction
+- [x] C5: Race condition in investment transaction update: update wraps reversal of old effects + application of new effects in a QueryRunner transaction
+
+#### Fixed (High)
+- [x] H1: Race condition in investment transaction delete: remove wraps reversal of effects + deletion in a QueryRunner transaction
+- [x] H2: Race condition in transfer delete: removeTransfer wraps balance reversals + deletion of both linked transactions in a QueryRunner transaction
+- [x] H3: Race condition in holdings rebuild: rebuildFromTransactions wraps delete-all + rebuild in a QueryRunner transaction
+- [x] H4: Race condition in transaction create with splits: create wraps transaction creation, split creation, and balance update in a QueryRunner transaction; splits use the same QueryRunner
+- [x] H5: Race condition in split creation loop: createSplits manages its own QueryRunner transaction when no external one is provided, or delegates to the caller's QueryRunner for atomic composition
