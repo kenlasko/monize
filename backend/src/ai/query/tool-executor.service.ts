@@ -124,7 +124,10 @@ export class ToolExecutorService {
     const endDate = input.endDate as string;
     const categoryNames = input.categoryNames as string[] | undefined;
     const accountNames = input.accountNames as string[] | undefined;
-    const searchText = input.searchText as string | undefined;
+    const rawSearchText = input.searchText as string | undefined;
+    const sanitizedSearchText = rawSearchText
+      ? rawSearchText.substring(0, 200).replace(/[%_]/g, "\\$&")
+      : undefined;
     const groupBy = input.groupBy as string | undefined;
     const direction = input.direction as string | undefined;
 
@@ -139,7 +142,7 @@ export class ToolExecutorService {
       endDate,
       categoryIds,
       undefined,
-      searchText,
+      sanitizedSearchText,
     );
 
     let breakdown: unknown = null;
@@ -153,7 +156,7 @@ export class ToolExecutorService {
         direction,
         accountIds,
         categoryIds,
-        searchText,
+        sanitizedSearchText,
       );
     }
 
@@ -195,6 +198,10 @@ export class ToolExecutorService {
     categoryIds?: string[],
     searchText?: string,
   ): Promise<unknown> {
+    const safeSearchText = searchText
+      ? searchText.substring(0, 200).replace(/[%_]/g, "\\$&")
+      : undefined;
+
     const qb = this.transactionRepo
       .createQueryBuilder("t")
       .where("t.userId = :userId", { userId })
@@ -218,10 +225,10 @@ export class ToolExecutorService {
       qb.andWhere("t.categoryId IN (:...categoryIds)", { categoryIds });
     }
 
-    if (searchText) {
+    if (safeSearchText) {
       qb.andWhere(
         "(t.description ILIKE :search OR t.payeeName ILIKE :search)",
-        { search: `%${searchText}%` },
+        { search: `%${safeSearchText}%` },
       );
     }
 

@@ -305,15 +305,7 @@ export class AiService {
   }
 
   private toResponseDto(config: AiProviderConfig): AiProviderConfigResponse {
-    let apiKeyMasked: string | null = null;
-    if (config.apiKeyEnc) {
-      try {
-        const decrypted = this.encryptionService.decrypt(config.apiKeyEnc);
-        apiKeyMasked = this.encryptionService.maskApiKey(decrypted);
-      } catch {
-        apiKeyMasked = "****";
-      }
-    }
+    const apiKeyMasked: string | null = config.apiKeyEnc ? "****" : null;
 
     return {
       id: config.id,

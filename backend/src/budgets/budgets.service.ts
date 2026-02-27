@@ -435,7 +435,7 @@ export class BudgetsService {
       daysRemaining > 0 ? Math.max(0, trulyAvailable / daysRemaining) : 0;
 
     let paceStatus: "under" | "on_track" | "over";
-    const paceRatio = projectedTotal / budgetTotal;
+    const paceRatio = budgetTotal > 0 ? projectedTotal / budgetTotal : 0;
     if (budgetTotal === 0 || paceRatio <= 0.95) {
       paceStatus = "under";
     } else if (paceRatio <= 1.05) {

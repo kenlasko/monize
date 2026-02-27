@@ -1,6 +1,10 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
-import { NotFoundException, UnauthorizedException } from "@nestjs/common";
+import {
+  BadRequestException,
+  NotFoundException,
+  UnauthorizedException,
+} from "@nestjs/common";
 import * as crypto from "crypto";
 import { PatService } from "./pat.service";
 import { PersonalAccessToken } from "./entities/personal-access-token.entity";
@@ -147,7 +151,7 @@ describe("PatService", () => {
 
       await expect(
         service.create("user-1", { name: "Too Many" }),
-      ).rejects.toThrow("Maximum of 10 active tokens per user");
+      ).rejects.toThrow(BadRequestException);
     });
   });
 

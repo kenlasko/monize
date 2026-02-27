@@ -201,22 +201,25 @@ export class AiInsightsService {
     }
 
     const userIds = await this.getActiveUserIds();
-    const batch = userIds.slice(0, CRON_BATCH_SIZE);
 
-    for (const userId of batch) {
-      try {
-        await this.generateInsights(userId);
-      } catch (error) {
-        const message =
-          error instanceof Error ? error.message : "Unknown error";
-        this.logger.warn(
-          `Failed to generate insights for user ${userId}: ${message}`,
-        );
+    for (let offset = 0; offset < userIds.length; offset += CRON_BATCH_SIZE) {
+      const batch = userIds.slice(offset, offset + CRON_BATCH_SIZE);
+
+      for (const userId of batch) {
+        try {
+          await this.generateInsights(userId);
+        } catch (error) {
+          const message =
+            error instanceof Error ? error.message : "Unknown error";
+          this.logger.warn(
+            `Failed to generate insights for user ${userId}: ${message}`,
+          );
+        }
       }
     }
 
     this.logger.log(
-      `Daily insight generation complete for ${batch.length} of ${userIds.length} users`,
+      `Daily insight generation complete for ${userIds.length} users`,
     );
   }
 

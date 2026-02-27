@@ -529,50 +529,63 @@ export class CategoriesService {
       );
     }
 
-    let categoryCount = 0;
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-    for (const cat of DEFAULT_INCOME_CATEGORIES) {
-      const parentCategory = this.categoriesRepository.create({
-        userId,
-        name: cat.name,
-        isIncome: true,
-      });
-      const savedParent = await this.categoriesRepository.save(parentCategory);
-      categoryCount++;
+    try {
+      const repo = queryRunner.manager.getRepository(Category);
+      let categoryCount = 0;
 
-      for (const subName of cat.subcategories) {
-        const subCategory = this.categoriesRepository.create({
+      for (const cat of DEFAULT_INCOME_CATEGORIES) {
+        const parentCategory = repo.create({
           userId,
-          parentId: savedParent.id,
-          name: subName,
+          name: cat.name,
           isIncome: true,
         });
-        await this.categoriesRepository.save(subCategory);
+        const savedParent = await repo.save(parentCategory);
         categoryCount++;
+
+        for (const subName of cat.subcategories) {
+          const subCategory = repo.create({
+            userId,
+            parentId: savedParent.id,
+            name: subName,
+            isIncome: true,
+          });
+          await repo.save(subCategory);
+          categoryCount++;
+        }
       }
-    }
 
-    for (const cat of DEFAULT_EXPENSE_CATEGORIES) {
-      const parentCategory = this.categoriesRepository.create({
-        userId,
-        name: cat.name,
-        isIncome: false,
-      });
-      const savedParent = await this.categoriesRepository.save(parentCategory);
-      categoryCount++;
-
-      for (const subName of cat.subcategories) {
-        const subCategory = this.categoriesRepository.create({
+      for (const cat of DEFAULT_EXPENSE_CATEGORIES) {
+        const parentCategory = repo.create({
           userId,
-          parentId: savedParent.id,
-          name: subName,
+          name: cat.name,
           isIncome: false,
         });
-        await this.categoriesRepository.save(subCategory);
+        const savedParent = await repo.save(parentCategory);
         categoryCount++;
-      }
-    }
 
-    return { categoriesCreated: categoryCount };
+        for (const subName of cat.subcategories) {
+          const subCategory = repo.create({
+            userId,
+            parentId: savedParent.id,
+            name: subName,
+            isIncome: false,
+          });
+          await repo.save(subCategory);
+          categoryCount++;
+        }
+      }
+
+      await queryRunner.commitTransaction();
+      return { categoriesCreated: categoryCount };
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
   }
 }

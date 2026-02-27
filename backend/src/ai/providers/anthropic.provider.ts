@@ -113,26 +113,33 @@ export class AnthropicProvider implements AiProvider {
   }
 
   async *stream(request: AiCompletionRequest): AsyncIterable<AiStreamChunk> {
-    const stream = this.client.messages.stream({
-      model: this.modelId,
-      max_tokens: request.maxTokens || 1024,
-      system: request.systemPrompt,
-      messages: this.toSimpleMessages(request.messages),
-      ...(request.temperature !== undefined && {
-        temperature: request.temperature,
-      }),
-    });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 120000);
 
-    for await (const event of stream) {
-      if (
-        event.type === "content_block_delta" &&
-        event.delta.type === "text_delta"
-      ) {
-        yield { content: event.delta.text, done: false };
+    try {
+      const stream = this.client.messages.stream({
+        model: this.modelId,
+        max_tokens: request.maxTokens || 1024,
+        system: request.systemPrompt,
+        messages: this.toSimpleMessages(request.messages),
+        ...(request.temperature !== undefined && {
+          temperature: request.temperature,
+        }),
+      }, { signal: controller.signal });
+
+      for await (const event of stream) {
+        if (
+          event.type === "content_block_delta" &&
+          event.delta.type === "text_delta"
+        ) {
+          yield { content: event.delta.text, done: false };
+        }
       }
-    }
 
-    yield { content: "", done: true };
+      yield { content: "", done: true };
+    } finally {
+      clearTimeout(timeout);
+    }
   }
 
   async completeWithTools(

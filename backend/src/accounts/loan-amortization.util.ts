@@ -159,7 +159,7 @@ export function calculateEndDate(
   const date = new Date(startDate);
 
   // Handle infinite payments case
-  if (!isFinite(totalPayments) || totalPayments > 1000) {
+  if (!isFinite(totalPayments) || totalPayments > 2500) {
     // Return a far future date to indicate the loan won't be paid off
     date.setFullYear(date.getFullYear() + 100);
     return date;

@@ -264,7 +264,7 @@ export class PortfolioCalculationService {
       const marketValue =
         currentPrice !== null ? quantity * currentPrice : null;
       const gainLoss =
-        marketValue !== null && costBasis > 0 ? marketValue - costBasis : null;
+        marketValue !== null ? marketValue - costBasis : null;
       const gainLossPercent =
         gainLoss !== null && costBasis > 0
           ? (gainLoss / costBasis) * 100

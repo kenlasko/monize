@@ -31,6 +31,7 @@ import {
 } from "./transaction-bulk-update.service";
 import { BulkUpdateDto } from "./dto/bulk-update.dto";
 import { isTransactionInFuture } from "../common/date-utils";
+import { getAllCategoryIdsWithChildren } from "../common/category-tree.util";
 
 export interface TransactionWithInvestmentLink extends Transaction {
   linkedInvestmentTransactionId?: string | null;
@@ -75,32 +76,6 @@ export class TransactionsService {
     private bulkUpdateService: TransactionBulkUpdateService,
     private dataSource: DataSource,
   ) {}
-
-  private async getAllCategoryIdsWithChildren(
-    userId: string,
-    categoryIds: string[],
-  ): Promise<string[]> {
-    const categories = await this.categoriesRepository.find({
-      where: { userId },
-      select: ["id", "parentId"],
-    });
-
-    const result = new Set<string>();
-    const addWithChildren = (parentId: string) => {
-      result.add(parentId);
-      for (const cat of categories) {
-        if (cat.parentId === parentId && !result.has(cat.id)) {
-          addWithChildren(cat.id);
-        }
-      }
-    };
-
-    for (const catId of categoryIds) {
-      addWithChildren(catId);
-    }
-
-    return [...result];
-  }
 
   async create(
     userId: string,
@@ -363,7 +338,8 @@ export class TransactionsService {
     }
 
     if (regularCategoryIds.length > 0) {
-      const uniqueCategoryIds = await this.getAllCategoryIdsWithChildren(
+      const uniqueCategoryIds = await getAllCategoryIdsWithChildren(
+        this.categoriesRepository,
         userId,
         regularCategoryIds,
       );
@@ -451,7 +427,7 @@ export class TransactionsService {
       const countBefore = await countQuery.getCount();
       return Math.floor(countBefore / safeLimit) + 1;
     } catch (error) {
-      console.error("Failed to find target transaction page:", error);
+      this.logger.error("Failed to find target transaction page:", error instanceof Error ? error.stack : String(error));
       return fallbackPage;
     }
   }

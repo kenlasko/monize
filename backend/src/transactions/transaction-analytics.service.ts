@@ -3,6 +3,7 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { Transaction } from "./entities/transaction.entity";
 import { Category } from "../categories/entities/category.entity";
+import { getAllCategoryIdsWithChildren } from "../common/category-tree.util";
 
 @Injectable()
 export class TransactionAnalyticsService {
@@ -12,32 +13,6 @@ export class TransactionAnalyticsService {
     @InjectRepository(Category)
     private categoriesRepository: Repository<Category>,
   ) {}
-
-  private async getAllCategoryIdsWithChildren(
-    userId: string,
-    categoryIds: string[],
-  ): Promise<string[]> {
-    const categories = await this.categoriesRepository.find({
-      where: { userId },
-      select: ["id", "parentId"],
-    });
-
-    const result = new Set<string>();
-    const addWithChildren = (parentId: string) => {
-      result.add(parentId);
-      for (const cat of categories) {
-        if (cat.parentId === parentId && !result.has(cat.id)) {
-          addWithChildren(cat.id);
-        }
-      }
-    };
-
-    for (const catId of categoryIds) {
-      addWithChildren(catId);
-    }
-
-    return [...result];
-  }
 
   async getSummary(
     userId: string,
@@ -136,7 +111,8 @@ export class TransactionAnalyticsService {
       }
 
       if (regularCategoryIds.length > 0) {
-        const uniqueCategoryIds = await this.getAllCategoryIdsWithChildren(
+        const uniqueCategoryIds = await getAllCategoryIdsWithChildren(
+          this.categoriesRepository,
           userId,
           regularCategoryIds,
         );
@@ -285,7 +261,8 @@ export class TransactionAnalyticsService {
       }
 
       if (regularCategoryIds.length > 0) {
-        const uniqueCategoryIds = await this.getAllCategoryIdsWithChildren(
+        const uniqueCategoryIds = await getAllCategoryIdsWithChildren(
+          this.categoriesRepository,
           userId,
           regularCategoryIds,
         );

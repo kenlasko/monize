@@ -13,6 +13,10 @@ import { Category } from "../categories/entities/category.entity";
 import { CreatePayeeDto } from "./dto/create-payee.dto";
 import { UpdatePayeeDto } from "./dto/update-payee.dto";
 
+function escapeLikeWildcards(value: string): string {
+  return value.replace(/[%_]/g, "\\$&");
+}
+
 @Injectable()
 export class PayeesService {
   constructor(
@@ -111,7 +115,7 @@ export class PayeesService {
     return this.payeesRepository.find({
       where: {
         userId,
-        name: Like(`%${query}%`),
+        name: Like(`%${escapeLikeWildcards(query)}%`),
       },
       relations: ["defaultCategory"],
       order: { name: "ASC" },
@@ -124,7 +128,7 @@ export class PayeesService {
     return this.payeesRepository.find({
       where: {
         userId,
-        name: Like(`${query}%`),
+        name: Like(`${escapeLikeWildcards(query)}%`),
       },
       relations: ["defaultCategory"],
       order: { name: "ASC" },
@@ -477,22 +481,26 @@ export class PayeesService {
       }
     }
 
-    let updated = 0;
+    const payeeIds = [...new Set(assignments.map((a) => a.payeeId))];
+    const payees = await this.payeesRepository.find({
+      where: { id: In(payeeIds), userId },
+    });
+    const payeeMap = new Map(payees.map((p) => [p.id, p]));
 
+    const toSave: Payee[] = [];
     for (const assignment of assignments) {
-      // Verify payee belongs to user
-      const payee = await this.payeesRepository.findOne({
-        where: { id: assignment.payeeId, userId },
-      });
-
+      const payee = payeeMap.get(assignment.payeeId);
       if (payee) {
         payee.defaultCategoryId = assignment.categoryId;
-        await this.payeesRepository.save(payee);
-        updated++;
+        toSave.push(payee);
       }
     }
 
-    return { updated };
+    if (toSave.length > 0) {
+      await this.payeesRepository.save(toSave);
+    }
+
+    return { updated: toSave.length };
   }
 }
 
