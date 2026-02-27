@@ -65,7 +65,8 @@ export class PayeesService {
       .leftJoin(
         "transactions",
         "transaction",
-        "transaction.payee_id = payee.id",
+        "transaction.payee_id = payee.id AND transaction.user_id = :userId",
+        { userId },
       )
       .where("payee.user_id = :userId", { userId })
       .groupBy("payee.id")
@@ -189,11 +190,11 @@ export class PayeesService {
     // Cascade name change to existing transactions and scheduled transactions
     if (nameChanged) {
       await this.transactionsRepository.update(
-        { payeeId: id },
+        { payeeId: id, userId },
         { payeeName: updatePayeeDto.name },
       );
       await this.scheduledTransactionsRepository.update(
-        { payeeId: id },
+        { payeeId: id, userId },
         { payeeName: updatePayeeDto.name },
       );
     }
@@ -214,7 +215,8 @@ export class PayeesService {
       .leftJoin(
         "transactions",
         "transaction",
-        "transaction.payee_id = payee.id",
+        "transaction.payee_id = payee.id AND transaction.user_id = :userId",
+        { userId },
       )
       .where("payee.user_id = :userId", { userId })
       .groupBy("payee.id")
@@ -232,7 +234,8 @@ export class PayeesService {
       .leftJoin(
         "transactions",
         "transaction",
-        "transaction.payee_id = payee.id",
+        "transaction.payee_id = payee.id AND transaction.user_id = :userId",
+        { userId },
       )
       .where("payee.user_id = :userId", { userId })
       .groupBy("payee.id")

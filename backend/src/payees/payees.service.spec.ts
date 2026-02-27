@@ -375,11 +375,11 @@ describe("PayeesService", () => {
       await service.update(userId, "payee-1", { name: "NewName" });
 
       expect(transactionsRepository.update).toHaveBeenCalledWith(
-        { payeeId: "payee-1" },
+        { payeeId: "payee-1", userId },
         { payeeName: "NewName" },
       );
       expect(scheduledTransactionsRepository.update).toHaveBeenCalledWith(
-        { payeeId: "payee-1" },
+        { payeeId: "payee-1", userId },
         { payeeName: "NewName" },
       );
     });

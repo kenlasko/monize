@@ -1,42 +1,237 @@
-# monize Project CLAUDE.md
+# Monize
 
-## Project Overview
-This is a comprehensive web-based personal finance management application designed as a modern replacement for Microsoft Money. Built with cutting-edge technologies, it provides all the features needed to manage personal finances, investments, budgets, and financial reporting.
+Personal finance management app (Microsoft Money replacement). NestJS backend, Next.js frontend, PostgreSQL database, all running in Docker.
+
+## Tech Stack
+
+| Layer | Tech | Version |
+|-------|------|---------|
+| Backend | NestJS + TypeORM | 11.x, TS 5.9 |
+| Frontend | Next.js (App Router) + React | 16.x, React 19 |
+| Database | PostgreSQL | 16 |
+| Styling | Tailwind CSS | 4.x |
+| State | Zustand (frontend), class-validator DTOs (backend) |
+| Forms | react-hook-form + Zod (frontend), class-validator (backend) |
+| Auth | JWT + Passport + OIDC + TOTP 2FA |
+| AI | Anthropic SDK, OpenAI SDK, Ollama (user-configurable) |
+| Testing | Jest (backend), Vitest (frontend), Playwright (e2e) |
+
+## Commands
+
+```bash
+# Everything runs in Docker
+docker compose -f docker-compose.dev.yml up
+
+# Backend (from /backend)
+npm run start:dev          # Dev server with HMR
+npm run test               # All tests
+npm run test:unit          # Unit tests only
+npm run test:cov           # Coverage report (80% minimum)
+npm run lint               # ESLint --fix
+npm run build              # Production build
+
+# Frontend (from /frontend)
+npm run dev                # Dev server (port 3001)
+npm run test               # Vitest
+npm run test:cov           # Coverage (65% lines minimum)
+npm run type-check         # tsc --noEmit
+npm run lint
+
+# E2E (from /e2e)
+npm run test               # Playwright
+```
+
+## Project Structure
+
+```
+backend/src/
+  {feature}/
+    {feature}.module.ts
+    {feature}.controller.ts
+    {feature}.service.ts
+    entities/{entity}.entity.ts
+    dto/create-{entity}.dto.ts
+    dto/update-{entity}.dto.ts
+    {feature}.service.spec.ts
+    {feature}.controller.spec.ts
+  common/                    # Shared guards, pipes, decorators, utils
+  auth/                      # JWT, OIDC, 2FA, PATs, refresh tokens
+  ai/                        # AI providers, query engine, MCP server
+
+frontend/src/
+  app/                       # Next.js App Router pages
+  components/{feature}/      # Feature-organized React components
+  lib/                       # API clients (axios), utilities
+  hooks/                     # Custom React hooks
+  store/                     # Zustand stores (auth, preferences, demo)
+  types/                     # Shared TypeScript interfaces
+
+database/
+  schema.sql                 # Complete schema (for fresh installs)
+  migrations/                # Incremental SQL migrations (auto-applied on startup)
+```
 
 ## Critical Rules
 
-### 1. Code Organization
-
-- Many small files over few large files
-- High cohesion, low coupling
-- 200-400 lines typical, 800 max per file
+### Code Organization
+- Many small files over few large files (200-400 lines typical, 800 max)
 - Organize by feature/domain, not by type
-- Always make sure to update schema.sql with any database modifications
-- The development environment is running in Docker
+- Always update `database/schema.sql` alongside any migration
 
-### 2. Code Style
-
+### Code Style
 - No emojis in code, comments, or documentation
-- Immutability always - never mutate objects or arrays
-- No console.log in production code
-- Proper error handling with try/catch
-- Input validation with Zod or similar
-- Reuse code where possible. Use common code for things like currency display, drop-downs, styles etc
-- use proxy not middleware because middleware is deprecated
+- Immutability always -- never mutate objects or arrays
+- No `console.log` in production code; use NestJS `Logger` class
+- Use proxy, not middleware (middleware is deprecated in this project)
 
-### 3. Testing
+### Security (Do Not Regress)
+- Parameterized queries only (TypeORM QueryBuilder or parameterized raw SQL). Never interpolate user input into SQL strings
+- All controllers use `@UseGuards(AuthGuard('jwt'))` at class level (except health + auth)
+- All service methods derive `userId` from JWT (`req.user.id`), never from request params/body
+- All path `:id` params use `ParseUUIDPipe`
+- DTOs use `whitelist: true` + `forbidNonWhitelisted: true`
+- All user-controlled values in HTML email templates must use `escapeHtml()`
+- API keys encrypted with AES-256-GCM before storage, never returned to client
+- CSRF double-submit cookie pattern is global; use `@SkipCsrf()` only for non-cookie auth (e.g., PAT bearer)
 
-- TDD: Write tests first
-- 80% minimum coverage
-- Unit tests for utilities
-- Integration tests for APIs
-- E2E tests for critical flows
+## Backend Patterns
 
-#### React act() Warnings (Frontend)
+### NestJS Module Pattern
 
-Components with async `useEffect` hooks (e.g., API calls on mount) will cause `act(...)` warnings if `render()` is called without flushing those updates. **Always wrap initial render in `act(async () => { ... })` for components that fetch data on mount.**
+Every feature follows this structure:
 
-Pattern: create a helper per test file and use it for every test:
+```typescript
+// controller -- thin, delegates to service
+@Controller('feature')
+@UseGuards(AuthGuard('jwt'))
+export class FeatureController {
+  constructor(private featureService: FeatureService) {}
+
+  @Post()
+  create(@Request() req, @Body() dto: CreateFeatureDto) {
+    return this.featureService.create(req.user.id, dto);
+  }
+
+  @Get(':id')
+  findOne(@Request() req, @Param('id', ParseUUIDPipe) id: string) {
+    return this.featureService.findOne(req.user.id, id);
+  }
+}
+
+// service -- all business logic, always takes userId as first param
+@Injectable()
+export class FeatureService {
+  private readonly logger = new Logger(FeatureService.name);
+
+  constructor(
+    @InjectRepository(Feature)
+    private repo: Repository<Feature>,
+    private dataSource: DataSource,
+  ) {}
+
+  async create(userId: string, dto: CreateFeatureDto): Promise<Feature> {
+    // Always filter by userId for multi-tenancy
+  }
+}
+```
+
+### QueryRunner Transactions (CRITICAL)
+
+Any operation that touches multiple tables or does read-modify-write MUST use a QueryRunner. This is the most common source of bugs in this codebase.
+
+```typescript
+async createSomething(userId: string, dto: CreateDto) {
+  const queryRunner = this.dataSource.createQueryRunner();
+  await queryRunner.connect();
+  await queryRunner.startTransaction();
+  try {
+    // All DB operations use queryRunner.manager instead of this.repo
+    const entity = queryRunner.manager.create(Entity, { ...dto, userId });
+    await queryRunner.manager.save(entity);
+    await this.updateBalance(accountId, amount, queryRunner);
+
+    await queryRunner.commitTransaction();
+    return entity;
+  } catch (error) {
+    await queryRunner.rollbackTransaction();
+    throw error;
+  } finally {
+    await queryRunner.release();
+  }
+}
+```
+
+Operations that already use QueryRunner correctly: `create()` and `createTransfer()` in transactions, investment transaction CRUD, transfer CRUD, holdings rebuild.
+
+Operations that still need it (see AUDIT_FINDINGS.md): `update()`, `remove()`, split operations, bulk updates.
+
+### Financial Math
+
+All money values are stored as `decimal(20,4)` in PostgreSQL. In JavaScript, always round to avoid floating-point drift:
+
+```typescript
+// WRONG: floating-point accumulation
+const total = items.reduce((sum, item) => sum + item.amount, 0);
+
+// RIGHT: integer arithmetic
+const totalCents = items.reduce(
+  (sum, item) => sum + Math.round(Number(item.amount) * 10000), 0
+);
+const total = totalCents / 10000;
+
+// For simple rounding
+const rounded = Math.round(value * 10000) / 10000;
+```
+
+Balance updates use atomic SQL: `UPDATE accounts SET current_balance = current_balance + $1 WHERE id = $2`.
+
+### DTO Validation
+
+Backend uses `class-validator`. Frontend uses Zod.
+
+```typescript
+// Backend DTO example
+export class CreateTransactionDto {
+  @IsUUID()
+  accountId: string;
+
+  @IsNumber({ maxDecimalPlaces: 4 })
+  @Min(-999999999999)
+  @Max(999999999999)
+  amount: number;
+
+  @IsDateString()
+  transactionDate: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  @SanitizeHtml()
+  memo?: string;
+}
+```
+
+Always include: `@MaxLength` on strings, `@Min`/`@Max` on numbers, `@IsUUID` on ID references, `@SanitizeHtml()` on user-facing text fields.
+
+## Frontend Patterns
+
+### API Clients
+
+All API calls go through typed axios clients in `frontend/src/lib/`:
+
+```typescript
+// lib/transactionsApi.ts
+export const transactionsApi = {
+  getAll: (params) => api.get<Transaction[]>('/transactions', { params }),
+  create: (data) => api.post<Transaction>('/transactions', data),
+};
+```
+
+The SSR proxy in `frontend/src/proxy.ts` handles auth cookie forwarding. Use proxy, not Next.js middleware.
+
+### React Testing (act() Pattern)
+
+Components with async `useEffect` (API calls on mount) MUST use this pattern to avoid act() warnings:
 
 ```typescript
 async function renderMyComponent() {
@@ -46,260 +241,45 @@ async function renderMyComponent() {
   });
   return result!;
 }
+
+// Use in every test
+it('renders data', async () => {
+  const { getByText } = await renderMyComponent();
+  expect(getByText('Expected')).toBeInTheDocument();
+});
 ```
 
-- Use `await renderMyComponent()` instead of bare `render(<MyComponent />)` in every test
-- For user interactions that trigger async state updates (e.g., clicking a button that fetches data), wrap the event in `act(async () => { fireEvent.click(...); })`
-- The `afterEach` flush pattern (`await act(async () => {})`) does NOT fix warnings that occur during test execution — it only helps with cleanup-phase updates
-- Tests that intentionally check loading/skeleton states with never-resolving mocks still need the `act()` wrapper to flush other effects (like `getStatus()`)
+Wrap user interactions that trigger async state updates: `await act(async () => { fireEvent.click(button); });`
 
-### 4. Security
+### State Management
 
-- No hardcoded secrets
-- Environment variables for sensitive data
-- Validate all user inputs
-- Parameterized queries only
-- CSRF protection enabled
-- Ensure we don't undo any security-related improvements when making changes
+Three Zustand stores in `frontend/src/store/`:
+- `authStore` -- user, isAuthenticated, login/logout
+- `preferencesStore` -- defaultCurrency, dateFormat, theme
+- `demoStore` -- demo mode state
 
-## Completed Work
+## Database
 
-### Security Audit & Fixes (Feb 2026)
+- Schema: `database/schema.sql` (complete, for fresh installs)
+- Migrations: `database/migrations/NNN_description.sql` (incremental, auto-applied on startup via `db-migrate.ts`)
+- Both must stay in sync -- any migration must also update schema.sql
+- All migrations use `IF NOT EXISTS` / `IF EXISTS` for idempotency
+- Column naming: `snake_case` in SQL, `camelCase` in TypeORM entities via `@Column({ name: 'snake_case' })`
 
-#### Critical
-- [x] C1: Hash password reset tokens with SHA-256 before storing in DB
-- [x] C2: Use unique per-user salt for TOTP encryption (not shared JWT_SECRET)
+## Environment
 
-#### High
-- [x] H1: Pessimistic write lock on transaction balance updates to prevent race conditions
-- [x] H2: OIDC callback catch block — don't leak internal errors to client
-- [x] H3: Global ThrottlerGuard (rate limiting on all endpoints)
-- [x] H4: Security headers — CSP, HSTS, X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Permissions-Policy
+Key env vars (see `.env.example` for full list):
+- `JWT_SECRET` -- minimum 32 chars, enforced at startup
+- `AI_ENCRYPTION_KEY` -- minimum 32 chars, for API key encryption
+- `DATABASE_*` -- PostgreSQL connection
+- `DEMO_MODE=true` -- enables demo restrictions, daily reset at 4 AM UTC
+- `LOCAL_AUTH_ENABLED` / `REGISTRATION_ENABLED` -- auth toggles
+- `OIDC_*` -- OpenID Connect provider config
 
-#### Medium
-- [x] M1: JWT type check — reject 2FA pending tokens on normal endpoints
-- [x] M3: Trust proxy configuration for correct client IP behind Docker/nginx
-- [x] M4: ParseUUIDPipe on all controller ID params (transactions, scheduled-transactions, categories, accounts, reports)
-- [x] M5-M7: DTO validation already solid (whitelist + forbidNonWhitelisted)
+## Pending Work
 
-#### Additional
-- [x] Demo password removed from startup logs
-- [x] MaxLength(5000) on QIF import DTO memo/payee fields
-
-### Refresh Token Flow (Feb 2026)
-- [x] Short-lived access tokens (15 min) + rotatable refresh tokens (7 days in DB)
-- [x] Token family tracking with replay detection (revokes entire family on reuse)
-- [x] Transparent frontend refresh with request queuing (no user-visible interruption)
-- [x] Refresh token revocation on logout and password reset
-- [x] Cron job to purge expired refresh tokens daily
-- [x] SSR proxy updated to check for refresh_token cookie alongside auth_token
-
-### Performance Optimizations (Feb 2026)
-
-#### Backend
-- [x] Scheduled Transactions N+1 query: ~40 queries per screen load reduced to 3 (batched overrides)
-- [x] Category counting: 4 sequential queries parallelized with Promise.all
-- [x] Payee getMostUsed/getRecentlyUsed: 2 queries each reduced to 1 (joined defaultCategory in aggregate)
-- [x] Report execute: conditional category/payee fetch based on groupBy (avoids over-fetching both)
-- [x] Portfolio account batch loading: N individual findOne calls replaced with batch In() query
-- [x] Account findAll: canDelete computed via batch GROUP BY queries (eliminated N per-account API calls)
-- [x] Holdings rebuild: N individual saves replaced with single batch save
-- [x] Split creation: Regular (non-transfer) splits batch-saved in one call; transfer splits still individual (need linked transactions)
-- [x] Investment transaction account resolution: N findOne calls replaced with batch findByIds query
-- [x] Import validation: Per-entity findOne lookups replaced with batch find(In()) queries for accounts, categories, and securities
-- [x] Delete transfer split linked transactions: N individual findOne calls replaced with batch find(In()) query
-- [x] Missing index: Added idx_investment_transactions_transaction on investment_transactions(transaction_id)
-- [x] Missing index: Added idx_sched_txn_overrides_orig composite on scheduled_transaction_overrides(scheduled_transaction_id, original_date)
-- [x] Investment account pair creation: Wrapped in QueryRunner transaction for atomicity (prevents orphaned partial pairs)
-
-#### Frontend
-- [x] HoldingRow memoized with React.memo in GroupedHoldingsList
-- [x] Dynamic imports for TransactionForm, PayeeForm, AccountForm (reduced initial bundle)
-- [x] Account deletability: removed N sequential API calls, uses canDelete from account list response
-- [x] Consolidated 7 localStorage persistence effects into 2 in transactions page
-
-### ZAP Security Scan Fixes (Feb 2026)
-- [x] Removed X-Powered-By header (poweredByHeader: false)
-- [x] Removed unsafe-eval from CSP script-src
-- [x] Added Cross-Origin-Opener-Policy: same-origin
-- [x] Added Cross-Origin-Resource-Policy: same-origin
-- [x] CSP unsafe-inline: Replaced with nonce-based CSP via proxy.ts; added object-src 'none'
-- [ ] Proxy disclosure: Infrastructure-level fix (reverse proxy config, not app code)
-
-### Security Audit Round 2 (Feb 2026)
-
-#### Fixed
-- [x] HTML injection in email templates: User-controlled data (firstName, payee, currencyCode) now escaped via escapeHtml() before interpolation into HTML email bodies
-- [x] JWT_SECRET minimum length enforced: Startup now rejects secrets shorter than 32 characters (previously only checked for existence)
-- [x] Replaced `new Function()` calculator eval with recursive-descent parser: Eliminates code execution primitive from frontend, CSP-compatible
-
-#### Verified Secure (no action needed)
-- SQL injection: All queries use parameterized TypeORM QueryBuilder or parameterized raw queries
-- IDOR: All service methods verify userId ownership before returning/modifying data
-- Mass assignment: Explicit property mapping used (not Object.assign), forbidNonWhitelisted DTO validation
-- Error leakage: Internal errors logged server-side, generic messages returned to clients
-- SSRF: External HTTP requests use hardcoded base URLs with encodeURIComponent() on parameters
-- XSS: No dangerouslySetInnerHTML usage found in React components
-- Authorization: All controllers use @UseGuards(AuthGuard("jwt")), admin routes use @Roles("admin")
-- Rate limiting: Global 100 req/min default, stricter limits on auth endpoints (3-5 per 15 min)
-- CORS: Properly restricts origins, localhost only allowed in non-production
-
-#### Informational (acceptable risk or design notes)
-- [ ] Demo user (demo@monize.com / Demo123!) in seed.service.ts: Known credential in source, seed-only
-- [ ] console.log in db-init.ts and seed.service.ts: Logs file paths during startup
-- [ ] Refresh token cookie uses path "/": Needed by frontend proxy auth check, restricting would break SSR auth detection
-- [ ] Swagger docs exposed in non-production: Intentional for development
-
-### Auth & Accounts Audit (Feb 2026)
-
-#### Fixed
-- [x] changePassword did not revoke refresh tokens: Old sessions remained active after password change, allowing continued access from compromised devices
-- [x] Admin resetUserPassword did not revoke refresh tokens: Users kept active sessions even after admin-forced password reset
-- [x] Admin updateUserStatus (deactivate) did not revoke refresh tokens: Deactivated users could continue using existing sessions until access token expired
-- [x] mustChangePassword flag not enforced server-side: Users with admin-assigned temporary passwords could access all endpoints without changing password. Added MustChangePasswordGuard as global guard with @SkipPasswordCheck() on auth, profile, and change-password endpoints
-- [x] Self-deletion of last admin account: Users could delete their own account via DELETE /users/account even as the last admin, leaving the system with no administrator
-- [x] Email change without password confirmation: updateProfile allowed email changes without verifying current password, enabling account takeover via compromised sessions. Now requires currentPassword when email is being changed
-- [x] Missing MaxLength on ChangePasswordDto.currentPassword: Could accept unlimited length input (added @MaxLength(128))
-- [x] Missing MaxLength on VerifyTotpDto.tempToken: Could accept arbitrarily large strings (added @MaxLength(2048))
-- [x] Missing MaxLength on ForgotPasswordDto.email: No length constraint on email field (added @MaxLength(254) per RFC 5321)
-
-#### Verified Secure (no action needed)
-- Authentication guards: All 19 controllers audited; 17 use class-level @UseGuards(AuthGuard("jwt")), 2 intentionally public (health, auth)
-- User identity: All endpoints derive userId from req.user (JWT), never from request params/body
-- Admin authorization: AdminController uses @UseGuards(AuthGuard("jwt"), RolesGuard) with @Roles("admin") at class level
-- ParseUUIDPipe: Applied to all path ID parameters across all controllers
-- JWT strategy: Validates signature (HS256), enforces expiration, rejects 2FA pending tokens, checks user active status
-- Refresh token rotation: Family-based replay detection with pessimistic write locks
-- Password reset tokens: SHA-256 hashed before storage, 1-hour expiry, revokes all refresh tokens
-- OIDC: State/nonce validation, email_verified check before account linking, no open redirects
-- CSRF: Double-submit cookie pattern with timing-safe comparison, global guard
-- Cookie security: httpOnly, secure (production), sameSite (lax/strict), no tokens in localStorage
-- Client-side auth: UI-only role checks, all admin enforcement server-side
-- Rate limiting: Auth endpoints 3-5 per 15 min, global 100/min
-
-### File Upload / Import Security Audit (Feb 2026)
-
-#### Architecture (Secure by Design)
-- No traditional file uploads (no multer/multipart/FileInterceptor)
-- QIF content sent as string in JSON POST body, processed in-memory
-- No files written to disk or stored on the server
-- No files served from web-accessible directories
-- No external tool processing (no ImageMagick, sharp, ffmpeg, etc.)
-- No stored XSS risk: React auto-escapes JSX, no dangerouslySetInnerHTML
-- All database operations use parameterized TypeORM queries
-
-#### Fixed
-- [x] dateFormat field in ImportQifDto validated against enum via @IsIn(): Previously accepted any string up to 50 chars, cast `as any` to parser
-- [x] @IsNotEmpty() added to ParseQifDto.content and ImportQifDto.content: Empty strings previously passed @IsString() + @MaxLength() validation
-- [x] QIF parser field truncation to match DB column limits: payee (255), referenceNumber (100), memo (5000), category (255), security (255) - prevents DB errors from crafted QIF content
-- [x] accountType in AccountMappingDto validated against AccountType enum via @IsIn(): Previously accepted any string
-- [x] securityType in SecurityMappingDto validated against allowed values via @IsIn(): Previously accepted any string
-- [x] Removed unsafe `as any` cast on dateFormat in import service: Now uses proper DateFormat type
-
-### Dependency Audit (Feb 2026)
-
-#### npm audit: All three packages (backend, frontend, e2e) report 0 vulnerabilities.
-
-#### Credential & Secret Management: SECURE
-- All sensitive values externalized to environment variables via ConfigService
-- .gitignore properly excludes .env files (only .env.example committed)
-- JWT_SECRET enforces minimum 32-character length at startup
-- Helm/K8s configs use secretRef pattern, no hardcoded secrets
-- All external API URLs use HTTPS
-- Demo credentials (seed.service.ts) are known and documented
-
-#### Fixed
-- [x] axios minimum version bumped to ^1.13.5 in backend and frontend: CVE-2026-25639 (DoS via __proto__ in mergeConfig) affects <=1.13.4. Lockfiles already resolved to 1.13.5 but package.json floor allowed vulnerable 1.13.4
-- [x] @hookform/resolvers upgraded from v3 to v5 (5.2.2): Replaced custom zodResolver wrapper with official resolver that natively supports Zod v4. Extracted z.config({ jitless: true }) CSP config to dedicated zodConfig.ts
-
-#### Action Required
-- [ ] openid-client v5 to v6 migration: v5 EOL is April 30, 2026. v6 is a complete API rewrite (ESM-only, functional API). No CVEs in v5 currently, but security patches end at EOL. Migration requires rewriting the OIDC authentication module
-
-#### Monitoring (no action needed now)
-- [ ] passport ^0.7.0 / passport-jwt ^4.0.1 / passport-local ^1.0.0: All on latest versions but ecosystem shows low maintenance activity (passport-local last released 12 years ago). No CVEs. Deeply embedded in NestJS auth pattern
-- [ ] class-transformer ^0.5.1: Latest version, no CVEs, but inactive maintenance (no releases in 12+ months). Required by NestJS ecosystem
-- [ ] react-hot-toast ^2.6.0: No releases since April 2023. No CVEs. Consider migrating to sonner if React 19 compatibility issues arise
-- [ ] source-map-support ^0.5.21 (dev): Unmaintained (~4 years). Consider replacing with Node.js built-in --enable-source-maps
-
-#### Verified Current (no issues)
-- NestJS ecosystem: All packages on latest (11.x)
-- bcryptjs ^3.0.3: Latest, no CVEs, actively maintained
-- otplib ^13.2.1: Latest major, no CVEs, uses audited crypto deps
-- helmet ^8.1.0: Latest, actively maintained
-- lodash override 4.17.23: Correctly patches CVE-2025-13465 (prototype pollution)
-- typeorm ^0.3.28: Latest, CVE-2025-60542 (SQL injection) only affects MySQL, not PostgreSQL
-- nodemailer ^8.0.1: Latest, CVE-2025-14874 and CVE-2025-13033 patched in v8.x
-- next ^16.1.6: All known CVEs patched (including critical CVE-2025-66478 RCE)
-- react/react-dom ^19.2.4: All known CVEs patched (including CVE-2025-55182 RCE)
-- zod ^4.3.6, zustand ^5.0.11, tailwindcss ^4.1.18: All current
-- All dev dependencies current with no known CVEs
-
-### AI Module Security Audit (Feb 2026)
-
-#### Fixed
-- [x] SSRF via baseUrl: User-supplied baseUrl for Ollama/OpenAI-compatible providers had no validation. Added IsSafeUrl validator that rejects private/internal IPs (127.x, 10.x, 172.16-31.x, 192.168.x, ::1), cloud metadata endpoints (169.254.169.254), .internal/.local hostnames, non-HTTP(S) protocols, and URLs with embedded credentials
-- [x] Uncaught JSON.parse in OpenAI tool arguments: OpenAI provider's completeWithTools parsed tool call arguments with bare JSON.parse, which would throw on malformed LLM output and crash the request. Wrapped in try/catch with empty-object fallback
-- [x] Uncaught JSON.parse in Ollama streaming: Ollama provider's stream method parsed NDJSON lines without try/catch. Malformed chunks from the Ollama server would throw and terminate the stream. Added try/catch with continue
-- [x] No per-user config limit: Users could create unlimited AI provider configurations (DoS/storage abuse). Added MAX_CONFIGS_PER_USER = 10 limit enforced in createConfig
-- [x] Prototype pollution via config DTO: The config field (JSONB) accepted arbitrary nested objects including __proto__/constructor keys. Added IsSafeConfigObject validator that restricts to flat objects with primitive values only (max 20 keys)
-- [x] Error message leakage in testConnection: Raw provider error messages (including internal URLs, API key validation messages, stack traces) were returned to the client. Now logs internally and returns generic message
-- [x] Error message leakage in complete(): When all providers fail, raw error messages from each provider were concatenated and returned to the client. Now logs the details server-side and returns generic message
-- [x] Error message leakage in SSE streaming: The catch block in streamQuery forwarded raw error.message to the SSE event stream. Now logs internally and sends generic error
-- [x] Error message leakage in AI query iterations: Provider errors during tool-use iterations were forwarded to the client. Now logs internally and returns generic message
-- [x] Unbounded priority field: priority had @Min(0) but no upper bound, accepting arbitrarily large integers. Added @Max(100)
-
-#### Verified Secure (no action needed)
-- Authentication: Both AiController and AiQueryController use class-level @UseGuards(AuthGuard("jwt")). All endpoints derive userId from req.user (JWT)
-- Authorization/IDOR: All service methods take userId from JWT and filter queries with userId. No cross-user data access possible
-- MustChangePasswordGuard: Applied globally via APP_GUARD, covers AI endpoints (no @SkipPasswordCheck on AI controllers)
-- SQL injection: All queries in ToolExecutorService use TypeORM QueryBuilder with parameterized bindings (:userId, :startDate, :search, etc.)
-- Rate limiting: AI query endpoints have @Throttle 10 req/min, config creation 10 req/min, test connection 5 req/min. Global 100/min also applies
-- API key encryption: Uses AES-256-GCM with per-encryption random salt via crypto.scryptSync. AI_ENCRYPTION_KEY minimum 32 chars enforced
-- API key exposure: Keys are never returned to client, only masked (last 4 chars) via toResponseDto
-- Input validation: AiQueryDto has @IsString + @MaxLength(2000) + @IsNotEmpty + @SanitizeHtml. All DTO fields have appropriate constraints
-- Tool execution boundary: ToolExecutorService only executes from a fixed allowlist of 6 tool names (switch/case), no dynamic dispatch
-- Tool iteration limit: MAX_ITERATIONS = 5 prevents infinite tool-use loops
-- XSS: Frontend uses React JSX (auto-escaped), no dangerouslySetInnerHTML in AI components
-- Prompt injection defense: System prompt instructs model to only share aggregated data, never individual transaction details. Tools return aggregates only
-- CSRF: Global CsrfGuard covers AI endpoints. Frontend SSE fetch includes X-CSRF-Token header
-- ParseUUIDPipe: Applied to all :id parameters in AI controllers
-
-#### Informational (acceptable risk or design notes)
-- [ ] Prompt injection is an inherent risk with LLM-based features: System prompt rules (e.g., "never reveal individual transaction details") are advisory, not enforceable. A determined user querying their own data can potentially override these via prompt manipulation. Since users can only access their own data, this is an acceptable risk
-- [ ] AI response content is rendered as plain text: If markdown rendering is added later, content sanitization will be needed to prevent stored XSS from LLM outputs
-- [ ] Ollama baseUrl defaults to http://localhost:11434: The default is only used when no explicit config exists. In Docker deployments, this typically points to a sibling container. The SSRF validator does not apply to the env-based AI_DEFAULT_BASE_URL (admin-controlled)
-- [ ] config JSONB field stores provider settings in plaintext: Values like temperature/maxTokens are non-sensitive. If sensitive values are added in future, they should use the encryption service
-
-### Financial Operations Audit (Feb 2026)
-
-#### Fixed (Critical)
-- [x] C1: Cross-user data leakage in split counting: Both getTransactionCount and findAll in categories.service join through the transaction table with userId filter to prevent counting splits belonging to other users
-- [x] C2: Race condition in transfer create: createTransfer wraps all operations (create from/to transactions, link IDs, update balances) in a QueryRunner transaction with commit/rollback
-- [x] C3: Race condition in transfer update: updateTransfer wraps reverse old balances + apply new balances + update records in a QueryRunner transaction
-- [x] C4: Race condition in investment transaction create: create wraps investment record creation, cash transaction creation, holdings update, and balance update in a QueryRunner transaction
-- [x] C5: Race condition in investment transaction update: update wraps reversal of old effects + application of new effects in a QueryRunner transaction
-
-#### Fixed (High)
-- [x] H1: Race condition in investment transaction delete: remove wraps reversal of effects + deletion in a QueryRunner transaction
-- [x] H2: Race condition in transfer delete: removeTransfer wraps balance reversals + deletion of both linked transactions in a QueryRunner transaction
-- [x] H3: Race condition in holdings rebuild: rebuildFromTransactions wraps delete-all + rebuild in a QueryRunner transaction
-- [x] H4: Race condition in transaction create with splits: create wraps transaction creation, split creation, and balance update in a QueryRunner transaction; splits use the same QueryRunner
-- [x] H5: Race condition in split creation loop: createSplits manages its own QueryRunner transaction when no external one is provided, or delegates to the caller's QueryRunner for atomic composition
-
-#### Fixed (Medium)
-- [x] M1: N+1 holdings rebuild individual saves: Batch-saved via single holdingsRepo.save(array)
-- [x] M2: N+1 split creation per-split saves: Regular splits batch-saved; transfer splits remain individual (need linked transactions)
-- [x] M3: N+1 investment transaction account resolution: Replaced per-account findOne loop with batch findByIds
-- [x] M4: N+1 import validation per-entity lookups: Replaced individual findOne with batch find({ where: { id: In(ids) } })
-- [x] M5: N+1 delete transfer split linked transactions: Replaced per-split findOne with batch find
-- [x] M6: Missing index investment_transactions.transaction_id: Added index via migration 019
-- [x] M7: Missing index scheduled_transaction_overrides(scheduled_transaction_id, original_date): Added composite index via migration 019
-- [x] M8: Race condition investment account pair creation: Wrapped in QueryRunner transaction
-
-#### Fixed (Low)
-- [x] L1: N+1 brokerage balance reset: Replaced find+loop+save with single accountsRepository.update()
-- [x] L2: N+1 scheduled transaction auto-post: Post bookkeeping wrapped in QueryRunner transaction for atomicity
-- [x] L3: N+1 per-account balance recalculation: Replaced per-account queries with single SQL using GROUP BY via ANY($1)
-- [x] L4: Missing FK relations on 13 entities: Added @ManyToOne(() => User) + @JoinColumn to Transaction, Account, Category, Payee, ScheduledTransaction, InvestmentTransaction, MonthlyAccountBalance, Budget, BudgetAlert, CustomReport, AiProviderConfig, AiUsageLog, AiInsight
-- [x] L5: @Exclude() without ClassSerializerInterceptor: Registered ClassSerializerInterceptor globally as APP_INTERCEPTOR
-- [x] L6: ProfileSection missing client-side validation: Migrated to Zod + react-hook-form with email/name/password length validation
+See `AUDIT_FINDINGS.md` for the complete audit backlog with prioritized fix phases. Key items:
+- [ ] openid-client v5 to v6 migration (v5 EOL April 30, 2026)
+- [ ] Wrap remaining write operations in QueryRunner transactions
+- [ ] Standardize financial math with integer arithmetic utility
+- [ ] UTC consistency for all date comparisons in crons and budget periods

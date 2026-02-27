@@ -212,7 +212,7 @@ export class CategoriesService {
       let currentParentId: string | null = category.parentId;
       while (currentParentId !== null && effectiveColor === null) {
         const parent = await this.categoriesRepository.findOne({
-          where: { id: currentParentId },
+          where: { id: currentParentId, userId },
           select: ["id", "color", "parentId"],
         });
         if (parent) {
@@ -276,7 +276,7 @@ export class CategoriesService {
     }
 
     const childCount = await this.categoriesRepository.count({
-      where: { parentId: id },
+      where: { parentId: id, userId },
     });
 
     if (childCount > 0) {

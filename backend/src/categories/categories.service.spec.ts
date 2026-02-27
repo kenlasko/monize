@@ -457,6 +457,15 @@ describe("CategoriesService", () => {
       const result = await service.findOne("user-1", "gc");
 
       expect(result.effectiveColor).toBe("#8b5cf6");
+      // Parent chain lookups must include userId for user isolation
+      expect(categoriesRepository.findOne).toHaveBeenNthCalledWith(2, {
+        where: { id: "p", userId: "user-1" },
+        select: ["id", "color", "parentId"],
+      });
+      expect(categoriesRepository.findOne).toHaveBeenNthCalledWith(3, {
+        where: { id: "gp", userId: "user-1" },
+        select: ["id", "color", "parentId"],
+      });
     });
   });
 
@@ -723,6 +732,9 @@ describe("CategoriesService", () => {
       await expect(service.remove("user-1", "cat-1")).rejects.toThrow(
         BadRequestException,
       );
+      expect(categoriesRepository.count).toHaveBeenCalledWith({
+        where: { parentId: "cat-1", userId: "user-1" },
+      });
     });
 
     it("throws NotFoundException when category does not exist", async () => {
