@@ -1,6 +1,10 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useForm } from 'react-hook-form';
+import '@/lib/zodConfig';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -26,6 +30,13 @@ const EXPIRY_OPTIONS = [
   { value: '365', label: '1 year' },
 ];
 
+const createTokenSchema = z.object({
+  name: z.string().min(1, 'Token name is required').max(100, 'Token name must be 100 characters or less'),
+  expiryDays: z.string(),
+});
+
+type CreateTokenFormData = z.infer<typeof createTokenSchema>;
+
 function formatRelativeDate(dateStr: string | null): string {
   if (!dateStr) return 'Never';
   const date = new Date(dateStr);
@@ -46,16 +57,27 @@ export function ApiAccessSection() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [revokeTokenId, setRevokeTokenId] = useState<string | null>(null);
 
-  // Create form state
-  const [newTokenName, setNewTokenName] = useState('');
+  // Scope selection state (managed separately since it's a multi-select toggle)
   const [selectedScopes, setSelectedScopes] = useState<string[]>(['read']);
-  const [expiryDays, setExpiryDays] = useState('');
-  const [isCreating, setIsCreating] = useState(false);
 
   // Show token once state
   const [createdToken, setCreatedToken] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [mcpUrlCopied, setMcpUrlCopied] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    reset: resetForm,
+    formState: { errors },
+  } = useForm<CreateTokenFormData>({
+    resolver: zodResolver(createTokenSchema),
+    defaultValues: {
+      name: '',
+      expiryDays: '',
+    },
+  });
 
   const mcpServerUrl = typeof window !== 'undefined'
     ? `${window.location.origin}${MCP_PATH}`
@@ -76,14 +98,7 @@ export function ApiAccessSection() {
     loadTokens();
   }, [loadTokens]);
 
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!newTokenName.trim()) {
-      toast.error('Token name is required');
-      return;
-    }
-
+  const handleCreate = async (formData: CreateTokenFormData) => {
     if (selectedScopes.length === 0) {
       toast.error('Select at least one scope');
       return;
@@ -92,14 +107,14 @@ export function ApiAccessSection() {
     setIsCreating(true);
     try {
       let expiresAt: string | undefined;
-      if (expiryDays) {
+      if (formData.expiryDays) {
         const date = new Date();
-        date.setDate(date.getDate() + parseInt(expiryDays));
+        date.setDate(date.getDate() + parseInt(formData.expiryDays));
         expiresAt = date.toISOString();
       }
 
       const result = await authApi.createToken({
-        name: newTokenName.trim(),
+        name: formData.name.trim(),
         scopes: selectedScopes.join(','),
         expiresAt,
       });
@@ -117,9 +132,8 @@ export function ApiAccessSection() {
   const handleCloseCreateModal = () => {
     setShowCreateModal(false);
     setCreatedToken(null);
-    setNewTokenName('');
+    resetForm();
     setSelectedScopes(['read']);
-    setExpiryDays('');
     setCopied(false);
   };
 
@@ -320,14 +334,14 @@ export function ApiAccessSection() {
               </div>
             </div>
           ) : (
-            <form onSubmit={handleCreate} className="space-y-4">
+            <form onSubmit={handleSubmit(handleCreate)} className="space-y-4">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                 Create API Token
               </h3>
               <Input
                 label="Token Name"
-                value={newTokenName}
-                onChange={(e) => setNewTokenName(e.target.value)}
+                {...register('name')}
+                error={errors.name?.message}
                 placeholder="e.g., Claude Desktop"
                 maxLength={100}
               />
@@ -364,8 +378,7 @@ export function ApiAccessSection() {
                   Expiration
                 </label>
                 <select
-                  value={expiryDays}
-                  onChange={(e) => setExpiryDays(e.target.value)}
+                  {...register('expiryDays')}
                   className="block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:border-blue-500 focus:ring-blue-500"
                 >
                   {EXPIRY_OPTIONS.map((opt) => (

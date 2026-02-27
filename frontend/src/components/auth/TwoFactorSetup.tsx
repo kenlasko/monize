@@ -1,12 +1,22 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import '@/lib/zodConfig';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import toast from 'react-hot-toast';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { authApi } from '@/lib/auth';
 import { getErrorMessage } from '@/lib/errors';
 import { TwoFactorSetupResponse } from '@/types/auth';
+
+const totpCodeSchema = z.object({
+  code: z.string().length(6, 'Code must be exactly 6 digits').regex(/^\d{6}$/, 'Code must be 6 digits'),
+});
+
+type TotpCodeFormData = z.infer<typeof totpCodeSchema>;
 
 interface TwoFactorSetupProps {
   onComplete: () => void;
@@ -16,10 +26,24 @@ interface TwoFactorSetupProps {
 
 export function TwoFactorSetup({ onComplete, onSkip, isForced }: TwoFactorSetupProps) {
   const [setupData, setSetupData] = useState<TwoFactorSetupResponse | null>(null);
-  const [code, setCode] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const [isSettingUp, setIsSettingUp] = useState(true);
   const [showManualKey, setShowManualKey] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    formState: { isSubmitting },
+  } = useForm<TotpCodeFormData>({
+    resolver: zodResolver(totpCodeSchema),
+    defaultValues: {
+      code: '',
+    },
+  });
+
+  const codeValue = watch('code');
+  const codeRef = register('code');
 
   useEffect(() => {
     const initSetup = async () => {
@@ -35,20 +59,14 @@ export function TwoFactorSetup({ onComplete, onSkip, isForced }: TwoFactorSetupP
     initSetup();
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (code.length !== 6) return;
-
-    setIsLoading(true);
+  const onSubmit = async (formData: TotpCodeFormData) => {
     try {
-      await authApi.confirmSetup2FA(code);
+      await authApi.confirmSetup2FA(formData.code);
       toast.success('Two-factor authentication enabled!');
       onComplete();
     } catch (error) {
       toast.error(getErrorMessage(error, 'Invalid verification code'));
-      setCode('');
-    } finally {
-      setIsLoading(false);
+      setValue('code', '');
     }
   };
 
@@ -108,24 +126,28 @@ export function TwoFactorSetup({ onComplete, onSkip, isForced }: TwoFactorSetupP
         )}
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <Input
           label="Enter the 6-digit code from your app"
           type="text"
           inputMode="numeric"
           autoComplete="one-time-code"
           maxLength={6}
-          value={code}
-          onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
           placeholder="000000"
+          {...codeRef}
+          onChange={(e) => {
+            const filtered = e.target.value.replace(/\D/g, '');
+            e.target.value = filtered;
+            codeRef.onChange(e);
+          }}
         />
 
         <Button
           type="submit"
           variant="primary"
           size="lg"
-          isLoading={isLoading}
-          disabled={code.length !== 6}
+          isLoading={isSubmitting}
+          disabled={codeValue.length !== 6}
           className="w-full"
         >
           Verify and Enable

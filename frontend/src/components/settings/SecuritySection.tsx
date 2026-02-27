@@ -1,6 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import '@/lib/zodConfig';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -13,6 +17,17 @@ import { usePreferencesStore } from '@/store/preferencesStore';
 import { User, UserPreferences, TrustedDevice } from '@/types/auth';
 import { getErrorMessage } from '@/lib/errors';
 
+const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, 'Current password is required').max(128, 'Password must be 128 characters or less'),
+  newPassword: z.string().min(8, 'Password must be at least 8 characters').max(128, 'Password must be 128 characters or less'),
+  confirmPassword: z.string().min(1, 'Please confirm your new password').max(128, 'Password must be 128 characters or less'),
+}).refine((data) => data.newPassword === data.confirmPassword, {
+  message: 'New passwords do not match',
+  path: ['confirmPassword'],
+});
+
+type ChangePasswordFormData = z.infer<typeof changePasswordSchema>;
+
 interface SecuritySectionProps {
   user: User;
   preferences: UserPreferences;
@@ -23,10 +38,19 @@ interface SecuritySectionProps {
 export function SecuritySection({ user, preferences, force2fa, onPreferencesUpdated }: SecuritySectionProps) {
   const updatePreferencesStore = usePreferencesStore((state) => state.updatePreferences);
 
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<ChangePasswordFormData>({
+    resolver: zodResolver(changePasswordSchema),
+    defaultValues: {
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: '',
+    },
+  });
 
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(preferences.twoFactorEnabled);
   const [showTwoFactorSetup, setShowTwoFactorSetup] = useState(false);
@@ -38,33 +62,16 @@ export function SecuritySection({ user, preferences, force2fa, onPreferencesUpda
   const [isLoadingDevices, setIsLoadingDevices] = useState(false);
   const [showRevokeAllConfirm, setShowRevokeAllConfirm] = useState(false);
 
-  const handleChangePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (newPassword !== confirmPassword) {
-      toast.error('New passwords do not match');
-      return;
-    }
-
-    if (newPassword.length < 8) {
-      toast.error('Password must be at least 8 characters');
-      return;
-    }
-
-    setIsChangingPassword(true);
+  const onSubmitPassword = async (formData: ChangePasswordFormData) => {
     try {
       await userSettingsApi.changePassword({
-        currentPassword,
-        newPassword,
+        currentPassword: formData.currentPassword,
+        newPassword: formData.newPassword,
       });
       toast.success('Password changed successfully');
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
+      reset();
     } catch (error) {
       toast.error(getErrorMessage(error, 'Failed to change password'));
-    } finally {
-      setIsChangingPassword(false);
     }
   };
 
@@ -139,33 +146,33 @@ export function SecuritySection({ user, preferences, force2fa, onPreferencesUpda
           </p>
         </div>
       )}
-      <form onSubmit={handleChangePassword}>
+      <form onSubmit={handleSubmit(onSubmitPassword)}>
         <div className="space-y-4">
           <Input
             label="Current Password"
             type="password"
-            value={currentPassword}
-            onChange={(e) => setCurrentPassword(e.target.value)}
+            {...register('currentPassword')}
+            error={errors.currentPassword?.message}
             placeholder="Enter current password"
           />
           <Input
             label="New Password"
             type="password"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
+            {...register('newPassword')}
+            error={errors.newPassword?.message}
             placeholder="Enter new password (min. 8 characters)"
           />
           <Input
             label="Confirm New Password"
             type="password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
+            {...register('confirmPassword')}
+            error={errors.confirmPassword?.message}
             placeholder="Confirm new password"
           />
         </div>
         <div className="mt-4 flex justify-end">
-          <Button type="submit" disabled={isChangingPassword}>
-            {isChangingPassword ? 'Changing...' : 'Change Password'}
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? 'Changing...' : 'Change Password'}
           </Button>
         </div>
       </form>

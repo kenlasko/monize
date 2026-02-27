@@ -1,6 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useForm, Controller } from 'react-hook-form';
+import '@/lib/zodConfig';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { CurrencyInput } from '@/components/ui/CurrencyInput';
@@ -8,9 +11,21 @@ import { getCurrencySymbol } from '@/lib/format';
 import type {
   Budget,
   UpdateBudgetData,
-  BudgetType,
-  BudgetStrategy,
 } from '@/types/budget';
+
+const BUDGET_TYPES = ['MONTHLY', 'ANNUAL', 'PAY_PERIOD'] as const;
+const STRATEGIES = ['FIXED', 'ROLLOVER', 'ZERO_BASED', 'FIFTY_THIRTY_TWENTY'] as const;
+
+const budgetFormSchema = z.object({
+  name: z.string().min(1, 'Budget name is required').max(255, 'Budget name must be 255 characters or less'),
+  description: z.string().max(1000, 'Description must be 1000 characters or less').optional().or(z.literal('')),
+  budgetType: z.enum(BUDGET_TYPES),
+  strategy: z.enum(STRATEGIES),
+  baseIncome: z.number().min(0).optional(),
+  isActive: z.boolean(),
+});
+
+type BudgetFormData = z.infer<typeof budgetFormSchema>;
 
 interface BudgetFormProps {
   budget: Budget;
@@ -19,13 +34,13 @@ interface BudgetFormProps {
   isSaving?: boolean;
 }
 
-const TYPE_OPTIONS: Array<{ value: BudgetType; label: string }> = [
+const TYPE_OPTIONS: Array<{ value: (typeof BUDGET_TYPES)[number]; label: string }> = [
   { value: 'MONTHLY', label: 'Monthly' },
   { value: 'ANNUAL', label: 'Annual' },
   { value: 'PAY_PERIOD', label: 'Pay Period' },
 ];
 
-const STRATEGY_OPTIONS: Array<{ value: BudgetStrategy; label: string }> = [
+const STRATEGY_OPTIONS: Array<{ value: (typeof STRATEGIES)[number]; label: string }> = [
   { value: 'FIXED', label: 'Fixed' },
   { value: 'ROLLOVER', label: 'Rollover' },
   { value: 'ZERO_BASED', label: 'Zero-Based' },
@@ -38,44 +53,49 @@ export function BudgetForm({
   onCancel,
   isSaving = false,
 }: BudgetFormProps) {
-  const [name, setName] = useState(budget.name);
-  const [description, setDescription] = useState(budget.description ?? '');
-  const [budgetType, setBudgetType] = useState<BudgetType>(budget.budgetType);
-  const [strategy, setStrategy] = useState<BudgetStrategy>(budget.strategy);
-  const [baseIncome, setBaseIncome] = useState<number | undefined>(
-    budget.baseIncome !== null ? budget.baseIncome : undefined,
-  );
-  const [isActive, setIsActive] = useState(budget.isActive);
+  const {
+    register,
+    handleSubmit,
+    control,
+    formState: { errors },
+  } = useForm<BudgetFormData>({
+    resolver: zodResolver(budgetFormSchema),
+    defaultValues: {
+      name: budget.name,
+      description: budget.description ?? '',
+      budgetType: budget.budgetType,
+      strategy: budget.strategy,
+      baseIncome: budget.baseIncome !== null ? budget.baseIncome : undefined,
+      isActive: budget.isActive,
+    },
+  });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name.trim()) return;
-
+  const onSubmit = async (formData: BudgetFormData) => {
     const data: UpdateBudgetData = {
-      name: name.trim(),
-      description: description.trim() || undefined,
-      budgetType,
-      strategy,
-      baseIncome: baseIncome ?? undefined,
+      name: formData.name.trim(),
+      description: formData.description?.trim() || undefined,
+      budgetType: formData.budgetType,
+      strategy: formData.strategy,
+      baseIncome: formData.baseIncome ?? undefined,
     };
 
     await onSave(data);
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <Input
         label="Budget Name"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
+        {...register('name')}
+        error={errors.name?.message}
         required
         maxLength={255}
       />
 
       <Input
         label="Description (optional)"
-        value={description}
-        onChange={(e) => setDescription(e.target.value)}
+        {...register('description')}
+        error={errors.description?.message}
         placeholder="Budget description"
       />
 
@@ -84,8 +104,7 @@ export function BudgetForm({
           Budget Type
         </label>
         <select
-          value={budgetType}
-          onChange={(e) => setBudgetType(e.target.value as BudgetType)}
+          {...register('budgetType')}
           className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
         >
           {TYPE_OPTIONS.map((opt) => (
@@ -94,6 +113,9 @@ export function BudgetForm({
             </option>
           ))}
         </select>
+        {errors.budgetType && (
+          <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.budgetType.message}</p>
+        )}
       </div>
 
       <div>
@@ -101,8 +123,7 @@ export function BudgetForm({
           Strategy
         </label>
         <select
-          value={strategy}
-          onChange={(e) => setStrategy(e.target.value as BudgetStrategy)}
+          {...register('strategy')}
           className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
         >
           {STRATEGY_OPTIONS.map((opt) => (
@@ -111,23 +132,32 @@ export function BudgetForm({
             </option>
           ))}
         </select>
+        {errors.strategy && (
+          <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.strategy.message}</p>
+        )}
       </div>
 
-      <CurrencyInput
-        label="Base Income (optional)"
-        value={baseIncome}
-        onChange={setBaseIncome}
-        allowNegative={false}
-        prefix={getCurrencySymbol(budget.currencyCode)}
-        placeholder="Expected monthly income"
+      <Controller
+        name="baseIncome"
+        control={control}
+        render={({ field }) => (
+          <CurrencyInput
+            label="Base Income (optional)"
+            value={field.value}
+            onChange={field.onChange}
+            onBlur={field.onBlur}
+            allowNegative={false}
+            prefix={getCurrencySymbol(budget.currencyCode)}
+            placeholder="Expected monthly income"
+          />
+        )}
       />
 
       <div className="flex items-center gap-2">
         <input
           type="checkbox"
           id="isActive"
-          checked={isActive}
-          onChange={(e) => setIsActive(e.target.checked)}
+          {...register('isActive')}
           className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
         />
         <label
