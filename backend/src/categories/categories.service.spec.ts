@@ -127,7 +127,7 @@ describe("CategoriesService", () => {
         release: jest.fn(),
         manager: {
           update: jest.fn().mockResolvedValue({ affected: 0 }),
-          createQueryBuilder: jest.fn((...args: unknown[]) =>
+          createQueryBuilder: jest.fn((..._args: unknown[]) =>
             createMockQueryBuilder(),
           ),
           save: jest
@@ -902,7 +902,7 @@ describe("CategoriesService", () => {
           .mockResolvedValueOnce({ affected: 1 }), // ScheduledTransaction update
         createQueryBuilder: jest
           .fn()
-          .mockImplementation((...args: unknown[]) => {
+          .mockImplementation((..._args: unknown[]) => {
             createQbCallCount++;
             // Call 1: get user transaction IDs (with entity arg)
             if (createQbCallCount === 1) return txQb;
@@ -953,7 +953,7 @@ describe("CategoriesService", () => {
           .mockResolvedValueOnce({ affected: 0 }), // ScheduledTransaction update
         createQueryBuilder: jest
           .fn()
-          .mockImplementation((...args: unknown[]) => {
+          .mockImplementation((..._args: unknown[]) => {
             createQbCallCount++;
             if (createQbCallCount === 1) return txQb;
             return stQb;
@@ -1000,7 +1000,7 @@ describe("CategoriesService", () => {
           .mockResolvedValueOnce({ affected: 0 }), // ScheduledTransaction update
         createQueryBuilder: jest
           .fn()
-          .mockImplementation((...args: unknown[]) => {
+          .mockImplementation((..._args: unknown[]) => {
             createQbCallCount++;
             if (createQbCallCount === 1) return txQb;
             return stQb;
