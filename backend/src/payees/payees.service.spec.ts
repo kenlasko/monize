@@ -874,9 +874,10 @@ describe("PayeesService", () => {
 
   describe("applyCategorySuggestions", () => {
     it("should bulk update payee categories and return count", async () => {
-      payeesRepository.findOne
-        .mockResolvedValueOnce({ ...mockPayeeNoCategory })
-        .mockResolvedValueOnce({ ...mockPayee });
+      payeesRepository.find.mockResolvedValue([
+        { ...mockPayeeNoCategory },
+        { ...mockPayee },
+      ]);
       categoriesRepository.find.mockResolvedValue([
         { id: "cat-food" },
         { id: "cat-coffee" },
@@ -893,13 +894,18 @@ describe("PayeesService", () => {
       );
 
       expect(result).toEqual({ updated: 2 });
-      expect(payeesRepository.save).toHaveBeenCalledTimes(2);
+      expect(payeesRepository.save).toHaveBeenCalledTimes(1);
+      expect(payeesRepository.save).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({ id: "payee-2", defaultCategoryId: "cat-food" }),
+          expect.objectContaining({ id: "payee-1", defaultCategoryId: "cat-coffee" }),
+        ]),
+      );
     });
 
     it("should skip assignments for payees not belonging to user", async () => {
-      payeesRepository.findOne
-        .mockResolvedValueOnce(null)
-        .mockResolvedValueOnce({ ...mockPayee });
+      // Batch find only returns payees belonging to the user (not "other-user-payee")
+      payeesRepository.find.mockResolvedValue([{ ...mockPayee }]);
       categoriesRepository.find.mockResolvedValue([
         { id: "cat-1" },
         { id: "cat-2" },
@@ -917,10 +923,16 @@ describe("PayeesService", () => {
 
       expect(result).toEqual({ updated: 1 });
       expect(payeesRepository.save).toHaveBeenCalledTimes(1);
+      expect(payeesRepository.save).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({ id: "payee-1", defaultCategoryId: "cat-2" }),
+        ]),
+      );
     });
 
     it("should return zero updated when no valid assignments", async () => {
-      payeesRepository.findOne.mockResolvedValue(null);
+      // Batch find returns empty: no payees match the requested IDs for this user
+      payeesRepository.find.mockResolvedValue([]);
       categoriesRepository.find.mockResolvedValue([{ id: "cat-1" }]);
 
       const result = await service.applyCategorySuggestions(userId, [
@@ -932,15 +944,17 @@ describe("PayeesService", () => {
     });
 
     it("should handle empty assignments array", async () => {
+      payeesRepository.find.mockResolvedValue([]);
+
       const result = await service.applyCategorySuggestions(userId, []);
 
       expect(result).toEqual({ updated: 0 });
-      expect(payeesRepository.findOne).not.toHaveBeenCalled();
+      expect(payeesRepository.save).not.toHaveBeenCalled();
     });
 
     it("should set defaultCategoryId on the payee entity before saving", async () => {
       const payee = { ...mockPayeeNoCategory, defaultCategoryId: null };
-      payeesRepository.findOne.mockResolvedValue(payee);
+      payeesRepository.find.mockResolvedValue([payee]);
       categoriesRepository.find.mockResolvedValue([{ id: "cat-new" }]);
 
       await service.applyCategorySuggestions(userId, [
@@ -949,7 +963,9 @@ describe("PayeesService", () => {
 
       expect(payee.defaultCategoryId).toBe("cat-new");
       expect(payeesRepository.save).toHaveBeenCalledWith(
-        expect.objectContaining({ defaultCategoryId: "cat-new" }),
+        expect.arrayContaining([
+          expect.objectContaining({ defaultCategoryId: "cat-new" }),
+        ]),
       );
     });
   });

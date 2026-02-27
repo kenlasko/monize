@@ -455,9 +455,9 @@ describe("Budget Period Lifecycle Integration", () => {
       // 4 saves for closing period categories + 1 save for the period itself via queryRunner.manager.save
       const qr = mockDataSource.createQueryRunner();
       expect(qr.manager.save).toHaveBeenCalledTimes(5);
-      // 4 saves for next period categories + 1 save for the next period via queryRunner.manager.getRepository().save
+      // 1 batch save for next period categories + 1 save for the next period via queryRunner.manager.getRepository().save
       const repoSave = qr.manager.getRepository().save;
-      expect(repoSave).toHaveBeenCalledTimes(5);
+      expect(repoSave).toHaveBeenCalledTimes(2);
     });
 
     it("respects rollover cap when computing rollover", () => {

@@ -133,6 +133,14 @@ describe("CategoriesService", () => {
           save: jest
             .fn()
             .mockImplementation((_entity: unknown, data: unknown) => data),
+          getRepository: jest.fn().mockReturnValue({
+            create: jest
+              .fn()
+              .mockImplementation((data: unknown) => ({ ...(data as Record<string, unknown>), id: `gen-${Date.now()}-${Math.random()}` })),
+            save: jest
+              .fn()
+              .mockImplementation((data: unknown) => Promise.resolve(data)),
+          }),
         },
       }),
     };
@@ -1173,19 +1181,21 @@ describe("CategoriesService", () => {
     it("imports default categories when user has none", async () => {
       categoriesRepository.count.mockResolvedValue(0);
       let idCounter = 0;
-      categoriesRepository.create.mockImplementation((data) => ({
-        ...data,
+      const qr = mockDataSource.createQueryRunner();
+      const qrRepo = qr.manager.getRepository();
+      qrRepo.create.mockImplementation((data: unknown) => ({
+        ...(data as Record<string, unknown>),
         id: `gen-${++idCounter}`,
       }));
-      categoriesRepository.save.mockImplementation((data) =>
+      qrRepo.save.mockImplementation((data: unknown) =>
         Promise.resolve(data),
       );
 
       const result = await service.importDefaults("user-1");
 
       expect(result.categoriesCreated).toBeGreaterThan(100);
-      expect(categoriesRepository.create).toHaveBeenCalled();
-      expect(categoriesRepository.save).toHaveBeenCalled();
+      expect(qrRepo.create).toHaveBeenCalled();
+      expect(qrRepo.save).toHaveBeenCalled();
     });
 
     it("throws BadRequestException when user already has categories", async () => {
@@ -1199,17 +1209,19 @@ describe("CategoriesService", () => {
     it("creates both income and expense parent categories", async () => {
       categoriesRepository.count.mockResolvedValue(0);
       let idCounter = 0;
-      categoriesRepository.create.mockImplementation((data) => ({
-        ...data,
+      const qr = mockDataSource.createQueryRunner();
+      const qrRepo = qr.manager.getRepository();
+      qrRepo.create.mockImplementation((data: unknown) => ({
+        ...(data as Record<string, unknown>),
         id: `gen-${++idCounter}`,
       }));
-      categoriesRepository.save.mockImplementation((data) =>
+      qrRepo.save.mockImplementation((data: unknown) =>
         Promise.resolve(data),
       );
 
       await service.importDefaults("user-1");
 
-      const createCalls = categoriesRepository.create.mock.calls.map(
+      const createCalls = qrRepo.create.mock.calls.map(
         (c: unknown[]) => c[0],
       );
       const incomeParents = createCalls.filter(
@@ -1226,17 +1238,19 @@ describe("CategoriesService", () => {
     it("sets correct parentId on subcategories", async () => {
       categoriesRepository.count.mockResolvedValue(0);
       let idCounter = 0;
-      categoriesRepository.create.mockImplementation((data) => ({
-        ...data,
+      const qr = mockDataSource.createQueryRunner();
+      const qrRepo = qr.manager.getRepository();
+      qrRepo.create.mockImplementation((data: unknown) => ({
+        ...(data as Record<string, unknown>),
         id: `gen-${++idCounter}`,
       }));
-      categoriesRepository.save.mockImplementation((data) =>
+      qrRepo.save.mockImplementation((data: unknown) =>
         Promise.resolve(data),
       );
 
       await service.importDefaults("user-1");
 
-      const createCalls = categoriesRepository.create.mock.calls.map(
+      const createCalls = qrRepo.create.mock.calls.map(
         (c: unknown[]) => c[0],
       );
       const subcategories = createCalls.filter(

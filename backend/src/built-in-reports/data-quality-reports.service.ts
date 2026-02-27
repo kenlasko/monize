@@ -246,31 +246,51 @@ export class DataQualityReportsService {
     const groups: DuplicateGroup[] = [];
     const processed = new Set<string>();
 
-    // Group transactions by rounded amount so we only compare transactions
-    // that could actually be duplicates (same amount). This reduces the
-    // comparison space from O(n^2) to O(n * k) where k is the size of each
-    // amount group, which is typically very small.
-    const amountGroups = new Map<string, DuplicateTransactionItem[]>();
+    // Group transactions by amount in cents so we only compare transactions
+    // that could actually be duplicates. Since the duplicate threshold is
+    // 0.01, we bucket by Math.floor(amount * 100) and also check the
+    // adjacent bucket (key + 1) to handle boundary cases. This reduces
+    // comparisons from O(n^2) to O(n * k) where k is the group size.
+    const amountBuckets = new Map<number, DuplicateTransactionItem[]>();
     for (const tx of transactions) {
-      const key = tx.amount.toFixed(2);
-      const group = amountGroups.get(key);
-      if (group) {
-        group.push(tx);
+      const key = Math.floor(tx.amount * 100);
+      const bucket = amountBuckets.get(key);
+      if (bucket) {
+        bucket.push(tx);
       } else {
-        amountGroups.set(key, [tx]);
+        amountBuckets.set(key, [tx]);
       }
     }
 
-    for (const [, amountGroup] of amountGroups) {
-      if (amountGroup.length < 2) continue;
+    // Build candidate sets: for each bucket, merge with adjacent bucket
+    const visitedBucketKeys = new Set<number>();
+    const candidateSets: DuplicateTransactionItem[][] = [];
 
-      // Sort by date within each amount group for the early-break optimisation
-      amountGroup.sort((a, b) =>
+    for (const [bucketKey] of amountBuckets) {
+      if (visitedBucketKeys.has(bucketKey)) continue;
+      visitedBucketKeys.add(bucketKey);
+
+      const current = amountBuckets.get(bucketKey) || [];
+      const adjacent = amountBuckets.get(bucketKey + 1) || [];
+
+      if (current.length + adjacent.length < 2) continue;
+
+      // Mark the adjacent bucket as visited so we don't process it again
+      if (adjacent.length > 0) {
+        visitedBucketKeys.add(bucketKey + 1);
+      }
+
+      candidateSets.push([...current, ...adjacent]);
+    }
+
+    for (const candidateGroup of candidateSets) {
+      // Sort by date within each candidate group for the early-break optimisation
+      candidateGroup.sort((a, b) =>
         a.transactionDate.localeCompare(b.transactionDate),
       );
 
-      for (let i = 0; i < amountGroup.length; i++) {
-        const tx1 = amountGroup[i];
+      for (let i = 0; i < candidateGroup.length; i++) {
+        const tx1 = candidateGroup[i];
         if (processed.has(tx1.id)) continue;
 
         const date1 = new Date(tx1.transactionDate);
@@ -278,8 +298,8 @@ export class DataQualityReportsService {
 
         const matches: DuplicateTransactionItem[] = [tx1];
 
-        for (let j = i + 1; j < amountGroup.length; j++) {
-          const tx2 = amountGroup[j];
+        for (let j = i + 1; j < candidateGroup.length; j++) {
+          const tx2 = candidateGroup[j];
           if (processed.has(tx2.id)) continue;
 
           const date2 = new Date(tx2.transactionDate);
@@ -294,6 +314,8 @@ export class DataQualityReportsService {
             if (daysDiff > 7) break;
             continue;
           }
+
+          if (Math.abs(tx1.amount - tx2.amount) > 0.01) continue;
 
           if (checkPayee && payee1 && payee2 && payee1 !== payee2) continue;
 

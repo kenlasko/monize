@@ -513,7 +513,7 @@ describe("PortfolioService", () => {
     });
 
     describe("when holding has zero averageCost", () => {
-      it("sets gainLoss and gainLossPercent to null", async () => {
+      it("computes gainLoss from market value and sets gainLossPercent to null", async () => {
         prefRepository.findOne.mockResolvedValue(mockPref);
         accountsRepository.find.mockResolvedValue([
           mockBrokerageAccount,
@@ -540,8 +540,9 @@ describe("PortfolioService", () => {
 
         expect(result.holdings).toHaveLength(1);
         expect(result.holdings[0].marketValue).toBe(1750);
-        // costBasis is 0, so gainLoss should be null
-        expect(result.holdings[0].gainLoss).toBeNull();
+        // costBasis is 0, gainLoss = marketValue - costBasis = 1750
+        expect(result.holdings[0].gainLoss).toBe(1750);
+        // gainLossPercent is null because dividing by zero costBasis is undefined
         expect(result.holdings[0].gainLossPercent).toBeNull();
       });
     });
