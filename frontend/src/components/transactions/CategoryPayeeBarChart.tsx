@@ -12,7 +12,7 @@ import {
   LabelList,
   Cell,
 } from 'recharts';
-import { format } from 'date-fns';
+import { format, lastDayOfMonth } from 'date-fns';
 import { parseLocalDate } from '@/lib/utils';
 import { MonthlyTotal } from '@/types/transaction';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
@@ -20,6 +20,7 @@ import { useNumberFormat } from '@/hooks/useNumberFormat';
 interface CategoryPayeeBarChartProps {
   data: MonthlyTotal[];
   isLoading: boolean;
+  onMonthClick?: (startDate: string, endDate: string) => void;
 }
 
 interface ChartDataPoint {
@@ -66,6 +67,7 @@ function MonthlyTotalTooltip({
 export function CategoryPayeeBarChart({
   data,
   isLoading,
+  onMonthClick,
 }: CategoryPayeeBarChartProps) {
   const { formatCurrency, formatCurrencyCompact, formatCurrencyAxis } = useNumberFormat();
 
@@ -116,9 +118,6 @@ export function CategoryPayeeBarChart({
     );
   }
 
-  // Determine if totals are predominantly negative (expenses) or positive (income)
-  const predominantlyNegative = chartData.filter(d => d.total < 0).length > chartData.length / 2;
-
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 mb-6">
       <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
@@ -130,6 +129,14 @@ export function CategoryPayeeBarChart({
           <BarChart
             data={chartData}
             margin={{ top: 20, right: 5, left: -10, bottom: 0 }}
+            onClick={onMonthClick ? (state: any) => {
+              const month = state?.activeLabel;
+              if (!month) return;
+              const firstDay = `${month}-01`;
+              const lastDay = format(lastDayOfMonth(parseLocalDate(firstDay)), 'yyyy-MM-dd');
+              onMonthClick(firstDay, lastDay);
+            } : undefined}
+            style={onMonthClick ? { cursor: 'pointer' } : undefined}
           >
             <CartesianGrid
               strokeDasharray="3 3"
@@ -150,7 +157,7 @@ export function CategoryPayeeBarChart({
               tickFormatter={formatCurrencyAxis}
               width={45}
             />
-            <Tooltip content={<MonthlyTotalTooltip formatCurrency={formatCurrencyCompact} />} />
+            <Tooltip content={<MonthlyTotalTooltip formatCurrency={formatCurrency} />} />
             <Bar
               dataKey="absTotal"
               radius={[4, 4, 0, 0]}
@@ -159,7 +166,7 @@ export function CategoryPayeeBarChart({
               {chartData.map((entry, index) => (
                 <Cell
                   key={index}
-                  fill={entry.total >= 0 ? '#22c55e' : '#3b82f6'}
+                  fill={entry.total >= 0 ? '#22c55e' : '#ef4444'}
                 />
               ))}
               <LabelList
@@ -182,7 +189,7 @@ export function CategoryPayeeBarChart({
               className={`font-semibold ${
                 summary.monthlyAvg >= 0
                   ? 'text-green-600 dark:text-green-400'
-                  : predominantlyNegative ? 'text-blue-600 dark:text-blue-400' : 'text-red-600 dark:text-red-400'
+                  : 'text-red-600 dark:text-red-400'
               }`}
             >
               {formatCurrencyCompact(summary.monthlyAvg)}
@@ -194,7 +201,7 @@ export function CategoryPayeeBarChart({
               className={`font-semibold ${
                 summary.total >= 0
                   ? 'text-green-600 dark:text-green-400'
-                  : predominantlyNegative ? 'text-blue-600 dark:text-blue-400' : 'text-red-600 dark:text-red-400'
+                  : 'text-red-600 dark:text-red-400'
               }`}
             >
               {formatCurrencyCompact(summary.total)}

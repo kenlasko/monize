@@ -367,7 +367,12 @@ function TransactionsContent() {
           actions={<Button onClick={handleCreateNew}>+ New Transaction</Button>}
         />
         {filters.filterCategoryIds.length > 0 || filters.filterPayeeIds.length > 0 || filters.filterSearch.length > 0 ? (
-          <CategoryPayeeBarChart data={monthlyTotals} isLoading={isLoading} />
+          <CategoryPayeeBarChart data={monthlyTotals} isLoading={isLoading} onMonthClick={(startDate, endDate) => {
+            filters.isFilterChange.current = true;
+            filters.setFilterStartDate(startDate);
+            filters.setFilterEndDate(endDate);
+            filters.setFilterTimePeriod('custom');
+          }} />
         ) : (
           <BalanceHistoryChart data={dailyBalances} isLoading={isLoading} />
         )}

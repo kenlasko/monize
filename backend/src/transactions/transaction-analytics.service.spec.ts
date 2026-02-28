@@ -452,6 +452,62 @@ describe("TransactionAnalyticsService", () => {
         expect(categoriesRepository.find).not.toHaveBeenCalled();
       });
 
+      it("uses split-aware amounts when category filter joins splits", async () => {
+        categoriesRepository.find.mockResolvedValue([
+          { id: "cat-1", parentId: null },
+        ]);
+
+        await service.getSummary(userId, undefined, undefined, undefined, [
+          "cat-1",
+        ]);
+
+        // Should use COALESCE(splits.amount, transaction.amount) in aggregations
+        expect(mockQueryBuilder.addSelect).toHaveBeenCalledWith(
+          expect.stringContaining(
+            "COALESCE(splits.amount, transaction.amount)",
+          ),
+          "totalIncome",
+        );
+        expect(mockQueryBuilder.addSelect).toHaveBeenCalledWith(
+          expect.stringContaining(
+            "COALESCE(splits.amount, transaction.amount)",
+          ),
+          "totalExpenses",
+        );
+        // Should count distinct transactions to avoid double-counting
+        expect(mockQueryBuilder.addSelect).toHaveBeenCalledWith(
+          "COUNT(DISTINCT transaction.id)",
+          "transactionCount",
+        );
+      });
+
+      it("uses transaction.amount when no category filter is active", async () => {
+        await service.getSummary(userId);
+
+        // Should NOT use COALESCE
+        const addSelectCalls = mockQueryBuilder.addSelect.mock.calls;
+        const coalesceUsed = addSelectCalls.some(
+          (call: unknown[]) =>
+            typeof call[0] === "string" && call[0].includes("COALESCE"),
+        );
+        expect(coalesceUsed).toBe(false);
+      });
+
+      it("uses transaction.amount when only uncategorized/transfer filters are active", async () => {
+        await service.getSummary(userId, undefined, undefined, undefined, [
+          "uncategorized",
+          "transfer",
+        ]);
+
+        // No splits join for category filtering, so should NOT use COALESCE
+        const addSelectCalls = mockQueryBuilder.addSelect.mock.calls;
+        const coalesceUsed = addSelectCalls.some(
+          (call: unknown[]) =>
+            typeof call[0] === "string" && call[0].includes("COALESCE"),
+        );
+        expect(coalesceUsed).toBe(false);
+      });
+
       it("deduplicates category IDs including children", async () => {
         categoriesRepository.find.mockResolvedValue([
           { id: "cat-1", parentId: null },
@@ -912,6 +968,39 @@ describe("TransactionAnalyticsService", () => {
         "monthlyCategoryIds",
         expect.arrayContaining(["cat-1", "cat-child"]),
       );
+    });
+
+    it("uses split-aware amounts when category filter joins splits", async () => {
+      categoriesRepository.find.mockResolvedValue([
+        { id: "cat-1", parentId: null },
+      ]);
+
+      await service.getMonthlyTotals(userId, undefined, undefined, undefined, [
+        "cat-1",
+      ]);
+
+      // Should use COALESCE(splits.amount, transaction.amount)
+      expect(mockQueryBuilder.addSelect).toHaveBeenCalledWith(
+        expect.stringContaining("COALESCE(splits.amount, transaction.amount)"),
+        "total",
+      );
+      // Should count distinct transactions
+      expect(mockQueryBuilder.addSelect).toHaveBeenCalledWith(
+        "COUNT(DISTINCT transaction.id)",
+        "count",
+      );
+    });
+
+    it("uses transaction.amount when no category filter is active", async () => {
+      await service.getMonthlyTotals(userId);
+
+      // Should NOT use COALESCE
+      const addSelectCalls = mockQueryBuilder.addSelect.mock.calls;
+      const coalesceUsed = addSelectCalls.some(
+        (call: unknown[]) =>
+          typeof call[0] === "string" && call[0].includes("COALESCE"),
+      );
+      expect(coalesceUsed).toBe(false);
     });
 
     it("applies payeeIds filter when provided", async () => {

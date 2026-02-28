@@ -1056,6 +1056,30 @@ describe("TransactionsService", () => {
       );
     });
 
+    it("uses separate filterSplits alias for category filtering to preserve all splits in results", async () => {
+      const mockQb = createMockQueryBuilder();
+      mockQb.getManyAndCount.mockResolvedValue([[], 0]);
+      transactionsRepository.createQueryBuilder.mockReturnValue(mockQb);
+      investmentTxRepository.find.mockResolvedValue([]);
+      categoriesRepository.find.mockResolvedValue([
+        { id: "cat-1", parentId: null },
+      ]);
+
+      await service.findAll("user-1", undefined, undefined, undefined, [
+        "cat-1",
+      ]);
+
+      // Should use filterSplits alias (not splits) for WHERE condition
+      // so leftJoinAndSelect on "splits" still loads ALL splits for display
+      expect(mockQb.leftJoin).toHaveBeenCalledWith(
+        "transaction.splits",
+        "filterSplits",
+      );
+      expect(mockQb.andWhere).toHaveBeenCalledWith(
+        expect.stringContaining("filterSplits.categoryId"),
+      );
+    });
+
     it("handles 'uncategorized' special category filter", async () => {
       const mockQb = createMockQueryBuilder();
       mockQb.getManyAndCount.mockResolvedValue([[], 0]);

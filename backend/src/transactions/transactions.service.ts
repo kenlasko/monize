@@ -345,8 +345,11 @@ export class TransactionsService {
       );
 
       if (uniqueCategoryIds.length > 0) {
+        // Use a separate join alias for filtering so the main "splits" join
+        // (leftJoinAndSelect) still loads ALL splits for display purposes.
+        queryBuilder.leftJoin("transaction.splits", "filterSplits");
         conditions.push(
-          "(transaction.categoryId IN (:...filterCategoryIds) OR splits.categoryId IN (:...filterCategoryIds))",
+          "(transaction.categoryId IN (:...filterCategoryIds) OR filterSplits.categoryId IN (:...filterCategoryIds))",
         );
         queryBuilder.setParameter("filterCategoryIds", uniqueCategoryIds);
       }

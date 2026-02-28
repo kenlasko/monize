@@ -78,6 +78,7 @@ export function BudgetCategoryForm({
     },
   });
 
+  // eslint-disable-next-line react-hooks/incompatible-library
   const watchedRolloverType = watch('rolloverType');
 
   const onSubmit = async (formData: BudgetCategoryFormData) => {

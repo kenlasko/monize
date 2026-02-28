@@ -1,24 +1,38 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@/test/render';
-import { YearOverYearReport } from './YearOverYearReport';
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, waitFor, fireEvent } from "@/test/render";
+import { YearOverYearReport } from "./YearOverYearReport";
 
-vi.mock('@/hooks/useNumberFormat', () => ({
+const mockPush = vi.fn();
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: mockPush }),
+}));
+
+vi.mock("@/hooks/useNumberFormat", () => ({
   useNumberFormat: () => ({
     formatCurrencyCompact: (n: number) => `$${n.toFixed(0)}`,
     formatCurrency: (n: number) => `$${n.toFixed(2)}`,
     formatCurrencyAxis: (n: number) => `$${n}`,
-    defaultCurrency: 'CAD',
+    defaultCurrency: "CAD",
   }),
 }));
 
-vi.mock('@/lib/chart-colours', () => ({
-  CHART_COLOURS: ['#3b82f6', '#ef4444', '#22c55e', '#f97316'],
+vi.mock("@/lib/chart-colours", () => ({
+  CHART_COLOURS: ["#3b82f6", "#ef4444", "#22c55e", "#f97316"],
 }));
 
-vi.mock('recharts', () => ({
-  ResponsiveContainer: ({ children }: any) => <div data-testid="responsive-container">{children}</div>,
-  BarChart: ({ children }: any) => <div data-testid="bar-chart">{children}</div>,
-  Bar: () => null,
+vi.mock("recharts", () => ({
+  ResponsiveContainer: ({ children }: any) => (
+    <div data-testid="responsive-container">{children}</div>
+  ),
+  BarChart: ({ children }: any) => (
+    <div data-testid="bar-chart">{children}</div>
+  ),
+  Bar: ({ dataKey, onClick }: any) => (
+    <button
+      data-testid={`bar-${dataKey}`}
+      onClick={() => onClick?.({ name: "Mar" })}
+    />
+  ),
   XAxis: () => null,
   YAxis: () => null,
   CartesianGrid: () => null,
@@ -28,13 +42,13 @@ vi.mock('recharts', () => ({
 
 const mockGetYearOverYear = vi.fn();
 
-vi.mock('@/lib/built-in-reports', () => ({
+vi.mock("@/lib/built-in-reports", () => ({
   builtInReportsApi: {
     getYearOverYear: (...args: any[]) => mockGetYearOverYear(...args),
   },
 }));
 
-vi.mock('@/lib/logger', () => ({
+vi.mock("@/lib/logger", () => ({
   createLogger: () => ({
     error: vi.fn(),
     warn: vi.fn(),
@@ -43,118 +57,175 @@ vi.mock('@/lib/logger', () => ({
   }),
 }));
 
-describe('YearOverYearReport', () => {
+describe("YearOverYearReport", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockPush.mockClear();
   });
 
-  it('shows loading state initially', () => {
+  it("shows loading state initially", () => {
     mockGetYearOverYear.mockReturnValue(new Promise(() => {}));
     render(<YearOverYearReport />);
-    expect(document.querySelector('.animate-pulse')).toBeTruthy();
+    expect(document.querySelector(".animate-pulse")).toBeTruthy();
   });
 
-  it('renders year cards and chart with data', async () => {
+  it("renders year cards and chart with data", async () => {
     mockGetYearOverYear.mockResolvedValue({
       data: [
-        { year: 2024, months: [{ month: 1, expenses: 3000, income: 5000, savings: 2000 }], totals: { income: 50000, expenses: 30000, savings: 20000 } },
-        { year: 2025, months: [{ month: 1, expenses: 3500, income: 5500, savings: 2000 }], totals: { income: 55000, expenses: 35000, savings: 20000 } },
+        {
+          year: 2024,
+          months: [{ month: 1, expenses: 3000, income: 5000, savings: 2000 }],
+          totals: { income: 50000, expenses: 30000, savings: 20000 },
+        },
+        {
+          year: 2025,
+          months: [{ month: 1, expenses: 3500, income: 5500, savings: 2000 }],
+          totals: { income: 55000, expenses: 35000, savings: 20000 },
+        },
       ],
     });
     render(<YearOverYearReport />);
     await waitFor(() => {
-      expect(screen.getByText('2024')).toBeInTheDocument();
+      expect(screen.getByText("2024")).toBeInTheDocument();
     });
-    expect(screen.getByText('2025')).toBeInTheDocument();
+    expect(screen.getByText("2025")).toBeInTheDocument();
   });
 
-  it('renders metric toggle buttons', async () => {
+  it("renders metric toggle buttons", async () => {
     mockGetYearOverYear.mockResolvedValue({ data: [] });
     render(<YearOverYearReport />);
     await waitFor(() => {
-      expect(screen.getByText('expenses')).toBeInTheDocument();
+      expect(screen.getByText("expenses")).toBeInTheDocument();
     });
-    expect(screen.getByText('income')).toBeInTheDocument();
-    expect(screen.getByText('savings')).toBeInTheDocument();
+    expect(screen.getByText("income")).toBeInTheDocument();
+    expect(screen.getByText("savings")).toBeInTheDocument();
   });
 
-  it('renders year comparison table when multiple years', async () => {
+  it("renders year comparison table when multiple years", async () => {
     mockGetYearOverYear.mockResolvedValue({
       data: [
-        { year: 2024, months: [], totals: { income: 50000, expenses: 30000, savings: 20000 } },
-        { year: 2025, months: [], totals: { income: 55000, expenses: 35000, savings: 20000 } },
+        {
+          year: 2024,
+          months: [],
+          totals: { income: 50000, expenses: 30000, savings: 20000 },
+        },
+        {
+          year: 2025,
+          months: [],
+          totals: { income: 55000, expenses: 35000, savings: 20000 },
+        },
       ],
     });
     render(<YearOverYearReport />);
     await waitFor(() => {
-      expect(screen.getByText('Year-over-Year Change')).toBeInTheDocument();
+      expect(screen.getByText("Year-over-Year Change")).toBeInTheDocument();
     });
   });
 
-  it('switches metric toggle to income', async () => {
+  it("switches metric toggle to income", async () => {
     mockGetYearOverYear.mockResolvedValue({
       data: [
-        { year: 2024, months: [{ month: 1, expenses: 3000, income: 5000, savings: 2000 }], totals: { income: 50000, expenses: 30000, savings: 20000 } },
+        {
+          year: 2024,
+          months: [{ month: 1, expenses: 3000, income: 5000, savings: 2000 }],
+          totals: { income: 50000, expenses: 30000, savings: 20000 },
+        },
       ],
     });
     render(<YearOverYearReport />);
     await waitFor(() => {
-      expect(screen.getByText('expenses')).toBeInTheDocument();
+      expect(screen.getByText("expenses")).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByText('income'));
-    expect(screen.getByText('Monthly Income Comparison')).toBeInTheDocument();
+    fireEvent.click(screen.getByText("income"));
+    expect(screen.getByText("Monthly Income Comparison")).toBeInTheDocument();
   });
 
-  it('switches metric toggle to savings', async () => {
+  it("switches metric toggle to savings", async () => {
     mockGetYearOverYear.mockResolvedValue({
       data: [
-        { year: 2024, months: [{ month: 1, expenses: 3000, income: 5000, savings: 2000 }], totals: { income: 50000, expenses: 30000, savings: 20000 } },
+        {
+          year: 2024,
+          months: [{ month: 1, expenses: 3000, income: 5000, savings: 2000 }],
+          totals: { income: 50000, expenses: 30000, savings: 20000 },
+        },
       ],
     });
     render(<YearOverYearReport />);
     await waitFor(() => {
-      expect(screen.getByText('expenses')).toBeInTheDocument();
+      expect(screen.getByText("expenses")).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByText('savings'));
-    expect(screen.getByText('Monthly Savings Comparison')).toBeInTheDocument();
+    fireEvent.click(screen.getByText("savings"));
+    expect(screen.getByText("Monthly Savings Comparison")).toBeInTheDocument();
   });
 
-  it('renders year cards with negative savings in orange', async () => {
+  it("renders year cards with negative savings in orange", async () => {
     mockGetYearOverYear.mockResolvedValue({
       data: [
-        { year: 2024, months: [], totals: { income: 30000, expenses: 40000, savings: -10000 } },
+        {
+          year: 2024,
+          months: [],
+          totals: { income: 30000, expenses: 40000, savings: -10000 },
+        },
       ],
     });
     render(<YearOverYearReport />);
     await waitFor(() => {
-      expect(screen.getByText('2024')).toBeInTheDocument();
+      expect(screen.getByText("2024")).toBeInTheDocument();
     });
-    expect(screen.getByText('Income')).toBeInTheDocument();
-    expect(screen.getByText('Expenses')).toBeInTheDocument();
-    expect(screen.getByText('Net')).toBeInTheDocument();
+    expect(screen.getByText("Income")).toBeInTheDocument();
+    expect(screen.getByText("Expenses")).toBeInTheDocument();
+    expect(screen.getByText("Net")).toBeInTheDocument();
   });
 
-  it('renders year-over-year change percentages', async () => {
+  it("renders year-over-year change percentages", async () => {
     mockGetYearOverYear.mockResolvedValue({
       data: [
-        { year: 2024, months: [], totals: { income: 50000, expenses: 30000, savings: 20000 } },
-        { year: 2025, months: [], totals: { income: 55000, expenses: 25000, savings: 30000 } },
+        {
+          year: 2024,
+          months: [],
+          totals: { income: 50000, expenses: 30000, savings: 20000 },
+        },
+        {
+          year: 2025,
+          months: [],
+          totals: { income: 55000, expenses: 25000, savings: 30000 },
+        },
       ],
     });
     render(<YearOverYearReport />);
     await waitFor(() => {
-      expect(screen.getByText('Year-over-Year Change')).toBeInTheDocument();
+      expect(screen.getByText("Year-over-Year Change")).toBeInTheDocument();
     });
     // The table headers
-    expect(screen.getByText('Metric')).toBeInTheDocument();
-    expect(screen.getByText('2024 vs 2025')).toBeInTheDocument();
+    expect(screen.getByText("Metric")).toBeInTheDocument();
+    expect(screen.getByText("2024 vs 2025")).toBeInTheDocument();
   });
 
-  it('handles API error gracefully', async () => {
-    mockGetYearOverYear.mockRejectedValue(new Error('Network error'));
+  it("handles API error gracefully", async () => {
+    mockGetYearOverYear.mockRejectedValue(new Error("Network error"));
     render(<YearOverYearReport />);
     await waitFor(() => {
-      expect(screen.getByText('expenses')).toBeInTheDocument();
+      expect(screen.getByText("expenses")).toBeInTheDocument();
     });
+  });
+
+  it("navigates to transactions page with month date range on bar click", async () => {
+    mockGetYearOverYear.mockResolvedValue({
+      data: [
+        {
+          year: 2024,
+          months: [{ month: 3, expenses: 3000, income: 5000, savings: 2000 }],
+          totals: { income: 50000, expenses: 30000, savings: 20000 },
+        },
+      ],
+    });
+    render(<YearOverYearReport />);
+    await waitFor(() => {
+      expect(screen.getByTestId("bar-2024")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByTestId("bar-2024"));
+    expect(mockPush).toHaveBeenCalledWith(
+      "/transactions?startDate=2024-03-01&endDate=2024-03-31",
+    );
   });
 });
