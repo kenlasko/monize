@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import {
   LineChart,
   Line,
@@ -11,16 +11,16 @@ import {
   Tooltip,
   ResponsiveContainer,
   Legend,
-} from 'recharts';
-import { format, parseISO, startOfMonth, endOfMonth } from 'date-fns';
-import { builtInReportsApi } from '@/lib/built-in-reports';
-import { MonthlyIncomeExpenseItem } from '@/types/built-in-reports';
-import { useNumberFormat } from '@/hooks/useNumberFormat';
-import { useDateRange } from '@/hooks/useDateRange';
-import { DateRangeSelector } from '@/components/ui/DateRangeSelector';
-import { createLogger } from '@/lib/logger';
+} from "recharts";
+import { format, parseISO, startOfMonth, endOfMonth } from "date-fns";
+import { builtInReportsApi } from "@/lib/built-in-reports";
+import { MonthlyIncomeExpenseItem } from "@/types/built-in-reports";
+import { useNumberFormat } from "@/hooks/useNumberFormat";
+import { useDateRange } from "@/hooks/useDateRange";
+import { DateRangeSelector } from "@/components/ui/DateRangeSelector";
+import { createLogger } from "@/lib/logger";
 
-const logger = createLogger('MonthlySpendingTrendReport');
+const logger = createLogger("MonthlySpendingTrendReport");
 
 interface ChartDataItem {
   name: string;
@@ -34,10 +34,20 @@ interface ChartDataItem {
 
 export function MonthlySpendingTrendReport() {
   const router = useRouter();
-  const { formatCurrencyCompact: formatCurrency, formatCurrencyAxis } = useNumberFormat();
+  const { formatCurrencyCompact: formatCurrency, formatCurrencyAxis } =
+    useNumberFormat();
   const [chartData, setChartData] = useState<ChartDataItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { dateRange, setDateRange, startDate, setStartDate, endDate, setEndDate, resolvedRange, isValid } = useDateRange({ defaultRange: '1y', alignment: 'month' });
+  const {
+    dateRange,
+    setDateRange,
+    startDate,
+    setStartDate,
+    endDate,
+    setEndDate,
+    resolvedRange,
+    isValid,
+  } = useDateRange({ defaultRange: "1y", alignment: "month" });
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
@@ -49,22 +59,24 @@ export function MonthlySpendingTrendReport() {
       });
 
       // Map response to chart data
-      const data: ChartDataItem[] = response.data.map((item: MonthlyIncomeExpenseItem) => {
-        const monthDate = parseISO(item.month + '-01');
-        return {
-          name: format(monthDate, 'MMM'),
-          fullName: format(monthDate, 'MMM yyyy'),
-          Expenses: Math.round(item.expenses),
-          Income: Math.round(item.income),
-          Net: Math.round(item.net),
-          monthStart: format(startOfMonth(monthDate), 'yyyy-MM-dd'),
-          monthEnd: format(endOfMonth(monthDate), 'yyyy-MM-dd'),
-        };
-      });
+      const data: ChartDataItem[] = response.data.map(
+        (item: MonthlyIncomeExpenseItem) => {
+          const monthDate = parseISO(item.month + "-01");
+          return {
+            name: format(monthDate, "MMM"),
+            fullName: format(monthDate, "MMM yyyy"),
+            Expenses: Math.round(item.expenses),
+            Income: Math.round(item.income),
+            Net: Math.round(item.net),
+            monthStart: format(startOfMonth(monthDate), "yyyy-MM-dd"),
+            monthEnd: format(endOfMonth(monthDate), "yyyy-MM-dd"),
+          };
+        },
+      );
 
       setChartData(data);
     } catch (error) {
-      logger.error('Failed to load data:', error);
+      logger.error("Failed to load data:", error);
     } finally {
       setIsLoading(false);
     }
@@ -77,25 +89,44 @@ export function MonthlySpendingTrendReport() {
   const totals = useMemo(() => {
     const totalExpenses = chartData.reduce((sum, m) => sum + m.Expenses, 0);
     const totalIncome = chartData.reduce((sum, m) => sum + m.Income, 0);
-    const avgExpenses = chartData.length > 0 ? totalExpenses / chartData.length : 0;
+    const avgExpenses =
+      chartData.length > 0 ? totalExpenses / chartData.length : 0;
     const avgIncome = chartData.length > 0 ? totalIncome / chartData.length : 0;
     return { totalExpenses, totalIncome, avgExpenses, avgIncome };
   }, [chartData]);
 
-  const handleChartClick = (state: unknown) => {
-    const chartState = state as { activePayload?: Array<{ payload: { monthStart: string; monthEnd: string } }> } | null;
-    if (chartState?.activePayload?.[0]?.payload) {
-      const { monthStart, monthEnd } = chartState.activePayload[0].payload;
+  const handleDotClick = (
+    _event: unknown,
+    payload: { payload?: { monthStart?: string; monthEnd?: string } },
+  ) => {
+    const monthStart = payload?.payload?.monthStart;
+    const monthEnd = payload?.payload?.monthEnd;
+    if (monthStart && monthEnd) {
       router.push(`/transactions?startDate=${monthStart}&endDate=${monthEnd}`);
     }
   };
 
-  const CustomTooltip = ({ active, payload, label: _label }: { active?: boolean; payload?: Array<{ name: string; value: number; color: string; payload?: { fullName?: string } }>; label?: string }) => {
+  const CustomTooltip = ({
+    active,
+    payload,
+    label: _label,
+  }: {
+    active?: boolean;
+    payload?: Array<{
+      name: string;
+      value: number;
+      color: string;
+      payload?: { fullName?: string };
+    }>;
+    label?: string;
+  }) => {
     if (active && payload && payload.length) {
       const data = payload[0]?.payload;
       return (
         <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
-          <p className="font-medium text-gray-900 dark:text-gray-100 mb-1">{data?.fullName}</p>
+          <p className="font-medium text-gray-900 dark:text-gray-100 mb-1">
+            {data?.fullName}
+          </p>
           {payload.map((entry, index) => (
             <p key={index} className="text-sm" style={{ color: entry.color }}>
               {entry.name}: {formatCurrency(entry.value)}
@@ -123,7 +154,7 @@ export function MonthlySpendingTrendReport() {
       {/* Controls */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
         <DateRangeSelector
-          ranges={['6m', '1y', '2y']}
+          ranges={["6m", "1y", "2y"]}
           value={dateRange}
           onChange={setDateRange}
           showCustom
@@ -147,8 +178,6 @@ export function MonthlySpendingTrendReport() {
                 <LineChart
                   data={chartData}
                   margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                  onClick={handleChartClick}
-                  style={{ cursor: 'pointer' }}
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                   <XAxis dataKey="name" tick={{ fontSize: 12 }} />
@@ -163,16 +192,34 @@ export function MonthlySpendingTrendReport() {
                     dataKey="Expenses"
                     stroke="#ef4444"
                     strokeWidth={2}
-                    dot={{ fill: '#ef4444', strokeWidth: 2, cursor: 'pointer' }}
-                    cursor="pointer"
+                    dot={{
+                      fill: "#ef4444",
+                      strokeWidth: 2,
+                      r: 4,
+                      cursor: "pointer",
+                    }}
+                    activeDot={{
+                      r: 6,
+                      cursor: "pointer",
+                      onClick: handleDotClick,
+                    }}
                   />
                   <Line
                     type="monotone"
                     dataKey="Income"
                     stroke="#22c55e"
                     strokeWidth={2}
-                    dot={{ fill: '#22c55e', strokeWidth: 2, cursor: 'pointer' }}
-                    cursor="pointer"
+                    dot={{
+                      fill: "#22c55e",
+                      strokeWidth: 2,
+                      r: 4,
+                      cursor: "pointer",
+                    }}
+                    activeDot={{
+                      r: 6,
+                      cursor: "pointer",
+                      onClick: handleDotClick,
+                    }}
                   />
                 </LineChart>
               </ResponsiveContainer>
@@ -181,25 +228,33 @@ export function MonthlySpendingTrendReport() {
             {/* Summary */}
             <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
               <div>
-                <div className="text-sm text-gray-500 dark:text-gray-400">Total Income</div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">
+                  Total Income
+                </div>
                 <div className="text-lg font-semibold text-green-600 dark:text-green-400">
                   {formatCurrency(totals.totalIncome)}
                 </div>
               </div>
               <div>
-                <div className="text-sm text-gray-500 dark:text-gray-400">Total Expenses</div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">
+                  Total Expenses
+                </div>
                 <div className="text-lg font-semibold text-red-600 dark:text-red-400">
                   {formatCurrency(totals.totalExpenses)}
                 </div>
               </div>
               <div>
-                <div className="text-sm text-gray-500 dark:text-gray-400">Avg Monthly Income</div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">
+                  Avg Monthly Income
+                </div>
                 <div className="text-lg font-semibold text-green-600 dark:text-green-400">
                   {formatCurrency(totals.avgIncome)}
                 </div>
               </div>
               <div>
-                <div className="text-sm text-gray-500 dark:text-gray-400">Avg Monthly Expenses</div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">
+                  Avg Monthly Expenses
+                </div>
                 <div className="text-lg font-semibold text-red-600 dark:text-red-400">
                   {formatCurrency(totals.avgExpenses)}
                 </div>
