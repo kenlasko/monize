@@ -181,9 +181,9 @@ export function UpcomingBills({ scheduledTransactions, isLoading, maxItems }: Up
                     <span className="font-medium text-gray-900 dark:text-gray-100 truncate">
                       {item.name}
                     </span>
-                    {getTypeBadge(type)}
+                    <span className="hidden sm:inline">{getTypeBadge(type)}</span>
                     {!item.autoPost && (
-                      <span className="px-1.5 py-0.5 bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400 text-xs rounded" title="Requires manual posting">
+                      <span className="hidden sm:inline px-1.5 py-0.5 bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400 text-xs rounded" title="Requires manual posting">
                         Manual
                       </span>
                     )}
