@@ -157,7 +157,7 @@ export function UpcomingBills({ scheduledTransactions, isLoading, maxItems }: Up
         >
           {sectionTitle}
         </button>
-        <span className="text-sm text-gray-500 dark:text-gray-400">Per reminder settings</span>
+        <span className="hidden sm:inline text-sm text-gray-500 dark:text-gray-400">Per reminder settings</span>
       </div>
       <div className="space-y-2 sm:space-y-3">
         {visibleItems.map((item) => {
