@@ -105,11 +105,14 @@ export function IncomeVsExpensesReport() {
     if (isValid) loadData();
   }, [isValid, loadData]);
 
-  const handleBarClick = (data: Record<string, unknown>) => {
-    const monthStart = data?.monthStart as string | undefined;
-    const monthEnd = data?.monthEnd as string | undefined;
-    if (monthStart && monthEnd) {
-      router.push(`/transactions?startDate=${monthStart}&endDate=${monthEnd}`);
+  const handleChartClick = (state: any) => {
+    const label = state?.activeLabel;
+    if (!label) return;
+    const item = chartData.find((d) => d.name === label);
+    if (item?.monthStart && item?.monthEnd) {
+      router.push(
+        `/transactions?startDate=${item.monthStart}&endDate=${item.monthEnd}`,
+      );
     }
   };
 
@@ -188,6 +191,8 @@ export function IncomeVsExpensesReport() {
                 <BarChart
                   data={chartData}
                   margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                  onClick={handleChartClick}
+                  style={{ cursor: "pointer" }}
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                   <XAxis dataKey="name" tick={{ fontSize: 12 }} />
@@ -202,22 +207,16 @@ export function IncomeVsExpensesReport() {
                     dataKey="Income"
                     fill="#22c55e"
                     radius={[4, 4, 0, 0]}
-                    cursor="pointer"
-                    onClick={handleBarClick}
                   />
                   <Bar
                     dataKey="Expenses"
                     fill="#ef4444"
                     radius={[4, 4, 0, 0]}
-                    cursor="pointer"
-                    onClick={handleBarClick}
                   />
                   <Bar
                     dataKey="Savings"
                     fill="#3b82f6"
                     radius={[4, 4, 0, 0]}
-                    cursor="pointer"
-                    onClick={handleBarClick}
                   />
                 </BarChart>
               </ResponsiveContainer>
