@@ -95,14 +95,14 @@ export function MonthlySpendingTrendReport() {
     return { totalExpenses, totalIncome, avgExpenses, avgIncome };
   }, [chartData]);
 
-  const handleDotClick = (
-    _event: unknown,
-    payload: { payload?: { monthStart?: string; monthEnd?: string } },
-  ) => {
-    const monthStart = payload?.payload?.monthStart;
-    const monthEnd = payload?.payload?.monthEnd;
-    if (monthStart && monthEnd) {
-      router.push(`/transactions?startDate=${monthStart}&endDate=${monthEnd}`);
+  const handleChartClick = (state: any) => {
+    const label = state?.activeLabel;
+    if (!label) return;
+    const item = chartData.find((d) => d.name === label);
+    if (item?.monthStart && item?.monthEnd) {
+      router.push(
+        `/transactions?startDate=${item.monthStart}&endDate=${item.monthEnd}`,
+      );
     }
   };
 
@@ -178,6 +178,8 @@ export function MonthlySpendingTrendReport() {
                 <LineChart
                   data={chartData}
                   margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                  onClick={handleChartClick}
+                  style={{ cursor: "pointer" }}
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                   <XAxis dataKey="name" tick={{ fontSize: 12 }} />
@@ -192,34 +194,16 @@ export function MonthlySpendingTrendReport() {
                     dataKey="Expenses"
                     stroke="#ef4444"
                     strokeWidth={2}
-                    dot={{
-                      fill: "#ef4444",
-                      strokeWidth: 2,
-                      r: 4,
-                      cursor: "pointer",
-                    }}
-                    activeDot={{
-                      r: 6,
-                      cursor: "pointer",
-                      onClick: handleDotClick,
-                    }}
+                    dot={{ fill: "#ef4444", strokeWidth: 2, r: 4 }}
+                    activeDot={{ r: 6 }}
                   />
                   <Line
                     type="monotone"
                     dataKey="Income"
                     stroke="#22c55e"
                     strokeWidth={2}
-                    dot={{
-                      fill: "#22c55e",
-                      strokeWidth: 2,
-                      r: 4,
-                      cursor: "pointer",
-                    }}
-                    activeDot={{
-                      r: 6,
-                      cursor: "pointer",
-                      onClick: handleDotClick,
-                    }}
+                    dot={{ fill: "#22c55e", strokeWidth: 2, r: 4 }}
+                    activeDot={{ r: 6 }}
                   />
                 </LineChart>
               </ResponsiveContainer>

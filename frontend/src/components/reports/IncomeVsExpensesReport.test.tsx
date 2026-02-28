@@ -37,17 +37,15 @@ vi.mock("recharts", () => ({
   ResponsiveContainer: ({ children }: any) => (
     <div data-testid="responsive-container">{children}</div>
   ),
-  BarChart: ({ children }: any) => (
-    <div data-testid="bar-chart">{children}</div>
+  BarChart: ({ children, onClick }: any) => (
+    <div
+      data-testid="bar-chart"
+      onClick={() => onClick?.({ activeLabel: "Jan" })}
+    >
+      {children}
+    </div>
   ),
-  Bar: ({ onClick, dataKey }: any) => (
-    <button
-      data-testid={`bar-${dataKey}`}
-      onClick={() =>
-        onClick?.({ monthStart: "2024-01-01", monthEnd: "2024-01-31" })
-      }
-    />
-  ),
+  Bar: ({ dataKey }: any) => <div data-testid={`bar-${dataKey}`} />,
   XAxis: () => null,
   YAxis: () => null,
   CartesianGrid: () => null,
@@ -164,7 +162,7 @@ describe("IncomeVsExpensesReport", () => {
     await waitFor(() => {
       expect(screen.getByTestId("bar-chart")).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByTestId("bar-Income"));
+    fireEvent.click(screen.getByTestId("bar-chart"));
     expect(mockPush).toHaveBeenCalledWith(
       "/transactions?startDate=2024-01-01&endDate=2024-01-31",
     );
