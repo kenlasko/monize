@@ -82,7 +82,7 @@ export function AppHeader() {
   };
 
   return (
-    <header className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50">
+    <header className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
       <div className="px-4 sm:px-6 lg:px-12">
         <div className="flex justify-between h-16">
           <div className="flex items-center">

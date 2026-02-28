@@ -6,7 +6,7 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: 'Monize',
     description: 'Track your finances, manage budgets, and monitor investments',
     start_url: '/',
-    display: 'standalone',
+    display: 'fullscreen',
     background_color: '#ffffff',
     theme_color: '#10b981',
     orientation: 'portrait-primary',

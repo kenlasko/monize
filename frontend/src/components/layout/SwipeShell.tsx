@@ -24,7 +24,7 @@ export function SwipeShell({ children }: SwipeShellProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 overflow-x-hidden">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 overflow-x-hidden" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
       <AppHeader />
       <DemoModeBanner />
       <SwipeIndicator currentIndex={currentIndex} totalPages={totalPages} isSwipePage={isSwipePage} />
