@@ -1,5 +1,5 @@
 import { NestFactory } from "@nestjs/core";
-import { ValidationPipe } from "@nestjs/common";
+import { Logger, ValidationPipe } from "@nestjs/common";
 import { SwaggerModule, DocumentBuilder } from "@nestjs/swagger";
 import helmet from "helmet";
 import * as express from "express";
@@ -102,11 +102,12 @@ async function bootstrap() {
     SwaggerModule.setup("api/docs", app, document);
   }
 
+  const logger = new Logger("Bootstrap");
   const port = process.env.PORT || 3001;
   await app.listen(port);
-  console.log(`🚀 Application is running on: http://localhost:${port}`);
+  logger.log(`Application is running on: http://localhost:${port}`);
   if (process.env.NODE_ENV !== "production") {
-    console.log(`📚 API Documentation: http://localhost:${port}/api/docs`);
+    logger.log(`API Documentation: http://localhost:${port}/api/docs`);
   }
 }
 

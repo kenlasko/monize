@@ -66,12 +66,12 @@ describe("HealthController", () => {
       expect(result).toEqual({ status: "ok" });
     });
 
-    it("throws error when database is unhealthy", async () => {
+    it("throws ServiceUnavailableException when database is unhealthy", async () => {
       (mockDataSource.query as jest.Mock).mockRejectedValue(
         new Error("connection failed"),
       );
 
-      await expect(controller.ready()).rejects.toThrow("Database not ready");
+      await expect(controller.ready()).rejects.toThrow("Service not ready");
     });
   });
 });
