@@ -195,7 +195,7 @@ describe("BudgetAlertService", () => {
   });
 
   describe("checkThresholdAlerts", () => {
-    it("returns OVER_BUDGET alert when spending is >= 100%", () => {
+    it("returns OVER_BUDGET alert when spending is > 100%", () => {
       const alerts = service.checkThresholdAlerts({
         budgetCategoryId: "bc-1",
         categoryId: "cat-1",
@@ -310,8 +310,8 @@ describe("BudgetAlertService", () => {
       expect(alerts[0].data.limit).toBe(500);
     });
 
-    it("only returns the most severe applicable alert", () => {
-      // At exactly 100%, only OVER_BUDGET should be returned (not both warning + critical)
+    it("returns THRESHOLD_CRITICAL at exactly 100% (not OVER_BUDGET)", () => {
+      // At exactly 100%, spending equals budget -- not over budget
       const alerts = service.checkThresholdAlerts({
         budgetCategoryId: "bc-1",
         categoryId: "cat-1",
@@ -326,7 +326,8 @@ describe("BudgetAlertService", () => {
       });
 
       expect(alerts).toHaveLength(1);
-      expect(alerts[0].alertType).toBe(AlertType.OVER_BUDGET);
+      expect(alerts[0].alertType).toBe(AlertType.THRESHOLD_CRITICAL);
+      expect(alerts[0].severity).toBe(AlertSeverity.CRITICAL);
     });
   });
 
