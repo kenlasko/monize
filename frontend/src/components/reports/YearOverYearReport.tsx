@@ -267,8 +267,8 @@ export function YearOverYearReport() {
                   radius={[4, 4, 0, 0]}
                   name={`${year}`}
                   cursor="pointer"
-                  onClick={(data: { name: string }) =>
-                    handleBarClick(year, data)
+                  onClick={(data) =>
+                    handleBarClick(year, { name: data.name ?? '' })
                   }
                 />
               ))}
