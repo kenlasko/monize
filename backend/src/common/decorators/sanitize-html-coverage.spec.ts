@@ -9,6 +9,11 @@ import {
   CreateScheduledTransactionOverrideDto,
   UpdateScheduledTransactionOverrideDto,
 } from "../../scheduled-transactions/dto/scheduled-transaction-override.dto";
+import {
+  CategoryMappingDto,
+  AccountMappingDto,
+  SecurityMappingDto,
+} from "../../import/dto/import.dto";
 
 describe("SanitizeHtml coverage on newly protected DTOs", () => {
   describe("CreateCustomReportDto", () => {
@@ -114,6 +119,81 @@ describe("SanitizeHtml coverage on newly protected DTOs", () => {
         description: "<span onclick=alert(1)>click</span>",
       });
       expect(dto.description).toBe("span onclick=alert(1)click/span");
+    });
+  });
+
+  describe("CategoryMappingDto", () => {
+    it("strips HTML from originalName", () => {
+      const dto = plainToInstance(CategoryMappingDto, {
+        originalName: "<script>xss</script>",
+      });
+      expect(dto.originalName).toBe("scriptxss/script");
+    });
+
+    it("strips HTML from createNew", () => {
+      const dto = plainToInstance(CategoryMappingDto, {
+        originalName: "Food",
+        createNew: "<b>Food</b>",
+      });
+      expect(dto.createNew).toBe("bFood/b");
+    });
+
+    it("strips HTML from createNewLoan", () => {
+      const dto = plainToInstance(CategoryMappingDto, {
+        originalName: "Loan",
+        createNewLoan: "<img src=x>Mortgage",
+      });
+      expect(dto.createNewLoan).toBe("img src=xMortgage");
+    });
+
+    it("strips HTML from newLoanInstitution", () => {
+      const dto = plainToInstance(CategoryMappingDto, {
+        originalName: "Loan",
+        newLoanInstitution: "<script>alert(1)</script>",
+      });
+      expect(dto.newLoanInstitution).toBe("scriptalert(1)/script");
+    });
+  });
+
+  describe("AccountMappingDto", () => {
+    it("strips HTML from originalName", () => {
+      const dto = plainToInstance(AccountMappingDto, {
+        originalName: "<div>Chequing</div>",
+      });
+      expect(dto.originalName).toBe("divChequing/div");
+    });
+
+    it("strips HTML from createNew", () => {
+      const dto = plainToInstance(AccountMappingDto, {
+        originalName: "Savings",
+        createNew: "<b>New Savings</b>",
+      });
+      expect(dto.createNew).toBe("bNew Savings/b");
+    });
+  });
+
+  describe("SecurityMappingDto", () => {
+    it("strips HTML from originalName", () => {
+      const dto = plainToInstance(SecurityMappingDto, {
+        originalName: "<script>xss</script>",
+      });
+      expect(dto.originalName).toBe("scriptxss/script");
+    });
+
+    it("strips HTML from createNew", () => {
+      const dto = plainToInstance(SecurityMappingDto, {
+        originalName: "AAPL",
+        createNew: "<b>AAPL</b>",
+      });
+      expect(dto.createNew).toBe("bAAPL/b");
+    });
+
+    it("strips HTML from securityName", () => {
+      const dto = plainToInstance(SecurityMappingDto, {
+        originalName: "AAPL",
+        securityName: "<img src=x>Apple Inc",
+      });
+      expect(dto.securityName).toBe("img src=xApple Inc");
     });
   });
 });

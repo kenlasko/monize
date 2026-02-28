@@ -32,6 +32,13 @@ export function encrypt(text: string, jwtSecret: string): string {
   return `${salt.toString("hex")}:${iv.toString("hex")}:${authTag.toString("hex")}:${encrypted}`;
 }
 
+/**
+ * Returns true if the ciphertext uses the legacy 3-part format (static salt).
+ */
+export function isLegacyEncryption(encryptedText: string): boolean {
+  return encryptedText.split(":").length === 3;
+}
+
 export function decrypt(encryptedText: string, jwtSecret: string): string {
   const parts = encryptedText.split(":");
 
@@ -48,7 +55,10 @@ export function decrypt(encryptedText: string, jwtSecret: string): string {
     authTagHex = parts[2];
     ciphertext = parts[3];
   } else if (parts.length === 3) {
-    // Legacy format: iv:authTag:ciphertext (static salt)
+    // DEPRECATED: Legacy format with static salt -- retained only for backward
+    // compatibility with existing encrypted TOTP secrets. New encryptions always
+    // use the 4-part format with a random per-encryption salt.
+    // Use migrateFromLegacy() to re-encrypt legacy values.
     key = deriveLegacyKey(jwtSecret);
     ivHex = parts[0];
     authTagHex = parts[1];
@@ -66,4 +76,19 @@ export function decrypt(encryptedText: string, jwtSecret: string): string {
   decrypted += decipher.final("utf8");
 
   return decrypted;
+}
+
+/**
+ * Re-encrypt a legacy (static salt) ciphertext using the current format
+ * with a random per-encryption salt. Returns null if already in new format.
+ */
+export function migrateFromLegacy(
+  encryptedText: string,
+  jwtSecret: string,
+): string | null {
+  if (!isLegacyEncryption(encryptedText)) {
+    return null;
+  }
+  const plaintext = decrypt(encryptedText, jwtSecret);
+  return encrypt(plaintext, jwtSecret);
 }

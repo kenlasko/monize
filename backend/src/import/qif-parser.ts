@@ -74,9 +74,17 @@ export type DateFormat =
   | "YYYY-MM-DD"
   | "YYYY-DD-MM";
 
+// Strip HTML angle brackets to prevent stored XSS from QIF content.
+function stripHtml(value: string): string {
+  return value.replace(/[<>]/g, "");
+}
+
 // Truncate a string to a maximum length to match database column limits.
 function truncate(value: string, maxLength: number): string {
-  return value.length > maxLength ? value.substring(0, maxLength) : value;
+  const sanitized = stripHtml(value);
+  return sanitized.length > maxLength
+    ? sanitized.substring(0, maxLength)
+    : sanitized;
 }
 
 // Field length limits matching database column constraints

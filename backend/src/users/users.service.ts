@@ -182,7 +182,7 @@ export class UsersService {
     }
 
     // Hash and save new password
-    const saltRounds = 10;
+    const saltRounds = 12;
     user.passwordHash = await bcrypt.hash(dto.newPassword, saltRounds);
     user.mustChangePassword = false;
     await this.usersRepository.save(user);

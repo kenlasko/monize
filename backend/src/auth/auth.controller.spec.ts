@@ -675,8 +675,9 @@ describe("AuthController", () => {
   describe("csrfRefresh", () => {
     it("sets csrf_token cookie and returns success message", async () => {
       const res = mockRes();
+      const req = { user: { id: "user-1" } };
 
-      await controller.csrfRefresh(res as any);
+      await controller.csrfRefresh(req as any, res as any);
 
       expect(res.cookie).toHaveBeenCalledWith(
         "csrf_token",
@@ -1086,6 +1087,7 @@ describe("AuthController", () => {
       authService.refreshTokens.mockResolvedValue({
         accessToken: "new-access",
         refreshToken: "new-refresh",
+        userId: "user-1",
       });
       const res = mockRes();
       const expressReq = { cookies: { refresh_token: "old-refresh" } } as any;

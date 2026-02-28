@@ -748,4 +748,55 @@ T-20.00
       expect(result.detectedDateFormat).toBe("YYYY-MM-DD");
     });
   });
+
+  describe("HTML sanitization", () => {
+    it("strips HTML angle brackets from payee", () => {
+      const qif = `!Type:Bank
+D01/15/2026
+T-50.00
+P<script>alert(1)</script>
+^`;
+      const result = parseQif(qif);
+      expect(result.transactions[0].payee).toBe("scriptalert(1)/script");
+    });
+
+    it("strips HTML angle brackets from memo", () => {
+      const qif = `!Type:Bank
+D01/15/2026
+T-50.00
+PGrocery
+M<img src=x onerror=alert(1)>
+^`;
+      const result = parseQif(qif);
+      expect(result.transactions[0].memo).toBe("img src=x onerror=alert(1)");
+    });
+
+    it("strips HTML angle brackets from category", () => {
+      const qif = `!Type:Bank
+D01/15/2026
+T-50.00
+PStore
+L<b>Food</b>
+^`;
+      const result = parseQif(qif);
+      expect(result.transactions[0].category).toBe("bFood/b");
+    });
+
+    it("strips HTML angle brackets from split memo", () => {
+      const qif = `!Type:Bank
+D01/15/2026
+T-100.00
+PStore
+SFood
+E<script>xss</script>
+$-60.00
+SClothing
+E<b>memo</b>
+$-40.00
+^`;
+      const result = parseQif(qif);
+      expect(result.transactions[0].splits[0].memo).toBe("scriptxss/script");
+      expect(result.transactions[0].splits[1].memo).toBe("bmemo/b");
+    });
+  });
 });

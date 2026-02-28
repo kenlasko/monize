@@ -81,7 +81,8 @@ export class YahooFinanceService {
       return null;
     } catch (error) {
       this.logger.error(
-        `Failed to fetch Yahoo Finance quote for ${symbol}: ${error.message}`,
+        `Failed to fetch Yahoo Finance quote for ${symbol}`,
+        error instanceof Error ? error.stack : undefined,
       );
       return null;
     }
@@ -161,7 +162,8 @@ export class YahooFinanceService {
       return prices;
     } catch (error) {
       this.logger.error(
-        `Failed to fetch historical prices for ${symbol}: ${error.message}`,
+        `Failed to fetch historical prices for ${symbol}`,
+        error instanceof Error ? error.stack : undefined,
       );
       return null;
     }
@@ -232,7 +234,10 @@ export class YahooFinanceService {
         currencyCode,
       };
     } catch (error) {
-      this.logger.error(`Failed to lookup security: ${error.message}`);
+      this.logger.error(
+        "Failed to lookup security",
+        error instanceof Error ? error.stack : undefined,
+      );
       return null;
     }
   }

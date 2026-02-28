@@ -103,12 +103,14 @@ export class AuthController {
     res: Response,
     accessToken: string,
     refreshToken: string,
+    userId: string,
   ) {
+    const jwtSecret = this.configService.get<string>("JWT_SECRET");
     res.cookie("auth_token", accessToken, this.getAccessCookieOptions());
     res.cookie("refresh_token", refreshToken, this.getRefreshCookieOptions());
     res.cookie(
       "csrf_token",
-      generateCsrfToken(),
+      generateCsrfToken(userId, jwtSecret),
       getCsrfCookieOptions(this.isProduction),
     );
   }
@@ -151,7 +153,12 @@ export class AuthController {
     }
     const result = await this.authService.register(registerDto);
 
-    this.setAuthCookies(res, result.accessToken, result.refreshToken);
+    this.setAuthCookies(
+      res,
+      result.accessToken,
+      result.refreshToken,
+      result.user.id,
+    );
     res.json({ user: result.user });
   }
 
@@ -179,7 +186,12 @@ export class AuthController {
       return res.json({ requires2FA: true, tempToken: result.tempToken });
     }
 
-    this.setAuthCookies(res, result.accessToken!, result.refreshToken!);
+    this.setAuthCookies(
+      res,
+      result.accessToken!,
+      result.refreshToken!,
+      result.user!.id,
+    );
     res.json({ user: result.user });
   }
 
@@ -259,11 +271,14 @@ export class AuthController {
       const { accessToken, refreshToken } =
         await this.authService.generateTokenPair(user);
 
-      this.setAuthCookies(res, accessToken, refreshToken);
+      this.setAuthCookies(res, accessToken, refreshToken, user.id);
       res.redirect(`${frontendUrl}/auth/callback?success=true`);
     } catch (error) {
       // SECURITY: Log detailed error server-side only, don't expose to client
-      this.logger.error("OIDC callback error", error.stack);
+      this.logger.error(
+        "OIDC callback error",
+        error instanceof Error ? error.stack : undefined,
+      );
       // Return generic error message to prevent information disclosure
       res.redirect(`${frontendUrl}/auth/callback?error=authentication_failed`);
     }
@@ -299,10 +314,11 @@ export class AuthController {
   @UseGuards(AuthGuard("jwt"))
   @ApiBearerAuth()
   @ApiOperation({ summary: "Refresh CSRF token cookie" })
-  async csrfRefresh(@Res() res: Response) {
+  async csrfRefresh(@Request() req, @Res() res: Response) {
+    const jwtSecret = this.configService.get<string>("JWT_SECRET");
     res.cookie(
       "csrf_token",
-      generateCsrfToken(),
+      generateCsrfToken(req.user.id, jwtSecret),
       getCsrfCookieOptions(this.isProduction),
     );
     res.json({ message: "CSRF token refreshed" });
@@ -394,7 +410,12 @@ export class AuthController {
       ipAddress,
     );
 
-    this.setAuthCookies(res, result.accessToken, result.refreshToken);
+    this.setAuthCookies(
+      res,
+      result.accessToken,
+      result.refreshToken,
+      result.user.id,
+    );
 
     if (result.trustedDeviceToken) {
       res.cookie("trusted_device", result.trustedDeviceToken, {
@@ -513,7 +534,12 @@ export class AuthController {
 
     try {
       const result = await this.authService.refreshTokens(refreshToken);
-      this.setAuthCookies(res, result.accessToken, result.refreshToken);
+      this.setAuthCookies(
+        res,
+        result.accessToken,
+        result.refreshToken,
+        result.userId,
+      );
       res.json({ message: "Token refreshed" });
     } catch (error) {
       this.clearAuthCookies(res);

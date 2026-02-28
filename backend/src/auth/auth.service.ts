@@ -499,7 +499,7 @@ export class AuthService {
 
   async refreshTokens(
     rawRefreshToken: string,
-  ): Promise<{ accessToken: string; refreshToken: string }> {
+  ): Promise<{ accessToken: string; refreshToken: string; userId: string }> {
     const tokenHash = this.hashToken(rawRefreshToken);
 
     return this.dataSource.transaction(async (manager) => {
@@ -571,7 +571,7 @@ export class AuthService {
         expiresIn: this.ACCESS_TOKEN_EXPIRY,
       });
 
-      return { accessToken, refreshToken: newRawRefreshToken };
+      return { accessToken, refreshToken: newRawRefreshToken, userId: user.id };
     });
   }
 
