@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   LineChart,
   Line,
@@ -11,7 +12,7 @@ import {
   ResponsiveContainer,
   Legend,
 } from 'recharts';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, startOfMonth, endOfMonth } from 'date-fns';
 import { builtInReportsApi } from '@/lib/built-in-reports';
 import { MonthlyIncomeExpenseItem } from '@/types/built-in-reports';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
@@ -27,9 +28,12 @@ interface ChartDataItem {
   Expenses: number;
   Income: number;
   Net: number;
+  monthStart: string;
+  monthEnd: string;
 }
 
 export function MonthlySpendingTrendReport() {
+  const router = useRouter();
   const { formatCurrencyCompact: formatCurrency, formatCurrencyAxis } = useNumberFormat();
   const [chartData, setChartData] = useState<ChartDataItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -53,6 +57,8 @@ export function MonthlySpendingTrendReport() {
           Expenses: Math.round(item.expenses),
           Income: Math.round(item.income),
           Net: Math.round(item.net),
+          monthStart: format(startOfMonth(monthDate), 'yyyy-MM-dd'),
+          monthEnd: format(endOfMonth(monthDate), 'yyyy-MM-dd'),
         };
       });
 
@@ -75,6 +81,14 @@ export function MonthlySpendingTrendReport() {
     const avgIncome = chartData.length > 0 ? totalIncome / chartData.length : 0;
     return { totalExpenses, totalIncome, avgExpenses, avgIncome };
   }, [chartData]);
+
+  const handleChartClick = (state: unknown) => {
+    const chartState = state as { activePayload?: Array<{ payload: { monthStart: string; monthEnd: string } }> } | null;
+    if (chartState?.activePayload?.[0]?.payload) {
+      const { monthStart, monthEnd } = chartState.activePayload[0].payload;
+      router.push(`/transactions?startDate=${monthStart}&endDate=${monthEnd}`);
+    }
+  };
 
   const CustomTooltip = ({ active, payload, label: _label }: { active?: boolean; payload?: Array<{ name: string; value: number; color: string; payload?: { fullName?: string } }>; label?: string }) => {
     if (active && payload && payload.length) {
@@ -130,7 +144,12 @@ export function MonthlySpendingTrendReport() {
           <>
             <div className="h-96">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                <LineChart
+                  data={chartData}
+                  margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                  onClick={handleChartClick}
+                  style={{ cursor: 'pointer' }}
+                >
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                   <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                   <YAxis
@@ -144,14 +163,16 @@ export function MonthlySpendingTrendReport() {
                     dataKey="Expenses"
                     stroke="#ef4444"
                     strokeWidth={2}
-                    dot={{ fill: '#ef4444', strokeWidth: 2 }}
+                    dot={{ fill: '#ef4444', strokeWidth: 2, cursor: 'pointer' }}
+                    cursor="pointer"
                   />
                   <Line
                     type="monotone"
                     dataKey="Income"
                     stroke="#22c55e"
                     strokeWidth={2}
-                    dot={{ fill: '#22c55e', strokeWidth: 2 }}
+                    dot={{ fill: '#22c55e', strokeWidth: 2, cursor: 'pointer' }}
+                    cursor="pointer"
                   />
                 </LineChart>
               </ResponsiveContainer>

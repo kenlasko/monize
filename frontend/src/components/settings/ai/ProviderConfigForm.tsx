@@ -57,6 +57,7 @@ export function ProviderConfigForm({ isOpen, onClose, onSubmit, editConfig }: Pr
     },
   });
 
+  // eslint-disable-next-line react-hooks/incompatible-library
   const provider = watch('provider');
   const needsBaseUrl = provider === 'ollama' || provider === 'openai-compatible';
   const needsApiKey = provider !== 'ollama';

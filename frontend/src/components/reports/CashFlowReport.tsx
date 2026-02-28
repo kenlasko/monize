@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   BarChart,
   Bar,
@@ -12,7 +13,7 @@ import {
   Legend,
   ReferenceLine,
 } from 'recharts';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, startOfMonth, endOfMonth } from 'date-fns';
 import { builtInReportsApi } from '@/lib/built-in-reports';
 import { MonthlyIncomeExpenseItem, CategorySpendingItem, IncomeSourceItem } from '@/types/built-in-reports';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
@@ -28,9 +29,12 @@ interface ChartDataItem {
   Income: number;
   Expenses: number;
   Net: number;
+  monthStart: string;
+  monthEnd: string;
 }
 
 export function CashFlowReport() {
+  const router = useRouter();
   const { formatCurrencyCompact: formatCurrency, formatCurrencyAxis } = useNumberFormat();
   const [monthlyData, setMonthlyData] = useState<ChartDataItem[]>([]);
   const [incomeItems, setIncomeItems] = useState<IncomeSourceItem[]>([]);
@@ -64,6 +68,8 @@ export function CashFlowReport() {
           Income: Math.round(item.income),
           Expenses: Math.round(item.expenses),
           Net: Math.round(item.net),
+          monthStart: format(startOfMonth(monthDate), 'yyyy-MM-dd'),
+          monthEnd: format(endOfMonth(monthDate), 'yyyy-MM-dd'),
         };
       });
 
@@ -85,6 +91,24 @@ export function CashFlowReport() {
   useEffect(() => {
     if (isValid) loadData();
   }, [isValid, loadData]);
+
+  const handleChartClick = (state: unknown) => {
+    const chartState = state as { activePayload?: Array<{ payload: { monthStart: string; monthEnd: string } }> } | null;
+    if (chartState?.activePayload?.[0]?.payload) {
+      const { monthStart, monthEnd } = chartState.activePayload[0].payload;
+      router.push(`/transactions?startDate=${monthStart}&endDate=${monthEnd}`);
+    }
+  };
+
+  const handleCategoryClick = (categoryId: string | null) => {
+    if (!categoryId) return;
+    const { start, end } = resolvedRange;
+    const params = new URLSearchParams();
+    params.set('categoryId', categoryId);
+    if (start) params.set('startDate', start);
+    if (end) params.set('endDate', end);
+    router.push(`/transactions?${params.toString()}`);
+  };
 
   const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: Array<{ name: string; value: number; color: string; payload: { fullName: string } }> }) => {
     if (active && payload && payload.length) {
@@ -173,7 +197,12 @@ export function CashFlowReport() {
         </h3>
         <div className="h-80">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={monthlyData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+            <BarChart
+              data={monthlyData}
+              margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+              onClick={handleChartClick}
+              style={{ cursor: 'pointer' }}
+            >
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
               <XAxis dataKey="name" tick={{ fontSize: 12 }} />
               <YAxis
@@ -183,8 +212,8 @@ export function CashFlowReport() {
               <Tooltip content={<CustomTooltip />} />
               <Legend />
               <ReferenceLine y={0} stroke="#9ca3af" />
-              <Bar dataKey="Income" fill="#22c55e" name="Inflows" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="Expenses" fill="#ef4444" name="Outflows" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="Income" fill="#22c55e" name="Inflows" radius={[4, 4, 0, 0]} cursor="pointer" />
+              <Bar dataKey="Expenses" fill="#ef4444" name="Outflows" radius={[4, 4, 0, 0]} cursor="pointer" />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -204,7 +233,11 @@ export function CashFlowReport() {
               <p className="px-6 py-4 text-gray-500 dark:text-gray-400">No income in this period</p>
             ) : (
               incomeItems.map((item, index) => (
-                <div key={index} className="px-6 py-3 flex items-center justify-between">
+                <div
+                  key={index}
+                  className={`px-6 py-3 flex items-center justify-between ${item.categoryId ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50' : ''}`}
+                  onClick={() => handleCategoryClick(item.categoryId)}
+                >
                   <span className="text-gray-900 dark:text-gray-100">{item.categoryName}</span>
                   <span className="font-medium text-green-600 dark:text-green-400">
                     {formatCurrency(item.total)}
@@ -227,7 +260,11 @@ export function CashFlowReport() {
               <p className="px-6 py-4 text-gray-500 dark:text-gray-400">No expenses in this period</p>
             ) : (
               expenseItems.map((item, index) => (
-                <div key={index} className="px-6 py-3 flex items-center justify-between">
+                <div
+                  key={index}
+                  className={`px-6 py-3 flex items-center justify-between ${item.categoryId ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50' : ''}`}
+                  onClick={() => handleCategoryClick(item.categoryId)}
+                >
                   <span className="text-gray-900 dark:text-gray-100">{item.categoryName}</span>
                   <span className="font-medium text-red-600 dark:text-red-400">
                     {formatCurrency(item.total)}

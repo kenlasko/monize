@@ -39,16 +39,6 @@ export class TransactionAnalyticsService {
   }> {
     const queryBuilder = this.transactionsRepository
       .createQueryBuilder("transaction")
-      .select("transaction.currencyCode", "currencyCode")
-      .addSelect(
-        "SUM(CASE WHEN transaction.amount > 0 THEN transaction.amount ELSE 0 END)",
-        "totalIncome",
-      )
-      .addSelect(
-        "SUM(CASE WHEN transaction.amount < 0 THEN ABS(transaction.amount) ELSE 0 END)",
-        "totalExpenses",
-      )
-      .addSelect("COUNT(*)", "transactionCount")
       .where("transaction.userId = :userId", { userId });
 
     // Join account for investment filtering and uncategorized conditions.
@@ -91,6 +81,8 @@ export class TransactionAnalyticsService {
       });
     }
 
+    let splitsCategoryJoin = false;
+
     if (categoryIds && categoryIds.length > 0) {
       const hasUncategorized = categoryIds.includes("uncategorized");
       const hasTransfer = categoryIds.includes("transfer");
@@ -119,6 +111,7 @@ export class TransactionAnalyticsService {
 
         if (uniqueCategoryIds.length > 0) {
           queryBuilder.leftJoin("transaction.splits", "splits");
+          splitsCategoryJoin = true;
           conditions.push(
             "(transaction.categoryId IN (:...summaryCategoryIds) OR splits.categoryId IN (:...summaryCategoryIds))",
           );
@@ -148,7 +141,27 @@ export class TransactionAnalyticsService {
       );
     }
 
-    queryBuilder.groupBy("transaction.currencyCode");
+    // When category filter joins splits, use the split amount for split
+    // transactions so we only count the matching split, not the full parent.
+    const amountExpr = splitsCategoryJoin
+      ? "COALESCE(splits.amount, transaction.amount)"
+      : "transaction.amount";
+
+    queryBuilder
+      .select("transaction.currencyCode", "currencyCode")
+      .addSelect(
+        `SUM(CASE WHEN ${amountExpr} > 0 THEN ${amountExpr} ELSE 0 END)`,
+        "totalIncome",
+      )
+      .addSelect(
+        `SUM(CASE WHEN ${amountExpr} < 0 THEN ABS(${amountExpr}) ELSE 0 END)`,
+        "totalExpenses",
+      )
+      .addSelect(
+        splitsCategoryJoin ? "COUNT(DISTINCT transaction.id)" : "COUNT(*)",
+        "transactionCount",
+      )
+      .groupBy("transaction.currencyCode");
 
     const rows = await queryBuilder.getRawMany();
 
@@ -202,9 +215,6 @@ export class TransactionAnalyticsService {
   ): Promise<Array<{ month: string; total: number; count: number }>> {
     const queryBuilder = this.transactionsRepository
       .createQueryBuilder("transaction")
-      .select("TO_CHAR(transaction.transactionDate, 'YYYY-MM')", "month")
-      .addSelect("SUM(transaction.amount)", "total")
-      .addSelect("COUNT(*)", "count")
       .where("transaction.userId = :userId", { userId });
 
     queryBuilder.leftJoin("transaction.account", "summaryAccount");
@@ -241,6 +251,8 @@ export class TransactionAnalyticsService {
       });
     }
 
+    let splitsCategoryJoin = false;
+
     if (categoryIds && categoryIds.length > 0) {
       const hasUncategorized = categoryIds.includes("uncategorized");
       const hasTransfer = categoryIds.includes("transfer");
@@ -269,6 +281,7 @@ export class TransactionAnalyticsService {
 
         if (uniqueCategoryIds.length > 0) {
           queryBuilder.leftJoin("transaction.splits", "splits");
+          splitsCategoryJoin = true;
           conditions.push(
             "(transaction.categoryId IN (:...monthlyCategoryIds) OR splits.categoryId IN (:...monthlyCategoryIds))",
           );
@@ -298,7 +311,21 @@ export class TransactionAnalyticsService {
       );
     }
 
-    queryBuilder.groupBy("month").orderBy("month", "ASC");
+    // When category filter joins splits, use the split amount for split
+    // transactions so we only count the matching split, not the full parent.
+    const amountExpr = splitsCategoryJoin
+      ? "COALESCE(splits.amount, transaction.amount)"
+      : "transaction.amount";
+
+    queryBuilder
+      .select("TO_CHAR(transaction.transactionDate, 'YYYY-MM')", "month")
+      .addSelect(`SUM(${amountExpr})`, "total")
+      .addSelect(
+        splitsCategoryJoin ? "COUNT(DISTINCT transaction.id)" : "COUNT(*)",
+        "count",
+      )
+      .groupBy("month")
+      .orderBy("month", "ASC");
 
     const rows = await queryBuilder.getRawMany();
 

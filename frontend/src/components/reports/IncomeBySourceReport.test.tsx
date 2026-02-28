@@ -1,48 +1,59 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@/test/render';
-import { IncomeBySourceReport } from './IncomeBySourceReport';
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, waitFor, fireEvent } from "@/test/render";
+import { IncomeBySourceReport } from "./IncomeBySourceReport";
 
-vi.mock('@/hooks/useNumberFormat', () => ({
+const mockPush = vi.fn();
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: mockPush }),
+}));
+
+vi.mock("@/hooks/useNumberFormat", () => ({
   useNumberFormat: () => ({
     formatCurrencyCompact: (n: number) => `$${n.toFixed(2)}`,
     formatCurrency: (n: number) => `$${n.toFixed(2)}`,
     formatCurrencyAxis: (n: number) => `$${n}`,
-    defaultCurrency: 'CAD',
+    defaultCurrency: "CAD",
   }),
 }));
 
-vi.mock('@/hooks/useDateRange', () => ({
+vi.mock("@/hooks/useDateRange", () => ({
   useDateRange: () => ({
-    dateRange: '1y',
+    dateRange: "1y",
     setDateRange: vi.fn(),
-    startDate: '',
+    startDate: "",
     setStartDate: vi.fn(),
-    endDate: '',
+    endDate: "",
     setEndDate: vi.fn(),
-    resolvedRange: { start: '2024-01-01', end: '2025-01-01' },
+    resolvedRange: { start: "2024-01-01", end: "2025-01-01" },
     isValid: true,
   }),
 }));
 
-vi.mock('@/lib/chart-colours', () => ({
-  CHART_COLOURS_INCOME: ['#22c55e', '#3b82f6', '#8b5cf6'],
+vi.mock("@/lib/chart-colours", () => ({
+  CHART_COLOURS_INCOME: ["#22c55e", "#3b82f6", "#8b5cf6"],
 }));
 
-vi.mock('@/components/ui/DateRangeSelector', () => ({
+vi.mock("@/components/ui/DateRangeSelector", () => ({
   DateRangeSelector: () => <div data-testid="date-range-selector" />,
 }));
 
-vi.mock('@/components/ui/ChartViewToggle', () => ({
+vi.mock("@/components/ui/ChartViewToggle", () => ({
   ChartViewToggle: () => <div data-testid="chart-view-toggle" />,
 }));
 
-vi.mock('recharts', () => ({
-  ResponsiveContainer: ({ children }: any) => <div data-testid="responsive-container">{children}</div>,
-  PieChart: ({ children }: any) => <div data-testid="pie-chart">{children}</div>,
+vi.mock("recharts", () => ({
+  ResponsiveContainer: ({ children }: any) => (
+    <div data-testid="responsive-container">{children}</div>
+  ),
+  PieChart: ({ children }: any) => (
+    <div data-testid="pie-chart">{children}</div>
+  ),
   Pie: () => null,
   Cell: () => null,
   Tooltip: () => null,
-  BarChart: ({ children }: any) => <div data-testid="bar-chart">{children}</div>,
+  BarChart: ({ children }: any) => (
+    <div data-testid="bar-chart">{children}</div>
+  ),
   Bar: () => null,
   XAxis: () => null,
   YAxis: () => null,
@@ -51,13 +62,13 @@ vi.mock('recharts', () => ({
 
 const mockGetIncomeBySource = vi.fn();
 
-vi.mock('@/lib/built-in-reports', () => ({
+vi.mock("@/lib/built-in-reports", () => ({
   builtInReportsApi: {
     getIncomeBySource: (...args: any[]) => mockGetIncomeBySource(...args),
   },
 }));
 
-vi.mock('@/lib/logger', () => ({
+vi.mock("@/lib/logger", () => ({
   createLogger: () => ({
     error: vi.fn(),
     warn: vi.fn(),
@@ -66,92 +77,129 @@ vi.mock('@/lib/logger', () => ({
   }),
 }));
 
-describe('IncomeBySourceReport', () => {
+describe("IncomeBySourceReport", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockPush.mockClear();
   });
 
-  it('shows loading state initially', () => {
+  it("shows loading state initially", () => {
     mockGetIncomeBySource.mockReturnValue(new Promise(() => {}));
     render(<IncomeBySourceReport />);
-    expect(document.querySelector('.animate-pulse')).toBeTruthy();
+    expect(document.querySelector(".animate-pulse")).toBeTruthy();
   });
 
-  it('renders empty state when no data returned', async () => {
+  it("renders empty state when no data returned", async () => {
     mockGetIncomeBySource.mockResolvedValue({
       data: [],
       totalIncome: 0,
     });
     render(<IncomeBySourceReport />);
     await waitFor(() => {
-      expect(screen.getByText('No income data for this period.')).toBeInTheDocument();
+      expect(
+        screen.getByText("No income data for this period."),
+      ).toBeInTheDocument();
     });
   });
 
-  it('renders chart and legend with sample data', async () => {
+  it("renders chart and legend with sample data", async () => {
     mockGetIncomeBySource.mockResolvedValue({
       data: [
-        { categoryId: 'cat-1', categoryName: 'Salary', total: 5000, color: '' },
-        { categoryId: 'cat-2', categoryName: 'Freelance', total: 1000, color: '' },
+        { categoryId: "cat-1", categoryName: "Salary", total: 5000, color: "" },
+        {
+          categoryId: "cat-2",
+          categoryName: "Freelance",
+          total: 1000,
+          color: "",
+        },
       ],
       totalIncome: 6000,
     });
     render(<IncomeBySourceReport />);
     await waitFor(() => {
-      expect(screen.getByText('Salary')).toBeInTheDocument();
+      expect(screen.getByText("Salary")).toBeInTheDocument();
     });
-    expect(screen.getByText('Freelance')).toBeInTheDocument();
-    expect(screen.getByText('Total Income')).toBeInTheDocument();
-    expect(screen.getByText('$6000.00')).toBeInTheDocument();
+    expect(screen.getByText("Freelance")).toBeInTheDocument();
+    expect(screen.getByText("Total Income")).toBeInTheDocument();
+    expect(screen.getByText("$6000.00")).toBeInTheDocument();
   });
 
-  it('renders controls', async () => {
+  it("renders controls", async () => {
     mockGetIncomeBySource.mockResolvedValue({ data: [], totalIncome: 0 });
     render(<IncomeBySourceReport />);
     await waitFor(() => {
-      expect(screen.getByTestId('date-range-selector')).toBeInTheDocument();
+      expect(screen.getByTestId("date-range-selector")).toBeInTheDocument();
     });
-    expect(screen.getByTestId('chart-view-toggle')).toBeInTheDocument();
+    expect(screen.getByTestId("chart-view-toggle")).toBeInTheDocument();
   });
 
-  it('renders categories with provided colors', async () => {
+  it("renders categories with provided colors", async () => {
     mockGetIncomeBySource.mockResolvedValue({
       data: [
-        { categoryId: 'cat-1', categoryName: 'Salary', total: 5000, color: '#00ff00' },
-        { categoryId: '', categoryName: 'Other', total: 500, color: '' },
+        {
+          categoryId: "cat-1",
+          categoryName: "Salary",
+          total: 5000,
+          color: "#00ff00",
+        },
+        { categoryId: "", categoryName: "Other", total: 500, color: "" },
       ],
       totalIncome: 5500,
     });
     render(<IncomeBySourceReport />);
     await waitFor(() => {
-      expect(screen.getByText('Salary')).toBeInTheDocument();
+      expect(screen.getByText("Salary")).toBeInTheDocument();
     });
-    expect(screen.getByText('Other')).toBeInTheDocument();
+    expect(screen.getByText("Other")).toBeInTheDocument();
     // The Other button should be disabled (no categoryId)
-    const otherButton = screen.getByText('Other').closest('button');
+    const otherButton = screen.getByText("Other").closest("button");
     expect(otherButton).toBeDisabled();
   });
 
-  it('shows percentages in legend', async () => {
+  it("shows percentages in legend", async () => {
     mockGetIncomeBySource.mockResolvedValue({
       data: [
-        { categoryId: 'cat-1', categoryName: 'Salary', total: 8000, color: '' },
-        { categoryId: 'cat-2', categoryName: 'Freelance', total: 2000, color: '' },
+        { categoryId: "cat-1", categoryName: "Salary", total: 8000, color: "" },
+        {
+          categoryId: "cat-2",
+          categoryName: "Freelance",
+          total: 2000,
+          color: "",
+        },
       ],
       totalIncome: 10000,
     });
     render(<IncomeBySourceReport />);
     await waitFor(() => {
-      expect(screen.getByText('$8000.00 (80.0%)')).toBeInTheDocument();
+      expect(screen.getByText("$8000.00 (80.0%)")).toBeInTheDocument();
     });
-    expect(screen.getByText('$2000.00 (20.0%)')).toBeInTheDocument();
+    expect(screen.getByText("$2000.00 (20.0%)")).toBeInTheDocument();
   });
 
-  it('handles API error gracefully', async () => {
-    mockGetIncomeBySource.mockRejectedValue(new Error('Network error'));
+  it("handles API error gracefully", async () => {
+    mockGetIncomeBySource.mockRejectedValue(new Error("Network error"));
     render(<IncomeBySourceReport />);
     await waitFor(() => {
-      expect(screen.getByText('No income data for this period.')).toBeInTheDocument();
+      expect(
+        screen.getByText("No income data for this period."),
+      ).toBeInTheDocument();
     });
+  });
+
+  it("navigates to transactions page on category legend click", async () => {
+    mockGetIncomeBySource.mockResolvedValue({
+      data: [
+        { categoryId: "cat-1", categoryName: "Salary", total: 5000, color: "" },
+      ],
+      totalIncome: 5000,
+    });
+    render(<IncomeBySourceReport />);
+    await waitFor(() => {
+      expect(screen.getByText("Salary")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText("Salary"));
+    expect(mockPush).toHaveBeenCalledWith(
+      "/transactions?categoryId=cat-1&startDate=2024-01-01&endDate=2025-01-01",
+    );
   });
 });

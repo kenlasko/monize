@@ -1,6 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@/test/render';
+import { render, screen, waitFor, fireEvent } from '@/test/render';
 import { MonthlySpendingTrendReport } from './MonthlySpendingTrendReport';
+
+const mockPush = vi.fn();
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: mockPush }),
+}));
 
 vi.mock('@/hooks/useNumberFormat', () => ({
   useNumberFormat: () => ({
@@ -30,7 +35,13 @@ vi.mock('@/components/ui/DateRangeSelector', () => ({
 
 vi.mock('recharts', () => ({
   ResponsiveContainer: ({ children }: any) => <div data-testid="responsive-container">{children}</div>,
-  LineChart: ({ children }: any) => <div data-testid="line-chart">{children}</div>,
+  LineChart: ({ children, onClick }: any) => (
+    <div data-testid="line-chart" onClick={() => onClick?.({
+      activePayload: [{ payload: { monthStart: '2024-01-01', monthEnd: '2024-01-31' } }],
+    })}>
+      {children}
+    </div>
+  ),
   Line: () => null,
   XAxis: () => null,
   YAxis: () => null,
@@ -59,6 +70,7 @@ vi.mock('@/lib/logger', () => ({
 describe('MonthlySpendingTrendReport', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockPush.mockClear();
   });
 
   it('shows loading state initially', () => {
@@ -119,5 +131,21 @@ describe('MonthlySpendingTrendReport', () => {
     await waitFor(() => {
       expect(screen.getByText('No data for this period.')).toBeInTheDocument();
     });
+  });
+
+  it('navigates to transactions page with date range on chart click', async () => {
+    mockGetIncomeVsExpenses.mockResolvedValue({
+      data: [
+        { month: '2024-01', income: 5000, expenses: 3000, net: 2000 },
+      ],
+    });
+    render(<MonthlySpendingTrendReport />);
+    await waitFor(() => {
+      expect(screen.getByTestId('line-chart')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByTestId('line-chart'));
+    expect(mockPush).toHaveBeenCalledWith(
+      '/transactions?startDate=2024-01-01&endDate=2024-01-31',
+    );
   });
 });
