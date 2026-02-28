@@ -684,9 +684,9 @@ describe("YahooFinanceService", () => {
       const result = service.getTradingDate(quote);
 
       expect(result).toBeInstanceOf(Date);
-      expect(result.getHours()).toBe(0);
-      expect(result.getMinutes()).toBe(0);
-      expect(result.getSeconds()).toBe(0);
+      expect(result.getUTCHours()).toBe(0);
+      expect(result.getUTCMinutes()).toBe(0);
+      expect(result.getUTCSeconds()).toBe(0);
     });
 
     it("should return today for weekday when regularMarketTime is missing", () => {
@@ -697,7 +697,7 @@ describe("YahooFinanceService", () => {
       const result = service.getTradingDate(quote);
 
       expect(result).toBeInstanceOf(Date);
-      expect(result.getHours()).toBe(0);
+      expect(result.getUTCHours()).toBe(0);
 
       // The date should be adjusted if it falls on weekend
       const day = result.getDay();

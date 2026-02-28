@@ -1382,9 +1382,9 @@ describe("SecurityPriceService", () => {
 
       await service.refreshAllPrices();
 
-      // The trading date should be derived from the timestamp
+      // The trading date should be derived from the timestamp (zeroed in UTC)
       const expectedDate = new Date(1748800000 * 1000);
-      expectedDate.setHours(0, 0, 0, 0);
+      expectedDate.setUTCHours(0, 0, 0, 0);
 
       expect(securityPriceRepository.create).toHaveBeenCalledWith(
         expect.objectContaining({

@@ -5,6 +5,7 @@ import * as bcrypt from "bcryptjs";
 
 import { DemoModeService } from "../common/demo-mode.service";
 import { DemoSeedService } from "./demo-seed.service";
+import { INTRADAY_TEMPLATES } from "./demo-seed-data/intraday-templates";
 
 @Injectable()
 export class DemoResetService {
@@ -167,6 +168,131 @@ export class DemoResetService {
       if (!queryRunner.isReleased) {
         await queryRunner.release();
       }
+    }
+  }
+
+  @Cron("0 */3 * * *") // Every 3 hours
+  async generateIntradayTransactions(): Promise<void> {
+    if (!this.demoModeService.isDemo) return;
+
+    this.logger.log("Generating intra-day demo transactions...");
+
+    try {
+      const [demoUser] = await this.dataSource.query(
+        "SELECT id FROM users WHERE email = 'demo@monize.com'",
+      );
+      if (!demoUser) return;
+
+      const userId = demoUser.id;
+      const now = new Date();
+      const today = now.toISOString().split("T")[0];
+
+      // Deterministic RNG seeded by date + hour (same window = same output)
+      const seedStr = `${today}-${now.getUTCHours()}`;
+      let seed = 0;
+      for (let i = 0; i < seedStr.length; i++) {
+        seed = ((seed << 5) - seed + seedStr.charCodeAt(i)) & 0xffffffff;
+      }
+      const rand = () => {
+        seed = (seed * 1664525 + 1013904223) & 0xffffffff;
+        return (seed >>> 0) / 0xffffffff;
+      };
+
+      const accountNameMap: Record<string, string> = {
+        chequing: "Primary Chequing",
+        visa: "Visa Rewards",
+        mastercard: "Mastercard",
+      };
+
+      const count = 1 + Math.floor(rand() * 2); // 1 or 2 transactions
+
+      for (let i = 0; i < count; i++) {
+        const template =
+          INTRADAY_TEMPLATES[Math.floor(rand() * INTRADAY_TEMPLATES.length)];
+
+        const amount =
+          -Math.round(
+            (template.minAmount +
+              rand() * (template.maxAmount - template.minAmount)) *
+              100,
+          ) / 100;
+
+        // Look up account
+        const accountName = accountNameMap[template.accountKey];
+        const [account] = await this.dataSource.query(
+          "SELECT id FROM accounts WHERE user_id = $1 AND name = $2",
+          [userId, accountName],
+        );
+        if (!account) continue;
+
+        // Deduplicate: skip if this exact transaction already exists
+        const [existing] = await this.dataSource.query(
+          `SELECT COUNT(*) as count FROM transactions
+           WHERE user_id = $1 AND transaction_date = $2
+             AND payee_name = $3 AND amount = $4`,
+          [userId, today, template.payeeName, amount],
+        );
+        if (parseInt(existing.count) > 0) continue;
+
+        // Look up payee
+        const [payee] = await this.dataSource.query(
+          "SELECT id FROM payees WHERE user_id = $1 AND name = $2",
+          [userId, template.payeeName],
+        );
+
+        // Look up category (handle "Parent > Child" path)
+        let categoryId: string | null = null;
+        const parts = template.categoryPath.split(" > ");
+        if (parts.length === 2) {
+          const [cat] = await this.dataSource.query(
+            `SELECT c.id FROM categories c
+             JOIN categories p ON c.parent_id = p.id
+             WHERE c.user_id = $1 AND p.name = $2 AND c.name = $3`,
+            [userId, parts[0], parts[1]],
+          );
+          categoryId = cat?.id || null;
+        } else {
+          const [cat] = await this.dataSource.query(
+            "SELECT id FROM categories WHERE user_id = $1 AND name = $2 AND parent_id IS NULL",
+            [userId, parts[0]],
+          );
+          categoryId = cat?.id || null;
+        }
+
+        // Insert transaction
+        await this.dataSource.query(
+          `INSERT INTO transactions (
+            user_id, account_id, transaction_date, payee_id, payee_name,
+            category_id, amount, currency_code, description,
+            is_cleared, is_reconciled, status
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'CAD', $8, false, false, 'UNRECONCILED')`,
+          [
+            userId,
+            account.id,
+            today,
+            payee?.id || null,
+            template.payeeName,
+            categoryId,
+            amount,
+            template.description,
+          ],
+        );
+
+        // Update account balance
+        await this.dataSource.query(
+          "UPDATE accounts SET current_balance = current_balance + $1 WHERE id = $2",
+          [amount, account.id],
+        );
+
+        this.logger.log(
+          `Added intra-day transaction: ${template.payeeName} $${Math.abs(amount).toFixed(2)}`,
+        );
+      }
+    } catch (error) {
+      this.logger.error(
+        "Intra-day transaction generation failed",
+        error instanceof Error ? error.stack : String(error),
+      );
     }
   }
 }

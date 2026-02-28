@@ -10,7 +10,7 @@ jest.mock("bcryptjs", () => ({
 
 describe("DemoResetService", () => {
   let service: DemoResetService;
-  let dataSource: { createQueryRunner: jest.Mock };
+  let dataSource: { createQueryRunner: jest.Mock; query: jest.Mock };
   let demoSeedService: { seedDemoData: jest.Mock };
   let demoModeService: { isDemo: boolean };
   let queryRunner: Record<string, jest.Mock>;
@@ -27,6 +27,7 @@ describe("DemoResetService", () => {
 
     dataSource = {
       createQueryRunner: jest.fn().mockReturnValue(queryRunner),
+      query: jest.fn().mockResolvedValue([]),
     };
 
     demoSeedService = {
@@ -165,6 +166,186 @@ describe("DemoResetService", () => {
       await service.resetDemoData();
 
       expect(callOrder).toEqual(["commit", "reseed"]);
+    });
+  });
+
+  describe("generateIntradayTransactions", () => {
+    it("does nothing when demo mode is disabled", async () => {
+      demoModeService.isDemo = false;
+
+      await service.generateIntradayTransactions();
+
+      expect(dataSource.query).not.toHaveBeenCalled();
+    });
+
+    it("returns early if demo user not found", async () => {
+      dataSource.query.mockResolvedValue([]);
+
+      await service.generateIntradayTransactions();
+
+      // Only the user lookup query should have been called
+      expect(dataSource.query).toHaveBeenCalledTimes(1);
+      expect(dataSource.query.mock.calls[0][0]).toContain(
+        "SELECT id FROM users",
+      );
+    });
+
+    describe("when demo user exists", () => {
+      beforeEach(() => {
+        dataSource.query.mockImplementation((sql: string) => {
+          if (sql.includes("SELECT id FROM users")) {
+            return Promise.resolve([{ id: "demo-user-id" }]);
+          }
+          if (sql.includes("SELECT id FROM accounts")) {
+            return Promise.resolve([{ id: "account-123" }]);
+          }
+          if (sql.includes("SELECT COUNT")) {
+            return Promise.resolve([{ count: "0" }]);
+          }
+          if (sql.includes("SELECT id FROM payees")) {
+            return Promise.resolve([{ id: "payee-456" }]);
+          }
+          if (sql.includes("SELECT c.id FROM categories")) {
+            return Promise.resolve([{ id: "cat-789" }]);
+          }
+          if (sql.includes("SELECT id FROM categories")) {
+            return Promise.resolve([{ id: "cat-789" }]);
+          }
+          return Promise.resolve([]);
+        });
+      });
+
+      it("inserts transactions with correct fields", async () => {
+        await service.generateIntradayTransactions();
+
+        const insertCalls = dataSource.query.mock.calls.filter(
+          (call: string[]) => call[0].includes("INSERT INTO transactions"),
+        );
+
+        expect(insertCalls.length).toBeGreaterThanOrEqual(1);
+        expect(insertCalls.length).toBeLessThanOrEqual(2);
+
+        const [sql, params] = insertCalls[0];
+        expect(sql).toContain("user_id");
+        expect(sql).toContain("account_id");
+        expect(sql).toContain("transaction_date");
+        expect(sql).toContain("UNRECONCILED");
+        expect(params[0]).toBe("demo-user-id");
+        expect(params[1]).toBe("account-123");
+        // Amount should be negative (expense)
+        expect(params[6]).toBeLessThan(0);
+      });
+
+      it("updates account balance after each insert", async () => {
+        await service.generateIntradayTransactions();
+
+        const insertCalls = dataSource.query.mock.calls.filter(
+          (call: string[]) => call[0].includes("INSERT INTO transactions"),
+        );
+        const balanceCalls = dataSource.query.mock.calls.filter(
+          (call: string[]) =>
+            call[0].includes("UPDATE accounts SET current_balance"),
+        );
+
+        expect(balanceCalls.length).toBe(insertCalls.length);
+
+        // Balance update amount should match the inserted transaction amount
+        for (let i = 0; i < insertCalls.length; i++) {
+          const insertedAmount = insertCalls[i][1][6];
+          const balanceAmount = balanceCalls[i][1][0];
+          expect(balanceAmount).toBe(insertedAmount);
+        }
+      });
+
+      it("skips duplicate transactions", async () => {
+        dataSource.query.mockImplementation((sql: string) => {
+          if (sql.includes("SELECT id FROM users")) {
+            return Promise.resolve([{ id: "demo-user-id" }]);
+          }
+          if (sql.includes("SELECT id FROM accounts")) {
+            return Promise.resolve([{ id: "account-123" }]);
+          }
+          if (sql.includes("SELECT COUNT")) {
+            // Simulate existing transaction
+            return Promise.resolve([{ count: "1" }]);
+          }
+          return Promise.resolve([]);
+        });
+
+        await service.generateIntradayTransactions();
+
+        const insertCalls = dataSource.query.mock.calls.filter(
+          (call: string[]) => call[0].includes("INSERT INTO transactions"),
+        );
+        expect(insertCalls.length).toBe(0);
+      });
+
+      it("skips when account not found", async () => {
+        dataSource.query.mockImplementation((sql: string) => {
+          if (sql.includes("SELECT id FROM users")) {
+            return Promise.resolve([{ id: "demo-user-id" }]);
+          }
+          if (sql.includes("SELECT id FROM accounts")) {
+            return Promise.resolve([]); // No account found
+          }
+          return Promise.resolve([]);
+        });
+
+        await service.generateIntradayTransactions();
+
+        const insertCalls = dataSource.query.mock.calls.filter(
+          (call: string[]) => call[0].includes("INSERT INTO transactions"),
+        );
+        expect(insertCalls.length).toBe(0);
+      });
+
+      it("produces deterministic output for the same time window", async () => {
+        await service.generateIntradayTransactions();
+        const firstRunInserts = dataSource.query.mock.calls
+          .filter((call: string[]) =>
+            call[0].includes("INSERT INTO transactions"),
+          )
+          .map((call: unknown[]) => (call[1] as unknown[])[4]); // payee_name
+
+        // Reset and run again — dedup will skip, but the template selection is the same
+        // Verify by checking the dedup queries use the same payee names
+        dataSource.query.mockClear();
+        dataSource.query.mockImplementation((sql: string) => {
+          if (sql.includes("SELECT id FROM users")) {
+            return Promise.resolve([{ id: "demo-user-id" }]);
+          }
+          if (sql.includes("SELECT id FROM accounts")) {
+            return Promise.resolve([{ id: "account-123" }]);
+          }
+          if (sql.includes("SELECT COUNT")) {
+            return Promise.resolve([{ count: "1" }]); // Already exists
+          }
+          return Promise.resolve([]);
+        });
+
+        await service.generateIntradayTransactions();
+
+        const dedupPayees = dataSource.query.mock.calls
+          .filter((call: string[]) => call[0].includes("SELECT COUNT"))
+          .map((call: unknown[]) => (call[1] as unknown[])[2]); // payee_name
+
+        // Same templates should be selected both times
+        expect(dedupPayees).toEqual(firstRunInserts);
+      });
+    });
+
+    it("does not throw on database error", async () => {
+      dataSource.query.mockImplementation((sql: string) => {
+        if (sql.includes("SELECT id FROM users")) {
+          return Promise.resolve([{ id: "demo-user-id" }]);
+        }
+        throw new Error("DB connection lost");
+      });
+
+      // Should not throw
+      await expect(
+        service.generateIntradayTransactions(),
+      ).resolves.toBeUndefined();
     });
   });
 
