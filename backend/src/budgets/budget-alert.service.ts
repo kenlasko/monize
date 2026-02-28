@@ -352,7 +352,7 @@ export class BudgetAlertService {
   checkThresholdAlerts(cat: CategoryActual): AlertCandidate[] {
     const alerts: AlertCandidate[] = [];
 
-    if (cat.percentUsed >= 100) {
+    if (cat.percentUsed > 100) {
       alerts.push({
         budgetId: "",
         budgetCategoryId: cat.budgetCategoryId,
