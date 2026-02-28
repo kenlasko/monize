@@ -173,7 +173,7 @@ export class AdminService {
     }
 
     const temporaryPassword = generateReadablePassword();
-    const saltRounds = 10;
+    const saltRounds = 12;
     targetUser.passwordHash = await bcrypt.hash(temporaryPassword, saltRounds);
     targetUser.mustChangePassword = true;
     targetUser.resetToken = null;

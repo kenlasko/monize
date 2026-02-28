@@ -1,6 +1,12 @@
 import { Module } from "@nestjs/common";
-import { APP_GUARD, APP_INTERCEPTOR, Reflector } from "@nestjs/core";
+import {
+  APP_FILTER,
+  APP_GUARD,
+  APP_INTERCEPTOR,
+  Reflector,
+} from "@nestjs/core";
 import { ClassSerializerInterceptor } from "@nestjs/common";
+import { GlobalExceptionFilter } from "./common/filters/http-exception.filter";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { ScheduleModule } from "@nestjs/schedule";
@@ -103,6 +109,7 @@ import { BudgetsModule } from "./budgets/budgets.module";
     BudgetsModule,
   ],
   providers: [
+    { provide: APP_FILTER, useClass: GlobalExceptionFilter },
     { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: CsrfGuard },
     { provide: APP_GUARD, useClass: MustChangePasswordGuard },

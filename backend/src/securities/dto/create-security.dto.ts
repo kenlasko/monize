@@ -26,6 +26,7 @@ export class CreateSecurityDto {
   @IsOptional()
   @IsString()
   @MaxLength(50)
+  @SanitizeHtml()
   securityType?: string;
 
   @ApiProperty({
@@ -36,6 +37,7 @@ export class CreateSecurityDto {
   @IsOptional()
   @IsString()
   @MaxLength(50)
+  @SanitizeHtml()
   exchange?: string;
 
   @ApiProperty({ example: "USD", description: "Currency code" })

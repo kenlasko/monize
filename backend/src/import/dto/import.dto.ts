@@ -15,6 +15,7 @@ import {
   ArrayMaxSize,
 } from "class-validator";
 import { Type } from "class-transformer";
+import { SanitizeHtml } from "../../common/decorators/sanitize-html.decorator";
 
 export class ParseQifDto {
   @ApiProperty({ description: "QIF file content as string" })
@@ -28,6 +29,7 @@ export class CategoryMappingDto {
   @ApiProperty({ description: "Original category name from QIF" })
   @IsString()
   @MaxLength(100)
+  @SanitizeHtml()
   originalName: string;
 
   @ApiPropertyOptional({ description: "Existing category ID to map to" })
@@ -39,6 +41,7 @@ export class CategoryMappingDto {
   @IsOptional()
   @IsString()
   @MaxLength(100)
+  @SanitizeHtml()
   createNew?: string;
 
   @ApiPropertyOptional({ description: "Parent category ID for new category" })
@@ -64,6 +67,7 @@ export class CategoryMappingDto {
   @IsOptional()
   @IsString()
   @MaxLength(100)
+  @SanitizeHtml()
   createNewLoan?: string;
 
   @ApiPropertyOptional({
@@ -79,6 +83,7 @@ export class CategoryMappingDto {
   @IsOptional()
   @IsString()
   @MaxLength(100)
+  @SanitizeHtml()
   newLoanInstitution?: string;
 }
 
@@ -86,6 +91,7 @@ export class AccountMappingDto {
   @ApiProperty({ description: "Original transfer account name from QIF" })
   @IsString()
   @MaxLength(100)
+  @SanitizeHtml()
   originalName: string;
 
   @ApiPropertyOptional({ description: "Existing account ID to map to" })
@@ -97,6 +103,7 @@ export class AccountMappingDto {
   @IsOptional()
   @IsString()
   @MaxLength(100)
+  @SanitizeHtml()
   createNew?: string;
 
   @ApiPropertyOptional({ description: "Account type for new account" })
@@ -128,6 +135,7 @@ export class SecurityMappingDto {
   @ApiProperty({ description: "Original security name/symbol from QIF" })
   @IsString()
   @MaxLength(100)
+  @SanitizeHtml()
   originalName: string;
 
   @ApiPropertyOptional({ description: "Existing security ID to map to" })
@@ -139,12 +147,14 @@ export class SecurityMappingDto {
   @IsOptional()
   @IsString()
   @MaxLength(50)
+  @SanitizeHtml()
   createNew?: string;
 
   @ApiPropertyOptional({ description: "Full name for new security" })
   @IsOptional()
   @IsString()
   @MaxLength(100)
+  @SanitizeHtml()
   securityName?: string;
 
   @ApiPropertyOptional({

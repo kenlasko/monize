@@ -1,5 +1,5 @@
 import { NestFactory } from "@nestjs/core";
-import { ValidationPipe } from "@nestjs/common";
+import { Logger, ValidationPipe } from "@nestjs/common";
 import { SwaggerModule, DocumentBuilder } from "@nestjs/swagger";
 import helmet from "helmet";
 import * as express from "express";
@@ -55,10 +55,13 @@ async function bootstrap() {
       : []),
   ].filter(Boolean);
 
+  const isProduction = process.env.NODE_ENV === "production";
   app.enableCors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps or curl)
-      if (!origin) return callback(null, true);
+      // Requests with no Origin header (server-to-server, curl, same-origin
+      // navigations): in production, reject to prevent null-origin abuse
+      // (e.g. sandboxed iframes). In dev, allow for convenience.
+      if (!origin) return callback(null, !isProduction);
 
       if (allowedOrigins.includes(origin)) {
         callback(null, true);
@@ -102,11 +105,12 @@ async function bootstrap() {
     SwaggerModule.setup("api/docs", app, document);
   }
 
+  const logger = new Logger("Bootstrap");
   const port = process.env.PORT || 3001;
   await app.listen(port);
-  console.log(`🚀 Application is running on: http://localhost:${port}`);
+  logger.log(`Application is running on: http://localhost:${port}`);
   if (process.env.NODE_ENV !== "production") {
-    console.log(`📚 API Documentation: http://localhost:${port}/api/docs`);
+    logger.log(`API Documentation: http://localhost:${port}/api/docs`);
   }
 }
 

@@ -18,6 +18,7 @@ import {
 } from "class-validator";
 import { Type } from "class-transformer";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { SanitizeHtml } from "../../common/decorators/sanitize-html.decorator";
 import {
   ReportViewType,
   TimeframeType,
@@ -166,18 +167,21 @@ export class CreateCustomReportDto {
   @ApiProperty({ description: "Report name" })
   @IsString()
   @MaxLength(100)
+  @SanitizeHtml()
   name: string;
 
   @ApiPropertyOptional({ description: "Report description" })
   @IsOptional()
   @IsString()
   @MaxLength(500)
+  @SanitizeHtml()
   description?: string;
 
   @ApiPropertyOptional({ description: "Icon identifier (emoji or icon name)" })
   @IsOptional()
   @IsString()
   @MaxLength(50)
+  @SanitizeHtml()
   icon?: string;
 
   @ApiPropertyOptional({

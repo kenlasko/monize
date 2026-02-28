@@ -11,6 +11,7 @@ import {
   MaxLength,
 } from "class-validator";
 import { Type } from "class-transformer";
+import { SanitizeHtml } from "../../common/decorators/sanitize-html.decorator";
 
 export class OverrideSplitDto {
   @ApiPropertyOptional({ description: "Category ID for this split" })
@@ -31,6 +32,7 @@ export class OverrideSplitDto {
   @IsOptional()
   @IsString()
   @MaxLength(500)
+  @SanitizeHtml()
   memo?: string | null;
 }
 
@@ -63,6 +65,7 @@ export class CreateScheduledTransactionOverrideDto {
   @IsOptional()
   @IsString()
   @MaxLength(500)
+  @SanitizeHtml()
   description?: string | null;
 
   @ApiPropertyOptional({
@@ -98,6 +101,7 @@ export class UpdateScheduledTransactionOverrideDto {
   @IsOptional()
   @IsString()
   @MaxLength(500)
+  @SanitizeHtml()
   description?: string | null;
 
   @ApiPropertyOptional({

@@ -8,12 +8,14 @@ import {
 } from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { IsFutureDate } from "../../common/validators/is-future-date.validator";
+import { SanitizeHtml } from "../../common/decorators/sanitize-html.decorator";
 
 export class CreatePatDto {
   @ApiProperty({ description: "User-assigned label for the token" })
   @IsString()
   @IsNotEmpty()
   @MaxLength(100)
+  @SanitizeHtml()
   name: string;
 
   @ApiPropertyOptional({

@@ -1,8 +1,12 @@
-import { generateCsrfToken, getCsrfCookieOptions } from "./csrf.util";
+import {
+  generateCsrfToken,
+  verifyCsrfToken,
+  getCsrfCookieOptions,
+} from "./csrf.util";
 
 describe("csrf.util", () => {
   describe("generateCsrfToken", () => {
-    it("returns a 64-character hex string", () => {
+    it("returns a 64-character hex string without session binding", () => {
       const token = generateCsrfToken();
       expect(token).toHaveLength(64);
       expect(token).toMatch(/^[0-9a-f]{64}$/);
@@ -12,6 +16,53 @@ describe("csrf.util", () => {
       const token1 = generateCsrfToken();
       const token2 = generateCsrfToken();
       expect(token1).not.toBe(token2);
+    });
+
+    it("returns session-bound token with nonce:hmac format", () => {
+      const token = generateCsrfToken(
+        "user-123",
+        "secret-key-32chars-minimum!!",
+      );
+      expect(token).toContain(":");
+      const parts = token.split(":");
+      expect(parts).toHaveLength(2);
+      expect(parts[0]).toHaveLength(64); // 32-byte nonce in hex
+      expect(parts[1]).toHaveLength(64); // SHA-256 HMAC in hex
+    });
+
+    it("generates unique session-bound tokens", () => {
+      const secret = "secret-key-32chars-minimum!!";
+      const t1 = generateCsrfToken("user-1", secret);
+      const t2 = generateCsrfToken("user-1", secret);
+      expect(t1).not.toBe(t2);
+    });
+  });
+
+  describe("verifyCsrfToken", () => {
+    it("verifies a valid session-bound token", () => {
+      const secret = "secret-key-32chars-minimum!!";
+      const sessionId = "user-123";
+      const token = generateCsrfToken(sessionId, secret);
+      expect(verifyCsrfToken(token, sessionId, secret)).toBe(true);
+    });
+
+    it("rejects a token with wrong session", () => {
+      const secret = "secret-key-32chars-minimum!!";
+      const token = generateCsrfToken("user-123", secret);
+      expect(verifyCsrfToken(token, "user-456", secret)).toBe(false);
+    });
+
+    it("rejects a token with wrong secret", () => {
+      const token = generateCsrfToken("user-123", "secret-1");
+      expect(verifyCsrfToken(token, "user-123", "secret-2")).toBe(false);
+    });
+
+    it("rejects a malformed token", () => {
+      expect(verifyCsrfToken("no-colon-token", "user-1", "secret")).toBe(false);
+    });
+
+    it("returns true without session binding (fallback)", () => {
+      expect(verifyCsrfToken("any-token")).toBe(true);
     });
   });
 
