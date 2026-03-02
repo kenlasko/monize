@@ -10,6 +10,7 @@ import {
 } from "./forecast-aggregator.service";
 import { FORECAST_SYSTEM_PROMPT } from "../context/prompt-templates";
 import { sanitizePromptValue } from "../context/prompt-sanitize";
+import { formatCurrencyAmount } from "../../common/format-currency.util";
 import { UserPreference } from "../../users/entities/user-preference.entity";
 import {
   ForecastResponse,
@@ -148,7 +149,7 @@ export class AiForecastService {
     );
     for (const acct of aggregates.accountBalances.accounts) {
       sections.push(
-        `${sanitizePromptValue(acct.name)} (${acct.accountType}): ${acct.balance.toFixed(2)} ${acct.currencyCode}`,
+        `${sanitizePromptValue(acct.name)} (${acct.accountType}): ${formatCurrencyAmount(acct.balance, acct.currencyCode)} ${acct.currencyCode}`,
       );
     }
 

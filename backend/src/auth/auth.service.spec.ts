@@ -471,8 +471,7 @@ describe("AuthService", () => {
 
       const setArg = builder.set.mock.calls[0][0];
       // 2nd lockout: 30min * 2^1 = 60min
-      const lockDuration =
-        setArg.lockedUntil.getTime() - Date.now();
+      const lockDuration = setArg.lockedUntil.getTime() - Date.now();
       expect(lockDuration).toBeGreaterThan(55 * 60 * 1000);
       expect(lockDuration).toBeLessThan(65 * 60 * 1000);
     });
@@ -1236,14 +1235,15 @@ describe("AuthService", () => {
       ).rejects.toThrow(ForbiddenException);
     });
 
-    it("handles duplicate email constraint error (code 23505) with verified email", async () => {
+    it("handles duplicate email constraint error (code 23505) with passwordless account", async () => {
       const duplicateError = new Error("duplicate key") as any;
       duplicateError.code = "23505";
 
       const existingUser = {
         ...mockUser,
         id: "existing-dup",
-        authProvider: "local",
+        passwordHash: null,
+        authProvider: "oidc",
         oidcSubject: null,
       };
 
@@ -1265,6 +1265,40 @@ describe("AuthService", () => {
 
       expect(result.id).toBe("existing-dup");
       expect(result.oidcSubject).toBe("oidc-sub-dup");
+    });
+
+    it("initiates OIDC link confirmation in catch path for local account with password", async () => {
+      const duplicateError = new Error("duplicate key") as any;
+      duplicateError.code = "23505";
+
+      const existingLocal = {
+        ...mockUser,
+        id: "existing-local-catch",
+        passwordHash: "$2a$10$hashedpassword",
+        authProvider: "local",
+        oidcSubject: null,
+      };
+
+      usersRepository.findOne
+        .mockResolvedValueOnce(null) // no existing by oidcSubject
+        .mockResolvedValueOnce(null) // no existing by email (race condition)
+        .mockResolvedValueOnce(existingLocal); // found after duplicate error
+
+      dataSource.transaction.mockRejectedValue(duplicateError);
+      usersRepository.save.mockImplementation((u) => u);
+
+      const result = await service.findOrCreateOidcUser({
+        sub: "oidc-sub-catch-link",
+        email: "test@example.com",
+        email_verified: true,
+      });
+
+      // Should return existing user without completing the link
+      expect(result.id).toBe("existing-local-catch");
+      expect(result.oidcSubject).toBeNull(); // Link not completed
+      expect((service as any).logger.warn).toHaveBeenCalledWith(
+        expect.stringContaining("OIDC link pending confirmation (catch path)"),
+      );
     });
 
     it("re-throws duplicate email error when email is unverified", async () => {
@@ -2505,7 +2539,9 @@ describe("AuthService", () => {
           resetToken: "reset",
           resetTokenExpiry: new Date(),
           twoFactorSecret: "secret",
+          pendingTwoFactorSecret: "pending-secret",
           backupCodes: '["hash1","hash2"]',
+          oidcLinkPending: true,
           oidcLinkToken: "token",
           oidcLinkExpiresAt: new Date(),
           pendingOidcSubject: "sub",
@@ -2521,7 +2557,9 @@ describe("AuthService", () => {
         password: "StrongPass123!",
       });
 
+      expect(result.user).not.toHaveProperty("pendingTwoFactorSecret");
       expect(result.user).not.toHaveProperty("backupCodes");
+      expect(result.user).not.toHaveProperty("oidcLinkPending");
       expect(result.user).not.toHaveProperty("oidcLinkToken");
       expect(result.user).not.toHaveProperty("oidcLinkExpiresAt");
       expect(result.user).not.toHaveProperty("pendingOidcSubject");

@@ -5,6 +5,7 @@ import { AccountsService } from "../../accounts/accounts.service";
 import { CategoriesService } from "../../categories/categories.service";
 import { UserPreference } from "../../users/entities/user-preference.entity";
 import { QUERY_SYSTEM_PROMPT } from "./prompt-templates";
+import { formatCurrencyAmount } from "../../common/format-currency.util";
 
 interface CategoryNode {
   id: string;
@@ -37,7 +38,7 @@ export class FinancialContextBuilder {
     const accountList = accounts
       .map(
         (a) =>
-          `- ${a.name} (${a.accountType}, ${a.currencyCode}, balance: ${Number(a.currentBalance).toFixed(2)})`,
+          `- ${a.name} (${a.accountType}, ${a.currencyCode}, balance: ${formatCurrencyAmount(Number(a.currentBalance), a.currencyCode)})`,
       )
       .join("\n");
 

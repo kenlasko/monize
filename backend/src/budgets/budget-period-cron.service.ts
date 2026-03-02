@@ -223,6 +223,7 @@ export class BudgetPeriodCronService {
 
         return {
           budgetName: budget.name,
+          currencyCode: budget.currencyCode,
           periodLabel,
           totalBudgeted,
           totalSpent,

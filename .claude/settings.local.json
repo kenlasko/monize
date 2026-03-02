@@ -16,7 +16,8 @@
       "Bash(npx jest:*)",
       "Bash(npx vitest run:*)",
       "Bash(git checkout:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git pull:*)"
     ]
   }
 }

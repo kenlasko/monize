@@ -10,7 +10,7 @@ import { Category } from '@/types/category';
 import { Account } from '@/types/account';
 import { CreateSplitData } from '@/types/transaction';
 import { buildCategoryTree } from '@/lib/categoryUtils';
-import { roundToCents, getCurrencySymbol } from '@/lib/format';
+import { roundToCents, getCurrencySymbol, formatAmountWithCommas, getDecimalPlacesForCurrency } from '@/lib/format';
 
 export type SplitType = 'category' | 'transfer';
 
@@ -43,6 +43,7 @@ export function SplitEditor({
   currencyCode = 'CAD',
 }: SplitEditorProps) {
   const currencySymbol = getCurrencySymbol(currencyCode);
+  const decimals = getDecimalPlacesForCurrency(currencyCode);
   const [localSplits, setLocalSplits] = useState<SplitRow[]>(splits);
 
   // Always show Type column since a transaction will always have an account
@@ -406,13 +407,13 @@ export function SplitEditor({
               <div className="flex items-center gap-2">
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Total</span>
                 <span className={`font-medium ${isBalanced ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                  {currencySymbol}{splitsTotal.toFixed(2)}
+                  {currencySymbol}{formatAmountWithCommas(splitsTotal, decimals)}
                 </span>
                 {isBalanced ? (
                   <span className="text-xs text-green-600 dark:text-green-400">Balanced</span>
                 ) : (
                   <span className="text-xs text-red-600 dark:text-red-400">
-                    Remaining: {currencySymbol}{remaining.toFixed(2)}
+                    Remaining: {currencySymbol}{formatAmountWithCommas(remaining, decimals)}
                   </span>
                 )}
               </div>
@@ -423,7 +424,7 @@ export function SplitEditor({
                   disabled={disabled}
                   className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline disabled:opacity-50 whitespace-nowrap"
                 >
-                  Set total to {currencySymbol}{splitsTotal.toFixed(2)}
+                  Set total to {currencySymbol}{formatAmountWithCommas(splitsTotal, decimals)}
                 </button>
               )}
             </div>
@@ -529,7 +530,7 @@ export function SplitEditor({
                       onClick={() => addRemainingToSplit(index)}
                       disabled={disabled || Math.abs(remaining) < 0.01}
                       className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                      title={Math.abs(remaining) < 0.01 ? 'No unassigned amount' : `Add ${remaining >= 0 ? '+' : ''}${currencySymbol}${Math.abs(remaining).toFixed(2)} to this split`}
+                      title={Math.abs(remaining) < 0.01 ? 'No unassigned amount' : `Add ${remaining >= 0 ? '+' : ''}${currencySymbol}${formatAmountWithCommas(Math.abs(remaining), decimals)} to this split`}
                     >
                       <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path
@@ -590,13 +591,13 @@ export function SplitEditor({
                         isBalanced ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
                       }`}
                     >
-                      {currencySymbol}{splitsTotal.toFixed(2)}
+                      {currencySymbol}{formatAmountWithCommas(splitsTotal, decimals)}
                     </span>
                     {isBalanced ? (
                       <span className="text-xs text-green-600 dark:text-green-400">Balanced</span>
                     ) : (
                       <span className="text-xs text-red-600 dark:text-red-400 whitespace-nowrap">
-                        Need {currencySymbol}{Number(transactionAmount).toFixed(2)} (remaining: {currencySymbol}{remaining.toFixed(2)})
+                        Need {currencySymbol}{formatAmountWithCommas(Number(transactionAmount), decimals)} (remaining: {currencySymbol}{formatAmountWithCommas(remaining, decimals)})
                       </span>
                     )}
                   </div>
@@ -607,7 +608,7 @@ export function SplitEditor({
                       disabled={disabled}
                       className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline disabled:opacity-50 whitespace-nowrap"
                     >
-                      Set total to {currencySymbol}{splitsTotal.toFixed(2)}
+                      Set total to {currencySymbol}{formatAmountWithCommas(splitsTotal, decimals)}
                     </button>
                   )}
                 </div>

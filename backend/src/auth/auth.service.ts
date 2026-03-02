@@ -571,10 +571,20 @@ export class AuthService {
               where: { email: trustedEmail },
             });
             if (existingUser) {
-              existingUser.oidcSubject = sub;
-              existingUser.authProvider = "oidc";
-              await this.usersRepository.save(existingUser);
-              user = existingUser;
+              if (existingUser.passwordHash) {
+                // M6: Local account requires user confirmation before linking
+                await this.initiateOidcLink(existingUser, sub);
+                this.logger.warn(
+                  `OIDC link pending confirmation (catch path) for user ${existingUser.id}`,
+                );
+                user = existingUser;
+              } else {
+                // OIDC-only account -- safe to link directly
+                existingUser.oidcSubject = sub;
+                existingUser.authProvider = "oidc";
+                await this.usersRepository.save(existingUser);
+                user = existingUser;
+              }
             } else {
               throw err;
             }
@@ -1104,15 +1114,17 @@ export class AuthService {
     return migratedCount;
   }
 
-  private sanitizeUser(user: User) {
+  sanitizeUser(user: User) {
     const {
       passwordHash,
       resetToken,
       resetTokenExpiry,
       twoFactorSecret,
+      pendingTwoFactorSecret,
       failedLoginAttempts,
       lockedUntil,
       backupCodes,
+      oidcLinkPending,
       oidcLinkToken,
       oidcLinkExpiresAt,
       pendingOidcSubject,

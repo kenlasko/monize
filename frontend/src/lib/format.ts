@@ -15,16 +15,39 @@ export function getCurrencySymbol(currencyCode: string): string {
 }
 
 /**
- * Format a number as currency with the specified currency code
+ * Format a number as currency with the specified currency code.
+ * Uses Intl.NumberFormat currency-native decimal places (e.g., JPY=0, USD=2, BHD=3).
  */
 export function formatCurrency(amount: number, currencyCode: string = 'USD'): string {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: currencyCode,
     currencyDisplay: 'narrowSymbol',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
   }).format(amount);
+}
+
+/**
+ * Get the number of decimal places for a currency code using Intl.NumberFormat.
+ * E.g., USD=2, JPY=0, BHD=3.
+ */
+export function getDecimalPlacesForCurrency(currencyCode: string): number {
+  try {
+    return new Intl.NumberFormat('en', {
+      style: 'currency',
+      currency: currencyCode,
+    }).resolvedOptions().minimumFractionDigits ?? 2;
+  } catch {
+    return 2;
+  }
+}
+
+/**
+ * Round a number to the specified number of decimal places.
+ * Uses multiply-round-divide to avoid floating point errors.
+ */
+export function roundToDecimals(value: number, decimalPlaces: number): number {
+  const factor = Math.pow(10, decimalPlaces);
+  return Math.round(value * factor) / factor;
 }
 
 /**
@@ -36,28 +59,29 @@ export function roundToCents(value: number): number {
 }
 
 /**
- * Format a number to exactly 2 decimal places for display in inputs
+ * Format a number to the specified decimal places for display in inputs.
+ * Defaults to 2 decimal places.
  */
-export function formatAmount(value: number | undefined | null): string {
+export function formatAmount(value: number | undefined | null, decimalPlaces: number = 2): string {
   if (value === undefined || value === null || isNaN(value)) {
     return '';
   }
-  return roundToCents(value).toFixed(2);
+  return roundToDecimals(value, decimalPlaces).toFixed(decimalPlaces);
 }
 
 /**
- * Format a number to exactly 2 decimal places with comma thousands separators
- * Used for display when input is not focused
+ * Format a number with comma thousands separators and the specified decimal places.
+ * Defaults to 2 decimal places. Used for display when input is not focused.
  */
-export function formatAmountWithCommas(value: number | undefined | null): string {
+export function formatAmountWithCommas(value: number | undefined | null, decimalPlaces: number = 2): string {
   if (value === undefined || value === null || isNaN(value)) {
     return '';
   }
-  const rounded = roundToCents(value);
+  const rounded = roundToDecimals(value, decimalPlaces);
   // Use Intl.NumberFormat for proper comma formatting
   return new Intl.NumberFormat('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    minimumFractionDigits: decimalPlaces,
+    maximumFractionDigits: decimalPlaces,
   }).format(rounded);
 }
 

@@ -16,6 +16,7 @@ import { Transaction } from "../transactions/entities/transaction.entity";
 import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
 import { User } from "../users/entities/user.entity";
 import { UserPreference } from "../users/entities/user-preference.entity";
+import { ScheduledTransaction } from "../scheduled-transactions/entities/scheduled-transaction.entity";
 import { EmailService } from "../notifications/email.service";
 
 function makeCategory(overrides: Partial<BudgetCategory> = {}): BudgetCategory {
@@ -97,6 +98,7 @@ describe("BudgetAlertService", () => {
   let splitsRepository: Record<string, jest.Mock>;
   let usersRepository: Record<string, jest.Mock>;
   let preferencesRepository: Record<string, jest.Mock>;
+  let scheduledTransactionsRepository: Record<string, jest.Mock>;
   let emailService: Record<string, jest.Mock>;
   let configService: Record<string, jest.Mock>;
 
@@ -153,6 +155,13 @@ describe("BudgetAlertService", () => {
       }),
     };
 
+    scheduledTransactionsRepository = {
+      createQueryBuilder: jest.fn().mockReturnValue({
+        where: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([]),
+      }),
+    };
+
     emailService = {
       getStatus: jest.fn().mockReturnValue({ configured: true }),
       sendMail: jest.fn().mockResolvedValue(undefined),
@@ -186,6 +195,10 @@ describe("BudgetAlertService", () => {
           provide: getRepositoryToken(UserPreference),
           useValue: preferencesRepository,
         },
+        {
+          provide: getRepositoryToken(ScheduledTransaction),
+          useValue: scheduledTransactionsRepository,
+        },
         { provide: EmailService, useValue: emailService },
         { provide: ConfigService, useValue: configService },
       ],
@@ -200,6 +213,7 @@ describe("BudgetAlertService", () => {
         budgetCategoryId: "bc-1",
         categoryId: "cat-1",
         categoryName: "Groceries",
+        currencyCode: "USD",
         budgeted: 500,
         spent: 550,
         percentUsed: 110,
@@ -221,6 +235,7 @@ describe("BudgetAlertService", () => {
         budgetCategoryId: "bc-1",
         categoryId: "cat-1",
         categoryName: "Dining",
+        currencyCode: "USD",
         budgeted: 300,
         spent: 290,
         percentUsed: 96.67,
@@ -232,7 +247,7 @@ describe("BudgetAlertService", () => {
 
       expect(alerts).toHaveLength(1);
       expect(alerts[0].alertType).toBe(AlertType.THRESHOLD_CRITICAL);
-      expect(alerts[0].severity).toBe(AlertSeverity.CRITICAL);
+      expect(alerts[0].severity).toBe(AlertSeverity.WARNING);
     });
 
     it("returns THRESHOLD_WARNING alert when at warn threshold", () => {
@@ -240,6 +255,7 @@ describe("BudgetAlertService", () => {
         budgetCategoryId: "bc-1",
         categoryId: "cat-1",
         categoryName: "Entertainment",
+        currencyCode: "USD",
         budgeted: 200,
         spent: 170,
         percentUsed: 85,
@@ -259,6 +275,7 @@ describe("BudgetAlertService", () => {
         budgetCategoryId: "bc-1",
         categoryId: "cat-1",
         categoryName: "Clothing",
+        currencyCode: "USD",
         budgeted: 400,
         spent: 200,
         percentUsed: 50,
@@ -276,6 +293,7 @@ describe("BudgetAlertService", () => {
         budgetCategoryId: "bc-1",
         categoryId: "cat-1",
         categoryName: "Travel",
+        currencyCode: "USD",
         budgeted: 1000,
         spent: 710,
         percentUsed: 71,
@@ -294,6 +312,7 @@ describe("BudgetAlertService", () => {
         budgetCategoryId: "bc-1",
         categoryId: "cat-1",
         categoryName: "Groceries",
+        currencyCode: "USD",
         budgeted: 500,
         spent: 450,
         percentUsed: 90,
@@ -316,6 +335,7 @@ describe("BudgetAlertService", () => {
         budgetCategoryId: "bc-1",
         categoryId: "cat-1",
         categoryName: "Groceries",
+        currencyCode: "USD",
         budgeted: 500,
         spent: 500,
         percentUsed: 100,
@@ -327,7 +347,7 @@ describe("BudgetAlertService", () => {
 
       expect(alerts).toHaveLength(1);
       expect(alerts[0].alertType).toBe(AlertType.THRESHOLD_CRITICAL);
-      expect(alerts[0].severity).toBe(AlertSeverity.CRITICAL);
+      expect(alerts[0].severity).toBe(AlertSeverity.WARNING);
     });
   });
 
@@ -338,6 +358,7 @@ describe("BudgetAlertService", () => {
           budgetCategoryId: "bc-1",
           categoryId: "cat-1",
           categoryName: "Dining",
+          currencyCode: "USD",
           budgeted: 300,
           spent: 200,
           percentUsed: 66.67,
@@ -363,6 +384,7 @@ describe("BudgetAlertService", () => {
           budgetCategoryId: "bc-1",
           categoryId: "cat-1",
           categoryName: "Groceries",
+          currencyCode: "USD",
           budgeted: 500,
           spent: 100,
           percentUsed: 20,
@@ -385,6 +407,7 @@ describe("BudgetAlertService", () => {
           budgetCategoryId: "bc-1",
           categoryId: "cat-1",
           categoryName: "Groceries",
+          currencyCode: "USD",
           budgeted: 500,
           spent: 600,
           percentUsed: 120,
@@ -406,6 +429,7 @@ describe("BudgetAlertService", () => {
           budgetCategoryId: "bc-1",
           categoryId: "cat-1",
           categoryName: "Transport",
+          currencyCode: "USD",
           budgeted: 200,
           spent: 150,
           percentUsed: 75,
@@ -433,6 +457,7 @@ describe("BudgetAlertService", () => {
           budgetCategoryId: "bc-1",
           categoryId: "cat-1",
           categoryName: "Dining",
+          currencyCode: "USD",
           budgeted: 300,
           spent: 280,
           percentUsed: 93.33,
@@ -445,6 +470,7 @@ describe("BudgetAlertService", () => {
           budgetCategoryId: "bc-2",
           categoryId: "cat-2",
           categoryName: "Entertainment",
+          currencyCode: "USD",
           budgeted: 200,
           spent: 180,
           percentUsed: 90,
@@ -468,6 +494,7 @@ describe("BudgetAlertService", () => {
           budgetCategoryId: "bc-1",
           categoryId: "cat-1",
           categoryName: "Dining",
+          currencyCode: "USD",
           budgeted: 300,
           spent: 100,
           percentUsed: 33.33,
@@ -480,6 +507,7 @@ describe("BudgetAlertService", () => {
           budgetCategoryId: "bc-2",
           categoryId: "cat-2",
           categoryName: "Entertainment",
+          currencyCode: "USD",
           budgeted: 200,
           spent: 50,
           percentUsed: 25,
@@ -500,6 +528,7 @@ describe("BudgetAlertService", () => {
           budgetCategoryId: "bc-1",
           categoryId: "cat-1",
           categoryName: "Dining",
+          currencyCode: "USD",
           budgeted: 300,
           spent: 280,
           percentUsed: 93.33,
@@ -512,6 +541,7 @@ describe("BudgetAlertService", () => {
           budgetCategoryId: "bc-2",
           categoryId: "cat-2",
           categoryName: "Hobbies",
+          currencyCode: "USD",
           budgeted: 200,
           spent: 180,
           percentUsed: 90,
@@ -524,6 +554,7 @@ describe("BudgetAlertService", () => {
           budgetCategoryId: "bc-3",
           categoryId: "cat-3",
           categoryName: "Gas",
+          currencyCode: "USD",
           budgeted: 200,
           spent: 50,
           percentUsed: 25,
@@ -546,6 +577,7 @@ describe("BudgetAlertService", () => {
           budgetCategoryId: "bc-1",
           categoryId: "cat-1",
           categoryName: "Rent",
+          currencyCode: "USD",
           budgeted: 1500,
           spent: 1500,
           percentUsed: 100,
@@ -568,6 +600,7 @@ describe("BudgetAlertService", () => {
             budgetCategoryId: "bc-inc-1",
             categoryId: "cat-inc-1",
             categoryName: "Salary",
+            currencyCode: "USD",
             budgeted: 5000,
             spent: 1500,
             percentUsed: 30,
@@ -594,6 +627,7 @@ describe("BudgetAlertService", () => {
             budgetCategoryId: "bc-inc-1",
             categoryId: "cat-inc-1",
             categoryName: "Salary",
+            currencyCode: "USD",
             budgeted: 5000,
             spent: 4000,
             percentUsed: 80,
@@ -618,6 +652,7 @@ describe("BudgetAlertService", () => {
             budgetCategoryId: "bc-inc-1",
             categoryId: "cat-inc-1",
             categoryName: "Salary",
+            currencyCode: "USD",
             budgeted: 5000,
             spent: 0,
             percentUsed: 0,
@@ -643,6 +678,7 @@ describe("BudgetAlertService", () => {
             budgetCategoryId: "bc-1",
             categoryId: "cat-1",
             categoryName: "Groceries",
+            currencyCode: "USD",
             budgeted: 500,
             spent: 200,
             percentUsed: 40,
@@ -655,6 +691,7 @@ describe("BudgetAlertService", () => {
             budgetCategoryId: "bc-2",
             categoryId: "cat-2",
             categoryName: "Dining",
+            currencyCode: "USD",
             budgeted: 300,
             spent: 100,
             percentUsed: 33.33,
@@ -681,6 +718,7 @@ describe("BudgetAlertService", () => {
             budgetCategoryId: "bc-1",
             categoryId: "cat-1",
             categoryName: "Groceries",
+            currencyCode: "USD",
             budgeted: 500,
             spent: 350,
             percentUsed: 70,
@@ -704,6 +742,7 @@ describe("BudgetAlertService", () => {
             budgetCategoryId: "bc-1",
             categoryId: "cat-1",
             categoryName: "Groceries",
+            currencyCode: "USD",
             budgeted: 500,
             spent: 50,
             percentUsed: 10,
@@ -727,6 +766,7 @@ describe("BudgetAlertService", () => {
             budgetCategoryId: "bc-1",
             categoryId: "cat-1",
             categoryName: "Groceries",
+            currencyCode: "USD",
             budgeted: 500,
             spent: 100,
             percentUsed: 20,

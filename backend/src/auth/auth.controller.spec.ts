@@ -32,6 +32,14 @@ describe("AuthController", () => {
     resetToken: null,
     resetTokenExpiry: null,
     twoFactorSecret: null,
+    pendingTwoFactorSecret: null,
+    failedLoginAttempts: 0,
+    lockedUntil: null,
+    backupCodes: null,
+    oidcLinkPending: false,
+    oidcLinkToken: null,
+    oidcLinkExpiresAt: null,
+    pendingOidcSubject: null,
   };
 
   const mockRes = () => ({
@@ -64,6 +72,24 @@ describe("AuthController", () => {
       checkForgotPasswordEmailLimit: jest.fn().mockReturnValue(true),
       generateBackupCodes: jest.fn(),
       confirmOidcLink: jest.fn(),
+      sanitizeUser: jest.fn().mockImplementation((user) => {
+        const {
+          passwordHash,
+          resetToken,
+          resetTokenExpiry,
+          twoFactorSecret,
+          pendingTwoFactorSecret,
+          failedLoginAttempts,
+          lockedUntil,
+          backupCodes,
+          oidcLinkPending,
+          oidcLinkToken,
+          oidcLinkExpiresAt,
+          pendingOidcSubject,
+          ...sanitized
+        } = user;
+        return { ...sanitized, hasPassword: !!passwordHash };
+      }),
     };
 
     oidcService = {
@@ -342,6 +368,14 @@ describe("AuthController", () => {
       expect(result).not.toHaveProperty("resetToken");
       expect(result).not.toHaveProperty("resetTokenExpiry");
       expect(result).not.toHaveProperty("twoFactorSecret");
+      expect(result).not.toHaveProperty("pendingTwoFactorSecret");
+      expect(result).not.toHaveProperty("failedLoginAttempts");
+      expect(result).not.toHaveProperty("lockedUntil");
+      expect(result).not.toHaveProperty("backupCodes");
+      expect(result).not.toHaveProperty("oidcLinkPending");
+      expect(result).not.toHaveProperty("oidcLinkToken");
+      expect(result).not.toHaveProperty("oidcLinkExpiresAt");
+      expect(result).not.toHaveProperty("pendingOidcSubject");
       expect(result.hasPassword).toBe(true);
       expect(result.email).toBe("test@example.com");
       expect(result.id).toBe("user-1");

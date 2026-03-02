@@ -4,6 +4,7 @@ import { memo, type JSX } from 'react';
 import { Transaction, TransactionStatus } from '@/types/transaction';
 import { CategoryBudgetStatus } from '@/types/budget';
 import { DensityLevel } from '@/hooks/useTableDensity';
+import { formatAmountWithCommas, formatCurrency, getDecimalPlacesForCurrency } from '@/lib/format';
 
 export interface TransactionRowProps {
   transaction: Transaction;
@@ -170,10 +171,10 @@ export const TransactionRow = memo(function TransactionRow({
                       <span className="text-blue-600 dark:text-blue-400">
                         {Number(split.amount) < 0
                           ? `\u2192 ${split.transferAccount.name}`
-                          : `${split.transferAccount.name} \u2192`}: ${Math.abs(Number(split.amount)).toFixed(2)}
+                          : `${split.transferAccount.name} \u2192`}: {formatAmountWithCommas(Math.abs(Number(split.amount)), getDecimalPlacesForCurrency(transaction.currencyCode))}
                       </span>
                     ) : (
-                      <>{split.category?.name || 'Uncategorized'}: ${Math.abs(Number(split.amount)).toFixed(2)}</>
+                      <>{split.category?.name || 'Uncategorized'}: {formatAmountWithCommas(Math.abs(Number(split.amount)), getDecimalPlacesForCurrency(transaction.currencyCode))}</>
                     )}
                   </div>
                 ))}
@@ -197,9 +198,9 @@ export const TransactionRow = memo(function TransactionRow({
                 }`}
                 title={
                   budgetStatus.percentUsed > 100
-                    ? `Over budget: ${budgetStatus.percentUsed.toFixed(0)}% used ($${budgetStatus.spent.toFixed(2)} / $${budgetStatus.budgeted.toFixed(2)})`
+                    ? `Over budget: ${budgetStatus.percentUsed.toFixed(0)}% used (${formatCurrency(budgetStatus.spent, transaction.currencyCode)} / ${formatCurrency(budgetStatus.budgeted, transaction.currencyCode)})`
                     : budgetStatus.percentUsed >= 80
-                      ? `Approaching limit: ${budgetStatus.percentUsed.toFixed(0)}% used ($${budgetStatus.remaining.toFixed(2)} remaining)`
+                      ? `Approaching limit: ${budgetStatus.percentUsed.toFixed(0)}% used (${formatCurrency(budgetStatus.remaining, transaction.currencyCode)} remaining)`
                       : undefined
                 }
               />

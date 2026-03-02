@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Sparkline } from './Sparkline';
-import { getCurrencySymbol } from '@/lib/format';
+import { getCurrencySymbol, formatAmount, getDecimalPlacesForCurrency } from '@/lib/format';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import type { WizardState } from './BudgetWizard';
 import type { BudgetProfile, CategoryGroup, TransferAnalysis } from '@/types/budget';
@@ -22,7 +22,8 @@ function BudgetAmountInput({
   const [editing, setEditing] = useState(false);
   const [editValue, setEditValue] = useState('');
 
-  const displayValue = editing ? editValue : amount.toFixed(2);
+  const decimals = getDecimalPlacesForCurrency(currencyCode);
+  const displayValue = editing ? editValue : formatAmount(amount, decimals);
 
   return (
     <div className="relative flex items-center">
@@ -35,7 +36,7 @@ function BudgetAmountInput({
         value={displayValue}
         onFocus={() => {
           setEditing(true);
-          setEditValue(amount.toFixed(2));
+          setEditValue(formatAmount(amount, decimals));
         }}
         onBlur={() => {
           setEditing(false);

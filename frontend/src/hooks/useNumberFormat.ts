@@ -30,8 +30,6 @@ export function useNumberFormat() {
         style: 'currency',
         currency,
         currencyDisplay: 'narrowSymbol',
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
       }).format(amount);
     },
     [numberFormat, defaultCurrency]

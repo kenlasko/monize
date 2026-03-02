@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest';
 import {
   getCurrencySymbol,
   formatCurrency,
+  getDecimalPlacesForCurrency,
+  roundToDecimals,
   roundToCents,
   formatAmount,
   formatAmountWithCommas,
@@ -61,6 +63,53 @@ describe('formatCurrency', () => {
     const result = formatCurrency(100.1, 'USD');
     expect(result).toContain('100.10');
   });
+
+  it('formats JPY with no decimals', () => {
+    const result = formatCurrency(1234, 'JPY');
+    expect(result).toContain('1,234');
+    expect(result).not.toContain('.');
+  });
+
+  it('formats BHD with 3 decimals', () => {
+    const result = formatCurrency(1234.567, 'BHD');
+    expect(result).toContain('1,234.567');
+  });
+});
+
+describe('getDecimalPlacesForCurrency', () => {
+  it('returns 2 for USD', () => {
+    expect(getDecimalPlacesForCurrency('USD')).toBe(2);
+  });
+
+  it('returns 0 for JPY', () => {
+    expect(getDecimalPlacesForCurrency('JPY')).toBe(0);
+  });
+
+  it('returns 3 for BHD', () => {
+    expect(getDecimalPlacesForCurrency('BHD')).toBe(3);
+  });
+
+  it('returns 2 for invalid currency', () => {
+    expect(getDecimalPlacesForCurrency('INVALID')).toBe(2);
+  });
+});
+
+describe('roundToDecimals', () => {
+  it('rounds to 0 decimals', () => {
+    expect(roundToDecimals(10.6, 0)).toBe(11);
+  });
+
+  it('rounds to 2 decimals', () => {
+    expect(roundToDecimals(10.125, 2)).toBe(10.13);
+  });
+
+  it('rounds to 3 decimals', () => {
+    expect(roundToDecimals(10.1235, 3)).toBe(10.124);
+  });
+
+  it('handles negative values', () => {
+    expect(roundToDecimals(-10.125, 2)).toBe(-10.12);
+  });
 });
 
 describe('roundToCents', () => {
@@ -102,6 +151,14 @@ describe('formatAmount', () => {
   it('returns empty string for NaN', () => {
     expect(formatAmount(NaN)).toBe('');
   });
+
+  it('formats with 0 decimal places', () => {
+    expect(formatAmount(10.5, 0)).toBe('11');
+  });
+
+  it('formats with 3 decimal places', () => {
+    expect(formatAmount(10.5, 3)).toBe('10.500');
+  });
 });
 
 describe('formatAmountWithCommas', () => {
@@ -111,6 +168,14 @@ describe('formatAmountWithCommas', () => {
 
   it('returns empty string for undefined', () => {
     expect(formatAmountWithCommas(undefined)).toBe('');
+  });
+
+  it('formats with 0 decimal places', () => {
+    expect(formatAmountWithCommas(1234567, 0)).toBe('1,234,567');
+  });
+
+  it('formats with 3 decimal places', () => {
+    expect(formatAmountWithCommas(1234.5, 3)).toBe('1,234.500');
   });
 });
 

@@ -60,10 +60,10 @@ describe("Email Templates", () => {
 
       expect(html).toContain("Electric Company");
       expect(html).toContain("2024-02-15");
-      expect(html).toContain("USD 150.00");
+      expect(html).toContain("$150.00");
       expect(html).toContain("Internet Provider");
       expect(html).toContain("2024-02-20");
-      expect(html).toContain("USD 79.99");
+      expect(html).toContain("$79.99");
     });
 
     it("includes the appUrl link to the bills page", () => {
@@ -158,7 +158,7 @@ describe("Email Templates", () => {
       expect(html).toContain("Tom &amp; Jerry");
     });
 
-    it("escapes quotes in payee currency codes", () => {
+    it("handles invalid currency codes safely in bill amounts", () => {
       const bills = [
         {
           payee: "Normal",
@@ -169,8 +169,9 @@ describe("Email Templates", () => {
       ];
       const html = billReminderTemplate("Alice", bills, "https://app.com");
 
+      // formatCurrency catches the invalid code and falls back to plain number
       expect(html).not.toContain('"onmouseover=');
-      expect(html).toContain("&quot;onmouseover=");
+      expect(html).toContain("50.00");
     });
   });
 
@@ -236,6 +237,7 @@ describe("Email Templates", () => {
     const sampleSummaries = [
       {
         budgetName: "Monthly Household",
+        currencyCode: "USD",
         periodLabel: "January 2026",
         totalBudgeted: 4000,
         totalSpent: 3200,
@@ -308,8 +310,8 @@ describe("Email Templates", () => {
         "https://monize.app",
       );
 
-      expect(html).toContain("$4000.00");
-      expect(html).toContain("$3200.00");
+      expect(html).toContain("$4,000.00");
+      expect(html).toContain("$3,200.00");
       expect(html).toContain("$800.00");
     });
 
@@ -523,8 +525,8 @@ describe("Email Templates", () => {
 
       expect(html).toContain("Monthly Household");
       expect(html).toContain("Annual Savings");
-      expect(html).toContain("$4000.00");
-      expect(html).toContain("$1000.00");
+      expect(html).toContain("$4,000.00");
+      expect(html).toContain("$1,000.00");
     });
 
     it("uses correct color for good health score (green)", () => {

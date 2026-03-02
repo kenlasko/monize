@@ -32,6 +32,7 @@ import {
   resolveCategorySpent,
 } from "./budget-spending.util";
 import { formatDateYMD, todayYMD } from "../common/date-utils";
+import { formatCurrency } from "../common/format-currency.util";
 
 export interface UpcomingBill {
   id: string;
@@ -505,6 +506,7 @@ export class BudgetsService {
     if (manualBills.length === 0) return;
 
     // Filter bills to only those within their own reminder window
+    // and not already paid ahead of time
     const eligibleBills = manualBills.filter((bill) => {
       const dueDate =
         typeof bill.nextDueDate === "string"
@@ -513,7 +515,24 @@ export class BudgetsService {
       const daysUntilDue = Math.ceil(
         (new Date(dueDate).getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
       );
-      return daysUntilDue <= bill.reminderDaysBefore;
+      if (daysUntilDue > bill.reminderDaysBefore) return false;
+
+      // Skip bills already posted for this cycle
+      if (bill.lastPostedDate) {
+        const lastPosted =
+          typeof bill.lastPostedDate === "string"
+            ? bill.lastPostedDate
+            : formatDateYMD(bill.lastPostedDate as Date);
+        // If lastPostedDate is within reminderDaysBefore of the due date,
+        // the bill was already paid ahead of time
+        const daysSincePosted = Math.ceil(
+          (today.getTime() - new Date(lastPosted).getTime()) /
+            (1000 * 60 * 60 * 24),
+        );
+        if (daysSincePosted <= bill.reminderDaysBefore) return false;
+      }
+
+      return true;
     });
 
     if (eligibleBills.length === 0) return;
@@ -574,7 +593,7 @@ export class BudgetsService {
       alert.alertType = AlertType.BILL_DUE;
       alert.severity = severity;
       alert.title = `${payeeName} due${daysUntilDue === 0 ? " today" : daysUntilDue === 1 ? " tomorrow" : ` in ${daysUntilDue} days`}`;
-      alert.message = `${bill.currencyCode} ${amount.toFixed(2)} due on ${dueDate}`;
+      alert.message = `${formatCurrency(amount, bill.currencyCode)} due on ${dueDate}`;
       alert.data = {
         billId: bill.id,
         payeeName,

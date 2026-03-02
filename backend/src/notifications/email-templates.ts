@@ -1,3 +1,5 @@
+import { formatCurrency } from "../common/format-currency.util";
+
 /**
  * Escape HTML entities to prevent HTML injection in email templates.
  * User-controlled data (names, payee fields) must be escaped before
@@ -43,7 +45,7 @@ export function billReminderTemplate(
         `<tr>
           <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb;">${escapeHtml(b.payee)}</td>
           <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb;">${escapeHtml(b.dueDate)}</td>
-          <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: right;">${escapeHtml(b.currencyCode)} ${Math.abs(b.amount).toFixed(2)}</td>
+          <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: right;">${formatCurrency(Math.abs(b.amount), b.currencyCode)}</td>
         </tr>`,
     )
     .join("");
@@ -230,6 +232,7 @@ interface MonthlySummaryCategoryData {
 
 interface MonthlySummaryData {
   budgetName: string;
+  currencyCode: string;
   periodLabel: string;
   totalBudgeted: number;
   totalSpent: number;
@@ -275,7 +278,7 @@ export function budgetMonthlySummaryTemplate(
                   `<tr>
                     <td style="padding: 4px 8px; color: #374151; font-size: 14px;">${escapeHtml(c.categoryName)}</td>
                     <td style="padding: 4px 8px; text-align: right; color: #dc2626; font-size: 14px; font-weight: 600;">${c.percentUsed.toFixed(0)}%</td>
-                    <td style="padding: 4px 8px; text-align: right; color: #6b7280; font-size: 14px;">$${c.actual.toFixed(2)} / $${c.budgeted.toFixed(2)}</td>
+                    <td style="padding: 4px 8px; text-align: right; color: #6b7280; font-size: 14px;">${formatCurrency(c.actual, s.currencyCode)} / ${formatCurrency(c.budgeted, s.currencyCode)}</td>
                   </tr>`,
               )
               .join("")}
@@ -290,7 +293,7 @@ export function budgetMonthlySummaryTemplate(
               <td style="padding: 4px 8px; text-align: right; font-size: 14px;">
                 <span style="color: ${c.percentUsed > 100 ? "#dc2626" : c.percentUsed > 80 ? "#d97706" : "#059669"}; font-weight: 600;">${c.percentUsed.toFixed(0)}%</span>
               </td>
-              <td style="padding: 4px 8px; text-align: right; color: #6b7280; font-size: 14px;">$${c.actual.toFixed(2)} / $${c.budgeted.toFixed(2)}</td>
+              <td style="padding: 4px 8px; text-align: right; color: #6b7280; font-size: 14px;">${formatCurrency(c.actual, s.currencyCode)} / ${formatCurrency(c.budgeted, s.currencyCode)}</td>
             </tr>`,
         )
         .join("");
@@ -310,15 +313,15 @@ export function budgetMonthlySummaryTemplate(
           <div style="display: flex; gap: 16px; margin-bottom: 12px;">
             <div>
               <span style="color: #6b7280; font-size: 12px;">Budgeted</span><br/>
-              <span style="color: #374151; font-weight: 600;">$${s.totalBudgeted.toFixed(2)}</span>
+              <span style="color: #374151; font-weight: 600;">${formatCurrency(s.totalBudgeted, s.currencyCode)}</span>
             </div>
             <div>
               <span style="color: #6b7280; font-size: 12px;">Spent</span><br/>
-              <span style="color: ${percentColor}; font-weight: 600;">$${s.totalSpent.toFixed(2)}</span>
+              <span style="color: ${percentColor}; font-weight: 600;">${formatCurrency(s.totalSpent, s.currencyCode)}</span>
             </div>
             <div>
               <span style="color: #6b7280; font-size: 12px;">Remaining</span><br/>
-              <span style="color: ${s.remaining >= 0 ? "#059669" : "#dc2626"}; font-weight: 600;">$${s.remaining.toFixed(2)}</span>
+              <span style="color: ${s.remaining >= 0 ? "#059669" : "#dc2626"}; font-weight: 600;">${formatCurrency(s.remaining, s.currencyCode)}</span>
             </div>
           </div>
 

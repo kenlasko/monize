@@ -93,7 +93,7 @@ export function InvestmentTransactionForm({
   onDirtyChange,
   submitRef,
 }: InvestmentTransactionFormProps) {
-  const { defaultCurrency } = useNumberFormat();
+  const { defaultCurrency, formatCurrency } = useNumberFormat();
   const [isLoading, setIsLoading] = useState(false);
   const [securities, setSecurities] = useState<Security[]>([]);
   const [showNewSecurityForm, setShowNewSecurityForm] = useState(false);
@@ -511,13 +511,13 @@ export function InvestmentTransactionForm({
               Total Amount ({transactionCurrency})
             </span>
             <span className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              {currencySymbol}{totalAmount.toFixed(2)}
+              {formatCurrency(totalAmount, transactionCurrency)}
             </span>
           </div>
           {needsQuantityPrice && (
             <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
               {watchedQuantity} shares @ {currencySymbol}{watchedPrice.toFixed(5)}
-              {watchedCommission > 0 && ` ${watchedAction === 'SELL' ? '-' : '+'} ${currencySymbol}${watchedCommission.toFixed(2)} commission`}
+              {watchedCommission > 0 && ` ${watchedAction === 'SELL' ? '-' : '+'} ${formatCurrency(watchedCommission, transactionCurrency)} commission`}
             </div>
           )}
         </div>

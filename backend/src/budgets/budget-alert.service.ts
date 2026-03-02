@@ -13,6 +13,7 @@ import { Transaction } from "../transactions/entities/transaction.entity";
 import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
 import { User } from "../users/entities/user.entity";
 import { UserPreference } from "../users/entities/user-preference.entity";
+import { ScheduledTransaction } from "../scheduled-transactions/entities/scheduled-transaction.entity";
 import { EmailService } from "../notifications/email.service";
 import {
   budgetAlertImmediateTemplate,
@@ -27,6 +28,7 @@ import {
   resolveCategoryName,
   resolveCategorySpent,
 } from "./budget-spending.util";
+import { formatCurrency } from "../common/format-currency.util";
 
 interface SeasonalProfile {
   budgetCategoryId: string;
@@ -41,6 +43,7 @@ interface CategoryActual {
   budgetCategoryId: string;
   categoryId: string | null;
   categoryName: string;
+  currencyCode: string;
   budgeted: number;
   spent: number;
   percentUsed: number;
@@ -77,6 +80,8 @@ export class BudgetAlertService {
     private usersRepository: Repository<User>,
     @InjectRepository(UserPreference)
     private preferencesRepository: Repository<UserPreference>,
+    @InjectRepository(ScheduledTransaction)
+    private scheduledTransactionsRepository: Repository<ScheduledTransaction>,
     private emailService: EmailService,
     private configService: ConfigService,
   ) {}
@@ -359,7 +364,7 @@ export class BudgetAlertService {
         alertType: AlertType.OVER_BUDGET,
         severity: AlertSeverity.CRITICAL,
         title: `${cat.categoryName} is over budget`,
-        message: `You have spent $${cat.spent.toFixed(2)} of your $${cat.budgeted.toFixed(2)} budget for ${cat.categoryName} (${cat.percentUsed.toFixed(1)}%).`,
+        message: `You have spent ${formatCurrency(cat.spent, cat.currencyCode)} of your ${formatCurrency(cat.budgeted, cat.currencyCode)} budget for ${cat.categoryName} (${cat.percentUsed.toFixed(1)}%).`,
         data: {
           categoryName: cat.categoryName,
           percent: cat.percentUsed,
@@ -372,9 +377,9 @@ export class BudgetAlertService {
         budgetId: "",
         budgetCategoryId: cat.budgetCategoryId,
         alertType: AlertType.THRESHOLD_CRITICAL,
-        severity: AlertSeverity.CRITICAL,
+        severity: AlertSeverity.WARNING,
         title: `${cat.categoryName} approaching limit`,
-        message: `You have used ${cat.percentUsed.toFixed(1)}% of your ${cat.categoryName} budget ($${cat.spent.toFixed(2)} of $${cat.budgeted.toFixed(2)}).`,
+        message: `You have used ${cat.percentUsed.toFixed(1)}% of your ${cat.categoryName} budget (${formatCurrency(cat.spent, cat.currencyCode)} of ${formatCurrency(cat.budgeted, cat.currencyCode)}).`,
         data: {
           categoryName: cat.categoryName,
           percent: cat.percentUsed,
@@ -390,7 +395,7 @@ export class BudgetAlertService {
         alertType: AlertType.THRESHOLD_WARNING,
         severity: AlertSeverity.WARNING,
         title: `${cat.categoryName} reaching budget limit`,
-        message: `You have used ${cat.percentUsed.toFixed(1)}% of your ${cat.categoryName} budget ($${cat.spent.toFixed(2)} of $${cat.budgeted.toFixed(2)}).`,
+        message: `You have used ${cat.percentUsed.toFixed(1)}% of your ${cat.categoryName} budget (${formatCurrency(cat.spent, cat.currencyCode)} of ${formatCurrency(cat.budgeted, cat.currencyCode)}).`,
         data: {
           categoryName: cat.categoryName,
           percent: cat.percentUsed,
@@ -420,7 +425,7 @@ export class BudgetAlertService {
         alertType: AlertType.PROJECTED_OVERSPEND,
         severity: AlertSeverity.WARNING,
         title: `${cat.categoryName} projected to overspend`,
-        message: `At your current pace, ${cat.categoryName} is projected to reach $${projectedTotal.toFixed(2)} by the end of the period (budget: $${cat.budgeted.toFixed(2)}).`,
+        message: `At your current pace, ${cat.categoryName} is projected to reach ${formatCurrency(projectedTotal, cat.currencyCode)} by the end of the period (budget: ${formatCurrency(cat.budgeted, cat.currencyCode)}).`,
         data: {
           categoryName: cat.categoryName,
           projectedTotal: Math.round(projectedTotal * 100) / 100,
@@ -438,7 +443,7 @@ export class BudgetAlertService {
     const alerts: AlertCandidate[] = [];
     const flexGroups = new Map<
       string,
-      { totalBudgeted: number; totalSpent: number }
+      { totalBudgeted: number; totalSpent: number; currencyCode: string }
     >();
 
     for (const cat of actuals) {
@@ -447,6 +452,7 @@ export class BudgetAlertService {
       const group = flexGroups.get(cat.flexGroup) || {
         totalBudgeted: 0,
         totalSpent: 0,
+        currencyCode: cat.currencyCode,
       };
       group.totalBudgeted += cat.budgeted;
       group.totalSpent += cat.spent;
@@ -464,7 +470,7 @@ export class BudgetAlertService {
           alertType: AlertType.FLEX_GROUP_WARNING,
           severity: AlertSeverity.WARNING,
           title: `Flex group "${groupName}" at ${groupPercent.toFixed(0)}%`,
-          message: `The "${groupName}" flex group has used $${group.totalSpent.toFixed(2)} of its combined $${group.totalBudgeted.toFixed(2)} budget (${groupPercent.toFixed(1)}%).`,
+          message: `The "${groupName}" flex group has used ${formatCurrency(group.totalSpent, group.currencyCode)} of its combined ${formatCurrency(group.totalBudgeted, group.currencyCode)} budget (${groupPercent.toFixed(1)}%).`,
           data: {
             flexGroup: groupName,
             totalBudgeted: group.totalBudgeted,
@@ -499,7 +505,7 @@ export class BudgetAlertService {
         alertType: AlertType.INCOME_SHORTFALL,
         severity: AlertSeverity.CRITICAL,
         title: "Income below expected",
-        message: `Your actual income ($${totalActualIncome.toFixed(2)}) is below ${Math.round(incomeRatio * 100)}% of expected income ($${expectedSoFar.toFixed(2)}) at this point in the period.`,
+        message: `Your actual income (${formatCurrency(totalActualIncome, incomeActuals[0]?.currencyCode || "USD")}) is below ${Math.round(incomeRatio * 100)}% of expected income (${formatCurrency(expectedSoFar, incomeActuals[0]?.currencyCode || "USD")}) at this point in the period.`,
         data: {
           actualIncome: totalActualIncome,
           expectedIncome: expectedSoFar,
@@ -644,13 +650,54 @@ export class BudgetAlertService {
 
     const { periodStart } = this.getCurrentPeriodDates();
 
-    const recentAlerts = await this.alertsRepository.find({
+    const allRecentAlerts = await this.alertsRepository.find({
       where: {
         userId,
         periodStart,
       },
       order: { createdAt: "DESC" },
       take: 20,
+    });
+
+    if (allRecentAlerts.length === 0) return false;
+
+    // Filter out BILL_DUE alerts for bills already paid ahead of time
+    const billAlerts = allRecentAlerts.filter(
+      (a) => a.alertType === AlertType.BILL_DUE,
+    );
+    const paidBillIds = new Set<string>();
+    if (billAlerts.length > 0) {
+      const billIds = billAlerts
+        .map((a) => (a.data as Record<string, unknown>)?.billId as string)
+        .filter(Boolean);
+      if (billIds.length > 0) {
+        const bills = await this.scheduledTransactionsRepository
+          .createQueryBuilder("st")
+          .where("st.id IN (:...billIds)", { billIds })
+          .getMany();
+        for (const bill of bills) {
+          const alertForBill = billAlerts.find(
+            (a) => (a.data as Record<string, unknown>)?.billId === bill.id,
+          );
+          if (!alertForBill) continue;
+          const alertDueDate = (alertForBill.data as Record<string, unknown>)
+            ?.dueDate as string;
+          // Bill was posted and nextDueDate advanced past the alert's due date
+          if (
+            alertDueDate &&
+            bill.nextDueDate &&
+            String(bill.nextDueDate) > alertDueDate
+          ) {
+            paidBillIds.add(bill.id);
+          }
+        }
+      }
+    }
+
+    const recentAlerts = allRecentAlerts.filter((a) => {
+      if (a.alertType !== AlertType.BILL_DUE) return true;
+      const billId = (a.data as Record<string, unknown>)?.billId as string;
+      return !paidBillIds.has(billId);
     });
 
     if (recentAlerts.length === 0) return false;
@@ -916,6 +963,7 @@ export class BudgetAlertService {
         budgetCategoryId: bc.id,
         categoryId: bc.categoryId,
         categoryName,
+        currencyCode: budget.currencyCode,
         budgeted,
         spent,
         percentUsed,

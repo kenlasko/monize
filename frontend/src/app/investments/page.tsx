@@ -24,6 +24,7 @@ import { Account } from '@/types/account';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { PAGE_SIZE } from '@/lib/constants';
 import { formatRelativeTime } from '@/lib/format';
+import { useNumberFormat } from '@/hooks/useNumberFormat';
 
 const TransactionForm = dynamic(() => import('@/components/transactions/TransactionForm').then(m => m.TransactionForm), { ssr: false });
 
@@ -38,6 +39,7 @@ export default function InvestmentsPage() {
 }
 
 function InvestmentsContent() {
+  const { formatCurrency } = useNumberFormat();
   const data = useInvestmentData();
   const [listDensity, setListDensity] = useLocalStorage<DensityLevel>('monize-investments-density', 'normal');
   const [transactionView, setTransactionView] = useState<TransactionViewType>('brokerage');
@@ -178,7 +180,7 @@ function InvestmentsContent() {
                                   <div key={i} className="flex items-start gap-2 text-xs">
                                     <span className="text-green-500 dark:text-green-400 flex-shrink-0">&#10003;</span>
                                     <span className="font-medium text-gray-800 dark:text-gray-200">{r.symbol}</span>
-                                    <span className="text-gray-500 dark:text-gray-400">${r.price?.toFixed(2)}</span>
+                                    <span className="text-gray-500 dark:text-gray-400">{r.price != null ? formatCurrency(r.price) : ''}</span>
                                   </div>
                                 ))}
                             </div>

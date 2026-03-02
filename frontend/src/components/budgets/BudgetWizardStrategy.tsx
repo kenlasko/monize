@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/Input';
 import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { Select } from '@/components/ui/Select';
 import { STRATEGY_LABELS } from './utils/budget-labels';
-import { getCurrencySymbol } from '@/lib/format';
+import { getCurrencySymbol, formatCurrency } from '@/lib/format';
 import type { WizardState } from './BudgetWizard';
 import type { RolloverType } from '@/types/budget';
 import type { Account } from '@/types/account';
@@ -254,7 +254,7 @@ export function BudgetWizardStrategy({
               <span className="text-sm text-gray-500 dark:text-gray-400">
                 Estimated from analysis:{' '}
                 <span className="font-medium text-gray-700 dark:text-gray-300">
-                  {getCurrencySymbol(state.currencyCode)}{state.analysisResult.estimatedMonthlyIncome.toFixed(2)}/mo
+                  {formatCurrency(state.analysisResult.estimatedMonthlyIncome, state.currencyCode)}/mo
                 </span>
               </span>
             </div>
