@@ -15,3 +15,37 @@ export function sanitizePromptValue(value: string): string {
       .trim()
   );
 }
+
+/**
+ * Recursively sanitize all string values in a tool result object.
+ *
+ * Tool results may contain user-controlled strings (payee names,
+ * category names, transaction descriptions) that could include
+ * prompt injection payloads. This function applies sanitizePromptValue()
+ * to every string value in the data structure before it is passed
+ * back to the LLM as a tool result message.
+ */
+export function sanitizeToolResultStrings(data: unknown): unknown {
+  if (data === null || data === undefined) {
+    return data;
+  }
+
+  if (typeof data === "string") {
+    return sanitizePromptValue(data);
+  }
+
+  if (Array.isArray(data)) {
+    return data.map((item) => sanitizeToolResultStrings(item));
+  }
+
+  if (typeof data === "object") {
+    const result: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(data)) {
+      result[key] = sanitizeToolResultStrings(value);
+    }
+    return result;
+  }
+
+  // numbers, booleans, etc. pass through unchanged
+  return data;
+}

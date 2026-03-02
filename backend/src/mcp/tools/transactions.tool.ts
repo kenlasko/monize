@@ -10,9 +10,12 @@ import {
   toolError,
   safeToolError,
 } from "../mcp-context";
+import { McpWriteLimiter } from "../mcp-write-limiter";
 
 @Injectable()
 export class McpTransactionsTools {
+  private readonly writeLimiter = new McpWriteLimiter();
+
   constructor(
     private readonly transactionsService: TransactionsService,
     private readonly accountsService: AccountsService,
@@ -119,7 +122,8 @@ export class McpTransactionsTools {
     server.registerTool(
       "create_transaction",
       {
-        description: "Create a new transaction",
+        description:
+          "Create a new transaction. Set dryRun=true to preview without saving.",
         inputSchema: {
           accountId: z.string().uuid().describe("Account ID"),
           amount: z
@@ -135,6 +139,13 @@ export class McpTransactionsTools {
             .max(500)
             .optional()
             .describe("Description or memo"),
+          dryRun: z
+            .boolean()
+            .optional()
+            .default(false)
+            .describe(
+              "If true, validate and return a preview without creating the transaction",
+            ),
         },
       },
       async (args, extra) => {
@@ -143,11 +154,39 @@ export class McpTransactionsTools {
         const check = requireScope(ctx.scopes, "write");
         if (check.error) return check.result;
 
+        // Rate limit check
+        const limitCheck = this.writeLimiter.checkLimit(ctx.userId);
+        if (!limitCheck.allowed) {
+          return toolError(
+            `Daily write limit reached (${limitCheck.limit} operations per day). Try again tomorrow.`,
+          );
+        }
+
         try {
           const account = await this.accountsService.findOne(
             ctx.userId,
             args.accountId,
           );
+
+          // Dry-run mode: return preview without persisting
+          if (args.dryRun) {
+            return toolResult({
+              dryRun: true,
+              preview: {
+                accountId: args.accountId,
+                accountName: account.name,
+                amount: args.amount,
+                date: args.date,
+                payeeName: args.payeeName || null,
+                categoryId: args.categoryId || null,
+                description: args.description || null,
+                currencyCode: account.currencyCode,
+              },
+              message:
+                "This is a preview. Call again with dryRun=false to create the transaction.",
+            });
+          }
+
           const transaction = await this.transactionsService.create(
             ctx.userId,
             {
@@ -160,6 +199,9 @@ export class McpTransactionsTools {
               currencyCode: account.currencyCode,
             },
           );
+
+          this.writeLimiter.record(ctx.userId, "create_transaction");
+
           return toolResult({
             id: transaction.id,
             date: transaction.transactionDate,
@@ -188,12 +230,23 @@ export class McpTransactionsTools {
         const check = requireScope(ctx.scopes, "write");
         if (check.error) return check.result;
 
+        // Rate limit check
+        const limitCheck = this.writeLimiter.checkLimit(ctx.userId);
+        if (!limitCheck.allowed) {
+          return toolError(
+            `Daily write limit reached (${limitCheck.limit} operations per day). Try again tomorrow.`,
+          );
+        }
+
         try {
           const transaction = await this.transactionsService.update(
             ctx.userId,
             args.transactionId,
             { categoryId: args.categoryId },
           );
+
+          this.writeLimiter.record(ctx.userId, "categorize_transaction");
+
           return toolResult({
             id: transaction.id,
             categoryId: transaction.categoryId,

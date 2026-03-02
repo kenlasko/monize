@@ -5,7 +5,7 @@ import { AccountsService } from "../../accounts/accounts.service";
 import { CategoriesService } from "../../categories/categories.service";
 import { UserPreference } from "../../users/entities/user-preference.entity";
 import { QUERY_SYSTEM_PROMPT } from "./prompt-templates";
-import { formatCurrencyAmount } from "../../common/format-currency.util";
+import { sanitizePromptValue } from "./prompt-sanitize";
 
 interface CategoryNode {
   id: string;
@@ -35,10 +35,12 @@ export class FinancialContextBuilder {
     const currency = preferences?.defaultCurrency || "USD";
     const today = new Date().toISOString().substring(0, 10);
 
+    // LLM06-F1: Only include account names and types, not balances.
+    // Balances are available through the get_account_balances tool.
     const accountList = accounts
       .map(
         (a) =>
-          `- ${a.name} (${a.accountType}, ${a.currencyCode}, balance: ${formatCurrencyAmount(Number(a.currentBalance), a.currencyCode)})`,
+          `- ${sanitizePromptValue(a.name)} (${a.accountType}, ${a.currencyCode})`,
       )
       .join("\n");
 
@@ -49,11 +51,13 @@ export class FinancialContextBuilder {
 TODAY'S DATE: ${today}
 USER'S DEFAULT CURRENCY: ${currency}
 
-USER'S ACCOUNTS:
+<USER_DATA>
+USER'S ACCOUNTS (use get_account_balances tool for balance details):
 ${accountList || "(No accounts configured)"}
 
 USER'S CATEGORIES:
-${categoryList || "(No categories configured)"}`;
+${categoryList || "(No categories configured)"}
+</USER_DATA>`;
   }
 
   async buildCategoryContext(userId: string): Promise<string> {
@@ -74,11 +78,12 @@ ${categoryList || "(No categories configured)"}`;
       .map((cat) => {
         const prefix = "  ".repeat(indent) + "- ";
         const type = cat.isIncome ? "[Income]" : "[Expense]";
+        const safeName = sanitizePromptValue(cat.name);
         const children =
           cat.children && cat.children.length > 0
             ? "\n" + this.formatCategoryTree(cat.children, indent + 1)
             : "";
-        return `${prefix}${cat.name} ${type}${children}`;
+        return `${prefix}${safeName} ${type}${children}`;
       })
       .join("\n");
   }

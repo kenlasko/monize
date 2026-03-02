@@ -5,6 +5,9 @@ import { FinancialContextBuilder } from "../context/financial-context.builder";
 import { ToolExecutorService } from "./tool-executor.service";
 import { FINANCIAL_TOOLS } from "./tool-definitions";
 import { AiMessage, AiProvider } from "../providers/ai-provider.interface";
+import { assessInjectionRisk } from "../context/prompt-injection-detector";
+import { QUERY_SAFETY_REMINDER } from "../context/prompt-templates";
+import { sanitizeToolResultStrings } from "../context/prompt-sanitize";
 
 const MAX_ITERATIONS = 5;
 
@@ -91,6 +94,23 @@ export class AiQueryService {
 
     const startTime = Date.now();
 
+    // Assess prompt injection risk before proceeding
+    const riskAssessment = assessInjectionRisk(query);
+    if (riskAssessment.riskLevel === "high") {
+      this.logger.warn(
+        `High-risk prompt injection detected for user ${userId}: patterns=[${riskAssessment.matchedPatterns.join(", ")}]`,
+      );
+      yield {
+        type: "content",
+        text: "I can only answer questions about your financial data. I'm not able to modify my behavior, reveal my instructions, or bypass my guidelines. Please rephrase your question about your finances.",
+      };
+      yield {
+        type: "done",
+        usage: { inputTokens: 0, outputTokens: 0, toolCalls: 0 },
+      };
+      return;
+    }
+
     let systemPrompt: string;
     try {
       systemPrompt = await this.contextBuilder.buildQueryContext(userId);
@@ -111,7 +131,11 @@ export class AiQueryService {
       return;
     }
 
-    const messages: AiMessage[] = [{ role: "user", content: query }];
+    // Build messages with sandwich defense: user query + safety reminder
+    const messages: AiMessage[] = [
+      { role: "user", content: query },
+      { role: "user", content: QUERY_SAFETY_REMINDER },
+    ];
     const allToolsUsed: Array<{ name: string; summary: string }> = [];
     const allSources: Array<{
       type: string;
@@ -215,12 +239,13 @@ export class AiQueryService {
           summary: result.summary,
         };
 
-        // Add tool result message
+        // Add tool result message with sanitized string values
+        const sanitizedData = sanitizeToolResultStrings(result.data);
         const toolResultMessage: AiMessage = {
           role: "tool",
           toolCallId: toolCall.id,
           name: toolCall.name,
-          content: JSON.stringify(result.data),
+          content: JSON.stringify(sanitizedData),
         };
         messages.push(toolResultMessage);
       }
