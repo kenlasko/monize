@@ -82,20 +82,35 @@ describe("FinancialContextBuilder", () => {
   });
 
   describe("buildQueryContext()", () => {
-    it("builds full context with accounts, categories, and preferences", async () => {
+    it("builds full context with accounts (no balances), categories, and preferences", async () => {
       const result = await builder.buildQueryContext(userId);
 
       expect(result).toContain(QUERY_SYSTEM_PROMPT);
       expect(result).toContain("USER'S DEFAULT CURRENCY: USD");
-      expect(result).toContain("Checking (checking, USD, balance: 5,000.00)");
-      expect(result).toContain(
-        "Credit Card (credit_card, USD, balance: -1,200.50)",
-      );
-      expect(result).toContain("Savings (savings, CAD, balance: 15,000.75)");
+      // LLM06-F1: Accounts should include name and type but NOT balances
+      expect(result).toContain("Checking (checking, USD)");
+      expect(result).toContain("Credit Card (credit_card, USD)");
+      expect(result).toContain("Savings (savings, CAD)");
+      // Balances should NOT be in the system prompt
+      expect(result).not.toContain("5,000.00");
+      expect(result).not.toContain("-1,200.50");
+      expect(result).not.toContain("15,000.75");
+      expect(result).not.toContain("balance:");
       expect(result).toContain("Food [Expense]");
       expect(result).toContain("Groceries [Expense]");
       expect(result).toContain("Dining Out [Expense]");
       expect(result).toContain("Salary [Income]");
+    });
+
+    it("wraps user data in USER_DATA delimiters", async () => {
+      const result = await builder.buildQueryContext(userId);
+      expect(result).toContain("<USER_DATA>");
+      expect(result).toContain("</USER_DATA>");
+    });
+
+    it("instructs to use get_account_balances tool for balances", async () => {
+      const result = await builder.buildQueryContext(userId);
+      expect(result).toContain("get_account_balances");
     });
 
     it("includes today's date", async () => {

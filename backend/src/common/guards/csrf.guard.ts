@@ -58,10 +58,12 @@ export class CsrfGuard implements CanActivate {
       throw new ForbiddenException("Invalid CSRF token");
     }
 
-    // H8: Verify HMAC binding to session if token includes signature
+    // XC-F1: Always verify HMAC session binding when session info is available.
+    // Tokens are always generated with HMAC binding (nonce:hmac format),
+    // so we unconditionally verify rather than checking for ":" in the token.
     const sessionId = request.user?.id;
     const jwtSecret = this.configService.get<string>("JWT_SECRET");
-    if (sessionId && jwtSecret && headerToken.includes(":")) {
+    if (sessionId && jwtSecret) {
       if (!verifyCsrfToken(headerToken, sessionId, jwtSecret)) {
         throw new ForbiddenException("Invalid CSRF token");
       }

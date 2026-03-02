@@ -359,6 +359,78 @@ describe("AiInsightsService", () => {
       expect(result.insights).toEqual([]);
     });
 
+    it("uses non-greedy regex to extract first JSON array only (LLM02-F1)", async () => {
+      const qb = mockQb();
+      qb.getOne.mockResolvedValue(null);
+      qb.getMany.mockResolvedValue([]);
+      qb.getRawOne.mockResolvedValue(null);
+      mockInsightRepo.createQueryBuilder.mockReturnValue(qb);
+
+      // Two JSON arrays in the response - only the first should be parsed
+      const firstArray = JSON.stringify([
+        {
+          type: "anomaly",
+          title: "First Insight",
+          description: "From first array",
+          severity: "info",
+          data: {},
+        },
+      ]);
+      const secondArray = JSON.stringify([
+        {
+          type: "trend",
+          title: "Second Insight",
+          description: "From second array",
+          severity: "warning",
+          data: {},
+        },
+      ]);
+
+      mockAiService.complete!.mockResolvedValue({
+        content: `Here are insights: ${firstArray}\n\nAlso: ${secondArray}`,
+        usage: { inputTokens: 100, outputTokens: 50 },
+        model: "test",
+        provider: "test",
+      });
+
+      await service.generateInsights(userId);
+
+      const savedInsights = mockInsightRepo.save.mock.calls[0]?.[0];
+      if (savedInsights) {
+        expect(savedInsights).toHaveLength(1);
+        expect(savedInsights[0].title).toBe("First Insight");
+      }
+    });
+
+    it("rejects JSON arrays exceeding 100KB size limit (LLM02-F1)", async () => {
+      const qb = mockQb();
+      qb.getOne.mockResolvedValue(null);
+      qb.getMany.mockResolvedValue([]);
+      qb.getRawOne.mockResolvedValue(null);
+      mockInsightRepo.createQueryBuilder.mockReturnValue(qb);
+
+      // Generate a JSON array larger than 100KB
+      const hugeItem = {
+        type: "anomaly",
+        title: "X",
+        description: "Y".repeat(110 * 1024),
+        severity: "info",
+        data: {},
+      };
+
+      mockAiService.complete!.mockResolvedValue({
+        content: JSON.stringify([hugeItem]),
+        usage: { inputTokens: 100, outputTokens: 50 },
+        model: "test",
+        provider: "test",
+      });
+
+      const result = await service.generateInsights(userId);
+
+      expect(mockInsightRepo.save).not.toHaveBeenCalled();
+      expect(result.insights).toEqual([]);
+    });
+
     it("validates insight types from AI response", async () => {
       const qb = mockQb();
       qb.getOne.mockResolvedValue(null);

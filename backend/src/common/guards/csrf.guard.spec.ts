@@ -4,6 +4,7 @@ import { ConfigService } from "@nestjs/config";
 import { Test, TestingModule } from "@nestjs/testing";
 import { CsrfGuard } from "./csrf.guard";
 import { SKIP_CSRF_KEY } from "../decorators/skip-csrf.decorator";
+import { generateCsrfToken } from "../csrf.util";
 
 describe("CsrfGuard", () => {
   let guard: CsrfGuard;
@@ -36,12 +37,16 @@ describe("CsrfGuard", () => {
     method?: string;
     cookies?: Record<string, string>;
     headers?: Record<string, string>;
+    user?: { id: string };
   }): ExecutionContext {
-    const request = {
+    const request: Record<string, unknown> = {
       method: overrides.method ?? "POST",
       cookies: overrides.cookies ?? {},
       headers: overrides.headers ?? {},
     };
+    if (overrides.user) {
+      request.user = overrides.user;
+    }
 
     return {
       switchToHttp: () => ({
@@ -178,6 +183,90 @@ describe("CsrfGuard", () => {
       });
 
       expect(guard.canActivate(context)).toBe(true);
+    });
+  });
+
+  describe("HMAC session binding (XC-F1)", () => {
+    const jwtSecret = "test-secret-key-32-chars-minimum!!";
+    const userId = "user-123";
+    let hmacGuard: CsrfGuard;
+
+    beforeEach(async () => {
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          CsrfGuard,
+          {
+            provide: Reflector,
+            useValue: {
+              getAllAndOverride: jest.fn().mockReturnValue(false),
+            },
+          },
+          {
+            provide: ConfigService,
+            useValue: {
+              get: jest.fn().mockReturnValue(jwtSecret),
+            },
+          },
+        ],
+      }).compile();
+
+      hmacGuard = module.get<CsrfGuard>(CsrfGuard);
+    });
+
+    it("accepts valid HMAC-bound token for the correct user", () => {
+      const token = generateCsrfToken(userId, jwtSecret);
+      const context = createMockContext({
+        method: "POST",
+        cookies: { csrf_token: token },
+        headers: { "x-csrf-token": token },
+        user: { id: userId },
+      });
+
+      expect(hmacGuard.canActivate(context)).toBe(true);
+    });
+
+    it("rejects HMAC-bound token for a different user", () => {
+      const token = generateCsrfToken(userId, jwtSecret);
+      const context = createMockContext({
+        method: "POST",
+        cookies: { csrf_token: token },
+        headers: { "x-csrf-token": token },
+        user: { id: "different-user" },
+      });
+
+      expect(() => hmacGuard.canActivate(context)).toThrow(
+        "Invalid CSRF token",
+      );
+    });
+
+    it("rejects tampered HMAC token", () => {
+      const token = generateCsrfToken(userId, jwtSecret);
+      const parts = token.split(":");
+      const tampered = `${parts[0]}:${"f".repeat(64)}`;
+      const context = createMockContext({
+        method: "POST",
+        cookies: { csrf_token: tampered },
+        headers: { "x-csrf-token": tampered },
+        user: { id: userId },
+      });
+
+      expect(() => hmacGuard.canActivate(context)).toThrow(
+        "Invalid CSRF token",
+      );
+    });
+
+    it("skips HMAC verification when no session is available", () => {
+      // No user on the request means sessionId is undefined
+      const token = "plain-token-no-colon";
+      const context = createMockContext({
+        method: "POST",
+        cookies: { csrf_token: token },
+        headers: { "x-csrf-token": token },
+        // no user
+      });
+
+      // Should pass the double-submit check without HMAC verification
+      expect(hmacGuard.canActivate(context)).toBe(true);
     });
   });
 });

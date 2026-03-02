@@ -14,6 +14,15 @@ import {
 } from "../../budgets/budget-date.utils";
 import { Transaction } from "../../transactions/entities/transaction.entity";
 import { Category } from "../../categories/entities/category.entity";
+import { validateToolInput } from "./tool-input-schemas";
+
+/**
+ * LLM06-F2: Minimum number of transactions required per group
+ * when returning payee-level breakdowns. Groups below this threshold
+ * are aggregated into an "Other" bucket to prevent revealing
+ * individual transaction amounts through targeted queries.
+ */
+export const MIN_AGGREGATION_COUNT = 3;
 
 interface ToolResult {
   data: unknown;
@@ -49,22 +58,36 @@ export class ToolExecutorService {
     toolName: string,
     input: Record<string, unknown>,
   ): Promise<ToolResult> {
+    // LLM07-F1: Validate tool input against Zod schema
+    const validation = validateToolInput(toolName, input);
+    if (!validation.success) {
+      this.logger.warn(
+        `Tool ${toolName} input validation failed: ${validation.error}`,
+      );
+      return {
+        data: { error: validation.error },
+        summary: `Invalid input for ${toolName}: ${validation.error}`,
+        sources: [],
+      };
+    }
+    const validatedInput = validation.data;
+
     try {
       switch (toolName) {
         case "query_transactions":
-          return await this.queryTransactions(userId, input);
+          return await this.queryTransactions(userId, validatedInput);
         case "get_account_balances":
-          return await this.getAccountBalances(userId, input);
+          return await this.getAccountBalances(userId, validatedInput);
         case "get_spending_by_category":
-          return await this.getSpendingByCategory(userId, input);
+          return await this.getSpendingByCategory(userId, validatedInput);
         case "get_income_summary":
-          return await this.getIncomeSummary(userId, input);
+          return await this.getIncomeSummary(userId, validatedInput);
         case "get_net_worth_history":
-          return await this.getNetWorthHistory(userId, input);
+          return await this.getNetWorthHistory(userId, validatedInput);
         case "compare_periods":
-          return await this.comparePeriods(userId, input);
+          return await this.comparePeriods(userId, validatedInput);
         case "get_budget_status":
-          return await this.getBudgetStatus(userId, input);
+          return await this.getBudgetStatus(userId, validatedInput);
         default:
           return {
             data: null,
@@ -257,13 +280,13 @@ export class ToolExecutorService {
           .groupBy("t.payeeName");
 
         const rows = await qb.getRawMany();
-        return rows
-          .map((r) => ({
+        return this.enforceAggregationThreshold(
+          rows.map((r) => ({
             payee: r.label,
             total: Number(r.total),
             count: Number(r.count),
-          }))
-          .sort((a, b) => b.total - a.total);
+          })),
+        );
       }
 
       case "month": {
@@ -432,11 +455,13 @@ export class ToolExecutorService {
           .groupBy("t.payeeName")
           .orderBy("total", "DESC");
         const rows = await qb.getRawMany();
-        items = rows.map((r) => ({
+        const payeeItems = rows.map((r) => ({
           label: r.label,
           amount: Number(r.total),
           count: Number(r.count),
         }));
+        // Enforce aggregation threshold for payee-level data
+        items = this.enforceAggregationThresholdLabeled(payeeItems);
         break;
       }
       case "month": {
@@ -615,21 +640,46 @@ export class ToolExecutorService {
     if (groupBy === "payee") {
       qb.select("COALESCE(t.payeeName, 'Unknown')", "label")
         .addSelect("SUM(ABS(t.amount))", "total")
+        .addSelect("COUNT(*)", "count")
         .groupBy("t.payeeName")
         .orderBy("total", "DESC");
     } else {
       qb.leftJoin("t.category", "cat")
         .select("COALESCE(cat.name, 'Uncategorized')", "label")
         .addSelect("SUM(ABS(t.amount))", "total")
+        .addSelect("COUNT(*)", "count")
         .groupBy("cat.name")
         .orderBy("total", "DESC");
     }
 
     const rows = await qb.getRawMany();
-    return rows.map((r) => ({
+    const items = rows.map((r) => ({
       label: r.label,
       total: Number(r.total),
+      count: Number(r.count),
     }));
+
+    // Enforce aggregation threshold for payee-level comparisons
+    if (groupBy === "payee") {
+      const aboveThreshold = items.filter(
+        (i) => i.count >= MIN_AGGREGATION_COUNT,
+      );
+      const belowThreshold = items.filter(
+        (i) => i.count < MIN_AGGREGATION_COUNT,
+      );
+      if (belowThreshold.length > 0) {
+        const otherTotal = belowThreshold.reduce((s, i) => s + i.total, 0);
+        const otherCount = belowThreshold.reduce((s, i) => s + i.count, 0);
+        aboveThreshold.push({
+          label: "Other (aggregated)",
+          total: otherTotal,
+          count: otherCount,
+        });
+      }
+      return aboveThreshold.map((i) => ({ label: i.label, total: i.total }));
+    }
+
+    return items.map((r) => ({ label: r.label, total: r.total }));
   }
 
   private async getBudgetStatus(
@@ -799,5 +849,55 @@ export class ToolExecutorService {
 
     // Default: CURRENT
     return getCurrentMonthPeriodDates();
+  }
+
+  /**
+   * LLM06-F2: Enforce minimum aggregation threshold for payee-level data.
+   * Groups with fewer than MIN_AGGREGATION_COUNT transactions are merged
+   * into an "Other (aggregated)" bucket to prevent revealing individual
+   * transaction amounts through targeted queries.
+   */
+  private enforceAggregationThreshold(
+    rows: Array<{ payee: string; total: number; count: number }>,
+  ): Array<{ payee: string; total: number; count: number }> {
+    const aboveThreshold = rows.filter((r) => r.count >= MIN_AGGREGATION_COUNT);
+    const belowThreshold = rows.filter((r) => r.count < MIN_AGGREGATION_COUNT);
+
+    if (belowThreshold.length > 0) {
+      const otherTotal = belowThreshold.reduce((sum, r) => sum + r.total, 0);
+      const otherCount = belowThreshold.reduce((sum, r) => sum + r.count, 0);
+      aboveThreshold.push({
+        payee: "Other (aggregated)",
+        total: otherTotal,
+        count: otherCount,
+      });
+    }
+
+    return aboveThreshold.sort((a, b) => b.total - a.total);
+  }
+
+  /**
+   * Same as enforceAggregationThreshold but for the { label, amount, count }
+   * shape used in income summary and period comparisons.
+   */
+  private enforceAggregationThresholdLabeled(
+    items: Array<{ label: string; amount: number; count: number }>,
+  ): Array<{ label: string; amount: number; count: number }> {
+    const aboveThreshold = items.filter(
+      (i) => i.count >= MIN_AGGREGATION_COUNT,
+    );
+    const belowThreshold = items.filter((i) => i.count < MIN_AGGREGATION_COUNT);
+
+    if (belowThreshold.length > 0) {
+      const otherAmount = belowThreshold.reduce((s, i) => s + i.amount, 0);
+      const otherCount = belowThreshold.reduce((s, i) => s + i.count, 0);
+      aboveThreshold.push({
+        label: "Other (aggregated)",
+        amount: otherAmount,
+        count: otherCount,
+      });
+    }
+
+    return aboveThreshold;
   }
 }

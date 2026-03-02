@@ -230,6 +230,52 @@ describe("ToolExecutorService", () => {
       expect(result.summary).toContain("Error executing query_transactions");
       expect(result.sources).toEqual([]);
     });
+
+    it("rejects invalid tool input with validation error (LLM07-F1)", async () => {
+      const result = await service.execute(userId, "query_transactions", {
+        startDate: "not-a-date",
+        endDate: "2026-01-31",
+      });
+
+      expect(result.data).toEqual(
+        expect.objectContaining({
+          error: expect.stringContaining("Invalid input"),
+        }),
+      );
+      expect(result.summary).toContain("Invalid input");
+      expect(result.sources).toEqual([]);
+    });
+
+    it("rejects missing required fields in tool input (LLM07-F1)", async () => {
+      const result = await service.execute(userId, "query_transactions", {});
+
+      expect(result.data).toEqual(
+        expect.objectContaining({
+          error: expect.stringContaining("Invalid input"),
+        }),
+      );
+      expect(result.sources).toEqual([]);
+    });
+
+    it("allows valid input and proceeds to tool execution (LLM07-F1)", async () => {
+      const result = await service.execute(userId, "query_transactions", {
+        startDate: "2026-01-01",
+        endDate: "2026-01-31",
+      });
+
+      expect(result.data).toBeDefined();
+      expect(result.summary).toContain("transactions");
+      expect(mockAnalyticsService.getSummary).toHaveBeenCalled();
+    });
+
+    it("passes through unknown tools without validation (LLM07-F1)", async () => {
+      const result = await service.execute(userId, "unknown_tool", {
+        anyField: "anyValue",
+      });
+
+      expect(result.data).toBeNull();
+      expect(result.summary).toContain("Unknown tool");
+    });
   });
 
   describe("query_transactions", () => {

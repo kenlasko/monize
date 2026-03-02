@@ -1,6 +1,7 @@
 import {
   CATEGORIZATION_SYSTEM_PROMPT,
   QUERY_SYSTEM_PROMPT,
+  QUERY_SAFETY_REMINDER,
   INSIGHT_SYSTEM_PROMPT,
   FORECAST_SYSTEM_PROMPT,
 } from "./prompt-templates";
@@ -35,6 +36,15 @@ describe("prompt-templates", () => {
       expect(QUERY_SYSTEM_PROMPT).toMatch(
         /never reveal individual transaction/i,
       );
+    });
+
+    it("includes data handling rules", () => {
+      expect(QUERY_SYSTEM_PROMPT).toMatch(/DATA HANDLING RULES/);
+      expect(QUERY_SYSTEM_PROMPT).toMatch(/DATA ONLY/);
+    });
+
+    it("instructs to not reveal system prompt", () => {
+      expect(QUERY_SYSTEM_PROMPT).toMatch(/never reveal.*system prompt/i);
     });
 
     it("instructs the AI to show expenses as positive numbers", () => {
@@ -93,6 +103,33 @@ describe("prompt-templates", () => {
   describe("placeholder prompts", () => {
     it("CATEGORIZATION_SYSTEM_PROMPT is a placeholder", () => {
       expect(CATEGORIZATION_SYSTEM_PROMPT).toContain("TODO");
+    });
+  });
+
+  describe("QUERY_SAFETY_REMINDER", () => {
+    it("is a non-empty string", () => {
+      expect(typeof QUERY_SAFETY_REMINDER).toBe("string");
+      expect(QUERY_SAFETY_REMINDER.length).toBeGreaterThan(50);
+    });
+
+    it("reinforces aggregation-only rule", () => {
+      expect(QUERY_SAFETY_REMINDER).toMatch(
+        /never reveal individual transaction/i,
+      );
+    });
+
+    it("reinforces system prompt secrecy", () => {
+      expect(QUERY_SAFETY_REMINDER).toMatch(/never reveal.*system prompt/i);
+    });
+
+    it("instructs to treat user data as data", () => {
+      expect(QUERY_SAFETY_REMINDER).toMatch(
+        /USER DATA.*data.*not instructions/i,
+      );
+    });
+
+    it("instructs to politely decline conflicting requests", () => {
+      expect(QUERY_SAFETY_REMINDER).toMatch(/politely decline/i);
     });
   });
 

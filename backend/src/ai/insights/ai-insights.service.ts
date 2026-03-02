@@ -335,9 +335,18 @@ export class AiInsightsService {
 
   private parseInsightsResponse(content: string): RawInsight[] {
     const trimmed = content.trim();
-    const jsonMatch = trimmed.match(/\[[\s\S]*\]/);
+    // LLM02-F1: Use non-greedy regex and enforce size limit
+    const jsonMatch = trimmed.match(/\[[\s\S]*?\]/);
     if (!jsonMatch) {
       this.logger.warn("AI response did not contain a JSON array");
+      return [];
+    }
+
+    const MAX_JSON_SIZE = 100 * 1024; // 100KB
+    if (jsonMatch[0].length > MAX_JSON_SIZE) {
+      this.logger.warn(
+        `AI insights JSON too large (${jsonMatch[0].length} bytes, limit ${MAX_JSON_SIZE})`,
+      );
       return [];
     }
 
