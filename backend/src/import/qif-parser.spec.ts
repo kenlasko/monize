@@ -548,6 +548,55 @@ T-50.00
     });
   });
 
+  describe("parseQif - DD/MM'YYYY format with apostrophe before 4-digit year", () => {
+    it("parses date with apostrophe before 4-digit year as DD/MM/YYYY", () => {
+      const qif = `!Type:Bank
+D08/03'2010
+T0.00
+^`;
+      const result = parseQif(qif, "DD/MM/YYYY");
+      expect(result.transactions[0].date).toBe("2010-03-08");
+    });
+
+    it("parses multiple transactions with apostrophe 4-digit year format", () => {
+      const qif = `!Type:Bank
+D08/03'2010
+T150.00
+PCash Deposit
+^
+D11/03'2010
+T521.48
+PNFT Distribution LTD
+^
+D12/03'2010
+T-20.00
+PCash Withdrawal
+^`;
+      const result = parseQif(qif, "DD/MM/YYYY");
+      expect(result.transactions[0].date).toBe("2010-03-08");
+      expect(result.transactions[1].date).toBe("2010-03-11");
+      expect(result.transactions[2].date).toBe("2010-03-12");
+    });
+
+    it("auto-detects DD/MM/YYYY from apostrophe format when day > 12", () => {
+      const qif = `!Type:Bank
+D15/03'2010
+T-50.00
+^`;
+      const result = parseQif(qif);
+      expect(result.detectedDateFormat).toBe("DD/MM/YYYY");
+    });
+
+    it("parses apostrophe 4-digit year with MM/DD/YYYY format", () => {
+      const qif = `!Type:Bank
+D03/15'2010
+T-50.00
+^`;
+      const result = parseQif(qif, "MM/DD/YYYY");
+      expect(result.transactions[0].date).toBe("2010-03-15");
+    });
+  });
+
   describe("parseQif - 2-digit year boundary (year 49 vs 50)", () => {
     it("treats year 50 as 2050", () => {
       const qif = `!Type:Bank

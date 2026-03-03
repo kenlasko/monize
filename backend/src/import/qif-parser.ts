@@ -363,11 +363,25 @@ export function parseQif(
   };
 }
 
+function normalizeDateSeparators(dateStr: string): string {
+  // Remove wrapping quotes and trim
+  let normalized = dateStr.replace(/^['"]|['"]$/g, "").trim();
+  // Normalize apostrophe/quote used as date separator to '/'
+  // Handles formats like DD/MM'YYYY and M/D'YY
+  normalized = normalized.replace(/(\d)['"](\d)/g, "$1/$2");
+  return normalized;
+}
+
 function detectDateFormat(dates: string[]): DateFormat {
   if (dates.length === 0) return "MM/DD/YYYY";
 
+  // Normalize separators so apostrophe formats (e.g. DD/MM'YYYY) are handled
+  const normalizedDates = dates.map(normalizeDateSeparators);
+
   // Check for YYYY-MM-DD or YYYY-DD-MM format (ISO-like)
-  const isoMatch = dates[0]?.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+  const isoMatch = normalizedDates[0]?.match(
+    /^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/,
+  );
   if (isoMatch) {
     const [, , part2, part3] = isoMatch;
     const p2 = parseInt(part2);
@@ -379,7 +393,7 @@ function detectDateFormat(dates: string[]): DateFormat {
     if (p3 > 12) return "YYYY-MM-DD";
 
     // Check multiple dates to make a better guess
-    for (const date of dates.slice(0, 10)) {
+    for (const date of normalizedDates.slice(0, 10)) {
       const m = date.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
       if (m) {
         if (parseInt(m[2]) > 12) return "YYYY-DD-MM";
@@ -392,7 +406,7 @@ function detectDateFormat(dates: string[]): DateFormat {
   }
 
   // Check for MM/DD/YYYY or DD/MM/YYYY format
-  for (const date of dates.slice(0, 10)) {
+  for (const date of normalizedDates.slice(0, 10)) {
     const match = date.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{2,4})$/);
     if (match) {
       const [, part1, part2] = match;
@@ -411,8 +425,7 @@ function detectDateFormat(dates: string[]): DateFormat {
 }
 
 function parseQifDate(dateStr: string, format?: DateFormat): string {
-  // Remove any quotes
-  dateStr = dateStr.replace(/['"]/g, "").trim();
+  dateStr = normalizeDateSeparators(dateStr);
 
   // Try YYYY-MM-DD or YYYY-DD-MM format (ISO-like)
   let match = dateStr.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
@@ -455,25 +468,6 @@ function parseQifDate(dateStr: string, format?: DateFormat): string {
     }
 
     return `${year}-${month}-${day}`;
-  }
-
-  // Try alternate format with apostrophe for year: M/D'YY
-  match = dateStr.match(/^(\d{1,2})[-/](\d{1,2})['"]?(\d{2})$/);
-  if (match) {
-    const [, part1, part2, year] = match;
-    const yearNum = parseInt(year);
-    const fullYear = yearNum > 50 ? `19${year}` : `20${year}`;
-
-    let month: string, day: string;
-    if (format === "DD/MM/YYYY") {
-      day = part1.padStart(2, "0");
-      month = part2.padStart(2, "0");
-    } else {
-      month = part1.padStart(2, "0");
-      day = part2.padStart(2, "0");
-    }
-
-    return `${fullYear}-${month}-${day}`;
   }
 
   // Return as-is if can't parse
