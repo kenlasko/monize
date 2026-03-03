@@ -295,10 +295,11 @@ export class AuthService {
 
     const secret = decrypt(user.twoFactorSecret, this.jwtSecret);
 
-    // L5: Check backup codes before TOTP
-    let isValid = otplib.verifySync({ token: code, secret }).valid;
-
-    if (!isValid && user.backupCodes) {
+    // L5: Try TOTP for 6-digit codes, backup codes for XXXX-XXXX format
+    let isValid = false;
+    if (/^\d{6}$/.test(code)) {
+      isValid = otplib.verifySync({ token: code, secret }).valid;
+    } else if (user.backupCodes) {
       isValid = await this.verifyBackupCode(user, code);
     }
 

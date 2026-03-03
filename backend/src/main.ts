@@ -12,6 +12,24 @@ import { AppModule } from "./app.module";
 // OID 1082 = DATE type in PostgreSQL
 pg.types.setTypeParser(1082, (val: string) => val);
 
+// Suppress Node.js 20 ERR_INTERNAL_ASSERTION in HTTP detachSocket.
+// This fires asynchronously when NestJS @Res() handlers throw exceptions,
+// causing a race between the exception filter's response and internal socket
+// cleanup. The response is already sent to the client; only the socket
+// bookkeeping assertion fails. Safe to suppress in dev; does not fire in prod.
+if (process.env.NODE_ENV !== "production") {
+  process.on("uncaughtException", (err: any) => {
+    if (
+      err?.code === "ERR_INTERNAL_ASSERTION" &&
+      err?.stack?.includes("detachSocket")
+    ) {
+      return;
+    }
+    console.error("Uncaught exception:", err);
+    process.exit(1);
+  });
+}
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
