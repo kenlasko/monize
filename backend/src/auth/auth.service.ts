@@ -417,6 +417,12 @@ export class AuthService {
       throw new NotFoundException("User not found");
     }
 
+    if (user.authProvider === "oidc") {
+      throw new BadRequestException(
+        "Two-factor authentication is not available for SSO accounts",
+      );
+    }
+
     const secret = otplib.generateSecret();
     const otpauthUrl = otplib.generateURI({
       secret,
@@ -668,6 +674,28 @@ export class AuthService {
       if (needsUpdate) {
         await this.usersRepository.save(user);
       }
+    }
+
+    // Strip any 2FA config from SSO users -- 2FA is managed by the identity provider
+    if (
+      user.twoFactorSecret ||
+      user.pendingTwoFactorSecret ||
+      user.backupCodes
+    ) {
+      user.twoFactorSecret = null;
+      user.pendingTwoFactorSecret = null;
+      user.backupCodes = null;
+      this.logger.log(`Cleared 2FA config for SSO user ${user.id}`);
+
+      const preferences = await this.preferencesRepository.findOne({
+        where: { userId: user.id },
+      });
+      if (preferences && preferences.twoFactorEnabled) {
+        preferences.twoFactorEnabled = false;
+        await this.preferencesRepository.save(preferences);
+      }
+
+      await this.trustedDevicesRepository.delete({ userId: user.id });
     }
 
     // Update last login

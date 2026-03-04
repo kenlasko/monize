@@ -879,6 +879,44 @@ describe('SecuritySection', () => {
     expect(screen.queryByText(/Single Sign-On \(SSO\)/)).not.toBeInTheDocument();
   });
 
+  // --- SSO users: 2FA settings hidden ---
+  it('hides 2FA controls for SSO users but keeps heading and explanation', () => {
+    const oidcUser = { ...mockUser, authProvider: 'oidc' as const };
+
+    render(
+      <SecuritySection
+        user={oidcUser}
+        preferences={mockPreferences}
+        force2fa={false}
+        onPreferencesUpdated={mockOnPreferencesUpdated}
+      />
+    );
+
+    expect(screen.getByText('Two-Factor Authentication')).toBeInTheDocument();
+    expect(screen.getByText(/not available for SSO accounts/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Enable 2FA' })).not.toBeInTheDocument();
+  });
+
+  it('hides 2FA controls for SSO users even when 2FA was previously enabled', () => {
+    const oidcUser = { ...mockUser, authProvider: 'oidc' as const };
+    const prefsWith2fa = { ...mockPreferences, twoFactorEnabled: true };
+
+    render(
+      <SecuritySection
+        user={oidcUser}
+        preferences={prefsWith2fa}
+        force2fa={false}
+        onPreferencesUpdated={mockOnPreferencesUpdated}
+      />
+    );
+
+    expect(screen.getByText('Two-Factor Authentication')).toBeInTheDocument();
+    expect(screen.getByText(/not available for SSO accounts/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Disable 2FA' })).not.toBeInTheDocument();
+    expect(screen.queryByText('Backup Codes')).not.toBeInTheDocument();
+    expect(screen.queryByText('Trusted Devices')).not.toBeInTheDocument();
+  });
+
   // --- 2FA disable error handling ---
   it('shows error toast when disable 2FA API fails', async () => {
     const prefsWith2fa = { ...mockPreferences, twoFactorEnabled: true };

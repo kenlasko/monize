@@ -687,6 +687,20 @@ describe("AuthService", () => {
         "User not found",
       );
     });
+
+    it("throws BadRequestException for SSO users", async () => {
+      usersRepository.findOne.mockResolvedValue({
+        ...mockUser,
+        authProvider: "oidc",
+      });
+
+      await expect(service.setup2FA("user-1")).rejects.toThrow(
+        BadRequestException,
+      );
+      await expect(service.setup2FA("user-1")).rejects.toThrow(
+        "Two-factor authentication is not available for SSO accounts",
+      );
+    });
   });
 
   // ---------------------------------------------------------------
@@ -1382,6 +1396,66 @@ describe("AuthService", () => {
 
       expect(result.firstName).toBe("John");
       expect(result.lastName).toBe("Michael Doe");
+    });
+
+    it("clears 2FA config for SSO users who have it", async () => {
+      const userWith2FA = {
+        ...mockUser,
+        id: "oidc-2fa",
+        oidcSubject: "oidc-sub-2fa",
+        authProvider: "oidc",
+        twoFactorSecret: "encrypted-secret",
+        pendingTwoFactorSecret: "pending-secret",
+        backupCodes: '["code1","code2"]',
+      };
+      usersRepository.findOne.mockResolvedValue(userWith2FA);
+      usersRepository.save.mockImplementation((u) => u);
+      preferencesRepository.findOne.mockResolvedValue({
+        userId: "oidc-2fa",
+        twoFactorEnabled: true,
+      });
+      preferencesRepository.save.mockImplementation((p) => p);
+      trustedDevicesRepository.delete.mockResolvedValue({ affected: 2 });
+
+      const result = await service.findOrCreateOidcUser({
+        sub: "oidc-sub-2fa",
+        email: "test@example.com",
+        email_verified: true,
+      });
+
+      expect(result.twoFactorSecret).toBeNull();
+      expect(result.pendingTwoFactorSecret).toBeNull();
+      expect(result.backupCodes).toBeNull();
+      expect(preferencesRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({ twoFactorEnabled: false }),
+      );
+      expect(trustedDevicesRepository.delete).toHaveBeenCalledWith({
+        userId: "oidc-2fa",
+      });
+    });
+
+    it("does not clear 2FA config when SSO user has no 2FA", async () => {
+      const userWithout2FA = {
+        ...mockUser,
+        id: "oidc-no2fa",
+        oidcSubject: "oidc-sub-no2fa",
+        authProvider: "oidc",
+        twoFactorSecret: null,
+        pendingTwoFactorSecret: null,
+        backupCodes: null,
+      };
+      usersRepository.findOne.mockResolvedValue(userWithout2FA);
+      usersRepository.save.mockImplementation((u) => u);
+
+      await service.findOrCreateOidcUser({
+        sub: "oidc-sub-no2fa",
+        email: "test@example.com",
+        email_verified: true,
+      });
+
+      // preferencesRepository.findOne should NOT be called for 2FA cleanup
+      // (only the lastLogin save should happen)
+      expect(trustedDevicesRepository.delete).not.toHaveBeenCalled();
     });
   });
 

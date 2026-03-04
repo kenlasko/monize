@@ -131,10 +131,10 @@ export function SecuritySection({ user, preferences, force2fa, onPreferencesUpda
   };
 
   useEffect(() => {
-    if (twoFactorEnabled && user.hasPassword) {
+    if (twoFactorEnabled && user.hasPassword && user.authProvider !== 'oidc') {
       loadTrustedDevices();
     }
-  }, [twoFactorEnabled, user.hasPassword]);
+  }, [twoFactorEnabled, user.hasPassword, user.authProvider]);
 
   const handleRevokeDevice = async (id: string) => {
     try {
@@ -205,50 +205,53 @@ export function SecuritySection({ user, preferences, force2fa, onPreferencesUpda
         <h3 className="text-md font-medium text-gray-900 dark:text-gray-100 mb-3">
           Two-Factor Authentication
         </h3>
-        {user.authProvider === 'oidc' && (
-          <div className="mb-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+        {user.authProvider === 'oidc' ? (
+          <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
             <p className="text-sm text-blue-700 dark:text-blue-300">
-              Two-factor authentication only applies to password-based logins. When using Single Sign-On (SSO), authentication security is managed by your identity provider.
+              Two-factor authentication is not available for SSO accounts. Authentication security is managed by your identity provider.
             </p>
-          </div>
-        )}
-        {twoFactorEnabled ? (
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
-                Enabled
-              </span>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                Your account is protected with TOTP verification.
-              </p>
-            </div>
-            {force2fa ? (
-              <p className="text-xs text-gray-500 dark:text-gray-400 italic">
-                Required by administrator
-              </p>
-            ) : (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowTwoFactorDisable(true)}
-              >
-                Disable 2FA
-              </Button>
-            )}
           </div>
         ) : (
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              Add an extra layer of security to your account.
-            </p>
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={() => setShowTwoFactorSetup(true)}
-            >
-              Enable 2FA
-            </Button>
-          </div>
+          <>
+            {twoFactorEnabled ? (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                    Enabled
+                  </span>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Your account is protected with TOTP verification.
+                  </p>
+                </div>
+                {force2fa ? (
+                  <p className="text-xs text-gray-500 dark:text-gray-400 italic">
+                    Required by administrator
+                  </p>
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowTwoFactorDisable(true)}
+                  >
+                    Disable 2FA
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Add an extra layer of security to your account.
+                </p>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => setShowTwoFactorSetup(true)}
+                >
+                  Enable 2FA
+                </Button>
+              </div>
+            )}
+          </>
         )}
       </div>
 
@@ -342,7 +345,7 @@ export function SecuritySection({ user, preferences, force2fa, onPreferencesUpda
       </Modal>
 
       {/* Backup Codes */}
-      {twoFactorEnabled && (
+      {twoFactorEnabled && user.authProvider !== 'oidc' && (
         <div className="border-t border-gray-200 dark:border-gray-700 mt-6 pt-6">
           <div className="flex items-center justify-between">
             <div>
@@ -377,7 +380,7 @@ export function SecuritySection({ user, preferences, force2fa, onPreferencesUpda
       </Modal>
 
       {/* Trusted Devices */}
-      {twoFactorEnabled && (
+      {twoFactorEnabled && user.authProvider !== 'oidc' && (
         <div className="border-t border-gray-200 dark:border-gray-700 mt-6 pt-6">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-md font-medium text-gray-900 dark:text-gray-100">
