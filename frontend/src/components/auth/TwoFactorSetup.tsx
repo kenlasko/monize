@@ -67,7 +67,7 @@ export function TwoFactorSetup({ onComplete, onSkip, isForced }: TwoFactorSetupP
       toast.success('Two-factor authentication enabled!');
       // Generate backup codes after successful 2FA setup
       try {
-        const response = await authApi.generateBackupCodes();
+        const response = await authApi.generateBackupCodes(formData.code);
         setBackupCodes(response.codes);
       } catch (error) {
         toast.error(getErrorMessage(error, 'Failed to generate backup codes'));
