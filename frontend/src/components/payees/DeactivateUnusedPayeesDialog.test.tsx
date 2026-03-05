@@ -276,6 +276,55 @@ describe('DeactivateUnusedPayeesDialog', () => {
     });
   });
 
+  describe('slider configuration', () => {
+    it('renders months unused slider with 6-month step and 10-year max', async () => {
+      const { container } = await renderDialog();
+
+      const sliders = container.querySelectorAll('input[type="range"]');
+      const monthsSlider = sliders[1];
+
+      expect(monthsSlider).toHaveAttribute('min', '6');
+      expect(monthsSlider).toHaveAttribute('max', '120');
+      expect(monthsSlider).toHaveAttribute('step', '6');
+    });
+
+    it('displays correct range labels for months slider', async () => {
+      const { getByText } = await renderDialog();
+
+      expect(getByText('6 months')).toBeInTheDocument();
+      expect(getByText('5 years')).toBeInTheDocument();
+      expect(getByText('10 years')).toBeInTheDocument();
+    });
+
+    it('formats year labels correctly for 12-month increments', async () => {
+      const { container, getByText } = await renderDialog();
+
+      const sliders = container.querySelectorAll('input[type="range"]');
+      const monthsSlider = sliders[1];
+
+      // Change to 24 months = 2 years
+      await act(async () => {
+        fireEvent.change(monthsSlider, { target: { value: '24' } });
+      });
+
+      expect(getByText('2 years')).toBeInTheDocument();
+    });
+
+    it('formats half-year labels correctly for 6-month offsets', async () => {
+      const { container, getByText } = await renderDialog();
+
+      const sliders = container.querySelectorAll('input[type="range"]');
+      const monthsSlider = sliders[1];
+
+      // Change to 18 months = 1.5 years
+      await act(async () => {
+        fireEvent.change(monthsSlider, { target: { value: '18' } });
+      });
+
+      expect(getByText('1.5 years')).toBeInTheDocument();
+    });
+  });
+
   describe('state reset on reopen', () => {
     it('clears candidates when dialog reopens', async () => {
       vi.mocked(payeesApi.getDeactivationPreview).mockResolvedValue(mockCandidates);

@@ -37,6 +37,7 @@ function makePayee(overrides: Partial<Payee> & { id: string; name: string }): Pa
     defaultCategoryId: null,
     defaultCategory: null,
     notes: null,
+    isActive: true,
     createdAt: '2026-01-01T00:00:00Z',
     transactionCount: 0,
     ...overrides,
@@ -340,6 +341,23 @@ describe('PayeeList', () => {
 
     expect(screen.getByText('Walmart')).toBeInTheDocument();
     expect(screen.getByText('Amazon')).toBeInTheDocument();
+  });
+
+  it('sorts names case-insensitively', () => {
+    const payees = [
+      makePayee({ id: 'p1', name: 'banana' }),
+      makePayee({ id: 'p2', name: 'Apple' }),
+      makePayee({ id: 'p3', name: 'cherry' }),
+    ];
+
+    const { container } = render(<PayeeList payees={payees} onEdit={onEdit} onRefresh={onRefresh} />);
+    const rows = container.querySelectorAll('tbody tr');
+    const names = Array.from(rows).map(row => row.querySelector('td')?.textContent?.trim());
+
+    // Default sort is name asc; case-insensitive means Apple < banana < cherry
+    expect(names[0]).toBe('Apple');
+    expect(names[1]).toBe('banana');
+    expect(names[2]).toBe('cherry');
   });
 
   it('uses controlled sort when onSort prop is provided', () => {
