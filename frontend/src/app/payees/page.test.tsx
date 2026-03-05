@@ -163,10 +163,10 @@ vi.mock('@/components/payees/CategoryAutoAssignDialog', () => ({
 }));
 
 const mockPayees = [
-  { id: 'p-1', name: 'Grocery Store', defaultCategoryId: 'cat-1', defaultCategory: { name: 'Food' }, transactionCount: 50 },
-  { id: 'p-2', name: 'Gas Station', defaultCategoryId: 'cat-2', defaultCategory: { name: 'Auto' }, transactionCount: 20 },
-  { id: 'p-3', name: 'Amazon', defaultCategoryId: null, defaultCategory: null, transactionCount: 35 },
-  { id: 'p-4', name: 'Electric Co', defaultCategoryId: null, defaultCategory: null, transactionCount: 12 },
+  { id: 'p-1', name: 'Grocery Store', defaultCategoryId: 'cat-1', defaultCategory: { name: 'Food' }, transactionCount: 50, isActive: true },
+  { id: 'p-2', name: 'Gas Station', defaultCategoryId: 'cat-2', defaultCategory: { name: 'Auto' }, transactionCount: 20, isActive: true },
+  { id: 'p-3', name: 'Amazon', defaultCategoryId: null, defaultCategory: null, transactionCount: 35, isActive: true },
+  { id: 'p-4', name: 'Electric Co', defaultCategoryId: null, defaultCategory: null, transactionCount: 12, isActive: true },
 ];
 
 describe('PayeesPage', () => {
@@ -202,11 +202,12 @@ describe('PayeesPage', () => {
   });
 
   describe('Summary Cards', () => {
-    it('renders all three summary cards', async () => {
+    it('renders all four summary cards', async () => {
       render(<PayeesPage />);
       await waitFor(() => {
         expect(screen.getByTestId('summary-Total Payees')).toHaveTextContent('4');
-        expect(screen.getByTestId('summary-With Category')).toHaveTextContent('2');
+        expect(screen.getByTestId('summary-Active')).toHaveTextContent('4');
+        expect(screen.getByTestId('summary-Inactive')).toHaveTextContent('0');
         expect(screen.getByTestId('summary-Without Category')).toHaveTextContent('2');
       });
     });
@@ -345,6 +346,7 @@ describe('PayeesPage', () => {
         defaultCategoryId: null,
         defaultCategory: null,
         transactionCount: i,
+        isActive: true,
       }));
       mockGetAllPayees.mockResolvedValue(manyPayees);
       render(<PayeesPage />);
