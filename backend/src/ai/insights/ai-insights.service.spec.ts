@@ -810,7 +810,7 @@ describe("AiInsightsService", () => {
       );
 
       // Trigger first generation (will hang)
-      const firstCall = service.generateInsights(userId);
+      void service.generateInsights(userId);
 
       // Wait a tick so generatingUsers is set
       await new Promise((resolve) => setImmediate(resolve));
