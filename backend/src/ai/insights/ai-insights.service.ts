@@ -277,30 +277,54 @@ export class AiInsightsService {
     return [...ids] as string[];
   }
 
+  private formatPctWithDirection(pct: number): string {
+    if (Math.abs(pct) < 0.05) return "0.0% (UNCHANGED)";
+    if (pct > 0) return `+${pct.toFixed(1)}% (ABOVE)`;
+    return `${pct.toFixed(1)}% (BELOW)`;
+  }
+
   private buildInsightsPrompt(aggregates: SpendingAggregates): string {
     const sections: string[] = [];
 
-    const projectedMonthlySpending =
-      aggregates.daysElapsedInMonth > 0
-        ? (aggregates.totalSpendingCurrentMonth /
-            aggregates.daysElapsedInMonth) *
-          aggregates.daysInMonth
-        : 0;
-    const projectedVsAvgPct =
-      aggregates.averageMonthlySpending > 0
-        ? ((projectedMonthlySpending - aggregates.averageMonthlySpending) /
-            aggregates.averageMonthlySpending) *
-          100
-        : 0;
+    const monthProgress = aggregates.daysElapsedInMonth / aggregates.daysInMonth;
+    const hasEnoughDaysForProjection = aggregates.daysElapsedInMonth >= 10;
+
+    let projectedMonthlySpending: number | null = null;
+    let projectedVsAvgPct: number | null = null;
+
+    if (hasEnoughDaysForProjection && aggregates.daysElapsedInMonth > 0) {
+      projectedMonthlySpending =
+        (aggregates.totalSpendingCurrentMonth /
+          aggregates.daysElapsedInMonth) *
+        aggregates.daysInMonth;
+      projectedVsAvgPct =
+        aggregates.averageMonthlySpending > 0
+          ? ((projectedMonthlySpending - aggregates.averageMonthlySpending) /
+              aggregates.averageMonthlySpending) *
+            100
+          : 0;
+    }
 
     sections.push(
       `Currency: ${aggregates.currency}`,
-      `Days elapsed in current month: ${aggregates.daysElapsedInMonth}/${aggregates.daysInMonth}`,
+      `Days elapsed in current month: ${aggregates.daysElapsedInMonth}/${aggregates.daysInMonth} (${(monthProgress * 100).toFixed(0)}% through month)`,
       `Total spending current month (so far): ${aggregates.totalSpendingCurrentMonth.toFixed(2)}`,
-      `Projected full-month spending: ${projectedMonthlySpending.toFixed(2)}`,
+    );
+
+    if (projectedMonthlySpending !== null && projectedVsAvgPct !== null) {
+      sections.push(
+        `Projected full-month spending: ${projectedMonthlySpending.toFixed(2)}`,
+        `Projected vs average: ${this.formatPctWithDirection(projectedVsAvgPct)}`,
+      );
+    } else {
+      sections.push(
+        `Projected full-month spending: NOT AVAILABLE (only ${aggregates.daysElapsedInMonth} days elapsed, need at least 10 for reliable projection)`,
+      );
+    }
+
+    sections.push(
       `Total spending previous month: ${aggregates.totalSpendingPreviousMonth.toFixed(2)}`,
       `Average monthly spending (6-month): ${aggregates.averageMonthlySpending.toFixed(2)}`,
-      `Projected vs average: ${projectedVsAvgPct >= 0 ? "+" : ""}${projectedVsAvgPct.toFixed(1)}%`,
     );
 
     // Filter to categories with actual current-month spending
@@ -323,8 +347,24 @@ export class AiInsightsService {
                 cat.previousMonthTotal) *
               100
             : 0;
+
+        const vsAvgLabel = cat.averageMonthlyTotal > 0
+          ? (cat.currentMonthTotal > cat.averageMonthlyTotal
+            ? `${Math.abs(vsAvgPct).toFixed(1)}% ABOVE average`
+            : cat.currentMonthTotal < cat.averageMonthlyTotal
+              ? `${Math.abs(vsAvgPct).toFixed(1)}% BELOW average`
+              : "EQUAL to average")
+          : "no historical average";
+        const vsPrevLabel = cat.previousMonthTotal > 0
+          ? (cat.currentMonthTotal > cat.previousMonthTotal
+            ? `${Math.abs(vsPrevPct).toFixed(1)}% ABOVE previous month`
+            : cat.currentMonthTotal < cat.previousMonthTotal
+              ? `${Math.abs(vsPrevPct).toFixed(1)}% BELOW previous month`
+              : "EQUAL to previous month")
+          : "no previous month data";
+
         sections.push(
-          `${sanitizePromptValue(cat.categoryName)}: current month=${cat.currentMonthTotal.toFixed(2)}, previous month=${cat.previousMonthTotal.toFixed(2)}, 6-month avg=${cat.averageMonthlyTotal.toFixed(2)}, vs avg=${vsAvgPct >= 0 ? "+" : ""}${vsAvgPct.toFixed(1)}%, vs prev=${vsPrevPct >= 0 ? "+" : ""}${vsPrevPct.toFixed(1)}%, months with data=${cat.monthCount}, transactions=${cat.transactionCount}`,
+          `${sanitizePromptValue(cat.categoryName)}: current=${cat.currentMonthTotal.toFixed(2)}, prev=${cat.previousMonthTotal.toFixed(2)}, avg=${cat.averageMonthlyTotal.toFixed(2)}, vs avg: ${vsAvgLabel}, vs prev: ${vsPrevLabel}, months=${cat.monthCount}, txns=${cat.transactionCount}`,
         );
       }
     }

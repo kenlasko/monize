@@ -520,8 +520,9 @@ describe("AiInsightsService", () => {
 
       const prompt = mockAiService.complete!.mock.calls[0][1].messages[0]
         .content as string;
-      expect(prompt).toContain("vs avg=");
-      expect(prompt).toContain("vs prev=");
+      expect(prompt).toContain("vs avg:");
+      expect(prompt).toContain("vs prev:");
+      expect(prompt).toContain("ABOVE average");
       expect(prompt).toContain("Projected full-month spending");
       expect(prompt).toContain("Projected vs average");
     });
@@ -557,6 +558,435 @@ describe("AiInsightsService", () => {
       await service.generateInsights(userId);
 
       expect(mockInsightRepo.remove).toHaveBeenCalled();
+    });
+
+    it("shows NOT AVAILABLE projection when fewer than 10 days elapsed", async () => {
+      const qb = mockQb();
+      qb.getOne.mockResolvedValue(null);
+      qb.getMany.mockResolvedValue([]);
+      qb.getRawOne.mockResolvedValue(null);
+      mockInsightRepo.createQueryBuilder.mockReturnValue(qb);
+
+      mockAggregatorService.computeAggregates!.mockResolvedValue(
+        makeAggregates({
+          daysElapsedInMonth: 5,
+          daysInMonth: 31,
+        }),
+      );
+
+      await service.generateInsights(userId);
+
+      const prompt = mockAiService.complete!.mock.calls[0][1].messages[0]
+        .content as string;
+      expect(prompt).toContain("NOT AVAILABLE");
+      expect(prompt).toContain("only 5 days elapsed");
+      expect(prompt).not.toMatch(
+        /Projected full-month spending: \d/,
+      );
+    });
+
+    it("shows projection when 10+ days elapsed", async () => {
+      const qb = mockQb();
+      qb.getOne.mockResolvedValue(null);
+      qb.getMany.mockResolvedValue([]);
+      qb.getRawOne.mockResolvedValue(null);
+      mockInsightRepo.createQueryBuilder.mockReturnValue(qb);
+
+      mockAggregatorService.computeAggregates!.mockResolvedValue(
+        makeAggregates({
+          daysElapsedInMonth: 15,
+          daysInMonth: 30,
+          totalSpendingCurrentMonth: 1500,
+          averageMonthlySpending: 2000,
+        }),
+      );
+
+      await service.generateInsights(userId);
+
+      const prompt = mockAiService.complete!.mock.calls[0][1].messages[0]
+        .content as string;
+      // 1500/15 * 30 = 3000
+      expect(prompt).toContain("Projected full-month spending: 3000.00");
+      expect(prompt).toContain("Projected vs average:");
+      expect(prompt).not.toContain("NOT AVAILABLE");
+    });
+
+    it("labels category spending BELOW average when current < average", async () => {
+      const qb = mockQb();
+      qb.getOne.mockResolvedValue(null);
+      qb.getMany.mockResolvedValue([]);
+      qb.getRawOne.mockResolvedValue(null);
+      mockInsightRepo.createQueryBuilder.mockReturnValue(qb);
+
+      mockAggregatorService.computeAggregates!.mockResolvedValue(
+        makeAggregates({
+          categorySpending: [
+            {
+              categoryName: "Dining",
+              categoryId: "cat-1",
+              currentMonthTotal: 94,
+              previousMonthTotal: 200,
+              averageMonthlyTotal: 988.6,
+              monthCount: 6,
+              transactionCount: 3,
+            },
+          ],
+        }),
+      );
+
+      await service.generateInsights(userId);
+
+      const prompt = mockAiService.complete!.mock.calls[0][1].messages[0]
+        .content as string;
+      expect(prompt).toContain("BELOW average");
+      expect(prompt).toContain("BELOW previous month");
+      expect(prompt).not.toContain("ABOVE average");
+      expect(prompt).not.toContain("ABOVE previous month");
+    });
+
+    it("labels category spending EQUAL when current matches average", async () => {
+      const qb = mockQb();
+      qb.getOne.mockResolvedValue(null);
+      qb.getMany.mockResolvedValue([]);
+      qb.getRawOne.mockResolvedValue(null);
+      mockInsightRepo.createQueryBuilder.mockReturnValue(qb);
+
+      mockAggregatorService.computeAggregates!.mockResolvedValue(
+        makeAggregates({
+          categorySpending: [
+            {
+              categoryName: "Groceries",
+              categoryId: "cat-1",
+              currentMonthTotal: 500,
+              previousMonthTotal: 500,
+              averageMonthlyTotal: 500,
+              monthCount: 6,
+              transactionCount: 10,
+            },
+          ],
+        }),
+      );
+
+      await service.generateInsights(userId);
+
+      const prompt = mockAiService.complete!.mock.calls[0][1].messages[0]
+        .content as string;
+      expect(prompt).toContain("EQUAL to average");
+      expect(prompt).toContain("EQUAL to previous month");
+    });
+
+    it("shows 'no historical average' when averageMonthlyTotal is 0", async () => {
+      const qb = mockQb();
+      qb.getOne.mockResolvedValue(null);
+      qb.getMany.mockResolvedValue([]);
+      qb.getRawOne.mockResolvedValue(null);
+      mockInsightRepo.createQueryBuilder.mockReturnValue(qb);
+
+      mockAggregatorService.computeAggregates!.mockResolvedValue(
+        makeAggregates({
+          categorySpending: [
+            {
+              categoryName: "New Category",
+              categoryId: "cat-1",
+              currentMonthTotal: 100,
+              previousMonthTotal: 0,
+              averageMonthlyTotal: 0,
+              monthCount: 1,
+              transactionCount: 2,
+            },
+          ],
+        }),
+      );
+
+      await service.generateInsights(userId);
+
+      const prompt = mockAiService.complete!.mock.calls[0][1].messages[0]
+        .content as string;
+      expect(prompt).toContain("no historical average");
+      expect(prompt).toContain("no previous month data");
+    });
+
+    it("includes month progress percentage in prompt", async () => {
+      const qb = mockQb();
+      qb.getOne.mockResolvedValue(null);
+      qb.getMany.mockResolvedValue([]);
+      qb.getRawOne.mockResolvedValue(null);
+      mockInsightRepo.createQueryBuilder.mockReturnValue(qb);
+
+      mockAggregatorService.computeAggregates!.mockResolvedValue(
+        makeAggregates({
+          daysElapsedInMonth: 15,
+          daysInMonth: 30,
+        }),
+      );
+
+      await service.generateInsights(userId);
+
+      const prompt = mockAiService.complete!.mock.calls[0][1].messages[0]
+        .content as string;
+      expect(prompt).toContain("15/30 (50% through month)");
+    });
+
+    it("includes recurring charges section in prompt", async () => {
+      const qb = mockQb();
+      qb.getOne.mockResolvedValue(null);
+      qb.getMany.mockResolvedValue([]);
+      qb.getRawOne.mockResolvedValue(null);
+      mockInsightRepo.createQueryBuilder.mockReturnValue(qb);
+
+      mockAggregatorService.computeAggregates!.mockResolvedValue(
+        makeAggregates({
+          recurringCharges: [
+            {
+              payeeName: "Netflix",
+              amounts: [15.99, 15.99, 17.99],
+              dates: ["2025-10-01", "2025-11-01", "2025-12-01"],
+              frequency: "monthly",
+              currentAmount: 17.99,
+              previousAmount: 15.99,
+              categoryName: "Entertainment",
+            },
+          ],
+        }),
+      );
+
+      await service.generateInsights(userId);
+
+      const prompt = mockAiService.complete!.mock.calls[0][1].messages[0]
+        .content as string;
+      expect(prompt).toContain("RECURRING CHARGES");
+      expect(prompt).toContain("Netflix");
+      expect(prompt).toContain("monthly");
+      expect(prompt).toContain("current=17.99");
+    });
+
+    it("includes monthly spending trends in prompt", async () => {
+      const qb = mockQb();
+      qb.getOne.mockResolvedValue(null);
+      qb.getMany.mockResolvedValue([]);
+      qb.getRawOne.mockResolvedValue(null);
+      mockInsightRepo.createQueryBuilder.mockReturnValue(qb);
+
+      mockAggregatorService.computeAggregates!.mockResolvedValue(
+        makeAggregates({
+          monthlySpending: [
+            {
+              month: "2026-01",
+              total: 2000,
+              categoryBreakdown: [
+                { categoryName: "Dining", total: 800 },
+                { categoryName: "Groceries", total: 600 },
+                { categoryName: "Transport", total: 400 },
+                { categoryName: "Entertainment", total: 200 },
+              ],
+            },
+          ],
+        }),
+      );
+
+      await service.generateInsights(userId);
+
+      const prompt = mockAiService.complete!.mock.calls[0][1].messages[0]
+        .content as string;
+      expect(prompt).toContain("MONTHLY SPENDING TRENDS");
+      expect(prompt).toContain("2026-01: total=2000.00");
+      // Top 3 only
+      expect(prompt).toContain("Dining=800.00");
+      expect(prompt).toContain("Groceries=600.00");
+      expect(prompt).toContain("Transport=400.00");
+      expect(prompt).not.toContain("Entertainment=200.00");
+    });
+
+    it("returns existing insights when generation is already in progress", async () => {
+      const qb = mockQb();
+      qb.getOne.mockResolvedValue(null);
+      qb.getMany.mockResolvedValue([makeInsight()]);
+      qb.getRawOne.mockResolvedValue({ lastGenerated: now.toISOString() });
+      mockInsightRepo.createQueryBuilder.mockReturnValue(qb);
+
+      // Start a generation that will hang
+      mockAggregatorService.computeAggregates!.mockImplementation(
+        () => new Promise(() => {}), // never resolves
+      );
+
+      // Trigger first generation (will hang)
+      const firstCall = service.generateInsights(userId);
+
+      // Wait a tick so generatingUsers is set
+      await new Promise((resolve) => setImmediate(resolve));
+
+      // Second call should return immediately with existing insights
+      const result = await service.generateInsights(userId);
+
+      expect(result.insights).toHaveLength(1);
+      expect(mockAggregatorService.computeAggregates).toHaveBeenCalledTimes(1);
+
+      // Clean up: we can't await firstCall since it never resolves,
+      // but the test will clean up
+    });
+
+    it("handles aggregator service failure gracefully", async () => {
+      const qb = mockQb();
+      qb.getOne.mockResolvedValue(null);
+      qb.getMany.mockResolvedValue([]);
+      qb.getRawOne.mockResolvedValue(null);
+      mockInsightRepo.createQueryBuilder.mockReturnValue(qb);
+
+      mockAggregatorService.computeAggregates!.mockRejectedValue(
+        new Error("Database connection lost"),
+      );
+
+      const result = await service.generateInsights(userId);
+
+      expect(result.insights).toEqual([]);
+      expect(mockAiService.complete).not.toHaveBeenCalled();
+    });
+
+    it("sanitizes data fields from AI response", async () => {
+      const qb = mockQb();
+      qb.getOne.mockResolvedValue(null);
+      qb.getMany.mockResolvedValue([]);
+      qb.getRawOne.mockResolvedValue(null);
+      mockInsightRepo.createQueryBuilder.mockReturnValue(qb);
+
+      mockAiService.complete!.mockResolvedValue({
+        content: JSON.stringify([
+          {
+            type: "anomaly",
+            title: "Test",
+            description: "Test desc",
+            severity: "info",
+            data: {
+              validKey: "valid",
+              __proto__: "malicious",
+              constructor: "evil",
+              nested: { shouldBeFiltered: true },
+              longString: "x".repeat(2000),
+              number: 42,
+              boolean: true,
+              nullVal: null,
+            },
+          },
+        ]),
+        usage: { inputTokens: 100, outputTokens: 50 },
+        model: "test",
+        provider: "test",
+      });
+
+      await service.generateInsights(userId);
+
+      const savedInsights = mockInsightRepo.save.mock.calls[0]?.[0];
+      expect(savedInsights).toHaveLength(1);
+      const data = savedInsights[0].data;
+      expect(data.validKey).toBe("valid");
+      expect(Object.keys(data)).not.toContain("__proto__");
+      expect(Object.keys(data)).not.toContain("constructor");
+      expect(data.nested).toBeUndefined(); // non-primitive filtered
+      expect(data.longString).toHaveLength(1000); // truncated
+      expect(data.number).toBe(42);
+      expect(data.boolean).toBe(true);
+      expect(data.nullVal).toBeNull();
+    });
+
+    it("validates severity values from AI response", async () => {
+      const qb = mockQb();
+      qb.getOne.mockResolvedValue(null);
+      qb.getMany.mockResolvedValue([]);
+      qb.getRawOne.mockResolvedValue(null);
+      mockInsightRepo.createQueryBuilder.mockReturnValue(qb);
+
+      mockAiService.complete!.mockResolvedValue({
+        content: JSON.stringify([
+          {
+            type: "anomaly",
+            title: "Bad severity",
+            description: "Invalid severity value",
+            severity: "critical",
+            data: {},
+          },
+          {
+            type: "anomaly",
+            title: "Good",
+            description: "Valid severity",
+            severity: "alert",
+            data: {},
+          },
+        ]),
+        usage: { inputTokens: 100, outputTokens: 50 },
+        model: "test",
+        provider: "test",
+      });
+
+      await service.generateInsights(userId);
+
+      const savedInsights = mockInsightRepo.save.mock.calls[0]?.[0];
+      expect(savedInsights).toHaveLength(1);
+      expect(savedInsights[0].severity).toBe("alert");
+    });
+
+    it("truncates long titles and descriptions from AI response", async () => {
+      const qb = mockQb();
+      qb.getOne.mockResolvedValue(null);
+      qb.getMany.mockResolvedValue([]);
+      qb.getRawOne.mockResolvedValue(null);
+      mockInsightRepo.createQueryBuilder.mockReturnValue(qb);
+
+      mockAiService.complete!.mockResolvedValue({
+        content: JSON.stringify([
+          {
+            type: "anomaly",
+            title: "T".repeat(500),
+            description: "D".repeat(10000),
+            severity: "info",
+            data: {},
+          },
+        ]),
+        usage: { inputTokens: 100, outputTokens: 50 },
+        model: "test",
+        provider: "test",
+      });
+
+      await service.generateInsights(userId);
+
+      const savedInsights = mockInsightRepo.save.mock.calls[0]?.[0];
+      expect(savedInsights[0].title).toHaveLength(255);
+      expect(savedInsights[0].description).toHaveLength(5000);
+    });
+
+    it("limits categories to top 15 in prompt", async () => {
+      const qb = mockQb();
+      qb.getOne.mockResolvedValue(null);
+      qb.getMany.mockResolvedValue([]);
+      qb.getRawOne.mockResolvedValue(null);
+      mockInsightRepo.createQueryBuilder.mockReturnValue(qb);
+
+      const categories = Array.from({ length: 20 }, (_, i) => ({
+        categoryName: `Category${i}`,
+        categoryId: `cat-${i}`,
+        currentMonthTotal: 100 - i,
+        previousMonthTotal: 90,
+        averageMonthlyTotal: 95,
+        monthCount: 6,
+        transactionCount: 5,
+      }));
+
+      mockAggregatorService.computeAggregates!.mockResolvedValue(
+        makeAggregates({ categorySpending: categories }),
+      );
+
+      await service.generateInsights(userId);
+
+      const prompt = mockAiService.complete!.mock.calls[0][1].messages[0]
+        .content as string;
+      expect(prompt).toContain("Category0");
+      expect(prompt).toContain("Category14");
+      expect(prompt).not.toContain("Category15");
+    });
+  });
+
+  describe("isGenerating()", () => {
+    it("returns false when not generating", () => {
+      expect(service.isGenerating(userId)).toBe(false);
     });
   });
 

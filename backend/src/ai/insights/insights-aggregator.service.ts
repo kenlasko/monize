@@ -146,8 +146,8 @@ export class InsightsAggregatorService {
 
     const rows = await this.transactionRepo
       .createQueryBuilder("t")
-      .leftJoin("t.category", "cat")
-      .select("COALESCE(cat.name, 'Uncategorized')", "categoryName")
+      .innerJoin("t.category", "cat")
+      .select("cat.name", "categoryName")
       .addSelect("cat.id", "categoryId")
       .addSelect("SUM(ABS(t.amount))", "total")
       .addSelect("COUNT(*)", "txnCount")
@@ -197,9 +197,9 @@ export class InsightsAggregatorService {
   ): Promise<MonthlySpending[]> {
     const rows = await this.transactionRepo
       .createQueryBuilder("t")
-      .leftJoin("t.category", "cat")
+      .innerJoin("t.category", "cat")
       .select("TO_CHAR(t.transactionDate, 'YYYY-MM')", "month")
-      .addSelect("COALESCE(cat.name, 'Uncategorized')", "categoryName")
+      .addSelect("cat.name", "categoryName")
       .addSelect("SUM(ABS(t.amount))", "total")
       .where("t.userId = :userId", { userId })
       .andWhere("t.transactionDate >= :startDate", { startDate })
@@ -250,7 +250,7 @@ export class InsightsAggregatorService {
       .createQueryBuilder("t")
       .leftJoin("t.category", "cat")
       .select("COALESCE(t.payeeName, 'Unknown')", "payeeName")
-      .addSelect("COALESCE(cat.name, 'Uncategorized')", "categoryName")
+      .addSelect("cat.name", "categoryName")
       .addSelect(
         "ARRAY_AGG(ABS(t.amount) ORDER BY t.transactionDate ASC)",
         "amounts",

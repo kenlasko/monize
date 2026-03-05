@@ -13,6 +13,7 @@ describe("InsightsAggregatorService", () => {
 
   const mockQueryBuilder = () => {
     const qb: Record<string, jest.Mock> = {
+      innerJoin: jest.fn().mockReturnThis(),
       leftJoin: jest.fn().mockReturnThis(),
       select: jest.fn().mockReturnThis(),
       addSelect: jest.fn().mockReturnThis(),
@@ -174,6 +175,103 @@ describe("InsightsAggregatorService", () => {
       expect(result.recurringCharges[0].frequency).toBe("monthly");
       expect(result.recurringCharges[0].currentAmount).toBe(17.99);
       expect(result.recurringCharges[0].previousAmount).toBe(15.99);
+    });
+
+    it("computes average monthly spending from completed months only", async () => {
+      const qb = mockQueryBuilder();
+      let callCount = 0;
+      const now = new Date();
+      const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+
+      qb.getRawMany.mockImplementation(() => {
+        callCount++;
+        if (callCount === 2) {
+          // Monthly spending query
+          return Promise.resolve([
+            { month: "2025-10", categoryName: "Food", total: "1000" },
+            { month: "2025-11", categoryName: "Food", total: "1200" },
+            { month: "2025-12", categoryName: "Food", total: "800" },
+            { month: currentMonthKey, categoryName: "Food", total: "500" },
+          ]);
+        }
+        return Promise.resolve([]);
+      });
+
+      mockTransactionRepo.createQueryBuilder.mockReturnValue(qb);
+
+      const result = await service.computeAggregates(userId, "USD");
+
+      // Average should exclude current month: (1000+1200+800)/3 = 1000
+      expect(result.averageMonthlySpending).toBe(1000);
+      expect(result.totalSpendingCurrentMonth).toBe(500);
+    });
+
+    it("handles category with null categoryId", async () => {
+      const qb = mockQueryBuilder();
+      let callCount = 0;
+
+      qb.getRawMany.mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          return Promise.resolve([
+            {
+              categoryName: "Food",
+              categoryId: null,
+              total: "300",
+              txnCount: "6",
+              currentMonthTotal: "50",
+              previousMonthTotal: "50",
+              monthCount: "3",
+            },
+          ]);
+        }
+        return Promise.resolve([]);
+      });
+
+      mockTransactionRepo.createQueryBuilder.mockReturnValue(qb);
+
+      const result = await service.computeAggregates(userId, "USD");
+
+      expect(result.categorySpending).toHaveLength(1);
+      expect(result.categorySpending[0].categoryId).toBeNull();
+    });
+
+    it("handles recurring charge with single amount", async () => {
+      const qb = mockQueryBuilder();
+      let callCount = 0;
+
+      qb.getRawMany.mockImplementation(() => {
+        callCount++;
+        if (callCount === 3) {
+          return Promise.resolve([
+            {
+              payeeName: "Service",
+              categoryName: "Utilities",
+              amounts: [29.99, 29.99, 29.99],
+              dates: ["2025-10-15", "2025-11-15", "2025-12-15"],
+              txnCount: "3",
+            },
+          ]);
+        }
+        return Promise.resolve([]);
+      });
+
+      mockTransactionRepo.createQueryBuilder.mockReturnValue(qb);
+
+      const result = await service.computeAggregates(userId, "USD");
+
+      expect(result.recurringCharges).toHaveLength(1);
+      expect(result.recurringCharges[0].currentAmount).toBe(29.99);
+      expect(result.recurringCharges[0].previousAmount).toBe(29.99);
+    });
+
+    it("uses innerJoin for category spending query", async () => {
+      const qb = mockQueryBuilder();
+      mockTransactionRepo.createQueryBuilder.mockReturnValue(qb);
+
+      await service.computeAggregates(userId, "USD");
+
+      expect(qb.innerJoin).toHaveBeenCalled();
     });
 
     it("filters out irregular charges", async () => {

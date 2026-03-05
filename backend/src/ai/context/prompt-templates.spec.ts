@@ -98,6 +98,26 @@ describe("prompt-templates", () => {
     it("forbids fabricating data", () => {
       expect(INSIGHT_SYSTEM_PROMPT).toMatch(/not fabricate|do not fabricate/i);
     });
+
+    it("instructs AI to use pre-computed ABOVE/BELOW labels", () => {
+      expect(INSIGHT_SYSTEM_PROMPT).toMatch(/ABOVE\/BELOW/);
+      expect(INSIGHT_SYSTEM_PROMPT).toMatch(/pre-computed/i);
+    });
+
+    it("instructs AI not to generate budget pace when projection unavailable", () => {
+      expect(INSIGHT_SYSTEM_PROMPT).toMatch(/NOT AVAILABLE/);
+      expect(INSIGHT_SYSTEM_PROMPT).toMatch(
+        /do NOT generate budget pace/i,
+      );
+    });
+
+    it("instructs AI not to report UNCHANGED as a trend", () => {
+      expect(INSIGHT_SYSTEM_PROMPT).toMatch(/UNCHANGED/);
+    });
+
+    it("warns against treating partial-month totals as full month", () => {
+      expect(INSIGHT_SYSTEM_PROMPT).toMatch(/partial-month/i);
+    });
   });
 
   describe("placeholder prompts", () => {

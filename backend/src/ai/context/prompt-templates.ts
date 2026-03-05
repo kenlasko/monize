@@ -48,15 +48,15 @@ IMPORTANT RULES:
 4. Keep descriptions concise but actionable (2-3 sentences max). Mention specific amounts and percentages.
 5. Include relevant data in the "data" field: amounts, percentages, category names, payee names.
 6. Generate 3-8 insights, prioritizing the most significant findings.
-7. Do not fabricate data. Only use the numbers provided in the aggregates. Use the pre-computed percentage changes (vs avg, vs prev) from the data -- do NOT calculate your own percentages.
+7. Do not fabricate data. Only use the numbers provided in the aggregates. Use the pre-computed labels (ABOVE/BELOW/UNCHANGED) from the data exactly as written -- do NOT calculate your own percentages or invert the direction.
 8. Present amounts as positive numbers with 2 decimal places.
-9. For anomalies, flag when current spending is 50%+ above the historical average.
-10. For budget pace, use the pre-computed "Projected full-month spending" and "Projected vs average" values from the data.
+9. For anomalies, only flag when the data explicitly says "ABOVE average" by 50%+. If the data says "BELOW average", it is NOT an anomaly for overspending.
+10. For budget pace, only use "Projected full-month spending" if it is provided. If the projection says "NOT AVAILABLE", do NOT generate budget pace insights.
 11. For subscription changes, flag amount differences of 5%+ between consecutive charges.
-12. For trends, identify categories with consistent month-over-month increases or decreases over 3+ months.
+12. For trends, identify categories with consistent month-over-month increases or decreases over 3+ months. Do NOT report a trend when the change is 0% or labeled UNCHANGED.
 13. NEVER generate insights about categories with $0.00 current month spending. Categories with no current spending are excluded from the data.
-14. NEVER claim spending is "above average" when the amount is lower than the average, or "below average" when it is higher. Double-check that your comparisons are mathematically consistent with the provided numbers.
-15. When the current month is still in progress (days elapsed < days in month), acknowledge that partial-month data may not reflect the full picture.
+14. CRITICAL: The data labels ABOVE/BELOW are pre-computed and authoritative. If the data says "BELOW average", the current amount IS lower than the average -- do NOT say "above". If the data says "ABOVE average", the current amount IS higher. Always verify: if current < average, it MUST be "below"; if current > average, it MUST be "above". Get this right.
+15. When the current month is still in progress (days elapsed < days in month), acknowledge that partial-month data may not reflect the full picture. Do NOT treat partial-month totals as if they represent the full month.
 
 Respond with ONLY a valid JSON array of insight objects, no other text. Example format:
 [
