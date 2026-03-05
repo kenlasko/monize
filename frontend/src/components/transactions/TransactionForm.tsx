@@ -263,16 +263,29 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
   }, [defaultAccountId, transaction, setValue]);
 
   // Load accounts, categories, active payees on mount
+  // When editing, also fetch the transaction's payee if it's inactive so it appears in the dropdown
   useEffect(() => {
     Promise.all([
       accountsApi.getAll(true),
       categoriesApi.getAll(),
       payeesApi.getAll('active'),
     ])
-      .then(([accountsData, categoriesData, payeesData]) => {
+      .then(async ([accountsData, categoriesData, payeesData]) => {
         setAccounts(accountsData);
         setCategories(categoriesData);
-        setPayees(payeesData);
+
+        // If editing a transaction with a payee that isn't in the active list, fetch it
+        if (transaction?.payeeId && !payeesData.some(p => p.id === transaction.payeeId)) {
+          try {
+            const existingPayee = await payeesApi.getById(transaction.payeeId);
+            setPayees([...payeesData, existingPayee]);
+          } catch {
+            // Payee may have been deleted; just use active list
+            setPayees(payeesData);
+          }
+        } else {
+          setPayees(payeesData);
+        }
       })
       .catch((error) => {
         toast.error(getErrorMessage(error, 'Failed to load form data'));

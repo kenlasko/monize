@@ -220,18 +220,33 @@ export function ScheduledTransactionForm({
     [payees]
   );
 
-  // Load accounts, categories, payees on mount
+  // Load accounts, categories, active payees on mount
+  // When editing, also fetch the scheduled transaction's payee if it's inactive
   useEffect(() => {
     Promise.all([
       accountsApi.getAll(),
       categoriesApi.getAll(),
       payeesApi.getAll('active'),
     ])
-      .then(([accountsData, categoriesData, payeesData]) => {
+      .then(async ([accountsData, categoriesData, payeesData]) => {
         setAccounts(accountsData);
         setCategories(categoriesData);
-        setPayees(payeesData);
-        setAllPayees(payeesData);
+
+        // If editing and the payee isn't in the active list, fetch it so it shows in the dropdown
+        if (scheduledTransaction?.payeeId && !payeesData.some(p => p.id === scheduledTransaction.payeeId)) {
+          try {
+            const existingPayee = await payeesApi.getById(scheduledTransaction.payeeId);
+            const merged = [...payeesData, existingPayee];
+            setPayees(merged);
+            setAllPayees(merged);
+          } catch {
+            setPayees(payeesData);
+            setAllPayees(payeesData);
+          }
+        } else {
+          setPayees(payeesData);
+          setAllPayees(payeesData);
+        }
       })
       .catch((error) => {
         toast.error(getErrorMessage(error, 'Failed to load form data'));
