@@ -505,9 +505,9 @@ describe("PayeesService", () => {
   describe("getSummary", () => {
     it("should return counts of total, with category, without category, active, and inactive", async () => {
       payeesRepository.count
-        .mockResolvedValueOnce(10)  // totalPayees
-        .mockResolvedValueOnce(6)   // payeesWithCategory
-        .mockResolvedValueOnce(8);  // activePayees
+        .mockResolvedValueOnce(10) // totalPayees
+        .mockResolvedValueOnce(6) // payeesWithCategory
+        .mockResolvedValueOnce(8); // activePayees
 
       const result = await service.getSummary(userId);
 
@@ -1003,9 +1003,11 @@ describe("PayeesService", () => {
       payeesRepository.find.mockResolvedValue([mockPayee]);
       const qb = {
         ...queryBuilderMock,
-        getRawMany: jest.fn().mockResolvedValue([
-          { id: "payee-1", count: "5", last_used_date: "2025-01-15" },
-        ]),
+        getRawMany: jest
+          .fn()
+          .mockResolvedValue([
+            { id: "payee-1", count: "5", last_used_date: "2025-01-15" },
+          ]),
       };
       payeesRepository.createQueryBuilder.mockReturnValue(qb);
 
@@ -1046,9 +1048,11 @@ describe("PayeesService", () => {
       payeesRepository.find.mockResolvedValue([mockPayee]);
       const qb = {
         ...queryBuilderMock,
-        getRawMany: jest.fn().mockResolvedValue([
-          { id: "payee-1", count: "5", last_used_date: "2025-06-15" },
-        ]),
+        getRawMany: jest
+          .fn()
+          .mockResolvedValue([
+            { id: "payee-1", count: "5", last_used_date: "2025-06-15" },
+          ]),
       };
       payeesRepository.createQueryBuilder.mockReturnValue(qb);
 
@@ -1065,9 +1069,11 @@ describe("PayeesService", () => {
       payeesRepository.find.mockResolvedValue([mockPayee]);
       const qb = {
         ...queryBuilderMock,
-        getRawMany: jest.fn().mockResolvedValue([
-          { id: "payee-1", count: "0", last_used_date: null },
-        ]),
+        getRawMany: jest
+          .fn()
+          .mockResolvedValue([
+            { id: "payee-1", count: "0", last_used_date: null },
+          ]),
       };
       payeesRepository.createQueryBuilder.mockReturnValue(qb);
 
@@ -1092,7 +1098,9 @@ describe("PayeesService", () => {
         "payee.user_id = :userId",
         { userId },
       );
-      expect(queryBuilderMock.andWhere).toHaveBeenCalledWith("payee.is_active = false");
+      expect(queryBuilderMock.andWhere).toHaveBeenCalledWith(
+        "payee.is_active = false",
+      );
       expect(queryBuilderMock.andWhere).toHaveBeenCalledWith(
         "LOWER(payee.name) = LOWER(:name)",
         { name: "starbucks" },
@@ -1177,7 +1185,9 @@ describe("PayeesService", () => {
 
       await service.previewDeactivation(userId, 5, 12);
 
-      expect(queryBuilderMock.andWhere).toHaveBeenCalledWith("payee.is_active = true");
+      expect(queryBuilderMock.andWhere).toHaveBeenCalledWith(
+        "payee.is_active = true",
+      );
     });
   });
 
@@ -1227,7 +1237,9 @@ describe("PayeesService", () => {
     it("should only deactivate currently active payees", async () => {
       payeesRepository.find.mockResolvedValue([]);
 
-      const result = await service.deactivatePayees(userId, ["already-inactive"]);
+      const result = await service.deactivatePayees(userId, [
+        "already-inactive",
+      ]);
 
       expect(result).toEqual({ deactivated: 0 });
       expect(payeesRepository.find).toHaveBeenCalledWith({

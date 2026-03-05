@@ -280,10 +280,7 @@ export class PayeesController {
     status: 200,
     description: "Matching inactive payee or null",
   })
-  findInactiveByName(
-    @Request() req,
-    @Query("name") name: string,
-  ) {
+  findInactiveByName(@Request() req, @Query("name") name: string) {
     const safeName = name ? name.slice(0, 255) : "";
     return this.payeesService.findInactiveByName(req.user.id, safeName);
   }

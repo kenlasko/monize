@@ -61,7 +61,10 @@ describe("PayeesController", () => {
       const result = await controller.findAll(mockReq, "active");
 
       expect(result).toEqual(expected);
-      expect(mockPayeesService.findAll).toHaveBeenCalledWith("user-1", "active");
+      expect(mockPayeesService.findAll).toHaveBeenCalledWith(
+        "user-1",
+        "active",
+      );
     });
 
     it("delegates to payeesService.findAll with undefined status", async () => {
@@ -71,7 +74,10 @@ describe("PayeesController", () => {
       const result = await controller.findAll(mockReq);
 
       expect(result).toEqual(expected);
-      expect(mockPayeesService.findAll).toHaveBeenCalledWith("user-1", undefined);
+      expect(mockPayeesService.findAll).toHaveBeenCalledWith(
+        "user-1",
+        undefined,
+      );
     });
   });
 

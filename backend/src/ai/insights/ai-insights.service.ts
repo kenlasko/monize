@@ -286,7 +286,8 @@ export class AiInsightsService {
   private buildInsightsPrompt(aggregates: SpendingAggregates): string {
     const sections: string[] = [];
 
-    const monthProgress = aggregates.daysElapsedInMonth / aggregates.daysInMonth;
+    const monthProgress =
+      aggregates.daysElapsedInMonth / aggregates.daysInMonth;
     const hasEnoughDaysForProjection = aggregates.daysElapsedInMonth >= 10;
 
     let projectedMonthlySpending: number | null = null;
@@ -294,8 +295,7 @@ export class AiInsightsService {
 
     if (hasEnoughDaysForProjection && aggregates.daysElapsedInMonth > 0) {
       projectedMonthlySpending =
-        (aggregates.totalSpendingCurrentMonth /
-          aggregates.daysElapsedInMonth) *
+        (aggregates.totalSpendingCurrentMonth / aggregates.daysElapsedInMonth) *
         aggregates.daysInMonth;
       projectedVsAvgPct =
         aggregates.averageMonthlySpending > 0
@@ -348,20 +348,22 @@ export class AiInsightsService {
               100
             : 0;
 
-        const vsAvgLabel = cat.averageMonthlyTotal > 0
-          ? (cat.currentMonthTotal > cat.averageMonthlyTotal
-            ? `${Math.abs(vsAvgPct).toFixed(1)}% ABOVE average`
-            : cat.currentMonthTotal < cat.averageMonthlyTotal
-              ? `${Math.abs(vsAvgPct).toFixed(1)}% BELOW average`
-              : "EQUAL to average")
-          : "no historical average";
-        const vsPrevLabel = cat.previousMonthTotal > 0
-          ? (cat.currentMonthTotal > cat.previousMonthTotal
-            ? `${Math.abs(vsPrevPct).toFixed(1)}% ABOVE previous month`
-            : cat.currentMonthTotal < cat.previousMonthTotal
-              ? `${Math.abs(vsPrevPct).toFixed(1)}% BELOW previous month`
-              : "EQUAL to previous month")
-          : "no previous month data";
+        const vsAvgLabel =
+          cat.averageMonthlyTotal > 0
+            ? cat.currentMonthTotal > cat.averageMonthlyTotal
+              ? `${Math.abs(vsAvgPct).toFixed(1)}% ABOVE average`
+              : cat.currentMonthTotal < cat.averageMonthlyTotal
+                ? `${Math.abs(vsAvgPct).toFixed(1)}% BELOW average`
+                : "EQUAL to average"
+            : "no historical average";
+        const vsPrevLabel =
+          cat.previousMonthTotal > 0
+            ? cat.currentMonthTotal > cat.previousMonthTotal
+              ? `${Math.abs(vsPrevPct).toFixed(1)}% ABOVE previous month`
+              : cat.currentMonthTotal < cat.previousMonthTotal
+                ? `${Math.abs(vsPrevPct).toFixed(1)}% BELOW previous month`
+                : "EQUAL to previous month"
+            : "no previous month data";
 
         sections.push(
           `${sanitizePromptValue(cat.categoryName)}: current=${cat.currentMonthTotal.toFixed(2)}, prev=${cat.previousMonthTotal.toFixed(2)}, avg=${cat.averageMonthlyTotal.toFixed(2)}, vs avg: ${vsAvgLabel}, vs prev: ${vsPrevLabel}, months=${cat.monthCount}, txns=${cat.transactionCount}`,

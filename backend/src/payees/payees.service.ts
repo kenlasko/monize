@@ -56,7 +56,9 @@ export class PayeesService {
   async findAll(
     userId: string,
     status?: "active" | "inactive" | "all",
-  ): Promise<(Payee & { transactionCount: number; lastUsedDate: string | null })[]> {
+  ): Promise<
+    (Payee & { transactionCount: number; lastUsedDate: string | null })[]
+  > {
     // Build where clause based on status filter
     const where: any = { userId };
     if (status === "active") {

@@ -106,9 +106,7 @@ describe("prompt-templates", () => {
 
     it("instructs AI not to generate budget pace when projection unavailable", () => {
       expect(INSIGHT_SYSTEM_PROMPT).toMatch(/NOT AVAILABLE/);
-      expect(INSIGHT_SYSTEM_PROMPT).toMatch(
-        /do NOT generate budget pace/i,
-      );
+      expect(INSIGHT_SYSTEM_PROMPT).toMatch(/do NOT generate budget pace/i);
     });
 
     it("instructs AI not to report UNCHANGED as a trend", () => {

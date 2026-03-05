@@ -580,9 +580,7 @@ describe("AiInsightsService", () => {
         .content as string;
       expect(prompt).toContain("NOT AVAILABLE");
       expect(prompt).toContain("only 5 days elapsed");
-      expect(prompt).not.toMatch(
-        /Projected full-month spending: \d/,
-      );
+      expect(prompt).not.toMatch(/Projected full-month spending: \d/);
     });
 
     it("shows projection when 10+ days elapsed", async () => {
