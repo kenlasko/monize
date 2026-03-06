@@ -80,7 +80,6 @@ function createDefaultProps(overrides: Partial<AccountRowProps> = {}): AccountRo
     onCloseClick: vi.fn(),
     onDeleteClick: vi.fn(),
     onReopen: vi.fn(),
-    onExport: vi.fn(),
     onLongPressStart: vi.fn(),
     onLongPressStartTouch: vi.fn(),
     onLongPressEnd: vi.fn(),

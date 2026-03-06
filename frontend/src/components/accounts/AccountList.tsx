@@ -9,9 +9,6 @@ import { accountsApi } from '@/lib/accounts';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
 import toast from 'react-hot-toast';
-import { createLogger } from '@/lib/logger';
-
-const logger = createLogger('AccountList');
 import { getErrorMessage } from '@/lib/errors';
 import { AccountRow } from './AccountRow';
 import { useTableDensity, nextDensity, type DensityLevel } from '@/hooks/useTableDensity';
@@ -345,16 +342,6 @@ export function AccountList({ accounts, brokerageMarketValues, onEdit, onRefresh
     }
   }, [onRefresh]);
 
-  const handleExport = useCallback(async (account: Account, format: 'csv' | 'qif') => {
-    try {
-      await accountsApi.exportAccount(account.id, format);
-      toast.success(`Exported ${account.name} as ${format.toUpperCase()}`);
-    } catch (error) {
-      logger.error('Export failed', error);
-      toast.error(getErrorMessage(error, 'Failed to export account'));
-    }
-  }, []);
-
   const formatCurrency = useCallback((amount: number | string | null | undefined, currency: string) => {
     const numericAmount = Number(amount) || 0;
     const formatted = formatCurrencyBase(numericAmount, currency);
@@ -529,7 +516,6 @@ export function AccountList({ accounts, brokerageMarketValues, onEdit, onRefresh
                 onRowClick={handleRowClick}
                 onEdit={onEdit}
                 onReconcile={handleReconcile}
-                onExport={handleExport}
                 onCloseClick={handleCloseClick}
                 onDeleteClick={handleDeleteClick}
                 onReopen={handleReopen}
@@ -620,25 +606,6 @@ export function AccountList({ accounts, brokerageMarketValues, onEdit, onRefresh
                   Reopen Account
                 </button>
               )}
-              <div className="border-t border-gray-200 dark:border-gray-700 my-1" />
-              <button
-                onClick={() => { setContextAccount(null); handleExport(contextAccount, 'csv'); }}
-                className="w-full text-left px-5 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3"
-              >
-                <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                </svg>
-                Export as CSV
-              </button>
-              <button
-                onClick={() => { setContextAccount(null); handleExport(contextAccount, 'qif'); }}
-                className="w-full text-left px-5 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3"
-              >
-                <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                </svg>
-                Export as QIF
-              </button>
               {deletableAccounts.has(contextAccount.id) && (
                 <button
                   onClick={() => { setContextAccount(null); handleDeleteClick(contextAccount); }}

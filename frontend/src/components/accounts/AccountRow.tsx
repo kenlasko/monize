@@ -1,6 +1,6 @@
 'use client';
 
-import { memo, useState, useRef, useEffect } from 'react';
+import { memo } from 'react';
 import { Account, AccountType } from '@/types/account';
 import { Button } from '@/components/ui/Button';
 
@@ -23,7 +23,6 @@ export interface AccountRowProps {
   onCloseClick: (account: Account) => void;
   onDeleteClick: (account: Account) => void;
   onReopen: (account: Account) => void;
-  onExport: (account: Account, format: 'csv' | 'qif') => void;
   onLongPressStart: (account: Account) => void;
   onLongPressStartTouch: (account: Account, e: React.TouchEvent) => void;
   onLongPressEnd: () => void;
@@ -49,7 +48,6 @@ export const AccountRow = memo(function AccountRow({
   onCloseClick,
   onDeleteClick,
   onReopen,
-  onExport,
   onLongPressStart,
   onLongPressStartTouch,
   onLongPressEnd,
@@ -174,7 +172,6 @@ export const AccountRow = memo(function AccountRow({
             isDeletable={isDeletable}
             onEdit={onEdit}
             onReconcile={onReconcile}
-            onExport={onExport}
             onCloseClick={onCloseClick}
             onDeleteClick={onDeleteClick}
           />
@@ -184,7 +181,6 @@ export const AccountRow = memo(function AccountRow({
             density={density}
             isDeletable={isDeletable}
             onReopen={onReopen}
-            onExport={onExport}
             onDeleteClick={onDeleteClick}
           />
         )}
@@ -193,89 +189,12 @@ export const AccountRow = memo(function AccountRow({
   );
 });
 
-function ExportDropdown({ account, density, onExport }: {
-  account: Account;
-  density: 'normal' | 'compact' | 'dense';
-  onExport: (account: Account, format: 'csv' | 'qif') => void;
-}) {
-  const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isOpen]);
-
-  if (density === 'dense') {
-    return (
-      <div className="relative inline-block" ref={dropdownRef}>
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className="inline-flex items-center justify-center p-1.5 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-          title="Export"
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-          </svg>
-        </button>
-        {isOpen && (
-          <div className="absolute right-0 mt-1 w-28 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-50">
-            <button
-              onClick={() => { onExport(account, 'csv'); setIsOpen(false); }}
-              className="block w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-            >
-              CSV
-            </button>
-            <button
-              onClick={() => { onExport(account, 'qif'); setIsOpen(false); }}
-              className="block w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-            >
-              QIF
-            </button>
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  return (
-    <div className="relative inline-block" ref={dropdownRef}>
-      <Button variant="outline" size="sm" onClick={() => setIsOpen(!isOpen)} title="Export account transactions">
-        Export
-      </Button>
-      {isOpen && (
-        <div className="absolute right-0 mt-1 w-28 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-50">
-          <button
-            onClick={() => { onExport(account, 'csv'); setIsOpen(false); }}
-            className="block w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-t-md"
-          >
-            CSV
-          </button>
-          <button
-            onClick={() => { onExport(account, 'qif'); setIsOpen(false); }}
-            className="block w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-b-md"
-          >
-            QIF
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function ActiveAccountActions({ account, density, isDeletable, onEdit, onReconcile, onExport, onCloseClick, onDeleteClick }: {
+function ActiveAccountActions({ account, density, isDeletable, onEdit, onReconcile, onCloseClick, onDeleteClick }: {
   account: Account;
   density: 'normal' | 'compact' | 'dense';
   isDeletable: boolean;
   onEdit: (account: Account) => void;
   onReconcile: (account: Account) => void;
-  onExport: (account: Account, format: 'csv' | 'qif') => void;
   onCloseClick: (account: Account) => void;
   onDeleteClick: (account: Account) => void;
 }) {
@@ -290,7 +209,6 @@ function ActiveAccountActions({ account, density, isDeletable, onEdit, onReconci
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
           </button>
         )}
-        <ExportDropdown account={account} density={density} onExport={onExport} />
         <button onClick={() => onCloseClick(account)} disabled={Number(account.currentBalance) !== 0} className={`inline-flex items-center justify-center p-1.5 rounded ${Number(account.currentBalance) !== 0 ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed' : 'text-gray-600 dark:text-gray-300 hover:text-orange-600 dark:hover:text-orange-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`} title={Number(account.currentBalance) !== 0 ? 'Account must have zero balance to close' : 'Close account'}>
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" /></svg>
         </button>
@@ -309,7 +227,6 @@ function ActiveAccountActions({ account, density, isDeletable, onEdit, onReconci
       {account.accountSubType !== 'INVESTMENT_BROKERAGE' && (
         <Button variant="outline" size="sm" onClick={() => onReconcile(account)} title="Reconcile account against a statement">Reconcile</Button>
       )}
-      <ExportDropdown account={account} density={density} onExport={onExport} />
       <Button variant="outline" size="sm" onClick={() => onCloseClick(account)} disabled={Number(account.currentBalance) !== 0} title={Number(account.currentBalance) !== 0 ? 'Account must have zero balance to close' : 'Close account'}>Close</Button>
       {isDeletable && (
         <Button variant="danger" size="sm" onClick={() => onDeleteClick(account)} title="Permanently delete account (no transactions)">Delete</Button>
@@ -318,12 +235,11 @@ function ActiveAccountActions({ account, density, isDeletable, onEdit, onReconci
   );
 }
 
-function ClosedAccountActions({ account, density, isDeletable, onReopen, onExport, onDeleteClick }: {
+function ClosedAccountActions({ account, density, isDeletable, onReopen, onDeleteClick }: {
   account: Account;
   density: 'normal' | 'compact' | 'dense';
   isDeletable: boolean;
   onReopen: (account: Account) => void;
-  onExport: (account: Account, format: 'csv' | 'qif') => void;
   onDeleteClick: (account: Account) => void;
 }) {
   if (density === 'dense') {
@@ -332,7 +248,6 @@ function ClosedAccountActions({ account, density, isDeletable, onReopen, onExpor
         <button onClick={() => onReopen(account)} className="inline-flex items-center justify-center p-1.5 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" title="Reopen">
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
         </button>
-        <ExportDropdown account={account} density={density} onExport={onExport} />
         {isDeletable && (
           <button onClick={() => onDeleteClick(account)} className="inline-flex items-center justify-center p-1.5 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/30 rounded" title="Permanently delete account (no transactions)">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
@@ -345,7 +260,6 @@ function ClosedAccountActions({ account, density, isDeletable, onReopen, onExpor
   return (
     <>
       <Button variant="outline" size="sm" onClick={() => onReopen(account)}>Reopen</Button>
-      <ExportDropdown account={account} density={density} onExport={onExport} />
       {isDeletable && (
         <Button variant="danger" size="sm" onClick={() => onDeleteClick(account)} title="Permanently delete account (no transactions)">Delete</Button>
       )}

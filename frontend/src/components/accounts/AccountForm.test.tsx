@@ -262,8 +262,7 @@ describe('AccountForm', () => {
 
     await waitFor(() => {
       expect(screen.getByTitle('Import transactions from QIF file')).toBeInTheDocument();
-      expect(screen.getByTitle('Export transactions as CSV')).toBeInTheDocument();
-      expect(screen.getByTitle('Export transactions as QIF')).toBeInTheDocument();
+      expect(screen.getByTitle('Export account transactions')).toBeInTheDocument();
     });
   });
 
@@ -274,7 +273,7 @@ describe('AccountForm', () => {
 
     await waitFor(() => {
       expect(screen.queryByTitle('Import transactions from QIF file')).not.toBeInTheDocument();
-      expect(screen.queryByTitle('Export transactions as CSV')).not.toBeInTheDocument();
+      expect(screen.queryByTitle('Export account transactions')).not.toBeInTheDocument();
     });
   });
 
