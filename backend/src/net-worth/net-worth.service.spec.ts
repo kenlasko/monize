@@ -1866,6 +1866,132 @@ describe("NetWorthService", () => {
       expect(result[0].value).toBe(11850);
     });
 
+    it("handles SELL and TRANSFER_OUT actions in daily holdings replay", async () => {
+      prefRepository.findOne.mockResolvedValue({
+        defaultCurrency: "USD",
+      });
+
+      // accounts query
+      dataSource.query.mockResolvedValueOnce([
+        {
+          id: "brok-1",
+          account_type: "INVESTMENT",
+          account_sub_type: "INVESTMENT_BROKERAGE",
+          currency_code: "USD",
+          opening_balance: 0,
+        },
+      ]);
+
+      // investment transactions: BUY 100, SELL 30, TRANSFER_OUT 20, SPLIT 50 = 100 shares
+      dataSource.query.mockResolvedValueOnce([
+        {
+          account_id: "brok-1",
+          security_id: "sec-1",
+          action: "BUY",
+          quantity: "100",
+          transaction_date: "2025-01-01",
+        },
+        {
+          account_id: "brok-1",
+          security_id: "sec-1",
+          action: "SELL",
+          quantity: "30",
+          transaction_date: "2025-02-01",
+        },
+        {
+          account_id: "brok-1",
+          security_id: "sec-1",
+          action: "TRANSFER_OUT",
+          quantity: "20",
+          transaction_date: "2025-02-15",
+        },
+        {
+          account_id: "brok-1",
+          security_id: "sec-1",
+          action: "SPLIT",
+          quantity: "50",
+          transaction_date: "2025-02-20",
+        },
+      ]);
+
+      // securities
+      securityRepository.findByIds.mockResolvedValue([
+        { id: "sec-1", skipPriceUpdates: false },
+      ]);
+
+      // security prices
+      dataSource.query.mockResolvedValueOnce([
+        {
+          security_id: "sec-1",
+          price_date: "2025-03-01",
+          close_price: "10.00",
+        },
+      ]);
+
+      const result = await service.getDailyInvestments(
+        "user-1",
+        "2025-03-01",
+        "2025-03-01",
+      );
+
+      // 100 - 30 - 20 + 50 = 100 shares * $10 = $1000
+      expect(result).toHaveLength(1);
+      expect(result[0].value).toBe(1000);
+    });
+
+    it("uses transaction prices for skipPriceUpdates securities in daily mode", async () => {
+      prefRepository.findOne.mockResolvedValue({
+        defaultCurrency: "USD",
+      });
+
+      // accounts query
+      dataSource.query.mockResolvedValueOnce([
+        {
+          id: "brok-1",
+          account_type: "INVESTMENT",
+          account_sub_type: "INVESTMENT_BROKERAGE",
+          currency_code: "USD",
+          opening_balance: 0,
+        },
+      ]);
+
+      // investment transactions
+      dataSource.query.mockResolvedValueOnce([
+        {
+          account_id: "brok-1",
+          security_id: "sec-skip",
+          action: "BUY",
+          quantity: "10",
+          transaction_date: "2025-01-15",
+        },
+      ]);
+
+      // securities with skipPriceUpdates
+      securityRepository.findByIds.mockResolvedValue([
+        { id: "sec-skip", skipPriceUpdates: true },
+      ]);
+
+      // transaction-based prices for skipPriceUpdates securities
+      // (market prices query is skipped since marketSecIds is empty)
+      dataSource.query.mockResolvedValueOnce([
+        {
+          security_id: "sec-skip",
+          transaction_date: "2025-01-15",
+          price: "25.00",
+        },
+      ]);
+
+      const result = await service.getDailyInvestments(
+        "user-1",
+        "2025-03-01",
+        "2025-03-01",
+      );
+
+      // 10 shares * $25 (from transaction price) = $250
+      expect(result).toHaveLength(1);
+      expect(result[0].value).toBe(250);
+    });
+
     it("returns empty when accountIds resolve to no accounts", async () => {
       prefRepository.findOne.mockResolvedValue({
         defaultCurrency: "USD",
