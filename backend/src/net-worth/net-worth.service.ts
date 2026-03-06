@@ -417,7 +417,11 @@ export class NetWorthService {
     if (investAccounts.length === 0) return [];
 
     const brokerageIds = investAccounts
-      .filter((a) => a.account_sub_type === "INVESTMENT_BROKERAGE")
+      .filter(
+        (a) =>
+          a.account_sub_type === "INVESTMENT_BROKERAGE" ||
+          (a.account_type === "INVESTMENT" && !a.account_sub_type),
+      )
       .map((a) => a.id);
     const cashIds = investAccounts
       .filter(
@@ -573,10 +577,6 @@ export class NetWorthService {
       d.setDate(d.getDate() + 1);
     }
 
-    // Replay holdings day by day and compute market value
-    const holdings = new Map<string, number>();
-    let txIdx = 0;
-
     // Currency conversion setup
     const currencies = new Set<string>();
     for (const a of investAccounts) {
@@ -597,21 +597,10 @@ export class NetWorthService {
       acctCurrency.set(a.id, a.currency_code);
     }
 
-    // Map brokerage accounts to their currency for market value conversion
-    const brokerageCurrency = new Map<string, string>();
-    for (const a of investAccounts) {
-      if (a.account_sub_type === "INVESTMENT_BROKERAGE") {
-        brokerageCurrency.set(a.id, a.currency_code);
-      }
-    }
-
-    // Track which brokerage account each security's transaction belongs to
-    const securityBrokerage = new Map<string, string>();
-    for (const tx of invTxs) {
-      if (tx.security_id && !securityBrokerage.has(tx.security_id)) {
-        securityBrokerage.set(tx.security_id, tx.account_id);
-      }
-    }
+    // Replay holdings per-account day by day and compute market value
+    // Key: account_id -> (security_id -> quantity)
+    const holdingsByAccount = new Map<string, Map<string, number>>();
+    let txIdx = 0;
 
     const result: { date: string; value: number }[] = [];
 
@@ -623,67 +612,72 @@ export class NetWorthService {
         if (txDate > dateStr) break;
 
         const secId = tx.security_id;
+        const acctId = tx.account_id;
         const qty = Number(tx.quantity) || 0;
 
         if (secId) {
+          if (!holdingsByAccount.has(acctId))
+            holdingsByAccount.set(acctId, new Map());
+          const acctHoldings = holdingsByAccount.get(acctId)!;
+
           switch (tx.action) {
             case "BUY":
             case "REINVEST":
             case "TRANSFER_IN":
-              holdings.set(secId, (holdings.get(secId) || 0) + qty);
+              acctHoldings.set(secId, (acctHoldings.get(secId) || 0) + qty);
               break;
             case "SELL":
             case "TRANSFER_OUT":
-              holdings.set(secId, (holdings.get(secId) || 0) - qty);
+              acctHoldings.set(secId, (acctHoldings.get(secId) || 0) - qty);
               break;
             case "SPLIT":
-              holdings.set(secId, (holdings.get(secId) || 0) + qty);
+              acctHoldings.set(secId, (acctHoldings.get(secId) || 0) + qty);
               break;
           }
         }
         txIdx++;
       }
 
-      // Compute market value from holdings
+      // Compute market value per account and convert to default currency
       let totalValue = 0;
 
-      for (const [secId, qty] of holdings) {
-        if (Math.abs(qty) < 0.00000001) continue;
+      for (const [acctId, acctHoldings] of holdingsByAccount) {
+        let acctMarketValue = 0;
 
-        const security = securityMap.get(secId);
-        let price: number | undefined;
+        for (const [secId, qty] of acctHoldings) {
+          if (Math.abs(qty) < 0.00000001) continue;
 
-        if (security?.skipPriceUpdates) {
-          const txPrices = txPricesBySec.get(secId) || [];
-          for (const tp of txPrices) {
-            if (tp.date <= dateStr) price = tp.price;
-            else break;
+          const security = securityMap.get(secId);
+          let price: number | undefined;
+
+          if (security?.skipPriceUpdates) {
+            const txPrices = txPricesBySec.get(secId) || [];
+            for (const tp of txPrices) {
+              if (tp.date <= dateStr) price = tp.price;
+              else break;
+            }
+          } else {
+            const secPrices = pricesBySec.get(secId) || [];
+            for (const sp of secPrices) {
+              if (sp.date <= dateStr) price = sp.price;
+              else break;
+            }
           }
-        } else {
-          const secPrices = pricesBySec.get(secId) || [];
-          for (const sp of secPrices) {
-            if (sp.date <= dateStr) price = sp.price;
-            else break;
+
+          if (price != null) {
+            acctMarketValue += qty * price;
           }
         }
 
-        if (price != null) {
-          let marketVal = qty * price;
-          const brokAcctId = securityBrokerage.get(secId);
-          const currency = brokAcctId
-            ? brokerageCurrency.get(brokAcctId)
-            : undefined;
-          if (currency) {
-            marketVal = this.convertCurrency(
-              marketVal,
-              currency,
-              defaultCurrency,
-              dateStr,
-              rateIndex,
-            );
-          }
-          totalValue += marketVal;
-        }
+        // Convert the entire account's market value from its currency
+        const currency = acctCurrency.get(acctId) || defaultCurrency;
+        totalValue += this.convertCurrency(
+          acctMarketValue,
+          currency,
+          defaultCurrency,
+          dateStr,
+          rateIndex,
+        );
       }
 
       // Add cash balances for INVESTMENT_CASH and standalone accounts
@@ -698,10 +692,6 @@ export class NetWorthService {
           rateIndex,
         );
       }
-
-      // For standalone investment accounts with brokerage data,
-      // add their cash balance from the market value computation above
-      // (standalone accounts have market_value + balance in monthly)
 
       result.push({
         date: dateStr,

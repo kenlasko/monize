@@ -1575,6 +1575,423 @@ describe("NetWorthService", () => {
       expect(result[0].value).toBe(1000);
     });
 
+    it("converts foreign currency brokerage values to default currency", async () => {
+      prefRepository.findOne.mockResolvedValue({
+        defaultCurrency: "USD",
+      });
+
+      // accounts query: CAD brokerage
+      dataSource.query.mockResolvedValueOnce([
+        {
+          id: "brok-cad",
+          account_type: "INVESTMENT",
+          account_sub_type: "INVESTMENT_BROKERAGE",
+          currency_code: "CAD",
+          opening_balance: 0,
+        },
+      ]);
+
+      // investment transactions
+      dataSource.query.mockResolvedValueOnce([
+        {
+          account_id: "brok-cad",
+          security_id: "sec-1",
+          action: "BUY",
+          quantity: "10",
+          transaction_date: "2025-02-01",
+        },
+      ]);
+
+      // securities
+      securityRepository.findByIds.mockResolvedValue([
+        { id: "sec-1", skipPriceUpdates: false },
+      ]);
+
+      // security prices
+      dataSource.query.mockResolvedValueOnce([
+        {
+          security_id: "sec-1",
+          price_date: "2025-03-01",
+          close_price: "100.00",
+        },
+      ]);
+
+      // exchange rates (buildRateIndex)
+      dataSource.query.mockResolvedValueOnce([
+        {
+          from_currency: "CAD",
+          to_currency: "USD",
+          rate: "0.75",
+          rate_date: "2025-02-28",
+        },
+      ]);
+
+      const result = await service.getDailyInvestments(
+        "user-1",
+        "2025-03-01",
+        "2025-03-01",
+      );
+
+      // 10 shares * $100 CAD = $1000 CAD * 0.75 = $750 USD
+      expect(result).toHaveLength(1);
+      expect(result[0].value).toBe(750);
+    });
+
+    it("converts foreign currency cash balances to default currency", async () => {
+      prefRepository.findOne.mockResolvedValue({
+        defaultCurrency: "USD",
+      });
+
+      // accounts query: CAD brokerage + CAD cash
+      dataSource.query.mockResolvedValueOnce([
+        {
+          id: "brok-cad",
+          account_type: "INVESTMENT",
+          account_sub_type: "INVESTMENT_BROKERAGE",
+          currency_code: "CAD",
+          opening_balance: 0,
+        },
+        {
+          id: "cash-cad",
+          account_type: "INVESTMENT",
+          account_sub_type: "INVESTMENT_CASH",
+          currency_code: "CAD",
+          opening_balance: 5000,
+        },
+      ]);
+
+      // investment transactions
+      dataSource.query.mockResolvedValueOnce([
+        {
+          account_id: "brok-cad",
+          security_id: "sec-1",
+          action: "BUY",
+          quantity: "10",
+          transaction_date: "2025-02-01",
+        },
+      ]);
+
+      // securities
+      securityRepository.findByIds.mockResolvedValue([
+        { id: "sec-1", skipPriceUpdates: false },
+      ]);
+
+      // security prices
+      dataSource.query.mockResolvedValueOnce([
+        {
+          security_id: "sec-1",
+          price_date: "2025-03-01",
+          close_price: "100.00",
+        },
+      ]);
+
+      // cash balances CTE
+      dataSource.query.mockResolvedValueOnce([
+        { date: "2025-03-01", balance: "5000", account_id: "cash-cad" },
+      ]);
+
+      // exchange rates (buildRateIndex)
+      dataSource.query.mockResolvedValueOnce([
+        {
+          from_currency: "CAD",
+          to_currency: "USD",
+          rate: "0.75",
+          rate_date: "2025-02-28",
+        },
+      ]);
+
+      const result = await service.getDailyInvestments(
+        "user-1",
+        "2025-03-01",
+        "2025-03-01",
+      );
+
+      // Securities: 10 * $100 CAD = $1000 CAD * 0.75 = $750 USD
+      // Cash: $5000 CAD * 0.75 = $3750 USD
+      // Total: $4500 USD
+      expect(result).toHaveLength(1);
+      expect(result[0].value).toBe(4500);
+    });
+
+    it("includes standalone investment account securities with currency conversion", async () => {
+      prefRepository.findOne.mockResolvedValue({
+        defaultCurrency: "USD",
+      });
+
+      // accounts query: standalone EUR investment account (no sub_type)
+      dataSource.query.mockResolvedValueOnce([
+        {
+          id: "inv-eur",
+          account_type: "INVESTMENT",
+          account_sub_type: null,
+          currency_code: "EUR",
+          opening_balance: 1000,
+        },
+      ]);
+
+      // investment transactions (standalone accounts have investment transactions)
+      dataSource.query.mockResolvedValueOnce([
+        {
+          account_id: "inv-eur",
+          security_id: "sec-eur",
+          action: "BUY",
+          quantity: "20",
+          transaction_date: "2025-01-15",
+        },
+      ]);
+
+      // securities
+      securityRepository.findByIds.mockResolvedValue([
+        { id: "sec-eur", skipPriceUpdates: false },
+      ]);
+
+      // security prices
+      dataSource.query.mockResolvedValueOnce([
+        {
+          security_id: "sec-eur",
+          price_date: "2025-03-01",
+          close_price: "50.00",
+        },
+      ]);
+
+      // cash balances CTE (standalone accounts also appear in cashIds)
+      dataSource.query.mockResolvedValueOnce([
+        { date: "2025-03-01", balance: "1000", account_id: "inv-eur" },
+      ]);
+
+      // exchange rates (buildRateIndex)
+      dataSource.query.mockResolvedValueOnce([
+        {
+          from_currency: "EUR",
+          to_currency: "USD",
+          rate: "1.10",
+          rate_date: "2025-02-28",
+        },
+      ]);
+
+      const result = await service.getDailyInvestments(
+        "user-1",
+        "2025-03-01",
+        "2025-03-01",
+      );
+
+      // Securities: 20 * 50 EUR = 1000 EUR * 1.10 = 1100 USD
+      // Cash: 1000 EUR * 1.10 = 1100 USD
+      // Total: 2200 USD
+      expect(result).toHaveLength(1);
+      expect(result[0].value).toBe(2200);
+    });
+
+    it("converts multiple accounts with different currencies to default currency", async () => {
+      prefRepository.findOne.mockResolvedValue({
+        defaultCurrency: "CAD",
+      });
+
+      // accounts query: CAD brokerage + USD brokerage
+      dataSource.query.mockResolvedValueOnce([
+        {
+          id: "brok-cad",
+          account_type: "INVESTMENT",
+          account_sub_type: "INVESTMENT_BROKERAGE",
+          currency_code: "CAD",
+          opening_balance: 0,
+        },
+        {
+          id: "brok-usd",
+          account_type: "INVESTMENT",
+          account_sub_type: "INVESTMENT_BROKERAGE",
+          currency_code: "USD",
+          opening_balance: 0,
+        },
+      ]);
+
+      // investment transactions for both accounts
+      dataSource.query.mockResolvedValueOnce([
+        {
+          account_id: "brok-cad",
+          security_id: "sec-cad",
+          action: "BUY",
+          quantity: "100",
+          transaction_date: "2025-02-01",
+        },
+        {
+          account_id: "brok-usd",
+          security_id: "sec-usd",
+          action: "BUY",
+          quantity: "50",
+          transaction_date: "2025-02-01",
+        },
+      ]);
+
+      // securities
+      securityRepository.findByIds.mockResolvedValue([
+        { id: "sec-cad", skipPriceUpdates: false },
+        { id: "sec-usd", skipPriceUpdates: false },
+      ]);
+
+      // security prices
+      dataSource.query.mockResolvedValueOnce([
+        {
+          security_id: "sec-cad",
+          price_date: "2025-03-01",
+          close_price: "50.00",
+        },
+        {
+          security_id: "sec-usd",
+          price_date: "2025-03-01",
+          close_price: "100.00",
+        },
+      ]);
+
+      // exchange rates (buildRateIndex): USD->CAD rate
+      dataSource.query.mockResolvedValueOnce([
+        {
+          from_currency: "USD",
+          to_currency: "CAD",
+          rate: "1.37",
+          rate_date: "2025-02-28",
+        },
+      ]);
+
+      const result = await service.getDailyInvestments(
+        "user-1",
+        "2025-03-01",
+        "2025-03-01",
+      );
+
+      // CAD brokerage: 100 * $50 CAD = $5000 CAD (no conversion needed)
+      // USD brokerage: 50 * $100 USD = $5000 USD * 1.37 = $6850 CAD
+      // Total: $11850 CAD
+      expect(result).toHaveLength(1);
+      expect(result[0].value).toBe(11850);
+    });
+
+    it("handles SELL and TRANSFER_OUT actions in daily holdings replay", async () => {
+      prefRepository.findOne.mockResolvedValue({
+        defaultCurrency: "USD",
+      });
+
+      // accounts query
+      dataSource.query.mockResolvedValueOnce([
+        {
+          id: "brok-1",
+          account_type: "INVESTMENT",
+          account_sub_type: "INVESTMENT_BROKERAGE",
+          currency_code: "USD",
+          opening_balance: 0,
+        },
+      ]);
+
+      // investment transactions: BUY 100, SELL 30, TRANSFER_OUT 20, SPLIT 50 = 100 shares
+      dataSource.query.mockResolvedValueOnce([
+        {
+          account_id: "brok-1",
+          security_id: "sec-1",
+          action: "BUY",
+          quantity: "100",
+          transaction_date: "2025-01-01",
+        },
+        {
+          account_id: "brok-1",
+          security_id: "sec-1",
+          action: "SELL",
+          quantity: "30",
+          transaction_date: "2025-02-01",
+        },
+        {
+          account_id: "brok-1",
+          security_id: "sec-1",
+          action: "TRANSFER_OUT",
+          quantity: "20",
+          transaction_date: "2025-02-15",
+        },
+        {
+          account_id: "brok-1",
+          security_id: "sec-1",
+          action: "SPLIT",
+          quantity: "50",
+          transaction_date: "2025-02-20",
+        },
+      ]);
+
+      // securities
+      securityRepository.findByIds.mockResolvedValue([
+        { id: "sec-1", skipPriceUpdates: false },
+      ]);
+
+      // security prices
+      dataSource.query.mockResolvedValueOnce([
+        {
+          security_id: "sec-1",
+          price_date: "2025-03-01",
+          close_price: "10.00",
+        },
+      ]);
+
+      const result = await service.getDailyInvestments(
+        "user-1",
+        "2025-03-01",
+        "2025-03-01",
+      );
+
+      // 100 - 30 - 20 + 50 = 100 shares * $10 = $1000
+      expect(result).toHaveLength(1);
+      expect(result[0].value).toBe(1000);
+    });
+
+    it("uses transaction prices for skipPriceUpdates securities in daily mode", async () => {
+      prefRepository.findOne.mockResolvedValue({
+        defaultCurrency: "USD",
+      });
+
+      // accounts query
+      dataSource.query.mockResolvedValueOnce([
+        {
+          id: "brok-1",
+          account_type: "INVESTMENT",
+          account_sub_type: "INVESTMENT_BROKERAGE",
+          currency_code: "USD",
+          opening_balance: 0,
+        },
+      ]);
+
+      // investment transactions
+      dataSource.query.mockResolvedValueOnce([
+        {
+          account_id: "brok-1",
+          security_id: "sec-skip",
+          action: "BUY",
+          quantity: "10",
+          transaction_date: "2025-01-15",
+        },
+      ]);
+
+      // securities with skipPriceUpdates
+      securityRepository.findByIds.mockResolvedValue([
+        { id: "sec-skip", skipPriceUpdates: true },
+      ]);
+
+      // transaction-based prices for skipPriceUpdates securities
+      // (market prices query is skipped since marketSecIds is empty)
+      dataSource.query.mockResolvedValueOnce([
+        {
+          security_id: "sec-skip",
+          transaction_date: "2025-01-15",
+          price: "25.00",
+        },
+      ]);
+
+      const result = await service.getDailyInvestments(
+        "user-1",
+        "2025-03-01",
+        "2025-03-01",
+      );
+
+      // 10 shares * $25 (from transaction price) = $250
+      expect(result).toHaveLength(1);
+      expect(result[0].value).toBe(250);
+    });
+
     it("returns empty when accountIds resolve to no accounts", async () => {
       prefRepository.findOne.mockResolvedValue({
         defaultCurrency: "USD",
