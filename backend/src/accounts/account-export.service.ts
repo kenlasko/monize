@@ -29,6 +29,10 @@ interface ExportSplit {
   transferAccountName: string;
 }
 
+interface CsvExportOptions {
+  expandSplits?: boolean;
+}
+
 @Injectable()
 export class AccountExportService {
   private readonly logger = new Logger(AccountExportService.name);
@@ -43,7 +47,12 @@ export class AccountExportService {
     private accountsService: AccountsService,
   ) {}
 
-  async exportCsv(userId: string, accountId: string): Promise<string> {
+  async exportCsv(
+    userId: string,
+    accountId: string,
+    options: CsvExportOptions = {},
+  ): Promise<string> {
+    const { expandSplits = true } = options;
     const account = await this.accountsService.findOne(userId, accountId);
     const transactions = await this.getExportTransactions(userId, accountId);
 
@@ -59,7 +68,7 @@ export class AccountExportService {
       }
       const balance = tx.status === "VOID" ? runningBalance : runningBalance;
 
-      if (tx.isSplit) {
+      if (tx.isSplit && expandSplits) {
         rows.push(
           this.csvRow(
             tx.date,

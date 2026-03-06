@@ -336,17 +336,24 @@ describe("AccountsController", () => {
       send: jest.fn(),
     } as any;
 
-    it("exports CSV format", async () => {
+    it("exports CSV format with expandSplits defaulting to true", async () => {
       mockAccountsService.findOne!.mockResolvedValue({
         name: "Chequing",
       });
       mockExportService.exportCsv!.mockResolvedValue("csv-content");
 
-      await controller.exportAccount(mockReq, "account-1", "csv", mockRes);
+      await controller.exportAccount(
+        mockReq,
+        "account-1",
+        "csv",
+        undefined,
+        mockRes,
+      );
 
       expect(mockExportService.exportCsv).toHaveBeenCalledWith(
         "user-1",
         "account-1",
+        { expandSplits: true },
       );
       expect(mockRes.setHeader).toHaveBeenCalledWith(
         "Content-Type",
@@ -359,13 +366,40 @@ describe("AccountsController", () => {
       expect(mockRes.send).toHaveBeenCalledWith("csv-content");
     });
 
+    it("passes expandSplits false to CSV export", async () => {
+      mockAccountsService.findOne!.mockResolvedValue({
+        name: "Chequing",
+      });
+      mockExportService.exportCsv!.mockResolvedValue("csv-content");
+
+      await controller.exportAccount(
+        mockReq,
+        "account-1",
+        "csv",
+        "false",
+        mockRes,
+      );
+
+      expect(mockExportService.exportCsv).toHaveBeenCalledWith(
+        "user-1",
+        "account-1",
+        { expandSplits: false },
+      );
+    });
+
     it("exports QIF format", async () => {
       mockAccountsService.findOne!.mockResolvedValue({
         name: "Savings",
       });
       mockExportService.exportQif!.mockResolvedValue("qif-content");
 
-      await controller.exportAccount(mockReq, "account-1", "qif", mockRes);
+      await controller.exportAccount(
+        mockReq,
+        "account-1",
+        "qif",
+        undefined,
+        mockRes,
+      );
 
       expect(mockExportService.exportQif).toHaveBeenCalledWith(
         "user-1",
@@ -380,7 +414,13 @@ describe("AccountsController", () => {
 
     it("throws BadRequestException for invalid format", async () => {
       await expect(
-        controller.exportAccount(mockReq, "account-1", "xml", mockRes),
+        controller.exportAccount(
+          mockReq,
+          "account-1",
+          "xml",
+          undefined,
+          mockRes,
+        ),
       ).rejects.toThrow(BadRequestException);
     });
 
@@ -390,7 +430,13 @@ describe("AccountsController", () => {
       });
       mockExportService.exportCsv!.mockResolvedValue("csv");
 
-      await controller.exportAccount(mockReq, "account-1", "csv", mockRes);
+      await controller.exportAccount(
+        mockReq,
+        "account-1",
+        "csv",
+        undefined,
+        mockRes,
+      );
 
       expect(mockRes.setHeader).toHaveBeenCalledWith(
         "Content-Disposition",

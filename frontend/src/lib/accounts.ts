@@ -138,9 +138,13 @@ export const accountsApi = {
   },
 
   // Export account transactions
-  exportAccount: async (id: string, format: 'csv' | 'qif'): Promise<void> => {
+  exportAccount: async (id: string, format: 'csv' | 'qif', options?: { expandSplits?: boolean }): Promise<void> => {
+    const params: Record<string, string> = { format };
+    if (options?.expandSplits === false) {
+      params.expandSplits = 'false';
+    }
     const response = await apiClient.get(`/accounts/${id}/export`, {
-      params: { format },
+      params,
       responseType: 'blob',
     });
     const contentDisposition = response.headers['content-disposition'] || '';

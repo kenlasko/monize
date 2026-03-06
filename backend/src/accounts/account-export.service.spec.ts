@@ -230,6 +230,39 @@ describe("AccountExportService", () => {
       expect(lines[3]).toContain("Gift card");
     });
 
+    it("collapses split transactions to single row when expandSplits is false", async () => {
+      const transactions = [buildSplitTransaction()];
+      const qb = createMockQueryBuilder(transactions);
+      mockTransactionRepo.createQueryBuilder.mockReturnValue(qb);
+
+      const csv = await service.exportCsv(userId, accountId, {
+        expandSplits: false,
+      });
+      const lines = csv.split("\n");
+
+      // Header + 1 transaction row only (no sub-rows)
+      expect(lines).toHaveLength(2);
+      // Should not contain "-- Split --" marker
+      expect(lines[1]).not.toContain("-- Split --");
+      // Should contain the transaction data on a single line
+      expect(lines[1]).toContain("Store");
+      expect(lines[1]).toContain("2025-02-01");
+      expect(lines[1]).toContain("-150");
+    });
+
+    it("still expands splits by default", async () => {
+      const transactions = [buildSplitTransaction()];
+      const qb = createMockQueryBuilder(transactions);
+      mockTransactionRepo.createQueryBuilder.mockReturnValue(qb);
+
+      const csv = await service.exportCsv(userId, accountId);
+      const lines = csv.split("\n");
+
+      // Header + main row + 2 split sub-rows
+      expect(lines).toHaveLength(4);
+      expect(lines[1]).toContain("-- Split --");
+    });
+
     it("escapes CSV values with commas and quotes", async () => {
       const transactions = [
         {

@@ -198,6 +198,13 @@ export class AccountsController {
     enum: ["csv", "qif"],
     description: "Export format",
   })
+  @ApiQuery({
+    name: "expandSplits",
+    required: false,
+    type: Boolean,
+    description:
+      "Whether to expand split transactions into sub-rows (CSV only, defaults to true)",
+  })
   @ApiResponse({
     status: 200,
     description: "File downloaded successfully",
@@ -209,6 +216,7 @@ export class AccountsController {
     @Request() req,
     @Param("id", ParseUUIDPipe) id: string,
     @Query("format") format: string,
+    @Query("expandSplits") expandSplits: string | undefined,
     @Res() res: Response,
   ) {
     if (format !== "csv" && format !== "qif") {
@@ -219,9 +227,11 @@ export class AccountsController {
     const safeName = account.name.replace(/[^a-zA-Z0-9_-]/g, "_");
 
     if (format === "csv") {
+      const shouldExpandSplits = expandSplits !== "false";
       const content = await this.accountExportService.exportCsv(
         req.user.id,
         id,
+        { expandSplits: shouldExpandSplits },
       );
       res.setHeader("Content-Type", "text/csv; charset=utf-8");
       res.setHeader(
