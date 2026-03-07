@@ -591,7 +591,25 @@ async function migrateInvestmentTransactions(
     }
 
     const qty = parseFloat(row['qty'] ?? '0')
-    const action: string = qty > 0 ? 'BUY' : qty < 0 ? 'SELL' : 'DIVIDEND'
+    // Money's TRN.act field determines the investment action type.
+    // LOT table analysis: act 0/3/5/15 open lots, act 1/16 close lots.
+    //   0 = Buy    1 = Sell    3, 5 = Reinvest (dividend → shares)
+    //   15 = Add shares (cost basis for transfers/splits)
+    //   16 = Transfer out (closes lots, despite the misleading name)
+    // Quantity is always positive in Money; direction comes from act.
+    const act = parseInt(trnRow['act'] ?? '0')
+    let action: string
+    if (act === 1 || act === 16) {
+      action = 'SELL'
+    } else if (qty === 0) {
+      action = 'DIVIDEND'
+    } else if (act === 3 || act === 5) {
+      action = 'REINVEST'
+    } else if (act === 15) {
+      action = 'ADD_SHARES'
+    } else {
+      action = 'BUY'
+    }
     const quantity = String(Math.abs(qty))
     const price = row['dPrice'] || '0'
     const commission = row['amtCmn'] || '0'
