@@ -791,6 +791,103 @@ async function computeBalances(client: Client, userId: string) {
   console.log(`  Balances updated: ${result.rowCount} accounts`)
 }
 
+// --- Holdings ---
+
+async function computeHoldings(client: Client, userId: string) {
+  // Rebuild holdings from investment transactions, mirroring the logic in
+  // holdings.service.ts rebuildFromTransactions(). Operates in SQL for speed.
+
+  // Get brokerage account IDs (INVESTMENT type with INVESTMENT_BROKERAGE sub-type or no sub-type)
+  const accountResult = await client.query(
+    `SELECT id FROM accounts
+     WHERE user_id = $1 AND account_type = 'INVESTMENT'
+     AND (account_sub_type = 'INVESTMENT_BROKERAGE' OR account_sub_type IS NULL)`,
+    [userId],
+  )
+  const brokerageIds = accountResult.rows.map((r: { id: string }) => r.id)
+  if (brokerageIds.length === 0) {
+    console.log('  Holdings: 0 (no brokerage accounts)')
+    return
+  }
+
+  // Get all investment transactions for these accounts, ordered by date
+  const txResult = await client.query(
+    `SELECT account_id, security_id, action, quantity, price
+     FROM investment_transactions
+     WHERE user_id = $1 AND account_id = ANY($2)
+     AND transaction_date <= CURRENT_DATE
+     ORDER BY transaction_date ASC, created_at ASC`,
+    [userId, brokerageIds],
+  )
+
+  // Compute holdings in memory (same algorithm as holdings.service.ts)
+  const holdingsMap = new Map<string, Map<string, { quantity: number; totalCost: number }>>()
+
+  for (const tx of txResult.rows) {
+    const quantity = Number(tx.quantity) || 0
+    const price = Number(tx.price) || 0
+    if (!tx.security_id) continue
+
+    const sellActions = ['SELL', 'TRANSFER_OUT', 'REMOVE_SHARES']
+    const quantityOnlyActions = ['ADD_SHARES', 'REMOVE_SHARES']
+    const holdingsActions = ['BUY', 'SELL', 'REINVEST', 'TRANSFER_IN', 'TRANSFER_OUT', 'ADD_SHARES', 'REMOVE_SHARES']
+
+    if (!holdingsActions.includes(tx.action)) continue
+
+    const quantityChange = sellActions.includes(tx.action) ? -quantity : quantity
+
+    if (!holdingsMap.has(tx.account_id)) holdingsMap.set(tx.account_id, new Map())
+    const accountHoldings = holdingsMap.get(tx.account_id)!
+    if (!accountHoldings.has(tx.security_id)) accountHoldings.set(tx.security_id, { quantity: 0, totalCost: 0 })
+    const holding = accountHoldings.get(tx.security_id)!
+
+    if (quantityOnlyActions.includes(tx.action)) {
+      holding.quantity += quantityChange
+    } else if (quantityChange > 0) {
+      holding.totalCost += quantityChange * price
+      holding.quantity += quantityChange
+    } else {
+      const sellQty = Math.abs(quantityChange)
+      if (holding.quantity > 0) {
+        const avgCost = holding.totalCost / holding.quantity
+        holding.totalCost -= sellQty * avgCost
+        holding.quantity -= sellQty
+      }
+    }
+  }
+
+  // Insert computed holdings
+  let count = 0
+  for (const [accountId, securities] of holdingsMap) {
+    for (const [securityId, data] of securities) {
+      if (Math.abs(data.quantity) < 0.00000001) continue
+      const avgCost = data.quantity > 0 ? data.totalCost / data.quantity : 0
+      await client.query(
+        `INSERT INTO holdings (account_id, security_id, quantity, average_cost)
+         VALUES ($1, $2, $3, $4)`,
+        [accountId, securityId, data.quantity, avgCost],
+      )
+      count++
+    }
+  }
+
+  console.log(`  Holdings: ${count}`)
+}
+
+// --- Scheduled Transaction Cleanup ---
+
+async function deactivatePastScheduledTransactions(client: Client, userId: string) {
+  // Mark scheduled transactions with next_due_date in the past as inactive,
+  // so they don't show as overdue in the Bills & Deposits screen.
+  const result = await client.query(
+    `UPDATE scheduled_transactions
+     SET is_active = false
+     WHERE user_id = $1 AND next_due_date < CURRENT_DATE AND is_active = true`,
+    [userId],
+  )
+  console.log(`  Deactivated past scheduled transactions: ${result.rowCount}`)
+}
+
 // --- Main ---
 
 async function main() {
@@ -865,8 +962,12 @@ async function main() {
       client, userId, accountMap, accountCurrencyMap, payeeMap, categoryMap,
     )
 
-    console.log('\nComputing balances:')
+    console.log('\nComputing balances and holdings:')
     await computeBalances(client, userId)
+    await computeHoldings(client, userId)
+
+    console.log('\nPost-import cleanup:')
+    await deactivatePastScheduledTransactions(client, userId)
 
     await client.query('COMMIT')
     console.log('\nMigration complete.')
