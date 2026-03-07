@@ -144,12 +144,13 @@ async function migratePayees(
     if (!hpay || !name) continue
 
     const id = randomUUID()
-    await client.query(
+    const result = await client.query(
       `INSERT INTO payees (id, user_id, name) VALUES ($1, $2, $3)
-       ON CONFLICT (user_id, name) DO NOTHING`,
+       ON CONFLICT (user_id, name) DO UPDATE SET name = EXCLUDED.name
+       RETURNING id`,
       [id, userId, name],
     )
-    payeeMap.set(hpay, id)
+    payeeMap.set(hpay, result.rows[0].id)
     count++
   }
 
@@ -182,14 +183,23 @@ async function migrateCategories(
     const parentMnyId = parseInt(row['hcatParent'] ?? '') || null
     const parentId = parentMnyId ? (categoryMap.get(parentMnyId) ?? null) : null
 
-    const id = randomUUID()
-    await client.query(
-      `INSERT INTO categories (id, user_id, parent_id, name)
-       VALUES ($1, $2, $3, $4)
-       ON CONFLICT (user_id, name, parent_id) DO NOTHING`,
-      [id, userId, parentId, name],
-    )
-    categoryMap.set(hcat, id)
+    // Check for existing category (handles NULL parent_id where UNIQUE constraint doesn't)
+    const existsQuery = parentId
+      ? `SELECT id FROM categories WHERE user_id = $1 AND name = $2 AND parent_id = $3`
+      : `SELECT id FROM categories WHERE user_id = $1 AND name = $2 AND parent_id IS NULL`
+    const existsParams = parentId ? [userId, name, parentId] : [userId, name]
+    const existing = await client.query(existsQuery, existsParams)
+
+    if (existing.rows.length > 0) {
+      categoryMap.set(hcat, existing.rows[0].id)
+    } else {
+      const id = randomUUID()
+      await client.query(
+        `INSERT INTO categories (id, user_id, parent_id, name) VALUES ($1, $2, $3, $4)`,
+        [id, userId, parentId, name],
+      )
+      categoryMap.set(hcat, id)
+    }
     count++
   }
 
@@ -220,13 +230,14 @@ async function migrateSecurities(
     if (symbol.startsWith('/')) symbol = symbol.slice(1)
     const exchange = row['szExchg']?.trim() || null
 
-    await client.query(
+    const result = await client.query(
       `INSERT INTO securities (id, user_id, symbol, name, exchange, currency_code)
        VALUES ($1, $2, $3, $4, $5, $6)
-       ON CONFLICT (user_id, symbol) DO NOTHING`,
+       ON CONFLICT (user_id, symbol) DO UPDATE SET name = EXCLUDED.name
+       RETURNING id`,
       [id, userId, symbol, name, exchange, currencyCode],
     )
-    securityMap.set(hsec, id)
+    securityMap.set(hsec, result.rows[0].id)
     count++
   }
 
