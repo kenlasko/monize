@@ -9,7 +9,11 @@ import {
   buildCurrencyMap,
 } from './transform'
 
+import * as path from 'path'
+
+// Load migration/.env first, then parent .env for Postgres credentials
 dotenv.config()
+dotenv.config({ path: path.resolve(__dirname, '..', '.env') })
 
 const MDB_FILE = 'source.mdb'
 
@@ -225,7 +229,7 @@ async function migrateSecurities(
 
     const id = randomUUID()
     const currencyCode = currencyMap.get(row['hcrnc'] ?? '') ?? 'NZD'
-    let symbol = row['szSymbol']?.trim() || name
+    let symbol = row['szSymbol']?.trim() || name.slice(0, 20)
     // Strip leading "/" from symbol (Money convention)
     if (symbol.startsWith('/')) symbol = symbol.slice(1)
     const exchange = row['szExchg']?.trim() || null
