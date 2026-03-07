@@ -486,7 +486,7 @@ describe("Email Templates", () => {
       expect(html).not.toContain("<b>Dangerous</b>");
       expect(html).toContain("&lt;script&gt;");
       expect(html).toContain("&lt;b&gt;Dangerous&lt;/b&gt;");
-      expect(html).toContain("&amp;&quot;&lt;&gt;&#039;");
+      expect(html).toContain("&amp;&quot;&lt;&gt;&apos;");
     });
 
     it("escapes HTML in firstName", () => {

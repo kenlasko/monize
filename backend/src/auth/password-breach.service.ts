@@ -8,6 +8,9 @@ export class PasswordBreachService {
 
   async isBreached(password: string): Promise<boolean> {
     try {
+      // SHA-1 is required by the HIBP k-Anonymity API protocol.
+      // Only the first 5 hex chars are sent; the full hash never leaves this process.
+      // bearer:disable javascript_lang_weak_hash_sha1
       const sha1 = crypto
         .createHash("sha1")
         .update(password)
@@ -29,10 +32,15 @@ export class PasswordBreachService {
 
       const body = await response.text();
       const lines = body.split("\n");
+      const suffixBuffer = Buffer.from(suffix);
 
       return lines.some((line) => {
         const [hashSuffix] = line.split(":");
-        return hashSuffix.trim() === suffix;
+        const candidate = Buffer.from(hashSuffix.trim());
+        return (
+          candidate.length === suffixBuffer.length &&
+          crypto.timingSafeEqual(candidate, suffixBuffer)
+        );
       });
     } catch (error) {
       this.logger.warn(

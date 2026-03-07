@@ -1,3 +1,4 @@
+import * as he from "he";
 import { formatCurrency } from "../common/format-currency.util";
 
 /**
@@ -6,12 +7,7 @@ import { formatCurrency } from "../common/format-currency.util";
  * interpolation into HTML to prevent phishing via injected markup.
  */
 function escapeHtml(unsafe: string): string {
-  return unsafe
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+  return he.encode(unsafe, { useNamedReferences: true });
 }
 
 export function testEmailTemplate(firstName: string): string {

@@ -2,6 +2,8 @@ import { Client } from "pg";
 import * as fs from "fs";
 import * as path from "path";
 
+const SCHEMA_FILENAME = "schema.sql";
+
 function requiredEnv(name: string, fallback?: string): string {
   const value = process.env[name] || fallback;
   if (!value) {
@@ -9,6 +11,18 @@ function requiredEnv(name: string, fallback?: string): string {
     process.exit(1);
   }
   return value;
+}
+
+/**
+ * Resolve a path and verify it stays within the given base directory.
+ * Returns the resolved path or null if validation fails.
+ */
+function safePath(base: string, relative: string): string | null {
+  const resolved = path.resolve(base, relative);
+  if (!resolved.startsWith(path.resolve(base) + path.sep) && resolved !== path.resolve(base)) {
+    return null;
+  }
+  return resolved;
 }
 
 async function initDatabase() {
@@ -41,24 +55,26 @@ async function initDatabase() {
     console.log("Tables not found. Initializing database...");
 
     // Try multiple possible locations for schema.sql
-    const possiblePaths = [
-      path.join(__dirname, "..", "schema.sql"), // /app/schema.sql (Docker)
-      path.join(__dirname, "..", "..", "database", "schema.sql"), // Development
-      path.join(process.cwd(), "schema.sql"), // Current directory
-      path.join(process.cwd(), "..", "database", "schema.sql"), // Parent/database
+    // All base directories are trusted (derived from __dirname or cwd)
+    const baseDirs = [
+      path.resolve(__dirname, ".."),                   // /app (Docker)
+      path.resolve(__dirname, "..", "..", "database"),  // Development
+      path.resolve(process.cwd()),                     // Current directory
+      path.resolve(process.cwd(), "..", "database"),   // Parent/database
     ];
 
     let schemaPath: string | null = null;
-    for (const p of possiblePaths) {
-      if (fs.existsSync(p)) {
-        schemaPath = p;
+    for (const base of baseDirs) {
+      const candidate = safePath(base, SCHEMA_FILENAME);
+      if (candidate && fs.existsSync(candidate)) {
+        schemaPath = candidate;
         break;
       }
     }
 
     if (!schemaPath) {
-      console.error("schema.sql not found. Searched paths:");
-      possiblePaths.forEach((p) => console.error(`  - ${p}`));
+      console.error("schema.sql not found. Searched directories:");
+      baseDirs.forEach((d) => console.error(`  - ${d}`));
       process.exit(1);
     }
 

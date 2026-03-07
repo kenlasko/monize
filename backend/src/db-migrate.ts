@@ -2,6 +2,21 @@ import { Client } from "pg";
 import * as fs from "fs";
 import * as path from "path";
 
+const MIGRATIONS_DIRNAME = "migrations";
+
+/**
+ * Resolve a path and verify it stays within the given base directory.
+ * Returns the resolved path or null if validation fails.
+ */
+function safePath(base: string, relative: string): string | null {
+  const resolvedBase = path.resolve(base);
+  const resolved = path.resolve(base, relative);
+  if (!resolved.startsWith(resolvedBase + path.sep) && resolved !== resolvedBase) {
+    return null;
+  }
+  return resolved;
+}
+
 export async function runMigrations() {
   const client = new Client({
     host: process.env.DATABASE_HOST || "localhost",
@@ -15,17 +30,19 @@ export async function runMigrations() {
     await client.connect();
 
     // Find migrations directory
-    const possiblePaths = [
-      path.join(__dirname, "..", "migrations"), // /app/migrations (Docker)
-      path.join(__dirname, "..", "..", "database", "migrations"), // Development
-      path.join(process.cwd(), "migrations"), // Current directory
-      path.join(process.cwd(), "..", "database", "migrations"), // Parent/database
+    // All base directories are trusted (derived from __dirname or cwd)
+    const baseDirs = [
+      path.resolve(__dirname, ".."),                   // /app (Docker)
+      path.resolve(__dirname, "..", "..", "database"),  // Development
+      path.resolve(process.cwd()),                     // Current directory
+      path.resolve(process.cwd(), "..", "database"),   // Parent/database
     ];
 
     let migrationsDir: string | null = null;
-    for (const p of possiblePaths) {
-      if (fs.existsSync(p) && fs.statSync(p).isDirectory()) {
-        migrationsDir = p;
+    for (const base of baseDirs) {
+      const candidate = safePath(base, MIGRATIONS_DIRNAME);
+      if (candidate && fs.existsSync(candidate) && fs.statSync(candidate).isDirectory()) {
+        migrationsDir = candidate;
         break;
       }
     }
@@ -52,7 +69,7 @@ export async function runMigrations() {
     // Find all .sql migration files, sorted by filename
     const files = fs
       .readdirSync(migrationsDir)
-      .filter((f) => f.endsWith(".sql"))
+      .filter((f) => f.endsWith(".sql") && !f.includes(path.sep) && !f.includes("/"))
       .sort();
 
     // Run pending migrations in order
@@ -60,7 +77,11 @@ export async function runMigrations() {
     for (const file of files) {
       if (appliedSet.has(file)) continue;
 
-      const filePath = path.join(migrationsDir, file);
+      const filePath = safePath(migrationsDir, file);
+      if (!filePath) {
+        console.error(`Skipping invalid migration filename: ${file}`);
+        continue;
+      }
       const sql = fs.readFileSync(filePath, "utf8");
 
       console.log(`Applying migration: ${file}`);
