@@ -798,6 +798,181 @@ T-20.00
     });
   });
 
+  describe("parseQif - deep date disambiguation beyond first 10 dates", () => {
+    function buildQifWithDates(dates: string[]): string {
+      const lines = ["!Type:Bank"];
+      for (const date of dates) {
+        lines.push(`D${date}`, "T-10.00", "^");
+      }
+      return lines.join("\n");
+    }
+
+    it("detects YYYY-MM-DD when unambiguous ISO date appears after 10th entry", () => {
+      // 12 ambiguous dates (both parts <= 12), then one with day=25
+      const dates = [
+        "2025-01-02",
+        "2025-02-03",
+        "2025-03-04",
+        "2025-04-05",
+        "2025-05-06",
+        "2025-06-07",
+        "2025-07-08",
+        "2025-08-09",
+        "2025-09-10",
+        "2025-10-11",
+        "2025-11-12",
+        "2025-12-01",
+        "2025-01-25",
+      ];
+      const result = parseQif(buildQifWithDates(dates));
+      expect(result.detectedDateFormat).toBe("YYYY-MM-DD");
+    });
+
+    it("detects YYYY-DD-MM when unambiguous ISO date appears after 10th entry", () => {
+      // 12 ambiguous dates, then one with second part=18 (must be day)
+      const dates = [
+        "2025-01-02",
+        "2025-02-03",
+        "2025-03-04",
+        "2025-04-05",
+        "2025-05-06",
+        "2025-06-07",
+        "2025-07-08",
+        "2025-08-09",
+        "2025-09-10",
+        "2025-10-11",
+        "2025-11-12",
+        "2025-12-01",
+        "2025-18-03",
+      ];
+      const result = parseQif(buildQifWithDates(dates));
+      expect(result.detectedDateFormat).toBe("YYYY-DD-MM");
+    });
+
+    it("detects MM/DD/YYYY when unambiguous slash date appears after 10th entry", () => {
+      const dates = [
+        "01/02/2025",
+        "02/03/2025",
+        "03/04/2025",
+        "04/05/2025",
+        "05/06/2025",
+        "06/07/2025",
+        "07/08/2025",
+        "08/09/2025",
+        "09/10/2025",
+        "10/11/2025",
+        "11/12/2025",
+        "12/01/2025",
+        "01/25/2025",
+      ];
+      const result = parseQif(buildQifWithDates(dates));
+      expect(result.detectedDateFormat).toBe("MM/DD/YYYY");
+    });
+
+    it("detects DD/MM/YYYY when unambiguous slash date appears after 10th entry", () => {
+      const dates = [
+        "01/02/2025",
+        "02/03/2025",
+        "03/04/2025",
+        "04/05/2025",
+        "05/06/2025",
+        "06/07/2025",
+        "07/08/2025",
+        "08/09/2025",
+        "09/10/2025",
+        "10/11/2025",
+        "11/12/2025",
+        "12/01/2025",
+        "25/01/2025",
+      ];
+      const result = parseQif(buildQifWithDates(dates));
+      expect(result.detectedDateFormat).toBe("DD/MM/YYYY");
+    });
+
+    it("re-parses transaction dates correctly after auto-detecting YYYY-DD-MM", () => {
+      // First dates are ambiguous, last one disambiguates as YYYY-DD-MM
+      const dates = [
+        "2025-03-05",
+        "2025-06-01",
+        "2025-18-03",
+      ];
+      const result = parseQif(buildQifWithDates(dates));
+      expect(result.detectedDateFormat).toBe("YYYY-DD-MM");
+      // With YYYY-DD-MM: 2025-03-05 -> day=03, month=05 -> 2025-05-03
+      expect(result.transactions[0].date).toBe("2025-05-03");
+      // 2025-06-01 -> day=06, month=01 -> 2025-01-06
+      expect(result.transactions[1].date).toBe("2025-01-06");
+      // 2025-18-03 -> day=18, month=03 -> 2025-03-18
+      expect(result.transactions[2].date).toBe("2025-03-18");
+    });
+
+    it("re-parses transaction dates correctly after auto-detecting DD/MM/YYYY", () => {
+      // First dates ambiguous, later one disambiguates as DD/MM/YYYY
+      const qif = `!Type:Bank
+D05/03/2025
+T-10.00
+^
+D01/06/2025
+T-20.00
+^
+D25/01/2025
+T-30.00
+^`;
+      const result = parseQif(qif);
+      expect(result.detectedDateFormat).toBe("DD/MM/YYYY");
+      // DD/MM/YYYY: 05/03/2025 -> day=05, month=03
+      expect(result.transactions[0].date).toBe("2025-03-05");
+      // 01/06/2025 -> day=01, month=06
+      expect(result.transactions[1].date).toBe("2025-06-01");
+      // 25/01/2025 -> day=25, month=01
+      expect(result.transactions[2].date).toBe("2025-01-25");
+    });
+
+    it("detects DD/MM/YYYY when unambiguous apostrophe date appears after 10th entry", () => {
+      const dates = [
+        "01/02'2025",
+        "02/03'2025",
+        "03/04'2025",
+        "04/05'2025",
+        "05/06'2025",
+        "06/07'2025",
+        "07/08'2025",
+        "08/09'2025",
+        "09/10'2025",
+        "10/11'2025",
+        "11/12'2025",
+        "12/01'2025",
+        "25/01'2025",
+      ];
+      const result = parseQif(buildQifWithDates(dates));
+      expect(result.detectedDateFormat).toBe("DD/MM/YYYY");
+    });
+
+    it("re-parses opening balance date after auto-detecting YYYY-DD-MM", () => {
+      const qif = `!Type:Bank
+D2025-05-01
+T1000.00
+POpening Balance
+L[Checking]
+^
+D2025-03-02
+T-50.00
+PStore
+^
+D2025-18-03
+T-30.00
+PShop
+^`;
+      const result = parseQif(qif);
+      expect(result.detectedDateFormat).toBe("YYYY-DD-MM");
+      // Opening balance date re-parsed: 2025-05-01 with YYYY-DD-MM -> day=05, month=01
+      expect(result.openingBalanceDate).toBe("2025-01-05");
+      // Transaction dates also re-parsed
+      expect(result.transactions[0].date).toBe("2025-02-03");
+      expect(result.transactions[1].date).toBe("2025-03-18");
+    });
+  });
+
   describe("HTML sanitization", () => {
     it("strips HTML angle brackets from payee", () => {
       const qif = `!Type:Bank

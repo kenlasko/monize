@@ -106,6 +106,8 @@ export function parseQif(
   const transferAccountsSet = new Set<string>();
   const securitiesSet = new Set<string>();
   const rawDates: string[] = [];
+  const transactionRawDates: string[] = [];
+  let openingBalanceRawDate: string | null = null;
 
   let accountType = "Bank";
   const accountName = "";
@@ -321,9 +323,11 @@ export function parseQif(
             // Extract opening balance - don't add as a transaction
             openingBalance = currentTransaction.amount || 0;
             openingBalanceDate = currentTransaction.date;
+            openingBalanceRawDate = rawDates[rawDates.length - 1];
           } else {
             currentTransaction.splits = currentSplits;
             transactions.push(currentTransaction as QifTransaction);
+            transactionRawDates.push(rawDates[rawDates.length - 1]);
           }
         }
 
@@ -341,10 +345,28 @@ export function parseQif(
     }
     currentTransaction.splits = currentSplits;
     transactions.push(currentTransaction as QifTransaction);
+    transactionRawDates.push(rawDates[rawDates.length - 1]);
   }
 
   // Detect date format from raw dates
   const detectedDateFormat = dateFormat || detectDateFormat(rawDates);
+
+  // If no explicit format was provided, re-parse all dates using the detected format
+  // so the preview endpoint returns correct date ranges
+  if (!dateFormat) {
+    for (let i = 0; i < transactions.length; i++) {
+      transactions[i].date = parseQifDate(
+        transactionRawDates[i],
+        detectedDateFormat,
+      );
+    }
+    if (openingBalanceRawDate !== null) {
+      openingBalanceDate = parseQifDate(
+        openingBalanceRawDate,
+        detectedDateFormat,
+      );
+    }
+  }
 
   // Get sample dates for UI display (unique, up to 3)
   const sampleDates = [...new Set(rawDates)].slice(0, 3);
@@ -392,8 +414,8 @@ function detectDateFormat(dates: string[]): DateFormat {
     // If third part > 12, it's likely the day (YYYY-MM-DD)
     if (p3 > 12) return "YYYY-MM-DD";
 
-    // Check multiple dates to make a better guess
-    for (const date of normalizedDates.slice(0, 10)) {
+    // Check all dates to disambiguate
+    for (const date of normalizedDates) {
       const m = date.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
       if (m) {
         if (parseInt(m[2]) > 12) return "YYYY-DD-MM";
@@ -406,7 +428,7 @@ function detectDateFormat(dates: string[]): DateFormat {
   }
 
   // Check for MM/DD/YYYY or DD/MM/YYYY format
-  for (const date of normalizedDates.slice(0, 10)) {
+  for (const date of normalizedDates) {
     const match = date.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{2,4})$/);
     if (match) {
       const [, part1, part2] = match;
