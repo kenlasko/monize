@@ -937,7 +937,7 @@ function ReportsContent() {
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
                           <div
-                            className={`${!bgColor ? `${colorClass} bg-opacity-20 dark:bg-opacity-30` : ''} rounded p-1.5 flex-shrink-0 flex items-center justify-center`}
+                            className={`${!bgColor ? `${colorClass} bg-opacity-20 dark:bg-opacity-30` : ''} rounded p-1.5 flex-shrink-0 hidden md:flex items-center justify-center`}
                             style={bgColor ? { backgroundColor: `${bgColor}40` } : undefined}
                           >
                             <div className="text-gray-700 dark:text-gray-200 [&>svg]:h-5 [&>svg]:w-5">
