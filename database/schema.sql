@@ -435,6 +435,7 @@ CREATE TABLE trusted_devices (
     token_hash VARCHAR(64) NOT NULL,
     device_name VARCHAR(255) NOT NULL,
     ip_address INET,
+    user_agent_hash VARCHAR(64),
     last_used_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     expires_at TIMESTAMP NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

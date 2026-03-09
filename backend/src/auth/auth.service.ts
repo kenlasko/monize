@@ -28,6 +28,8 @@ import {
   decrypt,
   isLegacyEncryption,
   migrateFromLegacy,
+  derivePurposeKey,
+  hashToken,
 } from "./crypto.util";
 import { PasswordBreachService } from "./password-breach.service";
 import { EmailService } from "../notifications/email.service";
@@ -38,6 +40,10 @@ import { UAParser } from "ua-parser-js";
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
   private jwtSecret: string;
+  /** Derived key for TOTP encryption -- cryptographically isolated from the JWT signing key */
+  private totpEncryptionKey: string;
+  /** Derived key for CSRF HMAC -- cryptographically isolated from the JWT signing key */
+  private csrfKey: string;
   private readonly ACCESS_TOKEN_EXPIRY = "15m";
   private readonly REFRESH_TOKEN_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
   private readonly MAX_FAILED_ATTEMPTS = 5;
@@ -60,6 +66,13 @@ export class AuthService {
   >();
   private readonly FORGOT_PASSWORD_EMAIL_LIMIT = 3;
   private readonly FORGOT_PASSWORD_EMAIL_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+  /**
+   * Track recently used TOTP codes per user to prevent replay within the
+   * code's validity window. Keys are "userId:code", values are expiry timestamps.
+   * TOTP codes are valid for ~30s but we track for 90s to cover clock skew.
+   */
+  private readonly usedTotpCodes = new Map<string, number>();
+  private readonly TOTP_CODE_REUSE_WINDOW_MS = 90 * 1000;
 
   constructor(
     @InjectRepository(User)
@@ -77,6 +90,39 @@ export class AuthService {
     private emailService: EmailService,
   ) {
     this.jwtSecret = this.configService.get<string>("JWT_SECRET")!;
+    this.totpEncryptionKey = derivePurposeKey(this.jwtSecret, "totp-encryption");
+    this.csrfKey = derivePurposeKey(this.jwtSecret, "csrf-token");
+  }
+
+  /** Get the derived CSRF key for use by the controller */
+  getCsrfKey(): string {
+    return this.csrfKey;
+  }
+
+  /**
+   * Decrypt a TOTP secret, transparently migrating from the old key (raw jwtSecret)
+   * to the new purpose-derived key. Returns the plaintext secret and a flag indicating
+   * whether the stored ciphertext should be re-encrypted.
+   */
+  private decryptTotpSecret(ciphertext: string): {
+    secret: string;
+    needsReEncrypt: boolean;
+  } {
+    // Try new purpose-derived key first
+    try {
+      return { secret: decrypt(ciphertext, this.totpEncryptionKey), needsReEncrypt: false };
+    } catch {
+      // Fall back to raw jwtSecret (legacy data encrypted before key separation)
+      const secret = decrypt(ciphertext, this.jwtSecret);
+      return { secret, needsReEncrypt: true };
+    }
+  }
+
+  /**
+   * Re-encrypt a TOTP secret using the current purpose-derived key.
+   */
+  private reEncryptTotpSecret(plainSecret: string): string {
+    return encrypt(plainSecret, this.totpEncryptionKey);
   }
 
   async register(registerDto: RegisterDto) {
@@ -132,7 +178,7 @@ export class AuthService {
     };
   }
 
-  async login(loginDto: LoginDto, trustedDeviceToken?: string) {
+  async login(loginDto: LoginDto, trustedDeviceToken?: string, userAgent?: string) {
     const { email: rawEmail, password } = loginDto;
     const email = rawEmail.toLowerCase().trim();
 
@@ -141,13 +187,13 @@ export class AuthService {
     });
 
     if (!user || !user.passwordHash) {
-      this.logger.warn(`Login failed: invalid credentials for email ${email}`);
+      this.logger.warn("Login failed: no matching account");
       throw new UnauthorizedException("Invalid credentials");
     }
 
     // Check account lockout
     if (user.lockedUntil && user.lockedUntil > new Date()) {
-      this.logger.warn(`Login failed: account locked for email ${email}`);
+      this.logger.warn(`Login failed: account locked for user ${user.id}`);
       throw new ForbiddenException(
         "Account is temporarily locked due to too many failed login attempts. Please try again later.",
       );
@@ -156,7 +202,7 @@ export class AuthService {
     const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
 
     if (!isPasswordValid) {
-      this.logger.warn(`Login failed: invalid password for email ${email}`);
+      this.logger.warn(`Login failed: invalid password for user ${user.id}`);
       // Atomically increment failed attempts
       const newAttempts = user.failedLoginAttempts + 1;
       const updateFields: Record<string, unknown> = {
@@ -170,7 +216,7 @@ export class AuthService {
         const lockoutDuration = this.BASE_LOCKOUT_MS * lockoutMultiplier;
         updateFields.lockedUntil = new Date(Date.now() + lockoutDuration);
         this.logger.warn(
-          `Account locked for email ${email} after ${newAttempts} failed attempts`,
+          `Account locked for user ${user.id} after ${newAttempts} failed attempts`,
         );
         // Fire-and-forget lockout email
         if (user.email) {
@@ -195,7 +241,7 @@ export class AuthService {
     }
 
     if (!user.isActive) {
-      this.logger.warn(`Login failed: account deactivated for email ${email}`);
+      this.logger.warn(`Login failed: account deactivated for user ${user.id}`);
       throw new UnauthorizedException("Account is deactivated");
     }
 
@@ -220,6 +266,7 @@ export class AuthService {
         const isTrusted = await this.validateTrustedDevice(
           user.id,
           trustedDeviceToken,
+          userAgent,
         );
         if (isTrusted) {
           user.lastLogin = new Date();
@@ -227,7 +274,7 @@ export class AuthService {
           const { accessToken, refreshToken } =
             await this.generateTokenPair(user);
           this.logger.log(
-            `Login successful (trusted device) for email ${email}`,
+            `Login successful (trusted device) for user ${user.id}`,
           );
           return { user: this.sanitizeUser(user), accessToken, refreshToken };
         }
@@ -238,7 +285,7 @@ export class AuthService {
         { sub: user.id, type: "2fa_pending" },
         { expiresIn: "5m" },
       );
-      this.logger.log(`Login requires 2FA for email ${email}`);
+      this.logger.log(`Login requires 2FA for user ${user.id}`);
       return { requires2FA: true, tempToken };
     }
 
@@ -248,7 +295,7 @@ export class AuthService {
 
     const { accessToken, refreshToken } = await this.generateTokenPair(user);
 
-    this.logger.log(`Login successful for email ${email}`);
+    this.logger.log(`Login successful for user ${user.id}`);
     return {
       user: this.sanitizeUser(user),
       accessToken,
@@ -312,12 +359,24 @@ export class AuthService {
       throw new UnauthorizedException("Invalid verification state");
     }
 
-    const secret = decrypt(user.twoFactorSecret, this.jwtSecret);
+    const { secret, needsReEncrypt } = this.decryptTotpSecret(
+      user.twoFactorSecret,
+    );
 
     // L5: Try TOTP for 6-digit codes, backup codes for XXXX-XXXX format
     let isValid = false;
+    let isTotpCode = false;
     if (/^\d{6}$/.test(code)) {
-      isValid = otplib.verifySync({ token: code, secret }).valid;
+      isTotpCode = true;
+      // SECURITY: Reject previously used TOTP codes to prevent replay attacks.
+      // Each code can only be used once within its validity window.
+      const codeKey = `${user.id}:${code}`;
+      this.cleanupExpiredTotpCodes();
+      if (this.usedTotpCodes.has(codeKey)) {
+        isValid = false;
+      } else {
+        isValid = otplib.verifySync({ token: code, secret }).valid;
+      }
     } else if (user.backupCodes) {
       isValid = await this.verifyBackupCode(user, code);
     }
@@ -362,12 +421,15 @@ export class AuthService {
     this.twoFactorAttempts.delete(tempToken);
     this.user2FAAttempts.delete(payload.sub);
 
-    // M8: Migrate legacy TOTP encryption if needed
-    if (isLegacyEncryption(user.twoFactorSecret)) {
-      const migrated = migrateFromLegacy(user.twoFactorSecret, this.jwtSecret);
-      if (migrated) {
-        user.twoFactorSecret = migrated;
-      }
+    // Mark TOTP code as used to prevent replay
+    if (isTotpCode) {
+      const codeKey = `${user.id}:${code}`;
+      this.usedTotpCodes.set(codeKey, Date.now() + this.TOTP_CODE_REUSE_WINDOW_MS);
+    }
+
+    // Re-encrypt with purpose-derived key if still using old key material
+    if (needsReEncrypt) {
+      user.twoFactorSecret = this.reEncryptTotpSecret(secret);
     }
 
     // Update last login
@@ -408,6 +470,15 @@ export class AuthService {
     }
   }
 
+  private cleanupExpiredTotpCodes(): void {
+    const now = Date.now();
+    for (const [key, expiresAt] of this.usedTotpCodes.entries()) {
+      if (expiresAt <= now) {
+        this.usedTotpCodes.delete(key);
+      }
+    }
+  }
+
   async setup2FA(userId: string) {
     const user = await this.usersRepository.findOne({
       where: { id: userId },
@@ -432,7 +503,7 @@ export class AuthService {
     const qrCodeDataUrl = await QRCode.toDataURL(otpauthUrl);
 
     // H5: Store in pending field, only commit after confirmation
-    user.pendingTwoFactorSecret = encrypt(secret, this.jwtSecret);
+    user.pendingTwoFactorSecret = encrypt(secret, this.totpEncryptionKey);
     await this.usersRepository.save(user);
 
     return { secret, qrCodeDataUrl, otpauthUrl };
@@ -447,7 +518,7 @@ export class AuthService {
       throw new BadRequestException("2FA setup not initiated");
     }
 
-    const secret = decrypt(user.pendingTwoFactorSecret, this.jwtSecret);
+    const secret = decrypt(user.pendingTwoFactorSecret, this.totpEncryptionKey);
     const isValid = otplib.verifySync({ token: code, secret }).valid;
 
     if (!isValid) {
@@ -492,7 +563,7 @@ export class AuthService {
       throw new BadRequestException("2FA is not enabled");
     }
 
-    const secret = decrypt(user.twoFactorSecret, this.jwtSecret);
+    const { secret } = this.decryptTotpSecret(user.twoFactorSecret);
     const isValid = otplib.verifySync({ token: code, secret }).valid;
 
     if (!isValid) {
@@ -518,24 +589,10 @@ export class AuthService {
     return { message: "Two-factor authentication disabled successfully" };
   }
 
-  async validateUser(email: string, password: string): Promise<any> {
-    const user = await this.usersRepository.findOne({
-      where: { email: email.toLowerCase().trim() },
-    });
-
-    if (user && user.passwordHash) {
-      const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
-      if (isPasswordValid && user.isActive) {
-        return this.sanitizeUser(user);
-      }
-    }
-    return null;
-  }
-
   async findOrCreateOidcUser(
     userInfo: Record<string, unknown>,
     registrationEnabled = true,
-  ) {
+  ): Promise<{ user: User; linkPending?: boolean }> {
     // Standard OIDC claims
     const sub = userInfo.sub as string;
     const rawEmail = userInfo.email as string | undefined;
@@ -578,13 +635,15 @@ export class AuthService {
 
         if (existingUser) {
           if (existingUser.passwordHash) {
-            // M6: Local account requires user confirmation before linking
-            await this.initiateOidcLink(existingUser, sub);
+            // SECURITY: Local account requires user confirmation before linking.
+            // Do NOT issue tokens -- return linkPending so the controller redirects
+            // the user to confirm via email instead of granting access.
+            const linkToken = await this.initiateOidcLink(existingUser, sub);
             this.logger.warn(
               `OIDC link pending confirmation for user ${existingUser.id}`,
             );
-            // Return the existing user without completing the link
-            user = existingUser;
+            await this.sendOidcLinkEmail(existingUser, linkToken);
+            return { user: existingUser, linkPending: true };
           } else {
             // OIDC-only account -- safe to link directly
             existingUser.oidcSubject = sub;
@@ -626,12 +685,16 @@ export class AuthService {
             });
             if (existingUser) {
               if (existingUser.passwordHash) {
-                // M6: Local account requires user confirmation before linking
-                await this.initiateOidcLink(existingUser, sub);
+                // SECURITY: Local account requires confirmation -- do not issue tokens
+                const linkToken = await this.initiateOidcLink(
+                  existingUser,
+                  sub,
+                );
                 this.logger.warn(
                   `OIDC link pending confirmation (catch path) for user ${existingUser.id}`,
                 );
-                user = existingUser;
+                await this.sendOidcLinkEmail(existingUser, linkToken);
+                return { user: existingUser, linkPending: true };
               } else {
                 // OIDC-only account -- safe to link directly
                 existingUser.oidcSubject = sub;
@@ -702,12 +765,12 @@ export class AuthService {
     user.lastLogin = new Date();
     await this.usersRepository.save(user);
 
-    return user;
+    return { user };
   }
 
   async validateOidcUser(profile: any): Promise<any> {
-    const user = await this.findOrCreateOidcUser(profile);
-    return this.sanitizeUser(user);
+    const result = await this.findOrCreateOidcUser(profile);
+    return this.sanitizeUser(result.user);
   }
 
   async generateTokenPair(
@@ -724,7 +787,7 @@ export class AuthService {
     });
 
     const rawRefreshToken = crypto.randomBytes(64).toString("hex");
-    const tokenHash = this.hashToken(rawRefreshToken);
+    const tokenHash = hashToken(rawRefreshToken);
     const familyId = crypto.randomUUID();
 
     const refreshTokenEntity = this.refreshTokensRepository.create({
@@ -743,7 +806,7 @@ export class AuthService {
   async refreshTokens(
     rawRefreshToken: string,
   ): Promise<{ accessToken: string; refreshToken: string; userId: string }> {
-    const tokenHash = this.hashToken(rawRefreshToken);
+    const tokenHash = hashToken(rawRefreshToken);
 
     return this.dataSource.transaction(async (manager) => {
       // SECURITY: Pessimistic lock prevents race condition when two requests
@@ -788,7 +851,7 @@ export class AuthService {
 
       // Rotate: generate new refresh token in the same family
       const newRawRefreshToken = crypto.randomBytes(64).toString("hex");
-      const newTokenHash = this.hashToken(newRawRefreshToken);
+      const newTokenHash = hashToken(newRawRefreshToken);
 
       existingToken.isRevoked = true;
       existingToken.replacedByHash = newTokenHash;
@@ -827,7 +890,7 @@ export class AuthService {
 
   async revokeRefreshToken(rawRefreshToken: string): Promise<void> {
     if (!rawRefreshToken) return;
-    const tokenHash = this.hashToken(rawRefreshToken);
+    const tokenHash = hashToken(rawRefreshToken);
     const token = await this.refreshTokensRepository.findOne({
       where: { tokenHash },
     });
@@ -877,7 +940,7 @@ export class AuthService {
     const resetTokenExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
     // SECURITY: Store hashed token — matches pattern used for refresh tokens and trusted devices
-    user.resetToken = this.hashToken(rawResetToken);
+    user.resetToken = hashToken(rawResetToken);
     user.resetTokenExpiry = resetTokenExpiry;
     await this.usersRepository.save(user);
 
@@ -894,7 +957,7 @@ export class AuthService {
     }
 
     // SECURITY: Hash the incoming token to compare against stored hash
-    const hashedToken = this.hashToken(token);
+    const hashedToken = hashToken(token);
 
     const saltRounds = 12;
     const passwordHash = await bcrypt.hash(newPassword, saltRounds);
@@ -928,8 +991,18 @@ export class AuthService {
 
   // Trusted device methods
 
-  private hashToken(token: string): string {
-    return crypto.createHash("sha256").update(token).digest("hex");
+  /**
+   * Create a stable fingerprint from the user-agent that survives browser updates.
+   * Only uses browser name + OS name (not versions), so updating Chrome 120 -> 121
+   * or macOS 14.1 -> 14.2 does not invalidate the trusted device.
+   */
+  private hashUserAgent(userAgent: string): string {
+    if (!userAgent) return hashToken("unknown");
+    const parser = new UAParser(userAgent);
+    const browser = parser.getBrowser();
+    const os = parser.getOS();
+    const stableFingerprint = `${browser.name || "unknown"}:${os.name || "unknown"}`;
+    return hashToken(stableFingerprint);
   }
 
   private parseDeviceName(userAgent: string): string {
@@ -955,7 +1028,7 @@ export class AuthService {
     ipAddress?: string,
   ): Promise<string> {
     const deviceToken = crypto.randomBytes(64).toString("hex");
-    const tokenHash = this.hashToken(deviceToken);
+    const tokenHash = hashToken(deviceToken);
     const deviceName = this.parseDeviceName(userAgent);
     const expiresAt = new Date(Date.now() + this.TRUSTED_DEVICE_EXPIRY_MS);
 
@@ -964,6 +1037,7 @@ export class AuthService {
       tokenHash,
       deviceName,
       ipAddress: ipAddress || null,
+      userAgentHash: this.hashUserAgent(userAgent),
       lastUsedAt: new Date(),
       expiresAt,
     });
@@ -975,8 +1049,9 @@ export class AuthService {
   async validateTrustedDevice(
     userId: string,
     deviceToken: string,
+    userAgent?: string,
   ): Promise<boolean> {
-    const tokenHash = this.hashToken(deviceToken);
+    const tokenHash = hashToken(deviceToken);
 
     const device = await this.trustedDevicesRepository.findOne({
       where: { userId, tokenHash },
@@ -987,6 +1062,17 @@ export class AuthService {
     if (device.expiresAt < new Date()) {
       await this.trustedDevicesRepository.remove(device);
       return false;
+    }
+
+    // SECURITY: Verify user-agent fingerprint matches to limit stolen token reuse.
+    // Skip check for legacy devices created before fingerprinting was added.
+    if (device.userAgentHash && userAgent) {
+      if (device.userAgentHash !== this.hashUserAgent(userAgent)) {
+        this.logger.warn(
+          `Trusted device token rejected: user-agent mismatch for user ${userId}`,
+        );
+        return false;
+      }
     }
 
     device.lastUsedAt = new Date();
@@ -1027,7 +1113,7 @@ export class AuthService {
     userId: string,
     deviceToken: string,
   ): Promise<string | null> {
-    const tokenHash = this.hashToken(deviceToken);
+    const tokenHash = hashToken(deviceToken);
     const device = await this.trustedDevicesRepository.findOne({
       where: { userId, tokenHash },
     });
@@ -1049,7 +1135,7 @@ export class AuthService {
       throw new BadRequestException("2FA is not enabled");
     }
 
-    const secret = decrypt(user.twoFactorSecret, this.jwtSecret);
+    const { secret } = this.decryptTotpSecret(user.twoFactorSecret);
     const isValid = otplib.verifySync({ token: code, secret }).valid;
 
     if (!isValid) {
@@ -1189,7 +1275,7 @@ export class AuthService {
     oidcSubject: string,
   ): Promise<string> {
     const linkToken = crypto.randomBytes(32).toString("hex");
-    existingUser.oidcLinkToken = this.hashToken(linkToken);
+    existingUser.oidcLinkToken = hashToken(linkToken);
     existingUser.oidcLinkExpiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
     existingUser.oidcLinkPending = true;
     existingUser.pendingOidcSubject = oidcSubject;
@@ -1197,8 +1283,42 @@ export class AuthService {
     return linkToken;
   }
 
+  private async sendOidcLinkEmail(
+    user: User,
+    linkToken: string,
+  ): Promise<void> {
+    if (!user.email) return;
+    try {
+      const frontendUrl =
+        this.configService.get<string>("PUBLIC_APP_URL") ||
+        "http://localhost:3000";
+      const confirmUrl = `${frontendUrl}/api/v1/auth/oidc/confirm-link?token=${linkToken}`;
+      const safeName = user.firstName || "there";
+      const html = `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <h2 style="color: #1f2937;">Link Your SSO Account</h2>
+          <p style="color: #374151;">Hi ${safeName},</p>
+          <p style="color: #374151;">Someone attempted to sign in via SSO with an email that matches your existing Monize account. To link your SSO identity to this account, click the button below:</p>
+          <p style="text-align: center; margin: 24px 0;">
+            <a href="${confirmUrl}" style="background-color: #2563eb; color: #ffffff; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600;">Confirm Account Link</a>
+          </p>
+          <p style="color: #6b7280; font-size: 14px;">If you did not initiate this request, you can safely ignore this email. The link expires in 1 hour.</p>
+          <p style="color: #6b7280; font-size: 14px; margin-top: 24px;">-- Monize</p>
+        </div>`;
+      await this.emailService.sendMail(
+        user.email,
+        "Monize: Confirm SSO Account Link",
+        html,
+      );
+    } catch (err) {
+      this.logger.warn(
+        `Failed to send OIDC link confirmation email: ${err instanceof Error ? err.message : err}`,
+      );
+    }
+  }
+
   async confirmOidcLink(token: string): Promise<User> {
-    const hashedToken = this.hashToken(token);
+    const hashedToken = hashToken(token);
 
     const user = await this.usersRepository.findOne({
       where: { oidcLinkToken: hashedToken, oidcLinkPending: true },
@@ -1230,7 +1350,7 @@ export class AuthService {
     return user;
   }
 
-  // M8: Migrate all legacy TOTP secrets to new format
+  // Migrate all TOTP secrets to use purpose-derived encryption key
 
   async migrateLegacyTotpSecrets(): Promise<number> {
     const users = await this.usersRepository
@@ -1240,22 +1360,20 @@ export class AuthService {
 
     let migratedCount = 0;
     for (const user of users) {
-      if (user.twoFactorSecret && isLegacyEncryption(user.twoFactorSecret)) {
-        const migrated = migrateFromLegacy(
-          user.twoFactorSecret,
-          this.jwtSecret,
-        );
-        if (migrated) {
-          user.twoFactorSecret = migrated;
-          await this.usersRepository.save(user);
-          migratedCount++;
-        }
+      if (!user.twoFactorSecret) continue;
+      const { secret, needsReEncrypt } = this.decryptTotpSecret(
+        user.twoFactorSecret,
+      );
+      if (needsReEncrypt) {
+        user.twoFactorSecret = this.reEncryptTotpSecret(secret);
+        await this.usersRepository.save(user);
+        migratedCount++;
       }
     }
 
     if (migratedCount > 0) {
       this.logger.log(
-        `Migrated ${migratedCount} legacy TOTP secrets to new format`,
+        `Migrated ${migratedCount} TOTP secrets to purpose-derived key`,
       );
     }
     return migratedCount;

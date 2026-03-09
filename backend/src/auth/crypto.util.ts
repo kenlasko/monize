@@ -4,6 +4,33 @@ const ALGORITHM = "aes-256-gcm";
 const IV_LENGTH = 16;
 const SALT_LENGTH = 16;
 
+/**
+ * Derive a purpose-specific key from the master secret using HKDF.
+ * Each purpose (e.g., "totp-encryption", "csrf") gets a cryptographically
+ * independent key so that compromising one use does not compromise others.
+ */
+export function derivePurposeKey(
+  masterSecret: string,
+  purpose: string,
+): string {
+  const key = crypto.hkdfSync(
+    "sha256",
+    masterSecret,
+    "", // no salt needed -- purpose string provides domain separation
+    purpose,
+    32,
+  );
+  return Buffer.from(key).toString("hex");
+}
+
+/**
+ * Hash a token (refresh token, reset token, device token, PAT) using SHA-256.
+ * Shared utility to eliminate duplication across auth.service.ts and pat.service.ts.
+ */
+export function hashToken(token: string): string {
+  return crypto.createHash("sha256").update(token).digest("hex");
+}
+
 function deriveKey(secret: string, salt: Buffer): Buffer {
   return crypto.scryptSync(secret, salt, 32);
 }

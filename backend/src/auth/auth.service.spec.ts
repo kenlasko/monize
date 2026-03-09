@@ -18,9 +18,12 @@ import { User } from "../users/entities/user.entity";
 import { UserPreference } from "../users/entities/user-preference.entity";
 import { TrustedDevice } from "../users/entities/trusted-device.entity";
 import { RefreshToken } from "./entities/refresh-token.entity";
-import { encrypt } from "./crypto.util";
+import { encrypt, derivePurposeKey } from "./crypto.util";
 import { PasswordBreachService } from "./password-breach.service";
 import { EmailService } from "../notifications/email.service";
+
+const TEST_JWT_SECRET = "test-jwt-secret-minimum-32-chars-long";
+const TEST_TOTP_KEY = derivePurposeKey(TEST_JWT_SECRET, "totp-encryption");
 
 jest.mock("otplib", () => ({
   verifySync: jest.fn(),
@@ -268,7 +271,7 @@ describe("AuthService", () => {
       expect(result.accessToken).toBeDefined();
       expect(result.refreshToken).toBeDefined();
       expect((service as any).logger.log).toHaveBeenCalledWith(
-        expect.stringContaining("Login successful for email"),
+        expect.stringContaining("Login successful for user"),
       );
     });
 
@@ -279,7 +282,7 @@ describe("AuthService", () => {
         service.login({ email: "nobody@example.com", password: "pass" }),
       ).rejects.toThrow(UnauthorizedException);
       expect((service as any).logger.warn).toHaveBeenCalledWith(
-        expect.stringContaining("Login failed: invalid credentials"),
+        expect.stringContaining("Login failed: no matching account"),
       );
     });
 
@@ -711,7 +714,7 @@ describe("AuthService", () => {
     const jwtSecret = "test-jwt-secret-minimum-32-chars-long";
 
     it("validates code and enables 2FA in preferences", async () => {
-      const encryptedSecret = encrypt("TESTSECRET", jwtSecret);
+      const encryptedSecret = encrypt("TESTSECRET", TEST_TOTP_KEY);
       usersRepository.findOne.mockResolvedValue({
         ...mockUser,
         pendingTwoFactorSecret: encryptedSecret,
@@ -739,7 +742,7 @@ describe("AuthService", () => {
     });
 
     it("creates preferences if they do not exist yet", async () => {
-      const encryptedSecret = encrypt("TESTSECRET", jwtSecret);
+      const encryptedSecret = encrypt("TESTSECRET", TEST_TOTP_KEY);
       usersRepository.findOne.mockResolvedValue({
         ...mockUser,
         pendingTwoFactorSecret: encryptedSecret,
@@ -763,7 +766,7 @@ describe("AuthService", () => {
     });
 
     it("throws for invalid verification code", async () => {
-      const encryptedSecret = encrypt("TESTSECRET", jwtSecret);
+      const encryptedSecret = encrypt("TESTSECRET", TEST_TOTP_KEY);
       usersRepository.findOne.mockResolvedValue({
         ...mockUser,
         pendingTwoFactorSecret: encryptedSecret,
@@ -806,7 +809,7 @@ describe("AuthService", () => {
     const jwtSecret = "test-jwt-secret-minimum-32-chars-long";
 
     it("validates code, clears secret, disables preferences, revokes trusted devices", async () => {
-      const encryptedSecret = encrypt("TESTSECRET", jwtSecret);
+      const encryptedSecret = encrypt("TESTSECRET", TEST_TOTP_KEY);
       usersRepository.findOne.mockResolvedValue({
         ...mockUser,
         twoFactorSecret: encryptedSecret,
@@ -857,7 +860,7 @@ describe("AuthService", () => {
     });
 
     it("throws for invalid verification code", async () => {
-      const encryptedSecret = encrypt("TESTSECRET", jwtSecret);
+      const encryptedSecret = encrypt("TESTSECRET", TEST_TOTP_KEY);
       usersRepository.findOne.mockResolvedValue({
         ...mockUser,
         twoFactorSecret: encryptedSecret,
@@ -892,7 +895,7 @@ describe("AuthService", () => {
     });
 
     it("handles case where preferences do not exist", async () => {
-      const encryptedSecret = encrypt("TESTSECRET", jwtSecret);
+      const encryptedSecret = encrypt("TESTSECRET", TEST_TOTP_KEY);
       usersRepository.findOne.mockResolvedValue({
         ...mockUser,
         twoFactorSecret: encryptedSecret,
@@ -917,7 +920,7 @@ describe("AuthService", () => {
     const jwtSecret = "test-jwt-secret-minimum-32-chars-long";
 
     it("returns tokens on valid code", async () => {
-      const encryptedSecret = encrypt("TESTSECRET", jwtSecret);
+      const encryptedSecret = encrypt("TESTSECRET", TEST_TOTP_KEY);
       (jwtService.verify as jest.Mock).mockReturnValue({
         sub: "user-1",
         type: "2fa_pending",
@@ -938,7 +941,7 @@ describe("AuthService", () => {
     });
 
     it("creates trusted device token when rememberDevice is true", async () => {
-      const encryptedSecret = encrypt("TESTSECRET", jwtSecret);
+      const encryptedSecret = encrypt("TESTSECRET", TEST_TOTP_KEY);
       (jwtService.verify as jest.Mock).mockReturnValue({
         sub: "user-1",
         type: "2fa_pending",
@@ -965,7 +968,7 @@ describe("AuthService", () => {
     });
 
     it("throws for invalid code during verification", async () => {
-      const encryptedSecret = encrypt("TESTSECRET", jwtSecret);
+      const encryptedSecret = encrypt("TESTSECRET", TEST_TOTP_KEY);
       (jwtService.verify as jest.Mock).mockReturnValue({
         sub: "user-1",
         type: "2fa_pending",
@@ -1018,7 +1021,7 @@ describe("AuthService", () => {
     });
 
     it("updates lastLogin on successful verification", async () => {
-      const encryptedSecret = encrypt("TESTSECRET", jwtSecret);
+      const encryptedSecret = encrypt("TESTSECRET", TEST_TOTP_KEY);
       (jwtService.verify as jest.Mock).mockReturnValue({
         sub: "user-1",
         type: "2fa_pending",
@@ -1088,11 +1091,11 @@ describe("AuthService", () => {
         family_name: "User",
       });
 
-      expect(result.email).toBe("oidc@example.com");
-      expect(result.oidcSubject).toBe("oidc-sub-123");
-      expect(result.authProvider).toBe("oidc");
-      expect(result.firstName).toBe("OIDC");
-      expect(result.lastName).toBe("User");
+      expect(result.user.email).toBe("oidc@example.com");
+      expect(result.user.oidcSubject).toBe("oidc-sub-123");
+      expect(result.user.authProvider).toBe("oidc");
+      expect(result.user.firstName).toBe("OIDC");
+      expect(result.user.lastName).toBe("User");
     });
 
     it("creates new user with unverified email (email stored but not linked)", async () => {
@@ -1111,7 +1114,7 @@ describe("AuthService", () => {
       });
 
       // Unverified email should still be stored
-      expect(result.email).toBe("unverified@example.com");
+      expect(result.user.email).toBe("unverified@example.com");
       // Should NOT have looked up by email (only 1 findOne call for oidcSubject)
       expect(usersRepository.findOne).toHaveBeenCalledTimes(1);
     });
@@ -1139,7 +1142,8 @@ describe("AuthService", () => {
         email_verified: true,
       });
 
-      expect(result.id).toBe("existing-user");
+      expect(result.linkPending).toBe(true);
+      expect(result.user.id).toBe("existing-user");
       // M6: Should initiate pending link, NOT direct link
       expect(existingLocal.oidcLinkPending).toBe(true);
       expect(existingLocal.pendingOidcSubject).toBe("oidc-sub-link");
@@ -1166,9 +1170,9 @@ describe("AuthService", () => {
         email_verified: true,
       });
 
-      expect(result.id).toBe("oidc-only-user");
-      expect(result.oidcSubject).toBe("oidc-sub-direct");
-      expect(result.authProvider).toBe("oidc");
+      expect(result.user.id).toBe("oidc-only-user");
+      expect(result.user.oidcSubject).toBe("oidc-sub-direct");
+      expect(result.user.authProvider).toBe("oidc");
     });
 
     it("does NOT link to existing user when email is unverified", async () => {
@@ -1210,8 +1214,8 @@ describe("AuthService", () => {
         family_name: "Name",
       });
 
-      expect(result.email).toBe("newemail@example.com");
-      expect(result.firstName).toBe("New");
+      expect(result.user.email).toBe("newemail@example.com");
+      expect(result.user.firstName).toBe("New");
     });
 
     it("does not update when info has not changed", async () => {
@@ -1278,8 +1282,8 @@ describe("AuthService", () => {
         email_verified: true,
       });
 
-      expect(result.id).toBe("existing-dup");
-      expect(result.oidcSubject).toBe("oidc-sub-dup");
+      expect(result.user.id).toBe("existing-dup");
+      expect(result.user.oidcSubject).toBe("oidc-sub-dup");
     });
 
     it("initiates OIDC link confirmation in catch path for local account with password", async () => {
@@ -1309,8 +1313,9 @@ describe("AuthService", () => {
       });
 
       // Should return existing user without completing the link
-      expect(result.id).toBe("existing-local-catch");
-      expect(result.oidcSubject).toBeNull(); // Link not completed
+      expect(result.linkPending).toBe(true);
+      expect(result.user.id).toBe("existing-local-catch");
+      expect(result.user.oidcSubject).toBeNull(); // Link not completed
       expect((service as any).logger.warn).toHaveBeenCalledWith(
         expect.stringContaining("OIDC link pending confirmation (catch path)"),
       );
@@ -1349,7 +1354,7 @@ describe("AuthService", () => {
         email_verified: true,
       });
 
-      expect(result.role).toBe("admin");
+      expect(result.user.role).toBe("admin");
     });
 
     it("throws for missing subject identifier", async () => {
@@ -1376,7 +1381,7 @@ describe("AuthService", () => {
         email_verified: false,
       });
 
-      expect(result.firstName).toBe("johndoe");
+      expect(result.user.firstName).toBe("johndoe");
     });
 
     it("uses full name split for firstName/lastName when specific claims absent", async () => {
@@ -1394,8 +1399,8 @@ describe("AuthService", () => {
         email_verified: false,
       });
 
-      expect(result.firstName).toBe("John");
-      expect(result.lastName).toBe("Michael Doe");
+      expect(result.user.firstName).toBe("John");
+      expect(result.user.lastName).toBe("Michael Doe");
     });
 
     it("clears 2FA config for SSO users who have it", async () => {
@@ -1423,9 +1428,9 @@ describe("AuthService", () => {
         email_verified: true,
       });
 
-      expect(result.twoFactorSecret).toBeNull();
-      expect(result.pendingTwoFactorSecret).toBeNull();
-      expect(result.backupCodes).toBeNull();
+      expect(result.user.twoFactorSecret).toBeNull();
+      expect(result.user.pendingTwoFactorSecret).toBeNull();
+      expect(result.user.backupCodes).toBeNull();
       expect(preferencesRepository.save).toHaveBeenCalledWith(
         expect.objectContaining({ twoFactorEnabled: false }),
       );
@@ -2077,7 +2082,7 @@ describe("AuthService", () => {
     it("bypasses 2FA when trustedDeviceToken is valid", async () => {
       const hashedPassword = await bcrypt.hash("ValidPass123!", 10);
       const jwtSecret = "test-jwt-secret-minimum-32-chars-long";
-      const encryptedSecret = encrypt("TESTSECRET", jwtSecret);
+      const encryptedSecret = encrypt("TESTSECRET", TEST_TOTP_KEY);
 
       usersRepository.findOne.mockResolvedValue({
         ...mockUser,
@@ -2116,7 +2121,7 @@ describe("AuthService", () => {
     it("falls back to 2FA when trusted device is invalid", async () => {
       const hashedPassword = await bcrypt.hash("ValidPass123!", 10);
       const jwtSecret = "test-jwt-secret-minimum-32-chars-long";
-      const encryptedSecret = encrypt("TESTSECRET", jwtSecret);
+      const encryptedSecret = encrypt("TESTSECRET", TEST_TOTP_KEY);
 
       usersRepository.findOne.mockResolvedValue({
         ...mockUser,
@@ -2143,7 +2148,7 @@ describe("AuthService", () => {
     it("does not check trusted device when no token provided", async () => {
       const hashedPassword = await bcrypt.hash("ValidPass123!", 10);
       const jwtSecret = "test-jwt-secret-minimum-32-chars-long";
-      const encryptedSecret = encrypt("TESTSECRET", jwtSecret);
+      const encryptedSecret = encrypt("TESTSECRET", TEST_TOTP_KEY);
 
       usersRepository.findOne.mockResolvedValue({
         ...mockUser,
@@ -2180,7 +2185,7 @@ describe("AuthService", () => {
     });
 
     it("blocks after 3 failed attempts on the same temp token", async () => {
-      const encryptedSecret = encrypt("TESTSECRET", jwtSecret);
+      const encryptedSecret = encrypt("TESTSECRET", TEST_TOTP_KEY);
       usersRepository.findOne.mockResolvedValue({
         ...mockUser,
         twoFactorSecret: encryptedSecret,
@@ -2202,7 +2207,7 @@ describe("AuthService", () => {
     });
 
     it("allows attempts on different temp tokens independently", async () => {
-      const encryptedSecret = encrypt("TESTSECRET", jwtSecret);
+      const encryptedSecret = encrypt("TESTSECRET", TEST_TOTP_KEY);
       usersRepository.findOne.mockResolvedValue({
         ...mockUser,
         twoFactorSecret: encryptedSecret,
@@ -2230,7 +2235,7 @@ describe("AuthService", () => {
     });
 
     it("clears attempt counter on successful verification", async () => {
-      const encryptedSecret = encrypt("TESTSECRET", jwtSecret);
+      const encryptedSecret = encrypt("TESTSECRET", TEST_TOTP_KEY);
       usersRepository.findOne.mockResolvedValue({
         ...mockUser,
         twoFactorSecret: encryptedSecret,
@@ -2426,7 +2431,8 @@ describe("AuthService", () => {
         email_verified: true,
       });
 
-      expect(result.id).toBe("local-user");
+      expect(result.linkPending).toBe(true);
+      expect(result.user.id).toBe("local-user");
       // Should have set oidcLinkPending to true
       expect(existingLocal.oidcLinkPending).toBe(true);
       expect(existingLocal.pendingOidcSubject).toBe("oidc-sub-link");
@@ -2443,7 +2449,7 @@ describe("AuthService", () => {
     const jwtSecret = "test-jwt-secret-minimum-32-chars-long";
 
     it("generates 12 backup codes", async () => {
-      const encryptedSecret = encrypt("TESTSECRET", jwtSecret);
+      const encryptedSecret = encrypt("TESTSECRET", TEST_TOTP_KEY);
       usersRepository.findOne.mockResolvedValue({
         ...mockUser,
         twoFactorSecret: encryptedSecret,
@@ -2460,7 +2466,7 @@ describe("AuthService", () => {
     });
 
     it("stores hashed codes in user entity", async () => {
-      const encryptedSecret = encrypt("TESTSECRET", jwtSecret);
+      const encryptedSecret = encrypt("TESTSECRET", TEST_TOTP_KEY);
       usersRepository.findOne.mockResolvedValue({
         ...mockUser,
         twoFactorSecret: encryptedSecret,
@@ -2503,7 +2509,7 @@ describe("AuthService", () => {
     });
 
     it("throws on invalid verification code", async () => {
-      const encryptedSecret = encrypt("TESTSECRET", jwtSecret);
+      const encryptedSecret = encrypt("TESTSECRET", TEST_TOTP_KEY);
       usersRepository.findOne.mockResolvedValue({
         ...mockUser,
         twoFactorSecret: encryptedSecret,
@@ -2549,7 +2555,7 @@ describe("AuthService", () => {
     }
 
     it("accepts a valid backup code", async () => {
-      const encryptedSecret = encrypt("TESTSECRET", jwtSecret);
+      const encryptedSecret = encrypt("TESTSECRET", TEST_TOTP_KEY);
       // Generate real backup codes
       usersRepository.findOne.mockResolvedValue({
         ...mockUser,
@@ -2584,7 +2590,7 @@ describe("AuthService", () => {
     });
 
     it("removes used backup code after verification", async () => {
-      const encryptedSecret = encrypt("TESTSECRET", jwtSecret);
+      const encryptedSecret = encrypt("TESTSECRET", TEST_TOTP_KEY);
       usersRepository.findOne.mockResolvedValue({
         ...mockUser,
         twoFactorSecret: encryptedSecret,
@@ -2619,7 +2625,7 @@ describe("AuthService", () => {
     });
 
     it("rejects invalid backup code", async () => {
-      const encryptedSecret = encrypt("TESTSECRET", jwtSecret);
+      const encryptedSecret = encrypt("TESTSECRET", TEST_TOTP_KEY);
       const hashedCodes = [await bcrypt.hash("abcd-1234", 10)];
       const userWithCodes = {
         ...mockUser,
@@ -2639,7 +2645,7 @@ describe("AuthService", () => {
     });
 
     it("does not call otplib.verifySync for backup codes", async () => {
-      const encryptedSecret = encrypt("TESTSECRET", jwtSecret);
+      const encryptedSecret = encrypt("TESTSECRET", TEST_TOTP_KEY);
       usersRepository.findOne.mockResolvedValue({
         ...mockUser,
         twoFactorSecret: encryptedSecret,
@@ -2671,7 +2677,7 @@ describe("AuthService", () => {
     });
 
     it("does not try backup codes for 6-digit TOTP codes", async () => {
-      const encryptedSecret = encrypt("TESTSECRET", jwtSecret);
+      const encryptedSecret = encrypt("TESTSECRET", TEST_TOTP_KEY);
       const userWithCodes = {
         ...mockUser,
         twoFactorSecret: encryptedSecret,
@@ -2692,7 +2698,7 @@ describe("AuthService", () => {
     });
 
     it("rejects non-6-digit code when user has no backup codes", async () => {
-      const encryptedSecret = encrypt("TESTSECRET", jwtSecret);
+      const encryptedSecret = encrypt("TESTSECRET", TEST_TOTP_KEY);
       const userWithNoCodes = {
         ...mockUser,
         twoFactorSecret: encryptedSecret,
@@ -2729,19 +2735,21 @@ describe("AuthService", () => {
     });
 
     it("counts migrated users correctly", async () => {
+      // Use a properly encrypted secret in new format (4-part, with derived key)
+      const alreadyMigrated = encrypt("TESTSECRET", TEST_TOTP_KEY);
       const mockQB = {
         where: jest.fn().mockReturnThis(),
         getMany: jest
           .fn()
           .mockResolvedValue([
-            { ...mockUser, twoFactorSecret: "newformat:with:four:parts" },
+            { ...mockUser, twoFactorSecret: alreadyMigrated },
           ]),
       };
       usersRepository.createQueryBuilder = jest.fn().mockReturnValue(mockQB);
       usersRepository.save.mockImplementation((u) => u);
 
       const count = await service.migrateLegacyTotpSecrets();
-      // The secret has 4 parts (new format), so isLegacyEncryption returns false
+      // Already encrypted with the derived key, so no migration needed
       expect(count).toBe(0);
     });
   });
@@ -2804,7 +2812,7 @@ describe("AuthService", () => {
     });
 
     it("blocks after 10 failed attempts across different temp tokens", async () => {
-      const encryptedSecret = encrypt("TESTSECRET", jwtSecret);
+      const encryptedSecret = encrypt("TESTSECRET", TEST_TOTP_KEY);
       usersRepository.findOne.mockResolvedValue({
         ...mockUser,
         twoFactorSecret: encryptedSecret,
@@ -2834,7 +2842,7 @@ describe("AuthService", () => {
     });
 
     it("locks user account after reaching per-user threshold", async () => {
-      const encryptedSecret = encrypt("TESTSECRET", jwtSecret);
+      const encryptedSecret = encrypt("TESTSECRET", TEST_TOTP_KEY);
       usersRepository.findOne.mockResolvedValue({
         ...mockUser,
         twoFactorSecret: encryptedSecret,
@@ -2867,7 +2875,7 @@ describe("AuthService", () => {
     });
 
     it("resets per-user counter on successful verification", async () => {
-      const encryptedSecret = encrypt("TESTSECRET", jwtSecret);
+      const encryptedSecret = encrypt("TESTSECRET", TEST_TOTP_KEY);
       usersRepository.findOne.mockResolvedValue({
         ...mockUser,
         twoFactorSecret: encryptedSecret,
@@ -2916,7 +2924,7 @@ describe("AuthService", () => {
     const jwtSecret = "test-jwt-secret-minimum-32-chars-long";
 
     it("uses QueryRunner transaction for backup code removal", async () => {
-      const encryptedSecret = encrypt("TESTSECRET", jwtSecret);
+      const encryptedSecret = encrypt("TESTSECRET", TEST_TOTP_KEY);
 
       // Generate backup codes
       usersRepository.findOne.mockResolvedValue({
@@ -2981,7 +2989,7 @@ describe("AuthService", () => {
     });
 
     it("rolls back transaction if backup code was already consumed", async () => {
-      const encryptedSecret = encrypt("TESTSECRET", jwtSecret);
+      const encryptedSecret = encrypt("TESTSECRET", TEST_TOTP_KEY);
       const hashedCodes = [await bcrypt.hash("abcd-1234", 10)];
 
       // QueryRunner returns user with no backup codes (already consumed)

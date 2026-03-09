@@ -53,7 +53,6 @@ describe("AuthController", () => {
     authService = {
       register: jest.fn(),
       login: jest.fn(),
-      validateUser: jest.fn(),
       getUserById: jest.fn(),
       generateResetToken: jest.fn(),
       resetPassword: jest.fn(),
@@ -72,6 +71,7 @@ describe("AuthController", () => {
       checkForgotPasswordEmailLimit: jest.fn().mockReturnValue(true),
       generateBackupCodes: jest.fn(),
       confirmOidcLink: jest.fn(),
+      getCsrfKey: jest.fn().mockReturnValue("test-csrf-key"),
       sanitizeUser: jest.fn().mockImplementation((user) => {
         const {
           passwordHash,
@@ -284,7 +284,10 @@ describe("AuthController", () => {
         tempToken: "temp-2fa-token",
       });
       const res = mockRes();
-      const expressReq = { cookies: {} } as any;
+      const expressReq = {
+        cookies: {},
+        headers: { "user-agent": "TestBrowser/1.0" },
+      } as any;
       const dto = { email: "test@example.com", password: "password" };
 
       await controller.login(dto as any, expressReq, res as any);
@@ -308,7 +311,10 @@ describe("AuthController", () => {
       };
       authService.login.mockResolvedValue(loginResult);
       const res = mockRes();
-      const expressReq = { cookies: {} } as any;
+      const expressReq = {
+        cookies: {},
+        headers: { "user-agent": "TestBrowser/1.0" },
+      } as any;
       const dto = { email: "test@example.com", password: "password" };
 
       await controller.login(dto as any, expressReq, res as any);
@@ -608,8 +614,10 @@ describe("AuthController", () => {
         name: "OIDC User",
       });
       authService.findOrCreateOidcUser.mockResolvedValue({
-        id: "user-oidc",
-        email: "oidc@example.com",
+        user: {
+          id: "user-oidc",
+          email: "oidc@example.com",
+        },
       });
       authService.generateTokenPair.mockResolvedValue({
         accessToken: "oidc-jwt",
@@ -1181,12 +1189,17 @@ describe("AuthController", () => {
       const res = mockRes();
       const expressReq = {
         cookies: { trusted_device: "my-trusted-token" },
+        headers: { "user-agent": "TestBrowser/1.0" },
       } as any;
       const dto = { email: "test@example.com", password: "password" };
 
       await controller.login(dto as any, expressReq, res as any);
 
-      expect(authService.login).toHaveBeenCalledWith(dto, "my-trusted-token");
+      expect(authService.login).toHaveBeenCalledWith(
+        dto,
+        "my-trusted-token",
+        "TestBrowser/1.0",
+      );
     });
 
     it("passes undefined when no trusted_device cookie exists", async () => {
@@ -1197,12 +1210,19 @@ describe("AuthController", () => {
       };
       authService.login.mockResolvedValue(loginResult);
       const res = mockRes();
-      const expressReq = { cookies: {} } as any;
+      const expressReq = {
+        cookies: {},
+        headers: { "user-agent": "TestBrowser/1.0" },
+      } as any;
       const dto = { email: "test@example.com", password: "password" };
 
       await controller.login(dto as any, expressReq, res as any);
 
-      expect(authService.login).toHaveBeenCalledWith(dto, undefined);
+      expect(authService.login).toHaveBeenCalledWith(
+        dto,
+        undefined,
+        "TestBrowser/1.0",
+      );
     });
   });
 });

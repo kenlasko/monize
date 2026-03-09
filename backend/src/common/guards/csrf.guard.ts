@@ -9,13 +9,21 @@ import { ConfigService } from "@nestjs/config";
 import * as crypto from "crypto";
 import { SKIP_CSRF_KEY } from "../decorators/skip-csrf.decorator";
 import { verifyCsrfToken } from "../csrf.util";
+import { derivePurposeKey } from "../../auth/crypto.util";
 
 @Injectable()
 export class CsrfGuard implements CanActivate {
+  private readonly csrfKey: string;
+
   constructor(
     private reflector: Reflector,
     private configService: ConfigService,
-  ) {}
+  ) {
+    const jwtSecret = this.configService.get<string>("JWT_SECRET");
+    this.csrfKey = jwtSecret
+      ? derivePurposeKey(jwtSecret, "csrf-token")
+      : "";
+  }
 
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest();
@@ -62,9 +70,8 @@ export class CsrfGuard implements CanActivate {
     // Tokens are always generated with HMAC binding (nonce:hmac format),
     // so we unconditionally verify rather than checking for ":" in the token.
     const sessionId = request.user?.id;
-    const jwtSecret = this.configService.get<string>("JWT_SECRET");
-    if (sessionId && jwtSecret) {
-      if (!verifyCsrfToken(headerToken, sessionId, jwtSecret)) {
+    if (sessionId && this.csrfKey) {
+      if (!verifyCsrfToken(headerToken, sessionId, this.csrfKey)) {
         throw new ForbiddenException("Invalid CSRF token");
       }
     }

@@ -190,8 +190,13 @@ describe("CsrfGuard", () => {
     const jwtSecret = "test-secret-key-32-chars-minimum!!";
     const userId = "user-123";
     let hmacGuard: CsrfGuard;
+    // The guard now derives a purpose-specific key from JWT_SECRET
+    let derivedCsrfKey: string;
 
     beforeEach(async () => {
+      const { derivePurposeKey } = require("../../auth/crypto.util");
+      derivedCsrfKey = derivePurposeKey(jwtSecret, "csrf-token");
+
       const module: TestingModule = await Test.createTestingModule({
         providers: [
           CsrfGuard,
@@ -214,7 +219,7 @@ describe("CsrfGuard", () => {
     });
 
     it("accepts valid HMAC-bound token for the correct user", () => {
-      const token = generateCsrfToken(userId, jwtSecret);
+      const token = generateCsrfToken(userId, derivedCsrfKey);
       const context = createMockContext({
         method: "POST",
         cookies: { csrf_token: token },
@@ -226,7 +231,7 @@ describe("CsrfGuard", () => {
     });
 
     it("rejects HMAC-bound token for a different user", () => {
-      const token = generateCsrfToken(userId, jwtSecret);
+      const token = generateCsrfToken(userId, derivedCsrfKey);
       const context = createMockContext({
         method: "POST",
         cookies: { csrf_token: token },
@@ -240,7 +245,7 @@ describe("CsrfGuard", () => {
     });
 
     it("rejects tampered HMAC token", () => {
-      const token = generateCsrfToken(userId, jwtSecret);
+      const token = generateCsrfToken(userId, derivedCsrfKey);
       const parts = token.split(":");
       const tampered = `${parts[0]}:${"f".repeat(64)}`;
       const context = createMockContext({

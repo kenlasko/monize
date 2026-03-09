@@ -105,12 +105,11 @@ export class AuthController {
     refreshToken: string,
     userId: string,
   ) {
-    const jwtSecret = this.configService.get<string>("JWT_SECRET");
     res.cookie("auth_token", accessToken, this.getAccessCookieOptions());
     res.cookie("refresh_token", refreshToken, this.getRefreshCookieOptions());
     res.cookie(
       "csrf_token",
-      generateCsrfToken(userId, jwtSecret),
+      generateCsrfToken(userId, this.authService.getCsrfKey()),
       getCsrfCookieOptions(this.isProduction),
     );
   }
@@ -179,7 +178,8 @@ export class AuthController {
       );
     }
     const trustedDeviceToken = req.cookies?.["trusted_device"];
-    const result = await this.authService.login(loginDto, trustedDeviceToken);
+    const userAgent = req.headers?.["user-agent"];
+    const result = await this.authService.login(loginDto, trustedDeviceToken, userAgent);
 
     // If 2FA is required, return temp token without setting cookie
     if (result.requires2FA) {
@@ -262,16 +262,25 @@ export class AuthController {
       );
 
       // Find or create user
-      const user = await this.authService.findOrCreateOidcUser(
+      const result = await this.authService.findOrCreateOidcUser(
         userInfo,
         this.registrationEnabled,
       );
 
+      // SECURITY: If an existing local account needs confirmation before linking,
+      // do NOT issue tokens. Redirect with a message instead.
+      if (result.linkPending) {
+        res.redirect(
+          `${frontendUrl}/auth/callback?link=pending`,
+        );
+        return;
+      }
+
       // Generate token pair
       const { accessToken, refreshToken } =
-        await this.authService.generateTokenPair(user);
+        await this.authService.generateTokenPair(result.user);
 
-      this.setAuthCookies(res, accessToken, refreshToken, user.id);
+      this.setAuthCookies(res, accessToken, refreshToken, result.user.id);
       res.redirect(`${frontendUrl}/auth/callback?success=true`);
     } catch (error) {
       // SECURITY: Log detailed error server-side only, don't expose to client
@@ -315,10 +324,9 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiOperation({ summary: "Refresh CSRF token cookie" })
   async csrfRefresh(@Request() req, @Res() res: Response) {
-    const jwtSecret = this.configService.get<string>("JWT_SECRET");
     res.cookie(
       "csrf_token",
-      generateCsrfToken(req.user.id, jwtSecret),
+      generateCsrfToken(req.user.id, this.authService.getCsrfKey()),
       getCsrfCookieOptions(this.isProduction),
     );
     res.json({ message: "CSRF token refreshed" });

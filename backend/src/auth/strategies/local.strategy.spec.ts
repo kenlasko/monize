@@ -18,7 +18,7 @@ describe("LocalStrategy", () => {
 
   beforeEach(async () => {
     authService = {
-      validateUser: jest.fn(),
+      login: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -36,27 +36,44 @@ describe("LocalStrategy", () => {
   });
 
   describe("validate", () => {
-    it("returns user when authService.validateUser returns a user", async () => {
-      authService.validateUser.mockResolvedValue(mockUser);
+    it("returns user when login succeeds", async () => {
+      authService.login.mockResolvedValue({
+        user: mockUser,
+        accessToken: "token",
+        refreshToken: "refresh",
+      });
 
       const result = await strategy.validate("test@example.com", "password123");
 
-      expect(authService.validateUser).toHaveBeenCalledWith(
-        "test@example.com",
-        "password123",
-      );
+      expect(authService.login).toHaveBeenCalledWith({
+        email: "test@example.com",
+        password: "password123",
+      });
       expect(result).toEqual(mockUser);
     });
 
-    it("throws UnauthorizedException when validateUser returns null", async () => {
-      authService.validateUser.mockResolvedValue(null);
+    it("throws UnauthorizedException when login requires 2FA", async () => {
+      authService.login.mockResolvedValue({
+        requires2FA: true,
+        tempToken: "temp",
+      });
+
+      await expect(
+        strategy.validate("test@example.com", "password123"),
+      ).rejects.toThrow(UnauthorizedException);
+      await expect(
+        strategy.validate("test@example.com", "password123"),
+      ).rejects.toThrow("2FA verification required");
+    });
+
+    it("throws when login throws UnauthorizedException", async () => {
+      authService.login.mockRejectedValue(
+        new UnauthorizedException("Invalid credentials"),
+      );
 
       await expect(
         strategy.validate("test@example.com", "wrongpassword"),
       ).rejects.toThrow(UnauthorizedException);
-      await expect(
-        strategy.validate("test@example.com", "wrongpassword"),
-      ).rejects.toThrow("Invalid credentials");
     });
   });
 });

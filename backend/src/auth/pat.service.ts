@@ -10,6 +10,7 @@ import { Repository } from "typeorm";
 import { PersonalAccessToken } from "./entities/personal-access-token.entity";
 import { User } from "../users/entities/user.entity";
 import { CreatePatDto } from "./dto/create-pat.dto";
+import { hashToken } from "./crypto.util";
 
 const MAX_TOKENS_PER_USER = 10;
 
@@ -41,7 +42,7 @@ export class PatService {
     }
 
     const rawToken = "pat_" + crypto.randomBytes(32).toString("hex");
-    const tokenHash = this.hashToken(rawToken);
+    const tokenHash = hashToken(rawToken);
     const tokenPrefix = rawToken.substring(0, 8);
 
     const token = this.patRepository.create({
@@ -79,7 +80,7 @@ export class PatService {
       throw new UnauthorizedException("Invalid token format");
     }
 
-    const tokenHash = this.hashToken(rawToken);
+    const tokenHash = hashToken(rawToken);
     const token = await this.patRepository.findOne({
       where: { tokenHash },
     });
@@ -130,7 +131,4 @@ export class PatService {
     await this.patRepository.update(tokenId, { isRevoked: true });
   }
 
-  private hashToken(token: string): string {
-    return crypto.createHash("sha256").update(token).digest("hex");
-  }
 }
