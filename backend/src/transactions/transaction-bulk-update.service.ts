@@ -116,6 +116,14 @@ export class TransactionBulkUpdateService {
         .andWhere("userId = :userId", { userId })
         .execute();
 
+      // Step 4b: Sync payee/description to linked transfer transactions
+      await this.syncLinkedTransfers(
+        userId,
+        eligibleIds,
+        updateFields,
+        queryRunner,
+      );
+
       await queryRunner.commitTransaction();
     } catch (error) {
       await queryRunner.rollbackTransaction();
@@ -192,7 +200,7 @@ export class TransactionBulkUpdateService {
   private async applyExclusions(
     userId: string,
     allIds: string[],
-    isUpdatingPayee: boolean,
+    _isUpdatingPayee: boolean,
     isUpdatingCategory: boolean,
   ): Promise<{
     eligibleIds: string[];
@@ -212,15 +220,10 @@ export class TransactionBulkUpdateService {
       .getMany();
 
     const skippedReasons: string[] = [];
-    let transferCount = 0;
     let splitCount = 0;
 
     const eligibleIds = transactions
       .filter((t) => {
-        if ((isUpdatingPayee || isUpdatingCategory) && t.isTransfer) {
-          transferCount++;
-          return false;
-        }
         if (isUpdatingCategory && t.isSplit) {
           splitCount++;
           return false;
@@ -229,12 +232,6 @@ export class TransactionBulkUpdateService {
       })
       .map((t) => t.id);
 
-    if (transferCount > 0) {
-      const plural = transferCount !== 1 ? 's' : '';
-      skippedReasons.push(
-        `${transferCount} transfer${plural} skipped (transfers must be updated individually to keep both sides in sync)`,
-      );
-    }
     if (splitCount > 0) {
       const plural = splitCount !== 1 ? 's' : '';
       skippedReasons.push(
@@ -244,9 +241,57 @@ export class TransactionBulkUpdateService {
 
     return {
       eligibleIds,
-      skipped: transferCount + splitCount,
+      skipped: splitCount,
       skippedReasons,
     };
+  }
+
+  /**
+   * For transfer transactions in the batch, apply payee and description
+   * updates to their linked counterparts so both sides stay in sync.
+   * Category is NOT synced because each side of a transfer may use
+   * different categories (e.g. "Transfer In" vs "Transfer Out").
+   */
+  private async syncLinkedTransfers(
+    userId: string,
+    eligibleIds: string[],
+    updateFields: Partial<Transaction>,
+    queryRunner: import("typeorm").QueryRunner,
+  ): Promise<void> {
+    // Build the subset of fields that should sync to the linked side
+    const syncFields: Record<string, unknown> = {};
+    if ("payeeId" in updateFields) syncFields.payeeId = updateFields.payeeId;
+    if ("payeeName" in updateFields)
+      syncFields.payeeName = updateFields.payeeName;
+    if ("description" in updateFields)
+      syncFields.description = updateFields.description;
+
+    if (Object.keys(syncFields).length === 0) return;
+
+    // Find linked transaction IDs for transfers in the batch
+    const repo = queryRunner.manager.getRepository(Transaction);
+    const transfers = await repo
+      .createQueryBuilder("t")
+      .select(["t.linkedTransactionId"])
+      .where("t.id IN (:...ids)", { ids: eligibleIds })
+      .andWhere("t.userId = :userId", { userId })
+      .andWhere("t.isTransfer = true")
+      .andWhere("t.linkedTransactionId IS NOT NULL")
+      .getMany();
+
+    const linkedIds = transfers
+      .map((t) => t.linkedTransactionId)
+      .filter((id): id is string => id !== null);
+
+    if (linkedIds.length === 0) return;
+
+    await queryRunner.manager
+      .createQueryBuilder()
+      .update(Transaction)
+      .set(syncFields as Partial<Transaction>)
+      .where("id IN (:...ids)", { ids: linkedIds })
+      .andWhere("userId = :userId", { userId })
+      .execute();
   }
 
   private async handleStatusBalanceChanges(

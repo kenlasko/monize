@@ -126,12 +126,12 @@ describe('BulkUpdateModal', () => {
     render(<BulkUpdateModal {...defaultProps} />);
     // Initially no transfer note
     await waitFor(() => {
-      expect(screen.queryByText(/Transfer transactions will be skipped/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Transfer transactions will have their linked counterpart/)).not.toBeInTheDocument();
     });
     // Enable payee
     const checkboxes = screen.getAllByRole('checkbox');
     fireEvent.click(checkboxes[0]); // Payee checkbox
-    expect(screen.getByText(/Transfer transactions will be skipped/)).toBeInTheDocument();
+    expect(screen.getByText(/Transfer transactions will have their linked counterpart/)).toBeInTheDocument();
   });
 
   it('shows split note when category enabled', async () => {

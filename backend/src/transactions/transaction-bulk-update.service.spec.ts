@@ -101,7 +101,11 @@ describe("TransactionBulkUpdateService", () => {
 
     // Mock QueryRunner with manager that has createQueryBuilder and getRepository
     mockManagerCreateQueryBuilder = jest.fn();
-    mockManagerGetRepository = jest.fn();
+    mockManagerGetRepository = jest.fn().mockReturnValue({
+      createQueryBuilder: jest.fn().mockReturnValue(createMockQueryBuilder({
+        getMany: jest.fn().mockResolvedValue([]),
+      })),
+    });
 
     mockQueryRunner = {
       connect: jest.fn().mockResolvedValue(undefined),
@@ -248,9 +252,13 @@ describe("TransactionBulkUpdateService", () => {
       expect(result.skipped).toBe(0);
     });
 
-    it("skips transfers when updating payee", async () => {
+    it("includes transfers when updating payee and syncs linked transactions", async () => {
       const tx1 = makeTransaction({ id: "tx-1" });
-      const tx2 = makeTransaction({ id: "tx-2", isTransfer: true });
+      const tx2 = makeTransaction({
+        id: "tx-2",
+        isTransfer: true,
+        linkedTransactionId: "tx-2-linked",
+      });
 
       // IDOR validation: payeeId is non-null so payeesRepository.findOne must return a match
       payeesRepository.findOne.mockResolvedValue({ id: "payee-1", userId });
@@ -268,9 +276,22 @@ describe("TransactionBulkUpdateService", () => {
 
       // Batch update via queryRunner.manager
       const updateQb = createMockQueryBuilder({
+        execute: jest.fn().mockResolvedValue({ affected: 2 }),
+      });
+      // Sync: getRepository returns a repo with createQueryBuilder for finding linked IDs
+      const syncFindQb = createMockQueryBuilder({
+        getMany: jest
+          .fn()
+          .mockResolvedValue([{ linkedTransactionId: "tx-2-linked" }]),
+      });
+      const syncUpdateQb = createMockQueryBuilder({
         execute: jest.fn().mockResolvedValue({ affected: 1 }),
       });
-      mockManagerCreateQueryBuilder.mockReturnValueOnce(updateQb);
+      const mockRepo = { createQueryBuilder: jest.fn().mockReturnValue(syncFindQb) };
+      mockManagerGetRepository.mockReturnValue(mockRepo);
+      mockManagerCreateQueryBuilder
+        .mockReturnValueOnce(updateQb)
+        .mockReturnValueOnce(syncUpdateQb);
 
       const dto: BulkUpdateDto = {
         mode: "ids",
@@ -281,14 +302,11 @@ describe("TransactionBulkUpdateService", () => {
 
       const result = await service.bulkUpdate(userId, dto);
 
-      expect(result.updated).toBe(1);
-      expect(result.skipped).toBe(1);
-      expect(result.skippedReasons).toEqual(
-        expect.arrayContaining([
-          expect.stringContaining("1 transfer"),
-        ]),
-      );
-      expect(result.skippedReasons[0]).toContain("keep both sides in sync");
+      // Both transactions should be updated (transfers are no longer skipped)
+      expect(result.updated).toBe(2);
+      expect(result.skipped).toBe(0);
+      // Linked transaction should also be updated
+      expect(syncUpdateQb.execute).toHaveBeenCalled();
     });
 
     it("skips split transactions when updating category", async () => {
@@ -565,12 +583,12 @@ describe("TransactionBulkUpdateService", () => {
     it("returns zero when all transactions are excluded", async () => {
       const tx = makeTransaction({
         id: "tx-1",
-        isTransfer: true,
+        isSplit: true,
       });
 
-      // IDOR validation: payeeId is non-null
-      payeesRepository.findOne.mockResolvedValue({
-        id: "some-payee-id",
+      // IDOR validation: categoryId is non-null
+      categoriesRepository.findOne.mockResolvedValue({
+        id: "cat-1",
         userId,
       });
 
@@ -588,7 +606,7 @@ describe("TransactionBulkUpdateService", () => {
       const dto: BulkUpdateDto = {
         mode: "ids",
         transactionIds: ["tx-1"],
-        payeeId: "some-payee-id",
+        categoryId: "cat-1",
       };
 
       const result = await service.bulkUpdate(userId, dto);
