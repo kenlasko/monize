@@ -414,7 +414,8 @@ export class AccountsService {
       if (updateAccountDto.statementDueDay !== undefined)
         account.statementDueDay = updateAccountDto.statementDueDay;
       if (updateAccountDto.statementSettlementDay !== undefined)
-        account.statementSettlementDay = updateAccountDto.statementSettlementDay;
+        account.statementSettlementDay =
+          updateAccountDto.statementSettlementDay;
     } else {
       // Clear statement fields if account type is changed away from credit card
       account.statementDueDay = null;

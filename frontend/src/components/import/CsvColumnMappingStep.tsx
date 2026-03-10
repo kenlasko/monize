@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/Button';
 import { CsvTransferRules } from './CsvTransferRules';
 import { ImportStep } from '@/app/import/import-utils';
-import { CsvColumnMappingConfig, CsvTransferRule, SavedColumnMapping, DateFormat } from '@/lib/import';
+import { CsvColumnMappingConfig, CsvTransferRule, SavedColumnMapping, DATE_FORMAT_OPTIONS, detectCsvDateFormat } from '@/lib/import';
+import { Account } from '@/types/account';
 
 interface CsvColumnMappingStepProps {
   headers: string[];
@@ -13,6 +14,7 @@ interface CsvColumnMappingStepProps {
   onColumnMappingChange: (mapping: CsvColumnMappingConfig) => void;
   transferRules: CsvTransferRule[];
   onTransferRulesChange: (rules: CsvTransferRule[]) => void;
+  accounts: Account[];
   savedMappings: SavedColumnMapping[];
   onSaveMapping: (name: string) => void;
   onLoadMapping: (mapping: SavedColumnMapping) => void;
@@ -24,12 +26,7 @@ interface CsvColumnMappingStepProps {
   setStep: (step: ImportStep) => void;
 }
 
-const DATE_FORMAT_OPTIONS = [
-  { value: 'MM/DD/YYYY', label: 'MM/DD/YYYY' },
-  { value: 'DD/MM/YYYY', label: 'DD/MM/YYYY' },
-  { value: 'YYYY-MM-DD', label: 'YYYY-MM-DD' },
-  { value: 'YYYY-DD-MM', label: 'YYYY-DD-MM' },
-];
+const CUSTOM_FORMAT_VALUE = '__custom__';
 
 const DELIMITER_OPTIONS = [
   { value: ',', label: 'Comma (,)' },
@@ -46,6 +43,7 @@ export function CsvColumnMappingStep({
   onColumnMappingChange,
   transferRules,
   onTransferRulesChange,
+  accounts,
   savedMappings,
   onSaveMapping,
   onLoadMapping,
@@ -60,6 +58,31 @@ export function CsvColumnMappingStep({
     columnMapping.debit !== undefined || columnMapping.credit !== undefined ? 'split' : 'single'
   );
   const [validationError, setValidationError] = useState('');
+  const [saveName, setSaveName] = useState('');
+  const [showSaveInput, setShowSaveInput] = useState(false);
+  // Auto-detect date format from sample data on first render
+  const [autoDetectedFormat] = useState(() => {
+    if (sampleRows.length === 0) return null;
+    const dateColIndex = columnMapping.date;
+    if (dateColIndex === undefined || dateColIndex < 0) return null;
+    const sampleDates = sampleRows.map((row) => row[dateColIndex] || '').filter(Boolean);
+    return detectCsvDateFormat(sampleDates);
+  });
+
+  const effectiveDateFormat = autoDetectedFormat || columnMapping.dateFormat;
+  const isCustom = !DATE_FORMAT_OPTIONS.some((o) => o.value === effectiveDateFormat) && effectiveDateFormat !== '';
+  const [customFormat, setCustomFormat] = useState(isCustom ? effectiveDateFormat : '');
+  const autoDetectedRef = useRef(false);
+
+  // Apply auto-detected format once via parent callback
+  useEffect(() => {
+    if (autoDetectedRef.current) return;
+    if (autoDetectedFormat && autoDetectedFormat !== columnMapping.dateFormat) {
+      autoDetectedRef.current = true;
+      onColumnMappingChange({ ...columnMapping, dateFormat: autoDetectedFormat });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoDetectedFormat]);
 
   const columnOptions = [
     { value: '', label: 'Not mapped' },
@@ -101,14 +124,15 @@ export function CsvColumnMappingStep({
   };
 
   const handleSave = () => {
-    const name = window.prompt('Enter a name for this column mapping:');
-    if (name && name.trim()) {
-      onSaveMapping(name.trim());
+    if (saveName.trim()) {
+      onSaveMapping(saveName.trim());
+      setSaveName('');
+      setShowSaveInput(false);
     }
   };
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="max-w-5xl mx-auto">
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
         <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
           CSV Column Mapping
@@ -143,14 +167,39 @@ export function CsvColumnMappingStep({
           <div className="flex items-center gap-2">
             <label className="text-sm text-gray-700 dark:text-gray-300">Date format:</label>
             <select
-              value={columnMapping.dateFormat}
-              onChange={(e) => onColumnMappingChange({ ...columnMapping, dateFormat: e.target.value as DateFormat })}
+              value={isCustom ? CUSTOM_FORMAT_VALUE : columnMapping.dateFormat}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === CUSTOM_FORMAT_VALUE) {
+                  if (customFormat) {
+                    onColumnMappingChange({ ...columnMapping, dateFormat: customFormat });
+                  }
+                } else {
+                  setCustomFormat('');
+                  onColumnMappingChange({ ...columnMapping, dateFormat: val });
+                }
+              }}
               className="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
             >
               {DATE_FORMAT_OPTIONS.map((o) => (
                 <option key={o.value} value={o.value}>{o.label}</option>
               ))}
+              <option value={CUSTOM_FORMAT_VALUE}>Custom...</option>
             </select>
+            {isCustom && (
+              <input
+                type="text"
+                value={customFormat}
+                onChange={(e) => {
+                  setCustomFormat(e.target.value);
+                  if (e.target.value) {
+                    onColumnMappingChange({ ...columnMapping, dateFormat: e.target.value });
+                  }
+                }}
+                placeholder="e.g. DD.MM.YYYY"
+                className="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 w-36"
+              />
+            )}
           </div>
         </div>
 
@@ -226,6 +275,17 @@ export function CsvColumnMappingStep({
                   {columnOptions.map((o) => (
                     <option key={o.value} value={o.value}>{o.label}</option>
                   ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Sign</label>
+                <select
+                  value={columnMapping.reverseSign ? 'reverse' : 'normal'}
+                  onChange={(e) => onColumnMappingChange({ ...columnMapping, reverseSign: e.target.value === 'reverse' })}
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                >
+                  <option value="normal">As-is (positive = deposit)</option>
+                  <option value="reverse">Reverse (positive = withdrawal)</option>
                 </select>
               </div>
             </div>
@@ -331,10 +391,34 @@ export function CsvColumnMappingStep({
             ) : (
               <span className="flex-1 text-sm text-gray-400 dark:text-gray-500 italic">No saved mappings</span>
             )}
-            <Button variant="outline" size="sm" onClick={handleSave}>
-              Save Current
-            </Button>
+            {!showSaveInput && (
+              <Button variant="outline" size="sm" onClick={() => setShowSaveInput(true)}>
+                Save Current
+              </Button>
+            )}
           </div>
+          {showSaveInput && (
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={saveName}
+                onChange={(e) => setSaveName(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleSave(); if (e.key === 'Escape') { setSaveName(''); setShowSaveInput(false); } }}
+                placeholder="Enter mapping name..."
+                autoFocus
+                className="flex-1 px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+              />
+              {savedMappings.some((m) => m.name === saveName.trim()) && saveName.trim() && (
+                <span className="text-xs text-amber-600 dark:text-amber-400 whitespace-nowrap">Will overwrite</span>
+              )}
+              <Button variant="primary" size="sm" onClick={handleSave} disabled={!saveName.trim()}>
+                Save
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => { setSaveName(''); setShowSaveInput(false); }}>
+                Cancel
+              </Button>
+            </div>
+          )}
           {savedMappings.length > 0 && (
             <div className="flex flex-wrap gap-1">
               {savedMappings.map((m) => (
@@ -355,7 +439,7 @@ export function CsvColumnMappingStep({
 
         {/* Transfer Rules */}
         <div className="mb-6">
-          <CsvTransferRules rules={transferRules} onChange={onTransferRulesChange} />
+          <CsvTransferRules rules={transferRules} onChange={onTransferRulesChange} accounts={accounts} />
         </div>
 
         {/* Validation Error */}

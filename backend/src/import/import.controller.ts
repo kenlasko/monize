@@ -169,9 +169,7 @@ export class ImportController {
     description: "Column mappings retrieved",
     type: [ColumnMappingResponseDto],
   })
-  async getColumnMappings(
-    @Request() req,
-  ): Promise<ColumnMappingResponseDto[]> {
+  async getColumnMappings(@Request() req): Promise<ColumnMappingResponseDto[]> {
     return this.importService.getColumnMappings(req.user.id);
   }
 

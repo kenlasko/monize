@@ -689,7 +689,9 @@ describe("OFX Parser", () => {
       expect(result.transactions[0].transferAccount).not.toContain("<");
       expect(result.transactions[0].transferAccount).not.toContain(">");
       // The NAME value does not contain angle brackets so it passes through intact
-      expect(result.transactions[0].transferAccount).toBe("Savings &amp; Loans");
+      expect(result.transactions[0].transferAccount).toBe(
+        "Savings &amp; Loans",
+      );
     });
   });
 

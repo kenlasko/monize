@@ -238,9 +238,11 @@ describe("ImportService", () => {
     columnMappingRepository = {
       find: jest.fn().mockResolvedValue([]),
       findOne: jest.fn().mockResolvedValue(null),
-      save: jest.fn().mockImplementation((entity) =>
-        Promise.resolve({ ...entity, id: entity.id || "mapping-1" }),
-      ),
+      save: jest
+        .fn()
+        .mockImplementation((entity) =>
+          Promise.resolve({ ...entity, id: entity.id || "mapping-1" }),
+        ),
       create: jest.fn().mockImplementation((data) => ({ ...data })),
       remove: jest.fn().mockResolvedValue(undefined),
     };
@@ -2685,9 +2687,9 @@ describe("ImportService", () => {
         error: "Invalid OFX format",
       });
 
-      await expect(
-        service.parseOfxFile(userId, "bad content"),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.parseOfxFile(userId, "bad content")).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
@@ -2802,9 +2804,9 @@ describe("ImportService", () => {
         error: "File is empty",
       });
 
-      await expect(
-        service.parseCsvHeaders(userId, ""),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.parseCsvHeaders(userId, "")).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
@@ -2853,7 +2855,11 @@ describe("ImportService", () => {
         openingBalanceDate: null,
       });
 
-      const result = await service.parseCsvFile(userId, csvContent, columnMapping);
+      const result = await service.parseCsvFile(
+        userId,
+        csvContent,
+        columnMapping,
+      );
 
       expect(mockedValidateCsvContent).toHaveBeenCalledWith(csvContent);
       expect(mockedParseCsv).toHaveBeenCalledWith(
@@ -2886,7 +2892,12 @@ describe("ImportService", () => {
         openingBalanceDate: null,
       });
 
-      await service.parseCsvFile(userId, csvContent, columnMapping, transferRules);
+      await service.parseCsvFile(
+        userId,
+        csvContent,
+        columnMapping,
+        transferRules,
+      );
 
       expect(mockedParseCsv).toHaveBeenCalledWith(
         csvContent,
@@ -3060,7 +3071,10 @@ describe("ImportService", () => {
       columnMappingRepository.create.mockReturnValue(createdEntity);
       columnMappingRepository.save.mockResolvedValue(createdEntity);
 
-      const result = await service.createColumnMapping(userId, createDto as any);
+      const result = await service.createColumnMapping(
+        userId,
+        createDto as any,
+      );
 
       expect(columnMappingRepository.findOne).toHaveBeenCalledWith({
         where: { userId, name: createDto.name },
@@ -3071,16 +3085,27 @@ describe("ImportService", () => {
       expect(result.name).toBe("My Bank CSV");
     });
 
-    it("throws ConflictException when name already exists", async () => {
-      columnMappingRepository.findOne.mockResolvedValue({
+    it("overwrites existing mapping when name already exists", async () => {
+      const existingEntity = {
         id: "existing-mapping",
         userId,
         name: createDto.name,
+        columnMappings: { date: 0, amount: 1 },
+        transferRules: [],
+      };
+      columnMappingRepository.findOne.mockResolvedValue(existingEntity);
+      columnMappingRepository.save.mockResolvedValue({
+        ...existingEntity,
+        columnMappings: createDto.columnMappings,
       });
 
-      await expect(
-        service.createColumnMapping(userId, createDto as any),
-      ).rejects.toThrow(ConflictException);
+      const result = await service.createColumnMapping(
+        userId,
+        createDto as any,
+      );
+
+      expect(columnMappingRepository.save).toHaveBeenCalledWith(existingEntity);
+      expect(result.id).toBe("existing-mapping");
     });
   });
 

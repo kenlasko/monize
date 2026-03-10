@@ -2,13 +2,18 @@
 
 import { Button } from '@/components/ui/Button';
 import { CsvTransferRule } from '@/lib/import';
+import { Account } from '@/types/account';
 
 interface CsvTransferRulesProps {
   rules: CsvTransferRule[];
   onChange: (rules: CsvTransferRule[]) => void;
+  accounts: Account[];
 }
 
-export function CsvTransferRules({ rules, onChange }: CsvTransferRulesProps) {
+export function CsvTransferRules({ rules, onChange, accounts }: CsvTransferRulesProps) {
+  const transferAccounts = accounts.filter(
+    (a) => !a.isClosed && a.accountSubType !== 'INVESTMENT_BROKERAGE',
+  );
   const addRule = () => {
     onChange([...rules, { type: 'payee', pattern: '', accountName: '' }]);
   };
@@ -41,30 +46,36 @@ export function CsvTransferRules({ rules, onChange }: CsvTransferRulesProps) {
         </p>
       )}
       {rules.map((rule, index) => (
-        <div key={index} className="flex items-center gap-2 bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
+        <div key={index} className="grid grid-cols-[130px_auto_1fr_auto_1fr_auto] items-center gap-2 bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
           <select
             value={rule.type}
             onChange={(e) => updateRule(index, 'type', e.target.value)}
             className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
           >
-            <option value="payee">Payee contains</option>
-            <option value="category">Category contains</option>
+            <option value="payee">Payee</option>
+            <option value="category">Category</option>
           </select>
+          <span className="text-xs text-gray-500 dark:text-gray-400">contains</span>
           <input
             type="text"
             value={rule.pattern}
             onChange={(e) => updateRule(index, 'pattern', e.target.value)}
             placeholder="Pattern..."
-            className="flex-1 px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+            className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
           />
           <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">as transfer to</span>
-          <input
-            type="text"
+          <select
             value={rule.accountName}
             onChange={(e) => updateRule(index, 'accountName', e.target.value)}
-            placeholder="Account name..."
-            className="flex-1 px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-          />
+            className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+          >
+            <option value="">Select account...</option>
+            {transferAccounts.map((account) => (
+              <option key={account.id} value={account.name}>
+                {account.name}
+              </option>
+            ))}
+          </select>
           <button
             onClick={() => removeRule(index)}
             className="text-red-500 hover:text-red-700 text-sm px-1"

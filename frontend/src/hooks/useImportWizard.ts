@@ -110,6 +110,20 @@ export function useImportWizard() {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const isBulkImport = importFiles.length > 1;
 
+  // Determine the next step after account selection, based on what mappings exist
+  const getStepAfterAccountSelection = (
+    catMappings: CategoryMapping[],
+    secMappings: SecurityMapping[],
+    accMappings: AccountMapping[],
+    isInvestment: boolean,
+  ): ImportStep => {
+    const showMapAccounts = accMappings.length > 0 && !isInvestment;
+    if (catMappings.length > 0) return 'mapCategories';
+    if (secMappings.length > 0) return 'mapSecurities';
+    if (showMapAccounts) return 'mapAccounts';
+    return 'review';
+  };
+
   const setFileAccountId = useCallback((fileIndex: number, accountId: string, confidence: MatchConfidence = 'exact') => {
     setImportFiles(prev => prev.map((f, i) =>
       i === fileIndex ? { ...f, selectedAccountId: accountId, matchConfidence: confidence } : f
@@ -334,8 +348,8 @@ export function useImportWizard() {
             fileContent,
             fileType: 'csv',
             parsedData: null as unknown as ImportFileData['parsedData'],
-            selectedAccountId: '',
-            matchConfidence: 'none',
+            selectedAccountId: preselectedAccountId || '',
+            matchConfidence: preselectedAccountId ? 'exact' : 'none',
           });
         }
         setImportFiles(fileDataArray);
@@ -370,23 +384,35 @@ export function useImportWizard() {
 
           const isInvestmentType = parsed.accountType === 'INVESTMENT';
           const match = matchFilenameToAccount(file.name, isInvestmentType, accounts, parsed.accountType);
+          const accountId = preselectedAccountId || match.id;
+          const confidence: MatchConfidence = preselectedAccountId ? 'exact' : match.confidence;
 
           fileDataArray.push({
             fileName: file.name,
             fileContent: content,
             fileType: detectedFileType,
             parsedData: parsed,
-            selectedAccountId: match.id,
-            matchConfidence: match.confidence,
+            selectedAccountId: accountId,
+            matchConfidence: confidence,
           });
         }
 
         if (detectedFormat) setDateFormat(detectedFormat);
+        const newCatMappings = buildCategoryMappings(allCats, categories, accounts);
+        const newAccMappings = buildAccountMappings(allTransferAccounts, accounts, defaultCurrency);
+        const newSecMappings = buildSecurityMappings(allSecs, securities);
         setImportFiles(fileDataArray);
-        setCategoryMappings(buildCategoryMappings(allCats, categories, accounts));
-        setAccountMappings(buildAccountMappings(allTransferAccounts, accounts, defaultCurrency));
-        setSecurityMappings(buildSecurityMappings(allSecs, securities));
-        setStep('selectAccount');
+        setCategoryMappings(newCatMappings);
+        setAccountMappings(newAccMappings);
+        setSecurityMappings(newSecMappings);
+
+        // Skip account selection when a single file is imported with a preselected account
+        if (preselectedAccountId && fileDataArray.length === 1) {
+          const isInvestment = fileDataArray[0].parsedData?.accountType === 'INVESTMENT';
+          setStep(getStepAfterAccountSelection(newCatMappings, newSecMappings, newAccMappings, isInvestment));
+        } else {
+          setStep('selectAccount');
+        }
 
         if (fileDataArray.length > 1) {
           toast.success(`Loaded ${fileDataArray.length} files for import`);
@@ -492,11 +518,19 @@ export function useImportWizard() {
       }
 
       if (detectedFormat) setDateFormat(detectedFormat);
+      const newCatMappings = buildCategoryMappings(allCats, categories, accounts);
+      const newAccMappings = buildAccountMappings(allTransferAccounts, accounts, defaultCurrency);
       setImportFiles(fileDataArray);
-      setCategoryMappings(buildCategoryMappings(allCats, categories, accounts));
-      setAccountMappings(buildAccountMappings(allTransferAccounts, accounts, defaultCurrency));
+      setCategoryMappings(newCatMappings);
+      setAccountMappings(newAccMappings);
       setSecurityMappings([]);
-      setStep('selectAccount');
+
+      // Skip account selection when a single file is imported with a preselected account
+      if (preselectedAccountId && fileDataArray.length === 1) {
+        setStep(getStepAfterAccountSelection(newCatMappings, [], newAccMappings, false));
+      } else {
+        setStep('selectAccount');
+      }
     } catch (error) {
       toast.error(getErrorMessage(error, 'Failed to parse CSV file(s)'));
     } finally {
@@ -511,7 +545,15 @@ export function useImportWizard() {
         columnMappings: csvColumnMapping,
         transferRules: csvTransferRules,
       });
-      setSavedColumnMappings(prev => [...prev, saved]);
+      setSavedColumnMappings(prev => {
+        const existingIndex = prev.findIndex(m => m.id === saved.id);
+        if (existingIndex >= 0) {
+          const updated = [...prev];
+          updated[existingIndex] = saved;
+          return updated;
+        }
+        return [...prev, saved];
+      });
       toast.success(`Column mapping "${name}" saved`);
     } catch (error) {
       toast.error(getErrorMessage(error, 'Failed to save column mapping'));

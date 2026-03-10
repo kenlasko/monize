@@ -192,6 +192,7 @@ export class ImportService {
       memo: dto.columnMapping.memo,
       referenceNumber: dto.columnMapping.referenceNumber,
       dateFormat: dto.columnMapping.dateFormat as DateFormat,
+      reverseSign: dto.columnMapping.reverseSign,
       hasHeader: dto.columnMapping.hasHeader,
       delimiter: dto.columnMapping.delimiter,
     };
@@ -219,9 +220,7 @@ export class ImportService {
 
   // --- Column Mapping CRUD ---
 
-  async getColumnMappings(
-    userId: string,
-  ): Promise<ColumnMappingResponseDto[]> {
+  async getColumnMappings(userId: string): Promise<ColumnMappingResponseDto[]> {
     const mappings = await this.columnMappingRepository.find({
       where: { userId },
       order: { name: "ASC" },
@@ -244,9 +243,23 @@ export class ImportService {
       where: { userId, name: dto.name },
     });
     if (existing) {
-      throw new ConflictException(
-        `A column mapping named "${dto.name}" already exists`,
-      );
+      existing.columnMappings = dto.columnMappings as unknown as Record<
+        string,
+        unknown
+      >;
+      existing.transferRules = (dto.transferRules || []) as unknown as Record<
+        string,
+        unknown
+      >[];
+      const saved = await this.columnMappingRepository.save(existing);
+      return {
+        id: saved.id,
+        name: saved.name,
+        columnMappings: saved.columnMappings,
+        transferRules: saved.transferRules,
+        createdAt: saved.createdAt,
+        updatedAt: saved.updatedAt,
+      };
     }
 
     const mapping = this.columnMappingRepository.create({
@@ -294,8 +307,10 @@ export class ImportService {
     }
 
     if (dto.columnMappings !== undefined) {
-      mapping.columnMappings =
-        dto.columnMappings as unknown as Record<string, unknown>;
+      mapping.columnMappings = dto.columnMappings as unknown as Record<
+        string,
+        unknown
+      >;
     }
     if (dto.transferRules !== undefined) {
       mapping.transferRules = dto.transferRules as unknown as Record<
@@ -534,11 +549,7 @@ export class ImportService {
     }
 
     // Post-import processing
-    await this.postImportProcessing(
-      userId,
-      isInvestment,
-      affectedAccountIds,
-    );
+    await this.postImportProcessing(userId, isInvestment, affectedAccountIds);
 
     return importResult;
   }

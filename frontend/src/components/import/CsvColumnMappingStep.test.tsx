@@ -31,6 +31,7 @@ function renderStep(overrides: Record<string, unknown> = {}) {
     onColumnMappingChange: vi.fn(),
     transferRules: [],
     onTransferRulesChange: vi.fn(),
+    accounts: [],
     savedMappings: [],
     onSaveMapping: vi.fn(),
     onLoadMapping: vi.fn(),
@@ -169,14 +170,15 @@ describe('CsvColumnMappingStep', () => {
     expect(screen.getAllByText('Bank Export').length).toBeGreaterThanOrEqual(1);
   });
 
-  it('calls onSaveMapping when Save Current clicked', () => {
-    vi.spyOn(window, 'prompt').mockReturnValue('My Mapping');
-
+  it('calls onSaveMapping when Save Current clicked and name entered', () => {
     const props = renderStep();
 
     fireEvent.click(screen.getByText('Save Current'));
 
-    expect(window.prompt).toHaveBeenCalled();
+    const input = screen.getByPlaceholderText('Enter mapping name...');
+    fireEvent.change(input, { target: { value: 'My Mapping' } });
+    fireEvent.click(screen.getByText('Save'));
+
     expect(props.onSaveMapping).toHaveBeenCalledWith('My Mapping');
   });
 
@@ -218,6 +220,91 @@ describe('CsvColumnMappingStep', () => {
     fireEvent.click(deleteButton);
 
     expect(props.onDeleteMapping).toHaveBeenCalledWith('map-1');
+  });
+
+  it('shows Sign dropdown in single amount mode', () => {
+    renderStep({
+      columnMapping: { ...defaultMapping(), amount: 1 },
+    });
+
+    expect(screen.getByText('Sign')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('As-is (positive = deposit)')).toBeInTheDocument();
+  });
+
+  it('calls onColumnMappingChange with reverseSign when Sign dropdown changed', () => {
+    const props = renderStep({
+      columnMapping: { ...defaultMapping(), amount: 1 },
+    });
+
+    const signSelect = screen.getByDisplayValue('As-is (positive = deposit)');
+    fireEvent.change(signSelect, { target: { value: 'reverse' } });
+
+    expect(props.onColumnMappingChange).toHaveBeenCalledWith(
+      expect.objectContaining({ reverseSign: true }),
+    );
+  });
+
+  it('does not show Sign dropdown in split debit/credit mode', () => {
+    renderStep({
+      columnMapping: { ...defaultMapping(), amount: undefined, debit: 1, credit: 2 },
+    });
+
+    expect(screen.queryByText('Sign')).not.toBeInTheDocument();
+  });
+
+  it('shows "Will overwrite" when save name matches existing mapping', () => {
+    const savedMappings: SavedColumnMapping[] = [
+      {
+        id: 'map-1',
+        name: 'Bank Export',
+        columnMappings: defaultMapping(),
+        transferRules: [],
+        createdAt: '2024-01-01T00:00:00Z',
+        updatedAt: '2024-01-01T00:00:00Z',
+      },
+    ];
+
+    renderStep({ savedMappings });
+
+    fireEvent.click(screen.getByText('Save Current'));
+
+    const input = screen.getByPlaceholderText('Enter mapping name...');
+    fireEvent.change(input, { target: { value: 'Bank Export' } });
+
+    expect(screen.getByText('Will overwrite')).toBeInTheDocument();
+  });
+
+  it('hides save input when Cancel clicked', () => {
+    renderStep();
+
+    fireEvent.click(screen.getByText('Save Current'));
+    expect(screen.getByPlaceholderText('Enter mapping name...')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Cancel'));
+    expect(screen.queryByPlaceholderText('Enter mapping name...')).not.toBeInTheDocument();
+  });
+
+  it('saves mapping on Enter key press', () => {
+    const props = renderStep();
+
+    fireEvent.click(screen.getByText('Save Current'));
+
+    const input = screen.getByPlaceholderText('Enter mapping name...');
+    fireEvent.change(input, { target: { value: 'Quick Save' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+
+    expect(props.onSaveMapping).toHaveBeenCalledWith('Quick Save');
+  });
+
+  it('does not save when name is empty', () => {
+    const props = renderStep();
+
+    fireEvent.click(screen.getByText('Save Current'));
+
+    const saveButton = screen.getByText('Save');
+    expect(saveButton).toBeDisabled();
+
+    expect(props.onSaveMapping).not.toHaveBeenCalled();
   });
 
   it('Back button calls setStep with upload', () => {

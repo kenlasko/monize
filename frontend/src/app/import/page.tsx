@@ -45,6 +45,7 @@ function ImportContent() {
             onColumnMappingChange={wizard.handleCsvColumnMappingChange}
             transferRules={wizard.csvTransferRules}
             onTransferRulesChange={wizard.handleCsvTransferRulesChange}
+            accounts={wizard.accounts}
             savedMappings={wizard.savedColumnMappings}
             onSaveMapping={wizard.handleSaveColumnMapping}
             onLoadMapping={wizard.handleLoadColumnMapping}

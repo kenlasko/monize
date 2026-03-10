@@ -40,7 +40,10 @@ function truncate(value: string, maxLength: number): string {
 function parseOfxDate(dateStr: string): string {
   if (!dateStr) return "";
   // Strip timezone info and fractional seconds
-  const cleaned = dateStr.replace(/\[.*\]/, "").replace(/\..*/, "").trim();
+  const cleaned = dateStr
+    .replace(/\[.*\]/, "")
+    .replace(/\..*/, "")
+    .trim();
   if (cleaned.length < 8) return "";
 
   const year = cleaned.substring(0, 4);
@@ -203,10 +206,7 @@ export function parseOfx(content: string): QifParseResult {
     }
 
     const payee = truncate(name || memo || "", 255);
-    const memoText = truncate(
-      name && memo && name !== memo ? memo : "",
-      5000,
-    );
+    const memoText = truncate(name && memo && name !== memo ? memo : "", 5000);
 
     const tx: QifTransaction = {
       date,
