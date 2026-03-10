@@ -46,28 +46,28 @@ export function CsvTransferRules({ rules, onChange, accounts }: CsvTransferRules
         </p>
       )}
       {rules.map((rule, index) => (
-        <div key={index} className="flex items-center gap-2 bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
+        <div key={index} className="grid grid-cols-[90px_auto_1fr_auto_1fr_auto] items-center gap-2 bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
           <select
             value={rule.type}
             onChange={(e) => updateRule(index, 'type', e.target.value)}
-            className="w-24 shrink-0 px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+            className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
           >
             <option value="payee">Payee</option>
             <option value="category">Category</option>
           </select>
-          <span className="shrink-0 text-xs text-gray-500 dark:text-gray-400">contains</span>
+          <span className="text-xs text-gray-500 dark:text-gray-400">contains</span>
           <input
             type="text"
             value={rule.pattern}
             onChange={(e) => updateRule(index, 'pattern', e.target.value)}
             placeholder="Pattern..."
-            className="flex-[3] min-w-[120px] px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+            className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
           />
-          <span className="shrink-0 text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">as transfer to</span>
+          <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">as transfer to</span>
           <select
             value={rule.accountName}
             onChange={(e) => updateRule(index, 'accountName', e.target.value)}
-            className="flex-[2] min-w-[120px] px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+            className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
           >
             <option value="">Select account...</option>
             {transferAccounts.map((account) => (
@@ -78,7 +78,7 @@ export function CsvTransferRules({ rules, onChange, accounts }: CsvTransferRules
           </select>
           <button
             onClick={() => removeRule(index)}
-            className="shrink-0 text-red-500 hover:text-red-700 text-sm px-1"
+            className="text-red-500 hover:text-red-700 text-sm px-1"
             title="Remove rule"
           >
             X
