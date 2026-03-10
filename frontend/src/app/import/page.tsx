@@ -5,6 +5,7 @@ import { PageLayout } from '@/components/layout/PageLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { UploadStep } from '@/components/import/UploadStep';
 import { SelectAccountStep } from '@/components/import/SelectAccountStep';
+import { CsvColumnMappingStep } from '@/components/import/CsvColumnMappingStep';
 import { MapCategoriesStep } from '@/components/import/MapCategoriesStep';
 import { MapSecuritiesStep } from '@/components/import/MapSecuritiesStep';
 import { MapAccountsStep } from '@/components/import/MapAccountsStep';
@@ -32,6 +33,27 @@ function ImportContent() {
             preselectedAccount={wizard.preselectedAccount}
             isLoading={wizard.isLoading}
             onFileSelect={wizard.handleFileSelect}
+          />
+        );
+
+      case 'csvColumnMapping':
+        return (
+          <CsvColumnMappingStep
+            headers={wizard.csvHeaders}
+            sampleRows={wizard.csvSampleRows}
+            columnMapping={wizard.csvColumnMapping}
+            onColumnMappingChange={wizard.handleCsvColumnMappingChange}
+            transferRules={wizard.csvTransferRules}
+            onTransferRulesChange={wizard.handleCsvTransferRulesChange}
+            savedMappings={wizard.savedColumnMappings}
+            onSaveMapping={wizard.handleSaveColumnMapping}
+            onLoadMapping={wizard.handleLoadColumnMapping}
+            onDeleteMapping={wizard.handleDeleteColumnMapping}
+            onDelimiterChange={wizard.handleCsvDelimiterChange}
+            onHasHeaderChange={wizard.handleCsvHasHeaderChange}
+            isLoading={wizard.isLoading}
+            onNext={wizard.handleCsvMappingComplete}
+            setStep={wizard.setStep}
           />
         );
 
@@ -155,18 +177,19 @@ function ImportContent() {
       <main className="px-4 sm:px-6 lg:px-12 pt-6 pb-8">
         <PageHeader
           title="Import Transactions"
-          subtitle="Import transactions from a QIF file"
+          subtitle="Import transactions from QIF, OFX/QFX, or CSV files"
           helpUrl="https://github.com/kenlasko/monize/wiki/Importing-from-Microsoft-Money"
         />
         {/* Progress indicator */}
         <div className="mb-8">
           <div className="flex items-center justify-center space-x-4">
             {(() => {
-              const stepOrder = ['upload', 'selectAccount', 'mapCategories', 'mapSecurities', 'mapAccounts', 'review', 'complete'];
+              const stepOrder = ['upload', 'csvColumnMapping', 'selectAccount', 'mapCategories', 'mapSecurities', 'mapAccounts', 'review', 'complete'];
               const currentIndex = stepOrder.indexOf(wizard.step);
 
               // Filter to only visible steps
               const visibleSteps = stepOrder.filter((s) => {
+                if (s === 'csvColumnMapping' && wizard.fileType !== 'csv') return false;
                 if (s === 'mapCategories' && wizard.categoryMappings.length === 0) return false;
                 if (s === 'mapSecurities' && wizard.securityMappings.length === 0) return false;
                 if (s === 'mapAccounts' && !wizard.shouldShowMapAccounts) return false;

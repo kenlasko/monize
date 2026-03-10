@@ -14,7 +14,7 @@ export function UploadStep({ preselectedAccount, isLoading, onFileSelect }: Uplo
     <div className="max-w-xl mx-auto">
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
         <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
-          Upload QIF Files
+          Upload Transaction Files
         </h2>
         {preselectedAccount && (
           <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-4">
@@ -24,21 +24,21 @@ export function UploadStep({ preselectedAccount, isLoading, onFileSelect }: Uplo
           </div>
         )}
         <p className="text-gray-600 dark:text-gray-400 mb-6">
-          Select one or more QIF files to import. You can select multiple files at once for bulk import.
-          Files will be automatically matched to accounts based on filename.
+          Select one or more files to import. Supported formats: QIF, OFX/QFX, CSV.
+          You can select multiple files of the same type for bulk import.
         </p>
         <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center">
           <input
             type="file"
-            accept=".qif"
+            accept=".qif,.ofx,.qfx,.csv"
             multiple
             onChange={onFileSelect}
             className="hidden"
-            id="qif-file"
+            id="import-file"
             disabled={isLoading}
           />
           <label
-            htmlFor="qif-file"
+            htmlFor="import-file"
             className="cursor-pointer inline-flex flex-col items-center"
           >
             <svg
@@ -55,7 +55,10 @@ export function UploadStep({ preselectedAccount, isLoading, onFileSelect }: Uplo
               />
             </svg>
             <span className="text-gray-600 dark:text-gray-400">
-              {isLoading ? 'Processing...' : 'Click to select QIF file(s)'}
+              {isLoading ? 'Processing...' : 'Click to select file(s)'}
+            </span>
+            <span className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+              QIF, OFX, QFX, or CSV
             </span>
           </label>
         </div>

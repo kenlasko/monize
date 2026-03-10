@@ -1,12 +1,14 @@
 import { ParsedQifResponse } from '@/lib/import';
 export { formatAccountType, isInvestmentBrokerageAccount } from '@/lib/account-utils';
 
-export type ImportStep = 'upload' | 'selectAccount' | 'mapCategories' | 'mapSecurities' | 'mapAccounts' | 'review' | 'complete';
+export type ImportFileType = 'qif' | 'ofx' | 'csv';
+export type ImportStep = 'upload' | 'csvColumnMapping' | 'selectAccount' | 'mapCategories' | 'mapSecurities' | 'mapAccounts' | 'review' | 'complete';
 export type MatchConfidence = 'exact' | 'partial' | 'type' | 'none';
 
 export interface ImportFileData {
   fileName: string;
   fileContent: string;
+  fileType: ImportFileType;
   parsedData: ParsedQifResponse;
   selectedAccountId: string;
   matchConfidence: MatchConfidence;

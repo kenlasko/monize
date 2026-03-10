@@ -56,6 +56,59 @@ export interface ImportQifRequest {
   dateFormat?: DateFormat;
 }
 
+export interface CsvColumnMappingConfig {
+  date: number;
+  amount?: number;
+  debit?: number;
+  credit?: number;
+  payee?: number;
+  category?: number;
+  memo?: number;
+  referenceNumber?: number;
+  dateFormat: DateFormat;
+  hasHeader: boolean;
+  delimiter: string;
+}
+
+export interface CsvTransferRule {
+  type: 'payee' | 'category';
+  pattern: string;
+  accountName: string;
+}
+
+export interface CsvHeadersResponse {
+  headers: string[];
+  sampleRows: string[][];
+  rowCount: number;
+}
+
+export interface SavedColumnMapping {
+  id: string;
+  name: string;
+  columnMappings: CsvColumnMappingConfig;
+  transferRules: CsvTransferRule[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ImportOfxRequest {
+  content: string;
+  accountId: string;
+  categoryMappings: CategoryMapping[];
+  accountMappings: AccountMapping[];
+  dateFormat?: DateFormat;
+}
+
+export interface ImportCsvRequest {
+  content: string;
+  accountId: string;
+  columnMapping: CsvColumnMappingConfig;
+  transferRules?: CsvTransferRule[];
+  categoryMappings: CategoryMapping[];
+  accountMappings: AccountMapping[];
+  dateFormat?: DateFormat;
+}
+
 export interface ImportResult {
   imported: number;
   skipped: number;
@@ -84,5 +137,52 @@ export const importApi = {
     // Longer timeout for large imports (5 minutes)
     const response = await apiClient.post('/import/qif', data, { timeout: 300000 });
     return response.data;
+  },
+
+  // OFX
+  parseOfx: async (content: string): Promise<ParsedQifResponse> => {
+    const response = await apiClient.post('/import/ofx/parse', { content }, { timeout: 60000 });
+    return response.data;
+  },
+
+  importOfx: async (data: ImportOfxRequest): Promise<ImportResult> => {
+    const response = await apiClient.post('/import/ofx', data, { timeout: 300000 });
+    return response.data;
+  },
+
+  // CSV
+  parseCsvHeaders: async (content: string, delimiter?: string): Promise<CsvHeadersResponse> => {
+    const response = await apiClient.post('/import/csv/headers', { content, delimiter }, { timeout: 60000 });
+    return response.data;
+  },
+
+  parseCsv: async (content: string, columnMapping: CsvColumnMappingConfig, transferRules?: CsvTransferRule[]): Promise<ParsedQifResponse> => {
+    const response = await apiClient.post('/import/csv/parse', { content, columnMapping, transferRules }, { timeout: 60000 });
+    return response.data;
+  },
+
+  importCsv: async (data: ImportCsvRequest): Promise<ImportResult> => {
+    const response = await apiClient.post('/import/csv', data, { timeout: 300000 });
+    return response.data;
+  },
+
+  // Column Mappings
+  getColumnMappings: async (): Promise<SavedColumnMapping[]> => {
+    const response = await apiClient.get('/import/column-mappings');
+    return response.data;
+  },
+
+  createColumnMapping: async (data: { name: string; columnMappings: CsvColumnMappingConfig; transferRules?: CsvTransferRule[] }): Promise<SavedColumnMapping> => {
+    const response = await apiClient.post('/import/column-mappings', data);
+    return response.data;
+  },
+
+  updateColumnMapping: async (id: string, data: { name?: string; columnMappings?: CsvColumnMappingConfig; transferRules?: CsvTransferRule[] }): Promise<SavedColumnMapping> => {
+    const response = await apiClient.put(`/import/column-mappings/${id}`, data);
+    return response.data;
+  },
+
+  deleteColumnMapping: async (id: string): Promise<void> => {
+    await apiClient.delete(`/import/column-mappings/${id}`);
   },
 };

@@ -13,6 +13,7 @@ import { Payee } from "../payees/entities/payee.entity";
 import { Security } from "../securities/entities/security.entity";
 import { InvestmentTransaction } from "../securities/entities/investment-transaction.entity";
 import { Holding } from "../securities/entities/holding.entity";
+import { ImportColumnMapping } from "./entities/import-column-mapping.entity";
 import { NetWorthModule } from "../net-worth/net-worth.module";
 import { SecuritiesModule } from "../securities/securities.module";
 import { CurrenciesModule } from "../currencies/currencies.module";
@@ -28,6 +29,7 @@ import { CurrenciesModule } from "../currencies/currencies.module";
       Security,
       InvestmentTransaction,
       Holding,
+      ImportColumnMapping,
     ]),
     forwardRef(() => NetWorthModule),
     forwardRef(() => SecuritiesModule),

@@ -2,6 +2,7 @@ import {
   Injectable,
   BadRequestException,
   NotFoundException,
+  ConflictException,
   Logger,
   Inject,
   forwardRef,
@@ -14,14 +15,29 @@ import { ExchangeRateService } from "../currencies/exchange-rate.service";
 import { Account, AccountSubType } from "../accounts/entities/account.entity";
 import { Category } from "../categories/entities/category.entity";
 import { Payee } from "../payees/entities/payee.entity";
+import { ImportColumnMapping } from "./entities/import-column-mapping.entity";
 import { parseQif, validateQifContent, DateFormat } from "./qif-parser";
+import type { QifParseResult } from "./qif-parser";
+import { parseOfx, validateOfxContent } from "./ofx-parser";
+import {
+  parseCsv,
+  parseCsvHeaders as parseCsvHeadersFn,
+  validateCsvContent,
+} from "./csv-parser";
+import type { CsvColumnMappingConfig, CsvTransferRule } from "./csv-parser";
 import {
   ImportQifDto,
+  ImportOfxDto,
+  ImportCsvDto,
   ParsedQifResponseDto,
   ImportResultDto,
   CategoryMappingDto,
   AccountMappingDto,
   SecurityMappingDto,
+  CreateColumnMappingDto,
+  UpdateColumnMappingDto,
+  CsvHeadersResponseDto,
+  ColumnMappingResponseDto,
 } from "./dto/import.dto";
 import { ImportContext } from "./import-context";
 import { ImportEntityCreatorService } from "./import-entity-creator.service";
@@ -40,6 +56,8 @@ export class ImportService {
     private categoriesRepository: Repository<Category>,
     @InjectRepository(Payee)
     private payeesRepository: Repository<Payee>,
+    @InjectRepository(ImportColumnMapping)
+    private columnMappingRepository: Repository<ImportColumnMapping>,
     @Inject(forwardRef(() => NetWorthService))
     private netWorthService: NetWorthService,
     @Inject(forwardRef(() => SecurityPriceService))
@@ -51,6 +69,8 @@ export class ImportService {
     private regularProcessor: ImportRegularProcessorService,
   ) {}
 
+  // --- QIF ---
+
   async parseQifFile(
     userId: string,
     content: string,
@@ -61,7 +81,253 @@ export class ImportService {
     }
 
     const result = parseQif(content);
+    return this.buildParsedResponse(result);
+  }
 
+  async importQifFile(
+    userId: string,
+    dto: ImportQifDto,
+  ): Promise<ImportResultDto> {
+    const validation = validateQifContent(dto.content);
+    if (!validation.valid) {
+      throw new BadRequestException(validation.error);
+    }
+
+    const result = parseQif(dto.content, dto.dateFormat as DateFormat);
+
+    return this.importParsedTransactions(
+      userId,
+      result,
+      dto.accountId,
+      dto.categoryMappings,
+      dto.accountMappings,
+      dto.securityMappings,
+      dto.dateFormat as DateFormat,
+    );
+  }
+
+  // --- OFX ---
+
+  async parseOfxFile(
+    userId: string,
+    content: string,
+  ): Promise<ParsedQifResponseDto> {
+    const validation = validateOfxContent(content);
+    if (!validation.valid) {
+      throw new BadRequestException(validation.error);
+    }
+
+    const result = parseOfx(content);
+    return this.buildParsedResponse(result);
+  }
+
+  async importOfxFile(
+    userId: string,
+    dto: ImportOfxDto,
+  ): Promise<ImportResultDto> {
+    const validation = validateOfxContent(dto.content);
+    if (!validation.valid) {
+      throw new BadRequestException(validation.error);
+    }
+
+    const result = parseOfx(dto.content);
+
+    return this.importParsedTransactions(
+      userId,
+      result,
+      dto.accountId,
+      dto.categoryMappings,
+      dto.accountMappings,
+      [],
+      dto.dateFormat as DateFormat,
+    );
+  }
+
+  // --- CSV ---
+
+  async parseCsvHeaders(
+    userId: string,
+    content: string,
+    delimiter?: string,
+  ): Promise<CsvHeadersResponseDto> {
+    const validation = validateCsvContent(content);
+    if (!validation.valid) {
+      throw new BadRequestException(validation.error);
+    }
+
+    return parseCsvHeadersFn(content, delimiter);
+  }
+
+  async parseCsvFile(
+    userId: string,
+    content: string,
+    columnMapping: CsvColumnMappingConfig,
+    transferRules?: CsvTransferRule[],
+  ): Promise<ParsedQifResponseDto> {
+    const validation = validateCsvContent(content);
+    if (!validation.valid) {
+      throw new BadRequestException(validation.error);
+    }
+
+    const result = parseCsv(content, columnMapping, transferRules);
+    return this.buildParsedResponse(result);
+  }
+
+  async importCsvFile(
+    userId: string,
+    dto: ImportCsvDto,
+  ): Promise<ImportResultDto> {
+    const validation = validateCsvContent(dto.content);
+    if (!validation.valid) {
+      throw new BadRequestException(validation.error);
+    }
+
+    const csvConfig: CsvColumnMappingConfig = {
+      date: dto.columnMapping.date,
+      amount: dto.columnMapping.amount,
+      debit: dto.columnMapping.debit,
+      credit: dto.columnMapping.credit,
+      payee: dto.columnMapping.payee,
+      category: dto.columnMapping.category,
+      memo: dto.columnMapping.memo,
+      referenceNumber: dto.columnMapping.referenceNumber,
+      dateFormat: dto.columnMapping.dateFormat as DateFormat,
+      hasHeader: dto.columnMapping.hasHeader,
+      delimiter: dto.columnMapping.delimiter,
+    };
+
+    const transferRules: CsvTransferRule[] | undefined = dto.transferRules?.map(
+      (r) => ({
+        type: r.type,
+        pattern: r.pattern,
+        accountName: r.accountName,
+      }),
+    );
+
+    const result = parseCsv(dto.content, csvConfig, transferRules);
+
+    return this.importParsedTransactions(
+      userId,
+      result,
+      dto.accountId,
+      dto.categoryMappings,
+      dto.accountMappings,
+      [],
+      dto.dateFormat as DateFormat,
+    );
+  }
+
+  // --- Column Mapping CRUD ---
+
+  async getColumnMappings(
+    userId: string,
+  ): Promise<ColumnMappingResponseDto[]> {
+    const mappings = await this.columnMappingRepository.find({
+      where: { userId },
+      order: { name: "ASC" },
+    });
+    return mappings.map((m) => ({
+      id: m.id,
+      name: m.name,
+      columnMappings: m.columnMappings,
+      transferRules: m.transferRules,
+      createdAt: m.createdAt,
+      updatedAt: m.updatedAt,
+    }));
+  }
+
+  async createColumnMapping(
+    userId: string,
+    dto: CreateColumnMappingDto,
+  ): Promise<ColumnMappingResponseDto> {
+    const existing = await this.columnMappingRepository.findOne({
+      where: { userId, name: dto.name },
+    });
+    if (existing) {
+      throw new ConflictException(
+        `A column mapping named "${dto.name}" already exists`,
+      );
+    }
+
+    const mapping = this.columnMappingRepository.create({
+      userId,
+      name: dto.name,
+      columnMappings: dto.columnMappings as unknown as Record<string, unknown>,
+      transferRules: (dto.transferRules || []) as unknown as Record<
+        string,
+        unknown
+      >[],
+    });
+    const saved = await this.columnMappingRepository.save(mapping);
+    return {
+      id: saved.id,
+      name: saved.name,
+      columnMappings: saved.columnMappings,
+      transferRules: saved.transferRules,
+      createdAt: saved.createdAt,
+      updatedAt: saved.updatedAt,
+    };
+  }
+
+  async updateColumnMapping(
+    userId: string,
+    id: string,
+    dto: UpdateColumnMappingDto,
+  ): Promise<ColumnMappingResponseDto> {
+    const mapping = await this.columnMappingRepository.findOne({
+      where: { id, userId },
+    });
+    if (!mapping) {
+      throw new NotFoundException("Column mapping not found");
+    }
+
+    if (dto.name !== undefined && dto.name !== mapping.name) {
+      const duplicate = await this.columnMappingRepository.findOne({
+        where: { userId, name: dto.name },
+      });
+      if (duplicate) {
+        throw new ConflictException(
+          `A column mapping named "${dto.name}" already exists`,
+        );
+      }
+      mapping.name = dto.name;
+    }
+
+    if (dto.columnMappings !== undefined) {
+      mapping.columnMappings =
+        dto.columnMappings as unknown as Record<string, unknown>;
+    }
+    if (dto.transferRules !== undefined) {
+      mapping.transferRules = dto.transferRules as unknown as Record<
+        string,
+        unknown
+      >[];
+    }
+
+    const saved = await this.columnMappingRepository.save(mapping);
+    return {
+      id: saved.id,
+      name: saved.name,
+      columnMappings: saved.columnMappings,
+      transferRules: saved.transferRules,
+      createdAt: saved.createdAt,
+      updatedAt: saved.updatedAt,
+    };
+  }
+
+  async deleteColumnMapping(userId: string, id: string): Promise<void> {
+    const mapping = await this.columnMappingRepository.findOne({
+      where: { id, userId },
+    });
+    if (!mapping) {
+      throw new NotFoundException("Column mapping not found");
+    }
+    await this.columnMappingRepository.remove(mapping);
+  }
+
+  // --- Shared Import Pipeline ---
+
+  private buildParsedResponse(result: QifParseResult): ParsedQifResponseDto {
     let startDate = "";
     let endDate = "";
     if (result.transactions.length > 0) {
@@ -90,39 +356,37 @@ export class ImportService {
     };
   }
 
-  async importQifFile(
+  private async importParsedTransactions(
     userId: string,
-    dto: ImportQifDto,
+    result: QifParseResult,
+    accountId: string,
+    categoryMappings: CategoryMappingDto[],
+    accountMappings: AccountMappingDto[],
+    securityMappings?: SecurityMappingDto[],
+    dateFormat?: DateFormat,
   ): Promise<ImportResultDto> {
-    const validation = validateQifContent(dto.content);
-    if (!validation.valid) {
-      throw new BadRequestException(validation.error);
-    }
-
     const account = await this.accountsRepository.findOne({
-      where: { id: dto.accountId, userId },
+      where: { id: accountId, userId },
     });
     if (!account) {
       throw new NotFoundException("Account not found");
     }
 
-    const result = parseQif(dto.content, dto.dateFormat as DateFormat);
-
-    // Validate QIF type matches destination account type
-    const isQifInvestment = result.accountType === "INVESTMENT";
+    // Validate file type matches destination account type
+    const isInvestment = result.accountType === "INVESTMENT";
     const isAccountBrokerage =
       account.accountSubType === AccountSubType.INVESTMENT_BROKERAGE;
 
-    if (isQifInvestment && !isAccountBrokerage) {
+    if (isInvestment && !isAccountBrokerage) {
       throw new BadRequestException(
-        "This QIF file contains investment transactions but the selected account is not an investment brokerage account. " +
+        "This file contains investment transactions but the selected account is not an investment brokerage account. " +
           "Please select a brokerage account for this import.",
       );
     }
 
-    if (!isQifInvestment && isAccountBrokerage) {
+    if (!isInvestment && isAccountBrokerage) {
       throw new BadRequestException(
-        "This QIF file contains regular banking transactions but the selected account is an investment brokerage account. " +
+        "This file contains regular banking transactions but the selected account is an investment brokerage account. " +
           "Please select a cash account (including investment cash accounts) for this import.",
       );
     }
@@ -133,13 +397,11 @@ export class ImportService {
       categoriesToCreate,
       loanCategoryMap,
       loanAccountsToCreate,
-    } = this.buildCategoryMappings(dto.categoryMappings);
-    const { accountMap, accountsToCreate } = this.buildAccountMappings(
-      dto.accountMappings,
-    );
-    const { securityMap, securitiesToCreate } = this.buildSecurityMappings(
-      dto.securityMappings,
-    );
+    } = this.buildCategoryMappings(categoryMappings);
+    const { accountMap, accountsToCreate } =
+      this.buildAccountMappings(accountMappings);
+    const { securityMap, securitiesToCreate } =
+      this.buildSecurityMappings(securityMappings);
 
     // Validate mapped entity IDs belong to user
     await this.validateMappedEntities(
@@ -156,7 +418,7 @@ export class ImportService {
     await queryRunner.startTransaction();
 
     const affectedAccountIds = new Set<string>();
-    affectedAccountIds.add(dto.accountId);
+    affectedAccountIds.add(accountId);
     const importStartTime = new Date();
 
     const importResult: ImportResultDto = {
@@ -179,7 +441,7 @@ export class ImportService {
     const ctx: ImportContext = {
       queryRunner,
       userId,
-      accountId: dto.accountId,
+      accountId,
       account,
       categoryMap,
       accountMap,
@@ -229,7 +491,7 @@ export class ImportService {
       if (result.openingBalance !== null) {
         await this.entityCreator.applyOpeningBalance(
           queryRunner,
-          dto.accountId,
+          accountId,
           account,
           result.openingBalance,
         );
@@ -241,7 +503,7 @@ export class ImportService {
       for (const qifTx of result.transactions) {
         txIndex++;
         try {
-          if (isQifInvestment) {
+          if (isInvestment) {
             await this.investmentProcessor.processTransaction(ctx, qifTx);
           } else {
             await this.regularProcessor.processTransaction(ctx, qifTx);
@@ -274,7 +536,7 @@ export class ImportService {
     // Post-import processing
     await this.postImportProcessing(
       userId,
-      isQifInvestment,
+      isInvestment,
       affectedAccountIds,
     );
 
@@ -431,10 +693,10 @@ export class ImportService {
 
   private async postImportProcessing(
     userId: string,
-    isQifInvestment: boolean,
+    isInvestment: boolean,
     affectedAccountIds: Set<string>,
   ): Promise<void> {
-    if (isQifInvestment) {
+    if (isInvestment) {
       try {
         this.logger.log("Post-import: backfilling historical security prices");
         await this.securityPriceService.backfillHistoricalPrices();
