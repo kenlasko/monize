@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/Button';
 import { CsvTransferRules } from './CsvTransferRules';
 import { ImportStep } from '@/app/import/import-utils';
-import { CsvColumnMappingConfig, CsvTransferRule, SavedColumnMapping, DateFormat, DATE_FORMAT_OPTIONS, detectCsvDateFormat } from '@/lib/import';
+import { CsvColumnMappingConfig, CsvTransferRule, SavedColumnMapping, DATE_FORMAT_OPTIONS, detectCsvDateFormat } from '@/lib/import';
 import { Account } from '@/types/account';
 
 interface CsvColumnMappingStepProps {
@@ -60,33 +60,29 @@ export function CsvColumnMappingStep({
   const [validationError, setValidationError] = useState('');
   const [saveName, setSaveName] = useState('');
   const [showSaveInput, setShowSaveInput] = useState(false);
-  const isBuiltInFormat = DATE_FORMAT_OPTIONS.some((o) => o.value === columnMapping.dateFormat);
-  const [customFormat, setCustomFormat] = useState(isBuiltInFormat ? '' : columnMapping.dateFormat);
-  const [isCustom, setIsCustom] = useState(!isBuiltInFormat);
+  // Auto-detect date format from sample data on first render
+  const [autoDetectedFormat] = useState(() => {
+    if (sampleRows.length === 0) return null;
+    const dateColIndex = columnMapping.date;
+    if (dateColIndex === undefined || dateColIndex < 0) return null;
+    const sampleDates = sampleRows.map((row) => row[dateColIndex] || '').filter(Boolean);
+    return detectCsvDateFormat(sampleDates);
+  });
+
+  const effectiveDateFormat = autoDetectedFormat || columnMapping.dateFormat;
+  const isCustom = !DATE_FORMAT_OPTIONS.some((o) => o.value === effectiveDateFormat) && effectiveDateFormat !== '';
+  const [customFormat, setCustomFormat] = useState(isCustom ? effectiveDateFormat : '');
   const autoDetectedRef = useRef(false);
 
-  // Auto-detect date format from sample data when date column changes
+  // Apply auto-detected format once via parent callback
   useEffect(() => {
     if (autoDetectedRef.current) return;
-    if (sampleRows.length === 0) return;
-    const dateColIndex = columnMapping.date;
-    if (dateColIndex === undefined || dateColIndex < 0) return;
-
-    const sampleDates = sampleRows.map((row) => row[dateColIndex] || '').filter(Boolean);
-    const detected = detectCsvDateFormat(sampleDates);
-    if (detected) {
+    if (autoDetectedFormat && autoDetectedFormat !== columnMapping.dateFormat) {
       autoDetectedRef.current = true;
-      const builtIn = DATE_FORMAT_OPTIONS.some((o) => o.value === detected);
-      if (builtIn) {
-        setIsCustom(false);
-        onColumnMappingChange({ ...columnMapping, dateFormat: detected });
-      } else {
-        setIsCustom(true);
-        setCustomFormat(detected);
-        onColumnMappingChange({ ...columnMapping, dateFormat: detected });
-      }
+      onColumnMappingChange({ ...columnMapping, dateFormat: autoDetectedFormat });
     }
-  }, [sampleRows, columnMapping.date]); // eslint-disable-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoDetectedFormat]);
 
   const columnOptions = [
     { value: '', label: 'Not mapped' },
@@ -175,12 +171,10 @@ export function CsvColumnMappingStep({
               onChange={(e) => {
                 const val = e.target.value;
                 if (val === CUSTOM_FORMAT_VALUE) {
-                  setIsCustom(true);
                   if (customFormat) {
                     onColumnMappingChange({ ...columnMapping, dateFormat: customFormat });
                   }
                 } else {
-                  setIsCustom(false);
                   setCustomFormat('');
                   onColumnMappingChange({ ...columnMapping, dateFormat: val });
                 }

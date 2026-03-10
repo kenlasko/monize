@@ -137,8 +137,7 @@ describe("CSV Parser", () => {
       });
 
       it("parses CSV with semicolon delimiter", () => {
-        const csv =
-          "Date;Amount;Payee\n01/15/2026;-50.00;Grocery Store\n";
+        const csv = "Date;Amount;Payee\n01/15/2026;-50.00;Grocery Store\n";
         const result = parseCsv(csv, baseConfig({ delimiter: ";" }));
 
         expect(result.transactions).toHaveLength(1);
@@ -147,8 +146,7 @@ describe("CSV Parser", () => {
       });
 
       it("parses CSV with tab delimiter", () => {
-        const csv =
-          "Date\tAmount\tPayee\n01/15/2026\t-50.00\tGrocery Store\n";
+        const csv = "Date\tAmount\tPayee\n01/15/2026\t-50.00\tGrocery Store\n";
         const result = parseCsv(csv, baseConfig({ delimiter: "\t" }));
 
         expect(result.transactions).toHaveLength(1);
@@ -228,6 +226,41 @@ describe("CSV Parser", () => {
 
         expect(result.transactions[0].amount).toBe(200);
       });
+
+      it("reverses sign for single amount column when reverseSign is true", () => {
+        const csv =
+          "Date,Amount,Payee\n01/15/2026,75.50,Store\n01/16/2026,-100.00,Refund\n";
+        const config = baseConfig({ reverseSign: true });
+        const result = parseCsv(csv, config);
+
+        expect(result.transactions[0].amount).toBe(-75.5);
+        expect(result.transactions[1].amount).toBe(100);
+      });
+
+      it("does not reverse sign when reverseSign is false", () => {
+        const csv = "Date,Amount,Payee\n01/15/2026,75.50,Store\n";
+        const config = baseConfig({ reverseSign: false });
+        const result = parseCsv(csv, config);
+
+        expect(result.transactions[0].amount).toBe(75.5);
+      });
+
+      it("does not reverse sign for split debit/credit columns", () => {
+        const csv =
+          "Date,Debit,Credit,Payee\n01/15/2026,50.00,,Store\n01/16/2026,,100.00,Deposit\n";
+        const config = baseConfig({
+          amount: undefined,
+          debit: 1,
+          credit: 2,
+          payee: 3,
+          reverseSign: true,
+        });
+        const result = parseCsv(csv, config);
+
+        // reverseSign only applies to single amount mode
+        expect(result.transactions[0].amount).toBe(-50);
+        expect(result.transactions[1].amount).toBe(100);
+      });
     });
 
     describe("date format parsing", () => {
@@ -245,19 +278,13 @@ describe("CSV Parser", () => {
 
       it("parses YYYY-MM-DD format", () => {
         const csv = "Date,Amount\n2026-01-15,-50.00\n";
-        const result = parseCsv(
-          csv,
-          baseConfig({ dateFormat: "YYYY-MM-DD" }),
-        );
+        const result = parseCsv(csv, baseConfig({ dateFormat: "YYYY-MM-DD" }));
         expect(result.transactions[0].date).toBe("2026-01-15");
       });
 
       it("parses YYYY-DD-MM format", () => {
         const csv = "Date,Amount\n2026-15-01,-50.00\n";
-        const result = parseCsv(
-          csv,
-          baseConfig({ dateFormat: "YYYY-DD-MM" }),
-        );
+        const result = parseCsv(csv, baseConfig({ dateFormat: "YYYY-DD-MM" }));
         expect(result.transactions[0].date).toBe("2026-01-15");
       });
 
@@ -383,8 +410,7 @@ describe("CSV Parser", () => {
 
     describe("quoted fields", () => {
       it("handles quoted fields with commas inside", () => {
-        const csv =
-          'Date,Amount,Payee\n01/15/2026,-50.00,"Smith, John"\n';
+        const csv = 'Date,Amount,Payee\n01/15/2026,-50.00,"Smith, John"\n';
         const result = parseCsv(csv, baseConfig());
 
         expect(result.transactions).toHaveLength(1);
@@ -400,8 +426,7 @@ describe("CSV Parser", () => {
       });
 
       it("handles quoted fields with newlines inside", () => {
-        const csv =
-          'Date,Amount,Memo\n01/15/2026,-50.00,"Line 1\nLine 2"\n';
+        const csv = 'Date,Amount,Memo\n01/15/2026,-50.00,"Line 1\nLine 2"\n';
         const config = baseConfig({ memo: 2, payee: undefined });
         const result = parseCsv(csv, config);
 
@@ -479,9 +504,7 @@ describe("CSV Parser", () => {
         const config = baseConfig({ memo: 3 });
         const result = parseCsv(csv, config);
 
-        expect(result.transactions[0].memo).toBe(
-          "img src=x onerror=alert(1)",
-        );
+        expect(result.transactions[0].memo).toBe("img src=x onerror=alert(1)");
       });
 
       it("strips HTML angle brackets from category", () => {
@@ -569,23 +592,21 @@ describe("CSV Parser", () => {
       });
 
       it("handles currency symbol (pound)", () => {
-        const csv =
-          "Date,Amount,Payee\n01/15/2026,\u00A31234.56,Store\n";
+        const csv = "Date,Amount,Payee\n01/15/2026,\u00A31234.56,Store\n";
         const result = parseCsv(csv, baseConfig());
 
         expect(result.transactions[0].amount).toBe(1234.56);
       });
 
       it("handles currency symbol (euro)", () => {
-        const csv =
-          "Date,Amount,Payee\n01/15/2026,\u20AC1234.56,Store\n";
+        const csv = "Date,Amount,Payee\n01/15/2026,\u20AC1234.56,Store\n";
         const result = parseCsv(csv, baseConfig());
 
         expect(result.transactions[0].amount).toBe(1234.56);
       });
 
       it("handles commas as thousands separators", () => {
-        const csv = "Date,Amount\n01/15/2026,\"1,234.56\"\n";
+        const csv = 'Date,Amount\n01/15/2026,"1,234.56"\n';
         const result = parseCsv(csv, baseConfig({ payee: undefined }));
 
         expect(result.transactions[0].amount).toBe(1234.56);
@@ -720,8 +741,7 @@ describe("CSV Parser", () => {
 
     describe("reference number mapping", () => {
       it("maps reference number column", () => {
-        const csv =
-          "Date,Amount,Payee,Ref\n01/15/2026,-50.00,Store,CHK1234\n";
+        const csv = "Date,Amount,Payee,Ref\n01/15/2026,-50.00,Store,CHK1234\n";
         const config = baseConfig({ referenceNumber: 3 });
         const result = parseCsv(csv, config);
 
