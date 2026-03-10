@@ -87,7 +87,7 @@ export class InvestmentTransaction {
   quantity: number | null;
 
   @ApiProperty({ example: 150.25, description: "Price per share" })
-  @Column({ type: "decimal", precision: 20, scale: 4, nullable: true })
+  @Column({ type: "decimal", precision: 20, scale: 6, nullable: true })
   price: number | null;
 
   @ApiProperty({ example: 9.99, description: "Commission or fee" })

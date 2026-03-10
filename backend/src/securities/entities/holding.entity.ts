@@ -35,7 +35,7 @@ export class Holding {
   @Column({
     type: "decimal",
     precision: 20,
-    scale: 4,
+    scale: 6,
     name: "average_cost",
     nullable: true,
   })

@@ -376,7 +376,7 @@ export function InvestmentTransactionForm({
             prefix={currencySymbol}
             value={watchedPrice || undefined}
             onChange={(value) => setValue('price', value, { shouldValidate: true })}
-            decimalPlaces={5}
+            decimalPlaces={6}
             min={0}
             error={errors.price?.message}
           />
@@ -440,7 +440,7 @@ export function InvestmentTransactionForm({
           </div>
           {needsQuantityPrice && (
             <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              {watchedQuantity} shares @ {currencySymbol}{watchedPrice.toFixed(5)}
+              {watchedQuantity} shares @ {currencySymbol}{watchedPrice.toFixed(6)}
               {watchedCommission > 0 && ` ${watchedAction === 'SELL' ? '-' : '+'} ${formatCurrency(watchedCommission, transactionCurrency)} commission`}
             </div>
           )}

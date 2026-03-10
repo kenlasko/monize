@@ -344,10 +344,10 @@ CREATE TABLE security_prices (
     id BIGSERIAL PRIMARY KEY,
     security_id UUID NOT NULL REFERENCES securities(id) ON DELETE CASCADE,
     price_date DATE NOT NULL,
-    open_price NUMERIC(20, 4),
-    high_price NUMERIC(20, 4),
-    low_price NUMERIC(20, 4),
-    close_price NUMERIC(20, 4) NOT NULL,
+    open_price NUMERIC(20, 6),
+    high_price NUMERIC(20, 6),
+    low_price NUMERIC(20, 6),
+    close_price NUMERIC(20, 6) NOT NULL,
     volume BIGINT,
     source VARCHAR(50), -- API source
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -363,7 +363,7 @@ CREATE TABLE holdings (
     account_id UUID NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
     security_id UUID NOT NULL REFERENCES securities(id),
     quantity NUMERIC(20, 8) NOT NULL DEFAULT 0,
-    average_cost NUMERIC(20, 4), -- average cost per unit
+    average_cost NUMERIC(20, 6), -- average cost per unit
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(account_id, security_id)
@@ -397,7 +397,7 @@ CREATE TABLE investment_transactions (
     action investment_action NOT NULL,
     transaction_date DATE NOT NULL,
     quantity NUMERIC(20, 8),
-    price NUMERIC(20, 4),
+    price NUMERIC(20, 6),
     commission NUMERIC(20, 4) DEFAULT 0,
     total_amount NUMERIC(20, 4) NOT NULL,
     description TEXT,

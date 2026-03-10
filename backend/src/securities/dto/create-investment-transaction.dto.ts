@@ -49,7 +49,7 @@ export class CreateInvestmentTransactionDto {
 
   @ApiProperty({ required: false, description: "Price per share" })
   @IsOptional()
-  @IsNumber({ maxDecimalPlaces: 4 })
+  @IsNumber({ maxDecimalPlaces: 6 })
   @Min(0)
   price?: number;
 
