@@ -9,6 +9,7 @@ import {
   IsNotEmpty,
   IsIn,
   IsBoolean,
+  Matches,
   IsNumber,
   IsInt,
   Min,
@@ -227,7 +228,9 @@ export class ImportQifDto {
       "Date format to use for parsing (MM/DD/YYYY, DD/MM/YYYY, YYYY-MM-DD, YYYY-DD-MM)",
   })
   @IsOptional()
-  @IsIn(["MM/DD/YYYY", "DD/MM/YYYY", "YYYY-MM-DD", "YYYY-DD-MM"])
+  @IsString()
+  @Matches(/^[YDMW/\-.]+$/, { message: 'dateFormat must contain only date pattern characters (Y, M, D) and separators (/, -, .)' })
+  @MaxLength(20)
   dateFormat?: string;
 }
 
@@ -350,7 +353,9 @@ export class ImportOfxDto {
     description: "Date format override",
   })
   @IsOptional()
-  @IsIn(["MM/DD/YYYY", "DD/MM/YYYY", "YYYY-MM-DD", "YYYY-DD-MM"])
+  @IsString()
+  @Matches(/^[YDMW/\-.]+$/, { message: 'dateFormat must contain only date pattern characters (Y, M, D) and separators (/, -, .)' })
+  @MaxLength(20)
   dateFormat?: string;
 }
 
@@ -419,7 +424,9 @@ export class CsvColumnMappingConfigDto {
   referenceNumber?: number;
 
   @ApiProperty({ description: "Date format for parsing" })
-  @IsIn(["MM/DD/YYYY", "DD/MM/YYYY", "YYYY-MM-DD", "YYYY-DD-MM"])
+  @IsString()
+  @Matches(/^[YDMW/\-.]+$/, { message: 'dateFormat must contain only date pattern characters (Y, M, D) and separators (/, -, .)' })
+  @MaxLength(20)
   dateFormat: string;
 
   @ApiProperty({ description: "Whether the CSV has a header row" })
@@ -542,7 +549,9 @@ export class ImportCsvDto {
     description: "Date format override",
   })
   @IsOptional()
-  @IsIn(["MM/DD/YYYY", "DD/MM/YYYY", "YYYY-MM-DD", "YYYY-DD-MM"])
+  @IsString()
+  @Matches(/^[YDMW/\-.]+$/, { message: 'dateFormat must contain only date pattern characters (Y, M, D) and separators (/, -, .)' })
+  @MaxLength(20)
   dateFormat?: string;
 }
 

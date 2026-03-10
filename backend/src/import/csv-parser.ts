@@ -29,7 +29,7 @@ export interface CsvColumnMappingConfig {
   category?: number;
   memo?: number;
   referenceNumber?: number;
-  dateFormat: DateFormat;
+  dateFormat: string;
   hasHeader: boolean;
   delimiter: string;
 }
@@ -213,14 +213,120 @@ function parseCsvRows(content: string, delimiter: string): string[][] {
   return rows;
 }
 
+// Well-known date format strings (used by the built-in format picker)
+const KNOWN_FORMATS = new Set([
+  "MM/DD/YYYY",
+  "DD/MM/YYYY",
+  "YYYY-MM-DD",
+  "YYYY-DD-MM",
+]);
+
+/**
+ * Validate that year, month, day values are within reasonable ranges.
+ * Returns the YYYY-MM-DD string or null if invalid.
+ */
+function validateAndFormat(
+  year: string,
+  month: string,
+  day: string,
+): string | null {
+  const y = parseInt(year);
+  const m = parseInt(month);
+  const d = parseInt(day);
+  if (m < 1 || m > 12 || d < 1 || d > 31 || y < 1900 || y > 2100) {
+    return null;
+  }
+  return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+}
+
+/**
+ * Resolve a 2-digit year to a 4-digit year.
+ * Years > 50 map to 19xx, others to 20xx.
+ */
+function resolveYear(raw: string): string {
+  if (raw.length === 4) return raw;
+  const n = parseInt(raw);
+  return n > 50 ? `19${raw}` : `20${raw}`;
+}
+
+/**
+ * Parse a date using a custom format pattern.
+ * Supported tokens: YYYY, YY, MM, DD (case-sensitive).
+ * Any other characters in the pattern are treated as literal separators.
+ */
+function parseDateCustom(dateStr: string, format: string): string | null {
+  // Build a regex from the format pattern
+  let regex = "^";
+  const groups: string[] = [];
+  let i = 0;
+  while (i < format.length) {
+    if (format.substring(i, i + 4) === "YYYY") {
+      regex += "(\\d{4})";
+      groups.push("year4");
+      i += 4;
+    } else if (format.substring(i, i + 2) === "YY") {
+      regex += "(\\d{2})";
+      groups.push("year2");
+      i += 2;
+    } else if (format.substring(i, i + 2) === "MM") {
+      regex += "(\\d{1,2})";
+      groups.push("month");
+      i += 2;
+    } else if (format.substring(i, i + 2) === "DD") {
+      regex += "(\\d{1,2})";
+      groups.push("day");
+      i += 2;
+    } else {
+      // Escape regex special chars for literal separator
+      regex += format[i].replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      i += 1;
+    }
+  }
+  regex += "$";
+
+  const match = dateStr.match(new RegExp(regex));
+  if (!match) return null;
+
+  let year = "";
+  let month = "";
+  let day = "";
+  for (let g = 0; g < groups.length; g++) {
+    const val = match[g + 1];
+    switch (groups[g]) {
+      case "year4":
+        year = val;
+        break;
+      case "year2":
+        year = resolveYear(val);
+        break;
+      case "month":
+        month = val;
+        break;
+      case "day":
+        day = val;
+        break;
+    }
+  }
+
+  if (!year || !month || !day) return null;
+  return validateAndFormat(year, month, day);
+}
+
 /**
  * Parse a date string using the specified format and return YYYY-MM-DD.
+ * Accepts the 4 well-known formats (with any of - / . as separator)
+ * or a custom pattern string using YYYY/YY, MM, DD tokens.
  * Returns null if the date cannot be parsed or is invalid.
  */
-function parseCsvDate(dateStr: string, format: DateFormat): string | null {
+function parseCsvDate(dateStr: string, format: string): string | null {
   const trimmed = dateStr.trim();
   if (!trimmed) {
     return null;
+  }
+
+  // For custom (non-built-in) format patterns, use the generic parser
+  if (!KNOWN_FORMATS.has(format)) {
+    return parseDateCustom(trimmed, format);
   }
 
   let year: string;
@@ -228,7 +334,7 @@ function parseCsvDate(dateStr: string, format: DateFormat): string | null {
   let day: string;
 
   if (format === "YYYY-MM-DD" || format === "YYYY-DD-MM") {
-    const match = trimmed.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+    const match = trimmed.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})$/);
     if (!match) {
       return null;
     }
@@ -242,17 +348,11 @@ function parseCsvDate(dateStr: string, format: DateFormat): string | null {
     }
   } else {
     // MM/DD/YYYY or DD/MM/YYYY
-    const match = trimmed.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{2,4})$/);
+    const match = trimmed.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{2,4})$/);
     if (!match) {
       return null;
     }
-    const yearRaw = match[3];
-    if (yearRaw.length === 2) {
-      const yearNum = parseInt(yearRaw);
-      year = yearNum > 50 ? `19${yearRaw}` : `20${yearRaw}`;
-    } else {
-      year = yearRaw;
-    }
+    year = resolveYear(match[3]);
 
     if (format === "DD/MM/YYYY") {
       day = match[1].padStart(2, "0");
@@ -264,22 +364,7 @@ function parseCsvDate(dateStr: string, format: DateFormat): string | null {
     }
   }
 
-  // Validate ranges
-  const monthNum = parseInt(month);
-  const dayNum = parseInt(day);
-  const yearNum = parseInt(year);
-
-  if (monthNum < 1 || monthNum > 12) {
-    return null;
-  }
-  if (dayNum < 1 || dayNum > 31) {
-    return null;
-  }
-  if (yearNum < 1900 || yearNum > 2100) {
-    return null;
-  }
-
-  return `${year}-${month}-${day}`;
+  return validateAndFormat(year, month, day);
 }
 
 /**

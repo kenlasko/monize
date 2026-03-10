@@ -2,6 +2,93 @@ import apiClient from './api';
 
 export type DateFormat = 'MM/DD/YYYY' | 'DD/MM/YYYY' | 'YYYY-MM-DD' | 'YYYY-DD-MM';
 
+/** Well-known date formats for the dropdown picker. */
+export const DATE_FORMAT_OPTIONS: { value: string; label: string }[] = [
+  { value: 'MM/DD/YYYY', label: 'MM/DD/YYYY' },
+  { value: 'DD/MM/YYYY', label: 'DD/MM/YYYY' },
+  { value: 'YYYY-MM-DD', label: 'YYYY-MM-DD' },
+  { value: 'YYYY-DD-MM', label: 'YYYY-DD-MM' },
+];
+
+/**
+ * Try parsing a single date string against a format pattern.
+ * Returns true if the date matches and produces valid month/day ranges.
+ */
+function tryParseDate(dateStr: string, format: string): boolean {
+  const trimmed = dateStr.trim();
+  if (!trimmed) return false;
+
+  if (format.startsWith('YYYY')) {
+    const match = trimmed.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})$/);
+    if (!match) return false;
+    const [, , p2, p3] = match;
+    if (format === 'YYYY-MM-DD') {
+      return parseInt(p2) >= 1 && parseInt(p2) <= 12 && parseInt(p3) >= 1 && parseInt(p3) <= 31;
+    }
+    if (format === 'YYYY-DD-MM') {
+      return parseInt(p3) >= 1 && parseInt(p3) <= 12 && parseInt(p2) >= 1 && parseInt(p2) <= 31;
+    }
+  } else {
+    const match = trimmed.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{2,4})$/);
+    if (!match) return false;
+    const [, p1, p2] = match;
+    if (format === 'MM/DD/YYYY') {
+      return parseInt(p1) >= 1 && parseInt(p1) <= 12 && parseInt(p2) >= 1 && parseInt(p2) <= 31;
+    }
+    if (format === 'DD/MM/YYYY') {
+      return parseInt(p2) >= 1 && parseInt(p2) <= 12 && parseInt(p1) >= 1 && parseInt(p1) <= 31;
+    }
+  }
+  return false;
+}
+
+/**
+ * Auto-detect the date format from an array of sample date strings.
+ * Examines the values to determine which of the built-in formats best matches.
+ * Returns null if no format can be confidently detected.
+ */
+export function detectCsvDateFormat(samples: string[]): string | null {
+  const dates = samples.filter((s) => s && s.trim());
+  if (dates.length === 0) return null;
+
+  const first = dates[0].trim();
+
+  // Check for ISO-like (YYYY prefix)
+  if (first.match(/^\d{4}[-/.]/)) {
+    // Disambiguate YYYY-MM-DD vs YYYY-DD-MM
+    for (const date of dates) {
+      const m = date.trim().match(/^\d{4}[-/.](\d{1,2})[-/.](\d{1,2})$/);
+      if (m) {
+        const p2 = parseInt(m[1]);
+        const p3 = parseInt(m[2]);
+        if (p2 > 12) return 'YYYY-DD-MM';
+        if (p3 > 12) return 'YYYY-MM-DD';
+      }
+    }
+    return 'YYYY-MM-DD';
+  }
+
+  // Check for numeric date with separators (- / .)
+  const numericMatch = first.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{2,4})$/);
+  if (numericMatch) {
+    // Disambiguate MM/DD/YYYY vs DD/MM/YYYY
+    for (const date of dates) {
+      const m = date.trim().match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{2,4})$/);
+      if (m) {
+        const p1 = parseInt(m[1]);
+        const p2 = parseInt(m[2]);
+        if (p1 > 12) return 'DD/MM/YYYY';
+        if (p2 > 12) return 'MM/DD/YYYY';
+      }
+    }
+    // Ambiguous (both parts <= 12) -- default to MM/DD/YYYY
+    return 'MM/DD/YYYY';
+  }
+
+  // No recognizable date pattern
+  return null;
+}
+
 export interface ParsedQifResponse {
   accountType: string;
   transactionCount: number;
@@ -65,7 +152,7 @@ export interface CsvColumnMappingConfig {
   category?: number;
   memo?: number;
   referenceNumber?: number;
-  dateFormat: DateFormat;
+  dateFormat: string;
   hasHeader: boolean;
   delimiter: string;
 }

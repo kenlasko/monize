@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/Button';
 import { CsvTransferRules } from './CsvTransferRules';
 import { ImportStep } from '@/app/import/import-utils';
-import { CsvColumnMappingConfig, CsvTransferRule, SavedColumnMapping, DateFormat } from '@/lib/import';
+import { CsvColumnMappingConfig, CsvTransferRule, SavedColumnMapping, DateFormat, DATE_FORMAT_OPTIONS, detectCsvDateFormat } from '@/lib/import';
 import { Account } from '@/types/account';
 
 interface CsvColumnMappingStepProps {
@@ -26,12 +26,7 @@ interface CsvColumnMappingStepProps {
   setStep: (step: ImportStep) => void;
 }
 
-const DATE_FORMAT_OPTIONS = [
-  { value: 'MM/DD/YYYY', label: 'MM/DD/YYYY' },
-  { value: 'DD/MM/YYYY', label: 'DD/MM/YYYY' },
-  { value: 'YYYY-MM-DD', label: 'YYYY-MM-DD' },
-  { value: 'YYYY-DD-MM', label: 'YYYY-DD-MM' },
-];
+const CUSTOM_FORMAT_VALUE = '__custom__';
 
 const DELIMITER_OPTIONS = [
   { value: ',', label: 'Comma (,)' },
@@ -63,6 +58,33 @@ export function CsvColumnMappingStep({
     columnMapping.debit !== undefined || columnMapping.credit !== undefined ? 'split' : 'single'
   );
   const [validationError, setValidationError] = useState('');
+  const isBuiltInFormat = DATE_FORMAT_OPTIONS.some((o) => o.value === columnMapping.dateFormat);
+  const [customFormat, setCustomFormat] = useState(isBuiltInFormat ? '' : columnMapping.dateFormat);
+  const [isCustom, setIsCustom] = useState(!isBuiltInFormat);
+  const autoDetectedRef = useRef(false);
+
+  // Auto-detect date format from sample data when date column changes
+  useEffect(() => {
+    if (autoDetectedRef.current) return;
+    if (sampleRows.length === 0) return;
+    const dateColIndex = columnMapping.date;
+    if (dateColIndex === undefined || dateColIndex < 0) return;
+
+    const sampleDates = sampleRows.map((row) => row[dateColIndex] || '').filter(Boolean);
+    const detected = detectCsvDateFormat(sampleDates);
+    if (detected) {
+      autoDetectedRef.current = true;
+      const builtIn = DATE_FORMAT_OPTIONS.some((o) => o.value === detected);
+      if (builtIn) {
+        setIsCustom(false);
+        onColumnMappingChange({ ...columnMapping, dateFormat: detected });
+      } else {
+        setIsCustom(true);
+        setCustomFormat(detected);
+        onColumnMappingChange({ ...columnMapping, dateFormat: detected });
+      }
+    }
+  }, [sampleRows, columnMapping.date]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const columnOptions = [
     { value: '', label: 'Not mapped' },
@@ -146,14 +168,41 @@ export function CsvColumnMappingStep({
           <div className="flex items-center gap-2">
             <label className="text-sm text-gray-700 dark:text-gray-300">Date format:</label>
             <select
-              value={columnMapping.dateFormat}
-              onChange={(e) => onColumnMappingChange({ ...columnMapping, dateFormat: e.target.value as DateFormat })}
+              value={isCustom ? CUSTOM_FORMAT_VALUE : columnMapping.dateFormat}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === CUSTOM_FORMAT_VALUE) {
+                  setIsCustom(true);
+                  if (customFormat) {
+                    onColumnMappingChange({ ...columnMapping, dateFormat: customFormat });
+                  }
+                } else {
+                  setIsCustom(false);
+                  setCustomFormat('');
+                  onColumnMappingChange({ ...columnMapping, dateFormat: val });
+                }
+              }}
               className="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
             >
               {DATE_FORMAT_OPTIONS.map((o) => (
                 <option key={o.value} value={o.value}>{o.label}</option>
               ))}
+              <option value={CUSTOM_FORMAT_VALUE}>Custom...</option>
             </select>
+            {isCustom && (
+              <input
+                type="text"
+                value={customFormat}
+                onChange={(e) => {
+                  setCustomFormat(e.target.value);
+                  if (e.target.value) {
+                    onColumnMappingChange({ ...columnMapping, dateFormat: e.target.value });
+                  }
+                }}
+                placeholder="e.g. DD.MM.YYYY"
+                className="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 w-36"
+              />
+            )}
           </div>
         </div>
 
