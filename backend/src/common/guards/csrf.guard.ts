@@ -20,9 +20,7 @@ export class CsrfGuard implements CanActivate {
     private configService: ConfigService,
   ) {
     const jwtSecret = this.configService.get<string>("JWT_SECRET");
-    this.csrfKey = jwtSecret
-      ? derivePurposeKey(jwtSecret, "csrf-token")
-      : "";
+    this.csrfKey = jwtSecret ? derivePurposeKey(jwtSecret, "csrf-token") : "";
   }
 
   canActivate(context: ExecutionContext): boolean {

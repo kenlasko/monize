@@ -233,7 +233,7 @@ export class TransactionBulkUpdateService {
       .map((t) => t.id);
 
     if (splitCount > 0) {
-      const plural = splitCount !== 1 ? 's' : '';
+      const plural = splitCount !== 1 ? "s" : "";
       skippedReasons.push(
         `${splitCount} split transaction${plural} skipped (split categories must be updated individually)`,
       );

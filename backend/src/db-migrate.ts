@@ -11,7 +11,10 @@ const MIGRATIONS_DIRNAME = "migrations";
 function safePath(base: string, relative: string): string | null {
   const resolvedBase = path.resolve(base);
   const resolved = path.resolve(base, relative);
-  if (!resolved.startsWith(resolvedBase + path.sep) && resolved !== resolvedBase) {
+  if (
+    !resolved.startsWith(resolvedBase + path.sep) &&
+    resolved !== resolvedBase
+  ) {
     return null;
   }
   return resolved;
@@ -32,16 +35,20 @@ export async function runMigrations() {
     // Find migrations directory
     // All base directories are trusted (derived from __dirname or cwd)
     const baseDirs = [
-      path.resolve(__dirname, ".."),                   // /app (Docker)
-      path.resolve(__dirname, "..", "..", "database"),  // Development
-      path.resolve(process.cwd()),                     // Current directory
-      path.resolve(process.cwd(), "..", "database"),   // Parent/database
+      path.resolve(__dirname, ".."), // /app (Docker)
+      path.resolve(__dirname, "..", "..", "database"), // Development
+      path.resolve(process.cwd()), // Current directory
+      path.resolve(process.cwd(), "..", "database"), // Parent/database
     ];
 
     let migrationsDir: string | null = null;
     for (const base of baseDirs) {
       const candidate = safePath(base, MIGRATIONS_DIRNAME);
-      if (candidate && fs.existsSync(candidate) && fs.statSync(candidate).isDirectory()) {
+      if (
+        candidate &&
+        fs.existsSync(candidate) &&
+        fs.statSync(candidate).isDirectory()
+      ) {
         migrationsDir = candidate;
         break;
       }
@@ -69,7 +76,9 @@ export async function runMigrations() {
     // Find all .sql migration files, sorted by filename
     const files = fs
       .readdirSync(migrationsDir)
-      .filter((f) => f.endsWith(".sql") && !f.includes(path.sep) && !f.includes("/"))
+      .filter(
+        (f) => f.endsWith(".sql") && !f.includes(path.sep) && !f.includes("/"),
+      )
       .sort();
 
     // Run pending migrations in order

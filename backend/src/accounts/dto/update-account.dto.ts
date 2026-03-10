@@ -115,8 +115,7 @@ export class UpdateAccountDto {
   // Credit card statement fields
   @ApiPropertyOptional({
     example: 15,
-    description:
-      "Day of the month when the credit card payment is due (1-31)",
+    description: "Day of the month when the credit card payment is due (1-31)",
   })
   @IsOptional()
   @IsNumber()

@@ -28,7 +28,12 @@ export class TrustedDevice {
   @Column({ name: "ip_address", type: "inet", nullable: true })
   ipAddress: string | null;
 
-  @Column({ name: "user_agent_hash", type: "varchar", length: 64, nullable: true })
+  @Column({
+    name: "user_agent_hash",
+    type: "varchar",
+    length: 64,
+    nullable: true,
+  })
   @Exclude()
   userAgentHash: string | null;
 

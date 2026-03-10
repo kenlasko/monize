@@ -19,7 +19,10 @@ function requiredEnv(name: string, fallback?: string): string {
  */
 function safePath(base: string, relative: string): string | null {
   const resolved = path.resolve(base, relative);
-  if (!resolved.startsWith(path.resolve(base) + path.sep) && resolved !== path.resolve(base)) {
+  if (
+    !resolved.startsWith(path.resolve(base) + path.sep) &&
+    resolved !== path.resolve(base)
+  ) {
     return null;
   }
   return resolved;
@@ -57,10 +60,10 @@ async function initDatabase() {
     // Try multiple possible locations for schema.sql
     // All base directories are trusted (derived from __dirname or cwd)
     const baseDirs = [
-      path.resolve(__dirname, ".."),                   // /app (Docker)
-      path.resolve(__dirname, "..", "..", "database"),  // Development
-      path.resolve(process.cwd()),                     // Current directory
-      path.resolve(process.cwd(), "..", "database"),   // Parent/database
+      path.resolve(__dirname, ".."), // /app (Docker)
+      path.resolve(__dirname, "..", "..", "database"), // Development
+      path.resolve(process.cwd()), // Current directory
+      path.resolve(process.cwd(), "..", "database"), // Parent/database
     ];
 
     let schemaPath: string | null = null;

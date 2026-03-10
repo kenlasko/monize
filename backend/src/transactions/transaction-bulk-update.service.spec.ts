@@ -102,9 +102,11 @@ describe("TransactionBulkUpdateService", () => {
     // Mock QueryRunner with manager that has createQueryBuilder and getRepository
     mockManagerCreateQueryBuilder = jest.fn();
     mockManagerGetRepository = jest.fn().mockReturnValue({
-      createQueryBuilder: jest.fn().mockReturnValue(createMockQueryBuilder({
-        getMany: jest.fn().mockResolvedValue([]),
-      })),
+      createQueryBuilder: jest.fn().mockReturnValue(
+        createMockQueryBuilder({
+          getMany: jest.fn().mockResolvedValue([]),
+        }),
+      ),
     });
 
     mockQueryRunner = {
@@ -287,7 +289,9 @@ describe("TransactionBulkUpdateService", () => {
       const syncUpdateQb = createMockQueryBuilder({
         execute: jest.fn().mockResolvedValue({ affected: 1 }),
       });
-      const mockRepo = { createQueryBuilder: jest.fn().mockReturnValue(syncFindQb) };
+      const mockRepo = {
+        createQueryBuilder: jest.fn().mockReturnValue(syncFindQb),
+      };
       mockManagerGetRepository.mockReturnValue(mockRepo);
       mockManagerCreateQueryBuilder
         .mockReturnValueOnce(updateQb)
