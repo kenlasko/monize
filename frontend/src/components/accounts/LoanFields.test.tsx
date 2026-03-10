@@ -66,6 +66,7 @@ const mockAccounts: Account[] = [
     scheduledTransactionId: null, assetCategoryId: null, dateAcquired: null,
     isCanadianMortgage: false, isVariableRate: false, termMonths: null, termEndDate: null,
     amortizationMonths: null, originalPrincipal: null,
+    statementDueDay: null, statementSettlementDay: null,
     createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-01-01T00:00:00Z',
   },
 ];
