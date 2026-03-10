@@ -3071,16 +3071,24 @@ describe("ImportService", () => {
       expect(result.name).toBe("My Bank CSV");
     });
 
-    it("throws ConflictException when name already exists", async () => {
-      columnMappingRepository.findOne.mockResolvedValue({
+    it("overwrites existing mapping when name already exists", async () => {
+      const existingEntity = {
         id: "existing-mapping",
         userId,
         name: createDto.name,
+        columnMappings: { date: 0, amount: 1 },
+        transferRules: [],
+      };
+      columnMappingRepository.findOne.mockResolvedValue(existingEntity);
+      columnMappingRepository.save.mockResolvedValue({
+        ...existingEntity,
+        columnMappings: createDto.columnMappings,
       });
 
-      await expect(
-        service.createColumnMapping(userId, createDto as any),
-      ).rejects.toThrow(ConflictException);
+      const result = await service.createColumnMapping(userId, createDto as any);
+
+      expect(columnMappingRepository.save).toHaveBeenCalledWith(existingEntity);
+      expect(result.id).toBe("existing-mapping");
     });
   });
 

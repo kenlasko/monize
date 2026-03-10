@@ -545,7 +545,15 @@ export function useImportWizard() {
         columnMappings: csvColumnMapping,
         transferRules: csvTransferRules,
       });
-      setSavedColumnMappings(prev => [...prev, saved]);
+      setSavedColumnMappings(prev => {
+        const existingIndex = prev.findIndex(m => m.id === saved.id);
+        if (existingIndex >= 0) {
+          const updated = [...prev];
+          updated[existingIndex] = saved;
+          return updated;
+        }
+        return [...prev, saved];
+      });
       toast.success(`Column mapping "${name}" saved`);
     } catch (error) {
       toast.error(getErrorMessage(error, 'Failed to save column mapping'));

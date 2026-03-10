@@ -170,14 +170,15 @@ describe('CsvColumnMappingStep', () => {
     expect(screen.getAllByText('Bank Export').length).toBeGreaterThanOrEqual(1);
   });
 
-  it('calls onSaveMapping when Save Current clicked', () => {
-    vi.spyOn(window, 'prompt').mockReturnValue('My Mapping');
-
+  it('calls onSaveMapping when Save Current clicked and name entered', () => {
     const props = renderStep();
 
     fireEvent.click(screen.getByText('Save Current'));
 
-    expect(window.prompt).toHaveBeenCalled();
+    const input = screen.getByPlaceholderText('Enter mapping name...');
+    fireEvent.change(input, { target: { value: 'My Mapping' } });
+    fireEvent.click(screen.getByText('Save'));
+
     expect(props.onSaveMapping).toHaveBeenCalledWith('My Mapping');
   });
 

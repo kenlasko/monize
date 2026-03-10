@@ -58,6 +58,8 @@ export function CsvColumnMappingStep({
     columnMapping.debit !== undefined || columnMapping.credit !== undefined ? 'split' : 'single'
   );
   const [validationError, setValidationError] = useState('');
+  const [saveName, setSaveName] = useState('');
+  const [showSaveInput, setShowSaveInput] = useState(false);
   const isBuiltInFormat = DATE_FORMAT_OPTIONS.some((o) => o.value === columnMapping.dateFormat);
   const [customFormat, setCustomFormat] = useState(isBuiltInFormat ? '' : columnMapping.dateFormat);
   const [isCustom, setIsCustom] = useState(!isBuiltInFormat);
@@ -126,9 +128,10 @@ export function CsvColumnMappingStep({
   };
 
   const handleSave = () => {
-    const name = window.prompt('Enter a name for this column mapping:');
-    if (name && name.trim()) {
-      onSaveMapping(name.trim());
+    if (saveName.trim()) {
+      onSaveMapping(saveName.trim());
+      setSaveName('');
+      setShowSaveInput(false);
     }
   };
 
@@ -394,10 +397,34 @@ export function CsvColumnMappingStep({
             ) : (
               <span className="flex-1 text-sm text-gray-400 dark:text-gray-500 italic">No saved mappings</span>
             )}
-            <Button variant="outline" size="sm" onClick={handleSave}>
-              Save Current
-            </Button>
+            {!showSaveInput && (
+              <Button variant="outline" size="sm" onClick={() => setShowSaveInput(true)}>
+                Save Current
+              </Button>
+            )}
           </div>
+          {showSaveInput && (
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={saveName}
+                onChange={(e) => setSaveName(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleSave(); if (e.key === 'Escape') { setSaveName(''); setShowSaveInput(false); } }}
+                placeholder="Enter mapping name..."
+                autoFocus
+                className="flex-1 px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+              />
+              {savedMappings.some((m) => m.name === saveName.trim()) && saveName.trim() && (
+                <span className="text-xs text-amber-600 dark:text-amber-400 whitespace-nowrap">Will overwrite</span>
+              )}
+              <Button variant="primary" size="sm" onClick={handleSave} disabled={!saveName.trim()}>
+                Save
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => { setSaveName(''); setShowSaveInput(false); }}>
+                Cancel
+              </Button>
+            </div>
+          )}
           {savedMappings.length > 0 && (
             <div className="flex flex-wrap gap-1">
               {savedMappings.map((m) => (

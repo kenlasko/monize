@@ -245,9 +245,21 @@ export class ImportService {
       where: { userId, name: dto.name },
     });
     if (existing) {
-      throw new ConflictException(
-        `A column mapping named "${dto.name}" already exists`,
-      );
+      existing.columnMappings =
+        dto.columnMappings as unknown as Record<string, unknown>;
+      existing.transferRules = (dto.transferRules || []) as unknown as Record<
+        string,
+        unknown
+      >[];
+      const saved = await this.columnMappingRepository.save(existing);
+      return {
+        id: saved.id,
+        name: saved.name,
+        columnMappings: saved.columnMappings,
+        transferRules: saved.transferRules,
+        createdAt: saved.createdAt,
+        updatedAt: saved.updatedAt,
+      };
     }
 
     const mapping = this.columnMappingRepository.create({
