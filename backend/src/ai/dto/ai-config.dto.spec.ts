@@ -1,4 +1,11 @@
 import "reflect-metadata";
+
+// Mock dns to prevent real DNS lookups in IsSafeUrl validator
+jest.mock("dns", () => ({
+  resolve4: jest.fn((_hostname, cb) => cb(null, ["93.184.216.34"])),
+  resolve6: jest.fn((_hostname, cb) => cb(null, [])),
+}));
+
 import { validate } from "class-validator";
 import { plainToInstance } from "class-transformer";
 import { CreateAiConfigDto, UpdateAiConfigDto } from "./ai-config.dto";

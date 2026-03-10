@@ -101,12 +101,12 @@ export function FavouriteAccounts({ accounts, isLoading }: FavouriteAccountsProp
                 )}
                 {account.accountType === 'CREDIT_CARD' &&
                   (account.statementDueDay || account.statementSettlementDay) && (
-                  <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2 text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                     {account.statementDueDay && (
                       <span className="flex items-center gap-0.5">
                         Due: {getOrdinal(account.statementDueDay)}
                         <span
-                          className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-400 text-[10px] cursor-help"
+                          className="hidden sm:inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-400 text-[10px] cursor-help"
                           title="The day of each month when your credit card payment is due"
                         >
                           ?
@@ -117,7 +117,7 @@ export function FavouriteAccounts({ accounts, isLoading }: FavouriteAccountsProp
                       <span className="flex items-center gap-0.5">
                         Settlement: {getOrdinal(account.statementSettlementDay)}
                         <span
-                          className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-400 text-[10px] cursor-help"
+                          className="hidden sm:inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-400 text-[10px] cursor-help"
                           title="The last day of the billing cycle. Transactions posted on or before this day appear on the current statement."
                         >
                           ?
