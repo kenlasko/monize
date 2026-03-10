@@ -46,7 +46,7 @@ export function CsvTransferRules({ rules, onChange, accounts }: CsvTransferRules
         </p>
       )}
       {rules.map((rule, index) => (
-        <div key={index} className="grid grid-cols-[90px_auto_1fr_auto_1fr_auto] items-center gap-2 bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
+        <div key={index} className="grid grid-cols-[110px_auto_1fr_auto_1fr_auto] items-center gap-2 bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
           <select
             value={rule.type}
             onChange={(e) => updateRule(index, 'type', e.target.value)}
