@@ -26,8 +26,11 @@ function escapeLikeWildcards(value: string): string {
  * Used in JavaScript (not SQL) for conflict detection.
  */
 function matchesAliasPattern(name: string, aliasPattern: string): boolean {
+  // Collapse consecutive wildcards and limit input lengths to prevent ReDoS
+  const normalized = aliasPattern.replace(/\*{2,}/g, "*");
+  if (normalized.length > 500 || name.length > 500) return false;
   // Convert alias pattern to regex: escape regex chars, then convert * to .*
-  const escaped = aliasPattern.replace(/[.+?^${}()|[\]\\]/g, "\\$&");
+  const escaped = normalized.replace(/[.+?^${}()|[\]\\]/g, "\\$&");
   const regexStr = "^" + escaped.replace(/\*/g, ".*") + "$";
   return new RegExp(regexStr, "i").test(name);
 }

@@ -273,7 +273,10 @@ export class ImportRegularProcessorService {
    * Alias patterns support * as wildcard.
    */
   private matchesAliasPattern(name: string, aliasPattern: string): boolean {
-    const escaped = aliasPattern.replace(/[.+?^${}()|[\]\\]/g, "\\$&");
+    // Collapse consecutive wildcards and limit input lengths to prevent ReDoS
+    const normalized = aliasPattern.replace(/\*{2,}/g, "*");
+    if (normalized.length > 500 || name.length > 500) return false;
+    const escaped = normalized.replace(/[.+?^${}()|[\]\\]/g, "\\$&");
     const regexStr = "^" + escaped.replace(/\*/g, ".*") + "$";
     return new RegExp(regexStr, "i").test(name);
   }
