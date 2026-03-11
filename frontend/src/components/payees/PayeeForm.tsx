@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useMemo, MutableRefObject } from 'react';
+import { useState, useRef, useMemo, useCallback, MutableRefObject } from 'react';
 import { useForm } from 'react-hook-form';
 import '@/lib/zodConfig';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -60,13 +60,17 @@ export function PayeeForm({ payee, categories, onSubmit, onCancel, onDirtyChange
 
   useFormDirtyNotify(isDirty, onDirtyChange);
 
-  const handleFormSubmit = (data: PayeeFormData) => {
+  const handleFormSubmit = useCallback((data: PayeeFormData) => {
     const submitData: PayeeFormSubmitData = { ...data };
     if (!payee && pendingAliasesRef.current.length > 0) {
       submitData.pendingAliases = pendingAliasesRef.current;
     }
     return onSubmit(submitData);
-  };
+  }, [payee, onSubmit]);
+
+  const onFormSubmit = useCallback((e?: React.BaseSyntheticEvent) => {
+    handleSubmit(handleFormSubmit)(e);
+  }, [handleSubmit, handleFormSubmit]);
 
   useFormSubmitRef(submitRef, handleSubmit, handleFormSubmit);
 
@@ -99,7 +103,7 @@ export function PayeeForm({ payee, categories, onSubmit, onCancel, onDirtyChange
   }, [defaultCategoryId, categories]);
 
   return (
-    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
+    <form onSubmit={onFormSubmit} className="space-y-4">
       <Input
         label="Payee Name"
         error={errors.name?.message}
