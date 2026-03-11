@@ -23,8 +23,8 @@
 | `current_balance` | decimal(20,4) | |
 | `credit_limit` | decimal(20,4) | Credit card |
 | `interest_rate` | decimal(10,4) | |
-| `statement_due_day` | int | Credit card |
-| `statement_settlement_day` | int | Credit card |
+| `statement_due_day` | int | Credit card: day of month payment is due (e.g. 15) |
+| `statement_settlement_day` | int | Credit card: last day of billing cycle (e.g. 25); purchases after this appear on next statement |
 | `is_closed` | bool | |
 | `closed_date` | date | |
 | `is_favourite` | bool | |
@@ -32,15 +32,14 @@
 | `payment_frequency` | ENUM | Loan/mortgage |
 | `payment_start_date` | date | |
 | `source_account_id` | UUID | Where loan payments come from |
-| `principal_category_id` | UUID | Loan principal category |
-| `interest_category_id` | UUID | Loan interest category |
+| `principal_category_id` | UUID | Loan: category for the principal repayment portion of each payment split (optional) |
+| `interest_category_id` | UUID | Loan: category for the interest expense portion of each payment split (defaults to "Loan Interest") |
 | `asset_category_id` | UUID | For ASSET accounts |
 | `date_acquired` | date | ASSET accounts |
-| `is_canadian_mortgage` | bool | Semi-annual compounding |
-| `is_variable_rate` | bool | Mortgage |
-| `term_months` | int | Mortgage term |
-| `term_end_date` | date | |
-| `amortization_months` | int | Mortgage amortization |
+| `is_variable_rate` | bool | Mortgage: variable/tracker rate (monthly compounding); false = fixed rate (also monthly compounding) |
+| `term_months` | int | Mortgage: length of current fixed/tracker rate deal in months (e.g. 24 for 2-year fix) |
+| `term_end_date` | date | Mortgage: calculated date when current deal expires |
+| `amortization_months` | int | Mortgage: total repayment period in months (e.g. 300 for 25-year mortgage); distinct from term |
 | `original_principal` | decimal | |
 
 **`transactions`**
@@ -131,7 +130,7 @@ There are 10 account types:
 | `ASSET` | Asset | Fixed assets (real estate, vehicles) |
 | `CREDIT_CARD` | Liability | `credit_limit`, statement cycle fields |
 | `LOAN` | Liability | Payment schedule, interest/principal split |
-| `MORTGAGE` | Liability | Canadian mortgage support, amortization, term |
+| `MORTGAGE` | Liability | Term + amortization tracking, payment schedule, interest/principal split |
 | `LINE_OF_CREDIT` | Liability | |
 | `OTHER` | Asset | Miscellaneous |
 
@@ -153,22 +152,24 @@ Classification (asset vs liability) is determined by the account type — there 
 
 ### Credit Card — Additional Fields
 - Credit limit
-- Statement due day (1–31)
-- Statement settlement day (last day of billing cycle)
+- Statement settlement day (1–31): the last day of your billing cycle; purchases after this go on the next statement
+- Statement due day (1–31): the day of the following month by which you must pay; together these define the window between statement close and payment deadline
 
 ### Loan — Additional Fields
 - Payment amount and frequency (WEEKLY, BIWEEKLY, MONTHLY, QUARTERLY, YEARLY)
 - Payment start date
 - Source account (where payments are drawn from)
-- Interest category (defaults to "Loan Interest" system category)
+- Interest category (defaults to "Loan Interest" system category): the spending category applied to the interest portion of each split payment
+- Principal category (optional): the category applied to the debt-repayment portion; most users leave this blank
 
 ### Mortgage — Additional Fields
 - Payment frequency (MONTHLY, SEMI_MONTHLY, BIWEEKLY, ACCELERATED_BIWEEKLY, WEEKLY, ACCELERATED_WEEKLY)
-- Is Canadian mortgage (semi-annual compounding)
-- Is variable rate
-- Term months (e.g., 60 for 5-year term)
-- Amortization months (e.g., 300 for 25 years)
-- Source account
+- Is variable rate: whether this is a variable/tracker rate (affects compounding); false = fixed rate
+- Term months: length of the current deal in months (e.g. 24 for a 2-year fix); when this expires you renegotiate and update the account
+- Amortization months: total repayment life of the mortgage (e.g. 300 for 25 years); always longer than the term
+- Source account (where payments are drawn from)
+
+*Note: both fixed and variable rates use monthly compounding, which is standard for UK/European mortgages.*
 
 ### Asset — Additional Fields
 - Date acquired (excludes from net worth before this date)
@@ -290,4 +291,5 @@ There is no mechanism to route a dividend to a completely separate, unlinked cas
 3. **Transfers are symmetric** — always two real transactions linked together, never a single "transfer" record. This means each side shows up in its account's ledger.
 4. **Reconciliation is statement-based** — built around the flow of: cleared → reconcile session with target balance → bulk confirm.
 5. **Dividends always flow through the linked cash account** — there is no "dividend reinvestment plan" that bypasses the cash account; REINVEST is a separate explicit action.
-6. **Loan/mortgage payments are decomposed** — the `interest_category_id` and `principal_category_id` allow split transactions to correctly categorize interest vs. principal portions.
+6. **Loan/mortgage payments are decomposed** — each payment is posted as a split transaction: the interest portion is categorised under `interest_category_id` (appears in spending reports), and the principal portion reduces the loan liability balance. `principal_category_id` is optional and only needed if you want the repayment portion to appear under a specific spending category.
+7. **No Canadian-specific mortgage logic** — both fixed and variable rate mortgages use standard monthly compounding, which is correct for UK/European mortgages.
