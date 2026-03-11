@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, MutableRefObject } from 'react';
+import { useState, useRef, useMemo, MutableRefObject } from 'react';
 import { useForm } from 'react-hook-form';
 import '@/lib/zodConfig';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -23,10 +23,14 @@ const payeeSchema = z.object({
 
 type PayeeFormData = z.infer<typeof payeeSchema>;
 
+export type PayeeFormSubmitData = PayeeFormData & {
+  pendingAliases?: string[];
+};
+
 interface PayeeFormProps {
   payee?: Payee;
   categories: Category[];
-  onSubmit: (data: PayeeFormData) => Promise<void>;
+  onSubmit: (data: PayeeFormSubmitData) => Promise<void>;
   onCancel: () => void;
   onDirtyChange?: (isDirty: boolean) => void;
   submitRef?: MutableRefObject<(() => void) | null>;
@@ -34,6 +38,7 @@ interface PayeeFormProps {
 
 export function PayeeForm({ payee, categories, onSubmit, onCancel, onDirtyChange, submitRef }: PayeeFormProps) {
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>(payee?.defaultCategoryId || '');
+  const pendingAliasesRef = useRef<string[]>([]);
 
   const {
     register,
@@ -55,10 +60,18 @@ export function PayeeForm({ payee, categories, onSubmit, onCancel, onDirtyChange
 
   useFormDirtyNotify(isDirty, onDirtyChange);
 
-  useFormSubmitRef(submitRef, handleSubmit, onSubmit);
+  const handleFormSubmit = (data: PayeeFormData) => {
+    const submitData: PayeeFormSubmitData = { ...data };
+    if (!payee && pendingAliasesRef.current.length > 0) {
+      submitData.pendingAliases = pendingAliasesRef.current;
+    }
+    return onSubmit(submitData);
+  };
 
-  const categoryOptions = useMemo(() =>
-    buildCategoryTree(categories).map(({ category }) => {
+  useFormSubmitRef(submitRef, handleSubmit, handleFormSubmit);
+
+  const categoryOptions = useMemo(() => {
+    const treeOptions = buildCategoryTree(categories).map(({ category }) => {
       const parentCategory = category.parentId
         ? categories.find(c => c.id === category.parentId)
         : null;
@@ -66,8 +79,9 @@ export function PayeeForm({ payee, categories, onSubmit, onCancel, onDirtyChange
         value: category.id,
         label: parentCategory ? `${parentCategory.name}: ${category.name}` : category.name,
       };
-    }),
-  [categories]);
+    });
+    return [{ value: '', label: 'None' }, ...treeOptions];
+  }, [categories]);
 
   const handleCategoryChange = (categoryId: string) => {
     setSelectedCategoryId(categoryId);
@@ -85,7 +99,7 @@ export function PayeeForm({ payee, categories, onSubmit, onCancel, onDirtyChange
   }, [defaultCategoryId, categories]);
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
       <Input
         label="Payee Name"
         error={errors.name?.message}
@@ -108,8 +122,10 @@ export function PayeeForm({ payee, categories, onSubmit, onCancel, onDirtyChange
         {...register('notes')}
       />
 
-      {payee && (
+      {payee ? (
         <PayeeAliasManager payeeId={payee.id} />
+      ) : (
+        <PayeeAliasManager onPendingAliasesChange={(aliases) => { pendingAliasesRef.current = aliases; }} />
       )}
 
       <FormActions onCancel={onCancel} submitLabel={payee ? 'Update Payee' : 'Create Payee'} isSubmitting={isSubmitting} />

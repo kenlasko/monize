@@ -1,5 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsString, IsOptional, MaxLength, IsUUID } from "class-validator";
+import { IsString, IsOptional, MaxLength, IsUUID, ValidateIf } from "class-validator";
 import { SanitizeHtml } from "../../common/decorators/sanitize-html.decorator";
 
 export class CreatePayeeDto {
@@ -15,6 +15,7 @@ export class CreatePayeeDto {
     description: "Default category ID for transactions with this payee",
   })
   @IsOptional()
+  @ValidateIf((o) => o.defaultCategoryId !== null)
   @IsUUID()
   defaultCategoryId?: string | null;
 

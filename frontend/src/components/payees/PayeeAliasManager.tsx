@@ -8,17 +8,29 @@ import { payeesApi } from '@/lib/payees';
 import toast from 'react-hot-toast';
 import { getErrorMessage } from '@/lib/errors';
 
-interface PayeeAliasManagerProps {
+interface ConnectedProps {
   payeeId: string;
+  onPendingAliasesChange?: never;
 }
 
-export function PayeeAliasManager({ payeeId }: PayeeAliasManagerProps) {
+interface LocalProps {
+  payeeId?: undefined;
+  onPendingAliasesChange: (aliases: string[]) => void;
+}
+
+type PayeeAliasManagerProps = ConnectedProps | LocalProps;
+
+export function PayeeAliasManager({ payeeId, onPendingAliasesChange }: PayeeAliasManagerProps) {
   const [aliases, setAliases] = useState<PayeeAlias[]>([]);
+  const [pendingAliases, setPendingAliases] = useState<string[]>([]);
   const [newAlias, setNewAlias] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
 
+  const isLocalMode = !payeeId;
+
   const loadAliases = useCallback(async () => {
+    if (isLocalMode) return;
     setIsLoading(true);
     try {
       const data = await payeesApi.getAliases(payeeId);
@@ -28,7 +40,7 @@ export function PayeeAliasManager({ payeeId }: PayeeAliasManagerProps) {
     } finally {
       setIsLoading(false);
     }
-  }, [payeeId]);
+  }, [payeeId, isLocalMode]);
 
   useEffect(() => {
     loadAliases();
@@ -37,6 +49,18 @@ export function PayeeAliasManager({ payeeId }: PayeeAliasManagerProps) {
   const handleAdd = async () => {
     const trimmed = newAlias.trim();
     if (!trimmed) return;
+
+    if (isLocalMode) {
+      if (pendingAliases.some(a => a.toLowerCase() === trimmed.toLowerCase())) {
+        toast.error(`Alias "${trimmed}" already added`);
+        return;
+      }
+      const updated = [...pendingAliases, trimmed].sort((a, b) => a.localeCompare(b));
+      setPendingAliases(updated);
+      onPendingAliasesChange(updated);
+      setNewAlias('');
+      return;
+    }
 
     setIsAdding(true);
     try {
@@ -52,6 +76,12 @@ export function PayeeAliasManager({ payeeId }: PayeeAliasManagerProps) {
     } finally {
       setIsAdding(false);
     }
+  };
+
+  const handleRemoveLocal = (alias: string) => {
+    const updated = pendingAliases.filter(a => a !== alias);
+    setPendingAliases(updated);
+    onPendingAliasesChange!(updated);
   };
 
   const handleRemove = async (alias: PayeeAlias) => {
@@ -71,6 +101,10 @@ export function PayeeAliasManager({ payeeId }: PayeeAliasManagerProps) {
     }
   };
 
+  const displayAliases = isLocalMode
+    ? pendingAliases
+    : aliases.map(a => a.alias);
+
   return (
     <div className="space-y-3">
       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -82,21 +116,21 @@ export function PayeeAliasManager({ payeeId }: PayeeAliasManagerProps) {
       </p>
 
       {/* Existing aliases */}
-      {isLoading ? (
+      {!isLocalMode && isLoading ? (
         <p className="text-sm text-gray-400">Loading...</p>
-      ) : aliases.length > 0 ? (
+      ) : displayAliases.length > 0 ? (
         <ul className="space-y-1">
-          {aliases.map((alias) => (
+          {displayAliases.map((aliasText, index) => (
             <li
-              key={alias.id}
+              key={isLocalMode ? aliasText : aliases[index]?.id ?? aliasText}
               className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 rounded px-3 py-1.5"
             >
               <span className="text-sm font-mono text-gray-700 dark:text-gray-300">
-                {alias.alias}
+                {aliasText}
               </span>
               <button
                 type="button"
-                onClick={() => handleRemove(alias)}
+                onClick={() => isLocalMode ? handleRemoveLocal(aliasText) : handleRemove(aliases[index])}
                 className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 text-sm"
                 title="Remove alias"
               >

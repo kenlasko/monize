@@ -119,4 +119,67 @@ describe('PayeeAliasManager', () => {
 
     expect(screen.getByText(/Use \* as wildcard/)).toBeInTheDocument();
   });
+
+  describe('local-only mode (no payeeId)', () => {
+    it('renders without loading aliases from API', () => {
+      const onChange = vi.fn();
+      render(<PayeeAliasManager onPendingAliasesChange={onChange} />);
+
+      expect(mockGetAliases).not.toHaveBeenCalled();
+      expect(screen.getByText('No aliases configured')).toBeInTheDocument();
+    });
+
+    it('adds aliases locally without API call', async () => {
+      const onChange = vi.fn();
+      render(<PayeeAliasManager onPendingAliasesChange={onChange} />);
+
+      const input = screen.getByPlaceholderText('e.g., STARBUCKS #*');
+      fireEvent.change(input, { target: { value: 'LOCAL*' } });
+
+      await act(async () => {
+        fireEvent.click(screen.getByText('Add'));
+      });
+
+      expect(mockCreateAlias).not.toHaveBeenCalled();
+      expect(onChange).toHaveBeenCalledWith(['LOCAL*']);
+      expect(screen.getByText('LOCAL*')).toBeInTheDocument();
+    });
+
+    it('removes aliases locally without API call', async () => {
+      const onChange = vi.fn();
+      render(<PayeeAliasManager onPendingAliasesChange={onChange} />);
+
+      const input = screen.getByPlaceholderText('e.g., STARBUCKS #*');
+      fireEvent.change(input, { target: { value: 'ALIAS1' } });
+      await act(async () => {
+        fireEvent.click(screen.getByText('Add'));
+      });
+
+      fireEvent.click(screen.getByText('Remove'));
+
+      expect(mockDeleteAlias).not.toHaveBeenCalled();
+      expect(onChange).toHaveBeenLastCalledWith([]);
+      expect(screen.getByText('No aliases configured')).toBeInTheDocument();
+    });
+
+    it('prevents duplicate aliases (case-insensitive)', async () => {
+      const onChange = vi.fn();
+      render(<PayeeAliasManager onPendingAliasesChange={onChange} />);
+
+      const input = screen.getByPlaceholderText('e.g., STARBUCKS #*');
+
+      fireEvent.change(input, { target: { value: 'STARBUCKS*' } });
+      await act(async () => {
+        fireEvent.click(screen.getByText('Add'));
+      });
+
+      fireEvent.change(input, { target: { value: 'starbucks*' } });
+      await act(async () => {
+        fireEvent.click(screen.getByText('Add'));
+      });
+
+      // Should only have been called with one alias
+      expect(onChange).toHaveBeenLastCalledWith(['STARBUCKS*']);
+    });
+  });
 });

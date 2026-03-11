@@ -75,12 +75,13 @@ function PayeesContent() {
 
   const handleFormSubmit = async (data: any) => {
     try {
+      const { pendingAliases, ...formData } = data;
       const cleanedData = {
-        ...data,
-        defaultCategoryId: data.defaultCategoryId === '' || data.defaultCategoryId === undefined
+        ...formData,
+        defaultCategoryId: formData.defaultCategoryId === '' || formData.defaultCategoryId === undefined
           ? null
-          : data.defaultCategoryId,
-        notes: data.notes || undefined,
+          : formData.defaultCategoryId,
+        notes: formData.notes || undefined,
       };
 
       if (editingItem) {
@@ -90,9 +91,19 @@ function PayeesContent() {
         setPayees(prev => prev.map(p => p.id === updated.id ? { ...p, ...updated } : p));
       } else {
         const created = await payeesApi.create(cleanedData);
+
+        // Create any aliases that were added during payee creation
+        let aliasCount = 0;
+        if (pendingAliases && pendingAliases.length > 0) {
+          for (const alias of pendingAliases) {
+            await payeesApi.createAlias({ payeeId: created.id, alias });
+            aliasCount++;
+          }
+        }
+
         toast.success('Payee created successfully');
         close();
-        setPayees(prev => [created, ...prev]);
+        setPayees(prev => [{ ...created, aliasCount }, ...prev]);
       }
     } catch (error) {
       toast.error(getErrorMessage(error, `Failed to ${editingItem ? 'update' : 'create'} payee`));
