@@ -99,10 +99,20 @@ export function PayeeAliasManager({ payeeId, onPendingAliasesChange }: PayeeAlia
     : aliases.map(a => a.alias);
 
   return (
-    <div className="space-y-3">
-      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-        Aliases
-      </label>
+    <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-4 bg-gray-50/50 dark:bg-gray-800/50 space-y-3">
+      <div className="flex items-center gap-2">
+        <svg className="h-4 w-4 text-gray-500 dark:text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
+        </svg>
+        <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+          Aliases
+        </span>
+        {displayAliases.length > 0 && (
+          <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded-full font-medium">
+            {displayAliases.length}
+          </span>
+        )}
+      </div>
       <p className="text-xs text-gray-500 dark:text-gray-400">
         Aliases map imported payee names to this payee. Use * as wildcard (e.g., &quot;STARBUCKS*&quot;).
         Case-insensitive.
@@ -116,7 +126,7 @@ export function PayeeAliasManager({ payeeId, onPendingAliasesChange }: PayeeAlia
           {displayAliases.map((aliasText, index) => (
             <li
               key={isLocalMode ? aliasText : aliases[index]?.id ?? aliasText}
-              className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 rounded px-3 py-1.5"
+              className="flex items-center justify-between bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded px-3 py-1.5"
             >
               <span className="text-sm font-mono text-gray-700 dark:text-gray-300">
                 {aliasText}

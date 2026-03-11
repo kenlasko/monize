@@ -90,31 +90,35 @@ export function Combobox({
         const target = event.target as HTMLElement;
         const isSubmitButton = target.closest('button[type="submit"]');
 
-        if (isTyping && !isSubmitButton) {
+        if (isTyping) {
           setIsTyping(false);
 
-          // Reset to selected value if not allowing custom
-          if (!allowCustomValue && selectedLabel) {
-            setInputValue(selectedLabel);
-          } else if (allowCustomValue && inputValue.trim()) {
-            // For custom values, check if input matches an option exactly
-            const matchedOption = options.find(
-              opt => opt.label.toLowerCase() === inputValue.toLowerCase()
-            );
-            if (matchedOption) {
-              // Select the matched option
-              setSelectedLabel(matchedOption.label);
-              setInputValue(matchedOption.label);
-              onChange(matchedOption.value, matchedOption.label);
-            } else if (inputValue.trim() !== selectedLabel) {
-              // Only update if value actually changed
-              setSelectedLabel(inputValue.trim());
-              onChange('', inputValue.trim());
+          if (!inputValue.trim()) {
+            // User erased the text -- clear the selection
+            if (selectedLabel) {
+              setSelectedLabel('');
+              setInputValue('');
+              onChange('', '');
+            }
+          } else if (!isSubmitButton) {
+            if (!allowCustomValue && selectedLabel) {
+              // Reset to selected value if not allowing custom
+              setInputValue(selectedLabel);
+            } else if (allowCustomValue) {
+              // For custom values, check if input matches an option exactly
+              const matchedOption = options.find(
+                opt => opt.label.toLowerCase() === inputValue.toLowerCase()
+              );
+              if (matchedOption) {
+                setSelectedLabel(matchedOption.label);
+                setInputValue(matchedOption.label);
+                onChange(matchedOption.value, matchedOption.label);
+              } else if (inputValue.trim() !== selectedLabel) {
+                setSelectedLabel(inputValue.trim());
+                onChange('', inputValue.trim());
+              }
             }
           }
-        } else if (isTyping && isSubmitButton) {
-          // Just close and reset typing state without calling onChange
-          setIsTyping(false);
         }
       }
     }
