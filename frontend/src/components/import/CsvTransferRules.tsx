@@ -46,7 +46,7 @@ export function CsvTransferRules({ rules, onChange, accounts }: CsvTransferRules
         </p>
       )}
       {rules.map((rule, index) => (
-        <div key={index} className="flex flex-col sm:flex-row sm:items-center gap-2 bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
+        <div key={index} className="flex flex-col gap-2 bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
           <div className="flex items-center gap-2">
             <select
               value={rule.type}
@@ -79,21 +79,16 @@ export function CsvTransferRules({ rules, onChange, accounts }: CsvTransferRules
                 </option>
               ))}
             </select>
+          </div>
+          <div className="flex justify-end">
             <button
               onClick={() => removeRule(index)}
-              className="sm:inline-flex hidden text-red-500 hover:text-red-700 text-sm px-1"
+              className="text-red-500 hover:text-red-700 text-sm px-1"
               title="Remove rule"
             >
-              X
+              Remove
             </button>
           </div>
-          <button
-            onClick={() => removeRule(index)}
-            className="sm:hidden self-end text-red-500 hover:text-red-700 text-sm px-1"
-            title="Remove rule"
-          >
-            Remove
-          </button>
         </div>
       ))}
     </div>
