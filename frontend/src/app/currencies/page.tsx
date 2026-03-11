@@ -43,8 +43,8 @@ function CurrenciesContent() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('active');
   const [currentPage, setCurrentPage] = useState(1);
   const [listDensity, setListDensity] = useLocalStorage<DensityLevel>('monize-currencies-density', 'normal');
-  const [sortField, setSortField] = useState<CurrencySortField>('code');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const [sortField, setSortField] = useLocalStorage<CurrencySortField>('monize-currencies-sort-field', 'code');
+  const [sortDirection, setSortDirection] = useLocalStorage<SortDirection>('monize-currencies-sort-dir', 'asc');
 
   const { defaultCurrency, getRate, refresh: refreshRates } = useExchangeRates();
 

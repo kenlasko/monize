@@ -16,8 +16,8 @@ const logger = createLogger('CategoryList');
 
 export type { DensityLevel } from '@/hooks/useTableDensity';
 
-type SortField = 'name' | 'type' | 'count';
-type SortDirection = 'asc' | 'desc';
+export type SortField = 'name' | 'type' | 'count';
+export type SortDirection = 'asc' | 'desc';
 
 interface CategoryRowProps {
   category: Category & { _level?: number };
@@ -132,6 +132,9 @@ interface CategoryListProps {
   onDelete?: (categoryId: string) => void;
   density?: DensityLevel;
   onDensityChange?: (density: DensityLevel) => void;
+  sortField?: SortField;
+  sortDirection?: SortDirection;
+  onSort?: (field: SortField) => void;
 }
 
 export function CategoryList({
@@ -141,12 +144,19 @@ export function CategoryList({
   onDelete,
   density: propDensity,
   onDensityChange,
+  sortField: propSortField,
+  sortDirection: propSortDirection,
+  onSort,
 }: CategoryListProps) {
   const router = useRouter();
   const [deleteCategory, setDeleteCategory] = useState<Category | null>(null);
   const [localDensity, setLocalDensity] = useState<DensityLevel>('normal');
-  const [sortField, setSortField] = useState<SortField>('name');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const [localSortField, setLocalSortField] = useState<SortField>('name');
+  const [localSortDirection, setLocalSortDirection] = useState<SortDirection>('asc');
+
+  // Use prop sort state if provided (controlled), otherwise use local state
+  const sortField = propSortField ?? localSortField;
+  const sortDirection = propSortDirection ?? localSortDirection;
 
   // Use prop density if provided, otherwise use local state
   const density = propDensity ?? localDensity;
@@ -163,13 +173,17 @@ export function CategoryList({
   }, [density, onDensityChange]);
 
   const handleSort = useCallback((field: SortField) => {
-    if (sortField === field) {
-      setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+    if (onSort) {
+      onSort(field);
     } else {
-      setSortField(field);
-      setSortDirection(field === 'count' ? 'desc' : 'asc');
+      if (localSortField === field) {
+        setLocalSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+      } else {
+        setLocalSortField(field);
+        setLocalSortDirection(field === 'count' ? 'desc' : 'asc');
+      }
     }
-  }, [sortField]);
+  }, [onSort, localSortField]);
 
   const handleViewTransactions = useCallback((category: Category) => {
     router.push(`/transactions?categoryId=${category.id}`);

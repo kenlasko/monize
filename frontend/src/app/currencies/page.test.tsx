@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { useState } from 'react';
 import { render, screen, waitFor, fireEvent } from '@/test/render';
 import CurrenciesPage from './page';
 import toast from 'react-hot-toast';
@@ -172,7 +173,7 @@ vi.mock('@/components/layout/PageHeader', () => ({
 }));
 
 vi.mock('@/hooks/useLocalStorage', () => ({
-  useLocalStorage: (key: string, defaultValue: any) => [defaultValue, vi.fn()],
+  useLocalStorage: (_key: string, defaultValue: any) => useState(defaultValue),
 }));
 
 describe('CurrenciesPage', () => {

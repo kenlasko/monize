@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { useState } from 'react';
 import { render, screen, waitFor, fireEvent } from '@/test/render';
 import PayeesPage from './page';
 import toast from 'react-hot-toast';
@@ -104,7 +105,7 @@ vi.mock('@/hooks/useFormModal', () => ({
 }));
 
 vi.mock('@/hooks/useLocalStorage', () => ({
-  useLocalStorage: (_key: string, defaultValue: any) => [defaultValue, vi.fn()],
+  useLocalStorage: (_key: string, defaultValue: any) => useState(defaultValue),
 }));
 
 vi.mock('@/components/layout/PageLayout', () => ({

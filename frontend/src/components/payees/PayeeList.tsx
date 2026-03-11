@@ -18,7 +18,7 @@ const logger = createLogger('PayeeList');
 // Re-export DensityLevel from shared hook
 export type { DensityLevel };
 
-export type SortField = 'name' | 'category' | 'count' | 'createdAt' | 'aliases';
+export type SortField = 'name' | 'category' | 'count' | 'createdAt' | 'aliases' | 'lastUsed';
 export type SortDirection = 'asc' | 'desc';
 
 interface PayeeListProps {
@@ -126,6 +126,9 @@ const PayeeRow = memo(function PayeeRow({
       </td>
       <td className={`${cellPadding} whitespace-nowrap text-center text-sm text-gray-600 dark:text-gray-400 hidden lg:table-cell`}>
         {payee.aliasCount ?? 0}
+      </td>
+      <td className={`${cellPadding} whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 hidden lg:table-cell`}>
+        {payee.lastUsedDate ? formatDate(payee.lastUsedDate.substring(0, 10)) : '-'}
       </td>
       <td className={`${cellPadding} whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 hidden lg:table-cell`}>
         {payee.createdAt ? formatDate(payee.createdAt.substring(0, 10)) : '-'}
@@ -240,7 +243,7 @@ export function PayeeList({
         setLocalSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
       } else {
         setLocalSortField(field);
-        setLocalSortDirection(field === 'count' || field === 'aliases' || field === 'createdAt' ? 'desc' : 'asc');
+        setLocalSortDirection(field === 'count' || field === 'aliases' || field === 'lastUsed' || field === 'createdAt' ? 'desc' : 'asc');
       }
     }
   }, [onSort, localSortField]);
@@ -261,6 +264,8 @@ export function PayeeList({
         comparison = (a.transactionCount ?? 0) - (b.transactionCount ?? 0);
       } else if (sortField === 'aliases') {
         comparison = (a.aliasCount ?? 0) - (b.aliasCount ?? 0);
+      } else if (sortField === 'lastUsed') {
+        comparison = (a.lastUsedDate || '').localeCompare(b.lastUsedDate || '');
       } else if (sortField === 'createdAt') {
         comparison = (a.createdAt || '').localeCompare(b.createdAt || '');
       }
@@ -354,6 +359,12 @@ export function PayeeList({
                 onClick={() => handleSort('aliases')}
               >
                 Aliases<SortIcon field="aliases" sortField={sortField} sortDirection={sortDirection} />
+              </th>
+              <th
+                className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:text-gray-700 dark:hover:text-gray-200 hidden lg:table-cell`}
+                onClick={() => handleSort('lastUsed')}
+              >
+                Last Used<SortIcon field="lastUsed" sortField={sortField} sortDirection={sortDirection} />
               </th>
               <th
                 className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:text-gray-700 dark:hover:text-gray-200 hidden lg:table-cell`}

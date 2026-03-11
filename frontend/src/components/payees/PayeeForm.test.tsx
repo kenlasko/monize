@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@/test/render';
+import { render, screen, fireEvent, act } from '@/test/render';
 import { PayeeForm } from './PayeeForm';
 
 vi.mock('@hookform/resolvers/zod', () => ({
@@ -48,5 +48,27 @@ describe('PayeeForm', () => {
   it('renders notes field', () => {
     render(<PayeeForm categories={categories} onSubmit={onSubmit} onCancel={onCancel} />);
     expect(screen.getByText('Notes (optional)')).toBeInTheDocument();
+  });
+
+  it('renders alias manager when creating a new payee', () => {
+    render(<PayeeForm categories={categories} onSubmit={onSubmit} onCancel={onCancel} />);
+    expect(screen.getByText('Aliases')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('e.g., STARBUCKS #*')).toBeInTheDocument();
+  });
+
+  it('renders alias manager when editing an existing payee', () => {
+    const payee = { id: 'p1', name: 'Walmart', defaultCategoryId: 'c1', notes: '' } as any;
+    render(<PayeeForm payee={payee} categories={categories} onSubmit={onSubmit} onCancel={onCancel} />);
+    expect(screen.getByText('Aliases')).toBeInTheDocument();
+  });
+
+  it('shows category options in dropdown', async () => {
+    Element.prototype.scrollIntoView = vi.fn();
+    render(<PayeeForm categories={categories} onSubmit={onSubmit} onCancel={onCancel} />);
+    const categoryInput = screen.getByPlaceholderText('Select category...');
+    await act(async () => {
+      fireEvent.focus(categoryInput);
+    });
+    expect(screen.getByText('Food')).toBeInTheDocument();
   });
 });

@@ -81,6 +81,7 @@ describe("PayeesService", () => {
 
     transactionsRepository = {
       update: jest.fn(),
+      count: jest.fn().mockResolvedValue(0),
     };
 
     scheduledTransactionsRepository = {
@@ -105,6 +106,7 @@ describe("PayeesService", () => {
     aliasRepository = {
       find: jest.fn().mockResolvedValue([]),
       findOne: jest.fn(),
+      count: jest.fn().mockResolvedValue(0),
       save: jest.fn().mockImplementation((data) => ({
         id: "alias-new",
         ...data,
@@ -409,10 +411,12 @@ describe("PayeesService", () => {
   describe("update", () => {
     it("should update payee properties", async () => {
       const existingPayee = { ...mockPayee };
-      // First findOne: ownership check (findOne); second findOne: name conflict check
+      const refreshedPayee = { ...mockPayee, name: "New Name", notes: "Updated notes" };
+      // First findOne: ownership check; second: name conflict check; third: re-fetch after save
       payeesRepository.findOne
         .mockResolvedValueOnce(existingPayee)
-        .mockResolvedValueOnce(null);
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(refreshedPayee);
 
       const result = await service.update(userId, "payee-1", {
         name: "New Name",
@@ -444,9 +448,11 @@ describe("PayeesService", () => {
 
     it("should cascade name change to transactions and scheduled transactions", async () => {
       const existingPayee = { ...mockPayee, name: "OldName" };
+      const refreshedPayee = { ...mockPayee, name: "NewName" };
       payeesRepository.findOne
         .mockResolvedValueOnce(existingPayee)
-        .mockResolvedValueOnce(null);
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(refreshedPayee);
 
       await service.update(userId, "payee-1", { name: "NewName" });
 
@@ -462,7 +468,9 @@ describe("PayeesService", () => {
 
     it("should not cascade when name is not changed", async () => {
       const existingPayee = { ...mockPayee };
-      payeesRepository.findOne.mockResolvedValueOnce(existingPayee);
+      payeesRepository.findOne
+        .mockResolvedValueOnce(existingPayee)
+        .mockResolvedValueOnce(existingPayee);
 
       await service.update(userId, "payee-1", { notes: "Just updating notes" });
 
@@ -472,22 +480,44 @@ describe("PayeesService", () => {
 
     it("should skip name conflict check when name is unchanged", async () => {
       const existingPayee = { ...mockPayee };
-      payeesRepository.findOne.mockResolvedValueOnce(existingPayee);
+      payeesRepository.findOne
+        .mockResolvedValueOnce(existingPayee)
+        .mockResolvedValueOnce(existingPayee);
 
       await service.update(userId, "payee-1", { name: "Starbucks" });
 
-      // findOne called only once (for findOne ownership), no conflict check needed
-      expect(payeesRepository.findOne).toHaveBeenCalledTimes(1);
+      // findOne called twice: once for ownership check, once for re-fetch; no conflict check
+      expect(payeesRepository.findOne).toHaveBeenCalledTimes(2);
     });
 
     it("should update defaultCategoryId via explicit mapping", async () => {
       const existingPayee = { ...mockPayee };
-      payeesRepository.findOne.mockResolvedValueOnce(existingPayee);
+      const refreshedPayee = { ...mockPayee, defaultCategoryId: "cat-99" };
+      payeesRepository.findOne
+        .mockResolvedValueOnce(existingPayee)
+        .mockResolvedValueOnce(refreshedPayee);
 
-      await service.update(userId, "payee-1", { defaultCategoryId: "cat-99" });
+      const result = await service.update(userId, "payee-1", { defaultCategoryId: "cat-99" });
 
-      expect(existingPayee.defaultCategoryId).toBe("cat-99");
+      expect(result.defaultCategoryId).toBe("cat-99");
       expect(payeesRepository.save).toHaveBeenCalled();
+    });
+
+    it("should clear defaultCategoryId when set to null", async () => {
+      const existingPayee = { ...mockPayee, defaultCategory: { id: "cat-1", name: "Food" } };
+      const refreshedPayee = { ...mockPayee, defaultCategoryId: null, defaultCategory: null };
+      payeesRepository.findOne
+        .mockResolvedValueOnce(existingPayee)
+        .mockResolvedValueOnce(refreshedPayee);
+
+      const result = await service.update(userId, "payee-1", { defaultCategoryId: null });
+
+      expect(result.defaultCategoryId).toBeNull();
+      // Verify the relation object is also nulled so TypeORM save() doesn't
+      // re-derive the FK from the stale loaded relation entity
+      const savedPayee = payeesRepository.save.mock.calls[0][0];
+      expect(savedPayee.defaultCategoryId).toBeNull();
+      expect(savedPayee.defaultCategory).toBeNull();
     });
   });
 
@@ -1361,21 +1391,26 @@ describe("PayeesService", () => {
   describe("update with isActive", () => {
     it("should update isActive field via update DTO", async () => {
       const existingPayee = { ...mockPayee, isActive: true };
-      payeesRepository.findOne.mockResolvedValueOnce(existingPayee);
+      const refreshedPayee = { ...mockPayee, isActive: false };
+      payeesRepository.findOne
+        .mockResolvedValueOnce(existingPayee)
+        .mockResolvedValueOnce(refreshedPayee);
 
-      await service.update(userId, "payee-1", { isActive: false });
+      const result = await service.update(userId, "payee-1", { isActive: false });
 
-      expect(existingPayee.isActive).toBe(false);
+      expect(result.isActive).toBe(false);
       expect(payeesRepository.save).toHaveBeenCalled();
     });
 
     it("should not modify isActive when not included in DTO", async () => {
       const existingPayee = { ...mockPayee, isActive: true };
-      payeesRepository.findOne.mockResolvedValueOnce(existingPayee);
+      payeesRepository.findOne
+        .mockResolvedValueOnce(existingPayee)
+        .mockResolvedValueOnce(existingPayee);
 
-      await service.update(userId, "payee-1", { notes: "Updated" });
+      const result = await service.update(userId, "payee-1", { notes: "Updated" });
 
-      expect(existingPayee.isActive).toBe(true);
+      expect(result.isActive).toBe(true);
     });
   });
 

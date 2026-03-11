@@ -12,7 +12,6 @@ import {
   DateFormat,
   CsvColumnMappingConfig,
   CsvTransferRule,
-  CsvHeadersResponse,
   SavedColumnMapping,
 } from '@/lib/import';
 import { accountsApi } from '@/lib/accounts';
@@ -423,7 +422,7 @@ export function useImportWizard() {
     } finally {
       setIsLoading(false);
     }
-  }, [accounts, categories, securities, defaultCurrency]);
+  }, [accounts, categories, securities, defaultCurrency, preselectedAccountId]);
 
   // CSV column mapping handlers
   const handleCsvColumnMappingChange = useCallback((mapping: CsvColumnMappingConfig) => {
@@ -536,7 +535,7 @@ export function useImportWizard() {
     } finally {
       setIsLoading(false);
     }
-  }, [importFiles, csvColumnMapping, csvTransferRules, csvHeaders, accounts, categories, defaultCurrency]);
+  }, [importFiles, csvColumnMapping, csvTransferRules, csvHeaders, accounts, categories, defaultCurrency, preselectedAccountId]);
 
   const handleSaveColumnMapping = useCallback(async (name: string) => {
     try {

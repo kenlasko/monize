@@ -148,7 +148,7 @@ describe('PayeeList', () => {
     ];
 
     render(<PayeeList payees={payees} onEdit={onEdit} onRefresh={onRefresh} />);
-    expect(screen.getByText('-')).toBeInTheDocument();
+    expect(screen.getAllByText('-').length).toBeGreaterThan(0);
   });
 
   // Edit

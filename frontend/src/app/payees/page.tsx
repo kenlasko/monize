@@ -47,8 +47,8 @@ function PayeesContent() {
   const [statusFilter, setStatusFilter] = useState<PayeeStatusFilter>('active');
   const [currentPage, setCurrentPage] = useState(1);
   const [listDensity, setListDensity] = useLocalStorage<DensityLevel>('monize-payees-density', 'normal');
-  const [sortField, setSortField] = useState<SortField>('name');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const [sortField, setSortField] = useLocalStorage<SortField>('monize-payees-sort-field', 'name');
+  const [sortDirection, setSortDirection] = useLocalStorage<SortDirection>('monize-payees-sort-dir', 'asc');
   const [mergePayee, setMergePayee] = useState<Payee | null>(null);
   const { showForm, editingItem, openCreate, openEdit, close, isEditing, modalProps, setFormDirty, unsavedChangesDialog, formSubmitRef } = useFormModal<Payee>();
 
@@ -75,22 +75,35 @@ function PayeesContent() {
 
   const handleFormSubmit = async (data: any) => {
     try {
+      const { pendingAliases, ...formData } = data;
       const cleanedData = {
-        ...data,
-        defaultCategoryId: data.defaultCategoryId || undefined,
-        notes: data.notes || undefined,
+        ...formData,
+        defaultCategoryId: formData.defaultCategoryId === '' || formData.defaultCategoryId === undefined
+          ? null
+          : formData.defaultCategoryId,
+        notes: formData.notes || undefined,
       };
 
       if (editingItem) {
         const updated = await payeesApi.update(editingItem.id, cleanedData);
         toast.success('Payee updated successfully');
         close();
-        setPayees(prev => prev.map(p => p.id === updated.id ? updated : p));
+        setPayees(prev => prev.map(p => p.id === updated.id ? { ...p, ...updated } : p));
       } else {
         const created = await payeesApi.create(cleanedData);
+
+        // Create any aliases that were added during payee creation
+        let aliasCount = 0;
+        if (pendingAliases && pendingAliases.length > 0) {
+          for (const alias of pendingAliases) {
+            await payeesApi.createAlias({ payeeId: created.id, alias });
+            aliasCount++;
+          }
+        }
+
         toast.success('Payee created successfully');
         close();
-        setPayees(prev => [created, ...prev]);
+        setPayees(prev => [{ ...created, aliasCount }, ...prev]);
       }
     } catch (error) {
       toast.error(getErrorMessage(error, `Failed to ${editingItem ? 'update' : 'create'} payee`));
@@ -137,6 +150,8 @@ function PayeesContent() {
         comparison = (a.transactionCount ?? 0) - (b.transactionCount ?? 0);
       } else if (sortField === 'aliases') {
         comparison = (a.aliasCount ?? 0) - (b.aliasCount ?? 0);
+      } else if (sortField === 'lastUsed') {
+        comparison = (a.lastUsedDate || '').localeCompare(b.lastUsedDate || '');
       } else if (sortField === 'createdAt') {
         comparison = (a.createdAt || '').localeCompare(b.createdAt || '');
       }
@@ -155,7 +170,7 @@ function PayeesContent() {
       setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
     } else {
       setSortField(field);
-      setSortDirection(field === 'count' || field === 'aliases' || field === 'createdAt' ? 'desc' : 'asc');
+      setSortDirection(field === 'count' || field === 'aliases' || field === 'lastUsed' || field === 'createdAt' ? 'desc' : 'asc');
     }
     setCurrentPage(1);
   }, [sortField]);
