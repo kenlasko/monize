@@ -23,6 +23,15 @@ let nextModalId = 0;
 // Reset via microtask after each popstate dispatch cycle.
 let popstateConsumed = false;
 
+/** Reset module-level state for testing. Not for production use. */
+export function __resetModalStateForTesting() {
+  pendingProgrammaticPops = 0;
+  bodyOverflowLockCount = 0;
+  openModalStack.length = 0;
+  nextModalId = 0;
+  popstateConsumed = false;
+}
+
 const FOCUSABLE_SELECTOR = [
   'a[href]',
   'button:not([disabled])',
