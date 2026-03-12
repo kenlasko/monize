@@ -152,10 +152,11 @@ export class TransactionsService {
         // Set split-level tags
         if (savedSplits && splits) {
           for (let i = 0; i < splits.length; i++) {
-            if (splits[i].tagIds && splits[i].tagIds.length > 0 && savedSplits[i]) {
+            const splitTagIds = splits[i].tagIds;
+            if (splitTagIds && splitTagIds.length > 0 && savedSplits[i]) {
               await this.tagsService.setSplitTags(
                 savedSplits[i].id,
-                splits[i].tagIds,
+                splitTagIds,
                 userId,
                 queryRunner,
               );
@@ -683,10 +684,11 @@ export class TransactionsService {
           // Set split-level tags
           if (savedSplits) {
             for (let i = 0; i < splits.length; i++) {
-              if (splits[i].tagIds && splits[i].tagIds.length > 0 && savedSplits[i]) {
+              const splitTagIds = splits[i].tagIds;
+              if (splitTagIds && splitTagIds.length > 0 && savedSplits[i]) {
                 await this.tagsService.setSplitTags(
                   savedSplits[i].id,
-                  splits[i].tagIds,
+                  splitTagIds,
                   userId,
                   queryRunner,
                 );

@@ -80,6 +80,7 @@ export const transactionsApi = {
     targetTransactionId?: string;
     amountFrom?: number;
     amountTo?: number;
+    tagIds?: string[];
   }): Promise<PaginatedTransactions> => {
     const apiParams = {
       ...buildFilterParams(params),
@@ -164,6 +165,7 @@ export const transactionsApi = {
     search?: string;
     amountFrom?: number;
     amountTo?: number;
+    tagIds?: string[];
   }): Promise<TransactionSummary> => {
     const apiParams = {
       ...buildFilterParams(params),
@@ -191,6 +193,7 @@ export const transactionsApi = {
     search?: string;
     amountFrom?: number;
     amountTo?: number;
+    tagIds?: string[];
   }): Promise<MonthlyTotal[]> => {
     const apiParams = {
       ...buildFilterParams(params),
