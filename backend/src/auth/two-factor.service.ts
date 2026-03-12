@@ -226,8 +226,9 @@ export class TwoFactorService {
     await this.usersRepository.save(user);
     this.logger.log(`2FA verification successful for user ${user.id}`);
 
+    const rememberMe = payload.rememberMe === true;
     const { accessToken, refreshToken } =
-      await this.tokenService.generateTokenPair(user);
+      await this.tokenService.generateTokenPair(user, rememberMe);
 
     let trustedDeviceToken: string | undefined;
     if (rememberDevice) {
@@ -243,6 +244,7 @@ export class TwoFactorService {
       accessToken,
       refreshToken,
       trustedDeviceToken,
+      rememberMe,
     };
   }
 

@@ -1,5 +1,6 @@
 import { Injectable, UnauthorizedException, Logger } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
+import { ConfigService } from "@nestjs/config";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository, LessThan, DataSource } from "typeorm";
 import { Cron, CronExpression } from "@nestjs/schedule";
@@ -13,17 +14,33 @@ import { hashToken } from "./crypto.util";
 export class TokenService {
   private readonly logger = new Logger(TokenService.name);
   private readonly ACCESS_TOKEN_EXPIRY = "15m";
-  private readonly REFRESH_TOKEN_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+  private readonly REFRESH_TOKEN_EXPIRY_MS = 1 * 24 * 60 * 60 * 1000; // 1 day
+  private readonly REMEMBER_ME_EXPIRY_MS: number;
 
   constructor(
     @InjectRepository(RefreshToken)
     private refreshTokensRepository: Repository<RefreshToken>,
     private jwtService: JwtService,
     private dataSource: DataSource,
-  ) {}
+    private configService: ConfigService,
+  ) {
+    const rememberMeDays = parseInt(
+      this.configService.get<string>("REMEMBER_ME_DAYS", "30"),
+      10,
+    );
+    this.REMEMBER_ME_EXPIRY_MS =
+      (rememberMeDays > 0 ? rememberMeDays : 30) * 24 * 60 * 60 * 1000;
+  }
+
+  getRefreshExpiryMs(rememberMe?: boolean): number {
+    return rememberMe
+      ? this.REMEMBER_ME_EXPIRY_MS
+      : this.REFRESH_TOKEN_EXPIRY_MS;
+  }
 
   async generateTokenPair(
     user: User,
+    rememberMe?: boolean,
   ): Promise<{ accessToken: string; refreshToken: string }> {
     const payload = {
       sub: user.id,
@@ -38,13 +55,14 @@ export class TokenService {
     const rawRefreshToken = crypto.randomBytes(64).toString("hex");
     const tokenHash = hashToken(rawRefreshToken);
     const familyId = crypto.randomUUID();
+    const expiryMs = this.getRefreshExpiryMs(rememberMe);
 
     const refreshTokenEntity = this.refreshTokensRepository.create({
       userId: user.id,
       tokenHash,
       familyId,
       isRevoked: false,
-      expiresAt: new Date(Date.now() + this.REFRESH_TOKEN_EXPIRY_MS),
+      expiresAt: new Date(Date.now() + expiryMs),
       replacedByHash: null,
     });
     await this.refreshTokensRepository.save(refreshTokenEntity);

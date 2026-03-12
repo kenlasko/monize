@@ -27,6 +27,7 @@ import { Throttle } from "@nestjs/throttler";
 import { Response, Request as ExpressRequest } from "express";
 
 import { AuthService } from "./auth.service";
+import { TokenService } from "./token.service";
 import { OidcService } from "./oidc/oidc.service";
 import { EmailService } from "../notifications/email.service";
 import { RegisterDto } from "./dto/register.dto";
@@ -58,6 +59,7 @@ export class AuthController {
     private configService: ConfigService,
     private emailService: EmailService,
     private demoModeService: DemoModeService,
+    private tokenService: TokenService,
   ) {
     // Default to true if not explicitly set to 'false'
     const localAuthSetting = this.configService.get<string>(
@@ -89,12 +91,12 @@ export class AuthController {
     };
   }
 
-  private getRefreshCookieOptions() {
+  private getRefreshCookieOptions(rememberMe?: boolean) {
     return {
       httpOnly: true,
       secure: this.isProduction,
       sameSite: "strict" as const,
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      maxAge: this.tokenService.getRefreshExpiryMs(rememberMe),
       path: "/",
     };
   }
@@ -104,9 +106,14 @@ export class AuthController {
     accessToken: string,
     refreshToken: string,
     userId: string,
+    rememberMe?: boolean,
   ) {
     res.cookie("auth_token", accessToken, this.getAccessCookieOptions());
-    res.cookie("refresh_token", refreshToken, this.getRefreshCookieOptions());
+    res.cookie(
+      "refresh_token",
+      refreshToken,
+      this.getRefreshCookieOptions(rememberMe),
+    );
     res.cookie(
       "csrf_token",
       generateCsrfToken(userId, this.authService.getCsrfKey()),
@@ -195,6 +202,7 @@ export class AuthController {
       result.accessToken!,
       result.refreshToken!,
       result.user!.id,
+      result.rememberMe,
     );
     res.json({ user: result.user });
   }
@@ -427,6 +435,7 @@ export class AuthController {
       result.accessToken,
       result.refreshToken,
       result.user.id,
+      result.rememberMe,
     );
 
     if (result.trustedDeviceToken) {

@@ -49,6 +49,7 @@ services:
       LOCAL_AUTH_ENABLED: ${LOCAL_AUTH_ENABLED:-true}
       REGISTRATION_ENABLED: ${REGISTRATION_ENABLED:-true}
       FORCE_2FA: ${FORCE_2FA:-false}
+      REMEMBER_ME_DAYS: ${REMEMBER_ME_DAYS:-30}
       # Demo mode (optional)
       DEMO_MODE: ${DEMO_MODE:-false}
       # OIDC (optional)

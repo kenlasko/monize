@@ -1,6 +1,7 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { JwtService } from "@nestjs/jwt";
+import { ConfigService } from "@nestjs/config";
 import { UnauthorizedException } from "@nestjs/common";
 import { DataSource } from "typeorm";
 import { TokenService } from "./token.service";
@@ -79,10 +80,35 @@ describe("TokenService", () => {
           provide: DataSource,
           useValue: dataSource,
         },
+        {
+          provide: ConfigService,
+          useValue: { get: jest.fn().mockReturnValue("30") },
+        },
       ],
     }).compile();
 
     service = module.get<TokenService>(TokenService);
+  });
+
+  describe("getRefreshExpiryMs", () => {
+    it("should return 1-day expiry when rememberMe is false", () => {
+      const result = service.getRefreshExpiryMs(false);
+
+      expect(result).toBe(1 * 24 * 60 * 60 * 1000);
+    });
+
+    it("should return 1-day expiry when rememberMe is undefined", () => {
+      const result = service.getRefreshExpiryMs();
+
+      expect(result).toBe(1 * 24 * 60 * 60 * 1000);
+    });
+
+    it("should return configured REMEMBER_ME_DAYS expiry when rememberMe is true", () => {
+      const result = service.getRefreshExpiryMs(true);
+
+      // ConfigService returns "30", so 30 days
+      expect(result).toBe(30 * 24 * 60 * 60 * 1000);
+    });
   });
 
   describe("generateTokenPair", () => {
@@ -113,6 +139,32 @@ describe("TokenService", () => {
         accessToken: "mock-access-token",
         refreshToken: "mock-random-token-hex",
       });
+    });
+
+    it("should use shorter expiry without rememberMe", async () => {
+      const now = Date.now();
+      jest.spyOn(Date, "now").mockReturnValue(now);
+
+      await service.generateTokenPair(mockUser as any);
+
+      const createCall = refreshTokensRepository.create.mock.calls[0][0];
+      const expectedExpiry = new Date(now + 1 * 24 * 60 * 60 * 1000);
+      expect(createCall.expiresAt).toEqual(expectedExpiry);
+
+      jest.restoreAllMocks();
+    });
+
+    it("should use longer expiry with rememberMe", async () => {
+      const now = Date.now();
+      jest.spyOn(Date, "now").mockReturnValue(now);
+
+      await service.generateTokenPair(mockUser as any, true);
+
+      const createCall = refreshTokensRepository.create.mock.calls[0][0];
+      const expectedExpiry = new Date(now + 30 * 24 * 60 * 60 * 1000);
+      expect(createCall.expiresAt).toEqual(expectedExpiry);
+
+      jest.restoreAllMocks();
     });
   });
 

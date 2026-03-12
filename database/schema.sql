@@ -503,6 +503,7 @@ CREATE TABLE refresh_tokens (
     token_hash VARCHAR(64) NOT NULL,
     family_id UUID NOT NULL,
     is_revoked BOOLEAN NOT NULL DEFAULT false,
+    remember_me BOOLEAN NOT NULL DEFAULT false,
     expires_at TIMESTAMP NOT NULL,
     replaced_by_hash VARCHAR(64),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

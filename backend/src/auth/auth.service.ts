@@ -122,7 +122,7 @@ export class AuthService {
     trustedDeviceToken?: string,
     userAgent?: string,
   ) {
-    const { email: rawEmail, password } = loginDto;
+    const { email: rawEmail, password, rememberMe } = loginDto;
     const email = rawEmail.toLowerCase().trim();
 
     const user = await this.usersRepository.findOne({
@@ -215,17 +215,23 @@ export class AuthService {
           user.lastLogin = new Date();
           await this.usersRepository.save(user);
           const { accessToken, refreshToken } =
-            await this.tokenService.generateTokenPair(user);
+            await this.tokenService.generateTokenPair(user, rememberMe);
           this.logger.log(
             `Login successful (trusted device) for user ${user.id}`,
           );
-          return { user: this.sanitizeUser(user), accessToken, refreshToken };
+          return {
+            user: this.sanitizeUser(user),
+            accessToken,
+            refreshToken,
+            rememberMe,
+          };
         }
       }
 
       // Return a temporary token for 2FA verification
+      // Encode rememberMe in the temp token so it survives the 2FA step
       const tempToken = this.jwtService.sign(
-        { sub: user.id, type: "2fa_pending" },
+        { sub: user.id, type: "2fa_pending", rememberMe: !!rememberMe },
         { expiresIn: "5m" },
       );
       this.logger.log(`Login requires 2FA for user ${user.id}`);
@@ -237,13 +243,14 @@ export class AuthService {
     await this.usersRepository.save(user);
 
     const { accessToken, refreshToken } =
-      await this.tokenService.generateTokenPair(user);
+      await this.tokenService.generateTokenPair(user, rememberMe);
 
     this.logger.log(`Login successful for user ${user.id}`);
     return {
       user: this.sanitizeUser(user),
       accessToken,
       refreshToken,
+      rememberMe,
     };
   }
 
@@ -534,8 +541,8 @@ export class AuthService {
 
   // --- Delegated methods (preserve public API for controller/strategies) ---
 
-  async generateTokenPair(user: User) {
-    return this.tokenService.generateTokenPair(user);
+  async generateTokenPair(user: User, rememberMe?: boolean) {
+    return this.tokenService.generateTokenPair(user, rememberMe);
   }
 
   async refreshTokens(rawRefreshToken: string) {
