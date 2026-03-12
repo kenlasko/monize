@@ -35,6 +35,16 @@ export class TagsController {
     return this.tagsService.findAll(req.user.id);
   }
 
+  @Get("transaction-counts")
+  @ApiOperation({ summary: "Get transaction counts for all tags" })
+  @ApiResponse({
+    status: 200,
+    description: "Transaction counts retrieved successfully",
+  })
+  getAllTransactionCounts(@Request() req) {
+    return this.tagsService.getAllTransactionCounts(req.user.id);
+  }
+
   @Get(":id")
   @ApiOperation({ summary: "Get a tag by ID" })
   @ApiResponse({ status: 200, description: "Tag retrieved successfully" })

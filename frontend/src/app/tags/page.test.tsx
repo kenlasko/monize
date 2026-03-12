@@ -75,6 +75,7 @@ const mockCreate = vi.fn();
 const mockUpdate = vi.fn();
 const mockDelete = vi.fn();
 const mockGetTransactionCount = vi.fn().mockResolvedValue(0);
+const mockGetAllTransactionCounts = vi.fn().mockResolvedValue({});
 
 vi.mock('@/lib/tags', () => ({
   tagsApi: {
@@ -83,6 +84,7 @@ vi.mock('@/lib/tags', () => ({
     update: (...args: any[]) => mockUpdate(...args),
     delete: (...args: any[]) => mockDelete(...args),
     getTransactionCount: (...args: any[]) => mockGetTransactionCount(...args),
+    getAllTransactionCounts: (...args: any[]) => mockGetAllTransactionCounts(...args),
   },
 }));
 

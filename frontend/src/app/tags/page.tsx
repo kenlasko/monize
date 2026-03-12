@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/Button';
@@ -32,7 +33,9 @@ export default function TagsPage() {
 }
 
 function TagsContent() {
+  const router = useRouter();
   const [tags, setTags] = useState<Tag[]>([]);
+  const [transactionCounts, setTransactionCounts] = useState<Record<string, number>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [listDensity, setListDensity] = useLocalStorage<DensityLevel>('monize-tags-density', 'normal');
@@ -45,8 +48,12 @@ function TagsContent() {
   const loadTags = async () => {
     setIsLoading(true);
     try {
-      const data = await tagsApi.getAll();
+      const [data, counts] = await Promise.all([
+        tagsApi.getAll(),
+        tagsApi.getAllTransactionCounts(),
+      ]);
       setTags(data);
+      setTransactionCounts(counts);
     } catch (error) {
       toast.error(getErrorMessage(error, 'Failed to load tags'));
       logger.error(error);
@@ -124,6 +131,10 @@ function TagsContent() {
       setSortDirection(field === 'createdAt' ? 'desc' : 'asc');
     }
   }, [sortField]);
+
+  const handleTagClick = useCallback((tag: Tag) => {
+    router.push(`/transactions?tagIds=${tag.id}`);
+  }, [router]);
 
   const tagsWithColor = tags.filter((t) => t.color).length;
   const tagsWithIcon = tags.filter((t) => t.icon).length;
@@ -232,8 +243,10 @@ function TagsContent() {
           ) : (
             <TagList
               tags={filteredTags}
+              transactionCounts={transactionCounts}
               onEdit={openEdit}
               onDelete={handleDeleteClick}
+              onTagClick={handleTagClick}
               density={listDensity}
               onDensityChange={setListDensity}
               sortField={sortField}

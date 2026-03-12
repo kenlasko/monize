@@ -14,19 +14,23 @@ export type SortDirection = 'asc' | 'desc';
 
 interface TagRowProps {
   tag: Tag;
+  transactionCount: number;
   density: DensityLevel;
   cellPadding: string;
   onEdit: (tag: Tag) => void;
   onDeleteClick: (tag: Tag) => void;
+  onTagClick?: (tag: Tag) => void;
   index: number;
 }
 
 const TagRow = memo(function TagRow({
   tag,
+  transactionCount,
   density,
   cellPadding,
   onEdit,
   onDeleteClick,
+  onTagClick,
   index,
 }: TagRowProps) {
   const handleEdit = useCallback(() => {
@@ -36,6 +40,10 @@ const TagRow = memo(function TagRow({
   const handleDelete = useCallback(() => {
     onDeleteClick(tag);
   }, [onDeleteClick, tag]);
+
+  const handleTagClick = useCallback(() => {
+    onTagClick?.(tag);
+  }, [onTagClick, tag]);
 
   return (
     <tr
@@ -49,9 +57,18 @@ const TagRow = memo(function TagRow({
               style={{ backgroundColor: tag.color }}
             />
           )}
-          <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-            {tag.name}
-          </span>
+          {onTagClick ? (
+            <button
+              onClick={handleTagClick}
+              className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline"
+            >
+              {tag.name}
+            </button>
+          ) : (
+            <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+              {tag.name}
+            </span>
+          )}
         </div>
       </td>
       <td className={`${cellPadding} whitespace-nowrap hidden sm:table-cell`}>
@@ -62,6 +79,9 @@ const TagRow = memo(function TagRow({
         ) : (
           <span className="text-sm text-gray-400 dark:text-gray-500">-</span>
         )}
+      </td>
+      <td className={`${cellPadding} whitespace-nowrap text-right text-sm text-gray-500 dark:text-gray-400 hidden sm:table-cell`}>
+        {transactionCount}
       </td>
       <td className={`${cellPadding} whitespace-nowrap text-right text-sm font-medium`}>
         <Button
@@ -87,8 +107,10 @@ const TagRow = memo(function TagRow({
 
 interface TagListProps {
   tags: Tag[];
+  transactionCounts?: Record<string, number>;
   onEdit: (tag: Tag) => void;
   onDelete: (tag: Tag) => void;
+  onTagClick?: (tag: Tag) => void;
   density?: DensityLevel;
   onDensityChange?: (density: DensityLevel) => void;
   sortField?: SortField;
@@ -98,8 +120,10 @@ interface TagListProps {
 
 export function TagList({
   tags,
+  transactionCounts,
   onEdit,
   onDelete,
+  onTagClick,
   density: propDensity,
   onDensityChange,
   sortField: propSortField,
@@ -206,6 +230,9 @@ export function TagList({
               >
                 Icon
               </th>
+              <th className={`${headerPadding} text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden sm:table-cell`}>
+                Transactions
+              </th>
               <th className={`${headerPadding} text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>
                 Actions
               </th>
@@ -216,10 +243,12 @@ export function TagList({
               <TagRow
                 key={tag.id}
                 tag={tag}
+                transactionCount={transactionCounts?.[tag.id] ?? 0}
                 density={density}
                 cellPadding={cellPadding}
                 onEdit={onEdit}
                 onDeleteClick={handleDeleteClick}
+                onTagClick={onTagClick}
                 index={index}
               />
             ))}

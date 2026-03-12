@@ -15,6 +15,7 @@ describe("TagsController", () => {
       update: jest.fn(),
       remove: jest.fn(),
       getTransactionCount: jest.fn(),
+      getAllTransactionCounts: jest.fn(),
       setTransactionTags: jest.fn(),
       setSplitTags: jest.fn(),
     };
@@ -69,6 +70,20 @@ describe("TagsController", () => {
       expect(mockTagsService.getTransactionCount).toHaveBeenCalledWith(
         "user-1",
         "tag-1",
+      );
+    });
+  });
+
+  describe("getAllTransactionCounts()", () => {
+    it("delegates to tagsService.getAllTransactionCounts with userId", async () => {
+      const expected = { "tag-1": 5, "tag-2": 3 };
+      mockTagsService.getAllTransactionCounts.mockResolvedValue(expected);
+
+      const result = await controller.getAllTransactionCounts(mockReq);
+
+      expect(result).toEqual(expected);
+      expect(mockTagsService.getAllTransactionCounts).toHaveBeenCalledWith(
+        "user-1",
       );
     });
   });

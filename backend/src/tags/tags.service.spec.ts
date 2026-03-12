@@ -63,6 +63,7 @@ describe("TagsService", () => {
 
     transactionTagsRepository = {
       count: jest.fn(),
+      createQueryBuilder: jest.fn(),
     };
 
     transactionSplitTagsRepository = {};
@@ -330,6 +331,51 @@ describe("TagsService", () => {
       await expect(
         service.getTransactionCount(userId, "nonexistent"),
       ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe("getAllTransactionCounts()", () => {
+    it("returns transaction counts keyed by tag ID", async () => {
+      const ttQueryBuilder = {
+        select: jest.fn().mockReturnThis(),
+        addSelect: jest.fn().mockReturnThis(),
+        innerJoin: jest.fn().mockReturnThis(),
+        groupBy: jest.fn().mockReturnThis(),
+        getRawMany: jest.fn().mockResolvedValue([
+          { tag_id: "tag-1", count: "5" },
+          { tag_id: "tag-2", count: "3" },
+        ]),
+      };
+      transactionTagsRepository.createQueryBuilder.mockReturnValue(
+        ttQueryBuilder,
+      );
+
+      const result = await service.getAllTransactionCounts(userId);
+
+      expect(result).toEqual({ "tag-1": 5, "tag-2": 3 });
+      expect(ttQueryBuilder.innerJoin).toHaveBeenCalledWith(
+        Tag,
+        "t",
+        "t.id = tt.tag_id AND t.user_id = :userId",
+        { userId },
+      );
+    });
+
+    it("returns empty object when no tags have transactions", async () => {
+      const ttQueryBuilder = {
+        select: jest.fn().mockReturnThis(),
+        addSelect: jest.fn().mockReturnThis(),
+        innerJoin: jest.fn().mockReturnThis(),
+        groupBy: jest.fn().mockReturnThis(),
+        getRawMany: jest.fn().mockResolvedValue([]),
+      };
+      transactionTagsRepository.createQueryBuilder.mockReturnValue(
+        ttQueryBuilder,
+      );
+
+      const result = await service.getAllTransactionCounts(userId);
+
+      expect(result).toEqual({});
     });
   });
 

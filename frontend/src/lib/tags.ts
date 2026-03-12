@@ -37,4 +37,9 @@ export const tagsApi = {
     const response = await apiClient.get<number>(`/tags/${id}/transaction-count`);
     return response.data;
   },
+
+  getAllTransactionCounts: async (): Promise<Record<string, number>> => {
+    const response = await apiClient.get<Record<string, number>>('/tags/transaction-counts');
+    return response.data;
+  },
 };
