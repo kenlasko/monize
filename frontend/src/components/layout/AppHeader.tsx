@@ -88,7 +88,7 @@ export function AppHeader() {
         <div className="flex justify-between h-16">
           <div className="flex items-center">
             {/* Mobile hamburger menu button */}
-            <div className="relative md:hidden" ref={mobileMenuRef}>
+            <div className="relative lg:hidden" ref={mobileMenuRef}>
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 className="p-2 mr-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
@@ -231,9 +231,9 @@ export function AppHeader() {
               className="flex items-center gap-2 text-2xl font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
             >
               <Image src="/icons/monize-logo.svg" alt="Monize" width={32} height={32} className="rounded" priority />
-              <span className="hidden md:inline">Monize</span>
+              <span className="hidden lg:inline">Monize</span>
             </button>
-            <nav className="hidden md:ml-8 md:flex md:space-x-4">
+            <nav className="hidden lg:ml-8 lg:flex lg:items-center lg:space-x-4">
               {navLinks.map((link) => (
                 <button
                   key={link.href}
