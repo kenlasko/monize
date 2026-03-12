@@ -4,11 +4,13 @@ import {
   Post,
   Body,
   Patch,
+  Delete,
   Param,
   Query,
   Request,
   UseGuards,
   ParseUUIDPipe,
+  ParseIntPipe,
   ParseBoolPipe,
   DefaultValuePipe,
   Logger,
@@ -37,6 +39,8 @@ import { SectorWeightingService } from "./sector-weighting.service";
 import { CreateSecurityDto } from "./dto/create-security.dto";
 import { UpdateSecurityDto } from "./dto/update-security.dto";
 import { RefreshSecurityPricesDto } from "./dto/refresh-security-prices.dto";
+import { CreateSecurityPriceDto } from "./dto/create-security-price.dto";
+import { UpdateSecurityPriceDto } from "./dto/update-security-price.dto";
 import { Security } from "./entities/security.entity";
 
 @ApiTags("Securities")
@@ -309,6 +313,21 @@ export class SecuritiesController {
     return { lastUpdated };
   }
 
+  @Post("prices/backfill-transactions")
+  @UseGuards(RolesGuard)
+  @Roles("admin")
+  @ApiOperation({
+    summary:
+      "Backfill prices from investment transactions for all securities (admin only)",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Transaction price backfill completed",
+  })
+  backfillTransactionPrices() {
+    return this.securityPriceService.backfillTransactionPrices();
+  }
+
   @Get(":id/prices")
   @ApiOperation({ summary: "Get price history for a security" })
   @ApiQuery({
@@ -330,5 +349,42 @@ export class SecuritiesController {
       undefined,
       limit,
     );
+  }
+
+  @Post(":id/prices")
+  @ApiOperation({ summary: "Create a manual price entry for a security" })
+  @ApiResponse({ status: 201, description: "Price created" })
+  async createPrice(
+    @Request() req,
+    @Param("id", ParseUUIDPipe) id: string,
+    @Body() dto: CreateSecurityPriceDto,
+  ) {
+    await this.securitiesService.findOne(req.user.id, id);
+    return this.securityPriceService.createManualPrice(id, dto);
+  }
+
+  @Patch(":id/prices/:priceId")
+  @ApiOperation({ summary: "Update a price entry" })
+  @ApiResponse({ status: 200, description: "Price updated" })
+  async updatePrice(
+    @Request() req,
+    @Param("id", ParseUUIDPipe) id: string,
+    @Param("priceId", ParseIntPipe) priceId: number,
+    @Body() dto: UpdateSecurityPriceDto,
+  ) {
+    await this.securitiesService.findOne(req.user.id, id);
+    return this.securityPriceService.updatePrice(id, priceId, dto);
+  }
+
+  @Delete(":id/prices/:priceId")
+  @ApiOperation({ summary: "Delete a price entry" })
+  @ApiResponse({ status: 200, description: "Price deleted" })
+  async deletePrice(
+    @Request() req,
+    @Param("id", ParseUUIDPipe) id: string,
+    @Param("priceId", ParseIntPipe) priceId: number,
+  ) {
+    await this.securitiesService.findOne(req.user.id, id);
+    await this.securityPriceService.deletePrice(id, priceId);
   }
 }

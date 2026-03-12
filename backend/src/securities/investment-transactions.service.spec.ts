@@ -15,6 +15,7 @@ import { AccountsService } from "../accounts/accounts.service";
 import { TransactionsService } from "../transactions/transactions.service";
 import { HoldingsService } from "./holdings.service";
 import { SecuritiesService } from "./securities.service";
+import { SecurityPriceService } from "./security-price.service";
 import { NetWorthService } from "../net-worth/net-worth.service";
 import { DataSource } from "typeorm";
 import { isTransactionInFuture } from "../common/date-utils";
@@ -34,6 +35,7 @@ describe("InvestmentTransactionsService", () => {
   let transactionsService: Record<string, jest.Mock>;
   let holdingsService: Record<string, jest.Mock>;
   let securitiesService: Record<string, jest.Mock>;
+  let securityPriceService: Record<string, jest.Mock>;
   let netWorthService: Record<string, jest.Mock>;
   let dataSource: Record<string, jest.Mock>;
   let mockQueryRunner: Record<string, any>;
@@ -220,6 +222,10 @@ describe("InvestmentTransactionsService", () => {
       findOne: jest.fn().mockResolvedValue(mockSecurity),
     };
 
+    securityPriceService = {
+      upsertTransactionPrice: jest.fn().mockResolvedValue(undefined),
+    };
+
     netWorthService = {
       recalculateAccount: jest.fn().mockResolvedValue(undefined),
       triggerDebouncedRecalc: jest.fn(),
@@ -300,6 +306,10 @@ describe("InvestmentTransactionsService", () => {
         {
           provide: SecuritiesService,
           useValue: securitiesService,
+        },
+        {
+          provide: SecurityPriceService,
+          useValue: securityPriceService,
         },
         {
           provide: NetWorthService,

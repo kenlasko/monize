@@ -15,6 +15,7 @@ import dynamic from 'next/dynamic';
 import { investmentsApi } from '@/lib/investments';
 import { Security, CreateSecurityData, Holding } from '@/types/investment';
 const SecurityForm = dynamic(() => import('@/components/securities/SecurityForm').then(m => m.SecurityForm), { ssr: false });
+const SecurityPriceHistory = dynamic(() => import('@/components/securities/SecurityPriceHistory').then(m => m.SecurityPriceHistory), { ssr: false });
 import { SecurityList, type SecurityHoldings, type SecuritySortField, type SortDirection } from '@/components/securities/SecurityList';
 import { type DensityLevel } from '@/hooks/useTableDensity';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
@@ -38,6 +39,7 @@ function SecuritiesContent() {
   const [holdings, setHoldings] = useState<SecurityHoldings>({});
   const [isLoading, setIsLoading] = useState(true);
   const { showForm, editingItem: editingSecurity, openCreate, openEdit, close, isEditing, modalProps, setFormDirty, unsavedChangesDialog, formSubmitRef } = useFormModal<Security>();
+  const [priceSecurity, setPriceSecurity] = useState<Security | undefined>();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('active');
   const [currentPage, setCurrentPage] = useState(1);
@@ -260,6 +262,16 @@ function SecuritiesContent() {
         </Modal>
         <UnsavedChangesDialog {...unsavedChangesDialog} />
 
+        {/* Price History Modal */}
+        <Modal isOpen={!!priceSecurity} onClose={() => setPriceSecurity(undefined)} maxWidth="5xl" className="p-6">
+          {priceSecurity && (
+            <SecurityPriceHistory
+              security={priceSecurity}
+              onClose={() => setPriceSecurity(undefined)}
+            />
+          )}
+        </Modal>
+
         {/* Securities List */}
         <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg overflow-hidden">
           {isLoading ? (
@@ -270,6 +282,7 @@ function SecuritiesContent() {
               holdings={holdings}
               onEdit={handleEdit}
               onToggleActive={handleToggleActive}
+              onViewPrices={setPriceSecurity}
               density={listDensity}
               onDensityChange={setListDensity}
               sortField={sortField}

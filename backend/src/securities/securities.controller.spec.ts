@@ -44,8 +44,12 @@ describe("SecuritiesController", () => {
       refreshAllPrices: jest.fn(),
       refreshPricesForSecurities: jest.fn(),
       backfillHistoricalPrices: jest.fn(),
+      backfillTransactionPrices: jest.fn(),
       getLastUpdateTime: jest.fn(),
       getPriceHistory: jest.fn(),
+      createManualPrice: jest.fn(),
+      updatePrice: jest.fn(),
+      deletePrice: jest.fn(),
     };
 
     netWorthService = {

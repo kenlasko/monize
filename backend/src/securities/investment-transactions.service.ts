@@ -16,6 +16,7 @@ import { AccountsService } from "../accounts/accounts.service";
 import { TransactionsService } from "../transactions/transactions.service";
 import { HoldingsService } from "./holdings.service";
 import { SecuritiesService } from "./securities.service";
+import { SecurityPriceService } from "./security-price.service";
 import { NetWorthService } from "../net-worth/net-worth.service";
 import {
   Transaction,
@@ -38,8 +39,18 @@ export class InvestmentTransactionsService {
     private transactionsService: TransactionsService,
     private holdingsService: HoldingsService,
     private securitiesService: SecuritiesService,
+    private securityPriceService: SecurityPriceService,
     private netWorthService: NetWorthService,
   ) {}
+
+  private static readonly PRICE_ACTIONS: ReadonlySet<InvestmentAction> =
+    new Set([
+      InvestmentAction.BUY,
+      InvestmentAction.SELL,
+      InvestmentAction.REINVEST,
+      InvestmentAction.TRANSFER_IN,
+      InvestmentAction.TRANSFER_OUT,
+    ]);
 
   private async findCashAccount(
     userId: string,
@@ -253,6 +264,19 @@ export class InvestmentTransactionsService {
     }
 
     this.netWorthService.triggerDebouncedRecalc(createDto.accountId, userId);
+
+    if (
+      createDto.securityId &&
+      InvestmentTransactionsService.PRICE_ACTIONS.has(createDto.action)
+    ) {
+      this.securityPriceService
+        .upsertTransactionPrice(createDto.securityId, createDto.transactionDate)
+        .catch((err) =>
+          this.logger.warn(
+            `Failed to update transaction-derived price: ${err.message}`,
+          ),
+        );
+    }
 
     return this.findOne(userId, savedId);
   }
@@ -570,6 +594,9 @@ export class InvestmentTransactionsService {
   ): Promise<InvestmentTransaction> {
     const transaction = await this.findOne(userId, id);
     const accountId = transaction.accountId;
+    const oldSecurityId = transaction.securityId;
+    const oldTransactionDate = transaction.transactionDate;
+    const oldAction = transaction.action;
 
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -661,6 +688,39 @@ export class InvestmentTransactionsService {
       updateDto.accountId ?? accountId,
       userId,
     );
+
+    // Update transaction-derived prices for the new security/date
+    const newSecurityId = transaction.securityId;
+    const newTransactionDate = transaction.transactionDate;
+    const newAction = transaction.action;
+    if (
+      newSecurityId &&
+      InvestmentTransactionsService.PRICE_ACTIONS.has(newAction)
+    ) {
+      this.securityPriceService
+        .upsertTransactionPrice(newSecurityId, newTransactionDate)
+        .catch((err) =>
+          this.logger.warn(
+            `Failed to update transaction-derived price: ${err.message}`,
+          ),
+        );
+    }
+
+    // Clean up old security/date if it changed
+    if (
+      oldSecurityId &&
+      InvestmentTransactionsService.PRICE_ACTIONS.has(oldAction) &&
+      (oldSecurityId !== newSecurityId ||
+        oldTransactionDate !== newTransactionDate)
+    ) {
+      this.securityPriceService
+        .upsertTransactionPrice(oldSecurityId, oldTransactionDate)
+        .catch((err) =>
+          this.logger.warn(
+            `Failed to clean up old transaction-derived price: ${err.message}`,
+          ),
+        );
+    }
 
     return this.findOne(userId, savedId);
   }
@@ -813,6 +873,22 @@ export class InvestmentTransactionsService {
     }
 
     this.netWorthService.triggerDebouncedRecalc(accountId, userId);
+
+    if (
+      transaction.securityId &&
+      InvestmentTransactionsService.PRICE_ACTIONS.has(transaction.action)
+    ) {
+      this.securityPriceService
+        .upsertTransactionPrice(
+          transaction.securityId,
+          transaction.transactionDate,
+        )
+        .catch((err) =>
+          this.logger.warn(
+            `Failed to update transaction-derived price after removal: ${err.message}`,
+          ),
+        );
+    }
   }
 
   async getSummary(userId: string, accountIds?: string[]) {

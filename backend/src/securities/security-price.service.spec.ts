@@ -1736,4 +1736,192 @@ describe("SecurityPriceService", () => {
       expect(result!.name).toBe("X Canada");
     });
   });
+
+  describe("upsertTransactionPrice", () => {
+    it("should create a price row from transaction data", async () => {
+      dataSourceMock.query
+        .mockResolvedValueOnce([
+          { avg_price: "150.500000", latest_action: "BUY" },
+        ])
+        .mockResolvedValueOnce(undefined);
+
+      await service.upsertTransactionPrice("sec-1", "2025-06-01");
+
+      expect(dataSourceMock.query).toHaveBeenCalledTimes(2);
+      const upsertCall = dataSourceMock.query.mock.calls[1];
+      expect(upsertCall[0]).toContain("INSERT INTO security_prices");
+      expect(upsertCall[1]).toEqual([
+        "sec-1",
+        "2025-06-01",
+        150.5,
+        "buy",
+        ["buy", "sell", "reinvest", "transfer_in", "transfer_out"],
+      ]);
+    });
+
+    it("should delete transaction-sourced price when no transactions remain", async () => {
+      dataSourceMock.query.mockResolvedValueOnce([
+        { avg_price: null, latest_action: null },
+      ]);
+
+      await service.upsertTransactionPrice("sec-1", "2025-06-01");
+
+      expect(dataSourceMock.query).toHaveBeenCalledTimes(2);
+      const deleteCall = dataSourceMock.query.mock.calls[1];
+      expect(deleteCall[0]).toContain("DELETE FROM security_prices");
+    });
+
+    it("should use most recent transaction action as source", async () => {
+      dataSourceMock.query
+        .mockResolvedValueOnce([
+          { avg_price: "160.000000", latest_action: "SELL" },
+        ])
+        .mockResolvedValueOnce(undefined);
+
+      await service.upsertTransactionPrice("sec-1", "2025-06-01");
+
+      const upsertCall = dataSourceMock.query.mock.calls[1];
+      expect(upsertCall[1][3]).toBe("sell");
+    });
+
+    it("should round price to 6 decimal places", async () => {
+      dataSourceMock.query
+        .mockResolvedValueOnce([
+          { avg_price: "150.1234567", latest_action: "BUY" },
+        ])
+        .mockResolvedValueOnce(undefined);
+
+      await service.upsertTransactionPrice("sec-1", "2025-06-01");
+
+      const upsertCall = dataSourceMock.query.mock.calls[1];
+      expect(upsertCall[1][2]).toBe(150.123457);
+    });
+  });
+
+  describe("createManualPrice", () => {
+    it("should create a new manual price entry", async () => {
+      securityPriceRepository.findOne.mockResolvedValue(null);
+
+      await service.createManualPrice("sec-1", {
+        priceDate: "2025-06-01",
+        closePrice: 150.5,
+      });
+
+      expect(securityPriceRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          securityId: "sec-1",
+          closePrice: 150.5,
+          source: "manual",
+        }),
+      );
+      expect(securityPriceRepository.save).toHaveBeenCalled();
+    });
+
+    it("should overwrite existing price entry", async () => {
+      const existing = { ...mockPriceEntry, source: "yahoo_finance" };
+      securityPriceRepository.findOne.mockResolvedValue(existing);
+
+      await service.createManualPrice("sec-1", {
+        priceDate: "2025-06-01",
+        closePrice: 200.0,
+      });
+
+      expect(securityPriceRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          closePrice: 200.0,
+          source: "manual",
+        }),
+      );
+    });
+  });
+
+  describe("updatePrice", () => {
+    it("should update an existing price entry", async () => {
+      securityPriceRepository.findOne.mockResolvedValue({
+        ...mockPriceEntry,
+      });
+
+      await service.updatePrice("sec-1", 1, { closePrice: 200.0 });
+
+      expect(securityPriceRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          closePrice: 200.0,
+          source: "manual",
+        }),
+      );
+    });
+
+    it("should throw NotFoundException when price not found", async () => {
+      securityPriceRepository.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.updatePrice("sec-1", 999, { closePrice: 200.0 }),
+      ).rejects.toThrow("Security price not found");
+    });
+  });
+
+  describe("deletePrice", () => {
+    it("should delete a price entry and attempt backfill", async () => {
+      const priceToDelete = {
+        ...mockPriceEntry,
+        priceDate: "2025-06-01",
+      };
+      securityPriceRepository.findOne.mockResolvedValue(priceToDelete);
+      securityPriceRepository.remove = jest.fn().mockResolvedValue(undefined);
+      dataSourceMock.query.mockResolvedValue([
+        { avg_price: null, latest_action: null },
+      ]);
+
+      await service.deletePrice("sec-1", 1);
+
+      expect(securityPriceRepository.remove).toHaveBeenCalledWith(
+        priceToDelete,
+      );
+    });
+
+    it("should throw NotFoundException when price not found", async () => {
+      securityPriceRepository.findOne.mockResolvedValue(null);
+
+      await expect(service.deletePrice("sec-1", 999)).rejects.toThrow(
+        "Security price not found",
+      );
+    });
+  });
+
+  describe("backfillTransactionPrices", () => {
+    it("should process all transaction pairs", async () => {
+      dataSourceMock.query
+        .mockResolvedValueOnce([
+          {
+            security_id: "sec-1",
+            transaction_date: "2025-06-01",
+            avg_price: "150.000000",
+            latest_action: "BUY",
+          },
+          {
+            security_id: "sec-1",
+            transaction_date: "2025-06-02",
+            avg_price: "155.000000",
+            latest_action: "SELL",
+          },
+        ])
+        .mockResolvedValueOnce({ rowCount: 2 });
+
+      const result = await service.backfillTransactionPrices();
+
+      expect(result.processed).toBe(2);
+      expect(dataSourceMock.query).toHaveBeenCalledTimes(2);
+      const insertCall = dataSourceMock.query.mock.calls[1];
+      expect(insertCall[0]).toContain("INSERT INTO security_prices");
+    });
+
+    it("should return zeros when no transactions exist", async () => {
+      dataSourceMock.query.mockResolvedValueOnce([]);
+
+      const result = await service.backfillTransactionPrices();
+
+      expect(result.processed).toBe(0);
+      expect(result.created).toBe(0);
+    });
+  });
 });

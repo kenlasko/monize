@@ -1,4 +1,4 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository, In, DataSource } from "typeorm";
 import { Cron } from "@nestjs/schedule";
@@ -11,8 +11,18 @@ import {
   SecurityLookupResult,
   HistoricalPrice,
 } from "./yahoo-finance.service";
+import { CreateSecurityPriceDto } from "./dto/create-security-price.dto";
+import { UpdateSecurityPriceDto } from "./dto/update-security-price.dto";
 
 export { SecurityLookupResult } from "./yahoo-finance.service";
+
+const TRANSACTION_SOURCES = [
+  "buy",
+  "sell",
+  "reinvest",
+  "transfer_in",
+  "transfer_out",
+];
 
 export interface PriceUpdateResult {
   symbol: string;
@@ -633,5 +643,230 @@ export class SecurityPriceService {
         `Failed to backfill daily prices for ${security.symbol}: ${error.message}`,
       );
     }
+  }
+
+  /**
+   * Upsert a transaction-derived price for a security on a given date.
+   * Computes average price from all price-relevant transactions on that date.
+   * Never overwrites yahoo_finance or manual prices.
+   */
+  async upsertTransactionPrice(
+    securityId: string,
+    transactionDate: string,
+  ): Promise<void> {
+    const rows: Array<{
+      avg_price: string;
+      latest_action: string;
+    }> = await this.dataSource.query(
+      `SELECT AVG(price::numeric) as avg_price,
+              (SELECT action FROM investment_transactions
+               WHERE security_id = $1 AND transaction_date = $2
+                 AND action IN ('BUY', 'SELL', 'REINVEST', 'TRANSFER_IN', 'TRANSFER_OUT')
+                 AND price IS NOT NULL
+               ORDER BY created_at DESC LIMIT 1) as latest_action
+       FROM investment_transactions
+       WHERE security_id = $1
+         AND transaction_date = $2
+         AND action IN ('BUY', 'SELL', 'REINVEST', 'TRANSFER_IN', 'TRANSFER_OUT')
+         AND price IS NOT NULL`,
+      [securityId, transactionDate],
+    );
+
+    const avgPrice = rows[0]?.avg_price
+      ? Math.round(Number(rows[0].avg_price) * 1000000) / 1000000
+      : null;
+    const latestAction = rows[0]?.latest_action;
+
+    if (avgPrice === null || latestAction === null) {
+      // No transactions remain -- remove any transaction-sourced price
+      await this.dataSource.query(
+        `DELETE FROM security_prices
+         WHERE security_id = $1 AND price_date = $2
+           AND source = ANY($3)`,
+        [securityId, transactionDate, TRANSACTION_SOURCES],
+      );
+      return;
+    }
+
+    const source = latestAction.toLowerCase();
+
+    await this.dataSource.query(
+      `INSERT INTO security_prices (security_id, price_date, close_price, source)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (security_id, price_date)
+       DO UPDATE SET close_price = $3, source = $4
+       WHERE security_prices.source = ANY($5)`,
+      [securityId, transactionDate, avgPrice, source, TRANSACTION_SOURCES],
+    );
+  }
+
+  /**
+   * Backfill transaction-derived prices for all securities.
+   * Processes all distinct (security_id, transaction_date) pairs.
+   */
+  async backfillTransactionPrices(): Promise<{
+    processed: number;
+    created: number;
+    skipped: number;
+  }> {
+    this.logger.log("Starting transaction price backfill");
+
+    const pairs: Array<{
+      security_id: string;
+      transaction_date: string;
+      avg_price: string;
+      latest_action: string;
+    }> = await this.dataSource.query(
+      `SELECT it.security_id, it.transaction_date,
+              AVG(it.price::numeric) as avg_price,
+              (SELECT it2.action FROM investment_transactions it2
+               WHERE it2.security_id = it.security_id
+                 AND it2.transaction_date = it.transaction_date
+                 AND it2.action IN ('BUY', 'SELL', 'REINVEST', 'TRANSFER_IN', 'TRANSFER_OUT')
+                 AND it2.price IS NOT NULL
+               ORDER BY it2.created_at DESC LIMIT 1) as latest_action
+       FROM investment_transactions it
+       WHERE it.security_id IS NOT NULL
+         AND it.price IS NOT NULL
+         AND it.action IN ('BUY', 'SELL', 'REINVEST', 'TRANSFER_IN', 'TRANSFER_OUT')
+       GROUP BY it.security_id, it.transaction_date`,
+    );
+
+    let created = 0;
+    let skipped = 0;
+    const batchSize = 500;
+
+    for (let i = 0; i < pairs.length; i += batchSize) {
+      const batch = pairs.slice(i, i + batchSize);
+      const values = batch
+        .map((_, idx) => {
+          const offset = idx * 4;
+          return `($${offset + 1}::UUID, $${offset + 2}::DATE, $${offset + 3}, $${offset + 4})`;
+        })
+        .join(", ");
+
+      const params: any[] = [];
+      for (const pair of batch) {
+        const price = Math.round(Number(pair.avg_price) * 1000000) / 1000000;
+        params.push(
+          pair.security_id,
+          pair.transaction_date,
+          price,
+          pair.latest_action.toLowerCase(),
+        );
+      }
+
+      const result = await this.dataSource.query(
+        `INSERT INTO security_prices (security_id, price_date, close_price, source)
+         VALUES ${values}
+         ON CONFLICT (security_id, price_date)
+         DO UPDATE SET close_price = EXCLUDED.close_price, source = EXCLUDED.source
+         WHERE security_prices.source = ANY($${params.length + 1})`,
+        [...params, TRANSACTION_SOURCES],
+      );
+
+      const affected = Array.isArray(result)
+        ? result.length
+        : (result?.rowCount ?? 0);
+      created += affected;
+    }
+
+    skipped = pairs.length - created;
+
+    this.logger.log(
+      `Transaction price backfill completed: ${pairs.length} processed, ${created} created/updated, ${skipped} skipped`,
+    );
+
+    return { processed: pairs.length, created, skipped };
+  }
+
+  /**
+   * Create a manual price entry (source='manual').
+   * Overwrites any existing price for that date.
+   */
+  async createManualPrice(
+    securityId: string,
+    dto: CreateSecurityPriceDto,
+  ): Promise<SecurityPrice> {
+    const existing = await this.securityPriceRepository.findOne({
+      where: { securityId, priceDate: new Date(dto.priceDate) },
+    });
+
+    if (existing) {
+      existing.closePrice = dto.closePrice;
+      existing.openPrice = dto.openPrice as number;
+      existing.highPrice = dto.highPrice as number;
+      existing.lowPrice = dto.lowPrice as number;
+      existing.volume = dto.volume as number;
+      existing.source = "manual";
+      return this.securityPriceRepository.save(existing);
+    }
+
+    const priceEntry = this.securityPriceRepository.create({
+      securityId,
+      priceDate: new Date(dto.priceDate),
+      closePrice: dto.closePrice,
+      openPrice: dto.openPrice as number,
+      highPrice: dto.highPrice as number,
+      lowPrice: dto.lowPrice as number,
+      volume: dto.volume as number,
+      source: "manual",
+    } as Partial<SecurityPrice>);
+
+    return this.securityPriceRepository.save(priceEntry);
+  }
+
+  /**
+   * Update an existing price entry. Sets source to 'manual'.
+   */
+  async updatePrice(
+    securityId: string,
+    priceId: number,
+    dto: UpdateSecurityPriceDto,
+  ): Promise<SecurityPrice> {
+    const price = await this.securityPriceRepository.findOne({
+      where: { id: priceId, securityId },
+    });
+
+    if (!price) {
+      throw new NotFoundException("Security price not found");
+    }
+
+    if (dto.closePrice !== undefined) price.closePrice = dto.closePrice;
+    if (dto.openPrice !== undefined) price.openPrice = dto.openPrice;
+    if (dto.highPrice !== undefined) price.highPrice = dto.highPrice;
+    if (dto.lowPrice !== undefined) price.lowPrice = dto.lowPrice;
+    if (dto.volume !== undefined) price.volume = dto.volume;
+    if (dto.priceDate !== undefined) price.priceDate = new Date(dto.priceDate);
+    price.source = "manual";
+
+    return this.securityPriceRepository.save(price);
+  }
+
+  /**
+   * Delete a price entry. Backfills from transactions if available.
+   */
+  async deletePrice(securityId: string, priceId: number): Promise<void> {
+    const price = await this.securityPriceRepository.findOne({
+      where: { id: priceId, securityId },
+    });
+
+    if (!price) {
+      throw new NotFoundException("Security price not found");
+    }
+
+    const priceDate =
+      typeof price.priceDate === "string"
+        ? price.priceDate
+        : price.priceDate.toISOString().substring(0, 10);
+
+    await this.securityPriceRepository.remove(price);
+
+    // Backfill from transactions if available
+    await this.upsertTransactionPrice(securityId, priceDate).catch((err) =>
+      this.logger.warn(
+        `Failed to backfill transaction price after deletion: ${err.message}`,
+      ),
+    );
   }
 }

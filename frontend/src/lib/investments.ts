@@ -8,6 +8,7 @@ import {
   Holding,
   Security,
   CreateSecurityData,
+  CreateSecurityPriceData,
   PaginatedInvestmentTransactions,
   TopMover,
   SectorWeightingResult,
@@ -238,6 +239,26 @@ export const investmentsApi = {
     });
     setCache(cacheKey, response.data, 60_000);
     return response.data;
+  },
+
+  // Create a manual price entry for a security
+  createSecurityPrice: async (securityId: string, data: CreateSecurityPriceData): Promise<SecurityPrice> => {
+    const response = await apiClient.post<SecurityPrice>(`/securities/${securityId}/prices`, data);
+    invalidateCache('investments:prices:');
+    return response.data;
+  },
+
+  // Update a price entry
+  updateSecurityPrice: async (securityId: string, priceId: number, data: Partial<CreateSecurityPriceData>): Promise<SecurityPrice> => {
+    const response = await apiClient.patch<SecurityPrice>(`/securities/${securityId}/prices/${priceId}`, data);
+    invalidateCache('investments:prices:');
+    return response.data;
+  },
+
+  // Delete a price entry
+  deleteSecurityPrice: async (securityId: string, priceId: number): Promise<void> => {
+    await apiClient.delete(`/securities/${securityId}/prices/${priceId}`);
+    invalidateCache('investments:prices:');
   },
 
   // Get sector weightings

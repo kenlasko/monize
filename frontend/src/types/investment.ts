@@ -173,6 +173,15 @@ export interface SecurityPrice {
   createdAt: string;
 }
 
+export interface CreateSecurityPriceData {
+  priceDate: string;
+  closePrice: number;
+  openPrice?: number;
+  highPrice?: number;
+  lowPrice?: number;
+  volume?: number;
+}
+
 export interface CreateSecurityData {
   symbol: string;
   name: string;
