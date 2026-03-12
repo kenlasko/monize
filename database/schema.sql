@@ -249,6 +249,40 @@ CREATE INDEX idx_transaction_splits_category ON transaction_splits(category_id);
 CREATE INDEX idx_transaction_splits_transfer_account ON transaction_splits(transfer_account_id);
 CREATE INDEX idx_transaction_splits_linked ON transaction_splits(linked_transaction_id);
 
+-- Tags
+CREATE TABLE tags (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name VARCHAR(100) NOT NULL,
+    color VARCHAR(7),
+    icon VARCHAR(50),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE UNIQUE INDEX idx_tags_user_name ON tags(user_id, LOWER(name));
+CREATE INDEX idx_tags_user ON tags(user_id);
+
+-- Transaction Tags (many-to-many)
+CREATE TABLE transaction_tags (
+    transaction_id UUID NOT NULL REFERENCES transactions(id) ON DELETE CASCADE,
+    tag_id UUID NOT NULL REFERENCES tags(id) ON DELETE CASCADE,
+    PRIMARY KEY (transaction_id, tag_id)
+);
+
+CREATE INDEX idx_transaction_tags_tag ON transaction_tags(tag_id);
+CREATE INDEX idx_transaction_tags_transaction ON transaction_tags(transaction_id);
+
+-- Transaction Split Tags (many-to-many)
+CREATE TABLE transaction_split_tags (
+    transaction_split_id UUID NOT NULL REFERENCES transaction_splits(id) ON DELETE CASCADE,
+    tag_id UUID NOT NULL REFERENCES tags(id) ON DELETE CASCADE,
+    PRIMARY KEY (transaction_split_id, tag_id)
+);
+
+CREATE INDEX idx_transaction_split_tags_tag ON transaction_split_tags(tag_id);
+CREATE INDEX idx_transaction_split_tags_split ON transaction_split_tags(transaction_split_id);
+
 -- Scheduled Transactions (recurring payments / bills & deposits)
 CREATE TABLE scheduled_transactions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -274,6 +308,7 @@ CREATE TABLE scheduled_transactions (
     is_split BOOLEAN DEFAULT false, -- indicates amounts are split across categories
     is_transfer BOOLEAN DEFAULT false, -- indicates this is an account-to-account transfer
     transfer_account_id UUID REFERENCES accounts(id) ON DELETE SET NULL, -- destination account for transfers
+    tag_ids JSONB DEFAULT '[]'::jsonb, -- array of tag UUIDs to apply when posting
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -799,3 +834,6 @@ CREATE TABLE import_column_mappings (
 CREATE INDEX idx_import_column_mappings_user ON import_column_mappings(user_id);
 
 CREATE TRIGGER update_import_column_mappings_updated_at BEFORE UPDATE ON import_column_mappings FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Trigger for tags updated_at
+CREATE TRIGGER update_tags_updated_at BEFORE UPDATE ON tags FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

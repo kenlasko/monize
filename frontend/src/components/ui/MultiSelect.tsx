@@ -19,6 +19,8 @@ interface MultiSelectProps {
   showSearch?: boolean;
   error?: string;
   disabled?: boolean;
+  onCreateNew?: () => void;
+  createNewLabel?: string;
 }
 
 export function MultiSelect({
@@ -30,6 +32,8 @@ export function MultiSelect({
   showSearch = true,
   error,
   disabled = false,
+  onCreateNew,
+  createNewLabel = 'Create new...',
 }: MultiSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchText, setSearchText] = useState('');
@@ -299,59 +303,90 @@ export function MultiSelect({
 
           {/* Options list */}
           <div className="max-h-[30rem] overflow-auto py-1">
-            {filteredOptions.length === 0 ? (
+            {filteredOptions.length === 0 && !onCreateNew ? (
               <div className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
                 No options found
               </div>
             ) : (
-              filteredOptions.map((option) => {
-                const selectionState = getSelectionState(option.value, option.hasChildren);
-                const isChecked = selectionState === 'all';
-                const isIndeterminate = selectionState === 'some';
+              <>
+                {filteredOptions.length === 0 && (
+                  <div className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
+                    No options found
+                  </div>
+                )}
+                {filteredOptions.map((option) => {
+                  const selectionState = getSelectionState(option.value, option.hasChildren);
+                  const isChecked = selectionState === 'all';
+                  const isIndeterminate = selectionState === 'some';
 
-                // When searching, show parent name for context (flatten the hierarchy)
-                const isSearching = searchText.length > 0;
-                const parentLabel = option.parentValue ? optionMap.get(option.parentValue)?.label : null;
+                  // When searching, show parent name for context (flatten the hierarchy)
+                  const isSearching = searchText.length > 0;
+                  const parentLabel = option.parentValue ? optionMap.get(option.parentValue)?.label : null;
 
-                return (
-                  <label
-                    key={option.value}
-                    className={cn(
-                      'flex items-center px-3 py-2 cursor-pointer',
-                      'hover:bg-gray-100 dark:hover:bg-gray-700',
-                      option.hasChildren && 'font-medium'
-                    )}
-                    style={{ paddingLeft: isSearching ? '0.75rem' : `${(option.level * 1.25) + 0.75}rem` }}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={isChecked}
-                      ref={(el) => {
-                        if (el) el.indeterminate = isIndeterminate;
-                      }}
-                      onChange={() => handleToggle(option.value, option.hasChildren)}
+                  return (
+                    <label
+                      key={option.value}
                       className={cn(
-                        'h-4 w-4 rounded border-gray-300 text-blue-600',
-                        'focus:ring-blue-500 focus:ring-offset-0',
-                        'dark:border-gray-500 dark:bg-gray-700 dark:focus:ring-blue-400'
+                        'flex items-center px-3 py-2 cursor-pointer',
+                        'hover:bg-gray-100 dark:hover:bg-gray-700',
+                        option.hasChildren && 'font-medium'
                       )}
-                    />
-                    <span className={cn(
-                      'ml-2 text-sm text-gray-900 dark:text-gray-100',
-                      option.hasChildren && 'font-medium'
-                    )}>
-                      {isSearching && parentLabel && (
-                        <span className="text-gray-500 dark:text-gray-400">
-                          {parentLabel} &rsaquo;{' '}
-                        </span>
-                      )}
-                      {option.label}
-                    </span>
-                  </label>
-                );
-              })
+                      style={{ paddingLeft: isSearching ? '0.75rem' : `${(option.level * 1.25) + 0.75}rem` }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        ref={(el) => {
+                          if (el) el.indeterminate = isIndeterminate;
+                        }}
+                        onChange={() => handleToggle(option.value, option.hasChildren)}
+                        className={cn(
+                          'h-4 w-4 rounded border-gray-300 text-blue-600',
+                          'focus:ring-blue-500 focus:ring-offset-0',
+                          'dark:border-gray-500 dark:bg-gray-700 dark:focus:ring-blue-400'
+                        )}
+                      />
+                      <span className={cn(
+                        'ml-2 text-sm text-gray-900 dark:text-gray-100',
+                        option.hasChildren && 'font-medium'
+                      )}>
+                        {isSearching && parentLabel && (
+                          <span className="text-gray-500 dark:text-gray-400">
+                            {parentLabel} &rsaquo;{' '}
+                          </span>
+                        )}
+                        {option.label}
+                      </span>
+                    </label>
+                  );
+                })}
+              </>
             )}
           </div>
+
+          {/* Create new option */}
+          {onCreateNew && (
+            <div className="border-t border-gray-200 dark:border-gray-700">
+              <button
+                type="button"
+                onClick={() => {
+                  onCreateNew();
+                  setIsOpen(false);
+                  setSearchText('');
+                }}
+                className={cn(
+                  'flex items-center w-full px-3 py-2 text-sm',
+                  'text-green-700 dark:text-green-400',
+                  'hover:bg-green-50 dark:hover:bg-green-900/30',
+                )}
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                {createNewLabel}
+              </button>
+            </div>
+          )}
         </div>
       )}
 

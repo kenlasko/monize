@@ -93,6 +93,10 @@ describe('TransactionFilterPanel', () => {
     categoryFilterOptions: [],
     payeeFilterOptions: [],
     formatDate: vi.fn((d: string) => d),
+    filterTagIds: [] as string[],
+    setFilterTagIds: vi.fn(),
+    selectedTags: [],
+    tagFilterOptions: [],
     onClearFilters: vi.fn(),
   };
 

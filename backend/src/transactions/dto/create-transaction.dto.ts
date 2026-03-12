@@ -128,4 +128,12 @@ export class CreateTransactionDto {
   @ValidateNested({ each: true })
   @Type(() => CreateTransactionSplitDto)
   splits?: CreateTransactionSplitDto[];
+
+  @ApiPropertyOptional({
+    description: "Tag IDs to assign to this transaction",
+  })
+  @IsOptional()
+  @IsArray()
+  @IsUUID(undefined, { each: true })
+  tagIds?: string[];
 }

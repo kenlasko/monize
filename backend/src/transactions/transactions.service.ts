@@ -15,6 +15,7 @@ import { CreateTransactionDto } from "./dto/create-transaction.dto";
 import { UpdateTransactionDto } from "./dto/update-transaction.dto";
 import { CreateTransactionSplitDto } from "./dto/create-transaction-split.dto";
 import { CreateTransferDto } from "./dto/create-transfer.dto";
+import { TagsService } from "../tags/tags.service";
 import { AccountsService } from "../accounts/accounts.service";
 import { PayeesService } from "../payees/payees.service";
 import { NetWorthService } from "../net-worth/net-worth.service";
@@ -67,6 +68,7 @@ export class TransactionsService {
     @Inject(forwardRef(() => AccountsService))
     private accountsService: AccountsService,
     private payeesService: PayeesService,
+    private tagsService: TagsService,
     @Inject(forwardRef(() => NetWorthService))
     private netWorthService: NetWorthService,
     private splitService: TransactionSplitService,
@@ -83,7 +85,7 @@ export class TransactionsService {
   ): Promise<Transaction> {
     await this.accountsService.findOne(userId, createTransactionDto.accountId);
 
-    const { splits, ...transactionData } = createTransactionDto;
+    const { splits, tagIds, ...transactionData } = createTransactionDto;
     const hasSplits = splits && splits.length > 0;
 
     if (hasSplits) {
@@ -137,13 +139,38 @@ export class TransactionsService {
       savedTransactionId = savedTransaction.id;
 
       if (hasSplits) {
-        await this.splitService.createSplits(
+        const savedSplits = await this.splitService.createSplits(
           savedTransaction.id,
           splits,
           userId,
           createTransactionDto.accountId,
           new Date(createTransactionDto.transactionDate),
           transactionData.payeeName,
+          queryRunner,
+        );
+
+        // Set split-level tags
+        if (savedSplits && splits) {
+          for (let i = 0; i < splits.length; i++) {
+            const splitTagIds = splits[i].tagIds;
+            if (splitTagIds && splitTagIds.length > 0 && savedSplits[i]) {
+              await this.tagsService.setSplitTags(
+                savedSplits[i].id,
+                splitTagIds,
+                userId,
+                queryRunner,
+              );
+            }
+          }
+        }
+      }
+
+      // Set transaction-level tags
+      if (tagIds && tagIds.length > 0) {
+        await this.tagsService.setTransactionTags(
+          savedTransaction.id,
+          tagIds,
+          userId,
           queryRunner,
         );
       }
@@ -193,6 +220,7 @@ export class TransactionsService {
     targetTransactionId?: string,
     amountFrom?: number,
     amountTo?: number,
+    tagIds?: string[],
   ): Promise<PaginatedTransactions> {
     let safePage = Math.max(1, page);
     const safeLimit = Math.min(200, Math.max(1, limit));
@@ -202,9 +230,11 @@ export class TransactionsService {
       .leftJoinAndSelect("transaction.account", "account")
       .leftJoinAndSelect("transaction.payee", "payee")
       .leftJoinAndSelect("transaction.category", "category")
+      .leftJoinAndSelect("transaction.tags", "tags")
       .leftJoinAndSelect("transaction.splits", "splits")
       .leftJoinAndSelect("splits.category", "splitCategory")
       .leftJoinAndSelect("splits.transferAccount", "splitTransferAccount")
+      .leftJoinAndSelect("splits.tags", "splitTags")
       .leftJoinAndSelect("transaction.linkedTransaction", "linkedTransaction")
       .leftJoinAndSelect("linkedTransaction.account", "linkedAccount")
       .leftJoinAndSelect("linkedTransaction.splits", "linkedSplits")
@@ -273,6 +303,20 @@ export class TransactionsService {
 
     if (amountTo !== undefined) {
       queryBuilder.andWhere("transaction.amount <= :amountTo", { amountTo });
+    }
+
+    if (tagIds && tagIds.length > 0) {
+      queryBuilder.leftJoin("transaction.tags", "filterTags");
+      queryBuilder.leftJoin("splits.tags", "filterSplitTags");
+      queryBuilder.andWhere(
+        new Brackets((qb) => {
+          qb.where("filterTags.id IN (:...filterTagIds)", {
+            filterTagIds: tagIds,
+          }).orWhere("filterSplitTags.id IN (:...filterTagIds)", {
+            filterTagIds: tagIds,
+          });
+        }),
+      );
     }
 
     if (targetTransactionId) {
@@ -555,9 +599,11 @@ export class TransactionsService {
         "account",
         "payee",
         "category",
+        "tags",
         "splits",
         "splits.category",
         "splits.transferAccount",
+        "splits.tags",
         "linkedTransaction",
         "linkedTransaction.account",
       ],
@@ -582,7 +628,7 @@ export class TransactionsService {
     const oldStatus = transaction.status;
     const wasVoid = oldStatus === TransactionStatus.VOID;
 
-    const { splits, ...updateData } = updateTransactionDto;
+    const { splits, tagIds, ...updateData } = updateTransactionDto;
 
     if (updateData.accountId && updateData.accountId !== oldAccountId) {
       await this.accountsService.findOne(userId, updateData.accountId);
@@ -625,7 +671,7 @@ export class TransactionsService {
           const accountId = updateData.accountId ?? transaction.accountId;
           const txDate =
             updateData.transactionDate ?? transaction.transactionDate;
-          await this.splitService.createSplits(
+          const savedSplits = await this.splitService.createSplits(
             id,
             splits,
             userId,
@@ -634,6 +680,21 @@ export class TransactionsService {
             updateData.payeeName ?? transaction.payeeName,
             queryRunner,
           );
+
+          // Set split-level tags
+          if (savedSplits) {
+            for (let i = 0; i < splits.length; i++) {
+              const splitTagIds = splits[i].tagIds;
+              if (splitTagIds && splitTagIds.length > 0 && savedSplits[i]) {
+                await this.tagsService.setSplitTags(
+                  savedSplits[i].id,
+                  splitTagIds,
+                  userId,
+                  queryRunner,
+                );
+              }
+            }
+          }
         } else if (Array.isArray(splits) && splits.length === 0) {
           await this.splitService.deleteTransferSplitLinkedTransactions(
             id,
@@ -687,6 +748,16 @@ export class TransactionsService {
           Transaction,
           id,
           transactionUpdateData,
+        );
+      }
+
+      // Update transaction-level tags
+      if (tagIds !== undefined) {
+        await this.tagsService.setTransactionTags(
+          id,
+          tagIds,
+          userId,
+          queryRunner,
         );
       }
 
@@ -1015,6 +1086,7 @@ export class TransactionsService {
     search?: string,
     amountFrom?: number,
     amountTo?: number,
+    tagIds?: string[],
   ) {
     return this.analyticsService.getMonthlyTotals(
       userId,
@@ -1026,6 +1098,7 @@ export class TransactionsService {
       search,
       amountFrom,
       amountTo,
+      tagIds,
     );
   }
 

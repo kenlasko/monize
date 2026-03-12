@@ -10,16 +10,21 @@ import { Input } from '@/components/ui/Input';
 import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { Select } from '@/components/ui/Select';
 import { Combobox } from '@/components/ui/Combobox';
+import { MultiSelect } from '@/components/ui/MultiSelect';
+import { Modal } from '@/components/ui/Modal';
+import { TagForm } from '@/components/tags/TagForm';
 import { SplitEditor, SplitRow, createEmptySplits, toSplitRows, toCreateSplitData } from '@/components/transactions/SplitEditor';
 import { scheduledTransactionsApi } from '@/lib/scheduled-transactions';
 import { getLocalDateString } from '@/lib/utils';
 import { payeesApi } from '@/lib/payees';
 import { categoriesApi } from '@/lib/categories';
 import { accountsApi } from '@/lib/accounts';
+import { tagsApi } from '@/lib/tags';
 import { ScheduledTransaction, FrequencyType, FREQUENCY_LABELS } from '@/types/scheduled-transaction';
 import { Payee } from '@/types/payee';
 import { Category } from '@/types/category';
 import { Account } from '@/types/account';
+import { Tag } from '@/types/tag';
 import { buildCategoryTree } from '@/lib/categoryUtils';
 import { roundToCents, getCurrencySymbol } from '@/lib/format';
 import { getErrorMessage } from '@/lib/errors';
@@ -88,6 +93,11 @@ export function ScheduledTransactionForm({
   const [categories, setCategories] = useState<Category[]>([]);
   const [payees, setPayees] = useState<Payee[]>([]);
   const [allPayees, setAllPayees] = useState<Payee[]>([]);
+  const [tags, setTags] = useState<Tag[]>([]);
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>(
+    scheduledTransaction?.tagIds || []
+  );
+  const [showTagForm, setShowTagForm] = useState(false);
 
   // Determine initial mode
   const getInitialMode = (): ScheduledTransactionMode => {
@@ -220,6 +230,14 @@ export function ScheduledTransactionForm({
     [payees]
   );
 
+  // Memoize tag options
+  const tagOptions = useMemo(() =>
+    [...tags]
+      .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }))
+      .map(tag => ({ value: tag.id, label: tag.name })),
+    [tags]
+  );
+
   // Load accounts, categories, active payees on mount
   // When editing, also fetch the scheduled transaction's payee if it's inactive
   useEffect(() => {
@@ -227,10 +245,12 @@ export function ScheduledTransactionForm({
       accountsApi.getAll(),
       categoriesApi.getAll(),
       payeesApi.getAll('active'),
+      tagsApi.getAll(),
     ])
-      .then(async ([accountsData, categoriesData, payeesData]) => {
+      .then(async ([accountsData, categoriesData, payeesData, tagsData]) => {
         setAccounts(accountsData);
         setCategories(categoriesData);
+        setTags(tagsData);
 
         // If editing and the payee isn't in the active list, fetch it so it shows in the dropdown
         if (scheduledTransaction?.payeeId && !payeesData.some(p => p.id === scheduledTransaction.payeeId)) {
@@ -381,6 +401,19 @@ export function ScheduledTransactionForm({
     setValue('amount', rounded, { shouldDirty: true, shouldValidate: true });
   };
 
+  const handleTagCreate = async (data: { name: string; color?: string; icon?: string }) => {
+    const cleanedData = {
+      ...data,
+      color: data.color || undefined,
+      icon: data.icon || undefined,
+    };
+    const newTag = await tagsApi.create(cleanedData);
+    setTags(prev => [...prev, newTag]);
+    setSelectedTagIds(prev => [...prev, newTag.id]);
+    toast.success(`Tag "${newTag.name}" created`);
+    setShowTagForm(false);
+  };
+
   const onSubmit = async (data: ScheduledTransactionFormData) => {
     // Validate transfer destination
     if (mode === 'transfer') {
@@ -418,6 +451,7 @@ export function ScheduledTransactionForm({
         ...formData,
         endDate: useEndDate ? formData.endDate : undefined,
         occurrencesRemaining: useOccurrences ? formData.occurrencesRemaining : undefined,
+        tagIds: selectedTagIds.length > 0 ? selectedTagIds : [],
       };
 
       if (mode === 'transfer') {
@@ -558,6 +592,30 @@ export function ScheduledTransactionForm({
         </label>
       </div>
     </div>
+  );
+
+  // Shared Tags section
+  const renderTags = () => (
+    <>
+      <MultiSelect
+        label="Tags"
+        options={tagOptions}
+        value={selectedTagIds}
+        onChange={setSelectedTagIds}
+        placeholder="Select tags..."
+        onCreateNew={() => setShowTagForm(true)}
+        createNewLabel="Create new tag..."
+      />
+      <Modal isOpen={showTagForm} onClose={() => setShowTagForm(false)} maxWidth="lg" allowOverflow pushHistory className="p-6">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
+          New Tag
+        </h2>
+        <TagForm
+          onSubmit={handleTagCreate}
+          onCancel={() => setShowTagForm(false)}
+        />
+      </Modal>
+    </>
   );
 
   // Shared Description textarea section
@@ -710,6 +768,9 @@ export function ScheduledTransactionForm({
             />
           </div>
 
+          {/* Tags */}
+          {renderTags()}
+
           {/* Row 6: End Condition */}
           {renderEndCondition('Tx')}
 
@@ -817,6 +878,9 @@ export function ScheduledTransactionForm({
               currencyCode={watchedCurrencyCode || defaultCurrency}
             />
           </div>
+
+          {/* Tags */}
+          {renderTags()}
 
           {/* Row 6: Frequency, Remind Days Before */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -941,6 +1005,9 @@ export function ScheduledTransactionForm({
               {...register('reminderDaysBefore', { valueAsNumber: true })}
             />
           </div>
+
+          {/* Tags */}
+          {renderTags()}
 
           {/* Row 7: Description */}
           {renderDescription()}

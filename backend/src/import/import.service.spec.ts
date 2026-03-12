@@ -261,7 +261,9 @@ describe("ImportService", () => {
 
     mockSecurityPriceService = {
       backfillHistoricalPrices: jest.fn().mockResolvedValue(undefined),
-      backfillTransactionPrices: jest.fn().mockResolvedValue({ processed: 0, created: 0, skipped: 0 }),
+      backfillTransactionPrices: jest
+        .fn()
+        .mockResolvedValue({ processed: 0, created: 0, skipped: 0 }),
     };
 
     mockExchangeRateService = {

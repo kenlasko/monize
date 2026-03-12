@@ -244,6 +244,7 @@ export class TransactionAnalyticsService {
     search?: string,
     amountFrom?: number,
     amountTo?: number,
+    tagIds?: string[],
   ): Promise<Array<{ month: string; total: number; count: number }>> {
     const queryBuilder = this.transactionsRepository
       .createQueryBuilder("transaction")
@@ -369,6 +370,13 @@ export class TransactionAnalyticsService {
 
     if (amountTo !== undefined) {
       queryBuilder.andWhere("transaction.amount <= :amountTo", { amountTo });
+    }
+
+    if (tagIds && tagIds.length > 0) {
+      queryBuilder.leftJoin("transaction.tags", "filterTags");
+      queryBuilder.andWhere("filterTags.id IN (:...monthlyTagIds)", {
+        monthlyTagIds: tagIds,
+      });
     }
 
     // When category filter joins splits, use the split amount for split

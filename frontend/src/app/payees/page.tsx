@@ -173,7 +173,7 @@ function PayeesContent() {
       setSortDirection(field === 'count' || field === 'aliases' || field === 'lastUsed' || field === 'createdAt' ? 'desc' : 'asc');
     }
     setCurrentPage(1);
-  }, [sortField]);
+  }, [sortField, setSortField, setSortDirection]);
 
   useEffect(() => {
     setCurrentPage(1);

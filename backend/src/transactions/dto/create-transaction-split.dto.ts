@@ -3,6 +3,7 @@ import {
   IsNumber,
   IsOptional,
   IsUUID,
+  IsArray,
   MaxLength,
   Min,
   Max,
@@ -42,4 +43,13 @@ export class CreateTransactionSplitDto {
   @MaxLength(500)
   @SanitizeHtml()
   memo?: string;
+
+  @ApiPropertyOptional({
+    description:
+      "Tag IDs to assign to this split (cumulative with parent transaction tags)",
+  })
+  @IsOptional()
+  @IsArray()
+  @IsUUID(undefined, { each: true })
+  tagIds?: string[];
 }

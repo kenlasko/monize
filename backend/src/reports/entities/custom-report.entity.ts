@@ -37,6 +37,7 @@ export enum GroupByType {
   MONTH = "MONTH",
   WEEK = "WEEK",
   DAY = "DAY",
+  TAG = "TAG",
 }
 
 export enum MetricType {

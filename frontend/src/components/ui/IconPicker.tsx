@@ -212,7 +212,7 @@ export function IconPicker({ value, onChange, label }: IconPickerProps) {
             className="fixed inset-0 z-10"
             onClick={() => setIsOpen(false)}
           />
-          <div className="absolute z-20 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg p-2 max-h-64 overflow-y-auto">
+          <div className="absolute z-20 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg p-2">
             <div className="grid grid-cols-6 gap-1">
               {ICON_NAMES.map((iconName) => (
                 <button

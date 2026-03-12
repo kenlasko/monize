@@ -65,6 +65,12 @@ vi.mock('@/lib/payees', () => ({
   },
 }));
 
+vi.mock('@/lib/tags', () => ({
+  tagsApi: {
+    getAll: vi.fn().mockResolvedValue([]),
+  },
+}));
+
 vi.mock('@/lib/scheduled-transactions', () => ({
   scheduledTransactionsApi: {
     create: (...args: any[]) => mockCreate(...args),

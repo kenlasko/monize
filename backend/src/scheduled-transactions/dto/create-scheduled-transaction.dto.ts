@@ -109,4 +109,9 @@ export class CreateScheduledTransactionDto {
   @ValidateNested({ each: true })
   @Type(() => CreateScheduledTransactionSplitDto)
   splits?: CreateScheduledTransactionSplitDto[];
+
+  @IsOptional()
+  @IsArray()
+  @IsUUID("4", { each: true })
+  tagIds?: string[];
 }

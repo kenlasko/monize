@@ -181,7 +181,7 @@ function SecuritiesContent() {
       setSortDirection('asc');
     }
     setCurrentPage(1);
-  }, [sortField]);
+  }, [sortField, setSortField, setSortDirection]);
 
   const goToPage = (page: number) => {
     if (page >= 1 && page <= totalPages) {

@@ -128,6 +128,12 @@ vi.mock('@/lib/payees', () => ({
   },
 }));
 
+vi.mock('@/lib/tags', () => ({
+  tagsApi: {
+    getAll: vi.fn().mockResolvedValue([]),
+  },
+}));
+
 vi.mock('@/lib/constants', () => ({
   PAGE_SIZE: 25,
 }));

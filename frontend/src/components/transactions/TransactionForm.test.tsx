@@ -219,6 +219,12 @@ vi.mock('@/lib/accounts', () => ({
   },
 }));
 
+vi.mock('@/lib/tags', () => ({
+  tagsApi: {
+    getAll: vi.fn().mockResolvedValue([]),
+  },
+}));
+
 vi.mock('@/hooks/useNumberFormat', () => ({
   useNumberFormat: () => ({ defaultCurrency: 'CAD' }),
 }));

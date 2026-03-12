@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
-import { Modal } from './Modal';
+import { render, screen, fireEvent, act } from '@testing-library/react';
+import { Modal, __resetModalStateForTesting } from './Modal';
 
 // jsdom doesn't implement requestAnimationFrame reliably for focus management
 // We mock it to run callbacks synchronously for testability
@@ -13,11 +13,14 @@ beforeEach(() => {
     return 0;
   };
   globalThis.cancelAnimationFrame = vi.fn();
+  // Reset module-level state to prevent leaks between tests
+  __resetModalStateForTesting();
 });
 
 afterEach(() => {
   globalThis.requestAnimationFrame = originalRAF;
   globalThis.cancelAnimationFrame = originalCAF;
+  document.body.style.overflow = '';
 });
 
 describe('Modal', () => {
@@ -37,11 +40,17 @@ describe('Modal', () => {
     expect(dialog).toHaveAttribute('aria-modal', 'true');
   });
 
+  it('renders via portal to document.body', () => {
+    render(<Modal isOpen={true}>Portal Content</Modal>);
+    const dialog = screen.getByRole('dialog');
+    expect(dialog.closest('body')).toBe(document.body);
+    expect(screen.getByText('Portal Content')).toBeInTheDocument();
+  });
+
   it('calls onClose when backdrop is clicked', () => {
     const onClose = vi.fn();
-    const { container } = render(<Modal isOpen={true} onClose={onClose}>Content</Modal>);
-    // Click the backdrop overlay (the fixed outer div)
-    const backdrop = container.firstChild as HTMLElement;
+    render(<Modal isOpen={true} onClose={onClose}>Content</Modal>);
+    const backdrop = screen.getByRole('dialog').parentElement!;
     fireEvent.click(backdrop);
     expect(onClose).toHaveBeenCalled();
   });
@@ -49,10 +58,26 @@ describe('Modal', () => {
   it('does not propagate click from inner content to backdrop', () => {
     const onClose = vi.fn();
     render(<Modal isOpen={true} onClose={onClose}><span>Content</span></Modal>);
-    // Click the inner content wrapper (not the backdrop)
     const dialog = screen.getByRole('dialog');
     fireEvent.click(dialog);
     expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it('stops submit event propagation from modal content', () => {
+    const outerSubmitHandler = vi.fn();
+    render(
+      <form onSubmit={outerSubmitHandler}>
+        <Modal isOpen={true}>
+          <form data-testid="inner-form" onSubmit={(e) => { e.preventDefault(); }}>
+            <button type="submit">Submit</button>
+          </form>
+        </Modal>
+      </form>
+    );
+    const dialog = screen.getByRole('dialog');
+    const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
+    dialog.dispatchEvent(submitEvent);
+    expect(outerSubmitHandler).not.toHaveBeenCalled();
   });
 
   it('calls onClose on Escape key', () => {
@@ -63,10 +88,74 @@ describe('Modal', () => {
   });
 
   it('prevents body scroll when open', () => {
-    const { unmount } = render(<Modal isOpen={true}>Content</Modal>);
+    const { rerender } = render(<Modal isOpen={true}>Content</Modal>);
     expect(document.body.style.overflow).toBe('hidden');
-    unmount();
+    rerender(<Modal isOpen={false}>Content</Modal>);
     expect(document.body.style.overflow).toBe('');
+  });
+
+  it('applies maxWidth class', () => {
+    render(<Modal isOpen={true} maxWidth="xl">Content</Modal>);
+    const dialog = screen.getByRole('dialog');
+    expect(dialog.className).toContain('max-w-xl');
+  });
+
+  it('applies allowOverflow class', () => {
+    render(<Modal isOpen={true} allowOverflow>Content</Modal>);
+    const dialog = screen.getByRole('dialog');
+    expect(dialog.className).toContain('overflow-visible');
+    expect(dialog.className).not.toContain('overflow-y-auto');
+  });
+
+  it('applies custom className', () => {
+    render(<Modal isOpen={true} className="p-6">Content</Modal>);
+    const dialog = screen.getByRole('dialog');
+    expect(dialog.className).toContain('p-6');
+  });
+
+  describe('body overflow ref counting', () => {
+    it('keeps body hidden when stacked modal closes but parent remains open', () => {
+      const { rerender } = render(
+        <>
+          <Modal isOpen={true}>Parent</Modal>
+          <Modal isOpen={true}>Child</Modal>
+        </>,
+      );
+      expect(document.body.style.overflow).toBe('hidden');
+
+      rerender(
+        <>
+          <Modal isOpen={true}>Parent</Modal>
+          <Modal isOpen={false}>Child</Modal>
+        </>,
+      );
+      expect(document.body.style.overflow).toBe('hidden');
+    });
+
+    it('restores body overflow only when last modal closes', () => {
+      const { rerender } = render(
+        <>
+          <Modal isOpen={true}>Parent</Modal>
+          <Modal isOpen={true}>Child</Modal>
+        </>,
+      );
+
+      rerender(
+        <>
+          <Modal isOpen={true}>Parent</Modal>
+          <Modal isOpen={false}>Child</Modal>
+        </>,
+      );
+      expect(document.body.style.overflow).toBe('hidden');
+
+      rerender(
+        <>
+          <Modal isOpen={false}>Parent</Modal>
+          <Modal isOpen={false}>Child</Modal>
+        </>,
+      );
+      expect(document.body.style.overflow).toBe('');
+    });
   });
 
   describe('pushHistory', () => {
@@ -84,8 +173,24 @@ describe('Modal', () => {
     });
 
     it('pushes history entry when modal opens with pushHistory', () => {
-      render(<Modal isOpen={true} pushHistory>Content</Modal>);
-      expect(pushStateSpy).toHaveBeenCalledWith({ modal: true }, '');
+      const { rerender } = render(<Modal isOpen={true} pushHistory>Content</Modal>);
+      expect(pushStateSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ modal: true }),
+        '',
+      );
+      rerender(<Modal isOpen={false} pushHistory>Content</Modal>);
+    });
+
+    it('preserves existing history state when pushing', () => {
+      const existingState = { __N: true, url: '/transactions' };
+      vi.spyOn(window.history, 'state', 'get').mockReturnValue(existingState);
+
+      const { rerender } = render(<Modal isOpen={true} pushHistory>Content</Modal>);
+      expect(pushStateSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ __N: true, url: '/transactions', modal: true }),
+        '',
+      );
+      rerender(<Modal isOpen={false} pushHistory>Content</Modal>);
     });
 
     it('does not push history entry without pushHistory', () => {
@@ -97,6 +202,91 @@ describe('Modal', () => {
       const { rerender } = render(<Modal isOpen={true} pushHistory>Content</Modal>);
       expect(pushStateSpy).toHaveBeenCalledTimes(1);
 
+      rerender(<Modal isOpen={false} pushHistory>Content</Modal>);
+      expect(backSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('closes modal on popstate (browser back button)', () => {
+      const onClose = vi.fn();
+      render(<Modal isOpen={true} pushHistory onClose={onClose}>Content</Modal>);
+      expect(pushStateSpy).toHaveBeenCalledTimes(1);
+
+      act(() => {
+        window.dispatchEvent(new PopStateEvent('popstate'));
+      });
+
+      expect(onClose).toHaveBeenCalled();
+      // Clean up: modal was closed via popstate, historyPushedRef is cleared
+    });
+
+    it('only topmost modal handles popstate when stacked', () => {
+      const parentClose = vi.fn();
+      const childClose = vi.fn();
+
+      const { rerender } = render(
+        <>
+          <Modal isOpen={true} pushHistory onClose={parentClose}>Parent</Modal>
+          <Modal isOpen={true} pushHistory onClose={childClose}>Child</Modal>
+        </>
+      );
+      expect(pushStateSpy).toHaveBeenCalledTimes(2);
+
+      // Simulate back button -- only child (topmost) should close
+      act(() => {
+        window.dispatchEvent(new PopStateEvent('popstate'));
+      });
+
+      expect(childClose).toHaveBeenCalled();
+      expect(parentClose).not.toHaveBeenCalled();
+
+      // Clean up
+      rerender(
+        <>
+          <Modal isOpen={false} pushHistory onClose={parentClose}>Parent</Modal>
+          <Modal isOpen={false} pushHistory onClose={childClose}>Child</Modal>
+        </>
+      );
+    });
+
+    it('parent modal does not close when child modal handles popstate', async () => {
+      const parentClose = vi.fn();
+      const childClose = vi.fn();
+
+      const { rerender } = render(
+        <>
+          <Modal isOpen={true} pushHistory onClose={parentClose}>Parent</Modal>
+          <Modal isOpen={true} pushHistory onClose={childClose}>Child</Modal>
+        </>
+      );
+
+      act(() => {
+        window.dispatchEvent(new PopStateEvent('popstate'));
+      });
+
+      expect(childClose).toHaveBeenCalledTimes(1);
+      expect(parentClose).not.toHaveBeenCalled();
+
+      // Flush microtask for popstateConsumed reset
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 0));
+      });
+
+      // Clean up
+      rerender(
+        <>
+          <Modal isOpen={false} pushHistory onClose={parentClose}>Parent</Modal>
+          <Modal isOpen={false} pushHistory onClose={childClose}>Child</Modal>
+        </>
+      );
+    });
+
+    it('cleans up modal stack on unmount', () => {
+      const { rerender } = render(
+        <Modal isOpen={true} pushHistory>Content</Modal>
+      );
+      expect(pushStateSpy).toHaveBeenCalledTimes(1);
+
+      // Properly close before unmount
       rerender(<Modal isOpen={false} pushHistory>Content</Modal>);
       expect(backSpy).toHaveBeenCalledTimes(1);
     });
@@ -117,11 +307,11 @@ describe('Modal', () => {
     it('prevents close when onBeforeClose returns false (backdrop)', () => {
       const onClose = vi.fn();
       const onBeforeClose = vi.fn(() => false);
-      const { container } = render(
+      render(
         <Modal isOpen={true} onClose={onClose} onBeforeClose={onBeforeClose}>Content</Modal>
       );
 
-      const backdrop = container.firstChild as HTMLElement;
+      const backdrop = screen.getByRole('dialog').parentElement!;
       fireEvent.click(backdrop);
 
       expect(onBeforeClose).toHaveBeenCalled();
@@ -137,6 +327,28 @@ describe('Modal', () => {
 
       expect(onBeforeClose).toHaveBeenCalled();
       expect(onClose).toHaveBeenCalled();
+    });
+
+    it('re-pushes history when onBeforeClose prevents popstate close', () => {
+      const pushStateSpy = vi.spyOn(window.history, 'pushState').mockImplementation(() => {});
+      vi.spyOn(window.history, 'back').mockImplementation(() => {});
+
+      const onClose = vi.fn();
+      const onBeforeClose = vi.fn(() => false);
+      render(
+        <Modal isOpen={true} pushHistory onClose={onClose} onBeforeClose={onBeforeClose}>Content</Modal>
+      );
+      expect(pushStateSpy).toHaveBeenCalledTimes(1);
+
+      act(() => {
+        window.dispatchEvent(new PopStateEvent('popstate'));
+      });
+
+      // Should re-push history entry since close was prevented
+      expect(pushStateSpy).toHaveBeenCalledTimes(2);
+      expect(onClose).not.toHaveBeenCalled();
+
+      pushStateSpy.mockRestore();
     });
   });
 
@@ -194,7 +406,6 @@ describe('Modal', () => {
     });
 
     it('redirects focus into modal when active element is outside', () => {
-      // Create an element outside the modal to focus
       const outsideBtn = document.createElement('button');
       outsideBtn.textContent = 'Outside';
       document.body.appendChild(outsideBtn);
@@ -239,11 +450,9 @@ describe('Modal', () => {
         </Modal>,
       );
 
-      // Focus the middle element
       const midInput = screen.getByTestId('input-mid');
       midInput.focus();
 
-      // Tab should not be intercepted (not first or last)
       const event = new KeyboardEvent('keydown', {
         key: 'Tab',
         bubbles: true,
@@ -269,10 +478,8 @@ describe('Modal', () => {
         </Modal>,
       );
 
-      // Modal auto-focused the button inside
       expect(screen.getByText('Inside')).toHaveFocus();
 
-      // Close modal
       rerender(
         <Modal isOpen={false}>
           <button>Inside</button>
@@ -295,7 +502,6 @@ describe('Modal', () => {
       const enabledBtn = screen.getByTestId('enabled-btn');
       enabledBtn.focus();
 
-      // Tab from the only enabled button should wrap back to itself
       fireEvent.keyDown(document, { key: 'Tab' });
 
       expect(enabledBtn).toHaveFocus();
@@ -318,15 +524,12 @@ describe('Modal', () => {
         </>,
       );
 
-      // Focus the first button of the foreground modal
       const discardBtn = screen.getByTestId('discard-btn');
       discardBtn.focus();
       expect(discardBtn).toHaveFocus();
 
-      // Tab should NOT redirect focus to the background modal's form input
       fireEvent.keyDown(document, { key: 'Tab' });
 
-      // Focus should stay within the foreground modal (not jump to form-input)
       const activeEl = document.activeElement;
       const foregroundDialog = screen.getByTestId('discard-btn').closest('[role="dialog"]');
       expect(foregroundDialog?.contains(activeEl)).toBe(true);
@@ -370,12 +573,10 @@ describe('Modal', () => {
         </>,
       );
 
-      // Focus the last button of the foreground modal
       const lastBtn = screen.getByTestId('last-btn');
       lastBtn.focus();
       expect(lastBtn).toHaveFocus();
 
-      // Tab from last should wrap to first in the foreground modal
       fireEvent.keyDown(document, { key: 'Tab' });
 
       expect(screen.getByTestId('first-btn')).toHaveFocus();

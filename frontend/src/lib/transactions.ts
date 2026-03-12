@@ -26,6 +26,7 @@ function buildFilterParams(params?: {
   categoryIds?: string[];
   payeeId?: string;
   payeeIds?: string[];
+  tagIds?: string[];
 }): Record<string, string | undefined> {
   const result: Record<string, string | undefined> = {};
 
@@ -45,6 +46,10 @@ function buildFilterParams(params?: {
     result.payeeIds = params.payeeIds.join(',');
   } else if (params?.payeeId) {
     result.payeeId = params.payeeId;
+  }
+
+  if (params?.tagIds && params.tagIds.length > 0) {
+    result.tagIds = params.tagIds.join(',');
   }
 
   return result;
@@ -75,6 +80,7 @@ export const transactionsApi = {
     targetTransactionId?: string;
     amountFrom?: number;
     amountTo?: number;
+    tagIds?: string[];
   }): Promise<PaginatedTransactions> => {
     const apiParams = {
       ...buildFilterParams(params),
@@ -159,6 +165,7 @@ export const transactionsApi = {
     search?: string;
     amountFrom?: number;
     amountTo?: number;
+    tagIds?: string[];
   }): Promise<TransactionSummary> => {
     const apiParams = {
       ...buildFilterParams(params),
@@ -186,6 +193,7 @@ export const transactionsApi = {
     search?: string;
     amountFrom?: number;
     amountTo?: number;
+    tagIds?: string[];
   }): Promise<MonthlyTotal[]> => {
     const apiParams = {
       ...buildFilterParams(params),

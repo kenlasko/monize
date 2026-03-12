@@ -14,6 +14,7 @@ import { TransactionBulkUpdateService } from "./transaction-bulk-update.service"
 import { TransactionsController } from "./transactions.controller";
 import { AccountsModule } from "../accounts/accounts.module";
 import { PayeesModule } from "../payees/payees.module";
+import { TagsModule } from "../tags/tags.module";
 import { NetWorthModule } from "../net-worth/net-worth.module";
 
 @Module({
@@ -28,6 +29,7 @@ import { NetWorthModule } from "../net-worth/net-worth.module";
     forwardRef(() => AccountsModule),
     forwardRef(() => NetWorthModule),
     PayeesModule,
+    TagsModule,
   ],
   providers: [
     TransactionsService,

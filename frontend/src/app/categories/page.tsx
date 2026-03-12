@@ -117,7 +117,7 @@ function CategoriesContent() {
       setSortField(field);
       setSortDirection(field === 'count' ? 'desc' : 'asc');
     }
-  }, [sortField]);
+  }, [sortField, setSortField, setSortDirection]);
 
   const incomeCount = categories.filter((c) => c.isIncome).length;
   const expenseCount = categories.filter((c) => !c.isIncome).length;

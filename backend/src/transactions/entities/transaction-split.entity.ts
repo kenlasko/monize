@@ -4,11 +4,14 @@ import {
   PrimaryGeneratedColumn,
   CreateDateColumn,
   ManyToOne,
+  ManyToMany,
   JoinColumn,
+  JoinTable,
 } from "typeorm";
 import { ApiProperty } from "@nestjs/swagger";
 import { Transaction } from "./transaction.entity";
 import { Category } from "../../categories/entities/category.entity";
+import { Tag } from "../../tags/entities/tag.entity";
 import { Account } from "../../accounts/entities/account.entity";
 
 @Entity("transaction_splits")
@@ -64,6 +67,14 @@ export class TransactionSplit {
   @ApiProperty({ example: "Groceries portion", required: false })
   @Column({ type: "text", nullable: true })
   memo: string | null;
+
+  @ManyToMany(() => Tag)
+  @JoinTable({
+    name: "transaction_split_tags",
+    joinColumn: { name: "transaction_split_id", referencedColumnName: "id" },
+    inverseJoinColumn: { name: "tag_id", referencedColumnName: "id" },
+  })
+  tags: Tag[];
 
   @ApiProperty()
   @CreateDateColumn({ name: "created_at" })

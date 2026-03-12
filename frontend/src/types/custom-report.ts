@@ -25,6 +25,7 @@ export enum GroupByType {
   MONTH = 'MONTH',
   WEEK = 'WEEK',
   DAY = 'DAY',
+  TAG = 'TAG',
 }
 
 export enum MetricType {
@@ -54,6 +55,7 @@ export enum TableColumn {
   MEMO = 'MEMO',
   CATEGORY = 'CATEGORY',
   ACCOUNT = 'ACCOUNT',
+  TAG = 'TAG',
 }
 
 export enum SortDirection {
@@ -61,7 +63,7 @@ export enum SortDirection {
   DESC = 'DESC',
 }
 
-export type FilterField = 'account' | 'category' | 'payee' | 'text';
+export type FilterField = 'account' | 'category' | 'payee' | 'tag' | 'text';
 
 export interface FilterCondition {
   field: FilterField;
@@ -77,6 +79,7 @@ export interface ReportFilters {
   accountIds?: string[];
   categoryIds?: string[];
   payeeIds?: string[];
+  tagIds?: string[];
   searchText?: string;
   // Advanced
   filterGroups?: FilterGroup[];
@@ -197,6 +200,7 @@ export const GROUP_BY_LABELS: Record<GroupByType, string> = {
   [GroupByType.MONTH]: 'Month',
   [GroupByType.WEEK]: 'Week',
   [GroupByType.DAY]: 'Day',
+  [GroupByType.TAG]: 'Tag',
 };
 
 export const METRIC_LABELS: Record<MetricType, string> = {
@@ -226,6 +230,7 @@ export const TABLE_COLUMN_LABELS: Record<TableColumn, string> = {
   [TableColumn.MEMO]: 'Memo',
   [TableColumn.CATEGORY]: 'Category',
   [TableColumn.ACCOUNT]: 'Account',
+  [TableColumn.TAG]: 'Tag',
 };
 
 export const SORT_DIRECTION_LABELS: Record<SortDirection, string> = {

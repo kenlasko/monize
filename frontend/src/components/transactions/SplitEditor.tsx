@@ -6,8 +6,10 @@ import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { Combobox } from '@/components/ui/Combobox';
+import { MultiSelect } from '@/components/ui/MultiSelect';
 import { Category } from '@/types/category';
 import { Account } from '@/types/account';
+import { Tag } from '@/types/tag';
 import { CreateSplitData } from '@/types/transaction';
 import { buildCategoryTree } from '@/lib/categoryUtils';
 import { roundToCents, getCurrencySymbol, formatAmountWithCommas, getDecimalPlacesForCurrency } from '@/lib/format';
@@ -23,6 +25,7 @@ interface SplitEditorProps {
   splits: SplitRow[];
   onChange: (splits: SplitRow[]) => void;
   categories: Category[];
+  tags?: Tag[];
   accounts?: Account[];
   sourceAccountId?: string;
   transactionAmount: number;
@@ -35,6 +38,7 @@ export function SplitEditor({
   splits,
   onChange,
   categories,
+  tags = [],
   accounts = [],
   sourceAccountId = '',
   transactionAmount,
@@ -59,6 +63,14 @@ export function SplitEditor({
       label: parentCategory ? `${parentCategory.name}: ${category.name}` : category.name,
     };
   }), [categories]);
+
+  // Memoize tag options for multiselect
+  const tagOptions = useMemo(() =>
+    [...tags]
+      .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }))
+      .map(tag => ({ value: tag.id, label: tag.name })),
+    [tags]
+  );
 
   // Memoize account options (excluding source account, asset accounts, investment accounts, and closed accounts, sorted alphabetically)
   const accountOptions = useMemo(() => {
@@ -388,6 +400,15 @@ export function SplitEditor({
                     className="w-full"
                   />
                 </div>
+                {tagOptions.length > 0 && (
+                  <MultiSelect
+                    options={tagOptions}
+                    value={split.tagIds || []}
+                    onChange={(values) => handleSplitChange(index, 'tagIds', values)}
+                    placeholder="Tags..."
+                    disabled={disabled}
+                  />
+                )}
               </div>
             );
           })}
@@ -448,12 +469,17 @@ export function SplitEditor({
               <th className="px-1 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase" style={{ width: supportsTransfers ? '34%' : '45%' }}>
                 {supportsTransfers ? 'Category / Account' : 'Category'}
               </th>
-              <th className="px-1 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase" style={{ width: supportsTransfers ? '17%' : '15%' }}>
+              <th className="px-1 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase" style={{ width: supportsTransfers ? '15%' : '13%' }}>
                 Amount
               </th>
-              <th className="px-1 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase" style={{ width: '28%' }}>
+              <th className="px-1 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase" style={{ width: '20%' }}>
                 Memo
               </th>
+              {tagOptions.length > 0 && (
+                <th className="px-1 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase" style={{ width: '15%' }}>
+                  Tags
+                </th>
+              )}
               <th className="px-1 py-2" style={{ width: '5%' }}></th>
             </tr>
           </thead>
@@ -526,6 +552,17 @@ export function SplitEditor({
                     className="w-full"
                   />
                 </td>
+                {tagOptions.length > 0 && (
+                  <td className="px-1 py-2">
+                    <MultiSelect
+                      options={tagOptions}
+                      value={split.tagIds || []}
+                      onChange={(values) => handleSplitChange(index, 'tagIds', values)}
+                      placeholder="Tags..."
+                      disabled={disabled}
+                    />
+                  </td>
+                )}
                 <td className="px-1 py-2">
                   <div className="flex space-x-1 justify-end">
                     <button
@@ -569,7 +606,7 @@ export function SplitEditor({
           <tfoot className="bg-gray-50 dark:bg-gray-800">
             {/* Add Split Button Row */}
             <tr className="border-t border-gray-200 dark:border-gray-700">
-              <td colSpan={supportsTransfers ? 5 : 4} className="p-0">
+              <td colSpan={(supportsTransfers ? 5 : 4) + (tagOptions.length > 0 ? 1 : 0)} className="p-0">
                 <button
                   type="button"
                   onClick={addSplit}
@@ -585,7 +622,7 @@ export function SplitEditor({
             </tr>
             {/* Total Row */}
             <tr className="border-t border-gray-200 dark:border-gray-700">
-              <td colSpan={supportsTransfers ? 5 : 4} className="px-3 py-2">
+              <td colSpan={(supportsTransfers ? 5 : 4) + (tagOptions.length > 0 ? 1 : 0)} className="px-3 py-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Total</span>
@@ -650,7 +687,7 @@ export function createEmptySplits(transactionAmount: number): SplitRow[] {
 }
 
 // Convert API splits to SplitRow format
-export function toSplitRows(splits: { id?: string; categoryId?: string | null; transferAccountId?: string | null; amount: number; memo?: string | null }[]): SplitRow[] {
+export function toSplitRows(splits: { id?: string; categoryId?: string | null; transferAccountId?: string | null; amount: number; memo?: string | null; tags?: { id: string }[] }[]): SplitRow[] {
   return splits.map((split, index) => ({
     id: split.id || `temp-${Date.now()}-${index}`,
     splitType: split.transferAccountId ? 'transfer' : 'category',
@@ -658,6 +695,7 @@ export function toSplitRows(splits: { id?: string; categoryId?: string | null; t
     transferAccountId: split.transferAccountId || undefined,
     amount: Number(split.amount),
     memo: split.memo || '',
+    tagIds: split.tags?.map(t => t.id) || [],
   }));
 }
 
@@ -668,5 +706,6 @@ export function toCreateSplitData(splits: SplitRow[]): CreateSplitData[] {
     transferAccountId: split.splitType === 'transfer' ? split.transferAccountId : undefined,
     amount: split.amount,
     memo: split.memo || undefined,
+    tagIds: split.tagIds && split.tagIds.length > 0 ? split.tagIds : undefined,
   }));
 }

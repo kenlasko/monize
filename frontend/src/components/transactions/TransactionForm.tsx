@@ -11,15 +11,20 @@ import { SplitEditor, SplitRow, createEmptySplits, toSplitRows, toCreateSplitDat
 import { NormalTransactionFields } from './NormalTransactionFields';
 import { SplitTransactionFields } from './SplitTransactionFields';
 import { TransferTransactionFields } from './TransferTransactionFields';
+import { MultiSelect } from '@/components/ui/MultiSelect';
+import { Modal } from '@/components/ui/Modal';
+import { TagForm } from '@/components/tags/TagForm';
 import { transactionsApi } from '@/lib/transactions';
 import { getLocalDateString } from '@/lib/utils';
 import { payeesApi } from '@/lib/payees';
 import { categoriesApi } from '@/lib/categories';
 import { accountsApi } from '@/lib/accounts';
+import { tagsApi } from '@/lib/tags';
 import { Transaction, TransactionStatus } from '@/types/transaction';
 import { Payee } from '@/types/payee';
 import { Category } from '@/types/category';
 import { Account } from '@/types/account';
+import { Tag } from '@/types/tag';
 import { ReactivatePayeeDialog } from '@/components/payees/ReactivatePayeeDialog';
 import { buildCategoryTree } from '@/lib/categoryUtils';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
@@ -65,6 +70,10 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [payees, setPayees] = useState<Payee[]>([]); // Full list of active payees
+  const [tags, setTags] = useState<Tag[]>([]);
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>(
+    transaction?.tags?.map(t => t.id) || []
+  );
   const [selectedPayeeId, setSelectedPayeeId] = useState<string>(transaction?.payeeId || '');
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>(transaction?.categoryId || '');
   const [, setCategoryName] = useState<string>('');
@@ -225,6 +234,14 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
     };
   }), [categoryTree, categories]);
 
+  // Memoize tag options for multiselect
+  const tagOptions = useMemo(() =>
+    [...tags]
+      .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }))
+      .map(tag => ({ value: tag.id, label: tag.name })),
+    [tags]
+  );
+
   // Handle mode changes
   const handleModeChange = (newMode: TransactionMode) => {
     setMode(newMode);
@@ -269,10 +286,12 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
       accountsApi.getAll(true),
       categoriesApi.getAll(),
       payeesApi.getAll('active'),
+      tagsApi.getAll(),
     ])
-      .then(async ([accountsData, categoriesData, payeesData]) => {
+      .then(async ([accountsData, categoriesData, payeesData, tagsData]) => {
         setAccounts(accountsData);
         setCategories(categoriesData);
+        setTags(tagsData);
 
         // If editing a transaction with a payee that isn't in the active list, fetch it
         if (transaction?.payeeId && !payeesData.some(p => p.id === transaction.payeeId)) {
@@ -551,6 +570,22 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
     }
   };
 
+  // Tag creation modal state
+  const [showTagForm, setShowTagForm] = useState(false);
+
+  const handleTagCreate = async (data: { name: string; color?: string; icon?: string }) => {
+    const cleanedData = {
+      ...data,
+      color: data.color || undefined,
+      icon: data.icon || undefined,
+    };
+    const newTag = await tagsApi.create(cleanedData);
+    setTags(prev => [...prev, newTag]);
+    setSelectedTagIds(prev => [...prev, newTag.id]);
+    toast.success(`Tag "${newTag.name}" created`);
+    setShowTagForm(false);
+  };
+
   const onSubmit = async (data: TransactionFormData) => {
     setIsLoading(true);
     try {
@@ -624,6 +659,7 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
       const payload = {
         ...data,
         splits: splitsData,
+        tagIds: selectedTagIds.length > 0 ? selectedTagIds : [],
         // Clear categoryId for split transactions
         categoryId: isSplitMode ? undefined : data.categoryId,
         // Ensure cleared optional fields are sent as null (not undefined)
@@ -782,6 +818,7 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
             splits={splits}
             onChange={setSplits}
             categories={categories}
+            tags={tags}
             accounts={accounts}
             sourceAccountId={watchedAccountId || ''}
             transactionAmount={watchedAmount || 0}
@@ -791,6 +828,28 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
           />
         </div>
       )}
+
+      {/* Tags */}
+      <MultiSelect
+        label="Tags"
+        options={tagOptions}
+        value={selectedTagIds}
+        onChange={setSelectedTagIds}
+        placeholder="Select tags..."
+        onCreateNew={() => setShowTagForm(true)}
+        createNewLabel="Create new tag..."
+      />
+
+      {/* Tag Creation Modal */}
+      <Modal isOpen={showTagForm} onClose={() => setShowTagForm(false)} maxWidth="lg" allowOverflow pushHistory className="p-6">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
+          New Tag
+        </h2>
+        <TagForm
+          onSubmit={handleTagCreate}
+          onCancel={() => setShowTagForm(false)}
+        />
+      </Modal>
 
       {/* Description - only shown when not in split mode (split mode has it inline with Reference Number) */}
       {!isSplitMode && (

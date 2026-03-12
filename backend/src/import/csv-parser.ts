@@ -8,7 +8,7 @@
  * embedded delimiters, newlines, and escaped double-quotes.
  */
 
-import type { QifTransaction, QifParseResult, DateFormat } from "./qif-parser";
+import type { QifTransaction, QifParseResult } from "./qif-parser";
 
 export interface CsvHeadersResult {
   headers: string[];

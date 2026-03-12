@@ -33,9 +33,11 @@ import {
 import { Account } from '@/types/account';
 import { Category } from '@/types/category';
 import { Payee } from '@/types/payee';
+import { Tag } from '@/types/tag';
 import { accountsApi } from '@/lib/accounts';
 import { categoriesApi } from '@/lib/categories';
 import { payeesApi } from '@/lib/payees';
+import { tagsApi } from '@/lib/tags';
 import { createLogger } from '@/lib/logger';
 
 import { useFormSubmitRef } from '@/hooks/useFormSubmitRef';
@@ -71,6 +73,12 @@ function convertLegacyFilters(filters: CustomReport['filters']): FilterGroup[] {
     value: id,
   }));
   if (payeeConditions.length > 0) groups.push({ conditions: payeeConditions });
+
+  const tagConditions = (filters.tagIds || []).map((id) => ({
+    field: 'tag' as const,
+    value: id,
+  }));
+  if (tagConditions.length > 0) groups.push({ conditions: tagConditions });
 
   if (filters.searchText?.trim()) {
     groups.push({ conditions: [{ field: 'text', value: filters.searchText.trim() }] });
@@ -129,6 +137,7 @@ export function CustomReportForm({ report, onSubmit, onCancel, onDirtyChange, su
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [payees, setPayees] = useState<Payee[]>([]);
+  const [tags, setTags] = useState<Tag[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [filterGroups, setFilterGroups] = useState<FilterGroup[]>(
     report ? convertLegacyFilters(report.filters) : [],
@@ -189,14 +198,16 @@ export function CustomReportForm({ report, onSubmit, onCancel, onDirtyChange, su
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [accountsData, categoriesData, payeesData] = await Promise.all([
+        const [accountsData, categoriesData, payeesData, tagsData] = await Promise.all([
           accountsApi.getAll(),
           categoriesApi.getAll(),
           payeesApi.getAll(),
+          tagsApi.getAll(),
         ]);
         setAccounts(accountsData.filter((a) => !a.isClosed));
         setCategories(categoriesData);
         setPayees(payeesData);
+        setTags(tagsData);
       } catch (error) {
         logger.error('Failed to load data:', error);
       } finally {
@@ -434,6 +445,7 @@ export function CustomReportForm({ report, onSubmit, onCancel, onDirtyChange, su
           accounts={accounts}
           categories={categories}
           payees={payees}
+          tags={tags}
         />
       </div>
 

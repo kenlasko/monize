@@ -1,6 +1,7 @@
 import { Payee } from './payee';
 import { Category } from './category';
 import { Account } from './account';
+import { Tag } from './tag';
 
 export enum TransactionStatus {
   UNRECONCILED = 'UNRECONCILED',
@@ -19,6 +20,7 @@ export interface TransactionSplit {
   linkedTransactionId: string | null;
   amount: number;
   memo: string | null;
+  tags?: Tag[];
   createdAt: string;
 }
 
@@ -52,6 +54,7 @@ export interface Transaction {
   /** ID of the linked investment transaction (if this is a cash transaction for an investment) */
   linkedInvestmentTransactionId?: string | null;
   splits?: TransactionSplit[];
+  tags?: Tag[];
   createdAt: string;
   updatedAt: string;
 }
@@ -61,6 +64,7 @@ export interface CreateSplitData {
   transferAccountId?: string;
   amount: number;
   memo?: string;
+  tagIds?: string[];
 }
 
 export interface CreateTransactionData {
@@ -79,6 +83,7 @@ export interface CreateTransactionData {
   isSplit?: boolean;
   parentTransactionId?: string;
   splits?: CreateSplitData[];
+  tagIds?: string[];
 }
 
 export interface UpdateTransactionData extends Partial<CreateTransactionData> {}
@@ -168,6 +173,7 @@ export interface BulkUpdateFilters {
   search?: string;
   amountFrom?: number;
   amountTo?: number;
+  tagIds?: string[];
 }
 
 export interface BulkUpdateData {
@@ -178,6 +184,7 @@ export interface BulkUpdateData {
   payeeName?: string | null;
   categoryId?: string | null;
   description?: string | null;
+  tagIds?: string[];
   status?: TransactionStatus;
 }
 

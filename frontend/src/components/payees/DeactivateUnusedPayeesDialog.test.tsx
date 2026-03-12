@@ -278,9 +278,9 @@ describe('DeactivateUnusedPayeesDialog', () => {
 
   describe('slider configuration', () => {
     it('renders months unused slider with 6-month step and 10-year max', async () => {
-      const { container } = await renderDialog();
+      await renderDialog();
 
-      const sliders = container.querySelectorAll('input[type="range"]');
+      const sliders = document.querySelectorAll('input[type="range"]');
       const monthsSlider = sliders[1];
 
       expect(monthsSlider).toHaveAttribute('min', '6');
@@ -297,9 +297,9 @@ describe('DeactivateUnusedPayeesDialog', () => {
     });
 
     it('formats year labels correctly for 12-month increments', async () => {
-      const { container, getByText } = await renderDialog();
+      const { getByText } = await renderDialog();
 
-      const sliders = container.querySelectorAll('input[type="range"]');
+      const sliders = document.querySelectorAll('input[type="range"]');
       const monthsSlider = sliders[1];
 
       // Change to 24 months = 2 years
@@ -311,9 +311,9 @@ describe('DeactivateUnusedPayeesDialog', () => {
     });
 
     it('formats half-year labels correctly for 6-month offsets', async () => {
-      const { container, getByText } = await renderDialog();
+      const { getByText } = await renderDialog();
 
-      const sliders = container.querySelectorAll('input[type="range"]');
+      const sliders = document.querySelectorAll('input[type="range"]');
       const monthsSlider = sliders[1];
 
       // Change to 18 months = 1.5 years

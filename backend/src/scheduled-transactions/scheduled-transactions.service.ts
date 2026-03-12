@@ -441,6 +441,8 @@ export class ScheduledTransactionsService {
       fieldsToUpdate.autoPost = updateData.autoPost;
     if (updateData.reminderDaysBefore !== undefined)
       fieldsToUpdate.reminderDaysBefore = updateData.reminderDaysBefore;
+    if (updateData.tagIds !== undefined)
+      fieldsToUpdate.tagIds = updateData.tagIds;
 
     if (isTransfer !== undefined) {
       fieldsToUpdate.isTransfer = isTransfer;
@@ -558,6 +560,10 @@ export class ScheduledTransactionsService {
       description: finalDescription,
       referenceNumber: postDto?.referenceNumber || undefined,
       isCleared: false,
+      tagIds:
+        scheduled.tagIds && scheduled.tagIds.length > 0
+          ? scheduled.tagIds
+          : undefined,
     };
 
     const useSplits = hasInlineIsSplit

@@ -19,6 +19,7 @@ import { transactionsApi } from '@/lib/transactions';
 import { accountsApi } from '@/lib/accounts';
 import { categoriesApi } from '@/lib/categories';
 import { payeesApi } from '@/lib/payees';
+import { tagsApi } from '@/lib/tags';
 import { Transaction, PaginationInfo, BulkUpdateData, BulkUpdateFilters, MonthlyTotal } from '@/types/transaction';
 import { useTransactionSelection } from '@/hooks/useTransactionSelection';
 import { useTransactionFilters } from '@/hooks/useTransactionFilters';
@@ -26,6 +27,7 @@ import { BulkSelectionBanner } from '@/components/transactions/BulkSelectionBann
 import { Account } from '@/types/account';
 import { Category } from '@/types/category';
 import { Payee } from '@/types/payee';
+import { Tag } from '@/types/tag';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { usePreferencesStore } from '@/store/preferencesStore';
@@ -63,6 +65,7 @@ function TransactionsContent() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [payees, setPayees] = useState<Payee[]>([]);
+  const [tags, setTags] = useState<Tag[]>([]);
   const [dailyBalances, setDailyBalances] = useState<Array<{ date: string; balance: number; accountId: string; currencyCode: string }>>([]);
   const [monthlyTotals, setMonthlyTotals] = useState<MonthlyTotal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -77,7 +80,7 @@ function TransactionsContent() {
   const modalOpenRef = useRef(false);
   modalOpenRef.current = showForm || showPayeeForm || showBulkUpdate;
 
-  const filters = useTransactionFilters({ accounts, categories, payees, weekStartsOn });
+  const filters = useTransactionFilters({ accounts, categories, payees, tags, weekStartsOn });
 
   const [pagination, setPagination] = useState<PaginationInfo | null>(null);
   const [startingBalance, setStartingBalance] = useState<number | undefined>();
@@ -92,14 +95,16 @@ function TransactionsContent() {
   const loadStaticData = useCallback(async () => {
     if (staticDataLoaded.current) return;
     try {
-      const [accountsData, categoriesData, payeesData] = await Promise.all([
+      const [accountsData, categoriesData, payeesData, tagsData] = await Promise.all([
         accountsApi.getAll(true),
         categoriesApi.getAll(),
         payeesApi.getAll(),
+        tagsApi.getAll(),
       ]);
       setAccounts(accountsData);
       setCategories(categoriesData);
       setPayees(payeesData);
+      setTags(tagsData);
       staticDataLoaded.current = true;
     } catch (error) {
       showErrorToast(error, 'Failed to load form data');
@@ -120,7 +125,7 @@ function TransactionsContent() {
       const targetTransactionId = filters.targetTransactionIdRef.current;
       filters.targetTransactionIdRef.current = null;
 
-      const hasCategoryOrPayeeFilter = filters.filterCategoryIds.length > 0 || filters.filterPayeeIds.length > 0 || filters.filterSearch.length > 0;
+      const hasCategoryOrPayeeFilter = filters.filterCategoryIds.length > 0 || filters.filterPayeeIds.length > 0 || filters.filterTagIds.length > 0 || filters.filterSearch.length > 0;
 
       const chartParams: { startDate?: string; endDate?: string; accountIds?: string } = {};
       if (filters.filterStartDate) chartParams.startDate = filters.filterStartDate;
@@ -137,6 +142,7 @@ function TransactionsContent() {
             endDate: filters.filterEndDate || undefined,
             categoryIds: filters.filterCategoryIds.length > 0 ? filters.filterCategoryIds : undefined,
             payeeIds: filters.filterPayeeIds.length > 0 ? filters.filterPayeeIds : undefined,
+            tagIds: filters.filterTagIds.length > 0 ? filters.filterTagIds : undefined,
             search: filters.filterSearch || undefined,
             amountFrom: parsedAmountFrom,
             amountTo: parsedAmountTo,
@@ -152,6 +158,7 @@ function TransactionsContent() {
           endDate: filters.filterEndDate || undefined,
           categoryIds: filters.filterCategoryIds.length > 0 ? filters.filterCategoryIds : undefined,
           payeeIds: filters.filterPayeeIds.length > 0 ? filters.filterPayeeIds : undefined,
+          tagIds: filters.filterTagIds.length > 0 ? filters.filterTagIds : undefined,
           search: filters.filterSearch || undefined,
           page,
           limit: PAGE_SIZE,
@@ -195,7 +202,7 @@ function TransactionsContent() {
     } finally {
       setIsLoading(false);
     }
-  }, [filters.filterAccountIds, filters.filterAccountStatus, filters.filteredAccounts, filters.filterCategoryIds, filters.filterPayeeIds, filters.filterStartDate, filters.filterEndDate, filters.filterSearch, filters.filterAmountFrom, filters.filterAmountTo]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [filters.filterAccountIds, filters.filterAccountStatus, filters.filteredAccounts, filters.filterCategoryIds, filters.filterPayeeIds, filters.filterTagIds, filters.filterStartDate, filters.filterEndDate, filters.filterSearch, filters.filterAmountFrom, filters.filterAmountTo]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadData = useCallback(async (page: number = filters.currentPage) => {
     await loadTransactions(page);
@@ -230,6 +237,7 @@ function TransactionsContent() {
         accountIds: filters.filterAccountIds,
         categoryIds: filters.filterCategoryIds,
         payeeIds: filters.filterPayeeIds,
+        tagIds: filters.filterTagIds,
         startDate: filters.filterStartDate,
         endDate: filters.filterEndDate,
         search: filters.filterSearch,
@@ -246,7 +254,7 @@ function TransactionsContent() {
     } else {
       loadTransactions(page);
     }
-  }, [filters.currentPage, filters.filterAccountIds, filters.filterCategoryIds, filters.filterPayeeIds, filters.filterStartDate, filters.filterEndDate, filters.filterSearch, filters.filterAmountFrom, filters.filterAmountTo, filters.updateUrl, loadTransactions, filters.filtersInitialized]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [filters.currentPage, filters.filterAccountIds, filters.filterCategoryIds, filters.filterPayeeIds, filters.filterTagIds, filters.filterStartDate, filters.filterEndDate, filters.filterSearch, filters.filterAmountFrom, filters.filterAmountTo, filters.updateUrl, loadTransactions, filters.filtersInitialized]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Patch popstate handler to skip when modals open
   useEffect(() => {
@@ -340,13 +348,14 @@ function TransactionsContent() {
     }
     if (filters.filterCategoryIds.length > 0) f.categoryIds = filters.filterCategoryIds;
     if (filters.filterPayeeIds.length > 0) f.payeeIds = filters.filterPayeeIds;
+    if (filters.filterTagIds.length > 0) f.tagIds = filters.filterTagIds;
     if (filters.filterStartDate) f.startDate = filters.filterStartDate;
     if (filters.filterEndDate) f.endDate = filters.filterEndDate;
     if (filters.filterSearch) f.search = filters.filterSearch;
     if (filters.filterAmountFrom) f.amountFrom = parseFloat(filters.filterAmountFrom);
     if (filters.filterAmountTo) f.amountTo = parseFloat(filters.filterAmountTo);
     return f;
-  }, [filters.filterAccountIds, filters.filterAccountStatus, filters.filteredAccounts, filters.filterCategoryIds, filters.filterPayeeIds, filters.filterStartDate, filters.filterEndDate, filters.filterSearch, filters.filterAmountFrom, filters.filterAmountTo]);
+  }, [filters.filterAccountIds, filters.filterAccountStatus, filters.filteredAccounts, filters.filterCategoryIds, filters.filterPayeeIds, filters.filterTagIds, filters.filterStartDate, filters.filterEndDate, filters.filterSearch, filters.filterAmountFrom, filters.filterAmountTo]);
 
   // Derive chart currency and aggregate per-account daily balances
   const { chartBalances, chartCurrency } = useMemo(() => {
@@ -406,7 +415,7 @@ function TransactionsContent() {
           helpUrl="https://github.com/kenlasko/monize/wiki/Transactions"
           actions={<Button onClick={handleCreateNew}>+ New Transaction</Button>}
         />
-        {filters.filterCategoryIds.length > 0 || filters.filterPayeeIds.length > 0 || filters.filterSearch.length > 0 ? (
+        {filters.filterCategoryIds.length > 0 || filters.filterPayeeIds.length > 0 || filters.filterTagIds.length > 0 || filters.filterSearch.length > 0 ? (
           <CategoryPayeeBarChart data={monthlyTotals} isLoading={isLoading} onMonthClick={(startDate, endDate) => {
             filters.isFilterChange.current = true;
             filters.setFilterStartDate(startDate);
@@ -459,6 +468,7 @@ function TransactionsContent() {
           filterTimePeriod={filters.filterTimePeriod}
           filterAmountFrom={filters.filterAmountFrom}
           filterAmountTo={filters.filterAmountTo}
+          filterTagIds={filters.filterTagIds}
           weekStartsOn={weekStartsOn}
           handleArrayFilterChange={filters.handleArrayFilterChange}
           handleFilterChange={filters.handleFilterChange}
@@ -473,6 +483,7 @@ function TransactionsContent() {
           setFilterTimePeriod={filters.setFilterTimePeriod}
           setFilterAmountFrom={filters.setFilterAmountFrom}
           setFilterAmountTo={filters.setFilterAmountTo}
+          setFilterTagIds={filters.setFilterTagIds}
           filtersExpanded={filters.filtersExpanded}
           setFiltersExpanded={filters.setFiltersExpanded}
           activeFilterCount={filters.activeFilterCount}
@@ -480,9 +491,11 @@ function TransactionsContent() {
           selectedAccounts={filters.selectedAccounts}
           selectedCategories={filters.selectedCategories}
           selectedPayees={filters.selectedPayees}
+          selectedTags={filters.selectedTags}
           accountFilterOptions={filters.accountFilterOptions}
           categoryFilterOptions={filters.categoryFilterOptions}
           payeeFilterOptions={filters.payeeFilterOptions}
+          tagFilterOptions={filters.tagFilterOptions}
           formatDate={formatDate}
           bulkSelectMode={bulkSelectMode}
           onToggleBulkSelectMode={() => {

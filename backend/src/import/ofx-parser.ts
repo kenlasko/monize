@@ -231,18 +231,6 @@ export function parseOfx(content: string): QifParseResult {
     transactions.push(tx);
   }
 
-  // Calculate date range
-  let startDate = "";
-  let endDate = "";
-  if (transactions.length > 0) {
-    const dates = transactions
-      .map((t) => t.date)
-      .filter((d) => d)
-      .sort();
-    startDate = dates[0] || "";
-    endDate = dates[dates.length - 1] || "";
-  }
-
   return {
     accountType,
     accountName: "",

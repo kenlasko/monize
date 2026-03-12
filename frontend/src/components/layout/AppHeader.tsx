@@ -21,6 +21,7 @@ const navLinks = [
 const toolsLinks: { href: string; label: string; badge?: string }[] = [
   { href: '/categories', label: 'Categories' },
   { href: '/payees', label: 'Payees' },
+  { href: '/tags', label: 'Tags' },
   { href: '/securities', label: 'Securities' },
   { href: '/currencies', label: 'Currencies' },
   { href: '/import', label: 'Import Transactions', badge: 'Beta' },

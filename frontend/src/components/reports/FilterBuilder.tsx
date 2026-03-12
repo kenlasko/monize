@@ -5,6 +5,7 @@ import { FilterGroup, FilterCondition, FilterField } from '@/types/custom-report
 import { Account } from '@/types/account';
 import { Category } from '@/types/category';
 import { Payee } from '@/types/payee';
+import { Tag } from '@/types/tag';
 import { MultiSelect, MultiSelectOption } from '@/components/ui/MultiSelect';
 
 interface FilterBuilderProps {
@@ -13,18 +14,20 @@ interface FilterBuilderProps {
   accounts: Account[];
   categories: Category[];
   payees: Payee[];
+  tags: Tag[];
 }
 
 const FIELD_OPTIONS: { value: FilterField; label: string }[] = [
   { value: 'account', label: 'Account' },
   { value: 'category', label: 'Category' },
   { value: 'payee', label: 'Payee' },
+  { value: 'tag', label: 'Tag' },
   { value: 'text', label: 'Text' },
 ];
 
-const ENTITY_FIELDS: FilterField[] = ['account', 'category', 'payee'];
+const ENTITY_FIELDS: FilterField[] = ['account', 'category', 'payee', 'tag'];
 
-export function FilterBuilder({ value, onChange, accounts, categories, payees }: FilterBuilderProps) {
+export function FilterBuilder({ value, onChange, accounts, categories, payees, tags }: FilterBuilderProps) {
   const accountOptions: MultiSelectOption[] = useMemo(() =>
     [...accounts]
       .sort((a, b) => a.name.localeCompare(b.name))
@@ -61,6 +64,13 @@ export function FilterBuilder({ value, onChange, accounts, categories, payees }:
     [payees]
   );
 
+  const tagOptions: MultiSelectOption[] = useMemo(() =>
+    [...tags]
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((t) => ({ value: t.id, label: t.name })),
+    [tags]
+  );
+
   const getValueOptions = (field: FilterField): MultiSelectOption[] => {
     switch (field) {
       case 'account':
@@ -69,6 +79,8 @@ export function FilterBuilder({ value, onChange, accounts, categories, payees }:
         return categoryOptions;
       case 'payee':
         return payeeOptions;
+      case 'tag':
+        return tagOptions;
       default:
         return [];
     }

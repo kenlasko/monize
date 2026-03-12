@@ -329,8 +329,10 @@ export class ReportsService {
       .leftJoinAndSelect("transaction.account", "account")
       .leftJoinAndSelect("transaction.category", "category")
       .leftJoinAndSelect("transaction.payee", "payee")
+      .leftJoinAndSelect("transaction.tags", "tags")
       .leftJoinAndSelect("transaction.splits", "splits")
       .leftJoinAndSelect("splits.category", "splitCategory")
+      .leftJoinAndSelect("splits.tags", "splitTags")
       .where("transaction.userId = :userId", { userId })
       .andWhere("transaction.transactionDate >= :startDate", { startDate })
       .andWhere("transaction.transactionDate <= :endDate", { endDate })
@@ -467,6 +469,37 @@ export class ReportsService {
                 }
                 break;
               }
+              case "tag": {
+                const values = Array.isArray(condition.value)
+                  ? condition.value
+                  : [condition.value];
+                if (values.length === 1) {
+                  qb[method](
+                    new Brackets((inner) => {
+                      inner
+                        .where(`tags.id = :${param}`, {
+                          [param]: values[0],
+                        })
+                        .orWhere(`splitTags.id = :${param}`, {
+                          [param]: values[0],
+                        });
+                    }),
+                  );
+                } else if (values.length > 1) {
+                  qb[method](
+                    new Brackets((inner) => {
+                      inner
+                        .where(`tags.id IN (:...${param})`, {
+                          [param]: values,
+                        })
+                        .orWhere(`splitTags.id IN (:...${param})`, {
+                          [param]: values,
+                        });
+                    }),
+                  );
+                }
+                break;
+              }
               case "text": {
                 const textValue = Array.isArray(condition.value)
                   ? condition.value[0] || ""
@@ -517,6 +550,8 @@ export class ReportsService {
         return this.aggregateByTime(transactions, metric, "week");
       case GroupByType.DAY:
         return this.aggregateByTime(transactions, metric, "day");
+      case GroupByType.TAG:
+        return this.aggregateByTag(transactions, metric);
       default:
         return this.aggregateNoGrouping(transactions, metric);
     }
@@ -684,6 +719,75 @@ export class ReportsService {
         id: payeeId,
         label: payee?.name || data.payeeName || "Unknown",
         value: this.calculateMetricValue(data.sum, data.count, metric),
+        percentage: totalSum > 0 ? (data.sum / totalSum) * 100 : 0,
+        count: data.count,
+      });
+    }
+
+    return result.sort((a, b) => b.value - a.value);
+  }
+
+  private aggregateByTag(
+    transactions: Transaction[],
+    metric: MetricType,
+  ): AggregatedDataPoint[] {
+    const dataMap = new Map<
+      string,
+      { sum: number; count: number; tagName: string; color?: string }
+    >();
+
+    for (const tx of transactions) {
+      // Collect all tags: transaction-level + split-level
+      const allTags = [...(tx.tags || [])];
+      if (tx.splits) {
+        for (const split of tx.splits) {
+          if (split.tags) {
+            for (const tag of split.tags) {
+              if (!allTags.some((t) => t.id === tag.id)) {
+                allTags.push(tag);
+              }
+            }
+          }
+        }
+      }
+
+      if (allTags.length === 0) {
+        // Untagged transactions
+        const existing = dataMap.get("untagged") || {
+          sum: 0,
+          count: 0,
+          tagName: "Untagged",
+        };
+        existing.sum += Math.abs(Number(tx.amount));
+        existing.count += 1;
+        dataMap.set("untagged", existing);
+      } else {
+        for (const tag of allTags) {
+          const existing = dataMap.get(tag.id) || {
+            sum: 0,
+            count: 0,
+            tagName: tag.name,
+            color: tag.color ?? undefined,
+          };
+          existing.sum += Math.abs(Number(tx.amount));
+          existing.count += 1;
+          dataMap.set(tag.id, existing);
+        }
+      }
+    }
+
+    const totalSum = Array.from(dataMap.values()).reduce(
+      (acc, v) => acc + v.sum,
+      0,
+    );
+
+    const result: AggregatedDataPoint[] = [];
+    for (const [tagId, data] of dataMap) {
+      result.push({
+        id: tagId,
+        label: data.tagName,
+        value: this.calculateMetricValue(data.sum, data.count, metric),
+        color: data.color,
         percentage: totalSum > 0 ? (data.sum / totalSum) * 100 : 0,
         count: data.count,
       });

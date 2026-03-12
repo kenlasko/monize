@@ -5,12 +5,15 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
+  ManyToMany,
   OneToMany,
   JoinColumn,
+  JoinTable,
 } from "typeorm";
 import { Account } from "../../accounts/entities/account.entity";
 import { Payee } from "../../payees/entities/payee.entity";
 import { Category } from "../../categories/entities/category.entity";
+import { Tag } from "../../tags/entities/tag.entity";
 import { TransactionSplit } from "./transaction-split.entity";
 import { User } from "../../users/entities/user.entity";
 
@@ -164,6 +167,14 @@ export class Transaction {
 
   @OneToMany(() => TransactionSplit, (split) => split.transaction)
   splits: TransactionSplit[];
+
+  @ManyToMany(() => Tag)
+  @JoinTable({
+    name: "transaction_tags",
+    joinColumn: { name: "transaction_id", referencedColumnName: "id" },
+    inverseJoinColumn: { name: "tag_id", referencedColumnName: "id" },
+  })
+  tags: Tag[];
 
   @CreateDateColumn({ name: "created_at" })
   createdAt: Date;

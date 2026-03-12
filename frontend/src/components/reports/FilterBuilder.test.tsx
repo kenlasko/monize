@@ -38,10 +38,16 @@ const mockPayees = [
   { id: 'pay-2', name: 'Store B' },
 ] as any[];
 
+const mockTags = [
+  { id: 'tag-1', name: 'Vacation' },
+  { id: 'tag-2', name: 'Tax Deductible' },
+] as any[];
+
 const defaultProps = {
   accounts: mockAccounts,
   categories: mockCategories,
   payees: mockPayees,
+  tags: mockTags,
 };
 
 function renderFilterBuilder(
@@ -190,11 +196,12 @@ describe('FilterBuilder', () => {
       // First select is the field dropdown
       const fieldSelect = selects[0];
       const options = within(fieldSelect).getAllByRole('option');
-      expect(options).toHaveLength(4);
+      expect(options).toHaveLength(5);
       expect(options[0]).toHaveTextContent('Account');
       expect(options[1]).toHaveTextContent('Category');
       expect(options[2]).toHaveTextContent('Payee');
-      expect(options[3]).toHaveTextContent('Text');
+      expect(options[3]).toHaveTextContent('Tag');
+      expect(options[4]).toHaveTextContent('Text');
     });
 
     it('has the correct field selected initially', () => {

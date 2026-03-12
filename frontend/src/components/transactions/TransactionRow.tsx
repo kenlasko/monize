@@ -1,6 +1,7 @@
 'use client';
 
 import { memo, type JSX } from 'react';
+import { getIconComponent } from '@/components/ui/IconPicker';
 import { Transaction, TransactionStatus } from '@/types/transaction';
 import { CategoryBudgetStatus } from '@/types/budget';
 import { DensityLevel } from '@/hooks/useTableDensity';
@@ -256,6 +257,32 @@ export const TransactionRow = memo(function TransactionRow({
         >
           {transaction.description || '-'}
         </div>
+      </td>
+      <td className={`${cellPadding} text-sm hidden xl:table-cell`}>
+        {transaction.tags && transaction.tags.length > 0 ? (
+          <div className="flex flex-wrap gap-1">
+            {transaction.tags.map((tag) => (
+              <span
+                key={tag.id}
+                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium"
+                style={{
+                  backgroundColor: tag.color ? `${tag.color}20` : '#9ca3af20',
+                  color: tag.color || '#6b7280',
+                }}
+                title={tag.name}
+              >
+                {tag.icon && (
+                  <span className="w-3 h-3 flex-shrink-0 [&>svg]:w-3 [&>svg]:h-3">
+                    {getIconComponent(tag.icon)}
+                  </span>
+                )}
+                {tag.name}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <span className="text-gray-400 dark:text-gray-500">-</span>
+        )}
       </td>
       <td className={`${cellPadding} whitespace-nowrap text-sm font-medium text-right ${isVoid ? 'line-through' : ''}`}>
         {formatAmount(transaction.amount, transaction.currencyCode)}

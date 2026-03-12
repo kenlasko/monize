@@ -378,7 +378,7 @@ export class ImportService {
     categoryMappings: CategoryMappingDto[],
     accountMappings: AccountMappingDto[],
     securityMappings?: SecurityMappingDto[],
-    dateFormat?: DateFormat,
+    _dateFormat?: DateFormat,
   ): Promise<ImportResultDto> {
     const account = await this.accountsRepository.findOne({
       where: { id: accountId, userId },

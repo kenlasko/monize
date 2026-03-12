@@ -8,6 +8,7 @@ import { buildCategoryColorMap } from '@/lib/categoryUtils';
 import { Account } from '@/types/account';
 import { Category } from '@/types/category';
 import { Payee } from '@/types/payee';
+import { Tag } from '@/types/tag';
 
 // LocalStorage keys for filter persistence
 const STORAGE_KEYS = {
@@ -21,6 +22,7 @@ const STORAGE_KEYS = {
   timePeriod: 'transactions.filter.timePeriod',
   amountFrom: 'transactions.filter.amountFrom',
   amountTo: 'transactions.filter.amountTo',
+  tagIds: 'transactions.filter.tagIds',
 };
 
 // Helper to get filter values as array
@@ -64,10 +66,11 @@ interface UseTransactionFiltersOptions {
   accounts: Account[];
   categories: Category[];
   payees: Payee[];
+  tags: Tag[];
   weekStartsOn: 0 | 1 | 2 | 3 | 4 | 5 | 6;
 }
 
-export function useTransactionFilters({ accounts, categories, payees, weekStartsOn: _weekStartsOn }: UseTransactionFiltersOptions) {
+export function useTransactionFilters({ accounts, categories, payees, tags, weekStartsOn: _weekStartsOn }: UseTransactionFiltersOptions) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -91,6 +94,7 @@ export function useTransactionFilters({ accounts, categories, payees, weekStarts
   const [filterTimePeriod, setFilterTimePeriod] = useState<string>('');
   const [filterAmountFrom, setFilterAmountFrom] = useState<string>('');
   const [filterAmountTo, setFilterAmountTo] = useState<string>('');
+  const [filterTagIds, setFilterTagIds] = useState<string[]>([]);
   const searchDebounceRef = useRef<NodeJS.Timeout | null>(null);
   const [filtersInitialized, setFiltersInitialized] = useState(false);
   const [filtersExpanded, setFiltersExpanded] = useState(true);
@@ -110,6 +114,7 @@ export function useTransactionFilters({ accounts, categories, payees, weekStarts
     accountIds: string[];
     categoryIds: string[];
     payeeIds: string[];
+    tagIds: string[];
     startDate: string;
     endDate: string;
     search: string;
@@ -121,6 +126,7 @@ export function useTransactionFilters({ accounts, categories, payees, weekStarts
     if (filters.accountIds.length) params.set('accountIds', filters.accountIds.join(','));
     if (filters.categoryIds.length) params.set('categoryIds', filters.categoryIds.join(','));
     if (filters.payeeIds.length) params.set('payeeIds', filters.payeeIds.join(','));
+    if (filters.tagIds.length) params.set('tagIds', filters.tagIds.join(','));
     if (filters.startDate) params.set('startDate', filters.startDate);
     if (filters.endDate) params.set('endDate', filters.endDate);
     if (filters.search) params.set('search', filters.search);
@@ -150,6 +156,10 @@ export function useTransactionFilters({ accounts, categories, payees, weekStarts
   const selectedAccounts = filterAccountIds
     .map(id => accounts.find(a => a.id === id))
     .filter((a): a is Account => a !== undefined);
+
+  const selectedTags = filterTagIds
+    .map(id => tags.find(t => t.id === id))
+    .filter((t): t is Tag => t !== undefined);
 
   // Filter accounts by status for the dropdown
   const filteredAccounts = useMemo(() => {
@@ -199,6 +209,12 @@ export function useTransactionFilters({ accounts, categories, payees, weekStarts
       .map(payee => ({ value: payee.id, label: payee.name }));
   }, [payees]);
 
+  const tagFilterOptions = useMemo(() => {
+    return [...tags]
+      .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }))
+      .map(tag => ({ value: tag.id, label: tag.name }));
+  }, [tags]);
+
   // When account status filter changes, remove any selected accounts that no longer match
   useEffect(() => {
     if (!filtersInitialized || filterAccountIds.length === 0 || accounts.length === 0) return;
@@ -219,6 +235,16 @@ export function useTransactionFilters({ accounts, categories, payees, weekStarts
     }
   }, [payees, filtersInitialized]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // When tags change, remove any selected tag filter IDs that no longer exist
+  useEffect(() => {
+    if (!filtersInitialized || filterTagIds.length === 0 || tags.length === 0) return;
+    const tagIdSet = new Set(tags.map(t => t.id));
+    const validSelectedIds = filterTagIds.filter(id => tagIdSet.has(id));
+    if (validSelectedIds.length !== filterTagIds.length) {
+      setFilterTagIds(validSelectedIds); // eslint-disable-line react-hooks/set-state-in-effect -- sync invalid selections after data change
+    }
+  }, [tags, filtersInitialized]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // When categories change, remove any selected category filter IDs that no longer exist
   useEffect(() => {
     if (!filtersInitialized || filterCategoryIds.length === 0 || categories.length === 0) return;
@@ -236,13 +262,14 @@ export function useTransactionFilters({ accounts, categories, payees, weekStarts
     count += filterAccountIds.length;
     count += filterCategoryIds.length;
     count += filterPayeeIds.length;
+    count += filterTagIds.length;
     if (filterStartDate) count++;
     if (filterEndDate) count++;
     if (filterSearch) count++;
     if (filterAmountFrom) count++;
     if (filterAmountTo) count++;
     return count;
-  }, [filterAccountIds, filterCategoryIds, filterPayeeIds, filterStartDate, filterEndDate, filterSearch, filterAmountFrom, filterAmountTo]);
+  }, [filterAccountIds, filterCategoryIds, filterPayeeIds, filterTagIds, filterStartDate, filterEndDate, filterSearch, filterAmountFrom, filterAmountTo]);
 
   // Auto-collapse filters when there are active filters, expand when none
   useEffect(() => {
@@ -264,7 +291,8 @@ export function useTransactionFilters({ accounts, categories, payees, weekStarts
       searchParams.has('endDate') ||
       searchParams.has('search') ||
       searchParams.has('amountFrom') ||
-      searchParams.has('amountTo');
+      searchParams.has('amountTo') ||
+      searchParams.has('tagIds');
 
     const getAccountIds = () => {
       const ids = searchParams.get('accountIds');
@@ -285,6 +313,7 @@ export function useTransactionFilters({ accounts, categories, payees, weekStarts
     setFilterAccountIds(getAccountIds());
     setFilterCategoryIds(getCategoryIds());
     setFilterPayeeIds(getPayeeIds());
+    setFilterTagIds(getFilterValues(STORAGE_KEYS.tagIds, searchParams.get('tagIds'), hasAnyUrlParams));
     const initialStartDate = getFilterValue(STORAGE_KEYS.startDate, searchParams.get('startDate'), hasAnyUrlParams);
     const initialEndDate = getFilterValue(STORAGE_KEYS.endDate, searchParams.get('endDate'), hasAnyUrlParams);
     setFilterStartDate(initialStartDate);
@@ -313,13 +342,14 @@ export function useTransactionFilters({ accounts, categories, payees, weekStarts
     localStorage.setItem(STORAGE_KEYS.accountIds, JSON.stringify(filterAccountIds));
     localStorage.setItem(STORAGE_KEYS.categoryIds, JSON.stringify(filterCategoryIds));
     localStorage.setItem(STORAGE_KEYS.payeeIds, JSON.stringify(filterPayeeIds));
+    localStorage.setItem(STORAGE_KEYS.tagIds, JSON.stringify(filterTagIds));
     localStorage.setItem(STORAGE_KEYS.startDate, filterStartDate);
     localStorage.setItem(STORAGE_KEYS.endDate, filterEndDate);
     localStorage.setItem(STORAGE_KEYS.search, filterSearch);
     localStorage.setItem(STORAGE_KEYS.timePeriod, filterTimePeriod);
     localStorage.setItem(STORAGE_KEYS.amountFrom, filterAmountFrom);
     localStorage.setItem(STORAGE_KEYS.amountTo, filterAmountTo);
-  }, [filterAccountIds, filterCategoryIds, filterPayeeIds, filterStartDate, filterEndDate, filterSearch, filterTimePeriod, filterAmountFrom, filterAmountTo, filtersInitialized]);
+  }, [filterAccountIds, filterCategoryIds, filterPayeeIds, filterTagIds, filterStartDate, filterEndDate, filterSearch, filterTimePeriod, filterAmountFrom, filterAmountTo, filtersInitialized]);
 
   // Helper to update array filter and mark as filter change
   const handleArrayFilterChange = useCallback(<T,>(setter: (value: T) => void, value: T) => {
@@ -362,6 +392,7 @@ export function useTransactionFilters({ accounts, categories, payees, weekStarts
       setFilterAccountIds(params.get('accountIds')?.split(',').filter(Boolean) || []);
       setFilterCategoryIds(params.get('categoryIds')?.split(',').filter(Boolean) || []);
       setFilterPayeeIds(params.get('payeeIds')?.split(',').filter(Boolean) || []);
+      setFilterTagIds(params.get('tagIds')?.split(',').filter(Boolean) || []);
       setFilterStartDate(params.get('startDate') || '');
       setFilterEndDate(params.get('endDate') || '');
       const search = params.get('search') || '';
@@ -416,6 +447,7 @@ export function useTransactionFilters({ accounts, categories, payees, weekStarts
     setFilterAccountIds([]);
     setFilterCategoryIds([]);
     setFilterPayeeIds([]);
+    setFilterTagIds([]);
     setFilterStartDate('');
     setFilterEndDate('');
     setFilterSearch('');
@@ -425,6 +457,7 @@ export function useTransactionFilters({ accounts, categories, payees, weekStarts
     localStorage.removeItem(STORAGE_KEYS.accountIds);
     localStorage.removeItem(STORAGE_KEYS.categoryIds);
     localStorage.removeItem(STORAGE_KEYS.payeeIds);
+    localStorage.removeItem(STORAGE_KEYS.tagIds);
     localStorage.removeItem(STORAGE_KEYS.startDate);
     localStorage.removeItem(STORAGE_KEYS.endDate);
     localStorage.removeItem(STORAGE_KEYS.search);
@@ -454,6 +487,7 @@ export function useTransactionFilters({ accounts, categories, payees, weekStarts
     filterTimePeriod, setFilterTimePeriod,
     filterAmountFrom, setFilterAmountFrom,
     filterAmountTo, setFilterAmountTo,
+    filterTagIds, setFilterTagIds,
     filtersInitialized,
     filtersExpanded, setFiltersExpanded,
     activeFilterCount,
@@ -463,11 +497,13 @@ export function useTransactionFilters({ accounts, categories, payees, weekStarts
     selectedAccounts,
     selectedCategories,
     selectedPayees,
+    selectedTags,
 
     // Filter options
     accountFilterOptions,
     categoryFilterOptions,
     payeeFilterOptions,
+    tagFilterOptions,
     categoryColorMap,
 
     // Filter handlers

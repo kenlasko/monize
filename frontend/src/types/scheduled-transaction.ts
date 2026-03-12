@@ -63,6 +63,7 @@ export interface ScheduledTransaction {
   isTransfer: boolean;
   transferAccountId: string | null;
   transferAccount: Account | null;
+  tagIds?: string[];
   splits?: ScheduledTransactionSplit[];
   overrideCount?: number;
   nextOverride?: ScheduledTransactionOverride | null;
@@ -98,6 +99,7 @@ export interface CreateScheduledTransactionData {
   isTransfer?: boolean;
   transferAccountId?: string;
   splits?: CreateScheduledTransactionSplitData[];
+  tagIds?: string[];
 }
 
 export interface UpdateScheduledTransactionData extends Partial<CreateScheduledTransactionData> {}

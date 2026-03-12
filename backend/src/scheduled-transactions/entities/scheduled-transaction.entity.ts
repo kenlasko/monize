@@ -120,6 +120,9 @@ export class ScheduledTransaction {
   @JoinColumn({ name: "transfer_account_id" })
   transferAccount: Account | null;
 
+  @Column({ type: "jsonb", name: "tag_ids", default: [] })
+  tagIds: string[];
+
   @OneToMany(
     () => ScheduledTransactionSplit,
     (split) => split.scheduledTransaction,
