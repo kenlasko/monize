@@ -51,9 +51,7 @@ export class TagsService {
       .getOne();
 
     if (existing) {
-      throw new ConflictException(
-        `A tag named "${dto.name}" already exists`,
-      );
+      throw new ConflictException(`A tag named "${dto.name}" already exists`);
     }
 
     const tag = this.tagsRepository.create({
@@ -77,9 +75,7 @@ export class TagsService {
         .getOne();
 
       if (existing) {
-        throw new ConflictException(
-          `A tag named "${dto.name}" already exists`,
-        );
+        throw new ConflictException(`A tag named "${dto.name}" already exists`);
       }
     }
 

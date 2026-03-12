@@ -45,7 +45,8 @@ export class CreateTransactionSplitDto {
   memo?: string;
 
   @ApiPropertyOptional({
-    description: "Tag IDs to assign to this split (cumulative with parent transaction tags)",
+    description:
+      "Tag IDs to assign to this split (cumulative with parent transaction tags)",
   })
   @IsOptional()
   @IsArray()

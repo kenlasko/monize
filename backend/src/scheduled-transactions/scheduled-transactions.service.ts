@@ -560,7 +560,10 @@ export class ScheduledTransactionsService {
       description: finalDescription,
       referenceNumber: postDto?.referenceNumber || undefined,
       isCleared: false,
-      tagIds: scheduled.tagIds && scheduled.tagIds.length > 0 ? scheduled.tagIds : undefined,
+      tagIds:
+        scheduled.tagIds && scheduled.tagIds.length > 0
+          ? scheduled.tagIds
+          : undefined,
     };
 
     const useSplits = hasInlineIsSplit

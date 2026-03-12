@@ -56,10 +56,7 @@ export class TagsController {
   @Get(":id/transaction-count")
   @ApiOperation({ summary: "Get number of transactions using this tag" })
   @ApiResponse({ status: 200, description: "Count retrieved successfully" })
-  getTransactionCount(
-    @Request() req,
-    @Param("id", ParseUUIDPipe) id: string,
-  ) {
+  getTransactionCount(@Request() req, @Param("id", ParseUUIDPipe) id: string) {
     return this.tagsService.getTransactionCount(req.user.id, id);
   }
 

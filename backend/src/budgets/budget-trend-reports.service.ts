@@ -323,8 +323,10 @@ export class BudgetTrendReportsService {
 
     // Expenses are negative; negate to get positive spending, clamp to 0
     return Math.max(
-      -(parseFloat(directResult?.total || "0") +
-        parseFloat(splitResult?.total || "0")),
+      -(
+        parseFloat(directResult?.total || "0") +
+        parseFloat(splitResult?.total || "0")
+      ),
       0,
     );
   }

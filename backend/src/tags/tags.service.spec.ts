@@ -179,7 +179,12 @@ describe("TagsService", () => {
     it("creates a tag with null color and icon when not provided", async () => {
       const dto = { name: "Simple Tag" };
       queryBuilderMock.getOne.mockResolvedValue(null);
-      const createdTag = { ...mockTag, name: "Simple Tag", color: null, icon: null };
+      const createdTag = {
+        ...mockTag,
+        name: "Simple Tag",
+        color: null,
+        icon: null,
+      };
       tagsRepository.create.mockReturnValue(createdTag);
       tagsRepository.save.mockResolvedValue(createdTag);
 
@@ -244,10 +249,9 @@ describe("TagsService", () => {
         "LOWER(tag.name) = LOWER(:name)",
         { name: "Travel" },
       );
-      expect(queryBuilderMock.andWhere).toHaveBeenCalledWith(
-        "tag.id != :id",
-        { id: "tag-1" },
-      );
+      expect(queryBuilderMock.andWhere).toHaveBeenCalledWith("tag.id != :id", {
+        id: "tag-1",
+      });
     });
 
     it("does not check for duplicate when name is unchanged (case-insensitive)", async () => {

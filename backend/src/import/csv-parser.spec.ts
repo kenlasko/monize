@@ -556,8 +556,7 @@ describe("CSV Parser", () => {
 
     describe("dates with time components", () => {
       it("strips time after space (HH:MM:SS)", () => {
-        const csv =
-          "Date,Amount,Payee\n01/15/2026 14:30:00,-50.00,Store\n";
+        const csv = "Date,Amount,Payee\n01/15/2026 14:30:00,-50.00,Store\n";
         const result = parseCsv(csv, baseConfig());
 
         expect(result.transactions).toHaveLength(1);
@@ -565,8 +564,7 @@ describe("CSV Parser", () => {
       });
 
       it("strips time after space (H:MM AM/PM)", () => {
-        const csv =
-          "Date,Amount,Payee\n01/15/2026 2:30 PM,-50.00,Store\n";
+        const csv = "Date,Amount,Payee\n01/15/2026 2:30 PM,-50.00,Store\n";
         const result = parseCsv(csv, baseConfig());
 
         expect(result.transactions).toHaveLength(1);
@@ -574,12 +572,8 @@ describe("CSV Parser", () => {
       });
 
       it("strips ISO 8601 time (T separator)", () => {
-        const csv =
-          "Date,Amount,Payee\n2026-01-15T12:00:00Z,-50.00,Store\n";
-        const result = parseCsv(
-          csv,
-          baseConfig({ dateFormat: "YYYY-MM-DD" }),
-        );
+        const csv = "Date,Amount,Payee\n2026-01-15T12:00:00Z,-50.00,Store\n";
+        const result = parseCsv(csv, baseConfig({ dateFormat: "YYYY-MM-DD" }));
 
         expect(result.transactions).toHaveLength(1);
         expect(result.transactions[0].date).toBe("2026-01-15");
@@ -588,30 +582,22 @@ describe("CSV Parser", () => {
       it("strips time with timezone offset", () => {
         const csv =
           "Date,Amount,Payee\n2026-01-15T14:30:00+05:00,-50.00,Store\n";
-        const result = parseCsv(
-          csv,
-          baseConfig({ dateFormat: "YYYY-MM-DD" }),
-        );
+        const result = parseCsv(csv, baseConfig({ dateFormat: "YYYY-MM-DD" }));
 
         expect(result.transactions).toHaveLength(1);
         expect(result.transactions[0].date).toBe("2026-01-15");
       });
 
       it("handles DD/MM/YYYY with time", () => {
-        const csv =
-          "Date,Amount,Payee\n15/01/2026 09:45,-50.00,Store\n";
-        const result = parseCsv(
-          csv,
-          baseConfig({ dateFormat: "DD/MM/YYYY" }),
-        );
+        const csv = "Date,Amount,Payee\n15/01/2026 09:45,-50.00,Store\n";
+        const result = parseCsv(csv, baseConfig({ dateFormat: "DD/MM/YYYY" }));
 
         expect(result.transactions).toHaveLength(1);
         expect(result.transactions[0].date).toBe("2026-01-15");
       });
 
       it("still parses dates without time normally", () => {
-        const csv =
-          "Date,Amount,Payee\n01/15/2026,-50.00,Store\n";
+        const csv = "Date,Amount,Payee\n01/15/2026,-50.00,Store\n";
         const result = parseCsv(csv, baseConfig());
 
         expect(result.transactions).toHaveLength(1);

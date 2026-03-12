@@ -1,9 +1,4 @@
-import {
-  IsString,
-  IsOptional,
-  MaxLength,
-  Matches,
-} from "class-validator";
+import { IsString, IsOptional, MaxLength, Matches } from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { SanitizeHtml } from "../../common/decorators/sanitize-html.decorator";
 
