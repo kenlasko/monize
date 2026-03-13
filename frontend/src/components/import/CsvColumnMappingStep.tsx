@@ -283,12 +283,28 @@ export function CsvColumnMappingStep({
               <div>
                 <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Sign</label>
                 <select
-                  value={columnMapping.reverseSign ? 'reverse' : 'normal'}
-                  onChange={(e) => onColumnMappingChange({ ...columnMapping, reverseSign: e.target.value === 'reverse' })}
+                  value={columnMapping.amountTypeColumn !== undefined ? 'type-column' : columnMapping.reverseSign ? 'reverse' : 'normal'}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === 'type-column') {
+                      // Clear reverseSign, default to first column
+                      const { reverseSign: _, ...rest } = columnMapping;
+                      onColumnMappingChange({ ...rest, amountTypeColumn: 0 } as typeof columnMapping);
+                    } else if (val === 'reverse') {
+                      // Clear all type column fields
+                      const { amountTypeColumn: _, incomeValues: _i, expenseValues: _e, transferOutValues: _to, transferInValues: _ti, transferAccountColumn: _ta, ...rest } = columnMapping;
+                      onColumnMappingChange({ ...rest, reverseSign: true } as typeof columnMapping);
+                    } else {
+                      // Normal: clear reverseSign and all type column fields
+                      const { reverseSign: _, amountTypeColumn: _a, incomeValues: _i, expenseValues: _e, transferOutValues: _to, transferInValues: _ti, transferAccountColumn: _ta, ...rest } = columnMapping;
+                      onColumnMappingChange(rest as typeof columnMapping);
+                    }
+                  }}
                   className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                 >
                   <option value="normal">As-is (positive = deposit)</option>
                   <option value="reverse">Reverse (positive = withdrawal)</option>
+                  <option value="type-column">Use transaction type column</option>
                 </select>
               </div>
             </div>
@@ -321,125 +337,118 @@ export function CsvColumnMappingStep({
             </div>
           )}
 
-          {/* Transaction type column (sign indicator) */}
-          <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg space-y-3">
-            <div>
-              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Transaction type column
-              </label>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
-                Optional column that indicates income, expense, or transfer per row.
-              </p>
-              <select
-                value={columnMapping.amountTypeColumn !== undefined ? String(columnMapping.amountTypeColumn) : ''}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  if (val === '') {
-                    const { amountTypeColumn: _, incomeValues: _i, expenseValues: _e, transferOutValues: _to, transferInValues: _ti, transferAccountColumn: _ta, ...rest } = columnMapping;
-                    onColumnMappingChange(rest as typeof columnMapping);
-                  } else {
+          {/* Transaction type column settings (shown when Sign = "Use transaction type column") */}
+          {columnMapping.amountTypeColumn !== undefined && amountMode === 'single' && (
+            <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Transaction type column
+                </label>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                  Select the column that indicates income, expense, or transfer per row.
+                </p>
+                <select
+                  value={String(columnMapping.amountTypeColumn)}
+                  onChange={(e) => {
+                    const val = e.target.value;
                     onColumnMappingChange({ ...columnMapping, amountTypeColumn: parseInt(val, 10) });
-                  }
-                }}
-                className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-              >
-                {columnOptions.map((o) => (
-                  <option key={o.value} value={o.value}>{o.label}</option>
-                ))}
-              </select>
-            </div>
-            {columnMapping.amountTypeColumn !== undefined && (
-              <>
-                {(() => {
-                  const uniqueValues = [...new Set(
-                    sampleRows.map((row) => row[columnMapping.amountTypeColumn!] || '').filter(Boolean)
-                  )];
-                  return uniqueValues.length > 0 ? (
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      Values found: {uniqueValues.join(', ')}
-                    </p>
-                  ) : null;
-                })()}
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Income keywords</label>
-                    <input
-                      type="text"
-                      value={(columnMapping.incomeValues || []).join(', ')}
-                      onChange={(e) => {
-                        const values = e.target.value.split(',').map((v) => v.trim()).filter(Boolean);
-                        onColumnMappingChange({ ...columnMapping, incomeValues: values.length > 0 ? values : undefined });
-                      }}
-                      placeholder="e.g. Income, Deposit"
-                      className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Expense keywords</label>
-                    <input
-                      type="text"
-                      value={(columnMapping.expenseValues || []).join(', ')}
-                      onChange={(e) => {
-                        const values = e.target.value.split(',').map((v) => v.trim()).filter(Boolean);
-                        onColumnMappingChange({ ...columnMapping, expenseValues: values.length > 0 ? values : undefined });
-                      }}
-                      placeholder="e.g. Expense, Debit"
-                      className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Transfer-out keywords</label>
-                    <input
-                      type="text"
-                      value={(columnMapping.transferOutValues || []).join(', ')}
-                      onChange={(e) => {
-                        const values = e.target.value.split(',').map((v) => v.trim()).filter(Boolean);
-                        onColumnMappingChange({ ...columnMapping, transferOutValues: values.length > 0 ? values : undefined });
-                      }}
-                      placeholder="e.g. Transfer-Out"
-                      className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Transfer-in keywords</label>
-                    <input
-                      type="text"
-                      value={(columnMapping.transferInValues || []).join(', ')}
-                      onChange={(e) => {
-                        const values = e.target.value.split(',').map((v) => v.trim()).filter(Boolean);
-                        onColumnMappingChange({ ...columnMapping, transferInValues: values.length > 0 ? values : undefined });
-                      }}
-                      placeholder="e.g. Transfer-In"
-                      className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                    />
-                  </div>
+                  }}
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                >
+                  {columnOptions.filter((o) => o.value !== '').map((o) => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+              </div>
+              {(() => {
+                const uniqueValues = [...new Set(
+                  sampleRows.map((row) => row[columnMapping.amountTypeColumn!] || '').filter(Boolean)
+                )];
+                return uniqueValues.length > 0 ? (
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Values found: {uniqueValues.join(', ')}
+                  </p>
+                ) : null;
+              })()}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Income keywords</label>
+                  <input
+                    type="text"
+                    value={(columnMapping.incomeValues || []).join(', ')}
+                    onChange={(e) => {
+                      const values = e.target.value.split(',').map((v) => v.trim()).filter(Boolean);
+                      onColumnMappingChange({ ...columnMapping, incomeValues: values.length > 0 ? values : undefined });
+                    }}
+                    placeholder="e.g. Income, Deposit"
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                  />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Transfer account column</label>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                    Column containing the transfer destination account name. Defaults to the Category column if not set.
-                  </p>
-                  <select
-                    value={columnMapping.transferAccountColumn !== undefined ? String(columnMapping.transferAccountColumn) : ''}
+                  <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Expense keywords</label>
+                  <input
+                    type="text"
+                    value={(columnMapping.expenseValues || []).join(', ')}
                     onChange={(e) => {
-                      const val = e.target.value;
-                      if (val === '') {
-                        const { transferAccountColumn: _, ...rest } = columnMapping;
-                        onColumnMappingChange(rest as typeof columnMapping);
-                      } else {
-                        onColumnMappingChange({ ...columnMapping, transferAccountColumn: parseInt(val, 10) });
-                      }
+                      const values = e.target.value.split(',').map((v) => v.trim()).filter(Boolean);
+                      onColumnMappingChange({ ...columnMapping, expenseValues: values.length > 0 ? values : undefined });
                     }}
+                    placeholder="e.g. Expense, Debit"
                     className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                  >
-                    {columnOptions.map((o) => (
-                      <option key={o.value} value={o.value}>{o.value === '' ? 'Use category column' : o.label}</option>
-                    ))}
-                  </select>
+                  />
                 </div>
-              </>
-            )}
-          </div>
+                <div>
+                  <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Transfer-out keywords</label>
+                  <input
+                    type="text"
+                    value={(columnMapping.transferOutValues || []).join(', ')}
+                    onChange={(e) => {
+                      const values = e.target.value.split(',').map((v) => v.trim()).filter(Boolean);
+                      onColumnMappingChange({ ...columnMapping, transferOutValues: values.length > 0 ? values : undefined });
+                    }}
+                    placeholder="e.g. Transfer-Out"
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Transfer-in keywords</label>
+                  <input
+                    type="text"
+                    value={(columnMapping.transferInValues || []).join(', ')}
+                    onChange={(e) => {
+                      const values = e.target.value.split(',').map((v) => v.trim()).filter(Boolean);
+                      onColumnMappingChange({ ...columnMapping, transferInValues: values.length > 0 ? values : undefined });
+                    }}
+                    placeholder="e.g. Transfer-In"
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Transfer account column</label>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                  Column containing the transfer destination account name. Defaults to the Category column if not set.
+                </p>
+                <select
+                  value={columnMapping.transferAccountColumn !== undefined ? String(columnMapping.transferAccountColumn) : ''}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === '') {
+                      const { transferAccountColumn: _, ...rest } = columnMapping;
+                      onColumnMappingChange(rest as typeof columnMapping);
+                    } else {
+                      onColumnMappingChange({ ...columnMapping, transferAccountColumn: parseInt(val, 10) });
+                    }
+                  }}
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                >
+                  {columnOptions.map((o) => (
+                    <option key={o.value} value={o.value}>{o.value === '' ? 'Use category column' : o.label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
 
           <div>
             <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Payee</label>

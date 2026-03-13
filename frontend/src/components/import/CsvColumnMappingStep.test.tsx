@@ -315,20 +315,38 @@ describe('CsvColumnMappingStep', () => {
     expect(props.setStep).toHaveBeenCalledWith('upload');
   });
 
-  describe('transaction type column', () => {
-    it('renders Transaction type column dropdown', () => {
-      renderStep();
+  describe('transaction type column (via Sign dropdown)', () => {
+    it('does not show transaction type settings by default', () => {
+      renderStep({
+        columnMapping: { ...defaultMapping(), amount: 1 },
+      });
 
-      expect(screen.getByText('Transaction type column')).toBeInTheDocument();
-    });
-
-    it('does not show keyword inputs when no column is selected', () => {
-      renderStep();
-
+      expect(screen.queryByText('Transaction type column')).not.toBeInTheDocument();
       expect(screen.queryByText('Income keywords')).not.toBeInTheDocument();
       expect(screen.queryByText('Expense keywords')).not.toBeInTheDocument();
-      expect(screen.queryByText('Transfer-out keywords')).not.toBeInTheDocument();
-      expect(screen.queryByText('Transfer-in keywords')).not.toBeInTheDocument();
+    });
+
+    it('Sign dropdown includes "Use transaction type column" option', () => {
+      renderStep({
+        columnMapping: { ...defaultMapping(), amount: 1 },
+      });
+
+      const signSelect = screen.getByDisplayValue('As-is (positive = deposit)');
+      expect(signSelect).toBeInTheDocument();
+      expect(signSelect.querySelector('option[value="type-column"]')).toBeInTheDocument();
+    });
+
+    it('sets amountTypeColumn to 0 when "Use transaction type column" selected', () => {
+      const props = renderStep({
+        columnMapping: { ...defaultMapping(), amount: 1 },
+      });
+
+      const signSelect = screen.getByDisplayValue('As-is (positive = deposit)');
+      fireEvent.change(signSelect, { target: { value: 'type-column' } });
+
+      expect(props.onColumnMappingChange).toHaveBeenCalledWith(
+        expect.objectContaining({ amountTypeColumn: 0 }),
+      );
     });
 
     it('shows keyword inputs when amountTypeColumn is set in mapping', () => {
@@ -336,32 +354,20 @@ describe('CsvColumnMappingStep', () => {
         columnMapping: { ...defaultMapping(), amount: 1, amountTypeColumn: 2 },
       });
 
+      expect(screen.getByText('Transaction type column')).toBeInTheDocument();
       expect(screen.getByText('Income keywords')).toBeInTheDocument();
       expect(screen.getByText('Expense keywords')).toBeInTheDocument();
       expect(screen.getByText('Transfer-out keywords')).toBeInTheDocument();
       expect(screen.getByText('Transfer-in keywords')).toBeInTheDocument();
     });
 
-    it('calls onColumnMappingChange with amountTypeColumn when column selected', () => {
-      const props = renderStep({
-        headers: ['Date', 'Amount', 'Payee', 'Type'],
-        sampleRows: [['2024-01-01', '100.00', 'Store', 'Expense']],
-        columnMapping: { ...defaultMapping(), amount: 1 },
+    it('Sign dropdown shows "Use transaction type column" when amountTypeColumn is set', () => {
+      renderStep({
+        columnMapping: { ...defaultMapping(), amount: 1, amountTypeColumn: 2 },
       });
 
-      // Find the transaction type column select (the one after "Transaction type column" label)
-      const selects = screen.getAllByRole('combobox');
-      // The transaction type column select should have "Not mapped" as default
-      const typeColumnSelect = selects.find(
-        (s) => (s as HTMLSelectElement).value === '',
-      );
-      expect(typeColumnSelect).toBeDefined();
-
-      fireEvent.change(typeColumnSelect!, { target: { value: '3' } });
-
-      expect(props.onColumnMappingChange).toHaveBeenCalledWith(
-        expect.objectContaining({ amountTypeColumn: 3 }),
-      );
+      const signSelect = screen.getByDisplayValue('Use transaction type column');
+      expect(signSelect).toBeInTheDocument();
     });
 
     it('shows unique values found in sample data when column is selected', () => {
@@ -405,7 +411,7 @@ describe('CsvColumnMappingStep', () => {
       );
     });
 
-    it('clears amountType fields when column is deselected', () => {
+    it('clears amountType fields when Sign changed back to normal', () => {
       const onColumnMappingChange = vi.fn();
       renderStep({
         columnMapping: {
@@ -418,15 +424,9 @@ describe('CsvColumnMappingStep', () => {
         onColumnMappingChange,
       });
 
-      // The transaction type column select is inside the section with "Transaction type column" label
-      // It is the select whose parent section also contains the "Expense keywords" label
-      const expenseLabel = screen.getByText('Expense keywords');
-      const section = expenseLabel.closest('.p-3');
-      const typeColumnSelect = section!.querySelector('select');
-      expect(typeColumnSelect).toBeDefined();
-      expect((typeColumnSelect as HTMLSelectElement).value).toBe('2');
-
-      fireEvent.change(typeColumnSelect!, { target: { value: '' } });
+      // Change Sign from "Use transaction type column" back to "As-is"
+      const signSelect = screen.getByDisplayValue('Use transaction type column');
+      fireEvent.change(signSelect, { target: { value: 'normal' } });
 
       const calls = onColumnMappingChange.mock.calls;
       const callArg = calls[calls.length - 1][0];
@@ -436,6 +436,28 @@ describe('CsvColumnMappingStep', () => {
       expect(callArg.transferOutValues).toBeUndefined();
       expect(callArg.transferInValues).toBeUndefined();
       expect(callArg.transferAccountColumn).toBeUndefined();
+      expect(callArg.reverseSign).toBeUndefined();
+    });
+
+    it('clears amountType fields when Sign changed to reverse', () => {
+      const onColumnMappingChange = vi.fn();
+      renderStep({
+        columnMapping: {
+          ...defaultMapping(),
+          amount: 1,
+          amountTypeColumn: 2,
+          expenseValues: ['Expense'],
+        },
+        onColumnMappingChange,
+      });
+
+      const signSelect = screen.getByDisplayValue('Use transaction type column');
+      fireEvent.change(signSelect, { target: { value: 'reverse' } });
+
+      const calls = onColumnMappingChange.mock.calls;
+      const callArg = calls[calls.length - 1][0];
+      expect(callArg.amountTypeColumn).toBeUndefined();
+      expect(callArg.reverseSign).toBe(true);
     });
 
     it('renders Transfer account column dropdown when amountTypeColumn is set', () => {
@@ -459,6 +481,26 @@ describe('CsvColumnMappingStep', () => {
 
       expect(props.onColumnMappingChange).toHaveBeenCalledWith(
         expect.objectContaining({ transferAccountColumn: 3 }),
+      );
+    });
+
+    it('allows changing the transaction type column within the panel', () => {
+      const props = renderStep({
+        headers: ['Date', 'Amount', 'Type', 'OtherType'],
+        sampleRows: [['2024-01-01', '100.00', 'Expense', 'Income']],
+        columnMapping: { ...defaultMapping(), amount: 1, amountTypeColumn: 2 },
+      });
+
+      // Find the transaction type column select inside the panel
+      const typeColumnLabel = screen.getByText('Transaction type column');
+      const section = typeColumnLabel.closest('.p-3');
+      const typeColumnSelect = section!.querySelector('select');
+      expect(typeColumnSelect).toBeDefined();
+
+      fireEvent.change(typeColumnSelect!, { target: { value: '3' } });
+
+      expect(props.onColumnMappingChange).toHaveBeenCalledWith(
+        expect.objectContaining({ amountTypeColumn: 3 }),
       );
     });
   });
