@@ -363,6 +363,7 @@ export class ImportService {
 
     return {
       accountType: result.accountType,
+      accountName: result.accountName,
       transactionCount: result.transactions.length,
       categories: result.categories,
       transferAccounts: result.transferAccounts,

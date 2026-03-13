@@ -44,8 +44,7 @@ async function bootstrap() {
   app.use(cookieParser());
 
   // Security middleware
-  const disableHttpsHeaders =
-    process.env.DISABLE_HTTPS_HEADERS === "true";
+  const disableHttpsHeaders = process.env.DISABLE_HTTPS_HEADERS === "true";
   app.use(
     helmet({
       frameguard: { action: "deny" },

@@ -154,6 +154,169 @@ describe("ImportEntityCreatorService", () => {
       expect(importResult.categoriesCreated).toBe(1);
     });
 
+    it("should create new parent category when createNewParentCategoryName is provided", async () => {
+      queryRunner.manager.findOne.mockResolvedValue(null);
+      let saveCount = 0;
+      queryRunner.manager.save.mockImplementation((data: any) => {
+        saveCount++;
+        return { ...data, id: `cat-${saveCount}` };
+      });
+
+      const categoryMap = new Map<string, string | null>();
+      const categoriesToCreate: CategoryMappingDto[] = [
+        {
+          originalName: "Fees & Charges:Bank Fee",
+          createNew: "Bank Fee",
+          createNewParentCategoryName: "Fees & Charges",
+        },
+      ];
+
+      await service.createCategories(
+        queryRunner,
+        userId,
+        categoriesToCreate,
+        categoryMap,
+        importResult,
+      );
+
+      // Should create parent first (cat-1), then child (cat-2)
+      expect(queryRunner.manager.save).toHaveBeenCalledTimes(2);
+      expect(queryRunner.manager.create).toHaveBeenCalledWith(
+        Category,
+        expect.objectContaining({
+          name: "Fees & Charges",
+          parentId: null,
+        }),
+      );
+      expect(queryRunner.manager.create).toHaveBeenCalledWith(
+        Category,
+        expect.objectContaining({
+          name: "Bank Fee",
+          parentId: "cat-1",
+        }),
+      );
+      expect(categoryMap.get("Fees & Charges:Bank Fee")).toBe("cat-2");
+      expect(importResult.categoriesCreated).toBe(2);
+    });
+
+    it("should reuse existing parent when createNewParentCategoryName matches", async () => {
+      const existingParent = {
+        id: "parent-existing",
+        name: "Bills & Utilities",
+        userId,
+      };
+      queryRunner.manager.findOne.mockImplementation(
+        (_entity: any, opts: any) => {
+          if (
+            opts?.where?.name === "Bills & Utilities" &&
+            opts?.where?.parentId
+          ) {
+            return Promise.resolve(existingParent);
+          }
+          return Promise.resolve(null);
+        },
+      );
+      const savedChild = { id: "child-new", name: "Electricity", userId };
+      queryRunner.manager.save.mockResolvedValue(savedChild);
+
+      const categoryMap = new Map<string, string | null>();
+      const categoriesToCreate: CategoryMappingDto[] = [
+        {
+          originalName: "Bills & Utilities:Electricity",
+          createNew: "Electricity",
+          createNewParentCategoryName: "Bills & Utilities",
+        },
+      ];
+
+      await service.createCategories(
+        queryRunner,
+        userId,
+        categoriesToCreate,
+        categoryMap,
+        importResult,
+      );
+
+      // Only child should be created; parent already exists
+      expect(queryRunner.manager.save).toHaveBeenCalledTimes(1);
+      expect(categoryMap.get("Bills & Utilities:Electricity")).toBe(
+        "child-new",
+      );
+      expect(importResult.categoriesCreated).toBe(1);
+    });
+
+    it("should reuse same new parent for multiple children", async () => {
+      queryRunner.manager.findOne.mockResolvedValue(null);
+      let saveCount = 0;
+      queryRunner.manager.save.mockImplementation((data: any) => {
+        saveCount++;
+        return { ...data, id: `cat-${saveCount}` };
+      });
+
+      const categoryMap = new Map<string, string | null>();
+      const categoriesToCreate: CategoryMappingDto[] = [
+        {
+          originalName: "Taxes:Income Tax",
+          createNew: "Income Tax",
+          createNewParentCategoryName: "Taxes",
+        },
+        {
+          originalName: "Taxes:CPP",
+          createNew: "CPP",
+          createNewParentCategoryName: "Taxes",
+        },
+      ];
+
+      await service.createCategories(
+        queryRunner,
+        userId,
+        categoriesToCreate,
+        categoryMap,
+        importResult,
+      );
+
+      // Parent created once (cat-1), two children (cat-2, cat-3)
+      expect(queryRunner.manager.save).toHaveBeenCalledTimes(3);
+      expect(importResult.categoriesCreated).toBe(3);
+      expect(categoryMap.get("Taxes:Income Tax")).toBe("cat-2");
+      expect(categoryMap.get("Taxes:CPP")).toBe("cat-3");
+    });
+
+    it("should prefer parentCategoryId over createNewParentCategoryName", async () => {
+      queryRunner.manager.findOne.mockResolvedValue(null);
+      queryRunner.manager.save.mockImplementation((data: any) => ({
+        ...data,
+        id: "child-id",
+      }));
+
+      const categoryMap = new Map<string, string | null>();
+      const categoriesToCreate: CategoryMappingDto[] = [
+        {
+          originalName: "Test:Sub",
+          createNew: "Sub",
+          parentCategoryId: "existing-parent-id",
+          createNewParentCategoryName: "Test",
+        },
+      ];
+
+      await service.createCategories(
+        queryRunner,
+        userId,
+        categoriesToCreate,
+        categoryMap,
+        importResult,
+      );
+
+      // Should use parentCategoryId, not create a new parent
+      expect(queryRunner.manager.create).toHaveBeenCalledWith(
+        Category,
+        expect.objectContaining({
+          name: "Sub",
+          parentId: "existing-parent-id",
+        }),
+      );
+      expect(queryRunner.manager.save).toHaveBeenCalledTimes(1);
+    });
+
     it("should create categories with different parents separately", async () => {
       queryRunner.manager.findOne.mockResolvedValue(null);
       let callCount = 0;

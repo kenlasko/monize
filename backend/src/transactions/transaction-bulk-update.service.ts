@@ -194,12 +194,18 @@ export class TransactionBulkUpdateService {
       const transactionIdsSet = new Set(transactions.map((t) => t.id));
 
       for (const tx of transactions) {
-        if (tx.linkedTransactionId && !transactionIdsSet.has(tx.linkedTransactionId)) {
+        if (
+          tx.linkedTransactionId &&
+          !transactionIdsSet.has(tx.linkedTransactionId)
+        ) {
           linkedIdsToDelete.add(tx.linkedTransactionId);
         }
         if (tx.isSplit && tx.splits) {
           for (const split of tx.splits) {
-            if (split.linkedTransactionId && !transactionIdsSet.has(split.linkedTransactionId)) {
+            if (
+              split.linkedTransactionId &&
+              !transactionIdsSet.has(split.linkedTransactionId)
+            ) {
               linkedIdsToDelete.add(split.linkedTransactionId);
             }
           }
@@ -235,10 +241,7 @@ export class TransactionBulkUpdateService {
           !isTransactionInFuture(tx.transactionDate)
         ) {
           const current = balanceAdjustments.get(tx.accountId) || 0;
-          balanceAdjustments.set(
-            tx.accountId,
-            current - Number(tx.amount),
-          );
+          balanceAdjustments.set(tx.accountId, current - Number(tx.amount));
         }
       }
 
@@ -281,9 +284,7 @@ export class TransactionBulkUpdateService {
     }
 
     // Trigger net worth recalc for all affected accounts
-    const affectedAccountIds = new Set(
-      transactions.map((t) => t.accountId),
-    );
+    const affectedAccountIds = new Set(transactions.map((t) => t.accountId));
     for (const accountId of affectedAccountIds) {
       this.netWorthService.triggerDebouncedRecalc(accountId, userId);
     }

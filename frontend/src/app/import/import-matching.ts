@@ -158,6 +158,33 @@ export function buildCategoryMappings(
       return { originalName: cat, isLoanCategory: true, loanAccountId };
     }
 
+    // For colon-separated categories (e.g., "Fees & Charges:Bank Fee"),
+    // auto-suggest creating the child under a new or existing parent
+    const parts = cat.split(':');
+    if (parts.length >= 2) {
+      const parentName = parts.slice(0, -1).join(':').trim();
+      const childName = parts[parts.length - 1].trim();
+
+      // Check if parent already exists as a top-level category
+      const existingParent = categories.find(
+        (c) => !c.parentId && c.name.toLowerCase() === parentName.toLowerCase()
+      );
+
+      if (existingParent) {
+        return {
+          originalName: cat,
+          createNew: childName,
+          parentCategoryId: existingParent.id,
+        };
+      }
+
+      return {
+        originalName: cat,
+        createNew: childName,
+        createNewParentCategoryName: parentName,
+      };
+    }
+
     return { originalName: cat, categoryId: undefined, createNew: undefined };
   });
 }

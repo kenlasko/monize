@@ -948,4 +948,102 @@ describe("ImportInvestmentProcessorService", () => {
       expect(holdingSave).toBeDefined();
     });
   });
+
+  describe("Quicken-specific investment action mappings", () => {
+    const testActionMapping = async (
+      qifAction: string,
+      expectedAction: InvestmentAction,
+    ) => {
+      const securityMap = new Map<string, string | null>();
+      securityMap.set("Test Security", "sec-1");
+      const ctx = makeContext({ securityMap });
+
+      const qifTx = {
+        action: qifAction,
+        security: "Test Security",
+        quantity: 10,
+        price: 100,
+        date: "2025-01-15",
+        amount: 1000,
+      };
+
+      await service.processTransaction(ctx, qifTx);
+
+      const firstSaveArg = ctx.queryRunner.manager.save.mock.calls[0][0];
+      expect(firstSaveArg).toBeInstanceOf(InvestmentTransaction);
+      expect(firstSaveArg.action).toBe(expectedAction);
+    };
+
+    it("maps CGMid to CAPITAL_GAIN", async () => {
+      await testActionMapping("CGMid", InvestmentAction.CAPITAL_GAIN);
+    });
+
+    it("maps CGMidX to CAPITAL_GAIN (X suffix stripped)", async () => {
+      await testActionMapping("CGMidX", InvestmentAction.CAPITAL_GAIN);
+    });
+
+    it("maps ReinvMd to REINVEST", async () => {
+      await testActionMapping("ReinvMd", InvestmentAction.REINVEST);
+    });
+
+    it("maps ShtSell to SELL", async () => {
+      await testActionMapping("ShtSell", InvestmentAction.SELL);
+    });
+
+    it("maps CvrShrt to BUY", async () => {
+      await testActionMapping("CvrShrt", InvestmentAction.BUY);
+    });
+
+    it("maps XIn to TRANSFER_IN", async () => {
+      await testActionMapping("XIn", InvestmentAction.TRANSFER_IN);
+    });
+
+    it("maps XOut to TRANSFER_OUT", async () => {
+      await testActionMapping("XOut", InvestmentAction.TRANSFER_OUT);
+    });
+
+    it("maps RtrnCap to DIVIDEND", async () => {
+      await testActionMapping("RtrnCap", InvestmentAction.DIVIDEND);
+    });
+
+    it("maps MargInt to INTEREST", async () => {
+      await testActionMapping("MargInt", InvestmentAction.INTEREST);
+    });
+
+    it("maps MiscExp to INTEREST", async () => {
+      await testActionMapping("MiscExp", InvestmentAction.INTEREST);
+    });
+
+    it("maps MiscInc to INTEREST", async () => {
+      await testActionMapping("MiscInc", InvestmentAction.INTEREST);
+    });
+
+    it("maps Contrib to BUY", async () => {
+      await testActionMapping("Contrib", InvestmentAction.BUY);
+    });
+
+    it("maps ContribX to BUY (X suffix stripped)", async () => {
+      await testActionMapping("ContribX", InvestmentAction.BUY);
+    });
+
+    it("maps Exercise to BUY", async () => {
+      await testActionMapping("Exercise", InvestmentAction.BUY);
+    });
+
+    it("maps Expire to REMOVE_SHARES", async () => {
+      await testActionMapping("Expire", InvestmentAction.REMOVE_SHARES);
+    });
+
+    it("maps Grant to ADD_SHARES", async () => {
+      await testActionMapping("Grant", InvestmentAction.ADD_SHARES);
+    });
+
+    it("maps Vest to ADD_SHARES", async () => {
+      await testActionMapping("Vest", InvestmentAction.ADD_SHARES);
+    });
+
+    it("maps Cash to INTEREST", async () => {
+      await testActionMapping("Cash", InvestmentAction.INTEREST);
+    });
+  });
 });

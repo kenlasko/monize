@@ -52,6 +52,16 @@ export class CategoryMappingDto {
   parentCategoryId?: string;
 
   @ApiPropertyOptional({
+    description:
+      "Name for a new parent category to create (used when parent does not exist yet)",
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  @SanitizeHtml()
+  createNewParentCategoryName?: string;
+
+  @ApiPropertyOptional({
     description: "Whether this category represents a loan payment",
   })
   @IsOptional()
@@ -240,6 +250,11 @@ export class ImportQifDto {
 export class ParsedQifResponseDto {
   @ApiProperty()
   accountType: string;
+
+  @ApiPropertyOptional({
+    description: "Account name from QIF file, if present",
+  })
+  accountName: string;
 
   @ApiProperty()
   transactionCount: number;

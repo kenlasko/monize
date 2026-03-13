@@ -25,6 +25,7 @@ export class ImportInvestmentProcessorService {
       intinc: InvestmentAction.INTEREST,
       cglong: InvestmentAction.CAPITAL_GAIN,
       cgshort: InvestmentAction.CAPITAL_GAIN,
+      cgmid: InvestmentAction.CAPITAL_GAIN,
       stksplit: InvestmentAction.SPLIT,
       shrsin: InvestmentAction.TRANSFER_IN,
       shrsout: InvestmentAction.TRANSFER_OUT,
@@ -32,6 +33,22 @@ export class ImportInvestmentProcessorService {
       reinvint: InvestmentAction.REINVEST,
       reinvlg: InvestmentAction.REINVEST,
       reinvsh: InvestmentAction.REINVEST,
+      reinvmd: InvestmentAction.REINVEST,
+      // Quicken-specific actions
+      contrib: InvestmentAction.BUY,
+      margint: InvestmentAction.INTEREST,
+      miscexp: InvestmentAction.INTEREST,
+      miscinc: InvestmentAction.INTEREST,
+      rtrncap: InvestmentAction.DIVIDEND,
+      shtsell: InvestmentAction.SELL,
+      cvrshrt: InvestmentAction.BUY,
+      xin: InvestmentAction.TRANSFER_IN,
+      xout: InvestmentAction.TRANSFER_OUT,
+      cash: InvestmentAction.INTEREST,
+      exercise: InvestmentAction.BUY,
+      expire: InvestmentAction.REMOVE_SHARES,
+      grant: InvestmentAction.ADD_SHARES,
+      vest: InvestmentAction.ADD_SHARES,
     };
 
     const qifAction = (qifTx.action || "").toLowerCase();

@@ -110,12 +110,14 @@ export function parseQif(
   let openingBalanceRawDate: string | null = null;
 
   let accountType = "Bank";
-  const accountName = "";
+  let accountName = "";
   let currentTransaction: Partial<QifTransaction> | null = null;
   let currentSplits: QifSplit[] = [];
   let currentSplit: Partial<QifSplit> | null = null;
   let openingBalance: number | null = null;
   let openingBalanceDate: string | null = null;
+  let skippingSection = false;
+  let inAccountSection = false;
 
   for (const line of lines) {
     if (!line.trim()) continue;
@@ -129,32 +131,86 @@ export function parseQif(
       switch (type.toLowerCase()) {
         case "bank":
           accountType = "CHEQUING";
+          skippingSection = false;
           break;
         case "cash":
           accountType = "CASH";
+          skippingSection = false;
           break;
         case "ccard":
           accountType = "CREDIT_CARD";
+          skippingSection = false;
           break;
         case "invst":
           accountType = "INVESTMENT";
+          skippingSection = false;
           break;
         case "oth a":
           accountType = "ASSET";
+          skippingSection = false;
           break;
         case "oth l":
           accountType = "LINE_OF_CREDIT";
+          skippingSection = false;
           break;
-        default:
-          accountType = "OTHER";
+        default: {
+          // Known non-transaction sections: skip all lines until next transaction type
+          const nonTransactionSections = [
+            "cat",
+            "class",
+            "tag",
+            "memorized",
+            "security",
+            "prices",
+            "budget",
+            "invitem",
+            "template",
+          ];
+          if (nonTransactionSections.includes(type.toLowerCase())) {
+            skippingSection = true;
+          } else {
+            // Truly unknown type: treat as OTHER but still parse transactions
+            accountType = "OTHER";
+            skippingSection = false;
+          }
+        }
       }
       continue;
     }
 
-    // Account name
+    // Account section: extract account name and type
     if (line.startsWith("!Account")) {
+      inAccountSection = true;
+      skippingSection = false;
       continue;
     }
+
+    // Parse !Account section fields (N=name, T=type, ^=end)
+    if (inAccountSection) {
+      if (code === "N") {
+        accountName = value;
+      } else if (code === "T") {
+        // Use account type from !Account only as fallback
+        const accountSectionType = value.toLowerCase();
+        const typeMap: Record<string, string> = {
+          bank: "CHEQUING",
+          cash: "CASH",
+          ccard: "CREDIT_CARD",
+          invst: "INVESTMENT",
+          "oth a": "ASSET",
+          "oth l": "LINE_OF_CREDIT",
+        };
+        if (typeMap[accountSectionType]) {
+          accountType = typeMap[accountSectionType];
+        }
+      } else if (code === "^") {
+        inAccountSection = false;
+      }
+      continue;
+    }
+
+    // Skip lines in non-transaction sections (e.g., !Type:Cat, !Type:Memorized)
+    if (skippingSection) continue;
 
     // Start new transaction
     if (code === "D" && !currentTransaction) {
@@ -391,6 +447,8 @@ function normalizeDateSeparators(dateStr: string): string {
   // Normalize apostrophe/quote used as date separator to '/'
   // Handles formats like DD/MM'YYYY and M/D'YY
   normalized = normalized.replace(/(\d)['"](\d)/g, "$1/$2");
+  // Strip spaces around date separators (Quicken pads single-digit days: "2/ 4/19")
+  normalized = normalized.replace(/\s*([/-])\s*/g, "$1");
   return normalized;
 }
 
@@ -508,6 +566,11 @@ function parseCategoryOrTransfer(value: string): {
   isTransfer: boolean;
   transferAccount: string;
 } {
+  // Quicken uses "--Split--" as a placeholder for split transactions; treat as empty
+  if (value.toLowerCase() === "--split--") {
+    return { category: "", isTransfer: false, transferAccount: "" };
+  }
+
   // Transfers are denoted by [Account Name]
   const transferMatch = value.match(/^\[(.+)\]$/);
   if (transferMatch) {

@@ -71,6 +71,7 @@ export function detectCsvDateFormat(samples: string[]): string | null {
 
 export interface ParsedQifResponse {
   accountType: string;
+  accountName?: string;
   transactionCount: number;
   categories: string[];
   transferAccounts: string[];
@@ -88,6 +89,7 @@ export interface CategoryMapping {
   categoryId?: string;
   createNew?: string;
   parentCategoryId?: string;
+  createNewParentCategoryName?: string;
   // Loan category fields
   isLoanCategory?: boolean;
   loanAccountId?: string;

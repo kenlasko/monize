@@ -61,7 +61,19 @@ export class ImportEntityCreatorService {
     const processedCategories = new Map<string, string>();
     for (const catMapping of categoriesToCreate) {
       const categoryName = catMapping.createNew;
-      const parentId = catMapping.parentCategoryId || null;
+      let parentId = catMapping.parentCategoryId || null;
+
+      // If a new parent category name is provided, create (or find) the parent first
+      if (!parentId && catMapping.createNewParentCategoryName) {
+        parentId = await this.findOrCreateParentCategory(
+          queryRunner,
+          userId,
+          catMapping.createNewParentCategoryName,
+          processedCategories,
+          importResult,
+        );
+      }
+
       const cacheKey = `${categoryName}|${parentId || "null"}`;
 
       if (processedCategories.has(cacheKey)) {
@@ -99,6 +111,39 @@ export class ImportEntityCreatorService {
       importResult.createdMappings!.categories[catMapping.originalName] =
         saved.id;
     }
+  }
+
+  private async findOrCreateParentCategory(
+    queryRunner: any,
+    userId: string,
+    parentName: string,
+    processedCategories: Map<string, string>,
+    importResult: ImportResultDto,
+  ): Promise<string> {
+    const cacheKey = `${parentName}|null`;
+    if (processedCategories.has(cacheKey)) {
+      return processedCategories.get(cacheKey)!;
+    }
+
+    const existing = await queryRunner.manager.findOne(Category, {
+      where: { userId, name: parentName, parentId: IsNull() },
+    });
+
+    if (existing) {
+      processedCategories.set(cacheKey, existing.id);
+      return existing.id;
+    }
+
+    const newParent = queryRunner.manager.create(Category, {
+      userId,
+      name: parentName,
+      parentId: null,
+      isIncome: false,
+    });
+    const saved = await queryRunner.manager.save(newParent);
+    processedCategories.set(cacheKey, saved.id);
+    importResult.categoriesCreated++;
+    return saved.id;
   }
 
   async createAccounts(

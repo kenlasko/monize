@@ -31,7 +31,7 @@ describe('ReviewStep', () => {
       investmentTransactions: [],
       qifType: 'Bank' as const,
       accountType: 'Bank',
-      accountName: null,
+      accountName: '',
       transactionCount: 5,
       dateRange: { start: '2024-01-01', end: '2024-01-31' },
       categories: [],

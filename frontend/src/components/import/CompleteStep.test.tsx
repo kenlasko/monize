@@ -104,7 +104,7 @@ describe('CompleteStep', () => {
           investmentTransactions: [],
           qifType: 'Bank' as const,
           accountType: 'INVESTMENT',
-          accountName: null,
+          accountName: '',
           transactionCount: 5,
           dateRange: { start: '2024-01-01', end: '2024-01-31' },
           categories: [],

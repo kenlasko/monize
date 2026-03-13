@@ -1045,10 +1045,7 @@ describe("CSV Parser", () => {
         });
         const result = parseCsv(csv, config);
 
-        expect(result.transferAccounts).toEqual([
-          "Cash",
-          "Freedom Unlimited",
-        ]);
+        expect(result.transferAccounts).toEqual(["Cash", "Freedom Unlimited"]);
       });
 
       it("forces expense amount negative even if already negative", () => {
@@ -1106,10 +1103,7 @@ describe("CSV Parser", () => {
         );
 
         // Transfer accounts collected
-        expect(result.transferAccounts).toEqual([
-          "Cash",
-          "Freedom Unlimited",
-        ]);
+        expect(result.transferAccounts).toEqual(["Cash", "Freedom Unlimited"]);
 
         // Categories collected (no transfer categories)
         expect(result.categories).toContain("Bills:Cable");

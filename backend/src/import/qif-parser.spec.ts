@@ -1019,4 +1019,286 @@ $-40.00
       expect(result.transactions[0].splits[1].memo).toBe("bmemo/b");
     });
   });
+
+  describe("Quicken QIF compatibility", () => {
+    it("parses space-padded dates from Quicken exports", () => {
+      const qif = `!Type:Bank
+D2/ 4'19
+T0.08
+PEQ Bank
+^
+D10/ 1'19
+T-251.00
+PCity Of Calgary
+^`;
+      const result = parseQif(qif);
+      expect(result.transactions).toHaveLength(2);
+      expect(result.transactions[0].date).toBe("2019-02-04");
+      expect(result.transactions[1].date).toBe("2019-10-01");
+    });
+
+    it("handles space-padded dates in DD/MM format", () => {
+      const qif = `!Type:Bank
+D 4/ 2/2019
+T100.00
+PTest
+^
+D25/12/2019
+T200.00
+PTest2
+^`;
+      const result = parseQif(qif, "DD/MM/YYYY");
+      expect(result.transactions[0].date).toBe("2019-02-04");
+      expect(result.transactions[1].date).toBe("2019-12-25");
+    });
+
+    it("skips !Type:Cat section without creating garbage transactions", () => {
+      const qif = `!Type:Cat
+NFood:Groceries
+DExpenses for food
+E
+^
+NTransportation
+DGetting around
+I
+^
+!Type:Bank
+D01/15/2026
+T-50.00
+PGrocery Store
+^`;
+      const result = parseQif(qif);
+      expect(result.transactions).toHaveLength(1);
+      expect(result.transactions[0].payee).toBe("Grocery Store");
+      expect(result.accountType).toBe("CHEQUING");
+    });
+
+    it("skips !Type:Memorized section", () => {
+      const qif = `!Type:Memorized
+D01/01/2026
+T-100.00
+PMonthly Payment
+KC
+^
+!Type:Bank
+D02/15/2026
+T200.00
+PPaycheck
+^`;
+      const result = parseQif(qif);
+      expect(result.transactions).toHaveLength(1);
+      expect(result.transactions[0].payee).toBe("Paycheck");
+    });
+
+    it("skips !Type:Security section", () => {
+      const qif = `!Type:Security
+NAAPL
+DApple Inc
+TStock
+^
+NMSFT
+DMicrosoft Corp
+TStock
+^
+!Type:Invst
+D03/01/2026
+NBuy
+YAAPL
+I150.00
+Q10
+T1500.00
+^`;
+      const result = parseQif(qif);
+      expect(result.transactions).toHaveLength(1);
+      expect(result.transactions[0].security).toBe("AAPL");
+      expect(result.accountType).toBe("INVESTMENT");
+    });
+
+    it("skips !Type:Prices section", () => {
+      const qif = `!Type:Prices
+"AAPL",150.00,"03/01/2026"
+"MSFT",300.00,"03/01/2026"
+^
+!Type:Bank
+D03/01/2026
+T-50.00
+PTest
+^`;
+      const result = parseQif(qif);
+      expect(result.transactions).toHaveLength(1);
+      expect(result.transactions[0].payee).toBe("Test");
+    });
+
+    it("skips !Type:Class and !Type:Tag sections", () => {
+      const qif = `!Type:Class
+NBusiness
+DFor business use
+^
+!Type:Tag
+NDeductible
+DDeductible expenses
+^
+!Type:Bank
+D01/15/2026
+T-30.00
+PStore
+^`;
+      const result = parseQif(qif);
+      expect(result.transactions).toHaveLength(1);
+      expect(result.transactions[0].payee).toBe("Store");
+    });
+
+    it("handles mixed skippable and transaction sections", () => {
+      const qif = `!Type:Cat
+NFood
+DFood expenses
+^
+!Type:Bank
+D01/15/2026
+T-50.00
+PGrocery
+^
+D01/16/2026
+T100.00
+PPaycheck
+^
+!Type:Security
+NAAPL
+DApple
+^
+!Type:Bank
+D01/17/2026
+T-25.00
+PCoffee
+^`;
+      const result = parseQif(qif);
+      expect(result.transactions).toHaveLength(3);
+      expect(result.transactions[0].payee).toBe("Grocery");
+      expect(result.transactions[1].payee).toBe("Paycheck");
+      expect(result.transactions[2].payee).toBe("Coffee");
+    });
+
+    it("treats --Split-- category as empty", () => {
+      const qif = `!Type:Bank
+D01/15/2026
+T-100.00
+PEnmax
+L--Split--
+SElectricity
+$-60.00
+SWater
+$-40.00
+^`;
+      const result = parseQif(qif);
+      expect(result.transactions[0].category).toBe("");
+      expect(result.transactions[0].isTransfer).toBe(false);
+      expect(result.transactions[0].splits).toHaveLength(2);
+      // --Split-- should not appear in collected categories
+      expect(result.categories).not.toContain("--Split--");
+    });
+
+    it("extracts account name from !Account section", () => {
+      const qif = `!Account
+NMy Checking
+TBank
+^
+!Type:Bank
+D01/15/2026
+T-50.00
+PStore
+^`;
+      const result = parseQif(qif);
+      expect(result.accountName).toBe("My Checking");
+      expect(result.accountType).toBe("CHEQUING");
+      expect(result.transactions).toHaveLength(1);
+    });
+
+    it("uses account type from !Account when no !Type: follows", () => {
+      const qif = `!Account
+NSavings Account
+TCash
+^
+D01/15/2026
+T100.00
+PDeposit
+^`;
+      const result = parseQif(qif);
+      expect(result.accountName).toBe("Savings Account");
+      expect(result.accountType).toBe("CASH");
+    });
+
+    it("!Type: overrides account type from !Account section", () => {
+      const qif = `!Account
+NMy Card
+TBank
+^
+!Type:CCard
+D01/15/2026
+T-50.00
+PStore
+^`;
+      const result = parseQif(qif);
+      expect(result.accountName).toBe("My Card");
+      expect(result.accountType).toBe("CREDIT_CARD");
+    });
+
+    it("ignores !Option:AutoSwitch and !Clear:AutoSwitch lines", () => {
+      const qif = `!Option:AutoSwitch
+!Account
+NChecking
+TBank
+^
+!Type:Bank
+D01/15/2026
+T-50.00
+PStore
+^
+!Clear:AutoSwitch`;
+      const result = parseQif(qif);
+      expect(result.transactions).toHaveLength(1);
+      expect(result.accountName).toBe("Checking");
+    });
+
+    it("parses real Quicken export with split transactions", () => {
+      const qif = `!Type:Bank
+D2/15'19
+U1,526.88
+T1,526.88
+CX
+NDEP
+PCity Wide Towing
+MFrom CITY WIDE TOWIN
+L--Split--
+SSandi Income
+ESalary
+$2,100.00
+STaxes:Sandi:Income Tax
+EIncome Tax Deducted
+$-318.05
+STaxes:Sandi:CPP Contrib
+ECPP Contribution
+$-102.21
+SPersonal Care:Health Insurance
+EExtended Health Care
+$-59.05
+SFinancial:Life Insurance
+EDisability Insurance
+$-8.98
+^`;
+      const result = parseQif(qif);
+      expect(result.transactions).toHaveLength(1);
+      const tx = result.transactions[0];
+      expect(tx.date).toBe("2019-02-15");
+      expect(tx.amount).toBe(1526.88);
+      expect(tx.payee).toBe("City Wide Towing");
+      expect(tx.category).toBe("");
+      expect(tx.reconciled).toBe(true);
+      expect(tx.number).toBe("DEP");
+      expect(tx.splits).toHaveLength(5);
+      expect(tx.splits[0].category).toBe("Sandi Income");
+      expect(tx.splits[0].amount).toBe(2100.0);
+      expect(tx.splits[1].category).toBe("Taxes:Sandi:Income Tax");
+      expect(tx.splits[1].amount).toBe(-318.05);
+    });
+  });
 });

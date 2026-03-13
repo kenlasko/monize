@@ -34,6 +34,12 @@ export function CategoryMappingRow({
   const [localNewLoanInstitution, setLocalNewLoanInstitution] = useState(
     mapping.newLoanInstitution || ''
   );
+  const [localNewParentName, setLocalNewParentName] = useState(
+    mapping.createNewParentCategoryName || ''
+  );
+  const [isCreatingNewParent, setIsCreatingNewParent] = useState(
+    !!mapping.createNewParentCategoryName
+  );
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Sync from parent if mapping changes externally (e.g., reset)
@@ -45,12 +51,17 @@ export function CategoryMappingRow({
   useEffect(() => { setLocalNewLoanAmount(mapping.newLoanAmount?.toString() || ''); }, [mapping.newLoanAmount]);
   // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional sync from parent props
   useEffect(() => { setLocalNewLoanInstitution(mapping.newLoanInstitution || ''); }, [mapping.newLoanInstitution]);
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional sync from parent props
+  useEffect(() => { setLocalNewParentName(mapping.createNewParentCategoryName || ''); }, [mapping.createNewParentCategoryName]);
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional sync from parent props
+  useEffect(() => { setIsCreatingNewParent(!!mapping.createNewParentCategoryName); }, [mapping.createNewParentCategoryName]);
 
   const handleCategorySelect = (categoryId: string) => {
     onMappingChange({
       categoryId: categoryId || undefined,
       createNew: undefined,
       parentCategoryId: undefined,
+      createNewParentCategoryName: undefined,
       isLoanCategory: false,
       loanAccountId: undefined,
       createNewLoan: undefined,
@@ -61,6 +72,8 @@ export function CategoryMappingRow({
     setLocalNewLoanName('');
     setLocalNewLoanAmount('');
     setLocalNewLoanInstitution('');
+    setLocalNewParentName('');
+    setIsCreatingNewParent(false);
   };
 
   const handleCreateNewBlur = (e: React.FocusEvent<HTMLInputElement>) => {
@@ -79,10 +92,32 @@ export function CategoryMappingRow({
     }
   };
 
-  const handleParentCategorySelect = (parentCategoryId: string) => {
-    onMappingChange({
-      parentCategoryId: parentCategoryId || undefined,
-    });
+  const handleParentCategorySelect = (value: string) => {
+    if (value === '__create_new__') {
+      setIsCreatingNewParent(true);
+      onMappingChange({
+        parentCategoryId: undefined,
+        createNewParentCategoryName: localNewParentName || undefined,
+      });
+    } else {
+      setIsCreatingNewParent(false);
+      setLocalNewParentName('');
+      onMappingChange({
+        parentCategoryId: value || undefined,
+        createNewParentCategoryName: undefined,
+      });
+    }
+  };
+
+  const handleNewParentNameBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const value = (e.target.value ?? localNewParentName).trim();
+    setLocalNewParentName(value);
+    if (value !== (mapping.createNewParentCategoryName || '')) {
+      onMappingChange({
+        parentCategoryId: undefined,
+        createNewParentCategoryName: value || undefined,
+      });
+    }
   };
 
   const handleIsLoanChange = (checked: boolean) => {
@@ -272,10 +307,24 @@ export function CategoryMappingRow({
                   <div className="mt-2">
                     <Select
                       label="Parent category"
-                      options={parentCategoryOptions}
-                      value={mapping.parentCategoryId || ''}
+                      options={[
+                        ...parentCategoryOptions,
+                        { value: '__create_new__', label: '+ Create new parent...' },
+                      ]}
+                      value={isCreatingNewParent ? '__create_new__' : (mapping.parentCategoryId || '')}
                       onChange={(e) => handleParentCategorySelect(e.target.value)}
                     />
+                    {isCreatingNewParent && (
+                      <div className="mt-2">
+                        <Input
+                          label="New parent category name"
+                          placeholder="e.g., Fees & Charges"
+                          value={localNewParentName}
+                          onChange={(e) => setLocalNewParentName(e.target.value)}
+                          onBlur={handleNewParentNameBlur}
+                        />
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
