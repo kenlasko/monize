@@ -12,6 +12,7 @@ import {
 import { Type } from "class-transformer";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { TransactionStatus } from "../entities/transaction.entity";
+import { SanitizeHtml } from "../../common/decorators/sanitize-html.decorator";
 
 export class BulkUpdateFilterDto {
   @ApiPropertyOptional({ description: "Filter by account IDs" })
@@ -85,6 +86,7 @@ export class BulkUpdateDto {
   @IsOptional()
   @IsString()
   @MaxLength(100)
+  @SanitizeHtml()
   payeeName?: string | null;
 
   @ApiPropertyOptional({ description: "Set category ID (null to clear)" })
@@ -96,6 +98,7 @@ export class BulkUpdateDto {
   @IsOptional()
   @IsString()
   @MaxLength(500)
+  @SanitizeHtml()
   description?: string | null;
 
   @ApiPropertyOptional({

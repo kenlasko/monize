@@ -23,6 +23,7 @@ import {
   AiCompletionResponse,
   AiProvider,
 } from "./providers/ai-provider.interface";
+import { validateUrlIsSafe } from "./validators/safe-url.validator";
 
 const DEFAULT_MAX_AI_PROVIDERS_PER_USER = 10;
 
@@ -32,6 +33,8 @@ export class AiService {
   private readonly maxProvidersPerUser: number;
   // M28: Cache the encrypted default API key to avoid re-encrypting on every call
   private cachedDefaultApiKeyEnc: string | null = null;
+  private validatedDefaultBaseUrl: string | null = null;
+  private defaultBaseUrlValidated = false;
 
   constructor(
     @InjectRepository(AiProviderConfig)
@@ -46,6 +49,27 @@ export class AiService {
       envVal && Number.isInteger(envVal) && envVal > 0
         ? envVal
         : DEFAULT_MAX_AI_PROVIDERS_PER_USER;
+
+    // SECURITY: Validate AI_DEFAULT_BASE_URL against SSRF at startup
+    const defaultBaseUrl = this.configService.get<string>(
+      "AI_DEFAULT_BASE_URL",
+    );
+    if (defaultBaseUrl) {
+      validateUrlIsSafe(defaultBaseUrl).then((isSafe) => {
+        if (isSafe) {
+          this.validatedDefaultBaseUrl = defaultBaseUrl;
+        } else {
+          this.logger.error(
+            `AI_DEFAULT_BASE_URL "${defaultBaseUrl}" failed SSRF validation -- ` +
+              "it points to a private/internal IP or blocked hostname. " +
+              "The default AI provider base URL will not be used.",
+          );
+        }
+        this.defaultBaseUrlValidated = true;
+      });
+    } else {
+      this.defaultBaseUrlValidated = true;
+    }
   }
 
   async getConfigs(userId: string): Promise<AiProviderConfigResponse[]> {
@@ -285,8 +309,8 @@ export class AiService {
     config.userId = userId;
     config.provider = provider as AiProviderConfig["provider"];
     config.model = this.configService.get<string>("AI_DEFAULT_MODEL") || null;
-    config.baseUrl =
-      this.configService.get<string>("AI_DEFAULT_BASE_URL") || null;
+    // SECURITY: Use the SSRF-validated base URL instead of raw env var
+    config.baseUrl = this.validatedDefaultBaseUrl;
     config.isActive = true;
     config.priority = 0;
     config.config = {};

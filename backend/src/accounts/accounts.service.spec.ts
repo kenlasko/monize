@@ -386,17 +386,19 @@ describe("AccountsService", () => {
 
   describe("update", () => {
     it("updates account name", async () => {
-      accountsRepository.findOne.mockResolvedValue({ ...mockAccount });
+      mockQueryRunner.manager.findOne.mockResolvedValue({ ...mockAccount });
 
       const result = await service.update("user-1", "account-1", {
         name: "Updated Name",
       });
 
       expect(result.name).toBe("Updated Name");
+      expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
+      expect(mockQueryRunner.release).toHaveBeenCalled();
     });
 
     it("throws BadRequestException for closed account", async () => {
-      accountsRepository.findOne.mockResolvedValue({
+      mockQueryRunner.manager.findOne.mockResolvedValue({
         ...mockAccount,
         isClosed: true,
       });
@@ -404,10 +406,12 @@ describe("AccountsService", () => {
       await expect(
         service.update("user-1", "account-1", { name: "New" }),
       ).rejects.toThrow(BadRequestException);
+      expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
+      expect(mockQueryRunner.release).toHaveBeenCalled();
     });
 
     it("adjusts currentBalance when openingBalance changes", async () => {
-      accountsRepository.findOne.mockResolvedValue({
+      mockQueryRunner.manager.findOne.mockResolvedValue({
         ...mockAccount,
         openingBalance: 1000,
         currentBalance: 1500,
@@ -415,13 +419,14 @@ describe("AccountsService", () => {
 
       await service.update("user-1", "account-1", { openingBalance: 1200 });
 
-      const saved = accountsRepository.save.mock.calls[0][0];
+      const saved = mockQueryRunner.manager.save.mock.calls[0][0];
       expect(saved.currentBalance).toBe(1700);
+      expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
     });
 
     it("recalculates termEndDate when termMonths changes to a positive value", async () => {
       const startDate = new Date("2025-01-15T12:00:00Z");
-      accountsRepository.findOne.mockResolvedValue({
+      mockQueryRunner.manager.findOne.mockResolvedValue({
         ...mockAccount,
         accountType: "MORTGAGE",
         paymentStartDate: startDate,
@@ -431,14 +436,14 @@ describe("AccountsService", () => {
 
       await service.update("user-1", "account-1", { termMonths: 36 });
 
-      const saved = accountsRepository.save.mock.calls[0][0];
+      const saved = mockQueryRunner.manager.save.mock.calls[0][0];
       expect(saved.termMonths).toBe(36);
       expect(saved.termEndDate).toBeInstanceOf(Date);
       expect(saved.termEndDate.getTime()).toBeGreaterThan(startDate.getTime());
     });
 
     it("sets termEndDate to null when termMonths is set to 0", async () => {
-      accountsRepository.findOne.mockResolvedValue({
+      mockQueryRunner.manager.findOne.mockResolvedValue({
         ...mockAccount,
         accountType: "MORTGAGE",
         paymentStartDate: new Date("2025-01-01"),
@@ -448,13 +453,13 @@ describe("AccountsService", () => {
 
       await service.update("user-1", "account-1", { termMonths: 0 });
 
-      const saved = accountsRepository.save.mock.calls[0][0];
+      const saved = mockQueryRunner.manager.save.mock.calls[0][0];
       expect(saved.termMonths).toBeNull();
       expect(saved.termEndDate).toBeNull();
     });
 
     it("updates amortizationMonths when provided", async () => {
-      accountsRepository.findOne.mockResolvedValue({
+      mockQueryRunner.manager.findOne.mockResolvedValue({
         ...mockAccount,
         accountType: "MORTGAGE",
         amortizationMonths: 300,
@@ -462,12 +467,12 @@ describe("AccountsService", () => {
 
       await service.update("user-1", "account-1", { amortizationMonths: 360 });
 
-      const saved = accountsRepository.save.mock.calls[0][0];
+      const saved = mockQueryRunner.manager.save.mock.calls[0][0];
       expect(saved.amortizationMonths).toBe(360);
     });
 
     it("updates credit card statement date fields", async () => {
-      accountsRepository.findOne.mockResolvedValue({
+      mockQueryRunner.manager.findOne.mockResolvedValue({
         ...mockAccount,
         accountType: "CREDIT_CARD",
         statementDueDay: null,
@@ -479,13 +484,13 @@ describe("AccountsService", () => {
         statementSettlementDay: 25,
       } as any);
 
-      const saved = accountsRepository.save.mock.calls[0][0];
+      const saved = mockQueryRunner.manager.save.mock.calls[0][0];
       expect(saved.statementDueDay).toBe(15);
       expect(saved.statementSettlementDay).toBe(25);
     });
 
     it("updates only statementDueDay without affecting statementSettlementDay", async () => {
-      accountsRepository.findOne.mockResolvedValue({
+      mockQueryRunner.manager.findOne.mockResolvedValue({
         ...mockAccount,
         accountType: "CREDIT_CARD",
         statementDueDay: 10,
@@ -496,13 +501,13 @@ describe("AccountsService", () => {
         statementDueDay: 5,
       } as any);
 
-      const saved = accountsRepository.save.mock.calls[0][0];
+      const saved = mockQueryRunner.manager.save.mock.calls[0][0];
       expect(saved.statementDueDay).toBe(5);
       expect(saved.statementSettlementDay).toBe(20);
     });
 
     it("ignores statement date fields when updating a non-credit-card account", async () => {
-      accountsRepository.findOne.mockResolvedValue({
+      mockQueryRunner.manager.findOne.mockResolvedValue({
         ...mockAccount,
         accountType: "SAVINGS",
         statementDueDay: null,
@@ -514,13 +519,13 @@ describe("AccountsService", () => {
         statementSettlementDay: 25,
       } as any);
 
-      const saved = accountsRepository.save.mock.calls[0][0];
+      const saved = mockQueryRunner.manager.save.mock.calls[0][0];
       expect(saved.statementDueDay).toBeNull();
       expect(saved.statementSettlementDay).toBeNull();
     });
 
     it("clears statement date fields when account type changes away from credit card", async () => {
-      accountsRepository.findOne.mockResolvedValue({
+      mockQueryRunner.manager.findOne.mockResolvedValue({
         ...mockAccount,
         accountType: "CREDIT_CARD",
         statementDueDay: 15,
@@ -531,7 +536,7 @@ describe("AccountsService", () => {
         accountType: AccountType.CHEQUING,
       } as any);
 
-      const saved = accountsRepository.save.mock.calls[0][0];
+      const saved = mockQueryRunner.manager.save.mock.calls[0][0];
       expect(saved.statementDueDay).toBeNull();
       expect(saved.statementSettlementDay).toBeNull();
     });
@@ -1755,7 +1760,7 @@ describe("AccountsService", () => {
 
   describe("update - currency sync on investment account", () => {
     it("syncs currency to linked account when currency changes on investment account", async () => {
-      accountsRepository.findOne
+      mockQueryRunner.manager.findOne
         .mockResolvedValueOnce({
           ...mockAccount,
           accountType: AccountType.INVESTMENT,
@@ -1767,38 +1772,39 @@ describe("AccountsService", () => {
           userId: "user-1",
           currencyCode: "USD",
         });
-      accountsRepository.save.mockImplementation((data) => data);
+      mockQueryRunner.manager.save.mockImplementation((data) => data);
 
       await service.update("user-1", "account-1", { currencyCode: "CAD" });
 
       // Second save should be the linked account currency update
-      const linkedSave = accountsRepository.save.mock.calls[1][0];
+      const linkedSave = mockQueryRunner.manager.save.mock.calls[1][0];
       expect(linkedSave.currencyCode).toBe("CAD");
+      expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
     });
 
     it("does not sync currency when account is not investment type", async () => {
-      accountsRepository.findOne.mockResolvedValue({
+      mockQueryRunner.manager.findOne.mockResolvedValue({
         ...mockAccount,
         accountType: AccountType.CHEQUING,
         linkedAccountId: null,
       });
-      accountsRepository.save.mockImplementation((data) => data);
+      mockQueryRunner.manager.save.mockImplementation((data) => data);
 
       await service.update("user-1", "account-1", { currencyCode: "CAD" });
 
       // Only one save call for the main account
-      expect(accountsRepository.save).toHaveBeenCalledTimes(1);
+      expect(mockQueryRunner.manager.save).toHaveBeenCalledTimes(1);
     });
   });
 
   describe("update - net worth recalculation", () => {
     it("triggers net worth recalc when openingBalance changes", async () => {
-      accountsRepository.findOne.mockResolvedValue({
+      mockQueryRunner.manager.findOne.mockResolvedValue({
         ...mockAccount,
         openingBalance: 1000,
         currentBalance: 1500,
       });
-      accountsRepository.save.mockImplementation((data) => data);
+      mockQueryRunner.manager.save.mockImplementation((data) => data);
 
       await service.update("user-1", "account-1", { openingBalance: 2000 });
 
@@ -1809,8 +1815,8 @@ describe("AccountsService", () => {
     });
 
     it("triggers net worth recalc when dateAcquired changes", async () => {
-      accountsRepository.findOne.mockResolvedValue({ ...mockAccount });
-      accountsRepository.save.mockImplementation((data) => data);
+      mockQueryRunner.manager.findOne.mockResolvedValue({ ...mockAccount });
+      mockQueryRunner.manager.save.mockImplementation((data) => data);
 
       await service.update("user-1", "account-1", {
         dateAcquired: "2024-06-01",
@@ -1823,8 +1829,8 @@ describe("AccountsService", () => {
     });
 
     it("does not trigger net worth recalc for name-only change", async () => {
-      accountsRepository.findOne.mockResolvedValue({ ...mockAccount });
-      accountsRepository.save.mockImplementation((data) => data);
+      mockQueryRunner.manager.findOne.mockResolvedValue({ ...mockAccount });
+      mockQueryRunner.manager.save.mockImplementation((data) => data);
 
       await service.update("user-1", "account-1", { name: "New Name" });
 

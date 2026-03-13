@@ -299,7 +299,7 @@ export class YahooFinanceService {
     range: string = "max",
   ): Promise<HistoricalPrice[] | null> {
     try {
-      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=${range}`;
+      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=${encodeURIComponent(range)}`;
 
       const response = await fetch(url, {
         headers: {

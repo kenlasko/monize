@@ -39,6 +39,9 @@ export class RefreshToken {
   })
   replacedByHash: string | null;
 
+  @Column({ name: "remember_me", type: "boolean", default: false })
+  rememberMe: boolean;
+
   @CreateDateColumn({ name: "created_at" })
   createdAt: Date;
 
