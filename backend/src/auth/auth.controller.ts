@@ -51,7 +51,7 @@ export class AuthController {
   private localAuthEnabled: boolean;
   private registrationEnabled: boolean;
   private force2fa: boolean;
-  private isProduction: boolean;
+  private useSecureCookies: boolean;
 
   constructor(
     private authService: AuthService,
@@ -77,14 +77,19 @@ export class AuthController {
       "false",
     );
     this.force2fa = force2faSetting.toLowerCase() === "true";
-    this.isProduction =
-      this.configService.get<string>("NODE_ENV") === "production";
+    const disableHttpsHeaders =
+      this.configService
+        .get<string>("DISABLE_HTTPS_HEADERS", "false")
+        .toLowerCase() === "true";
+    this.useSecureCookies =
+      this.configService.get<string>("NODE_ENV") === "production" &&
+      !disableHttpsHeaders;
   }
 
   private getAccessCookieOptions() {
     return {
       httpOnly: true,
-      secure: this.isProduction,
+      secure: this.useSecureCookies,
       sameSite: "lax" as const,
       maxAge: 15 * 60 * 1000, // 15 minutes (matches JWT expiry)
       path: "/",
@@ -94,7 +99,7 @@ export class AuthController {
   private getRefreshCookieOptions(rememberMe?: boolean) {
     return {
       httpOnly: true,
-      secure: this.isProduction,
+      secure: this.useSecureCookies,
       sameSite: "strict" as const,
       maxAge: this.tokenService.getRefreshExpiryMs(rememberMe),
       path: "/",
@@ -117,25 +122,25 @@ export class AuthController {
     res.cookie(
       "csrf_token",
       generateCsrfToken(userId, this.authService.getCsrfKey()),
-      getCsrfCookieOptions(this.isProduction),
+      getCsrfCookieOptions(this.useSecureCookies),
     );
   }
 
   private clearAuthCookies(res: Response) {
     res.clearCookie("auth_token", {
       httpOnly: true,
-      secure: this.isProduction,
+      secure: this.useSecureCookies,
       sameSite: "lax" as const,
       path: "/",
     });
     res.clearCookie("refresh_token", {
       httpOnly: true,
-      secure: this.isProduction,
+      secure: this.useSecureCookies,
       sameSite: "strict" as const,
       path: "/",
     });
     res.clearCookie("csrf_token", {
-      secure: this.isProduction,
+      secure: this.useSecureCookies,
       sameSite: "lax" as const,
       path: "/",
     });
@@ -222,7 +227,7 @@ export class AuthController {
     // Store state/nonce in secure cookies for validation
     const cookieOptions = {
       httpOnly: true,
-      secure: this.isProduction,
+      secure: this.useSecureCookies,
       sameSite: "lax" as const,
       maxAge: 600000, // 10 minutes
     };
@@ -337,7 +342,7 @@ export class AuthController {
     res.cookie(
       "csrf_token",
       generateCsrfToken(req.user.id, this.authService.getCsrfKey()),
-      getCsrfCookieOptions(this.isProduction),
+      getCsrfCookieOptions(this.useSecureCookies),
     );
     res.json({ message: "CSRF token refreshed" });
   }
@@ -441,7 +446,7 @@ export class AuthController {
     if (result.trustedDeviceToken) {
       res.cookie("trusted_device", result.trustedDeviceToken, {
         httpOnly: true,
-        secure: this.isProduction,
+        secure: this.useSecureCookies,
         sameSite: "lax",
         maxAge: 14 * 24 * 60 * 60 * 1000, // M5: 14 days (reduced from 30)
       });

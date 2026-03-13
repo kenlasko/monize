@@ -10,7 +10,9 @@ import { getCsrfCookieOptions } from "../csrf.util";
 
 @Injectable()
 export class CsrfRefreshInterceptor implements NestInterceptor {
-  private readonly isProduction = process.env.NODE_ENV === "production";
+  private readonly useSecureCookies =
+    process.env.NODE_ENV === "production" &&
+    process.env.DISABLE_HTTPS_HEADERS !== "true";
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     return next.handle().pipe(
@@ -33,7 +35,7 @@ export class CsrfRefreshInterceptor implements NestInterceptor {
           response.cookie(
             "csrf_token",
             request.cookies["csrf_token"],
-            getCsrfCookieOptions(this.isProduction),
+            getCsrfCookieOptions(this.useSecureCookies),
           );
         }
       }),

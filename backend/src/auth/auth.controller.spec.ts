@@ -1294,4 +1294,120 @@ describe("AuthController", () => {
       );
     });
   });
+
+  describe("cookie secure flag with DISABLE_HTTPS_HEADERS", () => {
+    it("sets secure cookies in production when DISABLE_HTTPS_HEADERS is not set", async () => {
+      configService.get.mockImplementation(
+        (key: string, defaultValue?: string) => {
+          const config: Record<string, string> = {
+            LOCAL_AUTH_ENABLED: "true",
+            REGISTRATION_ENABLED: "true",
+            FORCE_2FA: "false",
+            NODE_ENV: "production",
+          };
+          return config[key] ?? defaultValue;
+        },
+      );
+
+      const module: TestingModule = await Test.createTestingModule({
+        controllers: [AuthController],
+        providers: [
+          { provide: AuthService, useValue: authService },
+          { provide: OidcService, useValue: oidcService },
+          { provide: ConfigService, useValue: configService },
+          { provide: EmailService, useValue: emailService },
+          { provide: DemoModeService, useValue: demoModeService },
+          {
+            provide: TokenService,
+            useValue: {
+              getRefreshExpiryMs: jest
+                .fn()
+                .mockReturnValue(7 * 24 * 60 * 60 * 1000),
+            },
+          },
+        ],
+      }).compile();
+
+      const prodController = module.get<AuthController>(AuthController);
+      authService.login.mockResolvedValue({
+        accessToken: "at",
+        refreshToken: "rt",
+        user: mockUser,
+      });
+      const res = mockRes();
+      const expressReq = { cookies: {}, headers: {} } as any;
+
+      await prodController.login(
+        { email: "test@example.com", password: "Password1!" } as any,
+        expressReq,
+        res as any,
+      );
+
+      expect(res.cookie).toHaveBeenCalledWith(
+        "auth_token",
+        "at",
+        expect.objectContaining({ secure: true }),
+      );
+    });
+
+    it("disables secure cookies in production when DISABLE_HTTPS_HEADERS=true", async () => {
+      configService.get.mockImplementation(
+        (key: string, defaultValue?: string) => {
+          const config: Record<string, string> = {
+            LOCAL_AUTH_ENABLED: "true",
+            REGISTRATION_ENABLED: "true",
+            FORCE_2FA: "false",
+            NODE_ENV: "production",
+            DISABLE_HTTPS_HEADERS: "true",
+          };
+          return config[key] ?? defaultValue;
+        },
+      );
+
+      const module: TestingModule = await Test.createTestingModule({
+        controllers: [AuthController],
+        providers: [
+          { provide: AuthService, useValue: authService },
+          { provide: OidcService, useValue: oidcService },
+          { provide: ConfigService, useValue: configService },
+          { provide: EmailService, useValue: emailService },
+          { provide: DemoModeService, useValue: demoModeService },
+          {
+            provide: TokenService,
+            useValue: {
+              getRefreshExpiryMs: jest
+                .fn()
+                .mockReturnValue(7 * 24 * 60 * 60 * 1000),
+            },
+          },
+        ],
+      }).compile();
+
+      const httpController = module.get<AuthController>(AuthController);
+      authService.login.mockResolvedValue({
+        accessToken: "at",
+        refreshToken: "rt",
+        user: mockUser,
+      });
+      const res = mockRes();
+      const expressReq = { cookies: {}, headers: {} } as any;
+
+      await httpController.login(
+        { email: "test@example.com", password: "Password1!" } as any,
+        expressReq,
+        res as any,
+      );
+
+      expect(res.cookie).toHaveBeenCalledWith(
+        "auth_token",
+        "at",
+        expect.objectContaining({ secure: false }),
+      );
+      expect(res.cookie).toHaveBeenCalledWith(
+        "refresh_token",
+        "rt",
+        expect.objectContaining({ secure: false }),
+      );
+    });
+  });
 });
