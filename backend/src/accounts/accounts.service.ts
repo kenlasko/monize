@@ -365,135 +365,156 @@ export class AccountsService {
     id: string,
     updateAccountDto: UpdateAccountDto,
   ): Promise<Account> {
-    const account = await this.findOne(userId, id);
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-    if (account.isClosed) {
-      throw new BadRequestException("Cannot update a closed account");
-    }
-
-    // If openingBalance is being changed, we need to recalculate currentBalance
-    // currentBalance = openingBalance + sum(all transaction amounts)
-    if (
-      updateAccountDto.openingBalance !== undefined &&
-      updateAccountDto.openingBalance !== account.openingBalance
-    ) {
-      const oldOpeningBalance = Number(account.openingBalance) || 0;
-      const newOpeningBalance = Number(updateAccountDto.openingBalance) || 0;
-      const difference = newOpeningBalance - oldOpeningBalance;
-
-      // Adjust currentBalance by the difference
-      account.currentBalance =
-        Math.round((Number(account.currentBalance) + difference) * 10000) /
-        10000;
-    }
-
-    // SECURITY: Explicit property mapping instead of Object.assign to prevent mass assignment
-    if (updateAccountDto.name !== undefined)
-      account.name = updateAccountDto.name;
-    if (updateAccountDto.accountType !== undefined)
-      account.accountType = updateAccountDto.accountType;
-    if (updateAccountDto.currencyCode !== undefined)
-      account.currencyCode = updateAccountDto.currencyCode;
-    if (updateAccountDto.openingBalance !== undefined)
-      account.openingBalance = updateAccountDto.openingBalance;
-    if (updateAccountDto.description !== undefined)
-      account.description = updateAccountDto.description;
-    if (updateAccountDto.accountNumber !== undefined)
-      account.accountNumber = updateAccountDto.accountNumber;
-    if (updateAccountDto.institution !== undefined)
-      account.institution = updateAccountDto.institution;
-    if (updateAccountDto.creditLimit !== undefined)
-      account.creditLimit = updateAccountDto.creditLimit;
-    if (updateAccountDto.interestRate !== undefined)
-      account.interestRate = updateAccountDto.interestRate;
-    if (updateAccountDto.isFavourite !== undefined)
-      account.isFavourite = updateAccountDto.isFavourite;
-    // Credit card statement fields (only for credit card accounts)
-    const effectiveType = updateAccountDto.accountType ?? account.accountType;
-    if (effectiveType === AccountType.CREDIT_CARD) {
-      if (updateAccountDto.statementDueDay !== undefined)
-        account.statementDueDay = updateAccountDto.statementDueDay;
-      if (updateAccountDto.statementSettlementDay !== undefined)
-        account.statementSettlementDay =
-          updateAccountDto.statementSettlementDay;
-    } else {
-      // Clear statement fields if account type is changed away from credit card
-      account.statementDueDay = null;
-      account.statementSettlementDay = null;
-    }
-    if (updateAccountDto.paymentAmount !== undefined)
-      account.paymentAmount = updateAccountDto.paymentAmount;
-    if (updateAccountDto.paymentFrequency !== undefined)
-      account.paymentFrequency = updateAccountDto.paymentFrequency;
-    if (updateAccountDto.paymentStartDate !== undefined)
-      account.paymentStartDate = updateAccountDto.paymentStartDate
-        ? new Date(updateAccountDto.paymentStartDate)
-        : null;
-    if (updateAccountDto.sourceAccountId !== undefined)
-      account.sourceAccountId = updateAccountDto.sourceAccountId;
-    if (updateAccountDto.principalCategoryId !== undefined)
-      account.principalCategoryId = updateAccountDto.principalCategoryId;
-    if (updateAccountDto.interestCategoryId !== undefined)
-      account.interestCategoryId = updateAccountDto.interestCategoryId;
-    if (updateAccountDto.assetCategoryId !== undefined)
-      account.assetCategoryId = updateAccountDto.assetCategoryId;
-    if (updateAccountDto.dateAcquired !== undefined)
-      account.dateAcquired = updateAccountDto.dateAcquired
-        ? new Date(updateAccountDto.dateAcquired)
-        : null;
-    // Mortgage-specific fields
-    if (updateAccountDto.isCanadianMortgage !== undefined)
-      account.isCanadianMortgage = updateAccountDto.isCanadianMortgage;
-    if (updateAccountDto.isVariableRate !== undefined)
-      account.isVariableRate = updateAccountDto.isVariableRate;
-    if (updateAccountDto.termMonths !== undefined) {
-      account.termMonths = updateAccountDto.termMonths || null;
-      // Recalculate termEndDate when termMonths changes
-      if (updateAccountDto.termMonths > 0 && account.paymentStartDate) {
-        const termEndDate = new Date(account.paymentStartDate);
-        termEndDate.setMonth(
-          termEndDate.getMonth() + updateAccountDto.termMonths,
-        );
-        account.termEndDate = termEndDate;
-      } else {
-        account.termEndDate = null;
-      }
-    }
-    if (updateAccountDto.amortizationMonths !== undefined)
-      account.amortizationMonths = updateAccountDto.amortizationMonths;
-
-    const savedAccount = await this.accountsRepository.save(account);
-
-    // If currency changed on an investment account, update the linked account too
-    if (
-      updateAccountDto.currencyCode !== undefined &&
-      account.linkedAccountId &&
-      account.accountType === AccountType.INVESTMENT
-    ) {
-      const linkedAccount = await this.accountsRepository.findOne({
-        where: { id: account.linkedAccountId, userId },
+    try {
+      // Use pessimistic lock to prevent concurrent balance modifications
+      const account = await queryRunner.manager.findOne(Account, {
+        where: { id, userId },
+        lock: { mode: "pessimistic_write" },
       });
-      if (linkedAccount) {
-        linkedAccount.currencyCode = updateAccountDto.currencyCode;
-        await this.accountsRepository.save(linkedAccount);
+
+      if (!account) {
+        throw new NotFoundException("Account not found");
       }
-    }
 
-    // Trigger net worth recalculation if balance-affecting fields changed
-    const needsRecalc =
-      updateAccountDto.openingBalance !== undefined ||
-      updateAccountDto.dateAcquired !== undefined;
-    if (needsRecalc) {
-      this.netWorthService
-        .recalculateAccount(userId, id)
-        .catch((err) =>
-          this.logger.warn(
-            `Net worth recalc failed for account ${id}: ${err.message}`,
-          ),
-        );
-    }
+      if (account.isClosed) {
+        throw new BadRequestException("Cannot update a closed account");
+      }
 
-    return savedAccount;
+      // If openingBalance is being changed, we need to recalculate currentBalance
+      // currentBalance = openingBalance + sum(all transaction amounts)
+      if (
+        updateAccountDto.openingBalance !== undefined &&
+        updateAccountDto.openingBalance !== account.openingBalance
+      ) {
+        const oldOpeningBalance = Number(account.openingBalance) || 0;
+        const newOpeningBalance = Number(updateAccountDto.openingBalance) || 0;
+        const difference = newOpeningBalance - oldOpeningBalance;
+
+        // Adjust currentBalance by the difference
+        account.currentBalance =
+          Math.round((Number(account.currentBalance) + difference) * 10000) /
+          10000;
+      }
+
+      // SECURITY: Explicit property mapping instead of Object.assign to prevent mass assignment
+      if (updateAccountDto.name !== undefined)
+        account.name = updateAccountDto.name;
+      if (updateAccountDto.accountType !== undefined)
+        account.accountType = updateAccountDto.accountType;
+      if (updateAccountDto.currencyCode !== undefined)
+        account.currencyCode = updateAccountDto.currencyCode;
+      if (updateAccountDto.openingBalance !== undefined)
+        account.openingBalance = updateAccountDto.openingBalance;
+      if (updateAccountDto.description !== undefined)
+        account.description = updateAccountDto.description;
+      if (updateAccountDto.accountNumber !== undefined)
+        account.accountNumber = updateAccountDto.accountNumber;
+      if (updateAccountDto.institution !== undefined)
+        account.institution = updateAccountDto.institution;
+      if (updateAccountDto.creditLimit !== undefined)
+        account.creditLimit = updateAccountDto.creditLimit;
+      if (updateAccountDto.interestRate !== undefined)
+        account.interestRate = updateAccountDto.interestRate;
+      if (updateAccountDto.isFavourite !== undefined)
+        account.isFavourite = updateAccountDto.isFavourite;
+      // Credit card statement fields (only for credit card accounts)
+      const effectiveType = updateAccountDto.accountType ?? account.accountType;
+      if (effectiveType === AccountType.CREDIT_CARD) {
+        if (updateAccountDto.statementDueDay !== undefined)
+          account.statementDueDay = updateAccountDto.statementDueDay;
+        if (updateAccountDto.statementSettlementDay !== undefined)
+          account.statementSettlementDay =
+            updateAccountDto.statementSettlementDay;
+      } else {
+        // Clear statement fields if account type is changed away from credit card
+        account.statementDueDay = null;
+        account.statementSettlementDay = null;
+      }
+      if (updateAccountDto.paymentAmount !== undefined)
+        account.paymentAmount = updateAccountDto.paymentAmount;
+      if (updateAccountDto.paymentFrequency !== undefined)
+        account.paymentFrequency = updateAccountDto.paymentFrequency;
+      if (updateAccountDto.paymentStartDate !== undefined)
+        account.paymentStartDate = updateAccountDto.paymentStartDate
+          ? new Date(updateAccountDto.paymentStartDate)
+          : null;
+      if (updateAccountDto.sourceAccountId !== undefined)
+        account.sourceAccountId = updateAccountDto.sourceAccountId;
+      if (updateAccountDto.principalCategoryId !== undefined)
+        account.principalCategoryId = updateAccountDto.principalCategoryId;
+      if (updateAccountDto.interestCategoryId !== undefined)
+        account.interestCategoryId = updateAccountDto.interestCategoryId;
+      if (updateAccountDto.assetCategoryId !== undefined)
+        account.assetCategoryId = updateAccountDto.assetCategoryId;
+      if (updateAccountDto.dateAcquired !== undefined)
+        account.dateAcquired = updateAccountDto.dateAcquired
+          ? new Date(updateAccountDto.dateAcquired)
+          : null;
+      // Mortgage-specific fields
+      if (updateAccountDto.isCanadianMortgage !== undefined)
+        account.isCanadianMortgage = updateAccountDto.isCanadianMortgage;
+      if (updateAccountDto.isVariableRate !== undefined)
+        account.isVariableRate = updateAccountDto.isVariableRate;
+      if (updateAccountDto.termMonths !== undefined) {
+        account.termMonths = updateAccountDto.termMonths || null;
+        // Recalculate termEndDate when termMonths changes
+        if (updateAccountDto.termMonths > 0 && account.paymentStartDate) {
+          const termEndDate = new Date(account.paymentStartDate);
+          termEndDate.setMonth(
+            termEndDate.getMonth() + updateAccountDto.termMonths,
+          );
+          account.termEndDate = termEndDate;
+        } else {
+          account.termEndDate = null;
+        }
+      }
+      if (updateAccountDto.amortizationMonths !== undefined)
+        account.amortizationMonths = updateAccountDto.amortizationMonths;
+
+      const savedAccount = await queryRunner.manager.save(account);
+
+      // If currency changed on an investment account, update the linked account too
+      if (
+        updateAccountDto.currencyCode !== undefined &&
+        account.linkedAccountId &&
+        account.accountType === AccountType.INVESTMENT
+      ) {
+        const linkedAccount = await queryRunner.manager.findOne(Account, {
+          where: { id: account.linkedAccountId, userId },
+        });
+        if (linkedAccount) {
+          linkedAccount.currencyCode = updateAccountDto.currencyCode;
+          await queryRunner.manager.save(linkedAccount);
+        }
+      }
+
+      await queryRunner.commitTransaction();
+
+      // Trigger net worth recalculation if balance-affecting fields changed
+      const needsRecalc =
+        updateAccountDto.openingBalance !== undefined ||
+        updateAccountDto.dateAcquired !== undefined;
+      if (needsRecalc) {
+        this.netWorthService
+          .recalculateAccount(userId, id)
+          .catch((err) =>
+            this.logger.warn(
+              `Net worth recalc failed for account ${id}: ${err.message}`,
+            ),
+          );
+      }
+
+      return savedAccount;
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   /**

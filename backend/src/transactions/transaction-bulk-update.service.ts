@@ -549,7 +549,12 @@ export class TransactionBulkUpdateService {
     }
 
     if (filters.search && filters.search.trim()) {
-      const searchPattern = `%${filters.search.trim()}%`;
+      const escaped = filters.search
+        .trim()
+        .replace(/\\/g, "\\\\")
+        .replace(/%/g, "\\%")
+        .replace(/_/g, "\\_");
+      const searchPattern = `%${escaped}%`;
       if (!filters.categoryIds || filters.categoryIds.length === 0) {
         queryBuilder.leftJoin("transaction.splits", "searchSplits");
         queryBuilder.andWhere(

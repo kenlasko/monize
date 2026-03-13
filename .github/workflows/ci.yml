@@ -22,7 +22,7 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: 24
-      - run: npm install
+      - run: npm ci
       - run: npm run lint
       - run: npx tsc --noEmit
 
@@ -37,7 +37,7 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: 24
-      - run: npm install
+      - run: npm ci
       - run: npm run test:unit -- --coverage
       - name: Upload coverage
         if: always()
@@ -79,7 +79,7 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: 24
-      - run: npm install
+      - run: npm ci
       - run: npm run build
       - run: npm run test:integration
 
@@ -94,7 +94,7 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: 24
-      - run: npm install
+      - run: npm ci
       - run: npm run lint
       - run: npm run type-check
 
@@ -109,7 +109,7 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: 24
-      - run: npm install
+      - run: npm ci
       - run: npm run test:cov
       - name: Upload coverage
         if: always()
@@ -126,8 +126,8 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: 24
-      - run: cd backend && npm install && npm audit --audit-level=high
-      - run: cd frontend && npm install && npm audit --audit-level=high
+      - run: cd backend && npm ci && npm audit --audit-level=high
+      - run: cd frontend && npm ci && npm audit --audit-level=high
 
   bearer-scan:
     name: Bearer Security Scan

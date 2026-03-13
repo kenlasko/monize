@@ -701,8 +701,16 @@ describe("AuthController", () => {
 
       await controller.oidcCallback(query, expressReq, res as any);
 
-      expect(res.clearCookie).toHaveBeenCalledWith("oidc_state");
-      expect(res.clearCookie).toHaveBeenCalledWith("oidc_nonce");
+      expect(res.clearCookie).toHaveBeenCalledWith("oidc_state", {
+        httpOnly: true,
+        secure: false,
+        sameSite: "lax",
+      });
+      expect(res.clearCookie).toHaveBeenCalledWith("oidc_nonce", {
+        httpOnly: true,
+        secure: false,
+        sameSite: "lax",
+      });
       expect(oidcService.handleCallback).toHaveBeenCalledWith(
         query,
         "valid-state",

@@ -42,6 +42,7 @@ describe("TokenService", () => {
     tokenHash: "hashed-token",
     familyId: "family-1",
     isRevoked: false,
+    rememberMe: false,
     expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     replacedByHash: null,
     createdAt: new Date(),
@@ -131,6 +132,7 @@ describe("TokenService", () => {
         isRevoked: false,
         expiresAt: expect.any(Date),
         replacedByHash: null,
+        rememberMe: false,
       });
       expect(refreshTokensRepository.save).toHaveBeenCalledWith(
         mockRefreshToken,
@@ -213,6 +215,7 @@ describe("TokenService", () => {
         isRevoked: false,
         expiresAt: expect.any(Date),
         replacedByHash: null,
+        rememberMe: false,
       });
 
       expect(jwtService.sign).toHaveBeenCalledWith(

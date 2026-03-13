@@ -251,13 +251,27 @@ export class AuthController {
       "http://localhost:3000",
     );
 
+    const clearOidcCookieOptions = {
+      httpOnly: true,
+      secure: this.useSecureCookies,
+      sameSite: "lax" as const,
+    };
+
     try {
+      // Check for OIDC provider error response before processing
+      if (query.error) {
+        this.logger.warn(
+          `OIDC provider returned error: ${query.error} - ${query.error_description || "no description"}`,
+        );
+        throw new Error(`OIDC provider error: ${query.error}`);
+      }
+
       const state = req.cookies?.["oidc_state"];
       const nonce = req.cookies?.["oidc_nonce"];
 
-      // Clear OIDC cookies
-      res.clearCookie("oidc_state");
-      res.clearCookie("oidc_nonce");
+      // Clear OIDC cookies with matching options
+      res.clearCookie("oidc_state", clearOidcCookieOptions);
+      res.clearCookie("oidc_nonce", clearOidcCookieOptions);
 
       if (!state || !nonce) {
         throw new Error(
@@ -298,6 +312,9 @@ export class AuthController {
       this.setAuthCookies(res, accessToken, refreshToken, result.user.id);
       res.redirect(`${frontendUrl}/auth/callback?success=true`);
     } catch (error) {
+      // Clear OIDC cookies on error path as well
+      res.clearCookie("oidc_state", clearOidcCookieOptions);
+      res.clearCookie("oidc_nonce", clearOidcCookieOptions);
       // SECURITY: Log detailed error server-side only, don't expose to client
       this.logger.error(
         "OIDC callback error",

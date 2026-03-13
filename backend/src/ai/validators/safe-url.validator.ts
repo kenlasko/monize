@@ -175,6 +175,15 @@ export class IsSafeUrlConstraint implements ValidatorConstraintInterface {
   }
 }
 
+/**
+ * Standalone function to validate a URL is safe (not targeting private/internal IPs).
+ * Can be used outside of class-validator context (e.g. validating env vars at startup).
+ */
+export async function validateUrlIsSafe(url: string): Promise<boolean> {
+  const validator = new IsSafeUrlConstraint();
+  return validator.validate(url);
+}
+
 export function IsSafeUrl(
   validationOptions?: ValidationOptions,
 ): PropertyDecorator {

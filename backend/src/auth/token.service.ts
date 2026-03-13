@@ -64,6 +64,7 @@ export class TokenService {
       isRevoked: false,
       expiresAt: new Date(Date.now() + expiryMs),
       replacedByHash: null,
+      rememberMe: !!rememberMe,
     });
     await this.refreshTokensRepository.save(refreshTokenEntity);
 
@@ -124,13 +125,17 @@ export class TokenService {
       existingToken.replacedByHash = newTokenHash;
       await manager.save(existingToken);
 
+      const rotatedExpiryMs = this.getRefreshExpiryMs(
+        existingToken.rememberMe,
+      );
       const newRefreshTokenEntity = manager.create(RefreshToken, {
         userId: user.id,
         tokenHash: newTokenHash,
         familyId: existingToken.familyId,
         isRevoked: false,
-        expiresAt: new Date(Date.now() + this.REFRESH_TOKEN_EXPIRY_MS),
+        expiresAt: new Date(Date.now() + rotatedExpiryMs),
         replacedByHash: null,
+        rememberMe: existingToken.rememberMe,
       });
       await manager.save(newRefreshTokenEntity);
 
