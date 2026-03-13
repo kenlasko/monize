@@ -27,7 +27,7 @@ import { AccountsService } from "../accounts/accounts.service";
 import { TransactionsService } from "../transactions/transactions.service";
 import { ScheduledTransactionOverrideService } from "./scheduled-transaction-override.service";
 import { ScheduledTransactionLoanService } from "./scheduled-transaction-loan.service";
-import { formatDateYMD } from "../common/date-utils";
+import { formatDateYMD, todayYMD } from "../common/date-utils";
 
 @Injectable()
 export class ScheduledTransactionsService {
@@ -53,14 +53,13 @@ export class ScheduledTransactionsService {
     this.logger.log("Starting auto-post processing for scheduled transactions");
 
     try {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      const today = todayYMD();
 
       const dueTransactions = await this.scheduledTransactionsRepository.find({
         where: {
           isActive: true,
           autoPost: true,
-          nextDueDate: LessThanOrEqual(today),
+          nextDueDate: LessThanOrEqual(today) as any,
         },
         relations: [
           "account",
@@ -319,14 +318,13 @@ export class ScheduledTransactionsService {
   }
 
   async findDue(userId: string): Promise<ScheduledTransaction[]> {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const today = todayYMD();
 
     return this.scheduledTransactionsRepository.find({
       where: {
         userId,
         isActive: true,
-        nextDueDate: LessThanOrEqual(today),
+        nextDueDate: LessThanOrEqual(today) as any,
       },
       relations: [
         "account",
