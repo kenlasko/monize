@@ -1087,6 +1087,66 @@ describe("CSV Parser", () => {
         // Without amountTypeColumn, "Expense" text is ignored
         expect(result.transactions[0].amount).toBe(50);
       });
+
+      it("uses transferAccountColumn for transfer account name when set", () => {
+        const csv =
+          "Date,Amount,Payee,Category,Type,Account\n01/15/2026,500.00,ATM,Food,Transfer-Out,Savings Account\n";
+        const config = baseConfig({
+          category: 3,
+          amountTypeColumn: 4,
+          transferOutValues: ["Transfer-Out"],
+          transferAccountColumn: 5,
+        });
+        const result = parseCsv(csv, config);
+
+        expect(result.transactions[0].isTransfer).toBe(true);
+        expect(result.transactions[0].transferAccount).toBe("Savings Account");
+        expect(result.transactions[0].amount).toBe(-500);
+      });
+
+      it("falls back to category when transferAccountColumn is not set", () => {
+        const csv =
+          "Date,Amount,Payee,Category,Type\n01/15/2026,500.00,ATM,Cash,Transfer-Out\n";
+        const config = baseConfig({
+          category: 3,
+          amountTypeColumn: 4,
+          transferOutValues: ["Transfer-Out"],
+        });
+        const result = parseCsv(csv, config);
+
+        expect(result.transactions[0].transferAccount).toBe("Cash");
+      });
+
+      it("uses transferAccountColumn for transfer-in as well", () => {
+        const csv =
+          "Date,Amount,Payee,Category,Type,Source\n01/15/2026,500.00,Deposit,Income,Transfer-In,External Account\n";
+        const config = baseConfig({
+          category: 3,
+          amountTypeColumn: 4,
+          transferInValues: ["Transfer-In"],
+          transferAccountColumn: 5,
+        });
+        const result = parseCsv(csv, config);
+
+        expect(result.transactions[0].isTransfer).toBe(true);
+        expect(result.transactions[0].transferAccount).toBe("External Account");
+        expect(result.transactions[0].amount).toBe(500);
+      });
+
+      it("skips transfer when transferAccountColumn value is empty", () => {
+        const csv =
+          "Date,Amount,Payee,Category,Type,Account\n01/15/2026,500.00,ATM,Food,Transfer-Out,\n";
+        const config = baseConfig({
+          category: 3,
+          amountTypeColumn: 4,
+          transferOutValues: ["Transfer-Out"],
+          transferAccountColumn: 5,
+        });
+        const result = parseCsv(csv, config);
+
+        // transferAccountColumn is empty, so transfer is not detected
+        expect(result.transactions[0].isTransfer).toBe(false);
+      });
     });
   });
 });

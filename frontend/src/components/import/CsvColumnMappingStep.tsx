@@ -335,7 +335,7 @@ export function CsvColumnMappingStep({
                 onChange={(e) => {
                   const val = e.target.value;
                   if (val === '') {
-                    const { amountTypeColumn: _, expenseValues: _e, transferOutValues: _to, transferInValues: _ti, ...rest } = columnMapping;
+                    const { amountTypeColumn: _, expenseValues: _e, transferOutValues: _to, transferInValues: _ti, transferAccountColumn: _ta, ...rest } = columnMapping;
                     onColumnMappingChange(rest as typeof columnMapping);
                   } else {
                     onColumnMappingChange({ ...columnMapping, amountTypeColumn: parseInt(val, 10) });
@@ -400,6 +400,29 @@ export function CsvColumnMappingStep({
                       className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                     />
                   </div>
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Transfer account column</label>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                    Column containing the transfer destination account name. Defaults to the Category column if not set.
+                  </p>
+                  <select
+                    value={columnMapping.transferAccountColumn !== undefined ? String(columnMapping.transferAccountColumn) : ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === '') {
+                        const { transferAccountColumn: _, ...rest } = columnMapping;
+                        onColumnMappingChange(rest as typeof columnMapping);
+                      } else {
+                        onColumnMappingChange({ ...columnMapping, transferAccountColumn: parseInt(val, 10) });
+                      }
+                    }}
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                  >
+                    {columnOptions.map((o) => (
+                      <option key={o.value} value={o.value}>{o.value === '' ? 'Use category column' : o.label}</option>
+                    ))}
+                  </select>
                 </div>
               </>
             )}

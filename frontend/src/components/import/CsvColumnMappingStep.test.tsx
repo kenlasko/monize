@@ -432,6 +432,31 @@ describe('CsvColumnMappingStep', () => {
       expect(callArg.expenseValues).toBeUndefined();
       expect(callArg.transferOutValues).toBeUndefined();
       expect(callArg.transferInValues).toBeUndefined();
+      expect(callArg.transferAccountColumn).toBeUndefined();
+    });
+
+    it('renders Transfer account column dropdown when amountTypeColumn is set', () => {
+      renderStep({
+        columnMapping: { ...defaultMapping(), amount: 1, amountTypeColumn: 2 },
+      });
+
+      expect(screen.getByText('Transfer account column')).toBeInTheDocument();
+      expect(screen.getByText('Use category column')).toBeInTheDocument();
+    });
+
+    it('calls onColumnMappingChange with transferAccountColumn when selected', () => {
+      const props = renderStep({
+        headers: ['Date', 'Amount', 'Type', 'Account'],
+        sampleRows: [['2024-01-01', '100.00', 'Expense', 'Savings']],
+        columnMapping: { ...defaultMapping(), amount: 1, amountTypeColumn: 2 },
+      });
+
+      const transferAcctSelect = screen.getByDisplayValue('Use category column');
+      fireEvent.change(transferAcctSelect, { target: { value: '3' } });
+
+      expect(props.onColumnMappingChange).toHaveBeenCalledWith(
+        expect.objectContaining({ transferAccountColumn: 3 }),
+      );
     });
   });
 });

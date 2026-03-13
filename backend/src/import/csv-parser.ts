@@ -34,6 +34,7 @@ export interface CsvColumnMappingConfig {
   expenseValues?: string[];
   transferOutValues?: string[];
   transferInValues?: string[];
+  transferAccountColumn?: number;
 }
 
 export interface CsvTransferRule {
@@ -612,15 +613,24 @@ export function parseCsv(
           v.trim().toLowerCase(),
         );
 
-        if (transferOutVals.includes(typeValue) && categoryPart) {
+        // Resolve transfer account name: explicit column, or fall back to category
+        const transferAcctName =
+          config.transferAccountColumn !== undefined
+            ? truncate(
+                getField(row, config.transferAccountColumn),
+                FIELD_LIMITS.CATEGORY,
+              )
+            : categoryPart;
+
+        if (transferOutVals.includes(typeValue) && transferAcctName) {
           amount = -Math.abs(amount);
           isTransfer = true;
-          transferAccount = categoryPart;
+          transferAccount = transferAcctName;
           category = "";
-        } else if (transferInVals.includes(typeValue) && categoryPart) {
+        } else if (transferInVals.includes(typeValue) && transferAcctName) {
           amount = Math.abs(amount);
           isTransfer = true;
-          transferAccount = categoryPart;
+          transferAccount = transferAcctName;
           category = "";
         } else if (expenseVals.includes(typeValue)) {
           amount = -Math.abs(amount);

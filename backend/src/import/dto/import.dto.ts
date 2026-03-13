@@ -496,6 +496,16 @@ export class CsvColumnMappingConfigDto {
   @ArrayMaxSize(20)
   transferInValues?: string[];
 
+  @ApiPropertyOptional({
+    description:
+      "Column index for transfer account name (defaults to category column if not set)",
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(100)
+  transferAccountColumn?: number;
+
   @ApiProperty({ description: "Whether the CSV has a header row" })
   @IsBoolean()
   hasHeader: boolean;

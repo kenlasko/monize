@@ -141,6 +141,7 @@ export interface CsvColumnMappingConfig {
   expenseValues?: string[];
   transferOutValues?: string[];
   transferInValues?: string[];
+  transferAccountColumn?: number;
 }
 
 export interface CsvTransferRule {
