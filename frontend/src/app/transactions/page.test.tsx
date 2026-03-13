@@ -218,6 +218,7 @@ vi.mock('@/components/transactions/BulkSelectionBanner', () => ({
     <div data-testid="bulk-selection-banner">
       <span>{props.selectionCount} selected</span>
       <button data-testid="bulk-update-btn" onClick={props.onBulkUpdate}>Bulk Update</button>
+      <button data-testid="bulk-delete-btn" onClick={props.onBulkDelete}>Delete</button>
       <button data-testid="clear-selection" onClick={props.onClearSelection}>Clear</button>
       <button data-testid="select-all-matching" onClick={props.onSelectAllMatching}>Select All</button>
     </div>
@@ -226,6 +227,18 @@ vi.mock('@/components/transactions/BulkSelectionBanner', () => ({
 
 vi.mock('@/components/ui/Modal', () => ({
   Modal: ({ children, isOpen }: any) => isOpen ? <div data-testid="modal">{children}</div> : null,
+}));
+
+vi.mock('@/components/ui/ConfirmDialog', () => ({
+  ConfirmDialog: ({ isOpen, onConfirm, onCancel, title, message }: any) =>
+    isOpen ? (
+      <div data-testid="confirm-dialog">
+        <span>{title}</span>
+        <span>{message}</span>
+        <button data-testid="confirm-delete" onClick={onConfirm}>Confirm</button>
+        <button data-testid="cancel-delete" onClick={onCancel}>Cancel</button>
+      </div>
+    ) : null,
 }));
 
 vi.mock('@/components/ui/UnsavedChangesDialog', () => ({

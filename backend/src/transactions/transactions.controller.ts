@@ -31,7 +31,7 @@ import { UpdateSplitsDto } from "./dto/update-splits.dto";
 import { CreateTransferDto } from "./dto/create-transfer.dto";
 import { UpdateTransferDto } from "./dto/update-transfer.dto";
 import { BulkReconcileDto } from "./dto/bulk-reconcile.dto";
-import { BulkUpdateDto } from "./dto/bulk-update.dto";
+import { BulkUpdateDto, BulkDeleteDto } from "./dto/bulk-update.dto";
 import { MarkClearedDto } from "./dto/mark-cleared.dto";
 import { UpdateTransactionStatusDto } from "./dto/update-transaction-status.dto";
 import {
@@ -522,6 +522,18 @@ export class TransactionsController {
   @ApiResponse({ status: 401, description: "Unauthorized" })
   bulkUpdate(@Request() req, @Body() bulkUpdateDto: BulkUpdateDto) {
     return this.transactionsService.bulkUpdate(req.user.id, bulkUpdateDto);
+  }
+
+  @Post("bulk-delete")
+  @ApiOperation({ summary: "Bulk delete transactions by IDs or filters" })
+  @ApiResponse({
+    status: 200,
+    description: "Transactions deleted successfully",
+  })
+  @ApiResponse({ status: 400, description: "Bad request" })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  bulkDelete(@Request() req, @Body() bulkDeleteDto: BulkDeleteDto) {
+    return this.transactionsService.bulkDelete(req.user.id, bulkDeleteDto);
   }
 
   // ==================== Single Transaction CRUD (:id param routes) ====================

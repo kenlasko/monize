@@ -13,8 +13,17 @@ import { Category } from "../categories/entities/category.entity";
 import { Payee } from "../payees/entities/payee.entity";
 import { AccountsService } from "../accounts/accounts.service";
 import { NetWorthService } from "../net-worth/net-worth.service";
-import { BulkUpdateDto, BulkUpdateFilterDto } from "./dto/bulk-update.dto";
+import {
+  BulkUpdateDto,
+  BulkDeleteDto,
+  BulkUpdateFilterDto,
+} from "./dto/bulk-update.dto";
 import { getAllCategoryIdsWithChildren } from "../common/category-tree.util";
+import { isTransactionInFuture } from "../common/date-utils";
+
+export interface BulkDeleteResult {
+  deleted: number;
+}
 
 export interface BulkUpdateResult {
   updated: number;
@@ -142,6 +151,144 @@ export class TransactionBulkUpdateService {
       skipped,
       skippedReasons,
     };
+  }
+
+  async bulkDelete(
+    userId: string,
+    dto: BulkDeleteDto,
+  ): Promise<BulkDeleteResult> {
+    const allIds = await this.resolveTransactionIds(userId, dto);
+    if (allIds.length === 0) {
+      return { deleted: 0 };
+    }
+
+    // Load transaction details needed for balance adjustments and linked transfers
+    const transactions = await this.transactionsRepository
+      .createQueryBuilder("transaction")
+      .select([
+        "transaction.id",
+        "transaction.accountId",
+        "transaction.amount",
+        "transaction.status",
+        "transaction.transactionDate",
+        "transaction.isTransfer",
+        "transaction.linkedTransactionId",
+        "transaction.isSplit",
+      ])
+      .leftJoinAndSelect("transaction.splits", "splits")
+      .where("transaction.id IN (:...ids)", { ids: allIds })
+      .andWhere("transaction.userId = :userId", { userId })
+      .getMany();
+
+    if (transactions.length === 0) {
+      return { deleted: 0 };
+    }
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // Collect linked transaction IDs from transfers and split transfers
+      const linkedIdsToDelete = new Set<string>();
+      const transactionIdsSet = new Set(transactions.map((t) => t.id));
+
+      for (const tx of transactions) {
+        if (tx.linkedTransactionId && !transactionIdsSet.has(tx.linkedTransactionId)) {
+          linkedIdsToDelete.add(tx.linkedTransactionId);
+        }
+        if (tx.isSplit && tx.splits) {
+          for (const split of tx.splits) {
+            if (split.linkedTransactionId && !transactionIdsSet.has(split.linkedTransactionId)) {
+              linkedIdsToDelete.add(split.linkedTransactionId);
+            }
+          }
+        }
+      }
+
+      // Load linked transactions for balance adjustments
+      let linkedTransactions: Transaction[] = [];
+      if (linkedIdsToDelete.size > 0) {
+        linkedTransactions = await queryRunner.manager
+          .createQueryBuilder(Transaction, "transaction")
+          .select([
+            "transaction.id",
+            "transaction.accountId",
+            "transaction.amount",
+            "transaction.status",
+            "transaction.transactionDate",
+          ])
+          .where("transaction.id IN (:...ids)", {
+            ids: [...linkedIdsToDelete],
+          })
+          .andWhere("transaction.userId = :userId", { userId })
+          .getMany();
+      }
+
+      // Adjust balances for all transactions being deleted (primary + linked)
+      const allTransactionsToDelete = [...transactions, ...linkedTransactions];
+      const balanceAdjustments = new Map<string, number>();
+
+      for (const tx of allTransactionsToDelete) {
+        if (
+          tx.status !== TransactionStatus.VOID &&
+          !isTransactionInFuture(tx.transactionDate)
+        ) {
+          const current = balanceAdjustments.get(tx.accountId) || 0;
+          balanceAdjustments.set(
+            tx.accountId,
+            current - Number(tx.amount),
+          );
+        }
+      }
+
+      for (const [accountId, adjustment] of balanceAdjustments) {
+        if (adjustment !== 0) {
+          await this.accountsService.updateBalance(
+            accountId,
+            adjustment,
+            queryRunner,
+          );
+        }
+      }
+
+      // Delete linked transactions first (foreign key order)
+      if (linkedIdsToDelete.size > 0) {
+        await queryRunner.manager
+          .createQueryBuilder()
+          .delete()
+          .from(Transaction)
+          .where("id IN (:...ids)", { ids: [...linkedIdsToDelete] })
+          .andWhere("userId = :userId", { userId })
+          .execute();
+      }
+
+      // Delete the primary transactions
+      await queryRunner.manager
+        .createQueryBuilder()
+        .delete()
+        .from(Transaction)
+        .where("id IN (:...ids)", { ids: allIds })
+        .andWhere("userId = :userId", { userId })
+        .execute();
+
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+
+    // Trigger net worth recalc for all affected accounts
+    const affectedAccountIds = new Set(
+      transactions.map((t) => t.accountId),
+    );
+    for (const accountId of affectedAccountIds) {
+      this.netWorthService.triggerDebouncedRecalc(accountId, userId);
+    }
+
+    return { deleted: transactions.length };
   }
 
   private extractUpdateFields(dto: BulkUpdateDto): Partial<Transaction> {

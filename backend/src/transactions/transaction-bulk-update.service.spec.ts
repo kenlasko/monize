@@ -7,10 +7,12 @@ import { Category } from "../categories/entities/category.entity";
 import { Payee } from "../payees/entities/payee.entity";
 import { AccountsService } from "../accounts/accounts.service";
 import { NetWorthService } from "../net-worth/net-worth.service";
-import { BulkUpdateDto } from "./dto/bulk-update.dto";
+import { BulkUpdateDto, BulkDeleteDto } from "./dto/bulk-update.dto";
 import { DataSource } from "typeorm";
 
-jest.mock("../common/date-utils");
+jest.mock("../common/date-utils", () => ({
+  isTransactionInFuture: jest.fn().mockReturnValue(false),
+}));
 
 describe("TransactionBulkUpdateService", () => {
   let service: TransactionBulkUpdateService;
@@ -929,6 +931,255 @@ describe("TransactionBulkUpdateService", () => {
         100,
         expect.anything(),
       );
+    });
+  });
+
+  describe("bulkDelete", () => {
+    it("returns zero deleted when no transactions match", async () => {
+      const resolveQb = createMockQueryBuilder({
+        getMany: jest.fn().mockResolvedValue([]),
+      });
+      transactionsRepository.createQueryBuilder.mockReturnValue(resolveQb);
+
+      const dto: BulkDeleteDto = {
+        mode: "ids",
+        transactionIds: ["nonexistent"],
+      };
+
+      const result = await service.bulkDelete(userId, dto);
+
+      expect(result).toEqual({ deleted: 0 });
+    });
+
+    it("deletes transactions by explicit IDs", async () => {
+      const tx1 = makeTransaction({ id: "tx-1" });
+      const tx2 = makeTransaction({ id: "tx-2" });
+
+      // First call: resolve IDs
+      const resolveQb = createMockQueryBuilder({
+        getMany: jest.fn().mockResolvedValue([{ id: "tx-1" }, { id: "tx-2" }]),
+      });
+      // Second call: load transaction details
+      const detailsQb = createMockQueryBuilder({
+        getMany: jest.fn().mockResolvedValue([tx1, tx2]),
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+      });
+
+      transactionsRepository.createQueryBuilder
+        .mockReturnValueOnce(resolveQb)
+        .mockReturnValueOnce(detailsQb);
+
+      // Delete query via queryRunner.manager.createQueryBuilder()
+      const deleteQb = createMockQueryBuilder({
+        delete: jest.fn().mockReturnThis(),
+        from: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({ affected: 2 }),
+      });
+      mockManagerCreateQueryBuilder.mockReturnValueOnce(deleteQb);
+
+      const dto: BulkDeleteDto = {
+        mode: "ids",
+        transactionIds: ["tx-1", "tx-2"],
+      };
+
+      const result = await service.bulkDelete(userId, dto);
+
+      expect(result.deleted).toBe(2);
+      expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
+    });
+
+    it("adjusts balances for non-VOID, non-future transactions", async () => {
+      const tx1 = makeTransaction({
+        id: "tx-1",
+        accountId: "acc-1",
+        amount: 100,
+      });
+
+      const resolveQb = createMockQueryBuilder({
+        getMany: jest.fn().mockResolvedValue([{ id: "tx-1" }]),
+      });
+      const detailsQb = createMockQueryBuilder({
+        getMany: jest.fn().mockResolvedValue([tx1]),
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+      });
+
+      transactionsRepository.createQueryBuilder
+        .mockReturnValueOnce(resolveQb)
+        .mockReturnValueOnce(detailsQb);
+
+      const deleteQb = createMockQueryBuilder({
+        delete: jest.fn().mockReturnThis(),
+        from: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({ affected: 1 }),
+      });
+      mockManagerCreateQueryBuilder.mockReturnValueOnce(deleteQb);
+
+      const dto: BulkDeleteDto = {
+        mode: "ids",
+        transactionIds: ["tx-1"],
+      };
+
+      await service.bulkDelete(userId, dto);
+
+      expect(accountsService.updateBalance).toHaveBeenCalledWith(
+        "acc-1",
+        -100,
+        expect.anything(),
+      );
+    });
+
+    it("does not adjust balance for VOID transactions", async () => {
+      const tx1 = makeTransaction({
+        id: "tx-1",
+        accountId: "acc-1",
+        amount: 100,
+        status: TransactionStatus.VOID,
+      });
+
+      const resolveQb = createMockQueryBuilder({
+        getMany: jest.fn().mockResolvedValue([{ id: "tx-1" }]),
+      });
+      const detailsQb = createMockQueryBuilder({
+        getMany: jest.fn().mockResolvedValue([tx1]),
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+      });
+
+      transactionsRepository.createQueryBuilder
+        .mockReturnValueOnce(resolveQb)
+        .mockReturnValueOnce(detailsQb);
+
+      const deleteQb = createMockQueryBuilder({
+        delete: jest.fn().mockReturnThis(),
+        from: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({ affected: 1 }),
+      });
+      mockManagerCreateQueryBuilder.mockReturnValueOnce(deleteQb);
+
+      await service.bulkDelete(userId, {
+        mode: "ids",
+        transactionIds: ["tx-1"],
+      });
+
+      expect(accountsService.updateBalance).not.toHaveBeenCalled();
+    });
+
+    it("deletes linked transfer counterparts", async () => {
+      const tx1 = makeTransaction({
+        id: "tx-1",
+        isTransfer: true,
+        linkedTransactionId: "tx-1-linked",
+      });
+
+      const resolveQb = createMockQueryBuilder({
+        getMany: jest.fn().mockResolvedValue([{ id: "tx-1" }]),
+      });
+      const detailsQb = createMockQueryBuilder({
+        getMany: jest.fn().mockResolvedValue([tx1]),
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+      });
+
+      transactionsRepository.createQueryBuilder
+        .mockReturnValueOnce(resolveQb)
+        .mockReturnValueOnce(detailsQb);
+
+      // Load linked transaction details for balance adjustment
+      const linkedTx = makeTransaction({
+        id: "tx-1-linked",
+        accountId: "acc-2",
+        amount: -100,
+      });
+      const linkedDetailsQb = createMockQueryBuilder({
+        getMany: jest.fn().mockResolvedValue([linkedTx]),
+      });
+      mockManagerCreateQueryBuilder.mockImplementation(() =>
+        createMockQueryBuilder({
+          delete: jest.fn().mockReturnThis(),
+          from: jest.fn().mockReturnThis(),
+          execute: jest.fn().mockResolvedValue({ affected: 1 }),
+          getMany: jest.fn().mockResolvedValue([linkedTx]),
+        }),
+      );
+
+      await service.bulkDelete(userId, {
+        mode: "ids",
+        transactionIds: ["tx-1"],
+      });
+
+      // Should have called createQueryBuilder multiple times:
+      // 1. Load linked transaction details
+      // 2. Delete linked transactions
+      // 3. Delete primary transactions
+      expect(mockManagerCreateQueryBuilder).toHaveBeenCalled();
+      expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
+    });
+
+    it("triggers net worth recalc for affected accounts", async () => {
+      const tx1 = makeTransaction({
+        id: "tx-1",
+        accountId: "acc-1",
+      });
+
+      const resolveQb = createMockQueryBuilder({
+        getMany: jest.fn().mockResolvedValue([{ id: "tx-1" }]),
+      });
+      const detailsQb = createMockQueryBuilder({
+        getMany: jest.fn().mockResolvedValue([tx1]),
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+      });
+
+      transactionsRepository.createQueryBuilder
+        .mockReturnValueOnce(resolveQb)
+        .mockReturnValueOnce(detailsQb);
+
+      const deleteQb = createMockQueryBuilder({
+        delete: jest.fn().mockReturnThis(),
+        from: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({ affected: 1 }),
+      });
+      mockManagerCreateQueryBuilder.mockReturnValueOnce(deleteQb);
+
+      await service.bulkDelete(userId, {
+        mode: "ids",
+        transactionIds: ["tx-1"],
+      });
+
+      expect(netWorthService.triggerDebouncedRecalc).toHaveBeenCalledWith(
+        "acc-1",
+        userId,
+      );
+    });
+
+    it("rolls back transaction on error", async () => {
+      const tx1 = makeTransaction({ id: "tx-1" });
+
+      const resolveQb = createMockQueryBuilder({
+        getMany: jest.fn().mockResolvedValue([{ id: "tx-1" }]),
+      });
+      const detailsQb = createMockQueryBuilder({
+        getMany: jest.fn().mockResolvedValue([tx1]),
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+      });
+
+      transactionsRepository.createQueryBuilder
+        .mockReturnValueOnce(resolveQb)
+        .mockReturnValueOnce(detailsQb);
+
+      const deleteQb = createMockQueryBuilder({
+        delete: jest.fn().mockReturnThis(),
+        from: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockRejectedValue(new Error("DB error")),
+      });
+      mockManagerCreateQueryBuilder.mockReturnValueOnce(deleteQb);
+
+      await expect(
+        service.bulkDelete(userId, {
+          mode: "ids",
+          transactionIds: ["tx-1"],
+        }),
+      ).rejects.toThrow("DB error");
+
+      expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
+      expect(mockQueryRunner.release).toHaveBeenCalled();
     });
   });
 });

@@ -193,3 +193,13 @@ export interface BulkUpdateResult {
   skipped: number;
   skippedReasons: string[];
 }
+
+export interface BulkDeleteData {
+  mode: 'ids' | 'filter';
+  transactionIds?: string[];
+  filters?: BulkUpdateFilters;
+}
+
+export interface BulkDeleteResult {
+  deleted: number;
+}

@@ -14,6 +14,8 @@ import {
   BulkReconcileResult,
   BulkUpdateData,
   BulkUpdateResult,
+  BulkDeleteData,
+  BulkDeleteResult,
   MonthlyTotal,
 } from '@/types/transaction';
 import { invalidateCache } from './apiCache';
@@ -325,6 +327,17 @@ export const transactionsApi = {
   bulkUpdate: async (data: BulkUpdateData): Promise<BulkUpdateResult> => {
     const response = await apiClient.post<BulkUpdateResult>(
       '/transactions/bulk-update',
+      data,
+    );
+    invalidateCache('accounts:');
+    invalidateCache('investments:');
+    return response.data;
+  },
+
+  // Bulk delete transactions
+  bulkDelete: async (data: BulkDeleteData): Promise<BulkDeleteResult> => {
+    const response = await apiClient.post<BulkDeleteResult>(
+      '/transactions/bulk-delete',
       data,
     );
     invalidateCache('accounts:');

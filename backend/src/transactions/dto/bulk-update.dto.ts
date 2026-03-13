@@ -106,3 +106,31 @@ export class BulkUpdateDto {
   @IsEnum(TransactionStatus)
   status?: TransactionStatus;
 }
+
+export class BulkDeleteDto {
+  @ApiProperty({
+    description:
+      'Selection mode: "ids" for explicit IDs, "filter" for filter-based',
+    enum: ["ids", "filter"],
+  })
+  @IsEnum(["ids", "filter"])
+  mode: "ids" | "filter";
+
+  @ApiPropertyOptional({
+    description: 'Transaction IDs (required when mode is "ids")',
+    type: [String],
+  })
+  @ValidateIf((o) => o.mode === "ids")
+  @IsArray()
+  @IsUUID("4", { each: true })
+  transactionIds?: string[];
+
+  @ApiPropertyOptional({
+    description: 'Filters (used when mode is "filter")',
+  })
+  @ValidateIf((o) => o.mode === "filter")
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => BulkUpdateFilterDto)
+  filters?: BulkUpdateFilterDto;
+}

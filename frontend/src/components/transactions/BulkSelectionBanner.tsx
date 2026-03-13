@@ -10,6 +10,7 @@ interface BulkSelectionBannerProps {
   onSelectAllMatching: () => void;
   onClearSelection: () => void;
   onBulkUpdate: () => void;
+  onBulkDelete: () => void;
 }
 
 export function BulkSelectionBanner({
@@ -20,6 +21,7 @@ export function BulkSelectionBanner({
   onSelectAllMatching,
   onClearSelection,
   onBulkUpdate,
+  onBulkDelete,
 }: BulkSelectionBannerProps) {
   if (selectionCount === 0) return null;
 
@@ -52,6 +54,9 @@ export function BulkSelectionBanner({
         </button>
         <Button onClick={onBulkUpdate} size="sm">
           Bulk Update
+        </Button>
+        <Button onClick={onBulkDelete} size="sm" variant="danger">
+          Delete
         </Button>
       </div>
     </div>

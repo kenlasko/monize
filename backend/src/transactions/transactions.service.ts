@@ -29,8 +29,9 @@ import { TransactionAnalyticsService } from "./transaction-analytics.service";
 import {
   TransactionBulkUpdateService,
   BulkUpdateResult,
+  BulkDeleteResult,
 } from "./transaction-bulk-update.service";
-import { BulkUpdateDto } from "./dto/bulk-update.dto";
+import { BulkUpdateDto, BulkDeleteDto } from "./dto/bulk-update.dto";
 import { isTransactionInFuture } from "../common/date-utils";
 import { getAllCategoryIdsWithChildren } from "../common/category-tree.util";
 
@@ -1178,5 +1179,12 @@ export class TransactionsService {
     bulkUpdateDto: BulkUpdateDto,
   ): Promise<BulkUpdateResult> {
     return this.bulkUpdateService.bulkUpdate(userId, bulkUpdateDto);
+  }
+
+  async bulkDelete(
+    userId: string,
+    bulkDeleteDto: BulkDeleteDto,
+  ): Promise<BulkDeleteResult> {
+    return this.bulkUpdateService.bulkDelete(userId, bulkDeleteDto);
   }
 }

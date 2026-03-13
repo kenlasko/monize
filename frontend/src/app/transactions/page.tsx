@@ -20,7 +20,8 @@ import { accountsApi } from '@/lib/accounts';
 import { categoriesApi } from '@/lib/categories';
 import { payeesApi } from '@/lib/payees';
 import { tagsApi } from '@/lib/tags';
-import { Transaction, PaginationInfo, BulkUpdateData, BulkUpdateFilters, MonthlyTotal } from '@/types/transaction';
+import { Transaction, PaginationInfo, BulkUpdateData, BulkUpdateFilters, MonthlyTotal, BulkDeleteData } from '@/types/transaction';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { useTransactionSelection } from '@/hooks/useTransactionSelection';
 import { useTransactionFilters } from '@/hooks/useTransactionFilters';
 import { BulkSelectionBanner } from '@/components/transactions/BulkSelectionBanner';
@@ -74,11 +75,12 @@ function TransactionsContent() {
   const [editingPayee, setEditingPayee] = useState<Payee | undefined>();
   const [listDensity, setListDensity] = useLocalStorage<DensityLevel>('monize-transactions-density', 'normal');
   const [showBulkUpdate, setShowBulkUpdate] = useState(false);
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
   const [bulkSelectMode, setBulkSelectMode] = useState(false);
 
   // Ref to track whether any modal is open (used by popstate handler to avoid conflicts)
   const modalOpenRef = useRef(false);
-  modalOpenRef.current = showForm || showPayeeForm || showBulkUpdate;
+  modalOpenRef.current = showForm || showPayeeForm || showBulkUpdate || showBulkDeleteConfirm;
 
   const filters = useTransactionFilters({ accounts, categories, payees, tags, weekStartsOn });
 
@@ -406,6 +408,20 @@ function TransactionsContent() {
     return result;
   }, [selection, loadAllData]);
 
+  const handleBulkDelete = useCallback(async () => {
+    const payload = selection.buildSelectionPayload();
+    const result = await transactionsApi.bulkDelete(payload as BulkDeleteData);
+
+    if (result.deleted > 0) {
+      toast.success(`${result.deleted} transaction${result.deleted !== 1 ? 's' : ''} deleted`);
+    }
+
+    setShowBulkDeleteConfirm(false);
+    setBulkSelectMode(false);
+    selection.clearSelection();
+    loadAllData();
+  }, [selection, loadAllData]);
+
   return (
     <PageLayout>
       <main className="px-4 sm:px-6 lg:px-12 pt-6 pb-8">
@@ -515,6 +531,7 @@ function TransactionsContent() {
             onSelectAllMatching={selection.selectAllMatchingTransactions}
             onClearSelection={() => { selection.clearSelection(); setBulkSelectMode(false); }}
             onBulkUpdate={() => setShowBulkUpdate(true)}
+            onBulkDelete={() => setShowBulkDeleteConfirm(true)}
           />
         )}
 
@@ -524,6 +541,17 @@ function TransactionsContent() {
           onClose={() => setShowBulkUpdate(false)}
           onSubmit={handleBulkUpdate}
           selectionCount={selection.selectionCount}
+        />
+
+        {/* Bulk Delete Confirmation */}
+        <ConfirmDialog
+          isOpen={showBulkDeleteConfirm}
+          onCancel={() => setShowBulkDeleteConfirm(false)}
+          onConfirm={handleBulkDelete}
+          title="Delete Transactions"
+          message={`Are you sure you want to delete ${selection.selectionCount} transaction${selection.selectionCount !== 1 ? 's' : ''}? This will also delete any linked transfer counterparts. This action cannot be undone.`}
+          confirmLabel="Delete"
+          variant="danger"
         />
 
         {/* Transactions List */}
