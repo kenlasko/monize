@@ -189,12 +189,19 @@ export class ImportService {
       credit: dto.columnMapping.credit,
       payee: dto.columnMapping.payee,
       category: dto.columnMapping.category,
+      subcategory: dto.columnMapping.subcategory,
       memo: dto.columnMapping.memo,
       referenceNumber: dto.columnMapping.referenceNumber,
       dateFormat: dto.columnMapping.dateFormat as DateFormat,
       reverseSign: dto.columnMapping.reverseSign,
       hasHeader: dto.columnMapping.hasHeader,
       delimiter: dto.columnMapping.delimiter,
+      amountTypeColumn: dto.columnMapping.amountTypeColumn,
+      incomeValues: dto.columnMapping.incomeValues,
+      expenseValues: dto.columnMapping.expenseValues,
+      transferOutValues: dto.columnMapping.transferOutValues,
+      transferInValues: dto.columnMapping.transferInValues,
+      transferAccountColumn: dto.columnMapping.transferAccountColumn,
     };
 
     const transferRules: CsvTransferRule[] | undefined = dto.transferRules?.map(
