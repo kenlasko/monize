@@ -191,7 +191,7 @@ export function BulkUpdateModal({
   const showSplitNote = enabled.category;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} maxWidth="lg" className="p-6">
+    <Modal isOpen={isOpen} onClose={onClose} maxWidth="lg" className="p-6" allowOverflow>
       <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-1">
         Bulk Update Transactions
       </h2>
