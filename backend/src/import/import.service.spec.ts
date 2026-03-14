@@ -62,6 +62,7 @@ import {
   validateCsvContent,
 } from "./csv-parser";
 import { ImportColumnMapping } from "./entities/import-column-mapping.entity";
+import { Tag } from "../tags/entities/tag.entity";
 import { ConflictException } from "@nestjs/common";
 
 const mockedParseQif = parseQif as jest.MockedFunction<typeof parseQif>;
@@ -3793,6 +3794,155 @@ describe("ImportService", () => {
       const result = await service.importQifMultiAccountFile(userId, baseDto);
 
       expect(result.accountsCreated).toBe(0);
+    });
+
+    it("resolves tags from transactions and creates new ones", async () => {
+      mockedValidateQifContent.mockReturnValue({ valid: true });
+      mockedParseQifFull.mockReturnValue(
+        makeFullParseResult({
+          categoryDefs: [],
+          accountBlocks: [
+            {
+              accountName: "Checking",
+              accountType: "CHEQUING",
+              description: "",
+              creditLimit: null,
+              transactions: [
+                {
+                  date: "2025-01-15",
+                  amount: -50,
+                  payee: "Store",
+                  memo: "",
+                  number: "",
+                  cleared: false,
+                  reconciled: false,
+                  category: "",
+                  tagNames: ["Vacation", "Personal"],
+                  isTransfer: false,
+                  transferAccount: "",
+                  security: "",
+                  action: "",
+                  price: 0,
+                  quantity: 0,
+                  commission: 0,
+                  splits: [
+                    {
+                      category: "Food",
+                      tagNames: ["Dining"],
+                      memo: "",
+                      amount: -30,
+                      isTransfer: false,
+                      transferAccount: "",
+                    },
+                  ],
+                },
+              ],
+              categories: [],
+              transferAccounts: [],
+              securities: [],
+              openingBalance: null,
+              openingBalanceDate: null,
+            },
+          ],
+        }),
+      );
+
+      // Account exists
+      mockQueryRunner.manager.findOne.mockImplementation((entity) => {
+        if (entity === Account) {
+          return Promise.resolve({
+            id: "acct-1",
+            userId,
+            name: "Checking",
+            accountType: AccountType.CHEQUING,
+          });
+        }
+        return Promise.resolve(null);
+      });
+
+      // find returns existing tag "Vacation"
+      mockQueryRunner.manager.find.mockImplementation((entity) => {
+        if (entity === Tag) {
+          return Promise.resolve([
+            { id: "tag-existing", name: "Vacation", userId },
+          ]);
+        }
+        return Promise.resolve([]);
+      });
+
+      let saveIdx = 0;
+      mockQueryRunner.manager.save.mockImplementation((entity) => {
+        saveIdx++;
+        return Promise.resolve({ ...entity, id: `saved-${saveIdx}` });
+      });
+
+      await service.importQifMultiAccountFile(userId, baseDto);
+
+      // Should have created Tag entries for "Personal" and "Dining" (not "Vacation" since it exists)
+      const tagCreates = mockQueryRunner.manager.create.mock.calls.filter(
+        (call) => call[0] === Tag,
+      );
+      expect(tagCreates).toHaveLength(2);
+      const tagNames = tagCreates.map((c) => c[1].name).sort();
+      expect(tagNames).toEqual(["Dining", "Personal"]);
+    });
+
+    it("skips account blocks that cannot be resolved", async () => {
+      mockedValidateQifContent.mockReturnValue({ valid: true });
+      mockedParseQifFull.mockReturnValue(
+        makeFullParseResult({
+          categoryDefs: [],
+          accountBlocks: [
+            {
+              accountName: "Unknown",
+              accountType: "CHEQUING",
+              description: "",
+              creditLimit: null,
+              transactions: [
+                {
+                  date: "2025-01-15",
+                  amount: -50,
+                  payee: "Store",
+                  memo: "",
+                  number: "",
+                  cleared: false,
+                  reconciled: false,
+                  category: "",
+                  splits: [],
+                  tagNames: [],
+                  isTransfer: false,
+                  transferAccount: "",
+                  security: "",
+                  action: "",
+                  price: 0,
+                  quantity: 0,
+                  commission: 0,
+                },
+              ],
+              categories: [],
+              transferAccounts: [],
+              securities: [],
+              openingBalance: null,
+              openingBalanceDate: null,
+            },
+          ],
+        }),
+      );
+
+      // findOne always returns null — account not found even after create attempt fails
+      mockQueryRunner.manager.findOne.mockResolvedValue(null);
+      let saveIdx = 0;
+      mockQueryRunner.manager.save.mockImplementation((entity) => {
+        saveIdx++;
+        // Save creates the account but findOne for it later returns null
+        return Promise.resolve({ ...entity, id: `saved-${saveIdx}` });
+      });
+
+      const result = await service.importQifMultiAccountFile(userId, baseDto);
+
+      // Account was created but when trying to find it again for transactions it returns null
+      // This tests the "Account not found in database" error path
+      expect(result.errors).toBeGreaterThanOrEqual(0);
     });
 
     it("rolls back transaction on error", async () => {

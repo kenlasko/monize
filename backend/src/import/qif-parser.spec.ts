@@ -1795,4 +1795,72 @@ T-50.00
       expect(result.accountBlocks).toHaveLength(1);
     });
   });
+
+  describe("transaction field parsing", () => {
+    it("parses memo, cleared, and reconciled fields", () => {
+      const qif = `!Account\nNChecking\nTBank\n^\n!Type:Bank\nD01/15/2026\nT-50.00\nPGrocery\nMWeekly groceries\nC*\n^\nD01/16/2026\nT-25.00\nPPharmacy\nCX\n^\n`;
+      const result = parseQifFull(qif, "MM/DD/YYYY");
+      const txs = result.accountBlocks[0].transactions;
+      expect(txs).toHaveLength(2);
+      expect(txs[0].memo).toBe("Weekly groceries");
+      expect(txs[0].cleared).toBe(true);
+      expect(txs[0].reconciled).toBe(false);
+      expect(txs[1].cleared).toBe(false);
+      expect(txs[1].reconciled).toBe(true);
+    });
+
+    it("parses investment fields (Y, I, Q, O)", () => {
+      const qif = `!Account\nNBrokerage\nTInvst\n^\n!Type:Invst\nD01/15/2026\nNBuy\nYAAPL\nI150.50\nQ10\nO9.99\nT-1514.99\n^\n`;
+      const result = parseQifFull(qif, "MM/DD/YYYY");
+      const block = result.accountBlocks[0];
+      expect(block.securities).toContain("AAPL");
+      const tx = block.transactions[0];
+      expect(tx.security).toBe("AAPL");
+      expect(tx.price).toBe(150.5);
+      expect(tx.quantity).toBe(10);
+      expect(tx.commission).toBe(9.99);
+      expect(tx.action).toBe("Buy");
+    });
+
+    it("parses split memo (E) and split transfer accounts", () => {
+      const qif = `!Account\nNChecking\nTBank\n^\n!Type:Bank\nD01/15/2026\nT-100.00\nPVarious\nSFood\nEGroceries\n$-60.00\nS[Savings]\nESavings transfer\n$-40.00\n^\n`;
+      const result = parseQifFull(qif, "MM/DD/YYYY");
+      const tx = result.accountBlocks[0].transactions[0];
+      expect(tx.splits).toHaveLength(2);
+      expect(tx.splits[0].memo).toBe("Groceries");
+      expect(tx.splits[0].category).toBe("Food");
+      expect(tx.splits[1].memo).toBe("Savings transfer");
+      expect(tx.splits[1].isTransfer).toBe(true);
+      expect(tx.splits[1].transferAccount).toBe("Savings");
+      expect(result.accountBlocks[0].transferAccounts).toContain("Savings");
+    });
+
+    it("finalizes last transaction without record separator when block ends", () => {
+      // Transaction without trailing ^ before next !Account
+      const qif = `!Account\nNChecking\nTBank\n^\n!Type:Bank\nD01/15/2026\nT-50.00\nPStore\n!Account\nNSavings\nTBank\n^\n!Type:Bank\nD02/01/2026\nT100.00\nPDeposit\n^\n`;
+      const result = parseQifFull(qif, "MM/DD/YYYY");
+      expect(result.accountBlocks).toHaveLength(2);
+      // First block should have the transaction finalized even without ^
+      expect(result.accountBlocks[0].transactions).toHaveLength(1);
+      expect(result.accountBlocks[0].transactions[0].payee).toBe("Store");
+    });
+
+    it("detects opening balance via transfer payee in finalizeBlock", () => {
+      // Opening balance as last transaction (finalized via finalizeBlock, not ^)
+      const qif = `!Account\nNChecking\nTBank\n^\n!Type:Bank\nD01/01/2026\nT1000.00\nPOpening Balance\nL[Checking]\n`;
+      const result = parseQifFull(qif, "MM/DD/YYYY");
+      const block = result.accountBlocks[0];
+      expect(block.openingBalance).toBe(1000);
+      expect(block.transactions).toHaveLength(0);
+    });
+
+    it("flushes pending category def when section transitions", () => {
+      // Last category in !Type:Cat doesn't have ^ before !Account
+      const qif = `!Type:Cat\nNFood\nDFood expenses\nE\n^\nNUtilities\nDUtility bills\nE\n!Account\nNChecking\nTBank\n^\n!Type:Bank\nD01/15/2026\nT-50.00\n^\n`;
+      const result = parseQifFull(qif, "MM/DD/YYYY");
+      expect(result.categoryDefs).toHaveLength(2);
+      expect(result.categoryDefs[0].name).toBe("Food");
+      expect(result.categoryDefs[1].name).toBe("Utilities");
+    });
+  });
 });

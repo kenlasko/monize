@@ -11,6 +11,8 @@ describe("ImportController", () => {
     mockImportService = {
       parseQifFile: jest.fn(),
       importQifFile: jest.fn(),
+      parseQifMultiAccountFile: jest.fn(),
+      importQifMultiAccountFile: jest.fn(),
       parseOfxFile: jest.fn(),
       importOfxFile: jest.fn(),
       parseCsvHeaders: jest.fn(),
@@ -237,6 +239,41 @@ describe("ImportController", () => {
       expect(mockImportService.deleteColumnMapping).toHaveBeenCalledWith(
         "user-1",
         "mapping-1",
+      );
+    });
+  });
+
+  describe("parseQifMultiAccount()", () => {
+    it("delegates to importService.parseQifMultiAccountFile with userId and content", async () => {
+      const dto = { content: "!Type:Cat\nNFood\nE\n^" } as any;
+      mockImportService.parseQifMultiAccountFile!.mockResolvedValue("parsed");
+
+      const result = await controller.parseQifMultiAccount(mockReq, dto);
+
+      expect(result).toBe("parsed");
+      expect(mockImportService.parseQifMultiAccountFile).toHaveBeenCalledWith(
+        "user-1",
+        dto.content,
+      );
+    });
+  });
+
+  describe("importQifMultiAccount()", () => {
+    it("delegates to importService.importQifMultiAccountFile with userId and dto", async () => {
+      const dto = {
+        content: "!Type:Cat\nNFood\nE\n^",
+        currencyCode: "CAD",
+      } as any;
+      mockImportService.importQifMultiAccountFile!.mockResolvedValue(
+        "imported",
+      );
+
+      const result = await controller.importQifMultiAccount(mockReq, dto);
+
+      expect(result).toBe("imported");
+      expect(mockImportService.importQifMultiAccountFile).toHaveBeenCalledWith(
+        "user-1",
+        dto,
       );
     });
   });
