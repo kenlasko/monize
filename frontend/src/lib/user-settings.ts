@@ -46,7 +46,7 @@ export const userSettingsApi = {
   },
 
   deleteAccount: async (data: { password?: string; oidcIdToken?: string }): Promise<void> => {
-    await apiClient.post('/users/delete-account', data);
+    await apiClient.post('/users/delete-account', data, { timeout: 120000 });
   },
 
   getSmtpStatus: async (): Promise<{ configured: boolean }> => {
@@ -60,7 +60,9 @@ export const userSettingsApi = {
   },
 
   deleteData: async (options: DeleteDataOptions): Promise<DeleteDataResult> => {
-    const response = await apiClient.post<DeleteDataResult>('/users/delete-data', options);
+    const response = await apiClient.post<DeleteDataResult>('/users/delete-data', options, {
+      timeout: 120000,
+    });
     return response.data;
   },
 };

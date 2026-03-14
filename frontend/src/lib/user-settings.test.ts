@@ -46,7 +46,7 @@ describe('userSettingsApi', () => {
   it('deleteAccount posts to /users/delete-account with credentials', async () => {
     vi.mocked(apiClient.post).mockResolvedValue({});
     await userSettingsApi.deleteAccount({ password: 'mypass' });
-    expect(apiClient.post).toHaveBeenCalledWith('/users/delete-account', { password: 'mypass' });
+    expect(apiClient.post).toHaveBeenCalledWith('/users/delete-account', { password: 'mypass' }, { timeout: 120000 });
   });
 
   it('deleteData posts to /users/delete-data with options', async () => {
@@ -64,7 +64,7 @@ describe('userSettingsApi', () => {
       deleteCategories: false,
       deletePayees: false,
       deleteExchangeRates: false,
-    });
+    }, { timeout: 120000 });
     expect(result.deleted.transactions).toBe(50);
   });
 

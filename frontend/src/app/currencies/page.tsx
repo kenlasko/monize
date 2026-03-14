@@ -104,7 +104,10 @@ function CurrenciesContent() {
         await exchangeRatesApi.activateCurrency(currency.code);
         toast.success('Currency activated');
       }
-      loadData();
+      // Update inline without full reload to preserve scroll position
+      setAllCurrencies(prev =>
+        prev.map(c => c.code === currency.code ? { ...c, isActive: !currency.isActive } : c)
+      );
     } catch (error) {
       toast.error(getErrorMessage(error, 'Failed to update currency status'));
     }
