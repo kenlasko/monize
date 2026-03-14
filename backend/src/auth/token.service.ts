@@ -125,9 +125,7 @@ export class TokenService {
       existingToken.replacedByHash = newTokenHash;
       await manager.save(existingToken);
 
-      const rotatedExpiryMs = this.getRefreshExpiryMs(
-        existingToken.rememberMe,
-      );
+      const rotatedExpiryMs = this.getRefreshExpiryMs(existingToken.rememberMe);
       const newRefreshTokenEntity = manager.create(RefreshToken, {
         userId: user.id,
         tokenHash: newTokenHash,

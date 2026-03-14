@@ -4,18 +4,21 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { FormActions } from '@/components/ui/FormActions';
 import { Combobox } from '@/components/ui/Combobox';
+import { MultiSelect } from '@/components/ui/MultiSelect';
 import { Select } from '@/components/ui/Select';
 import { TransactionStatus, BulkUpdateData, BulkUpdateResult } from '@/types/transaction';
 import { Category } from '@/types/category';
 import { Payee } from '@/types/payee';
+import { Tag } from '@/types/tag';
 import { categoriesApi } from '@/lib/categories';
 import { payeesApi } from '@/lib/payees';
+import { tagsApi } from '@/lib/tags';
 import { buildCategoryTree } from '@/lib/categoryUtils';
 
 interface BulkUpdateModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: Partial<Pick<BulkUpdateData, 'payeeId' | 'payeeName' | 'categoryId' | 'description' | 'status'>>) => Promise<BulkUpdateResult>;
+  onSubmit: (data: Partial<Pick<BulkUpdateData, 'payeeId' | 'payeeName' | 'categoryId' | 'description' | 'status' | 'tagIds'>>) => Promise<BulkUpdateResult>;
   selectionCount: number;
 }
 
@@ -24,6 +27,7 @@ interface FieldToggle {
   category: boolean;
   description: boolean;
   status: boolean;
+  tags: boolean;
 }
 
 export function BulkUpdateModal({
@@ -34,6 +38,7 @@ export function BulkUpdateModal({
 }: BulkUpdateModalProps) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [payees, setPayees] = useState<Payee[]>([]);
+  const [tags, setTags] = useState<Tag[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Field toggles
@@ -42,6 +47,7 @@ export function BulkUpdateModal({
     category: false,
     description: false,
     status: false,
+    tags: false,
   });
 
   // Field values
@@ -50,6 +56,7 @@ export function BulkUpdateModal({
   const [selectedCategoryId, setSelectedCategoryId] = useState('');
   const [description, setDescription] = useState('');
   const [status, setStatus] = useState<TransactionStatus>(TransactionStatus.UNRECONCILED);
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
 
   // Load data when modal opens
   useEffect(() => {
@@ -57,9 +64,11 @@ export function BulkUpdateModal({
       Promise.all([
         categoriesApi.getAll(),
         payeesApi.getAll('active'),
-      ]).then(([categoriesData, payeesData]) => {
+        tagsApi.getAll(),
+      ]).then(([categoriesData, payeesData, tagsData]) => {
         setCategories(categoriesData);
         setPayees(payeesData);
+        setTags(tagsData);
       });
     }
   }, [isOpen]);
@@ -67,12 +76,13 @@ export function BulkUpdateModal({
   // Reset form when modal closes
   useEffect(() => {
     if (!isOpen) {
-      setEnabled({ payee: false, category: false, description: false, status: false });
+      setEnabled({ payee: false, category: false, description: false, status: false, tags: false });
       setSelectedPayeeId('');
       setPayeeName('');
       setSelectedCategoryId('');
       setDescription('');
       setStatus(TransactionStatus.UNRECONCILED);
+      setSelectedTagIds([]);
     }
   }, [isOpen]);
 
@@ -101,6 +111,14 @@ export function BulkUpdateModal({
     { value: TransactionStatus.VOID, label: 'Void' },
   ];
 
+  const tagOptions = useMemo(() =>
+    [...tags]
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map(tag => ({
+        value: tag.id,
+        label: tag.name,
+      })), [tags]);
+
   const toggleField = useCallback((field: keyof FieldToggle) => {
     setEnabled(prev => ({ ...prev, [field]: !prev[field] }));
   }, []);
@@ -125,7 +143,7 @@ export function BulkUpdateModal({
     e.preventDefault();
     if (!hasAnyEnabled) return;
 
-    const updateData: Partial<Pick<BulkUpdateData, 'payeeId' | 'payeeName' | 'categoryId' | 'description' | 'status'>> = {};
+    const updateData: Partial<Pick<BulkUpdateData, 'payeeId' | 'payeeName' | 'categoryId' | 'description' | 'status' | 'tagIds'>> = {};
 
     if (enabled.payee) {
       if (selectedPayeeId) {
@@ -154,6 +172,10 @@ export function BulkUpdateModal({
 
     if (enabled.status) {
       updateData.status = status;
+    }
+
+    if (enabled.tags) {
+      updateData.tagIds = selectedTagIds;
     }
 
     setIsSubmitting(true);
@@ -236,6 +258,20 @@ export function BulkUpdateModal({
               onChange={e => setStatus(e.target.value as TransactionStatus)}
             />
           </TogglableField>
+
+          {/* Tags field */}
+          <TogglableField
+            label="Tags"
+            enabled={enabled.tags}
+            onToggle={() => toggleField('tags')}
+          >
+            <MultiSelect
+              options={tagOptions}
+              value={selectedTagIds}
+              onChange={setSelectedTagIds}
+              placeholder="Select tags (leave empty to clear all)..."
+            />
+          </TogglableField>
         </div>
 
         {/* Info notes */}
@@ -258,7 +294,7 @@ export function BulkUpdateModal({
           onCancel={onClose}
           submitLabel={`Update ${selectionCount} Transaction${selectionCount !== 1 ? 's' : ''}`}
           isSubmitting={isSubmitting}
-          className={!hasAnyEnabled ? 'opacity-50 pointer-events-none' : ''}
+          submitDisabled={!hasAnyEnabled}
         />
       </form>
     </Modal>

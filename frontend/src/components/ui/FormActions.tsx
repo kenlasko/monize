@@ -5,6 +5,7 @@ interface FormActionsProps {
   onCancel?: () => void;
   submitLabel?: string;
   isSubmitting?: boolean;
+  submitDisabled?: boolean;
   className?: string;
 }
 
@@ -15,6 +16,7 @@ export function FormActions({
   onCancel,
   submitLabel = 'Save',
   isSubmitting = false,
+  submitDisabled = false,
   className,
 }: FormActionsProps) {
   return (
@@ -29,7 +31,7 @@ export function FormActions({
           Cancel
         </Button>
       )}
-      <Button type="submit" isLoading={isSubmitting}>
+      <Button type="submit" isLoading={isSubmitting} disabled={submitDisabled || isSubmitting}>
         {submitLabel}
       </Button>
     </div>

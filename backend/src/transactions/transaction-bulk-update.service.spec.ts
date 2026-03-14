@@ -7,6 +7,7 @@ import { Category } from "../categories/entities/category.entity";
 import { Payee } from "../payees/entities/payee.entity";
 import { AccountsService } from "../accounts/accounts.service";
 import { NetWorthService } from "../net-worth/net-worth.service";
+import { TagsService } from "../tags/tags.service";
 import { BulkUpdateDto, BulkDeleteDto } from "./dto/bulk-update.dto";
 import { DataSource } from "typeorm";
 
@@ -21,6 +22,7 @@ describe("TransactionBulkUpdateService", () => {
   let payeesRepository: Record<string, jest.Mock>;
   let accountsService: Record<string, jest.Mock>;
   let netWorthService: Record<string, jest.Mock>;
+  let tagsService: Record<string, jest.Mock>;
   let mockQueryRunner: Record<string, any>;
   let mockManagerCreateQueryBuilder: jest.Mock;
   let mockManagerGetRepository: jest.Mock;
@@ -101,6 +103,10 @@ describe("TransactionBulkUpdateService", () => {
       triggerDebouncedRecalc: jest.fn(),
     };
 
+    tagsService = {
+      setTransactionTags: jest.fn().mockResolvedValue(undefined),
+    };
+
     // Mock QueryRunner with manager that has createQueryBuilder and getRepository
     mockManagerCreateQueryBuilder = jest.fn();
     mockManagerGetRepository = jest.fn().mockReturnValue({
@@ -144,6 +150,7 @@ describe("TransactionBulkUpdateService", () => {
         },
         { provide: AccountsService, useValue: accountsService },
         { provide: NetWorthService, useValue: netWorthService },
+        { provide: TagsService, useValue: tagsService },
         { provide: DataSource, useValue: mockDataSource },
       ],
     }).compile();
@@ -723,6 +730,74 @@ describe("TransactionBulkUpdateService", () => {
       expect(setArg).toEqual({ categoryId: null, description: null });
     });
 
+    it("updates tags on eligible transactions when tagIds is provided", async () => {
+      const tx1 = makeTransaction({ id: "tx-1" });
+      const tx2 = makeTransaction({ id: "tx-2" });
+
+      const resolveQb = createMockQueryBuilder({
+        getMany: jest.fn().mockResolvedValue([{ id: "tx-1" }, { id: "tx-2" }]),
+      });
+      const exclusionsQb = createMockQueryBuilder({
+        getMany: jest.fn().mockResolvedValue([tx1, tx2]),
+      });
+
+      transactionsRepository.createQueryBuilder
+        .mockReturnValueOnce(resolveQb)
+        .mockReturnValueOnce(exclusionsQb);
+
+      const dto: BulkUpdateDto = {
+        mode: "ids",
+        transactionIds: ["tx-1", "tx-2"],
+        tagIds: ["tag-a", "tag-b"],
+      };
+
+      await service.bulkUpdate(userId, dto);
+
+      expect(tagsService.setTransactionTags).toHaveBeenCalledTimes(2);
+      expect(tagsService.setTransactionTags).toHaveBeenCalledWith(
+        "tx-1",
+        ["tag-a", "tag-b"],
+        userId,
+        mockQueryRunner,
+      );
+      expect(tagsService.setTransactionTags).toHaveBeenCalledWith(
+        "tx-2",
+        ["tag-a", "tag-b"],
+        userId,
+        mockQueryRunner,
+      );
+    });
+
+    it("clears tags when tagIds is empty array", async () => {
+      const tx = makeTransaction({ id: "tx-1" });
+
+      const resolveQb = createMockQueryBuilder({
+        getMany: jest.fn().mockResolvedValue([{ id: "tx-1" }]),
+      });
+      const exclusionsQb = createMockQueryBuilder({
+        getMany: jest.fn().mockResolvedValue([tx]),
+      });
+
+      transactionsRepository.createQueryBuilder
+        .mockReturnValueOnce(resolveQb)
+        .mockReturnValueOnce(exclusionsQb);
+
+      const dto: BulkUpdateDto = {
+        mode: "ids",
+        transactionIds: ["tx-1"],
+        tagIds: [],
+      };
+
+      await service.bulkUpdate(userId, dto);
+
+      expect(tagsService.setTransactionTags).toHaveBeenCalledWith(
+        "tx-1",
+        [],
+        userId,
+        mockQueryRunner,
+      );
+    });
+
     it("applies filters in filter mode", async () => {
       const tx = makeTransaction({ id: "tx-1" });
 
@@ -1087,9 +1162,6 @@ describe("TransactionBulkUpdateService", () => {
         id: "tx-1-linked",
         accountId: "acc-2",
         amount: -100,
-      });
-      const linkedDetailsQb = createMockQueryBuilder({
-        getMany: jest.fn().mockResolvedValue([linkedTx]),
       });
       mockManagerCreateQueryBuilder.mockImplementation(() =>
         createMockQueryBuilder({

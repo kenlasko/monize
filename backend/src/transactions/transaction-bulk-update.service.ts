@@ -13,6 +13,7 @@ import { Category } from "../categories/entities/category.entity";
 import { Payee } from "../payees/entities/payee.entity";
 import { AccountsService } from "../accounts/accounts.service";
 import { NetWorthService } from "../net-worth/net-worth.service";
+import { TagsService } from "../tags/tags.service";
 import {
   BulkUpdateDto,
   BulkDeleteDto,
@@ -46,6 +47,7 @@ export class TransactionBulkUpdateService {
     private accountsService: AccountsService,
     @Inject(forwardRef(() => NetWorthService))
     private netWorthService: NetWorthService,
+    private tagsService: TagsService,
     private dataSource: DataSource,
   ) {}
 
@@ -54,7 +56,8 @@ export class TransactionBulkUpdateService {
     dto: BulkUpdateDto,
   ): Promise<BulkUpdateResult> {
     const updateFields = this.extractUpdateFields(dto);
-    if (Object.keys(updateFields).length === 0) {
+    const isUpdatingTags = "tagIds" in dto;
+    if (Object.keys(updateFields).length === 0 && !isUpdatingTags) {
       throw new BadRequestException(
         "At least one update field must be provided",
       );
@@ -116,22 +119,36 @@ export class TransactionBulkUpdateService {
         );
       }
 
-      // Step 4: Execute batch update
-      await queryRunner.manager
-        .createQueryBuilder()
-        .update(Transaction)
-        .set(updateFields)
-        .where("id IN (:...ids)", { ids: eligibleIds })
-        .andWhere("userId = :userId", { userId })
-        .execute();
+      // Step 4: Execute batch update for column fields
+      if (Object.keys(updateFields).length > 0) {
+        await queryRunner.manager
+          .createQueryBuilder()
+          .update(Transaction)
+          .set(updateFields)
+          .where("id IN (:...ids)", { ids: eligibleIds })
+          .andWhere("userId = :userId", { userId })
+          .execute();
 
-      // Step 4b: Sync payee/description to linked transfer transactions
-      await this.syncLinkedTransfers(
-        userId,
-        eligibleIds,
-        updateFields,
-        queryRunner,
-      );
+        // Step 4b: Sync payee/description to linked transfer transactions
+        await this.syncLinkedTransfers(
+          userId,
+          eligibleIds,
+          updateFields,
+          queryRunner,
+        );
+      }
+
+      // Step 4c: Update tags (many-to-many relation, must be done per-transaction)
+      if (isUpdatingTags) {
+        for (const txId of eligibleIds) {
+          await this.tagsService.setTransactionTags(
+            txId,
+            dto.tagIds ?? [],
+            userId,
+            queryRunner,
+          );
+        }
+      }
 
       await queryRunner.commitTransaction();
     } catch (error) {

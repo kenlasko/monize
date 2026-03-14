@@ -108,6 +108,15 @@ export class BulkUpdateDto {
   @IsOptional()
   @IsEnum(TransactionStatus)
   status?: TransactionStatus;
+
+  @ApiPropertyOptional({
+    description: "Set tag IDs (empty array to clear all tags)",
+    type: [String],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsUUID("4", { each: true })
+  tagIds?: string[];
 }
 
 export class BulkDeleteDto {

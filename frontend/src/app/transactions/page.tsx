@@ -386,7 +386,7 @@ function TransactionsContent() {
     bulkUpdateFilters,
   );
 
-  const handleBulkUpdate = useCallback(async (updateFields: Partial<Pick<BulkUpdateData, 'payeeId' | 'payeeName' | 'categoryId' | 'description' | 'status'>>) => {
+  const handleBulkUpdate = useCallback(async (updateFields: Partial<Pick<BulkUpdateData, 'payeeId' | 'payeeName' | 'categoryId' | 'description' | 'status' | 'tagIds'>>) => {
     const payload = selection.buildSelectionPayload();
     const result = await transactionsApi.bulkUpdate({ ...payload, ...updateFields } as BulkUpdateData);
 
