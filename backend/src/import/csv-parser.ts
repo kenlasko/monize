@@ -697,6 +697,7 @@ export function parseCsv(
       price: 0,
       quantity: 0,
       commission: 0,
+      tagNames: [],
     };
 
     transactions.push(transaction);

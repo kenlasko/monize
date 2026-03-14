@@ -43,6 +43,7 @@ import { ImportContext } from "./import-context";
 import { ImportEntityCreatorService } from "./import-entity-creator.service";
 import { ImportInvestmentProcessorService } from "./import-investment-processor.service";
 import { ImportRegularProcessorService } from "./import-regular-processor.service";
+import { Tag } from "../tags/entities/tag.entity";
 
 @Injectable()
 export class ImportService {
@@ -470,6 +471,7 @@ export class ImportService {
       accountMap,
       loanCategoryMap,
       securityMap,
+      tagMap: new Map<string, string>(),
       importStartTime,
       dateCounters: new Map<string, number>(),
       affectedAccountIds,
@@ -509,6 +511,9 @@ export class ImportService {
         account,
         importResult,
       );
+
+      // Create or resolve tags from QIF data
+      await this.resolveImportTags(queryRunner, userId, result, ctx.tagMap);
 
       // Apply opening balance
       if (result.openingBalance !== null) {
@@ -758,6 +763,60 @@ export class ImportService {
             `Post-import net worth recalc failed for account ${accountId}: ${err.message}`,
           ),
         );
+    }
+  }
+
+  /**
+   * Collect all unique tag names from parsed transactions (and splits),
+   * then find or create each tag. Populates tagMap with lowercase name -> tag ID.
+   */
+  private async resolveImportTags(
+    queryRunner: any,
+    userId: string,
+    result: QifParseResult,
+    tagMap: Map<string, string>,
+  ): Promise<void> {
+    // Collect all unique tag names
+    const tagNamesSet = new Set<string>();
+    for (const tx of result.transactions) {
+      for (const name of tx.tagNames ?? []) {
+        tagNamesSet.add(name);
+      }
+      for (const split of tx.splits) {
+        for (const name of split.tagNames ?? []) {
+          tagNamesSet.add(name);
+        }
+      }
+    }
+
+    if (tagNamesSet.size === 0) return;
+
+    // Load existing tags for this user
+    const existingTags = await queryRunner.manager.find(Tag, {
+      where: { userId },
+    });
+
+    // Build case-insensitive lookup
+    const existingByName = new Map<string, Tag>();
+    for (const tag of existingTags) {
+      existingByName.set(tag.name.toLowerCase(), tag);
+    }
+
+    // Find or create each tag
+    for (const name of tagNamesSet) {
+      const key = name.toLowerCase();
+      const existing = existingByName.get(key);
+      if (existing) {
+        tagMap.set(key, existing.id);
+      } else {
+        const newTag = queryRunner.manager.create(Tag, {
+          userId,
+          name,
+        });
+        const saved = await queryRunner.manager.save(newTag);
+        tagMap.set(key, saved.id);
+        existingByName.set(key, saved);
+      }
     }
   }
 

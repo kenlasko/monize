@@ -63,6 +63,7 @@ describe("ImportInvestmentProcessorService", () => {
       accountMap: new Map(),
       loanCategoryMap: new Map(),
       securityMap: new Map(),
+      tagMap: new Map(),
       importStartTime: new Date(),
       dateCounters: new Map(),
       affectedAccountIds: new Set(),

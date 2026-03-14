@@ -226,6 +226,7 @@ export function parseOfx(content: string): QifParseResult {
       price: 0,
       quantity: 0,
       commission: 0,
+      tagNames: [],
     };
 
     transactions.push(tx);

@@ -999,7 +999,8 @@ PStore
 L<b>Food</b>
 ^`;
       const result = parseQif(qif);
-      expect(result.transactions[0].category).toBe("bFood/b");
+      expect(result.transactions[0].category).toBe("bFood");
+      expect(result.transactions[0].tagNames).toEqual(["b"]);
     });
 
     it("strips HTML angle brackets from split memo", () => {
@@ -1299,6 +1300,112 @@ $-8.98
       expect(tx.splits[0].amount).toBe(2100.0);
       expect(tx.splits[1].category).toBe("Taxes:Sandi:Income Tax");
       expect(tx.splits[1].amount).toBe(-318.05);
+    });
+  });
+
+  describe("parseQif - Quicken tags", () => {
+    it("extracts a single tag from category field", () => {
+      const qif = `!Type:Bank
+D01/15/2026
+T-50.00
+LFood:Groceries/Weekly
+^`;
+      const result = parseQif(qif);
+      const tx = result.transactions[0];
+      expect(tx.category).toBe("Food:Groceries");
+      expect(tx.tagNames).toEqual(["Weekly"]);
+    });
+
+    it("extracts multiple tags from category field", () => {
+      const qif = `!Type:Bank
+D01/15/2026
+T-50.00
+LFood:Groceries/Weekly/Essential
+^`;
+      const result = parseQif(qif);
+      const tx = result.transactions[0];
+      expect(tx.category).toBe("Food:Groceries");
+      expect(tx.tagNames).toEqual(["Weekly", "Essential"]);
+    });
+
+    it("extracts tags from top-level category (no subcategory)", () => {
+      const qif = `!Type:Bank
+D01/15/2026
+T-50.00
+LGroceries/Weekly
+^`;
+      const result = parseQif(qif);
+      const tx = result.transactions[0];
+      expect(tx.category).toBe("Groceries");
+      expect(tx.tagNames).toEqual(["Weekly"]);
+    });
+
+    it("returns empty tagNames when no tag present", () => {
+      const qif = `!Type:Bank
+D01/15/2026
+T-50.00
+LFood:Groceries
+^`;
+      const result = parseQif(qif);
+      const tx = result.transactions[0];
+      expect(tx.category).toBe("Food:Groceries");
+      expect(tx.tagNames).toEqual([]);
+    });
+
+    it("extracts tags from transfer category", () => {
+      const qif = `!Type:Bank
+D01/15/2026
+T-500.00
+L[Savings Account]/Monthly
+^`;
+      const result = parseQif(qif);
+      const tx = result.transactions[0];
+      expect(tx.isTransfer).toBe(true);
+      expect(tx.transferAccount).toBe("Savings Account");
+      expect(tx.tagNames).toEqual(["Monthly"]);
+    });
+
+    it("extracts tags from split categories", () => {
+      const qif = `!Type:Bank
+D01/15/2026
+T-100.00
+SFood:Groceries/Weekly
+$-60.00
+SHousehold/Monthly
+$-40.00
+^`;
+      const result = parseQif(qif);
+      const tx = result.transactions[0];
+      expect(tx.splits[0].category).toBe("Food:Groceries");
+      expect(tx.splits[0].tagNames).toEqual(["Weekly"]);
+      expect(tx.splits[1].category).toBe("Household");
+      expect(tx.splits[1].tagNames).toEqual(["Monthly"]);
+    });
+
+    it("does not include tag portion in extracted categories list", () => {
+      const qif = `!Type:Bank
+D01/15/2026
+T-50.00
+LFood:Groceries/Weekly
+^
+D01/16/2026
+T-30.00
+LTransport/Monthly
+^`;
+      const result = parseQif(qif);
+      expect(result.categories).toEqual(["Food:Groceries", "Transport"]);
+    });
+
+    it("handles empty tag name (trailing slash)", () => {
+      const qif = `!Type:Bank
+D01/15/2026
+T-50.00
+LFood/
+^`;
+      const result = parseQif(qif);
+      const tx = result.transactions[0];
+      expect(tx.category).toBe("Food");
+      expect(tx.tagNames).toEqual([]);
     });
   });
 });

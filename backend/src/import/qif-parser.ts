@@ -33,6 +33,7 @@ export interface QifTransaction {
   cleared: boolean;
   reconciled: boolean;
   category: string;
+  tagNames?: string[];
   isTransfer: boolean;
   transferAccount: string;
   splits: QifSplit[];
@@ -46,6 +47,7 @@ export interface QifTransaction {
 
 export interface QifSplit {
   category: string;
+  tagNames?: string[];
   memo: string;
   amount: number;
   isTransfer: boolean;
@@ -223,6 +225,7 @@ export function parseQif(
         cleared: false,
         reconciled: false,
         category: "",
+        tagNames: [],
         isTransfer: false,
         transferAccount: "",
         splits: [],
@@ -276,10 +279,11 @@ export function parseQif(
         break;
 
       case "L": {
-        // Category or Transfer
-        const { category, isTransfer, transferAccount } =
+        // Category or Transfer (tags appended after / separator)
+        const { category, tagNames, isTransfer, transferAccount } =
           parseCategoryOrTransfer(value);
         currentTransaction.category = truncate(category, FIELD_LIMITS.CATEGORY);
+        currentTransaction.tagNames = tagNames;
         currentTransaction.isTransfer = isTransfer;
         currentTransaction.transferAccount = truncate(
           transferAccount,
@@ -297,7 +301,7 @@ export function parseQif(
       }
 
       case "S": {
-        // Split category
+        // Split category (tags appended after / separator)
         // Save previous split if exists
         if (currentSplit && currentSplit.category !== undefined) {
           currentSplits.push(currentSplit as QifSplit);
@@ -306,6 +310,7 @@ export function parseQif(
         const splitParsed = parseCategoryOrTransfer(value);
         currentSplit = {
           category: truncate(splitParsed.category, FIELD_LIMITS.CATEGORY),
+          tagNames: splitParsed.tagNames,
           memo: "",
           amount: 0,
           isTransfer: splitParsed.isTransfer,
@@ -563,31 +568,78 @@ function parseQifAmount(amountStr: string): number | null {
 
 function parseCategoryOrTransfer(value: string): {
   category: string;
+  tagNames: string[];
   isTransfer: boolean;
   transferAccount: string;
 } {
   // Quicken uses "--Split--" as a placeholder for split transactions; treat as empty
   if (value.toLowerCase() === "--split--") {
-    return { category: "", isTransfer: false, transferAccount: "" };
+    return {
+      category: "",
+      tagNames: [],
+      isTransfer: false,
+      transferAccount: "",
+    };
   }
 
   // Transfers are denoted by [Account Name]
-  const transferMatch = value.match(/^\[(.+)\]$/);
+  // Tags can also appear on transfers: [Account Name]/TagName
+  const transferMatch = value.match(/^\[(.+)\](.*)$/);
   if (transferMatch) {
+    const tagNames = extractTagNames(transferMatch[2]);
     return {
       category: "",
+      tagNames,
       isTransfer: true,
       transferAccount: transferMatch[1],
     };
   }
 
   // Category might have subcategory separated by :
-  // e.g., "Food:Groceries" or just "Food"
+  // Tags are appended after the category/subcategory separated by /
+  // e.g., "Food:Groceries/TagA/TagB" or "Food/Tag" or just "Food"
+  const { category, tagNames } = extractCategoryAndTags(value);
   return {
-    category: value,
+    category,
+    tagNames,
     isTransfer: false,
     transferAccount: "",
   };
+}
+
+/**
+ * Extract tag names from a string that starts with / separator.
+ * e.g., "/TagA/TagB" -> ["TagA", "TagB"]
+ * e.g., "" -> []
+ */
+function extractTagNames(suffix: string): string[] {
+  if (!suffix) return [];
+  // Split by / and filter empty strings, strip HTML for XSS safety
+  return suffix
+    .split("/")
+    .map((s) => stripHtml(s.trim()))
+    .filter((s) => s.length > 0);
+}
+
+/**
+ * Extract category and tag names from a QIF category field.
+ * Tags are separated from the category by / (forward slash).
+ * e.g., "Food:Groceries/TagA/TagB" -> { category: "Food:Groceries", tagNames: ["TagA", "TagB"] }
+ * e.g., "Food/Tag" -> { category: "Food", tagNames: ["Tag"] }
+ * e.g., "Food:Groceries" -> { category: "Food:Groceries", tagNames: [] }
+ */
+function extractCategoryAndTags(value: string): {
+  category: string;
+  tagNames: string[];
+} {
+  const slashIndex = value.indexOf("/");
+  if (slashIndex === -1) {
+    return { category: value, tagNames: [] };
+  }
+
+  const category = value.substring(0, slashIndex);
+  const tagNames = extractTagNames(value.substring(slashIndex));
+  return { category, tagNames };
 }
 
 export function validateQifContent(content: string): {

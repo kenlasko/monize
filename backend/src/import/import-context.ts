@@ -10,6 +10,8 @@ export interface ImportContext {
   accountMap: Map<string, string | null>;
   loanCategoryMap: Map<string, string>;
   securityMap: Map<string, string | null>;
+  /** Maps tag name (case-insensitive key) to tag ID */
+  tagMap: Map<string, string>;
   importStartTime: Date;
   dateCounters: Map<string, number>;
   affectedAccountIds: Set<string>;
