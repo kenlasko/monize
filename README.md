@@ -46,7 +46,7 @@ My perfect product to replace MS Money needed the following features:
   - Line of Credit
   - Brokerage accounts
   - Asset accounts
-- Must support importing from QIF (the only export option available for MS Money)
+- Must support importing from QIF (the export format used by MS Money and Quicken)
 - Must be self-hostable via containerization
 - Must support multiple currencies
 - Must support pulling currency exchange rates and stock prices on a regular basis
@@ -59,14 +59,6 @@ Monize is running in my [Kubernetes cluster](https://github.com/kenlasko/k8s).
 
 
 ## Features
-Before you look at the list of features, you should know what it DOESN'T include:
-- automated downloading of transactions from any platform
-- importing transactions via anything other than QIF
-
-My reason for this is because I still believe in manually tracking everything. If there is interest from the community, I will add it at some point.
-
-I could easily add import capabilities for other filetypes, but I would need examples.
-
 ### Account Management
 - Multiple account types: Chequing, Savings, Credit Cards, Loans, Mortgages, Line of Credit
 - Investment accounts with brokerage support
@@ -84,7 +76,9 @@ I could easily add import capabilities for other filetypes, but I would need exa
 - Bulk update and bulk delete operations with filter-based selection
 - Payees with auto-categorization rules, aliases with wildcard patterns, and merge capability
 - Multi-currency transactions with automatic exchange rate tracking
-- Import from CSV, OFX/QFX, and QIF (Microsoft Money and Quicken) with smart column auto-matching
+- Import from CSV, OFX/QFX, and QIF (Quicken and Microsoft Money) with smart column auto-matching
+- Quicken full-file import: import all accounts, categories, and tags from a single QIF export
+- Data reset: wipe financial data and re-import without losing your user account or settings
 
 ### Investment Features
 - Track stocks, bonds, ETFs, and mutual funds
