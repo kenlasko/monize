@@ -289,7 +289,7 @@ export function RealizedGainsReport() {
           </p>
         </div>
       ) : viewType === 'chart' ? (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 px-2 py-4 sm:p-6">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
             Realized Gains by Security
           </h3>
@@ -300,7 +300,7 @@ export function RealizedGainsReport() {
           ) : (
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} layout="vertical" margin={{ left: 10, right: 30 }}>
+                <BarChart data={chartData} layout="vertical" margin={{ left: 0, right: 10 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                   <XAxis type="number" tickFormatter={formatCurrencyAxis} />
                   <YAxis type="category" dataKey="symbol" width={60} tick={{ fontSize: 12 }} />

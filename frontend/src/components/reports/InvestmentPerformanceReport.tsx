@@ -251,7 +251,7 @@ export function InvestmentPerformanceReport() {
       {viewType === 'performance' ? (
         <>
           {/* Holdings Performance Chart */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 px-2 py-4 sm:p-6">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
               Holdings by Market Value
             </h3>
@@ -350,7 +350,7 @@ export function InvestmentPerformanceReport() {
         </>
       ) : (
         /* Asset Allocation View */
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 px-2 py-4 sm:p-6">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
             Asset Allocation
           </h3>

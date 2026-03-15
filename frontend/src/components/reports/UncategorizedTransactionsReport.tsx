@@ -9,6 +9,7 @@ import { parseLocalDate } from '@/lib/utils';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useDateRange } from '@/hooks/useDateRange';
 import { DateRangeSelector } from '@/components/ui/DateRangeSelector';
+import { exportToCsv } from '@/lib/csv-export';
 import { createLogger } from '@/lib/logger';
 
 const logger = createLogger('UncategorizedTransactionsReport');
@@ -97,6 +98,18 @@ export function UncategorizedTransactionsReport() {
       setSortField(field);
       setSortOrder('desc');
     }
+  };
+
+  const handleExportCsv = () => {
+    const headers = ['Date', 'Payee', 'Description', 'Account', 'Amount'];
+    const rows = filteredAndSortedTransactions.map((tx) => [
+      format(parseLocalDate(tx.transactionDate), 'yyyy-MM-dd'),
+      tx.payeeName || 'Unknown',
+      tx.description || '',
+      tx.accountName || 'Unknown',
+      tx.amount,
+    ]);
+    exportToCsv('uncategorized-transactions', headers, rows);
   };
 
   const SortIcon = ({ field }: { field: SortField }) => {
@@ -233,13 +246,25 @@ export function UncategorizedTransactionsReport() {
         </div>
       ) : (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              Uncategorized Transactions
-            </h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Click a transaction to view it in the transactions page
-            </p>
+          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                Uncategorized Transactions
+              </h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                Click a transaction to view it in the transactions page
+              </p>
+            </div>
+            <button
+              onClick={handleExportCsv}
+              className="px-3 py-1.5 text-sm font-medium rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-1.5 shrink-0"
+              title="Export to CSV"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              CSV
+            </button>
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">

@@ -7,6 +7,7 @@ import { transactionsApi } from '@/lib/transactions';
 import { Account } from '@/types/account';
 import { Transaction } from '@/types/transaction';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { exportToCsv } from '@/lib/csv-export';
 import { createLogger } from '@/lib/logger';
 
 const logger = createLogger('LoanAmortizationReport');
@@ -305,6 +306,21 @@ export function LoanAmortizationReport() {
     };
   }, [paymentHistory, selectedAccount, historicalCount, hasProjection]);
 
+  const handleExportCsv = () => {
+    const headers = ['#', 'Date', 'Payment', 'Principal', 'Interest', 'Balance', 'Type'];
+    const rows = paymentHistory.map((row) => [
+      row.paymentNumber,
+      format(parseISO(row.date), 'yyyy-MM-dd'),
+      row.payment,
+      row.principal,
+      row.interest,
+      row.balance,
+      row.isProjected ? 'Projected' : 'Actual',
+    ]);
+    const accountName = selectedAccount?.name?.replace(/[^a-zA-Z0-9]/g, '-') || 'loan';
+    exportToCsv(`amortization-${accountName}`, headers, rows);
+  };
+
   const displayedRows = showAllRows
     ? paymentHistory
     : paymentHistory.slice(0, 24);
@@ -439,16 +455,30 @@ export function LoanAmortizationReport() {
 
       {/* Payment History Table */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-            Payment {hasProjection ? 'History & Projection' : 'History'}
-          </h3>
-          {summary && (
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              {historicalCount} payments made
-              {hasProjection && ` + ${paymentHistory.length - historicalCount} projected`}
-              {' '}totaling {formatCurrency(summary.totalPayments)}
-            </p>
+        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              Payment {hasProjection ? 'History & Projection' : 'History'}
+            </h3>
+            {summary && (
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                {historicalCount} payments made
+                {hasProjection && ` + ${paymentHistory.length - historicalCount} projected`}
+                {' '}totaling {formatCurrency(summary.totalPayments)}
+              </p>
+            )}
+          </div>
+          {paymentHistory.length > 0 && (
+            <button
+              onClick={handleExportCsv}
+              className="px-3 py-1.5 text-sm font-medium rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-1.5 shrink-0"
+              title="Export to CSV"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              CSV
+            </button>
           )}
         </div>
 

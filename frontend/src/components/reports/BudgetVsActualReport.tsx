@@ -149,7 +149,7 @@ export function BudgetVsActualReport() {
 
       {/* Chart */}
       {viewMode === 'overview' ? (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 px-2 py-4 sm:p-6">
           {trendData.length === 0 ? (
             <p className="text-gray-500 dark:text-gray-400 text-center py-8">
               No trend data available for this budget yet.

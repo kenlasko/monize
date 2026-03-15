@@ -238,7 +238,7 @@ export function WeekendVsWeekdayReport() {
           </p>
         </div>
       ) : viewType === 'comparison' ? (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 px-2 py-4 sm:p-6">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
             Weekend vs Weekday Split
           </h3>
@@ -297,7 +297,7 @@ export function WeekendVsWeekdayReport() {
           </div>
         </div>
       ) : viewType === 'byDay' ? (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 px-2 py-4 sm:p-6">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
             Spending by Day of Week
           </h3>
@@ -339,16 +339,16 @@ export function WeekendVsWeekdayReport() {
           </div>
         </div>
       ) : (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 px-2 py-4 sm:p-6">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
             Category Comparison
           </h3>
           <div className="h-[480px]">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={categoryComparison} layout="vertical" margin={{ left: 100 }}>
+              <BarChart data={categoryComparison} layout="vertical" margin={{ left: 10 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                 <XAxis type="number" tickFormatter={formatCurrencyAxis} />
-                <YAxis type="category" dataKey="name" tick={{ fontSize: 12 }} width={100} />
+                <YAxis type="category" dataKey="name" tick={{ fontSize: 12 }} width={80} />
                 <Tooltip content={<CustomTooltip />} />
                 <Legend />
                 <Bar dataKey="weekendTotal" fill="#8b5cf6" name="Weekend" />

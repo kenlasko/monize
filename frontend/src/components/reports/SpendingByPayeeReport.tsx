@@ -119,7 +119,7 @@ export function SpendingByPayeeReport() {
       </div>
 
       {/* Chart */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 px-2 py-4 sm:p-6">
         {chartData.length === 0 ? (
           <p className="text-gray-500 dark:text-gray-400 text-center py-8">
             No expense data for this period.
@@ -128,13 +128,13 @@ export function SpendingByPayeeReport() {
           <>
             <div className="h-[500px]">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} layout="vertical" margin={{ left: 120, right: 40 }}>
+                <BarChart data={chartData} layout="vertical" margin={{ left: 10, right: 10 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                   <XAxis
                     type="number"
                     tickFormatter={formatCurrencyAxis}
                   />
-                  <YAxis type="category" dataKey="name" tick={{ fontSize: 12 }} width={120} />
+                  <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={90} />
                   <Tooltip content={<CustomTooltip />} />
                   <Bar
                     dataKey="value"

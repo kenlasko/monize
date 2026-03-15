@@ -18,6 +18,7 @@ import { parseLocalDate } from '@/lib/utils';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useDateRange } from '@/hooks/useDateRange';
 import { DateRangeSelector } from '@/components/ui/DateRangeSelector';
+import { exportToCsv } from '@/lib/csv-export';
 import { createLogger } from '@/lib/logger';
 
 const logger = createLogger('BillPaymentHistoryReport');
@@ -51,6 +52,20 @@ export function BillPaymentHistoryReport() {
 
   const handleBillClick = () => {
     router.push('/bills');
+  };
+
+  const handleExportCsv = () => {
+    if (!billData) return;
+    const headers = ['Bill', 'Payee', 'Payments', 'Average', 'Total Paid', 'Last Payment'];
+    const rows = billData.billPayments.map((bp) => [
+      bp.scheduledTransactionName,
+      bp.payeeName || '',
+      bp.paymentCount,
+      bp.averagePayment,
+      bp.totalPaid,
+      bp.lastPaymentDate ? format(parseLocalDate(bp.lastPaymentDate), 'yyyy-MM-dd') : '',
+    ]);
+    exportToCsv('bill-payment-history', headers, rows);
   };
 
   const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number }>; label?: string }) => {
@@ -179,10 +194,20 @@ export function BillPaymentHistoryReport() {
       ) : (
         /* By Bill Table */
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
               Payment History by Bill
             </h3>
+            <button
+              onClick={handleExportCsv}
+              className="px-3 py-1.5 text-sm font-medium rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-1.5 shrink-0"
+              title="Export to CSV"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              CSV
+            </button>
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">

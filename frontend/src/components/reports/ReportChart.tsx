@@ -19,6 +19,7 @@ import { ReportViewType, AggregatedDataPoint, GroupByType, TableColumn } from '@
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { CHART_COLOURS } from '@/lib/chart-colours';
+import { exportToCsv } from '@/lib/csv-export';
 
 // Default columns if none specified
 const DEFAULT_TABLE_COLUMNS = [TableColumn.LABEL, TableColumn.VALUE, TableColumn.PERCENTAGE, TableColumn.COUNT];
@@ -29,9 +30,10 @@ interface ReportChartProps {
   groupBy: GroupByType;
   onDataPointClick?: (id: string) => void;
   tableColumns?: TableColumn[];
+  exportFilename?: string;
 }
 
-export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableColumns }: ReportChartProps) {
+export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableColumns, exportFilename }: ReportChartProps) {
   const { formatCurrency, formatNumber } = useNumberFormat();
   const { formatDate } = useDateFormat();
   const columns = tableColumns && tableColumns.length > 0 ? tableColumns : DEFAULT_TABLE_COLUMNS;
@@ -107,7 +109,7 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
       return (
         <div className="h-80">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+            <BarChart data={chartData} margin={{ top: 20, right: 10, left: 0, bottom: 60 }}>
               <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
               <XAxis
                 dataKey="label"
@@ -142,7 +144,7 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
       return (
         <div className="h-80">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+            <LineChart data={chartData} margin={{ top: 20, right: 10, left: 0, bottom: 60 }}>
               <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
               <XAxis
                 dataKey="label"
@@ -179,8 +181,41 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
                           groupBy === GroupByType.NONE ? 'Item' : 'Period';
       const totalCount = chartData.reduce((sum, item) => sum + (item.count || 0), 0);
 
+      const handleExportCsv = () => {
+        const columnMap: Record<TableColumn, { header: string; getValue: (item: AggregatedDataPoint) => string | number }> = {
+          [TableColumn.DATE]: { header: 'Date', getValue: (item) => item.date || '' },
+          [TableColumn.LABEL]: { header: labelHeader, getValue: (item) => item.label },
+          [TableColumn.PAYEE]: { header: 'Payee', getValue: (item) => item.payee || '' },
+          [TableColumn.DESCRIPTION]: { header: 'Description', getValue: (item) => item.description || '' },
+          [TableColumn.MEMO]: { header: 'Memo', getValue: (item) => item.memo || '' },
+          [TableColumn.CATEGORY]: { header: 'Category', getValue: (item) => item.category || '' },
+          [TableColumn.ACCOUNT]: { header: 'Account', getValue: (item) => item.account || '' },
+          [TableColumn.VALUE]: { header: 'Amount', getValue: (item) => item.value },
+          [TableColumn.PERCENTAGE]: { header: '%', getValue: (item) => item.percentage ?? (total > 0 ? Number(((item.value / total) * 100).toFixed(1)) : 0) },
+          [TableColumn.COUNT]: { header: 'Count', getValue: (item) => item.count || 0 },
+          [TableColumn.TAG]: { header: 'Tag', getValue: (item) => item.label || '' },
+        };
+        const headers = columns.map((col) => columnMap[col]?.header || col);
+        const rows = chartData.map((item) =>
+          columns.map((col) => columnMap[col]?.getValue(item) ?? '')
+        );
+        exportToCsv(exportFilename || 'report', headers, rows);
+      };
+
       return (
         <div className="overflow-x-auto">
+          <div className="flex justify-end px-4 py-2">
+            <button
+              onClick={handleExportCsv}
+              className="px-3 py-1.5 text-sm font-medium rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-1.5"
+              title="Export to CSV"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              CSV
+            </button>
+          </div>
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
             <thead>
               <tr>

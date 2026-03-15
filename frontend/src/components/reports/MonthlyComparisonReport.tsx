@@ -164,7 +164,7 @@ export function MonthlyComparisonReport() {
       </div>
 
       {/* Income vs Expenses Summary */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 px-2 py-4 sm:p-6">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Income vs Expenses</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Income */}
@@ -212,7 +212,7 @@ export function MonthlyComparisonReport() {
       </div>
 
       {/* Summary Notes */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 px-2 py-4 sm:p-6">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">Summary</h2>
         <div className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
           <p>{notes.savingsNote}</p>
@@ -221,7 +221,7 @@ export function MonthlyComparisonReport() {
       </div>
 
       {/* Monthly Expenses Compared */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 px-2 py-4 sm:p-6">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Monthly Expenses Compared</h2>
         {/* Pie Charts */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
@@ -283,7 +283,7 @@ export function MonthlyComparisonReport() {
       </div>
 
       {/* Top 5 Expense Categories */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 px-2 py-4 sm:p-6">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Top 5 Expense Categories</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <TopCategoriesTable
@@ -302,7 +302,7 @@ export function MonthlyComparisonReport() {
       </div>
 
       {/* Net Worth */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 px-2 py-4 sm:p-6">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Your Net Worth</h2>
         {nw.monthlyHistory.length > 0 ? (
           <>
@@ -311,7 +311,7 @@ export function MonthlyComparisonReport() {
                 <BarChart data={nw.monthlyHistory.map(p => ({
                   name: format(parseMonth(p.month), 'MMM yy'),
                   netWorth: Math.round(p.netWorth),
-                }))} margin={{ top: 10, right: 20, left: 20, bottom: 5 }}>
+                }))} margin={{ top: 10, right: 10, left: 0, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                   <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                   <YAxis tickFormatter={formatCurrencyAxis} tick={{ fontSize: 12 }} />
@@ -340,7 +340,7 @@ export function MonthlyComparisonReport() {
 
       {/* Investment Performance */}
       {(investments.accountPerformance.length > 0 || investments.topMovers.length > 0) && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 px-2 py-4 sm:p-6">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Investment Performance</h2>
 
           {investments.accountPerformance.length > 0 && (
@@ -352,12 +352,12 @@ export function MonthlyComparisonReport() {
                       name: a.accountName,
                       return: Number(a.annualizedReturn.toFixed(2)),
                     }))}
-                    margin={{ top: 10, right: 20, left: 20, bottom: 5 }}
+                    margin={{ top: 10, right: 10, left: 0, bottom: 5 }}
                     layout="vertical"
                   >
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                     <XAxis type="number" tickFormatter={(v: number) => `${v}%`} tick={{ fontSize: 12 }} />
-                    <YAxis type="category" dataKey="name" tick={{ fontSize: 12 }} width={150} />
+                    <YAxis type="category" dataKey="name" tick={{ fontSize: 12 }} width={90} />
                     <Tooltip formatter={(value) => [`${Number(value).toFixed(2)}%`, 'Annualized Return']} />
                     <Bar
                       dataKey="return"

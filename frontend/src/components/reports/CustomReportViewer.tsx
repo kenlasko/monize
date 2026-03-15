@@ -255,6 +255,7 @@ export function CustomReportViewer({ reportId }: CustomReportViewerProps) {
               groupBy={result.groupBy as GroupByType}
               onDataPointClick={handleDataPointClick}
               tableColumns={result.tableColumns}
+              exportFilename={report.name.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()}
             />
           ) : (
             <div className="py-12 text-center text-gray-500 dark:text-gray-400">

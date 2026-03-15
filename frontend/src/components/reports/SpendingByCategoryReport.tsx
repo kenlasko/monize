@@ -134,7 +134,7 @@ export function SpendingByCategoryReport() {
       </div>
 
       {/* Chart */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 px-2 py-4 sm:p-6">
         {chartData.length === 0 ? (
           <p className="text-gray-500 dark:text-gray-400 text-center py-8">
             No expense data for this period.
@@ -167,10 +167,10 @@ export function SpendingByCategoryReport() {
             ) : (
               <div className="h-96">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={chartData} layout="vertical" margin={{ left: 100 }}>
+                  <BarChart data={chartData} layout="vertical" margin={{ left: 10 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                     <XAxis type="number" tickFormatter={(value) => formatCurrency(value)} />
-                    <YAxis type="category" dataKey="name" tick={{ fontSize: 12 }} width={100} />
+                    <YAxis type="category" dataKey="name" tick={{ fontSize: 12 }} width={80} />
                     <Tooltip content={<CustomTooltip />} />
                     <Bar
                       dataKey="value"

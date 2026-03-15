@@ -179,7 +179,7 @@ export function CashFlowReport() {
     <div className="space-y-6">
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-6">
+        <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 sm:p-6">
           <div className="text-sm text-green-600 dark:text-green-400">
             Total Inflows
           </div>
@@ -187,7 +187,7 @@ export function CashFlowReport() {
             {formatCurrency(totals.totalIncome)}
           </div>
         </div>
-        <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-6">
+        <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4 sm:p-6">
           <div className="text-sm text-red-600 dark:text-red-400">
             Total Outflows
           </div>
@@ -196,7 +196,7 @@ export function CashFlowReport() {
           </div>
         </div>
         <div
-          className={`rounded-lg p-6 ${
+          className={`rounded-lg p-4 sm:p-6 ${
             totals.netCashFlow >= 0
               ? "bg-blue-50 dark:bg-blue-900/20"
               : "bg-orange-50 dark:bg-orange-900/20"
@@ -239,15 +239,15 @@ export function CashFlowReport() {
       </div>
 
       {/* Monthly Chart */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 px-2 py-4 sm:p-6">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 px-1 sm:px-0">
           Monthly Cash Flow
         </h3>
         <div className="h-80">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={monthlyData}
-              margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+              margin={{ top: 20, right: 10, left: 0, bottom: 5 }}
               onClick={handleChartClick}
               style={{ cursor: "pointer" }}
             >
