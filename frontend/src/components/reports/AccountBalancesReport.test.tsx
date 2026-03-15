@@ -185,4 +185,42 @@ describe("AccountBalancesReport", () => {
     fireEvent.click(screen.getByText("Brokerage"));
     expect(mockPush).toHaveBeenCalledWith("/investments");
   });
+
+  it("does not double-count investment cash in brokerage and linked cash account", async () => {
+    mockGetAll.mockResolvedValue([
+      {
+        id: "acc-brokerage",
+        name: "Investments - Brokerage",
+        accountType: "INVESTMENT",
+        accountSubType: "INVESTMENT_BROKERAGE",
+        currentBalance: 0,
+        currencyCode: "CAD",
+        isClosed: false,
+        linkedAccountId: "acc-cash",
+      },
+      {
+        id: "acc-cash",
+        name: "Investments - Cash",
+        accountType: "INVESTMENT",
+        accountSubType: "INVESTMENT_CASH",
+        currentBalance: 5000,
+        currencyCode: "CAD",
+        isClosed: false,
+        linkedAccountId: "acc-brokerage",
+      },
+    ]);
+    mockGetPortfolioSummary.mockResolvedValue({
+      holdingsByAccount: [
+        { accountId: "acc-brokerage", totalMarketValue: 10000, cashBalance: 5000 },
+      ],
+    });
+    render(<AccountBalancesReport />);
+    await waitFor(() => {
+      expect(screen.getByText("Investments - Brokerage")).toBeInTheDocument();
+    });
+    // Total should be 10000 (holdings) + 5000 (cash account) = 15000
+    // NOT 15000 (holdings+cash in brokerage) + 5000 (cash account) = 20000
+    const assetElements = screen.getAllByText("$15000.00");
+    expect(assetElements.length).toBeGreaterThanOrEqual(1);
+  });
 });

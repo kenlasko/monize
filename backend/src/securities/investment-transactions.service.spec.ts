@@ -1066,11 +1066,32 @@ describe("InvestmentTransactionsService", () => {
       );
     });
 
-    it("triggers net worth recalculation after create", async () => {
+    it("triggers net worth recalculation for brokerage and cash accounts after create", async () => {
       await service.create(userId, createBuyDto);
 
       expect(netWorthService.triggerDebouncedRecalc).toHaveBeenCalledWith(
         accountId,
+        userId,
+      );
+      expect(netWorthService.triggerDebouncedRecalc).toHaveBeenCalledWith(
+        cashAccountId,
+        userId,
+      );
+    });
+
+    it("triggers net worth recalculation for funding account when specified", async () => {
+      const dtoWithFunding = {
+        ...createBuyDto,
+        fundingAccountId,
+      };
+      await service.create(userId, dtoWithFunding);
+
+      expect(netWorthService.triggerDebouncedRecalc).toHaveBeenCalledWith(
+        accountId,
+        userId,
+      );
+      expect(netWorthService.triggerDebouncedRecalc).toHaveBeenCalledWith(
+        fundingAccountId,
         userId,
       );
     });
@@ -1633,7 +1654,7 @@ describe("InvestmentTransactionsService", () => {
       expect(transactionRepository.remove).toHaveBeenCalled();
     });
 
-    it("triggers net worth recalculation after update", async () => {
+    it("triggers net worth recalculation for brokerage and cash accounts after update", async () => {
       const existingTx = { ...mockBuyTransaction, transactionId: null };
       const firstFindQB = createMockQueryBuilder(existingTx);
       const secondFindQB = createMockQueryBuilder(existingTx);
@@ -1646,6 +1667,10 @@ describe("InvestmentTransactionsService", () => {
 
       expect(netWorthService.triggerDebouncedRecalc).toHaveBeenCalledWith(
         accountId,
+        userId,
+      );
+      expect(netWorthService.triggerDebouncedRecalc).toHaveBeenCalledWith(
+        cashAccountId,
         userId,
       );
     });
@@ -1918,7 +1943,7 @@ describe("InvestmentTransactionsService", () => {
       expect(transactionRepository.remove).not.toHaveBeenCalled();
     });
 
-    it("triggers net worth recalculation after remove", async () => {
+    it("triggers net worth recalculation for brokerage and cash accounts after remove", async () => {
       const tx = { ...mockBuyTransaction, transactionId: null };
       const mockQB = createMockQueryBuilder(tx);
       investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
@@ -1929,6 +1954,10 @@ describe("InvestmentTransactionsService", () => {
 
       expect(netWorthService.triggerDebouncedRecalc).toHaveBeenCalledWith(
         accountId,
+        userId,
+      );
+      expect(netWorthService.triggerDebouncedRecalc).toHaveBeenCalledWith(
+        cashAccountId,
         userId,
       );
     });

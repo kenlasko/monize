@@ -52,6 +52,42 @@ export class InvestmentTransactionsService {
       InvestmentAction.TRANSFER_OUT,
     ]);
 
+  /**
+   * Trigger net worth recalc for the given account and its linked cash account.
+   * Investment transactions affect both the brokerage (holdings) and the linked
+   * cash account (cash balance), so both need their snapshots updated.
+   */
+  private triggerRecalcWithCashAccount(
+    accountId: string,
+    userId: string,
+    fundingAccountId?: string | null,
+  ): void {
+    this.netWorthService.triggerDebouncedRecalc(accountId, userId);
+
+    if (fundingAccountId) {
+      this.netWorthService.triggerDebouncedRecalc(fundingAccountId, userId);
+    } else {
+      this.accountsService
+        .findOne(userId, accountId)
+        .then((account) => {
+          if (
+            account.accountSubType === AccountSubType.INVESTMENT_BROKERAGE &&
+            account.linkedAccountId
+          ) {
+            this.netWorthService.triggerDebouncedRecalc(
+              account.linkedAccountId,
+              userId,
+            );
+          }
+        })
+        .catch((err) =>
+          this.logger.warn(
+            `Failed to trigger cash account recalc for ${accountId}: ${err.message}`,
+          ),
+        );
+    }
+  }
+
   private async findCashAccount(
     userId: string,
     accountId: string,
@@ -263,7 +299,11 @@ export class InvestmentTransactionsService {
       await queryRunner.release();
     }
 
-    this.netWorthService.triggerDebouncedRecalc(createDto.accountId, userId);
+    this.triggerRecalcWithCashAccount(
+      createDto.accountId,
+      userId,
+      createDto.fundingAccountId,
+    );
 
     if (
       createDto.securityId &&
@@ -684,7 +724,7 @@ export class InvestmentTransactionsService {
       await queryRunner.release();
     }
 
-    this.netWorthService.triggerDebouncedRecalc(
+    this.triggerRecalcWithCashAccount(
       updateDto.accountId ?? accountId,
       userId,
     );
@@ -872,7 +912,11 @@ export class InvestmentTransactionsService {
       await queryRunner.release();
     }
 
-    this.netWorthService.triggerDebouncedRecalc(accountId, userId);
+    this.triggerRecalcWithCashAccount(
+      accountId,
+      userId,
+      transaction.fundingAccountId,
+    );
 
     if (
       transaction.securityId &&

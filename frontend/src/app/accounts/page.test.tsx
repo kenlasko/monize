@@ -311,7 +311,7 @@ describe('AccountsPage', () => {
     });
   });
 
-  it('uses brokerage market values from portfolio summary', async () => {
+  it('uses brokerage market values from portfolio summary (holdings only, cash in linked account)', async () => {
     mockGetAll.mockResolvedValue([
       { id: 'acc-5', name: 'Brokerage', accountType: 'INVESTMENT', accountSubType: 'INVESTMENT_BROKERAGE', currencyCode: 'USD', currentBalance: 0, isClosed: false, canDelete: false },
     ]);
@@ -322,8 +322,27 @@ describe('AccountsPage', () => {
     });
     render(<AccountsPage />);
     await waitFor(() => {
-      // Brokerage value: 50000 + 5000 = 55000
+      // Brokerage value: 50000 (holdings only; cash balance is in the linked INVESTMENT_CASH account)
+      expect(screen.getByTestId('summary-Total Assets')).toHaveTextContent('$50000.00');
+    });
+  });
+
+  it('does not double-count investment cash in brokerage and linked cash account', async () => {
+    mockGetAll.mockResolvedValue([
+      { id: 'acc-brokerage', name: 'My Investments - Brokerage', accountType: 'INVESTMENT', accountSubType: 'INVESTMENT_BROKERAGE', currencyCode: 'USD', currentBalance: 0, isClosed: false, canDelete: false, linkedAccountId: 'acc-cash' },
+      { id: 'acc-cash', name: 'My Investments - Cash', accountType: 'INVESTMENT', accountSubType: 'INVESTMENT_CASH', currencyCode: 'USD', currentBalance: 5000, isClosed: false, canDelete: false, linkedAccountId: 'acc-brokerage' },
+    ]);
+    mockGetPortfolioSummary.mockResolvedValue({
+      holdingsByAccount: [
+        { accountId: 'acc-brokerage', totalMarketValue: 50000, cashBalance: 5000 },
+      ],
+    });
+    render(<AccountsPage />);
+    await waitFor(() => {
+      // Total should be 50000 (holdings) + 5000 (cash account) = 55000
+      // NOT 55000 (holdings+cash in brokerage) + 5000 (cash account) = 60000 (double-counted)
       expect(screen.getByTestId('summary-Total Assets')).toHaveTextContent('$55000.00');
+      expect(screen.getByTestId('summary-Net Worth')).toHaveTextContent('$55000.00');
     });
   });
 

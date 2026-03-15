@@ -1155,6 +1155,42 @@ describe("NetWorthService", () => {
         where: { userId: "user-1" },
       });
     });
+
+    it("includes INVESTMENT_CASH balance in net worth without double-counting", async () => {
+      mabRepository.count.mockResolvedValue(5);
+      prefRepository.findOne.mockResolvedValue({
+        defaultCurrency: "USD",
+      });
+
+      // Simulate a brokerage + linked cash account pair
+      dataSource.query.mockResolvedValueOnce([
+        {
+          month: "2024-01-01",
+          balance: 0,
+          market_value: 50000,
+          account_id: "brokerage-1",
+          account_type: AccountType.INVESTMENT,
+          account_sub_type: "INVESTMENT_BROKERAGE",
+          currency_code: "USD",
+        },
+        {
+          month: "2024-01-01",
+          balance: 5000,
+          market_value: null,
+          account_id: "cash-1",
+          account_type: AccountType.INVESTMENT,
+          account_sub_type: "INVESTMENT_CASH",
+          currency_code: "USD",
+        },
+      ]);
+
+      const result = await service.getMonthlyNetWorth("user-1");
+
+      // Brokerage uses market_value (50000), cash account uses balance (5000)
+      // Total assets = 50000 + 5000 = 55000 (no double-counting)
+      expect(result[0].assets).toBe(55000);
+      expect(result[0].netWorth).toBe(55000);
+    });
   });
 
   describe("getMonthlyInvestments", () => {

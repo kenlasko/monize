@@ -63,13 +63,14 @@ function AccountsContent() {
     loadAccounts();
   }, []);
 
-  // Build a map of brokerage account ID -> total market value of holdings
+  // Build a map of brokerage account ID -> market value of holdings only.
+  // Cash balance is tracked separately via the linked INVESTMENT_CASH account
+  // to avoid double-counting in the net worth summary.
   const brokerageMarketValues = useMemo(() => {
     const map = new Map<string, number>();
     if (!portfolioSummary) return map;
     for (const accountHoldings of portfolioSummary.holdingsByAccount) {
-      const totalValue = accountHoldings.totalMarketValue + accountHoldings.cashBalance;
-      map.set(accountHoldings.accountId, totalValue);
+      map.set(accountHoldings.accountId, accountHoldings.totalMarketValue);
     }
     return map;
   }, [portfolioSummary]);
