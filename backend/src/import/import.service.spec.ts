@@ -108,6 +108,7 @@ describe("ImportService", () => {
     commitTransaction: jest.Mock;
     rollbackTransaction: jest.Mock;
     release: jest.Mock;
+    query: jest.Mock;
     manager: {
       save: jest.Mock;
       delete: jest.Mock;
@@ -187,6 +188,7 @@ describe("ImportService", () => {
       commitTransaction: jest.fn(),
       rollbackTransaction: jest.fn(),
       release: jest.fn(),
+      query: jest.fn(),
       manager: {
         save: jest
           .fn()

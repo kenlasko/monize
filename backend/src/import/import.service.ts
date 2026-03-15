@@ -319,18 +319,32 @@ export class ImportService {
         for (const qifTx of block.transactions) {
           txIndex++;
           try {
-            if (isInvestment) {
-              await this.investmentProcessor.processTransaction(ctx, qifTx);
-            } else {
-              await this.regularProcessor.processTransaction(ctx, qifTx);
+            const savepointName = `tx_import_${txIndex}`;
+            await queryRunner.query(`SAVEPOINT ${savepointName}`);
+            try {
+              if (isInvestment) {
+                await this.investmentProcessor.processTransaction(ctx, qifTx);
+              } else {
+                await this.regularProcessor.processTransaction(ctx, qifTx);
+              }
+              await queryRunner.query(`RELEASE SAVEPOINT ${savepointName}`);
+            } catch (error) {
+              await queryRunner.query(`ROLLBACK TO SAVEPOINT ${savepointName}`);
+              importResult.errors++;
+              importResult.errorMessages.push(
+                `Error importing transaction ${txIndex}/${block.transactions.length} in "${block.accountName}" on ${qifTx.date}: ${error.message}`,
+              );
+              this.logger.warn(
+                `Error importing transaction in "${block.accountName}": ${error.message}`,
+              );
             }
-          } catch (error) {
+          } catch (savepointError) {
             importResult.errors++;
             importResult.errorMessages.push(
-              `Error importing transaction ${txIndex}/${block.transactions.length} in "${block.accountName}" on ${qifTx.date}: ${error.message}`,
+              `Error importing transaction ${txIndex}/${block.transactions.length} in "${block.accountName}" on ${qifTx.date}: ${savepointError.message}`,
             );
             this.logger.warn(
-              `Error importing transaction in "${block.accountName}": ${error.message}`,
+              `Savepoint error in "${block.accountName}": ${savepointError.message}`,
             );
           }
         }
@@ -1081,18 +1095,32 @@ export class ImportService {
       for (const qifTx of result.transactions) {
         txIndex++;
         try {
-          if (isInvestment) {
-            await this.investmentProcessor.processTransaction(ctx, qifTx);
-          } else {
-            await this.regularProcessor.processTransaction(ctx, qifTx);
+          const savepointName = `tx_import_${txIndex}`;
+          await queryRunner.query(`SAVEPOINT ${savepointName}`);
+          try {
+            if (isInvestment) {
+              await this.investmentProcessor.processTransaction(ctx, qifTx);
+            } else {
+              await this.regularProcessor.processTransaction(ctx, qifTx);
+            }
+            await queryRunner.query(`RELEASE SAVEPOINT ${savepointName}`);
+          } catch (error) {
+            await queryRunner.query(`ROLLBACK TO SAVEPOINT ${savepointName}`);
+            importResult.errors++;
+            importResult.errorMessages.push(
+              `Error importing transaction ${txIndex}/${totalTransactions} on ${qifTx.date}: ${error.message}`,
+            );
+            this.logger.warn(
+              `Error importing transaction ${txIndex}/${totalTransactions}: ${error.message}`,
+            );
           }
-        } catch (error) {
+        } catch (savepointError) {
           importResult.errors++;
           importResult.errorMessages.push(
-            `Error importing transaction ${txIndex}/${totalTransactions} on ${qifTx.date}: ${error.message}`,
+            `Error importing transaction ${txIndex}/${totalTransactions} on ${qifTx.date}: ${savepointError.message}`,
           );
           this.logger.warn(
-            `Error importing transaction ${txIndex}/${totalTransactions}: ${error.message}`,
+            `Savepoint error for transaction ${txIndex}/${totalTransactions}: ${savepointError.message}`,
           );
         }
       }
