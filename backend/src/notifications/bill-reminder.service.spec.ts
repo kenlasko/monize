@@ -928,7 +928,7 @@ describe("BillReminderService", () => {
 
       describe("date formatting in bill data", () => {
         it("formats nextDueDate as YYYY-MM-DD string (splits on T)", async () => {
-          const dueDate = new Date("2026-03-15T12:00:00.000Z");
+          const dueDate = daysFromNow(1);
           const bill = makeBill({
             userId: userId1,
             nextDueDate: dueDate,
