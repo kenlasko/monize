@@ -15,6 +15,7 @@ interface MultiAccountReviewStepProps {
   isLoading: boolean;
   onImport: () => void;
   setStep: (step: ImportStep) => void;
+  hasSecuritiesToMap: boolean;
 }
 
 export function MultiAccountReviewStep({
@@ -27,6 +28,7 @@ export function MultiAccountReviewStep({
   isLoading,
   onImport,
   setStep,
+  hasSecuritiesToMap,
 }: MultiAccountReviewStepProps) {
   const { categoryDefs, tagDefs = [], accounts, totalTransactionCount } = multiAccountData;
   const incomeCategories = categoryDefs.filter((c) => c.isIncome);
@@ -169,6 +171,15 @@ export function MultiAccountReviewStep({
         </div>
       )}
 
+      {/* Securities notice */}
+      {hasSecuritiesToMap && (
+        <div className="mb-6 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+          <p className="text-sm text-amber-800 dark:text-amber-300">
+            This file contains {multiAccountData.securities.length} securit{multiAccountData.securities.length !== 1 ? 'ies' : 'y'} that need to be mapped before import.
+          </p>
+        </div>
+      )}
+
       {/* Actions */}
       <div className="flex justify-between pt-4">
         <Button
@@ -178,12 +189,18 @@ export function MultiAccountReviewStep({
         >
           Back
         </Button>
-        <Button
-          onClick={onImport}
-          isLoading={isLoading}
-        >
-          Import All
-        </Button>
+        {hasSecuritiesToMap ? (
+          <Button onClick={() => setStep('mapSecurities')}>
+            Next: Map Securities
+          </Button>
+        ) : (
+          <Button
+            onClick={onImport}
+            isLoading={isLoading}
+          >
+            Import All
+          </Button>
+        )}
       </div>
     </div>
   );

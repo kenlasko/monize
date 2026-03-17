@@ -357,6 +357,17 @@ export class ImportQifMultiAccountDto {
   })
   @MaxLength(20)
   dateFormat?: string;
+
+  @ApiPropertyOptional({
+    description: "Security mappings for investment transactions",
+    type: [SecurityMappingDto],
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(500)
+  @ValidateNested({ each: true })
+  @Type(() => SecurityMappingDto)
+  securityMappings?: SecurityMappingDto[];
 }
 
 export class ParsedQifMultiAccountResponseDto {
@@ -390,6 +401,12 @@ export class ParsedQifMultiAccountResponseDto {
 
   @ApiProperty()
   totalTransactionCount: number;
+
+  @ApiProperty({
+    type: [String],
+    description: "Unique securities found across investment account blocks",
+  })
+  securities: string[];
 
   @ApiProperty({ description: "Detected date format" })
   detectedDateFormat: string;

@@ -267,6 +267,7 @@ export interface ParsedQifMultiAccountResponse {
     dateRange: { start: string; end: string };
   }>;
   totalTransactionCount: number;
+  securities: string[];
   detectedDateFormat: DateFormat;
   sampleDates: string[];
 }
@@ -275,6 +276,7 @@ export interface ImportQifMultiAccountRequest {
   content: string;
   currencyCode: string;
   dateFormat?: DateFormat;
+  securityMappings?: SecurityMapping[];
 }
 
 export const importApi = {

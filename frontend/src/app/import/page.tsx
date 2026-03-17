@@ -120,6 +120,9 @@ function ImportContent() {
             categoryMappings={wizard.categoryMappings}
             shouldShowMapAccounts={wizard.shouldShowMapAccounts}
             setStep={wizard.setStep}
+            isMultiAccountImport={!!wizard.multiAccountData}
+            isLoading={wizard.isLoading}
+            onMultiAccountImport={wizard.handleMultiAccountImport}
           />
         );
 
@@ -170,6 +173,7 @@ function ImportContent() {
             isLoading={wizard.isLoading}
             onImport={wizard.handleMultiAccountImport}
             setStep={wizard.setStep}
+            hasSecuritiesToMap={wizard.securityMappings.length > 0}
           />
         ) : null;
 
@@ -211,7 +215,8 @@ function ImportContent() {
                 if (s === 'mapSecurities' && wizard.securityMappings.length === 0) return false;
                 if (s === 'mapAccounts' && !wizard.shouldShowMapAccounts) return false;
                 if (s === 'multiAccountReview' && !wizard.multiAccountData) return false;
-                if (wizard.multiAccountData && ['selectAccount', 'mapCategories', 'mapSecurities', 'mapAccounts', 'review'].includes(s)) return false;
+                if (wizard.multiAccountData && ['selectAccount', 'mapCategories', 'mapAccounts', 'review'].includes(s)) return false;
+                if (wizard.multiAccountData && s === 'mapSecurities' && wizard.securityMappings.length === 0) return false;
                 return true;
               });
 

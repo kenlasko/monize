@@ -18,6 +18,7 @@ const defaultMultiAccountData: ParsedQifMultiAccountResponse = {
     { accountName: 'Credit Card', accountType: 'CCard', transactionCount: 12, dateRange: { start: '2025-02-01', end: '2025-06-15' } },
   ],
   totalTransactionCount: 17,
+  securities: [],
   detectedDateFormat: 'MM/DD/YYYY' as DateFormat,
   sampleDates: ['01/15/2025', '02/20/2025'],
 };
@@ -36,6 +37,7 @@ describe('MultiAccountReviewStep', () => {
     isLoading: false,
     onImport: vi.fn(),
     setStep: vi.fn(),
+    hasSecuritiesToMap: false,
   };
 
   beforeEach(() => {

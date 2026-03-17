@@ -5,7 +5,7 @@ import { Select } from '@/components/ui/Select';
 import { Input } from '@/components/ui/Input';
 import { SecurityMapping } from '@/lib/import';
 
-type ImportStep = 'upload' | 'selectAccount' | 'mapCategories' | 'mapSecurities' | 'mapAccounts' | 'review' | 'complete';
+type ImportStep = 'upload' | 'selectAccount' | 'mapCategories' | 'mapSecurities' | 'mapAccounts' | 'review' | 'multiAccountReview' | 'complete';
 
 interface MapSecuritiesStepProps {
   securityMappings: SecurityMapping[];
@@ -18,6 +18,9 @@ interface MapSecuritiesStepProps {
   categoryMappings: { length: number };
   shouldShowMapAccounts: boolean;
   setStep: (step: ImportStep) => void;
+  isMultiAccountImport?: boolean;
+  isLoading?: boolean;
+  onMultiAccountImport?: () => void;
 }
 
 export function MapSecuritiesStep({
@@ -31,6 +34,9 @@ export function MapSecuritiesStep({
   categoryMappings,
   shouldShowMapAccounts,
   setStep,
+  isMultiAccountImport = false,
+  isLoading = false,
+  onMultiAccountImport,
 }: MapSecuritiesStepProps) {
   const readyCount = securityMappings.filter((m) => m.securityId || (m.createNew && m.securityName)).length;
   const needsAttentionCount = securityMappings.length - readyCount;
@@ -140,7 +146,9 @@ export function MapSecuritiesStep({
           <Button
             variant="outline"
             onClick={() => {
-              if (categoryMappings.length > 0) {
+              if (isMultiAccountImport) {
+                setStep('multiAccountReview');
+              } else if (categoryMappings.length > 0) {
                 setStep('mapCategories');
               } else {
                 setStep('selectAccount');
@@ -149,17 +157,26 @@ export function MapSecuritiesStep({
           >
             Back
           </Button>
-          <Button
-            onClick={() => {
-              if (shouldShowMapAccounts) {
-                setStep('mapAccounts');
-              } else {
-                setStep('review');
-              }
-            }}
-          >
-            Next
-          </Button>
+          {isMultiAccountImport ? (
+            <Button
+              onClick={onMultiAccountImport}
+              isLoading={isLoading}
+            >
+              Import All
+            </Button>
+          ) : (
+            <Button
+              onClick={() => {
+                if (shouldShowMapAccounts) {
+                  setStep('mapAccounts');
+                } else {
+                  setStep('review');
+                }
+              }}
+            >
+              Next
+            </Button>
+          )}
         </div>
       </div>
     </div>

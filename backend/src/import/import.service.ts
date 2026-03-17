@@ -156,6 +156,14 @@ export class ImportService {
       0,
     );
 
+    // Collect unique securities across all investment account blocks
+    const allSecurities = new Set<string>();
+    for (const block of result.accountBlocks) {
+      for (const sec of block.securities) {
+        allSecurities.add(sec);
+      }
+    }
+
     return {
       isMultiAccount: result.isMultiAccount,
       categoryDefs: result.categoryDefs.map((c) => ({
@@ -169,6 +177,7 @@ export class ImportService {
       })),
       accounts,
       totalTransactionCount,
+      securities: Array.from(allSecurities).sort(),
       detectedDateFormat: result.detectedDateFormat,
       sampleDates: result.sampleDates,
     };
@@ -261,7 +270,38 @@ export class ImportService {
         tagMap,
       );
 
-      // Step 5: Import transactions per account block
+      // Step 5: Build security map from user-provided security mappings
+      const { securityMap, securitiesToCreate } =
+        this.buildSecurityMappings(dto.securityMappings);
+
+      // Create any new securities that the user requested
+      if (securitiesToCreate.length > 0) {
+        // Use the first investment account as the reference for security creation
+        const firstInvestmentBlock = result.accountBlocks.find(
+          (b) => b.accountType === "INVESTMENT",
+        );
+        const refAccountId = firstInvestmentBlock
+          ? accountNameToId.get(firstInvestmentBlock.accountName)
+          : undefined;
+        const refAccount = refAccountId
+          ? await queryRunner.manager.findOne(Account, {
+              where: { id: refAccountId },
+            })
+          : undefined;
+
+        if (refAccount) {
+          await this.entityCreator.createSecurities(
+            queryRunner,
+            userId,
+            securitiesToCreate,
+            securityMap,
+            refAccount,
+            importResult,
+          );
+        }
+      }
+
+      // Step 6: Import transactions per account block
       for (const block of result.accountBlocks) {
         const accountId = accountNameToId.get(block.accountName);
         if (!accountId) {
@@ -296,7 +336,7 @@ export class ImportService {
           categoryMap,
           accountMap,
           loanCategoryMap: new Map(),
-          securityMap: new Map(),
+          securityMap,
           tagMap,
           importStartTime,
           dateCounters: new Map(),

@@ -389,6 +389,16 @@ export function useImportWizard() {
               if (multiResult.detectedDateFormat) {
                 setDateFormat(multiResult.detectedDateFormat);
               }
+              // Build security mappings if the file contains investment securities
+              if (multiResult.securities && multiResult.securities.length > 0) {
+                const newSecMappings = buildSecurityMappings(
+                  new Set(multiResult.securities),
+                  securities,
+                );
+                setSecurityMappings(newSecMappings);
+              } else {
+                setSecurityMappings([]);
+              }
               setStep('multiAccountReview');
               setIsLoading(false);
               return;
@@ -703,6 +713,7 @@ export function useImportWizard() {
         content: multiAccountContent,
         currencyCode: multiAccountCurrency,
         dateFormat,
+        securityMappings: securityMappings.length > 0 ? securityMappings : undefined,
       });
 
       setImportResult(result);
