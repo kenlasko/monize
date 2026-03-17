@@ -26,7 +26,10 @@ export const backupApi = {
     password?: string;
     oidcIdToken?: string;
   }): Promise<RestoreResult> => {
-    const compressed = await compressGzip(await params.file.arrayBuffer());
+    const isAlreadyCompressed = params.file.name.endsWith('.gz');
+    const body = isAlreadyCompressed
+      ? params.file
+      : await compressGzip(await params.file.arrayBuffer());
 
     const headers: Record<string, string> = {
       'Content-Type': 'application/gzip',
@@ -40,7 +43,7 @@ export const backupApi = {
 
     const response = await apiClient.post<RestoreResult>(
       '/backup/restore',
-      compressed,
+      body,
       { headers, timeout: 300000 },
     );
     return response.data;

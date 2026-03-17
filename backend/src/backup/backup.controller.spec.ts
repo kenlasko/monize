@@ -43,11 +43,11 @@ describe("BackupController", () => {
 
       expect(mockRes.setHeader).toHaveBeenCalledWith(
         "Content-Type",
-        "application/json",
+        "application/gzip",
       );
       expect(mockRes.setHeader).toHaveBeenCalledWith(
         "Content-Disposition",
-        expect.stringContaining("monize-backup-"),
+        expect.stringContaining(".json.gz"),
       );
       expect(mockBackupService.streamExport).toHaveBeenCalledWith(
         userId,

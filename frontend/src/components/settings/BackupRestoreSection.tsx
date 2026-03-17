@@ -27,7 +27,7 @@ export function BackupRestoreSection({ user }: BackupRestoreSectionProps) {
     try {
       const blob = await backupApi.exportBackup();
       const url = URL.createObjectURL(blob);
-      const filename = `monize-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      const filename = `monize-backup-${new Date().toISOString().slice(0, 10)}.json.gz`;
 
       const link = document.createElement('a');
       link.href = url;
@@ -162,7 +162,7 @@ export function BackupRestoreSection({ user }: BackupRestoreSectionProps) {
                 id="backup-file-input"
                 ref={fileInputRef}
                 type="file"
-                accept=".json"
+                accept=".json,.json.gz,.gz"
                 onChange={handleFileChange}
                 className="block w-full text-sm text-gray-500 dark:text-gray-400
                   file:mr-4 file:py-2 file:px-4 file:rounded file:border-0

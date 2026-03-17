@@ -8,7 +8,7 @@ import {
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository, DataSource } from "typeorm";
 import * as bcrypt from "bcryptjs";
-import { gunzipSync } from "zlib";
+import { createGzip, gunzipSync } from "zlib";
 import { User } from "../users/entities/user.entity";
 
 export interface RestoreBackupInput {
@@ -189,18 +189,35 @@ export class BackupService {
       },
     ];
 
-    // Stream JSON to the response one table at a time to avoid OOM
-    res.write(
+    // Stream JSON through gzip to the response, one table at a time, to
+    // avoid OOM and produce a smaller download.
+    const gzip = createGzip();
+    gzip.pipe(res);
+
+    const write = (chunk: string): Promise<void> =>
+      new Promise((resolve, _reject) => {
+        if (!gzip.write(chunk)) {
+          gzip.once("drain", resolve);
+        } else {
+          resolve();
+        }
+      });
+
+    await write(
       `{"version":${BACKUP_VERSION},"exportedAt":"${new Date().toISOString()}"`,
     );
 
     for (const { key, sql } of tableQueries) {
       const rows = await this.query(sql, [userId]);
-      res.write(`,"${key}":${JSON.stringify(rows)}`);
+      await write(`,"${key}":${JSON.stringify(rows)}`);
     }
 
-    res.write("}");
-    res.end();
+    await write("}");
+
+    await new Promise<void>((resolve, reject) => {
+      gzip.once("error", reject);
+      gzip.end(resolve);
+    });
 
     this.logger.log(`Backup export completed for user ${userId}`);
   }

@@ -6,7 +6,8 @@ import {
   BadRequestException,
   NotFoundException,
 } from "@nestjs/common";
-import { gzipSync } from "zlib";
+import { gzipSync, gunzipSync } from "zlib";
+import { PassThrough } from "stream";
 import { BackupService, RestoreBackupInput } from "./backup.service";
 import { User } from "../users/entities/user.entity";
 import * as bcrypt from "bcryptjs";
@@ -68,16 +69,19 @@ describe("BackupService", () => {
   });
 
   describe("streamExport", () => {
-    let mockRes: { write: jest.Mock; end: jest.Mock };
+    async function collectGzipOutput(
+      mockRes: PassThrough,
+    ): Promise<Record<string, unknown>> {
+      const chunks: Buffer[] = [];
+      for await (const chunk of mockRes) {
+        chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+      }
+      const compressed = Buffer.concat(chunks);
+      const json = gunzipSync(compressed).toString("utf-8");
+      return JSON.parse(json);
+    }
 
-    beforeEach(() => {
-      mockRes = {
-        write: jest.fn(),
-        end: jest.fn(),
-      };
-    });
-
-    it("should stream all user data as JSON to the response", async () => {
+    it("should stream gzip-compressed JSON to the response", async () => {
       const mockCategories = [{ id: "cat-1", name: "Food", user_id: userId }];
       const mockAccounts = [{ id: "acc-1", name: "Checking", user_id: userId }];
 
@@ -89,37 +93,30 @@ describe("BackupService", () => {
         return Promise.resolve([]);
       });
 
+      const mockRes = new PassThrough();
+      const resultPromise = collectGzipOutput(mockRes);
       await service.streamExport(userId, mockRes as any);
-
-      // Reconstruct the streamed JSON
-      const output = mockRes.write.mock.calls
-        .map((c: unknown[]) => c[0])
-        .join("");
-      const result = JSON.parse(output);
+      const result = await resultPromise;
 
       expect(result.version).toBe(1);
       expect(result.exportedAt).toBeDefined();
       expect(result.categories).toEqual(mockCategories);
       expect(result.accounts).toEqual(mockAccounts);
-      expect(mockRes.end).toHaveBeenCalled();
       expect(mockDataSource.query).toHaveBeenCalled();
     });
 
     it("should stream empty arrays when user has no data", async () => {
       mockDataSource.query.mockResolvedValue([]);
 
+      const mockRes = new PassThrough();
+      const resultPromise = collectGzipOutput(mockRes);
       await service.streamExport(userId, mockRes as any);
-
-      const output = mockRes.write.mock.calls
-        .map((c: unknown[]) => c[0])
-        .join("");
-      const result = JSON.parse(output);
+      const result = await resultPromise;
 
       expect(result.version).toBe(1);
       expect(result.categories).toEqual([]);
       expect(result.transactions).toEqual([]);
       expect(result.accounts).toEqual([]);
-      expect(mockRes.end).toHaveBeenCalled();
     });
   });
 

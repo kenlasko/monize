@@ -31,9 +31,9 @@ export class BackupController {
   @ApiOperation({ summary: "Export all user data as JSON backup" })
   @ApiResponse({ status: 200, description: "Backup file downloaded" })
   async exportBackup(@Request() req, @Res() res: Response) {
-    const filename = `monize-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    const filename = `monize-backup-${new Date().toISOString().slice(0, 10)}.json.gz`;
 
-    res.setHeader("Content-Type", "application/json");
+    res.setHeader("Content-Type", "application/gzip");
     res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
     await this.backupService.streamExport(req.user.id, res);
   }
