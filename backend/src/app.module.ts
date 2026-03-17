@@ -39,6 +39,7 @@ import { AiModule } from "./ai/ai.module";
 import { McpModule } from "./mcp/mcp.module";
 import { BudgetsModule } from "./budgets/budgets.module";
 import { TagsModule } from "./tags/tags.module";
+import { BackupModule } from "./backup/backup.module";
 
 @Module({
   imports: [
@@ -110,6 +111,7 @@ import { TagsModule } from "./tags/tags.module";
     McpModule,
     BudgetsModule,
     TagsModule,
+    BackupModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: GlobalExceptionFilter },

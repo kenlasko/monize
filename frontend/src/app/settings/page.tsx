@@ -10,6 +10,7 @@ import { PreferencesSection } from '@/components/settings/PreferencesSection';
 import { NotificationsSection } from '@/components/settings/NotificationsSection';
 import { SecuritySection } from '@/components/settings/SecuritySection';
 import { DangerZoneSection } from '@/components/settings/DangerZoneSection';
+import { BackupRestoreSection } from '@/components/settings/BackupRestoreSection';
 import { ApiAccessSection } from '@/components/settings/ApiAccessSection';
 import { userSettingsApi } from '@/lib/user-settings';
 import { authApi } from '@/lib/auth';
@@ -140,6 +141,8 @@ function SettingsContent() {
             </p>
           </Link>
         )}
+
+        {!isDemoMode && user && <BackupRestoreSection user={user} />}
 
         {!isDemoMode && user && <DangerZoneSection user={user} />}
       </main>
