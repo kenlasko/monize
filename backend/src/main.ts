@@ -36,7 +36,13 @@ async function bootstrap() {
   // Trust first proxy (Docker/nginx) so req.ip reflects the real client IP
   app.getHttpAdapter().getInstance().set("trust proxy", 1);
 
-  // Increase body size limit for large QIF file imports
+  // Higher body size limit for backup restore (can contain years of financial data)
+  app.use(
+    "/api/v1/backup/restore",
+    express.json({ limit: "100mb" }),
+  );
+
+  // Default body size limit for regular endpoints (QIF imports, etc.)
   app.use(express.json({ limit: "10mb" }));
   app.use(express.urlencoded({ limit: "10mb", extended: true }));
 
