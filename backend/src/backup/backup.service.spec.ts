@@ -124,6 +124,7 @@ describe("BackupService", () => {
     const validBackupData = {
       version: 1,
       exportedAt: "2026-01-01T00:00:00.000Z",
+      currencies: [],
       user_preferences: [],
       user_currency_preferences: [],
       categories: [],
@@ -431,6 +432,65 @@ describe("BackupService", () => {
           call[0].includes('"linked_account_id"'),
       );
       expect(linkedAccountUpdate).toBeDefined();
+    });
+
+    it("should ensure referenced currencies exist before restoring data", async () => {
+      mockUserRepo.findOne.mockResolvedValue(mockUser);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+      // First call to SELECT code FROM currencies returns empty (missing)
+      mockQueryRunner.query.mockImplementation(
+        (sql: string, _params?: unknown[]) => {
+          if (
+            typeof sql === "string" &&
+            sql.includes("SELECT code FROM currencies")
+          ) {
+            return Promise.resolve([]);
+          }
+          return Promise.resolve([]);
+        },
+      );
+
+      const backupWithCurrencies = {
+        ...validBackupData,
+        currencies: [
+          {
+            code: "MYR",
+            name: "Malaysian Ringgit",
+            symbol: "RM",
+            decimal_places: 2,
+            is_active: true,
+            created_by_user_id: "other-user",
+          },
+        ],
+        user_currency_preferences: [
+          { user_id: userId, currency_code: "MYR", is_active: false },
+        ],
+        accounts: [
+          {
+            id: "acc-1",
+            user_id: userId,
+            name: "MYR Account",
+            currency_code: "MYR",
+          },
+        ],
+      };
+
+      await service.restoreData(
+        userId,
+        makeInput({ password: "test", data: backupWithCurrencies }),
+      );
+
+      // Verify currencies INSERT was called with user-created currency
+      const insertCalls = mockQueryRunner.query.mock.calls.filter(
+        (call: unknown[]) =>
+          typeof call[0] === "string" &&
+          call[0].includes('INSERT INTO "currencies"'),
+      );
+      expect(insertCalls.length).toBeGreaterThan(0);
+
+      // Verify the created_by_user_id was overridden to current user
+      const currencyInsert = insertCalls[0];
+      expect(currencyInsert[1]).toContain(userId);
     });
 
     it("should accept OIDC re-auth for OIDC users", async () => {

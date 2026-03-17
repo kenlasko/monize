@@ -22,6 +22,7 @@ const BACKUP_VERSION = 1;
 interface BackupData {
   version: number;
   exportedAt: string;
+  currencies: Record<string, unknown>[];
   user_preferences: Record<string, unknown>[];
   user_currency_preferences: Record<string, unknown>[];
   categories: Record<string, unknown>[];
@@ -67,6 +68,10 @@ export class BackupService {
     this.logger.log(`Starting backup export for user ${userId}`);
 
     const tableQueries: Array<{ key: string; sql: string }> = [
+      {
+        key: "currencies",
+        sql: "SELECT * FROM currencies WHERE created_by_user_id = $1",
+      },
       {
         key: "user_preferences",
         sql: "SELECT * FROM user_preferences WHERE user_id = $1",
@@ -251,6 +256,11 @@ export class BackupService {
       // Phase 2: Insert backup data in FK-safe order.
       // Columns that create circular or forward FK references are stripped
       // during insert and restored in Phase 3 via UPDATE.
+
+      // Ensure all referenced currency codes exist before restoring tables
+      // that have FK references to currencies(code).
+      await this.ensureCurrenciesExist(queryRunner, data, userId);
+
       restored.userPreferences = await this.insertRows(
         queryRunner,
         "user_preferences",
@@ -641,6 +651,16 @@ export class BackupService {
     await queryRunner.query("DELETE FROM user_preferences WHERE user_id = $1", [
       userId,
     ]);
+
+    // User-created currencies (only those not referenced by other users)
+    await queryRunner.query(
+      `DELETE FROM currencies WHERE created_by_user_id = $1
+       AND code NOT IN (
+         SELECT DISTINCT currency_code FROM user_currency_preferences WHERE user_id != $1
+         UNION SELECT DISTINCT currency_code FROM accounts WHERE user_id != $1
+       )`,
+      [userId],
+    );
   }
 
   private async restoreDeferredFkColumns(
@@ -712,6 +732,82 @@ export class BackupService {
           );
         }
       }
+    }
+  }
+
+  private async ensureCurrenciesExist(
+    queryRunner: ReturnType<DataSource["createQueryRunner"]>,
+    data: BackupData,
+    userId: string,
+  ): Promise<void> {
+    // Collect all currency codes referenced across backup tables
+    const referencedCodes = new Set<string>();
+    const tablesWithCurrency: Array<{
+      rows: Record<string, unknown>[] | undefined;
+      column: string;
+    }> = [
+      { rows: data.user_currency_preferences, column: "currency_code" },
+      { rows: data.user_preferences, column: "default_currency" },
+      { rows: data.accounts, column: "currency_code" },
+      { rows: data.transactions, column: "currency_code" },
+      { rows: data.scheduled_transactions, column: "currency_code" },
+      { rows: data.securities, column: "currency_code" },
+      { rows: data.budgets, column: "currency_code" },
+    ];
+
+    for (const { rows, column } of tablesWithCurrency) {
+      if (!rows) continue;
+      for (const row of rows) {
+        const code = row[column];
+        if (typeof code === "string" && code.length > 0) {
+          referencedCodes.add(code);
+        }
+      }
+    }
+
+    if (referencedCodes.size === 0) return;
+
+    // First, restore user-created currencies from the backup (ON CONFLICT DO NOTHING)
+    if (data.currencies) {
+      for (const row of data.currencies) {
+        const filteredRow = { ...row };
+        filteredRow.created_by_user_id = userId;
+        delete filteredRow.created_at;
+
+        const columns = Object.keys(filteredRow);
+        const values = Object.values(filteredRow);
+        if (columns.length === 0) continue;
+
+        const columnList = columns.map((c) => `"${c}"`).join(", ");
+        const placeholders = columns.map((_, i) => `$${i + 1}`).join(", ");
+        await queryRunner.query(
+          `INSERT INTO "currencies" (${columnList}) VALUES (${placeholders})
+           ON CONFLICT (code) DO NOTHING`,
+          values,
+        );
+      }
+    }
+
+    // Check which codes are still missing from the currencies table
+    const codeArray = Array.from(referencedCodes);
+    const existing: Array<{ code: string }> = await queryRunner.query(
+      `SELECT code FROM currencies WHERE code = ANY($1)`,
+      [codeArray],
+    );
+    const existingSet = new Set(existing.map((r) => r.code));
+    const missing = codeArray.filter((c) => !existingSet.has(c));
+
+    // Auto-create minimal entries for any still-missing currencies
+    for (const code of missing) {
+      await queryRunner.query(
+        `INSERT INTO "currencies" ("code", "name", "symbol", "decimal_places", "is_active", "created_by_user_id")
+         VALUES ($1, $2, $3, 2, true, $4)
+         ON CONFLICT (code) DO NOTHING`,
+        [code, code, code, userId],
+      );
+      this.logger.log(
+        `Auto-created missing currency ${code} during backup restore`,
+      );
     }
   }
 
