@@ -217,6 +217,12 @@ export class ImportService {
       accountsCreated: 0,
       payeesCreated: 0,
       securitiesCreated: 0,
+      createdMappings: {
+        categories: {},
+        accounts: {},
+        loans: {},
+        securities: {},
+      },
     };
 
     try {
