@@ -1741,6 +1741,857 @@ describe("TransactionsService", () => {
         { payeeIds: ["payee-1"] },
       );
     });
+
+    // ==================== Filtered Starting Balance Tests ====================
+
+    describe("content-filtered starting balance (zero-based)", () => {
+      const mockTx = {
+        id: "tx-1",
+        userId: "user-1",
+        accountId: "account-1",
+        amount: -50,
+        status: TransactionStatus.UNRECONCILED,
+        isCleared: false,
+        isReconciled: false,
+        isVoid: false,
+        splits: [],
+      };
+
+      it("returns total sum of matching transactions for page 1 with payee filter", async () => {
+        const mockQb = createMockQueryBuilder();
+        mockQb.getManyAndCount.mockResolvedValue([[mockTx], 1]);
+
+        const idsQb = createMockQueryBuilder();
+        const totalSumQb = createMockQueryBuilder({
+          setParameters: jest.fn().mockReturnThis(),
+        });
+        totalSumQb.getRawOne.mockResolvedValue({ totalSum: -500 });
+
+        transactionsRepository.createQueryBuilder
+          .mockReturnValueOnce(mockQb)
+          .mockReturnValueOnce(idsQb)
+          .mockReturnValueOnce(totalSumQb);
+
+        investmentTxRepository.find.mockResolvedValue([]);
+
+        const result = await service.findAll(
+          "user-1",
+          ["account-1"],
+          undefined,
+          undefined,
+          undefined,
+          ["payee-1"],
+        );
+
+        expect(result.startingBalance).toBe(-500);
+      });
+
+      it("returns total sum of matching transactions for page 1 with search filter", async () => {
+        const mockQb = createMockQueryBuilder();
+        mockQb.getManyAndCount.mockResolvedValue([[mockTx], 1]);
+
+        const idsQb = createMockQueryBuilder();
+        const totalSumQb = createMockQueryBuilder({
+          setParameters: jest.fn().mockReturnThis(),
+        });
+        totalSumQb.getRawOne.mockResolvedValue({ totalSum: -200 });
+
+        transactionsRepository.createQueryBuilder
+          .mockReturnValueOnce(mockQb)
+          .mockReturnValueOnce(idsQb)
+          .mockReturnValueOnce(totalSumQb);
+
+        investmentTxRepository.find.mockResolvedValue([]);
+
+        const result = await service.findAll(
+          "user-1",
+          ["account-1"],
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          1,
+          50,
+          false,
+          "grocery",
+        );
+
+        expect(result.startingBalance).toBe(-200);
+      });
+
+      it("returns total sum of matching transactions for page 1 with amount filter", async () => {
+        const mockQb = createMockQueryBuilder();
+        mockQb.getManyAndCount.mockResolvedValue([[mockTx], 1]);
+
+        const idsQb = createMockQueryBuilder();
+        const totalSumQb = createMockQueryBuilder({
+          setParameters: jest.fn().mockReturnThis(),
+        });
+        totalSumQb.getRawOne.mockResolvedValue({ totalSum: -750 });
+
+        transactionsRepository.createQueryBuilder
+          .mockReturnValueOnce(mockQb)
+          .mockReturnValueOnce(idsQb)
+          .mockReturnValueOnce(totalSumQb);
+
+        investmentTxRepository.find.mockResolvedValue([]);
+
+        const result = await service.findAll(
+          "user-1",
+          ["account-1"],
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          1,
+          50,
+          false,
+          undefined,
+          undefined,
+          -100,
+          -10,
+        );
+
+        expect(result.startingBalance).toBe(-750);
+      });
+
+      it("returns total sum of matching transactions for page 1 with tag filter", async () => {
+        const mockQb = createMockQueryBuilder();
+        mockQb.getManyAndCount.mockResolvedValue([[mockTx], 1]);
+
+        const idsQb = createMockQueryBuilder();
+        const totalSumQb = createMockQueryBuilder({
+          setParameters: jest.fn().mockReturnThis(),
+        });
+        totalSumQb.getRawOne.mockResolvedValue({ totalSum: -300 });
+
+        transactionsRepository.createQueryBuilder
+          .mockReturnValueOnce(mockQb)
+          .mockReturnValueOnce(idsQb)
+          .mockReturnValueOnce(totalSumQb);
+
+        investmentTxRepository.find.mockResolvedValue([]);
+
+        const result = await service.findAll(
+          "user-1",
+          ["account-1"],
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          1,
+          50,
+          false,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          ["tag-1"],
+        );
+
+        expect(result.startingBalance).toBe(-300);
+      });
+
+      it("returns total sum of matching transactions for page 1 with category filter", async () => {
+        const mockQb = createMockQueryBuilder();
+        mockQb.getManyAndCount.mockResolvedValue([[mockTx], 1]);
+
+        // Category filter triggers getAllCategoryIdsWithChildren
+        categoriesRepository.find.mockResolvedValue([
+          { id: "cat-1", parentId: null },
+        ]);
+
+        const idsQb = createMockQueryBuilder();
+        const totalSumQb = createMockQueryBuilder({
+          setParameters: jest.fn().mockReturnThis(),
+        });
+        totalSumQb.getRawOne.mockResolvedValue({ totalSum: -400 });
+
+        transactionsRepository.createQueryBuilder
+          .mockReturnValueOnce(mockQb)
+          .mockReturnValueOnce(idsQb)
+          .mockReturnValueOnce(totalSumQb);
+
+        investmentTxRepository.find.mockResolvedValue([]);
+
+        const result = await service.findAll(
+          "user-1",
+          ["account-1"],
+          undefined,
+          undefined,
+          ["cat-1"],
+        );
+
+        expect(result.startingBalance).toBe(-400);
+      });
+
+      it("subtracts previous pages sum for page > 1 with content filter", async () => {
+        const mockQb = createMockQueryBuilder();
+        mockQb.getManyAndCount.mockResolvedValue([[mockTx], 100]);
+
+        // buildFilteredIdsSubquery for totalSum
+        const idsQb1 = createMockQueryBuilder();
+        // totalSum QB
+        const totalSumQb = createMockQueryBuilder({
+          setParameters: jest.fn().mockReturnThis(),
+        });
+        totalSumQb.getRawOne.mockResolvedValue({ totalSum: -3000 });
+
+        // buildFilteredIdsSubquery for prevPagesSum
+        const idsQb2 = createMockQueryBuilder();
+        // prevIdsQuery QB
+        const prevIdsQb = createMockQueryBuilder({
+          setParameters: jest.fn().mockReturnThis(),
+        });
+        // sumResult QB
+        const sumQb = createMockQueryBuilder({
+          setParameters: jest.fn().mockReturnThis(),
+        });
+        sumQb.getRawOne.mockResolvedValue({ sum: -1000 });
+
+        transactionsRepository.createQueryBuilder
+          .mockReturnValueOnce(mockQb)
+          .mockReturnValueOnce(idsQb1)
+          .mockReturnValueOnce(totalSumQb)
+          .mockReturnValueOnce(idsQb2)
+          .mockReturnValueOnce(prevIdsQb)
+          .mockReturnValueOnce(sumQb);
+
+        investmentTxRepository.find.mockResolvedValue([]);
+
+        const result = await service.findAll(
+          "user-1",
+          ["account-1"],
+          undefined,
+          undefined,
+          undefined,
+          ["payee-1"],
+          2,
+          50,
+        );
+
+        // startingBalance = totalSum - prevPagesSum = -3000 - (-1000) = -2000
+        expect(result.startingBalance).toBe(-2000);
+      });
+
+      it("returns zero starting balance when no matching transactions", async () => {
+        const mockQb = createMockQueryBuilder();
+        mockQb.getManyAndCount.mockResolvedValue([[mockTx], 1]);
+
+        const idsQb = createMockQueryBuilder();
+        const totalSumQb = createMockQueryBuilder({
+          setParameters: jest.fn().mockReturnThis(),
+        });
+        totalSumQb.getRawOne.mockResolvedValue({ totalSum: 0 });
+
+        transactionsRepository.createQueryBuilder
+          .mockReturnValueOnce(mockQb)
+          .mockReturnValueOnce(idsQb)
+          .mockReturnValueOnce(totalSumQb);
+
+        investmentTxRepository.find.mockResolvedValue([]);
+
+        const result = await service.findAll(
+          "user-1",
+          ["account-1"],
+          undefined,
+          undefined,
+          undefined,
+          ["payee-nonexistent"],
+        );
+
+        expect(result.startingBalance).toBe(0);
+      });
+
+      it("applies payee filter to balance subquery", async () => {
+        const mockQb = createMockQueryBuilder();
+        mockQb.getManyAndCount.mockResolvedValue([[mockTx], 1]);
+
+        const idsQb = createMockQueryBuilder();
+        const totalSumQb = createMockQueryBuilder({
+          setParameters: jest.fn().mockReturnThis(),
+        });
+        totalSumQb.getRawOne.mockResolvedValue({ totalSum: -100 });
+
+        transactionsRepository.createQueryBuilder
+          .mockReturnValueOnce(mockQb)
+          .mockReturnValueOnce(idsQb)
+          .mockReturnValueOnce(totalSumQb);
+
+        investmentTxRepository.find.mockResolvedValue([]);
+
+        await service.findAll(
+          "user-1",
+          ["account-1"],
+          undefined,
+          undefined,
+          undefined,
+          ["payee-1", "payee-2"],
+        );
+
+        // The idsQb (buildFilteredIdsSubquery) should filter by payee
+        expect(idsQb.andWhere).toHaveBeenCalledWith(
+          "bf.payeeId IN (:...bfPayeeIds)",
+          { bfPayeeIds: ["payee-1", "payee-2"] },
+        );
+      });
+
+      it("applies amount filter to balance subquery", async () => {
+        const mockQb = createMockQueryBuilder();
+        mockQb.getManyAndCount.mockResolvedValue([[mockTx], 1]);
+
+        const idsQb = createMockQueryBuilder();
+        const totalSumQb = createMockQueryBuilder({
+          setParameters: jest.fn().mockReturnThis(),
+        });
+        totalSumQb.getRawOne.mockResolvedValue({ totalSum: -100 });
+
+        transactionsRepository.createQueryBuilder
+          .mockReturnValueOnce(mockQb)
+          .mockReturnValueOnce(idsQb)
+          .mockReturnValueOnce(totalSumQb);
+
+        investmentTxRepository.find.mockResolvedValue([]);
+
+        await service.findAll(
+          "user-1",
+          ["account-1"],
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          1,
+          50,
+          false,
+          undefined,
+          undefined,
+          -100,
+          -10,
+        );
+
+        expect(idsQb.andWhere).toHaveBeenCalledWith(
+          "bf.amount >= :bfAmountFrom",
+          { bfAmountFrom: -100 },
+        );
+        expect(idsQb.andWhere).toHaveBeenCalledWith(
+          "bf.amount <= :bfAmountTo",
+          { bfAmountTo: -10 },
+        );
+      });
+
+      it("applies search filter to balance subquery with splits join", async () => {
+        const mockQb = createMockQueryBuilder();
+        mockQb.getManyAndCount.mockResolvedValue([[mockTx], 1]);
+
+        const idsQb = createMockQueryBuilder();
+        const totalSumQb = createMockQueryBuilder({
+          setParameters: jest.fn().mockReturnThis(),
+        });
+        totalSumQb.getRawOne.mockResolvedValue({ totalSum: -100 });
+
+        transactionsRepository.createQueryBuilder
+          .mockReturnValueOnce(mockQb)
+          .mockReturnValueOnce(idsQb)
+          .mockReturnValueOnce(totalSumQb);
+
+        investmentTxRepository.find.mockResolvedValue([]);
+
+        await service.findAll(
+          "user-1",
+          ["account-1"],
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          1,
+          50,
+          false,
+          "grocery",
+        );
+
+        // Should join splits for search
+        expect(idsQb.leftJoin).toHaveBeenCalledWith("bf.splits", "bfSplits");
+        expect(idsQb.andWhere).toHaveBeenCalledWith(
+          "(bf.description ILIKE :bfSearch OR bf.payeeName ILIKE :bfSearch OR bfSplits.memo ILIKE :bfSearch)",
+          { bfSearch: "%grocery%" },
+        );
+      });
+
+      it("applies tag filter to balance subquery with tag joins", async () => {
+        const mockQb = createMockQueryBuilder();
+        mockQb.getManyAndCount.mockResolvedValue([[mockTx], 1]);
+
+        const idsQb = createMockQueryBuilder();
+        const totalSumQb = createMockQueryBuilder({
+          setParameters: jest.fn().mockReturnThis(),
+        });
+        totalSumQb.getRawOne.mockResolvedValue({ totalSum: -100 });
+
+        transactionsRepository.createQueryBuilder
+          .mockReturnValueOnce(mockQb)
+          .mockReturnValueOnce(idsQb)
+          .mockReturnValueOnce(totalSumQb);
+
+        investmentTxRepository.find.mockResolvedValue([]);
+
+        await service.findAll(
+          "user-1",
+          ["account-1"],
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          1,
+          50,
+          false,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          ["tag-1"],
+        );
+
+        // Should join splits and tags
+        expect(idsQb.leftJoin).toHaveBeenCalledWith("bf.splits", "bfSplits");
+        expect(idsQb.leftJoin).toHaveBeenCalledWith("bf.tags", "bfTags");
+        expect(idsQb.leftJoin).toHaveBeenCalledWith(
+          "bfSplits.tags",
+          "bfSplitTags",
+        );
+        expect(idsQb.andWhere).toHaveBeenCalledWith(expect.any(Brackets));
+      });
+
+      it("applies category filter with child categories to balance subquery", async () => {
+        const mockQb = createMockQueryBuilder();
+        mockQb.getManyAndCount.mockResolvedValue([[mockTx], 1]);
+
+        categoriesRepository.find.mockResolvedValue([
+          { id: "cat-1", parentId: null },
+          { id: "cat-1-child", parentId: "cat-1" },
+        ]);
+
+        const idsQb = createMockQueryBuilder();
+        const totalSumQb = createMockQueryBuilder({
+          setParameters: jest.fn().mockReturnThis(),
+        });
+        totalSumQb.getRawOne.mockResolvedValue({ totalSum: -400 });
+
+        transactionsRepository.createQueryBuilder
+          .mockReturnValueOnce(mockQb)
+          .mockReturnValueOnce(idsQb)
+          .mockReturnValueOnce(totalSumQb);
+
+        investmentTxRepository.find.mockResolvedValue([]);
+
+        await service.findAll(
+          "user-1",
+          ["account-1"],
+          undefined,
+          undefined,
+          ["cat-1"],
+        );
+
+        // Should join splits for category matching
+        expect(idsQb.leftJoin).toHaveBeenCalledWith("bf.splits", "bfSplits");
+        expect(idsQb.andWhere).toHaveBeenCalledWith(expect.any(Brackets));
+        // Category IDs are expanded to include children
+        expect(idsQb.where).toHaveBeenCalledWith(
+          "bf.categoryId IN (:...bfCatIds)",
+          { bfCatIds: expect.arrayContaining(["cat-1", "cat-1-child"]) },
+        );
+      });
+
+      it("applies date filters alongside content filters in balance subquery", async () => {
+        const mockQb = createMockQueryBuilder();
+        mockQb.getManyAndCount.mockResolvedValue([[mockTx], 1]);
+
+        const idsQb = createMockQueryBuilder();
+        const totalSumQb = createMockQueryBuilder({
+          setParameters: jest.fn().mockReturnThis(),
+        });
+        totalSumQb.getRawOne.mockResolvedValue({ totalSum: -250 });
+
+        transactionsRepository.createQueryBuilder
+          .mockReturnValueOnce(mockQb)
+          .mockReturnValueOnce(idsQb)
+          .mockReturnValueOnce(totalSumQb);
+
+        investmentTxRepository.find.mockResolvedValue([]);
+
+        const result = await service.findAll(
+          "user-1",
+          ["account-1"],
+          "2026-01-01",
+          "2026-03-31",
+          undefined,
+          ["payee-1"],
+        );
+
+        // Content filter takes priority, so zero-based balance
+        expect(result.startingBalance).toBe(-250);
+        // Date filters are still applied to the subquery
+        expect(idsQb.andWhere).toHaveBeenCalledWith(
+          "bf.transactionDate >= :bfStartDate",
+          { bfStartDate: "2026-01-01" },
+        );
+        expect(idsQb.andWhere).toHaveBeenCalledWith(
+          "bf.transactionDate <= :bfEndDate",
+          { bfEndDate: "2026-03-31" },
+        );
+      });
+    });
+
+    describe("date-filtered starting balance", () => {
+      const mockTx = {
+        id: "tx-1",
+        userId: "user-1",
+        accountId: "account-1",
+        amount: -50,
+        status: TransactionStatus.UNRECONCILED,
+        isCleared: false,
+        isReconciled: false,
+        isVoid: false,
+        splits: [],
+      };
+
+      it("returns balance at end of date range for page 1 with endDate", async () => {
+        const mockQb = createMockQueryBuilder();
+        mockQb.getManyAndCount.mockResolvedValue([[mockTx], 1]);
+
+        // computeProjectedBalance: future sum QB
+        const futureQb = createMockQueryBuilder();
+        futureQb.getRawOne.mockResolvedValue({ sum: 0 });
+
+        // sumAfterEndDate QB
+        const sumAfterQb = createMockQueryBuilder();
+        sumAfterQb.getRawOne.mockResolvedValue({ sum: -300 });
+
+        transactionsRepository.createQueryBuilder
+          .mockReturnValueOnce(mockQb)
+          .mockReturnValueOnce(futureQb)
+          .mockReturnValueOnce(sumAfterQb);
+
+        investmentTxRepository.find.mockResolvedValue([]);
+        accountsService.findOne.mockResolvedValue({
+          ...mockAccount,
+          currentBalance: 1000,
+        });
+
+        const result = await service.findAll(
+          "user-1",
+          ["account-1"],
+          "2026-01-01",
+          "2026-01-31",
+        );
+
+        // projected = 1000 + 0 = 1000
+        // balance at end of Jan = 1000 - (-300) = 1300
+        expect(result.startingBalance).toBe(1300);
+      });
+
+      it("returns projected balance for page 1 with startDate only", async () => {
+        const mockQb = createMockQueryBuilder();
+        mockQb.getManyAndCount.mockResolvedValue([[mockTx], 1]);
+
+        // computeProjectedBalance: future sum QB
+        const futureQb = createMockQueryBuilder();
+        futureQb.getRawOne.mockResolvedValue({ sum: 0 });
+
+        transactionsRepository.createQueryBuilder
+          .mockReturnValueOnce(mockQb)
+          .mockReturnValueOnce(futureQb);
+
+        investmentTxRepository.find.mockResolvedValue([]);
+        accountsService.findOne.mockResolvedValue({
+          ...mockAccount,
+          currentBalance: 1000,
+        });
+
+        const result = await service.findAll(
+          "user-1",
+          ["account-1"],
+          "2026-01-01",
+        );
+
+        // With startDate only, projected balance = 1000
+        expect(result.startingBalance).toBe(1000);
+      });
+
+      it("includes future transactions in projected balance for date-filtered view", async () => {
+        const mockQb = createMockQueryBuilder();
+        mockQb.getManyAndCount.mockResolvedValue([[mockTx], 1]);
+
+        const futureQb = createMockQueryBuilder();
+        futureQb.getRawOne.mockResolvedValue({ sum: 500 });
+
+        const sumAfterQb = createMockQueryBuilder();
+        sumAfterQb.getRawOne.mockResolvedValue({ sum: 200 });
+
+        transactionsRepository.createQueryBuilder
+          .mockReturnValueOnce(mockQb)
+          .mockReturnValueOnce(futureQb)
+          .mockReturnValueOnce(sumAfterQb);
+
+        investmentTxRepository.find.mockResolvedValue([]);
+        accountsService.findOne.mockResolvedValue({
+          ...mockAccount,
+          currentBalance: 1000,
+        });
+
+        const result = await service.findAll(
+          "user-1",
+          ["account-1"],
+          "2026-01-01",
+          "2026-01-31",
+        );
+
+        // projected = 1000 + 500 = 1500
+        // balance at end of Jan = 1500 - 200 = 1300
+        expect(result.startingBalance).toBe(1300);
+      });
+
+      it("subtracts date-filtered previous pages sum for page > 1 with endDate", async () => {
+        const mockQb = createMockQueryBuilder();
+        mockQb.getManyAndCount.mockResolvedValue([[mockTx], 100]);
+
+        const futureQb = createMockQueryBuilder();
+        futureQb.getRawOne.mockResolvedValue({ sum: 0 });
+
+        const sumAfterQb = createMockQueryBuilder();
+        sumAfterQb.getRawOne.mockResolvedValue({ sum: -300 });
+
+        // previousPagesQuery QB (date-filtered)
+        const prevPagesQb = createMockQueryBuilder();
+        // sumResult QB
+        const sumQb = createMockQueryBuilder({
+          setParameters: jest.fn().mockReturnThis(),
+        });
+        sumQb.getRawOne.mockResolvedValue({ sum: -100 });
+
+        transactionsRepository.createQueryBuilder
+          .mockReturnValueOnce(mockQb)
+          .mockReturnValueOnce(futureQb)
+          .mockReturnValueOnce(sumAfterQb)
+          .mockReturnValueOnce(prevPagesQb)
+          .mockReturnValueOnce(sumQb);
+
+        investmentTxRepository.find.mockResolvedValue([]);
+        accountsService.findOne.mockResolvedValue({
+          ...mockAccount,
+          currentBalance: 1000,
+        });
+
+        const result = await service.findAll(
+          "user-1",
+          ["account-1"],
+          "2026-01-01",
+          "2026-01-31",
+          undefined,
+          undefined,
+          2,
+          50,
+        );
+
+        // baseBalance = 1000 - (-300) = 1300
+        // startingBalance = 1300 - (-100) = 1400
+        expect(result.startingBalance).toBe(1400);
+      });
+
+      it("applies date constraints to previous pages query", async () => {
+        const mockQb = createMockQueryBuilder();
+        mockQb.getManyAndCount.mockResolvedValue([[mockTx], 100]);
+
+        const futureQb = createMockQueryBuilder();
+        futureQb.getRawOne.mockResolvedValue({ sum: 0 });
+
+        const sumAfterQb = createMockQueryBuilder();
+        sumAfterQb.getRawOne.mockResolvedValue({ sum: 0 });
+
+        const prevPagesQb = createMockQueryBuilder();
+        const sumQb = createMockQueryBuilder({
+          setParameters: jest.fn().mockReturnThis(),
+        });
+        sumQb.getRawOne.mockResolvedValue({ sum: 0 });
+
+        transactionsRepository.createQueryBuilder
+          .mockReturnValueOnce(mockQb)
+          .mockReturnValueOnce(futureQb)
+          .mockReturnValueOnce(sumAfterQb)
+          .mockReturnValueOnce(prevPagesQb)
+          .mockReturnValueOnce(sumQb);
+
+        investmentTxRepository.find.mockResolvedValue([]);
+        accountsService.findOne.mockResolvedValue({
+          ...mockAccount,
+          currentBalance: 1000,
+        });
+
+        await service.findAll(
+          "user-1",
+          ["account-1"],
+          "2026-01-01",
+          "2026-01-31",
+          undefined,
+          undefined,
+          2,
+          50,
+        );
+
+        // Previous pages query should have date constraints
+        expect(prevPagesQb.andWhere).toHaveBeenCalledWith(
+          "t.transactionDate >= :startDate",
+          { startDate: "2026-01-01" },
+        );
+        expect(prevPagesQb.andWhere).toHaveBeenCalledWith(
+          "t.transactionDate <= :endDate",
+          { endDate: "2026-01-31" },
+        );
+      });
+
+      it("subtracts date-filtered previous pages sum for page > 1 with startDate only", async () => {
+        const mockQb = createMockQueryBuilder();
+        mockQb.getManyAndCount.mockResolvedValue([[mockTx], 100]);
+
+        const futureQb = createMockQueryBuilder();
+        futureQb.getRawOne.mockResolvedValue({ sum: 0 });
+
+        const prevPagesQb = createMockQueryBuilder();
+        const sumQb = createMockQueryBuilder({
+          setParameters: jest.fn().mockReturnThis(),
+        });
+        sumQb.getRawOne.mockResolvedValue({ sum: -200 });
+
+        transactionsRepository.createQueryBuilder
+          .mockReturnValueOnce(mockQb)
+          .mockReturnValueOnce(futureQb)
+          .mockReturnValueOnce(prevPagesQb)
+          .mockReturnValueOnce(sumQb);
+
+        investmentTxRepository.find.mockResolvedValue([]);
+        accountsService.findOne.mockResolvedValue({
+          ...mockAccount,
+          currentBalance: 1000,
+        });
+
+        const result = await service.findAll(
+          "user-1",
+          ["account-1"],
+          "2026-01-01",
+          undefined,
+          undefined,
+          undefined,
+          2,
+          50,
+        );
+
+        // projected = 1000, startingBalance = 1000 - (-200) = 1200
+        expect(result.startingBalance).toBe(1200);
+        // Previous pages query should have startDate constraint
+        expect(prevPagesQb.andWhere).toHaveBeenCalledWith(
+          "t.transactionDate >= :startDate",
+          { startDate: "2026-01-01" },
+        );
+      });
+    });
+
+    describe("unfiltered starting balance (preserved behavior)", () => {
+      const mockTx = {
+        id: "tx-1",
+        userId: "user-1",
+        accountId: "account-1",
+        amount: -50,
+        status: TransactionStatus.UNRECONCILED,
+        isCleared: false,
+        isReconciled: false,
+        isVoid: false,
+        splits: [],
+      };
+
+      it("uses projected balance for page 1 with no filters", async () => {
+        const mockQb = createMockQueryBuilder();
+        mockQb.getManyAndCount.mockResolvedValue([[mockTx], 1]);
+
+        const futureQb = createMockQueryBuilder();
+        futureQb.getRawOne.mockResolvedValue({ sum: 0 });
+
+        transactionsRepository.createQueryBuilder
+          .mockReturnValueOnce(mockQb)
+          .mockReturnValueOnce(futureQb);
+
+        investmentTxRepository.find.mockResolvedValue([]);
+        accountsService.findOne.mockResolvedValue({
+          ...mockAccount,
+          currentBalance: 1000,
+        });
+
+        const result = await service.findAll("user-1", ["account-1"]);
+
+        expect(result.startingBalance).toBe(1000);
+      });
+
+      it("uses projected balance with future transactions for page 1 with no filters", async () => {
+        const mockQb = createMockQueryBuilder();
+        mockQb.getManyAndCount.mockResolvedValue([[mockTx], 1]);
+
+        const futureQb = createMockQueryBuilder();
+        futureQb.getRawOne.mockResolvedValue({ sum: -5000 });
+
+        transactionsRepository.createQueryBuilder
+          .mockReturnValueOnce(mockQb)
+          .mockReturnValueOnce(futureQb);
+
+        investmentTxRepository.find.mockResolvedValue([]);
+        accountsService.findOne.mockResolvedValue({
+          ...mockAccount,
+          currentBalance: 8000,
+        });
+
+        const result = await service.findAll("user-1", ["account-1"]);
+
+        // projected = 8000 + (-5000) = 3000
+        expect(result.startingBalance).toBe(3000);
+      });
+
+      it("subtracts unfiltered previous pages sum for page > 1 with no filters", async () => {
+        const mockQb = createMockQueryBuilder();
+        mockQb.getManyAndCount.mockResolvedValue([[mockTx], 100]);
+
+        const futureQb = createMockQueryBuilder();
+        futureQb.getRawOne.mockResolvedValue({ sum: 0 });
+
+        const prevPagesQb = createMockQueryBuilder();
+        const sumQb = createMockQueryBuilder({
+          setParameters: jest.fn().mockReturnThis(),
+        });
+        sumQb.getRawOne.mockResolvedValue({ sum: -500 });
+
+        transactionsRepository.createQueryBuilder
+          .mockReturnValueOnce(mockQb)
+          .mockReturnValueOnce(futureQb)
+          .mockReturnValueOnce(prevPagesQb)
+          .mockReturnValueOnce(sumQb);
+
+        investmentTxRepository.find.mockResolvedValue([]);
+        accountsService.findOne.mockResolvedValue({
+          ...mockAccount,
+          currentBalance: 2000,
+        });
+
+        const result = await service.findAll(
+          "user-1",
+          ["account-1"],
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          2,
+          50,
+        );
+
+        // projected = 2000, startingBalance = 2000 - (-500) = 2500
+        expect(result.startingBalance).toBe(2500);
+      });
+    });
   });
 
   describe("getReconciliationData", () => {
