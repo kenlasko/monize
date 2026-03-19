@@ -76,7 +76,7 @@ export enum SortDirection {
 }
 
 // Filter group types
-export type FilterField = "account" | "category" | "payee" | "text";
+export type FilterField = "account" | "category" | "payee" | "tag" | "text";
 
 export interface FilterCondition {
   field: FilterField;
