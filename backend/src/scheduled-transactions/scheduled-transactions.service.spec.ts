@@ -7,6 +7,7 @@ import { ScheduledTransaction } from "./entities/scheduled-transaction.entity";
 import { ScheduledTransactionSplit } from "./entities/scheduled-transaction-split.entity";
 import { ScheduledTransactionOverride } from "./entities/scheduled-transaction-override.entity";
 import { Account } from "../accounts/entities/account.entity";
+import { Tag } from "../tags/entities/tag.entity";
 import { AccountsService } from "../accounts/accounts.service";
 import { TransactionsService } from "../transactions/transactions.service";
 import { ScheduledTransactionOverrideService } from "./scheduled-transaction-override.service";
@@ -18,6 +19,7 @@ describe("ScheduledTransactionsService", () => {
   let splitsRepo: Record<string, jest.Mock>;
   let overridesRepo: Record<string, jest.Mock>;
   let accountsRepo: Record<string, jest.Mock>;
+  let tagRepo: Record<string, jest.Mock>;
   let accountsService: Record<string, jest.Mock>;
   let transactionsService: Record<string, jest.Mock>;
   let mockQueryRunner: Record<string, any>;
@@ -124,6 +126,10 @@ describe("ScheduledTransactionsService", () => {
       findOne: jest.fn(),
     };
 
+    tagRepo = {
+      findBy: jest.fn().mockResolvedValue([]),
+    };
+
     accountsService = {
       findOne: jest.fn().mockResolvedValue({ id: "acc-1", userId }),
     };
@@ -174,6 +180,7 @@ describe("ScheduledTransactionsService", () => {
           useValue: overridesRepo,
         },
         { provide: getRepositoryToken(Account), useValue: accountsRepo },
+        { provide: getRepositoryToken(Tag), useValue: tagRepo },
         { provide: AccountsService, useValue: accountsService },
         { provide: TransactionsService, useValue: transactionsService },
         { provide: DataSource, useValue: mockDataSource },

@@ -7,7 +7,7 @@ import {
   Logger,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository, LessThanOrEqual, DataSource } from "typeorm";
+import { Repository, LessThanOrEqual, DataSource, In } from "typeorm";
 import { Cron } from "@nestjs/schedule";
 import {
   ScheduledTransaction,
@@ -23,6 +23,7 @@ import {
   UpdateScheduledTransactionOverrideDto,
 } from "./dto/scheduled-transaction-override.dto";
 import { PostScheduledTransactionDto } from "./dto/post-scheduled-transaction.dto";
+import { Tag } from "../tags/entities/tag.entity";
 import { AccountsService } from "../accounts/accounts.service";
 import { TransactionsService } from "../transactions/transactions.service";
 import { ScheduledTransactionOverrideService } from "./scheduled-transaction-override.service";
@@ -40,6 +41,8 @@ export class ScheduledTransactionsService {
     private splitsRepository: Repository<ScheduledTransactionSplit>,
     @InjectRepository(ScheduledTransactionOverride)
     private overridesRepository: Repository<ScheduledTransactionOverride>,
+    @InjectRepository(Tag)
+    private tagRepository: Repository<Tag>,
     @Inject(forwardRef(() => AccountsService))
     private accountsService: AccountsService,
     private transactionsService: TransactionsService,
@@ -70,6 +73,7 @@ export class ScheduledTransactionsService {
           "splits",
           "splits.category",
           "splits.transferAccount",
+          "splits.tags",
         ],
         order: { nextDueDate: "ASC" },
       });
@@ -221,17 +225,31 @@ export class ScheduledTransactionsService {
     scheduledTransactionId: string,
     splits: CreateScheduledTransactionSplitDto[],
   ): Promise<ScheduledTransactionSplit[]> {
-    const splitEntities = splits.map((split) =>
-      this.splitsRepository.create({
+    const savedSplits: ScheduledTransactionSplit[] = [];
+
+    for (const split of splits) {
+      const entity = this.splitsRepository.create({
         scheduledTransactionId,
         categoryId: split.categoryId || null,
         transferAccountId: split.transferAccountId || null,
         amount: split.amount,
         memo: split.memo || null,
-      }),
-    );
+      });
 
-    return this.splitsRepository.save(splitEntities);
+      const saved = await this.splitsRepository.save(entity);
+
+      if (split.tagIds && split.tagIds.length > 0) {
+        const tags = await this.tagRepository.findBy({
+          id: In(split.tagIds),
+        });
+        saved.tags = tags;
+        await this.splitsRepository.save(saved);
+      }
+
+      savedSplits.push(saved);
+    }
+
+    return savedSplits;
   }
 
   async findAll(userId: string): Promise<
@@ -250,6 +268,7 @@ export class ScheduledTransactionsService {
       .leftJoinAndSelect("st.splits", "splits")
       .leftJoinAndSelect("splits.category", "splitCategory")
       .leftJoinAndSelect("splits.transferAccount", "splitTransferAccount")
+      .leftJoinAndSelect("splits.tags", "splitTags")
       .where("st.userId = :userId", { userId })
       .orderBy("st.nextDueDate", "ASC")
       .getMany();
@@ -337,6 +356,7 @@ export class ScheduledTransactionsService {
         "splits",
         "splits.category",
         "splits.transferAccount",
+        "splits.tags",
       ],
     });
 
@@ -402,6 +422,7 @@ export class ScheduledTransactionsService {
           "splits",
           "splits.category",
           "splits.transferAccount",
+          "splits.tags",
         ],
       });
 
@@ -424,6 +445,7 @@ export class ScheduledTransactionsService {
       .leftJoinAndSelect("st.splits", "splits")
       .leftJoinAndSelect("splits.category", "splitCategory")
       .leftJoinAndSelect("splits.transferAccount", "splitTransferAccount")
+      .leftJoinAndSelect("splits.tags", "splitTags")
       .where("st.userId = :userId", { userId })
       .andWhere("st.isActive = :isActive", { isActive: true })
       .andWhere("st.nextDueDate <= :futureDate", { futureDate })
@@ -664,6 +686,10 @@ export class ScheduledTransactionsService {
           transferAccountId: split.transferAccountId || undefined,
           amount: Number(split.amount),
           memo: split.memo || undefined,
+          tagIds:
+            split.tags && split.tags.length > 0
+              ? split.tags.map((t) => t.id)
+              : undefined,
         }));
       }
     } else {
