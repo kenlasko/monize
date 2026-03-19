@@ -236,6 +236,16 @@ export class ImportService {
         importResult,
       );
 
+      // Step 1b: Also create categories referenced in transaction L-lines
+      // that are not covered by !Type:Cat (common in Quicken exports)
+      await this.createCategoriesFromBlocks(
+        queryRunner,
+        userId,
+        result.accountBlocks,
+        categoryMap,
+        importResult,
+      );
+
       // Step 2: Create accounts from !Account blocks
       const accountNameToId = new Map<string, string>();
       await this.createAccountsFromBlocks(
@@ -277,8 +287,9 @@ export class ImportService {
       );
 
       // Step 5: Build security map from user-provided security mappings
-      const { securityMap, securitiesToCreate } =
-        this.buildSecurityMappings(dto.securityMappings);
+      const { securityMap, securitiesToCreate } = this.buildSecurityMappings(
+        dto.securityMappings,
+      );
 
       // Create any new securities that the user requested
       if (securitiesToCreate.length > 0) {
@@ -309,7 +320,7 @@ export class ImportService {
 
       // Step 6: Import transactions per account block
       for (const block of result.accountBlocks) {
-        const accountId = accountNameToId.get(block.accountName);
+        let accountId = accountNameToId.get(block.accountName);
         if (!accountId) {
           importResult.errors += block.transactions.length;
           importResult.errorMessages.push(
@@ -318,7 +329,7 @@ export class ImportService {
           continue;
         }
 
-        const account = await queryRunner.manager.findOne(Account, {
+        let account = await queryRunner.manager.findOne(Account, {
           where: { id: accountId },
         });
         if (!account) {
@@ -329,10 +340,33 @@ export class ImportService {
           continue;
         }
 
-        affectedAccountIds.add(accountId);
-
         const isInvestment = block.accountType === "INVESTMENT";
         if (isInvestment) hasInvestment = true;
+
+        // For investment blocks, the accountNameToId maps to the cash account
+        // (for transfer resolution), but the investment processor needs the
+        // brokerage account so that investment transactions and holdings are
+        // recorded there, and the cash-side transaction is routed to the
+        // linked cash account.
+        if (
+          isInvestment &&
+          account.accountSubType === AccountSubType.INVESTMENT_CASH &&
+          account.linkedAccountId
+        ) {
+          const brokerageAccount = await queryRunner.manager.findOne(Account, {
+            where: { id: account.linkedAccountId },
+          });
+          if (
+            brokerageAccount &&
+            brokerageAccount.accountSubType ===
+              AccountSubType.INVESTMENT_BROKERAGE
+          ) {
+            accountId = brokerageAccount.id;
+            account = brokerageAccount;
+          }
+        }
+
+        affectedAccountIds.add(accountId);
 
         const ctx: ImportContext = {
           queryRunner,
@@ -539,6 +573,85 @@ export class ImportService {
     categoryMap.set(name, saved.id);
     importResult.categoriesCreated++;
     return saved.id;
+  }
+
+  /**
+   * Create categories referenced in transaction L-lines across all account blocks
+   * that were not already created from !Type:Cat definitions.
+   * This handles Quicken exports where some categories are used in transactions
+   * but missing from the !Type:Cat section.
+   */
+  private async createCategoriesFromBlocks(
+    queryRunner: any,
+    userId: string,
+    blocks: QifFullParseResult["accountBlocks"],
+    categoryMap: Map<string, string | null>,
+    importResult: ImportResultDto,
+  ): Promise<void> {
+    const processedCategories = new Map<string, string>();
+
+    // Copy existing categoryMap entries into processedCategories for dedup
+    for (const [name, id] of categoryMap) {
+      if (id) {
+        processedCategories.set(`${name}|null`, id);
+      }
+    }
+
+    // Collect all unique category names from all blocks
+    const allCategories = new Set<string>();
+    for (const block of blocks) {
+      for (const cat of block.categories) {
+        if (cat && !categoryMap.has(cat)) {
+          allCategories.add(cat);
+        }
+      }
+    }
+
+    for (const categoryName of allCategories) {
+      const parts = categoryName.split(":");
+      const isSubcategory = parts.length > 1;
+
+      if (isSubcategory) {
+        const parentName = parts[0].trim();
+        const childName = parts.slice(1).join(":").trim();
+
+        const parentId = await this.findOrCreateCategoryDef(
+          queryRunner,
+          userId,
+          parentName,
+          null,
+          false,
+          processedCategories,
+          categoryMap,
+          importResult,
+        );
+
+        await this.findOrCreateCategoryDef(
+          queryRunner,
+          userId,
+          childName,
+          parentId,
+          false,
+          processedCategories,
+          categoryMap,
+          importResult,
+        );
+
+        const childId = processedCategories.get(`${childName}|${parentId}`)!;
+        categoryMap.set(categoryName, childId);
+      } else {
+        await this.findOrCreateCategoryDef(
+          queryRunner,
+          userId,
+          categoryName,
+          null,
+          false,
+          processedCategories,
+          categoryMap,
+          importResult,
+        );
+      }
+    }
   }
 
   /**

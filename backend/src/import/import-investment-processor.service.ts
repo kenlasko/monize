@@ -254,6 +254,8 @@ export class ImportInvestmentProcessorService {
       payeeName = `${actionLabel}: ${securitySymbol} $${totalAmount.toFixed(2)}`;
     }
 
+    const isCrossAccountTransfer = cashAccountId !== ctx.accountId;
+
     const cashTx = new Transaction();
     cashTx.userId = ctx.userId;
     cashTx.accountId = cashAccountId;
@@ -265,11 +267,37 @@ export class ImportInvestmentProcessorService {
     cashTx.payeeId = null;
     cashTx.description = investmentTx.description;
     cashTx.status = TransactionStatus.CLEARED;
-    cashTx.isTransfer = false;
+    cashTx.isTransfer = isCrossAccountTransfer;
 
     const savedCashTx = await ctx.queryRunner.manager.save(cashTx);
 
-    investmentTx.transactionId = savedCashTx.id;
+    // Create linked transaction on the brokerage side so the target account
+    // is visible from both sides of the transfer
+    if (isCrossAccountTransfer) {
+      const brokerageTx = new Transaction();
+      brokerageTx.userId = ctx.userId;
+      brokerageTx.accountId = ctx.accountId;
+      brokerageTx.transactionDate = investmentTx.transactionDate;
+      brokerageTx.amount = -cashAmount;
+      brokerageTx.currencyCode = ctx.account.currencyCode;
+      brokerageTx.exchangeRate = 1;
+      brokerageTx.payeeName = payeeName;
+      brokerageTx.payeeId = null;
+      brokerageTx.description = investmentTx.description;
+      brokerageTx.status = TransactionStatus.CLEARED;
+      brokerageTx.isTransfer = true;
+      brokerageTx.linkedTransactionId = savedCashTx.id;
+
+      const savedBrokerageTx = await ctx.queryRunner.manager.save(brokerageTx);
+
+      savedCashTx.linkedTransactionId = savedBrokerageTx.id;
+      await ctx.queryRunner.manager.save(savedCashTx);
+
+      investmentTx.transactionId = savedBrokerageTx.id;
+    } else {
+      investmentTx.transactionId = savedCashTx.id;
+    }
+
     await ctx.queryRunner.manager.save(investmentTx);
 
     await updateAccountBalance(ctx.queryRunner, cashAccountId, cashAmount);

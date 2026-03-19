@@ -539,7 +539,10 @@ function parseQifDate(dateStr: string, format?: DateFormat): string {
     // Convert 1 or 2-digit year to 4-digit
     if (year.length <= 2) {
       const yearNum = parseInt(year);
-      year = yearNum > 50 ? `19${year.padStart(2, "0")}` : `20${year.padStart(2, "0")}`;
+      year =
+        yearNum > 50
+          ? `19${year.padStart(2, "0")}`
+          : `20${year.padStart(2, "0")}`;
     }
 
     let month: string, day: string;

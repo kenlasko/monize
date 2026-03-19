@@ -221,17 +221,12 @@ describe("TransactionSplitService", () => {
       );
     });
 
-    it("throws when any split amount is zero", () => {
+    it("allows zero amount splits when total matches", () => {
       const splits = [
         { amount: 0, categoryId: "cat-1" },
         { amount: -100, categoryId: "cat-2" },
       ];
-      expect(() => service.validateSplits(splits, -100)).toThrow(
-        BadRequestException,
-      );
-      expect(() => service.validateSplits(splits, -100)).toThrow(
-        "Split amounts cannot be zero",
-      );
+      expect(() => service.validateSplits(splits, -100)).not.toThrow();
     });
 
     it("handles floating point precision correctly", () => {

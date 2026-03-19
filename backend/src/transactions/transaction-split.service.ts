@@ -65,11 +65,6 @@ export class TransactionSplitService {
       );
     }
 
-    for (const split of splits) {
-      if (split.amount === 0) {
-        throw new BadRequestException("Split amounts cannot be zero");
-      }
-    }
   }
 
   async createSplits(
