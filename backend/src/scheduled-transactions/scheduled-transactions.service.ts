@@ -215,12 +215,6 @@ export class ScheduledTransactionsService {
         `Split amounts (${roundedSum}) must equal transaction amount (${roundedAmount})`,
       );
     }
-
-    for (const split of splits) {
-      if (split.amount === 0) {
-        throw new BadRequestException("Split amounts cannot be zero");
-      }
-    }
   }
 
   private async createSplits(

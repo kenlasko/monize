@@ -306,7 +306,11 @@ describe("ScheduledTransactionsService", () => {
       );
     });
 
-    it("should reject splits with zero amount", async () => {
+    it("should allow zero amount splits when total matches", async () => {
+      const saved = makeScheduled({ isSplit: true });
+      scheduledRepo.save.mockResolvedValue(saved);
+      stubFindOne(saved);
+
       const dto = {
         ...baseDto,
         splits: [
@@ -314,9 +318,8 @@ describe("ScheduledTransactionsService", () => {
           { categoryId: "cat-b", amount: -1200 },
         ],
       };
-      await expect(service.create(userId, dto)).rejects.toThrow(
-        BadRequestException,
-      );
+      await service.create(userId, dto);
+      expect(scheduledRepo.save).toHaveBeenCalled();
     });
 
     it("should allow single split with transferAccountId (loan payment)", async () => {
