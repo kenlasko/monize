@@ -219,7 +219,7 @@ describe("ScheduledTransactionOverrideService", () => {
       ).rejects.toThrow(BadRequestException);
     });
 
-    it("should throw BadRequestException when a split amount is zero", async () => {
+    it("should allow zero amount splits when total matches", async () => {
       overridesRepository.createQueryBuilder.mockReturnValue(
         mockQueryBuilder(null),
       );
@@ -235,9 +235,8 @@ describe("ScheduledTransactionOverrideService", () => {
         ],
       };
 
-      await expect(
-        service.createOverride(scheduledTransactionId, dto),
-      ).rejects.toThrow(BadRequestException);
+      await service.createOverride(scheduledTransactionId, dto);
+      expect(overridesRepository.save).toHaveBeenCalled();
     });
 
     it("should map splits with null categoryId and memo", async () => {
