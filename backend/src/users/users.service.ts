@@ -167,8 +167,20 @@ export class UsersService {
     if (dto.gettingStartedDismissed !== undefined) {
       preferences.gettingStartedDismissed = dto.gettingStartedDismissed;
     }
+    if (dto.weekStartsOn !== undefined) {
+      preferences.weekStartsOn = dto.weekStartsOn;
+    }
+    if (dto.budgetDigestEnabled !== undefined) {
+      preferences.budgetDigestEnabled = dto.budgetDigestEnabled;
+    }
+    if (dto.budgetDigestDay !== undefined) {
+      preferences.budgetDigestDay = dto.budgetDigestDay;
+    }
     if (dto.favouriteReportIds !== undefined) {
       preferences.favouriteReportIds = dto.favouriteReportIds;
+    }
+    if (dto.showCreatedAt !== undefined) {
+      preferences.showCreatedAt = dto.showCreatedAt;
     }
 
     return this.preferencesRepository.save(preferences);

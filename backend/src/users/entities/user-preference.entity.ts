@@ -63,6 +63,9 @@ export class UserPreference {
   })
   favouriteReportIds: string[];
 
+  @Column({ name: "show_created_at", default: false })
+  showCreatedAt: boolean;
+
   @CreateDateColumn({ name: "created_at" })
   createdAt: Date;
 
