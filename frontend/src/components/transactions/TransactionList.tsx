@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useMemo, useCallback, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { Transaction, TransactionStatus } from '@/types/transaction';
 import { CategoryBudgetStatus } from '@/types/budget';
@@ -243,6 +243,19 @@ export function TransactionList({
     }
   }, [onRefresh, onTransactionUpdate]);
 
+  // Find the index where future transactions end and today/past begin
+  // Transactions are sorted DESC by date, so future ones come first
+  const futureBoundaryIndex = useMemo(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    for (let i = 0; i < transactions.length; i++) {
+      if (transactions[i].transactionDate <= today) {
+        return i;
+      }
+    }
+    // All transactions are future-dated
+    return transactions.length;
+  }, [transactions]);
+
   // Calculate running balances
   const runningBalances = useMemo(() => {
     if (!isSingleAccountView || startingBalance === undefined || transactions.length === 0) {
@@ -360,37 +373,56 @@ export function TransactionList({
             </tr>
           </thead>
           <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-            {transactions.map((transaction, index) => (
-              <TransactionRow
-                key={transaction.id}
-                transaction={transaction}
-                index={index}
-                density={density}
-                cellPadding={cellPadding}
-                isSingleAccountView={isSingleAccountView}
-                runningBalance={runningBalances.get(transaction.id)}
-                isDeleting={deletingId === transaction.id}
-                formatDate={formatDate}
-                formatAmount={formatAmount}
-                formatBalance={formatBalance}
-                onRowClick={handleRowClick}
-                onLongPressStart={handleLongPressStart}
-                onLongPressStartTouch={handleLongPressStartTouch}
-                onLongPressEnd={handleLongPressEnd}
-                onTouchMove={handleTouchMove}
-                onPayeeClick={onPayeeClick}
-                onTransferClick={onTransferClick}
-                onCategoryClick={onCategoryClick}
-                onCycleStatus={handleCycleStatus}
-                onEdit={onEdit}
-                onDeleteClick={handleDeleteClick}
-                selectionMode={selectionMode}
-                isSelected={selectionMode ? selectedIds?.has(transaction.id) : undefined}
-                onToggleSelection={selectionMode ? () => onToggleSelection?.(transaction.id) : undefined}
-                categoryColorMap={categoryColorMap}
-                budgetStatusMap={budgetStatusMap}
-              />
-            ))}
+            {transactions.map((transaction, index) => {
+              const isFuture = index < futureBoundaryIndex;
+              const colCount = 8
+                + (selectionMode ? 1 : 0)
+                + (isSingleAccountView ? 1 : 0);
+              return (
+                <React.Fragment key={transaction.id}>
+                  {index === futureBoundaryIndex && futureBoundaryIndex > 0 && (
+                    <tr>
+                      <td colSpan={colCount} className="px-0 py-0">
+                        <div className="flex items-center gap-3 px-4 py-1.5">
+                          <div className="flex-1 border-t border-blue-300 dark:border-blue-700" />
+                          <span className="text-xs font-medium text-blue-500 dark:text-blue-400 uppercase tracking-wider whitespace-nowrap">Today</span>
+                          <div className="flex-1 border-t border-blue-300 dark:border-blue-700" />
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                  <TransactionRow
+                    transaction={transaction}
+                    index={index}
+                    density={density}
+                    cellPadding={cellPadding}
+                    isSingleAccountView={isSingleAccountView}
+                    runningBalance={runningBalances.get(transaction.id)}
+                    isDeleting={deletingId === transaction.id}
+                    formatDate={formatDate}
+                    formatAmount={formatAmount}
+                    formatBalance={formatBalance}
+                    onRowClick={handleRowClick}
+                    onLongPressStart={handleLongPressStart}
+                    onLongPressStartTouch={handleLongPressStartTouch}
+                    onLongPressEnd={handleLongPressEnd}
+                    onTouchMove={handleTouchMove}
+                    onPayeeClick={onPayeeClick}
+                    onTransferClick={onTransferClick}
+                    onCategoryClick={onCategoryClick}
+                    onCycleStatus={handleCycleStatus}
+                    onEdit={onEdit}
+                    onDeleteClick={handleDeleteClick}
+                    selectionMode={selectionMode}
+                    isSelected={selectionMode ? selectedIds?.has(transaction.id) : undefined}
+                    onToggleSelection={selectionMode ? () => onToggleSelection?.(transaction.id) : undefined}
+                    categoryColorMap={categoryColorMap}
+                    budgetStatusMap={budgetStatusMap}
+                    isFuture={isFuture}
+                  />
+                </React.Fragment>
+              );
+            })}
           </tbody>
         </table>
       </div>

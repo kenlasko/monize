@@ -34,6 +34,7 @@ export interface TransactionRowProps {
   onToggleSelection?: () => void;
   categoryColorMap?: Map<string, string | null>;
   budgetStatusMap?: Record<string, CategoryBudgetStatus>;
+  isFuture?: boolean;
 }
 
 export const TransactionRow = memo(function TransactionRow({
@@ -63,6 +64,7 @@ export const TransactionRow = memo(function TransactionRow({
   onToggleSelection,
   categoryColorMap,
   budgetStatusMap,
+  isFuture,
 }: TransactionRowProps) {
   const isVoid = transaction.status === TransactionStatus.VOID;
   const categoryColor = transaction.category
@@ -79,7 +81,7 @@ export const TransactionRow = memo(function TransactionRow({
       onTouchMove={onTouchMove}
       onTouchEnd={onLongPressEnd}
       onTouchCancel={onLongPressEnd}
-      className={`hover:bg-gray-100 dark:hover:bg-gray-800 ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-gray-800/50' : ''} ${isVoid ? 'opacity-50' : ''} ${onEdit ? 'cursor-pointer' : ''} ${isSelected ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}
+      className={`hover:bg-gray-100 dark:hover:bg-gray-800 ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-gray-800/50' : ''} ${isVoid ? 'opacity-50' : ''} ${isFuture && !isVoid ? 'opacity-60' : ''} ${onEdit ? 'cursor-pointer' : ''} ${isSelected ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}
     >
       {selectionMode && (
         <td className={`${cellPadding} whitespace-nowrap w-10`} onClick={e => e.stopPropagation()}>
