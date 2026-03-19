@@ -880,7 +880,29 @@ export class AccountsService {
       currencyCode: string;
     }>
   > {
-    const end = endDate || todayYMD();
+    let end = endDate || todayYMD();
+
+    // When no explicit endDate, extend to include future transactions
+    if (!endDate) {
+      const accountIdsFilter =
+        accountIds && accountIds.length > 0 ? accountIds : null;
+      const maxDateResult = await this.dataSource.query(
+        `SELECT MAX(t.transaction_date)::TEXT as max_date
+         FROM transactions t
+         JOIN accounts a ON a.id = t.account_id
+         WHERE a.user_id = $1
+           AND ($2::UUID[] IS NULL OR t.account_id = ANY($2::UUID[]))
+           AND (t.status IS NULL OR t.status != 'VOID')
+           AND t.parent_transaction_id IS NULL
+           AND t.transaction_date > $3`,
+        [userId, accountIdsFilter, end],
+      );
+      const maxFutureDate = maxDateResult?.[0]?.max_date;
+      if (maxFutureDate && maxFutureDate > end) {
+        end = maxFutureDate;
+      }
+    }
+
     const start =
       startDate ||
       (() => {
