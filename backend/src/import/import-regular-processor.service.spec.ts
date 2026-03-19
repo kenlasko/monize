@@ -1413,7 +1413,7 @@ describe("ImportRegularProcessorService", () => {
 
       // Track the savedTx id assigned during processTransaction
       let savedTxId: string | null = null;
-      let linkedTxId: string | null = null;
+      const linkedTxId: string | null = null;
       const originalCreate = ctx.queryRunner.manager.create;
       let createCallIndex = 0;
       ctx.queryRunner.manager.create = jest

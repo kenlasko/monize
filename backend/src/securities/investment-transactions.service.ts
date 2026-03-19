@@ -724,10 +724,7 @@ export class InvestmentTransactionsService {
       await queryRunner.release();
     }
 
-    this.triggerRecalcWithCashAccount(
-      updateDto.accountId ?? accountId,
-      userId,
-    );
+    this.triggerRecalcWithCashAccount(updateDto.accountId ?? accountId, userId);
 
     // Update transaction-derived prices for the new security/date
     const newSecurityId = transaction.securityId;
