@@ -1383,7 +1383,7 @@ describe('TransactionList', () => {
       });
     });
 
-    it('does not show running balance when isSingleAccountView is false', async () => {
+    it('shows running balance when isSingleAccountView is false but startingBalance is provided', async () => {
       const tx = createTransaction({ amount: -50 });
 
       render(
@@ -1393,6 +1393,23 @@ describe('TransactionList', () => {
           onRefresh={mockOnRefresh}
           isSingleAccountView={false}
           startingBalance={1000}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Balance')).toBeInTheDocument();
+      });
+    });
+
+    it('does not show running balance when isSingleAccountView is false and no startingBalance', async () => {
+      const tx = createTransaction({ amount: -50 });
+
+      render(
+        <TransactionList
+          transactions={[tx]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+          isSingleAccountView={false}
         />
       );
 

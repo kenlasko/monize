@@ -256,9 +256,11 @@ export function TransactionList({
     return transactions.length;
   }, [transactions]);
 
+  const showRunningBalance = isSingleAccountView || startingBalance !== undefined;
+
   // Calculate running balances
   const runningBalances = useMemo(() => {
-    if (!isSingleAccountView || startingBalance === undefined || transactions.length === 0) {
+    if (startingBalance === undefined || transactions.length === 0) {
       return new Map<string, number>();
     }
 
@@ -271,7 +273,7 @@ export function TransactionList({
     }
 
     return balances;
-  }, [transactions, startingBalance, isSingleAccountView]);
+  }, [transactions, startingBalance]);
 
   const formatAmount = useCallback((amount: number, currencyCode?: string) => {
     const isNegative = amount < 0;
@@ -365,7 +367,7 @@ export function TransactionList({
               <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden xl:table-cell`}>Description</th>
               <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden xl:table-cell`}>Tags</th>
               <th className={`${headerPadding} text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>Amount</th>
-              {isSingleAccountView && (
+              {showRunningBalance && (
                 <th className={`${headerPadding} text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>Balance</th>
               )}
               <th className={`${headerPadding} text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden sm:table-cell`}>Status</th>
@@ -377,7 +379,7 @@ export function TransactionList({
               const isFuture = index < futureBoundaryIndex;
               const colCount = 9
                 + (selectionMode ? 1 : 0)
-                + (isSingleAccountView ? 1 : 0);
+                + (showRunningBalance ? 1 : 0);
               return (
                 <React.Fragment key={transaction.id}>
                   {index === futureBoundaryIndex && futureBoundaryIndex > 0 && (
@@ -397,6 +399,7 @@ export function TransactionList({
                     density={density}
                     cellPadding={cellPadding}
                     isSingleAccountView={isSingleAccountView}
+                    showRunningBalance={showRunningBalance}
                     runningBalance={runningBalances.get(transaction.id)}
                     isDeleting={deletingId === transaction.id}
                     formatDate={formatDate}

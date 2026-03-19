@@ -13,6 +13,7 @@ export interface TransactionRowProps {
   density: DensityLevel;
   cellPadding: string;
   isSingleAccountView: boolean;
+  showRunningBalance?: boolean;
   runningBalance: number | undefined;
   isDeleting: boolean;
   formatDate: (date: string) => string;
@@ -43,6 +44,7 @@ export const TransactionRow = memo(function TransactionRow({
   density,
   cellPadding,
   isSingleAccountView,
+  showRunningBalance = isSingleAccountView,
   runningBalance,
   isDeleting,
   formatDate,
@@ -289,7 +291,7 @@ export const TransactionRow = memo(function TransactionRow({
       <td className={`${cellPadding} whitespace-nowrap text-sm font-medium text-right ${isVoid ? 'line-through' : ''}`}>
         {formatAmount(transaction.amount, transaction.currencyCode)}
       </td>
-      {isSingleAccountView && (
+      {showRunningBalance && (
         <td className={`${cellPadding} whitespace-nowrap text-sm font-medium text-right`}>
           {runningBalance !== undefined
             ? formatBalance(runningBalance, transaction.currencyCode)

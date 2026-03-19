@@ -347,10 +347,40 @@ export class TransactionsService {
     let startingBalance: number | undefined;
     const singleAccountId =
       accountIds?.length === 1 ? accountIds[0] : undefined;
+    const hasContentFilters = !!(
+      (categoryIds && categoryIds.length > 0) ||
+      (payeeIds && payeeIds.length > 0) ||
+      (tagIds && tagIds.length > 0) ||
+      search ||
+      amountFrom !== undefined ||
+      amountTo !== undefined
+    );
     if (singleAccountId && data.length > 0) {
       startingBalance = await this.calculateStartingBalance(
         userId,
         singleAccountId,
+        safePage,
+        skip,
+        {
+          startDate,
+          endDate,
+          categoryIds,
+          payeeIds,
+          tagIds,
+          search,
+          amountFrom,
+          amountTo,
+        },
+      );
+    } else if (
+      accountIds &&
+      accountIds.length > 1 &&
+      hasContentFilters &&
+      data.length > 0
+    ) {
+      startingBalance = await this.calculateMultiAccountContentFilteredBalance(
+        userId,
+        accountIds,
         safePage,
         skip,
         {
@@ -665,6 +695,51 @@ export class TransactionsService {
   }
 
   /**
+   * Multi-account content-filtered balance: zero-based running balance
+   * across multiple accounts when content filters are active.
+   */
+  private async calculateMultiAccountContentFilteredBalance(
+    userId: string,
+    accountIds: string[],
+    safePage: number,
+    skip: number,
+    filters: {
+      startDate?: string;
+      endDate?: string;
+      categoryIds?: string[];
+      payeeIds?: string[];
+      tagIds?: string[];
+      search?: string;
+      amountFrom?: number;
+      amountTo?: number;
+    },
+  ): Promise<number> {
+    const idsSubquery = await this.buildFilteredIdsSubquery(
+      userId,
+      accountIds,
+      filters,
+    );
+
+    const totalSumResult = await this.transactionsRepository
+      .createQueryBuilder("t")
+      .select("COALESCE(SUM(t.amount), 0)", "totalSum")
+      .where(`t.id IN (${idsSubquery.getQuery()})`)
+      .setParameters(idsSubquery.getParameters())
+      .getRawOne();
+
+    const totalSum = Number(totalSumResult?.totalSum) || 0;
+
+    if (safePage === 1) return totalSum;
+
+    return totalSum - (await this.computeFilteredPrevPagesSum(
+      userId,
+      accountIds,
+      skip,
+      filters,
+    ));
+  }
+
+  /**
    * Date-filtered balance: shows actual account balance at the date range.
    * With endDate: balance at end of date range.
    * With only startDate: projected balance (same as unfiltered).
@@ -770,7 +845,7 @@ export class TransactionsService {
    */
   private async computeFilteredPrevPagesSum(
     userId: string,
-    accountId: string,
+    accountId: string | string[],
     skip: number,
     filters: {
       startDate?: string;
@@ -816,7 +891,7 @@ export class TransactionsService {
    */
   private async buildFilteredIdsSubquery(
     userId: string,
-    accountId: string,
+    accountId: string | string[],
     filters: {
       startDate?: string;
       endDate?: string;
@@ -831,8 +906,15 @@ export class TransactionsService {
     const qb = this.transactionsRepository
       .createQueryBuilder("bf")
       .select("DISTINCT bf.id")
-      .where("bf.userId = :bfUserId", { bfUserId: userId })
-      .andWhere("bf.accountId = :bfAccountId", { bfAccountId: accountId });
+      .where("bf.userId = :bfUserId", { bfUserId: userId });
+
+    if (Array.isArray(accountId)) {
+      qb.andWhere("bf.accountId IN (:...bfAccountIds)", {
+        bfAccountIds: accountId,
+      });
+    } else {
+      qb.andWhere("bf.accountId = :bfAccountId", { bfAccountId: accountId });
+    }
 
     if (filters.startDate) {
       qb.andWhere("bf.transactionDate >= :bfStartDate", {
