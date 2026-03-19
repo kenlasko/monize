@@ -46,10 +46,10 @@ class IsStringOrStringArray implements ValidatorConstraintInterface {
 export class FilterConditionDto {
   @ApiProperty({
     description: "Field to filter on",
-    enum: ["account", "category", "payee", "text"],
+    enum: ["account", "category", "payee", "tag", "text"],
   })
-  @IsIn(["account", "category", "payee", "text"])
-  field: "account" | "category" | "payee" | "text";
+  @IsIn(["account", "category", "payee", "tag", "text"])
+  field: "account" | "category" | "payee" | "tag" | "text";
 
   @ApiProperty({
     description:

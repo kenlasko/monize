@@ -4,6 +4,7 @@ const packageJson = require('./package.json');
 const nextConfig = {
   reactStrictMode: true,
   output: 'standalone', // Optimized for Docker deployment
+  serverExternalPackages: ['jspdf', 'jspdf-autotable', 'fflate'],
   poweredByHeader: false, // Remove X-Powered-By: Next.js header
   env: {
     PUBLIC_APP_URL: process.env.PUBLIC_APP_URL || 'http://localhost:3000',
