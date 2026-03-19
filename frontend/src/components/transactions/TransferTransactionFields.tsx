@@ -1,5 +1,6 @@
 'use client';
 
+import { ReactNode } from 'react';
 import { UseFormRegister, FieldErrors, UseFormSetValue } from 'react-hook-form';
 import { Input } from '@/components/ui/Input';
 import { CurrencyInput } from '@/components/ui/CurrencyInput';
@@ -36,6 +37,7 @@ interface TransferTransactionFieldsProps {
   crossCurrencyInfo: CrossCurrencyInfo | null;
   payees: Payee[];
   transaction?: Transaction;
+  createdAtSlot?: ReactNode;
 }
 
 export function TransferTransactionFields({
@@ -57,17 +59,19 @@ export function TransferTransactionFields({
   crossCurrencyInfo,
   payees,
   transaction: _transaction,
+  createdAtSlot,
 }: TransferTransactionFieldsProps) {
   return (
     <div className="space-y-4">
-      {/* Row 1: Date */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Row 1: Date and optionally Create Date */}
+      <div className={`grid grid-cols-1 gap-4 ${createdAtSlot ? 'md:grid-cols-2' : 'md:grid-cols-2'}`}>
         <Input
           label="Date"
           type="date"
           error={errors.transactionDate?.message as string | undefined}
           {...register('transactionDate')}
         />
+        {createdAtSlot}
       </div>
 
       {/* Row 2: From and To Accounts side by side */}

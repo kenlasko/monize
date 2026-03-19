@@ -1,6 +1,7 @@
 import { Account } from './account';
 import { Payee } from './payee';
 import { Category } from './category';
+import { Tag } from './tag';
 
 export type FrequencyType =
   | 'ONCE'
@@ -32,6 +33,7 @@ export interface ScheduledTransactionSplit {
   transferAccount: Account | null;
   amount: number;
   memo: string | null;
+  tags?: Tag[];
   createdAt: string;
 }
 
@@ -77,6 +79,7 @@ export interface CreateScheduledTransactionSplitData {
   transferAccountId?: string;
   amount: number;
   memo?: string;
+  tagIds?: string[];
 }
 
 export interface CreateScheduledTransactionData {

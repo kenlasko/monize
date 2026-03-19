@@ -4,11 +4,14 @@ import {
   PrimaryGeneratedColumn,
   CreateDateColumn,
   ManyToOne,
+  ManyToMany,
   JoinColumn,
+  JoinTable,
 } from "typeorm";
 import { ScheduledTransaction } from "./scheduled-transaction.entity";
 import { Category } from "../../categories/entities/category.entity";
 import { Account } from "../../accounts/entities/account.entity";
+import { Tag } from "../../tags/entities/tag.entity";
 
 @Entity("scheduled_transaction_splits")
 export class ScheduledTransactionSplit {
@@ -43,6 +46,17 @@ export class ScheduledTransactionSplit {
 
   @Column({ type: "text", nullable: true })
   memo: string | null;
+
+  @ManyToMany(() => Tag)
+  @JoinTable({
+    name: "scheduled_transaction_split_tags",
+    joinColumn: {
+      name: "scheduled_transaction_split_id",
+      referencedColumnName: "id",
+    },
+    inverseJoinColumn: { name: "tag_id", referencedColumnName: "id" },
+  })
+  tags: Tag[];
 
   @CreateDateColumn({ name: "created_at" })
   createdAt: Date;

@@ -1,5 +1,6 @@
 'use client';
 
+import { ReactNode } from 'react';
 import { UseFormRegister, FieldErrors } from 'react-hook-form';
 import { Input } from '@/components/ui/Input';
 import { CurrencyInput } from '@/components/ui/CurrencyInput';
@@ -28,6 +29,7 @@ interface NormalTransactionFieldsProps {
   handleAmountChange: (value: number | undefined) => void;
   handleModeChange: (mode: 'normal' | 'split' | 'transfer') => void;
   transaction?: Transaction;
+  createdAtSlot?: ReactNode;
 }
 
 export function NormalTransactionFields({
@@ -48,11 +50,12 @@ export function NormalTransactionFields({
   handleAmountChange,
   handleModeChange,
   transaction,
+  createdAtSlot,
 }: NormalTransactionFieldsProps) {
   return (
     <div className="space-y-4">
-      {/* Row 1: Account and Date */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Row 1: Account, Date, and optionally Create Date */}
+      <div className={`grid grid-cols-1 gap-4 ${createdAtSlot ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}>
         <Select
           label="Account"
           error={errors.accountId?.message as string | undefined}
@@ -79,6 +82,7 @@ export function NormalTransactionFields({
           error={errors.transactionDate?.message as string | undefined}
           {...register('transactionDate')}
         />
+        {createdAtSlot}
       </div>
 
       {/* Row 2: Payee and Category */}

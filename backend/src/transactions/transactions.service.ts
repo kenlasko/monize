@@ -629,7 +629,7 @@ export class TransactionsService {
     const oldStatus = transaction.status;
     const wasVoid = oldStatus === TransactionStatus.VOID;
 
-    const { splits, tagIds, ...updateData } = updateTransactionDto;
+    const { splits, tagIds, createdAt, ...updateData } = updateTransactionDto;
 
     if (updateData.accountId && updateData.accountId !== oldAccountId) {
       await this.accountsService.findOne(userId, updateData.accountId);
@@ -738,6 +738,8 @@ export class TransactionsService {
         transactionUpdateData.status = updateData.status;
       if ("reconciledDate" in updateData)
         transactionUpdateData.reconciledDate = updateData.reconciledDate as any;
+      if (createdAt !== undefined)
+        transactionUpdateData.createdAt = new Date(createdAt);
 
       if (splits && splits.length > 0) {
         transactionUpdateData.categoryId = null;

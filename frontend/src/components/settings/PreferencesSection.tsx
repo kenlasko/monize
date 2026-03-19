@@ -68,6 +68,7 @@ export function PreferencesSection({ preferences, onPreferencesUpdated }: Prefer
   const [theme, setTheme] = useState<'light' | 'dark' | 'system'>(preferences.theme);
   const [defaultCurrency, setDefaultCurrency] = useState(preferences.defaultCurrency);
   const [weekStartsOn, setWeekStartsOn] = useState(preferences.weekStartsOn ?? 1);
+  const [showCreatedAt, setShowCreatedAt] = useState(preferences.showCreatedAt ?? false);
   const [isUpdatingPreferences, setIsUpdatingPreferences] = useState(false);
 
   const [availableCurrencies, setAvailableCurrencies] = useState<CurrencyInfo[]>([]);
@@ -93,6 +94,7 @@ export function PreferencesSection({ preferences, onPreferencesUpdated }: Prefer
         theme,
         defaultCurrency,
         weekStartsOn,
+        showCreatedAt,
       };
 
       const updated = await userSettingsApi.updatePreferences(data);
@@ -153,6 +155,19 @@ export function PreferencesSection({ preferences, onPreferencesUpdated }: Prefer
           value={String(weekStartsOn)}
           onChange={(e) => setWeekStartsOn(Number(e.target.value))}
         />
+
+        <div className="flex items-center">
+          <input
+            id="showCreatedAt"
+            type="checkbox"
+            checked={showCreatedAt}
+            onChange={(e) => setShowCreatedAt(e.target.checked)}
+            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded"
+          />
+          <label htmlFor="showCreatedAt" className="ml-2 block text-sm text-gray-900 dark:text-gray-100">
+            Show Create Date in transaction forms
+          </label>
+        </div>
       </div>
 
       <div className="mt-6 flex justify-end">

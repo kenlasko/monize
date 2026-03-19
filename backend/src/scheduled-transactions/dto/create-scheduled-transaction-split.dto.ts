@@ -3,6 +3,7 @@ import {
   IsUUID,
   IsOptional,
   IsString,
+  IsArray,
   ValidateIf,
   MaxLength,
 } from "class-validator";
@@ -36,4 +37,13 @@ export class CreateScheduledTransactionSplitDto {
   @MaxLength(500)
   @SanitizeHtml()
   memo?: string;
+
+  @ApiPropertyOptional({
+    description:
+      "Tag IDs to assign to this split (applied when posting the transaction)",
+  })
+  @IsOptional()
+  @IsArray()
+  @IsUUID(undefined, { each: true })
+  tagIds?: string[];
 }

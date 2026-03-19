@@ -90,6 +90,7 @@ export interface UserPreferences {
   budgetDigestEnabled: boolean;
   budgetDigestDay: 'MONDAY' | 'FRIDAY';
   favouriteReportIds: string[];
+  showCreatedAt: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -114,6 +115,7 @@ export interface UpdatePreferencesData {
   budgetDigestEnabled?: boolean;
   budgetDigestDay?: 'MONDAY' | 'FRIDAY';
   favouriteReportIds?: string[];
+  showCreatedAt?: boolean;
 }
 
 export interface ChangePasswordData {

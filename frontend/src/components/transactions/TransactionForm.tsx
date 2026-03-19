@@ -28,6 +28,7 @@ import { Tag } from '@/types/tag';
 import { ReactivatePayeeDialog } from '@/components/payees/ReactivatePayeeDialog';
 import { buildCategoryTree } from '@/lib/categoryUtils';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { usePreferencesStore } from '@/store/preferencesStore';
 import { createLogger } from '@/lib/logger';
 import { getErrorMessage } from '@/lib/errors';
 import { optionalUuid, optionalString } from '@/lib/zod-helpers';
@@ -66,6 +67,7 @@ type TransactionMode = 'normal' | 'split' | 'transfer';
 
 export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCancel, onDirtyChange, submitRef }: TransactionFormProps) {
   const { defaultCurrency } = useNumberFormat();
+  const showCreatedAt = usePreferencesStore((s) => s.preferences?.showCreatedAt ?? false);
   const [isLoading, setIsLoading] = useState(false);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -570,6 +572,15 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
     }
   };
 
+  // Created At override (only when editing and preference is enabled)
+  const [createdAtValue, setCreatedAtValue] = useState<string>(() => {
+    if (!transaction?.createdAt) return '';
+    // Convert ISO timestamp to datetime-local format (YYYY-MM-DDTHH:mm)
+    const d = new Date(transaction.createdAt);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  });
+
   // Tag creation modal state
   const [showTagForm, setShowTagForm] = useState(false);
 
@@ -669,7 +680,12 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
       };
 
       if (transaction) {
-        await transactionsApi.update(transaction.id, payload);
+        // Include createdAt override if preference is enabled and value was changed
+        const updatePayload: any = { ...payload };
+        if (showCreatedAt && createdAtValue) {
+          updatePayload.createdAt = new Date(createdAtValue).toISOString();
+        }
+        await transactionsApi.update(transaction.id, updatePayload);
         toast.success('Transaction updated');
       } else {
         await transactionsApi.create(payload);
@@ -685,6 +701,20 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
   };
 
   useFormSubmitRef(submitRef, handleSubmit, onSubmit);
+
+  const createdAtSlot = showCreatedAt && transaction ? (
+    <div>
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        Create Date
+      </label>
+      <input
+        type="datetime-local"
+        value={createdAtValue}
+        onChange={(e) => setCreatedAtValue(e.target.value)}
+        className="block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-100 dark:focus:border-blue-400 dark:focus:ring-blue-400"
+      />
+    </div>
+  ) : undefined;
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -758,6 +788,7 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
           handleAmountChange={handleAmountChange}
           handleModeChange={handleModeChange}
           transaction={transaction}
+          createdAtSlot={createdAtSlot}
         />
       )}
 
@@ -775,6 +806,7 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
           handlePayeeCreate={handlePayeeCreate}
           handleAmountChange={handleSplitTotalChange}
           transaction={transaction}
+          createdAtSlot={createdAtSlot}
         />
       )}
 
@@ -798,6 +830,7 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
           crossCurrencyInfo={crossCurrencyInfo}
           payees={payees}
           transaction={transaction}
+          createdAtSlot={createdAtSlot}
         />
       )}
 
@@ -879,6 +912,7 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
         ]}
         {...register('status')}
       />
+
       {/* Actions */}
       <FormActions onCancel={onCancel} submitLabel={`${transaction ? 'Update' : 'Create'} ${mode === 'transfer' ? 'Transfer' : 'Transaction'}`} isSubmitting={isLoading} />
 

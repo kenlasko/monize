@@ -44,6 +44,7 @@ const mockPreferences: UserPreferences = {
   weekStartsOn: 1,
   budgetDigestEnabled: true,
   budgetDigestDay: 'MONDAY',
+  showCreatedAt: false,
   favouriteReportIds: [],
   createdAt: '2024-01-01T00:00:00Z',
   updatedAt: '2024-01-01T00:00:00Z',

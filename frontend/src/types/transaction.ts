@@ -86,7 +86,9 @@ export interface CreateTransactionData {
   tagIds?: string[];
 }
 
-export interface UpdateTransactionData extends Partial<CreateTransactionData> {}
+export interface UpdateTransactionData extends Partial<CreateTransactionData> {
+  createdAt?: string;
+}
 
 export interface CurrencySummary {
   totalIncome: number;

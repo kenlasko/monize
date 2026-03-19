@@ -112,4 +112,11 @@ export class UpdatePreferencesDto {
   })
   @ArrayMaxSize(100)
   favouriteReportIds?: string[];
+
+  @ApiPropertyOptional({
+    description: "Show the Created At field in transaction forms",
+  })
+  @IsOptional()
+  @IsBoolean()
+  showCreatedAt?: boolean;
 }

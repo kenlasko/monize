@@ -871,6 +871,7 @@ export function ScheduledTransactionForm({
               splits={splits}
               onChange={setSplits}
               categories={categories}
+              tags={tags}
               accounts={accounts}
               sourceAccountId={watchedAccountId || ''}
               transactionAmount={watchedAmount || 0}
