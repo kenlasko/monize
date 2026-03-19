@@ -353,6 +353,16 @@ export class TransactionsService {
         singleAccountId,
         safePage,
         skip,
+        {
+          startDate,
+          endDate,
+          categoryIds,
+          payeeIds,
+          tagIds,
+          search,
+          amountFrom,
+          amountTo,
+        },
       );
     }
 
@@ -518,26 +528,70 @@ export class TransactionsService {
     singleAccountId: string,
     safePage: number,
     skip: number,
+    filters?: {
+      startDate?: string;
+      endDate?: string;
+      categoryIds?: string[];
+      payeeIds?: string[];
+      tagIds?: string[];
+      search?: string;
+      amountFrom?: number;
+      amountTo?: number;
+    },
   ): Promise<number> {
-    const account = await this.accountsService.findOne(userId, singleAccountId);
-    const currentBalance = Number(account.currentBalance) || 0;
+    const hasContentFilters = !!(
+      (filters?.categoryIds && filters.categoryIds.length > 0) ||
+      (filters?.payeeIds && filters.payeeIds.length > 0) ||
+      (filters?.tagIds && filters.tagIds.length > 0) ||
+      filters?.search ||
+      filters?.amountFrom !== undefined ||
+      filters?.amountTo !== undefined
+    );
+    const hasDateFilter = !!(filters?.startDate || filters?.endDate);
 
-    // currentBalance only reflects past transactions.  Future-dated non-VOID
-    // transactions are excluded by design, so we add them back to get the
-    // projected balance that the newest-first running balance starts from.
-    const now = new Date();
-    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    if (hasContentFilters) {
+      return this.calculateContentFilteredBalance(
+        userId,
+        singleAccountId,
+        safePage,
+        skip,
+        filters!,
+      );
+    }
 
-    const futureResult = await this.transactionsRepository
-      .createQueryBuilder("t")
-      .select("COALESCE(SUM(t.amount), 0)", "sum")
-      .where("t.userId = :userId", { userId })
-      .andWhere("t.accountId = :singleAccountId", { singleAccountId })
-      .andWhere("t.transactionDate > :today", { today })
-      .andWhere("t.status != :void", { void: TransactionStatus.VOID })
-      .getRawOne();
+    if (hasDateFilter) {
+      return this.calculateDateFilteredBalance(
+        userId,
+        singleAccountId,
+        safePage,
+        skip,
+        filters!,
+      );
+    }
 
-    const projectedBalance = currentBalance + (Number(futureResult?.sum) || 0);
+    // No filters: original behavior
+    return this.calculateUnfilteredBalance(
+      userId,
+      singleAccountId,
+      safePage,
+      skip,
+    );
+  }
+
+  /**
+   * Original unfiltered balance calculation. Returns projected balance
+   * (current + future) adjusted for pagination.
+   */
+  private async calculateUnfilteredBalance(
+    userId: string,
+    singleAccountId: string,
+    safePage: number,
+    skip: number,
+  ): Promise<number> {
+    const projectedBalance = await this.computeProjectedBalance(
+      userId,
+      singleAccountId,
+    );
 
     if (safePage === 1) {
       return projectedBalance;
@@ -562,6 +616,337 @@ export class TransactionsService {
 
     const sumBefore = Number(sumResult?.sum) || 0;
     return projectedBalance - sumBefore;
+  }
+
+  /**
+   * Content-filtered balance: zero-based running balance.
+   * startingBalance = totalSum of all matching transactions (page 1)
+   * or totalSum - sumOfPreviousPages (page > 1).
+   */
+  private async calculateContentFilteredBalance(
+    userId: string,
+    accountId: string,
+    safePage: number,
+    skip: number,
+    filters: {
+      startDate?: string;
+      endDate?: string;
+      categoryIds?: string[];
+      payeeIds?: string[];
+      tagIds?: string[];
+      search?: string;
+      amountFrom?: number;
+      amountTo?: number;
+    },
+  ): Promise<number> {
+    const idsSubquery = await this.buildFilteredIdsSubquery(
+      userId,
+      accountId,
+      filters,
+    );
+
+    const totalSumResult = await this.transactionsRepository
+      .createQueryBuilder("t")
+      .select("COALESCE(SUM(t.amount), 0)", "totalSum")
+      .where(`t.id IN (${idsSubquery.getQuery()})`)
+      .setParameters(idsSubquery.getParameters())
+      .getRawOne();
+
+    const totalSum = Number(totalSumResult?.totalSum) || 0;
+
+    if (safePage === 1) return totalSum;
+
+    return totalSum - (await this.computeFilteredPrevPagesSum(
+      userId,
+      accountId,
+      skip,
+      filters,
+    ));
+  }
+
+  /**
+   * Date-filtered balance: shows actual account balance at the date range.
+   * With endDate: balance at end of date range.
+   * With only startDate: projected balance (same as unfiltered).
+   * Adjusted for pagination within the filtered set.
+   */
+  private async calculateDateFilteredBalance(
+    userId: string,
+    accountId: string,
+    safePage: number,
+    skip: number,
+    filters: {
+      startDate?: string;
+      endDate?: string;
+    },
+  ): Promise<number> {
+    let baseBalance: number;
+
+    if (filters.endDate) {
+      // Balance at end of date range = projected - sum(tx after endDate)
+      const projectedBalance = await this.computeProjectedBalance(
+        userId,
+        accountId,
+      );
+
+      const sumAfterResult = await this.transactionsRepository
+        .createQueryBuilder("t")
+        .select("COALESCE(SUM(t.amount), 0)", "sum")
+        .where("t.userId = :userId", { userId })
+        .andWhere("t.accountId = :accountId", { accountId })
+        .andWhere("t.transactionDate > :endDate", {
+          endDate: filters.endDate,
+        })
+        .getRawOne();
+
+      baseBalance =
+        projectedBalance - (Number(sumAfterResult?.sum) || 0);
+    } else {
+      // Only startDate: top of list is still projected balance
+      baseBalance = await this.computeProjectedBalance(userId, accountId);
+    }
+
+    if (safePage === 1) return baseBalance;
+
+    // For page > 1, subtract sum of previous pages (within filtered set)
+    const previousPagesQuery = this.transactionsRepository
+      .createQueryBuilder("t")
+      .select("t.id")
+      .where("t.userId = :userId", { userId })
+      .andWhere("t.accountId = :accountId", { accountId })
+      .orderBy("t.transactionDate", "DESC")
+      .addOrderBy("t.createdAt", "DESC")
+      .addOrderBy("t.id", "DESC")
+      .limit(skip);
+
+    if (filters.startDate) {
+      previousPagesQuery.andWhere("t.transactionDate >= :startDate", {
+        startDate: filters.startDate,
+      });
+    }
+    if (filters.endDate) {
+      previousPagesQuery.andWhere("t.transactionDate <= :endDate", {
+        endDate: filters.endDate,
+      });
+    }
+
+    const sumResult = await this.transactionsRepository
+      .createQueryBuilder("transaction")
+      .select("SUM(transaction.amount)", "sum")
+      .where(`transaction.id IN (${previousPagesQuery.getQuery()})`)
+      .setParameters(previousPagesQuery.getParameters())
+      .getRawOne();
+
+    return baseBalance - (Number(sumResult?.sum) || 0);
+  }
+
+  /**
+   * Compute projected balance (current balance + future non-void transactions).
+   */
+  private async computeProjectedBalance(
+    userId: string,
+    accountId: string,
+  ): Promise<number> {
+    const account = await this.accountsService.findOne(userId, accountId);
+    const currentBalance = Number(account.currentBalance) || 0;
+
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+
+    const futureResult = await this.transactionsRepository
+      .createQueryBuilder("t")
+      .select("COALESCE(SUM(t.amount), 0)", "sum")
+      .where("t.userId = :userId", { userId })
+      .andWhere("t.accountId = :accountId", { accountId })
+      .andWhere("t.transactionDate > :today", { today })
+      .andWhere("t.status != :void", { void: TransactionStatus.VOID })
+      .getRawOne();
+
+    return currentBalance + (Number(futureResult?.sum) || 0);
+  }
+
+  /**
+   * Sum of filtered transactions on previous pages (for content-filtered pagination).
+   */
+  private async computeFilteredPrevPagesSum(
+    userId: string,
+    accountId: string,
+    skip: number,
+    filters: {
+      startDate?: string;
+      endDate?: string;
+      categoryIds?: string[];
+      payeeIds?: string[];
+      tagIds?: string[];
+      search?: string;
+      amountFrom?: number;
+      amountTo?: number;
+    },
+  ): Promise<number> {
+    const idsSubquery = await this.buildFilteredIdsSubquery(
+      userId,
+      accountId,
+      filters,
+    );
+
+    // Get ordered matching transactions, limited to previous pages
+    const prevIdsQuery = this.transactionsRepository
+      .createQueryBuilder("t")
+      .select("t.id")
+      .where(`t.id IN (${idsSubquery.getQuery()})`)
+      .setParameters(idsSubquery.getParameters())
+      .orderBy("t.transactionDate", "DESC")
+      .addOrderBy("t.createdAt", "DESC")
+      .addOrderBy("t.id", "DESC")
+      .limit(skip);
+
+    const sumResult = await this.transactionsRepository
+      .createQueryBuilder("main")
+      .select("COALESCE(SUM(main.amount), 0)", "sum")
+      .where(`main.id IN (${prevIdsQuery.getQuery()})`)
+      .setParameters(prevIdsQuery.getParameters())
+      .getRawOne();
+
+    return Number(sumResult?.sum) || 0;
+  }
+
+  /**
+   * Build a subquery that returns DISTINCT transaction IDs matching
+   * the given content/date filters for a single account.
+   */
+  private async buildFilteredIdsSubquery(
+    userId: string,
+    accountId: string,
+    filters: {
+      startDate?: string;
+      endDate?: string;
+      categoryIds?: string[];
+      payeeIds?: string[];
+      tagIds?: string[];
+      search?: string;
+      amountFrom?: number;
+      amountTo?: number;
+    },
+  ) {
+    const qb = this.transactionsRepository
+      .createQueryBuilder("bf")
+      .select("DISTINCT bf.id")
+      .where("bf.userId = :bfUserId", { bfUserId: userId })
+      .andWhere("bf.accountId = :bfAccountId", { bfAccountId: accountId });
+
+    if (filters.startDate) {
+      qb.andWhere("bf.transactionDate >= :bfStartDate", {
+        bfStartDate: filters.startDate,
+      });
+    }
+    if (filters.endDate) {
+      qb.andWhere("bf.transactionDate <= :bfEndDate", {
+        bfEndDate: filters.endDate,
+      });
+    }
+    if (filters.payeeIds && filters.payeeIds.length > 0) {
+      qb.andWhere("bf.payeeId IN (:...bfPayeeIds)", {
+        bfPayeeIds: filters.payeeIds,
+      });
+    }
+    if (filters.amountFrom !== undefined) {
+      qb.andWhere("bf.amount >= :bfAmountFrom", {
+        bfAmountFrom: filters.amountFrom,
+      });
+    }
+    if (filters.amountTo !== undefined) {
+      qb.andWhere("bf.amount <= :bfAmountTo", {
+        bfAmountTo: filters.amountTo,
+      });
+    }
+
+    // Determine if we need a splits join (shared across search/category/tag)
+    const needsSplitsJoin = !!(
+      filters.search ||
+      (filters.categoryIds &&
+        filters.categoryIds.some(
+          (id) => id !== "uncategorized" && id !== "transfer",
+        )) ||
+      (filters.tagIds && filters.tagIds.length > 0)
+    );
+
+    if (needsSplitsJoin) {
+      qb.leftJoin("bf.splits", "bfSplits");
+    }
+
+    if (filters.search) {
+      const escaped = filters.search
+        .trim()
+        .replace(/\\/g, "\\\\")
+        .replace(/%/g, "\\%")
+        .replace(/_/g, "\\_");
+      qb.andWhere(
+        "(bf.description ILIKE :bfSearch OR bf.payeeName ILIKE :bfSearch OR bfSplits.memo ILIKE :bfSearch)",
+        { bfSearch: `%${escaped}%` },
+      );
+    }
+
+    if (filters.categoryIds && filters.categoryIds.length > 0) {
+      const hasUncategorized = filters.categoryIds.includes("uncategorized");
+      const hasTransfer = filters.categoryIds.includes("transfer");
+      const regularIds = filters.categoryIds.filter(
+        (id) => id !== "uncategorized" && id !== "transfer",
+      );
+
+      const expandedIds =
+        regularIds.length > 0
+          ? await getAllCategoryIdsWithChildren(
+              this.categoriesRepository,
+              userId,
+              regularIds,
+            )
+          : [];
+
+      qb.andWhere(
+        new Brackets((outer) => {
+          let hasCondition = false;
+          if (hasUncategorized) {
+            outer.where(
+              "bf.categoryId IS NULL AND bf.isSplit = false AND bf.isTransfer = false",
+            );
+            hasCondition = true;
+          }
+          if (hasTransfer) {
+            const method = hasCondition ? "orWhere" : "where";
+            outer[method]("bf.isTransfer = true");
+            hasCondition = true;
+          }
+          if (expandedIds.length > 0) {
+            const method = hasCondition ? "orWhere" : "where";
+            outer[method](
+              new Brackets((inner) => {
+                inner
+                  .where("bf.categoryId IN (:...bfCatIds)", {
+                    bfCatIds: expandedIds,
+                  })
+                  .orWhere("bfSplits.categoryId IN (:...bfCatIds)");
+              }),
+            );
+          }
+        }),
+      );
+    }
+
+    if (filters.tagIds && filters.tagIds.length > 0) {
+      qb.leftJoin("bf.tags", "bfTags");
+      qb.leftJoin("bfSplits.tags", "bfSplitTags");
+      qb.andWhere(
+        new Brackets((sub) => {
+          sub
+            .where("bfTags.id IN (:...bfTagIds)", {
+              bfTagIds: filters.tagIds,
+            })
+            .orWhere("bfSplitTags.id IN (:...bfTagIds)");
+        }),
+      );
+    }
+
+    return qb;
   }
 
   private async enrichWithInvestmentLinks(
