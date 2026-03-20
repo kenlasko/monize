@@ -471,17 +471,35 @@ function TransactionsContent() {
       }
 
       const headers = ['Date', 'Account', 'Payee', 'Category', 'Description', 'Tags', 'Amount', 'Currency', 'Status'];
-      const rows = allTransactions.map(tx => [
-        tx.transactionDate,
-        tx.account?.name ?? '',
-        tx.payee?.name ?? tx.payeeName ?? '',
-        tx.category?.name ?? '',
-        tx.description ?? '',
-        tx.tags?.map(t => t.name).join('; ') ?? '',
-        tx.amount,
-        tx.currencyCode ?? '',
-        tx.status,
-      ]);
+      const rows = allTransactions.map(tx => {
+        // Use the filtered split amount when only some splits match the
+        // active filter, matching what the UI displays.
+        let amount = tx.amount;
+        if (tx.isSplit && tx.splits && tx.splits.length > 0) {
+          const splitsSumCents = tx.splits.reduce(
+            (sum, s) => sum + Math.round(Number(s.amount) * 10000),
+            0,
+          );
+          const txAmountCents = Math.round(Number(tx.amount) * 10000);
+          if (splitsSumCents !== txAmountCents) {
+            amount = splitsSumCents / 10000;
+          }
+        }
+
+        return [
+          tx.transactionDate,
+          tx.account?.name ?? '',
+          tx.payee?.name ?? tx.payeeName ?? '',
+          tx.isSplit && tx.splits
+            ? tx.splits.map(s => s.category?.name || 'Uncategorized').join('; ')
+            : (tx.category?.name ?? ''),
+          tx.description ?? '',
+          tx.tags?.map(t => t.name).join('; ') ?? '',
+          amount,
+          tx.currencyCode ?? '',
+          tx.status,
+        ];
+      });
 
       const now = new Date();
       const datePart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
