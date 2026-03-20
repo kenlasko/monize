@@ -436,7 +436,7 @@ function BillsContent() {
           actions={<Button onClick={handleCreateNew}>+ New Schedule</Button>}
         />
         {/* Summary Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6 mb-6">
           <SummaryCard label="Active Bills" value={summary.totalBills} icon={SummaryIcons.clipboard} />
           <SummaryCard label="Active Deposits" value={summary.totalDeposits} icon={SummaryIcons.plus} />
           <SummaryCard

@@ -27,17 +27,17 @@ const valueColorClasses = {
  */
 export function SummaryCard({ label, value, icon, valueColor = 'default', onClick }: SummaryCardProps) {
   const content = (
-    <div className="p-5">
+    <div className="p-3 sm:p-5">
       <div className="flex items-center">
-        <div className="flex-shrink-0">
+        <div className="flex-shrink-0 hidden sm:block">
           {icon}
         </div>
-        <div className="ml-5 w-0 flex-1">
+        <div className="sm:ml-5 w-0 flex-1">
           <dl>
-            <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
+            <dt className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
               {label}
             </dt>
-            <dd className={`text-lg font-semibold ${valueColorClasses[valueColor]}`}>
+            <dd className={`text-base sm:text-lg font-semibold ${valueColorClasses[valueColor]}`}>
               {value}
             </dd>
           </dl>
