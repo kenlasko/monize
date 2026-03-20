@@ -1176,7 +1176,7 @@ describe("TransactionsService", () => {
       );
     });
 
-    it("uses separate filterSplits alias for category filtering to preserve all splits in results", async () => {
+    it("filters on main splits alias for category filtering so non-matching splits are excluded", async () => {
       const mockQb = createMockQueryBuilder();
       mockQb.getManyAndCount.mockResolvedValue([[], 0]);
       transactionsRepository.createQueryBuilder.mockReturnValue(mockQb);
@@ -1189,15 +1189,16 @@ describe("TransactionsService", () => {
         "cat-1",
       ]);
 
-      // Should use filterSplits alias (not splits) for WHERE condition
-      // so leftJoinAndSelect on "splits" still loads ALL splits for display
-      expect(mockQb.leftJoin).toHaveBeenCalledWith(
+      // Should NOT use a separate filterSplits alias -- filter directly on
+      // the main "splits" alias so non-matching split rows are excluded from
+      // hydration, enabling the frontend to detect partial amounts.
+      expect(mockQb.leftJoin).not.toHaveBeenCalledWith(
         "transaction.splits",
         "filterSplits",
       );
-      // filterSplits reference is now inside a Brackets callback
+      // The WHERE condition should reference splits.categoryId (main alias)
       expect(mockQb.orWhere).toHaveBeenCalledWith(
-        expect.stringContaining("filterSplits.categoryId"),
+        expect.stringContaining("splits.categoryId"),
         expect.anything(),
       );
     });
@@ -1947,7 +1948,7 @@ describe("TransactionsService", () => {
         const sumQb = createMockQueryBuilder({
           setParameters: jest.fn().mockReturnThis(),
         });
-        sumQb.getRawOne.mockResolvedValue({ sum: -1000 });
+        sumQb.getRawOne.mockResolvedValue({ totalSum: -1000 });
 
         transactionsRepository.createQueryBuilder
           .mockReturnValueOnce(mockQb)

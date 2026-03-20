@@ -1895,6 +1895,102 @@ describe('TransactionList', () => {
       });
     });
 
+    it('shows filtered amount with partial indicator when splits sum differs from transaction amount', async () => {
+      const splitTx = createTransaction({
+        isSplit: true,
+        categoryId: null,
+        category: null,
+        amount: -200,
+        splits: [
+          { id: 's1', transactionId: 'tx-1', categoryId: 'cat-1', category: { id: 'cat-1', name: 'Groceries' } as any, transferAccountId: null, transferAccount: null, linkedTransactionId: null, amount: -50, memo: null, createdAt: '' },
+        ],
+      });
+
+      render(
+        <TransactionList
+          transactions={[splitTx]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+        />
+      );
+
+      await waitFor(() => {
+        // Should show the filtered amount ($50) not the full amount ($200)
+        expect(screen.getByText('-$50.00')).toBeInTheDocument();
+        // Should show the partial indicator asterisk
+        expect(screen.getByText('*')).toBeInTheDocument();
+        // Should have tooltip with full amount
+        const indicator = screen.getByText('*').closest('span[title]');
+        expect(indicator?.getAttribute('title')).toContain('200');
+      });
+    });
+
+    it('shows full amount when all splits are present', async () => {
+      const splitTx = createTransaction({
+        isSplit: true,
+        categoryId: null,
+        category: null,
+        amount: -50,
+        splits: [
+          { id: 's1', transactionId: 'tx-1', categoryId: 'cat-1', category: { id: 'cat-1', name: 'Groceries' } as any, transferAccountId: null, transferAccount: null, linkedTransactionId: null, amount: -30, memo: null, createdAt: '' },
+          { id: 's2', transactionId: 'tx-1', categoryId: 'cat-2', category: { id: 'cat-2', name: 'Dining' } as any, transferAccountId: null, transferAccount: null, linkedTransactionId: null, amount: -20, memo: null, createdAt: '' },
+        ],
+      });
+
+      render(
+        <TransactionList
+          transactions={[splitTx]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('-$50.00')).toBeInTheDocument();
+        // Should NOT show the partial indicator
+        expect(screen.queryByText('*')).not.toBeInTheDocument();
+      });
+    });
+
+    it('uses filtered amount for running balance when splits are partial', async () => {
+      const transactions = [
+        createTransaction({
+          id: 'tx-1',
+          isSplit: true,
+          categoryId: null,
+          category: null,
+          amount: -200,
+          payeeName: 'Split Store',
+          splits: [
+            { id: 's1', transactionId: 'tx-1', categoryId: 'cat-1', category: { id: 'cat-1', name: 'Groceries' } as any, transferAccountId: null, transferAccount: null, linkedTransactionId: null, amount: -50, memo: null, createdAt: '' },
+          ],
+        }),
+        createTransaction({
+          id: 'tx-2',
+          amount: -100,
+          payeeName: 'Regular Store',
+        }),
+      ];
+
+      render(
+        <TransactionList
+          transactions={transactions}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+          isSingleAccountView={true}
+          startingBalance={500}
+        />
+      );
+
+      await waitFor(() => {
+        // Backend provides split-aware startingBalance (500).
+        // First tx: balance = 500
+        // Second tx: balance = 500 - (-50) = 550
+        expect(screen.getByText('$500.00')).toBeInTheDocument();
+        expect(screen.getByText('$550.00')).toBeInTheDocument();
+      });
+    });
+
     it('shows "Uncategorized" for splits without category', async () => {
       const splitTx = createTransaction({
         isSplit: true,

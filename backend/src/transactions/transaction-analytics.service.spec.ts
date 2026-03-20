@@ -218,81 +218,20 @@ describe("TransactionAnalyticsService", () => {
       );
     });
 
-    describe("transfer exclusion", () => {
-      it("excludes transfers by default", async () => {
+    describe("account exclusion", () => {
+      it("excludes investment brokerage accounts", async () => {
         await service.getSummary(userId);
 
         expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
-          "transaction.isTransfer = false",
+          "(summaryAccount.accountSubType IS NULL OR summaryAccount.accountSubType != 'INVESTMENT_BROKERAGE')",
         );
       });
 
-      it("excludes transfers when categoryIds do not include transfer", async () => {
-        categoriesRepository.find.mockResolvedValue([
-          { id: "cat-1", parentId: null },
-        ]);
-
-        await service.getSummary(userId, undefined, undefined, undefined, [
-          "cat-1",
-        ]);
-
-        expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
-          "transaction.isTransfer = false",
-        );
-      });
-
-      it("does not exclude transfers when transfer category is explicitly requested", async () => {
-        await service.getSummary(userId, undefined, undefined, undefined, [
-          "transfer",
-        ]);
-
-        expect(mockQueryBuilder.andWhere).not.toHaveBeenCalledWith(
-          "transaction.isTransfer = false",
-        );
-      });
-
-      it("does not exclude transfers when search filter is provided", async () => {
-        await service.getSummary(
-          userId,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          "grocery",
-        );
-
-        expect(mockQueryBuilder.andWhere).not.toHaveBeenCalledWith(
-          "transaction.isTransfer = false",
-        );
-      });
-    });
-
-    describe("investment account exclusion", () => {
-      it("excludes investment accounts by default", async () => {
+      it("does not exclude transfers", async () => {
         await service.getSummary(userId);
 
-        expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
-          "summaryAccount.accountType != :investmentType",
-          { investmentType: "INVESTMENT" },
-        );
-      });
-
-      it("excludes investment accounts when accountIds is empty", async () => {
-        await service.getSummary(userId, []);
-
-        expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
-          "summaryAccount.accountType != :investmentType",
-          { investmentType: "INVESTMENT" },
-        );
-      });
-
-      it("does not exclude investment accounts when specific accountIds are provided", async () => {
-        await service.getSummary(userId, ["acc-1"]);
-
         expect(mockQueryBuilder.andWhere).not.toHaveBeenCalledWith(
-          "summaryAccount.accountType != :investmentType",
-          expect.anything(),
+          "transaction.isTransfer = false",
         );
       });
     });
@@ -938,36 +877,19 @@ describe("TransactionAnalyticsService", () => {
       expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith("month", "ASC");
     });
 
-    it("excludes transfers by default", async () => {
+    it("excludes investment brokerage accounts", async () => {
       await service.getMonthlyTotals(userId);
 
       expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
-        "transaction.isTransfer = false",
+        "(summaryAccount.accountSubType IS NULL OR summaryAccount.accountSubType != 'INVESTMENT_BROKERAGE')",
       );
     });
 
-    it("does not exclude transfers when search filter is provided", async () => {
-      await service.getMonthlyTotals(
-        userId,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        "grocery",
-      );
+    it("does not exclude transfers", async () => {
+      await service.getMonthlyTotals(userId);
 
       expect(mockQueryBuilder.andWhere).not.toHaveBeenCalledWith(
         "transaction.isTransfer = false",
-      );
-    });
-
-    it("excludes investment accounts by default", async () => {
-      await service.getMonthlyTotals(userId);
-
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
-        "summaryAccount.accountType != :investmentType",
-        { investmentType: "INVESTMENT" },
       );
     });
 
@@ -1080,6 +1002,164 @@ describe("TransactionAnalyticsService", () => {
         "(transaction.description ILIKE :search OR transaction.payeeName ILIKE :search OR splits.memo ILIKE :search)",
         { search: "%grocery%" },
       );
+    });
+
+    describe("tagIds filter", () => {
+      it("joins both transaction tags and split tags when tagIds provided", async () => {
+        await service.getMonthlyTotals(
+          userId,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          ["tag-1"],
+        );
+
+        expect(mockQueryBuilder.leftJoin).toHaveBeenCalledWith(
+          "transaction.splits",
+          "splits",
+        );
+        expect(mockQueryBuilder.leftJoin).toHaveBeenCalledWith(
+          "transaction.tags",
+          "filterTags",
+        );
+        expect(mockQueryBuilder.leftJoin).toHaveBeenCalledWith(
+          "splits.tags",
+          "filterSplitTags",
+        );
+      });
+
+      it("filters by tag on both transaction and split tags using OR", async () => {
+        await service.getMonthlyTotals(
+          userId,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          ["tag-1", "tag-2"],
+        );
+
+        expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+          expect.any(Brackets),
+        );
+        expect(mockQueryBuilder.where).toHaveBeenCalledWith(
+          "filterTags.id IN (:...monthlyTagIds)",
+          { monthlyTagIds: ["tag-1", "tag-2"] },
+        );
+        expect(mockQueryBuilder.orWhere).toHaveBeenCalledWith(
+          "filterSplitTags.id IN (:...monthlyTagIds)",
+          { monthlyTagIds: ["tag-1", "tag-2"] },
+        );
+      });
+
+      it("uses split-aware amounts when tag filter is active", async () => {
+        await service.getMonthlyTotals(
+          userId,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          ["tag-1"],
+        );
+
+        expect(mockQueryBuilder.addSelect).toHaveBeenCalledWith(
+          expect.stringContaining(
+            "COALESCE(splits.amount, transaction.amount)",
+          ),
+          "total",
+        );
+        expect(mockQueryBuilder.addSelect).toHaveBeenCalledWith(
+          "COUNT(DISTINCT transaction.id)",
+          "count",
+        );
+      });
+
+      it("does not duplicate splits join when category filter already joined splits", async () => {
+        categoriesRepository.find.mockResolvedValue([
+          { id: "cat-1", parentId: null },
+        ]);
+
+        await service.getMonthlyTotals(
+          userId,
+          undefined,
+          undefined,
+          undefined,
+          ["cat-1"],
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          ["tag-1"],
+        );
+
+        const splitsJoinCalls = mockQueryBuilder.leftJoin.mock.calls.filter(
+          (call: unknown[]) =>
+            call[0] === "transaction.splits" && call[1] === "splits",
+        );
+        expect(splitsJoinCalls.length).toBe(1);
+      });
+
+      it("does not duplicate splits join when search filter already joined splits", async () => {
+        await service.getMonthlyTotals(
+          userId,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          "test",
+          undefined,
+          undefined,
+          ["tag-1"],
+        );
+
+        const splitsJoinCalls = mockQueryBuilder.leftJoin.mock.calls.filter(
+          (call: unknown[]) =>
+            call[0] === "transaction.splits" && call[1] === "splits",
+        );
+        expect(splitsJoinCalls.length).toBe(1);
+      });
+
+      it("does not apply tag filter when tagIds is empty", async () => {
+        await service.getMonthlyTotals(
+          userId,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          [],
+        );
+
+        expect(mockQueryBuilder.leftJoin).not.toHaveBeenCalledWith(
+          "transaction.tags",
+          "filterTags",
+        );
+      });
+
+      it("does not apply tag filter when tagIds is undefined", async () => {
+        await service.getMonthlyTotals(userId);
+
+        expect(mockQueryBuilder.leftJoin).not.toHaveBeenCalledWith(
+          "transaction.tags",
+          "filterTags",
+        );
+      });
     });
   });
 

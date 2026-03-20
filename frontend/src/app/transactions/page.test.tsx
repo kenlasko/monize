@@ -719,6 +719,53 @@ describe('TransactionsPage', () => {
         expect(mockTxOpenEdit).toHaveBeenCalled();
       });
     });
+
+    it('fetches full transaction when editing a split transaction', async () => {
+      const splitTx = { id: 'tx-split', date: '2026-02-01', amount: -100, payee: { name: 'Store' }, isTransfer: false, isSplit: true, splits: [{ id: 's1', amount: -60 }] };
+      const fullSplitTx = { ...splitTx, splits: [{ id: 's1', amount: -60 }, { id: 's2', amount: -40 }] };
+      mockGetAll.mockResolvedValue({
+        data: [splitTx],
+        pagination: { page: 1, totalPages: 1, total: 1 },
+      });
+      mockGetSummary.mockResolvedValue({ totalIncome: 0, totalExpenses: 100, netCashFlow: -100, transactionCount: 1 });
+      mockGetById.mockResolvedValue(fullSplitTx);
+
+      render(<TransactionsPage />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('tx-tx-split')).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByTestId('tx-tx-split'));
+
+      await waitFor(() => {
+        expect(mockGetById).toHaveBeenCalledWith('tx-split');
+        expect(mockTxOpenEdit).toHaveBeenCalledWith(fullSplitTx);
+      });
+    });
+
+    it('falls back to filtered transaction if getById fails for split transaction', async () => {
+      const splitTx = { id: 'tx-split', date: '2026-02-01', amount: -100, payee: { name: 'Store' }, isTransfer: false, isSplit: true, splits: [{ id: 's1', amount: -60 }] };
+      mockGetAll.mockResolvedValue({
+        data: [splitTx],
+        pagination: { page: 1, totalPages: 1, total: 1 },
+      });
+      mockGetSummary.mockResolvedValue({ totalIncome: 0, totalExpenses: 100, netCashFlow: -100, transactionCount: 1 });
+      mockGetById.mockRejectedValue(new Error('Network error'));
+
+      render(<TransactionsPage />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('tx-tx-split')).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByTestId('tx-tx-split'));
+
+      await waitFor(() => {
+        expect(mockGetById).toHaveBeenCalledWith('tx-split');
+        expect(mockTxOpenEdit).toHaveBeenCalledWith(splitTx);
+      });
+    });
   });
 
   describe('Payee Interaction', () => {
@@ -1272,6 +1319,101 @@ describe('TransactionsPage', () => {
 
       const [, , rows] = mockExportToCsv.mock.calls[0];
       expect(rows[0]).toEqual(['2026-02-01', '', '', '', '', '', -25, 'USD', 'UNRECONCILED']);
+    });
+
+    it('exports filtered split amount when only some splits match the filter', async () => {
+      const splitTransaction = [
+        {
+          id: 'tx-split',
+          transactionDate: '2026-03-01',
+          amount: -200,
+          status: 'CLEARED',
+          payee: { id: 'p1', name: 'Store' },
+          payeeName: 'Store',
+          category: null,
+          account: { id: 'acc-1', name: 'Checking' },
+          description: 'Split purchase',
+          tags: [],
+          currencyCode: 'USD',
+          isTransfer: false,
+          isSplit: true,
+          splits: [
+            { id: 's1', amount: -50, category: { id: 'c1', name: 'Groceries' }, tags: [] },
+          ],
+        },
+      ];
+
+      mockGetAll.mockResolvedValue({
+        data: splitTransaction,
+        pagination: { page: 1, totalPages: 1, total: 1 },
+        startingBalance: 5000,
+      });
+
+      render(<TransactionsPage />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('tx-count')).toHaveTextContent('1 transactions');
+      });
+
+      fireEvent.click(screen.getByTestId('export-btn'));
+
+      await waitFor(() => {
+        expect(mockExportToCsv).toHaveBeenCalledTimes(1);
+      });
+
+      const [, , rows] = mockExportToCsv.mock.calls[0];
+      // Amount should be the filtered split sum (-50), not the full amount (-200)
+      expect(rows[0][6]).toBe(-50);
+      // Category should show split categories
+      expect(rows[0][3]).toBe('Groceries');
+    });
+
+    it('exports full amount when all splits are present', async () => {
+      const splitTransaction = [
+        {
+          id: 'tx-split',
+          transactionDate: '2026-03-01',
+          amount: -200,
+          status: 'CLEARED',
+          payee: null,
+          payeeName: null,
+          category: null,
+          account: { id: 'acc-1', name: 'Checking' },
+          description: null,
+          tags: [],
+          currencyCode: 'USD',
+          isTransfer: false,
+          isSplit: true,
+          splits: [
+            { id: 's1', amount: -50, category: { id: 'c1', name: 'Groceries' }, tags: [] },
+            { id: 's2', amount: -150, category: { id: 'c2', name: 'Dining' }, tags: [] },
+          ],
+        },
+      ];
+
+      mockGetAll.mockResolvedValue({
+        data: splitTransaction,
+        pagination: { page: 1, totalPages: 1, total: 1 },
+        startingBalance: 5000,
+      });
+
+      render(<TransactionsPage />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('tx-count')).toHaveTextContent('1 transactions');
+      });
+
+      fireEvent.click(screen.getByTestId('export-btn'));
+
+      await waitFor(() => {
+        expect(mockExportToCsv).toHaveBeenCalledTimes(1);
+      });
+
+      const [, , rows] = mockExportToCsv.mock.calls[0];
+      // Full amount since all splits are present
+      expect(rows[0][6]).toBe(-200);
+      // Category should show all split categories
+      expect(rows[0][3]).toBe('Groceries; Dining');
     });
   });
 });

@@ -15,6 +15,9 @@ export interface TransactionRowProps {
   isSingleAccountView: boolean;
   showRunningBalance?: boolean;
   runningBalance: number | undefined;
+  /** When set, a filter has reduced which splits are visible.  Show this
+   *  amount instead of the full transaction amount and flag as partial. */
+  displayAmount?: number;
   isDeleting: boolean;
   formatDate: (date: string) => string;
   formatAmount: (amount: number, currencyCode?: string) => JSX.Element;
@@ -46,6 +49,7 @@ export const TransactionRow = memo(function TransactionRow({
   isSingleAccountView,
   showRunningBalance = isSingleAccountView,
   runningBalance,
+  displayAmount,
   isDeleting,
   formatDate,
   formatAmount,
@@ -289,7 +293,17 @@ export const TransactionRow = memo(function TransactionRow({
         )}
       </td>
       <td className={`${cellPadding} whitespace-nowrap text-sm font-medium text-right ${isVoid ? 'line-through' : ''}`}>
-        {formatAmount(transaction.amount, transaction.currencyCode)}
+        {displayAmount !== undefined ? (
+          <span
+            title={`Filtered amount (full transaction: ${formatAmountWithCommas(Math.abs(transaction.amount), getDecimalPlacesForCurrency(transaction.currencyCode))})`}
+            className="inline-flex items-center gap-1 justify-end"
+          >
+            {formatAmount(displayAmount, transaction.currencyCode)}
+            <span className="text-purple-500 dark:text-purple-400 text-xs font-normal">*</span>
+          </span>
+        ) : (
+          formatAmount(transaction.amount, transaction.currencyCode)
+        )}
       </td>
       {showRunningBalance && (
         <td className={`${cellPadding} whitespace-nowrap text-sm font-medium text-right`}>

@@ -43,27 +43,14 @@ export class TransactionAnalyticsService {
       .createQueryBuilder("transaction")
       .where("transaction.userId = :userId", { userId });
 
-    // Join account for investment filtering and uncategorized conditions.
+    // Join account for filtering and uncategorized conditions.
+    // Use the same exclusion logic as findAll() so the summary
+    // counts/totals match the transaction list.
     queryBuilder.leftJoin("transaction.account", "summaryAccount");
 
-    // Exclude transfers by default — they are not real income/expenses.
-    // Include them when the user explicitly filters for "transfer" category,
-    // searches by description, or filters by payee.
-    const wantsTransfers =
-      (categoryIds && categoryIds.includes("transfer")) ||
-      !!search ||
-      (payeeIds && payeeIds.length > 0);
-    if (!wantsTransfers) {
-      queryBuilder.andWhere("transaction.isTransfer = false");
-    }
-
-    // Exclude investment account transactions (purchases, sales, dividends)
-    // unless the user explicitly filters for specific investment accounts.
-    if (!accountIds || accountIds.length === 0) {
-      queryBuilder.andWhere("summaryAccount.accountType != :investmentType", {
-        investmentType: "INVESTMENT",
-      });
-    }
+    queryBuilder.andWhere(
+      "(summaryAccount.accountSubType IS NULL OR summaryAccount.accountSubType != 'INVESTMENT_BROKERAGE')",
+    );
 
     if (accountIds && accountIds.length > 0) {
       queryBuilder.andWhere("transaction.accountId IN (:...accountIds)", {
@@ -250,21 +237,15 @@ export class TransactionAnalyticsService {
       .createQueryBuilder("transaction")
       .where("transaction.userId = :userId", { userId });
 
+    // Join account for filtering.  Use the same exclusion logic as
+    // findAll() so the chart counts/totals match the transaction list.
+    // getMonthlyTotals is only called when filters are active (the
+    // frontend switches to daily balances otherwise).
     queryBuilder.leftJoin("transaction.account", "summaryAccount");
 
-    const wantsTransfers =
-      (categoryIds && categoryIds.includes("transfer")) ||
-      !!search ||
-      (payeeIds && payeeIds.length > 0);
-    if (!wantsTransfers) {
-      queryBuilder.andWhere("transaction.isTransfer = false");
-    }
-
-    if (!accountIds || accountIds.length === 0) {
-      queryBuilder.andWhere("summaryAccount.accountType != :investmentType", {
-        investmentType: "INVESTMENT",
-      });
-    }
+    queryBuilder.andWhere(
+      "(summaryAccount.accountSubType IS NULL OR summaryAccount.accountSubType != 'INVESTMENT_BROKERAGE')",
+    );
 
     if (accountIds && accountIds.length > 0) {
       queryBuilder.andWhere("transaction.accountId IN (:...accountIds)", {
@@ -285,6 +266,7 @@ export class TransactionAnalyticsService {
     }
 
     let splitsCategoryJoin = false;
+    let splitsJoined = false;
 
     if (categoryIds && categoryIds.length > 0) {
       const hasUncategorized = categoryIds.includes("uncategorized");
@@ -308,6 +290,7 @@ export class TransactionAnalyticsService {
         if (uniqueCategoryIds.length > 0) {
           queryBuilder.leftJoin("transaction.splits", "splits");
           splitsCategoryJoin = true;
+          splitsJoined = true;
         }
 
         queryBuilder.andWhere(
@@ -353,8 +336,9 @@ export class TransactionAnalyticsService {
 
     if (search && search.trim()) {
       const searchPattern = `%${search.trim()}%`;
-      if (!categoryIds || categoryIds.length === 0) {
+      if (!splitsJoined) {
         queryBuilder.leftJoin("transaction.splits", "splits");
+        splitsJoined = true;
       }
       queryBuilder.andWhere(
         "(transaction.description ILIKE :search OR transaction.payeeName ILIKE :search OR splits.memo ILIKE :search)",
@@ -373,15 +357,26 @@ export class TransactionAnalyticsService {
     }
 
     if (tagIds && tagIds.length > 0) {
+      if (!splitsJoined) {
+        queryBuilder.leftJoin("transaction.splits", "splits");
+        splitsJoined = true;
+      }
       queryBuilder.leftJoin("transaction.tags", "filterTags");
-      queryBuilder.andWhere("filterTags.id IN (:...monthlyTagIds)", {
-        monthlyTagIds: tagIds,
-      });
+      queryBuilder.leftJoin("splits.tags", "filterSplitTags");
+      queryBuilder.andWhere(
+        new Brackets((qb) => {
+          qb.where("filterTags.id IN (:...monthlyTagIds)", {
+            monthlyTagIds: tagIds,
+          }).orWhere("filterSplitTags.id IN (:...monthlyTagIds)", {
+            monthlyTagIds: tagIds,
+          });
+        }),
+      );
     }
 
-    // When category filter joins splits, use the split amount for split
+    // When category or tag filter joins splits, use the split amount for split
     // transactions so we only count the matching split, not the full parent.
-    const amountExpr = splitsCategoryJoin
+    const amountExpr = splitsJoined
       ? "COALESCE(splits.amount, transaction.amount)"
       : "transaction.amount";
 
@@ -389,7 +384,7 @@ export class TransactionAnalyticsService {
       .select("TO_CHAR(transaction.transactionDate, 'YYYY-MM')", "month")
       .addSelect(`SUM(${amountExpr})`, "total")
       .addSelect(
-        splitsCategoryJoin ? "COUNT(DISTINCT transaction.id)" : "COUNT(*)",
+        splitsJoined ? "COUNT(DISTINCT transaction.id)" : "COUNT(*)",
         "count",
       )
       .groupBy("month")

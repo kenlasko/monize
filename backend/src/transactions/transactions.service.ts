@@ -455,12 +455,6 @@ export class TransactionsService {
             )
           : [];
 
-      if (uniqueCategoryIds.length > 0) {
-        // Use a separate join alias for filtering so the main "splits" join
-        // (leftJoinAndSelect) still loads ALL splits for display purposes.
-        queryBuilder.leftJoin("transaction.splits", "filterSplits");
-      }
-
       queryBuilder.andWhere(
         new Brackets((qb) => {
           if (hasUncategorized) {
@@ -478,6 +472,11 @@ export class TransactionsService {
           if (uniqueCategoryIds.length > 0) {
             const method = hasCondition ? "orWhere" : "where";
             hasCondition = true;
+            // Filter on the main "splits" alias so that only matching split
+            // rows are hydrated.  Non-matching splits are excluded from the
+            // response, which lets the frontend detect partial amounts and
+            // display a filtered total.  The edit form fetches the full
+            // transaction via getById, so it still sees all splits.
             qb[method](
               new Brackets((inner) => {
                 inner
@@ -485,7 +484,7 @@ export class TransactionsService {
                     filterCategoryIds: uniqueCategoryIds,
                   })
                   .orWhere(
-                    "filterSplits.categoryId IN (:...filterCategoryIds)",
+                    "splits.categoryId IN (:...filterCategoryIds)",
                     { filterCategoryIds: uniqueCategoryIds },
                   );
               }),
@@ -696,14 +695,11 @@ export class TransactionsService {
       filters,
     );
 
-    const totalSumResult = await this.transactionsRepository
-      .createQueryBuilder("t")
-      .select("COALESCE(SUM(t.amount), 0)", "totalSum")
-      .where(`t.id IN (${idsSubquery.getQuery()})`)
-      .setParameters(idsSubquery.getParameters())
-      .getRawOne();
-
-    const totalSum = Number(totalSumResult?.totalSum) || 0;
+    const totalSum = await this.computeSplitAwareSum(
+      idsSubquery,
+      userId,
+      filters,
+    );
 
     if (safePage === 1) return totalSum;
 
@@ -741,14 +737,11 @@ export class TransactionsService {
       filters,
     );
 
-    const totalSumResult = await this.transactionsRepository
-      .createQueryBuilder("t")
-      .select("COALESCE(SUM(t.amount), 0)", "totalSum")
-      .where(`t.id IN (${idsSubquery.getQuery()})`)
-      .setParameters(idsSubquery.getParameters())
-      .getRawOne();
-
-    const totalSum = Number(totalSumResult?.totalSum) || 0;
+    const totalSum = await this.computeSplitAwareSum(
+      idsSubquery,
+      userId,
+      filters,
+    );
 
     if (safePage === 1) return totalSum;
 
@@ -896,14 +889,84 @@ export class TransactionsService {
       .addOrderBy("t.id", "DESC")
       .limit(skip);
 
-    const sumResult = await this.transactionsRepository
-      .createQueryBuilder("main")
-      .select("COALESCE(SUM(main.amount), 0)", "sum")
-      .where(`main.id IN (${prevIdsQuery.getQuery()})`)
-      .setParameters(prevIdsQuery.getParameters())
-      .getRawOne();
+    return this.computeSplitAwareSum(prevIdsQuery, userId, filters);
+  }
 
-    return Number(sumResult?.sum) || 0;
+  /**
+   * Compute a split-aware sum for a set of transaction IDs.
+   *
+   * When category or tag filters are active, splits are joined with the
+   * same filter conditions used by findAll().  Non-matching split rows
+   * are excluded, so COALESCE(splits.amount, t.amount) produces the
+   * partial split sum for partially-matching split transactions and the
+   * full t.amount for non-split transactions.
+   */
+  private async computeSplitAwareSum(
+    idsSubquery: { getQuery: () => string; getParameters: () => Record<string, any> },
+    userId: string,
+    filters: {
+      categoryIds?: string[];
+      tagIds?: string[];
+    },
+  ): Promise<number> {
+    const regularCategoryIds = (filters.categoryIds ?? []).filter(
+      (id) => id !== "uncategorized" && id !== "transfer",
+    );
+    const hasRegularCategories = regularCategoryIds.length > 0;
+    const hasTags = (filters.tagIds?.length ?? 0) > 0;
+
+    if (!hasRegularCategories && !hasTags) {
+      const result = await this.transactionsRepository
+        .createQueryBuilder("sa")
+        .select("COALESCE(SUM(sa.amount), 0)", "totalSum")
+        .where(`sa.id IN (${idsSubquery.getQuery()})`)
+        .setParameters(idsSubquery.getParameters())
+        .getRawOne();
+      return Number(result?.totalSum) || 0;
+    }
+
+    const sumQb = this.transactionsRepository
+      .createQueryBuilder("sa")
+      .where(`sa.id IN (${idsSubquery.getQuery()})`)
+      .setParameters(idsSubquery.getParameters());
+
+    sumQb.leftJoin("sa.splits", "saSplits");
+
+    if (hasRegularCategories) {
+      const expandedIds = await getAllCategoryIdsWithChildren(
+        this.categoriesRepository,
+        userId,
+        regularCategoryIds,
+      );
+      if (expandedIds.length > 0) {
+        sumQb.andWhere(
+          new Brackets((qb) => {
+            qb.where("sa.categoryId IN (:...saCatIds)", {
+              saCatIds: expandedIds,
+            }).orWhere("saSplits.categoryId IN (:...saCatIds)");
+          }),
+        );
+      }
+    }
+
+    if (hasTags) {
+      sumQb.leftJoin("sa.tags", "saTags");
+      sumQb.leftJoin("saSplits.tags", "saSplitTags");
+      sumQb.andWhere(
+        new Brackets((qb) => {
+          qb.where("saTags.id IN (:...saTagIds)", {
+            saTagIds: filters.tagIds,
+          }).orWhere("saSplitTags.id IN (:...saTagIds)");
+        }),
+      );
+    }
+
+    sumQb.select(
+      "COALESCE(SUM(COALESCE(saSplits.amount, sa.amount)), 0)",
+      "totalSum",
+    );
+    const result = await sumQb.getRawOne();
+    return Number(result?.totalSum) || 0;
   }
 
   /**

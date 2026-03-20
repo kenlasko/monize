@@ -262,7 +262,30 @@ export function TransactionList({
 
   const showRunningBalance = isSingleAccountView || startingBalance !== undefined;
 
-  // Calculate running balances
+  // Compute display amounts for split transactions.  When a filter
+  // causes only some splits to be returned, the sum of visible splits
+  // will differ from the parent transaction amount.  In that case show
+  // only the filtered total so the amount column matches what the user
+  // sees in the category column.
+  const displayAmounts = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const tx of transactions) {
+      if (tx.isSplit && tx.splits && tx.splits.length > 0) {
+        const splitsSumCents = tx.splits.reduce(
+          (sum, s) => sum + Math.round(Number(s.amount) * 10000),
+          0,
+        );
+        const txAmountCents = Math.round(Number(tx.amount) * 10000);
+        if (splitsSumCents !== txAmountCents) {
+          map.set(tx.id, splitsSumCents / 10000);
+        }
+      }
+    }
+    return map;
+  }, [transactions]);
+
+  // Calculate running balances using the backend-provided starting
+  // balance and display amounts (which may be filtered split totals).
   const runningBalances = useMemo(() => {
     if (startingBalance === undefined || transactions.length === 0) {
       return new Map<string, number>();
@@ -272,12 +295,13 @@ export function TransactionList({
     let cumulativeSum = 0;
 
     for (const tx of transactions) {
+      const amount = displayAmounts.get(tx.id) ?? Number(tx.amount);
       balances.set(tx.id, startingBalance - cumulativeSum);
-      cumulativeSum += Number(tx.amount);
+      cumulativeSum += amount;
     }
 
     return balances;
-  }, [transactions, startingBalance]);
+  }, [transactions, startingBalance, displayAmounts]);
 
   const formatAmount = useCallback((amount: number, currencyCode?: string) => {
     const isNegative = amount < 0;
@@ -427,6 +451,7 @@ export function TransactionList({
                     isSingleAccountView={isSingleAccountView}
                     showRunningBalance={showRunningBalance}
                     runningBalance={runningBalances.get(transaction.id)}
+                    displayAmount={displayAmounts.get(transaction.id)}
                     isDeleting={deletingId === transaction.id}
                     formatDate={formatDate}
                     formatAmount={formatAmount}
