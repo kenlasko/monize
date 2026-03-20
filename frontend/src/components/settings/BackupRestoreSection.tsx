@@ -4,9 +4,39 @@ import { useState, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { backupApi } from '@/lib/backupApi';
+import { Modal } from '@/components/ui/Modal';
+import { backupApi, RestoreResult } from '@/lib/backupApi';
 import { getErrorMessage } from '@/lib/errors';
 import { User } from '@/types/auth';
+
+const RESTORE_LABELS: Record<string, string> = {
+  userPreferences: 'User Preferences',
+  userCurrencyPreferences: 'Currency Preferences',
+  categories: 'Categories',
+  payees: 'Payees',
+  payeeAliases: 'Payee Aliases',
+  accounts: 'Accounts',
+  tags: 'Tags',
+  scheduledTransactions: 'Scheduled Transactions',
+  scheduledTransactionSplits: 'Scheduled Transaction Splits',
+  scheduledTransactionOverrides: 'Scheduled Transaction Overrides',
+  securities: 'Securities',
+  securityPrices: 'Security Prices',
+  holdings: 'Holdings',
+  transactions: 'Transactions',
+  transactionSplits: 'Transaction Splits',
+  transactionTags: 'Transaction Tags',
+  transactionSplitTags: 'Transaction Split Tags',
+  investmentTransactions: 'Investment Transactions',
+  budgets: 'Budgets',
+  budgetCategories: 'Budget Categories',
+  budgetPeriods: 'Budget Periods',
+  budgetPeriodCategories: 'Budget Period Categories',
+  budgetAlerts: 'Budget Alerts',
+  customReports: 'Custom Reports',
+  importColumnMappings: 'Import Column Mappings',
+  monthlyAccountBalances: 'Monthly Account Balances',
+};
 
 interface BackupRestoreSectionProps {
   user: User;
@@ -18,6 +48,7 @@ export function BackupRestoreSection({ user }: BackupRestoreSectionProps) {
   const [isRestoring, setIsRestoring] = useState(false);
   const [restorePassword, setRestorePassword] = useState('');
   const [restoreFile, setRestoreFile] = useState<File | null>(null);
+  const [restoreResult, setRestoreResult] = useState<RestoreResult | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isOidc = user.authProvider === 'oidc';
@@ -71,11 +102,7 @@ export function BackupRestoreSection({ user }: BackupRestoreSectionProps) {
         ...authData,
       });
 
-      const totalRestored = Object.values(result.restored).reduce(
-        (sum, n) => sum + n,
-        0,
-      );
-      toast.success(`Restored ${totalRestored} records successfully`);
+      setRestoreResult(result);
 
       // Reset form
       setShowRestore(false);
@@ -242,6 +269,61 @@ export function BackupRestoreSection({ user }: BackupRestoreSectionProps) {
           </div>
         )}
       </div>
+
+      <Modal
+        isOpen={restoreResult !== null}
+        onClose={() => setRestoreResult(null)}
+        maxWidth="md"
+      >
+        {restoreResult && (
+          <div className="p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="flex-shrink-0 w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
+                <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Restore Complete
+              </h2>
+            </div>
+
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+              Your data has been restored successfully. Here is a summary of what was restored:
+            </p>
+
+            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 max-h-64 overflow-y-auto">
+              <dl className="space-y-1">
+                {Object.entries(restoreResult.restored)
+                  .filter(([, count]) => count > 0)
+                  .map(([key, count]) => (
+                    <div key={key} className="flex justify-between text-sm">
+                      <dt className="text-gray-600 dark:text-gray-400">
+                        {RESTORE_LABELS[key] ?? key}
+                      </dt>
+                      <dd className="font-medium text-gray-900 dark:text-white">
+                        {count.toLocaleString()}
+                      </dd>
+                    </div>
+                  ))}
+              </dl>
+            </div>
+
+            <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-600 flex justify-between text-sm font-medium">
+              <span className="text-gray-900 dark:text-white">Total records</span>
+              <span className="text-gray-900 dark:text-white">
+                {Object.values(restoreResult.restored).reduce((sum, n) => sum + n, 0).toLocaleString()}
+              </span>
+            </div>
+
+            <div className="mt-6 flex justify-end">
+              <Button onClick={() => setRestoreResult(null)}>
+                Done
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }
