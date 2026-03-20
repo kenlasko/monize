@@ -455,12 +455,6 @@ export class TransactionsService {
             )
           : [];
 
-      if (uniqueCategoryIds.length > 0) {
-        // Use a separate join alias for filtering so the main "splits" join
-        // (leftJoinAndSelect) still loads ALL splits for display purposes.
-        queryBuilder.leftJoin("transaction.splits", "filterSplits");
-      }
-
       queryBuilder.andWhere(
         new Brackets((qb) => {
           if (hasUncategorized) {
@@ -478,6 +472,11 @@ export class TransactionsService {
           if (uniqueCategoryIds.length > 0) {
             const method = hasCondition ? "orWhere" : "where";
             hasCondition = true;
+            // Filter on the main "splits" alias so that only matching split
+            // rows are hydrated.  Non-matching splits are excluded from the
+            // response, which lets the frontend detect partial amounts and
+            // display a filtered total.  The edit form fetches the full
+            // transaction via getById, so it still sees all splits.
             qb[method](
               new Brackets((inner) => {
                 inner
@@ -485,7 +484,7 @@ export class TransactionsService {
                     filterCategoryIds: uniqueCategoryIds,
                   })
                   .orWhere(
-                    "filterSplits.categoryId IN (:...filterCategoryIds)",
+                    "splits.categoryId IN (:...filterCategoryIds)",
                     { filterCategoryIds: uniqueCategoryIds },
                   );
               }),
