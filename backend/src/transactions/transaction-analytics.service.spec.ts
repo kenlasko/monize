@@ -1081,6 +1081,164 @@ describe("TransactionAnalyticsService", () => {
         { search: "%grocery%" },
       );
     });
+
+    describe("tagIds filter", () => {
+      it("joins both transaction tags and split tags when tagIds provided", async () => {
+        await service.getMonthlyTotals(
+          userId,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          ["tag-1"],
+        );
+
+        expect(mockQueryBuilder.leftJoin).toHaveBeenCalledWith(
+          "transaction.splits",
+          "splits",
+        );
+        expect(mockQueryBuilder.leftJoin).toHaveBeenCalledWith(
+          "transaction.tags",
+          "filterTags",
+        );
+        expect(mockQueryBuilder.leftJoin).toHaveBeenCalledWith(
+          "splits.tags",
+          "filterSplitTags",
+        );
+      });
+
+      it("filters by tag on both transaction and split tags using OR", async () => {
+        await service.getMonthlyTotals(
+          userId,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          ["tag-1", "tag-2"],
+        );
+
+        expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+          expect.any(Brackets),
+        );
+        expect(mockQueryBuilder.where).toHaveBeenCalledWith(
+          "filterTags.id IN (:...monthlyTagIds)",
+          { monthlyTagIds: ["tag-1", "tag-2"] },
+        );
+        expect(mockQueryBuilder.orWhere).toHaveBeenCalledWith(
+          "filterSplitTags.id IN (:...monthlyTagIds)",
+          { monthlyTagIds: ["tag-1", "tag-2"] },
+        );
+      });
+
+      it("uses split-aware amounts when tag filter is active", async () => {
+        await service.getMonthlyTotals(
+          userId,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          ["tag-1"],
+        );
+
+        expect(mockQueryBuilder.addSelect).toHaveBeenCalledWith(
+          expect.stringContaining(
+            "COALESCE(splits.amount, transaction.amount)",
+          ),
+          "total",
+        );
+        expect(mockQueryBuilder.addSelect).toHaveBeenCalledWith(
+          "COUNT(DISTINCT transaction.id)",
+          "count",
+        );
+      });
+
+      it("does not duplicate splits join when category filter already joined splits", async () => {
+        categoriesRepository.find.mockResolvedValue([
+          { id: "cat-1", parentId: null },
+        ]);
+
+        await service.getMonthlyTotals(
+          userId,
+          undefined,
+          undefined,
+          undefined,
+          ["cat-1"],
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          ["tag-1"],
+        );
+
+        const splitsJoinCalls = mockQueryBuilder.leftJoin.mock.calls.filter(
+          (call: unknown[]) =>
+            call[0] === "transaction.splits" && call[1] === "splits",
+        );
+        expect(splitsJoinCalls.length).toBe(1);
+      });
+
+      it("does not duplicate splits join when search filter already joined splits", async () => {
+        await service.getMonthlyTotals(
+          userId,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          "test",
+          undefined,
+          undefined,
+          ["tag-1"],
+        );
+
+        const splitsJoinCalls = mockQueryBuilder.leftJoin.mock.calls.filter(
+          (call: unknown[]) =>
+            call[0] === "transaction.splits" && call[1] === "splits",
+        );
+        expect(splitsJoinCalls.length).toBe(1);
+      });
+
+      it("does not apply tag filter when tagIds is empty", async () => {
+        await service.getMonthlyTotals(
+          userId,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          [],
+        );
+
+        expect(mockQueryBuilder.leftJoin).not.toHaveBeenCalledWith(
+          "transaction.tags",
+          "filterTags",
+        );
+      });
+
+      it("does not apply tag filter when tagIds is undefined", async () => {
+        await service.getMonthlyTotals(userId);
+
+        expect(mockQueryBuilder.leftJoin).not.toHaveBeenCalledWith(
+          "transaction.tags",
+          "filterTags",
+        );
+      });
+    });
   });
 
   describe("amount range filter", () => {
