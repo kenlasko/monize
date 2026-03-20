@@ -67,6 +67,7 @@ describe("ImportInvestmentProcessorService", () => {
       importStartTime: new Date(),
       dateCounters: new Map(),
       affectedAccountIds: new Set(),
+      createdCounterpartIds: new Set<string>(),
       importResult: makeImportResult(),
       ...overrides,
     };
@@ -995,14 +996,6 @@ describe("ImportInvestmentProcessorService", () => {
       await testActionMapping("CvrShrt", InvestmentAction.BUY);
     });
 
-    it("maps XIn to TRANSFER_IN", async () => {
-      await testActionMapping("XIn", InvestmentAction.TRANSFER_IN);
-    });
-
-    it("maps XOut to TRANSFER_OUT", async () => {
-      await testActionMapping("XOut", InvestmentAction.TRANSFER_OUT);
-    });
-
     it("maps RtrnCap to DIVIDEND", async () => {
       await testActionMapping("RtrnCap", InvestmentAction.DIVIDEND);
     });
@@ -1045,6 +1038,131 @@ describe("ImportInvestmentProcessorService", () => {
 
     it("maps Cash to INTEREST", async () => {
       await testActionMapping("Cash", InvestmentAction.INTEREST);
+    });
+  });
+
+  describe("processCashTransfer (XIn/XOut via processTransaction)", () => {
+    const makeMockQueryBuilder = (result: any = null) => {
+      const qb: Record<string, jest.Mock> = {
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue(result),
+      };
+      return qb;
+    };
+
+    it("should create cash transaction for XOut and a counterpart in transfer account", async () => {
+      const accountMap = new Map<string, string | null>();
+      accountMap.set("Savings", "acc-savings");
+      const ctx = makeContext({ accountMap });
+
+      (ctx.queryRunner.manager as any).createQueryBuilder = jest
+        .fn()
+        .mockReturnValue(makeMockQueryBuilder(null));
+
+      ctx.queryRunner.manager.findOne.mockImplementation(
+        (_entity: any, opts: any) => {
+          if (opts?.where?.id === "acc-savings") {
+            return Promise.resolve({ id: "acc-savings", currencyCode: "USD" });
+          }
+          return Promise.resolve(null);
+        },
+      );
+
+      const qifTx = {
+        action: "XOut",
+        date: "2025-01-15",
+        amount: -1000,
+        isTransfer: true,
+        transferAccount: "Savings",
+      };
+
+      await service.processTransaction(ctx, qifTx);
+
+      expect(ctx.importResult.imported).toBe(1);
+      expect(ctx.importResult.skipped).toBe(0);
+      const saveCalls = ctx.queryRunner.manager.save.mock.calls;
+      // Should save cash tx and counterpart
+      expect(saveCalls.length).toBeGreaterThanOrEqual(2);
+    });
+
+    it("should skip XIn when counterpart was already created in this import run", async () => {
+      const accountMap = new Map<string, string | null>();
+      accountMap.set("Brokerage", "acc-brokerage");
+      const ctx = makeContext({ accountMap });
+
+      const existingCounterpart = { id: "tx-counterpart", amount: 1000 };
+      (ctx.queryRunner.manager as any).createQueryBuilder = jest
+        .fn()
+        .mockReturnValue(makeMockQueryBuilder(existingCounterpart));
+      ctx.createdCounterpartIds.add("tx-counterpart");
+
+      const qifTx = {
+        action: "XIn",
+        date: "2025-01-15",
+        amount: 1000,
+        isTransfer: true,
+        transferAccount: "Brokerage",
+      };
+
+      await service.processTransaction(ctx, qifTx);
+
+      expect(ctx.importResult.skipped).toBe(1);
+      expect(ctx.importResult.imported).toBe(0);
+    });
+
+    it("should not skip XIn when counterpart is not in createdCounterpartIds", async () => {
+      const accountMap = new Map<string, string | null>();
+      accountMap.set("Brokerage", "acc-brokerage");
+      const ctx = makeContext({ accountMap });
+
+      const existingTx = { id: "tx-other", amount: 1000 };
+      (ctx.queryRunner.manager as any).createQueryBuilder = jest
+        .fn()
+        .mockReturnValue(makeMockQueryBuilder(existingTx));
+      // NOT added to createdCounterpartIds
+
+      ctx.queryRunner.manager.findOne.mockImplementation(
+        (_entity: any, opts: any) => {
+          if (opts?.where?.id === "acc-brokerage") {
+            return Promise.resolve({
+              id: "acc-brokerage",
+              currencyCode: "USD",
+            });
+          }
+          return Promise.resolve(null);
+        },
+      );
+
+      const qifTx = {
+        action: "XIn",
+        date: "2025-01-15",
+        amount: 1000,
+        isTransfer: true,
+        transferAccount: "Brokerage",
+      };
+
+      await service.processTransaction(ctx, qifTx);
+
+      expect(ctx.importResult.imported).toBe(1);
+      expect(ctx.importResult.skipped).toBe(0);
+    });
+
+    it("should create a cash-only transaction for XOut with no mapped transfer account", async () => {
+      const ctx = makeContext();
+
+      const qifTx = {
+        action: "XOut",
+        date: "2025-01-15",
+        amount: -500,
+        isTransfer: false,
+      };
+
+      await service.processTransaction(ctx, qifTx);
+
+      expect(ctx.importResult.imported).toBe(1);
+      const saveCalls = ctx.queryRunner.manager.save.mock.calls;
+      expect(saveCalls.length).toBe(1);
     });
   });
 });

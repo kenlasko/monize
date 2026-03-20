@@ -18,6 +18,13 @@ export class ImportInvestmentProcessorService {
   private readonly logger = new Logger(ImportInvestmentProcessorService.name);
 
   async processTransaction(ctx: ImportContext, qifTx: any): Promise<void> {
+    // Handle cash transfers (XIn/XOut) before any investment-specific processing
+    const rawAction = (qifTx.action || "").toLowerCase();
+    if (rawAction === "xin" || rawAction === "xout") {
+      await this.processCashTransfer(ctx, qifTx);
+      return;
+    }
+
     const actionMap: Record<string, InvestmentAction> = {
       buy: InvestmentAction.BUY,
       sell: InvestmentAction.SELL,
@@ -301,6 +308,118 @@ export class ImportInvestmentProcessorService {
     await ctx.queryRunner.manager.save(investmentTx);
 
     await updateAccountBalance(ctx.queryRunner, cashAccountId, cashAmount);
+  }
+
+  private async processCashTransfer(
+    ctx: ImportContext,
+    qifTx: any,
+  ): Promise<void> {
+    // Determine cash account (linked cash account for brokerage, or current account directly)
+    let cashAccountId = ctx.accountId;
+    let cashCurrencyCode = ctx.account.currencyCode;
+
+    if (
+      ctx.account.accountSubType === AccountSubType.INVESTMENT_BROKERAGE &&
+      ctx.account.linkedAccountId
+    ) {
+      cashAccountId = ctx.account.linkedAccountId;
+      ctx.affectedAccountIds.add(cashAccountId);
+      const linkedAccount = await ctx.queryRunner.manager.findOne(Account, {
+        where: { id: ctx.account.linkedAccountId },
+      });
+      if (linkedAccount) {
+        cashCurrencyCode = linkedAccount.currencyCode;
+      }
+    }
+
+    const cashAmount: number = qifTx.amount || 0;
+    if (cashAmount === 0) return;
+
+    const status = qifTx.reconciled
+      ? TransactionStatus.RECONCILED
+      : qifTx.cleared
+        ? TransactionStatus.CLEARED
+        : TransactionStatus.UNRECONCILED;
+
+    const transferAccountId =
+      qifTx.isTransfer && qifTx.transferAccount
+        ? ctx.accountMap.get(qifTx.transferAccount) || null
+        : null;
+
+    // Check if this is a counterpart already created when processing the other account's block
+    if (transferAccountId) {
+      const existingCounterpart = await ctx.queryRunner.manager
+        .createQueryBuilder(Transaction, "t")
+        .where("t.user_id = :userId", { userId: ctx.userId })
+        .andWhere("t.account_id = :accountId", { accountId: cashAccountId })
+        .andWhere("t.transaction_date = :date", { date: qifTx.date })
+        .andWhere("t.amount = :amount", { amount: cashAmount })
+        .andWhere("t.is_transfer = true")
+        .getOne();
+
+      if (
+        existingCounterpart &&
+        ctx.createdCounterpartIds.has(existingCounterpart.id)
+      ) {
+        ctx.importResult.skipped++;
+        return;
+      }
+    }
+
+    const payeeName =
+      qifTx.payee ||
+      (qifTx.action?.toLowerCase() === "xout"
+        ? `Transfer to ${qifTx.transferAccount || "unknown"}`
+        : `Transfer from ${qifTx.transferAccount || "unknown"}`);
+
+    const cashTx = ctx.queryRunner.manager.create(Transaction, {
+      userId: ctx.userId,
+      accountId: cashAccountId,
+      transactionDate: qifTx.date,
+      amount: cashAmount,
+      payeeName,
+      description: qifTx.memo || null,
+      status,
+      currencyCode: cashCurrencyCode,
+      isTransfer: !!transferAccountId,
+    });
+
+    const savedCashTx = await ctx.queryRunner.manager.save(cashTx);
+    ctx.affectedAccountIds.add(cashAccountId);
+    await updateAccountBalance(ctx.queryRunner, cashAccountId, cashAmount);
+
+    if (transferAccountId) {
+      ctx.affectedAccountIds.add(transferAccountId);
+      const linkedAmount = -cashAmount;
+
+      const targetAccount = await ctx.queryRunner.manager.findOne(Account, {
+        where: { id: transferAccountId },
+      });
+
+      const linkedTx = ctx.queryRunner.manager.create(Transaction, {
+        userId: ctx.userId,
+        accountId: transferAccountId,
+        transactionDate: qifTx.date,
+        amount: linkedAmount,
+        payeeName,
+        description: qifTx.memo || null,
+        status,
+        currencyCode: targetAccount?.currencyCode || cashCurrencyCode,
+        isTransfer: true,
+        linkedTransactionId: savedCashTx.id,
+      });
+
+      const savedLinkedTx = await ctx.queryRunner.manager.save(linkedTx);
+      ctx.createdCounterpartIds.add(savedLinkedTx.id);
+
+      await ctx.queryRunner.manager.update(Transaction, savedCashTx.id, {
+        linkedTransactionId: savedLinkedTx.id,
+      });
+
+      await updateAccountBalance(ctx.queryRunner, transferAccountId, linkedAmount);
+    }
+
+    ctx.importResult.imported++;
   }
 
   private async processHoldings(

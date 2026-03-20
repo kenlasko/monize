@@ -15,6 +15,8 @@ export interface ImportContext {
   importStartTime: Date;
   dateCounters: Map<string, number>;
   affectedAccountIds: Set<string>;
+  /** IDs of transactions created as counterparts during this import run */
+  createdCounterpartIds: Set<string>;
   importResult: ImportResultDto;
 }
 

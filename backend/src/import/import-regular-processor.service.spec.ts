@@ -74,6 +74,7 @@ describe("ImportRegularProcessorService", () => {
       importStartTime: new Date(),
       dateCounters: new Map(),
       affectedAccountIds: new Set(),
+      createdCounterpartIds: new Set<string>(),
       importResult: makeImportResult(),
       ...overrides,
     };
@@ -267,7 +268,7 @@ describe("ImportRegularProcessorService", () => {
   });
 
   describe("isDuplicateTransfer (via processTransaction)", () => {
-    it("should skip duplicate linked transfers", async () => {
+    it("should skip duplicate linked transfers when tx is a known counterpart", async () => {
       const accountMap = new Map<string, string | null>();
       accountMap.set("Savings", "acc-savings");
       const ctx = makeContext({ accountMap });
@@ -277,6 +278,8 @@ describe("ImportRegularProcessorService", () => {
       ctx.queryRunner.manager.createQueryBuilder.mockReturnValue(
         makeMockQueryBuilder(existingTransfer),
       );
+      // Mark as a counterpart created in this import run
+      ctx.createdCounterpartIds.add("tx-existing");
 
       const qifTx = {
         date: "2025-01-15",
@@ -291,7 +294,38 @@ describe("ImportRegularProcessorService", () => {
       expect(ctx.importResult.imported).toBe(0);
     });
 
-    it("should skip split-linked transfers", async () => {
+    it("should not skip linked transfers that are not known counterparts", async () => {
+      const accountMap = new Map<string, string | null>();
+      accountMap.set("Savings", "acc-savings");
+      const ctx = makeContext({ accountMap });
+
+      // Set up query builder to find existing linked transfer NOT in createdCounterpartIds
+      const existingTransfer = { id: "tx-existing", accountId: "acc-1" };
+      let qbCallCount = 0;
+      ctx.queryRunner.manager.createQueryBuilder.mockImplementation(() => {
+        qbCallCount++;
+        if (qbCallCount <= 2) {
+          // isDuplicateTransfer calls return the transfer (but not in createdCounterpartIds)
+          return makeMockQueryBuilder(existingTransfer);
+        }
+        return makeMockQueryBuilder(null);
+      });
+
+      const qifTx = {
+        date: "2025-01-15",
+        amount: -200,
+        isTransfer: true,
+        transferAccount: "Savings",
+      };
+
+      await service.processTransaction(ctx, qifTx);
+
+      // Should not be skipped since tx-existing is not in createdCounterpartIds
+      expect(ctx.importResult.skipped).toBe(0);
+      expect(ctx.importResult.imported).toBe(1);
+    });
+
+    it("should skip split-linked transfers when tx is a known counterpart", async () => {
       const ctx = makeContext();
 
       // When isTransfer is true but transferAccount is absent,
@@ -300,6 +334,8 @@ describe("ImportRegularProcessorService", () => {
       ctx.queryRunner.manager.createQueryBuilder.mockReturnValue(
         makeMockQueryBuilder({ id: "tx-split-linked" }),
       );
+      // Mark as a counterpart created in this import run
+      ctx.createdCounterpartIds.add("tx-split-linked");
 
       const qifTx = {
         date: "2025-01-15",

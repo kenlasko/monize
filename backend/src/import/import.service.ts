@@ -381,6 +381,7 @@ export class ImportService {
           importStartTime,
           dateCounters: new Map(),
           affectedAccountIds,
+          createdCounterpartIds: new Set<string>(),
           importResult,
         };
 
@@ -1198,6 +1199,7 @@ export class ImportService {
       importStartTime,
       dateCounters: new Map<string, number>(),
       affectedAccountIds,
+      createdCounterpartIds: new Set<string>(),
       importResult,
     };
 

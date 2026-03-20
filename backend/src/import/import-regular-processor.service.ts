@@ -131,7 +131,10 @@ export class ImportRegularProcessorService {
           })
           .getOne();
 
-        if (existingLinkedTransfers) {
+        if (
+          existingLinkedTransfers &&
+          ctx.createdCounterpartIds.has(existingLinkedTransfers.id)
+        ) {
           return true;
         }
       }
@@ -155,7 +158,10 @@ export class ImportRegularProcessorService {
         .andWhere("t.amount = :amount", { amount: qifTx.amount })
         .getOne();
 
-      if (existingSplitLinkedTx) {
+      if (
+        existingSplitLinkedTx &&
+        ctx.createdCounterpartIds.has(existingSplitLinkedTx.id)
+      ) {
         return true;
       }
     }
@@ -511,6 +517,7 @@ export class ImportRegularProcessorService {
 
     const savedLinkedSplitTx =
       await ctx.queryRunner.manager.save(linkedSplitTx);
+    ctx.createdCounterpartIds.add(savedLinkedSplitTx.id);
 
     await ctx.queryRunner.manager.update(TransactionSplit, savedSplit.id, {
       linkedTransactionId: savedLinkedSplitTx.id,
@@ -689,6 +696,7 @@ export class ImportRegularProcessorService {
     });
 
     const savedLinkedTx = await ctx.queryRunner.manager.save(linkedTx);
+    ctx.createdCounterpartIds.add(savedLinkedTx.id);
 
     await ctx.queryRunner.manager.update(Transaction, savedTx.id, {
       linkedTransactionId: savedLinkedTx.id,
