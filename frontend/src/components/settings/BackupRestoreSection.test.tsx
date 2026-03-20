@@ -123,7 +123,7 @@ describe('BackupRestoreSection', () => {
     expect(confirmButton).toBeDisabled();
   });
 
-  it('restores backup successfully by sending file to API', async () => {
+  it('restores backup successfully and shows summary modal', async () => {
     (backupApi.restoreBackup as ReturnType<typeof vi.fn>).mockResolvedValue({
       message: 'Backup restored successfully',
       restored: { categories: 5, accounts: 3 },
@@ -151,8 +151,20 @@ describe('BackupRestoreSection', () => {
         password: 'testpass',
         file: expect.any(File),
       });
-      expect(toast.success).toHaveBeenCalledWith('Restored 8 records successfully');
     });
+
+    // Verify success modal is shown with summary
+    expect(screen.getByText('Restore Complete')).toBeInTheDocument();
+    expect(screen.getByText('Categories')).toBeInTheDocument();
+    expect(screen.getByText('5')).toBeInTheDocument();
+    expect(screen.getByText('Accounts')).toBeInTheDocument();
+    expect(screen.getByText('3')).toBeInTheDocument();
+    expect(screen.getByText('8')).toBeInTheDocument(); // Total
+    expect(screen.getByText('Done')).toBeInTheDocument();
+
+    // Clicking Done closes the modal
+    fireEvent.click(screen.getByText('Done'));
+    expect(screen.queryByText('Restore Complete')).not.toBeInTheDocument();
   });
 
   it('shows error toast on restore failure', async () => {
