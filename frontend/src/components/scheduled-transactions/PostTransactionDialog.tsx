@@ -197,7 +197,7 @@ export function PostTransactionDialog({
   const currentCategory = categoryId ? categories.find(c => c.id === categoryId) : null;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} maxWidth="5xl" allowOverflow className="p-6">
+    <Modal isOpen={isOpen} onClose={onClose} maxWidth="5xl" className="p-6">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
           Post Transaction

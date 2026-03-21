@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { cn } from '@/lib/utils';
 
 export interface MultiSelectOption {
@@ -37,7 +38,10 @@ export function MultiSelect({
 }: MultiSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchText, setSearchText] = useState('');
+  const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number; width: number } | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Build a flat list with hierarchy info for display, and a map for lookups
@@ -170,10 +174,46 @@ export function MultiSelect({
     onChange(newValue);
   };
 
+  // Calculate dropdown position from trigger button
+  const updatePosition = useCallback(() => {
+    if (!triggerRef.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    setDropdownPos({
+      top: rect.bottom + 4,
+      left: rect.left,
+      width: rect.width,
+    });
+  }, []);
+
+  // Update position when opening
+  useEffect(() => {
+    if (isOpen) updatePosition();
+  }, [isOpen, updatePosition]);
+
+  // Close on parent scroll or window resize (dropdown would be misaligned)
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleScrollOrResize = (event: Event) => {
+      if (dropdownRef.current?.contains(event.target as Node)) return;
+      setIsOpen(false);
+      setSearchText('');
+    };
+    window.addEventListener('scroll', handleScrollOrResize, true);
+    window.addEventListener('resize', handleScrollOrResize);
+    return () => {
+      window.removeEventListener('scroll', handleScrollOrResize, true);
+      window.removeEventListener('resize', handleScrollOrResize);
+    };
+  }, [isOpen]);
+
   // Close on click outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (
+        wrapperRef.current && !wrapperRef.current.contains(target) &&
+        (!dropdownRef.current || !dropdownRef.current.contains(target))
+      ) {
         setIsOpen(false);
         setSearchText('');
       }
@@ -209,6 +249,7 @@ export function MultiSelect({
 
       {/* Trigger button */}
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
@@ -246,9 +287,13 @@ export function MultiSelect({
         </div>
       </button>
 
-      {/* Dropdown */}
-      {isOpen && (
-        <div className="absolute z-20 mt-1 w-full bg-white dark:bg-gray-800 shadow-lg dark:shadow-gray-700/50 rounded-md ring-1 ring-black ring-opacity-5 dark:ring-gray-600">
+      {/* Dropdown (portal-rendered to avoid overflow clipping) */}
+      {isOpen && dropdownPos && createPortal(
+        <div
+          ref={dropdownRef}
+          className="fixed z-[100] bg-white dark:bg-gray-800 shadow-lg dark:shadow-gray-700/50 rounded-md ring-1 ring-black ring-opacity-5 dark:ring-gray-600"
+          style={{ top: dropdownPos.top, left: dropdownPos.left, width: dropdownPos.width }}
+        >
           {/* Search input */}
           {showSearch && (
             <div className="p-2 border-b border-gray-200 dark:border-gray-700">
@@ -387,7 +432,8 @@ export function MultiSelect({
               </button>
             </div>
           )}
-        </div>
+        </div>,
+        document.body,
       )}
 
       {error && (

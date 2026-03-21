@@ -26,7 +26,10 @@
       "WebFetch(domain:raw.githubusercontent.com)",
       "WebFetch(domain:cycode.com)",
       "Bash(git commit:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(while read hash msg)",
+      "Bash(do git show \"$hash\" -- frontend/src/app/transactions/page.tsx)",
+      "Bash(echo:*)"
     ]
   }
 }
