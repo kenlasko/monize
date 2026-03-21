@@ -108,11 +108,16 @@ export class ImportRegularProcessorService {
     ctx: ImportContext,
     qifTx: any,
   ): Promise<boolean> {
-    // Check for duplicate linked transfers
+    // Check for duplicate linked transfers using counting to avoid false positives.
+    // Multiple genuinely different transfers can share the same date, amount, and
+    // account pair (e.g. two $150 transfers to the same account on the same day
+    // with different payees). We count how many matching linked transfers already
+    // exist in the DB and how many same-signature QIF entries we have seen in this
+    // block; only skip when the seen count does not exceed the existing count.
     if (qifTx.isTransfer && qifTx.transferAccount) {
       const mappedTransferAccountId = ctx.accountMap.get(qifTx.transferAccount);
       if (mappedTransferAccountId) {
-        const existingLinkedTransfers = await ctx.queryRunner.manager
+        const existingCount = await ctx.queryRunner.manager
           .createQueryBuilder(Transaction, "t")
           .innerJoin(
             Transaction,
@@ -129,17 +134,22 @@ export class ImportRegularProcessorService {
           .andWhere("linked.account_id = :linkedAccountId", {
             linkedAccountId: mappedTransferAccountId,
           })
-          .getOne();
+          .getCount();
 
-        if (existingLinkedTransfers) {
-          return true;
+        if (existingCount > 0) {
+          const sigKey = `linked|${qifTx.date}|${qifTx.amount}|${mappedTransferAccountId}`;
+          const seenSoFar = ctx.transferDupCounts.get(sigKey) || 0;
+          ctx.transferDupCounts.set(sigKey, seenSoFar + 1);
+          if (seenSoFar + 1 <= existingCount) {
+            return true;
+          }
         }
       }
     }
 
-    // Check for split-linked transfers
+    // Check for split-linked transfers (same counting approach)
     if (qifTx.isTransfer) {
-      const existingSplitLinkedTx = await ctx.queryRunner.manager
+      const existingCount = await ctx.queryRunner.manager
         .createQueryBuilder(Transaction, "t")
         .innerJoin(
           TransactionSplit,
@@ -153,10 +163,15 @@ export class ImportRegularProcessorService {
         .andWhere("t.is_transfer = true")
         .andWhere("t.transaction_date = :date", { date: qifTx.date })
         .andWhere("t.amount = :amount", { amount: qifTx.amount })
-        .getOne();
+        .getCount();
 
-      if (existingSplitLinkedTx) {
-        return true;
+      if (existingCount > 0) {
+        const sigKey = `split|${qifTx.date}|${qifTx.amount}`;
+        const seenSoFar = ctx.transferDupCounts.get(sigKey) || 0;
+        ctx.transferDupCounts.set(sigKey, seenSoFar + 1);
+        if (seenSoFar + 1 <= existingCount) {
+          return true;
+        }
       }
     }
 

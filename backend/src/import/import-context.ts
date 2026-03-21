@@ -16,6 +16,9 @@ export interface ImportContext {
   dateCounters: Map<string, number>;
   affectedAccountIds: Set<string>;
   importResult: ImportResultDto;
+  /** Tracks how many QIF entries with each transfer signature have been seen in the current block,
+   *  used to distinguish genuinely different transfers that share date/amount/account. */
+  transferDupCounts: Map<string, number>;
 }
 
 /**

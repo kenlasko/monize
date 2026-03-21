@@ -167,6 +167,7 @@ describe("ImportService", () => {
     leftJoinAndSelect: jest.fn().mockReturnThis(),
     getOne: jest.fn().mockResolvedValue(null),
     getMany: jest.fn().mockResolvedValue([]),
+    getCount: jest.fn().mockResolvedValue(0),
     ...overrides,
   });
 
@@ -1620,7 +1621,7 @@ describe("ImportService", () => {
 
         // Simulate an existing linked transfer found via createQueryBuilder
         const mockQb = createMockQueryBuilder({
-          getOne: jest.fn().mockResolvedValue({ id: "existing-transfer" }),
+          getCount: jest.fn().mockResolvedValue(1),
         });
         mockQueryRunner.manager.createQueryBuilder.mockReturnValue(mockQb);
 

@@ -30,6 +30,7 @@ describe("ImportRegularProcessorService", () => {
       andWhere: jest.fn().mockReturnThis(),
       getOne: jest.fn().mockResolvedValue(result),
       getMany: jest.fn().mockResolvedValue(result ? [result] : []),
+      getCount: jest.fn().mockResolvedValue(result ? 1 : 0),
     };
     return qb;
   };
@@ -75,6 +76,7 @@ describe("ImportRegularProcessorService", () => {
       dateCounters: new Map(),
       affectedAccountIds: new Set(),
       importResult: makeImportResult(),
+      transferDupCounts: new Map(),
       ...overrides,
     };
   };
@@ -324,6 +326,103 @@ describe("ImportRegularProcessorService", () => {
 
       expect(ctx.importResult.skipped).toBe(0);
       expect(ctx.importResult.imported).toBe(1);
+    });
+
+    it("should not skip a second transfer with same date/amount/account but different payee", async () => {
+      // Reproduces GitHub issue #288: two transfers on the same day for the
+      // same amount to the same account (e.g. Manulife $150 and Cris Morley $150
+      // both to Tangerine) should NOT be treated as duplicates of each other.
+      const accountMap = new Map<string, string | null>();
+      accountMap.set("Tangerine", "acc-tangerine");
+      const ctx = makeContext({ accountMap });
+
+      // After the first transfer is processed, the DB has 1 existing linked
+      // transfer matching the signature. The counting logic should let the
+      // second QIF entry through because seenCount (2) > existingCount (1).
+      let qbCallCount = 0;
+      ctx.queryRunner.manager.createQueryBuilder.mockImplementation(() => {
+        qbCallCount++;
+        // Calls 1-2: isDuplicateTransfer for 1st QIF tx (linked + split-linked)
+        // Calls 3-4: isDuplicateTransfer for 2nd QIF tx (linked + split-linked)
+        // The linked query returns count=1 only for the 2nd tx (after 1st was created)
+        const qb = makeMockQueryBuilder(null);
+        if (qbCallCount === 3) {
+          // 2nd tx's linked-transfer check: 1 existing match in DB
+          qb.getCount.mockResolvedValue(1);
+        }
+        return qb;
+      });
+
+      ctx.queryRunner.manager.findOne.mockImplementation(
+        (_entity: any, opts: any) => {
+          if (opts?.where?.id === "acc-tangerine") {
+            return Promise.resolve({
+              id: "acc-tangerine",
+              currencyCode: "CAD",
+            });
+          }
+          return Promise.resolve(null);
+        },
+      );
+
+      const tx1 = {
+        date: "2020-10-05",
+        amount: -150,
+        payee: "Manulife",
+        memo: "Insurance",
+        isTransfer: true,
+        transferAccount: "Tangerine",
+      };
+      const tx2 = {
+        date: "2020-10-05",
+        amount: -150,
+        payee: "Cris Morley",
+        memo: "For Boots",
+        isTransfer: true,
+        transferAccount: "Tangerine",
+      };
+
+      await service.processTransaction(ctx, tx1);
+      await service.processTransaction(ctx, tx2);
+
+      expect(ctx.importResult.imported).toBe(2);
+      expect(ctx.importResult.skipped).toBe(0);
+    });
+
+    it("should correctly skip both sides when processing the other account block", async () => {
+      // When processing the transfer-target account, both incoming transfers
+      // should be detected as duplicates (they were already created as linked txs).
+      const accountMap = new Map<string, string | null>();
+      accountMap.set("Source Account", "acc-source");
+      const ctx = makeContext({ accountMap });
+
+      // Both QIF entries find 2 existing linked transfers in the DB
+      ctx.queryRunner.manager.createQueryBuilder.mockImplementation(() => {
+        const qb = makeMockQueryBuilder(null);
+        qb.getCount.mockResolvedValue(2);
+        return qb;
+      });
+
+      const tx1 = {
+        date: "2020-10-05",
+        amount: 150,
+        payee: "Manulife",
+        isTransfer: true,
+        transferAccount: "Source Account",
+      };
+      const tx2 = {
+        date: "2020-10-05",
+        amount: 150,
+        payee: "Cris Morley",
+        isTransfer: true,
+        transferAccount: "Source Account",
+      };
+
+      await service.processTransaction(ctx, tx1);
+      await service.processTransaction(ctx, tx2);
+
+      expect(ctx.importResult.skipped).toBe(2);
+      expect(ctx.importResult.imported).toBe(0);
     });
   });
 

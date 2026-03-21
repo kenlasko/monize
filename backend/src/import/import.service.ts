@@ -382,6 +382,7 @@ export class ImportService {
           dateCounters: new Map(),
           affectedAccountIds,
           importResult,
+          transferDupCounts: new Map(),
         };
 
         // Apply opening balance
@@ -1199,6 +1200,7 @@ export class ImportService {
       dateCounters: new Map<string, number>(),
       affectedAccountIds,
       importResult,
+      transferDupCounts: new Map<string, number>(),
     };
 
     try {

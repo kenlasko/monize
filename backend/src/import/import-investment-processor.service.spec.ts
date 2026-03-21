@@ -68,6 +68,7 @@ describe("ImportInvestmentProcessorService", () => {
       dateCounters: new Map(),
       affectedAccountIds: new Set(),
       importResult: makeImportResult(),
+      transferDupCounts: new Map(),
       ...overrides,
     };
   };
