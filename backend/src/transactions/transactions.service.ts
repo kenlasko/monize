@@ -483,10 +483,9 @@ export class TransactionsService {
                   .where("transaction.categoryId IN (:...filterCategoryIds)", {
                     filterCategoryIds: uniqueCategoryIds,
                   })
-                  .orWhere(
-                    "splits.categoryId IN (:...filterCategoryIds)",
-                    { filterCategoryIds: uniqueCategoryIds },
-                  );
+                  .orWhere("splits.categoryId IN (:...filterCategoryIds)", {
+                    filterCategoryIds: uniqueCategoryIds,
+                  });
               }),
             );
           }
@@ -703,12 +702,10 @@ export class TransactionsService {
 
     if (safePage === 1) return totalSum;
 
-    return totalSum - (await this.computeFilteredPrevPagesSum(
-      userId,
-      accountId,
-      skip,
-      filters,
-    ));
+    return (
+      totalSum -
+      (await this.computeFilteredPrevPagesSum(userId, accountId, skip, filters))
+    );
   }
 
   /**
@@ -745,12 +742,15 @@ export class TransactionsService {
 
     if (safePage === 1) return totalSum;
 
-    return totalSum - (await this.computeFilteredPrevPagesSum(
-      userId,
-      accountIds,
-      skip,
-      filters,
-    ));
+    return (
+      totalSum -
+      (await this.computeFilteredPrevPagesSum(
+        userId,
+        accountIds,
+        skip,
+        filters,
+      ))
+    );
   }
 
   /**
@@ -788,8 +788,7 @@ export class TransactionsService {
         })
         .getRawOne();
 
-      baseBalance =
-        projectedBalance - (Number(sumAfterResult?.sum) || 0);
+      baseBalance = projectedBalance - (Number(sumAfterResult?.sum) || 0);
     } else {
       // Only startDate: top of list is still projected balance
       baseBalance = await this.computeProjectedBalance(userId, accountId);
@@ -902,7 +901,10 @@ export class TransactionsService {
    * full t.amount for non-split transactions.
    */
   private async computeSplitAwareSum(
-    idsSubquery: { getQuery: () => string; getParameters: () => Record<string, any> },
+    idsSubquery: {
+      getQuery: () => string;
+      getParameters: () => Record<string, any>;
+    },
     userId: string,
     filters: {
       categoryIds?: string[];

@@ -265,7 +265,6 @@ export class TransactionAnalyticsService {
       });
     }
 
-    let splitsCategoryJoin = false;
     let splitsJoined = false;
 
     if (categoryIds && categoryIds.length > 0) {
@@ -289,7 +288,6 @@ export class TransactionAnalyticsService {
 
         if (uniqueCategoryIds.length > 0) {
           queryBuilder.leftJoin("transaction.splits", "splits");
-          splitsCategoryJoin = true;
           splitsJoined = true;
         }
 

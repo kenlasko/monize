@@ -2184,13 +2184,9 @@ describe("TransactionsService", () => {
 
         investmentTxRepository.find.mockResolvedValue([]);
 
-        await service.findAll(
-          "user-1",
-          ["account-1"],
-          undefined,
-          undefined,
-          ["cat-1"],
-        );
+        await service.findAll("user-1", ["account-1"], undefined, undefined, [
+          "cat-1",
+        ]);
 
         // Should join splits for category matching
         expect(idsQb.leftJoin).toHaveBeenCalledWith("bf.splits", "bfSplits");

@@ -110,8 +110,7 @@ export class ScheduledTransactionLoanService {
         });
         if (
           account &&
-          (account.accountType === "LOAN" ||
-            account.accountType === "MORTGAGE")
+          (account.accountType === "LOAN" || account.accountType === "MORTGAGE")
         ) {
           return account.id;
         }

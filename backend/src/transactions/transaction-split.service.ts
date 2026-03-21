@@ -64,7 +64,6 @@ export class TransactionSplitService {
         `Split amounts (${splitsSumCents / 10000}) must equal transaction amount (${expectedSumCents / 10000})`,
       );
     }
-
   }
 
   async createSplits(
