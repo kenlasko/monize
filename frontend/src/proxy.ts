@@ -54,13 +54,20 @@ export async function proxy(request: NextRequest) {
     headers.set('x-forwarded-for', clientIp);
 
     try {
+      // Buffer the body to avoid ReadableStream locking issues in Next.js middleware.
+      // Passing request.body (a ReadableStream) directly to undici can intermittently
+      // fail with "expected non-null body source" if the stream has already been
+      // transferred or locked by the Next.js runtime before the proxy reads it.
+      const body =
+        request.method !== 'GET' && request.method !== 'HEAD'
+          ? await request.arrayBuffer()
+          : undefined;
+
       const response = await fetch(url.toString(), {
         method: request.method,
         headers,
-        body: request.body,
+        body,
         redirect: 'manual',
-        // @ts-expect-error - duplex is required for streaming bodies
-        duplex: 'half',
       });
 
       if (!backendConnected) {
