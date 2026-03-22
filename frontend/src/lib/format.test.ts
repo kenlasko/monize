@@ -107,8 +107,29 @@ describe('roundToDecimals', () => {
     expect(roundToDecimals(10.1235, 3)).toBe(10.124);
   });
 
-  it('handles negative values', () => {
-    expect(roundToDecimals(-10.125, 2)).toBe(-10.12);
+  it('rounds negative midpoints away from zero', () => {
+    expect(roundToDecimals(-10.125, 2)).toBe(-10.13);
+    expect(roundToDecimals(-10.124, 2)).toBe(-10.12);
+  });
+
+  it('handles IEEE 754 midpoint errors (the 159.735 bug)', () => {
+    // 10 * 15.9735 = 159.735 mathematically, but IEEE 754 stores it as
+    // 159.73499..., causing naive Math.round(x * 100) / 100 to give 159.73
+    const total = 10 * 15.9735;
+    expect(roundToDecimals(total, 2)).toBe(159.74);
+  });
+
+  it('handles other common IEEE 754 midpoint cases', () => {
+    expect(roundToDecimals(1.005, 2)).toBe(1.01);
+    expect(roundToDecimals(2.675, 2)).toBe(2.68);
+    expect(roundToDecimals(1.255, 2)).toBe(1.26);
+  });
+
+  it('handles edge cases', () => {
+    expect(roundToDecimals(0, 2)).toBe(0);
+    expect(roundToDecimals(5, 2)).toBe(5);
+    expect(roundToDecimals(Infinity, 2)).toBe(Infinity);
+    expect(roundToDecimals(NaN, 2)).toBeNaN();
   });
 });
 
@@ -126,8 +147,8 @@ describe('roundToCents', () => {
     expect(roundToCents(10.5)).toBe(10.5);
   });
 
-  it('handles negative values', () => {
-    expect(roundToCents(-10.125)).toBe(-10.12);
+  it('rounds negative midpoints away from zero', () => {
+    expect(roundToCents(-10.125)).toBe(-10.13);
   });
 
   it('handles zero', () => {

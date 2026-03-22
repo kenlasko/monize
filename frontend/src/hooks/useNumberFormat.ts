@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { usePreferencesStore } from '@/store/preferencesStore';
+import { roundToDecimals } from '@/lib/format';
 
 /**
  * Get the effective locale for number formatting.
@@ -26,11 +27,16 @@ export function useNumberFormat() {
     (amount: number, currencyCode?: string): string => {
       const currency = currencyCode || defaultCurrency;
       const locale = getEffectiveLocale(numberFormat);
-      return new Intl.NumberFormat(locale, {
+      const formatter = new Intl.NumberFormat(locale, {
         style: 'currency',
         currency,
         currencyDisplay: 'narrowSymbol',
-      }).format(amount);
+      });
+      // Pre-round to the currency's native decimal places to avoid IEEE 754
+      // midpoint errors (e.g., 159.735 stored as 159.73499... rounding to
+      // 159.73 instead of 159.74).
+      const decimals = formatter.resolvedOptions().minimumFractionDigits;
+      return formatter.format(roundToDecimals(amount, decimals));
     },
     [numberFormat, defaultCurrency]
   );

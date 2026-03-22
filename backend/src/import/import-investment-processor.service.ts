@@ -12,6 +12,7 @@ import {
 } from "../transactions/entities/transaction.entity";
 import { ImportContext, updateAccountBalance } from "./import-context";
 import { isGbxExchange, convertGbxToGbp } from "../common/gbx-currency.util";
+import { roundToDecimals } from "../common/round.util";
 
 @Injectable()
 export class ImportInvestmentProcessorService {
@@ -88,14 +89,14 @@ export class ImportInvestmentProcessorService {
       : rawCommission;
     let totalAmount = qifTx.amount
       ? needsGbxConversion
-        ? convertGbxToGbp(Math.round(qifTx.amount * 100) / 100)
-        : Math.round(qifTx.amount * 100) / 100
-      : Math.round((quantity * price + commission) * 100) / 100;
+        ? convertGbxToGbp(roundToDecimals(qifTx.amount, 2))
+        : roundToDecimals(qifTx.amount, 2)
+      : roundToDecimals(quantity * price + commission, 2);
 
     if (action === InvestmentAction.BUY) {
-      totalAmount = Math.round((quantity * price + commission) * 100) / 100;
+      totalAmount = roundToDecimals(quantity * price + commission, 2);
     } else if (action === InvestmentAction.SELL) {
-      totalAmount = Math.round((quantity * price - commission) * 100) / 100;
+      totalAmount = roundToDecimals(quantity * price - commission, 2);
     }
 
     // Create investment transaction

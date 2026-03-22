@@ -18,6 +18,7 @@ import { HoldingsService } from "./holdings.service";
 import { SecuritiesService } from "./securities.service";
 import { SecurityPriceService } from "./security-price.service";
 import { NetWorthService } from "../net-worth/net-worth.service";
+import { roundToDecimals } from "../common/round.util";
 import {
   Transaction,
   TransactionStatus,
@@ -349,7 +350,7 @@ export class InvestmentTransactionsService {
     }
 
     // M13: Round to 4 decimal places to avoid floating-point drift
-    return Math.round(result * 10000) / 10000;
+    return roundToDecimals(result, 4);
   }
 
   private async processTransactionEffectsInTransaction(
