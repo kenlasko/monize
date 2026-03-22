@@ -10,6 +10,7 @@ vi.mock('@/lib/format', () => ({
   getCurrencySymbol: vi.fn(() => '$'),
   getDecimalPlacesForCurrency: vi.fn(() => 2),
   formatAmount: vi.fn((v: number | undefined | null) => (v === undefined || v === null || isNaN(v)) ? '' : (Math.round(v * 100) / 100).toFixed(2)),
+  roundToDecimals: vi.fn((v: number) => v),
 }));
 
 describe('BudgetWizardCategories', () => {

@@ -364,13 +364,16 @@ export function useInvestmentData() {
   };
 
   const handleDeleteTransaction = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this transaction?')) return;
+    setTransactions(prev => prev.filter(tx => tx.id !== id));
     try {
       await investmentsApi.deleteTransaction(id);
-      loadAllPortfolioData(selectedAccountIds, currentPage, transactionFilters);
+      const ids = selectedAccountIds.length > 0 ? selectedAccountIds : undefined;
+      const summary = await investmentsApi.getPortfolioSummary(ids);
+      setPortfolioSummary(summary);
     } catch (error) {
       logger.error('Failed to delete transaction:', error);
-      alert('Failed to delete transaction');
+      window.alert('Failed to delete transaction');
+      loadAllPortfolioData(selectedAccountIds, currentPage, transactionFilters);
     }
   };
 

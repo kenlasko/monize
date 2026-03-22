@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@/test/render';
 import { CategoryPayeeBarChart } from './CategoryPayeeBarChart';
 
@@ -14,14 +14,25 @@ vi.mock('recharts', () => ({
   Cell: () => <div data-testid="cell" />,
 }));
 
+// Use vi.fn() so individual tests can override the implementation to simulate
+// different currencies (e.g. USD with 2dp vs JPY with 0dp vs BHD with 3dp).
+const mockFormatCurrency = vi.fn((n: number) => `$${n.toFixed(2)}`);
+const mockFormatCurrencyAxis = vi.fn((n: number) => `$${n}`);
+
 vi.mock('@/hooks/useNumberFormat', () => ({
   useNumberFormat: () => ({
-    formatCurrencyCompact: (n: number) => `$${n.toFixed(0)}`,
-    formatCurrencyAxis: (n: number) => `$${n}`,
+    formatCurrency: mockFormatCurrency,
+    formatCurrencyAxis: mockFormatCurrencyAxis,
   }),
 }));
 
 describe('CategoryPayeeBarChart', () => {
+  beforeEach(() => {
+    // Reset to default USD-like 2-decimal behaviour before each test
+    mockFormatCurrency.mockImplementation((n: number) => `$${n.toFixed(2)}`);
+    mockFormatCurrency.mockClear();
+  });
+
   it('renders loading state with title and pulse skeleton', () => {
     render(<CategoryPayeeBarChart data={[]} isLoading={true} />);
     expect(screen.getByText('Monthly Totals')).toBeInTheDocument();
@@ -62,10 +73,10 @@ describe('CategoryPayeeBarChart', () => {
       />
     );
 
-    // Monthly avg = -1000 / 2 = -500
-    expect(screen.getByText('$-500')).toBeInTheDocument();
-    // Total = -1000
-    expect(screen.getByText('$-1000')).toBeInTheDocument();
+    // Monthly avg = -1000 / 2 = -500 => $-500.00
+    expect(screen.getByText('$-500.00')).toBeInTheDocument();
+    // Total = -1000 => $-1000.00
+    expect(screen.getByText('$-1000.00')).toBeInTheDocument();
     // Transaction count = 15
     expect(screen.getByText('15')).toBeInTheDocument();
   });
@@ -81,9 +92,66 @@ describe('CategoryPayeeBarChart', () => {
       />
     );
 
-    // Total = 3000
-    expect(screen.getByText('$3000')).toBeInTheDocument();
+    // Total = 3000 => $3000.00
+    expect(screen.getByText('$3000.00')).toBeInTheDocument();
     // Transaction count = 15
     expect(screen.getByText('15')).toBeInTheDocument();
+  });
+
+  it('passes Monthly Avg and Total through formatCurrency', () => {
+    render(
+      <CategoryPayeeBarChart
+        data={[
+          { month: '2025-01', total: 400, count: 2 },
+          { month: '2025-02', total: 600, count: 3 },
+        ]}
+        isLoading={false}
+      />
+    );
+
+    // formatCurrency must be called with the monthly avg (500) and the total (1000)
+    const calledWith = mockFormatCurrency.mock.calls.map(([n]) => n);
+    expect(calledWith).toContain(500);
+    expect(calledWith).toContain(1000);
+  });
+
+  it('shows 0 decimal places when formatCurrency returns 0dp (e.g. JPY)', () => {
+    // Simulate a 0-decimal currency like JPY
+    mockFormatCurrency.mockImplementation((n: number) => `¥${Math.round(n).toLocaleString('en-US')}`);
+
+    render(
+      <CategoryPayeeBarChart
+        data={[
+          { month: '2025-01', total: 60000, count: 3 },
+          { month: '2025-02', total: 40000, count: 2 },
+        ]}
+        isLoading={false}
+      />
+    );
+
+    // Monthly avg = 50,000 (no decimals)
+    expect(screen.getByText('¥50,000')).toBeInTheDocument();
+    // Total = 100,000 (no decimals)
+    expect(screen.getByText('¥100,000')).toBeInTheDocument();
+  });
+
+  it('shows 3 decimal places when formatCurrency returns 3dp (e.g. BHD)', () => {
+    // Simulate a 3-decimal currency like BHD
+    mockFormatCurrency.mockImplementation((n: number) => `BD${n.toFixed(3)}`);
+
+    render(
+      <CategoryPayeeBarChart
+        data={[
+          { month: '2025-01', total: 100, count: 1 },
+          { month: '2025-02', total: 200, count: 1 },
+        ]}
+        isLoading={false}
+      />
+    );
+
+    // Monthly avg = 150 => BD150.000
+    expect(screen.getByText('BD150.000')).toBeInTheDocument();
+    // Total = 300 => BD300.000
+    expect(screen.getByText('BD300.000')).toBeInTheDocument();
   });
 });

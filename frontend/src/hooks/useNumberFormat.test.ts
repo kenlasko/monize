@@ -61,4 +61,21 @@ describe('useNumberFormat', () => {
     expect(result.current.defaultCurrency).toBe('USD');
     expect(result.current.numberFormat).toBe('en-US');
   });
+
+  it('formatCurrency rounds IEEE 754 midpoint values up correctly', () => {
+    // 3 * 53.245 = 159.73499999... in IEEE 754 without pre-rounding,
+    // which would incorrectly round down to 159.73.
+    // With roundToDecimals applied before formatting, it should be 159.74.
+    const { result } = renderHook(() => useNumberFormat());
+    const formatted = result.current.formatCurrency(159.735);
+    // 159.735 pre-rounded to 2dp via roundToDecimals should yield 159.74
+    expect(formatted).toContain('159.74');
+    expect(formatted).not.toContain('159.73');
+  });
+
+  it('formatCurrency handles zero correctly', () => {
+    const { result } = renderHook(() => useNumberFormat());
+    const formatted = result.current.formatCurrency(0);
+    expect(formatted).toContain('0.00');
+  });
 });

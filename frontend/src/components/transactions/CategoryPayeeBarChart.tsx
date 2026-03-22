@@ -69,7 +69,7 @@ export function CategoryPayeeBarChart({
   isLoading,
   onMonthClick,
 }: CategoryPayeeBarChartProps) {
-  const { formatCurrency, formatCurrencyCompact, formatCurrencyAxis } = useNumberFormat();
+  const { formatCurrency, formatCurrencyAxis } = useNumberFormat();
 
   const chartData = useMemo(() => {
     return data.map((d) => {
@@ -192,7 +192,7 @@ export function CategoryPayeeBarChart({
                   : 'text-red-600 dark:text-red-400'
               }`}
             >
-              {formatCurrencyCompact(summary.monthlyAvg)}
+              {formatCurrency(summary.monthlyAvg)}
             </div>
           </div>
           <div>
@@ -204,7 +204,7 @@ export function CategoryPayeeBarChart({
                   : 'text-red-600 dark:text-red-400'
               }`}
             >
-              {formatCurrencyCompact(summary.total)}
+              {formatCurrency(summary.total)}
             </div>
           </div>
           <div>

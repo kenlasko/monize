@@ -21,7 +21,7 @@ import {
   Security,
   CreateSecurityData,
 } from '@/types/investment';
-import { getCurrencySymbol } from '@/lib/format';
+import { getCurrencySymbol, roundToDecimals } from '@/lib/format';
 import { getErrorMessage } from '@/lib/errors';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { createLogger } from '@/lib/logger';
@@ -187,11 +187,11 @@ export function InvestmentTransactionForm({
   // Calculate total amount
   const totalAmount = useMemo(() => {
     if (quantityPriceActions.includes(watchedAction)) {
-      const subtotal = watchedQuantity * watchedPrice;
+      const subtotal = roundToDecimals(watchedQuantity * watchedPrice, 4);
       if (watchedAction === 'BUY' || watchedAction === 'REINVEST') {
-        return subtotal + watchedCommission;
+        return roundToDecimals(subtotal + watchedCommission, 4);
       } else {
-        return subtotal - watchedCommission;
+        return roundToDecimals(subtotal - watchedCommission, 4);
       }
     }
     return watchedPrice; // For amount-only actions, price is used as the amount

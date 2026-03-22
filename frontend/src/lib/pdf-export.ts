@@ -32,8 +32,6 @@ export async function exportToPdf(options: PdfExportOptions): Promise<void> {
   const hasTable = tableData && tableData.headers.length > 0;
 
   // Dynamically import jspdf to avoid Turbopack SSR bundling issues with fflate
-  const { jsPDF } = await import('jspdf');
-
   // Use landscape for chart-only or chart+table, portrait for table-only
   const orientation = hasChart ? 'landscape' : 'portrait';
   const { jsPDF: JsPDF } = await import('jspdf');

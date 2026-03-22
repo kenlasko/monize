@@ -16,6 +16,7 @@ vi.mock('@/lib/budgets', () => ({
 vi.mock('@/lib/format', () => ({
   formatCurrency: vi.fn((amount: number) => `$${amount.toFixed(2)}`),
   getDecimalPlacesForCurrency: vi.fn(() => 2),
+  roundToDecimals: vi.fn((v: number) => v),
 }));
 
 // Mock errors

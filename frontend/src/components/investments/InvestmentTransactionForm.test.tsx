@@ -15,6 +15,10 @@ vi.mock('@/lib/format', () => ({
   getCurrencySymbol: () => '$',
   getDecimalPlacesForCurrency: () => 2,
   roundToCents: (v: number) => Math.round(v * 100) / 100,
+  roundToDecimals: (v: number, dp: number) => {
+    const factor = Math.pow(10, dp);
+    return Math.round(v * factor) / factor;
+  },
   formatAmountWithCommas: (v: number) => v?.toLocaleString() ?? '',
   parseAmount: (v: string) => parseFloat(v) || 0,
   filterCurrencyInput: (v: string) => v,
@@ -316,6 +320,22 @@ describe('InvestmentTransactionForm', () => {
     render(<InvestmentTransactionForm accounts={accounts} />);
     await waitFor(() => {
       expect(screen.getByText(/Total Amount/)).toBeInTheDocument();
+    });
+  });
+
+  it('displays total amount rounded to avoid IEEE 754 drift', async () => {
+    // 3 * 53.245 = 159.73499... in IEEE 754, which should round to 159.73 without fix
+    // but should display as 159.74 after roundToDecimals is applied
+    const transaction = {
+      id: 't1', accountId: 'a1', action: 'BUY' as const, transactionDate: '2024-01-01',
+      quantity: 3, price: 53.245, commission: 0, totalAmount: 159.74, description: '',
+    } as any;
+
+    render(<InvestmentTransactionForm accounts={accounts} transaction={transaction} />);
+    await waitFor(() => {
+      // The total display uses formatCurrency which receives the rounded value
+      // formatCurrency mock: $${n.toFixed(2)} => $159.74 not $159.73
+      expect(screen.getByText(/\$159\.74/)).toBeInTheDocument();
     });
   });
 
