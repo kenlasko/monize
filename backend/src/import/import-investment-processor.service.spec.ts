@@ -27,6 +27,18 @@ describe("ImportInvestmentProcessorService", () => {
     securitiesCreated: 0,
   });
 
+  const makeMockQueryBuilder = (countResult = 0, oneResult: any = null) => {
+    const qb: Record<string, jest.Mock> = {
+      innerJoin: jest.fn().mockReturnThis(),
+      leftJoin: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      getOne: jest.fn().mockResolvedValue(oneResult),
+      getCount: jest.fn().mockResolvedValue(countResult),
+    };
+    return qb;
+  };
+
   const makeMockManager = () => ({
     save: jest.fn().mockImplementation((entity: any) => {
       if (!entity.id) {
@@ -37,6 +49,7 @@ describe("ImportInvestmentProcessorService", () => {
     findOne: jest.fn().mockResolvedValue(null),
     update: jest.fn().mockResolvedValue({ affected: 1 }),
     create: jest.fn().mockImplementation((_cls: any, data: any) => data),
+    createQueryBuilder: jest.fn().mockReturnValue(makeMockQueryBuilder()),
   });
 
   const makeMockQueryRunner = () => {
@@ -996,12 +1009,42 @@ describe("ImportInvestmentProcessorService", () => {
       await testActionMapping("CvrShrt", InvestmentAction.BUY);
     });
 
-    it("maps XIn to TRANSFER_IN", async () => {
-      await testActionMapping("XIn", InvestmentAction.TRANSFER_IN);
+    it("XIn is handled as a cash transfer, not an investment transaction", async () => {
+      // XIn bypasses the actionMap and is processed by processCashTransfer,
+      // so no InvestmentTransaction record is created.
+      const ctx = makeContext();
+      const qifTx = {
+        action: "XIn",
+        date: "2025-01-15",
+        amount: 500,
+      };
+
+      await service.processTransaction(ctx, qifTx);
+
+      const saveCalls = ctx.queryRunner.manager.save.mock.calls;
+      const investmentTxSave = saveCalls.find(
+        (call: any) => call[0] instanceof InvestmentTransaction,
+      );
+      expect(investmentTxSave).toBeUndefined();
+      expect(ctx.importResult.imported).toBe(1);
     });
 
-    it("maps XOut to TRANSFER_OUT", async () => {
-      await testActionMapping("XOut", InvestmentAction.TRANSFER_OUT);
+    it("XOut is handled as a cash transfer, not an investment transaction", async () => {
+      const ctx = makeContext();
+      const qifTx = {
+        action: "XOut",
+        date: "2025-01-15",
+        amount: -200,
+      };
+
+      await service.processTransaction(ctx, qifTx);
+
+      const saveCalls = ctx.queryRunner.manager.save.mock.calls;
+      const investmentTxSave = saveCalls.find(
+        (call: any) => call[0] instanceof InvestmentTransaction,
+      );
+      expect(investmentTxSave).toBeUndefined();
+      expect(ctx.importResult.imported).toBe(1);
     });
 
     it("maps RtrnCap to DIVIDEND", async () => {
@@ -1046,6 +1089,259 @@ describe("ImportInvestmentProcessorService", () => {
 
     it("maps Cash to INTEREST", async () => {
       await testActionMapping("Cash", InvestmentAction.INTEREST);
+    });
+  });
+
+  describe("XIn / XOut cash transfers", () => {
+    it("XIn creates a cash transaction and a linked transaction in the transfer account", async () => {
+      const accountMap = new Map<string, string | null>();
+      accountMap.set("Chequing", "acc-chequing");
+      const ctx = makeContext({ accountMap });
+
+      ctx.queryRunner.manager.findOne.mockImplementation(
+        (_entity: any, opts: any) => {
+          if (opts?.where?.id === "acc-chequing") {
+            return Promise.resolve({
+              id: "acc-chequing",
+              currencyCode: "USD",
+              currentBalance: 5000,
+            });
+          }
+          if (opts?.where?.id === accountId) {
+            return Promise.resolve({
+              id: accountId,
+              currencyCode: "USD",
+              currentBalance: 0,
+            });
+          }
+          return Promise.resolve(null);
+        },
+      );
+
+      const qifTx = {
+        action: "XIn",
+        date: "2025-01-15",
+        amount: 1000,
+        payee: "Transfer",
+        memo: "Cash in",
+        isTransfer: true,
+        transferAccount: "Chequing",
+        cleared: true,
+      };
+
+      await service.processTransaction(ctx, qifTx);
+
+      expect(ctx.importResult.imported).toBe(1);
+      expect(ctx.importResult.skipped).toBe(0);
+
+      // No InvestmentTransaction should be created
+      const saveCalls = ctx.queryRunner.manager.save.mock.calls;
+      const investmentTxSave = saveCalls.find(
+        (call: any) => call[0] instanceof InvestmentTransaction,
+      );
+      expect(investmentTxSave).toBeUndefined();
+
+      // Cash transaction saved in the investment account
+      const cashTxSave = saveCalls.find(
+        (call: any) => call[0]?.accountId === accountId && call[0]?.amount === 1000,
+      );
+      expect(cashTxSave).toBeDefined();
+
+      // Linked transaction saved in the transfer account
+      const linkedTxSave = saveCalls.find(
+        (call: any) => call[0]?.accountId === "acc-chequing" && call[0]?.amount === -1000,
+      );
+      expect(linkedTxSave).toBeDefined();
+      expect(ctx.affectedAccountIds.has("acc-chequing")).toBe(true);
+    });
+
+    it("XOut creates a cash transaction and a linked transaction in the transfer account", async () => {
+      const accountMap = new Map<string, string | null>();
+      accountMap.set("Savings", "acc-savings");
+      const ctx = makeContext({ accountMap });
+
+      ctx.queryRunner.manager.findOne.mockImplementation(
+        (_entity: any, opts: any) => {
+          if (opts?.where?.id === "acc-savings") {
+            return Promise.resolve({
+              id: "acc-savings",
+              currencyCode: "USD",
+              currentBalance: 2000,
+            });
+          }
+          return Promise.resolve(null);
+        },
+      );
+
+      const qifTx = {
+        action: "XOut",
+        date: "2025-01-20",
+        amount: -500,
+        payee: "Withdrawal",
+        isTransfer: true,
+        transferAccount: "Savings",
+      };
+
+      await service.processTransaction(ctx, qifTx);
+
+      expect(ctx.importResult.imported).toBe(1);
+
+      const saveCalls = ctx.queryRunner.manager.save.mock.calls;
+      const cashTxSave = saveCalls.find(
+        (call: any) => call[0]?.accountId === accountId && call[0]?.amount === -500,
+      );
+      expect(cashTxSave).toBeDefined();
+
+      const linkedTxSave = saveCalls.find(
+        (call: any) => call[0]?.accountId === "acc-savings" && call[0]?.amount === 500,
+      );
+      expect(linkedTxSave).toBeDefined();
+    });
+
+    it("XIn with no transfer account creates only a cash transaction", async () => {
+      const ctx = makeContext();
+
+      const qifTx = {
+        action: "XIn",
+        date: "2025-02-01",
+        amount: 200,
+        isTransfer: false,
+      };
+
+      await service.processTransaction(ctx, qifTx);
+
+      expect(ctx.importResult.imported).toBe(1);
+
+      const saveCalls = ctx.queryRunner.manager.save.mock.calls;
+      // Only the cash TX and the balance update (via findOne/update) -- no linked TX
+      const txSaves = saveCalls.filter(
+        (call: any) => call[0]?.accountId === accountId,
+      );
+      expect(txSaves.length).toBe(1);
+    });
+
+    it("XIn for brokerage account routes cash to the linked cash account", async () => {
+      const accountMap = new Map<string, string | null>();
+      accountMap.set("Chequing", "acc-chequing");
+      const ctx = makeContext({
+        accountMap,
+        account: {
+          id: accountId,
+          currencyCode: "USD",
+          accountSubType: AccountSubType.INVESTMENT_BROKERAGE,
+          linkedAccountId: "acc-cash",
+          name: "My Brokerage",
+        } as any,
+      });
+
+      ctx.queryRunner.manager.findOne.mockImplementation(
+        (_entity: any, opts: any) => {
+          if (opts?.where?.id === "acc-cash") {
+            return Promise.resolve({
+              id: "acc-cash",
+              currencyCode: "USD",
+              currentBalance: 0,
+            });
+          }
+          if (opts?.where?.id === "acc-chequing") {
+            return Promise.resolve({
+              id: "acc-chequing",
+              currencyCode: "USD",
+              currentBalance: 5000,
+            });
+          }
+          return Promise.resolve(null);
+        },
+      );
+
+      const qifTx = {
+        action: "XIn",
+        date: "2025-03-01",
+        amount: 750,
+        isTransfer: true,
+        transferAccount: "Chequing",
+      };
+
+      await service.processTransaction(ctx, qifTx);
+
+      expect(ctx.importResult.imported).toBe(1);
+      expect(ctx.affectedAccountIds.has("acc-cash")).toBe(true);
+
+      const saveCalls = ctx.queryRunner.manager.save.mock.calls;
+      const cashTxSave = saveCalls.find(
+        (call: any) => call[0]?.accountId === "acc-cash" && call[0]?.amount === 750,
+      );
+      expect(cashTxSave).toBeDefined();
+    });
+
+    it("duplicate XIn is skipped using counting when already exists in DB", async () => {
+      // If a matching linked transfer already exists (e.g. from a prior import
+      // of the counterpart account), the XIn should be skipped.
+      const accountMap = new Map<string, string | null>();
+      accountMap.set("Chequing", "acc-chequing");
+      const ctx = makeContext({ accountMap });
+
+      // Duplicate detection query returns count=1 (already imported once)
+      ctx.queryRunner.manager.createQueryBuilder.mockReturnValue(
+        makeMockQueryBuilder(1),
+      );
+
+      const qifTx = {
+        action: "XIn",
+        date: "2025-01-15",
+        amount: 300,
+        isTransfer: true,
+        transferAccount: "Chequing",
+      };
+
+      await service.processTransaction(ctx, qifTx);
+
+      expect(ctx.importResult.skipped).toBe(1);
+      expect(ctx.importResult.imported).toBe(0);
+    });
+
+    it("two XIn transfers with same signature are not both skipped (counting logic)", async () => {
+      // Two genuine XIn transfers on the same day for the same amount from the
+      // same account should both be imported even when the second one finds
+      // existingCount=1 in the DB (the record created by the first XIn).
+      // The "always count" logic ensures seenSoFar=1 by the time the second
+      // XIn runs, so seenSoFar+1=2 > existingCount=1 → not skipped.
+      const accountMap = new Map<string, string | null>();
+      accountMap.set("Chequing", "acc-chequing");
+      const ctx = makeContext({ accountMap });
+
+      let qbCallCount = 0;
+      ctx.queryRunner.manager.createQueryBuilder.mockImplementation(() => {
+        qbCallCount++;
+        const qb = makeMockQueryBuilder(0);
+        // 1st XIn: existingCount=0 (DB empty). Counter bumped to 1.
+        // 2nd XIn: existingCount=1 (1st XIn created a linked TX). Counter
+        //   is already 1, so seenSoFar+1=2 > 1 → not skipped.
+        if (qbCallCount === 2) {
+          qb.getCount.mockResolvedValue(1);
+        }
+        return qb;
+      });
+
+      ctx.queryRunner.manager.findOne.mockResolvedValue({
+        id: "acc-chequing",
+        currencyCode: "USD",
+        currentBalance: 0,
+      });
+
+      const qifTx = {
+        action: "XIn",
+        date: "2025-01-15",
+        amount: 300,
+        isTransfer: true,
+        transferAccount: "Chequing",
+      };
+
+      await service.processTransaction(ctx, { ...qifTx });
+      await service.processTransaction(ctx, { ...qifTx });
+
+      expect(ctx.importResult.imported).toBe(2);
+      expect(ctx.importResult.skipped).toBe(0);
     });
   });
 });

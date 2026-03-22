@@ -18,6 +18,15 @@ export class ImportInvestmentProcessorService {
   private readonly logger = new Logger(ImportInvestmentProcessorService.name);
 
   async processTransaction(ctx: ImportContext, qifTx: any): Promise<void> {
+    // XIn/XOut are cash-only transfers between the investment account and
+    // another account; they carry no security data and must be handled as
+    // regular linked transactions rather than investment transactions.
+    const qifActionRaw = (qifTx.action || "").toLowerCase();
+    if (qifActionRaw === "xin" || qifActionRaw === "xout") {
+      await this.processCashTransfer(ctx, qifTx);
+      return;
+    }
+
     const actionMap: Record<string, InvestmentAction> = {
       buy: InvestmentAction.BUY,
       sell: InvestmentAction.SELL,
@@ -182,6 +191,125 @@ export class ImportInvestmentProcessorService {
 
     ctx.securityMap.set(securityName, savedSecurity.id);
     return savedSecurity.id;
+  }
+
+  private async processCashTransfer(
+    ctx: ImportContext,
+    qifTx: any,
+  ): Promise<void> {
+    // Determine the cash account to credit/debit.
+    // For brokerage accounts with a linked cash account, cash goes there.
+    let cashAccountId = ctx.accountId;
+    let cashCurrencyCode = ctx.account.currencyCode;
+    if (
+      ctx.account.accountSubType === AccountSubType.INVESTMENT_BROKERAGE &&
+      ctx.account.linkedAccountId
+    ) {
+      cashAccountId = ctx.account.linkedAccountId;
+      ctx.affectedAccountIds.add(cashAccountId);
+      const linkedAccount = await ctx.queryRunner.manager.findOne(Account, {
+        where: { id: ctx.account.linkedAccountId },
+      });
+      if (linkedAccount) {
+        cashCurrencyCode = linkedAccount.currencyCode;
+      }
+    }
+
+    const cashAmount = qifTx.amount || 0;
+    const status = qifTx.reconciled
+      ? TransactionStatus.RECONCILED
+      : qifTx.cleared
+        ? TransactionStatus.CLEARED
+        : TransactionStatus.UNRECONCILED;
+
+    const transferAccountId: string | null =
+      qifTx.isTransfer && qifTx.transferAccount
+        ? (ctx.accountMap.get(qifTx.transferAccount) ?? null)
+        : null;
+
+    // Duplicate detection using the same counting approach as the regular
+    // processor: compare how many matching linked transfers already exist in
+    // the DB against how many same-signature entries we have seen so far in
+    // this import block, and only skip when the seen count does not exceed
+    // the existing count.
+    if (transferAccountId) {
+      const existingCount = await ctx.queryRunner.manager
+        .createQueryBuilder(Transaction, "t")
+        .innerJoin(
+          Transaction,
+          "linked",
+          "t.linked_transaction_id = linked.id",
+        )
+        .where("t.user_id = :userId", { userId: ctx.userId })
+        .andWhere("t.account_id = :accountId", { accountId: cashAccountId })
+        .andWhere("t.is_transfer = true")
+        .andWhere("t.transaction_date = :date", { date: qifTx.date })
+        .andWhere("t.amount = :amount", { amount: cashAmount })
+        .andWhere("linked.account_id = :linkedAccountId", {
+          linkedAccountId: transferAccountId,
+        })
+        .getCount();
+
+      // Always count every QIF entry with this signature, including ones where
+      // existingCount is zero (i.e. a fresh import where this QIF entry itself
+      // creates the first DB record). This ensures that when the next entry
+      // with the same signature arrives and finds existingCount=1, seenSoFar
+      // is already 1 so seenSoFar+1=2 > 1 and it is not incorrectly skipped.
+      const sigKey = `xfer|${qifTx.date}|${cashAmount}|${transferAccountId}`;
+      const seenSoFar = ctx.transferDupCounts.get(sigKey) || 0;
+      ctx.transferDupCounts.set(sigKey, seenSoFar + 1);
+      if (existingCount > 0 && seenSoFar + 1 <= existingCount) {
+        ctx.importResult.skipped++;
+        return;
+      }
+    }
+
+    const cashTx = ctx.queryRunner.manager.create(Transaction, {
+      userId: ctx.userId,
+      accountId: cashAccountId,
+      transactionDate: qifTx.date,
+      amount: cashAmount,
+      payeeName: qifTx.payee || null,
+      description: qifTx.memo || null,
+      status,
+      currencyCode: cashCurrencyCode,
+      isTransfer: !!transferAccountId,
+    });
+    const savedCashTx = await ctx.queryRunner.manager.save(cashTx);
+    await updateAccountBalance(ctx.queryRunner, cashAccountId, cashAmount);
+
+    if (transferAccountId) {
+      ctx.affectedAccountIds.add(transferAccountId);
+      const linkedAmount = -cashAmount;
+      const targetAccount = await ctx.queryRunner.manager.findOne(Account, {
+        where: { id: transferAccountId },
+      });
+
+      const linkedTx = ctx.queryRunner.manager.create(Transaction, {
+        userId: ctx.userId,
+        accountId: transferAccountId,
+        transactionDate: qifTx.date,
+        amount: linkedAmount,
+        payeeName: qifTx.payee || `Transfer from ${ctx.account.name}`,
+        description: qifTx.memo || null,
+        status,
+        currencyCode: targetAccount?.currencyCode || cashCurrencyCode,
+        isTransfer: true,
+        linkedTransactionId: savedCashTx.id,
+      });
+      const savedLinkedTx = await ctx.queryRunner.manager.save(linkedTx);
+
+      await ctx.queryRunner.manager.update(Transaction, savedCashTx.id, {
+        linkedTransactionId: savedLinkedTx.id,
+      });
+      await updateAccountBalance(
+        ctx.queryRunner,
+        transferAccountId,
+        linkedAmount,
+      );
+    }
+
+    ctx.importResult.imported++;
   }
 
   private async processCashTransaction(

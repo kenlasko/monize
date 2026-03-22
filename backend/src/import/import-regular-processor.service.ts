@@ -442,8 +442,18 @@ export class ImportRegularProcessorService {
     // Exclude transactions already linked to the current transaction (savedTx)
     // to prevent a second split transfer from matching the linked transaction
     // created by a prior split transfer in the same parent transaction.
+    // Only match transactions that are either unlinked or linked to a simple
+    // (non-split) placeholder in the current account. This prevents stealing
+    // a linked transaction that already belongs to another split parent
+    // transaction imported earlier in the same block.
     const existingLinkedTx = await ctx.queryRunner.manager
       .createQueryBuilder(Transaction, "t")
+      .leftJoin(
+        Transaction,
+        "placeholder",
+        "placeholder.id = t.linked_transaction_id AND placeholder.account_id = :currentAccountId AND placeholder.is_split = false",
+        { currentAccountId: ctx.accountId },
+      )
       .where("t.user_id = :userId", { userId: ctx.userId })
       .andWhere("t.account_id = :accountId", {
         accountId: splitTransferAccountId,
@@ -452,8 +462,7 @@ export class ImportRegularProcessorService {
       .andWhere("t.amount = :amount", { amount: linkedAmount })
       .andWhere("t.is_transfer = true")
       .andWhere(
-        "(t.linked_transaction_id IS NULL OR t.linked_transaction_id != :currentTxId)",
-        { currentTxId: savedTx.id },
+        "(t.linked_transaction_id IS NULL OR placeholder.id IS NOT NULL)",
       )
       .getOne();
 

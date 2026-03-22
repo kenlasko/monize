@@ -25,6 +25,7 @@ describe("ImportRegularProcessorService", () => {
   const makeMockQueryBuilder = (result: any = null) => {
     const qb: Record<string, jest.Mock> = {
       innerJoin: jest.fn().mockReturnThis(),
+      leftJoin: jest.fn().mockReturnThis(),
       leftJoinAndSelect: jest.fn().mockReturnThis(),
       where: jest.fn().mockReturnThis(),
       andWhere: jest.fn().mockReturnThis(),
@@ -423,6 +424,99 @@ describe("ImportRegularProcessorService", () => {
 
       expect(ctx.importResult.skipped).toBe(2);
       expect(ctx.importResult.imported).toBe(0);
+    });
+
+    it("should not delete a prior split transaction when a second split transaction shares the same transfer account", async () => {
+      // Reproduces a bug where two split transactions with the same date/amount
+      // and a common transfer split (e.g. both have [Accounts Rec] -76.00) caused
+      // the second import to steal the linked transaction from the first and then
+      // delete the first parent transaction as a phantom placeholder.
+      //
+      // Both transactions have amount -100 with splits:
+      //   TX1: [Personal Care -24, [Accounts Rec] -76]
+      //   TX2: [[Accounts Rec] -76, Personal Care -24]  (same splits, reversed order)
+      //
+      // Expected: both imported (imported=2), TX1 is NOT deleted.
+      const accountMap = new Map<string, string | null>();
+      accountMap.set("Accounts Rec", "acc-rec");
+      const ctx = makeContext({ accountMap });
+
+      // isDuplicateTransfer returns false for split transactions (isTransfer is
+      // false on the parent). processSplitTransfer uses getOne, not getCount.
+      // Return null from all query builders so no existing linked tx is found
+      // (simulating a fresh import where neither TX has been stored yet).
+      ctx.queryRunner.manager.createQueryBuilder.mockReturnValue(
+        makeMockQueryBuilder(null),
+      );
+
+      // findOne: return the target account for balance updates
+      ctx.queryRunner.manager.findOne.mockImplementation(
+        (_entity: any, opts: any) => {
+          if (opts?.where?.id === "acc-rec") {
+            return Promise.resolve({
+              id: "acc-rec",
+              currencyCode: "CAD",
+              currentBalance: 0,
+            });
+          }
+          if (opts?.where?.id === ctx.accountId) {
+            return Promise.resolve({
+              id: ctx.accountId,
+              currencyCode: "CAD",
+              currentBalance: 0,
+            });
+          }
+          return Promise.resolve(null);
+        },
+      );
+
+      const tx1 = {
+        date: "2022-06-01",
+        amount: -100,
+        payee: "Galib Shariff Prof",
+        memo: "Physio - Dan",
+        reconciled: true,
+        splits: [
+          {
+            category: "Personal Care:Massage - Physio - Chiro",
+            amount: -24,
+          },
+          {
+            isTransfer: true,
+            transferAccount: "Accounts Rec",
+            amount: -76,
+          },
+        ],
+      };
+      const tx2 = {
+        date: "2022-06-01",
+        amount: -100,
+        payee: "Galib Shariff Prof",
+        memo: "Physio - Dan",
+        reconciled: true,
+        splits: [
+          {
+            isTransfer: true,
+            transferAccount: "Accounts Rec",
+            amount: -76,
+          },
+          {
+            category: "Personal Care:Massage - Physio - Chiro",
+            amount: -24,
+          },
+        ],
+      };
+
+      await service.processTransaction(ctx, tx1);
+      await service.processTransaction(ctx, tx2);
+
+      expect(ctx.importResult.imported).toBe(2);
+      expect(ctx.importResult.skipped).toBe(0);
+
+      // Verify TX1 was not deleted: the delete mock should not have been
+      // called with the ID of the transaction saved during TX1's processing.
+      const deleteCalls = ctx.queryRunner.manager.delete.mock.calls;
+      expect(deleteCalls.length).toBe(0);
     });
   });
 
