@@ -35,7 +35,7 @@ export function useNumberFormat() {
       // Pre-round to the currency's native decimal places to avoid IEEE 754
       // midpoint errors (e.g., 159.735 stored as 159.73499... rounding to
       // 159.73 instead of 159.74).
-      const decimals = formatter.resolvedOptions().minimumFractionDigits;
+      const decimals = formatter.resolvedOptions().minimumFractionDigits ?? 2;
       return formatter.format(roundToDecimals(amount, decimals));
     },
     [numberFormat, defaultCurrency]
