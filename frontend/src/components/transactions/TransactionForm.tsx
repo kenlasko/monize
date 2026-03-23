@@ -55,6 +55,7 @@ type TransactionFormData = z.infer<typeof transactionSchema>;
 
 interface TransactionFormProps {
   transaction?: Transaction;
+  duplicateFrom?: Transaction;
   defaultAccountId?: string;
   onSuccess?: () => void;
   onCancel?: () => void;
@@ -65,7 +66,7 @@ interface TransactionFormProps {
 // Transaction mode type
 type TransactionMode = 'normal' | 'split' | 'transfer';
 
-export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCancel, onDirtyChange, submitRef }: TransactionFormProps) {
+export function TransactionForm({ transaction, duplicateFrom, defaultAccountId, onSuccess, onCancel, onDirtyChange, submitRef }: TransactionFormProps) {
   const { defaultCurrency } = useNumberFormat();
   const showCreatedAt = usePreferencesStore((s) => s.preferences?.showCreatedAt ?? false);
   const [isLoading, setIsLoading] = useState(false);
@@ -73,11 +74,13 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
   const [categories, setCategories] = useState<Category[]>([]);
   const [payees, setPayees] = useState<Payee[]>([]); // Full list of active payees
   const [tags, setTags] = useState<Tag[]>([]);
+  // initSource: the transaction to pre-fill from (either editing or duplicating)
+  const initSource = transaction || duplicateFrom;
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>(
-    transaction?.tags?.map(t => t.id) || []
+    initSource?.tags?.map(t => t.id) || []
   );
-  const [selectedPayeeId, setSelectedPayeeId] = useState<string>(transaction?.payeeId || '');
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string>(transaction?.categoryId || '');
+  const [selectedPayeeId, setSelectedPayeeId] = useState<string>(initSource?.payeeId || '');
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>(initSource?.categoryId || '');
   const [, setCategoryName] = useState<string>('');
 
   // Reactivation modal state
@@ -86,10 +89,10 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
   const [isReactivating, setIsReactivating] = useState(false);
   const [pendingPayeeName, setPendingPayeeName] = useState<string>('');
 
-  // Determine initial mode based on transaction
+  // Determine initial mode based on transaction or duplicateFrom
   const getInitialMode = (): TransactionMode => {
-    if (transaction?.isTransfer) return 'transfer';
-    if (transaction?.isSplit) return 'split';
+    if (initSource?.isTransfer) return 'transfer';
+    if (initSource?.isSplit) return 'split';
     return 'normal';
   };
 
@@ -97,32 +100,32 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
   const [mode, setMode] = useState<TransactionMode>(getInitialMode());
 
   // Split transaction state
-  const [isSplitMode, setIsSplitMode] = useState<boolean>(transaction?.isSplit || false);
+  const [isSplitMode, setIsSplitMode] = useState<boolean>(initSource?.isSplit || false);
   const [splits, setSplits] = useState<SplitRow[]>(
-    transaction?.splits && transaction.splits.length > 0
-      ? toSplitRows(transaction.splits)
+    initSource?.splits && initSource.splits.length > 0
+      ? toSplitRows(initSource.splits)
       : []
   );
 
   // For transfers, determine from/to accounts based on amount sign
   // Negative amount = outgoing (from this account), Positive amount = incoming (to this account)
   const getTransferAccounts = () => {
-    if (!transaction?.isTransfer || !transaction.linkedTransaction) {
+    if (!initSource?.isTransfer || !initSource.linkedTransaction) {
       return { fromAccountId: '', toAccountId: '' };
     }
 
-    const isOutgoing = Number(transaction.amount) < 0;
+    const isOutgoing = Number(initSource.amount) < 0;
     if (isOutgoing) {
       // This transaction is the "from" side (money leaving)
       return {
-        fromAccountId: transaction.accountId,
-        toAccountId: transaction.linkedTransaction.accountId,
+        fromAccountId: initSource.accountId,
+        toAccountId: initSource.linkedTransaction.accountId,
       };
     } else {
       // This transaction is the "to" side (money arriving)
       return {
-        fromAccountId: transaction.linkedTransaction.accountId,
-        toAccountId: transaction.accountId,
+        fromAccountId: initSource.linkedTransaction.accountId,
+        toAccountId: initSource.accountId,
       };
     }
   };
@@ -136,20 +139,20 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
 
   // Target amount for cross-currency transfers
   const [transferTargetAmount, setTransferTargetAmount] = useState<number | undefined>(() => {
-    // If editing a transfer with different currencies, initialize target amount from linked transaction
-    if (transaction?.isTransfer && transaction.linkedTransaction) {
-      const isOutgoing = Number(transaction.amount) < 0;
-      const toTx = isOutgoing ? transaction.linkedTransaction : transaction;
+    // If editing/duplicating a transfer with different currencies, initialize target amount from linked transaction
+    if (initSource?.isTransfer && initSource.linkedTransaction) {
+      const isOutgoing = Number(initSource.amount) < 0;
+      const toTx = isOutgoing ? initSource.linkedTransaction : initSource;
       return Math.abs(Number(toTx.amount));
     }
     return undefined;
   });
   // Transfer payee (optional)
   const [transferPayeeId, setTransferPayeeId] = useState<string>(
-    transaction?.isTransfer ? (transaction.payeeId || '') : '',
+    initSource?.isTransfer ? (initSource.payeeId || '') : '',
   );
   const [transferPayeeName, setTransferPayeeName] = useState<string>(
-    transaction?.isTransfer ? (transaction.payeeName || '') : '',
+    initSource?.isTransfer ? (initSource.payeeName || '') : '',
   );
 
   // Note: CurrencyInput components manage their own display state internally
@@ -162,24 +165,25 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
     formState: { errors, isDirty },
   } = useForm<TransactionFormData>({
     resolver: zodResolver(transactionSchema) as Resolver<TransactionFormData>,
-    defaultValues: transaction
+    defaultValues: initSource
       ? {
           // For transfers, use the "from" account as the primary account
-          accountId: transaction.isTransfer && initialTransferAccounts.fromAccountId
+          accountId: initSource.isTransfer && initialTransferAccounts.fromAccountId
             ? initialTransferAccounts.fromAccountId
-            : transaction.accountId,
-          transactionDate: transaction.transactionDate,
-          payeeId: transaction.payeeId || '',
-          payeeName: transaction.payeeName || '',
-          categoryId: transaction.categoryId || '',
+            : initSource.accountId,
+          // For duplicates, use today's date; for edits, use the original date
+          transactionDate: duplicateFrom ? getLocalDateString() : initSource.transactionDate,
+          payeeId: initSource.payeeId || '',
+          payeeName: initSource.payeeName || '',
+          categoryId: initSource.categoryId || '',
           // For transfers, always show absolute amount
-          amount: transaction.isTransfer
-            ? Math.abs(Math.round(Number(transaction.amount) * 100) / 100)
-            : Math.round(Number(transaction.amount) * 100) / 100,
-          currencyCode: transaction.currencyCode,
-          description: transaction.description || '',
-          referenceNumber: transaction.referenceNumber || '',
-          status: transaction.status || TransactionStatus.UNRECONCILED,
+          amount: initSource.isTransfer
+            ? Math.abs(Math.round(Number(initSource.amount) * 100) / 100)
+            : Math.round(Number(initSource.amount) * 100) / 100,
+          currencyCode: initSource.currencyCode,
+          description: initSource.description || '',
+          referenceNumber: initSource.referenceNumber || '',
+          status: duplicateFrom ? TransactionStatus.UNRECONCILED : (initSource.status || TransactionStatus.UNRECONCILED),
         }
       : {
           accountId: defaultAccountId || '',
@@ -718,7 +722,7 @@ export function TransactionForm({ transaction, defaultAccountId, onSuccess, onCa
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      {/* Mode selector - only show for new transactions or if not already a transfer being edited */}
+      {/* Mode selector - show for new/duplicate transactions, or non-transfer edits */}
       {(!transaction || !transaction.isTransfer) && (
         <div className="flex space-x-2 pb-2 border-b dark:border-gray-700">
           <button

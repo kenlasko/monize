@@ -32,6 +32,7 @@ export interface TransactionRowProps {
   onCategoryClick?: (categoryId: string) => void;
   onCycleStatus: (transaction: Transaction) => void;
   onEdit?: (transaction: Transaction) => void;
+  onDuplicate?: (transaction: Transaction) => void;
   onDeleteClick: (transaction: Transaction) => void;
   isSelected?: boolean;
   selectionMode?: boolean;
@@ -64,6 +65,7 @@ export const TransactionRow = memo(function TransactionRow({
   onCategoryClick,
   onCycleStatus,
   onEdit,
+  onDuplicate,
   onDeleteClick,
   isSelected,
   selectionMode,
@@ -342,6 +344,15 @@ export const TransactionRow = memo(function TransactionRow({
             {transaction.linkedInvestmentTransactionId
               ? (density === 'dense' ? '\uD83D\uDCC8' : 'View')
               : (density === 'dense' ? '\u270E' : 'Edit')}
+          </button>
+        )}
+        {!transaction.linkedInvestmentTransactionId && onDuplicate && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onDuplicate(transaction); }}
+            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+            title="Duplicate transaction"
+          >
+            {density === 'dense' ? '\u2398' : 'Copy'}
           </button>
         )}
         {!transaction.linkedInvestmentTransactionId && (
