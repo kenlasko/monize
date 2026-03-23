@@ -72,6 +72,7 @@ function TransactionsContent() {
   const [monthlyTotals, setMonthlyTotals] = useState<MonthlyTotal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { showForm, editingItem: editingTransaction, openCreate, openEdit, close, modalProps, setFormDirty, unsavedChangesDialog, formSubmitRef } = useFormModal<Transaction>();
+  const [duplicatingFrom, setDuplicatingFrom] = useState<Transaction | undefined>();
   const [showPayeeForm, setShowPayeeForm] = useState(false);
   const [editingPayee, setEditingPayee] = useState<Payee | undefined>();
   const [listDensity, setListDensity] = useLocalStorage<DensityLevel>('monize-transactions-density', 'normal');
@@ -291,9 +292,31 @@ function TransactionsContent() {
     }
   };
 
+  const handleDuplicate = async (transaction: Transaction) => {
+    if (transaction.linkedInvestmentTransactionId) return;
+    if (transaction.isTransfer || transaction.isSplit) {
+      try {
+        const fullTransaction = await transactionsApi.getById(transaction.id);
+        setDuplicatingFrom(fullTransaction);
+      } catch (error) {
+        logger.error('Failed to load transaction details for duplication:', error);
+        setDuplicatingFrom(transaction);
+      }
+    } else {
+      setDuplicatingFrom(transaction);
+    }
+    openCreate();
+  };
+
+  const handleClose = () => {
+    setDuplicatingFrom(undefined);
+    close();
+  };
+
   const [formKey, setFormKey] = useState(0);
 
   const handleFormSuccess = () => {
+    setDuplicatingFrom(undefined);
     close();
     setFormKey(prev => prev + 1);
     loadData();
@@ -537,21 +560,25 @@ function TransactionsContent() {
         )}
 
         {/* Form Modal */}
-        <Modal isOpen={showForm} onClose={close} {...modalProps} maxWidth="6xl" className="p-6 !max-w-[69rem]">
+        <Modal isOpen={showForm} onClose={handleClose} {...modalProps} maxWidth="6xl" className="p-6 !max-w-[69rem]">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
-            {editingTransaction ? 'Edit Transaction' : 'New Transaction'}
+            {editingTransaction ? 'Edit Transaction' : duplicatingFrom ? 'Duplicate Transaction' : 'New Transaction'}
           </h2>
           <TransactionForm
-            key={`${editingTransaction?.id || 'new'}-${filters.filterAccountIds.join(',')}-${formKey}`}
+            key={`${editingTransaction?.id || 'new'}-${duplicatingFrom?.id || ''}-${filters.filterAccountIds.join(',')}-${formKey}`}
             transaction={editingTransaction}
+            duplicateFrom={duplicatingFrom}
             defaultAccountId={filters.filterAccountIds.length === 1 ? filters.filterAccountIds[0] : undefined}
             onSuccess={handleFormSuccess}
-            onCancel={close}
+            onCancel={handleClose}
             onDirtyChange={setFormDirty}
             submitRef={formSubmitRef}
           />
         </Modal>
-        <UnsavedChangesDialog {...unsavedChangesDialog} />
+        <UnsavedChangesDialog
+          {...unsavedChangesDialog}
+          onDiscard={() => { setDuplicatingFrom(undefined); unsavedChangesDialog.onDiscard(); }}
+        />
 
         {/* Payee Edit Modal */}
         {editingPayee && (
@@ -656,6 +683,7 @@ function TransactionsContent() {
             <TransactionList
               transactions={transactions}
               onEdit={handleEdit}
+              onDuplicate={handleDuplicate}
               onRefresh={loadAllData}
               onTransactionUpdate={handleTransactionUpdate}
               onPayeeClick={handlePayeeClick}

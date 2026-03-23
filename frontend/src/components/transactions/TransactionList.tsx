@@ -17,6 +17,7 @@ import { DensityLevel, nextDensity } from '@/hooks/useTableDensity';
 interface TransactionListProps {
   transactions: Transaction[];
   onEdit?: (transaction: Transaction) => void;
+  onDuplicate?: (transaction: Transaction) => void;
   onDelete?: (id: string) => void;
   onRefresh?: () => void;
   onTransactionUpdate?: (transaction: Transaction) => void;
@@ -50,6 +51,7 @@ interface TransactionListProps {
 export function TransactionList({
   transactions,
   onEdit,
+  onDuplicate,
   onDelete,
   onRefresh,
   onTransactionUpdate,
@@ -156,7 +158,7 @@ export function TransactionList({
     switch (density) {
       case 'dense': return 'px-3 py-1';
       case 'compact': return 'px-4 py-2';
-      default: return 'px-6 py-4';
+      default: return 'px-4 py-4';
     }
   }, [density]);
 
@@ -164,9 +166,10 @@ export function TransactionList({
     switch (density) {
       case 'dense': return 'px-3 py-2';
       case 'compact': return 'px-4 py-2';
-      default: return 'px-6 py-3';
+      default: return 'px-4 py-3';
     }
   }, [density]);
+
 
   const cycleDensity = useCallback(() => {
     const next = nextDensity(density);
@@ -466,6 +469,7 @@ export function TransactionList({
                     onCategoryClick={onCategoryClick}
                     onCycleStatus={handleCycleStatus}
                     onEdit={onEdit}
+                    onDuplicate={onDuplicate}
                     onDeleteClick={handleDeleteClick}
                     selectionMode={selectionMode}
                     isSelected={selectionMode ? selectedIds?.has(transaction.id) : undefined}
@@ -488,6 +492,7 @@ export function TransactionList({
         formatDate={formatDate}
         onClose={handleActionSheetClose}
         onEdit={onEdit}
+        onDuplicate={onDuplicate}
         onDeleteClick={handleDeleteClick}
         onDateFilterClick={onDateFilterClick}
         onAccountFilterClick={onAccountFilterClick}

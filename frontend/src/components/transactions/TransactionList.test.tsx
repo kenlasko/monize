@@ -2406,4 +2406,171 @@ describe('TransactionList', () => {
       });
     });
   });
+
+  // =========================================================================
+  // Duplicate transaction tests
+  // =========================================================================
+
+  describe('duplicate transaction', () => {
+    it('shows Copy button when onDuplicate is provided', async () => {
+      const mockOnDuplicate = vi.fn();
+      render(
+        <TransactionList
+          transactions={[createTransaction()]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+          onDuplicate={mockOnDuplicate}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Copy')).toBeInTheDocument();
+      });
+    });
+
+    it('does not show Copy button when onDuplicate is not provided', async () => {
+      render(
+        <TransactionList
+          transactions={[createTransaction()]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Edit')).toBeInTheDocument();
+      });
+
+      expect(screen.queryByText('Copy')).not.toBeInTheDocument();
+    });
+
+    it('calls onDuplicate with the transaction when Copy is clicked', async () => {
+      const mockOnDuplicate = vi.fn();
+      const transaction = createTransaction();
+
+      render(
+        <TransactionList
+          transactions={[transaction]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+          onDuplicate={mockOnDuplicate}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Copy')).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByText('Copy'));
+
+      expect(mockOnDuplicate).toHaveBeenCalledWith(transaction);
+    });
+
+    it('does not show Copy button for investment-linked transactions', async () => {
+      const mockOnDuplicate = vi.fn();
+      const investmentTransaction = createTransaction({
+        linkedInvestmentTransactionId: 'inv-tx-1',
+      });
+
+      render(
+        <TransactionList
+          transactions={[investmentTransaction]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+          onDuplicate={mockOnDuplicate}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('View')).toBeInTheDocument();
+      });
+
+      expect(screen.queryByText('Copy')).not.toBeInTheDocument();
+    });
+
+    it('shows Duplicate option in action sheet when onDuplicate is provided', async () => {
+      const mockOnDuplicate = vi.fn();
+      const transaction = createTransaction();
+
+      vi.useFakeTimers();
+
+      render(
+        <TransactionList
+          transactions={[transaction]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+          onDuplicate={mockOnDuplicate}
+        />
+      );
+
+      const row = screen.getByText('Grocery Store').closest('tr')!;
+      fireEvent.mouseDown(row);
+      await act(async () => { vi.advanceTimersByTime(800); });
+      vi.useRealTimers();
+
+      await waitFor(() => {
+        expect(screen.getByText('Duplicate')).toBeInTheDocument();
+      });
+    });
+
+    it('calls onDuplicate from action sheet and closes it', async () => {
+      const mockOnDuplicate = vi.fn();
+      const transaction = createTransaction();
+
+      vi.useFakeTimers();
+
+      render(
+        <TransactionList
+          transactions={[transaction]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+          onDuplicate={mockOnDuplicate}
+        />
+      );
+
+      const row = screen.getByText('Grocery Store').closest('tr')!;
+      fireEvent.mouseDown(row);
+      await act(async () => { vi.advanceTimersByTime(800); });
+      vi.useRealTimers();
+
+      await waitFor(() => {
+        expect(screen.getByText('Duplicate')).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByText('Duplicate'));
+
+      expect(mockOnDuplicate).toHaveBeenCalledWith(transaction);
+    });
+
+    it('does not show Duplicate in action sheet for investment-linked transactions', async () => {
+      const mockOnDuplicate = vi.fn();
+      const investmentTransaction = createTransaction({
+        linkedInvestmentTransactionId: 'inv-tx-1',
+      });
+
+      vi.useFakeTimers();
+
+      render(
+        <TransactionList
+          transactions={[investmentTransaction]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+          onDuplicate={mockOnDuplicate}
+        />
+      );
+
+      const row = screen.getByText('Grocery Store').closest('tr')!;
+      fireEvent.mouseDown(row);
+      await act(async () => { vi.advanceTimersByTime(800); });
+      vi.useRealTimers();
+
+      await waitFor(() => {
+        // Action sheet opens (Edit button appears in the sheet)
+        const editButtons = screen.getAllByText('Edit');
+        expect(editButtons.length).toBeGreaterThanOrEqual(1);
+      });
+
+      expect(screen.queryByText('Duplicate')).not.toBeInTheDocument();
+    });
+  });
 });

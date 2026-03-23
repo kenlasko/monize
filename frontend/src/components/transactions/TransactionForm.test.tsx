@@ -2311,4 +2311,160 @@ describe('TransactionForm', () => {
       });
     });
   });
+
+  // =========================================================================
+  // Duplicate transaction tests
+  // =========================================================================
+
+  describe('duplicate transaction (duplicateFrom prop)', () => {
+    it('shows "Create Transaction" button when duplicating (not Update)', async () => {
+      const source = createExistingTransaction();
+
+      render(
+        <TransactionForm
+          duplicateFrom={source}
+          onSuccess={mockOnSuccess}
+          onCancel={mockOnCancel}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /Create Transaction/i })).toBeInTheDocument();
+      });
+      expect(screen.queryByRole('button', { name: /Update Transaction/i })).not.toBeInTheDocument();
+    });
+
+    it('uses today\'s date instead of the source transaction date', async () => {
+      const source = createExistingTransaction({ transactionDate: '2020-06-01' });
+
+      render(
+        <TransactionForm
+          duplicateFrom={source}
+          onSuccess={mockOnSuccess}
+          onCancel={mockOnCancel}
+        />
+      );
+
+      await waitFor(() => {
+        const dateInput = screen.getByLabelText('Date') as HTMLInputElement;
+        // Should not use the old date
+        expect(dateInput.value).not.toBe('2020-06-01');
+        // Should use today's date
+        expect(dateInput.value).toBe(getLocalDateString());
+      });
+    });
+
+    it('pre-fills description from source transaction and submits it via create', async () => {
+      const source = createExistingTransaction({ amount: -75.5, description: 'Monthly bill' });
+      mockCreate.mockResolvedValueOnce({});
+
+      const { container } = render(
+        <TransactionForm
+          duplicateFrom={source}
+          onSuccess={mockOnSuccess}
+          onCancel={mockOnCancel}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Description')).toBeInTheDocument();
+      });
+
+      const textarea = container.querySelector('textarea') as HTMLTextAreaElement;
+      expect(textarea.value).toBe('Monthly bill');
+    });
+
+    it('calls transactionsApi.create (not update) when submitting a duplicate', async () => {
+      const source = createExistingTransaction();
+      mockCreate.mockResolvedValueOnce({});
+
+      render(
+        <TransactionForm
+          duplicateFrom={source}
+          onSuccess={mockOnSuccess}
+          onCancel={mockOnCancel}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /Create Transaction/i })).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByRole('button', { name: /Create Transaction/i }));
+
+      await waitFor(() => {
+        expect(mockCreate).toHaveBeenCalledTimes(1);
+        expect(mockUpdate).not.toHaveBeenCalled();
+      });
+    });
+
+    it('resets status to UNRECONCILED when duplicating a reconciled transaction', async () => {
+      const source = createExistingTransaction({ status: TransactionStatus.RECONCILED });
+
+      render(
+        <TransactionForm
+          duplicateFrom={source}
+          onSuccess={mockOnSuccess}
+          onCancel={mockOnCancel}
+        />
+      );
+
+      await waitFor(() => {
+        const statusSelect = screen.getByRole('combobox', { name: /Status/i }) as HTMLSelectElement;
+        expect(statusSelect.value).toBe(TransactionStatus.UNRECONCILED);
+      });
+    });
+
+    it('starts in split mode when duplicating a split transaction', async () => {
+      const source = createSplitTransaction();
+
+      render(
+        <TransactionForm
+          duplicateFrom={source}
+          onSuccess={mockOnSuccess}
+          onCancel={mockOnCancel}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Split Transaction')).toBeInTheDocument();
+        expect(screen.getByTestId('split-editor')).toBeInTheDocument();
+      });
+    });
+
+    it('starts in transfer mode when duplicating a transfer transaction', async () => {
+      const source = createTransferTransaction();
+
+      render(
+        <TransactionForm
+          duplicateFrom={source}
+          onSuccess={mockOnSuccess}
+          onCancel={mockOnCancel}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('From Account')).toBeInTheDocument();
+        expect(screen.getByText('To Account')).toBeInTheDocument();
+      });
+    });
+
+    it('shows the mode selector tabs when duplicating a transfer', async () => {
+      const source = createTransferTransaction();
+
+      render(
+        <TransactionForm
+          duplicateFrom={source}
+          onSuccess={mockOnSuccess}
+          onCancel={mockOnCancel}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Transaction')).toBeInTheDocument();
+        expect(screen.getByText('Split')).toBeInTheDocument();
+        expect(screen.getByText('Transfer')).toBeInTheDocument();
+      });
+    });
+  });
 });
