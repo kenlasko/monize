@@ -223,10 +223,20 @@ export class ImportInvestmentProcessorService {
         ? TransactionStatus.CLEARED
         : TransactionStatus.UNRECONCILED;
 
-    const transferAccountId: string | null =
+    let transferAccountId: string | null =
       qifTx.isTransfer && qifTx.transferAccount
         ? (ctx.accountMap.get(qifTx.transferAccount) ?? null)
         : null;
+    // Case-insensitive fallback (matches resolveTransactionTarget behavior)
+    if (!transferAccountId && qifTx.isTransfer && qifTx.transferAccount) {
+      const lowerName = qifTx.transferAccount.toLowerCase();
+      for (const [name, id] of ctx.accountMap) {
+        if (id && name.toLowerCase() === lowerName) {
+          transferAccountId = id;
+          break;
+        }
+      }
+    }
 
     // Duplicate detection using the same counting approach as the regular
     // processor: compare how many matching linked transfers already exist in
@@ -236,11 +246,7 @@ export class ImportInvestmentProcessorService {
     if (transferAccountId) {
       const existingCount = await ctx.queryRunner.manager
         .createQueryBuilder(Transaction, "t")
-        .innerJoin(
-          Transaction,
-          "linked",
-          "t.linked_transaction_id = linked.id",
-        )
+        .innerJoin(Transaction, "linked", "t.linked_transaction_id = linked.id")
         .where("t.user_id = :userId", { userId: ctx.userId })
         .andWhere("t.account_id = :accountId", { accountId: cashAccountId })
         .andWhere("t.is_transfer = true")

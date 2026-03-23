@@ -115,7 +115,18 @@ export class ImportRegularProcessorService {
     // exist in the DB and how many same-signature QIF entries we have seen in this
     // block; only skip when the seen count does not exceed the existing count.
     if (qifTx.isTransfer && qifTx.transferAccount) {
-      const mappedTransferAccountId = ctx.accountMap.get(qifTx.transferAccount);
+      let mappedTransferAccountId =
+        ctx.accountMap.get(qifTx.transferAccount) ?? undefined;
+      // Case-insensitive fallback (matches resolveTransactionTarget behavior)
+      if (!mappedTransferAccountId) {
+        const lowerName = qifTx.transferAccount.toLowerCase();
+        for (const [name, id] of ctx.accountMap) {
+          if (id && name.toLowerCase() === lowerName) {
+            mappedTransferAccountId = id;
+            break;
+          }
+        }
+      }
       if (mappedTransferAccountId) {
         const existingCount = await ctx.queryRunner.manager
           .createQueryBuilder(Transaction, "t")
@@ -136,13 +147,16 @@ export class ImportRegularProcessorService {
           })
           .getCount();
 
-        if (existingCount > 0) {
-          const sigKey = `linked|${qifTx.date}|${qifTx.amount}|${mappedTransferAccountId}`;
-          const seenSoFar = ctx.transferDupCounts.get(sigKey) || 0;
-          ctx.transferDupCounts.set(sigKey, seenSoFar + 1);
-          if (seenSoFar + 1 <= existingCount) {
-            return true;
-          }
+        // Always count every QIF entry with this signature, even when
+        // existingCount is zero (fresh import). This ensures that when the
+        // next entry with the same signature arrives and finds existingCount=1,
+        // seenSoFar is already 1 so seenSoFar+1=2 > 1 and it is not
+        // incorrectly skipped. Matches processCashTransfer counting logic.
+        const sigKey = `linked|${qifTx.date}|${qifTx.amount}|${mappedTransferAccountId}`;
+        const seenSoFar = ctx.transferDupCounts.get(sigKey) || 0;
+        ctx.transferDupCounts.set(sigKey, seenSoFar + 1);
+        if (existingCount > 0 && seenSoFar + 1 <= existingCount) {
+          return true;
         }
       }
     }
@@ -165,13 +179,12 @@ export class ImportRegularProcessorService {
         .andWhere("t.amount = :amount", { amount: qifTx.amount })
         .getCount();
 
-      if (existingCount > 0) {
-        const sigKey = `split|${qifTx.date}|${qifTx.amount}`;
-        const seenSoFar = ctx.transferDupCounts.get(sigKey) || 0;
-        ctx.transferDupCounts.set(sigKey, seenSoFar + 1);
-        if (seenSoFar + 1 <= existingCount) {
-          return true;
-        }
+      // Always count (same rationale as linked transfers above)
+      const sigKey = `split|${qifTx.date}|${qifTx.amount}`;
+      const seenSoFar = ctx.transferDupCounts.get(sigKey) || 0;
+      ctx.transferDupCounts.set(sigKey, seenSoFar + 1);
+      if (existingCount > 0 && seenSoFar + 1 <= existingCount) {
+        return true;
       }
     }
 

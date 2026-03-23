@@ -1,4 +1,4 @@
-import { roundToDecimals } from './round.util';
+import { roundToDecimals } from "./round.util";
 
 /**
  * Format a number as currency with the correct decimal places for the given currency code.

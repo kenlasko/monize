@@ -21,10 +21,7 @@
  *   roundToDecimals(-159.735, 2)      => -159.74  (not -159.73)
  *   roundToDecimals(1.005, 2)         => 1.01     (not 1.00)
  */
-export function roundToDecimals(
-  value: number,
-  decimalPlaces: number,
-): number {
+export function roundToDecimals(value: number, decimalPlaces: number): number {
   if (!isFinite(value)) return value;
   const sign = value < 0 ? -1 : 1;
   const abs = Math.abs(value);
@@ -32,9 +29,7 @@ export function roundToDecimals(
   return (
     sign *
     Number(
-      Math.round(Number(nudged + 'e' + decimalPlaces)) +
-        'e-' +
-        decimalPlaces,
+      Math.round(Number(nudged + "e" + decimalPlaces)) + "e-" + decimalPlaces,
     )
   );
 }

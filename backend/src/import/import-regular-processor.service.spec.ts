@@ -340,14 +340,16 @@ describe("ImportRegularProcessorService", () => {
       // After the first transfer is processed, the DB has 1 existing linked
       // transfer matching the signature. The counting logic should let the
       // second QIF entry through because seenCount (2) > existingCount (1).
+      // QB call sequence per processTransaction:
+      //   1. isDuplicateTransfer linked check
+      //   2. isDuplicateTransfer split-linked check
+      //   3. matchPendingTransfer
+      // So for tx2, the linked check is call 4.
       let qbCallCount = 0;
       ctx.queryRunner.manager.createQueryBuilder.mockImplementation(() => {
         qbCallCount++;
-        // Calls 1-2: isDuplicateTransfer for 1st QIF tx (linked + split-linked)
-        // Calls 3-4: isDuplicateTransfer for 2nd QIF tx (linked + split-linked)
-        // The linked query returns count=1 only for the 2nd tx (after 1st was created)
         const qb = makeMockQueryBuilder(null);
-        if (qbCallCount === 3) {
+        if (qbCallCount === 4) {
           // 2nd tx's linked-transfer check: 1 existing match in DB
           qb.getCount.mockResolvedValue(1);
         }
@@ -1494,6 +1496,43 @@ describe("ImportRegularProcessorService", () => {
         (call: any) => call[1] === pendingSplitTransfer.id,
       );
       expect(pendingUpdate).toBeDefined();
+    });
+  });
+
+  describe("isDuplicateTransfer - case-insensitive account matching", () => {
+    it("should detect duplicate even when transfer account name has different casing", async () => {
+      // Simulates the scenario where the investment processor created a linked
+      // transfer pair (e.g. from XOut processing), and the regular processor
+      // encounters the counterpart with slightly different account name casing.
+      const accountMap = new Map<string, string | null>();
+      accountMap.set("My Investments", "acc-investment-cash");
+      const ctx = makeContext({ accountMap });
+
+      // The linked transfer already exists (created by the investment processor)
+      let qbCallCount = 0;
+      ctx.queryRunner.manager.createQueryBuilder.mockImplementation(() => {
+        qbCallCount++;
+        const qb = makeMockQueryBuilder(null);
+        if (qbCallCount === 1) {
+          // linked-transfer check: 1 existing match
+          qb.getCount.mockResolvedValue(1);
+        }
+        return qb;
+      });
+
+      // Transfer uses different casing than account map key
+      const qifTx = {
+        date: "2025-01-15",
+        amount: 1000,
+        payee: "Transfer from My Investments",
+        isTransfer: true,
+        transferAccount: "my investments", // lowercase
+      };
+
+      await service.processTransaction(ctx, qifTx);
+
+      expect(ctx.importResult.skipped).toBe(1);
+      expect(ctx.importResult.imported).toBe(0);
     });
   });
 
