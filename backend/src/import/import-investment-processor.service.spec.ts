@@ -1143,13 +1143,15 @@ describe("ImportInvestmentProcessorService", () => {
 
       // Cash transaction saved in the investment account
       const cashTxSave = saveCalls.find(
-        (call: any) => call[0]?.accountId === accountId && call[0]?.amount === 1000,
+        (call: any) =>
+          call[0]?.accountId === accountId && call[0]?.amount === 1000,
       );
       expect(cashTxSave).toBeDefined();
 
       // Linked transaction saved in the transfer account
       const linkedTxSave = saveCalls.find(
-        (call: any) => call[0]?.accountId === "acc-chequing" && call[0]?.amount === -1000,
+        (call: any) =>
+          call[0]?.accountId === "acc-chequing" && call[0]?.amount === -1000,
       );
       expect(linkedTxSave).toBeDefined();
       expect(ctx.affectedAccountIds.has("acc-chequing")).toBe(true);
@@ -1188,12 +1190,14 @@ describe("ImportInvestmentProcessorService", () => {
 
       const saveCalls = ctx.queryRunner.manager.save.mock.calls;
       const cashTxSave = saveCalls.find(
-        (call: any) => call[0]?.accountId === accountId && call[0]?.amount === -500,
+        (call: any) =>
+          call[0]?.accountId === accountId && call[0]?.amount === -500,
       );
       expect(cashTxSave).toBeDefined();
 
       const linkedTxSave = saveCalls.find(
-        (call: any) => call[0]?.accountId === "acc-savings" && call[0]?.amount === 500,
+        (call: any) =>
+          call[0]?.accountId === "acc-savings" && call[0]?.amount === 500,
       );
       expect(linkedTxSave).toBeDefined();
     });
@@ -1269,7 +1273,8 @@ describe("ImportInvestmentProcessorService", () => {
 
       const saveCalls = ctx.queryRunner.manager.save.mock.calls;
       const cashTxSave = saveCalls.find(
-        (call: any) => call[0]?.accountId === "acc-cash" && call[0]?.amount === 750,
+        (call: any) =>
+          call[0]?.accountId === "acc-cash" && call[0]?.amount === 750,
       );
       expect(cashTxSave).toBeDefined();
     });
