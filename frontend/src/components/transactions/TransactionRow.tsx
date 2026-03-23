@@ -337,7 +337,7 @@ export const TransactionRow = memo(function TransactionRow({
           )}
         </button>
       </td>
-      <td className={`${density === 'normal' ? 'px-4 py-4' : cellPadding} sticky right-0 z-10 ${stickyActionsBg} border-l border-gray-200 dark:border-gray-700 whitespace-nowrap text-right text-sm font-medium space-x-2 hidden min-[480px]:table-cell`}>
+      <td className={`${density === 'normal' ? 'px-4 py-4' : cellPadding} sticky right-0 z-10 ${stickyActionsBg} whitespace-nowrap text-right text-sm font-medium space-x-2 hidden min-[480px]:table-cell`}>
         {onEdit && (
           <button
             onClick={(e) => { e.stopPropagation(); onEdit(transaction); }}
