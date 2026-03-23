@@ -170,6 +170,14 @@ export function TransactionList({
     }
   }, [density]);
 
+  const actionHeaderPadding = useMemo(() => {
+    switch (density) {
+      case 'dense': return 'px-3 py-2';
+      case 'compact': return 'px-4 py-2';
+      default: return 'px-4 py-3';
+    }
+  }, [density]);
+
   const cycleDensity = useCallback(() => {
     const next = nextDensity(density);
     if (onDensityChange) {
@@ -423,7 +431,7 @@ export function TransactionList({
                 <th className={`${headerPadding} text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>Balance</th>
               )}
               <th className={`${headerPadding} text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden sm:table-cell`}>Status</th>
-              <th className={`${headerPadding} text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden min-[480px]:table-cell`}>Actions</th>
+              <th className={`${actionHeaderPadding} text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden min-[480px]:table-cell`}>Actions</th>
             </tr>
           </thead>
           <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
