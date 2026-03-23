@@ -79,6 +79,12 @@ export const TransactionRow = memo(function TransactionRow({
     ? (categoryColorMap?.get(transaction.category.id) ?? transaction.category.color)
     : null;
 
+  const stickyActionsBg = isSelected
+    ? 'bg-blue-50 dark:bg-blue-900/20 group-hover:bg-blue-100 dark:group-hover:bg-blue-800/40'
+    : density !== 'normal' && index % 2 === 1
+      ? 'bg-gray-50 dark:bg-gray-800/50 group-hover:bg-gray-100 dark:group-hover:bg-gray-800'
+      : 'bg-white dark:bg-gray-800 group-hover:bg-gray-100 dark:group-hover:bg-gray-800';
+
   return (
     <tr
       onClick={() => onRowClick(transaction)}
@@ -89,7 +95,7 @@ export const TransactionRow = memo(function TransactionRow({
       onTouchMove={onTouchMove}
       onTouchEnd={onLongPressEnd}
       onTouchCancel={onLongPressEnd}
-      className={`hover:bg-gray-100 dark:hover:bg-gray-800 ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-gray-800/50' : ''} ${isVoid ? 'opacity-50' : ''} ${isFuture && !isVoid ? 'opacity-60' : ''} ${onEdit ? 'cursor-pointer' : ''} ${isSelected ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}
+      className={`group hover:bg-gray-100 dark:hover:bg-gray-800 ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-gray-800/50' : ''} ${isVoid ? 'opacity-50' : ''} ${isFuture && !isVoid ? 'opacity-60' : ''} ${onEdit ? 'cursor-pointer' : ''} ${isSelected ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}
     >
       {selectionMode && (
         <td className={`${cellPadding} whitespace-nowrap w-10`} onClick={e => e.stopPropagation()}>
@@ -331,7 +337,7 @@ export const TransactionRow = memo(function TransactionRow({
           )}
         </button>
       </td>
-      <td className={`${density === 'normal' ? 'px-4 py-4' : cellPadding} whitespace-nowrap text-right text-sm font-medium space-x-2 hidden min-[480px]:table-cell`}>
+      <td className={`${density === 'normal' ? 'px-4 py-4' : cellPadding} sticky right-0 z-10 ${stickyActionsBg} border-l border-gray-200 dark:border-gray-700 whitespace-nowrap text-right text-sm font-medium space-x-2 hidden min-[480px]:table-cell`}>
         {onEdit && (
           <button
             onClick={(e) => { e.stopPropagation(); onEdit(transaction); }}
