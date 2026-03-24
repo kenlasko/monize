@@ -1087,8 +1087,30 @@ describe("ImportInvestmentProcessorService", () => {
       await testActionMapping("Vest", InvestmentAction.ADD_SHARES);
     });
 
-    it("maps Cash to INTEREST", async () => {
+    it("maps Cash to INTEREST when no transfer account", async () => {
       await testActionMapping("Cash", InvestmentAction.INTEREST);
+    });
+
+    it("Cash with transfer account is handled as a cash transfer, not an investment transaction", async () => {
+      const ctx = makeContext();
+      const qifTx = {
+        action: "Cash",
+        date: "2025-01-11",
+        amount: -3016,
+        isTransfer: true,
+        transferAccount: "WS Cash - Joint",
+      };
+
+      await service.processTransaction(ctx, qifTx);
+
+      expect(ctx.importResult.imported).toBe(1);
+
+      // No InvestmentTransaction should be created
+      const saveCalls = ctx.queryRunner.manager.save.mock.calls;
+      const investmentTxSave = saveCalls.find(
+        (call: any) => call[0] instanceof InvestmentTransaction,
+      );
+      expect(investmentTxSave).toBeUndefined();
     });
   });
 
@@ -1303,6 +1325,54 @@ describe("ImportInvestmentProcessorService", () => {
 
       expect(ctx.importResult.skipped).toBe(1);
       expect(ctx.importResult.imported).toBe(0);
+    });
+
+    it("Cash with transfer account creates linked transactions like XOut", async () => {
+      const accountMap = new Map<string, string | null>();
+      accountMap.set("WS Cash - Joint", "acc-cash-joint");
+      const ctx = makeContext({ accountMap });
+
+      ctx.queryRunner.manager.findOne.mockImplementation(
+        (_entity: any, opts: any) => {
+          if (opts?.where?.id === "acc-cash-joint") {
+            return Promise.resolve({
+              id: "acc-cash-joint",
+              currencyCode: "CAD",
+              currentBalance: 10000,
+            });
+          }
+          return Promise.resolve(null);
+        },
+      );
+
+      const qifTx = {
+        action: "Cash",
+        date: "2025-01-11",
+        amount: -3016,
+        payee: "Transfer To WS Cash - Joint",
+        isTransfer: true,
+        transferAccount: "WS Cash - Joint",
+      };
+
+      await service.processTransaction(ctx, qifTx);
+
+      expect(ctx.importResult.imported).toBe(1);
+
+      const saveCalls = ctx.queryRunner.manager.save.mock.calls;
+
+      // Cash transaction on the investment side
+      const cashTxSave = saveCalls.find(
+        (call: any) =>
+          call[0]?.accountId === accountId && call[0]?.amount === -3016,
+      );
+      expect(cashTxSave).toBeDefined();
+
+      // Linked transaction on the transfer account side
+      const linkedTxSave = saveCalls.find(
+        (call: any) =>
+          call[0]?.accountId === "acc-cash-joint" && call[0]?.amount === 3016,
+      );
+      expect(linkedTxSave).toBeDefined();
     });
 
     it("two XIn transfers with same signature are not both skipped (counting logic)", async () => {

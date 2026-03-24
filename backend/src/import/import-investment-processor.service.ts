@@ -22,8 +22,15 @@ export class ImportInvestmentProcessorService {
     // XIn/XOut are cash-only transfers between the investment account and
     // another account; they carry no security data and must be handled as
     // regular linked transactions rather than investment transactions.
+    // The "Cash" action with a transfer account (L[Account Name]) is also
+    // a pure cash transfer and must be handled the same way; otherwise it
+    // gets incorrectly mapped to an INTEREST investment transaction.
     const qifActionRaw = (qifTx.action || "").toLowerCase();
-    if (qifActionRaw === "xin" || qifActionRaw === "xout") {
+    if (
+      qifActionRaw === "xin" ||
+      qifActionRaw === "xout" ||
+      (qifActionRaw === "cash" && qifTx.isTransfer && qifTx.transferAccount)
+    ) {
       await this.processCashTransfer(ctx, qifTx);
       return;
     }
