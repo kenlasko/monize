@@ -101,7 +101,7 @@ export class SecuritiesController {
   }
 
   @Get("lookup")
-  @Throttle({ default: { ttl: 60000, limit: 10 } }) // L2: 10 lookups per minute
+  @Throttle({ default: { ttl: 60000, limit: 60 } }) // L2: 60 lookups per minute
   @ApiOperation({ summary: "Lookup security info from Yahoo Finance" })
   @ApiQuery({
     name: "q",
