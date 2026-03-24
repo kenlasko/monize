@@ -22,14 +22,24 @@ export class ImportInvestmentProcessorService {
     // XIn/XOut are cash-only transfers between the investment account and
     // another account; they carry no security data and must be handled as
     // regular linked transactions rather than investment transactions.
-    // The "Cash" action with a transfer account (L[Account Name]) is also
-    // a pure cash transfer and must be handled the same way; otherwise it
-    // gets incorrectly mapped to an INTEREST investment transaction.
     const qifActionRaw = (qifTx.action || "").toLowerCase();
+    if (qifActionRaw === "xin" || qifActionRaw === "xout") {
+      await this.processCashTransfer(ctx, qifTx);
+      return;
+    }
+
+    // Actions like Cash, CashX, MiscExp, MiscExpX, MiscInc, MiscIncX, and
+    // MargInt/MargIntX all map to INTEREST, but when they carry a transfer
+    // account (L[Account Name]) and no security they are pure cash movements
+    // between accounts. Route them to processCashTransfer so they become
+    // proper linked transfers instead of spurious interest transactions.
+    const cashTransferActions = ["cash", "miscexp", "miscinc", "margint"];
+    const qifActionBase = qifActionRaw.replace(/x$/, "");
     if (
-      qifActionRaw === "xin" ||
-      qifActionRaw === "xout" ||
-      (qifActionRaw === "cash" && qifTx.isTransfer && qifTx.transferAccount)
+      cashTransferActions.includes(qifActionBase) &&
+      qifTx.isTransfer &&
+      qifTx.transferAccount &&
+      !qifTx.security
     ) {
       await this.processCashTransfer(ctx, qifTx);
       return;

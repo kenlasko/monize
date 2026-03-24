@@ -1112,6 +1112,94 @@ describe("ImportInvestmentProcessorService", () => {
       );
       expect(investmentTxSave).toBeUndefined();
     });
+
+    it("CashX (X-suffix) with transfer account is handled as a cash transfer", async () => {
+      const ctx = makeContext();
+      const qifTx = {
+        action: "CashX",
+        date: "2025-01-11",
+        amount: -3016,
+        isTransfer: true,
+        transferAccount: "WS Cash - Joint",
+      };
+
+      await service.processTransaction(ctx, qifTx);
+
+      expect(ctx.importResult.imported).toBe(1);
+
+      const saveCalls = ctx.queryRunner.manager.save.mock.calls;
+      const investmentTxSave = saveCalls.find(
+        (call: any) => call[0] instanceof InvestmentTransaction,
+      );
+      expect(investmentTxSave).toBeUndefined();
+    });
+
+    it("MiscExp with transfer account and no security is handled as a cash transfer", async () => {
+      const ctx = makeContext();
+      const qifTx = {
+        action: "MiscExp",
+        date: "2025-02-15",
+        amount: -100,
+        isTransfer: true,
+        transferAccount: "Chequing",
+      };
+
+      await service.processTransaction(ctx, qifTx);
+
+      expect(ctx.importResult.imported).toBe(1);
+
+      const saveCalls = ctx.queryRunner.manager.save.mock.calls;
+      const investmentTxSave = saveCalls.find(
+        (call: any) => call[0] instanceof InvestmentTransaction,
+      );
+      expect(investmentTxSave).toBeUndefined();
+    });
+
+    it("MiscInc with transfer account and no security is handled as a cash transfer", async () => {
+      const ctx = makeContext();
+      const qifTx = {
+        action: "MiscInc",
+        date: "2025-02-15",
+        amount: 200,
+        isTransfer: true,
+        transferAccount: "Savings",
+      };
+
+      await service.processTransaction(ctx, qifTx);
+
+      expect(ctx.importResult.imported).toBe(1);
+
+      const saveCalls = ctx.queryRunner.manager.save.mock.calls;
+      const investmentTxSave = saveCalls.find(
+        (call: any) => call[0] instanceof InvestmentTransaction,
+      );
+      expect(investmentTxSave).toBeUndefined();
+    });
+
+    it("MiscExp with transfer AND security goes through normal investment path", async () => {
+      const securityMap = new Map<string, string | null>();
+      securityMap.set("Test Security", "sec-1");
+      const ctx = makeContext({ securityMap });
+
+      const qifTx = {
+        action: "MiscExp",
+        date: "2025-02-15",
+        amount: -100,
+        security: "Test Security",
+        isTransfer: true,
+        transferAccount: "Chequing",
+      };
+
+      await service.processTransaction(ctx, qifTx);
+
+      // Should create an InvestmentTransaction because security is present
+      const saveCalls = ctx.queryRunner.manager.save.mock.calls;
+      const investmentTxSave = saveCalls.find(
+        (call: any) => call[0] instanceof InvestmentTransaction,
+      );
+      expect(investmentTxSave).toBeDefined();
+      expect(investmentTxSave[0].action).toBe(InvestmentAction.INTEREST);
+    });
   });
 
   describe("XIn / XOut cash transfers", () => {
