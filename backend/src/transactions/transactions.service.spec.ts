@@ -4115,6 +4115,10 @@ describe("TransactionsService", () => {
       transactionsRepository.findOne
         .mockResolvedValueOnce({ ...fromTx })
         .mockResolvedValueOnce({ ...toTx })
+        // re-fetch inside transferService.updateTransfer
+        .mockResolvedValueOnce({ ...fromTx })
+        .mockResolvedValueOnce({ ...toTx })
+        // re-fetch after setTransactionTags in updateTransfer wrapper
         .mockResolvedValueOnce({ ...fromTx, tags: [{ id: "tag-1" }] })
         .mockResolvedValueOnce({ ...toTx, tags: [{ id: "tag-1" }] });
 
@@ -4138,6 +4142,10 @@ describe("TransactionsService", () => {
       transactionsRepository.findOne
         .mockResolvedValueOnce({ ...fromTx })
         .mockResolvedValueOnce({ ...toTx })
+        // re-fetch inside transferService.updateTransfer
+        .mockResolvedValueOnce({ ...fromTx })
+        .mockResolvedValueOnce({ ...toTx })
+        // re-fetch after setTransactionTags in updateTransfer wrapper
         .mockResolvedValueOnce({ ...fromTx, tags: [] })
         .mockResolvedValueOnce({ ...toTx, tags: [] });
 
