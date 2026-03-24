@@ -292,7 +292,11 @@ export class PortfolioService {
     // Get unique security IDs
     const securityIds = [...new Set(activeHoldings.map((h) => h.securityId))];
 
-    // Query the two most recent weekday (Mon-Fri) prices for each security
+    // Query the two most recent prices for each security.
+    // No weekday filter: crypto and other 24/7 assets can have weekend prices,
+    // and the investments page (getLatestPrices) also returns any-day prices.
+    // Filtering to weekdays-only caused the widget to show a stale weekday price
+    // while the investments page showed a newer weekend price.
     const priceRows: Array<{
       security_id: string;
       close_price: string;
@@ -303,7 +307,6 @@ export class PortfolioService {
                 ROW_NUMBER() OVER (PARTITION BY security_id ORDER BY price_date DESC) as rn
          FROM security_prices
          WHERE security_id = ANY($1)
-           AND EXTRACT(DOW FROM price_date) BETWEEN 1 AND 5
        ) sub
        WHERE rn <= 2
        ORDER BY security_id, rn`,
