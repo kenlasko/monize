@@ -1467,6 +1467,44 @@ export class ImportService {
     isInvestment: boolean,
     affectedAccountIds: Set<string>,
   ): Promise<void> {
+    // Recalculate current_balance for all affected accounts so that
+    // future-dated transactions are excluded. During import,
+    // updateAccountBalance() adds every transaction amount regardless
+    // of date, which inflates the balance when future transactions exist.
+    for (const accountId of affectedAccountIds) {
+      try {
+        const account = await this.accountsRepository.findOne({
+          where: { id: accountId },
+        });
+        if (account) {
+          const balanceSql = `SELECT COALESCE($2::NUMERIC, 0) + COALESCE(SUM(t.amount), 0) as balance
+             FROM transactions t
+             WHERE t.account_id = $1
+               AND (t.status IS NULL OR t.status != 'VOID')
+               AND t.parent_transaction_id IS NULL
+               AND t.transaction_date <= CURRENT_DATE`;
+
+          const result: { balance: string }[] = await this.dataSource.query(
+            balanceSql,
+            [accountId, account.openingBalance],
+          );
+
+          const newBalance =
+            result.length > 0
+              ? Math.round(Number(result[0].balance) * 10000) / 10000
+              : Math.round(Number(account.openingBalance) * 10000) / 10000;
+
+          await this.accountsRepository.update(accountId, {
+            currentBalance: newBalance,
+          });
+        }
+      } catch (err) {
+        this.logger.warn(
+          `Post-import balance recalculation failed for account ${accountId}: ${err.message}`,
+        );
+      }
+    }
+
     if (isInvestment) {
       try {
         this.logger.log("Post-import: backfilling historical security prices");
