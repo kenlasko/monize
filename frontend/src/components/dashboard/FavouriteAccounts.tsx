@@ -128,15 +128,20 @@ export function FavouriteAccounts({ accounts, isLoading }: FavouriteAccountsProp
                 )}
               </div>
             </div>
-            <div
-              className={`font-semibold whitespace-nowrap ml-2 ${
-                Number(account.currentBalance) >= 0
-                  ? 'text-green-600 dark:text-green-400'
-                  : 'text-red-600 dark:text-red-400'
-              }`}
-            >
-              {formatCurrency(account.currentBalance, account.currencyCode)}
-            </div>
+            {(() => {
+              const totalBalance = (Number(account.currentBalance) || 0) + (Number(account.futureTransactionsSum) || 0);
+              return (
+                <div
+                  className={`font-semibold whitespace-nowrap ml-2 ${
+                    totalBalance >= 0
+                      ? 'text-green-600 dark:text-green-400'
+                      : 'text-red-600 dark:text-red-400'
+                  }`}
+                >
+                  {formatCurrency(totalBalance, account.currencyCode)}
+                </div>
+              );
+            })()}
           </button>
         ))}
       </div>

@@ -172,7 +172,9 @@ export class AccountsService {
   async findAll(
     userId: string,
     includeInactive = false,
-  ): Promise<(Account & { canDelete?: boolean })[]> {
+  ): Promise<
+    (Account & { canDelete?: boolean; futureTransactionsSum?: number })[]
+  > {
     const queryBuilder = this.accountsRepository
       .createQueryBuilder("account")
       .where("account.userId = :userId", { userId })
@@ -191,7 +193,7 @@ export class AccountsService {
     // Batch check deletability: count transactions + investment transactions per account in 2 queries
     const accountIds = accounts.map((a) => a.id);
 
-    const [txCounts, invTxCounts] = await Promise.all([
+    const [txCounts, invTxCounts, futureSums] = await Promise.all([
       this.transactionRepository
         .createQueryBuilder("t")
         .select("t.accountId", "accountId")
@@ -206,6 +208,17 @@ export class AccountsService {
         .where("it.accountId IN (:...accountIds)", { accountIds })
         .groupBy("it.accountId")
         .getRawMany(),
+      this.dataSource.query(
+        `SELECT t.account_id as "accountId",
+                COALESCE(SUM(t.amount), 0) as "futureSum"
+         FROM transactions t
+         WHERE t.account_id = ANY($1)
+           AND t.transaction_date > CURRENT_DATE
+           AND (t.status IS NULL OR t.status != 'VOID')
+           AND t.parent_transaction_id IS NULL
+         GROUP BY t.account_id`,
+        [accountIds],
+      ) as Promise<Array<{ accountId: string; futureSum: string }>>,
     ]);
 
     const txCountMap = new Map<string, number>();
@@ -214,12 +227,19 @@ export class AccountsService {
     const invTxCountMap = new Map<string, number>();
     for (const row of invTxCounts)
       invTxCountMap.set(row.accountId, parseInt(row.cnt, 10));
+    const futureSumMap = new Map<string, number>();
+    for (const row of futureSums)
+      futureSumMap.set(
+        row.accountId,
+        Math.round(Number(row.futureSum) * 10000) / 10000,
+      );
 
     return accounts.map((account) => ({
       ...account,
       canDelete:
         !(txCountMap.get(account.id) || 0) &&
         !(invTxCountMap.get(account.id) || 0),
+      futureTransactionsSum: futureSumMap.get(account.id) ?? 0,
     }));
   }
 

@@ -1,28 +1,33 @@
 'use client';
 
+import { useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { differenceInDays, isToday, isTomorrow, startOfDay } from 'date-fns';
 import { ScheduledTransaction } from '@/types/scheduled-transaction';
+import { Account } from '@/types/account';
 import { parseLocalDate } from '@/lib/utils';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
 
+const LIABILITY_TYPES = new Set(['CREDIT_CARD', 'LOAN', 'MORTGAGE', 'LINE_OF_CREDIT']);
+
 interface UpcomingBillsProps {
   scheduledTransactions: ScheduledTransaction[];
+  accounts: Account[];
   isLoading: boolean;
   maxItems: number;
 }
 
-export function UpcomingBills({ scheduledTransactions, isLoading, maxItems }: UpcomingBillsProps) {
+export function UpcomingBills({ scheduledTransactions, accounts, isLoading, maxItems }: UpcomingBillsProps) {
   const router = useRouter();
   const { formatDate } = useDateFormat();
   const { formatCurrency: formatCurrencyBase } = useNumberFormat();
   const { convertToDefault } = useExchangeRates();
 
   // Filter to active bills, deposits, and transfers within each item's reminder window
-  const today = startOfDay(new Date());
-  const upcomingItems = scheduledTransactions
+  const today = useMemo(() => startOfDay(new Date()), []);
+  const upcomingItems = useMemo(() => scheduledTransactions
     .filter((st) => {
       if (!st.isActive) return false;
       const dueDate = parseLocalDate(st.nextDueDate);
@@ -36,7 +41,48 @@ export function UpcomingBills({ scheduledTransactions, isLoading, maxItems }: Up
       if (!a.autoPost && b.autoPost) return -1;
       if (a.autoPost && !b.autoPost) return 1;
       return 0;
-    });
+    }), [scheduledTransactions, today]);
+
+  // Build a map of account ID -> Account for quick lookups
+  const accountMap = useMemo(() => {
+    const map = new Map<string, Account>();
+    for (const acc of accounts) {
+      map.set(acc.id, acc);
+    }
+    return map;
+  }, [accounts]);
+
+  // Compute which upcoming items will cause a non-liability account balance to go negative.
+  // Uses running balances per account, processing items in date order (which they already are).
+  const negativeBalanceItems = useMemo(() => {
+    const result = new Set<string>();
+    // Running balance per account: start with currentBalance + futureTransactionsSum
+    const runningBalances = new Map<string, number>();
+
+    for (const item of upcomingItems) {
+      const account = accountMap.get(item.accountId);
+      if (!account) continue;
+
+      // Skip liability accounts - they normally carry negative balances
+      if (LIABILITY_TYPES.has(account.accountType)) continue;
+
+      if (!runningBalances.has(item.accountId)) {
+        runningBalances.set(
+          item.accountId,
+          (Number(account.currentBalance) || 0) + (Number(account.futureTransactionsSum) || 0),
+        );
+      }
+
+      const effectiveAmount = item.nextOverride?.amount ?? item.amount;
+      const newBalance = runningBalances.get(item.accountId)! + effectiveAmount;
+      runningBalances.set(item.accountId, newBalance);
+
+      if (newBalance < 0) {
+        result.add(item.id);
+      }
+    }
+    return result;
+  }, [upcomingItems, accountMap]);
 
   const formatCurrency = (amount: number, currency: string) => {
     return formatCurrencyBase(Math.abs(amount), currency);
@@ -195,8 +241,20 @@ export function UpcomingBills({ scheduledTransactions, isLoading, maxItems }: Up
                   )}
                 </div>
               </div>
-              <div className={`font-semibold ${amountDisplay.className} whitespace-nowrap ml-2`}>
-                {amountDisplay.text}
+              <div className="flex items-center gap-1 ml-2">
+                {negativeBalanceItems.has(item.id) && (
+                  <span
+                    className="flex-shrink-0 text-amber-500 dark:text-amber-400"
+                    title="This transaction will cause the account balance to go below zero"
+                  >
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.168 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 6a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 6zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                    </svg>
+                  </span>
+                )}
+                <div className={`font-semibold ${amountDisplay.className} whitespace-nowrap`}>
+                  {amountDisplay.text}
+                </div>
               </div>
             </div>
           );

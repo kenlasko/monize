@@ -133,18 +133,25 @@ export const AccountRow = memo(function AccountRow({
           </>
         ) : (
           <>
-            <div
-              className={`text-sm font-medium ${
-                Number(account.currentBalance) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
-              }`}
-            >
-              {formatCurrency(account.currentBalance, account.currencyCode)}
-            </div>
-            {density !== 'dense' && account.currencyCode !== defaultCurrency && (
-              <div className="text-xs text-gray-400 dark:text-gray-500">
-                {'\u2248 '}{formatCurrencyBase(convertToDefault(Number(account.currentBalance) || 0, account.currencyCode), defaultCurrency)}
-              </div>
-            )}
+            {(() => {
+              const totalBalance = (Number(account.currentBalance) || 0) + (Number(account.futureTransactionsSum) || 0);
+              return (
+                <>
+                  <div
+                    className={`text-sm font-medium ${
+                      totalBalance >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                    }`}
+                  >
+                    {formatCurrency(totalBalance, account.currencyCode)}
+                  </div>
+                  {density !== 'dense' && account.currencyCode !== defaultCurrency && (
+                    <div className="text-xs text-gray-400 dark:text-gray-500">
+                      {'\u2248 '}{formatCurrencyBase(convertToDefault(totalBalance, account.currencyCode), defaultCurrency)}
+                    </div>
+                  )}
+                </>
+              );
+            })()}
             {density !== 'dense' && account.creditLimit && (
               <div className="text-xs text-gray-500 dark:text-gray-400">
                 Limit: {formatCurrency(account.creditLimit, account.currencyCode)}

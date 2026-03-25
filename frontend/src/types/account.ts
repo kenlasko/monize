@@ -62,6 +62,7 @@ export interface Account {
   amortizationMonths: number | null;
   originalPrincipal: number | null;
   canDelete?: boolean;
+  futureTransactionsSum?: number;
   createdAt: string;
   updatedAt: string;
 }

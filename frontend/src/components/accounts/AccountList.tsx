@@ -226,7 +226,8 @@ export function AccountList({ accounts, brokerageMarketValues, onEdit, onRefresh
           comparison = a.accountType.localeCompare(b.accountType);
           break;
         case 'balance':
-          comparison = Number(a.currentBalance) - Number(b.currentBalance);
+          comparison = ((Number(a.currentBalance) || 0) + (Number(a.futureTransactionsSum) || 0)) -
+            ((Number(b.currentBalance) || 0) + (Number(b.futureTransactionsSum) || 0));
           break;
         case 'status':
           comparison = (a.isClosed ? 1 : 0) - (b.isClosed ? 1 : 0);

@@ -45,13 +45,13 @@ describe('UpcomingBills', () => {
   });
 
   it('renders loading state with title and pulse skeleton', () => {
-    render(<UpcomingBills scheduledTransactions={[]} isLoading={true} maxItems={defaultMaxItems} />);
+    render(<UpcomingBills accounts={[]} scheduledTransactions={[]} isLoading={true} maxItems={defaultMaxItems} />);
     expect(screen.getByText('Upcoming Bills & Deposits')).toBeInTheDocument();
     expect(document.querySelector('.animate-pulse')).toBeInTheDocument();
   });
 
   it('renders empty state when no upcoming items', () => {
-    render(<UpcomingBills scheduledTransactions={[]} isLoading={false} maxItems={defaultMaxItems} />);
+    render(<UpcomingBills accounts={[]} scheduledTransactions={[]} isLoading={false} maxItems={defaultMaxItems} />);
     expect(screen.getByText('No upcoming bills, deposits, or transfers within their reminder windows.')).toBeInTheDocument();
   });
 
@@ -63,7 +63,7 @@ describe('UpcomingBills', () => {
       },
     ] as any[];
 
-    render(<UpcomingBills scheduledTransactions={transactions} isLoading={false} maxItems={defaultMaxItems} />);
+    render(<UpcomingBills accounts={[]} scheduledTransactions={transactions} isLoading={false} maxItems={defaultMaxItems} />);
     expect(screen.getByText('Netflix')).toBeInTheDocument();
     expect(screen.getByText('Tomorrow')).toBeInTheDocument();
     expect(screen.getByText('Bill')).toBeInTheDocument();
@@ -78,7 +78,7 @@ describe('UpcomingBills', () => {
       },
     ] as any[];
 
-    render(<UpcomingBills scheduledTransactions={transactions} isLoading={false} maxItems={defaultMaxItems} />);
+    render(<UpcomingBills accounts={[]} scheduledTransactions={transactions} isLoading={false} maxItems={defaultMaxItems} />);
     expect(screen.getByText('Today')).toBeInTheDocument();
     expect(screen.getByText('Rent')).toBeInTheDocument();
   });
@@ -92,7 +92,7 @@ describe('UpcomingBills', () => {
       },
     ] as any[];
 
-    render(<UpcomingBills scheduledTransactions={transactions} isLoading={false} maxItems={defaultMaxItems} />);
+    render(<UpcomingBills accounts={[]} scheduledTransactions={transactions} isLoading={false} maxItems={defaultMaxItems} />);
     expect(screen.getByText('5 days')).toBeInTheDocument();
   });
 
@@ -103,7 +103,7 @@ describe('UpcomingBills', () => {
       { id: '2', name: 'Spotify', amount: -9.99, currencyCode: 'CAD', nextDueDate: dateStr, isActive: true, autoPost: true },
     ] as any[];
 
-    render(<UpcomingBills scheduledTransactions={transactions} isLoading={false} maxItems={defaultMaxItems} />);
+    render(<UpcomingBills accounts={[]} scheduledTransactions={transactions} isLoading={false} maxItems={defaultMaxItems} />);
     expect(screen.getByText('Total due')).toBeInTheDocument();
   });
 
@@ -113,7 +113,7 @@ describe('UpcomingBills', () => {
       { id: '1', name: 'Salary', amount: 5000, currencyCode: 'CAD', nextDueDate: dateStr, isActive: true, autoPost: true, isTransfer: false },
     ] as any[];
 
-    render(<UpcomingBills scheduledTransactions={transactions} isLoading={false} maxItems={defaultMaxItems} />);
+    render(<UpcomingBills accounts={[]} scheduledTransactions={transactions} isLoading={false} maxItems={defaultMaxItems} />);
     expect(screen.getByText('Deposit')).toBeInTheDocument();
     expect(screen.getByText('Total incoming')).toBeInTheDocument();
   });
@@ -124,7 +124,7 @@ describe('UpcomingBills', () => {
       { id: '1', name: 'Savings Transfer', amount: -500, currencyCode: 'CAD', nextDueDate: dateStr, isActive: true, autoPost: true, isTransfer: true },
     ] as any[];
 
-    render(<UpcomingBills scheduledTransactions={transactions} isLoading={false} maxItems={defaultMaxItems} />);
+    render(<UpcomingBills accounts={[]} scheduledTransactions={transactions} isLoading={false} maxItems={defaultMaxItems} />);
     expect(screen.getByText('Transfer')).toBeInTheDocument();
   });
 
@@ -135,7 +135,7 @@ describe('UpcomingBills', () => {
       { id: '2', name: 'Inactive Bill', amount: -30, currencyCode: 'CAD', nextDueDate: dateStr, isActive: false, autoPost: true },
     ] as any[];
 
-    render(<UpcomingBills scheduledTransactions={transactions} isLoading={false} maxItems={defaultMaxItems} />);
+    render(<UpcomingBills accounts={[]} scheduledTransactions={transactions} isLoading={false} maxItems={defaultMaxItems} />);
     expect(screen.getByText('Active Bill')).toBeInTheDocument();
     expect(screen.queryByText('Inactive Bill')).not.toBeInTheDocument();
   });
@@ -145,12 +145,12 @@ describe('UpcomingBills', () => {
       { id: '1', name: 'Far Future Bill', amount: -50, currencyCode: 'CAD', nextDueDate: futureDateStr(10), isActive: true, autoPost: true, reminderDaysBefore: 3 },
     ] as any[];
 
-    render(<UpcomingBills scheduledTransactions={transactions} isLoading={false} maxItems={defaultMaxItems} />);
+    render(<UpcomingBills accounts={[]} scheduledTransactions={transactions} isLoading={false} maxItems={defaultMaxItems} />);
     expect(screen.getByText('No upcoming bills, deposits, or transfers within their reminder windows.')).toBeInTheDocument();
   });
 
   it('navigates to bills page on title click', () => {
-    render(<UpcomingBills scheduledTransactions={[]} isLoading={false} maxItems={defaultMaxItems} />);
+    render(<UpcomingBills accounts={[]} scheduledTransactions={[]} isLoading={false} maxItems={defaultMaxItems} />);
     fireEvent.click(screen.getByText('Upcoming Bills & Deposits'));
     expect(mockPush).toHaveBeenCalledWith('/bills');
   });
@@ -161,7 +161,7 @@ describe('UpcomingBills', () => {
       { id: '1', name: 'Netflix', amount: -15.99, currencyCode: 'CAD', nextDueDate: dateStr, isActive: true, autoPost: true },
     ] as any[];
 
-    render(<UpcomingBills scheduledTransactions={transactions} isLoading={false} maxItems={defaultMaxItems} />);
+    render(<UpcomingBills accounts={[]} scheduledTransactions={transactions} isLoading={false} maxItems={defaultMaxItems} />);
     fireEvent.click(screen.getByText('View all bills & deposits'));
     expect(mockPush).toHaveBeenCalledWith('/bills');
   });
@@ -176,7 +176,7 @@ describe('UpcomingBills', () => {
       },
     ] as any[];
 
-    render(<UpcomingBills scheduledTransactions={transactions} isLoading={false} maxItems={defaultMaxItems} />);
+    render(<UpcomingBills accounts={[]} scheduledTransactions={transactions} isLoading={false} maxItems={defaultMaxItems} />);
     expect(screen.getByText('AT&T')).toBeInTheDocument();
   });
 
@@ -186,7 +186,7 @@ describe('UpcomingBills', () => {
       { id: '1', name: 'Auto Bill', amount: -50, currencyCode: 'CAD', nextDueDate: dateStr, isActive: true, autoPost: true },
     ] as any[];
 
-    render(<UpcomingBills scheduledTransactions={transactions} isLoading={false} maxItems={defaultMaxItems} />);
+    render(<UpcomingBills accounts={[]} scheduledTransactions={transactions} isLoading={false} maxItems={defaultMaxItems} />);
     expect(screen.queryByText('Manual')).not.toBeInTheDocument();
   });
 
@@ -196,7 +196,7 @@ describe('UpcomingBills', () => {
       { id: '1', name: 'Netflix', amount: -15.99, currencyCode: 'CAD', nextDueDate: dateStr, isActive: true, autoPost: true },
     ] as any[];
 
-    render(<UpcomingBills scheduledTransactions={transactions} isLoading={false} maxItems={defaultMaxItems} />);
+    render(<UpcomingBills accounts={[]} scheduledTransactions={transactions} isLoading={false} maxItems={defaultMaxItems} />);
     // The amount appears in both the item row and the total section
     const amountEls = screen.getAllByText('-$15.99');
     expect(amountEls.length).toBeGreaterThanOrEqual(1);
@@ -209,7 +209,7 @@ describe('UpcomingBills', () => {
       { id: '1', name: 'Salary', amount: 5000, currencyCode: 'CAD', nextDueDate: dateStr, isActive: true, autoPost: true },
     ] as any[];
 
-    render(<UpcomingBills scheduledTransactions={transactions} isLoading={false} maxItems={defaultMaxItems} />);
+    render(<UpcomingBills accounts={[]} scheduledTransactions={transactions} isLoading={false} maxItems={defaultMaxItems} />);
     // The amount appears in both the item row and the total section
     const amountEls = screen.getAllByText('+$5000.00');
     expect(amountEls.length).toBeGreaterThanOrEqual(1);
@@ -222,7 +222,7 @@ describe('UpcomingBills', () => {
       { id: '2', name: 'Sooner Bill', amount: -30, currencyCode: 'CAD', nextDueDate: futureDateStr(1), isActive: true, autoPost: true },
     ] as any[];
 
-    render(<UpcomingBills scheduledTransactions={transactions} isLoading={false} maxItems={defaultMaxItems} />);
+    render(<UpcomingBills accounts={[]} scheduledTransactions={transactions} isLoading={false} maxItems={defaultMaxItems} />);
     const items = screen.getAllByText(/Bill/);
     // The sooner bill should appear before the later one
     const soonerIdx = items.findIndex(el => el.textContent === 'Sooner Bill');
@@ -240,7 +240,7 @@ describe('UpcomingBills', () => {
       },
     ] as any[];
 
-    render(<UpcomingBills scheduledTransactions={transactions} isLoading={false} maxItems={defaultMaxItems} />);
+    render(<UpcomingBills accounts={[]} scheduledTransactions={transactions} isLoading={false} maxItems={defaultMaxItems} />);
     // Should show the override amount (-75), not the default (-100)
     expect(screen.getAllByText('-$75.00').length).toBeGreaterThanOrEqual(1);
     expect(screen.queryByText('-$100.00')).not.toBeInTheDocument();
@@ -256,7 +256,7 @@ describe('UpcomingBills', () => {
       },
     ] as any[];
 
-    render(<UpcomingBills scheduledTransactions={transactions} isLoading={false} maxItems={defaultMaxItems} />);
+    render(<UpcomingBills accounts={[]} scheduledTransactions={transactions} isLoading={false} maxItems={defaultMaxItems} />);
     // Override amount is positive, so it should be classified as a deposit
     expect(screen.getByText('Deposit')).toBeInTheDocument();
   });
@@ -271,7 +271,7 @@ describe('UpcomingBills', () => {
       },
     ] as any[];
 
-    render(<UpcomingBills scheduledTransactions={transactions} isLoading={false} maxItems={defaultMaxItems} />);
+    render(<UpcomingBills accounts={[]} scheduledTransactions={transactions} isLoading={false} maxItems={defaultMaxItems} />);
     expect(screen.getAllByText('-$200.00').length).toBeGreaterThanOrEqual(1);
   });
 
@@ -282,7 +282,7 @@ describe('UpcomingBills', () => {
       nextDueDate: dateStr, isActive: true, autoPost: true,
     })) as any[];
 
-    render(<UpcomingBills scheduledTransactions={transactions} isLoading={false} maxItems={4} />);
+    render(<UpcomingBills accounts={[]} scheduledTransactions={transactions} isLoading={false} maxItems={4} />);
     // Only 4 of 6 items should be visible
     expect(screen.getByText('Bill 1')).toBeInTheDocument();
     expect(screen.getByText('Bill 4')).toBeInTheDocument();
@@ -299,7 +299,7 @@ describe('UpcomingBills', () => {
       { id: '2', name: 'Bill B', amount: -20, currencyCode: 'CAD', nextDueDate: dateStr, isActive: true, autoPost: true },
     ] as any[];
 
-    render(<UpcomingBills scheduledTransactions={transactions} isLoading={false} maxItems={5} />);
+    render(<UpcomingBills accounts={[]} scheduledTransactions={transactions} isLoading={false} maxItems={5} />);
     expect(screen.getByText('Bill A')).toBeInTheDocument();
     expect(screen.getByText('Bill B')).toBeInTheDocument();
     expect(screen.queryByText(/\+\d+ more/)).not.toBeInTheDocument();
@@ -312,7 +312,7 @@ describe('UpcomingBills', () => {
       { id: '2', name: 'Manual Bill', amount: -30, currencyCode: 'CAD', nextDueDate: dateStr, isActive: true, autoPost: false },
     ] as any[];
 
-    render(<UpcomingBills scheduledTransactions={transactions} isLoading={false} maxItems={defaultMaxItems} />);
+    render(<UpcomingBills accounts={[]} scheduledTransactions={transactions} isLoading={false} maxItems={defaultMaxItems} />);
     const billElements = screen.getAllByText(/Bill/);
     const manualIdx = billElements.findIndex(el => el.textContent === 'Manual Bill');
     const autoIdx = billElements.findIndex(el => el.textContent === 'Auto Bill');

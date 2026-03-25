@@ -321,7 +321,9 @@ export function CashFlowForecastChart({
                   const { cx, cy } = props;
                   if (props.index === minBalanceIndex) {
                     const color = summary.minBalance < 0 ? '#ef4444' : '#f59e0b';
-                    const label = formatAxis(summary.minBalance);
+                    const label = Math.abs(summary.minBalance) >= 1000
+                      ? formatAxis(summary.minBalance)
+                      : formatCurrency(summary.minBalance);
                     const labelWidth = label.length * 7 + 14;
                     const labelHeight = 22;
                     const arrowSize = 5;

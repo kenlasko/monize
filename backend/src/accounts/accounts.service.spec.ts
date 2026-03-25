@@ -143,7 +143,7 @@ describe("AccountsService", () => {
         {
           provide: DataSource,
           useValue: {
-            query: jest.fn(),
+            query: jest.fn().mockResolvedValue([]),
             createQueryRunner: jest.fn().mockReturnValue(mockQueryRunner),
           },
         },

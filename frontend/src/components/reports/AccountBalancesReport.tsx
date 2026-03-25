@@ -104,10 +104,10 @@ export function AccountBalancesReport() {
       accs.sort((a, b) => {
         const balA = a.accountSubType === 'INVESTMENT_BROKERAGE'
           ? (brokerageMarketValues.get(a.id) ?? 0)
-          : Math.abs(Number(a.currentBalance));
+          : Math.abs((Number(a.currentBalance) || 0) + (Number(a.futureTransactionsSum) || 0));
         const balB = b.accountSubType === 'INVESTMENT_BROKERAGE'
           ? (brokerageMarketValues.get(b.id) ?? 0)
-          : Math.abs(Number(b.currentBalance));
+          : Math.abs((Number(b.currentBalance) || 0) + (Number(b.futureTransactionsSum) || 0));
         return balB - balA;
       });
     });
@@ -122,7 +122,7 @@ export function AccountBalancesReport() {
     filteredAccounts.forEach((acc) => {
       const rawBalance = acc.accountSubType === 'INVESTMENT_BROKERAGE'
         ? (brokerageMarketValues.get(acc.id) ?? 0)
-        : (Number(acc.currentBalance) || 0);
+        : (Number(acc.currentBalance) || 0) + (Number(acc.futureTransactionsSum) || 0);
       const convertedBalance = convertToDefault(rawBalance, acc.currencyCode);
 
       if (LIABILITY_TYPES.includes(acc.accountType)) {
@@ -135,11 +135,11 @@ export function AccountBalancesReport() {
     return { assets, liabilities, netWorth: assets - liabilities };
   }, [filteredAccounts, brokerageMarketValues, convertToDefault]);
 
-  // Helper to get effective balance for an account
+  // Helper to get effective balance for an account (includes future-dated transactions)
   const getEffectiveBalance = useCallback((acc: Account): number => {
     return acc.accountSubType === 'INVESTMENT_BROKERAGE'
       ? (brokerageMarketValues.get(acc.id) ?? 0)
-      : (Number(acc.currentBalance) || 0);
+      : (Number(acc.currentBalance) || 0) + (Number(acc.futureTransactionsSum) || 0);
   }, [brokerageMarketValues]);
 
   // Build chart data
@@ -385,7 +385,7 @@ export function AccountBalancesReport() {
             const groupTotal = accs.reduce((sum, acc) => {
               const rawBalance = acc.accountSubType === 'INVESTMENT_BROKERAGE'
                 ? (brokerageMarketValues.get(acc.id) ?? 0)
-                : (Number(acc.currentBalance) || 0);
+                : (Number(acc.currentBalance) || 0) + (Number(acc.futureTransactionsSum) || 0);
               return sum + convertToDefault(rawBalance, acc.currencyCode);
             }, 0);
 
@@ -406,7 +406,7 @@ export function AccountBalancesReport() {
                     const isBrokerage = acc.accountSubType === 'INVESTMENT_BROKERAGE';
                     const effectiveBalance = isBrokerage
                       ? (brokerageMarketValues.get(acc.id) ?? 0)
-                      : (Number(acc.currentBalance) || 0);
+                      : (Number(acc.currentBalance) || 0) + (Number(acc.futureTransactionsSum) || 0);
                     return (
                       <button
                         key={acc.id}

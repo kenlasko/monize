@@ -113,9 +113,10 @@ function AccountsContent() {
 
     activeAccounts.forEach((a) => {
       // For brokerage accounts, use portfolio market value instead of currentBalance
+      // For other accounts, include future-dated transactions in the balance
       const rawBalance = a.accountSubType === 'INVESTMENT_BROKERAGE'
         ? (brokerageMarketValues.get(a.id) ?? 0)
-        : (Number(a.currentBalance) || 0);
+        : (Number(a.currentBalance) || 0) + (Number(a.futureTransactionsSum) || 0);
       // Convert to default currency for accurate aggregation
       const effectiveBalance = convertToDefault(rawBalance, a.currencyCode);
 
