@@ -3,6 +3,8 @@ import { BadRequestException } from "@nestjs/common";
 import { AccountsController } from "./accounts.controller";
 import { AccountsService } from "./accounts.service";
 import { AccountExportService } from "./account-export.service";
+import { LoanPaymentDetectorService } from "./loan-payment-detector.service";
+import { LoanPaymentSetupService } from "./loan-payment-setup.service";
 
 describe("AccountsController", () => {
   let controller: AccountsController;
@@ -44,6 +46,14 @@ describe("AccountsController", () => {
         {
           provide: AccountExportService,
           useValue: mockExportService,
+        },
+        {
+          provide: LoanPaymentDetectorService,
+          useValue: { detectPaymentPattern: jest.fn() },
+        },
+        {
+          provide: LoanPaymentSetupService,
+          useValue: { setupLoanPayments: jest.fn() },
         },
       ],
     }).compile();
