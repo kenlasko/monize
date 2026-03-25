@@ -13,12 +13,12 @@ vi.mock('recharts', () => ({
   ReferenceLine: () => <div data-testid="reference-line" />,
 }));
 
-const mockFormatCurrencyCompact = vi.fn((n: number, _code?: string) => `$${n.toFixed(0)}`);
+const mockFormatCurrency = vi.fn((n: number, _code?: string) => `$${n.toFixed(2)}`);
 const mockFormatCurrencyAxis = vi.fn((n: number, _code?: string) => `$${n}`);
 
 vi.mock('@/hooks/useNumberFormat', () => ({
   useNumberFormat: () => ({
-    formatCurrencyCompact: mockFormatCurrencyCompact,
+    formatCurrency: mockFormatCurrency,
     formatCurrencyAxis: mockFormatCurrencyAxis,
   }),
 }));
@@ -55,9 +55,9 @@ describe('BalanceHistoryChart', () => {
     expect(screen.getByText('Starting')).toBeInTheDocument();
     expect(screen.getByText('Current')).toBeInTheDocument();
     expect(screen.getByText('Min Balance')).toBeInTheDocument();
-    expect(screen.getByText('$1000')).toBeInTheDocument();
-    expect(screen.getByText('$900')).toBeInTheDocument();
-    expect(screen.getByText('$750')).toBeInTheDocument();
+    expect(screen.getByText('$1000.00')).toBeInTheDocument();
+    expect(screen.getByText('$900.00')).toBeInTheDocument();
+    expect(screen.getByText('$750.00')).toBeInTheDocument();
   });
 
   it('shows "Lowest" label and warning when balance goes negative', () => {
@@ -129,14 +129,14 @@ describe('BalanceHistoryChart', () => {
 
     expect(screen.getByText('Ending')).toBeInTheDocument();
     // Starting = 2000, Current = 1800 (today or before), Ending = 1900, Min = 1500
-    expect(screen.getByText('$2000')).toBeInTheDocument();
-    expect(screen.getByText('$1800')).toBeInTheDocument();
-    expect(screen.getByText('$1900')).toBeInTheDocument();
-    expect(screen.getByText('$1500')).toBeInTheDocument();
+    expect(screen.getByText('$2000.00')).toBeInTheDocument();
+    expect(screen.getByText('$1800.00')).toBeInTheDocument();
+    expect(screen.getByText('$1900.00')).toBeInTheDocument();
+    expect(screen.getByText('$1500.00')).toBeInTheDocument();
   });
 
   it('passes currencyCode to formatting functions', () => {
-    mockFormatCurrencyCompact.mockClear();
+    mockFormatCurrency.mockClear();
 
     render(
       <BalanceHistoryChart
@@ -149,8 +149,8 @@ describe('BalanceHistoryChart', () => {
       />
     );
 
-    // Summary footer calls formatCurrency (which wraps formatCurrencyCompact with currencyCode)
-    const eurCalls = mockFormatCurrencyCompact.mock.calls.filter(
+    // Summary footer calls formatCurrency with currencyCode
+    const eurCalls = mockFormatCurrency.mock.calls.filter(
       ([, code]) => code === 'EUR',
     );
     expect(eurCalls.length).toBeGreaterThan(0);

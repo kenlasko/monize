@@ -13,12 +13,12 @@ vi.mock('recharts', () => ({
   ReferenceLine: () => <div data-testid="reference-line" />,
 }));
 
-const mockFormatCurrencyCompact = vi.fn((n: number, _code?: string) => `$${n.toFixed(0)}`);
+const mockFormatCurrency = vi.fn((n: number, _code?: string) => `$${n.toFixed(2)}`);
 const mockFormatCurrencyAxis = vi.fn((n: number, _code?: string) => `$${n}`);
 
 vi.mock('@/hooks/useNumberFormat', () => ({
   useNumberFormat: () => ({
-    formatCurrencyCompact: mockFormatCurrencyCompact,
+    formatCurrency: mockFormatCurrency,
     formatCurrencyAxis: mockFormatCurrencyAxis,
   }),
 }));
@@ -141,9 +141,9 @@ describe('CashFlowForecastChart', () => {
     expect(screen.getByText('Starting')).toBeInTheDocument();
     expect(screen.getByText('Ending')).toBeInTheDocument();
     expect(screen.getByText('Min Balance')).toBeInTheDocument();
-    expect(screen.getByText('$1000')).toBeInTheDocument();
-    expect(screen.getByText('$750')).toBeInTheDocument();
-    expect(screen.getByText('$650')).toBeInTheDocument();
+    expect(screen.getByText('$1000.00')).toBeInTheDocument();
+    expect(screen.getByText('$750.00')).toBeInTheDocument();
+    expect(screen.getByText('$650.00')).toBeInTheDocument();
   });
 
   it('shows scheduled transaction count when forecasted transactions exist', () => {
@@ -280,7 +280,7 @@ describe('CashFlowForecastChart', () => {
 
   describe('currency-aware formatting', () => {
     it('uses account currency for single-currency accounts', () => {
-      mockFormatCurrencyCompact.mockClear();
+      mockFormatCurrency.mockClear();
       const accounts = [makeAccount({ currencyCode: 'USD' })];
 
       const forecastData = [
@@ -300,14 +300,14 @@ describe('CashFlowForecastChart', () => {
       );
 
       // Summary footer calls formatCurrencyCompact with the account's currency
-      const usdCalls = mockFormatCurrencyCompact.mock.calls.filter(
+      const usdCalls = mockFormatCurrency.mock.calls.filter(
         ([, code]) => code === 'USD',
       );
       expect(usdCalls.length).toBeGreaterThan(0);
     });
 
     it('uses default currency when accounts have mixed currencies', () => {
-      mockFormatCurrencyCompact.mockClear();
+      mockFormatCurrency.mockClear();
       const accounts = [
         makeAccount({ id: 'a1', currencyCode: 'USD' }),
         makeAccount({ id: 'a2', name: 'Euro Account', currencyCode: 'EUR' }),
@@ -330,7 +330,7 @@ describe('CashFlowForecastChart', () => {
       );
 
       // With mixed currencies, should format in default currency (CAD)
-      const cadCalls = mockFormatCurrencyCompact.mock.calls.filter(
+      const cadCalls = mockFormatCurrency.mock.calls.filter(
         ([, code]) => code === 'CAD',
       );
       expect(cadCalls.length).toBeGreaterThan(0);

@@ -28,9 +28,21 @@
 /* Dark mode variant */
 @variant dark (&:where(.dark, .dark *));
 
-/* Base styles */
+/* Base styles -- extend background behind display cutouts */
+html {
+  @apply bg-gray-50;
+}
+
+.dark html {
+  @apply bg-gray-900;
+}
+
 body {
   @apply bg-gray-50 text-gray-900;
+  padding-top: env(safe-area-inset-top);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 .dark body {

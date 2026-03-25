@@ -63,11 +63,11 @@ export function BalanceHistoryChart({
   isLoading,
   currencyCode,
 }: BalanceHistoryChartProps) {
-  const { formatCurrencyCompact, formatCurrencyAxis } = useNumberFormat();
+  const { formatCurrency: formatCurrencyFull, formatCurrencyAxis } = useNumberFormat();
 
   const formatCurrency = useCallback(
-    (value: number) => formatCurrencyCompact(value, currencyCode),
-    [formatCurrencyCompact, currencyCode],
+    (value: number) => formatCurrencyFull(value, currencyCode),
+    [formatCurrencyFull, currencyCode],
   );
 
   const formatAxis = useCallback(

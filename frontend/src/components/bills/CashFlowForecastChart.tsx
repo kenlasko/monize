@@ -113,7 +113,7 @@ export function CashFlowForecastChart({
   futureTransactions = [],
   isLoading,
 }: CashFlowForecastChartProps) {
-  const { formatCurrencyCompact, formatCurrencyAxis } = useNumberFormat();
+  const { formatCurrency: formatCurrencyFull, formatCurrencyAxis } = useNumberFormat();
   const { convertToDefault, defaultCurrency } = useExchangeRates();
   const [selectedPeriod, setSelectedPeriod] = useState<ForecastPeriod>(() => getStoredPeriod());
   const [selectedAccountId, setSelectedAccountId] = useState<string>(() => getStoredAccountId());
@@ -151,8 +151,8 @@ export function CashFlowForecastChart({
   }, [accounts, selectedAccountId, defaultCurrency]);
 
   const formatCurrency = useCallback(
-    (value: number) => formatCurrencyCompact(value, chartCurrency),
-    [formatCurrencyCompact, chartCurrency],
+    (value: number) => formatCurrencyFull(value, chartCurrency),
+    [formatCurrencyFull, chartCurrency],
   );
 
   const formatAxis = useCallback(
