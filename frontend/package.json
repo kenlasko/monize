@@ -33,7 +33,8 @@
     "zustand": "^5.0.11"
   },
   "overrides": {
-    "undici": "^7.24.1"
+    "undici": "^7.24.1",
+    "picomatch": "4.0.4"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.9.1",
