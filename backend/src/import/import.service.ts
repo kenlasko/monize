@@ -448,6 +448,10 @@ export class ImportService {
     // Post-import processing
     await this.postImportProcessing(userId, hasInvestment, affectedAccountIds);
 
+    // Detect loan/mortgage accounts needing payment setup
+    importResult.loanAccountsNeedingSetup =
+      await this.findLoanAccountsNeedingSetup(userId, affectedAccountIds);
+
     return importResult;
   }
 
@@ -1303,6 +1307,10 @@ export class ImportService {
     // Post-import processing
     await this.postImportProcessing(userId, isInvestment, affectedAccountIds);
 
+    // Detect loan/mortgage accounts needing payment setup
+    importResult.loanAccountsNeedingSetup =
+      await this.findLoanAccountsNeedingSetup(userId, affectedAccountIds);
+
     return importResult;
   }
 
@@ -1503,6 +1511,43 @@ export class ImportService {
           ),
         );
     }
+  }
+
+  /**
+   * Find loan/mortgage accounts among the affected accounts that do not yet
+   * have a scheduled payment configured. Returns info for the frontend to
+   * prompt the user to set up recurring payments.
+   */
+  private async findLoanAccountsNeedingSetup(
+    userId: string,
+    affectedAccountIds: Set<string>,
+  ): Promise<
+    Array<{ accountId: string; accountName: string; accountType: string }>
+  > {
+    if (affectedAccountIds.size === 0) return [];
+
+    const accounts = await this.accountsRepository.find({
+      where: { userId },
+    });
+
+    const loanTypes = new Set([
+      AccountType.LOAN,
+      AccountType.MORTGAGE,
+      AccountType.LINE_OF_CREDIT,
+    ]);
+
+    return accounts
+      .filter(
+        (a) =>
+          affectedAccountIds.has(a.id) &&
+          loanTypes.has(a.accountType) &&
+          !a.scheduledTransactionId,
+      )
+      .map((a) => ({
+        accountId: a.id,
+        accountName: a.name,
+        accountType: a.accountType,
+      }));
   }
 
   /**

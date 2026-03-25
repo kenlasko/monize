@@ -11,6 +11,9 @@ import {
   MortgageAmortizationPreview,
   UpdateMortgageRateData,
   UpdateMortgageRateResponse,
+  DetectedLoanPayment,
+  SetupLoanPaymentsData,
+  SetupLoanPaymentsResponse,
 } from '@/types/account';
 import { getCached, setCache, invalidateCache } from './apiCache';
 
@@ -133,6 +136,19 @@ export const accountsApi = {
   // Update mortgage interest rate
   updateMortgageRate: async (id: string, data: UpdateMortgageRateData): Promise<UpdateMortgageRateResponse> => {
     const response = await apiClient.patch<UpdateMortgageRateResponse>(`/accounts/${id}/mortgage-rate`, data);
+    invalidateCache('accounts:');
+    return response.data;
+  },
+
+  // Detect loan payment patterns from transaction history
+  detectLoanPayments: async (id: string): Promise<DetectedLoanPayment | null> => {
+    const response = await apiClient.get<DetectedLoanPayment | null>(`/accounts/${id}/detect-loan-payments`);
+    return response.data;
+  },
+
+  // Set up scheduled loan/mortgage payments
+  setupLoanPayments: async (id: string, data: SetupLoanPaymentsData): Promise<SetupLoanPaymentsResponse> => {
+    const response = await apiClient.post<SetupLoanPaymentsResponse>(`/accounts/${id}/setup-loan-payments`, data);
     invalidateCache('accounts:');
     return response.data;
   },

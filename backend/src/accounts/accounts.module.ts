@@ -7,6 +7,8 @@ import { Category } from "../categories/entities/category.entity";
 import { AccountsService } from "./accounts.service";
 import { AccountExportService } from "./account-export.service";
 import { LoanMortgageAccountService } from "./loan-mortgage-account.service";
+import { LoanPaymentDetectorService } from "./loan-payment-detector.service";
+import { LoanPaymentSetupService } from "./loan-payment-setup.service";
 import { AccountsController } from "./accounts.controller";
 import { MortgageReminderService } from "./mortgage-reminder.service";
 import { CategoriesModule } from "../categories/categories.module";
@@ -29,6 +31,8 @@ import { NetWorthModule } from "../net-worth/net-worth.module";
     AccountsService,
     AccountExportService,
     LoanMortgageAccountService,
+    LoanPaymentDetectorService,
+    LoanPaymentSetupService,
     MortgageReminderService,
   ],
   controllers: [AccountsController],

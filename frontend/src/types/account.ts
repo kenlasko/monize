@@ -166,3 +166,45 @@ export interface UpdateMortgageRateResponse {
   interestPayment: number;
   effectiveDate: string;
 }
+
+// Loan payment detection types
+export interface DetectedLoanPayment {
+  paymentAmount: number;
+  paymentFrequency: string;
+  confidence: number;
+  sourceAccountId: string | null;
+  sourceAccountName: string | null;
+  interestCategoryId: string | null;
+  interestCategoryName: string | null;
+  principalCategoryId: string | null;
+  estimatedInterestRate: number | null;
+  suggestedNextDueDate: string;
+  firstPaymentDate: string;
+  lastPaymentDate: string;
+  paymentCount: number;
+  currentBalance: number;
+  isMortgage: boolean;
+}
+
+export interface SetupLoanPaymentsData {
+  paymentAmount: number;
+  paymentFrequency: string;
+  sourceAccountId: string;
+  nextDueDate: string;
+  interestRate?: number;
+  interestCategoryId?: string;
+  payeeName?: string;
+  autoPost?: boolean;
+  isCanadianMortgage?: boolean;
+  isVariableRate?: boolean;
+  amortizationMonths?: number;
+  termMonths?: number;
+}
+
+export interface SetupLoanPaymentsResponse {
+  scheduledTransactionId: string;
+  accountId: string;
+  paymentAmount: number;
+  paymentFrequency: string;
+  nextDueDate: string;
+}

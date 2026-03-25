@@ -1,0 +1,610 @@
+import { Injectable, Logger, NotFoundException } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { Account, AccountType } from "./entities/account.entity";
+import { Transaction } from "../transactions/entities/transaction.entity";
+import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
+
+export interface DetectedLoanPayment {
+  /** Detected regular payment amount (positive) */
+  paymentAmount: number;
+  /** Detected payment frequency */
+  paymentFrequency: string;
+  /** Confidence score 0-1 for the detection */
+  confidence: number;
+  /** Source account ID (where payments come from) */
+  sourceAccountId: string | null;
+  /** Source account name */
+  sourceAccountName: string | null;
+  /** Detected interest category ID (if splits found) */
+  interestCategoryId: string | null;
+  /** Detected interest category name */
+  interestCategoryName: string | null;
+  /** Detected principal category ID (if splits found) */
+  principalCategoryId: string | null;
+  /** Estimated interest rate (annual percentage, null if cannot determine) */
+  estimatedInterestRate: number | null;
+  /** Suggested next due date based on last payment */
+  suggestedNextDueDate: string;
+  /** Date of the first detected payment */
+  firstPaymentDate: string;
+  /** Date of the last detected payment */
+  lastPaymentDate: string;
+  /** Number of payments analyzed */
+  paymentCount: number;
+  /** Current loan balance (absolute value) */
+  currentBalance: number;
+  /** Whether the account is a mortgage */
+  isMortgage: boolean;
+}
+
+interface PaymentRecord {
+  date: string;
+  amount: number;
+  sourceAccountId: string | null;
+  sourceAccountName: string | null;
+  interestAmount: number | null;
+  principalAmount: number | null;
+  interestCategoryId: string | null;
+  interestCategoryName: string | null;
+}
+
+@Injectable()
+export class LoanPaymentDetectorService {
+  private readonly logger = new Logger(LoanPaymentDetectorService.name);
+
+  constructor(
+    @InjectRepository(Account)
+    private accountsRepository: Repository<Account>,
+    @InjectRepository(Transaction)
+    private transactionRepository: Repository<Transaction>,
+  ) {}
+
+  /**
+   * Analyze transactions on a loan/mortgage account to detect payment patterns.
+   * Looks at incoming transfers (payments) to determine amount, frequency,
+   * source account, and interest/principal splits.
+   */
+  async detectPaymentPattern(
+    userId: string,
+    accountId: string,
+  ): Promise<DetectedLoanPayment | null> {
+    const account = await this.accountsRepository.findOne({
+      where: { id: accountId, userId },
+    });
+
+    if (!account) {
+      throw new NotFoundException("Account not found");
+    }
+
+    if (
+      account.accountType !== AccountType.LOAN &&
+      account.accountType !== AccountType.MORTGAGE &&
+      account.accountType !== AccountType.LINE_OF_CREDIT
+    ) {
+      return null;
+    }
+
+    // Find all transactions on this loan account that look like payments
+    // Payments to a loan are positive amounts (reducing the negative balance)
+    const transactions = await this.transactionRepository.find({
+      where: { accountId, userId },
+      relations: ["account"],
+      order: { transactionDate: "ASC" },
+    });
+
+    if (transactions.length === 0) {
+      return null;
+    }
+
+    // Build payment records from transactions
+    const payments = await this.buildPaymentRecords(
+      userId,
+      accountId,
+      transactions,
+    );
+
+    if (payments.length < 2) {
+      // Need at least 2 payments to detect a pattern
+      return payments.length === 1
+        ? this.buildSinglePaymentResult(account, payments[0])
+        : null;
+    }
+
+    // Detect the regular payment amount (most common amount)
+    const regularAmount = this.detectRegularAmount(payments);
+    if (!regularAmount) {
+      return null;
+    }
+
+    // Filter to only regular payments (within 5% of detected amount)
+    const regularPayments = payments.filter(
+      (p) => Math.abs(p.amount - regularAmount) / regularAmount < 0.05,
+    );
+
+    if (regularPayments.length < 2) {
+      return null;
+    }
+
+    // Detect frequency from payment intervals
+    const frequency = this.detectFrequency(regularPayments);
+    const confidence = this.calculateConfidence(
+      regularPayments,
+      payments,
+      regularAmount,
+      frequency,
+    );
+
+    // Determine source account (most common)
+    const sourceAccount = this.detectSourceAccount(regularPayments);
+
+    // Detect interest/principal split info
+    const splitInfo = this.detectSplitInfo(regularPayments);
+
+    // Estimate interest rate if we have split data
+    const estimatedRate = this.estimateInterestRate(
+      account,
+      regularPayments,
+      regularAmount,
+      frequency,
+    );
+
+    // Calculate next due date
+    const lastPayment = regularPayments[regularPayments.length - 1];
+    const suggestedNextDueDate = this.calculateNextDueDate(
+      lastPayment.date,
+      frequency,
+    );
+
+    return {
+      paymentAmount: regularAmount,
+      paymentFrequency: frequency,
+      confidence,
+      sourceAccountId: sourceAccount.id,
+      sourceAccountName: sourceAccount.name,
+      interestCategoryId: splitInfo.interestCategoryId,
+      interestCategoryName: splitInfo.interestCategoryName,
+      principalCategoryId: splitInfo.principalCategoryId,
+      estimatedInterestRate: estimatedRate,
+      suggestedNextDueDate,
+      firstPaymentDate: regularPayments[0].date,
+      lastPaymentDate: lastPayment.date,
+      paymentCount: regularPayments.length,
+      currentBalance: Math.abs(Number(account.currentBalance)),
+      isMortgage: account.accountType === AccountType.MORTGAGE,
+    };
+  }
+
+  /**
+   * Build payment records by examining transactions and their linked transfers/splits.
+   */
+  private async buildPaymentRecords(
+    userId: string,
+    accountId: string,
+    transactions: Transaction[],
+  ): Promise<PaymentRecord[]> {
+    const payments: PaymentRecord[] = [];
+
+    for (const tx of transactions) {
+      const amount = Number(tx.amount);
+
+      // Payments to a loan account are positive (reducing the negative liability)
+      if (amount <= 0) continue;
+
+      let sourceAccountId: string | null = null;
+      let sourceAccountName: string | null = null;
+      let interestAmount: number | null = null;
+      let principalAmount: number | null = null;
+      let interestCategoryId: string | null = null;
+      let interestCategoryName: string | null = null;
+
+      // Check if this is a transfer - find the linked transaction
+      if (tx.isTransfer && tx.linkedTransactionId) {
+        const linkedTx = await this.transactionRepository.findOne({
+          where: { id: tx.linkedTransactionId, userId },
+          relations: ["account"],
+        });
+        if (linkedTx) {
+          sourceAccountId = linkedTx.accountId;
+          sourceAccountName = linkedTx.account?.name || null;
+
+          // Check if the source transaction has splits (principal + interest)
+          if (linkedTx.isSplit) {
+            const splits = await this.transactionRepository.manager.find(
+              TransactionSplit,
+              {
+                where: { transactionId: linkedTx.id },
+                relations: ["category"],
+              },
+            );
+            for (const split of splits) {
+              const splitAmount = Math.abs(Number(split.amount));
+              if (split.transferAccountId === accountId) {
+                // This split transfers to the loan account = principal
+                principalAmount = splitAmount;
+              } else if (split.categoryId) {
+                // This split has a category = likely interest
+                interestAmount = splitAmount;
+                interestCategoryId = split.categoryId;
+                interestCategoryName = split.category?.name || null;
+              }
+            }
+          }
+        }
+      }
+
+      payments.push({
+        date: tx.transactionDate,
+        amount,
+        sourceAccountId,
+        sourceAccountName,
+        interestAmount,
+        principalAmount,
+        interestCategoryId,
+        interestCategoryName,
+      });
+    }
+
+    return payments;
+  }
+
+  /**
+   * Detect the most common payment amount (the regular payment).
+   * Groups amounts within 1 cent tolerance and returns the mode.
+   */
+  private detectRegularAmount(payments: PaymentRecord[]): number | null {
+    // Round amounts to 2 decimal places and count occurrences
+    const amountCounts = new Map<number, number>();
+    for (const p of payments) {
+      const rounded = Math.round(p.amount * 100) / 100;
+      amountCounts.set(rounded, (amountCounts.get(rounded) || 0) + 1);
+    }
+
+    // Find the most frequent amount
+    let maxCount = 0;
+    let regularAmount: number | null = null;
+    for (const [amount, count] of amountCounts) {
+      if (count > maxCount) {
+        maxCount = count;
+        regularAmount = amount;
+      }
+    }
+
+    // Require at least 2 occurrences of the same amount
+    if (maxCount < 2) {
+      // Try grouping within 5% tolerance
+      return this.detectRegularAmountFuzzy(payments);
+    }
+
+    return regularAmount;
+  }
+
+  /**
+   * Fuzzy amount detection - groups amounts within 5% of median.
+   */
+  private detectRegularAmountFuzzy(payments: PaymentRecord[]): number | null {
+    const amounts = [...payments.map((p) => p.amount)].sort((a, b) => a - b);
+    const median = amounts[Math.floor(amounts.length / 2)];
+
+    const nearMedian = amounts.filter(
+      (a) => Math.abs(a - median) / median < 0.05,
+    );
+
+    if (nearMedian.length >= 2) {
+      // Return the average of the near-median amounts
+      const sum = nearMedian.reduce((s, a) => s + a, 0);
+      return Math.round((sum / nearMedian.length) * 100) / 100;
+    }
+
+    return null;
+  }
+
+  /**
+   * Detect payment frequency from intervals between payment dates.
+   */
+  private detectFrequency(payments: PaymentRecord[]): string {
+    const intervals: number[] = [];
+    for (let i = 1; i < payments.length; i++) {
+      const prev = new Date(payments[i - 1].date);
+      const curr = new Date(payments[i].date);
+      const diffDays = Math.round(
+        (curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24),
+      );
+      intervals.push(diffDays);
+    }
+
+    // Calculate median interval
+    const sorted = [...intervals].sort((a, b) => a - b);
+    const medianInterval = sorted[Math.floor(sorted.length / 2)];
+
+    // Map interval to frequency
+    if (medianInterval <= 10) return "WEEKLY";
+    if (medianInterval <= 18) return "BIWEEKLY";
+    if (medianInterval <= 21) return "SEMIMONTHLY";
+    if (medianInterval <= 45) return "MONTHLY";
+    if (medianInterval <= 100) return "QUARTERLY";
+    return "YEARLY";
+  }
+
+  /**
+   * Calculate confidence score based on how consistent the payments are.
+   */
+  private calculateConfidence(
+    regularPayments: PaymentRecord[],
+    allPayments: PaymentRecord[],
+    regularAmount: number,
+    frequency: string,
+  ): number {
+    let score = 0;
+
+    // 1. What percentage of all payments match the regular amount? (0-0.4)
+    const matchRatio = regularPayments.length / allPayments.length;
+    score += matchRatio * 0.4;
+
+    // 2. How consistent are the intervals? (0-0.3)
+    const expectedDays = this.getExpectedIntervalDays(frequency);
+    const intervals: number[] = [];
+    for (let i = 1; i < regularPayments.length; i++) {
+      const prev = new Date(regularPayments[i - 1].date);
+      const curr = new Date(regularPayments[i].date);
+      const diffDays =
+        (curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24);
+      intervals.push(diffDays);
+    }
+
+    if (intervals.length > 0) {
+      const avgDeviation =
+        intervals.reduce((sum, d) => sum + Math.abs(d - expectedDays), 0) /
+        intervals.length;
+      // Allow up to 5 days deviation for full score
+      const intervalScore = Math.max(0, 1 - avgDeviation / 10);
+      score += intervalScore * 0.3;
+    }
+
+    // 3. Number of payments (more = more confident) (0-0.2)
+    const countScore = Math.min(1, regularPayments.length / 12);
+    score += countScore * 0.2;
+
+    // 4. Exact amount match bonus (0-0.1)
+    const exactMatches = regularPayments.filter(
+      (p) => Math.round(p.amount * 100) === Math.round(regularAmount * 100),
+    ).length;
+    const exactRatio = exactMatches / regularPayments.length;
+    score += exactRatio * 0.1;
+
+    return Math.round(score * 100) / 100;
+  }
+
+  private getExpectedIntervalDays(frequency: string): number {
+    switch (frequency) {
+      case "WEEKLY":
+        return 7;
+      case "BIWEEKLY":
+        return 14;
+      case "SEMIMONTHLY":
+        return 15;
+      case "MONTHLY":
+        return 30;
+      case "QUARTERLY":
+        return 91;
+      case "YEARLY":
+        return 365;
+      default:
+        return 30;
+    }
+  }
+
+  /**
+   * Determine the most common source account for payments.
+   */
+  private detectSourceAccount(payments: PaymentRecord[]): {
+    id: string | null;
+    name: string | null;
+  } {
+    const counts = new Map<string, { count: number; name: string | null }>();
+    for (const p of payments) {
+      if (p.sourceAccountId) {
+        const existing = counts.get(p.sourceAccountId);
+        if (existing) {
+          existing.count++;
+        } else {
+          counts.set(p.sourceAccountId, {
+            count: 1,
+            name: p.sourceAccountName,
+          });
+        }
+      }
+    }
+
+    let bestId: string | null = null;
+    let bestName: string | null = null;
+    let bestCount = 0;
+    for (const [id, { count, name }] of counts) {
+      if (count > bestCount) {
+        bestCount = count;
+        bestId = id;
+        bestName = name;
+      }
+    }
+
+    return { id: bestId, name: bestName };
+  }
+
+  /**
+   * Detect principal/interest split information from payment records.
+   */
+  private detectSplitInfo(payments: PaymentRecord[]): {
+    interestCategoryId: string | null;
+    interestCategoryName: string | null;
+    principalCategoryId: string | null;
+  } {
+    // Find the most common interest category
+    const categoryCounts = new Map<
+      string,
+      { count: number; name: string | null }
+    >();
+    for (const p of payments) {
+      if (p.interestCategoryId) {
+        const existing = categoryCounts.get(p.interestCategoryId);
+        if (existing) {
+          existing.count++;
+        } else {
+          categoryCounts.set(p.interestCategoryId, {
+            count: 1,
+            name: p.interestCategoryName,
+          });
+        }
+      }
+    }
+
+    let interestCategoryId: string | null = null;
+    let interestCategoryName: string | null = null;
+    let bestCount = 0;
+    for (const [id, { count, name }] of categoryCounts) {
+      if (count > bestCount) {
+        bestCount = count;
+        interestCategoryId = id;
+        interestCategoryName = name;
+      }
+    }
+
+    return {
+      interestCategoryId,
+      interestCategoryName,
+      // Principal category is not used in the current schema
+      // (principal goes as a transfer to the loan account)
+      principalCategoryId: null,
+    };
+  }
+
+  /**
+   * Estimate the annual interest rate from payment data.
+   * Uses the relationship: interest = balance * (annual_rate / periods_per_year)
+   *
+   * If split data is available, uses the interest portion directly.
+   * Otherwise, tries to estimate from balance changes.
+   */
+  private estimateInterestRate(
+    account: Account,
+    payments: PaymentRecord[],
+    regularAmount: number,
+    frequency: string,
+  ): number | null {
+    // Try to estimate from split data first
+    const paymentsWithSplits = payments.filter(
+      (p) => p.interestAmount !== null && p.principalAmount !== null,
+    );
+
+    if (paymentsWithSplits.length >= 2) {
+      // Use the earliest payments for best accuracy (balance is closest to original)
+      const earlyPayments = paymentsWithSplits.slice(0, 6);
+      const rates: number[] = [];
+      const periodsPerYear = this.getPeriodsPerYear(frequency);
+
+      // We don't know the exact balance at each point, but we can estimate
+      // from the opening balance and principal payments made
+      let estimatedBalance = Math.abs(Number(account.openingBalance));
+
+      for (const p of earlyPayments) {
+        if (estimatedBalance <= 0 || !p.interestAmount) continue;
+        const periodicRate = p.interestAmount / estimatedBalance;
+        const annualRate = periodicRate * periodsPerYear * 100;
+        if (annualRate > 0 && annualRate < 50) {
+          rates.push(annualRate);
+        }
+        estimatedBalance -= p.principalAmount || 0;
+      }
+
+      if (rates.length > 0) {
+        const avgRate = rates.reduce((s, r) => s + r, 0) / rates.length;
+        return Math.round(avgRate * 100) / 100;
+      }
+    }
+
+    return null;
+  }
+
+  private getPeriodsPerYear(frequency: string): number {
+    switch (frequency) {
+      case "WEEKLY":
+        return 52;
+      case "BIWEEKLY":
+        return 26;
+      case "SEMIMONTHLY":
+        return 24;
+      case "MONTHLY":
+        return 12;
+      case "QUARTERLY":
+        return 4;
+      case "YEARLY":
+        return 1;
+      default:
+        return 12;
+    }
+  }
+
+  /**
+   * Calculate the next due date by advancing one period from the last payment date.
+   */
+  private calculateNextDueDate(lastDate: string, frequency: string): string {
+    const date = new Date(lastDate);
+
+    switch (frequency) {
+      case "WEEKLY":
+        date.setDate(date.getDate() + 7);
+        break;
+      case "BIWEEKLY":
+        date.setDate(date.getDate() + 14);
+        break;
+      case "SEMIMONTHLY":
+        if (date.getDate() <= 15) {
+          // Move to end of month
+          date.setMonth(date.getMonth() + 1, 0);
+        } else {
+          // Move to 15th of next month
+          date.setMonth(date.getMonth() + 1, 15);
+        }
+        break;
+      case "MONTHLY":
+        date.setMonth(date.getMonth() + 1);
+        break;
+      case "QUARTERLY":
+        date.setMonth(date.getMonth() + 3);
+        break;
+      case "YEARLY":
+        date.setFullYear(date.getFullYear() + 1);
+        break;
+    }
+
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }
+
+  /**
+   * Build a result from a single payment when only one exists.
+   */
+  private buildSinglePaymentResult(
+    account: Account,
+    payment: PaymentRecord,
+  ): DetectedLoanPayment {
+    return {
+      paymentAmount: payment.amount,
+      paymentFrequency: "MONTHLY", // Default assumption
+      confidence: 0.2,
+      sourceAccountId: payment.sourceAccountId,
+      sourceAccountName: payment.sourceAccountName,
+      interestCategoryId: payment.interestCategoryId,
+      interestCategoryName: payment.interestCategoryName,
+      principalCategoryId: null,
+      estimatedInterestRate: null,
+      suggestedNextDueDate: this.calculateNextDueDate(payment.date, "MONTHLY"),
+      firstPaymentDate: payment.date,
+      lastPaymentDate: payment.date,
+      paymentCount: 1,
+      currentBalance: Math.abs(Number(account.currentBalance)),
+      isMortgage: account.accountType === AccountType.MORTGAGE,
+    };
+  }
+}

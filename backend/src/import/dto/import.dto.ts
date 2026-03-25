@@ -327,6 +327,16 @@ export class ImportResultDto {
     loans: Record<string, string>;
     securities: Record<string, string>;
   };
+
+  @ApiPropertyOptional({
+    description:
+      "IDs of loan/mortgage accounts that were created or received transactions during import and do not yet have scheduled payments configured",
+  })
+  loanAccountsNeedingSetup?: Array<{
+    accountId: string;
+    accountName: string;
+    accountType: string;
+  }>;
 }
 
 // --- Multi-account QIF DTOs ---

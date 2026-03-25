@@ -1,10 +1,12 @@
 'use client';
 
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { ImportResult } from '@/lib/import';
 import { Account } from '@/types/account';
 import { ImportFileData, BulkImportResult } from '@/app/import/import-utils';
+import { LoanPaymentSetupDialog } from '@/components/accounts/LoanPaymentSetupDialog';
 
 interface CompleteStepProps {
   importFiles: ImportFileData[];
@@ -29,6 +31,50 @@ export function CompleteStep({
 }: CompleteStepProps) {
   const router = useRouter();
   const hasInvestmentFile = importFiles.some((f) => f.parsedData.accountType === 'INVESTMENT');
+
+  // Loan payment setup state
+  const [setupDialogAccount, setSetupDialogAccount] = useState<{
+    accountId: string;
+    accountName: string;
+    accountType: string;
+  } | null>(null);
+  const [completedSetups, setCompletedSetups] = useState<Set<string>>(new Set());
+
+  // Collect loan accounts needing setup from import results
+  const loanAccountsNeedingSetup = useMemo(() => {
+    const seen = new Set<string>();
+    const loanAccounts: Array<{
+      accountId: string;
+      accountName: string;
+      accountType: string;
+    }> = [];
+
+    const addAccounts = (items?: Array<{ accountId: string; accountName: string; accountType: string }>) => {
+      if (!items) return;
+      for (const la of items) {
+        if (!seen.has(la.accountId)) {
+          seen.add(la.accountId);
+          loanAccounts.push(la);
+        }
+      }
+    };
+
+    if (importResult) {
+      addAccounts(importResult.loanAccountsNeedingSetup);
+    }
+    if (bulkImportResult) {
+      addAccounts(bulkImportResult.loanAccountsNeedingSetup);
+      for (const fileResult of bulkImportResult.fileResults) {
+        addAccounts(fileResult.loanAccountsNeedingSetup);
+      }
+    }
+
+    return loanAccounts;
+  }, [importResult, bulkImportResult]);
+
+  const pendingSetups = loanAccountsNeedingSetup.filter(
+    (la) => !completedSetups.has(la.accountId),
+  );
 
   return (
     <div className={isBulkImport ? "max-w-4xl mx-auto" : "max-w-xl mx-auto"}>
@@ -87,7 +133,7 @@ export function CompleteStep({
                   >
                     <p className="font-medium text-gray-900 dark:text-gray-100">{result.fileName}</p>
                     <p className="text-gray-600 dark:text-gray-400">
-                      → {result.accountName}: {result.imported} imported, {result.skipped} skipped
+                      {'\u2192'} {result.accountName}: {result.imported} imported, {result.skipped} skipped
                       {result.errors > 0 && <span className="text-red-600 dark:text-red-400">, {result.errors} errors</span>}
                     </p>
                     {result.errorMessages.length > 0 && (
@@ -154,6 +200,51 @@ export function CompleteStep({
           </div>
         )}
 
+        {/* Loan/Mortgage payment setup prompt */}
+        {pendingSetups.length > 0 && (
+          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 mb-6">
+            <h3 className="font-medium text-amber-900 dark:text-amber-200 mb-2">
+              Set Up Recurring Payments
+            </h3>
+            <p className="text-sm text-amber-800 dark:text-amber-300 mb-3">
+              The following loan/mortgage accounts were imported without scheduled payments.
+              Set up recurring payments to continue tracking your loan progress.
+            </p>
+            <div className="space-y-2">
+              {pendingSetups.map((la) => (
+                <div
+                  key={la.accountId}
+                  className="flex items-center justify-between bg-white dark:bg-gray-800 rounded p-3"
+                >
+                  <div>
+                    <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                      {la.accountName}
+                    </span>
+                    <span className="ml-2 text-xs text-gray-500 dark:text-gray-400 capitalize">
+                      {la.accountType.toLowerCase().replace('_', ' ')}
+                    </span>
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={() => setSetupDialogAccount(la)}
+                  >
+                    Set Up Payments
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Show completion message for already-setup accounts */}
+        {completedSetups.size > 0 && (
+          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3 mb-6">
+            <p className="text-sm text-green-800 dark:text-green-300">
+              Scheduled payments configured for {completedSetups.size} account{completedSetups.size > 1 ? 's' : ''}.
+            </p>
+          </div>
+        )}
+
         <div className="flex justify-center space-x-4">
           <Button
             variant="outline"
@@ -166,6 +257,19 @@ export function CompleteStep({
           </Button>
         </div>
       </div>
+
+      {/* Loan payment setup dialog */}
+      {setupDialogAccount && (
+        <LoanPaymentSetupDialog
+          isOpen={true}
+          onClose={() => setSetupDialogAccount(null)}
+          loanAccount={setupDialogAccount}
+          accounts={accounts}
+          onSetupComplete={() => {
+            setCompletedSetups((prev) => new Set([...prev, setupDialogAccount.accountId]));
+          }}
+        />
+      )}
     </div>
   );
 }

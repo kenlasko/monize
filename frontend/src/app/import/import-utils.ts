@@ -29,6 +29,16 @@ export interface BulkImportResult {
     skipped: number;
     errors: number;
     errorMessages: string[];
+    loanAccountsNeedingSetup?: Array<{
+      accountId: string;
+      accountName: string;
+      accountType: string;
+    }>;
+  }>;
+  loanAccountsNeedingSetup?: Array<{
+    accountId: string;
+    accountName: string;
+    accountType: string;
   }>;
 }
 

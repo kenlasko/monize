@@ -799,6 +799,7 @@ export function useImportWizard() {
               skipped: result.skipped,
               errors: result.errors,
               errorMessages: result.errorMessages,
+              loanAccountsNeedingSetup: result.loanAccountsNeedingSetup,
             });
 
             totalImported += result.imported;
@@ -856,7 +857,24 @@ export function useImportWizard() {
           }
         }
 
-        setBulkImportResult({ totalImported, totalSkipped, totalErrors, categoriesCreated, accountsCreated, payeesCreated, securitiesCreated, fileResults });
+        // Aggregate loan accounts needing setup across all file results
+        const seenLoanIds = new Set<string>();
+        const allLoanAccountsNeedingSetup: Array<{ accountId: string; accountName: string; accountType: string }> = [];
+        for (const fr of fileResults) {
+          if (fr.loanAccountsNeedingSetup) {
+            for (const la of fr.loanAccountsNeedingSetup) {
+              if (!seenLoanIds.has(la.accountId)) {
+                seenLoanIds.add(la.accountId);
+                allLoanAccountsNeedingSetup.push(la);
+              }
+            }
+          }
+        }
+
+        setBulkImportResult({
+          totalImported, totalSkipped, totalErrors, categoriesCreated, accountsCreated, payeesCreated, securitiesCreated, fileResults,
+          loanAccountsNeedingSetup: allLoanAccountsNeedingSetup.length > 0 ? allLoanAccountsNeedingSetup : undefined,
+        });
         setStep('complete');
 
         if (totalErrors === 0) {

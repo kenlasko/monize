@@ -26,6 +26,8 @@ import { Response } from "express";
 import { AuthGuard } from "@nestjs/passport";
 import { AccountsService } from "./accounts.service";
 import { AccountExportService } from "./account-export.service";
+import { LoanPaymentDetectorService } from "./loan-payment-detector.service";
+import { LoanPaymentSetupService } from "./loan-payment-setup.service";
 import { CreateAccountDto } from "./dto/create-account.dto";
 import { UpdateAccountDto } from "./dto/update-account.dto";
 import { LoanPreviewDto } from "./dto/loan-preview.dto";
@@ -37,6 +39,11 @@ import {
   UpdateMortgageRateDto,
   UpdateMortgageRateResponseDto,
 } from "./dto/update-mortgage-rate.dto";
+import {
+  SetupLoanPaymentsDto,
+  DetectedLoanPaymentResponseDto,
+  SetupLoanPaymentsResponseDto,
+} from "./dto/setup-loan-payments.dto";
 import { PaymentFrequency } from "./loan-amortization.util";
 import { MortgagePaymentFrequency } from "./mortgage-amortization.util";
 import { formatDateYMD } from "../common/date-utils";
@@ -49,6 +56,8 @@ export class AccountsController {
   constructor(
     private readonly accountsService: AccountsService,
     private readonly accountExportService: AccountExportService,
+    private readonly loanPaymentDetectorService: LoanPaymentDetectorService,
+    private readonly loanPaymentSetupService: LoanPaymentSetupService,
   ) {}
 
   @Post()
@@ -399,6 +408,63 @@ export class AccountsController {
       new Date(updateMortgageRateDto.effectiveDate),
       updateMortgageRateDto.newPaymentAmount,
     );
+  }
+
+  @Get(":id/detect-loan-payments")
+  @ApiOperation({
+    summary: "Detect loan payment patterns from transaction history",
+    description:
+      "Analyzes transactions on a loan or mortgage account to detect regular payment patterns including amount, frequency, source account, and interest/principal splits.",
+  })
+  @ApiParam({
+    name: "id",
+    description: "Loan or mortgage account UUID",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Payment pattern detected (or null if insufficient data)",
+    type: DetectedLoanPaymentResponseDto,
+  })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  @ApiResponse({ status: 404, description: "Account not found" })
+  detectLoanPayments(
+    @Request() req,
+    @Param("id", ParseUUIDPipe) id: string,
+  ): Promise<DetectedLoanPaymentResponseDto | null> {
+    return this.loanPaymentDetectorService.detectPaymentPattern(
+      req.user.id,
+      id,
+    );
+  }
+
+  @Post(":id/setup-loan-payments")
+  @ApiOperation({
+    summary: "Set up scheduled loan/mortgage payments",
+    description:
+      "Creates a scheduled transaction for recurring loan or mortgage payments and updates the account with payment details. Typically used after importing a loan account with existing transaction history.",
+  })
+  @ApiParam({
+    name: "id",
+    description: "Loan or mortgage account UUID",
+  })
+  @ApiResponse({
+    status: 201,
+    description: "Scheduled payment created successfully",
+    type: SetupLoanPaymentsResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description:
+      "Bad request - not a loan/mortgage account or already has scheduled payments",
+  })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  @ApiResponse({ status: 404, description: "Account not found" })
+  setupLoanPayments(
+    @Request() req,
+    @Param("id", ParseUUIDPipe) id: string,
+    @Body() dto: SetupLoanPaymentsDto,
+  ): Promise<SetupLoanPaymentsResponseDto> {
+    return this.loanPaymentSetupService.setupLoanPayments(req.user.id, id, dto);
   }
 
   @Post(":id/close")

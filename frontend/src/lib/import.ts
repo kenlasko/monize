@@ -247,6 +247,11 @@ export interface ImportResult {
     loans: Record<string, string>;
     securities: Record<string, string>;
   };
+  loanAccountsNeedingSetup?: Array<{
+    accountId: string;
+    accountName: string;
+    accountType: string;
+  }>;
 }
 
 export interface ParsedQifMultiAccountResponse {

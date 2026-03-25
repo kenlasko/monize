@@ -24,6 +24,7 @@ import { LoanFields } from './LoanFields';
 import { MortgageFields } from './MortgageFields';
 import { AssetFields } from './AssetFields';
 import { AccountExportModal } from './AccountExportModal';
+import { LoanPaymentSetupDialog } from './LoanPaymentSetupDialog';
 
 import { useFormSubmitRef } from '@/hooks/useFormSubmitRef';
 import { useFormDirtyNotify } from '@/hooks/useFormDirtyNotify';
@@ -127,6 +128,7 @@ export function AccountForm({ account, onSubmit, onCancel, onDirtyChange, submit
   const [selectedAssetCategoryId, setSelectedAssetCategoryId] = useState<string>(account?.assetCategoryId || '');
   const [assetCategoryName, setAssetCategoryName] = useState<string>('');
   const [selectedInterestCategoryId, setSelectedInterestCategoryId] = useState<string>(account?.interestCategoryId || '');
+  const [showLoanSetupDialog, setShowLoanSetupDialog] = useState(false);
 
   const {
     register,
@@ -245,15 +247,17 @@ export function AccountForm({ account, onSubmit, onCancel, onDirtyChange, submit
     }));
   }, [currencies, defaultCurrency]);
 
-  // Load accounts and categories when LOAN, MORTGAGE, or ASSET type is selected
-  // For loans/mortgages: only when creating new (payment setup is done at creation)
+  // Load accounts and categories when LOAN, MORTGAGE, LINE_OF_CREDIT, or ASSET type is selected
   // For assets: always (to allow editing the value change category)
+  // For loans/mortgages: for new creation or when editing accounts that need payment setup
+  const isLineOfCreditAccount = watchedAccountType === 'LINE_OF_CREDIT';
   useEffect(() => {
-    const shouldLoadForLoan = isLoanAccount && !account;
+    const shouldLoadForLoan = isLoanAccount;
     const shouldLoadForMortgage = isMortgageAccount;
+    const shouldLoadForLineOfCredit = isLineOfCreditAccount;
     const shouldLoadForAsset = isAssetAccount;
 
-    if (shouldLoadForLoan || shouldLoadForMortgage || shouldLoadForAsset) {
+    if (shouldLoadForLoan || shouldLoadForMortgage || shouldLoadForLineOfCredit || shouldLoadForAsset) {
       const loadData = async () => {
         try {
           const [accountsData, categoriesData] = await Promise.all([
@@ -304,7 +308,7 @@ export function AccountForm({ account, onSubmit, onCancel, onDirtyChange, submit
       };
       loadData();
     }
-  }, [isLoanAccount, isMortgageAccount, isAssetAccount, account, setValue, getValues]);
+  }, [isLoanAccount, isMortgageAccount, isLineOfCreditAccount, isAssetAccount, account, setValue, getValues]);
 
   const toggleFavourite = () => {
     setValue('isFavourite', !watchedIsFavourite, { shouldDirty: true });
@@ -582,6 +586,40 @@ export function AccountForm({ account, onSubmit, onCancel, onDirtyChange, submit
           isEditing={!!account}
           selectedInterestCategoryId={selectedInterestCategoryId}
           handleInterestCategoryChange={handleInterestCategoryChange}
+        />
+      )}
+
+      {/* Set Up Payments button for existing loan/mortgage/LOC accounts without scheduled payments */}
+      {account && !account.scheduledTransactionId &&
+        (isLoanAccount || isMortgageAccount || watchedAccountType === 'LINE_OF_CREDIT') && (
+        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+          <p className="text-sm text-amber-800 dark:text-amber-300 mb-2">
+            This account does not have scheduled payments configured.
+          </p>
+          <button
+            type="button"
+            onClick={() => setShowLoanSetupDialog(true)}
+            className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            Set Up Recurring Payments
+          </button>
+        </div>
+      )}
+
+      {showLoanSetupDialog && account && (
+        <LoanPaymentSetupDialog
+          isOpen={showLoanSetupDialog}
+          onClose={() => setShowLoanSetupDialog(false)}
+          loanAccount={{
+            accountId: account.id,
+            accountName: account.name,
+            accountType: account.accountType,
+          }}
+          accounts={accounts}
+          onSetupComplete={() => {
+            setShowLoanSetupDialog(false);
+            router.refresh();
+          }}
         />
       )}
 

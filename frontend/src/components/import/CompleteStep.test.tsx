@@ -3,6 +3,28 @@ import { render, screen, fireEvent } from '@/test/render';
 import { CompleteStep } from './CompleteStep';
 import { Account } from '@/types/account';
 
+vi.mock('@/lib/accounts', () => ({
+  accountsApi: {
+    detectLoanPayments: vi.fn().mockResolvedValue(null),
+    setupLoanPayments: vi.fn().mockResolvedValue({}),
+  },
+}));
+
+vi.mock('@/lib/categories', () => ({
+  categoriesApi: {
+    getAll: vi.fn().mockResolvedValue([]),
+  },
+}));
+
+vi.mock('@/lib/logger', () => ({
+  createLogger: () => ({ error: vi.fn(), info: vi.fn(), warn: vi.fn(), debug: vi.fn() }),
+}));
+
+vi.mock('@/components/accounts/LoanPaymentSetupDialog', () => ({
+  LoanPaymentSetupDialog: ({ isOpen }: { isOpen: boolean }) =>
+    isOpen ? <div data-testid="loan-payment-setup-dialog">LoanPaymentSetupDialog</div> : null,
+}));
+
 function createAccount(overrides: Partial<Account> = {}): Account {
   return {
     id: 'acc-1', userId: 'user-1', accountType: 'CHEQUING', accountSubType: null,
@@ -282,5 +304,53 @@ describe('CompleteStep', () => {
     );
     // Should not show single-file format fields
     expect(screen.queryByText('Target Account:')).not.toBeInTheDocument();
+  });
+
+  // --- Loan account setup tests ---
+
+  it('shows "Import Complete" heading', () => {
+    render(<CompleteStep {...defaultProps} />);
+    expect(screen.getByText('Import Complete')).toBeInTheDocument();
+  });
+
+  it('shows import result summary for single file import', () => {
+    render(<CompleteStep {...defaultProps} />);
+    expect(screen.getByText(/test\.qif/)).toBeInTheDocument();
+    expect(screen.getByText(/10 transactions/)).toBeInTheDocument();
+    expect(screen.getByText(/2 duplicate transfers/)).toBeInTheDocument();
+  });
+
+  it('shows loan accounts needing setup when present in importResult', () => {
+    const resultWithLoans = {
+      ...defaultProps.importResult!,
+      loanAccountsNeedingSetup: [
+        { accountId: 'loan-1', accountName: 'Home Mortgage', accountType: 'MORTGAGE' },
+        { accountId: 'loan-2', accountName: 'Car Loan', accountType: 'LOAN' },
+      ],
+    };
+    render(<CompleteStep {...defaultProps} importResult={resultWithLoans} />);
+
+    expect(screen.getByText('Set Up Recurring Payments')).toBeInTheDocument();
+    expect(screen.getByText('Home Mortgage')).toBeInTheDocument();
+    expect(screen.getByText('Car Loan')).toBeInTheDocument();
+  });
+
+  it('shows "Set Up Payments" button for each pending loan account', () => {
+    const resultWithLoans = {
+      ...defaultProps.importResult!,
+      loanAccountsNeedingSetup: [
+        { accountId: 'loan-1', accountName: 'Home Mortgage', accountType: 'MORTGAGE' },
+        { accountId: 'loan-2', accountName: 'Car Loan', accountType: 'LOAN' },
+      ],
+    };
+    render(<CompleteStep {...defaultProps} importResult={resultWithLoans} />);
+
+    const setupButtons = screen.getAllByRole('button', { name: /Set Up Payments/i });
+    expect(setupButtons).toHaveLength(2);
+  });
+
+  it('does not show loan setup section when no loan accounts need setup', () => {
+    render(<CompleteStep {...defaultProps} />);
+    expect(screen.queryByText('Set Up Recurring Payments')).not.toBeInTheDocument();
   });
 });
