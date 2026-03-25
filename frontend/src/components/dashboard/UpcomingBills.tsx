@@ -26,8 +26,8 @@ export function UpcomingBills({ scheduledTransactions, accounts, isLoading, maxI
   const { convertToDefault } = useExchangeRates();
 
   // Filter to active bills, deposits, and transfers within each item's reminder window
-  const today = startOfDay(new Date());
-  const upcomingItems = scheduledTransactions
+  const today = useMemo(() => startOfDay(new Date()), []);
+  const upcomingItems = useMemo(() => scheduledTransactions
     .filter((st) => {
       if (!st.isActive) return false;
       const dueDate = parseLocalDate(st.nextDueDate);
@@ -41,7 +41,7 @@ export function UpcomingBills({ scheduledTransactions, accounts, isLoading, maxI
       if (!a.autoPost && b.autoPost) return -1;
       if (a.autoPost && !b.autoPost) return 1;
       return 0;
-    });
+    }), [scheduledTransactions, today]);
 
   // Build a map of account ID -> Account for quick lookups
   const accountMap = useMemo(() => {
