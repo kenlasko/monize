@@ -1533,7 +1533,6 @@ export class ImportService {
     const loanTypes = new Set([
       AccountType.LOAN,
       AccountType.MORTGAGE,
-      AccountType.LINE_OF_CREDIT,
     ]);
 
     return accounts
