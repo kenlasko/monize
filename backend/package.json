@@ -95,7 +95,9 @@
     "typescript-eslint": "^8.54.0"
   },
   "overrides": {
-    "lodash": "4.17.23"
+    "lodash": "4.17.23",
+    "ajv": "8.18.0",
+    "picomatch": "4.0.4"
   },
   "jest": {
     "moduleFileExtensions": [
