@@ -441,6 +441,8 @@ export class AccountsService {
         account.interestRate = updateAccountDto.interestRate;
       if (updateAccountDto.isFavourite !== undefined)
         account.isFavourite = updateAccountDto.isFavourite;
+      if (updateAccountDto.excludeFromNetWorth !== undefined)
+        account.excludeFromNetWorth = updateAccountDto.excludeFromNetWorth;
       // Credit card statement fields (only for credit card accounts)
       const effectiveType = updateAccountDto.accountType ?? account.accountType;
       if (effectiveType === AccountType.CREDIT_CARD) {
