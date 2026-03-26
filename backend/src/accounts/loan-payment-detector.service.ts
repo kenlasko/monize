@@ -613,32 +613,37 @@ export class LoanPaymentDetectorService {
 
   /**
    * Build a map of running balance before each transaction date.
-   * Uses all transactions on the loan account to track the actual balance
-   * at each point in time, giving accurate data for interest rate estimation.
+   * Works backwards from the known currentBalance (which is accurate)
+   * rather than forwards from openingBalance (which may not match
+   * the actual balance when the user started tracking).
    */
   private buildRunningBalanceMap(
     account: Account,
     transactions: Transaction[],
   ): Map<string, number> {
     const balanceMap = new Map<string, number>();
-    // Start from the absolute opening balance (loan balances are negative liabilities)
-    let absBalance = Math.abs(Number(account.openingBalance));
+    // Start from the current balance and work backwards through transactions.
+    // This is more reliable than starting from openingBalance, which may
+    // represent the original mortgage amount rather than the balance at
+    // the time of the first tracked transaction.
+    let absBalance = Math.abs(Number(account.currentBalance));
 
-    // Transactions are already sorted by date ASC from the query
-    for (const tx of transactions) {
+    // Process transactions in reverse chronological order to reconstruct
+    // what the balance was before each transaction.
+    const reversed = [...transactions].reverse();
+    for (const tx of reversed) {
       const dateStr =
         typeof tx.transactionDate === "string"
           ? tx.transactionDate.split("T")[0]
           : String(tx.transactionDate);
 
-      // Record balance before the first transaction on this date
-      if (!balanceMap.has(dateStr)) {
-        balanceMap.set(dateStr, absBalance);
-      }
+      // Undo the transaction: payments (positive) had reduced the balance,
+      // so add them back; charges/fees (negative) had increased it, so subtract.
+      absBalance += Number(tx.amount);
 
-      // Payments (positive) reduce the absolute balance;
-      // charges/fees (negative) increase it
-      absBalance -= Number(tx.amount);
+      // Record the pre-transaction balance for this date.
+      // Since we're going backwards, overwrite to get the earliest (pre-first-tx) balance.
+      balanceMap.set(dateStr, absBalance);
     }
 
     return balanceMap;
