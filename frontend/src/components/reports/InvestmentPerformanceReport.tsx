@@ -256,7 +256,7 @@ export function InvestmentPerformanceReport() {
               Holdings by Market Value
             </h3>
             <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                 <PieChart>
                   <Pie
                     data={holdingsData}
@@ -356,7 +356,7 @@ export function InvestmentPerformanceReport() {
           </h3>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                 <PieChart>
                   <Pie
                     data={allocationData}

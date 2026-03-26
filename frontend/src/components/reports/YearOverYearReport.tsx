@@ -246,7 +246,7 @@ export function YearOverYearReport() {
           Monthly {metric.charAt(0).toUpperCase() + metric.slice(1)} Comparison
         </h3>
         <div className="h-96">
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer width="100%" height="100%" minWidth={0}>
             <BarChart
               data={chartData}
               margin={{ top: 20, right: 10, left: 0, bottom: 5 }}

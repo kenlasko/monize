@@ -187,7 +187,7 @@ export function IncomeVsExpensesReport() {
         ) : (
           <>
             <div className="h-96">
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                 <BarChart
                   data={chartData}
                   margin={{ top: 20, right: 10, left: 0, bottom: 5 }}

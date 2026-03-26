@@ -150,7 +150,7 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
         <div>
           {exportBar}
           <div ref={chartContainerRef} className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               <PieChart>
                 <Pie
                   data={chartData}
@@ -179,7 +179,7 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
         <div>
           {exportBar}
           <div ref={chartContainerRef} className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               <BarChart data={chartData} margin={{ top: 20, right: 10, left: 0, bottom: 60 }}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
                 <XAxis
@@ -217,7 +217,7 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
         <div>
           {exportBar}
           <div ref={chartContainerRef} className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               <LineChart data={chartData} margin={{ top: 20, right: 10, left: 0, bottom: 60 }}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
                 <XAxis

@@ -174,7 +174,7 @@ export function MonthlySpendingTrendReport() {
         ) : (
           <>
             <div className="h-96">
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                 <LineChart
                   data={chartData}
                   margin={{ top: 5, right: 10, left: 0, bottom: 5 }}

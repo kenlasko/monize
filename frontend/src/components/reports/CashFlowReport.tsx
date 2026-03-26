@@ -244,7 +244,7 @@ export function CashFlowReport() {
           Monthly Cash Flow
         </h3>
         <div className="h-80">
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer width="100%" height="100%" minWidth={0}>
             <BarChart
               data={monthlyData}
               margin={{ top: 20, right: 10, left: 0, bottom: 5 }}

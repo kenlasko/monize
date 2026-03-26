@@ -352,7 +352,7 @@ export function GeographicAllocationReport() {
             Regional Allocation
           </h3>
           <div style={{ width: '100%', height: 350 }}>
-            <ResponsiveContainer>
+            <ResponsiveContainer minWidth={0}>
               <PieChart>
                 <Pie
                   data={regionData}
@@ -380,7 +380,7 @@ export function GeographicAllocationReport() {
             Exchange Allocation
           </h3>
           <div style={{ width: '100%', height: Math.max(300, exchangeData.length * 40 + 60) }}>
-            <ResponsiveContainer>
+            <ResponsiveContainer minWidth={0}>
               <BarChart
                 data={exchangeData}
                 layout="vertical"

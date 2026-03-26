@@ -553,7 +553,7 @@ export function DebtPayoffTimelineReport() {
           <>
             {viewType === 'balance' && (
               <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                   <AreaChart data={payoffSchedule}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                     <XAxis
@@ -609,7 +609,7 @@ export function DebtPayoffTimelineReport() {
             )}
             {viewType === 'breakdown' && (
               <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                   <BarChart data={payoffSchedule}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                     <XAxis
@@ -656,7 +656,7 @@ export function DebtPayoffTimelineReport() {
             )}
             {viewType === 'distribution' && (
               <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                   <BarChart data={distributionData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                     <XAxis

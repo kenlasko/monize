@@ -264,7 +264,7 @@ export function SecurityTypeAllocationReport() {
           Asset Type Allocation
         </h3>
         <div style={{ width: '100%', height: 350 }}>
-          <ResponsiveContainer>
+          <ResponsiveContainer minWidth={0}>
             <PieChart>
               <Pie
                 data={allocationData}

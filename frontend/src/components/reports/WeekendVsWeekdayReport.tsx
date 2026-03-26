@@ -244,7 +244,7 @@ export function WeekendVsWeekdayReport() {
           </h3>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="h-96">
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                 <PieChart>
                   <Pie
                     data={pieData}
@@ -302,7 +302,7 @@ export function WeekendVsWeekdayReport() {
             Spending by Day of Week
           </h3>
           <div className="h-96">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               <BarChart data={dayData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                 <XAxis dataKey="day" />
@@ -344,7 +344,7 @@ export function WeekendVsWeekdayReport() {
             Category Comparison
           </h3>
           <div className="h-[480px]">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               <BarChart data={categoryComparison} layout="vertical" margin={{ left: 10 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                 <XAxis type="number" tickFormatter={formatCurrencyAxis} />

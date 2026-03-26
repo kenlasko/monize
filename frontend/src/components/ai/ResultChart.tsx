@@ -45,7 +45,7 @@ export function ResultChart({ type, title, data }: ResultChartProps) {
         {title}
       </h4>
       <div className="h-64">
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
           {type === 'pie' ? (
             <PieChart>
               <Pie

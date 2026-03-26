@@ -158,7 +158,7 @@ export function BudgetCategoryTrend({
 
       {/* Chart */}
       <div className="h-72" data-testid="category-trend-chart">
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
           <LineChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
             <XAxis

@@ -144,7 +144,7 @@ export function IncomeBySourceReport() {
           <>
             {viewType === 'pie' ? (
               <div className="h-96">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                   <PieChart>
                     <Pie
                       data={chartData}
@@ -167,7 +167,7 @@ export function IncomeBySourceReport() {
               </div>
             ) : (
               <div className="h-96">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                   <BarChart data={chartData} layout="vertical" margin={{ left: 10 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                     <XAxis type="number" tickFormatter={(value) => formatCurrency(value)} />

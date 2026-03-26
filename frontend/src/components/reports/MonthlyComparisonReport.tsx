@@ -307,7 +307,7 @@ export function MonthlyComparisonReport() {
         {nw.monthlyHistory.length > 0 ? (
           <>
             <div className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                 <BarChart data={nw.monthlyHistory.map(p => ({
                   name: format(parseMonth(p.month), 'MMM yy'),
                   netWorth: Math.round(p.netWorth),
@@ -346,7 +346,7 @@ export function MonthlyComparisonReport() {
           {investments.accountPerformance.length > 0 && (
             <>
               <div className="h-72 mb-6">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                   <BarChart
                     data={investments.accountPerformance.map(a => ({
                       name: a.accountName,
@@ -443,7 +443,7 @@ function ExpensePieChart({
     <div>
       <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 text-center">{title}</h3>
       <div className="h-56">
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
           <PieChart>
             <Pie
               data={data.map((d) => ({ name: d.categoryName, value: Math.abs(d.total) }))}

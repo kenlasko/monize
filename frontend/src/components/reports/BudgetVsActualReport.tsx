@@ -157,7 +157,7 @@ export function BudgetVsActualReport() {
           ) : (
             <>
               <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                   <BarChart data={trendData}>
                     <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
                     <XAxis dataKey="month" tick={{ fontSize: 12 }} />
@@ -188,7 +188,7 @@ export function BudgetVsActualReport() {
               <div className="mt-6">
                 <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Variance Over Time</h3>
                 <div className="h-48">
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                     <LineChart data={trendData}>
                       <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
                       <XAxis dataKey="month" tick={{ fontSize: 12 }} />

@@ -284,7 +284,7 @@ export function SectorWeightingsReport() {
           Sector Allocation
         </h3>
         <div style={{ width: '100%', height: Math.max(300, chartData.length * 40 + 60) }}>
-          <ResponsiveContainer>
+          <ResponsiveContainer minWidth={0}>
             <BarChart
               data={chartData}
               layout="vertical"

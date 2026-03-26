@@ -391,7 +391,7 @@ export function DividendYieldGrowthReport() {
           {annualData.length > 0 ? (
             <>
               <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                   <BarChart data={annualData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                     <XAxis dataKey="year" tick={{ fontSize: 11 }} />
@@ -456,7 +456,7 @@ export function DividendYieldGrowthReport() {
           {frequencyData.length > 0 ? (
             <>
               <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                   <BarChart data={frequencyData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                     <XAxis dataKey="frequency" tick={{ fontSize: 11 }} />
