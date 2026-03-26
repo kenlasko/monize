@@ -55,6 +55,8 @@ interface PaymentRecord {
   principalAmount: number | null;
   /** Extra principal detected from splits (memo cues or multiple principal splits) */
   extraPrincipalAmount: number | null;
+  /** Individual principal split amounts when multiple transfers to the loan exist */
+  principalSplitAmounts: number[];
   interestCategoryId: string | null;
   interestCategoryName: string | null;
 }
@@ -166,8 +168,6 @@ export class LoanPaymentDetectorService {
       payments,
       regularAmount,
       regularPayments.length,
-      balanceMap,
-      frequency,
     );
 
     // The regularAmount is the total from the source account (includes extra principal).
@@ -182,7 +182,12 @@ export class LoanPaymentDetectorService {
     // Analyze the recent P/I split trend from several payments.
     // In amortization, principal increases and interest decreases each period.
     // Use the trend to project the next expected split values.
-    const splitAnalysis = this.analyzeSplitTrend(payments);
+    // Pass extra principal so it can be subtracted from principalAmount
+    // when the combined total was stored without memo-based separation.
+    const splitAnalysis = this.analyzeSplitTrend(
+      payments,
+      extraPrincipal.averageExtraPrincipal,
+    );
 
     // Calculate next due date
     const lastPayment = regularPayments[regularPayments.length - 1];
@@ -243,6 +248,7 @@ export class LoanPaymentDetectorService {
       let interestAmount: number | null = null;
       let principalAmount: number | null = null;
       let extraPrincipalAmount: number | null = null;
+      let principalSplitAmounts: number[] = [];
       let interestCategoryId: string | null = null;
       let interestCategoryName: string | null = null;
       // Default to loan-side amount; override with source amount when available
@@ -332,10 +338,14 @@ export class LoanPaymentDetectorService {
                 principalAmount = regular > 0 ? regular : null;
                 extraPrincipalAmount = extra > 0 ? extra : null;
               } else {
-                // No memo cues -- sum all as principal and let detectExtraPrincipal
-                // handle separation via pattern analysis across payments.
-                principalAmount = principalSplits.reduce(
-                  (s, ps) => s + ps.amount,
+                // No memo cues -- keep individual split amounts for cross-payment
+                // analysis. The largest split is likely regular principal (varies),
+                // smaller splits may be extra principal (static).
+                // Sum all into principalAmount for now; detectExtraPrincipal will
+                // use principalSplitAmounts to separate them.
+                principalSplitAmounts = principalSplits.map((ps) => ps.amount);
+                principalAmount = principalSplitAmounts.reduce(
+                  (s, a) => s + a,
                   0,
                 );
               }
@@ -352,6 +362,7 @@ export class LoanPaymentDetectorService {
         interestAmount,
         principalAmount,
         extraPrincipalAmount,
+        principalSplitAmounts,
         interestCategoryId,
         interestCategoryName,
       });
@@ -672,34 +683,30 @@ export class LoanPaymentDetectorService {
 
   /**
    * Detect extra principal payments from split-level data.
-   * Only suggests extra principal when consistently applied across multiple payments.
+   *
+   * The source account transaction for a loan payment has splits:
+   *   - Transfer to loan account = principal (varies, increases over time)
+   *   - Categorized expense = interest (varies, decreases over time)
+   *   - (Optional) Second transfer to loan account = extra principal (static)
    *
    * Strategies (in priority order):
    * 1. Memo-based: Use "Extra"/"Additional" keywords from split memos.
-   * 2. Interest-based: Use the interest split and running balance to compute
-   *    expected amortization principal, then identify a consistent excess as extra.
-   *    In amortization: regular principal = base_payment - interest.
-   *    If actual principal consistently exceeds this, the static excess is extra.
+   * 2. Multiple splits: When a payment has 2+ transfers to the loan account,
+   *    find the split amount that is constant/static across payments. The
+   *    varying one is regular principal; the static one is extra principal.
    * 3. Fall back to zero.
    */
   private detectExtraPrincipal(
     allPayments: PaymentRecord[],
     _regularAmount: number,
     _regularPaymentCount: number,
-    balanceMap?: Map<string, number>,
-    frequency?: string,
   ): { averageExtraPrincipal: number; extraPrincipalCount: number } {
     // Strategy 1: Use memo-detected extra principal from splits.
-    // Only suggest if consistently applied (at least 3 payments and >= 50% of all payments).
     const memoBasedExtras = allPayments.filter(
       (p) => p.extraPrincipalAmount !== null && p.extraPrincipalAmount > 0,
     );
 
-    const isConsistent =
-      memoBasedExtras.length >= 3 &&
-      memoBasedExtras.length / allPayments.length >= 0.5;
-
-    if (isConsistent) {
+    if (memoBasedExtras.length >= 3 && memoBasedExtras.length / allPayments.length >= 0.5) {
       const totalExtra = memoBasedExtras.reduce(
         (sum, p) => sum + p.extraPrincipalAmount!,
         0,
@@ -711,119 +718,43 @@ export class LoanPaymentDetectorService {
       };
     }
 
-    // Strategy 2: Use interest amounts and balance to detect extra principal.
-    // For each payment with splits: compute expected_interest from the balance
-    // and estimated rate, derive expected_principal = total - expected_interest,
-    // then extra = actual_principal - expected_principal.
-    // If this excess is roughly constant (static), it's extra principal.
-    if (balanceMap && frequency) {
-      const paymentsWithSplits = allPayments.filter(
-        (p) =>
-          p.principalAmount !== null &&
-          p.principalAmount > 0 &&
-          p.interestAmount !== null &&
-          p.interestAmount > 0,
-      );
+    // Strategy 2: Look for payments with multiple principal splits (2+ transfers
+    // to the loan account). The extra principal appears as a second transfer
+    // with a static/constant amount across payments.
+    const paymentsWithMultipleSplits = allPayments.filter(
+      (p) => p.principalSplitAmounts.length >= 2,
+    );
 
-      if (paymentsWithSplits.length >= 3) {
-        const periodsPerYear = this.getPeriodsPerYear(frequency);
+    if (paymentsWithMultipleSplits.length >= 3) {
+      // For each payment, find the smaller split amount(s).
+      // In amortization, the regular principal is the larger, varying portion.
+      // The extra principal is the smaller, static portion.
+      const candidateExtras: number[] = [];
 
-        // Compute excess principal for each payment:
-        // total_payment = principal + interest (from splits)
-        // expected_interest = balance * rate / periodsPerYear
-        // But we don't need the rate explicitly -- we can use the actual interest
-        // to figure out what the base payment would be WITHOUT extra principal.
-        //
-        // Key insight: if total_payment is constant across all payments,
-        // and interest is decreasing, then principal must increase by the same
-        // delta that interest decreased. Any static component in principal is extra.
-        //
-        // base_principal[i] = base_principal[0] + sum_of_interest_decreases[0..i]
-        // actual_principal[i] = base_principal[i] + extra
-        // So: extra = actual_principal[i] - (base_principal[0] + cumulative_interest_decrease[i])
-        //
-        // We don't know base_principal[0], but if extra is constant across all
-        // payments, then: actual_principal[i] - actual_principal[0] should equal
-        // interest[0] - interest[i] (the cumulative decrease in interest).
-        // If actual_principal increases by MORE than interest decreases, that's
-        // inconsistent. If it increases by LESS, the shortfall is meaningless.
-        // If equal, no detectable extra from this method.
-        //
-        // Alternative approach: use interest rate from the data.
-        // estimated_rate = median(interest / balance * periodsPerYear)
-        // Then for each payment: expected_interest = balance * rate / periodsPerYear
-        // expected_base_payment = total[0] - extra (unknown)
-        // expected_principal = expected_base_payment - expected_interest
-        //
-        // Simpler: look at the relationship between total_payment and
-        // (principal + interest). In a normal amortization with NO extra,
-        // total_payment should equal principal + interest. With extra,
-        // total_payment = (principal_without_extra + interest) + extra.
-        // Since we observe (principal_with_extra + interest) = total_payment,
-        // we need another way to separate.
-        //
-        // Best approach: use the interest rate to compute expected interest,
-        // then expected_principal = total - expected_interest - extra.
-        // But we need rate first. Use median rate from interest/balance.
-
-        // First, estimate the periodic rate from interest amounts and balances
-        const rates: number[] = [];
-        for (const p of paymentsWithSplits) {
-          const dateStr = p.date.split("T")[0];
-          const balance = balanceMap.get(dateStr);
-          if (balance && balance > 0 && p.interestAmount) {
-            const periodicRate = p.interestAmount / balance;
-            if (periodicRate > 0 && periodicRate < 0.1) {
-              rates.push(periodicRate);
-            }
-          }
+      for (const p of paymentsWithMultipleSplits) {
+        // Sort splits ascending -- the smaller ones are candidate extras
+        const sorted = [...p.principalSplitAmounts].sort((a, b) => a - b);
+        // Take all but the largest (which is likely the regular principal)
+        for (let i = 0; i < sorted.length - 1; i++) {
+          candidateExtras.push(sorted[i]);
         }
+      }
 
-        if (rates.length >= 3) {
-          rates.sort((a, b) => a - b);
-          const mid = Math.floor(rates.length / 2);
-          const medianRate =
-            rates.length % 2 === 0
-              ? (rates[mid - 1] + rates[mid]) / 2
-              : rates[mid];
+      if (candidateExtras.length >= 3) {
+        // Check if these candidate extras are roughly the same value (static)
+        const avg =
+          candidateExtras.reduce((s, e) => s + e, 0) / candidateExtras.length;
+        const maxDev = Math.max(
+          ...candidateExtras.map((e) => Math.abs(e - avg)),
+        );
+        const isStatic = avg > 0.01 && (maxDev < 0.02 || maxDev / avg < 0.05);
 
-          // For each payment, compute expected interest from balance,
-          // then expected_regular_principal = total_payment - expected_interest
-          // extra = actual_principal - expected_regular_principal
-          const extras: number[] = [];
-          for (const p of paymentsWithSplits) {
-            const dateStr = p.date.split("T")[0];
-            const balance = balanceMap.get(dateStr);
-            if (!balance || balance <= 0) continue;
-
-            const expectedInterest = balance * medianRate;
-            const totalPayment = p.principalAmount! + p.interestAmount!;
-            const expectedRegularPrincipal = totalPayment - expectedInterest;
-            // Extra = what was actually paid as principal minus what we'd expect
-            // from regular amortization
-            const extra = p.principalAmount! - expectedRegularPrincipal;
-
-            // Extra should be non-negative (paying more than expected)
-            if (extra > 0.01) {
-              extras.push(extra);
-            }
-          }
-
-          // Check if the extras are roughly constant (static)
-          if (extras.length >= 3 && extras.length / paymentsWithSplits.length >= 0.5) {
-            const avg = extras.reduce((s, e) => s + e, 0) / extras.length;
-            const maxDev = Math.max(...extras.map((e) => Math.abs(e - avg)));
-            // Allow 15% tolerance for rounding and minor balance fluctuations
-            const isStatic = avg > 1 && maxDev / avg < 0.15;
-
-            if (isStatic) {
-              const extraAmount = Math.round(avg * 100) / 100;
-              return {
-                averageExtraPrincipal: extraAmount,
-                extraPrincipalCount: extras.length,
-              };
-            }
-          }
+        if (isStatic) {
+          const extraAmount = Math.round(avg * 100) / 100;
+          return {
+            averageExtraPrincipal: extraAmount,
+            extraPrincipalCount: paymentsWithMultipleSplits.length,
+          };
         }
       }
     }
@@ -836,11 +767,14 @@ export class LoanPaymentDetectorService {
    * In amortization: principal increases each period, interest decreases.
    * Uses the last several payments to project what the next split should be.
    *
-   * Returns projected values for the next payment, or the most recent
-   * split values if the trend can't be determined.
+   * @param extraPrincipalAmount - If detected, this is subtracted from
+   *   principalAmount to get the regular principal before trend analysis.
+   *
+   * Returns projected REGULAR principal and interest values for the next payment.
    */
   private analyzeSplitTrend(
     allPayments: PaymentRecord[],
+    extraPrincipalAmount: number = 0,
   ): { projectedPrincipal: number | null; projectedInterest: number | null } {
     // Get payments with split data, in chronological order
     const withSplits = allPayments.filter(
@@ -851,16 +785,32 @@ export class LoanPaymentDetectorService {
       return { projectedPrincipal: null, projectedInterest: null };
     }
 
+    // Subtract extra principal from principalAmount to get regular principal
+    const getRegularPrincipal = (p: PaymentRecord): number => {
+      const total = p.principalAmount!;
+      // If this payment had memo-based extra, it's already excluded from principalAmount.
+      // Only subtract when extraPrincipalAmount was detected from multi-split analysis
+      // and this payment's principalAmount includes the extra (no memo-based separation).
+      if (
+        extraPrincipalAmount > 0 &&
+        p.extraPrincipalAmount === null &&
+        p.principalSplitAmounts.length >= 2
+      ) {
+        return Math.max(0, total - extraPrincipalAmount);
+      }
+      return total;
+    };
+
     if (withSplits.length === 1) {
       return {
-        projectedPrincipal: withSplits[0].principalAmount,
+        projectedPrincipal: getRegularPrincipal(withSplits[0]),
         projectedInterest: withSplits[0].interestAmount,
       };
     }
 
     // Use up to the last 6 payments for trend analysis
     const recent = withSplits.slice(-6);
-    const principals = recent.map((p) => p.principalAmount!);
+    const principals = recent.map(getRegularPrincipal);
     const interests = recent.map((p) => p.interestAmount!);
 
     // Verify the amortization pattern:
@@ -878,7 +828,6 @@ export class LoanPaymentDetectorService {
 
     if (hasAmortizationPattern && recent.length >= 3) {
       // Project the next values by continuing the trend.
-      // Use the average step between consecutive payments.
       const principalSteps: number[] = [];
       const interestSteps: number[] = [];
       for (let i = 1; i < recent.length; i++) {
@@ -906,10 +855,12 @@ export class LoanPaymentDetectorService {
     }
 
     // No clear trend -- return the most recent split values
-    const last = withSplits[withSplits.length - 1];
+    const lastRegularPrincipal = getRegularPrincipal(
+      withSplits[withSplits.length - 1],
+    );
     return {
-      projectedPrincipal: last.principalAmount,
-      projectedInterest: last.interestAmount,
+      projectedPrincipal: lastRegularPrincipal,
+      projectedInterest: withSplits[withSplits.length - 1].interestAmount,
     };
   }
 
