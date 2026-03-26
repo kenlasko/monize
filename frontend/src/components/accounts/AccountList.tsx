@@ -434,7 +434,7 @@ export function AccountList({ accounts, brokerageMarketValues, onEdit, onRefresh
               <select
                 value={filterNetWorth}
                 onChange={(e) => setFilterNetWorth(e.target.value as 'included' | 'excluded' | '')}
-                className="text-sm font-sans border border-gray-300 dark:border-gray-600 rounded-md px-3 py-1.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 min-w-[13rem]"
+                className="text-sm font-sans border border-gray-300 dark:border-gray-600 rounded-md px-3 py-1.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 min-w-[16rem]"
               >
                 <option value="">Net Worth: All</option>
                 <option value="included">In Net Worth</option>
