@@ -36,6 +36,14 @@ export interface DetectedLoanPayment {
   currentBalance: number;
   /** Whether the account is a mortgage */
   isMortgage: boolean;
+  /** Average extra principal payment per period (0 if none detected) */
+  averageExtraPrincipal: number;
+  /** Number of extra principal payments detected */
+  extraPrincipalCount: number;
+  /** Principal portion from the most recent split payment (null if no splits) */
+  lastPrincipalAmount: number | null;
+  /** Interest portion from the most recent split payment (null if no splits) */
+  lastInterestAmount: number | null;
 }
 
 interface PaymentRecord {
@@ -141,13 +149,31 @@ export class LoanPaymentDetectorService {
     // Detect interest/principal split info
     const splitInfo = this.detectSplitInfo(regularPayments);
 
+    // Build running balance map from all transactions for accurate rate estimation
+    const balanceMap = this.buildRunningBalanceMap(account, transactions);
+
     // Estimate interest rate if we have split data
     const estimatedRate = this.estimateInterestRate(
-      account,
-      regularPayments,
-      regularAmount,
+      payments,
+      balanceMap,
       frequency,
     );
+
+    // Detect extra principal payments (payments outside the regular pattern)
+    const extraPrincipal = this.detectExtraPrincipal(
+      payments,
+      regularAmount,
+      regularPayments.length,
+    );
+
+    // Get the last payment's P/I split
+    const paymentsWithSplits = payments.filter(
+      (p) => p.interestAmount !== null && p.principalAmount !== null,
+    );
+    const lastSplitPayment =
+      paymentsWithSplits.length > 0
+        ? paymentsWithSplits[paymentsWithSplits.length - 1]
+        : null;
 
     // Calculate next due date
     const lastPayment = regularPayments[regularPayments.length - 1];
@@ -172,6 +198,10 @@ export class LoanPaymentDetectorService {
       paymentCount: regularPayments.length,
       currentBalance: Math.abs(Number(account.currentBalance)),
       isMortgage: account.accountType === AccountType.MORTGAGE,
+      averageExtraPrincipal: extraPrincipal.averageExtraPrincipal,
+      extraPrincipalCount: extraPrincipal.extraPrincipalCount,
+      lastPrincipalAmount: lastSplitPayment?.principalAmount ?? null,
+      lastInterestAmount: lastSplitPayment?.interestAmount ?? null,
     };
   }
 
@@ -478,50 +508,116 @@ export class LoanPaymentDetectorService {
   }
 
   /**
+   * Build a map of running balance before each transaction date.
+   * Uses all transactions on the loan account to track the actual balance
+   * at each point in time, giving accurate data for interest rate estimation.
+   */
+  private buildRunningBalanceMap(
+    account: Account,
+    transactions: Transaction[],
+  ): Map<string, number> {
+    const balanceMap = new Map<string, number>();
+    // Start from the absolute opening balance (loan balances are negative liabilities)
+    let absBalance = Math.abs(Number(account.openingBalance));
+
+    // Transactions are already sorted by date ASC from the query
+    for (const tx of transactions) {
+      const dateStr =
+        typeof tx.transactionDate === "string"
+          ? tx.transactionDate.split("T")[0]
+          : String(tx.transactionDate);
+
+      // Record balance before the first transaction on this date
+      if (!balanceMap.has(dateStr)) {
+        balanceMap.set(dateStr, absBalance);
+      }
+
+      // Payments (positive) reduce the absolute balance;
+      // charges/fees (negative) increase it
+      absBalance -= Number(tx.amount);
+    }
+
+    return balanceMap;
+  }
+
+  /**
    * Estimate the annual interest rate from payment data.
-   * Uses the relationship: interest = balance * (annual_rate / periods_per_year)
-   *
-   * If split data is available, uses the interest portion directly.
-   * Otherwise, tries to estimate from balance changes.
+   * Uses the actual running balance at each payment date for accuracy,
+   * and takes the median rate to be robust against outliers.
    */
   private estimateInterestRate(
-    account: Account,
     payments: PaymentRecord[],
-    regularAmount: number,
+    balanceMap: Map<string, number>,
     frequency: string,
   ): number | null {
-    // Try to estimate from split data first
     const paymentsWithSplits = payments.filter(
       (p) => p.interestAmount !== null && p.principalAmount !== null,
     );
 
-    if (paymentsWithSplits.length >= 2) {
-      // Use the earliest payments for best accuracy (balance is closest to original)
-      const earlyPayments = paymentsWithSplits.slice(0, 6);
-      const rates: number[] = [];
-      const periodsPerYear = this.getPeriodsPerYear(frequency);
+    if (paymentsWithSplits.length < 1) {
+      return null;
+    }
 
-      // We don't know the exact balance at each point, but we can estimate
-      // from the opening balance and principal payments made
-      let estimatedBalance = Math.abs(Number(account.openingBalance));
+    const periodsPerYear = this.getPeriodsPerYear(frequency);
+    const rates: number[] = [];
 
-      for (const p of earlyPayments) {
-        if (estimatedBalance <= 0 || !p.interestAmount) continue;
-        const periodicRate = p.interestAmount / estimatedBalance;
-        const annualRate = periodicRate * periodsPerYear * 100;
-        if (annualRate > 0 && annualRate < 50) {
-          rates.push(annualRate);
-        }
-        estimatedBalance -= p.principalAmount || 0;
-      }
+    for (const p of paymentsWithSplits) {
+      const dateStr = p.date.split("T")[0];
+      const balance = balanceMap.get(dateStr);
+      if (!balance || balance <= 0 || !p.interestAmount) continue;
 
-      if (rates.length > 0) {
-        const avgRate = rates.reduce((s, r) => s + r, 0) / rates.length;
-        return Math.round(avgRate * 100) / 100;
+      const periodicRate = p.interestAmount / balance;
+      const annualRate = periodicRate * periodsPerYear * 100;
+      if (annualRate > 0 && annualRate < 50) {
+        rates.push(annualRate);
       }
     }
 
-    return null;
+    if (rates.length === 0) {
+      return null;
+    }
+
+    // Use median for robustness against outliers
+    rates.sort((a, b) => a - b);
+    const mid = Math.floor(rates.length / 2);
+    const medianRate =
+      rates.length % 2 === 0
+        ? (rates[mid - 1] + rates[mid]) / 2
+        : rates[mid];
+
+    return Math.round(medianRate * 100) / 100;
+  }
+
+  /**
+   * Detect extra principal payments beyond the regular payment amount.
+   * These are payments that don't match the regular payment pattern.
+   */
+  private detectExtraPrincipal(
+    allPayments: PaymentRecord[],
+    regularAmount: number,
+    regularPaymentCount: number,
+  ): { averageExtraPrincipal: number; extraPrincipalCount: number } {
+    let totalExtra = 0;
+    let count = 0;
+
+    for (const p of allPayments) {
+      const deviation = Math.abs(p.amount - regularAmount) / regularAmount;
+      if (deviation >= 0.05) {
+        // This payment is not a regular payment -- treat entire amount as extra principal
+        totalExtra += p.amount;
+        count++;
+      }
+    }
+
+    if (count === 0) {
+      return { averageExtraPrincipal: 0, extraPrincipalCount: 0 };
+    }
+
+    // Average per regular payment period
+    const periods = Math.max(regularPaymentCount, 1);
+    const avgPerPeriod = Math.round((totalExtra / periods) * 100) / 100;
+
+    return { averageExtraPrincipal: avgPerPeriod, extraPrincipalCount: count };
   }
 
   private getPeriodsPerYear(frequency: string): number {
@@ -605,6 +701,10 @@ export class LoanPaymentDetectorService {
       paymentCount: 1,
       currentBalance: Math.abs(Number(account.currentBalance)),
       isMortgage: account.accountType === AccountType.MORTGAGE,
+      averageExtraPrincipal: 0,
+      extraPrincipalCount: 0,
+      lastPrincipalAmount: payment.principalAmount,
+      lastInterestAmount: payment.interestAmount,
     };
   }
 }

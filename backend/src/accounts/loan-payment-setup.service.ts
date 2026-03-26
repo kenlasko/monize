@@ -92,11 +92,24 @@ export class LoanPaymentSetupService {
     // Calculate principal/interest split for the next payment
     const currentBalance = Math.abs(Number(account.currentBalance));
     const interestRate = dto.interestRate || Number(account.interestRate) || 0;
+    const extraPrincipal = dto.extraPrincipal || 0;
+    // Base payment amount excludes extra principal for split calculation
+    const basePaymentAmount = dto.paymentAmount - extraPrincipal;
 
     let principalPayment: number;
     let interestPayment: number;
 
-    if (
+    if (dto.detectedInterestAmount != null && dto.detectedInterestAmount >= 0) {
+      // Use the interest amount detected from imported transaction history.
+      // This continues the actual P/I ratio from the existing data rather than
+      // recalculating from the amortization formula, which may differ due to
+      // compounding method, rate changes, or rounding differences.
+      interestPayment = dto.detectedInterestAmount;
+      principalPayment = basePaymentAmount - interestPayment + extraPrincipal;
+      if (principalPayment < 0) {
+        principalPayment = 0;
+      }
+    } else if (
       account.accountType === AccountType.MORTGAGE &&
       (dto.isCanadianMortgage || account.isCanadianMortgage)
     ) {
@@ -104,21 +117,21 @@ export class LoanPaymentSetupService {
       const split = calculateMortgagePaymentSplit(
         currentBalance,
         interestRate,
-        dto.paymentAmount,
+        basePaymentAmount,
         dto.paymentFrequency as MortgagePaymentFrequency,
         dto.isCanadianMortgage ?? account.isCanadianMortgage ?? false,
         dto.isVariableRate ?? account.isVariableRate ?? false,
       );
-      principalPayment = split.principal;
+      principalPayment = split.principal + extraPrincipal;
       interestPayment = split.interest;
     } else if (interestRate > 0) {
       const split = calculatePaymentSplit(
         currentBalance,
         interestRate,
-        dto.paymentAmount,
+        basePaymentAmount,
         dto.paymentFrequency as PaymentFrequency,
       );
-      principalPayment = split.principal;
+      principalPayment = split.principal + extraPrincipal;
       interestPayment = split.interest;
     } else {
       // No interest rate - entire payment goes to principal

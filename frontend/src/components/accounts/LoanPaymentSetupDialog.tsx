@@ -57,6 +57,13 @@ export function LoanPaymentSetupDialog({
   const [payeeName, setPayeeName] = useState('');
   const [autoPost, setAutoPost] = useState(false);
 
+  // Extra principal
+  const [includeExtraPrincipal, setIncludeExtraPrincipal] = useState(false);
+  const [extraPrincipal, setExtraPrincipal] = useState<number>(0);
+
+  // Use detected split ratio from imported transactions
+  const [useDetectedSplit, setUseDetectedSplit] = useState(false);
+
   // Mortgage-specific
   const isMortgage = loanAccount.accountType === 'MORTGAGE';
   const [isCanadianMortgage, setIsCanadianMortgage] = useState(false);
@@ -74,6 +81,12 @@ export function LoanPaymentSetupDialog({
     .map((a) => ({ value: a.id, label: a.name }));
 
   const categoryOptions = getCategorySelectOptions(categories);
+
+  const hasDetectedSplit =
+    detected?.lastPrincipalAmount != null && detected?.lastInterestAmount != null;
+
+  // Total payment including extra principal
+  const totalPaymentAmount = paymentAmount + (includeExtraPrincipal ? extraPrincipal : 0);
 
   // Detect payment pattern on open
   useEffect(() => {
@@ -96,15 +109,31 @@ export function LoanPaymentSetupDialog({
           setNextDueDate(result.suggestedNextDueDate);
           setInterestRate(result.estimatedInterestRate ?? undefined);
           setInterestCategoryId(result.interestCategoryId || '');
+
+          // Pre-fill extra principal if detected
+          if (result.averageExtraPrincipal > 0) {
+            setExtraPrincipal(result.averageExtraPrincipal);
+          }
+
+          // Enable detected split by default for mortgages when split data is available
+          if (
+            result.lastPrincipalAmount != null &&
+            result.lastInterestAmount != null &&
+            loanAccount.accountType === 'MORTGAGE'
+          ) {
+            setUseDetectedSplit(true);
+          }
         } else {
           setDetected(null);
-          // Set defaults
           setPaymentAmount(0);
           setPaymentFrequency('MONTHLY');
           setNextDueDate('');
           setInterestRate(undefined);
           setInterestCategoryId('');
           setSourceAccountId(sourceAccountOptions[0]?.value || '');
+          setExtraPrincipal(0);
+          setIncludeExtraPrincipal(false);
+          setUseDetectedSplit(false);
         }
       } catch (error) {
         logger.error('Failed to detect payment pattern:', error);
@@ -118,7 +147,7 @@ export function LoanPaymentSetupDialog({
   }, [isOpen, loanAccount.accountId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSubmit = useCallback(async () => {
-    if (!paymentAmount || !sourceAccountId || !nextDueDate) {
+    if (!totalPaymentAmount || !sourceAccountId || !nextDueDate) {
       toast.error('Please fill in all required fields');
       return;
     }
@@ -126,7 +155,7 @@ export function LoanPaymentSetupDialog({
     setIsSubmitting(true);
     try {
       const data: SetupLoanPaymentsData = {
-        paymentAmount,
+        paymentAmount: totalPaymentAmount,
         paymentFrequency,
         sourceAccountId,
         nextDueDate,
@@ -135,6 +164,14 @@ export function LoanPaymentSetupDialog({
         payeeName: payeeName || undefined,
         autoPost,
       };
+
+      if (includeExtraPrincipal && extraPrincipal > 0) {
+        data.extraPrincipal = extraPrincipal;
+      }
+
+      if (useDetectedSplit && detected?.lastInterestAmount != null) {
+        data.detectedInterestAmount = detected.lastInterestAmount;
+      }
 
       if (isMortgage) {
         data.isCanadianMortgage = isCanadianMortgage;
@@ -155,8 +192,9 @@ export function LoanPaymentSetupDialog({
       setIsSubmitting(false);
     }
   }, [
-    paymentAmount, paymentFrequency, sourceAccountId, nextDueDate,
+    totalPaymentAmount, paymentFrequency, sourceAccountId, nextDueDate,
     interestRate, interestCategoryId, payeeName, autoPost,
+    includeExtraPrincipal, extraPrincipal, useDetectedSplit, detected,
     isMortgage, isCanadianMortgage, isVariableRate, amortizationMonths, termMonths,
     loanAccount, onSetupComplete, onClose,
   ]);
@@ -201,6 +239,18 @@ export function LoanPaymentSetupDialog({
                     </span>
                   )}
                 </p>
+                {hasDetectedSplit && (
+                  <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                    Last payment split: ${detected.lastPrincipalAmount?.toFixed(2)} principal
+                    {' / '}${detected.lastInterestAmount?.toFixed(2)} interest
+                  </p>
+                )}
+                {detected.extraPrincipalCount > 0 && (
+                  <p className="text-xs text-blue-600 dark:text-blue-400 mt-0.5">
+                    {detected.extraPrincipalCount} extra principal payment{detected.extraPrincipalCount !== 1 ? 's' : ''} detected
+                    {' ('}avg ${detected.averageExtraPrincipal.toFixed(2)}/period)
+                  </p>
+                )}
                 <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
                   Review and adjust the values below before saving.
                 </p>
@@ -211,12 +261,64 @@ export function LoanPaymentSetupDialog({
               {/* Payment Amount */}
               <div>
                 <CurrencyInput
-                  label="Payment Amount *"
+                  label="Regular Payment Amount *"
                   value={paymentAmount || undefined}
                   onChange={(val) => setPaymentAmount(val ?? 0)}
                   prefix="$"
                 />
               </div>
+
+              {/* Extra Principal */}
+              {detected && detected.extraPrincipalCount > 0 && (
+                <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 space-y-2">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={includeExtraPrincipal}
+                      onChange={(e) => setIncludeExtraPrincipal(e.target.checked)}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Include extra principal payments
+                    </span>
+                  </label>
+                  {includeExtraPrincipal && (
+                    <div className="ml-6">
+                      <CurrencyInput
+                        label="Extra Principal Per Payment"
+                        value={extraPrincipal || undefined}
+                        onChange={(val) => setExtraPrincipal(val ?? 0)}
+                        prefix="$"
+                      />
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        Total payment: ${totalPaymentAmount.toFixed(2)}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Use Detected Split Ratio */}
+              {hasDetectedSplit && (
+                <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={useDetectedSplit}
+                      onChange={(e) => setUseDetectedSplit(e.target.checked)}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Use principal/interest split from imported transactions
+                    </span>
+                  </label>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 ml-6">
+                    {useDetectedSplit
+                      ? `Will use $${detected!.lastInterestAmount!.toFixed(2)} for interest, remainder to principal`
+                      : 'Will calculate split from the interest rate and current balance'}
+                  </p>
+                </div>
+              )}
 
               {/* Payment Frequency */}
               <div>
@@ -400,7 +502,7 @@ export function LoanPaymentSetupDialog({
               </Button>
               <Button
                 onClick={handleSubmit}
-                disabled={isSubmitting || !paymentAmount || !sourceAccountId || !nextDueDate}
+                disabled={isSubmitting || !totalPaymentAmount || !sourceAccountId || !nextDueDate}
               >
                 {isSubmitting ? 'Setting Up...' : 'Set Up Payments'}
               </Button>

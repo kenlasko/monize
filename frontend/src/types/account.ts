@@ -186,6 +186,10 @@ export interface DetectedLoanPayment {
   paymentCount: number;
   currentBalance: number;
   isMortgage: boolean;
+  averageExtraPrincipal: number;
+  extraPrincipalCount: number;
+  lastPrincipalAmount: number | null;
+  lastInterestAmount: number | null;
 }
 
 export interface SetupLoanPaymentsData {
@@ -201,6 +205,8 @@ export interface SetupLoanPaymentsData {
   isVariableRate?: boolean;
   amortizationMonths?: number;
   termMonths?: number;
+  extraPrincipal?: number;
+  detectedInterestAmount?: number;
 }
 
 export interface SetupLoanPaymentsResponse {
