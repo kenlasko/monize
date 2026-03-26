@@ -724,61 +724,75 @@ export class LoanPaymentDetectorService {
 
   /**
    * Estimate the annual interest rate from payment data.
-   * Uses the actual running balance at each payment date and the real
-   * number of days between payments to annualize. This avoids dependence
-   * on the detected frequency, which can be wrong if payments are not
-   * perfectly deduplicated.
+   *
+   * Uses consecutive payment splits to derive the periodic rate without
+   * depending on the account balance (which may be wrong if openingBalance
+   * had the wrong sign). For amortization:
+   *   interest_n - interest_{n+1} = principal_n * periodicRate
+   * So: periodicRate = (interest_n - interest_{n+1}) / principal_n
+   *
+   * Falls back to balance-based estimation when consecutive splits aren't
+   * available.
    */
   private estimateInterestRate(
     payments: PaymentRecord[],
     balanceMap: Map<string, number>,
-    _frequency: string,
+    frequency: string,
   ): number | null {
     const paymentsWithSplits = payments.filter(
       (p) => p.interestAmount !== null && p.principalAmount !== null,
     );
 
-    if (paymentsWithSplits.length < 2) {
-      // Need at least 2 payments to compute days between them
-      if (paymentsWithSplits.length === 1) {
-        // Fall back to using the detected frequency for a single payment
-        const p = paymentsWithSplits[0];
-        const dateStr = p.date.split("T")[0];
-        const balance = balanceMap.get(dateStr);
-        if (balance && balance > 0 && p.interestAmount) {
-          const periodicRate = p.interestAmount / balance;
-          const periodsPerYear = this.getPeriodsPerYear(_frequency);
-          const annualRate = periodicRate * periodsPerYear * 100;
-          if (annualRate > 0 && annualRate < 50) {
-            return Math.round(annualRate * 100) / 100;
-          }
-        }
-      }
+    if (paymentsWithSplits.length < 1) {
       return null;
     }
 
+    const periodsPerYear = this.getPeriodsPerYear(frequency);
     const rates: number[] = [];
 
-    // Use actual days between consecutive payments to annualize the rate,
-    // making the estimate independent of frequency detection.
-    for (let i = 1; i < paymentsWithSplits.length; i++) {
-      const p = paymentsWithSplits[i];
-      const prevDate = new Date(paymentsWithSplits[i - 1].date);
-      const currDate = new Date(p.date);
-      const daysBetween = Math.round(
-        (currDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24),
-      );
+    // Primary: estimate from consecutive interest/principal pairs.
+    // In amortization, the drop in interest between consecutive payments
+    // equals the previous principal times the periodic rate.
+    for (let i = 0; i < paymentsWithSplits.length - 1; i++) {
+      const curr = paymentsWithSplits[i];
+      const next = paymentsWithSplits[i + 1];
+      if (
+        !curr.interestAmount ||
+        !next.interestAmount ||
+        !curr.principalAmount
+      ) {
+        continue;
+      }
 
-      if (daysBetween <= 0) continue; // Skip same-day entries
+      const interestDrop = curr.interestAmount - next.interestAmount;
+      // Use regular principal (subtract extra if detected in splits)
+      let regularPrincipal = curr.principalAmount;
+      if (curr.principalSplitAmounts.length >= 2) {
+        // Use the largest split as regular principal (varies/increases)
+        regularPrincipal = Math.max(...curr.principalSplitAmounts);
+      }
 
-      const dateStr = p.date.split("T")[0];
-      const balance = balanceMap.get(dateStr);
-      if (!balance || balance <= 0 || !p.interestAmount) continue;
+      if (regularPrincipal > 0 && interestDrop > 0) {
+        const periodicRate = interestDrop / regularPrincipal;
+        const annualRate = periodicRate * periodsPerYear * 100;
+        if (annualRate > 0 && annualRate < 50) {
+          rates.push(annualRate);
+        }
+      }
+    }
 
-      const periodicRate = p.interestAmount / balance;
-      const annualRate = periodicRate * (365 / daysBetween) * 100;
-      if (annualRate > 0 && annualRate < 50) {
-        rates.push(annualRate);
+    // Fallback: balance-based estimation if consecutive approach didn't work
+    if (rates.length === 0) {
+      for (const p of paymentsWithSplits) {
+        const dateStr = p.date.split("T")[0];
+        const balance = balanceMap.get(dateStr);
+        if (!balance || balance <= 0 || !p.interestAmount) continue;
+
+        const periodicRate = p.interestAmount / balance;
+        const annualRate = periodicRate * periodsPerYear * 100;
+        if (annualRate > 0 && annualRate < 50) {
+          rates.push(annualRate);
+        }
       }
     }
 

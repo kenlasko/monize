@@ -218,7 +218,7 @@ export class LoanPaymentSetupService {
       scheduledTransactionId: scheduledTransaction.id,
     };
 
-    if (interestRate > 0 && !account.interestRate) {
+    if (interestRate > 0) {
       updateData.interestRate = interestRate;
     }
 

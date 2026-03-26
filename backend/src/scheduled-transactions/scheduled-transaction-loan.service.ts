@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { ScheduledTransaction } from "./entities/scheduled-transaction.entity";
@@ -15,6 +15,8 @@ import {
 
 @Injectable()
 export class ScheduledTransactionLoanService {
+  private readonly logger = new Logger(ScheduledTransactionLoanService.name);
+
   constructor(
     @InjectRepository(ScheduledTransaction)
     private scheduledTransactionsRepository: Repository<ScheduledTransaction>,
@@ -106,6 +108,14 @@ export class ScheduledTransactionLoanService {
         frequency,
       );
     }
+
+    this.logger.log(
+      `Recalculate loan splits: balance=${currentBalance}, rate=${interestRate}%, ` +
+        `freq=${frequency}, basePayment=${basePaymentAmount}, extra=${extraPrincipalAmount}, ` +
+        `newPrincipal=${newSplit.principal}, newInterest=${newSplit.interest}, ` +
+        `isMortgage=${loanAccount.accountType === "MORTGAGE"}, ` +
+        `isCanadian=${loanAccount.isCanadianMortgage}`,
+    );
 
     if (principalSplit) {
       principalSplit.amount = -newSplit.principal;
