@@ -437,11 +437,8 @@ describe('AccountList', () => {
 
     expect(screen.getByText('2 of 2 accounts')).toBeInTheDocument();
 
-    const inNetWorthButton = screen.getAllByRole('button').find(
-      (btn) => btn.textContent === 'In Net Worth' && btn.closest('.inline-flex.rounded-md')
-    );
-    expect(inNetWorthButton).toBeTruthy();
-    fireEvent.click(inNetWorthButton!);
+    const netWorthFilter = screen.getByDisplayValue('Net Worth: All');
+    fireEvent.change(netWorthFilter, { target: { value: 'included' } });
 
     expect(screen.getByText('1 of 2 accounts')).toBeInTheDocument();
     expect(screen.getByText('Included Account')).toBeInTheDocument();
@@ -458,11 +455,8 @@ describe('AccountList', () => {
       <AccountList accounts={accounts} onEdit={mockOnEdit} onRefresh={mockOnRefresh} />
     );
 
-    const excludedButton = screen.getAllByRole('button').find(
-      (btn) => btn.textContent === 'Excluded' && btn.closest('.inline-flex.rounded-md')
-    );
-    expect(excludedButton).toBeTruthy();
-    fireEvent.click(excludedButton!);
+    const netWorthFilter = screen.getByDisplayValue('Net Worth: All');
+    fireEvent.change(netWorthFilter, { target: { value: 'excluded' } });
 
     expect(screen.getByText('1 of 2 accounts')).toBeInTheDocument();
     expect(screen.queryByText('Included Account')).not.toBeInTheDocument();

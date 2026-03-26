@@ -430,39 +430,16 @@ export function AccountList({ accounts, brokerageMarketValues, onEdit, onRefresh
               </button>
               </div>
 
-              {/* Net Worth segmented control */}
-              <div className="inline-flex rounded-md shadow-sm">
-              <button
-                onClick={() => setFilterNetWorth('')}
-                className={`px-3 py-1.5 text-sm font-medium rounded-l-md border ${
-                  filterNetWorth === ''
-                    ? 'bg-blue-600 text-white border-blue-600'
-                    : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'
-                }`}
+              {/* Net Worth filter */}
+              <select
+                value={filterNetWorth}
+                onChange={(e) => setFilterNetWorth(e.target.value as 'included' | 'excluded' | '')}
+                className="text-sm font-sans border border-gray-300 dark:border-gray-600 rounded-md px-3 py-1.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               >
-                All
-              </button>
-              <button
-                onClick={() => setFilterNetWorth('included')}
-                className={`px-3 py-1.5 text-sm font-medium border-t border-b ${
-                  filterNetWorth === 'included'
-                    ? 'bg-blue-600 text-white border-blue-600'
-                    : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'
-                }`}
-              >
-                In Net Worth
-              </button>
-              <button
-                onClick={() => setFilterNetWorth('excluded')}
-                className={`px-3 py-1.5 text-sm font-medium rounded-r-md border ${
-                  filterNetWorth === 'excluded'
-                    ? 'bg-blue-600 text-white border-blue-600'
-                    : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'
-                }`}
-              >
-                Excluded
-              </button>
-              </div>
+                <option value="">Net Worth: All</option>
+                <option value="included">In Net Worth</option>
+                <option value="excluded">Excluded from Net Worth</option>
+              </select>
             </div>
 
             {activeFilterCount > 0 && (
