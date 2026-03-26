@@ -752,7 +752,9 @@ export class LoanPaymentDetectorService {
 
     // Primary: estimate from consecutive interest/principal pairs.
     // In amortization, the drop in interest between consecutive payments
-    // equals the previous principal times the periodic rate.
+    // equals the TOTAL principal reduction times the periodic rate.
+    // Total principal = regular principal + extra principal, since both
+    // reduce the balance and thus affect the next interest calculation.
     for (let i = 0; i < paymentsWithSplits.length - 1; i++) {
       const curr = paymentsWithSplits[i];
       const next = paymentsWithSplits[i + 1];
@@ -765,15 +767,13 @@ export class LoanPaymentDetectorService {
       }
 
       const interestDrop = curr.interestAmount - next.interestAmount;
-      // Use regular principal (subtract extra if detected in splits)
-      let regularPrincipal = curr.principalAmount;
-      if (curr.principalSplitAmounts.length >= 2) {
-        // Use the largest split as regular principal (varies/increases)
-        regularPrincipal = Math.max(...curr.principalSplitAmounts);
-      }
+      // Total principal going to the loan account (regular + extra)
+      // Both reduce the balance and cause the interest to drop
+      const totalPrincipal =
+        (curr.principalAmount || 0) + (curr.extraPrincipalAmount || 0);
 
-      if (regularPrincipal > 0 && interestDrop > 0) {
-        const periodicRate = interestDrop / regularPrincipal;
+      if (totalPrincipal > 0 && interestDrop > 0) {
+        const periodicRate = interestDrop / totalPrincipal;
         const annualRate = periodicRate * periodsPerYear * 100;
         if (annualRate > 0 && annualRate < 50) {
           rates.push(annualRate);
