@@ -134,8 +134,10 @@ describe('useInvestmentData – handleDeleteTransaction', () => {
     // t1 should be removed immediately, t2 should remain
     expect(result.current.transactions.every(tx => tx.id !== 't1')).toBe(true);
 
-    // Clean up the hanging promise
-    resolveDelete();
+    // Clean up the hanging promise — wrap in act since resolving triggers state updates
+    await act(async () => {
+      resolveDelete();
+    });
   });
 
   it('calls deleteTransaction API with the correct id', async () => {

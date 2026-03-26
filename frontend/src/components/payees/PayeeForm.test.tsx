@@ -33,9 +33,11 @@ describe('PayeeForm', () => {
     expect(screen.getByText('Create Payee')).toBeInTheDocument();
   });
 
-  it('renders update form when editing', () => {
+  it('renders update form when editing', async () => {
     const payee = { id: 'p1', name: 'Walmart', defaultCategoryId: 'c1', notes: 'Groceries' } as any;
-    render(<PayeeForm payee={payee} categories={categories} onSubmit={onSubmit} onCancel={onCancel} />);
+    await act(async () => {
+      render(<PayeeForm payee={payee} categories={categories} onSubmit={onSubmit} onCancel={onCancel} />);
+    });
     expect(screen.getByText('Update Payee')).toBeInTheDocument();
   });
 
@@ -56,9 +58,11 @@ describe('PayeeForm', () => {
     expect(screen.getByPlaceholderText('e.g., STARBUCKS #*')).toBeInTheDocument();
   });
 
-  it('renders alias manager when editing an existing payee', () => {
+  it('renders alias manager when editing an existing payee', async () => {
     const payee = { id: 'p1', name: 'Walmart', defaultCategoryId: 'c1', notes: '' } as any;
-    render(<PayeeForm payee={payee} categories={categories} onSubmit={onSubmit} onCancel={onCancel} />);
+    await act(async () => {
+      render(<PayeeForm payee={payee} categories={categories} onSubmit={onSubmit} onCancel={onCancel} />);
+    });
     expect(screen.getByText('Aliases')).toBeInTheDocument();
   });
 
