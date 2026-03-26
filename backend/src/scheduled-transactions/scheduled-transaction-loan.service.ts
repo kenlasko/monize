@@ -61,13 +61,39 @@ export class ScheduledTransactionLoanService {
     const frequency = (loanAccount.paymentFrequency ||
       scheduledTransaction.frequency) as PaymentFrequency;
 
+    const splits = scheduledTransaction.splits || [];
+
+    // Identify splits: there may be a regular principal transfer, an interest
+    // category split, and optionally a separate extra principal transfer.
+    // Extra principal splits have memo "Extra Principal" and transfer to the
+    // loan account. Regular principal also transfers to the loan account.
+    const extraPrincipalSplit = splits.find(
+      (s) =>
+        s.transferAccountId === loanAccountId &&
+        s.memo?.toLowerCase().includes("extra"),
+    );
+    const principalSplit = splits.find(
+      (s) =>
+        s.transferAccountId === loanAccountId &&
+        s !== extraPrincipalSplit,
+    );
+    const interestSplit = splits.find(
+      (s) => s.categoryId && !s.transferAccountId,
+    );
+
+    // The base payment for amortization calculation excludes extra principal
+    const extraPrincipalAmount = extraPrincipalSplit
+      ? Math.abs(Number(extraPrincipalSplit.amount))
+      : 0;
+    const basePaymentAmount = paymentAmount - extraPrincipalAmount;
+
     let newSplit: { principal: number; interest: number };
 
     if (loanAccount.accountType === "MORTGAGE") {
       newSplit = calculateMortgagePaymentSplit(
         currentBalance,
         interestRate,
-        paymentAmount,
+        basePaymentAmount,
         frequency as MortgagePaymentFrequency,
         loanAccount.isCanadianMortgage,
         loanAccount.isVariableRate,
@@ -76,18 +102,10 @@ export class ScheduledTransactionLoanService {
       newSplit = calculatePaymentSplit(
         currentBalance,
         interestRate,
-        paymentAmount,
+        basePaymentAmount,
         frequency,
       );
     }
-
-    const splits = scheduledTransaction.splits || [];
-    const principalSplit = splits.find(
-      (s) => s.transferAccountId === loanAccountId,
-    );
-    const interestSplit = splits.find(
-      (s) => s.categoryId && !s.transferAccountId,
-    );
 
     if (principalSplit) {
       principalSplit.amount = -newSplit.principal;
