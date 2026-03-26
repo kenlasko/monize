@@ -174,6 +174,7 @@ export class NetWorthService {
        WHERE mab.user_id = $1
          AND mab.month >= DATE_TRUNC('month', $2::DATE)
          AND mab.month <= DATE_TRUNC('month', $3::DATE)
+         AND a.exclude_from_net_worth = false
        ORDER BY mab.month`,
       [userId, start, end],
     );

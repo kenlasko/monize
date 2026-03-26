@@ -125,6 +125,9 @@ export class Account {
   @Column({ name: "is_favourite", default: false })
   isFavourite: boolean;
 
+  @Column({ name: "exclude_from_net_worth", default: false })
+  excludeFromNetWorth: boolean;
+
   @Column({
     type: "varchar",
     length: 50,

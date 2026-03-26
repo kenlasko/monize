@@ -116,6 +116,7 @@ CREATE TABLE accounts (
     is_closed BOOLEAN DEFAULT false,
     closed_date DATE,
     is_favourite BOOLEAN DEFAULT false,
+    exclude_from_net_worth BOOLEAN DEFAULT false,
     -- Loan-specific fields
     payment_amount NUMERIC(20, 4), -- payment amount per period for loans
     payment_frequency VARCHAR(20), -- 'WEEKLY', 'BIWEEKLY', 'MONTHLY', 'QUARTERLY', 'YEARLY'

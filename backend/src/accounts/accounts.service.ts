@@ -757,6 +757,8 @@ export class AccountsService {
       const balance = Number(account.currentBalance);
       totalBalance += balance;
 
+      if (account.excludeFromNetWorth) return;
+
       if (assetTypes.includes(account.accountType)) {
         totalAssets += balance;
       } else if (liabilityTypes.includes(account.accountType)) {

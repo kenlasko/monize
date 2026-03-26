@@ -69,6 +69,7 @@ const accountSchema = z.object({
   accountNumber: z.string().optional(),
   institution: z.string().optional(),
   isFavourite: z.boolean().optional(),
+  excludeFromNetWorth: z.boolean().optional(),
   createInvestmentPair: z.boolean().optional(),
   // Credit card statement fields
   statementDueDay: optionalNumberWithRange(1, 31),
@@ -155,6 +156,7 @@ export function AccountForm({ account, onSubmit, onCancel, onDirtyChange, submit
           accountNumber: account.accountNumber || undefined,
           institution: account.institution || undefined,
           isFavourite: account.isFavourite || false,
+          excludeFromNetWorth: account.excludeFromNetWorth || false,
           statementDueDay: account.statementDueDay || undefined,
           statementSettlementDay: account.statementSettlementDay || undefined,
           paymentAmount: account.paymentAmount
@@ -176,6 +178,7 @@ export function AccountForm({ account, onSubmit, onCancel, onDirtyChange, submit
           currencyCode: defaultCurrency,
           openingBalance: 0,
           isFavourite: false,
+          excludeFromNetWorth: false,
           paymentFrequency: 'MONTHLY' as PaymentFrequency,
         },
   });
@@ -674,6 +677,17 @@ export function AccountForm({ account, onSubmit, onCancel, onDirtyChange, submit
         </button>
         {/* Hidden input for form registration */}
         <input type="hidden" {...register('isFavourite')} />
+
+        <label className="flex items-center gap-2 px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer">
+          <input
+            type="checkbox"
+            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            {...register('excludeFromNetWorth')}
+          />
+          <span className="text-sm text-gray-700 dark:text-gray-300">
+            Exclude from Net Worth
+          </span>
+        </label>
 
         {/* Import/Export buttons - only shown when editing */}
         {account && (

@@ -39,6 +39,7 @@ describe("AccountsService", () => {
     linkedAccountId: null,
     accountSubType: null,
     scheduledTransactionId: null,
+    excludeFromNetWorth: false,
   };
 
   beforeEach(async () => {
@@ -2275,6 +2276,48 @@ describe("AccountsService", () => {
       expect(result.totalLiabilities).toBe(0);
       expect(result.netWorth).toBe(0);
       expect(result.totalBalance).toBe(0);
+    });
+
+    it("excludes accounts with excludeFromNetWorth from net worth but includes in totalBalance", async () => {
+      const mixedAccounts = [
+        {
+          ...mockAccount,
+          id: "a1",
+          accountType: AccountType.CHEQUING,
+          currentBalance: 5000,
+          excludeFromNetWorth: false,
+        },
+        {
+          ...mockAccount,
+          id: "a2",
+          accountType: AccountType.SAVINGS,
+          currentBalance: 10000,
+          excludeFromNetWorth: true,
+        },
+        {
+          ...mockAccount,
+          id: "l1",
+          accountType: AccountType.CREDIT_CARD,
+          currentBalance: -2000,
+          excludeFromNetWorth: true,
+        },
+      ];
+
+      const getMany = jest.fn().mockResolvedValue(mixedAccounts);
+      accountsRepository.createQueryBuilder.mockReturnValue({
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getMany,
+      });
+
+      const result = await service.getSummary("user-1");
+
+      expect(result.totalAccounts).toBe(3);
+      expect(result.totalBalance).toBe(5000 + 10000 - 2000);
+      expect(result.totalAssets).toBe(5000);
+      expect(result.totalLiabilities).toBe(0);
+      expect(result.netWorth).toBe(5000);
     });
   });
 });

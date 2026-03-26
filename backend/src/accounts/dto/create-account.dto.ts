@@ -132,6 +132,16 @@ export class CreateAccountDto {
   @IsBoolean()
   isFavourite?: boolean;
 
+  @ApiPropertyOptional({
+    example: false,
+    description:
+      "Whether to exclude this account from net worth calculations",
+    default: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  excludeFromNetWorth?: boolean;
+
   // Credit card statement fields
   @ApiPropertyOptional({
     example: 15,

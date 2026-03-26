@@ -40,6 +40,7 @@ export interface Account {
   isClosed: boolean;
   closedDate: string | null;
   isFavourite: boolean;
+  excludeFromNetWorth: boolean;
   // Credit card statement fields
   statementDueDay: number | null;
   statementSettlementDay: number | null;
@@ -78,6 +79,7 @@ export interface CreateAccountData {
   creditLimit?: number;
   interestRate?: number;
   isFavourite?: boolean;
+  excludeFromNetWorth?: boolean;
   createInvestmentPair?: boolean;
   // Credit card statement fields
   statementDueDay?: number;
