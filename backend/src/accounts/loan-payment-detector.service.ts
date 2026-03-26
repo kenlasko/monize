@@ -161,21 +161,26 @@ export class LoanPaymentDetectorService {
       frequency,
     );
 
-    // Detect extra principal payments (payments outside the regular pattern)
+    // Detect extra principal payments
     const extraPrincipal = this.detectExtraPrincipal(
       payments,
       regularAmount,
       regularPayments.length,
     );
 
-    // Get the last payment's P/I split
-    const paymentsWithSplits = payments.filter(
-      (p) => p.interestAmount !== null && p.principalAmount !== null,
-    );
-    const lastSplitPayment =
-      paymentsWithSplits.length > 0
-        ? paymentsWithSplits[paymentsWithSplits.length - 1]
-        : null;
+    // The regularAmount is the total from the source account (includes extra principal).
+    // Subtract extra principal to get the base payment (principal + interest only).
+    const basePaymentAmount =
+      extraPrincipal.averageExtraPrincipal > 0
+        ? Math.round(
+            (regularAmount - extraPrincipal.averageExtraPrincipal) * 100,
+          ) / 100
+        : regularAmount;
+
+    // Analyze the recent P/I split trend from several payments.
+    // In amortization, principal increases and interest decreases each period.
+    // Use the trend to project the next expected split values.
+    const splitAnalysis = this.analyzeSplitTrend(payments);
 
     // Calculate next due date
     const lastPayment = regularPayments[regularPayments.length - 1];
@@ -185,7 +190,7 @@ export class LoanPaymentDetectorService {
     );
 
     return {
-      paymentAmount: regularAmount,
+      paymentAmount: basePaymentAmount,
       paymentFrequency: frequency,
       confidence,
       sourceAccountId: sourceAccount.id,
@@ -202,8 +207,8 @@ export class LoanPaymentDetectorService {
       isMortgage: account.accountType === AccountType.MORTGAGE,
       averageExtraPrincipal: extraPrincipal.averageExtraPrincipal,
       extraPrincipalCount: extraPrincipal.extraPrincipalCount,
-      lastPrincipalAmount: lastSplitPayment?.principalAmount ?? null,
-      lastInterestAmount: lastSplitPayment?.interestAmount ?? null,
+      lastPrincipalAmount: splitAnalysis.projectedPrincipal,
+      lastInterestAmount: splitAnalysis.projectedInterest,
     };
   }
 
@@ -775,6 +780,88 @@ export class LoanPaymentDetectorService {
     return { averageExtraPrincipal: 0, extraPrincipalCount: 0 };
   }
 
+  /**
+   * Analyze the principal/interest split trend across recent payments.
+   * In amortization: principal increases each period, interest decreases.
+   * Uses the last several payments to project what the next split should be.
+   *
+   * Returns projected values for the next payment, or the most recent
+   * split values if the trend can't be determined.
+   */
+  private analyzeSplitTrend(
+    allPayments: PaymentRecord[],
+  ): { projectedPrincipal: number | null; projectedInterest: number | null } {
+    // Get payments with split data, in chronological order
+    const withSplits = allPayments.filter(
+      (p) => p.principalAmount !== null && p.interestAmount !== null,
+    );
+
+    if (withSplits.length === 0) {
+      return { projectedPrincipal: null, projectedInterest: null };
+    }
+
+    if (withSplits.length === 1) {
+      return {
+        projectedPrincipal: withSplits[0].principalAmount,
+        projectedInterest: withSplits[0].interestAmount,
+      };
+    }
+
+    // Use up to the last 6 payments for trend analysis
+    const recent = withSplits.slice(-6);
+    const principals = recent.map((p) => p.principalAmount!);
+    const interests = recent.map((p) => p.interestAmount!);
+
+    // Verify the amortization pattern:
+    // principal should be increasing, interest should be decreasing
+    let principalIncreasing = 0;
+    let interestDecreasing = 0;
+    for (let i = 1; i < recent.length; i++) {
+      if (principals[i] >= principals[i - 1]) principalIncreasing++;
+      if (interests[i] <= interests[i - 1]) interestDecreasing++;
+    }
+
+    const steps = recent.length - 1;
+    const hasAmortizationPattern =
+      principalIncreasing / steps >= 0.6 && interestDecreasing / steps >= 0.6;
+
+    if (hasAmortizationPattern && recent.length >= 3) {
+      // Project the next values by continuing the trend.
+      // Use the average step between consecutive payments.
+      const principalSteps: number[] = [];
+      const interestSteps: number[] = [];
+      for (let i = 1; i < recent.length; i++) {
+        principalSteps.push(principals[i] - principals[i - 1]);
+        interestSteps.push(interests[i] - interests[i - 1]);
+      }
+
+      const avgPrincipalStep =
+        principalSteps.reduce((s, v) => s + v, 0) / principalSteps.length;
+      const avgInterestStep =
+        interestSteps.reduce((s, v) => s + v, 0) / interestSteps.length;
+
+      const lastPrincipal = principals[principals.length - 1];
+      const lastInterest = interests[interests.length - 1];
+
+      const projectedPrincipal = Math.round(
+        (lastPrincipal + avgPrincipalStep) * 100,
+      ) / 100;
+      const projectedInterest = Math.max(
+        0,
+        Math.round((lastInterest + avgInterestStep) * 100) / 100,
+      );
+
+      return { projectedPrincipal, projectedInterest };
+    }
+
+    // No clear trend -- return the most recent split values
+    const last = withSplits[withSplits.length - 1];
+    return {
+      projectedPrincipal: last.principalAmount,
+      projectedInterest: last.interestAmount,
+    };
+  }
+
   private getPeriodsPerYear(frequency: string): number {
     switch (frequency) {
       case "WEEKLY":
@@ -840,8 +927,13 @@ export class LoanPaymentDetectorService {
     account: Account,
     payment: PaymentRecord,
   ): DetectedLoanPayment {
+    const extraAmount = payment.extraPrincipalAmount ?? 0;
+    const baseAmount =
+      extraAmount > 0
+        ? Math.round((payment.amount - extraAmount) * 100) / 100
+        : payment.amount;
     return {
-      paymentAmount: payment.amount,
+      paymentAmount: baseAmount,
       paymentFrequency: "MONTHLY", // Default assumption
       confidence: 0.2,
       sourceAccountId: payment.sourceAccountId,
