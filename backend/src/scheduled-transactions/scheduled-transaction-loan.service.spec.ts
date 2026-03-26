@@ -312,7 +312,11 @@ describe("ScheduledTransactionLoanService", () => {
     });
 
     it("should calculate correct interest for the current balance", async () => {
-      // $20,000 at 6% monthly: interest = 20000 * (0.06 / 12) = 100.00
+      // Uses amortization recurrence from previous splits:
+      // Previous: principal=400, interest=100 (consistent with $20K at 6% monthly)
+      // periodicRate = 0.06/12 = 0.005
+      // next_interest = 100 - 400 * 0.005 = 98.00
+      // next_principal = 500 - 98 = 402.00
       const loanAccount = makeLoanAccount({
         currentBalance: -20000,
         interestRate: 6,
@@ -320,7 +324,25 @@ describe("ScheduledTransactionLoanService", () => {
       });
       accountsRepository.findOne.mockResolvedValue(loanAccount);
 
-      const scheduledTx = makeScheduledTransaction({ amount: -500 });
+      const scheduledTx = makeScheduledTransaction({
+        amount: -500,
+        splits: [
+          {
+            id: "split-principal",
+            transferAccountId: loanAccountId,
+            categoryId: null,
+            amount: -400,
+            memo: "Principal",
+          },
+          {
+            id: "split-interest",
+            transferAccountId: null,
+            categoryId: "cat-interest",
+            amount: -100,
+            memo: "Interest",
+          },
+        ] as any,
+      });
       scheduledTransactionsRepository.findOne.mockResolvedValue(scheduledTx);
 
       await service.recalculateLoanPaymentSplits(
@@ -331,20 +353,22 @@ describe("ScheduledTransactionLoanService", () => {
       const interestSave = splitsRepository.save.mock.calls.find(
         (call: any) => call[0].categoryId === "cat-interest",
       );
-      // Interest = -100 (negated)
-      expect(interestSave[0].amount).toBe(-100);
+      // next_interest = 100 - 400 * 0.005 = 98.00
+      expect(interestSave[0].amount).toBe(-98);
 
       const principalSave = splitsRepository.save.mock.calls.find(
         (call: any) => call[0].transferAccountId === loanAccountId,
       );
-      // Principal = -(500 - 100) = -400
-      expect(principalSave[0].amount).toBe(-400);
+      // next_principal = 500 - 98 = 402
+      expect(principalSave[0].amount).toBe(-402);
     });
 
     it("should use mortgage-specific rate calculation for MORTGAGE accounts", async () => {
       // Canadian fixed-rate mortgage uses semi-annual compounding
-      // $200,000 at 6%, monthly: periodic rate = ((1 + 0.03)^(2/12)) - 1 = ~0.004938...
-      // Interest = 200000 * 0.004938... = ~987.65
+      // periodicRate = ((1 + 0.03)^(2/12)) - 1 = ~0.004938...
+      // Previous splits consistent with $200K at this rate:
+      //   interest = 200000 * 0.004938 = ~987.65, principal = 1500 - 987.65 = ~512.35
+      // Recurrence: next_interest = 987.65 - 512.35 * 0.004938 = ~985.12
       const mortgageAccount = makeLoanAccount({
         accountType: "MORTGAGE" as any,
         currentBalance: -200000,
@@ -355,7 +379,25 @@ describe("ScheduledTransactionLoanService", () => {
       });
       accountsRepository.findOne.mockResolvedValue(mortgageAccount);
 
-      const scheduledTx = makeScheduledTransaction({ amount: -1500 });
+      const scheduledTx = makeScheduledTransaction({
+        amount: -1500,
+        splits: [
+          {
+            id: "split-principal",
+            transferAccountId: loanAccountId,
+            categoryId: null,
+            amount: -512.35,
+            memo: "Principal",
+          },
+          {
+            id: "split-interest",
+            transferAccountId: null,
+            categoryId: "cat-interest",
+            amount: -987.65,
+            memo: "Interest",
+          },
+        ] as any,
+      });
       scheduledTransactionsRepository.findOne.mockResolvedValue(scheduledTx);
 
       await service.recalculateLoanPaymentSplits(
@@ -368,15 +410,19 @@ describe("ScheduledTransactionLoanService", () => {
       const interestSave = splitsRepository.save.mock.calls.find(
         (call: any) => call[0].categoryId === "cat-interest",
       );
-      // Canadian semi-annual compounding: interest should be ~987.65, not 1000.00 (simple monthly)
+      // Canadian semi-annual compounding gives different result than simple monthly
       expect(interestSave[0].amount).not.toBe(-1000);
-      expect(interestSave[0].amount).toBeCloseTo(-987.65, 0);
+      // next_interest = 987.65 - 512.35 * 0.004938 ~= 985.12
+      expect(interestSave[0].amount).toBeCloseTo(-985.12, 0);
     });
 
     it("should use standard rate calculation for non-Canadian MORTGAGE accounts", async () => {
       // Non-Canadian mortgage: standard monthly compounding, same as loans
-      // $200,000 at 6%, monthly: rate = 0.06/12 = 0.005
-      // Interest = 200000 * 0.005 = 1000.00
+      // periodicRate = 0.06/12 = 0.005
+      // Previous splits consistent with $200K at this rate:
+      //   interest = 200000 * 0.005 = 1000, principal = 1500 - 1000 = 500
+      // Recurrence: next_interest = 1000 - 500 * 0.005 = 997.50
+      //             next_principal = 1500 - 997.50 = 502.50
       const mortgageAccount = makeLoanAccount({
         accountType: "MORTGAGE" as any,
         currentBalance: -200000,
@@ -387,7 +433,25 @@ describe("ScheduledTransactionLoanService", () => {
       });
       accountsRepository.findOne.mockResolvedValue(mortgageAccount);
 
-      const scheduledTx = makeScheduledTransaction({ amount: -1500 });
+      const scheduledTx = makeScheduledTransaction({
+        amount: -1500,
+        splits: [
+          {
+            id: "split-principal",
+            transferAccountId: loanAccountId,
+            categoryId: null,
+            amount: -500,
+            memo: "Principal",
+          },
+          {
+            id: "split-interest",
+            transferAccountId: null,
+            categoryId: "cat-interest",
+            amount: -1000,
+            memo: "Interest",
+          },
+        ] as any,
+      });
       scheduledTransactionsRepository.findOne.mockResolvedValue(scheduledTx);
 
       await service.recalculateLoanPaymentSplits(
@@ -398,12 +462,12 @@ describe("ScheduledTransactionLoanService", () => {
       const interestSave = splitsRepository.save.mock.calls.find(
         (call: any) => call[0].categoryId === "cat-interest",
       );
-      expect(interestSave[0].amount).toBe(-1000);
+      expect(interestSave[0].amount).toBe(-997.5);
 
       const principalSave = splitsRepository.save.mock.calls.find(
         (call: any) => call[0].transferAccountId === loanAccountId,
       );
-      expect(principalSave[0].amount).toBe(-500);
+      expect(principalSave[0].amount).toBe(-502.5);
     });
   });
 

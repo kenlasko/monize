@@ -4,14 +4,13 @@ import { Repository } from "typeorm";
 import { ScheduledTransaction } from "./entities/scheduled-transaction.entity";
 import { ScheduledTransactionSplit } from "./entities/scheduled-transaction-split.entity";
 import { Account } from "../accounts/entities/account.entity";
+import { PaymentFrequency } from "../accounts/loan-amortization.util";
 import {
-  calculatePaymentSplit,
-  PaymentFrequency,
-} from "../accounts/loan-amortization.util";
-import {
-  calculateMortgagePaymentSplit,
+  getPeriodicRate,
+  getMortgagePeriodsPerYear,
   MortgagePaymentFrequency,
 } from "../accounts/mortgage-amortization.util";
+import { getPeriodsPerYear } from "../accounts/loan-amortization.util";
 
 @Injectable()
 export class ScheduledTransactionLoanService {
@@ -89,41 +88,91 @@ export class ScheduledTransactionLoanService {
       : 0;
     const basePaymentAmount = paymentAmount - extraPrincipalAmount;
 
-    let newSplit: { principal: number; interest: number };
+    // Get the previous split values (the values that were just posted).
+    // These are still on the scheduled transaction template because posting
+    // is read-only with respect to the template.
+    const prevPrincipal = principalSplit
+      ? Math.abs(Number(principalSplit.amount))
+      : 0;
+    const prevInterest = interestSplit
+      ? Math.abs(Number(interestSplit.amount))
+      : 0;
 
-    if (loanAccount.accountType === "MORTGAGE") {
-      newSplit = calculateMortgagePaymentSplit(
-        currentBalance,
-        interestRate,
-        basePaymentAmount,
-        frequency as MortgagePaymentFrequency,
-        loanAccount.isCanadianMortgage,
-        loanAccount.isVariableRate,
-      );
+    let newInterest: number;
+    let newPrincipal: number;
+
+    if (prevInterest > 0 && prevPrincipal > 0 && interestRate > 0) {
+      // Use the amortization recurrence relation to derive the next P/I split
+      // from the previous values. This avoids depending on currentBalance,
+      // which may be wrong if the opening balance had the wrong sign.
+      //
+      // In amortization:
+      //   next_interest = prev_interest - (prev_principal + extra) * periodicRate
+      //   next_principal = basePayment - next_interest
+      //
+      // The total principal (regular + extra) reduces the balance, which
+      // causes the interest to drop by that amount times the periodic rate.
+      const periodsPerYear =
+        loanAccount.accountType === "MORTGAGE"
+          ? getMortgagePeriodsPerYear(frequency as MortgagePaymentFrequency)
+          : getPeriodsPerYear(frequency);
+
+      const periodicRate =
+        loanAccount.accountType === "MORTGAGE"
+          ? getPeriodicRate(
+              interestRate,
+              periodsPerYear,
+              loanAccount.isCanadianMortgage,
+              loanAccount.isVariableRate,
+            )
+          : interestRate / 100 / periodsPerYear;
+
+      const totalPrevPrincipal = prevPrincipal + extraPrincipalAmount;
+      newInterest = prevInterest - totalPrevPrincipal * periodicRate;
+      newInterest = Math.max(0, Math.round(newInterest * 100) / 100);
+      newPrincipal = Math.round((basePaymentAmount - newInterest) * 100) / 100;
+
+      if (newPrincipal < 0) {
+        newPrincipal = 0;
+      }
     } else {
-      newSplit = calculatePaymentSplit(
-        currentBalance,
-        interestRate,
-        basePaymentAmount,
-        frequency,
-      );
+      // No previous split data or no rate -- fall back to balance-based calc
+      const periodsPerYear =
+        loanAccount.accountType === "MORTGAGE"
+          ? getMortgagePeriodsPerYear(frequency as MortgagePaymentFrequency)
+          : getPeriodsPerYear(frequency);
+
+      const periodicRate =
+        loanAccount.accountType === "MORTGAGE"
+          ? getPeriodicRate(
+              interestRate,
+              periodsPerYear,
+              loanAccount.isCanadianMortgage,
+              loanAccount.isVariableRate,
+            )
+          : interestRate / 100 / periodsPerYear;
+
+      newInterest = Math.round(currentBalance * periodicRate * 100) / 100;
+      newPrincipal = Math.round((basePaymentAmount - newInterest) * 100) / 100;
+      if (newPrincipal < 0) newPrincipal = 0;
+      if (newPrincipal > currentBalance) newPrincipal = currentBalance;
     }
 
     this.logger.log(
-      `Recalculate loan splits: balance=${currentBalance}, rate=${interestRate}%, ` +
-        `freq=${frequency}, basePayment=${basePaymentAmount}, extra=${extraPrincipalAmount}, ` +
-        `newPrincipal=${newSplit.principal}, newInterest=${newSplit.interest}, ` +
+      `Recalculate loan splits: prevPrincipal=${prevPrincipal}, prevInterest=${prevInterest}, ` +
+        `rate=${interestRate}%, freq=${frequency}, basePayment=${basePaymentAmount}, ` +
+        `extra=${extraPrincipalAmount}, newPrincipal=${newPrincipal}, newInterest=${newInterest}, ` +
         `isMortgage=${loanAccount.accountType === "MORTGAGE"}, ` +
         `isCanadian=${loanAccount.isCanadianMortgage}`,
     );
 
     if (principalSplit) {
-      principalSplit.amount = -newSplit.principal;
+      principalSplit.amount = -newPrincipal;
       await this.splitsRepository.save(principalSplit);
     }
 
     if (interestSplit) {
-      interestSplit.amount = -newSplit.interest;
+      interestSplit.amount = -newInterest;
       await this.splitsRepository.save(interestSplit);
     }
   }
