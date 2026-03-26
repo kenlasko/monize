@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { differenceInDays, isToday, isTomorrow, startOfDay } from 'date-fns';
+import { differenceInDays, isPast, isToday, isTomorrow, startOfDay } from 'date-fns';
 import { ScheduledTransaction } from '@/types/scheduled-transaction';
 import { Account } from '@/types/account';
 import { parseLocalDate } from '@/lib/utils';
@@ -25,14 +25,15 @@ export function UpcomingBills({ scheduledTransactions, accounts, isLoading, maxI
   const { formatCurrency: formatCurrencyBase } = useNumberFormat();
   const { convertToDefault } = useExchangeRates();
 
-  // Filter to active bills, deposits, and transfers within each item's reminder window
+  // Filter to active bills, deposits, and transfers: overdue items + within each item's reminder window
   const today = useMemo(() => startOfDay(new Date()), []);
   const upcomingItems = useMemo(() => scheduledTransactions
     .filter((st) => {
       if (!st.isActive) return false;
       const dueDate = parseLocalDate(st.nextDueDate);
       const daysUntil = differenceInDays(dueDate, today);
-      return daysUntil >= 0 && daysUntil <= (st.reminderDaysBefore ?? 3);
+      // Include overdue items (daysUntil < 0) and items within their reminder window
+      return daysUntil < 0 || (daysUntil >= 0 && daysUntil <= (st.reminderDaysBefore ?? 3));
     })
     .sort((a, b) => {
       const dateDiff = parseLocalDate(a.nextDueDate).getTime() - parseLocalDate(b.nextDueDate).getTime();
@@ -88,8 +89,14 @@ export function UpcomingBills({ scheduledTransactions, accounts, isLoading, maxI
     return formatCurrencyBase(Math.abs(amount), currency);
   };
 
+  const isOverdue = (dateStr: string) => {
+    const date = parseLocalDate(dateStr);
+    return isPast(date) && !isToday(date);
+  };
+
   const getDueDateLabel = (dateStr: string) => {
     const date = parseLocalDate(dateStr);
+    if (isPast(date) && !isToday(date)) return 'Overdue';
     if (isToday(date)) return 'Today';
     if (isTomorrow(date)) return 'Tomorrow';
     const days = differenceInDays(date, today);
@@ -177,7 +184,7 @@ export function UpcomingBills({ scheduledTransactions, accounts, isLoading, maxI
           {sectionTitle}
         </button>
         <p className="text-gray-500 dark:text-gray-400 text-sm">
-          No upcoming bills, deposits, or transfers within their reminder windows.
+          No overdue or upcoming bills, deposits, or transfers within their reminder windows.
         </p>
       </div>
     );
@@ -212,7 +219,11 @@ export function UpcomingBills({ scheduledTransactions, accounts, isLoading, maxI
           return (
             <div
               key={item.id}
-              className="flex items-center justify-between p-2 sm:p-3 rounded-lg border border-gray-200 dark:border-gray-700"
+              className={`flex items-center justify-between p-2 sm:p-3 rounded-lg border ${
+                isOverdue(item.nextDueDate)
+                  ? 'border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/10'
+                  : 'border-gray-200 dark:border-gray-700'
+              }`}
             >
               <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                 <span

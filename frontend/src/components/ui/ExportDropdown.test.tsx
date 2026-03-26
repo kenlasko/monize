@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render } from '@/test/render';
-import { fireEvent, screen } from '@testing-library/react';
+import { fireEvent, screen, act } from '@testing-library/react';
 import { ExportDropdown } from './ExportDropdown';
 
 describe('ExportDropdown', () => {
@@ -36,7 +36,9 @@ describe('ExportDropdown', () => {
       <ExportDropdown onExportCsv={vi.fn()} onExportPdf={onExportPdf} />,
     );
     fireEvent.click(screen.getByText('Export'));
-    fireEvent.click(screen.getByText('PDF'));
+    await act(async () => {
+      fireEvent.click(screen.getByText('PDF'));
+    });
     expect(onExportPdf).toHaveBeenCalledOnce();
   });
 

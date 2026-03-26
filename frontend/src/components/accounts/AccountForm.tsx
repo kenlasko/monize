@@ -130,6 +130,7 @@ export function AccountForm({ account, onSubmit, onCancel, onDirtyChange, submit
   const [assetCategoryName, setAssetCategoryName] = useState<string>('');
   const [selectedInterestCategoryId, setSelectedInterestCategoryId] = useState<string>(account?.interestCategoryId || '');
   const [showLoanSetupDialog, setShowLoanSetupDialog] = useState(false);
+  const [hasScheduledPayment, setHasScheduledPayment] = useState(!!account?.scheduledTransactionId);
 
   const {
     register,
@@ -593,7 +594,7 @@ export function AccountForm({ account, onSubmit, onCancel, onDirtyChange, submit
       )}
 
       {/* Set Up Payments button for existing loan/mortgage accounts without scheduled payments */}
-      {account && !account.scheduledTransactionId &&
+      {account && !hasScheduledPayment &&
         (isLoanAccount || isMortgageAccount) && (
         <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
           <p className="text-sm text-amber-800 dark:text-amber-300 mb-2">
@@ -617,10 +618,12 @@ export function AccountForm({ account, onSubmit, onCancel, onDirtyChange, submit
             accountId: account.id,
             accountName: account.name,
             accountType: account.accountType,
+            currencyCode: account.currencyCode,
           }}
           accounts={accounts}
           onSetupComplete={() => {
             setShowLoanSetupDialog(false);
+            setHasScheduledPayment(true);
             router.refresh();
           }}
         />

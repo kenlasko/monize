@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@/test/render';
+import { render, screen, waitFor, fireEvent, act } from '@/test/render';
 import { DebtPayoffTimelineReport } from './DebtPayoffTimelineReport';
 
 vi.mock('@/hooks/useNumberFormat', () => ({
@@ -230,10 +230,14 @@ describe('DebtPayoffTimelineReport', () => {
       expect(screen.getByText('Balance Over Time')).toBeInTheDocument();
     });
     // Switch to breakdown view
-    fireEvent.click(screen.getByText('Payment Breakdown'));
+    await act(async () => {
+      fireEvent.click(screen.getByText('Payment Breakdown'));
+    });
     expect(screen.getByTestId('bar-chart')).toBeInTheDocument();
     // Switch to distribution view
-    fireEvent.click(screen.getByText('Principal vs Interest'));
+    await act(async () => {
+      fireEvent.click(screen.getByText('Principal vs Interest'));
+    });
     expect(screen.getByTestId('bar-chart')).toBeInTheDocument();
   });
 

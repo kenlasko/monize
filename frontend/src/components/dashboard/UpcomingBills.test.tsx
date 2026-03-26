@@ -52,7 +52,7 @@ describe('UpcomingBills', () => {
 
   it('renders empty state when no upcoming items', () => {
     render(<UpcomingBills accounts={[]} scheduledTransactions={[]} isLoading={false} maxItems={defaultMaxItems} />);
-    expect(screen.getByText('No upcoming bills, deposits, or transfers within their reminder windows.')).toBeInTheDocument();
+    expect(screen.getByText('No overdue or upcoming bills, deposits, or transfers within their reminder windows.')).toBeInTheDocument();
   });
 
   it('renders upcoming bill with Tomorrow label', () => {
@@ -146,7 +146,7 @@ describe('UpcomingBills', () => {
     ] as any[];
 
     render(<UpcomingBills accounts={[]} scheduledTransactions={transactions} isLoading={false} maxItems={defaultMaxItems} />);
-    expect(screen.getByText('No upcoming bills, deposits, or transfers within their reminder windows.')).toBeInTheDocument();
+    expect(screen.getByText('No overdue or upcoming bills, deposits, or transfers within their reminder windows.')).toBeInTheDocument();
   });
 
   it('navigates to bills page on title click', () => {

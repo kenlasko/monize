@@ -64,7 +64,7 @@ const ScheduledTransactionRow = memo(function ScheduledTransactionRow({
 
   return (
     <tr
-      className={`hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer select-none ${!transaction.isActive ? 'opacity-50' : ''}`}
+      className={`hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer select-none ${!transaction.isActive ? 'opacity-50' : ''} ${dueDateStatus?.label === 'Overdue' ? 'bg-red-50 dark:bg-red-900/10' : ''}`}
       onClick={() => onRowClick(transaction)}
       onMouseDown={() => onLongPressStart(transaction)}
       onMouseUp={onLongPressEnd}

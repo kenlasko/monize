@@ -37,6 +37,7 @@ export function CompleteStep({
     accountId: string;
     accountName: string;
     accountType: string;
+    currencyCode?: string;
   } | null>(null);
   const [completedSetups, setCompletedSetups] = useState<Set<string>>(new Set());
 
@@ -47,9 +48,10 @@ export function CompleteStep({
       accountId: string;
       accountName: string;
       accountType: string;
+      currencyCode?: string;
     }> = [];
 
-    const addAccounts = (items?: Array<{ accountId: string; accountName: string; accountType: string }>) => {
+    const addAccounts = (items?: Array<{ accountId: string; accountName: string; accountType: string; currencyCode?: string }>) => {
       if (!items) return;
       for (const la of items) {
         if (!seen.has(la.accountId)) {

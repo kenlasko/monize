@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   PieChart,
   Pie,
@@ -309,9 +309,8 @@ export function SecurityTypeAllocationReport() {
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
               {allocationData.map((item) => (
-                <>
+                <React.Fragment key={item.type}>
                   <tr
-                    key={item.type}
                     className="hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer"
                     onClick={() => setExpandedType(expandedType === item.type ? null : item.type)}
                   >
@@ -360,7 +359,7 @@ export function SecurityTypeAllocationReport() {
                       </td>
                     </tr>
                   ))}
-                </>
+                </React.Fragment>
               ))}
             </tbody>
             <tfoot className="bg-gray-50 dark:bg-gray-900/50">

@@ -186,6 +186,10 @@ export interface DetectedLoanPayment {
   paymentCount: number;
   currentBalance: number;
   isMortgage: boolean;
+  averageExtraPrincipal: number;
+  extraPrincipalCount: number;
+  lastPrincipalAmount: number | null;
+  lastInterestAmount: number | null;
 }
 
 export interface SetupLoanPaymentsData {
@@ -195,12 +199,15 @@ export interface SetupLoanPaymentsData {
   nextDueDate: string;
   interestRate?: number;
   interestCategoryId?: string;
+  payeeId?: string;
   payeeName?: string;
   autoPost?: boolean;
   isCanadianMortgage?: boolean;
   isVariableRate?: boolean;
   amortizationMonths?: number;
   termMonths?: number;
+  extraPrincipal?: number;
+  detectedInterestAmount?: number;
 }
 
 export interface SetupLoanPaymentsResponse {

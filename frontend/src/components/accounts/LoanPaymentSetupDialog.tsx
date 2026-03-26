@@ -9,10 +9,13 @@ import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { Combobox } from '@/components/ui/Combobox';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Account, DetectedLoanPayment, SetupLoanPaymentsData } from '@/types/account';
+import { Payee } from '@/types/payee';
 import { Category } from '@/types/category';
 import { accountsApi } from '@/lib/accounts';
 import { categoriesApi } from '@/lib/categories';
+import { payeesApi } from '@/lib/payees';
 import { getCategorySelectOptions } from '@/lib/categoryUtils';
+import { getCurrencySymbol } from '@/lib/format';
 import { createLogger } from '@/lib/logger';
 import toast from 'react-hot-toast';
 
@@ -30,7 +33,7 @@ const paymentFrequencyOptions = [
 interface LoanPaymentSetupDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  loanAccount: { accountId: string; accountName: string; accountType: string };
+  loanAccount: { accountId: string; accountName: string; accountType: string; currencyCode?: string };
   accounts: Account[];
   onSetupComplete?: () => void;
 }
@@ -46,6 +49,7 @@ export function LoanPaymentSetupDialog({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [detected, setDetected] = useState<DetectedLoanPayment | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [payees, setPayees] = useState<Payee[]>([]);
 
   // Form state
   const [paymentAmount, setPaymentAmount] = useState<number>(0);
@@ -54,11 +58,20 @@ export function LoanPaymentSetupDialog({
   const [nextDueDate, setNextDueDate] = useState('');
   const [interestRate, setInterestRate] = useState<number | undefined>(undefined);
   const [interestCategoryId, setInterestCategoryId] = useState('');
+  const [selectedPayeeId, setSelectedPayeeId] = useState('');
   const [payeeName, setPayeeName] = useState('');
   const [autoPost, setAutoPost] = useState(false);
 
+  // Extra principal
+  const [includeExtraPrincipal, setIncludeExtraPrincipal] = useState(false);
+  const [extraPrincipal, setExtraPrincipal] = useState<number>(0);
+
+  // Use detected split ratio from imported transactions
+  const [useDetectedSplit, setUseDetectedSplit] = useState(false);
+
   // Mortgage-specific
   const isMortgage = loanAccount.accountType === 'MORTGAGE';
+  const currencySymbol = getCurrencySymbol(loanAccount.currencyCode || 'USD');
   const [isCanadianMortgage, setIsCanadianMortgage] = useState(false);
   const [isVariableRate, setIsVariableRate] = useState(false);
   const [amortizationMonths, setAmortizationMonths] = useState<number | undefined>(undefined);
@@ -75,6 +88,17 @@ export function LoanPaymentSetupDialog({
 
   const categoryOptions = getCategorySelectOptions(categories);
 
+  const payeeOptions = payees.map((p) => ({
+    value: p.id,
+    label: p.name,
+  }));
+
+  const hasDetectedSplit =
+    detected?.lastPrincipalAmount != null && detected?.lastInterestAmount != null;
+
+  // Total payment including extra principal
+  const totalPaymentAmount = paymentAmount + (includeExtraPrincipal ? extraPrincipal : 0);
+
   // Detect payment pattern on open
   useEffect(() => {
     if (!isOpen) return;
@@ -82,11 +106,13 @@ export function LoanPaymentSetupDialog({
     const detect = async () => {
       setIsDetecting(true);
       try {
-        const [result, cats] = await Promise.all([
+        const [result, cats, payeeList] = await Promise.all([
           accountsApi.detectLoanPayments(loanAccount.accountId),
           categoriesApi.getAll(),
+          payeesApi.getAll('active'),
         ]);
         setCategories(cats);
+        setPayees(payeeList);
 
         if (result) {
           setDetected(result);
@@ -96,15 +122,32 @@ export function LoanPaymentSetupDialog({
           setNextDueDate(result.suggestedNextDueDate);
           setInterestRate(result.estimatedInterestRate ?? undefined);
           setInterestCategoryId(result.interestCategoryId || '');
+
+          // Pre-fill extra principal if detected
+          if (result.averageExtraPrincipal > 0) {
+            setExtraPrincipal(result.averageExtraPrincipal);
+            setIncludeExtraPrincipal(true);
+          }
+
+          // Enable detected split by default for mortgages when split data is available
+          if (
+            result.lastPrincipalAmount != null &&
+            result.lastInterestAmount != null &&
+            loanAccount.accountType === 'MORTGAGE'
+          ) {
+            setUseDetectedSplit(true);
+          }
         } else {
           setDetected(null);
-          // Set defaults
           setPaymentAmount(0);
           setPaymentFrequency('MONTHLY');
           setNextDueDate('');
           setInterestRate(undefined);
           setInterestCategoryId('');
           setSourceAccountId(sourceAccountOptions[0]?.value || '');
+          setExtraPrincipal(0);
+          setIncludeExtraPrincipal(false);
+          setUseDetectedSplit(false);
         }
       } catch (error) {
         logger.error('Failed to detect payment pattern:', error);
@@ -117,8 +160,27 @@ export function LoanPaymentSetupDialog({
     detect();
   }, [isOpen, loanAccount.accountId]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const handlePayeeChange = useCallback((payeeId: string, name: string) => {
+    setSelectedPayeeId(payeeId);
+    setPayeeName(name);
+  }, []);
+
+  const handlePayeeCreate = useCallback(async (name: string) => {
+    if (!name.trim()) return;
+    try {
+      const newPayee = await payeesApi.create({ name: name.trim() });
+      setPayees((prev) => [...prev, newPayee]);
+      setSelectedPayeeId(newPayee.id);
+      setPayeeName(newPayee.name);
+      toast.success(`Payee "${name}" created`);
+    } catch (error: any) {
+      const message = error?.response?.data?.message || 'Failed to create payee';
+      toast.error(message);
+    }
+  }, []);
+
   const handleSubmit = useCallback(async () => {
-    if (!paymentAmount || !sourceAccountId || !nextDueDate) {
+    if (!totalPaymentAmount || !sourceAccountId || !nextDueDate) {
       toast.error('Please fill in all required fields');
       return;
     }
@@ -126,15 +188,24 @@ export function LoanPaymentSetupDialog({
     setIsSubmitting(true);
     try {
       const data: SetupLoanPaymentsData = {
-        paymentAmount,
+        paymentAmount: totalPaymentAmount,
         paymentFrequency,
         sourceAccountId,
         nextDueDate,
         interestRate,
         interestCategoryId: interestCategoryId || undefined,
+        payeeId: selectedPayeeId || undefined,
         payeeName: payeeName || undefined,
         autoPost,
       };
+
+      if (includeExtraPrincipal && extraPrincipal > 0) {
+        data.extraPrincipal = extraPrincipal;
+      }
+
+      if (useDetectedSplit && detected?.lastInterestAmount != null) {
+        data.detectedInterestAmount = detected.lastInterestAmount;
+      }
 
       if (isMortgage) {
         data.isCanadianMortgage = isCanadianMortgage;
@@ -155,8 +226,9 @@ export function LoanPaymentSetupDialog({
       setIsSubmitting(false);
     }
   }, [
-    paymentAmount, paymentFrequency, sourceAccountId, nextDueDate,
-    interestRate, interestCategoryId, payeeName, autoPost,
+    totalPaymentAmount, paymentFrequency, sourceAccountId, nextDueDate,
+    interestRate, interestCategoryId, selectedPayeeId, payeeName, autoPost,
+    includeExtraPrincipal, extraPrincipal, useDetectedSplit, detected,
     isMortgage, isCanadianMortgage, isVariableRate, amortizationMonths, termMonths,
     loanAccount, onSetupComplete, onClose,
   ]);
@@ -201,6 +273,18 @@ export function LoanPaymentSetupDialog({
                     </span>
                   )}
                 </p>
+                {hasDetectedSplit && (
+                  <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                    Last payment split: {currencySymbol}{detected.lastPrincipalAmount?.toFixed(2)} principal
+                    {' / '}{currencySymbol}{detected.lastInterestAmount?.toFixed(2)} interest
+                  </p>
+                )}
+                {detected.extraPrincipalCount > 0 && (
+                  <p className="text-xs text-blue-600 dark:text-blue-400 mt-0.5">
+                    {detected.extraPrincipalCount} extra principal payment{detected.extraPrincipalCount !== 1 ? 's' : ''} detected
+                    {' ('}avg {currencySymbol}{detected.averageExtraPrincipal.toFixed(2)}/period)
+                  </p>
+                )}
                 <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
                   Review and adjust the values below before saving.
                 </p>
@@ -211,12 +295,62 @@ export function LoanPaymentSetupDialog({
               {/* Payment Amount */}
               <div>
                 <CurrencyInput
-                  label="Payment Amount *"
+                  label="Regular Payment Amount *"
                   value={paymentAmount || undefined}
                   onChange={(val) => setPaymentAmount(val ?? 0)}
-                  prefix="$"
+                  prefix={currencySymbol}
                 />
               </div>
+
+              {/* Extra Principal */}
+              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 space-y-2">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={includeExtraPrincipal}
+                    onChange={(e) => setIncludeExtraPrincipal(e.target.checked)}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Include extra payment to principal
+                  </span>
+                </label>
+                {includeExtraPrincipal && (
+                  <div className="ml-6">
+                    <CurrencyInput
+                      label="Extra Principal Per Payment"
+                      value={extraPrincipal || undefined}
+                      onChange={(val) => setExtraPrincipal(val ?? 0)}
+                      prefix={currencySymbol}
+                    />
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      Total payment: {currencySymbol}{totalPaymentAmount.toFixed(2)}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Use Detected Split Ratio */}
+              {hasDetectedSplit && (
+                <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={useDetectedSplit}
+                      onChange={(e) => setUseDetectedSplit(e.target.checked)}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Use principal/interest split from imported transactions
+                    </span>
+                  </label>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 ml-6">
+                    {useDetectedSplit
+                      ? `Will use ${currencySymbol}${detected!.lastInterestAmount!.toFixed(2)} for interest, remainder to principal`
+                      : 'Will calculate split from the interest rate and current balance'}
+                  </p>
+                </div>
+              )}
 
               {/* Payment Frequency */}
               <div>
@@ -294,16 +428,18 @@ export function LoanPaymentSetupDialog({
                 )}
               </div>
 
-              {/* Payee Name */}
+              {/* Payee */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Payee / Lender Name
+                  Payee / Lender
                 </label>
-                <Input
-                  value={payeeName}
-                  onChange={(e) => setPayeeName(e.target.value)}
-                  placeholder="e.g., Bank of America"
-                  maxLength={255}
+                <Combobox
+                  value={selectedPayeeId}
+                  onChange={handlePayeeChange}
+                  onCreateNew={handlePayeeCreate}
+                  options={payeeOptions}
+                  placeholder="Select or create payee..."
+                  allowCustomValue={true}
                 />
               </div>
 
@@ -400,7 +536,7 @@ export function LoanPaymentSetupDialog({
               </Button>
               <Button
                 onClick={handleSubmit}
-                disabled={isSubmitting || !paymentAmount || !sourceAccountId || !nextDueDate}
+                disabled={isSubmitting || !totalPaymentAmount || !sourceAccountId || !nextDueDate}
               >
                 {isSubmitting ? 'Setting Up...' : 'Set Up Payments'}
               </Button>

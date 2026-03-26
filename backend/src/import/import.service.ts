@@ -1560,7 +1560,7 @@ export class ImportService {
     userId: string,
     affectedAccountIds: Set<string>,
   ): Promise<
-    Array<{ accountId: string; accountName: string; accountType: string }>
+    Array<{ accountId: string; accountName: string; accountType: string; currencyCode: string }>
   > {
     if (affectedAccountIds.size === 0) return [];
 
@@ -1584,6 +1584,7 @@ export class ImportService {
         accountId: a.id,
         accountName: a.name,
         accountType: a.accountType,
+        currencyCode: a.currencyCode,
       }));
   }
 

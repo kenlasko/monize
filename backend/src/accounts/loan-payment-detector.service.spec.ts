@@ -122,6 +122,7 @@ describe("LoanPaymentDetectorService", () => {
           return Promise.resolve({
             id: where.id,
             accountId: "chequing-1",
+            amount: -500,
             account: { name: "Checking" },
             isSplit: false,
           });
@@ -222,12 +223,13 @@ describe("LoanPaymentDetectorService", () => {
 
       transactionRepository.find.mockResolvedValue(payments);
 
-      // Mock linked transactions with splits
+      // Mock linked transactions with splits (source account side)
       transactionRepository.findOne.mockImplementation(({ where }) => {
         if (where?.id?.startsWith("linked-")) {
           return Promise.resolve({
             id: where.id,
             accountId: "chequing-1",
+            amount: -500,
             account: { name: "Checking" },
             isSplit: true,
           });

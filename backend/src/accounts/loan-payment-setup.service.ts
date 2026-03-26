@@ -92,11 +92,24 @@ export class LoanPaymentSetupService {
     // Calculate principal/interest split for the next payment
     const currentBalance = Math.abs(Number(account.currentBalance));
     const interestRate = dto.interestRate || Number(account.interestRate) || 0;
+    const extraPrincipal = dto.extraPrincipal || 0;
+    // Base payment amount excludes extra principal for split calculation
+    const basePaymentAmount = dto.paymentAmount - extraPrincipal;
 
     let principalPayment: number;
     let interestPayment: number;
 
-    if (
+    if (dto.detectedInterestAmount != null && dto.detectedInterestAmount >= 0) {
+      // Use the interest amount detected from imported transaction history.
+      // This continues the actual P/I ratio from the existing data rather than
+      // recalculating from the amortization formula, which may differ due to
+      // compounding method, rate changes, or rounding differences.
+      interestPayment = dto.detectedInterestAmount;
+      principalPayment = basePaymentAmount - interestPayment;
+      if (principalPayment < 0) {
+        principalPayment = 0;
+      }
+    } else if (
       account.accountType === AccountType.MORTGAGE &&
       (dto.isCanadianMortgage || account.isCanadianMortgage)
     ) {
@@ -104,7 +117,7 @@ export class LoanPaymentSetupService {
       const split = calculateMortgagePaymentSplit(
         currentBalance,
         interestRate,
-        dto.paymentAmount,
+        basePaymentAmount,
         dto.paymentFrequency as MortgagePaymentFrequency,
         dto.isCanadianMortgage ?? account.isCanadianMortgage ?? false,
         dto.isVariableRate ?? account.isVariableRate ?? false,
@@ -115,7 +128,7 @@ export class LoanPaymentSetupService {
       const split = calculatePaymentSplit(
         currentBalance,
         interestRate,
-        dto.paymentAmount,
+        basePaymentAmount,
         dto.paymentFrequency as PaymentFrequency,
       );
       principalPayment = split.principal;
@@ -163,6 +176,16 @@ export class LoanPaymentSetupService {
       });
     }
 
+    // Extra principal as a separate transfer split to the loan account,
+    // matching the structure of imported transactions
+    if (extraPrincipal > 0) {
+      splits.push({
+        transferAccountId: accountId,
+        amount: -extraPrincipal,
+        memo: "Extra Principal",
+      });
+    }
+
     const accountLabel =
       account.accountType === AccountType.MORTGAGE ? "Mortgage" : "Loan";
 
@@ -172,6 +195,7 @@ export class LoanPaymentSetupService {
       {
         accountId: dto.sourceAccountId,
         name: `${accountLabel} Payment - ${account.name}`,
+        payeeId: dto.payeeId || undefined,
         payeeName: dto.payeeName || account.institution || undefined,
         amount: -dto.paymentAmount,
         currencyCode: account.currencyCode,
@@ -194,7 +218,7 @@ export class LoanPaymentSetupService {
       scheduledTransactionId: scheduledTransaction.id,
     };
 
-    if (interestRate > 0 && !account.interestRate) {
+    if (interestRate > 0) {
       updateData.interestRate = interestRate;
     }
 

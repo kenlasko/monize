@@ -62,6 +62,13 @@ export class SetupLoanPaymentsDto {
   interestCategoryId?: string;
 
   @ApiPropertyOptional({
+    description: "Payee ID for the scheduled transaction",
+  })
+  @IsOptional()
+  @IsUUID()
+  payeeId?: string;
+
+  @ApiPropertyOptional({
     description: "Payee name for the scheduled transaction",
     example: "Bank of America",
   })
@@ -115,6 +122,28 @@ export class SetupLoanPaymentsDto {
   @Min(1)
   @Max(600)
   termMonths?: number;
+
+  @ApiPropertyOptional({
+    description:
+      "Extra principal amount per payment period. Added to the principal portion of the split.",
+    example: 200,
+  })
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 4 })
+  @Min(0)
+  @Max(999999999999)
+  extraPrincipal?: number;
+
+  @ApiPropertyOptional({
+    description:
+      "Interest amount from detected transaction history. When provided, uses this for the interest split instead of calculating from the amortization formula.",
+    example: 1000,
+  })
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 4 })
+  @Min(0)
+  @Max(999999999999)
+  detectedInterestAmount?: number;
 }
 
 export class DetectedLoanPaymentResponseDto {
@@ -162,6 +191,26 @@ export class DetectedLoanPaymentResponseDto {
 
   @ApiProperty()
   isMortgage: boolean;
+
+  @ApiProperty({ description: "Average extra principal per payment period" })
+  averageExtraPrincipal: number;
+
+  @ApiProperty({
+    description: "Number of extra principal payments detected",
+  })
+  extraPrincipalCount: number;
+
+  @ApiProperty({
+    nullable: true,
+    description: "Principal portion from most recent split payment",
+  })
+  lastPrincipalAmount: number | null;
+
+  @ApiProperty({
+    nullable: true,
+    description: "Interest portion from most recent split payment",
+  })
+  lastInterestAmount: number | null;
 }
 
 export class SetupLoanPaymentsResponseDto {

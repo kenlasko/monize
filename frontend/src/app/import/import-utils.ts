@@ -33,12 +33,14 @@ export interface BulkImportResult {
       accountId: string;
       accountName: string;
       accountType: string;
+      currencyCode?: string;
     }>;
   }>;
   loanAccountsNeedingSetup?: Array<{
     accountId: string;
     accountName: string;
     accountType: string;
+    currencyCode?: string;
   }>;
 }
 
