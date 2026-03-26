@@ -6,6 +6,8 @@ import {
   IsArray,
   ValidateIf,
   MaxLength,
+  Min,
+  Max,
 } from "class-validator";
 import { ApiPropertyOptional } from "@nestjs/swagger";
 import { SanitizeHtml } from "../../common/decorators/sanitize-html.decorator";
@@ -29,7 +31,9 @@ export class CreateScheduledTransactionSplitDto {
   @ValidateIf((o) => !o.categoryId)
   transferAccountId?: string;
 
-  @IsNumber()
+  @IsNumber({ maxDecimalPlaces: 4 })
+  @Min(-999999999999)
+  @Max(999999999999)
   amount: number;
 
   @IsOptional()

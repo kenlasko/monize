@@ -102,6 +102,8 @@ export class CreateAccountDto {
   })
   @IsOptional()
   @IsNumber({ maxDecimalPlaces: 4 })
+  @Min(-999999999999)
+  @Max(999999999999)
   openingBalance?: number;
 
   @ApiPropertyOptional({

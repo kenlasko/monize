@@ -10,6 +10,7 @@ import {
   ArrayMaxSize,
   ValidateNested,
   Min,
+  Max,
   MaxLength,
 } from "class-validator";
 import { Type } from "class-transformer";
@@ -50,7 +51,9 @@ export class CreateScheduledTransactionDto {
   @IsUUID()
   categoryId?: string;
 
-  @IsNumber()
+  @IsNumber({ maxDecimalPlaces: 4 })
+  @Min(-999999999999)
+  @Max(999999999999)
   amount: number;
 
   @IsString()
