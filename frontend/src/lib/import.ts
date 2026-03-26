@@ -252,6 +252,7 @@ export interface ImportResult {
     accountId: string;
     accountName: string;
     accountType: string;
+    currencyCode?: string;
   }>;
 }
 

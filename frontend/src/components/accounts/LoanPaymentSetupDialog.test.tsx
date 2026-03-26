@@ -60,6 +60,10 @@ const defaultDetected: DetectedLoanPayment = {
   paymentCount: 15,
   currentBalance: 200000,
   isMortgage: false,
+  averageExtraPrincipal: 0,
+  extraPrincipalCount: 0,
+  lastPrincipalAmount: null,
+  lastInterestAmount: null,
 };
 
 const sourceAccount = createAccount({ id: 'acc-1', name: 'My Chequing', accountType: 'CHEQUING' });
@@ -67,7 +71,7 @@ const sourceAccount = createAccount({ id: 'acc-1', name: 'My Chequing', accountT
 const defaultProps = {
   isOpen: true,
   onClose: vi.fn(),
-  loanAccount: { accountId: 'loan-1', accountName: 'My Loan', accountType: 'LOAN' },
+  loanAccount: { accountId: 'loan-1', accountName: 'My Loan', accountType: 'LOAN', currencyCode: 'USD' },
   accounts: [sourceAccount],
   onSetupComplete: vi.fn(),
 };

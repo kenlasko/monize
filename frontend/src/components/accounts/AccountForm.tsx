@@ -617,6 +617,7 @@ export function AccountForm({ account, onSubmit, onCancel, onDirtyChange, submit
             accountId: account.id,
             accountName: account.name,
             accountType: account.accountType,
+            currencyCode: account.currencyCode,
           }}
           accounts={accounts}
           onSetupComplete={() => {

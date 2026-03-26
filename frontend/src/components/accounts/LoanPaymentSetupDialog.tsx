@@ -13,6 +13,7 @@ import { Category } from '@/types/category';
 import { accountsApi } from '@/lib/accounts';
 import { categoriesApi } from '@/lib/categories';
 import { getCategorySelectOptions } from '@/lib/categoryUtils';
+import { getCurrencySymbol } from '@/lib/format';
 import { createLogger } from '@/lib/logger';
 import toast from 'react-hot-toast';
 
@@ -30,7 +31,7 @@ const paymentFrequencyOptions = [
 interface LoanPaymentSetupDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  loanAccount: { accountId: string; accountName: string; accountType: string };
+  loanAccount: { accountId: string; accountName: string; accountType: string; currencyCode?: string };
   accounts: Account[];
   onSetupComplete?: () => void;
 }
@@ -66,6 +67,7 @@ export function LoanPaymentSetupDialog({
 
   // Mortgage-specific
   const isMortgage = loanAccount.accountType === 'MORTGAGE';
+  const currencySymbol = getCurrencySymbol(loanAccount.currencyCode || 'USD');
   const [isCanadianMortgage, setIsCanadianMortgage] = useState(false);
   const [isVariableRate, setIsVariableRate] = useState(false);
   const [amortizationMonths, setAmortizationMonths] = useState<number | undefined>(undefined);
@@ -241,14 +243,14 @@ export function LoanPaymentSetupDialog({
                 </p>
                 {hasDetectedSplit && (
                   <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                    Last payment split: ${detected.lastPrincipalAmount?.toFixed(2)} principal
-                    {' / '}${detected.lastInterestAmount?.toFixed(2)} interest
+                    Last payment split: {currencySymbol}{detected.lastPrincipalAmount?.toFixed(2)} principal
+                    {' / '}{currencySymbol}{detected.lastInterestAmount?.toFixed(2)} interest
                   </p>
                 )}
                 {detected.extraPrincipalCount > 0 && (
                   <p className="text-xs text-blue-600 dark:text-blue-400 mt-0.5">
                     {detected.extraPrincipalCount} extra principal payment{detected.extraPrincipalCount !== 1 ? 's' : ''} detected
-                    {' ('}avg ${detected.averageExtraPrincipal.toFixed(2)}/period)
+                    {' ('}avg {currencySymbol}{detected.averageExtraPrincipal.toFixed(2)}/period)
                   </p>
                 )}
                 <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
@@ -264,7 +266,7 @@ export function LoanPaymentSetupDialog({
                   label="Regular Payment Amount *"
                   value={paymentAmount || undefined}
                   onChange={(val) => setPaymentAmount(val ?? 0)}
-                  prefix="$"
+                  prefix={currencySymbol}
                 />
               </div>
 
@@ -288,10 +290,10 @@ export function LoanPaymentSetupDialog({
                         label="Extra Principal Per Payment"
                         value={extraPrincipal || undefined}
                         onChange={(val) => setExtraPrincipal(val ?? 0)}
-                        prefix="$"
+                        prefix={currencySymbol}
                       />
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        Total payment: ${totalPaymentAmount.toFixed(2)}
+                        Total payment: {currencySymbol}{totalPaymentAmount.toFixed(2)}
                       </p>
                     </div>
                   )}
@@ -314,7 +316,7 @@ export function LoanPaymentSetupDialog({
                   </label>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 ml-6">
                     {useDetectedSplit
-                      ? `Will use $${detected!.lastInterestAmount!.toFixed(2)} for interest, remainder to principal`
+                      ? `Will use ${currencySymbol}${detected!.lastInterestAmount!.toFixed(2)} for interest, remainder to principal`
                       : 'Will calculate split from the interest rate and current balance'}
                   </p>
                 </div>

@@ -343,6 +343,7 @@ export class ImportResultDto {
     accountId: string;
     accountName: string;
     accountType: string;
+    currencyCode: string;
   }>;
 }
 
