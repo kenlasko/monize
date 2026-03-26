@@ -172,7 +172,7 @@ export function LoanPaymentSetupDialog({
   const accountLabel = isMortgage ? 'Mortgage' : 'Loan';
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} maxWidth="lg" allowOverflow>
+    <Modal isOpen={isOpen} onClose={onClose} maxWidth="lg">
       <div className="p-6">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">
           Set Up {accountLabel} Payments

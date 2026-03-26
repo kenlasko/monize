@@ -65,6 +65,7 @@ export function CategoryMappingRow({
       isLoanCategory: false,
       loanAccountId: undefined,
       createNewLoan: undefined,
+      newLoanType: undefined,
       newLoanAmount: undefined,
       newLoanInstitution: undefined,
     });
@@ -86,6 +87,7 @@ export function CategoryMappingRow({
         isLoanCategory: false,
         loanAccountId: undefined,
         createNewLoan: undefined,
+        newLoanType: undefined,
         newLoanAmount: undefined,
         newLoanInstitution: undefined,
       });
@@ -133,6 +135,7 @@ export function CategoryMappingRow({
       // Pre-fill or clear loan fields
       loanAccountId: undefined,
       createNewLoan: checked ? suggestedName : undefined,
+      newLoanType: checked ? 'LOAN' : undefined,
       newLoanAmount: undefined,
       newLoanInstitution: undefined,
     });
@@ -150,6 +153,7 @@ export function CategoryMappingRow({
     onMappingChange({
       loanAccountId: accountId || undefined,
       createNewLoan: undefined,
+      newLoanType: undefined,
       newLoanAmount: undefined,
       newLoanInstitution: undefined,
     });
@@ -262,6 +266,19 @@ export function CategoryMappingRow({
                       value={localNewLoanName}
                       onChange={(e) => setLocalNewLoanName(e.target.value)}
                       onBlur={handleNewLoanNameBlur}
+                    />
+                    <Select
+                      label="Loan type"
+                      value={mapping.newLoanType || 'LOAN'}
+                      onChange={(e) =>
+                        onMappingChange({
+                          newLoanType: e.target.value as 'LOAN' | 'MORTGAGE',
+                        })
+                      }
+                      options={[
+                        { value: 'LOAN', label: 'Loan' },
+                        { value: 'MORTGAGE', label: 'Mortgage' },
+                      ]}
                     />
                     <Input
                       label="Institution"

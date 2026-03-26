@@ -249,10 +249,14 @@ export class ImportEntityCreatorService {
   ): Promise<void> {
     for (const loanMapping of loanAccountsToCreate) {
       const loanAmount = loanMapping.newLoanAmount || 0;
+      const loanType =
+        loanMapping.newLoanType === 'MORTGAGE'
+          ? AccountType.MORTGAGE
+          : AccountType.LOAN;
       const newLoanAccount = queryRunner.manager.create(Account, {
         userId,
         name: loanMapping.createNewLoan,
-        accountType: AccountType.LOAN,
+        accountType: loanType,
         currencyCode: account.currencyCode,
         institution: loanMapping.newLoanInstitution || null,
         openingBalance: -loanAmount,

@@ -94,6 +94,7 @@ export interface CategoryMapping {
   isLoanCategory?: boolean;
   loanAccountId?: string;
   createNewLoan?: string;
+  newLoanType?: 'LOAN' | 'MORTGAGE';
   newLoanAmount?: number;
   newLoanInstitution?: string;
 }

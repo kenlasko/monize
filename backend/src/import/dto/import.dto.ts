@@ -83,6 +83,13 @@ export class CategoryMappingDto {
   createNewLoan?: string;
 
   @ApiPropertyOptional({
+    description: "Account type for new loan account (LOAN or MORTGAGE)",
+  })
+  @IsOptional()
+  @IsIn(["LOAN", "MORTGAGE"])
+  newLoanType?: string;
+
+  @ApiPropertyOptional({
     description: "Initial loan amount for new loan account",
   })
   @IsOptional()

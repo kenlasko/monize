@@ -423,6 +423,107 @@ describe('CategoryMappingRow', () => {
     );
   });
 
+  it('defaults newLoanType to LOAN when enabling loan checkbox', () => {
+    render(
+      <CategoryMappingRow
+        mapping={defaultMapping}
+        categoryOptions={categoryOptions}
+        parentCategoryOptions={parentCategoryOptions}
+        loanAccounts={loanAccounts}
+        onMappingChange={onMappingChange}
+        formatCategoryPath={formatCategoryPath}
+        isHighlighted={true}
+      />
+    );
+    fireEvent.click(screen.getByText('This is a loan payment'));
+    expect(onMappingChange).toHaveBeenCalledWith(
+      expect.objectContaining({ isLoanCategory: true, newLoanType: 'LOAN' })
+    );
+  });
+
+  it('shows loan type selector when creating new loan', () => {
+    const loanMapping = { ...defaultMapping, isLoanCategory: true, newLoanType: 'LOAN' };
+    render(
+      <CategoryMappingRow
+        mapping={loanMapping}
+        categoryOptions={categoryOptions}
+        parentCategoryOptions={parentCategoryOptions}
+        loanAccounts={loanAccounts}
+        onMappingChange={onMappingChange}
+        formatCategoryPath={formatCategoryPath}
+        isHighlighted={true}
+      />
+    );
+    expect(screen.getByText('Loan type')).toBeInTheDocument();
+    const loanTypeSelect = screen.getAllByRole('combobox').find((s) => {
+      const options = Array.from(s.querySelectorAll('option'));
+      return options.some((o) => o.textContent === 'Mortgage');
+    });
+    expect(loanTypeSelect).toBeDefined();
+  });
+
+  it('hides loan type selector when existing loan account is selected', () => {
+    const loanMapping = { ...defaultMapping, isLoanCategory: true, loanAccountId: 'loan1' };
+    render(
+      <CategoryMappingRow
+        mapping={loanMapping}
+        categoryOptions={categoryOptions}
+        parentCategoryOptions={parentCategoryOptions}
+        loanAccounts={loanAccounts}
+        onMappingChange={onMappingChange}
+        formatCategoryPath={formatCategoryPath}
+        isHighlighted={true}
+      />
+    );
+    expect(screen.queryByText('Loan type')).not.toBeInTheDocument();
+  });
+
+  it('calls onMappingChange when loan type is changed to MORTGAGE', () => {
+    const loanMapping = { ...defaultMapping, isLoanCategory: true, newLoanType: 'LOAN' };
+    render(
+      <CategoryMappingRow
+        mapping={loanMapping}
+        categoryOptions={categoryOptions}
+        parentCategoryOptions={parentCategoryOptions}
+        loanAccounts={loanAccounts}
+        onMappingChange={onMappingChange}
+        formatCategoryPath={formatCategoryPath}
+        isHighlighted={true}
+      />
+    );
+    const loanTypeSelect = screen.getAllByRole('combobox').find((s) => {
+      const options = Array.from(s.querySelectorAll('option'));
+      return options.some((o) => o.textContent === 'Mortgage');
+    });
+    fireEvent.change(loanTypeSelect!, { target: { value: 'MORTGAGE' } });
+    expect(onMappingChange).toHaveBeenCalledWith(
+      expect.objectContaining({ newLoanType: 'MORTGAGE' })
+    );
+  });
+
+  it('clears newLoanType when selecting an existing loan account', () => {
+    const loanMapping = { ...defaultMapping, isLoanCategory: true, newLoanType: 'MORTGAGE' };
+    render(
+      <CategoryMappingRow
+        mapping={loanMapping}
+        categoryOptions={categoryOptions}
+        parentCategoryOptions={parentCategoryOptions}
+        loanAccounts={loanAccounts}
+        onMappingChange={onMappingChange}
+        formatCategoryPath={formatCategoryPath}
+        isHighlighted={true}
+      />
+    );
+    const loanSelect = screen.getAllByRole('combobox').find((s) => {
+      const options = Array.from(s.querySelectorAll('option'));
+      return options.some((o) => o.textContent?.includes('Mortgage'));
+    });
+    fireEvent.change(loanSelect!, { target: { value: 'loan1' } });
+    expect(onMappingChange).toHaveBeenCalledWith(
+      expect.objectContaining({ loanAccountId: 'loan1', newLoanType: undefined })
+    );
+  });
+
   it('clears loan fields when unchecking loan checkbox', () => {
     const loanMapping = { ...defaultMapping, isLoanCategory: true };
     render(

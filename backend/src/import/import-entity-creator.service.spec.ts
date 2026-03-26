@@ -690,6 +690,76 @@ describe("ImportEntityCreatorService", () => {
       expect(importResult.createdMappings!.loans["Car Loan"]).toBe("loan-1");
     });
 
+    it("should create a mortgage account when newLoanType is MORTGAGE", async () => {
+      const savedLoan = { id: "mortgage-1" };
+      queryRunner.manager.save.mockResolvedValue(savedLoan);
+
+      const loanCategoryMap = new Map<string, string>();
+      const loanAccountsToCreate: CategoryMappingDto[] = [
+        {
+          originalName: "Mortgage Payment",
+          createNewLoan: "Home Mortgage",
+          newLoanType: "MORTGAGE",
+          newLoanAmount: 350000,
+          newLoanInstitution: "Bank XYZ",
+        },
+      ];
+
+      await service.createLoanAccounts(
+        queryRunner,
+        userId,
+        loanAccountsToCreate,
+        loanCategoryMap,
+        account,
+        importResult,
+      );
+
+      expect(queryRunner.manager.create).toHaveBeenCalledWith(
+        Account,
+        expect.objectContaining({
+          userId,
+          name: "Home Mortgage",
+          accountType: AccountType.MORTGAGE,
+          currencyCode: "CAD",
+          institution: "Bank XYZ",
+          openingBalance: -350000,
+          currentBalance: -350000,
+        }),
+      );
+      expect(loanCategoryMap.get("Mortgage Payment")).toBe("mortgage-1");
+      expect(importResult.accountsCreated).toBe(1);
+    });
+
+    it("should default to LOAN type when newLoanType is not provided", async () => {
+      const savedLoan = { id: "loan-default" };
+      queryRunner.manager.save.mockResolvedValue(savedLoan);
+
+      const loanCategoryMap = new Map<string, string>();
+      const loanAccountsToCreate: CategoryMappingDto[] = [
+        {
+          originalName: "Car Loan",
+          createNewLoan: "Car Loan Account",
+          newLoanAmount: 20000,
+        },
+      ];
+
+      await service.createLoanAccounts(
+        queryRunner,
+        userId,
+        loanAccountsToCreate,
+        loanCategoryMap,
+        account,
+        importResult,
+      );
+
+      expect(queryRunner.manager.create).toHaveBeenCalledWith(
+        Account,
+        expect.objectContaining({
+          accountType: AccountType.LOAN,
+        }),
+      );
+    });
+
     it("should default loan amount to 0 when not provided", async () => {
       const savedLoan = { id: "loan-zero" };
       queryRunner.manager.save.mockResolvedValue(savedLoan);
