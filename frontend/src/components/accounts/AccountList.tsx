@@ -23,6 +23,7 @@ const STORAGE_KEYS = {
   showFilters: 'accounts.filter.showFilters',
   accountType: 'accounts.filter.accountType',
   status: 'accounts.filter.status',
+  netWorth: 'accounts.filter.netWorth',
   sortField: 'accounts.filter.sortField',
   sortDirection: 'accounts.filter.sortDirection',
   density: 'accounts.filter.density',
@@ -105,6 +106,9 @@ export function AccountList({ accounts, brokerageMarketValues, onEdit, onRefresh
   const [filterStatus, setFilterStatus] = useState<'active' | 'closed' | ''>(() =>
     getStoredValue<'active' | 'closed' | ''>(STORAGE_KEYS.status, '')
   );
+  const [filterNetWorth, setFilterNetWorth] = useState<'included' | 'excluded' | ''>(() =>
+    getStoredValue<'included' | 'excluded' | ''>(STORAGE_KEYS.netWorth, '')
+  );
 
   // Density state - initialize from localStorage
   const [density, setDensity] = useState<DensityLevel>(() =>
@@ -123,6 +127,10 @@ export function AccountList({ accounts, brokerageMarketValues, onEdit, onRefresh
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.status, JSON.stringify(filterStatus));
   }, [filterStatus]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.netWorth, JSON.stringify(filterNetWorth));
+  }, [filterNetWorth]);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.sortField, JSON.stringify(sortField));
@@ -214,6 +222,11 @@ export function AccountList({ accounts, brokerageMarketValues, onEdit, onRefresh
         filterStatus === 'active' ? !a.isClosed : a.isClosed
       );
     }
+    if (filterNetWorth) {
+      result = result.filter((a) =>
+        filterNetWorth === 'excluded' ? a.excludeFromNetWorth : !a.excludeFromNetWorth
+      );
+    }
 
     // Apply sorting
     result.sort((a, b) => {
@@ -237,7 +250,7 @@ export function AccountList({ accounts, brokerageMarketValues, onEdit, onRefresh
     });
 
     return result;
-  }, [accounts, filterAccountType, filterStatus, sortField, sortDirection]);
+  }, [accounts, filterAccountType, filterStatus, filterNetWorth, sortField, sortDirection]);
 
   // Build a map of account IDs to names for showing linked account pairs
   const accountNameMap = useMemo(() => {
@@ -247,7 +260,7 @@ export function AccountList({ accounts, brokerageMarketValues, onEdit, onRefresh
   }, [accounts]);
 
   // Count active filters
-  const activeFilterCount = [filterAccountType, filterStatus].filter(Boolean).length;
+  const activeFilterCount = [filterAccountType, filterStatus, filterNetWorth].filter(Boolean).length;
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -261,9 +274,11 @@ export function AccountList({ accounts, brokerageMarketValues, onEdit, onRefresh
   const clearFilters = () => {
     setFilterAccountType('');
     setFilterStatus('');
+    setFilterNetWorth('');
     // Also clear localStorage
     localStorage.removeItem(STORAGE_KEYS.accountType);
     localStorage.removeItem(STORAGE_KEYS.status);
+    localStorage.removeItem(STORAGE_KEYS.netWorth);
   };
 
 
@@ -412,6 +427,40 @@ export function AccountList({ accounts, brokerageMarketValues, onEdit, onRefresh
                 }`}
               >
                 Closed
+              </button>
+              </div>
+
+              {/* Net Worth segmented control */}
+              <div className="inline-flex rounded-md shadow-sm">
+              <button
+                onClick={() => setFilterNetWorth('')}
+                className={`px-3 py-1.5 text-sm font-medium rounded-l-md border ${
+                  filterNetWorth === ''
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'
+                }`}
+              >
+                All
+              </button>
+              <button
+                onClick={() => setFilterNetWorth('included')}
+                className={`px-3 py-1.5 text-sm font-medium border-t border-b ${
+                  filterNetWorth === 'included'
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'
+                }`}
+              >
+                In Net Worth
+              </button>
+              <button
+                onClick={() => setFilterNetWorth('excluded')}
+                className={`px-3 py-1.5 text-sm font-medium rounded-r-md border ${
+                  filterNetWorth === 'excluded'
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'
+                }`}
+              >
+                Excluded
               </button>
               </div>
             </div>
