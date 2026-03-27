@@ -6,6 +6,7 @@ import { TagsService } from "./tags.service";
 import { Tag } from "./entities/tag.entity";
 import { TransactionTag } from "./entities/transaction-tag.entity";
 import { TransactionSplitTag } from "./entities/transaction-split-tag.entity";
+import { ActionHistoryService } from "../action-history/action-history.service";
 
 describe("TagsService", () => {
   let service: TagsService;
@@ -90,6 +91,10 @@ describe("TagsService", () => {
         {
           provide: DataSource,
           useValue: mockDataSource,
+        },
+        {
+          provide: ActionHistoryService,
+          useValue: { record: jest.fn().mockResolvedValue(null) },
         },
       ],
     }).compile();

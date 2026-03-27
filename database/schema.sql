@@ -850,3 +850,21 @@ CREATE TRIGGER update_import_column_mappings_updated_at BEFORE UPDATE ON import_
 
 -- Trigger for tags updated_at
 CREATE TRIGGER update_tags_updated_at BEFORE UPDATE ON tags FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Action History (undo/redo support)
+CREATE TABLE action_history (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    entity_type VARCHAR(50) NOT NULL,
+    entity_id UUID,
+    action VARCHAR(20) NOT NULL,
+    before_data JSONB,
+    after_data JSONB,
+    related_entities JSONB,
+    is_undone BOOLEAN NOT NULL DEFAULT false,
+    description VARCHAR(500) NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_action_history_user_created ON action_history(user_id, created_at DESC);
+CREATE INDEX idx_action_history_user_undone ON action_history(user_id, is_undone, created_at DESC);

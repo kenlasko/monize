@@ -40,6 +40,7 @@ import { McpModule } from "./mcp/mcp.module";
 import { BudgetsModule } from "./budgets/budgets.module";
 import { TagsModule } from "./tags/tags.module";
 import { BackupModule } from "./backup/backup.module";
+import { ActionHistoryModule } from "./action-history/action-history.module";
 
 @Module({
   imports: [
@@ -112,6 +113,7 @@ import { BackupModule } from "./backup/backup.module";
     BudgetsModule,
     TagsModule,
     BackupModule,
+    ActionHistoryModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: GlobalExceptionFilter },

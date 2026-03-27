@@ -13,6 +13,7 @@ import { CreateTransferDto } from "./dto/create-transfer.dto";
 import { AccountsService } from "../accounts/accounts.service";
 import { NetWorthService } from "../net-worth/net-worth.service";
 import { isTransactionInFuture } from "../common/date-utils";
+import { ActionHistoryService } from "../action-history/action-history.service";
 
 export interface TransferResult {
   fromTransaction: Transaction;
@@ -33,6 +34,7 @@ export class TransactionTransferService {
     @Inject(forwardRef(() => NetWorthService))
     private netWorthService: NetWorthService,
     private dataSource: DataSource,
+    private actionHistoryService: ActionHistoryService,
   ) {}
 
   private triggerNetWorthRecalc(accountId: string, userId: string): void {
@@ -170,10 +172,25 @@ export class TransactionTransferService {
     this.triggerNetWorthRecalc(fromAccountId, userId);
     this.triggerNetWorthRecalc(toAccountId, userId);
 
-    return {
+    const result = {
       fromTransaction: await findOne(userId, savedFromId),
       toTransaction: await findOne(userId, savedToId),
     };
+
+    this.actionHistoryService.record(userId, {
+      entityType: "transfer",
+      entityId: savedFromId,
+      action: "create",
+      afterData: {
+        fromTransactionId: savedFromId,
+        toTransactionId: savedToId,
+        fromAccountId,
+        toAccountId,
+      },
+      description: `Created transfer $${amount.toFixed(2)} from ${fromAccount.name} to ${toAccount.name}`,
+    });
+
+    return result;
   }
 
   async getLinkedTransaction(

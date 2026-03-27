@@ -8,6 +8,7 @@ import { ScheduledTransaction } from "../scheduled-transactions/entities/schedul
 import { ScheduledTransactionSplit } from "../scheduled-transactions/entities/scheduled-transaction-split.entity";
 import { CategoriesService } from "./categories.service";
 import { CategoriesController } from "./categories.controller";
+import { ActionHistoryModule } from "../action-history/action-history.module";
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { CategoriesController } from "./categories.controller";
       ScheduledTransaction,
       ScheduledTransactionSplit,
     ]),
+    ActionHistoryModule,
   ],
   providers: [CategoriesService],
   controllers: [CategoriesController],

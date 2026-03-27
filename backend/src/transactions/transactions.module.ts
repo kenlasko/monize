@@ -16,6 +16,7 @@ import { AccountsModule } from "../accounts/accounts.module";
 import { PayeesModule } from "../payees/payees.module";
 import { TagsModule } from "../tags/tags.module";
 import { NetWorthModule } from "../net-worth/net-worth.module";
+import { ActionHistoryModule } from "../action-history/action-history.module";
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { NetWorthModule } from "../net-worth/net-worth.module";
     forwardRef(() => NetWorthModule),
     PayeesModule,
     TagsModule,
+    ActionHistoryModule,
   ],
   providers: [
     TransactionsService,

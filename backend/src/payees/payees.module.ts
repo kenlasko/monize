@@ -7,6 +7,7 @@ import { ScheduledTransaction } from "../scheduled-transactions/entities/schedul
 import { Category } from "../categories/entities/category.entity";
 import { PayeesService } from "./payees.service";
 import { PayeesController } from "./payees.controller";
+import { ActionHistoryModule } from "../action-history/action-history.module";
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { PayeesController } from "./payees.controller";
       ScheduledTransaction,
       Category,
     ]),
+    ActionHistoryModule,
   ],
   providers: [PayeesService],
   controllers: [PayeesController],

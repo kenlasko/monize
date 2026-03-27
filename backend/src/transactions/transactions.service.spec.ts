@@ -17,6 +17,7 @@ import { TransactionReconciliationService } from "./transaction-reconciliation.s
 import { TransactionAnalyticsService } from "./transaction-analytics.service";
 import { TransactionBulkUpdateService } from "./transaction-bulk-update.service";
 import { TagsService } from "../tags/tags.service";
+import { ActionHistoryService } from "../action-history/action-history.service";
 import { isTransactionInFuture } from "../common/date-utils";
 
 jest.mock("../common/date-utils", () => ({
@@ -203,6 +204,7 @@ describe("TransactionsService", () => {
         },
         { provide: NetWorthService, useValue: netWorthService },
         { provide: DataSource, useValue: mockDataSource },
+        { provide: ActionHistoryService, useValue: { record: jest.fn().mockResolvedValue(null) } },
         TransactionSplitService,
         TransactionTransferService,
         TransactionReconciliationService,

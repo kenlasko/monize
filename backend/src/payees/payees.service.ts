@@ -16,6 +16,7 @@ import { CreatePayeeDto } from "./dto/create-payee.dto";
 import { UpdatePayeeDto } from "./dto/update-payee.dto";
 import { CreatePayeeAliasDto } from "./dto/create-payee-alias.dto";
 import { MergePayeeDto } from "./dto/merge-payee.dto";
+import { ActionHistoryService } from "../action-history/action-history.service";
 
 function escapeLikeWildcards(value: string): string {
   return value.replace(/[%_]/g, "\\$&");
@@ -67,6 +68,7 @@ export class PayeesService {
     @InjectRepository(Category)
     private categoriesRepository: Repository<Category>,
     private dataSource: DataSource,
+    private actionHistoryService: ActionHistoryService,
   ) {}
 
   async create(userId: string, createPayeeDto: CreatePayeeDto): Promise<Payee> {
@@ -89,7 +91,18 @@ export class PayeesService {
       userId,
     });
 
-    return this.payeesRepository.save(payee);
+    const saved = await this.payeesRepository.save(payee);
+    this.actionHistoryService.record(userId, {
+      entityType: "payee",
+      entityId: saved.id,
+      action: "create",
+      afterData: {
+        id: saved.id, name: saved.name, notes: saved.notes,
+        defaultCategoryId: saved.defaultCategoryId, isActive: saved.isActive,
+      },
+      description: `Created payee "${saved.name}"`,
+    });
+    return saved;
   }
 
   async findAll(
@@ -263,6 +276,10 @@ export class PayeesService {
     updatePayeeDto: UpdatePayeeDto,
   ): Promise<Payee & { aliasCount: number; transactionCount: number }> {
     const payee = await this.findOne(userId, id);
+    const beforeData = {
+      name: payee.name, notes: payee.notes,
+      defaultCategoryId: payee.defaultCategoryId, isActive: payee.isActive,
+    };
 
     // Check for name conflicts if name is being updated
     if (updatePayeeDto.name && updatePayeeDto.name !== payee.name) {
@@ -318,12 +335,34 @@ export class PayeesService {
     const transactionCount = await this.transactionsRepository.count({
       where: { payeeId: id, userId },
     });
+    this.actionHistoryService.record(userId, {
+      entityType: "payee",
+      entityId: id,
+      action: "update",
+      beforeData,
+      afterData: {
+        name: refreshed.name, notes: refreshed.notes,
+        defaultCategoryId: refreshed.defaultCategoryId, isActive: refreshed.isActive,
+      },
+      description: `Updated payee "${refreshed.name}"`,
+    });
     return { ...refreshed, aliasCount, transactionCount };
   }
 
   async remove(userId: string, id: string): Promise<void> {
     const payee = await this.findOne(userId, id);
+    const beforeData = {
+      id: payee.id, name: payee.name, notes: payee.notes,
+      defaultCategoryId: payee.defaultCategoryId, isActive: payee.isActive,
+    };
     await this.payeesRepository.remove(payee);
+    this.actionHistoryService.record(userId, {
+      entityType: "payee",
+      entityId: id,
+      action: "delete",
+      beforeData,
+      description: `Deleted payee "${beforeData.name}"`,
+    });
   }
 
   async getMostUsed(userId: string, limit: number = 10): Promise<Payee[]> {

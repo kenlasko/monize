@@ -3,6 +3,7 @@ import { getRepositoryToken } from "@nestjs/typeorm";
 import { NotFoundException, BadRequestException } from "@nestjs/common";
 import { DataSource } from "typeorm";
 import { CategoriesService } from "./categories.service";
+import { ActionHistoryService } from "../action-history/action-history.service";
 import { Category } from "./entities/category.entity";
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
@@ -171,6 +172,7 @@ describe("CategoriesService", () => {
           useValue: scheduledSplitsRepository,
         },
         { provide: DataSource, useValue: mockDataSource },
+        { provide: ActionHistoryService, useValue: { record: jest.fn().mockResolvedValue(null) } },
       ],
     }).compile();
 

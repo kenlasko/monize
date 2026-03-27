@@ -6,6 +6,7 @@ import { useAuthStore } from '@/store/authStore';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { authApi } from '@/lib/auth';
 import { useDemoStore } from '@/store/demoStore';
+import { useUndoRedo } from '@/hooks/useUndoRedo';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -17,6 +18,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { user, isAuthenticated, isLoading, _hasHydrated } = useAuthStore();
   const { preferences } = usePreferencesStore();
   const [force2fa, setForce2fa] = useState(false);
+  useUndoRedo();
 
   useEffect(() => {
     if (_hasHydrated && !isLoading && !isAuthenticated) {

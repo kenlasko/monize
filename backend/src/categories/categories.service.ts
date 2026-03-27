@@ -13,6 +13,7 @@ import { ScheduledTransaction } from "../scheduled-transactions/entities/schedul
 import { ScheduledTransactionSplit } from "../scheduled-transactions/entities/scheduled-transaction-split.entity";
 import { CreateCategoryDto } from "./dto/create-category.dto";
 import { UpdateCategoryDto } from "./dto/update-category.dto";
+import { ActionHistoryService } from "../action-history/action-history.service";
 import {
   DEFAULT_INCOME_CATEGORIES,
   DEFAULT_EXPENSE_CATEGORIES,
@@ -34,6 +35,7 @@ export class CategoriesService {
     @InjectRepository(ScheduledTransactionSplit)
     private scheduledSplitsRepository: Repository<ScheduledTransactionSplit>,
     private dataSource: DataSource,
+    private actionHistoryService: ActionHistoryService,
   ) {}
 
   async create(
@@ -53,7 +55,19 @@ export class CategoriesService {
       userId,
     });
 
-    return this.categoriesRepository.save(category);
+    const saved = await this.categoriesRepository.save(category);
+    this.actionHistoryService.record(userId, {
+      entityType: "category",
+      entityId: saved.id,
+      action: "create",
+      afterData: {
+        id: saved.id, name: saved.name, description: saved.description,
+        icon: saved.icon, color: saved.color, isIncome: saved.isIncome,
+        parentId: saved.parentId, isSystem: saved.isSystem,
+      },
+      description: `Created category "${saved.name}"`,
+    });
+    return saved;
   }
 
   private resolveEffectiveColors<
@@ -234,6 +248,11 @@ export class CategoriesService {
     updateCategoryDto: UpdateCategoryDto,
   ): Promise<Category> {
     const category = await this.findOne(userId, id);
+    const beforeData = {
+      name: category.name, description: category.description,
+      icon: category.icon, color: category.color,
+      isIncome: category.isIncome, parentId: category.parentId,
+    };
 
     if (category.isSystem) {
       throw new BadRequestException("Cannot modify system categories");
@@ -283,7 +302,20 @@ export class CategoriesService {
       category.isIncome = updateCategoryDto.isIncome;
     }
 
-    return this.categoriesRepository.save(category);
+    const saved = await this.categoriesRepository.save(category);
+    this.actionHistoryService.record(userId, {
+      entityType: "category",
+      entityId: id,
+      action: "update",
+      beforeData,
+      afterData: {
+        name: saved.name, description: saved.description,
+        icon: saved.icon, color: saved.color,
+        isIncome: saved.isIncome, parentId: saved.parentId,
+      },
+      description: `Updated category "${saved.name}"`,
+    });
+    return saved;
   }
 
   async remove(userId: string, id: string): Promise<void> {
@@ -316,7 +348,20 @@ export class CategoriesService {
       { defaultCategoryId: null },
     );
 
+    const beforeData = {
+      id: category.id, name: category.name, description: category.description,
+      icon: category.icon, color: category.color,
+      isIncome: category.isIncome, parentId: category.parentId,
+      isSystem: category.isSystem,
+    };
     await this.categoriesRepository.remove(category);
+    this.actionHistoryService.record(userId, {
+      entityType: "category",
+      entityId: id,
+      action: "delete",
+      beforeData,
+      description: `Deleted category "${beforeData.name}"`,
+    });
   }
 
   async getTransactionCount(

@@ -33,6 +33,7 @@ import {
 } from "./transaction-bulk-update.service";
 import { BulkUpdateDto, BulkDeleteDto } from "./dto/bulk-update.dto";
 import { isTransactionInFuture } from "../common/date-utils";
+import { ActionHistoryService } from "../action-history/action-history.service";
 import { getAllCategoryIdsWithChildren } from "../common/category-tree.util";
 
 export interface TransactionWithInvestmentLink extends Transaction {
@@ -78,6 +79,7 @@ export class TransactionsService {
     private analyticsService: TransactionAnalyticsService,
     private bulkUpdateService: TransactionBulkUpdateService,
     private dataSource: DataSource,
+    private actionHistoryService: ActionHistoryService,
   ) {}
 
   async create(
@@ -204,7 +206,9 @@ export class TransactionsService {
       userId,
     );
 
-    return this.findOne(userId, savedTransactionId);
+    const result = await this.findOne(userId, savedTransactionId);
+    this.recordTransactionAction(userId, result, "create");
+    return result;
   }
 
   async findAll(
@@ -1176,6 +1180,7 @@ export class TransactionsService {
     updateTransactionDto: UpdateTransactionDto,
   ): Promise<Transaction> {
     const transaction = await this.findOne(userId, id);
+    const beforeSnapshot = this.snapshotTransaction(transaction);
     const oldAmount = Number(transaction.amount);
     const oldAccountId = transaction.accountId;
     const oldTransactionDate = transaction.transactionDate;
@@ -1394,11 +1399,20 @@ export class TransactionsService {
       this.netWorthService.triggerDebouncedRecalc(oldAccountId, userId);
     }
 
+    this.actionHistoryService.record(userId, {
+      entityType: "transaction",
+      entityId: id,
+      action: "update",
+      beforeData: beforeSnapshot,
+      afterData: this.snapshotTransaction(finalTransaction),
+      description: `Updated transaction ${finalTransaction.payeeName || ""} $${Number(finalTransaction.amount).toFixed(2)}`,
+    });
     return finalTransaction;
   }
 
   async remove(userId: string, id: string): Promise<void> {
     const transaction = await this.findOne(userId, id);
+    const beforeSnapshot = this.snapshotTransaction(transaction);
     const accountId = transaction.accountId;
 
     const queryRunner = this.dataSource.createQueryRunner();
@@ -1435,6 +1449,7 @@ export class TransactionsService {
           );
           await queryRunner.commitTransaction();
           this.netWorthService.triggerDebouncedRecalc(accountId, userId);
+          this.recordTransactionAction(userId, { ...transaction, ...beforeSnapshot } as Transaction, "delete", beforeSnapshot);
           return;
         } else {
           await this.accountsService.updateBalance(
@@ -1455,6 +1470,7 @@ export class TransactionsService {
     }
 
     this.netWorthService.triggerDebouncedRecalc(accountId, userId);
+    this.recordTransactionAction(userId, { ...transaction, ...beforeSnapshot } as Transaction, "delete", beforeSnapshot);
   }
 
   private async removeParentTransaction(
@@ -1781,5 +1797,56 @@ export class TransactionsService {
     bulkDeleteDto: BulkDeleteDto,
   ): Promise<BulkDeleteResult> {
     return this.bulkUpdateService.bulkDelete(userId, bulkDeleteDto);
+  }
+
+  private snapshotTransaction(
+    tx: Transaction,
+  ): Record<string, any> {
+    return {
+      id: tx.id,
+      accountId: tx.accountId,
+      transactionDate: tx.transactionDate,
+      amount: tx.amount,
+      currencyCode: tx.currencyCode,
+      exchangeRate: tx.exchangeRate,
+      payeeId: tx.payeeId,
+      payeeName: tx.payeeName,
+      categoryId: tx.categoryId,
+      description: tx.description,
+      referenceNumber: tx.referenceNumber,
+      status: tx.status,
+      isSplit: tx.isSplit,
+      isTransfer: tx.isTransfer,
+      linkedTransactionId: tx.linkedTransactionId,
+      parentTransactionId: tx.parentTransactionId,
+      reconciledDate: tx.reconciledDate,
+      createdAt: tx.createdAt,
+      splits: tx.splits?.map((s) => ({
+        id: s.id,
+        categoryId: s.categoryId,
+        transferAccountId: s.transferAccountId,
+        linkedTransactionId: s.linkedTransactionId,
+        amount: s.amount,
+        memo: s.memo,
+      })),
+      tagIds: tx.tags?.map((t) => t.id),
+    };
+  }
+
+  private recordTransactionAction(
+    userId: string,
+    tx: Transaction,
+    action: "create" | "update" | "delete",
+    beforeData?: Record<string, any>,
+  ): void {
+    const snapshot = action === "delete" ? beforeData : this.snapshotTransaction(tx);
+    this.actionHistoryService.record(userId, {
+      entityType: "transaction",
+      entityId: tx.id,
+      action,
+      beforeData: action === "create" ? undefined : beforeData,
+      afterData: action === "delete" ? undefined : snapshot,
+      description: `${action === "create" ? "Created" : action === "update" ? "Updated" : "Deleted"} transaction ${tx.payeeName || ""} $${Number(tx.amount).toFixed(2)}`,
+    });
   }
 }

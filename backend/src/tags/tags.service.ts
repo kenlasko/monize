@@ -11,6 +11,7 @@ import { TransactionTag } from "./entities/transaction-tag.entity";
 import { TransactionSplitTag } from "./entities/transaction-split-tag.entity";
 import { CreateTagDto } from "./dto/create-tag.dto";
 import { UpdateTagDto } from "./dto/update-tag.dto";
+import { ActionHistoryService } from "../action-history/action-history.service";
 
 @Injectable()
 export class TagsService {
@@ -24,6 +25,7 @@ export class TagsService {
     @InjectRepository(TransactionSplitTag)
     private transactionSplitTagsRepository: Repository<TransactionSplitTag>,
     private dataSource: DataSource,
+    private actionHistoryService: ActionHistoryService,
   ) {}
 
   async findAll(userId: string): Promise<Tag[]> {
@@ -60,11 +62,20 @@ export class TagsService {
       icon: dto.icon || null,
       userId,
     });
-    return this.tagsRepository.save(tag);
+    const saved = await this.tagsRepository.save(tag);
+    this.actionHistoryService.record(userId, {
+      entityType: "tag",
+      entityId: saved.id,
+      action: "create",
+      afterData: { id: saved.id, name: saved.name, color: saved.color, icon: saved.icon },
+      description: `Created tag "${saved.name}"`,
+    });
+    return saved;
   }
 
   async update(userId: string, id: string, dto: UpdateTagDto): Promise<Tag> {
     const tag = await this.findOne(userId, id);
+    const beforeData = { name: tag.name, color: tag.color, icon: tag.icon };
 
     if (dto.name && dto.name.toLowerCase() !== tag.name.toLowerCase()) {
       const existing = await this.tagsRepository
@@ -85,12 +96,29 @@ export class TagsService {
       ...(dto.icon !== undefined && { icon: dto.icon || null }),
     });
 
-    return this.tagsRepository.save(tag);
+    const saved = await this.tagsRepository.save(tag);
+    this.actionHistoryService.record(userId, {
+      entityType: "tag",
+      entityId: id,
+      action: "update",
+      beforeData,
+      afterData: { name: saved.name, color: saved.color, icon: saved.icon },
+      description: `Updated tag "${saved.name}"`,
+    });
+    return saved;
   }
 
   async remove(userId: string, id: string): Promise<void> {
     const tag = await this.findOne(userId, id);
+    const beforeData = { id: tag.id, name: tag.name, color: tag.color, icon: tag.icon };
     await this.tagsRepository.remove(tag);
+    this.actionHistoryService.record(userId, {
+      entityType: "tag",
+      entityId: id,
+      action: "delete",
+      beforeData,
+      description: `Deleted tag "${beforeData.name}"`,
+    });
   }
 
   async getTransactionCount(userId: string, id: string): Promise<number> {

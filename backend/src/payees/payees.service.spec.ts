@@ -12,6 +12,7 @@ import { PayeeAlias } from "./entities/payee-alias.entity";
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { ScheduledTransaction } from "../scheduled-transactions/entities/scheduled-transaction.entity";
 import { Category } from "../categories/entities/category.entity";
+import { ActionHistoryService } from "../action-history/action-history.service";
 
 describe("PayeesService", () => {
   let service: PayeesService;
@@ -165,6 +166,7 @@ describe("PayeesService", () => {
           useValue: categoriesRepository,
         },
         { provide: DataSource, useValue: mockDataSource },
+        { provide: ActionHistoryService, useValue: { record: jest.fn().mockResolvedValue(null) } },
       ],
     }).compile();
 
