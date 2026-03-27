@@ -400,7 +400,7 @@ export class ImportService {
         for (const qifTx of block.transactions) {
           txIndex++;
           try {
-            const savepointName = `tx_import_${txIndex}`;
+            const savepointName = `tx_import_${Number(txIndex)}`;
             await queryRunner.query(`SAVEPOINT ${savepointName}`);
             try {
               if (isInvestment) {
@@ -1260,7 +1260,7 @@ export class ImportService {
       for (const qifTx of result.transactions) {
         txIndex++;
         try {
-          const savepointName = `tx_import_${txIndex}`;
+          const savepointName = `tx_import_${Number(txIndex)}`;
           await queryRunner.query(`SAVEPOINT ${savepointName}`);
           try {
             if (isInvestment) {

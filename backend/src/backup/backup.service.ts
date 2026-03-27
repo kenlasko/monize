@@ -19,6 +19,15 @@ export interface RestoreBackupInput {
 
 const BACKUP_VERSION = 1;
 
+/** Validates that a SQL identifier (table/column name) contains only safe characters. */
+function assertSafeIdentifier(name: string): void {
+  if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name)) {
+    throw new BadRequestException(
+      `Invalid identifier in backup data: "${name}"`,
+    );
+  }
+}
+
 interface BackupData {
   version: number;
   exportedAt: string;
@@ -724,6 +733,8 @@ export class BackupService {
 
     for (const { table, rows, column } of deferredUpdates) {
       if (!rows) continue;
+      assertSafeIdentifier(table);
+      assertSafeIdentifier(column);
       for (const row of rows) {
         if (row[column] != null && row.id != null) {
           await queryRunner.query(
@@ -782,6 +793,7 @@ export class BackupService {
         );
         if (columns.length === 0) continue;
 
+        columns.forEach(assertSafeIdentifier);
         const columnList = columns.map((c) => `"${c}"`).join(", ");
         const placeholders = columns.map((_, i) => `$${i + 1}`).join(", ");
         await queryRunner.query(
@@ -925,7 +937,9 @@ export class BackupService {
         continue;
       }
 
-      // Use quoted identifiers for column names (safe since they come from DB export)
+      // Validate identifiers to prevent SQL injection from malicious backup data
+      assertSafeIdentifier(table);
+      columns.forEach(assertSafeIdentifier);
       const columnList = columns.map((c) => `"${c}"`).join(", ");
       const placeholders = columns.map((_, i) => `$${i + 1}`).join(", ");
 
