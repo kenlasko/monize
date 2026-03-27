@@ -24,6 +24,7 @@ interface TransactionListProps {
   onPayeeClick?: (payeeId: string) => void;
   onTransferClick?: (linkedAccountId: string, linkedTransactionId: string) => void;
   onCategoryClick?: (categoryId: string) => void;
+  onTagClick?: (tagId: string) => void;
   onDateFilterClick?: (date: string) => void;
   onAccountFilterClick?: (accountId: string) => void;
   onPayeeFilterClick?: (payeeId: string) => void;
@@ -58,6 +59,7 @@ export function TransactionList({
   onPayeeClick,
   onTransferClick,
   onCategoryClick,
+  onTagClick,
   onDateFilterClick,
   onAccountFilterClick,
   onPayeeFilterClick,
@@ -467,6 +469,7 @@ export function TransactionList({
                     onPayeeClick={onPayeeClick}
                     onTransferClick={onTransferClick}
                     onCategoryClick={onCategoryClick}
+                    onTagClick={onTagClick}
                     onCycleStatus={handleCycleStatus}
                     onEdit={onEdit}
                     onDuplicate={onDuplicate}
@@ -498,6 +501,7 @@ export function TransactionList({
         onAccountFilterClick={onAccountFilterClick}
         onPayeeFilterClick={onPayeeFilterClick}
         onCategoryClick={onCategoryClick}
+        onTagFilterClick={onTagClick}
       />
 
       {/* Delete Confirmation Dialog */}

@@ -30,6 +30,7 @@ export interface TransactionRowProps {
   onPayeeClick?: (payeeId: string) => void;
   onTransferClick?: (linkedAccountId: string, linkedTransactionId: string) => void;
   onCategoryClick?: (categoryId: string) => void;
+  onTagClick?: (tagId: string) => void;
   onCycleStatus: (transaction: Transaction) => void;
   onEdit?: (transaction: Transaction) => void;
   onDuplicate?: (transaction: Transaction) => void;
@@ -63,6 +64,7 @@ export const TransactionRow = memo(function TransactionRow({
   onPayeeClick,
   onTransferClick,
   onCategoryClick,
+  onTagClick,
   onCycleStatus,
   onEdit,
   onDuplicate,
@@ -89,7 +91,7 @@ export const TransactionRow = memo(function TransactionRow({
       onTouchMove={onTouchMove}
       onTouchEnd={onLongPressEnd}
       onTouchCancel={onLongPressEnd}
-      className={`hover:bg-gray-100 dark:hover:bg-gray-800 ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-gray-800/50' : ''} ${isVoid ? 'opacity-50' : ''} ${isFuture && !isVoid ? 'opacity-60' : ''} ${onEdit ? 'cursor-pointer' : ''} ${isSelected ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}
+      className={`hover:bg-gray-100 dark:hover:bg-gray-800 select-none touch-manipulation ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-gray-800/50' : ''} ${isVoid ? 'opacity-50' : ''} ${isFuture && !isVoid ? 'opacity-60' : ''} ${onEdit ? 'cursor-pointer' : ''} ${isSelected ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}
     >
       {selectionMode && (
         <td className={`${cellPadding} whitespace-nowrap w-10`} onClick={e => e.stopPropagation()}>
@@ -271,7 +273,25 @@ export const TransactionRow = memo(function TransactionRow({
       <td className={`${cellPadding} text-sm hidden xl:table-cell`}>
         {transaction.tags && transaction.tags.length > 0 ? (
           <div className="flex flex-wrap gap-1">
-            {transaction.tags.map((tag) => (
+            {transaction.tags.map((tag) => onTagClick ? (
+              <button
+                key={tag.id}
+                onClick={(e) => { e.stopPropagation(); onTagClick(tag.id); }}
+                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium hover:opacity-80 transition-opacity"
+                style={{
+                  backgroundColor: tag.color ? `${tag.color}20` : '#9ca3af20',
+                  color: tag.color || '#6b7280',
+                }}
+                title={`Filter by ${tag.name}`}
+              >
+                {tag.icon && (
+                  <span className="w-3 h-3 flex-shrink-0 [&>svg]:w-3 [&>svg]:h-3">
+                    {getIconComponent(tag.icon)}
+                  </span>
+                )}
+                {tag.name}
+              </button>
+            ) : (
               <span
                 key={tag.id}
                 className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium"

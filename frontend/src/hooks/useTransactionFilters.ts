@@ -435,6 +435,11 @@ export function useTransactionFilters({ accounts, categories, payees, tags, week
     setFilterPayeeIds([payeeId]);
   }, []);
 
+  const handleTagFilterClick = useCallback((tagId: string) => {
+    isFilterChange.current = true;
+    setFilterTagIds([tagId]);
+  }, []);
+
   const handleTransferClick = useCallback((linkedAccountId: string, _linkedTransactionId: string) => {
     targetTransactionIdRef.current = _linkedTransactionId;
     setFilterAccountStatus('');
@@ -514,6 +519,7 @@ export function useTransactionFilters({ accounts, categories, payees, tags, week
     handleDateFilterClick,
     handleAccountFilterClick,
     handlePayeeFilterClick,
+    handleTagFilterClick,
     handleTransferClick,
     clearFilters,
     goToPage,
