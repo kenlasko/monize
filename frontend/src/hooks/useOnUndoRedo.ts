@@ -8,7 +8,8 @@ import { useEffect } from 'react';
  */
 export function useOnUndoRedo(callback: () => void) {
   useEffect(() => {
-    window.addEventListener('undoredo', callback);
-    return () => window.removeEventListener('undoredo', callback);
+    const handler = () => callback();
+    window.addEventListener('undoredo', handler);
+    return () => window.removeEventListener('undoredo', handler);
   }, [callback]);
 }
