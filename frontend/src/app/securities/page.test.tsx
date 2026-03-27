@@ -92,6 +92,8 @@ vi.mock('@/lib/investments', () => ({
   investmentsApi: {
     getSecurities: (...args: any[]) => mockGetSecurities(...args),
     getHoldings: (...args: any[]) => mockGetHoldings(...args),
+    getUsedSecurityIds: vi.fn().mockResolvedValue([]),
+    deleteSecurity: vi.fn().mockResolvedValue(undefined),
     createSecurity: (...args: any[]) => mockCreateSecurity(...args),
     updateSecurity: (...args: any[]) => mockUpdateSecurity(...args),
     deactivateSecurity: (...args: any[]) => mockDeactivateSecurity(...args),
