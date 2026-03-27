@@ -473,8 +473,18 @@ export class CurrenciesService {
   ): Promise<CurrencyLookupResult> {
     try {
       const yahooSymbol = `${code}USD=X`;
-      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSymbol)}?interval=1d&range=1d`;
-      const response = await fetch(url, {
+      const yahooBase = "https://query1.finance.yahoo.com";
+      const url = new URL(
+        `/v8/finance/chart/${encodeURIComponent(yahooSymbol)}`,
+        yahooBase,
+      );
+      if (url.origin !== yahooBase) {
+        return { code, name: metadata.name, symbol: metadata.symbol, decimalPlaces: metadata.decimalPlaces };
+      }
+      url.searchParams.set("interval", "1d");
+      url.searchParams.set("range", "1d");
+      const response = await fetch(url.toString(), {
+        redirect: "error",
         headers: {
           "User-Agent":
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",

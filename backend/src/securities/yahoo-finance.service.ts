@@ -62,6 +62,28 @@ const YAHOO_SECTOR_NAMES: Record<string, string> = {
   energy: "Energy",
 };
 
+const YAHOO_BASE_URL = "https://query1.finance.yahoo.com";
+
+/** Max length for symbols and search queries sent to Yahoo Finance. */
+const MAX_QUERY_LENGTH = 200;
+
+/**
+ * Validate and build a Yahoo Finance URL, ensuring the result always
+ * points to the expected host.
+ */
+function buildYahooUrl(path: string, query?: Record<string, string>): string {
+  const url = new URL(path, YAHOO_BASE_URL);
+  if (url.origin !== YAHOO_BASE_URL) {
+    throw new Error("Yahoo Finance URL origin mismatch");
+  }
+  if (query) {
+    for (const [k, v] of Object.entries(query)) {
+      url.searchParams.set(k, v);
+    }
+  }
+  return url.toString();
+}
+
 @Injectable()
 export class YahooFinanceService {
   private readonly logger = new Logger(YahooFinanceService.name);
@@ -202,6 +224,7 @@ export class YahooFinanceService {
             "User-Agent": YahooFinanceService.USER_AGENT,
             Cookie: this.cookie!,
           },
+          redirect: "error",
           signal: AbortSignal.timeout(YahooFinanceService.FETCH_TIMEOUT_MS),
         });
       } catch (err) {
@@ -222,13 +245,18 @@ export class YahooFinanceService {
 
   async fetchQuote(symbol: string): Promise<YahooQuoteResult | null> {
     try {
-      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=1d`;
+      const safeSymbol = symbol.slice(0, MAX_QUERY_LENGTH);
+      const url = buildYahooUrl(
+        `/v8/finance/chart/${encodeURIComponent(safeSymbol)}`,
+        { interval: "1d", range: "1d" },
+      );
 
       const response = await fetch(url, {
         headers: {
           "User-Agent":
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
         },
+        redirect: "error",
         signal: AbortSignal.timeout(YahooFinanceService.FETCH_TIMEOUT_MS),
       });
 
@@ -299,13 +327,19 @@ export class YahooFinanceService {
     range: string = "max",
   ): Promise<HistoricalPrice[] | null> {
     try {
-      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=${encodeURIComponent(range)}`;
+      const safeSymbol = symbol.slice(0, MAX_QUERY_LENGTH);
+      const safeRange = range.slice(0, 10);
+      const url = buildYahooUrl(
+        `/v8/finance/chart/${encodeURIComponent(safeSymbol)}`,
+        { interval: "1d", range: safeRange },
+      );
 
       const response = await fetch(url, {
         headers: {
           "User-Agent":
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
         },
+        redirect: "error",
         signal: AbortSignal.timeout(60000),
       });
 
@@ -364,13 +398,19 @@ export class YahooFinanceService {
    */
   async lookupSecurity(query: string): Promise<SecurityLookupResult | null> {
     try {
-      const url = `https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(query)}&quotesCount=10&newsCount=0`;
+      const safeQuery = query.slice(0, MAX_QUERY_LENGTH);
+      const url = buildYahooUrl("/v1/finance/search", {
+        q: safeQuery,
+        quotesCount: "10",
+        newsCount: "0",
+      });
 
       const response = await fetch(url, {
         headers: {
           "User-Agent":
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
         },
+        redirect: "error",
         signal: AbortSignal.timeout(YahooFinanceService.FETCH_TIMEOUT_MS),
       });
 
@@ -640,13 +680,18 @@ export class YahooFinanceService {
    */
   async fetchStockSectorInfo(symbol: string): Promise<StockSectorInfo | null> {
     try {
-      // Use v1/search API which returns sector/industry without auth
-      const url = `https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(symbol)}&quotesCount=5&newsCount=0`;
+      const safeSymbol = symbol.slice(0, MAX_QUERY_LENGTH);
+      const url = buildYahooUrl("/v1/finance/search", {
+        q: safeSymbol,
+        quotesCount: "5",
+        newsCount: "0",
+      });
 
       const response = await fetch(url, {
         headers: {
           "User-Agent": YahooFinanceService.USER_AGENT,
         },
+        redirect: "error",
         signal: AbortSignal.timeout(YahooFinanceService.FETCH_TIMEOUT_MS),
       });
 
@@ -690,7 +735,11 @@ export class YahooFinanceService {
     symbol: string,
   ): Promise<EtfSectorWeighting[] | null> {
     try {
-      const url = `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${encodeURIComponent(symbol)}?modules=topHoldings`;
+      const safeSymbol = symbol.slice(0, MAX_QUERY_LENGTH);
+      const url = buildYahooUrl(
+        `/v10/finance/quoteSummary/${encodeURIComponent(safeSymbol)}`,
+        { modules: "topHoldings" },
+      );
 
       const response = await this.fetchV10(url);
 
