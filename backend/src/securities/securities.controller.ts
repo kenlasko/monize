@@ -91,6 +91,19 @@ export class SecuritiesController {
     return this.securitiesService.findAll(req.user.id, includeInactive);
   }
 
+  @Get("used")
+  @ApiOperation({
+    summary: "Get security IDs that have investment transactions",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "List of security IDs with transactions",
+    schema: { type: "array", items: { type: "string" } },
+  })
+  getUsedSecurityIds(@Request() req): Promise<string[]> {
+    return this.securitiesService.getSecurityIdsWithTransactions(req.user.id);
+  }
+
   @Get("search")
   @ApiOperation({ summary: "Search securities by symbol or name" })
   @ApiQuery({ name: "q", required: true, description: "Search query" })
@@ -192,6 +205,24 @@ export class SecuritiesController {
     @Param("id", ParseUUIDPipe) id: string,
   ): Promise<Security> {
     return this.securitiesService.activate(req.user.id, id);
+  }
+
+  @Delete(":id")
+  @ApiOperation({ summary: "Delete a security" })
+  @ApiResponse({
+    status: 200,
+    description: "Security deleted",
+  })
+  @ApiResponse({
+    status: 403,
+    description: "Security has holdings or transactions",
+  })
+  @ApiResponse({ status: 404, description: "Security not found" })
+  async remove(
+    @Request() req,
+    @Param("id", ParseUUIDPipe) id: string,
+  ): Promise<void> {
+    await this.securitiesService.remove(req.user.id, id);
   }
 
   @Post("prices/refresh")

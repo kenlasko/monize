@@ -16,7 +16,8 @@ import { investmentsApi } from '@/lib/investments';
 import { Security, CreateSecurityData, Holding } from '@/types/investment';
 const SecurityForm = dynamic(() => import('@/components/securities/SecurityForm').then(m => m.SecurityForm), { ssr: false });
 const SecurityPriceHistory = dynamic(() => import('@/components/securities/SecurityPriceHistory').then(m => m.SecurityPriceHistory), { ssr: false });
-import { SecurityList, type SecurityHoldings, type SecuritySortField, type SortDirection } from '@/components/securities/SecurityList';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { SecurityList, type SecurityHoldings, type SecurityTransactions, type SecuritySortField, type SortDirection } from '@/components/securities/SecurityList';
 import { type DensityLevel } from '@/hooks/useTableDensity';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { createLogger } from '@/lib/logger';
@@ -37,7 +38,12 @@ export default function SecuritiesPage() {
 function SecuritiesContent() {
   const [allSecurities, setAllSecurities] = useState<Security[]>([]);
   const [holdings, setHoldings] = useState<SecurityHoldings>({});
+  const [transactionSecurityIds, setTransactionSecurityIds] = useState<SecurityTransactions>(new Set());
   const [isLoading, setIsLoading] = useState(true);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; security: Security | null }>({
+    isOpen: false,
+    security: null,
+  });
   const { showForm, editingItem: editingSecurity, openCreate, openEdit, close, isEditing, modalProps, setFormDirty, unsavedChangesDialog, formSubmitRef } = useFormModal<Security>();
   const [priceSecurity, setPriceSecurity] = useState<Security | undefined>();
   const [searchQuery, setSearchQuery] = useState('');
@@ -50,11 +56,13 @@ function SecuritiesContent() {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [data, holdingsData] = await Promise.all([
+      const [data, holdingsData, usedIds] = await Promise.all([
         investmentsApi.getSecurities(true),
         investmentsApi.getHoldings(),
+        investmentsApi.getUsedSecurityIds(),
       ]);
       setAllSecurities(data);
+      setTransactionSecurityIds(new Set(usedIds));
 
       // Aggregate holdings by securityId, filtering out negligible quantities
       const holdingsMap: SecurityHoldings = {};
@@ -116,6 +124,27 @@ function SecuritiesContent() {
     }
   };
 
+
+  const handleDeleteClick = (security: Security) => {
+    setDeleteConfirm({ isOpen: true, security });
+  };
+
+  const handleDeleteConfirm = async () => {
+    const security = deleteConfirm.security;
+    if (!security) return;
+    setDeleteConfirm({ isOpen: false, security: null });
+    try {
+      await investmentsApi.deleteSecurity(security.id);
+      toast.success(`Security "${security.symbol}" deleted`);
+      loadData();
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Failed to delete security'));
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteConfirm({ isOpen: false, security: null });
+  };
 
   const handleToggleActive = async (security: Security) => {
     try {
@@ -280,8 +309,10 @@ function SecuritiesContent() {
             <SecurityList
               securities={paginatedSecurities}
               holdings={holdings}
+              transactionSecurityIds={transactionSecurityIds}
               onEdit={handleEdit}
               onToggleActive={handleToggleActive}
+              onDelete={handleDeleteClick}
               onViewPrices={setPriceSecurity}
               density={listDensity}
               onDensityChange={setListDensity}
@@ -312,6 +343,18 @@ function SecuritiesContent() {
             {sortedSecurities.length} securit{sortedSecurities.length !== 1 ? 'ies' : 'y'}
           </div>
         )}
+
+        {/* Delete Confirmation */}
+        <ConfirmDialog
+          isOpen={deleteConfirm.isOpen}
+          title="Delete Security"
+          message={`Are you sure you want to delete "${deleteConfirm.security?.symbol || ''}"? All price history will also be deleted. This action cannot be undone.`}
+          confirmLabel="Delete"
+          cancelLabel="Cancel"
+          variant="danger"
+          onConfirm={handleDeleteConfirm}
+          onCancel={handleDeleteCancel}
+        />
       </main>
     </PageLayout>
   );

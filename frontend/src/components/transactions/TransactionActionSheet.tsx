@@ -16,6 +16,7 @@ interface TransactionActionSheetProps {
   onAccountFilterClick?: (accountId: string) => void;
   onPayeeFilterClick?: (payeeId: string) => void;
   onCategoryClick?: (categoryId: string) => void;
+  onTagFilterClick?: (tagId: string) => void;
 }
 
 export function TransactionActionSheet({
@@ -30,6 +31,7 @@ export function TransactionActionSheet({
   onAccountFilterClick,
   onPayeeFilterClick,
   onCategoryClick,
+  onTagFilterClick,
 }: TransactionActionSheetProps) {
   const handleFilterDate = useCallback(() => {
     if (!transaction) return;
@@ -62,6 +64,13 @@ export function TransactionActionSheet({
       onCategoryClick(transaction.category.id);
     }
   }, [transaction, onClose, onCategoryClick]);
+
+  const handleFilterTag = useCallback((tagId: string) => {
+    onClose();
+    if (onTagFilterClick) {
+      onTagFilterClick(tagId);
+    }
+  }, [onClose, onTagFilterClick]);
 
   const handleDelete = useCallback(() => {
     if (!transaction) return;
@@ -123,6 +132,20 @@ export function TransactionActionSheet({
             </svg>
             Filter by &ldquo;{transaction.category.name}&rdquo;
           </button>
+        )}
+        {onTagFilterClick && transaction?.tags && transaction.tags.length > 0 && (
+          transaction.tags.map((tag) => (
+            <button
+              key={tag.id}
+              onClick={() => handleFilterTag(tag.id)}
+              className="w-full px-4 py-3 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3"
+            >
+              <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+              </svg>
+              Filter by tag &ldquo;{tag.name}&rdquo;
+            </button>
+          ))
         )}
         {onEdit && (
           <button

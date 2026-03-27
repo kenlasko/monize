@@ -689,6 +689,7 @@ function TransactionsContent() {
               onPayeeClick={handlePayeeClick}
               onTransferClick={filters.handleTransferClick}
               onCategoryClick={filters.handleCategoryClick}
+              onTagClick={filters.handleTagFilterClick}
               onDateFilterClick={filters.handleDateFilterClick}
               onAccountFilterClick={filters.handleAccountFilterClick}
               onPayeeFilterClick={filters.handlePayeeFilterClick}

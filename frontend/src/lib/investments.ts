@@ -163,6 +163,17 @@ export const investmentsApi = {
     return response.data;
   },
 
+  // Delete security (only if no holdings or transactions reference it)
+  deleteSecurity: async (id: string): Promise<void> => {
+    await apiClient.delete(`/securities/${id}`);
+  },
+
+  // Get security IDs that have investment transactions
+  getUsedSecurityIds: async (): Promise<string[]> => {
+    const response = await apiClient.get<string[]>('/securities/used');
+    return response.data;
+  },
+
   // Search securities
   searchSecurities: async (query: string): Promise<Security[]> => {
     const response = await apiClient.get<Security[]>('/securities/search', {

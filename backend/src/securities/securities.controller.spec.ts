@@ -37,6 +37,8 @@ describe("SecuritiesController", () => {
       update: jest.fn(),
       deactivate: jest.fn(),
       activate: jest.fn(),
+      remove: jest.fn(),
+      getSecurityIdsWithTransactions: jest.fn(),
     };
 
     securityPriceService = {
@@ -227,6 +229,32 @@ describe("SecuritiesController", () => {
         "sec-1",
       );
       expect(result.isActive).toBe(true);
+    });
+  });
+
+  describe("remove", () => {
+    it("delegates to securitiesService.remove", async () => {
+      securitiesService.remove.mockResolvedValue(undefined);
+
+      await controller.remove(req, "sec-1");
+
+      expect(securitiesService.remove).toHaveBeenCalledWith("user-1", "sec-1");
+    });
+  });
+
+  describe("getUsedSecurityIds", () => {
+    it("delegates to securitiesService.getSecurityIdsWithTransactions", async () => {
+      securitiesService.getSecurityIdsWithTransactions.mockResolvedValue([
+        "sec-1",
+        "sec-2",
+      ]);
+
+      const result = await controller.getUsedSecurityIds(req);
+
+      expect(
+        securitiesService.getSecurityIdsWithTransactions,
+      ).toHaveBeenCalledWith("user-1");
+      expect(result).toEqual(["sec-1", "sec-2"]);
     });
   });
 

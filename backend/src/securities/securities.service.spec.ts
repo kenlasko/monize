@@ -8,12 +8,14 @@ import {
 import { SecuritiesService } from "./securities.service";
 import { Security } from "./entities/security.entity";
 import { Holding } from "./entities/holding.entity";
+import { InvestmentTransaction } from "./entities/investment-transaction.entity";
 import { SecurityPriceService } from "./security-price.service";
 
 describe("SecuritiesService", () => {
   let service: SecuritiesService;
   let securitiesRepository: Record<string, jest.Mock>;
   let holdingsRepository: Record<string, jest.Mock>;
+  let investmentTransactionsRepository: Record<string, jest.Mock>;
   let mockSecurityPriceService: Record<string, jest.Mock>;
 
   const mockSecurity = {
@@ -55,6 +57,16 @@ describe("SecuritiesService", () => {
       })),
     };
 
+    investmentTransactionsRepository = {
+      createQueryBuilder: jest.fn(() => ({
+        select: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getCount: jest.fn().mockResolvedValue(0),
+        getRawMany: jest.fn().mockResolvedValue([]),
+      })),
+    };
+
     mockSecurityPriceService = {
       backfillSecurity: jest.fn().mockResolvedValue(undefined),
     };
@@ -69,6 +81,10 @@ describe("SecuritiesService", () => {
         {
           provide: getRepositoryToken(Holding),
           useValue: holdingsRepository,
+        },
+        {
+          provide: getRepositoryToken(InvestmentTransaction),
+          useValue: investmentTransactionsRepository,
         },
         {
           provide: SecurityPriceService,
@@ -293,6 +309,111 @@ describe("SecuritiesService", () => {
 
       expect(result.isActive).toBe(true);
       expect(securitiesRepository.save).toHaveBeenCalled();
+    });
+  });
+
+  describe("remove", () => {
+    it("deletes security when no holdings or transactions exist", async () => {
+      securitiesRepository.findOne.mockResolvedValue({ ...mockSecurity });
+      securitiesRepository.remove = jest.fn().mockResolvedValue(undefined);
+      holdingsRepository.createQueryBuilder.mockReturnValue({
+        leftJoin: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getCount: jest.fn().mockResolvedValue(0),
+      });
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue({
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getCount: jest.fn().mockResolvedValue(0),
+      });
+
+      await service.remove("user-1", "sec-1");
+
+      expect(securitiesRepository.remove).toHaveBeenCalledWith(
+        expect.objectContaining({ id: "sec-1" }),
+      );
+    });
+
+    it("throws ForbiddenException when security has holdings", async () => {
+      securitiesRepository.findOne.mockResolvedValue({ ...mockSecurity });
+      holdingsRepository.createQueryBuilder.mockReturnValue({
+        leftJoin: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getCount: jest.fn().mockResolvedValue(2),
+      });
+
+      await expect(service.remove("user-1", "sec-1")).rejects.toThrow(
+        ForbiddenException,
+      );
+      await expect(service.remove("user-1", "sec-1")).rejects.toThrow(
+        "Cannot delete security that has holdings",
+      );
+    });
+
+    it("throws ForbiddenException when security has investment transactions", async () => {
+      securitiesRepository.findOne.mockResolvedValue({ ...mockSecurity });
+      holdingsRepository.createQueryBuilder.mockReturnValue({
+        leftJoin: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getCount: jest.fn().mockResolvedValue(0),
+      });
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue({
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getCount: jest.fn().mockResolvedValue(5),
+      });
+
+      await expect(service.remove("user-1", "sec-1")).rejects.toThrow(
+        ForbiddenException,
+      );
+      await expect(service.remove("user-1", "sec-1")).rejects.toThrow(
+        "Cannot delete security that has investment transactions",
+      );
+    });
+
+    it("throws NotFoundException when security does not exist", async () => {
+      securitiesRepository.findOne.mockResolvedValue(null);
+
+      await expect(service.remove("user-1", "nonexistent")).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
+
+  describe("getSecurityIdsWithTransactions", () => {
+    it("returns security IDs that have transactions", async () => {
+      const getRawMany = jest.fn().mockResolvedValue([
+        { securityId: "sec-1" },
+        { securityId: "sec-2" },
+      ]);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue({
+        select: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getRawMany,
+      });
+
+      const result = await service.getSecurityIdsWithTransactions("user-1");
+
+      expect(result).toEqual(["sec-1", "sec-2"]);
+      expect(getRawMany).toHaveBeenCalled();
+    });
+
+    it("returns empty array when no transactions exist", async () => {
+      const getRawMany = jest.fn().mockResolvedValue([]);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue({
+        select: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getRawMany,
+      });
+
+      const result = await service.getSecurityIdsWithTransactions("user-1");
+
+      expect(result).toEqual([]);
     });
   });
 
