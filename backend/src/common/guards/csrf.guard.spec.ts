@@ -1,6 +1,7 @@
 import { ExecutionContext, ForbiddenException } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import { ConfigService } from "@nestjs/config";
+import { JwtService } from "@nestjs/jwt";
 import { Test, TestingModule } from "@nestjs/testing";
 import { CsrfGuard } from "./csrf.guard";
 import { SKIP_CSRF_KEY } from "../decorators/skip-csrf.decorator";
@@ -27,6 +28,12 @@ describe("CsrfGuard", () => {
             get: jest.fn().mockReturnValue(undefined),
           },
         },
+        {
+          provide: JwtService,
+          useValue: {
+            decode: jest.fn().mockReturnValue(null),
+          },
+        },
       ],
     }).compile();
 
@@ -38,16 +45,12 @@ describe("CsrfGuard", () => {
     method?: string;
     cookies?: Record<string, string>;
     headers?: Record<string, string>;
-    user?: { id: string };
   }): ExecutionContext {
     const request: Record<string, unknown> = {
       method: overrides.method ?? "POST",
       cookies: overrides.cookies ?? {},
       headers: overrides.headers ?? {},
     };
-    if (overrides.user) {
-      request.user = overrides.user;
-    }
 
     return {
       switchToHttp: () => ({
@@ -191,11 +194,14 @@ describe("CsrfGuard", () => {
     const jwtSecret = "test-secret-key-32-chars-minimum!!";
     const userId = "user-123";
     let hmacGuard: CsrfGuard;
-    // The guard now derives a purpose-specific key from JWT_SECRET
+    let mockJwtService: { decode: jest.Mock };
     let derivedCsrfKey: string;
 
     beforeEach(async () => {
       derivedCsrfKey = derivePurposeKey(jwtSecret, "csrf-token");
+      mockJwtService = {
+        decode: jest.fn().mockReturnValue({ sub: userId }),
+      };
 
       const module: TestingModule = await Test.createTestingModule({
         providers: [
@@ -212,19 +218,36 @@ describe("CsrfGuard", () => {
               get: jest.fn().mockReturnValue(jwtSecret),
             },
           },
+          {
+            provide: JwtService,
+            useValue: mockJwtService,
+          },
         ],
       }).compile();
 
       hmacGuard = module.get<CsrfGuard>(CsrfGuard);
     });
 
-    it("accepts valid HMAC-bound token for the correct user", () => {
+    it("accepts valid HMAC-bound token when JWT is in cookie", () => {
+      const token = generateCsrfToken(userId, derivedCsrfKey);
+      const context = createMockContext({
+        method: "POST",
+        cookies: { csrf_token: token, auth_token: "fake-jwt" },
+        headers: { "x-csrf-token": token },
+      });
+
+      expect(hmacGuard.canActivate(context)).toBe(true);
+    });
+
+    it("accepts valid HMAC-bound token when JWT is in Authorization header", () => {
       const token = generateCsrfToken(userId, derivedCsrfKey);
       const context = createMockContext({
         method: "POST",
         cookies: { csrf_token: token },
-        headers: { "x-csrf-token": token },
-        user: { id: userId },
+        headers: {
+          "x-csrf-token": token,
+          authorization: "Bearer fake-jwt",
+        },
       });
 
       expect(hmacGuard.canActivate(context)).toBe(true);
@@ -232,11 +255,12 @@ describe("CsrfGuard", () => {
 
     it("rejects HMAC-bound token for a different user", () => {
       const token = generateCsrfToken(userId, derivedCsrfKey);
+      mockJwtService.decode.mockReturnValue({ sub: "different-user" });
+
       const context = createMockContext({
         method: "POST",
-        cookies: { csrf_token: token },
+        cookies: { csrf_token: token, auth_token: "fake-jwt" },
         headers: { "x-csrf-token": token },
-        user: { id: "different-user" },
       });
 
       expect(() => hmacGuard.canActivate(context)).toThrow(
@@ -250,9 +274,8 @@ describe("CsrfGuard", () => {
       const tampered = `${parts[0]}:${"f".repeat(64)}`;
       const context = createMockContext({
         method: "POST",
-        cookies: { csrf_token: tampered },
+        cookies: { csrf_token: tampered, auth_token: "fake-jwt" },
         headers: { "x-csrf-token": tampered },
-        user: { id: userId },
       });
 
       expect(() => hmacGuard.canActivate(context)).toThrow(
@@ -260,17 +283,30 @@ describe("CsrfGuard", () => {
       );
     });
 
-    it("skips HMAC verification when no session is available", () => {
-      // No user on the request means sessionId is undefined
+    it("skips HMAC verification when no JWT is present", () => {
       const token = "plain-token-no-colon";
       const context = createMockContext({
         method: "POST",
         cookies: { csrf_token: token },
         headers: { "x-csrf-token": token },
-        // no user
       });
 
       // Should pass the double-submit check without HMAC verification
+      expect(hmacGuard.canActivate(context)).toBe(true);
+    });
+
+    it("skips HMAC verification when JWT decode fails", () => {
+      mockJwtService.decode.mockImplementation(() => {
+        throw new Error("invalid token");
+      });
+
+      const token = "plain-token-no-colon";
+      const context = createMockContext({
+        method: "POST",
+        cookies: { csrf_token: token, auth_token: "bad-jwt" },
+        headers: { "x-csrf-token": token },
+      });
+
       expect(hmacGuard.canActivate(context)).toBe(true);
     });
   });

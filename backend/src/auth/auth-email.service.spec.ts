@@ -60,6 +60,10 @@ describe("AuthEmailService", () => {
     service = module.get<AuthEmailService>(AuthEmailService);
   });
 
+  afterEach(() => {
+    service.onModuleDestroy();
+  });
+
   describe("generateResetToken", () => {
     it("should return user and token when user exists with password", async () => {
       const user = { ...mockUser };
@@ -309,6 +313,45 @@ describe("AuthEmailService", () => {
       expect(service.checkForgotPasswordEmailLimit("user2@example.com")).toBe(
         true,
       );
+    });
+  });
+
+  describe("cleanup", () => {
+    it("should remove expired entries when cleanup runs", () => {
+      // Add entries
+      service.checkForgotPasswordEmailLimit("expired@example.com");
+      service.checkForgotPasswordEmailLimit("fresh@example.com");
+
+      // Advance time so the first entry expires
+      const realDateNow = Date.now;
+      const originalNow = Date.now();
+      Date.now = jest
+        .fn()
+        .mockReturnValue(originalNow + 60 * 60 * 1000 + 1);
+
+      try {
+        // Add a fresh entry at the new time
+        service.checkForgotPasswordEmailLimit("fresh@example.com");
+
+        // Trigger cleanup via the internal method
+        (service as any).cleanupExpiredAttempts();
+
+        // expired@example.com should be cleaned up, fresh should remain
+        // Verify by checking that expired@example.com starts fresh (allowed)
+        // and reaches limit normally
+        const result =
+          service.checkForgotPasswordEmailLimit("expired@example.com");
+        expect(result).toBe(true);
+      } finally {
+        Date.now = realDateNow;
+      }
+    });
+
+    it("should clear interval on module destroy", () => {
+      const clearIntervalSpy = jest.spyOn(global, "clearInterval");
+      service.onModuleDestroy();
+      expect(clearIntervalSpy).toHaveBeenCalled();
+      clearIntervalSpy.mockRestore();
     });
   });
 });

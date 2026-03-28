@@ -6,6 +6,7 @@ import {
 } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import { ConfigService } from "@nestjs/config";
+import { JwtService } from "@nestjs/jwt";
 import * as crypto from "crypto";
 import { SKIP_CSRF_KEY } from "../decorators/skip-csrf.decorator";
 import { verifyCsrfToken } from "../csrf.util";
@@ -18,6 +19,7 @@ export class CsrfGuard implements CanActivate {
   constructor(
     private reflector: Reflector,
     private configService: ConfigService,
+    private jwtService: JwtService,
   ) {
     const jwtSecret = this.configService.get<string>("JWT_SECRET");
     this.csrfKey = jwtSecret ? derivePurposeKey(jwtSecret, "csrf-token") : "";
@@ -64,16 +66,41 @@ export class CsrfGuard implements CanActivate {
       throw new ForbiddenException("Invalid CSRF token");
     }
 
-    // XC-F1: Always verify HMAC session binding when session info is available.
-    // Tokens are always generated with HMAC binding (nonce:hmac format),
-    // so we unconditionally verify rather than checking for ":" in the token.
-    const sessionId = request.user?.id;
-    if (sessionId && this.csrfKey) {
-      if (!verifyCsrfToken(headerToken, sessionId, this.csrfKey)) {
-        throw new ForbiddenException("Invalid CSRF token");
+    // Verify HMAC session binding by extracting the user ID directly from the
+    // JWT token. This guard runs as a global guard before the route-level JWT
+    // guard, so request.user is not yet populated. We decode the JWT here to
+    // get the session ID for HMAC verification. If the token is missing or
+    // invalid, we skip the HMAC check (the JWT guard will reject later).
+    if (this.csrfKey) {
+      const sessionId = this.extractSessionId(request);
+      if (sessionId) {
+        if (!verifyCsrfToken(headerToken, sessionId, this.csrfKey)) {
+          throw new ForbiddenException("Invalid CSRF token");
+        }
       }
     }
 
     return true;
+  }
+
+  private extractSessionId(request: any): string | null {
+    // Try auth_token cookie first, then Authorization header
+    const token =
+      request.cookies?.["auth_token"] ||
+      this.extractBearerToken(request.headers?.["authorization"]);
+
+    if (!token) return null;
+
+    try {
+      const payload = this.jwtService.decode(token);
+      return payload?.sub || null;
+    } catch {
+      return null;
+    }
+  }
+
+  private extractBearerToken(header: string | undefined): string | null {
+    if (!header?.startsWith("Bearer ")) return null;
+    return header.slice(7);
   }
 }

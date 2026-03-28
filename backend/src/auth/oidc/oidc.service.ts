@@ -138,6 +138,50 @@ export class OidcService implements OnModuleInit {
   }
 
   /**
+   * Verify an OIDC ID token's claims without full JWKS signature verification.
+   * Checks that the token is a valid JWT, issued by the configured provider,
+   * intended for our client, not expired, and belongs to the expected subject.
+   */
+  verifyIdTokenClaims(
+    idToken: string,
+    expectedSubject: string,
+  ): boolean {
+    try {
+      const parts = idToken.split(".");
+      if (parts.length !== 3) return false;
+
+      const payload = JSON.parse(
+        Buffer.from(parts[1], "base64url").toString("utf-8"),
+      );
+
+      // Verify issuer matches configured OIDC provider
+      if (this.config) {
+        const expectedIssuer = this.config.serverMetadata().issuer;
+        if (payload.iss !== expectedIssuer) return false;
+      }
+
+      // Verify audience includes our client ID
+      const clientId = this.configService.get<string>("OIDC_CLIENT_ID");
+      if (clientId) {
+        const aud = Array.isArray(payload.aud) ? payload.aud : [payload.aud];
+        if (!aud.includes(clientId)) return false;
+      }
+
+      // Verify token is not expired (with 60s clock skew tolerance)
+      if (payload.exp && payload.exp < Math.floor(Date.now() / 1000) - 60) {
+        return false;
+      }
+
+      // Verify subject matches the expected OIDC subject
+      if (payload.sub !== expectedSubject) return false;
+
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
    * Generate a random state value for CSRF protection
    */
   generateState(): string {

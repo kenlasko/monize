@@ -10,6 +10,7 @@ import { Repository, DataSource } from "typeorm";
 import * as bcrypt from "bcryptjs";
 import { createGzip, gunzipSync } from "zlib";
 import { User } from "../users/entities/user.entity";
+import { OidcService } from "../auth/oidc/oidc.service";
 
 export interface RestoreBackupInput {
   compressedData: Buffer;
@@ -59,6 +60,7 @@ export class BackupService {
     @InjectRepository(User)
     private readonly usersRepository: Repository<User>,
     private readonly dataSource: DataSource,
+    private readonly oidcService: OidcService,
   ) {}
 
   async streamExport(
@@ -473,6 +475,18 @@ export class BackupService {
           "OIDC re-authentication is required to confirm restore",
         );
       }
+      if (
+        !user.oidcSubject ||
+        !this.oidcService.enabled ||
+        !this.oidcService.verifyIdTokenClaims(
+          input.oidcIdToken,
+          user.oidcSubject,
+        )
+      ) {
+        throw new UnauthorizedException(
+          "Invalid OIDC token: the token must be a valid ID token from your SSO provider",
+        );
+      }
     } else if (user.passwordHash) {
       if (!input.password) {
         throw new UnauthorizedException(
@@ -769,10 +783,29 @@ export class BackupService {
 
     // First, restore user-created currencies from the backup (ON CONFLICT DO NOTHING)
     if (data.currencies) {
+      // Validate column names against the actual currencies table schema to
+      // prevent SQL injection via crafted backup data with malicious keys.
+      const currencySchemaResult = await queryRunner.query(
+        `SELECT column_name FROM information_schema.columns
+         WHERE table_name = 'currencies' AND table_schema = 'public'`,
+      );
+      const validCurrencyColumns = new Set<string>(
+        currencySchemaResult.map(
+          (r: { column_name: string }) => r.column_name,
+        ),
+      );
+
       for (const row of data.currencies) {
         const filteredRow = { ...row };
         filteredRow.created_by_user_id = userId;
         delete filteredRow.created_at;
+
+        // Strip column names not in the actual table schema
+        for (const key of Object.keys(filteredRow)) {
+          if (!validCurrencyColumns.has(key)) {
+            delete filteredRow[key];
+          }
+        }
 
         const columns = Object.keys(filteredRow);
         const values = Object.values(filteredRow).map((v) =>
@@ -878,16 +911,23 @@ export class BackupService {
     };
     const columnsToDefer = deferredFkColumns[table] ?? [];
 
-    // Detect native PostgreSQL array columns (e.g. TEXT[]) so we can pass
-    // JS arrays directly to the pg driver instead of JSON-stringifying them.
-    // JSONB columns still need JSON.stringify; only native array columns differ.
-    const arrayColResult = await queryRunner.query(
-      `SELECT column_name FROM information_schema.columns
-       WHERE table_name = $1 AND data_type = 'ARRAY'`,
+    // Fetch all valid column names for this table from the schema. This serves
+    // two purposes: (1) detect native PostgreSQL array columns so we can pass JS
+    // arrays directly to the pg driver, and (2) validate that column names from
+    // the user-uploaded backup are real columns, preventing SQL injection via
+    // crafted column names with embedded double-quote characters.
+    const schemaColResult = await queryRunner.query(
+      `SELECT column_name, data_type FROM information_schema.columns
+       WHERE table_name = $1 AND table_schema = 'public'`,
       [table],
     );
+    const validColumns = new Set<string>(
+      schemaColResult.map((r: { column_name: string }) => r.column_name),
+    );
     const pgArrayColumns = new Set<string>(
-      arrayColResult.map((r: { column_name: string }) => r.column_name),
+      schemaColResult
+        .filter((r: { data_type: string }) => r.data_type === "ARRAY")
+        .map((r: { column_name: string }) => r.column_name),
     );
 
     let count = 0;
@@ -908,6 +948,14 @@ export class BackupService {
         delete filteredRow[col];
       }
 
+      // Strip any column names not present in the actual table schema to
+      // prevent SQL injection via crafted backup data with malicious keys.
+      for (const key of Object.keys(filteredRow)) {
+        if (!validColumns.has(key)) {
+          delete filteredRow[key];
+        }
+      }
+
       const columns = Object.keys(filteredRow);
       // Stringify object/array values for JSONB columns -- PostgreSQL requires
       // JSON text, not native JS objects, in parameterised queries. Native
@@ -925,7 +973,6 @@ export class BackupService {
         continue;
       }
 
-      // Use quoted identifiers for column names (safe since they come from DB export)
       const columnList = columns.map((c) => `"${c}"`).join(", ");
       const placeholders = columns.map((_, i) => `$${i + 1}`).join(", ");
 

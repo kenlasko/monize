@@ -1,4 +1,9 @@
-import { Injectable, BadRequestException, Logger } from "@nestjs/common";
+import {
+  Injectable,
+  BadRequestException,
+  Logger,
+  OnModuleDestroy,
+} from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import * as bcrypt from "bcryptjs";
@@ -10,7 +15,7 @@ import { PasswordBreachService } from "./password-breach.service";
 import { TokenService } from "./token.service";
 
 @Injectable()
-export class AuthEmailService {
+export class AuthEmailService implements OnModuleDestroy {
   private readonly logger = new Logger(AuthEmailService.name);
 
   // M7: Per-email rate limiting for forgot-password
@@ -20,13 +25,37 @@ export class AuthEmailService {
   >();
   private readonly FORGOT_PASSWORD_EMAIL_LIMIT = 3;
   private readonly FORGOT_PASSWORD_EMAIL_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+  private readonly cleanupInterval: ReturnType<typeof setInterval>;
 
   constructor(
     @InjectRepository(User)
     private usersRepository: Repository<User>,
     private passwordBreachService: PasswordBreachService,
     private tokenService: TokenService,
-  ) {}
+  ) {
+    // Periodically prune expired entries to prevent unbounded memory growth.
+    // unref() ensures the timer does not prevent Node.js process shutdown.
+    this.cleanupInterval = setInterval(
+      () => this.cleanupExpiredAttempts(),
+      this.FORGOT_PASSWORD_EMAIL_WINDOW_MS,
+    );
+    if (this.cleanupInterval.unref) {
+      this.cleanupInterval.unref();
+    }
+  }
+
+  onModuleDestroy() {
+    clearInterval(this.cleanupInterval);
+  }
+
+  private cleanupExpiredAttempts(): void {
+    const now = Date.now();
+    for (const [email, record] of this.forgotPasswordAttempts) {
+      if (now - record.windowStart > this.FORGOT_PASSWORD_EMAIL_WINDOW_MS) {
+        this.forgotPasswordAttempts.delete(email);
+      }
+    }
+  }
 
   async generateResetToken(
     email: string,

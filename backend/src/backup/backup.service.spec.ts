@@ -10,6 +10,7 @@ import { gzipSync, gunzipSync } from "zlib";
 import { PassThrough } from "stream";
 import { BackupService, RestoreBackupInput } from "./backup.service";
 import { User } from "../users/entities/user.entity";
+import { OidcService } from "../auth/oidc/oidc.service";
 import * as bcrypt from "bcryptjs";
 
 jest.mock("bcryptjs");
@@ -32,6 +33,56 @@ describe("BackupService", () => {
     passwordHash: "hashed-password",
   };
 
+  // Known columns per table for schema validation mock. When insertRows()
+  // queries information_schema.columns, the mock returns these so that
+  // column-name validation does not strip legitimate backup data.
+  const schemaColumns: Record<string, string[]> = {
+    categories: ["id", "user_id", "name", "parent_id", "type", "icon", "color", "is_active", "sort_order", "created_at", "updated_at"],
+    accounts: ["id", "user_id", "name", "type", "currency_code", "current_balance", "opening_balance", "is_active", "institution", "account_number", "notes", "sort_order", "linked_account_id", "source_account_id", "scheduled_transaction_id", "principal_category_id", "interest_category_id", "asset_category_id", "interest_rate", "loan_amount", "original_term_months", "loan_start_date", "maturity_date", "payment_amount", "payment_frequency", "compounding_frequency", "amortization_months", "extra_payment", "asset_value", "asset_date", "depreciation_rate", "appreciation_rate", "created_at", "updated_at"],
+    payees: ["id", "user_id", "name", "default_category_id", "created_at", "updated_at"],
+    tags: ["id", "user_id", "name", "color", "created_at", "updated_at"],
+    transactions: ["id", "user_id", "account_id", "amount", "transaction_date", "payee_id", "category_id", "memo", "is_reconciled", "check_number", "type", "linked_transaction_id", "parent_transaction_id", "is_split", "created_at", "updated_at"],
+    transaction_splits: ["id", "transaction_id", "amount", "category_id", "memo", "transfer_account_id", "created_at", "updated_at"],
+    transaction_tags: ["transaction_id", "tag_id"],
+    transaction_split_tags: ["transaction_split_id", "tag_id"],
+    securities: ["id", "user_id", "symbol", "name", "type", "exchange", "currency_code", "sector_weightings", "skip_price_updates", "data_source", "created_at", "updated_at"],
+    security_prices: ["id", "security_id", "date", "close_price", "created_at"],
+    holdings: ["id", "user_id", "account_id", "security_id", "quantity", "cost_basis", "created_at", "updated_at"],
+    investment_transactions: ["id", "user_id", "account_id", "security_id", "type", "quantity", "price", "amount", "commission", "transaction_date", "memo", "created_at", "updated_at"],
+    user_preferences: ["id", "user_id", "key", "value", "created_at", "updated_at"],
+    user_currency_preferences: ["id", "user_id", "currency_code", "decimal_places", "created_at", "updated_at"],
+    scheduled_transactions: ["id", "user_id", "account_id", "amount", "payee_id", "category_id", "memo", "frequency", "start_date", "end_date", "next_due_date", "is_active", "type", "created_at", "updated_at"],
+    scheduled_transaction_splits: ["id", "scheduled_transaction_id", "amount", "category_id", "memo", "transfer_account_id", "created_at", "updated_at"],
+    scheduled_transaction_overrides: ["id", "scheduled_transaction_id", "original_date", "new_date", "skip", "created_at", "updated_at"],
+    budgets: ["id", "user_id", "name", "period_type", "currency_code", "is_active", "created_at", "updated_at"],
+    budget_categories: ["id", "budget_id", "category_id", "amount", "created_at", "updated_at"],
+    budget_periods: ["id", "budget_id", "start_date", "end_date", "created_at", "updated_at"],
+    budget_period_categories: ["id", "budget_period_id", "category_id", "budgeted", "actual", "created_at", "updated_at"],
+    budget_alerts: ["id", "budget_id", "type", "threshold", "created_at", "updated_at"],
+    custom_reports: ["id", "user_id", "name", "config", "created_at", "updated_at"],
+    import_column_mappings: ["id", "user_id", "name", "mappings", "created_at", "updated_at"],
+    monthly_account_balances: ["id", "account_id", "year_month", "balance", "created_at", "updated_at"],
+    payee_aliases: ["id", "user_id", "payee_id", "alias", "created_at", "updated_at"],
+    currencies: ["code", "name", "symbol", "decimal_places", "is_active", "created_by_user_id", "created_at", "updated_at"],
+  };
+
+  function mockQueryHandler(sql: string, params?: unknown[]) {
+    if (typeof sql === "string" && sql.includes("information_schema.columns")) {
+      // Extract table name from params (insertRows) or from the SQL itself (ensureCurrenciesExist)
+      let tableName: string | undefined;
+      if (Array.isArray(params) && params.length > 0) {
+        tableName = params[0] as string;
+      } else if (sql.includes("'currencies'")) {
+        tableName = "currencies";
+      }
+      const cols = tableName && schemaColumns[tableName] ? schemaColumns[tableName] : [];
+      return Promise.resolve(
+        cols.map((col) => ({ column_name: col, data_type: "text" })),
+      );
+    }
+    return Promise.resolve([]);
+  }
+
   beforeEach(async () => {
     mockQueryRunner = {
       connect: jest.fn(),
@@ -39,7 +90,7 @@ describe("BackupService", () => {
       commitTransaction: jest.fn(),
       rollbackTransaction: jest.fn(),
       release: jest.fn(),
-      query: jest.fn().mockResolvedValue([]),
+      query: jest.fn().mockImplementation(mockQueryHandler),
     };
 
     mockDataSource = {
@@ -61,6 +112,13 @@ describe("BackupService", () => {
         {
           provide: DataSource,
           useValue: mockDataSource,
+        },
+        {
+          provide: OidcService,
+          useValue: {
+            enabled: true,
+            verifyIdTokenClaims: jest.fn().mockReturnValue(true),
+          },
         },
       ],
     }).compile();
@@ -556,6 +614,7 @@ describe("BackupService", () => {
         ...mockUser,
         authProvider: "oidc",
         passwordHash: null,
+        oidcSubject: "oidc-sub-123",
       });
 
       const result = await service.restoreData(

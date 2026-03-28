@@ -22,7 +22,10 @@ import { LoginDto } from "./dto/login.dto";
 import { derivePurposeKey, hashToken } from "./crypto.util";
 import { PasswordBreachService } from "./password-breach.service";
 import { EmailService } from "../notifications/email.service";
-import { accountLockedTemplate } from "../notifications/email-templates";
+import {
+  accountLockedTemplate,
+  oidcLinkTemplate,
+} from "../notifications/email-templates";
 import { TokenService } from "./token.service";
 import { TwoFactorService } from "./two-factor.service";
 import { AuthEmailService } from "./auth-email.service";
@@ -463,18 +466,7 @@ export class AuthService {
         this.configService.get<string>("PUBLIC_APP_URL") ||
         "http://localhost:3000";
       const confirmUrl = `${frontendUrl}/api/v1/auth/oidc/confirm-link?token=${linkToken}`;
-      const safeName = user.firstName || "there";
-      const html = `
-        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <h2 style="color: #1f2937;">Link Your SSO Account</h2>
-          <p style="color: #374151;">Hi ${safeName},</p>
-          <p style="color: #374151;">Someone attempted to sign in via SSO with an email that matches your existing Monize account. To link your SSO identity to this account, click the button below:</p>
-          <p style="text-align: center; margin: 24px 0;">
-            <a href="${confirmUrl}" style="background-color: #2563eb; color: #ffffff; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600;">Confirm Account Link</a>
-          </p>
-          <p style="color: #6b7280; font-size: 14px;">If you did not initiate this request, you can safely ignore this email. The link expires in 1 hour.</p>
-          <p style="color: #6b7280; font-size: 14px; margin-top: 24px;">-- Monize</p>
-        </div>`;
+      const html = oidcLinkTemplate(user.firstName || "", confirmUrl);
       await this.emailService.sendMail(
         user.email,
         "Monize: Confirm SSO Account Link",

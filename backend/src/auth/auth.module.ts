@@ -70,6 +70,7 @@ import { NotificationsModule } from "../notifications/notifications.module";
     OidcService,
     PatService,
     PasswordBreachService,
+    JwtModule,
   ],
 })
 export class AuthModule {}
