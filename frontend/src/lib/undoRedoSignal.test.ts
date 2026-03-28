@@ -1,3 +1,4 @@
+import { describe, it, expect, vi } from 'vitest';
 import { subscribeUndoRedo, notifyUndoRedo } from './undoRedoSignal';
 
 describe('undoRedoSignal', () => {
