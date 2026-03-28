@@ -76,6 +76,7 @@ export class ImportRegularProcessorService {
     });
 
     const savedTx = await ctx.queryRunner.manager.save(transaction);
+    ctx.createdTransactionIds.push(savedTx.id);
 
     // Assign tags to the transaction
     await this.assignTransactionTags(ctx, savedTx.id, qifTx.tagNames);
@@ -548,6 +549,7 @@ export class ImportRegularProcessorService {
 
     const savedLinkedSplitTx =
       await ctx.queryRunner.manager.save(linkedSplitTx);
+    ctx.createdTransactionIds.push(savedLinkedSplitTx.id);
 
     await ctx.queryRunner.manager.update(TransactionSplit, savedSplit.id, {
       linkedTransactionId: savedLinkedSplitTx.id,
@@ -726,6 +728,7 @@ export class ImportRegularProcessorService {
     });
 
     const savedLinkedTx = await ctx.queryRunner.manager.save(linkedTx);
+    ctx.createdTransactionIds.push(savedLinkedTx.id);
 
     await ctx.queryRunner.manager.update(Transaction, savedTx.id, {
       linkedTransactionId: savedLinkedTx.id,

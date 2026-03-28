@@ -298,6 +298,7 @@ export class ImportInvestmentProcessorService {
       isTransfer: !!transferAccountId,
     });
     const savedCashTx = await ctx.queryRunner.manager.save(cashTx);
+    ctx.createdTransactionIds.push(savedCashTx.id);
     await updateAccountBalance(ctx.queryRunner, cashAccountId, cashAmount);
 
     if (transferAccountId) {
@@ -320,6 +321,7 @@ export class ImportInvestmentProcessorService {
         linkedTransactionId: savedCashTx.id,
       });
       const savedLinkedTx = await ctx.queryRunner.manager.save(linkedTx);
+      ctx.createdTransactionIds.push(savedLinkedTx.id);
 
       await ctx.queryRunner.manager.update(Transaction, savedCashTx.id, {
         linkedTransactionId: savedLinkedTx.id,
@@ -420,6 +422,7 @@ export class ImportInvestmentProcessorService {
     cashTx.isTransfer = isCrossAccountTransfer;
 
     const savedCashTx = await ctx.queryRunner.manager.save(cashTx);
+    ctx.createdTransactionIds.push(savedCashTx.id);
 
     // Create linked transaction on the brokerage side so the target account
     // is visible from both sides of the transfer
@@ -439,6 +442,7 @@ export class ImportInvestmentProcessorService {
       brokerageTx.linkedTransactionId = savedCashTx.id;
 
       const savedBrokerageTx = await ctx.queryRunner.manager.save(brokerageTx);
+      ctx.createdTransactionIds.push(savedBrokerageTx.id);
 
       savedCashTx.linkedTransactionId = savedBrokerageTx.id;
       await ctx.queryRunner.manager.save(savedCashTx);

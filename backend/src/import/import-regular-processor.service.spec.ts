@@ -78,6 +78,7 @@ describe("ImportRegularProcessorService", () => {
       affectedAccountIds: new Set(),
       importResult: makeImportResult(),
       transferDupCounts: new Map(),
+      createdTransactionIds: [],
       ...overrides,
     };
   };

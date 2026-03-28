@@ -17,6 +17,7 @@ import { ImportColumnMapping } from "./entities/import-column-mapping.entity";
 import { NetWorthModule } from "../net-worth/net-worth.module";
 import { SecuritiesModule } from "../securities/securities.module";
 import { CurrenciesModule } from "../currencies/currencies.module";
+import { ActionHistoryModule } from "../action-history/action-history.module";
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { CurrenciesModule } from "../currencies/currencies.module";
     forwardRef(() => NetWorthModule),
     forwardRef(() => SecuritiesModule),
     forwardRef(() => CurrenciesModule),
+    ActionHistoryModule,
   ],
   controllers: [ImportController],
   providers: [

@@ -27,6 +27,7 @@ import { ExchangeRateService } from "../currencies/exchange-rate.service";
 import { ImportEntityCreatorService } from "./import-entity-creator.service";
 import { ImportInvestmentProcessorService } from "./import-investment-processor.service";
 import { ImportRegularProcessorService } from "./import-regular-processor.service";
+import { ActionHistoryService } from "../action-history/action-history.service";
 
 // Mock the qif-parser module so we can control its return values
 jest.mock("./qif-parser", () => ({
@@ -323,6 +324,10 @@ describe("ImportService", () => {
         { provide: NetWorthService, useValue: mockNetWorthService },
         { provide: SecurityPriceService, useValue: mockSecurityPriceService },
         { provide: ExchangeRateService, useValue: mockExchangeRateService },
+        {
+          provide: ActionHistoryService,
+          useValue: { record: jest.fn().mockResolvedValue(null) },
+        },
         ImportEntityCreatorService,
         ImportInvestmentProcessorService,
         ImportRegularProcessorService,

@@ -19,6 +19,8 @@ export interface ImportContext {
   /** Tracks how many QIF entries with each transfer signature have been seen in the current block,
    *  used to distinguish genuinely different transfers that share date/amount/account. */
   transferDupCounts: Map<string, number>;
+  /** IDs of transactions created during this import, for action history undo support */
+  createdTransactionIds: string[];
 }
 
 /**

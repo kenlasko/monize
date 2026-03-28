@@ -59,6 +59,8 @@ import { ImportEntityCreatorService } from "./import-entity-creator.service";
 import { ImportInvestmentProcessorService } from "./import-investment-processor.service";
 import { ImportRegularProcessorService } from "./import-regular-processor.service";
 import { Tag } from "../tags/entities/tag.entity";
+import { Transaction } from "../transactions/entities/transaction.entity";
+import { ActionHistoryService } from "../action-history/action-history.service";
 
 @Injectable()
 export class ImportService {
@@ -83,6 +85,7 @@ export class ImportService {
     private entityCreator: ImportEntityCreatorService,
     private investmentProcessor: ImportInvestmentProcessorService,
     private regularProcessor: ImportRegularProcessorService,
+    private actionHistoryService: ActionHistoryService,
   ) {}
 
   // --- QIF ---
@@ -207,6 +210,7 @@ export class ImportService {
     const affectedAccountIds = new Set<string>();
     const importStartTime = new Date();
     let hasInvestment = false;
+    const createdTransactionIds: string[] = [];
 
     const importResult: ImportResultDto = {
       imported: 0,
@@ -383,6 +387,7 @@ export class ImportService {
           affectedAccountIds,
           importResult,
           transferDupCounts: new Map(),
+          createdTransactionIds,
         };
 
         // Apply opening balance
@@ -444,6 +449,14 @@ export class ImportService {
     } finally {
       await queryRunner.release();
     }
+
+    // Record action history for undo support (small imports only)
+    await this.recordImportHistory(
+      userId,
+      createdTransactionIds,
+      affectedAccountIds,
+      importResult.imported,
+    );
 
     // Post-import processing
     await this.postImportProcessing(userId, hasInvestment, affectedAccountIds);
@@ -1190,6 +1203,7 @@ export class ImportService {
       },
     };
 
+    const createdTransactionIds: string[] = [];
     const ctx: ImportContext = {
       queryRunner,
       userId,
@@ -1205,6 +1219,7 @@ export class ImportService {
       affectedAccountIds,
       importResult,
       transferDupCounts: new Map<string, number>(),
+      createdTransactionIds,
     };
 
     try {
@@ -1303,6 +1318,14 @@ export class ImportService {
     } finally {
       await queryRunner.release();
     }
+
+    // Record action history for undo support (small imports only)
+    await this.recordImportHistory(
+      userId,
+      createdTransactionIds,
+      affectedAccountIds,
+      importResult.imported,
+    );
 
     // Post-import processing
     await this.postImportProcessing(userId, isInvestment, affectedAccountIds);
@@ -1462,6 +1485,81 @@ export class ImportService {
     }
   }
 
+  private static readonly MAX_IMPORT_UNDO_TRANSACTIONS = 200;
+
+  private async recordImportHistory(
+    userId: string,
+    createdTransactionIds: string[],
+    affectedAccountIds: Set<string>,
+    importedCount: number,
+  ): Promise<void> {
+    if (
+      createdTransactionIds.length === 0 ||
+      createdTransactionIds.length > ImportService.MAX_IMPORT_UNDO_TRANSACTIONS
+    ) {
+      return;
+    }
+
+    try {
+      const transactions = await this.dataSource.manager.find(Transaction, {
+        where: { id: In(createdTransactionIds), userId },
+        relations: ["splits"],
+      });
+
+      const txSnapshots: Record<string, any>[] = [];
+      for (const tx of transactions) {
+        const tagRows: { tag_id: string }[] = await this.dataSource.query(
+          "SELECT tag_id FROM transaction_tags WHERE transaction_id = $1",
+          [tx.id],
+        );
+        txSnapshots.push({
+          id: tx.id,
+          accountId: tx.accountId,
+          transactionDate: tx.transactionDate,
+          amount: tx.amount,
+          currencyCode: tx.currencyCode,
+          exchangeRate: tx.exchangeRate,
+          payeeId: tx.payeeId,
+          payeeName: tx.payeeName,
+          categoryId: tx.categoryId,
+          description: tx.description,
+          referenceNumber: tx.referenceNumber,
+          status: tx.status,
+          isSplit: tx.isSplit,
+          isTransfer: tx.isTransfer,
+          linkedTransactionId: tx.linkedTransactionId,
+          parentTransactionId: tx.parentTransactionId,
+          createdAt: tx.createdAt,
+          tagIds: tagRows.map((r) => r.tag_id),
+          splits: (tx.splits || []).map((s) => ({
+            id: s.id,
+            categoryId: s.categoryId,
+            transferAccountId: s.transferAccountId,
+            linkedTransactionId: s.linkedTransactionId,
+            amount: s.amount,
+            memo: s.memo,
+          })),
+        });
+      }
+
+      await this.actionHistoryService.record(userId, {
+        entityType: "bulk_transaction",
+        entityId: null,
+        action: "bulk_create",
+        beforeData: null,
+        afterData: {
+          transactions: txSnapshots,
+          accountIds: Array.from(affectedAccountIds),
+        },
+        description: `Imported ${importedCount} transactions`,
+      });
+    } catch (error) {
+      this.logger.warn(
+        `Failed to record import action history: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+
   private async postImportProcessing(
     userId: string,
     isInvestment: boolean,
@@ -1560,7 +1658,12 @@ export class ImportService {
     userId: string,
     affectedAccountIds: Set<string>,
   ): Promise<
-    Array<{ accountId: string; accountName: string; accountType: string; currencyCode: string }>
+    Array<{
+      accountId: string;
+      accountName: string;
+      accountType: string;
+      currencyCode: string;
+    }>
   > {
     if (affectedAccountIds.size === 0) return [];
 
@@ -1568,10 +1671,7 @@ export class ImportService {
       where: { userId },
     });
 
-    const loanTypes = new Set([
-      AccountType.LOAN,
-      AccountType.MORTGAGE,
-    ]);
+    const loanTypes = new Set([AccountType.LOAN, AccountType.MORTGAGE]);
 
     return accounts
       .filter(

@@ -23,7 +23,13 @@ import { CustomReport } from "../reports/entities/custom-report.entity";
 export interface RecordActionParams {
   entityType: string;
   entityId: string | null;
-  action: "create" | "update" | "delete" | "bulk_update" | "bulk_delete";
+  action:
+    | "create"
+    | "update"
+    | "delete"
+    | "bulk_update"
+    | "bulk_delete"
+    | "bulk_create";
   beforeData?: Record<string, any> | null;
   afterData?: Record<string, any> | null;
   relatedEntities?: Record<string, any>[] | null;
@@ -433,6 +439,8 @@ export class ActionHistoryService {
       case "update":
         return "update";
       case "bulk_delete":
+        return "bulk_create";
+      case "bulk_create":
         return "bulk_delete";
       case "bulk_update":
         return "bulk_update";
@@ -898,6 +906,9 @@ export class ActionHistoryService {
       case "bulk_delete":
         await this.undoBulkDelete(action, queryRunner);
         break;
+      case "bulk_create":
+        await this.undoBulkCreate(action, queryRunner);
+        break;
       case "bulk_update":
         await this.undoBulkUpdate(action, queryRunner);
         break;
@@ -944,6 +955,70 @@ export class ActionHistoryService {
           txData.createdAt ?? new Date(),
         ],
       );
+      accountIds.add(txData.accountId);
+    }
+
+    for (const accountId of accountIds) {
+      await this.recalculateBalance(accountId, queryRunner);
+    }
+  }
+
+  private async undoBulkCreate(
+    action: ActionHistory,
+    queryRunner: QueryRunner,
+  ): Promise<void> {
+    if (!action.afterData || !Array.isArray(action.afterData.transactions))
+      return;
+
+    const accountIds = new Set<string>(action.afterData.accountIds || []);
+    const deletedIds = new Set<string>();
+
+    for (const txData of action.afterData.transactions) {
+      if (deletedIds.has(txData.id)) continue;
+
+      // Delete tags
+      await queryRunner.query(
+        `DELETE FROM transaction_tags WHERE transaction_id = $1`,
+        [txData.id],
+      );
+
+      // Delete splits
+      await queryRunner.query(
+        `DELETE FROM transaction_splits WHERE transaction_id = $1`,
+        [txData.id],
+      );
+
+      // Unlink before deleting to avoid FK constraint
+      if (txData.linkedTransactionId) {
+        await queryRunner.query(
+          `UPDATE transactions SET linked_transaction_id = NULL WHERE id = $1`,
+          [txData.id],
+        );
+        // Also delete the linked transaction if not already processed
+        if (!deletedIds.has(txData.linkedTransactionId)) {
+          await queryRunner.query(
+            `DELETE FROM transaction_tags WHERE transaction_id = $1`,
+            [txData.linkedTransactionId],
+          );
+          await queryRunner.query(
+            `DELETE FROM transaction_splits WHERE transaction_id = $1`,
+            [txData.linkedTransactionId],
+          );
+          await queryRunner.query(
+            `UPDATE transactions SET linked_transaction_id = NULL WHERE id = $1`,
+            [txData.linkedTransactionId],
+          );
+          await queryRunner.query(`DELETE FROM transactions WHERE id = $1`, [
+            txData.linkedTransactionId,
+          ]);
+          deletedIds.add(txData.linkedTransactionId);
+        }
+      }
+
+      await queryRunner.query(`DELETE FROM transactions WHERE id = $1`, [
+        txData.id,
+      ]);
+      deletedIds.add(txData.id);
       accountIds.add(txData.accountId);
     }
 
