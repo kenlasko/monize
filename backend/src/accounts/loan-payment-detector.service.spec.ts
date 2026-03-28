@@ -960,8 +960,10 @@ describe("LoanPaymentDetectorService", () => {
       // Payments ~20 days apart to hit the semimonthly range (19-21 days)
       const payments: any[] = [];
       const dates = [
-        "2025-01-01", "2025-01-21",
-        "2025-02-10", "2025-03-02",
+        "2025-01-01",
+        "2025-01-21",
+        "2025-02-10",
+        "2025-03-02",
         "2025-03-22",
       ];
       dates.forEach((dateStr, i) => {
@@ -990,8 +992,10 @@ describe("LoanPaymentDetectorService", () => {
       // ~20 day intervals, last payment on the 10th (day <= 15)
       const payments: any[] = [];
       const dates = [
-        "2025-01-01", "2025-01-21",
-        "2025-02-10", "2025-03-02",
+        "2025-01-01",
+        "2025-01-21",
+        "2025-02-10",
+        "2025-03-02",
         "2025-03-10",
       ];
       dates.forEach((dateStr, i) => {
@@ -1022,8 +1026,10 @@ describe("LoanPaymentDetectorService", () => {
       // ~20 day intervals, last payment on the 22nd (day > 15)
       const payments: any[] = [];
       const dates = [
-        "2025-01-01", "2025-01-21",
-        "2025-02-10", "2025-03-02",
+        "2025-01-01",
+        "2025-01-21",
+        "2025-02-10",
+        "2025-03-02",
         "2025-03-22",
       ];
       dates.forEach((dateStr, i) => {
