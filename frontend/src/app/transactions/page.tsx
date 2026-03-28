@@ -120,6 +120,7 @@ function TransactionsContent() {
 
   // Load transaction data and chart data in parallel
   const loadTransactions = useCallback(async (page: number) => {
+    const safePage = (!page || page < 1) ? 1 : page;
     try {
       let accountIdsForQuery: string[] | undefined;
       if (filters.filterAccountIds.length > 0) {
@@ -166,7 +167,7 @@ function TransactionsContent() {
           payeeIds: filters.filterPayeeIds.length > 0 ? filters.filterPayeeIds : undefined,
           tagIds: filters.filterTagIds.length > 0 ? filters.filterTagIds : undefined,
           search: filters.filterSearch || undefined,
-          page,
+          page: safePage,
           limit: PAGE_SIZE,
           targetTransactionId: targetTransactionId || undefined,
           amountFrom: parsedAmountFrom,
@@ -187,7 +188,7 @@ function TransactionsContent() {
         setMonthlyTotals([]);
       }
 
-      if (targetTransactionId && transactionsResponse.pagination.page !== page) {
+      if (targetTransactionId && transactionsResponse.pagination.page !== safePage) {
         filters.setCurrentPage(transactionsResponse.pagination.page);
       }
 
