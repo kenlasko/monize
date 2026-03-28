@@ -886,6 +886,19 @@ export class ActionHistoryService {
           delete updateFields.userId;
           delete updateFields.createdAt;
           delete updateFields.updatedAt;
+
+          // Filter out relation properties that can't be used in UPDATE queries.
+          // Only keep fields whose snake_case names are in the ALLOWED_COLUMNS whitelist.
+          const allowedCols = ALLOWED_COLUMNS[tableName];
+          if (allowedCols) {
+            for (const key of Object.keys(updateFields)) {
+              const col = this.toSnakeCase(key);
+              if (!allowedCols.has(col)) {
+                delete updateFields[key];
+              }
+            }
+          }
+
           if (Object.keys(updateFields).length > 0) {
             await queryRunner.manager.update(
               entityClass,
