@@ -221,7 +221,12 @@ function TransactionsContent() {
     await loadTransactions(page);
   }, [filters.currentPage, loadStaticData, loadTransactions]);
 
-  useOnUndoRedo(loadAllData);
+  const handleUndoRedo = useCallback(() => {
+    staticDataLoaded.current = false;
+    loadStaticData();
+    loadTransactions(filters.currentPage || 1);
+  }, [loadStaticData, loadTransactions, filters.currentPage]);
+  useOnUndoRedo(handleUndoRedo);
 
   // Load static data once on mount
   useEffect(() => {
