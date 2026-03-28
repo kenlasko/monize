@@ -1,12 +1,13 @@
 import { renderHook } from '@testing-library/react';
 import { useOnUndoRedo } from './useOnUndoRedo';
+import { notifyUndoRedo } from '@/lib/undoRedoSignal';
 
 describe('useOnUndoRedo', () => {
-  it('should call callback when undoredo event fires', () => {
+  it('should call callback when undoredo signal fires', () => {
     const callback = vi.fn();
     renderHook(() => useOnUndoRedo(callback));
 
-    window.dispatchEvent(new CustomEvent('undoredo'));
+    notifyUndoRedo();
     expect(callback).toHaveBeenCalledTimes(1);
   });
 
@@ -15,7 +16,7 @@ describe('useOnUndoRedo', () => {
     const { unmount } = renderHook(() => useOnUndoRedo(callback));
 
     unmount();
-    window.dispatchEvent(new CustomEvent('undoredo'));
+    notifyUndoRedo();
     expect(callback).not.toHaveBeenCalled();
   });
 
@@ -28,7 +29,7 @@ describe('useOnUndoRedo', () => {
     );
 
     rerender({ cb: callback2 });
-    window.dispatchEvent(new CustomEvent('undoredo'));
+    notifyUndoRedo();
 
     expect(callback1).not.toHaveBeenCalled();
     expect(callback2).toHaveBeenCalledTimes(1);

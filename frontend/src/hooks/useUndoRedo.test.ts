@@ -105,14 +105,15 @@ describe('useUndoRedo', () => {
     );
   });
 
-  it('should dispatch undoredo event on success', async () => {
+  it('should notify undoredo signal on success', async () => {
     actionHistoryApi.undo.mockResolvedValue({
       action: { id: 'action-1' },
       description: 'Undone: test',
     });
 
-    const eventHandler = vi.fn();
-    window.addEventListener('undoredo', eventHandler);
+    const { subscribeUndoRedo } = await import('@/lib/undoRedoSignal');
+    const signalHandler = vi.fn();
+    const unsubscribe = subscribeUndoRedo(signalHandler);
 
     const { result } = renderHook(() => useUndoRedo());
 
@@ -120,8 +121,8 @@ describe('useUndoRedo', () => {
       await result.current.handleUndo();
     });
 
-    expect(eventHandler).toHaveBeenCalled();
-    window.removeEventListener('undoredo', eventHandler);
+    expect(signalHandler).toHaveBeenCalled();
+    unsubscribe();
   });
 
   it('should respond to Ctrl+Z keyboard shortcut', async () => {

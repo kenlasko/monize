@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import { actionHistoryApi, type ActionHistoryItem } from '@/lib/action-history';
 import { clearAllCache } from '@/lib/apiCache';
+import { notifyUndoRedo, subscribeUndoRedo } from '@/lib/undoRedoSignal';
 import { createLogger } from '@/lib/logger';
 
 const logger = createLogger('ActionHistoryPanel');
@@ -66,11 +67,8 @@ export function ActionHistoryPanel() {
 
   // Refresh history when undo/redo happens via keyboard
   useEffect(() => {
-    const handler = () => {
-      if (isOpen) fetchHistory();
-    };
-    window.addEventListener('undoredo', handler);
-    return () => window.removeEventListener('undoredo', handler);
+    if (!isOpen) return;
+    return subscribeUndoRedo(() => fetchHistory());
   }, [isOpen, fetchHistory]);
 
   // Close on click outside
@@ -94,7 +92,7 @@ export function ActionHistoryPanel() {
       const result = await actionHistoryApi.undo();
       toast.success(result.description);
       clearAllCache();
-      window.dispatchEvent(new CustomEvent('undoredo'));
+      notifyUndoRedo();
       await fetchHistory();
     } catch (error: any) {
       const status = error?.response?.status;
@@ -119,7 +117,7 @@ export function ActionHistoryPanel() {
       const result = await actionHistoryApi.redo();
       toast.success(result.description);
       clearAllCache();
-      window.dispatchEvent(new CustomEvent('undoredo'));
+      notifyUndoRedo();
       await fetchHistory();
     } catch (error: any) {
       const status = error?.response?.status;
