@@ -29,7 +29,12 @@
       "Bash(git push:*)",
       "Bash(while read hash msg)",
       "Bash(do git show \"$hash\" -- frontend/src/app/transactions/page.tsx)",
-      "Bash(echo:*)"
+      "Bash(echo:*)",
+      "Bash(npm run lint:*)",
+      "Bash(npm run type-check:*)",
+      "Bash(npm run test:*)",
+      "Bash(docker compose:*)",
+      "Bash(git clone:*)"
     ]
   }
 }
