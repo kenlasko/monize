@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import { actionHistoryApi, type ActionHistoryItem } from '@/lib/action-history';
+import { clearAllCache } from '@/lib/apiCache';
 import { createLogger } from '@/lib/logger';
 
 const logger = createLogger('ActionHistoryPanel');
@@ -29,6 +30,9 @@ const entityLabels: Record<string, string> = {
   payee: 'Payee',
   tag: 'Tag',
   account: 'Account',
+  scheduled_transaction: 'Scheduled',
+  security: 'Security',
+  budget: 'Budget',
 };
 
 export function ActionHistoryPanel() {
@@ -89,6 +93,7 @@ export function ActionHistoryPanel() {
     try {
       const result = await actionHistoryApi.undo();
       toast.success(result.description);
+      clearAllCache();
       window.dispatchEvent(new CustomEvent('undoredo'));
       await fetchHistory();
     } catch (error: any) {
@@ -113,6 +118,7 @@ export function ActionHistoryPanel() {
     try {
       const result = await actionHistoryApi.redo();
       toast.success(result.description);
+      clearAllCache();
       window.dispatchEvent(new CustomEvent('undoredo'));
       await fetchHistory();
     } catch (error: any) {

@@ -3,6 +3,7 @@
 import { useEffect, useCallback, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { actionHistoryApi } from '@/lib/action-history';
+import { clearAllCache } from '@/lib/apiCache';
 import { createLogger } from '@/lib/logger';
 
 const logger = createLogger('UndoRedo');
@@ -27,6 +28,7 @@ export function useUndoRedo() {
     try {
       const result = await actionHistoryApi.undo();
       toast.success(result.description);
+      clearAllCache();
       window.dispatchEvent(new CustomEvent('undoredo'));
     } catch (error: any) {
       const status = error?.response?.status;
@@ -50,6 +52,7 @@ export function useUndoRedo() {
     try {
       const result = await actionHistoryApi.redo();
       toast.success(result.description);
+      clearAllCache();
       window.dispatchEvent(new CustomEvent('undoredo'));
     } catch (error: any) {
       const status = error?.response?.status;
