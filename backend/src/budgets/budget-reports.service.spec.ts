@@ -1158,6 +1158,868 @@ describe("BudgetReportsService", () => {
     });
   });
 
+  describe("getHealthScoreHistory", () => {
+    it("should return empty array when no periods exist", async () => {
+      periodsRepository.find.mockResolvedValueOnce([]);
+
+      const result = await service.getHealthScoreHistory(
+        "user-1",
+        "budget-1",
+        6,
+      );
+
+      expect(result).toEqual([]);
+    });
+
+    it("should compute scores for closed periods using stored actuals", async () => {
+      const periods: Partial<BudgetPeriod>[] = [
+        {
+          id: "p-1",
+          budgetId: "budget-1",
+          periodStart: "2026-01-01",
+          periodEnd: "2026-01-31",
+          totalBudgeted: 800,
+          actualExpenses: 500,
+          actualIncome: 5000,
+          status: PeriodStatus.CLOSED,
+          periodCategories: [
+            {
+              id: "pc-1",
+              budgetPeriodId: "p-1",
+              budgetCategoryId: "bc-1",
+              categoryId: "cat-1",
+              budgetedAmount: 500,
+              actualAmount: 350,
+              rolloverIn: 0,
+              effectiveBudget: 500,
+              rolloverOut: 0,
+              budgetCategory: mockBudgetCategory,
+              category: mockCategory,
+              budgetPeriod: {} as BudgetPeriod,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            } as BudgetPeriodCategory,
+            {
+              id: "pc-2",
+              budgetPeriodId: "p-1",
+              budgetCategoryId: "bc-2",
+              categoryId: "cat-2",
+              budgetedAmount: 300,
+              actualAmount: 150,
+              rolloverIn: 0,
+              effectiveBudget: 300,
+              rolloverOut: 0,
+              budgetCategory: mockBudgetCategory2,
+              category: mockCategory2,
+              budgetPeriod: {} as BudgetPeriod,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            } as BudgetPeriodCategory,
+          ],
+        },
+      ];
+
+      periodsRepository.find.mockResolvedValueOnce(periods);
+
+      const result = await service.getHealthScoreHistory(
+        "user-1",
+        "budget-1",
+        6,
+      );
+
+      expect(result).toHaveLength(1);
+      expect(result[0].month).toBe("Jan 2026");
+      expect(result[0].score).toBeGreaterThanOrEqual(0);
+      expect(result[0].score).toBeLessThanOrEqual(100);
+      expect(result[0].label).toBeDefined();
+    });
+
+    it("should apply over-budget deductions in history", async () => {
+      const periods: Partial<BudgetPeriod>[] = [
+        {
+          id: "p-1",
+          budgetId: "budget-1",
+          periodStart: "2026-01-01",
+          periodEnd: "2026-01-31",
+          totalBudgeted: 800,
+          actualExpenses: 1200,
+          actualIncome: 5000,
+          status: PeriodStatus.CLOSED,
+          periodCategories: [
+            {
+              id: "pc-1",
+              budgetPeriodId: "p-1",
+              budgetCategoryId: "bc-1",
+              categoryId: "cat-1",
+              budgetedAmount: 500,
+              actualAmount: 700,
+              rolloverIn: 0,
+              effectiveBudget: 500,
+              rolloverOut: 0,
+              budgetCategory: mockBudgetCategory,
+              category: mockCategory,
+              budgetPeriod: {} as BudgetPeriod,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            } as BudgetPeriodCategory,
+          ],
+        },
+      ];
+
+      periodsRepository.find.mockResolvedValueOnce(periods);
+
+      const result = await service.getHealthScoreHistory(
+        "user-1",
+        "budget-1",
+        6,
+      );
+
+      expect(result).toHaveLength(1);
+      // Over budget by 40% on NEED category: deductions + essential penalty
+      expect(result[0].score).toBeLessThan(100);
+    });
+
+    it("should apply essential weight penalty for NEED categories over budget", async () => {
+      // NEED category hugely over budget
+      const periods: Partial<BudgetPeriod>[] = [
+        {
+          id: "p-1",
+          budgetId: "budget-1",
+          periodStart: "2026-02-01",
+          periodEnd: "2026-02-28",
+          totalBudgeted: 500,
+          actualExpenses: 1000,
+          actualIncome: 5000,
+          status: PeriodStatus.CLOSED,
+          periodCategories: [
+            {
+              id: "pc-1",
+              budgetPeriodId: "p-1",
+              budgetCategoryId: "bc-1",
+              categoryId: "cat-1",
+              budgetedAmount: 500,
+              actualAmount: 1000,
+              rolloverIn: 0,
+              effectiveBudget: 500,
+              rolloverOut: 0,
+              budgetCategory: mockBudgetCategory, // CategoryGroup.NEED
+              category: mockCategory,
+              budgetPeriod: {} as BudgetPeriod,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            } as BudgetPeriodCategory,
+          ],
+        },
+      ];
+
+      // Also test a WANT category same overage for comparison
+      const periodsWant: Partial<BudgetPeriod>[] = [
+        {
+          id: "p-2",
+          budgetId: "budget-1",
+          periodStart: "2026-02-01",
+          periodEnd: "2026-02-28",
+          totalBudgeted: 300,
+          actualExpenses: 600,
+          actualIncome: 5000,
+          status: PeriodStatus.CLOSED,
+          periodCategories: [
+            {
+              id: "pc-2",
+              budgetPeriodId: "p-2",
+              budgetCategoryId: "bc-2",
+              categoryId: "cat-2",
+              budgetedAmount: 300,
+              actualAmount: 600,
+              rolloverIn: 0,
+              effectiveBudget: 300,
+              rolloverOut: 0,
+              budgetCategory: mockBudgetCategory2, // CategoryGroup.WANT
+              category: mockCategory2,
+              budgetPeriod: {} as BudgetPeriod,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            } as BudgetPeriodCategory,
+          ],
+        },
+      ];
+
+      periodsRepository.find.mockResolvedValueOnce(periods);
+      const resultNeed = await service.getHealthScoreHistory(
+        "user-1",
+        "budget-1",
+        6,
+      );
+
+      periodsRepository.find.mockResolvedValueOnce(periodsWant);
+      const resultWant = await service.getHealthScoreHistory(
+        "user-1",
+        "budget-1",
+        6,
+      );
+
+      // NEED category should have lower score due to essential weight penalty
+      expect(resultNeed[0].score).toBeLessThan(resultWant[0].score);
+    });
+
+    it("should give under-budget bonus for categories at 80% or below", async () => {
+      const periods: Partial<BudgetPeriod>[] = [
+        {
+          id: "p-1",
+          budgetId: "budget-1",
+          periodStart: "2026-03-01",
+          periodEnd: "2026-03-31",
+          totalBudgeted: 800,
+          actualExpenses: 200,
+          actualIncome: 5000,
+          status: PeriodStatus.CLOSED,
+          periodCategories: [
+            {
+              id: "pc-1",
+              budgetPeriodId: "p-1",
+              budgetCategoryId: "bc-1",
+              categoryId: "cat-1",
+              budgetedAmount: 500,
+              actualAmount: 100,
+              rolloverIn: 0,
+              effectiveBudget: 500,
+              rolloverOut: 0,
+              budgetCategory: mockBudgetCategory,
+              category: mockCategory,
+              budgetPeriod: {} as BudgetPeriod,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            } as BudgetPeriodCategory,
+            {
+              id: "pc-2",
+              budgetPeriodId: "p-1",
+              budgetCategoryId: "bc-2",
+              categoryId: "cat-2",
+              budgetedAmount: 300,
+              actualAmount: 100,
+              rolloverIn: 0,
+              effectiveBudget: 300,
+              rolloverOut: 0,
+              budgetCategory: mockBudgetCategory2,
+              category: mockCategory2,
+              budgetPeriod: {} as BudgetPeriod,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            } as BudgetPeriodCategory,
+          ],
+        },
+      ];
+
+      periodsRepository.find.mockResolvedValueOnce(periods);
+
+      const result = await service.getHealthScoreHistory(
+        "user-1",
+        "budget-1",
+        6,
+      );
+
+      expect(result).toHaveLength(1);
+      expect(result[0].score).toBe(100);
+      expect(result[0].label).toBe("Excellent");
+    });
+
+    it("should skip zero-budgeted period categories", async () => {
+      const periods: Partial<BudgetPeriod>[] = [
+        {
+          id: "p-1",
+          budgetId: "budget-1",
+          periodStart: "2026-01-01",
+          periodEnd: "2026-01-31",
+          totalBudgeted: 0,
+          actualExpenses: 0,
+          actualIncome: 0,
+          status: PeriodStatus.CLOSED,
+          periodCategories: [
+            {
+              id: "pc-1",
+              budgetPeriodId: "p-1",
+              budgetCategoryId: "bc-1",
+              categoryId: "cat-1",
+              budgetedAmount: 0,
+              actualAmount: 100,
+              rolloverIn: 0,
+              effectiveBudget: 0,
+              rolloverOut: 0,
+              budgetCategory: mockBudgetCategory,
+              category: mockCategory,
+              budgetPeriod: {} as BudgetPeriod,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            } as BudgetPeriodCategory,
+          ],
+        },
+      ];
+
+      periodsRepository.find.mockResolvedValueOnce(periods);
+
+      const result = await service.getHealthScoreHistory(
+        "user-1",
+        "budget-1",
+        6,
+      );
+
+      expect(result).toHaveLength(1);
+      expect(result[0].score).toBe(100);
+    });
+
+    it("should skip income categories from period scoring", async () => {
+      const incomeBudgetCategory: BudgetCategory = {
+        ...mockBudgetCategory,
+        id: "bc-income",
+        isIncome: true,
+        categoryGroup: null,
+      };
+
+      const periods: Partial<BudgetPeriod>[] = [
+        {
+          id: "p-1",
+          budgetId: "budget-1",
+          periodStart: "2026-01-01",
+          periodEnd: "2026-01-31",
+          totalBudgeted: 5000,
+          actualExpenses: 0,
+          actualIncome: 5000,
+          status: PeriodStatus.CLOSED,
+          periodCategories: [
+            {
+              id: "pc-income",
+              budgetPeriodId: "p-1",
+              budgetCategoryId: "bc-income",
+              categoryId: "cat-income",
+              budgetedAmount: 5000,
+              actualAmount: 5000,
+              rolloverIn: 0,
+              effectiveBudget: 5000,
+              rolloverOut: 0,
+              budgetCategory: incomeBudgetCategory,
+              category: null,
+              budgetPeriod: {} as BudgetPeriod,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            } as BudgetPeriodCategory,
+          ],
+        },
+      ];
+
+      periodsRepository.find.mockResolvedValueOnce(periods);
+
+      const result = await service.getHealthScoreHistory(
+        "user-1",
+        "budget-1",
+        6,
+      );
+
+      expect(result).toHaveLength(1);
+      // Income should not affect score; base should be 100
+      expect(result[0].score).toBe(100);
+    });
+
+    it("should compute actuals from transactions for OPEN periods", async () => {
+      const periods: Partial<BudgetPeriod>[] = [
+        {
+          id: "p-1",
+          budgetId: "budget-1",
+          periodStart: "2026-03-01",
+          periodEnd: "2026-03-31",
+          totalBudgeted: 500,
+          actualExpenses: 0,
+          actualIncome: 0,
+          status: PeriodStatus.OPEN,
+          periodCategories: [
+            {
+              id: "pc-1",
+              budgetPeriodId: "p-1",
+              budgetCategoryId: "bc-1",
+              categoryId: "cat-1",
+              budgetedAmount: 500,
+              actualAmount: 0, // Not yet stored for open periods
+              rolloverIn: 0,
+              effectiveBudget: 500,
+              rolloverOut: 0,
+              budgetCategory: mockBudgetCategory,
+              category: mockCategory,
+              budgetPeriod: {} as BudgetPeriod,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            } as BudgetPeriodCategory,
+          ],
+        },
+      ];
+
+      periodsRepository.find.mockResolvedValueOnce(periods);
+
+      // computeCategoryActual will query transactions and splits
+      const txQb = createMockQueryBuilder({
+        getRawOne: jest.fn().mockResolvedValue({ total: "-300" }),
+      });
+      const splitQb = createMockQueryBuilder({
+        getRawOne: jest.fn().mockResolvedValue({ total: "-50" }),
+      });
+      transactionsRepository.createQueryBuilder.mockReturnValueOnce(txQb);
+      splitsRepository.createQueryBuilder.mockReturnValueOnce(splitQb);
+
+      const result = await service.getHealthScoreHistory(
+        "user-1",
+        "budget-1",
+        6,
+      );
+
+      expect(result).toHaveLength(1);
+      // actual = -(-300 + -50) = 350, 350/500 = 70% -> under budget bonus
+      expect(result[0].score).toBeGreaterThanOrEqual(90);
+      expect(transactionsRepository.createQueryBuilder).toHaveBeenCalled();
+      expect(splitsRepository.createQueryBuilder).toHaveBeenCalled();
+    });
+
+    it("should compute actuals from transactions for OPEN period over budget", async () => {
+      const periods: Partial<BudgetPeriod>[] = [
+        {
+          id: "p-1",
+          budgetId: "budget-1",
+          periodStart: "2026-03-01",
+          periodEnd: "2026-03-31",
+          totalBudgeted: 500,
+          actualExpenses: 0,
+          actualIncome: 0,
+          status: PeriodStatus.OPEN,
+          periodCategories: [
+            {
+              id: "pc-1",
+              budgetPeriodId: "p-1",
+              budgetCategoryId: "bc-1",
+              categoryId: "cat-1",
+              budgetedAmount: 500,
+              actualAmount: 0,
+              rolloverIn: 0,
+              effectiveBudget: 500,
+              rolloverOut: 0,
+              budgetCategory: mockBudgetCategory,
+              category: mockCategory,
+              budgetPeriod: {} as BudgetPeriod,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            } as BudgetPeriodCategory,
+          ],
+        },
+      ];
+
+      periodsRepository.find.mockResolvedValueOnce(periods);
+
+      // Expenses exceed budget: -800 total
+      const txQb = createMockQueryBuilder({
+        getRawOne: jest.fn().mockResolvedValue({ total: "-700" }),
+      });
+      const splitQb = createMockQueryBuilder({
+        getRawOne: jest.fn().mockResolvedValue({ total: "-100" }),
+      });
+      transactionsRepository.createQueryBuilder.mockReturnValueOnce(txQb);
+      splitsRepository.createQueryBuilder.mockReturnValueOnce(splitQb);
+
+      const result = await service.getHealthScoreHistory(
+        "user-1",
+        "budget-1",
+        6,
+      );
+
+      expect(result).toHaveLength(1);
+      // actual = 800, 800/500 = 160% -> over budget deductions
+      expect(result[0].score).toBeLessThan(100);
+    });
+
+    it("should format period months correctly", async () => {
+      const periods: Partial<BudgetPeriod>[] = [
+        {
+          id: "p-1",
+          budgetId: "budget-1",
+          periodStart: "2025-12-01",
+          periodEnd: "2025-12-31",
+          totalBudgeted: 800,
+          actualExpenses: 500,
+          actualIncome: 5000,
+          status: PeriodStatus.CLOSED,
+          periodCategories: [],
+        },
+        {
+          id: "p-2",
+          budgetId: "budget-1",
+          periodStart: "2026-06-01",
+          periodEnd: "2026-06-30",
+          totalBudgeted: 800,
+          actualExpenses: 500,
+          actualIncome: 5000,
+          status: PeriodStatus.CLOSED,
+          periodCategories: [],
+        },
+      ];
+
+      periodsRepository.find.mockResolvedValueOnce(periods);
+
+      const result = await service.getHealthScoreHistory(
+        "user-1",
+        "budget-1",
+        12,
+      );
+
+      expect(result).toHaveLength(2);
+      expect(result[0].month).toBe("Dec 2025");
+      expect(result[1].month).toBe("Jun 2026");
+    });
+
+    it("should return correct labels for different score ranges", async () => {
+      // Many over-budget categories to push score below 50
+      // Each category deduction is capped at 15, essential penalty at 5
+      // Need 4+ NEED categories to get score below 50:
+      // 100 - 4*(15) - 4*(5) = 100 - 60 - 20 = 20
+      const makePc = (idx: number): BudgetPeriodCategory =>
+        ({
+          id: `pc-${idx}`,
+          budgetPeriodId: "p-1",
+          budgetCategoryId: `bc-${idx}`,
+          categoryId: `cat-${idx}`,
+          budgetedAmount: 100,
+          actualAmount: 600,
+          rolloverIn: 0,
+          effectiveBudget: 100,
+          rolloverOut: 0,
+          budgetCategory: {
+            ...mockBudgetCategory,
+            id: `bc-${idx}`,
+            categoryId: `cat-${idx}`,
+          },
+          category: { ...mockCategory, id: `cat-${idx}` },
+          budgetPeriod: {} as BudgetPeriod,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }) as BudgetPeriodCategory;
+
+      // Add extra budget categories to bcMap via mockBudget
+      const extraCategories = [3, 4, 5, 6].map((idx) => ({
+        ...mockBudgetCategory,
+        id: `bc-${idx}`,
+        categoryId: `cat-${idx}`,
+      }));
+      budgetsService.findOne.mockResolvedValueOnce({
+        ...mockBudget,
+        categories: [
+          ...mockBudget.categories,
+          ...extraCategories,
+        ],
+      });
+
+      const periods: Partial<BudgetPeriod>[] = [
+        {
+          id: "p-1",
+          budgetId: "budget-1",
+          periodStart: "2026-01-01",
+          periodEnd: "2026-01-31",
+          totalBudgeted: 800,
+          actualExpenses: 5000,
+          actualIncome: 5000,
+          status: PeriodStatus.CLOSED,
+          periodCategories: [
+            makePc(1),
+            makePc(2),
+            makePc(3),
+            makePc(4),
+            makePc(5),
+            makePc(6),
+          ],
+        },
+      ];
+
+      periodsRepository.find.mockResolvedValueOnce(periods);
+
+      const result = await service.getHealthScoreHistory(
+        "user-1",
+        "budget-1",
+        6,
+      );
+
+      expect(result).toHaveLength(1);
+      expect(result[0].score).toBeLessThanOrEqual(50);
+      expect(["Needs Attention", "Off Track"]).toContain(result[0].label);
+    });
+
+    it("should handle multiple periods and return all scores", async () => {
+      const periods: Partial<BudgetPeriod>[] = [
+        {
+          id: "p-1",
+          budgetId: "budget-1",
+          periodStart: "2026-01-01",
+          periodEnd: "2026-01-31",
+          totalBudgeted: 800,
+          actualExpenses: 400,
+          actualIncome: 5000,
+          status: PeriodStatus.CLOSED,
+          periodCategories: [
+            {
+              id: "pc-1",
+              budgetPeriodId: "p-1",
+              budgetCategoryId: "bc-2",
+              categoryId: "cat-2",
+              budgetedAmount: 300,
+              actualAmount: 100,
+              rolloverIn: 0,
+              effectiveBudget: 300,
+              rolloverOut: 0,
+              budgetCategory: mockBudgetCategory2,
+              category: mockCategory2,
+              budgetPeriod: {} as BudgetPeriod,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            } as BudgetPeriodCategory,
+          ],
+        },
+        {
+          id: "p-2",
+          budgetId: "budget-1",
+          periodStart: "2026-02-01",
+          periodEnd: "2026-02-28",
+          totalBudgeted: 800,
+          actualExpenses: 900,
+          actualIncome: 5000,
+          status: PeriodStatus.CLOSED,
+          periodCategories: [
+            {
+              id: "pc-2",
+              budgetPeriodId: "p-2",
+              budgetCategoryId: "bc-2",
+              categoryId: "cat-2",
+              budgetedAmount: 300,
+              actualAmount: 450,
+              rolloverIn: 0,
+              effectiveBudget: 300,
+              rolloverOut: 0,
+              budgetCategory: mockBudgetCategory2,
+              category: mockCategory2,
+              budgetPeriod: {} as BudgetPeriod,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            } as BudgetPeriodCategory,
+          ],
+        },
+      ];
+
+      periodsRepository.find.mockResolvedValueOnce(periods);
+
+      const result = await service.getHealthScoreHistory(
+        "user-1",
+        "budget-1",
+        6,
+      );
+
+      expect(result).toHaveLength(2);
+      expect(result[0].month).toBe("Jan 2026");
+      expect(result[1].month).toBe("Feb 2026");
+      // First period under budget, second over budget
+      expect(result[0].score).toBeGreaterThan(result[1].score);
+    });
+
+    it("should handle period category without budgetCategory relation", async () => {
+      const periods: Partial<BudgetPeriod>[] = [
+        {
+          id: "p-1",
+          budgetId: "budget-1",
+          periodStart: "2026-01-01",
+          periodEnd: "2026-01-31",
+          totalBudgeted: 800,
+          actualExpenses: 500,
+          actualIncome: 5000,
+          status: PeriodStatus.CLOSED,
+          periodCategories: [
+            {
+              id: "pc-1",
+              budgetPeriodId: "p-1",
+              budgetCategoryId: "bc-1",
+              categoryId: "cat-1",
+              budgetedAmount: 500,
+              actualAmount: 700,
+              rolloverIn: 0,
+              effectiveBudget: 500,
+              rolloverOut: 0,
+              budgetCategory: null as any,
+              category: null,
+              budgetPeriod: {} as BudgetPeriod,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            } as BudgetPeriodCategory,
+          ],
+        },
+      ];
+
+      periodsRepository.find.mockResolvedValueOnce(periods);
+
+      const result = await service.getHealthScoreHistory(
+        "user-1",
+        "budget-1",
+        6,
+      );
+
+      // Should not crash -- budgetCategory is null, isEssential = false
+      expect(result).toHaveLength(1);
+      expect(result[0].score).toBeLessThan(100);
+    });
+  });
+
+  describe("getSavingsRate - expense splits", () => {
+    const currentMonthKey = (() => {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    })();
+
+    it("should include expense splits in totals", async () => {
+      const directExpenseRows = [{ month: currentMonthKey, total: "2000" }];
+      const splitExpenseRows = [{ month: currentMonthKey, total: "500" }];
+
+      let txCallCount = 0;
+      transactionsRepository.createQueryBuilder.mockImplementation(() => {
+        txCallCount++;
+        if (txCallCount === 1) {
+          // direct income
+          return createMockQueryBuilder({
+            getRawMany: jest.fn().mockResolvedValue([
+              { month: currentMonthKey, total: "5000" },
+            ]),
+          });
+        }
+        if (txCallCount === 2) {
+          // direct expenses
+          return createMockQueryBuilder({
+            getRawMany: jest
+              .fn()
+              .mockResolvedValue(directExpenseRows),
+          });
+        }
+        return createMockQueryBuilder();
+      });
+
+      let splitCallCount = 0;
+      splitsRepository.createQueryBuilder.mockImplementation(() => {
+        splitCallCount++;
+        if (splitCallCount === 1) {
+          // income splits
+          return createMockQueryBuilder();
+        }
+        // expense splits (2nd call)
+        return createMockQueryBuilder({
+          getRawMany: jest.fn().mockResolvedValue(splitExpenseRows),
+        });
+      });
+
+      const result = await service.getSavingsRate("user-1", "budget-1", 1);
+
+      // 2000 direct + 500 split = 2500 total expenses
+      expect(result[0].expenses).toBe(2500);
+      expect(result[0].income).toBe(5000);
+      expect(result[0].savings).toBe(2500);
+    });
+  });
+
+  describe("getHealthScore - trend bonus edge cases", () => {
+    it("should return zero trend bonus when spending is getting worse", async () => {
+      // latest period has higher spending % than previous
+      periodsRepository.find.mockResolvedValueOnce([
+        {
+          id: "p-2",
+          budgetId: "budget-1",
+          periodStart: "2026-02-01",
+          totalBudgeted: 800,
+          actualExpenses: 900, // 112.5%
+          status: PeriodStatus.CLOSED,
+        },
+        {
+          id: "p-1",
+          budgetId: "budget-1",
+          periodStart: "2026-01-01",
+          totalBudgeted: 800,
+          actualExpenses: 600, // 75%
+          status: PeriodStatus.CLOSED,
+        },
+      ]);
+
+      const result = await service.getHealthScore("user-1", "budget-1");
+
+      expect(result.breakdown.trendBonus).toBe(0);
+    });
+
+    it("should return zero trend bonus when spending percentage is the same", async () => {
+      periodsRepository.find.mockResolvedValueOnce([
+        {
+          id: "p-2",
+          budgetId: "budget-1",
+          periodStart: "2026-02-01",
+          totalBudgeted: 800,
+          actualExpenses: 600,
+          status: PeriodStatus.CLOSED,
+        },
+        {
+          id: "p-1",
+          budgetId: "budget-1",
+          periodStart: "2026-01-01",
+          totalBudgeted: 800,
+          actualExpenses: 600,
+          status: PeriodStatus.CLOSED,
+        },
+      ]);
+
+      const result = await service.getHealthScore("user-1", "budget-1");
+
+      expect(result.breakdown.trendBonus).toBe(0);
+    });
+  });
+
+  describe("getSavingsRate - no expense categories", () => {
+    const currentMonthKey = (() => {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    })();
+
+    it("should skip expense queries when no expense categories exist", async () => {
+      // Budget with only income categories (no expense categories)
+      const transferCategory: BudgetCategory = {
+        ...mockBudgetCategory,
+        id: "bc-transfer",
+        categoryId: null,
+        isTransfer: true,
+        isIncome: false,
+      };
+
+      budgetsService.findOne.mockResolvedValueOnce({
+        ...mockBudget,
+        categories: [mockIncomeCategory, transferCategory],
+      });
+
+      const incomeRows = [{ month: currentMonthKey, total: "5000" }];
+
+      let txCallCount = 0;
+      transactionsRepository.createQueryBuilder.mockImplementation(() => {
+        txCallCount++;
+        if (txCallCount === 1) {
+          return createMockQueryBuilder({
+            getRawMany: jest.fn().mockResolvedValue(incomeRows),
+          });
+        }
+        return createMockQueryBuilder();
+      });
+
+      splitsRepository.createQueryBuilder.mockImplementation(() =>
+        createMockQueryBuilder(),
+      );
+
+      const result = await service.getSavingsRate("user-1", "budget-1", 1);
+
+      expect(result[0].income).toBe(5000);
+      expect(result[0].expenses).toBe(0);
+      expect(result[0].savings).toBe(5000);
+      expect(result[0].savingsRate).toBe(100);
+    });
+  });
+
   describe("authorization", () => {
     it("should verify budget ownership via budgetsService.findOne", async () => {
       await service.getTrend("user-1", "budget-1", 6);
