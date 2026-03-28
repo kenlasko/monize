@@ -42,9 +42,10 @@ export default function InvestmentsPage() {
 function InvestmentsContent() {
   const { formatCurrency } = useNumberFormat();
   const data = useInvestmentData();
+  const { loadAllPortfolioData, selectedAccountIds, currentPage, transactionFilters } = data;
   const handleUndoRedo = useCallback(() => {
-    data.loadAllPortfolioData(data.selectedAccountIds, data.currentPage, data.transactionFilters);
-  }, [data.loadAllPortfolioData, data.selectedAccountIds, data.currentPage, data.transactionFilters]);
+    loadAllPortfolioData(selectedAccountIds, currentPage, transactionFilters);
+  }, [loadAllPortfolioData, selectedAccountIds, currentPage, transactionFilters]);
   useOnUndoRedo(handleUndoRedo);
   const [listDensity, setListDensity] = useLocalStorage<DensityLevel>('monize-investments-density', 'normal');
   const [transactionView, setTransactionView] = useState<TransactionViewType>('brokerage');
