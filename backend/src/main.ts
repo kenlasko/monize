@@ -88,10 +88,12 @@ async function bootstrap() {
   const isProduction = process.env.NODE_ENV === "production";
   app.enableCors({
     origin: (origin, callback) => {
-      // Requests with no Origin header (server-to-server, curl, same-origin
-      // navigations): in production, reject to prevent null-origin abuse
-      // (e.g. sandboxed iframes). In dev, allow for convenience.
-      if (!origin) return callback(null, !isProduction);
+      // Requests with no Origin header (server-to-server, health checks,
+      // curl, same-origin navigations): always allow. Non-browser clients
+      // can trivially set any Origin, so blocking null Origin adds no real
+      // security. Sandboxed-iframe abuse is prevented by Helmet's
+      // frameguard: { action: "deny" } instead.
+      if (!origin) return callback(null, true);
 
       if (allowedOrigins.includes(origin)) {
         callback(null, true);
