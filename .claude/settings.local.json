@@ -41,7 +41,8 @@
       "Bash(sudo apt-get install:*)",
       "Bash(git log:*)",
       "Bash(npm audit:*)",
-      "Bash(git status:*)"
+      "Bash(git status:*)",
+      "Bash(npm install:*)"
     ]
   }
 }

@@ -85,7 +85,6 @@ async function bootstrap() {
       : []),
   ].filter(Boolean);
 
-  const isProduction = process.env.NODE_ENV === "production";
   app.enableCors({
     origin: (origin, callback) => {
       // Requests with no Origin header (server-to-server, health checks,
@@ -139,16 +138,16 @@ async function bootstrap() {
     SwaggerModule.setup("api/docs", app, document);
   }
 
-  const logger = new Logger("Bootstrap");
-  const port = process.env.PORT || 3001;
-  await app.listen(port);
-
   // Increase HTTP server timeouts for large backup uploads (100mb+).
   // Default requestTimeout is 5 min which may not be enough when uploading
   // through multiple proxy layers on slower connections.
   const server = app.getHttpServer();
   server.requestTimeout = 600000; // 10 minutes
   server.headersTimeout = 605000; // must be > requestTimeout
+
+  const logger = new Logger("Bootstrap");
+  const port = process.env.PORT || 3001;
+  await app.listen(port);
 
   logger.log(`Application is running on: http://localhost:${port}`);
   if (process.env.NODE_ENV !== "production") {
