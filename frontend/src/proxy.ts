@@ -40,6 +40,11 @@ function nextWithCsp(request: NextRequest): NextResponse {
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // Let Next.js API routes handle health checks directly (no proxy)
+  if (pathname.startsWith('/api/v1/health/')) {
+    return NextResponse.next();
+  }
+
   // Handle API proxying to backend
   if (pathname.startsWith('/api/')) {
     const apiUrl = process.env.INTERNAL_API_URL || 'http://localhost:3001';
