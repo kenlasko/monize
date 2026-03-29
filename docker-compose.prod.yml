@@ -35,7 +35,7 @@ services:
         condition: service_healthy
     environment:
       NODE_ENV: production
-      PORT: 3000
+      PORT: ${BACKEND_PORT:-3000}
       DATABASE_HOST: postgres
       DATABASE_PORT: 5432
       DATABASE_NAME: ${POSTGRES_DB}
@@ -75,7 +75,7 @@ services:
     networks:
       - monize-network
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/api/v1/health/live"]
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:${BACKEND_PORT:-3000}/api/v1/health/live"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -98,15 +98,16 @@ services:
         condition: service_healthy
     environment:
       NODE_ENV: production
-      INTERNAL_API_URL: http://backend:3000
+      PORT: ${FRONTEND_PORT:-3000}
+      INTERNAL_API_URL: http://backend:${BACKEND_PORT:-3000}
       PUBLIC_APP_URL: ${PUBLIC_APP_URL}
       DISABLE_HTTPS_HEADERS: ${DISABLE_HTTPS_HEADERS:-false}
     ports:
-      - "${FRONTEND_PORT:-3000}:3000"
+      - "${FRONTEND_PORT:-3000}:${FRONTEND_PORT:-3000}"
     networks:
       - monize-network
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000"]
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:${FRONTEND_PORT:-3000}"]
       interval: 30s
       timeout: 10s
       retries: 3

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@/test/render';
+import * as nextNavigation from 'next/navigation';
 import { AccountList } from './AccountList';
 import { Account } from '@/types/account';
 import { accountsApi } from '@/lib/accounts';
@@ -992,5 +993,54 @@ describe('AccountList', () => {
     // The approximate conversion indicator
     const approxIndicator = screen.getByText(/\u2248/);
     expect(approxIndicator).toBeInTheDocument();
+  });
+
+  describe('navigation on row click', () => {
+    let mockPush: ReturnType<typeof vi.fn>;
+
+    beforeEach(() => {
+      mockPush = vi.fn();
+      vi.spyOn(nextNavigation, 'useRouter').mockReturnValue({
+        push: mockPush,
+        replace: vi.fn(),
+        back: vi.fn(),
+        forward: vi.fn(),
+        refresh: vi.fn(),
+        prefetch: vi.fn(),
+      } as unknown as ReturnType<typeof nextNavigation.useRouter>);
+    });
+
+    it('navigates to /investments with accountId for brokerage accounts', () => {
+      const account = createAccount({
+        id: 'broker-1',
+        name: 'My Brokerage',
+        accountType: 'INVESTMENT',
+        accountSubType: 'INVESTMENT_BROKERAGE',
+      });
+
+      render(
+        <AccountList accounts={[account]} onEdit={mockOnEdit} onRefresh={mockOnRefresh} />
+      );
+
+      fireEvent.click(screen.getByText('My Brokerage'));
+
+      expect(mockPush).toHaveBeenCalledWith('/investments?accountId=broker-1');
+    });
+
+    it('navigates to /transactions with accountId for non-brokerage accounts', () => {
+      const account = createAccount({
+        id: 'chequing-1',
+        name: 'Main Chequing',
+        accountType: 'CHEQUING',
+      });
+
+      render(
+        <AccountList accounts={[account]} onEdit={mockOnEdit} onRefresh={mockOnRefresh} />
+      );
+
+      fireEvent.click(screen.getByText('Main Chequing'));
+
+      expect(mockPush).toHaveBeenCalledWith('/transactions?accountId=chequing-1');
+    });
   });
 });

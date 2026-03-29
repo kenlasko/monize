@@ -282,6 +282,23 @@ export function useInvestmentData() {
     loadPriceStatus();
   }, [loadInvestmentAccounts, loadAllAccounts, loadPriceStatus]);
 
+  // Apply accountId filter from URL query parameter (e.g. navigating from Accounts page)
+  const accountIdAppliedRef = useRef(false);
+  useEffect(() => {
+    if (accountIdAppliedRef.current || accounts.length === 0) return;
+    const accountId = searchParams.get('accountId');
+    if (accountId) {
+      accountIdAppliedRef.current = true;
+      const matchingAccount = accounts.find(
+        (a) => a.id === accountId && (a.accountSubType === 'INVESTMENT_BROKERAGE' || !a.accountSubType),
+      );
+      if (matchingAccount) {
+        setSelectedAccountIds([accountId]);
+      }
+      router.replace('/investments', { scroll: false });
+    }
+  }, [accounts, searchParams, router, setSelectedAccountIds]);
+
   // Prune stale/non-selectable account IDs from localStorage when accounts load
   useEffect(() => {
     if (accounts.length > 0 && selectedAccountIds.length > 0) {

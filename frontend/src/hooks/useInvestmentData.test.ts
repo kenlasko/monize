@@ -68,9 +68,13 @@ vi.mock('@/hooks/useFormModal', () => ({
   }),
 }));
 
+const mockRouterPush = vi.fn();
+const mockRouterReplace = vi.fn();
+let mockSearchParamsGet: (key: string) => string | null = () => null;
+
 vi.mock('next/navigation', () => ({
-  useSearchParams: () => ({ get: () => null }),
-  useRouter: () => ({ push: vi.fn() }),
+  useSearchParams: () => ({ get: (key: string) => mockSearchParamsGet(key) }),
+  useRouter: () => ({ push: mockRouterPush, replace: mockRouterReplace }),
 }));
 
 vi.mock('@/lib/logger', () => ({
@@ -106,6 +110,7 @@ const defaultSetup = () => {
 describe('useInvestmentData – handleDeleteTransaction', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockSearchParamsGet = () => null;
     defaultSetup();
   });
 
@@ -221,5 +226,89 @@ describe('useInvestmentData – handleDeleteTransaction', () => {
     // The fallback loadAllPortfolioData calls getPortfolioSummary once (not the separate call)
     const summaryCallsAfter = mockGetPortfolioSummary.mock.calls.length;
     expect(summaryCallsAfter - summaryCallsBefore).toBe(1);
+  });
+});
+
+describe('useInvestmentData – accountId URL filter', () => {
+  const brokerageAccount = {
+    id: 'broker-1',
+    name: 'My Brokerage',
+    accountType: 'INVESTMENT',
+    accountSubType: 'INVESTMENT_BROKERAGE',
+    linkedAccountId: 'cash-1',
+    currentBalance: 0,
+    currencyCode: 'CAD',
+  };
+
+  const cashAccount = {
+    id: 'cash-1',
+    name: 'My Cash',
+    accountType: 'INVESTMENT',
+    accountSubType: 'INVESTMENT_CASH',
+    linkedAccountId: 'broker-1',
+    currentBalance: 0,
+    currencyCode: 'CAD',
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockSearchParamsGet = () => null;
+    mockGetTransactions.mockResolvedValue({ data: [], pagination: null });
+    mockGetPortfolioSummary.mockResolvedValue(mockSummary);
+    mockGetAllAccounts.mockResolvedValue([]);
+  });
+
+  it('sets selectedAccountIds from accountId URL parameter when account exists', async () => {
+    mockSearchParamsGet = (key: string) => key === 'accountId' ? 'broker-1' : null;
+    mockGetInvestmentAccounts.mockResolvedValue([brokerageAccount, cashAccount]);
+
+    const { result } = renderHook(() => useInvestmentData());
+    await act(async () => { await new Promise(res => setTimeout(res, 0)); });
+
+    expect(result.current.selectedAccountIds).toEqual(['broker-1']);
+  });
+
+  it('cleans up the URL after applying the accountId filter', async () => {
+    mockSearchParamsGet = (key: string) => key === 'accountId' ? 'broker-1' : null;
+    mockGetInvestmentAccounts.mockResolvedValue([brokerageAccount, cashAccount]);
+
+    renderHook(() => useInvestmentData());
+    await act(async () => { await new Promise(res => setTimeout(res, 0)); });
+
+    expect(mockRouterReplace).toHaveBeenCalledWith('/investments', { scroll: false });
+  });
+
+  it('does not set filter when accountId does not match a selectable account', async () => {
+    mockSearchParamsGet = (key: string) => key === 'accountId' ? 'nonexistent-id' : null;
+    mockGetInvestmentAccounts.mockResolvedValue([brokerageAccount, cashAccount]);
+
+    const { result } = renderHook(() => useInvestmentData());
+    await act(async () => { await new Promise(res => setTimeout(res, 0)); });
+
+    // Should remain empty (default) since the account was not found
+    expect(result.current.selectedAccountIds).toEqual([]);
+    // URL should still be cleaned up
+    expect(mockRouterReplace).toHaveBeenCalledWith('/investments', { scroll: false });
+  });
+
+  it('does not set filter for non-brokerage accounts (e.g. INVESTMENT_CASH)', async () => {
+    mockSearchParamsGet = (key: string) => key === 'accountId' ? 'cash-1' : null;
+    mockGetInvestmentAccounts.mockResolvedValue([brokerageAccount, cashAccount]);
+
+    const { result } = renderHook(() => useInvestmentData());
+    await act(async () => { await new Promise(res => setTimeout(res, 0)); });
+
+    expect(result.current.selectedAccountIds).toEqual([]);
+  });
+
+  it('does not apply accountId filter when no accountId param is present', async () => {
+    mockSearchParamsGet = () => null;
+    mockGetInvestmentAccounts.mockResolvedValue([brokerageAccount, cashAccount]);
+
+    const { result } = renderHook(() => useInvestmentData());
+    await act(async () => { await new Promise(res => setTimeout(res, 0)); });
+
+    expect(result.current.selectedAccountIds).toEqual([]);
+    expect(mockRouterReplace).not.toHaveBeenCalled();
   });
 });

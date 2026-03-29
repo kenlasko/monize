@@ -191,7 +191,7 @@ export function AccountList({ accounts, brokerageMarketValues, onEdit, onRefresh
       return;
     }
     if (account.accountSubType === 'INVESTMENT_BROKERAGE') {
-      router.push('/investments');
+      router.push(`/investments?accountId=${account.id}`);
     } else {
       router.push(`/transactions?accountId=${account.id}`);
     }
@@ -284,7 +284,7 @@ export function AccountList({ accounts, brokerageMarketValues, onEdit, onRefresh
 
   const handleViewTransactions = useCallback((account: Account) => {
     if (account.accountSubType === 'INVESTMENT_BROKERAGE') {
-      router.push('/investments');
+      router.push(`/investments?accountId=${account.id}`);
     } else {
       router.push(`/transactions?accountId=${account.id}`);
     }
