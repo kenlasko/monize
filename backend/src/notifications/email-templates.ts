@@ -27,6 +27,7 @@ interface BillData {
   amount: number;
   dueDate: string;
   currencyCode: string;
+  isIncome: boolean;
 }
 
 export function billReminderTemplate(
@@ -41,7 +42,10 @@ export function billReminderTemplate(
         `<tr>
           <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb;">${escapeHtml(b.payee)}</td>
           <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb;">${escapeHtml(b.dueDate)}</td>
-          <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: right;">${formatCurrency(Math.abs(b.amount), b.currencyCode)}</td>
+          <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb;">
+            <span style="display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; color: white; background: ${b.isIncome ? "#059669" : "#dc2626"};">${b.isIncome ? "Income" : "Expense"}</span>
+          </td>
+          <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: right; color: ${b.isIncome ? "#059669" : "#dc2626"}; font-weight: 500;">${formatCurrency(Math.abs(b.amount), b.currencyCode)}</td>
         </tr>`,
     )
     .join("");
@@ -56,6 +60,7 @@ export function billReminderTemplate(
           <tr style="background: #f3f4f6;">
             <th style="padding: 10px 12px; text-align: left; font-weight: 600; color: #374151;">Payee</th>
             <th style="padding: 10px 12px; text-align: left; font-weight: 600; color: #374151;">Due Date</th>
+            <th style="padding: 10px 12px; text-align: left; font-weight: 600; color: #374151;">Type</th>
             <th style="padding: 10px 12px; text-align: right; font-weight: 600; color: #374151;">Amount</th>
           </tr>
         </thead>

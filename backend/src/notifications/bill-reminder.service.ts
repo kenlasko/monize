@@ -106,11 +106,13 @@ export class BillReminderService {
           const ov = b.overrides?.find(
             (o) => String(o.originalDate).split("T")[0] === dueDateStr,
           );
+          const rawAmount = Number(ov?.amount ?? b.amount);
           return {
             payee: b.payee?.name || b.payeeName || b.name,
-            amount: Math.abs(Number(ov?.amount ?? b.amount)),
+            amount: Math.abs(rawAmount),
             dueDate: ov ? String(ov.overrideDate).split("T")[0] : dueDateStr,
             currencyCode: b.currencyCode,
+            isIncome: rawAmount > 0,
           };
         });
 

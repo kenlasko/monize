@@ -39,15 +39,17 @@ describe("Email Templates", () => {
     const sampleBills = [
       {
         payee: "Electric Company",
-        amount: -150.0,
+        amount: 150.0,
         dueDate: "2024-02-15",
         currencyCode: "USD",
+        isIncome: false,
       },
       {
         payee: "Internet Provider",
-        amount: -79.99,
+        amount: 79.99,
         dueDate: "2024-02-20",
         currencyCode: "USD",
+        isIncome: false,
       },
     ];
 
@@ -108,6 +110,74 @@ describe("Email Templates", () => {
 
       expect(html).toContain("Upcoming Bill Reminder");
     });
+
+    it("shows expense bills in red", () => {
+      const html = billReminderTemplate(
+        "Alice",
+        sampleBills,
+        "https://monize.app",
+      );
+
+      expect(html).toContain("Expense");
+      expect(html).toContain("#dc2626");
+    });
+
+    it("shows income bills in green", () => {
+      const incomeBills = [
+        {
+          payee: "Employer",
+          amount: 3000.0,
+          dueDate: "2024-02-28",
+          currencyCode: "USD",
+          isIncome: true,
+        },
+      ];
+      const html = billReminderTemplate(
+        "Alice",
+        incomeBills,
+        "https://monize.app",
+      );
+
+      expect(html).toContain("Income");
+      expect(html).toContain("#059669");
+    });
+
+    it("shows Type column header", () => {
+      const html = billReminderTemplate(
+        "Alice",
+        sampleBills,
+        "https://monize.app",
+      );
+
+      expect(html).toContain(">Type</th>");
+    });
+
+    it("distinguishes income and expense in mixed list", () => {
+      const mixedBills = [
+        {
+          payee: "Electric Company",
+          amount: 150.0,
+          dueDate: "2024-02-15",
+          currencyCode: "USD",
+          isIncome: false,
+        },
+        {
+          payee: "Salary Deposit",
+          amount: 5000.0,
+          dueDate: "2024-02-28",
+          currencyCode: "USD",
+          isIncome: true,
+        },
+      ];
+      const html = billReminderTemplate(
+        "Alice",
+        mixedBills,
+        "https://monize.app",
+      );
+
+      expect(html).toContain("Expense");
+      expect(html).toContain("Income");
+    });
   });
 
   describe("HTML injection prevention", () => {
@@ -123,9 +193,10 @@ describe("Email Templates", () => {
       const bills = [
         {
           payee: '<img src=x onerror="alert(1)">',
-          amount: -100,
+          amount: 100,
           dueDate: "2024-01-01",
           currencyCode: "USD",
+          isIncome: false,
         },
       ];
       const html = billReminderTemplate("Alice", bills, "https://app.com");
@@ -162,9 +233,10 @@ describe("Email Templates", () => {
       const bills = [
         {
           payee: "Normal",
-          amount: -50,
+          amount: 50,
           dueDate: "2024-01-01",
           currencyCode: '"onmouseover="alert(1)',
+          isIncome: false,
         },
       ];
       const html = billReminderTemplate("Alice", bills, "https://app.com");
