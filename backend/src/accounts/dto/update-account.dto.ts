@@ -113,9 +113,17 @@ export class UpdateAccountDto {
   isFavourite?: boolean;
 
   @ApiPropertyOptional({
+    description: "Sort order for favourite accounts display",
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(1000)
+  favouriteSortOrder?: number;
+
+  @ApiPropertyOptional({
     example: false,
-    description:
-      "Whether to exclude this account from net worth calculations",
+    description: "Whether to exclude this account from net worth calculations",
   })
   @IsOptional()
   @IsBoolean()

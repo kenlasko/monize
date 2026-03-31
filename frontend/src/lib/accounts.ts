@@ -74,6 +74,12 @@ export const accountsApi = {
     return response.data;
   },
 
+  // Reorder favourite accounts
+  reorderFavourites: async (accountIds: string[]): Promise<void> => {
+    await apiClient.patch('/accounts/reorder-favourites', { accountIds });
+    invalidateCache('accounts:');
+  },
+
   // Get account balance
   getBalance: async (id: string): Promise<{ balance: number }> => {
     const response = await apiClient.get<{ balance: number }>(`/accounts/${id}/balance`);

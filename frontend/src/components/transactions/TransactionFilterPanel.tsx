@@ -111,7 +111,7 @@ export function TransactionFilterPanel({
           </span>
           {filteredAccounts
             .filter(a => a.isFavourite)
-            .sort((a, b) => a.name.localeCompare(b.name))
+            .sort((a, b) => a.favouriteSortOrder - b.favouriteSortOrder)
             .map(account => {
               const isSelected = filterAccountIds.includes(account.id);
               return (

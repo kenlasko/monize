@@ -40,6 +40,7 @@ export interface Account {
   isClosed: boolean;
   closedDate: string | null;
   isFavourite: boolean;
+  favouriteSortOrder: number;
   excludeFromNetWorth: boolean;
   // Credit card statement fields
   statementDueDay: number | null;

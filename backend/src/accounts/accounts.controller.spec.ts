@@ -29,6 +29,7 @@ describe("AccountsController", () => {
       getTransactionCount: jest.fn(),
       delete: jest.fn(),
       getDailyBalances: jest.fn(),
+      reorderFavourites: jest.fn(),
     };
 
     mockExportService = {
@@ -549,6 +550,20 @@ describe("AccountsController", () => {
       expect(mockRes.setHeader).toHaveBeenCalledWith(
         "Content-Disposition",
         'attachment; filename="My_Account___Special.csv"',
+      );
+    });
+  });
+
+  describe("reorderFavourites()", () => {
+    it("delegates to accountsService.reorderFavourites with userId and accountIds", () => {
+      const dto = { accountIds: ["id-1", "id-2", "id-3"] };
+      mockAccountsService.reorderFavourites!.mockResolvedValue(undefined);
+
+      controller.reorderFavourites(mockReq, dto);
+
+      expect(mockAccountsService.reorderFavourites).toHaveBeenCalledWith(
+        "user-1",
+        ["id-1", "id-2", "id-3"],
       );
     });
   });

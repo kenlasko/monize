@@ -255,7 +255,10 @@ export class LoanPaymentDetectorService {
       if (loanSideAmount <= 0) continue;
 
       // Skip if we already processed another loan-side transaction from the same source
-      if (tx.linkedTransactionId && processedLinkedIds.has(tx.linkedTransactionId)) {
+      if (
+        tx.linkedTransactionId &&
+        processedLinkedIds.has(tx.linkedTransactionId)
+      ) {
         continue;
       }
 
@@ -324,10 +327,7 @@ export class LoanPaymentDetectorService {
             if (principalSplits.length === 1) {
               // Single principal split -- check memo for "extra"/"additional"
               const memo = (principalSplits[0].memo || "").toLowerCase();
-              if (
-                memo.includes("extra") ||
-                memo.includes("additional")
-              ) {
+              if (memo.includes("extra") || memo.includes("additional")) {
                 extraPrincipalAmount = principalSplits[0].amount;
               } else {
                 principalAmount = principalSplits[0].amount;
@@ -340,10 +340,7 @@ export class LoanPaymentDetectorService {
 
               for (const ps of principalSplits) {
                 const memo = (ps.memo || "").toLowerCase();
-                if (
-                  memo.includes("extra") ||
-                  memo.includes("additional")
-                ) {
+                if (memo.includes("extra") || memo.includes("additional")) {
                   extra += ps.amount;
                   hasMemoCues = true;
                 } else {
@@ -419,8 +416,7 @@ export class LoanPaymentDetectorService {
       }
 
       // Pick the record with the most complete split data as the base
-      const best =
-        group.find((p) => p.interestAmount !== null) || group[0];
+      const best = group.find((p) => p.interestAmount !== null) || group[0];
 
       // If the best record doesn't have split data but another does,
       // merge interest info from it
@@ -804,9 +800,7 @@ export class LoanPaymentDetectorService {
     rates.sort((a, b) => a - b);
     const mid = Math.floor(rates.length / 2);
     const medianRate =
-      rates.length % 2 === 0
-        ? (rates[mid - 1] + rates[mid]) / 2
-        : rates[mid];
+      rates.length % 2 === 0 ? (rates[mid - 1] + rates[mid]) / 2 : rates[mid];
 
     return Math.round(medianRate * 100) / 100;
   }
@@ -836,7 +830,10 @@ export class LoanPaymentDetectorService {
       (p) => p.extraPrincipalAmount !== null && p.extraPrincipalAmount > 0,
     );
 
-    if (memoBasedExtras.length >= 3 && memoBasedExtras.length / allPayments.length >= 0.5) {
+    if (
+      memoBasedExtras.length >= 3 &&
+      memoBasedExtras.length / allPayments.length >= 0.5
+    ) {
       const totalExtra = memoBasedExtras.reduce(
         (sum, p) => sum + p.extraPrincipalAmount!,
         0,
@@ -892,8 +889,7 @@ export class LoanPaymentDetectorService {
         }
 
         if (extraGroup) {
-          const avg =
-            extraGroup.reduce((s, e) => s + e, 0) / extraGroup.length;
+          const avg = extraGroup.reduce((s, e) => s + e, 0) / extraGroup.length;
           const extraAmount = Math.round(avg * 100) / 100;
           if (extraAmount > 0.01) {
             return {
@@ -989,9 +985,8 @@ export class LoanPaymentDetectorService {
       const lastPrincipal = principals[principals.length - 1];
       const lastInterest = interests[interests.length - 1];
 
-      const projectedPrincipal = Math.round(
-        (lastPrincipal + avgPrincipalStep) * 100,
-      ) / 100;
+      const projectedPrincipal =
+        Math.round((lastPrincipal + avgPrincipalStep) * 100) / 100;
       const projectedInterest = Math.max(
         0,
         Math.round((lastInterest + avgInterestStep) * 100) / 100,

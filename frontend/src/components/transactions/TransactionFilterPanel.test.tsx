@@ -11,7 +11,7 @@ function createAccount(overrides: Partial<Account> = {}): Account {
     linkedAccountId: null, name: 'Chequing', description: null, currencyCode: 'CAD',
     accountNumber: null, institution: null, openingBalance: 0, currentBalance: 1000,
     creditLimit: null, interestRate: null, isClosed: false, closedDate: null,
-    isFavourite: false, excludeFromNetWorth: false, paymentAmount: null, paymentFrequency: null, paymentStartDate: null,
+    isFavourite: false, favouriteSortOrder: 0, excludeFromNetWorth: false, paymentAmount: null, paymentFrequency: null, paymentStartDate: null,
     sourceAccountId: null, principalCategoryId: null, interestCategoryId: null,
     scheduledTransactionId: null, assetCategoryId: null, dateAcquired: null,
     isCanadianMortgage: false, isVariableRate: false, termMonths: null, termEndDate: null,
@@ -563,11 +563,11 @@ describe('TransactionFilterPanel', () => {
   // ----------------------------------------------------------------
 
   describe('favourite account quick-select buttons', () => {
-    it('renders multiple favourite accounts sorted alphabetically', () => {
+    it('renders multiple favourite accounts sorted by favouriteSortOrder', () => {
       const accounts = [
-        createAccount({ id: 'acc-z', name: 'Zccount', isFavourite: true }),
-        createAccount({ id: 'acc-a', name: 'Accoont', isFavourite: true }),
-        createAccount({ id: 'acc-m', name: 'Midaccount', isFavourite: true }),
+        createAccount({ id: 'acc-z', name: 'Zccount', isFavourite: true, favouriteSortOrder: 0 }),
+        createAccount({ id: 'acc-a', name: 'Accoont', isFavourite: true, favouriteSortOrder: 2 }),
+        createAccount({ id: 'acc-m', name: 'Midaccount', isFavourite: true, favouriteSortOrder: 1 }),
       ];
 
       render(<TransactionFilterPanel {...defaultProps} filteredAccounts={accounts} />);
@@ -577,9 +577,9 @@ describe('TransactionFilterPanel', () => {
       );
       expect(buttons).toHaveLength(3);
 
-      // Verify alphabetical order
+      // Verify favouriteSortOrder ordering
       const names = buttons.map(b => b.textContent?.trim());
-      expect(names).toEqual(['Accoont', 'Midaccount', 'Zccount']);
+      expect(names).toEqual(['Zccount', 'Midaccount', 'Accoont']);
     });
 
     it('calls handleArrayFilterChange with account id when favourite button is clicked', () => {

@@ -457,6 +457,8 @@ export class AccountsService {
         account.isFavourite = updateAccountDto.isFavourite;
       if (updateAccountDto.excludeFromNetWorth !== undefined)
         account.excludeFromNetWorth = updateAccountDto.excludeFromNetWorth;
+      if (updateAccountDto.favouriteSortOrder !== undefined)
+        account.favouriteSortOrder = updateAccountDto.favouriteSortOrder;
       // Credit card statement fields (only for credit card accounts)
       const effectiveType = updateAccountDto.accountType ?? account.accountType;
       if (effectiveType === AccountType.CREDIT_CARD) {
@@ -1086,6 +1088,32 @@ export class AccountsService {
       this.logger.error(
         `Failed to apply deferred transaction balances: ${error.message}`,
       );
+    }
+  }
+
+  async reorderFavourites(userId: string, accountIds: string[]): Promise<void> {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
+      for (let i = 0; i < accountIds.length; i++) {
+        await queryRunner.manager.update(
+          Account,
+          {
+            id: accountIds[i],
+            userId,
+          },
+          {
+            favouriteSortOrder: i,
+          },
+        );
+      }
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
     }
   }
 }

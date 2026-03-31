@@ -136,8 +136,7 @@ export class CreateAccountDto {
 
   @ApiPropertyOptional({
     example: false,
-    description:
-      "Whether to exclude this account from net worth calculations",
+    description: "Whether to exclude this account from net worth calculations",
     default: false,
   })
   @IsOptional()

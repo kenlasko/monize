@@ -19,6 +19,12 @@ vi.mock("@/hooks/useNumberFormat", () => ({
   }),
 }));
 
+vi.mock("@/lib/accounts", () => ({
+  accountsApi: {
+    reorderFavourites: vi.fn().mockResolvedValue(undefined),
+  },
+}));
+
 describe("FavouriteAccounts", () => {
   it("renders loading state", () => {
     render(<FavouriteAccounts accounts={[]} isLoading={true} />);
@@ -38,7 +44,7 @@ describe("FavouriteAccounts", () => {
         name: "Checking",
         currentBalance: 1500,
         currencyCode: "CAD",
-        isFavourite: true,
+        isFavourite: true, favouriteSortOrder: 0,
         isClosed: false,
         institution: "TD Bank",
       },
@@ -47,7 +53,7 @@ describe("FavouriteAccounts", () => {
         name: "Savings",
         currentBalance: -200,
         currencyCode: "CAD",
-        isFavourite: true,
+        isFavourite: true, favouriteSortOrder: 0,
         isClosed: false,
       },
     ] as any[];
@@ -66,7 +72,7 @@ describe("FavouriteAccounts", () => {
         name: "Open",
         currentBalance: 100,
         currencyCode: "CAD",
-        isFavourite: true,
+        isFavourite: true, favouriteSortOrder: 0,
         isClosed: false,
       },
       {
@@ -74,7 +80,7 @@ describe("FavouriteAccounts", () => {
         name: "Closed",
         currentBalance: 0,
         currencyCode: "CAD",
-        isFavourite: true,
+        isFavourite: true, favouriteSortOrder: 0,
         isClosed: true,
       },
     ] as any[];
@@ -91,7 +97,7 @@ describe("FavouriteAccounts", () => {
         name: "Visa Card",
         currentBalance: -500,
         currencyCode: "CAD",
-        isFavourite: true,
+        isFavourite: true, favouriteSortOrder: 0,
         isClosed: false,
         accountType: "CREDIT_CARD",
         statementDueDay: 15,
@@ -111,7 +117,7 @@ describe("FavouriteAccounts", () => {
         name: "CC",
         currentBalance: 0,
         currencyCode: "CAD",
-        isFavourite: true,
+        isFavourite: true, favouriteSortOrder: 0,
         isClosed: false,
         accountType: "CREDIT_CARD",
         statementDueDay: 1,
@@ -131,7 +137,7 @@ describe("FavouriteAccounts", () => {
         name: "Checking",
         currentBalance: 1000,
         currencyCode: "CAD",
-        isFavourite: true,
+        isFavourite: true, favouriteSortOrder: 0,
         isClosed: false,
         accountType: "CHEQUING",
       },
@@ -149,7 +155,7 @@ describe("FavouriteAccounts", () => {
         name: "Visa",
         currentBalance: -100,
         currencyCode: "CAD",
-        isFavourite: true,
+        isFavourite: true, favouriteSortOrder: 0,
         isClosed: false,
         accountType: "CREDIT_CARD",
         statementSettlementDay: 20,
@@ -169,7 +175,7 @@ describe("FavouriteAccounts", () => {
         name: "Amex",
         currentBalance: -200,
         currencyCode: "CAD",
-        isFavourite: true,
+        isFavourite: true, favouriteSortOrder: 0,
         isClosed: false,
         accountType: "CREDIT_CARD",
         statementDueDay: 3,
@@ -188,7 +194,7 @@ describe("FavouriteAccounts", () => {
         name: "Checking",
         currentBalance: 1500,
         currencyCode: "CAD",
-        isFavourite: true,
+        isFavourite: true, favouriteSortOrder: 0,
         isClosed: false,
       },
     ] as any[];

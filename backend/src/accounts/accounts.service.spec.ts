@@ -2385,4 +2385,50 @@ describe("AccountsService", () => {
       expect(result.netWorth).toBe(5000);
     });
   });
+
+  describe("reorderFavourites()", () => {
+    it("updates favourite_sort_order for each account in order", async () => {
+      mockQueryRunner.manager.update = jest.fn().mockResolvedValue(undefined);
+
+      await service.reorderFavourites("user-1", [
+        "account-a",
+        "account-b",
+        "account-c",
+      ]);
+
+      expect(mockQueryRunner.connect).toHaveBeenCalled();
+      expect(mockQueryRunner.startTransaction).toHaveBeenCalled();
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledTimes(3);
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+        Account,
+        { id: "account-a", userId: "user-1" },
+        { favouriteSortOrder: 0 },
+      );
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+        Account,
+        { id: "account-b", userId: "user-1" },
+        { favouriteSortOrder: 1 },
+      );
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+        Account,
+        { id: "account-c", userId: "user-1" },
+        { favouriteSortOrder: 2 },
+      );
+      expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
+      expect(mockQueryRunner.release).toHaveBeenCalled();
+    });
+
+    it("rolls back transaction on error", async () => {
+      mockQueryRunner.manager.update = jest
+        .fn()
+        .mockRejectedValue(new Error("DB error"));
+
+      await expect(
+        service.reorderFavourites("user-1", ["account-a"]),
+      ).rejects.toThrow("DB error");
+
+      expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
+      expect(mockQueryRunner.release).toHaveBeenCalled();
+    });
+  });
 });
