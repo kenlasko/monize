@@ -220,7 +220,7 @@ export const TransactionRow = memo(function TransactionRow({
           </div>
         )}
       </td>
-      <td className={`${cellPadding} ${density !== 'normal' ? 'whitespace-nowrap' : ''} hidden xl:table-cell`}>
+      <td className={`${cellPadding} ${density !== 'normal' ? 'whitespace-nowrap' : ''}`}>
         {transaction.linkedInvestmentTransactionId ? (
           <span
             className={`inline-flex text-xs leading-5 font-semibold rounded-full bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200 ${density === 'dense' ? 'px-1.5 py-0.5' : 'px-2 py-1'}`}
@@ -358,7 +358,7 @@ export const TransactionRow = memo(function TransactionRow({
           {transaction.description || '-'}
         </div>
       </td>
-      <td className={`${cellPadding} text-sm hidden 2xl:table-cell`}>
+      <td className={`${cellPadding} text-sm hidden xl:table-cell`}>
         {transaction.tags && transaction.tags.length > 0 ? (
           <div className="flex flex-wrap gap-1">
             {transaction.tags.map((tag) => onTagClick ? (
@@ -422,7 +422,7 @@ export const TransactionRow = memo(function TransactionRow({
             : '-'}
         </td>
       )}
-      <td className={`${cellPadding} whitespace-nowrap text-center hidden sm:table-cell`}>
+      <td className={`${cellPadding} whitespace-nowrap text-center hidden min-[1400px]:table-cell`}>
         <button
           onClick={(e) => { e.stopPropagation(); onCycleStatus(transaction); }}
           className="text-sm px-3 py-1.5 -my-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
