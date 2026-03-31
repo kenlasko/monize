@@ -109,7 +109,7 @@ const InvestmentTransactionRow = memo(function InvestmentTransactionRow({
       onTouchMove={onTouchMove}
       onTouchEnd={onLongPressEnd}
       onTouchCancel={onLongPressEnd}
-      className={`group hover:bg-gray-50 dark:hover:bg-gray-700/30 ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-gray-800/50' : ''} ${onEdit ? 'cursor-pointer' : ''}`}
+      className={`group hover:bg-gray-50 dark:hover:bg-gray-700/30 ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-gray-800' : ''} ${onEdit ? 'cursor-pointer' : ''}`}
     >
       <td className={`${cellPadding} whitespace-nowrap text-sm text-gray-900 dark:text-gray-100`}>
         {formatDate(tx.transactionDate)}
@@ -145,7 +145,7 @@ const InvestmentTransactionRow = memo(function InvestmentTransactionRow({
         )}
       </td>
       {hasActions && (
-        <td className={`${cellPadding} whitespace-nowrap text-right text-sm space-x-3 hidden min-[480px]:table-cell sticky right-0 ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-gray-800/50' : 'bg-white dark:bg-gray-800'} group-hover:bg-gray-50 dark:group-hover:bg-gray-700/30`}>
+        <td className={`${cellPadding} whitespace-nowrap text-right text-sm space-x-3 hidden min-[480px]:table-cell sticky right-0 ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-gray-800' : 'bg-white dark:bg-gray-800'} group-hover:bg-gray-50 dark:group-hover:bg-gray-700/30`}>
           {onEdit && (
             <button
               onClick={(e) => { e.stopPropagation(); onEdit(tx); }}

@@ -52,7 +52,7 @@ const CategoryRow = memo(function CategoryRow({
 
   return (
     <tr
-      className={`group hover:bg-gray-50 dark:hover:bg-gray-800 ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-gray-800/50' : ''}`}
+      className={`group hover:bg-gray-50 dark:hover:bg-gray-800 ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-gray-800' : ''}`}
     >
       <td className={`${cellPadding} whitespace-nowrap`}>
         <div
@@ -101,7 +101,7 @@ const CategoryRow = memo(function CategoryRow({
           </div>
         </td>
       )}
-      <td className={`${cellPadding} whitespace-nowrap text-right text-sm font-medium sticky right-0 ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-gray-800/50' : 'bg-white dark:bg-gray-900'} group-hover:bg-gray-50 dark:group-hover:bg-gray-800`}>
+      <td className={`${cellPadding} whitespace-nowrap text-right text-sm font-medium sticky right-0 ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-gray-800' : 'bg-white dark:bg-gray-900'} group-hover:bg-gray-50 dark:group-hover:bg-gray-800`}>
         <Button
           variant="ghost"
           size="sm"
