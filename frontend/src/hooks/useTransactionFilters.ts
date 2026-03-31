@@ -285,6 +285,7 @@ export function useTransactionFilters({ accounts, categories, payees, tags, week
       searchParams.has('accountIds') ||
       searchParams.has('categoryId') ||
       searchParams.has('categoryIds') ||
+      searchParams.has('categoryType') ||
       searchParams.has('payeeId') ||
       searchParams.has('payeeIds') ||
       searchParams.has('startDate') ||
@@ -300,6 +301,11 @@ export function useTransactionFilters({ accounts, categories, payees, tags, week
       return getFilterValues(STORAGE_KEYS.accountIds, ids || id, hasAnyUrlParams);
     };
     const getCategoryIds = () => {
+      const categoryType = searchParams.get('categoryType');
+      if (categoryType === 'income' || categoryType === 'expense') {
+        const isIncome = categoryType === 'income';
+        return categories.filter(c => c.isIncome === isIncome).map(c => c.id);
+      }
       const ids = searchParams.get('categoryIds');
       const id = searchParams.get('categoryId');
       return getFilterValues(STORAGE_KEYS.categoryIds, ids || id, hasAnyUrlParams);

@@ -181,15 +181,130 @@ describe('IncomeExpensesBarChart', () => {
     expect(screen.getByTestId('bar-chart')).toBeInTheDocument();
   });
 
-  it('navigates to transactions page with date range on bar click', () => {
-    render(<IncomeExpensesBarChart transactions={[]} isLoading={false} />);
-    fireEvent.click(screen.getByTestId('bar-Income'));
-    expect(mockPush).toHaveBeenCalledWith('/transactions?startDate=2026-02-17&endDate=2026-02-23');
+  it('classifies by category isIncome instead of amount sign', () => {
+    const today = new Date();
+    const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+    const transactions = [
+      {
+        id: '1', amount: 5000, currencyCode: 'CAD', isTransfer: false,
+        transactionDate: dateStr,
+        category: { isIncome: true },
+      },
+      {
+        id: '2', amount: -500, currencyCode: 'CAD', isTransfer: false,
+        transactionDate: dateStr,
+        category: { isIncome: false },
+      },
+    ] as any[];
+
+    render(<IncomeExpensesBarChart transactions={transactions} isLoading={false} />);
+    expect(screen.getByText('$5000')).toBeInTheDocument();
+    expect(screen.getByText('$500')).toBeInTheDocument();
+    expect(screen.getByText('$4500')).toBeInTheDocument();
   });
 
-  it('navigates on Expenses bar click as well', () => {
+  it('counts expense refunds as reducing expenses', () => {
+    const today = new Date();
+    const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+    const transactions = [
+      {
+        id: '1', amount: -500, currencyCode: 'CAD', isTransfer: false,
+        transactionDate: dateStr,
+        category: { isIncome: false },
+      },
+      {
+        id: '2', amount: 400, currencyCode: 'CAD', isTransfer: false,
+        transactionDate: dateStr,
+        category: { isIncome: false },
+      },
+    ] as any[];
+
+    render(<IncomeExpensesBarChart transactions={transactions} isLoading={false} />);
+    // Net expense: 500 - 400 = 100
+    expect(screen.getByText('$100')).toBeInTheDocument();
+  });
+
+  it('classifies split transactions by split category', () => {
+    const today = new Date();
+    const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+    const transactions = [
+      {
+        id: '1', amount: 1000, currencyCode: 'CAD', isTransfer: false,
+        transactionDate: dateStr,
+        category: null,
+        splits: [
+          { id: 's1', amount: 700, category: { isIncome: true }, transferAccountId: null },
+          { id: 's2', amount: 300, category: { isIncome: false }, transferAccountId: null },
+        ],
+      },
+    ] as any[];
+
+    render(<IncomeExpensesBarChart transactions={transactions} isLoading={false} />);
+    // Income: 700 from income split
+    // Expenses: -300 (positive amount on expense category reduces expenses, so -300)
+    // But since expenses can't go below 0 in display, net = 700 - (-300) = 1000
+    expect(screen.getByText('$700')).toBeInTheDocument();
+  });
+
+  it('skips transfer splits in split transactions', () => {
+    const today = new Date();
+    const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+    const transactions = [
+      {
+        id: '1', amount: 1000, currencyCode: 'CAD', isTransfer: false,
+        transactionDate: dateStr,
+        category: null,
+        splits: [
+          { id: 's1', amount: 600, category: { isIncome: true }, transferAccountId: null },
+          { id: 's2', amount: 400, category: { isIncome: true }, transferAccountId: 'acc-123' },
+        ],
+      },
+    ] as any[];
+
+    render(<IncomeExpensesBarChart transactions={transactions} isLoading={false} />);
+    // Only s1 counted (600 income), s2 skipped due to transferAccountId
+    // $600 appears twice (Income and Net), expenses should be $0
+    const amountEls = screen.getAllByText('$600');
+    expect(amountEls.length).toBe(2);
+    expect(screen.getByText('$0')).toBeInTheDocument();
+  });
+
+  it('falls back to sign-based for uncategorized transactions', () => {
+    const today = new Date();
+    const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+    const transactions = [
+      {
+        id: '1', amount: 300, currencyCode: 'CAD', isTransfer: false,
+        transactionDate: dateStr,
+        category: null,
+      },
+      {
+        id: '2', amount: -100, currencyCode: 'CAD', isTransfer: false,
+        transactionDate: dateStr,
+        category: null,
+      },
+    ] as any[];
+
+    render(<IncomeExpensesBarChart transactions={transactions} isLoading={false} />);
+    expect(screen.getByText('$300')).toBeInTheDocument();
+    expect(screen.getByText('$100')).toBeInTheDocument();
+    expect(screen.getByText('$200')).toBeInTheDocument();
+  });
+
+  it('navigates to transactions page with income filter on Income bar click', () => {
+    render(<IncomeExpensesBarChart transactions={[]} isLoading={false} />);
+    fireEvent.click(screen.getByTestId('bar-Income'));
+    expect(mockPush).toHaveBeenCalledWith('/transactions?startDate=2026-02-17&endDate=2026-02-23&categoryType=income');
+  });
+
+  it('navigates to transactions page with expense filter on Expenses bar click', () => {
     render(<IncomeExpensesBarChart transactions={[]} isLoading={false} />);
     fireEvent.click(screen.getByTestId('bar-Expenses'));
-    expect(mockPush).toHaveBeenCalledWith('/transactions?startDate=2026-02-17&endDate=2026-02-23');
+    expect(mockPush).toHaveBeenCalledWith('/transactions?startDate=2026-02-17&endDate=2026-02-23&categoryType=expense');
   });
 });

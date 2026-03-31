@@ -45,7 +45,18 @@ vi.mock("recharts", () => ({
       {children}
     </div>
   ),
-  Bar: ({ dataKey }: any) => <div data-testid={`bar-${dataKey}`} />,
+  Bar: ({ dataKey, onClick }: any) => (
+    <button
+      data-testid={`bar-${dataKey}`}
+      onClick={() =>
+        onClick?.(
+          { payload: { monthStart: "2024-01-01", monthEnd: "2024-01-31" } },
+          0,
+          new MouseEvent("click"),
+        )
+      }
+    />
+  ),
   XAxis: () => null,
   YAxis: () => null,
   CartesianGrid: () => null,
@@ -153,7 +164,7 @@ describe("IncomeVsExpensesReport", () => {
     });
   });
 
-  it("navigates to transactions page with date range on chart click", async () => {
+  it("navigates to transactions page with date range on chart background click", async () => {
     mockGetIncomeVsExpenses.mockResolvedValue({
       data: [{ month: "2024-01", income: 5000, expenses: 3000, net: 2000 }],
       totals: { income: 5000, expenses: 3000 },
@@ -163,6 +174,52 @@ describe("IncomeVsExpensesReport", () => {
       expect(screen.getByTestId("bar-chart")).toBeInTheDocument();
     });
     fireEvent.click(screen.getByTestId("bar-chart"));
+    expect(mockPush).toHaveBeenCalledWith(
+      "/transactions?startDate=2024-01-01&endDate=2024-01-31",
+    );
+  });
+
+  it("navigates with income categoryType when clicking Income bar", async () => {
+    mockGetIncomeVsExpenses.mockResolvedValue({
+      data: [{ month: "2024-01", income: 5000, expenses: 3000, net: 2000 }],
+      totals: { income: 5000, expenses: 3000 },
+    });
+    render(<IncomeVsExpensesReport />);
+    await waitFor(() => {
+      expect(screen.getByTestId("bar-Income")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByTestId("bar-Income"));
+    expect(mockPush).toHaveBeenCalledWith(
+      "/transactions?startDate=2024-01-01&endDate=2024-01-31&categoryType=income",
+    );
+  });
+
+  it("navigates with expense categoryType when clicking Expenses bar", async () => {
+    mockGetIncomeVsExpenses.mockResolvedValue({
+      data: [{ month: "2024-01", income: 5000, expenses: 3000, net: 2000 }],
+      totals: { income: 5000, expenses: 3000 },
+    });
+    render(<IncomeVsExpensesReport />);
+    await waitFor(() => {
+      expect(screen.getByTestId("bar-Expenses")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByTestId("bar-Expenses"));
+    expect(mockPush).toHaveBeenCalledWith(
+      "/transactions?startDate=2024-01-01&endDate=2024-01-31&categoryType=expense",
+    );
+  });
+
+  it("does not include categoryType when clicking Savings bar", async () => {
+    mockGetIncomeVsExpenses.mockResolvedValue({
+      data: [{ month: "2024-01", income: 5000, expenses: 3000, net: 2000 }],
+      totals: { income: 5000, expenses: 3000 },
+    });
+    render(<IncomeVsExpensesReport />);
+    await waitFor(() => {
+      expect(screen.getByTestId("bar-Savings")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByTestId("bar-Savings"));
+    // Savings bar has no categoryType onClick, so falls through to chart-level click (date only)
     expect(mockPush).toHaveBeenCalledWith(
       "/transactions?startDate=2024-01-01&endDate=2024-01-31",
     );

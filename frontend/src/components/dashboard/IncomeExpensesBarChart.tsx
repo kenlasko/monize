@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   BarChart,
@@ -104,12 +104,29 @@ export function IncomeExpensesBarChart({
       );
 
       if (weekBucket) {
-        const rawAmount = Number(tx.amount) || 0;
-        const amount = convertToDefault(rawAmount, tx.currencyCode);
-        if (amount >= 0) {
-          weekBucket.income += amount;
+        const classifyAmount = (rawAmount: number, category: { isIncome: boolean } | null | undefined) => {
+          const amount = convertToDefault(rawAmount, tx.currencyCode);
+          if (category?.isIncome === true) {
+            weekBucket.income += amount;
+          } else if (category?.isIncome === false) {
+            weekBucket.expenses += -1 * amount;
+          } else {
+            // Uncategorized: fall back to sign-based
+            if (amount >= 0) {
+              weekBucket.income += amount;
+            } else {
+              weekBucket.expenses += Math.abs(amount);
+            }
+          }
+        };
+
+        if (tx.splits && tx.splits.length > 0) {
+          tx.splits.forEach((split) => {
+            if (split.transferAccountId) return;
+            classifyAmount(Number(split.amount) || 0, split.category);
+          });
         } else {
-          weekBucket.expenses += Math.abs(amount);
+          classifyAmount(Number(tx.amount) || 0, tx.category);
         }
       }
     });
@@ -123,11 +140,27 @@ export function IncomeExpensesBarChart({
     }));
   }, [transactions, formatDate, convertToDefault, weekStartsOn]);
 
-  const handleBarClick = (data: { payload?: { startDate?: string; endDate?: string } }) => {
+  const barClickedRef = useRef(false);
+
+  const handleBarClick = (categoryType: 'income' | 'expense') => (data: { payload?: { startDate?: string; endDate?: string } }) => {
+    barClickedRef.current = true;
     const startDate = data.payload?.startDate;
     const endDate = data.payload?.endDate;
     if (startDate && endDate) {
-      router.push(`/transactions?startDate=${startDate}&endDate=${endDate}`);
+      router.push(`/transactions?startDate=${startDate}&endDate=${endDate}&categoryType=${categoryType}`);
+    }
+  };
+
+  const handleChartClick = (state: { activeLabel?: string | number } | null) => {
+    if (barClickedRef.current) {
+      barClickedRef.current = false;
+      return;
+    }
+    const label = state?.activeLabel;
+    if (!label) return;
+    const item = chartData.find((d) => d.name === label);
+    if (item?.startDate && item?.endDate) {
+      router.push(`/transactions?startDate=${item.startDate}&endDate=${item.endDate}`);
     }
   };
 
@@ -168,6 +201,8 @@ export function IncomeExpensesBarChart({
             data={chartData}
             barGap={4}
             margin={{ top: 5, right: 5, left: -10, bottom: 0 }}
+            onClick={handleChartClick}
+            style={{ cursor: 'pointer' }}
           >
             <CartesianGrid
               strokeDasharray="3 3"
@@ -199,7 +234,7 @@ export function IncomeExpensesBarChart({
               radius={[4, 4, 0, 0]}
               maxBarSize={40}
               cursor="pointer"
-              onClick={handleBarClick}
+              onClick={handleBarClick('income')}
             />
             <Bar
               dataKey="Expenses"
@@ -207,7 +242,7 @@ export function IncomeExpensesBarChart({
               radius={[4, 4, 0, 0]}
               maxBarSize={40}
               cursor="pointer"
-              onClick={handleBarClick}
+              onClick={handleBarClick('expense')}
             />
           </BarChart>
         </ResponsiveContainer>

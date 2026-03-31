@@ -149,10 +149,21 @@ export class IncomeReportsService {
       SELECT
         TO_CHAR(t.transaction_date, 'YYYY-MM') as month,
         t.currency_code,
-        SUM(CASE WHEN COALESCE(ts.amount, t.amount) > 0 THEN COALESCE(ts.amount, t.amount) ELSE 0 END) as income,
-        SUM(CASE WHEN COALESCE(ts.amount, t.amount) < 0 THEN ABS(COALESCE(ts.amount, t.amount)) ELSE 0 END) as expenses
+        SUM(CASE
+          WHEN c.is_income = true THEN COALESCE(ts.amount, t.amount)
+          WHEN c.is_income = false THEN 0
+          WHEN COALESCE(ts.amount, t.amount) > 0 THEN COALESCE(ts.amount, t.amount)
+          ELSE 0
+        END) as income,
+        SUM(CASE
+          WHEN c.is_income = false THEN -1 * COALESCE(ts.amount, t.amount)
+          WHEN c.is_income = true THEN 0
+          WHEN COALESCE(ts.amount, t.amount) < 0 THEN ABS(COALESCE(ts.amount, t.amount))
+          ELSE 0
+        END) as expenses
       FROM transactions t
       LEFT JOIN transaction_splits ts ON ts.transaction_id = t.id
+      LEFT JOIN categories c ON c.id = COALESCE(ts.category_id, t.category_id)
       LEFT JOIN accounts a ON a.id = t.account_id
       WHERE t.user_id = $1
         AND t.transaction_date <= $2

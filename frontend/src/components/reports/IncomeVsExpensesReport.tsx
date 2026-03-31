@@ -122,7 +122,24 @@ export function IncomeVsExpensesReport() {
     });
   };
 
+  const barClickedRef = useRef(false);
+
+  const handleBarClick = (categoryType: 'income' | 'expense') => (data: { payload?: { monthStart?: string; monthEnd?: string } }) => {
+    barClickedRef.current = true;
+    const monthStart = data.payload?.monthStart;
+    const monthEnd = data.payload?.monthEnd;
+    if (monthStart && monthEnd) {
+      router.push(
+        `/transactions?startDate=${monthStart}&endDate=${monthEnd}&categoryType=${categoryType}`,
+      );
+    }
+  };
+
   const handleChartClick = (state: any) => {
+    if (barClickedRef.current) {
+      barClickedRef.current = false;
+      return;
+    }
     const label = state?.activeLabel;
     if (!label) return;
     const item = chartData.find((d) => d.name === label);
@@ -227,16 +244,21 @@ export function IncomeVsExpensesReport() {
                     dataKey="Income"
                     fill="#22c55e"
                     radius={[4, 4, 0, 0]}
+                    cursor="pointer"
+                    onClick={handleBarClick('income')}
                   />
                   <Bar
                     dataKey="Expenses"
                     fill="#ef4444"
                     radius={[4, 4, 0, 0]}
+                    cursor="pointer"
+                    onClick={handleBarClick('expense')}
                   />
                   <Bar
                     dataKey="Savings"
                     fill="#3b82f6"
                     radius={[4, 4, 0, 0]}
+                    cursor="pointer"
                   />
                 </BarChart>
               </ResponsiveContainer>
