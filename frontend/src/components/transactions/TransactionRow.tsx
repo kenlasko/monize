@@ -416,7 +416,7 @@ export const TransactionRow = memo(function TransactionRow({
         )}
       </td>
       {showRunningBalance && (
-        <td className={`${cellPadding} whitespace-nowrap text-sm font-medium text-right`}>
+        <td className={`${cellPadding} whitespace-nowrap text-sm font-medium text-right hidden lg:table-cell`}>
           {runningBalance !== undefined
             ? formatBalance(runningBalance, transaction.currencyCode)
             : '-'}
