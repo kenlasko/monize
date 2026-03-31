@@ -55,7 +55,7 @@ export const AccountRow = memo(function AccountRow({
 }: AccountRowProps) {
   return (
     <tr
-      className="hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer select-none"
+      className="group hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer select-none"
       onClick={() => onRowClick(account)}
       onMouseDown={() => onLongPressStart(account)}
       onMouseUp={onLongPressEnd}
@@ -171,7 +171,7 @@ export const AccountRow = memo(function AccountRow({
           {!account.isClosed ? 'Active' : 'Closed'}
         </span>
       </td>
-      <td className={`${cellPadding} whitespace-nowrap text-right text-sm font-medium ${density === 'dense' ? 'space-x-1' : 'space-x-2'} hidden min-[480px]:table-cell`} onClick={(e) => e.stopPropagation()}>
+      <td className={`${cellPadding} whitespace-nowrap text-right text-sm font-medium ${density === 'dense' ? 'space-x-1' : 'space-x-2'} hidden min-[480px]:table-cell sticky right-0 bg-white dark:bg-gray-900 group-hover:bg-gray-50 dark:group-hover:bg-gray-800`} onClick={(e) => e.stopPropagation()}>
         {!account.isClosed ? (
           <ActiveAccountActions
             account={account}

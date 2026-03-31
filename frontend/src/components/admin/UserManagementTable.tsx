@@ -57,7 +57,7 @@ export function UserManagementTable({
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
               Last Login
             </th>
-            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider sticky right-0 bg-gray-50 dark:bg-gray-800">
               Actions
             </th>
           </tr>
@@ -66,7 +66,7 @@ export function UserManagementTable({
           {sortedUsers.map((user) => {
             const isSelf = user.id === currentUserId;
             return (
-              <tr key={user.id} className={isSelf ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''}>
+              <tr key={user.id} className={`group ${isSelf ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''}`}>
                 {/* User info */}
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
@@ -130,7 +130,7 @@ export function UserManagementTable({
                 </td>
 
                 {/* Actions */}
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm space-x-2">
+                <td className={`px-6 py-4 whitespace-nowrap text-right text-sm space-x-2 sticky right-0 ${isSelf ? 'bg-blue-50/50 dark:bg-blue-900/10' : 'bg-white dark:bg-gray-900'} group-hover:bg-gray-50 dark:group-hover:bg-gray-800`}>
                   {!isSelf && (
                     <>
                       {user.hasPassword && (

@@ -519,7 +519,7 @@ export function AccountList({ accounts, brokerageMarketValues, onEdit, onRefresh
                   <SortIcon field="status" sortField={sortField} sortDirection={sortDirection} />
                 </div>
               </th>
-              <th className={`${headerPadding} text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden min-[480px]:table-cell`}>
+              <th className={`${headerPadding} text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden min-[480px]:table-cell sticky right-0 bg-gray-50 dark:bg-gray-800`}>
                 Actions
               </th>
             </tr>
