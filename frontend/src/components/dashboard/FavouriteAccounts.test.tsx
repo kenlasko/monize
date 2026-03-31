@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, act } from "@/test/render";
 import { FavouriteAccounts } from "./FavouriteAccounts";
 import { accountsApi } from "@/lib/accounts";
