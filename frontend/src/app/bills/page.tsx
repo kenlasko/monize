@@ -309,6 +309,7 @@ function BillsContent() {
         case 'DAILY': return amount * 30;
         case 'WEEKLY': return amount * 4.33;
         case 'BIWEEKLY': return amount * 2.17;
+        case 'EVERY4WEEKS': return amount * (365.25 / 28 / 12);
         case 'MONTHLY': return amount;
         case 'QUARTERLY': return amount / 3;
         case 'YEARLY': return amount / 12;
@@ -389,6 +390,7 @@ function BillsContent() {
         case 'DAILY': nextDate = addDays(nextDate, 1); break;
         case 'WEEKLY': nextDate = addWeeks(nextDate, 1); break;
         case 'BIWEEKLY': nextDate = addWeeks(nextDate, 2); break;
+        case 'EVERY4WEEKS': nextDate = addWeeks(nextDate, 4); break;
         case 'MONTHLY': nextDate = addMonths(nextDate, 1); break;
         case 'QUARTERLY': nextDate = addMonths(nextDate, 3); break;
         case 'YEARLY': nextDate = addYears(nextDate, 1); break;

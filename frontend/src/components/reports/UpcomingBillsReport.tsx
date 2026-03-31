@@ -96,6 +96,9 @@ export function UpcomingBillsReport() {
         case 'BIWEEKLY':
           nextDate = addWeeks(nextDate, 2);
           break;
+        case 'EVERY4WEEKS':
+          nextDate = addWeeks(nextDate, 4);
+          break;
         case 'MONTHLY':
           nextDate = addMonths(nextDate, 1);
           break;

@@ -8,6 +8,7 @@ export type FrequencyType =
   | 'DAILY'
   | 'WEEKLY'
   | 'BIWEEKLY'
+  | 'EVERY4WEEKS'
   | 'SEMIMONTHLY'
   | 'MONTHLY'
   | 'QUARTERLY'
@@ -18,6 +19,7 @@ export const FREQUENCY_LABELS: Record<FrequencyType, string> = {
   DAILY: 'Daily',
   WEEKLY: 'Weekly',
   BIWEEKLY: 'Every 2 Weeks',
+  EVERY4WEEKS: 'Every 4 Weeks',
   SEMIMONTHLY: 'Twice a Month',
   MONTHLY: 'Monthly',
   QUARTERLY: 'Quarterly',

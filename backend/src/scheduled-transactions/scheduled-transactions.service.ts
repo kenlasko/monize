@@ -850,6 +850,9 @@ export class ScheduledTransactionsService {
       case "BIWEEKLY":
         date.setUTCDate(date.getUTCDate() + 14);
         break;
+      case "EVERY4WEEKS":
+        date.setUTCDate(date.getUTCDate() + 28);
+        break;
       case "SEMIMONTHLY":
         if (date.getUTCDate() <= 15) {
           date.setUTCMonth(date.getUTCMonth() + 1, 0);

@@ -37,6 +37,9 @@ function calculateNextDates(startDate: string, frequency: FrequencyType, count: 
       case 'BIWEEKLY':
         currentDate.setDate(currentDate.getDate() + 14);
         break;
+      case 'EVERY4WEEKS':
+        currentDate.setDate(currentDate.getDate() + 28);
+        break;
       case 'SEMIMONTHLY':
         // Twice a month: 15th and last day of month
         if (currentDate.getDate() <= 15) {

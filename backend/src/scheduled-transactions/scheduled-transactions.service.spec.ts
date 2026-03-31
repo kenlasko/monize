@@ -743,6 +743,19 @@ describe("ScheduledTransactionsService", () => {
       expect(toUTCDateStr(new Date(updateArg.nextDueDate))).toBe("2025-03-15");
     });
 
+    it("should advance EVERY4WEEKS by 28 days", async () => {
+      const scheduled = makeScheduled({
+        frequency: "EVERY4WEEKS",
+        nextDueDate: utcDate(2025, 3, 1),
+      });
+      stubFindOne(scheduled);
+
+      await service.skip(userId, stId);
+
+      const updateArg = scheduledRepo.update.mock.calls[0][1];
+      expect(toUTCDateStr(new Date(updateArg.nextDueDate))).toBe("2025-03-29");
+    });
+
     it("should advance SEMIMONTHLY: day<=15 goes to last day of month", async () => {
       const scheduled = makeScheduled({
         frequency: "SEMIMONTHLY",
