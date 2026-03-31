@@ -204,6 +204,33 @@ describe("AiService", () => {
       expect(mockEncryptionService.encrypt).not.toHaveBeenCalled();
       expect(mockConfigRepository.save).toHaveBeenCalled();
     });
+
+    it("allows private/local baseUrl for self-hosted providers", async () => {
+      await service.createConfig(userId, {
+        provider: "ollama",
+        baseUrl: "http://192.168.1.100:11434",
+      });
+      expect(mockConfigRepository.save).toHaveBeenCalled();
+    });
+
+    it("rejects private baseUrl for cloud providers", async () => {
+      await expect(
+        service.createConfig(userId, {
+          provider: "anthropic",
+          apiKey: "sk-key",
+          baseUrl: "http://localhost:8080",
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it("rejects invalid URL scheme for self-hosted providers", async () => {
+      await expect(
+        service.createConfig(userId, {
+          provider: "ollama",
+          baseUrl: "ftp://localhost:11434",
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
   });
 
   describe("updateConfig()", () => {

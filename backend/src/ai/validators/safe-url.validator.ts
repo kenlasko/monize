@@ -184,6 +184,27 @@ export async function validateUrlIsSafe(url: string): Promise<boolean> {
   return validator.validate(url);
 }
 
+/**
+ * Lighter validation for self-hosted providers (Ollama, OpenAI-compatible) that are
+ * expected to run on private/local networks. Only checks protocol and rejects
+ * embedded credentials.
+ */
+export function validateUrlBasicSafety(url: string): boolean {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return false;
+  }
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    return false;
+  }
+  if (parsed.username || parsed.password) {
+    return false;
+  }
+  return true;
+}
+
 export function IsSafeUrl(
   validationOptions?: ValidationOptions,
 ): PropertyDecorator {
