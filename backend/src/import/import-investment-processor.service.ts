@@ -242,6 +242,14 @@ export class ImportInvestmentProcessorService {
       }
     }
 
+    // Self-referencing transfer: when the transfer account resolves to the
+    // same account as the cash account (e.g. brokerage XIn with L field
+    // pointing to its own account), treat it as a simple cash deposit rather
+    // than a transfer pair — otherwise we create +/- entries that net to zero.
+    if (transferAccountId === cashAccountId) {
+      transferAccountId = null;
+    }
+
     // Duplicate detection using the same counting approach as the regular
     // processor: compare how many matching linked transfers already exist in
     // the DB against how many same-signature entries we have seen so far in

@@ -323,11 +323,22 @@ export class InvestmentTransactionsService {
 
     const result = await this.findOne(userId, savedId);
 
+    // Capture linked cash transaction for redo support
+    const afterData: Record<string, unknown> = { ...result };
+    if (result.transactionId) {
+      const cashTx = await this.transactionRepository.findOne({
+        where: { id: result.transactionId, userId },
+      });
+      if (cashTx) {
+        afterData.linkedCashTransaction = { ...cashTx };
+      }
+    }
+
     this.actionHistoryService.record(userId, {
       entityType: "investment_transaction",
       entityId: result.id,
       action: "create",
-      afterData: { ...result },
+      afterData,
       description: `Created ${createDto.action} transaction${createDto.securityId ? "" : ""}`,
     });
 
@@ -911,8 +922,18 @@ export class InvestmentTransactionsService {
 
   async remove(userId: string, id: string): Promise<void> {
     const transaction = await this.findOne(userId, id);
-    const beforeData = { ...transaction };
+    const beforeData: Record<string, unknown> = { ...transaction };
     const { accountId } = transaction;
+
+    // Capture linked cash transaction for undo support
+    if (transaction.transactionId) {
+      const cashTx = await this.transactionRepository.findOne({
+        where: { id: transaction.transactionId, userId },
+      });
+      if (cashTx) {
+        beforeData.linkedCashTransaction = { ...cashTx };
+      }
+    }
 
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -959,7 +980,7 @@ export class InvestmentTransactionsService {
 
     this.actionHistoryService.record(userId, {
       entityType: "investment_transaction",
-      entityId: beforeData.id,
+      entityId: beforeData.id as string,
       action: "delete",
       beforeData,
       description: `Deleted ${beforeData.action} transaction`,

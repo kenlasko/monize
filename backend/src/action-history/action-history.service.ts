@@ -837,30 +837,7 @@ export class ActionHistoryService {
 
     const before = action.beforeData;
 
-    // Re-insert the investment transaction
-    await queryRunner.query(
-      `INSERT INTO investment_transactions (id, user_id, account_id, transaction_id, security_id,
-        funding_account_id, action, transaction_date, quantity, price, commission, total_amount, description, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
-      [
-        before.id,
-        action.userId,
-        before.accountId,
-        before.transactionId ?? null,
-        before.securityId ?? null,
-        before.fundingAccountId ?? null,
-        before.action,
-        before.transactionDate,
-        before.quantity ?? 0,
-        before.price ?? 0,
-        before.commission ?? 0,
-        before.totalAmount ?? 0,
-        before.description ?? null,
-        before.createdAt ?? new Date(),
-      ],
-    );
-
-    // Re-insert linked cash transaction if it was captured
+    // Re-insert linked cash transaction first (investment_transactions.transaction_id references it)
     if (before.linkedCashTransaction) {
       const cashTx = before.linkedCashTransaction;
       await queryRunner.query(
@@ -883,6 +860,34 @@ export class ActionHistoryService {
       );
       await this.recalculateBalance(cashTx.accountId, queryRunner);
     }
+
+    // Re-insert the investment transaction
+    // Only reference the cash transaction FK if we actually restored it above;
+    // older action history records may not have linkedCashTransaction captured.
+    const restoredTransactionId = before.linkedCashTransaction
+      ? (before.transactionId ?? null)
+      : null;
+    await queryRunner.query(
+      `INSERT INTO investment_transactions (id, user_id, account_id, transaction_id, security_id,
+        funding_account_id, action, transaction_date, quantity, price, commission, total_amount, description, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
+      [
+        before.id,
+        action.userId,
+        before.accountId,
+        restoredTransactionId,
+        before.securityId ?? null,
+        before.fundingAccountId ?? null,
+        before.action,
+        before.transactionDate,
+        before.quantity ?? 0,
+        before.price ?? 0,
+        before.commission ?? 0,
+        before.totalAmount ?? 0,
+        before.description ?? null,
+        before.createdAt ?? new Date(),
+      ],
+    );
 
     // Rebuild holdings
     await this.rebuildHoldings(action.userId, before.accountId, queryRunner);
@@ -1104,7 +1109,7 @@ export class ActionHistoryService {
   ): Promise<void> {
     // Delete existing holdings for this account
     await queryRunner.query(
-      `DELETE FROM investment_holdings WHERE account_id = $1`,
+      `DELETE FROM holdings WHERE account_id = $1`,
       [accountId],
     );
 
@@ -1165,7 +1170,7 @@ export class ActionHistoryService {
           : 0;
 
       await queryRunner.query(
-        `INSERT INTO investment_holdings (id, account_id, security_id, quantity, average_cost)
+        `INSERT INTO holdings (id, account_id, security_id, quantity, average_cost)
          VALUES (uuid_generate_v4(), $1, $2, $3, $4)
          ON CONFLICT (account_id, security_id) DO UPDATE SET quantity = $3, average_cost = $4`,
         [accountId, securityId, data.quantity, avgCost],

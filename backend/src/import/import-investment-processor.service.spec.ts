@@ -1525,6 +1525,112 @@ describe("ImportInvestmentProcessorService", () => {
       expect(linkedTxSave).toBeDefined();
     });
 
+    it("XIn self-referencing transfer on brokerage creates single deposit, not net-zero pair", async () => {
+      // When the transfer account resolves to the same cash account as the
+      // brokerage's linked account, no linked transaction should be created.
+      // This prevents a +/- pair that nets to zero.
+      const accountMap = new Map<string, string | null>();
+      accountMap.set("SL Sandi RRSP (Baymag)", "acc-cash");
+      const ctx = makeContext({
+        accountMap,
+        account: {
+          id: "acc-brokerage",
+          currencyCode: "CAD",
+          accountSubType: AccountSubType.INVESTMENT_BROKERAGE,
+          linkedAccountId: "acc-cash",
+          name: "SL Sandi RRSP (Baymag) - Brokerage",
+        } as any,
+      });
+      (ctx as any).accountId = "acc-brokerage";
+
+      ctx.queryRunner.manager.findOne.mockImplementation(
+        (_entity: any, opts: any) => {
+          if (opts?.where?.id === "acc-cash") {
+            return Promise.resolve({
+              id: "acc-cash",
+              currencyCode: "CAD",
+              currentBalance: 0,
+            });
+          }
+          return Promise.resolve(null);
+        },
+      );
+
+      const qifTx = {
+        action: "XIn",
+        date: "2026-02-28",
+        amount: 571.24,
+        payee: "Monthly Update",
+        isTransfer: true,
+        transferAccount: "SL Sandi RRSP (Baymag)",
+      };
+
+      await service.processTransaction(ctx, qifTx);
+
+      expect(ctx.importResult.imported).toBe(1);
+
+      const saveCalls = ctx.queryRunner.manager.save.mock.calls;
+      // Only one cash transaction (the deposit), no linked counterpart
+      const cashTxSaves = saveCalls.filter(
+        (call: any) => call[0]?.amount !== undefined,
+      );
+      expect(cashTxSaves.length).toBe(1);
+      expect(cashTxSaves[0][0].accountId).toBe("acc-cash");
+      expect(cashTxSaves[0][0].amount).toBe(571.24);
+      expect(cashTxSaves[0][0].isTransfer).toBe(false);
+    });
+
+    it("XOut self-referencing transfer on brokerage creates single withdrawal", async () => {
+      const accountMap = new Map<string, string | null>();
+      accountMap.set("My RRSP", "acc-cash");
+      const ctx = makeContext({
+        accountMap,
+        account: {
+          id: "acc-brokerage",
+          currencyCode: "CAD",
+          accountSubType: AccountSubType.INVESTMENT_BROKERAGE,
+          linkedAccountId: "acc-cash",
+          name: "My RRSP - Brokerage",
+        } as any,
+      });
+      (ctx as any).accountId = "acc-brokerage";
+
+      ctx.queryRunner.manager.findOne.mockImplementation(
+        (_entity: any, opts: any) => {
+          if (opts?.where?.id === "acc-cash") {
+            return Promise.resolve({
+              id: "acc-cash",
+              currencyCode: "CAD",
+              currentBalance: 1000,
+            });
+          }
+          return Promise.resolve(null);
+        },
+      );
+
+      const qifTx = {
+        action: "XOut",
+        date: "2026-03-15",
+        amount: 200,
+        payee: "Withdrawal",
+        isTransfer: true,
+        transferAccount: "My RRSP",
+      };
+
+      await service.processTransaction(ctx, qifTx);
+
+      expect(ctx.importResult.imported).toBe(1);
+
+      const saveCalls = ctx.queryRunner.manager.save.mock.calls;
+      const cashTxSaves = saveCalls.filter(
+        (call: any) => call[0]?.amount !== undefined,
+      );
+      expect(cashTxSaves.length).toBe(1);
+      expect(cashTxSaves[0][0].accountId).toBe("acc-cash");
+      expect(cashTxSaves[0][0].amount).toBe(-200);
+      expect(cashTxSaves[0][0].isTransfer).toBe(false);
+    });
+
     it("two XIn transfers with same signature are not both skipped (counting logic)", async () => {
       // Two genuine XIn transfers on the same day for the same amount from the
       // same account should both be imported even when the second one finds

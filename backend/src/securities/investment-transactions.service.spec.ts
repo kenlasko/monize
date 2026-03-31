@@ -1140,6 +1140,69 @@ describe("InvestmentTransactionsService", () => {
         }),
       );
     });
+
+    it("captures linkedCashTransaction in afterData for action history on create", async () => {
+      const mockCashTx = {
+        id: cashTransactionId,
+        userId,
+        accountId: cashAccountId,
+        transactionDate: "2025-01-15",
+        amount: -1509.99,
+        currencyCode: "USD",
+      };
+      transactionRepository.findOne.mockResolvedValue(mockCashTx);
+
+      await service.create(userId, createBuyDto);
+
+      expect(transactionRepository.findOne).toHaveBeenCalledWith({
+        where: { id: cashTransactionId, userId },
+      });
+      expect(mockActionHistoryService.record).toHaveBeenCalledWith(
+        userId,
+        expect.objectContaining({
+          afterData: expect.objectContaining({
+            linkedCashTransaction: expect.objectContaining({
+              id: cashTransactionId,
+              accountId: cashAccountId,
+              amount: -1509.99,
+            }),
+          }),
+        }),
+      );
+    });
+
+    it("records afterData without linkedCashTransaction when no cash tx exists", async () => {
+      // REINVEST does not create a cash transaction
+      const reinvestDto = {
+        accountId,
+        securityId,
+        action: InvestmentAction.REINVEST,
+        transactionDate: "2025-01-15",
+        quantity: 3,
+        price: 150,
+        description: "Reinvest",
+      };
+      const mockReinvestResult = {
+        ...mockBuyTransaction,
+        action: InvestmentAction.REINVEST,
+        transactionId: null,
+      };
+      const findOneQB = createMockQueryBuilder(mockReinvestResult);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        findOneQB,
+      );
+
+      await service.create(userId, reinvestDto);
+
+      expect(mockActionHistoryService.record).toHaveBeenCalledWith(
+        userId,
+        expect.objectContaining({
+          afterData: expect.not.objectContaining({
+            linkedCashTransaction: expect.anything(),
+          }),
+        }),
+      );
+    });
   });
 
   describe("findAll", () => {
@@ -2032,6 +2095,56 @@ describe("InvestmentTransactionsService", () => {
           description: expect.stringContaining("Deleted BUY transaction"),
         }),
       );
+    });
+
+    it("captures linkedCashTransaction in beforeData for action history on remove", async () => {
+      const mockCashTx = {
+        id: cashTransactionId,
+        userId,
+        accountId: cashAccountId,
+        transactionDate: "2025-01-15",
+        amount: -1509.99,
+        currencyCode: "USD",
+        status: "CLEARED",
+      };
+      const tx = { ...mockBuyTransaction, transactionId: cashTransactionId };
+      const mockQB = createMockQueryBuilder(tx);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        mockQB,
+      );
+      transactionRepository.findOne.mockResolvedValue(mockCashTx);
+
+      await service.remove(userId, transactionId);
+
+      expect(transactionRepository.findOne).toHaveBeenCalledWith({
+        where: { id: cashTransactionId, userId },
+      });
+      expect(mockActionHistoryService.record).toHaveBeenCalledWith(
+        userId,
+        expect.objectContaining({
+          beforeData: expect.objectContaining({
+            linkedCashTransaction: expect.objectContaining({
+              id: cashTransactionId,
+              accountId: cashAccountId,
+              amount: -1509.99,
+            }),
+          }),
+        }),
+      );
+    });
+
+    it("records beforeData without linkedCashTransaction when transactionId is null", async () => {
+      const tx = { ...mockBuyTransaction, transactionId: null };
+      const mockQB = createMockQueryBuilder(tx);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        mockQB,
+      );
+
+      await service.remove(userId, transactionId);
+
+      expect(transactionRepository.findOne).not.toHaveBeenCalled();
+      const recordCall = mockActionHistoryService.record.mock.calls[0];
+      expect(recordCall[1].beforeData.linkedCashTransaction).toBeUndefined();
     });
   });
 

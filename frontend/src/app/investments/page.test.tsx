@@ -628,9 +628,7 @@ describe('InvestmentsPage', () => {
       vi.restoreAllMocks();
     });
 
-    it('does not delete transaction when cancelled', async () => {
-      vi.spyOn(window, 'confirm').mockReturnValue(false);
-
+    it('calls delete directly without window.confirm (ConfirmDialog handles confirmation)', async () => {
       await renderPage();
       await waitFor(() => {
         expect(screen.getByTestId('delete-itx-1')).toBeInTheDocument();
@@ -638,13 +636,12 @@ describe('InvestmentsPage', () => {
 
       fireEvent.click(screen.getByTestId('delete-itx-1'));
 
-      expect(mockDeleteTransaction).not.toHaveBeenCalled();
-
-      vi.restoreAllMocks();
+      await waitFor(() => {
+        expect(mockDeleteTransaction).toHaveBeenCalledWith('itx-1');
+      });
     });
 
     it('shows alert when delete fails', async () => {
-      vi.spyOn(window, 'confirm').mockReturnValue(true);
       vi.spyOn(window, 'alert').mockImplementation(() => {});
       mockDeleteTransaction.mockRejectedValue(new Error('Delete failed'));
 
