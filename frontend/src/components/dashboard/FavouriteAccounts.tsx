@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Account } from '@/types/account';
 import { usePreferencesStore } from '@/store/preferencesStore';
@@ -78,11 +78,13 @@ export function FavouriteAccounts({ accounts, isLoading, onAccountsChanged }: Fa
   );
 
   // Reset local order when accounts change from parent
-  const prevAccountsRef = useState({ accounts })[0];
-  if (prevAccountsRef.accounts !== accounts) {
-    prevAccountsRef.accounts = accounts;
-    setLocalOrder(null);
-  }
+  const prevAccountsRef = useRef(accounts);
+  useEffect(() => {
+    if (prevAccountsRef.current !== accounts) {
+      prevAccountsRef.current = accounts;
+      setLocalOrder(null);
+    }
+  }, [accounts]);
 
   if (isLoading) {
     return (
