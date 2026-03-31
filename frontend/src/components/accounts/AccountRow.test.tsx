@@ -50,6 +50,7 @@ function createAccount(overrides: Partial<Account> = {}): Account {
 function createDefaultProps(overrides: Partial<AccountRowProps> = {}): AccountRowProps {
   return {
     account: createAccount(),
+    index: 0,
     density: 'normal',
     cellPadding: 'px-4 py-3',
     isDeletable: false,

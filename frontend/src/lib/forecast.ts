@@ -81,6 +81,9 @@ function addFrequencyInterval(date: Date, frequency: FrequencyType): Date {
     case 'BIWEEKLY':
       newDate.setDate(newDate.getDate() + 14);
       break;
+    case 'EVERY4WEEKS':
+      newDate.setDate(newDate.getDate() + 28);
+      break;
     case 'SEMIMONTHLY':
       // Twice a month: 15th and last day of month
       if (newDate.getDate() <= 15) {

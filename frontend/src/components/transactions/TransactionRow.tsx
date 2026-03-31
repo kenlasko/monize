@@ -179,7 +179,7 @@ export const TransactionRow = memo(function TransactionRow({
       onTouchMove={onTouchMove}
       onTouchEnd={onLongPressEnd}
       onTouchCancel={onLongPressEnd}
-      className={`hover:bg-gray-100 dark:hover:bg-gray-800 select-none touch-manipulation ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-gray-800/50' : ''} ${isVoid ? 'opacity-50' : ''} ${isFuture && !isVoid ? 'opacity-60' : ''} ${onEdit ? 'cursor-pointer' : ''} ${isSelected ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}
+      className={`group hover:bg-gray-100 dark:hover:bg-gray-800 select-none touch-manipulation ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-table-stripe-dark' : 'bg-white dark:bg-gray-900'} ${isVoid ? 'opacity-50' : ''} ${isFuture && !isVoid ? 'opacity-60' : ''} ${onEdit ? 'cursor-pointer' : ''} ${isSelected ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}
     >
       {selectionMode && (
         <td className={`${cellPadding} whitespace-nowrap w-10`} onClick={e => e.stopPropagation()}>
@@ -194,7 +194,7 @@ export const TransactionRow = memo(function TransactionRow({
       <td className={`${cellPadding} whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 ${isVoid ? 'line-through' : ''}`}>
         {formatDate(transaction.transactionDate)}
       </td>
-      <td className={`${cellPadding} whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 ${isVoid ? 'line-through' : ''} hidden md:table-cell`}>
+      <td className={`${cellPadding} whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 ${isVoid ? 'line-through' : ''} hidden lg:table-cell`}>
         {transaction.account?.name || '-'}
       </td>
       <td className={`${cellPadding} max-w-[100px] sm:max-w-none overflow-hidden`}>
@@ -220,7 +220,7 @@ export const TransactionRow = memo(function TransactionRow({
           </div>
         )}
       </td>
-      <td className={`${cellPadding} ${density !== 'normal' ? 'whitespace-nowrap' : ''} hidden lg:table-cell`}>
+      <td className={`${cellPadding} ${density !== 'normal' ? 'whitespace-nowrap' : ''} hidden min-[900px]:table-cell`}>
         {transaction.linkedInvestmentTransactionId ? (
           <span
             className={`inline-flex text-xs leading-5 font-semibold rounded-full bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200 ${density === 'dense' ? 'px-1.5 py-0.5' : 'px-2 py-1'}`}
@@ -350,7 +350,7 @@ export const TransactionRow = memo(function TransactionRow({
           <span className="text-sm text-gray-400 dark:text-gray-500">-</span>
         )}
       </td>
-      <td className={`${cellPadding} text-sm text-gray-500 dark:text-gray-400 hidden xl:table-cell`}>
+      <td className={`${cellPadding} text-sm text-gray-500 dark:text-gray-400 hidden 2xl:table-cell`}>
         <div
           className={`truncate max-w-[320px] ${isVoid ? 'line-through' : ''}`}
           title={transaction.description || undefined}
@@ -422,7 +422,7 @@ export const TransactionRow = memo(function TransactionRow({
             : '-'}
         </td>
       )}
-      <td className={`${cellPadding} whitespace-nowrap text-center hidden sm:table-cell`}>
+      <td className={`${cellPadding} whitespace-nowrap text-center hidden min-[1400px]:table-cell`}>
         <button
           onClick={(e) => { e.stopPropagation(); onCycleStatus(transaction); }}
           className="text-sm px-3 py-1.5 -my-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
@@ -439,7 +439,7 @@ export const TransactionRow = memo(function TransactionRow({
           )}
         </button>
       </td>
-      <td className={`${cellPadding} whitespace-nowrap text-right text-sm font-medium space-x-2 hidden min-[480px]:table-cell`}>
+      <td className={`${cellPadding} whitespace-nowrap text-right text-sm font-medium space-x-2 hidden min-[480px]:table-cell sticky right-0 ${isSelected ? 'bg-blue-50 dark:bg-blue-900/20' : density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-table-stripe-dark' : 'bg-white dark:bg-gray-900'} group-hover:bg-gray-100 dark:group-hover:bg-gray-800`}>
         {onEdit && (
           <button
             onClick={(e) => { e.stopPropagation(); onEdit(transaction); }}

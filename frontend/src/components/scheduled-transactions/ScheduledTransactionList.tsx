@@ -64,7 +64,7 @@ const ScheduledTransactionRow = memo(function ScheduledTransactionRow({
 
   return (
     <tr
-      className={`hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer select-none ${!transaction.isActive ? 'opacity-50' : ''} ${dueDateStatus?.label === 'Overdue' ? 'bg-red-50 dark:bg-red-900/10' : ''}`}
+      className={`group hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer select-none ${!transaction.isActive ? 'opacity-50' : ''} ${dueDateStatus?.label === 'Overdue' ? 'bg-red-50 dark:bg-red-900/10' : 'bg-white dark:bg-gray-900'}`}
       onClick={() => onRowClick(transaction)}
       onMouseDown={() => onLongPressStart(transaction)}
       onMouseUp={onLongPressEnd}
@@ -208,7 +208,7 @@ const ScheduledTransactionRow = memo(function ScheduledTransactionRow({
       </td>
 
       {/* Actions */}
-      <td className="px-4 py-3 whitespace-nowrap text-right hidden min-[480px]:table-cell" onClick={(e) => e.stopPropagation()}>
+      <td className={`px-4 py-3 whitespace-nowrap text-right hidden min-[480px]:table-cell sticky right-0 ${dueDateStatus?.label === 'Overdue' ? 'bg-red-50 dark:bg-red-900/10' : 'bg-white dark:bg-gray-900'} group-hover:bg-gray-100 dark:group-hover:bg-gray-800`} onClick={(e) => e.stopPropagation()}>
         <div className="flex justify-end items-center space-x-1">
           {transaction.isActive && (
             <>
@@ -511,7 +511,7 @@ export function ScheduledTransactionList({
             <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden md:table-cell">
               Auto
             </th>
-            <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden min-[480px]:table-cell">
+            <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden min-[480px]:table-cell sticky right-0 bg-gray-50 dark:bg-gray-800">
               Actions
             </th>
           </tr>

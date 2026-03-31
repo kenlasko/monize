@@ -71,7 +71,7 @@ export function Pagination({
   const buttonClass = "px-2 h-[26px] text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed";
 
   return (
-    <div className={`flex flex-col sm:flex-row items-center justify-between gap-3 ${minimal ? 'bg-transparent' : 'bg-white dark:bg-gray-800 px-4 py-3 shadow dark:shadow-gray-700/50 rounded-lg'}`}>
+    <div className={`flex flex-col min-[820px]:flex-row items-center justify-between gap-3 ${minimal ? 'bg-transparent' : 'bg-white dark:bg-gray-800 px-4 py-3 shadow dark:shadow-gray-700/50 rounded-lg'}`}>
       {/* Showing X-Y of Z */}
       <div className="text-sm text-gray-700 dark:text-gray-300">
         Showing{' '}

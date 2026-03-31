@@ -222,6 +222,31 @@ describe('buildForecast', () => {
     });
   });
 
+  // --- EVERY4WEEKS frequency ---
+  describe('EVERY4WEEKS frequency', () => {
+    it('generates occurrences every 28 days', () => {
+      const accounts = [makeAccount({ currentBalance: 3000 })];
+      const transactions = [makeScheduled({
+        nextDueDate: '2025-01-15',
+        amount: -500,
+        frequency: 'EVERY4WEEKS',
+      })];
+      const result = buildForecast(accounts, transactions, '90days', 'all');
+      const jan15 = result.find(dp => dp.date === '2025-01-15');
+      const feb12 = result.find(dp => dp.date === '2025-02-12');
+      const mar12 = result.find(dp => dp.date === '2025-03-12');
+      expect(jan15?.transactions.length).toBe(1);
+      expect(jan15?.balance).toBe(2500);
+      expect(feb12?.transactions.length).toBe(1);
+      expect(feb12?.balance).toBe(2000);
+      expect(mar12?.transactions.length).toBe(1);
+      expect(mar12?.balance).toBe(1500);
+      // No occurrence at 14 days (not biweekly)
+      const jan29 = result.find(dp => dp.date === '2025-01-29');
+      expect(jan29?.transactions.length ?? 0).toBe(0);
+    });
+  });
+
   // --- SEMIMONTHLY frequency ---
   describe('SEMIMONTHLY frequency', () => {
     it('generates dates on 15th and end of month', () => {

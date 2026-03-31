@@ -91,7 +91,7 @@ const PayeeRow = memo(function PayeeRow({
 
   return (
     <tr
-      className={`hover:bg-gray-50 dark:hover:bg-gray-800 ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-gray-800/50' : ''} ${!payee.isActive ? 'opacity-60' : ''}`}
+      className={`group hover:bg-gray-100 dark:hover:bg-gray-800 ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-table-stripe-dark' : 'bg-white dark:bg-gray-900'} ${!payee.isActive ? 'opacity-60' : ''}`}
     >
       <td className={`${cellPadding} whitespace-nowrap`}>
         <button
@@ -153,7 +153,7 @@ const PayeeRow = memo(function PayeeRow({
           </div>
         </td>
       )}
-      <td className={`${cellPadding} whitespace-nowrap text-right text-sm font-medium`}>
+      <td className={`${cellPadding} whitespace-nowrap text-right text-sm font-medium sticky right-0 ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-table-stripe-dark' : 'bg-white dark:bg-gray-900'} group-hover:bg-gray-100 dark:group-hover:bg-gray-800`}>
         {!payee.isActive && onReactivate ? (
           <Button
             variant="ghost"
@@ -382,7 +382,7 @@ export function PayeeList({
                   Notes
                 </th>
               )}
-              <th className={`${headerPadding} text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>
+              <th className={`${headerPadding} text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider sticky right-0 bg-gray-50 dark:bg-gray-800`}>
                 Actions
               </th>
             </tr>
