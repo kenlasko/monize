@@ -8,11 +8,9 @@ import {
   MaxLength,
   Min,
   Max,
-  ValidateIf,
 } from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { SanitizeHtml } from "../../common/decorators/sanitize-html.decorator";
-import { IsSafeUrl } from "../validators/safe-url.validator";
 import { IsSafeConfigObject } from "../validators/safe-config-object.validator";
 import {
   AI_PROVIDERS,
@@ -60,13 +58,11 @@ export class CreateAiConfigDto {
   @ApiPropertyOptional({
     example: "https://api.example.com",
     description:
-      "Base URL for the provider (required for Ollama and OpenAI-compatible). Must be a valid external HTTP/HTTPS URL.",
+      "Base URL for the provider (required for Ollama and OpenAI-compatible). Self-hosted providers allow private/local URLs.",
   })
   @IsOptional()
   @IsString()
   @MaxLength(500)
-  @ValidateIf((o) => o.baseUrl !== undefined && o.baseUrl !== "")
-  @IsSafeUrl()
   baseUrl?: string;
 
   @ApiPropertyOptional({
@@ -120,13 +116,11 @@ export class UpdateAiConfigDto {
   @ApiPropertyOptional({
     example: "https://api.example.com",
     description:
-      "Base URL for the provider. Must be a valid external HTTP/HTTPS URL.",
+      "Base URL for the provider. Self-hosted providers allow private/local URLs.",
   })
   @IsOptional()
   @IsString()
   @MaxLength(500)
-  @ValidateIf((o) => o.baseUrl !== undefined && o.baseUrl !== "")
-  @IsSafeUrl()
   baseUrl?: string;
 
   @ApiPropertyOptional({

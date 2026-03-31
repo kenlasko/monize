@@ -23,7 +23,14 @@ import {
   AiCompletionResponse,
   AiProvider,
 } from "./providers/ai-provider.interface";
-import { validateUrlIsSafe } from "./validators/safe-url.validator";
+import {
+  validateUrlIsSafe,
+  validateUrlBasicSafety,
+} from "./validators/safe-url.validator";
+import {
+  SELF_HOSTED_PROVIDERS,
+  AiProviderType,
+} from "./entities/ai-provider-config.entity";
 
 const DEFAULT_MAX_AI_PROVIDERS_PER_USER = 10;
 
@@ -50,23 +57,44 @@ export class AiService {
         ? envVal
         : DEFAULT_MAX_AI_PROVIDERS_PER_USER;
 
-    // SECURITY: Validate AI_DEFAULT_BASE_URL against SSRF at startup
+    // SECURITY: Validate AI_DEFAULT_BASE_URL at startup.
+    // Self-hosted providers (ollama, openai-compatible) only need basic URL
+    // safety since they are expected to run on private/local networks.
     const defaultBaseUrl = this.configService.get<string>(
       "AI_DEFAULT_BASE_URL",
     );
     if (defaultBaseUrl) {
-      validateUrlIsSafe(defaultBaseUrl).then((isSafe) => {
-        if (isSafe) {
+      const defaultProvider = this.configService.get<string>(
+        "AI_DEFAULT_PROVIDER",
+      );
+      const isSelfHosted = SELF_HOSTED_PROVIDERS.has(
+        defaultProvider as AiProviderType,
+      );
+
+      if (isSelfHosted) {
+        if (validateUrlBasicSafety(defaultBaseUrl)) {
           this.validatedDefaultBaseUrl = defaultBaseUrl;
         } else {
           this.logger.error(
-            `AI_DEFAULT_BASE_URL "${defaultBaseUrl}" failed SSRF validation -- ` +
-              "it points to a private/internal IP or blocked hostname. " +
+            `AI_DEFAULT_BASE_URL "${defaultBaseUrl}" is not a valid HTTP/HTTPS URL. ` +
               "The default AI provider base URL will not be used.",
           );
         }
         this.defaultBaseUrlValidated = true;
-      });
+      } else {
+        validateUrlIsSafe(defaultBaseUrl).then((isSafe) => {
+          if (isSafe) {
+            this.validatedDefaultBaseUrl = defaultBaseUrl;
+          } else {
+            this.logger.error(
+              `AI_DEFAULT_BASE_URL "${defaultBaseUrl}" failed SSRF validation -- ` +
+                "it points to a private/internal IP or blocked hostname. " +
+                "The default AI provider base URL will not be used.",
+            );
+          }
+          this.defaultBaseUrlValidated = true;
+        });
+      }
     } else {
       this.defaultBaseUrlValidated = true;
     }
@@ -94,6 +122,12 @@ export class AiService {
     userId: string,
     dto: CreateAiConfigDto,
   ): Promise<AiProviderConfigResponse> {
+    // Validate baseUrl: self-hosted providers allow private URLs,
+    // cloud providers require full SSRF validation
+    if (dto.baseUrl) {
+      await this.validateBaseUrl(dto.baseUrl, dto.provider);
+    }
+
     const existingCount = await this.configRepository.count({
       where: { userId },
     });
@@ -133,6 +167,12 @@ export class AiService {
     dto: UpdateAiConfigDto,
   ): Promise<AiProviderConfigResponse> {
     const config = await this.getConfig(userId, configId);
+
+    // Validate baseUrl: self-hosted providers allow private URLs,
+    // cloud providers require full SSRF validation
+    if (dto.baseUrl) {
+      await this.validateBaseUrl(dto.baseUrl, config.provider);
+    }
 
     if (dto.displayName !== undefined)
       config.displayName = dto.displayName || null;
@@ -326,6 +366,26 @@ export class AiService {
     }
 
     return config;
+  }
+
+  private async validateBaseUrl(
+    baseUrl: string,
+    provider: AiProviderType,
+  ): Promise<void> {
+    if (SELF_HOSTED_PROVIDERS.has(provider)) {
+      if (!validateUrlBasicSafety(baseUrl)) {
+        throw new BadRequestException(
+          "baseUrl must be a valid HTTP or HTTPS URL",
+        );
+      }
+    } else {
+      const isSafe = await validateUrlIsSafe(baseUrl);
+      if (!isSafe) {
+        throw new BadRequestException(
+          "baseUrl must be a valid HTTP/HTTPS URL pointing to an external host",
+        );
+      }
+    }
   }
 
   private toResponseDto(config: AiProviderConfig): AiProviderConfigResponse {

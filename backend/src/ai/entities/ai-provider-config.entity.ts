@@ -18,6 +18,12 @@ export const AI_PROVIDERS = [
 
 export type AiProviderType = (typeof AI_PROVIDERS)[number];
 
+/** Providers that are self-hosted and expected to run on private/local networks. */
+export const SELF_HOSTED_PROVIDERS: ReadonlySet<AiProviderType> = new Set([
+  "ollama",
+  "openai-compatible",
+]);
+
 @Entity("ai_provider_configs")
 export class AiProviderConfig {
   @PrimaryGeneratedColumn("uuid")
