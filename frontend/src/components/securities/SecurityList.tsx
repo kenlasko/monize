@@ -102,7 +102,7 @@ const SecurityRow = memo(function SecurityRow({
     <tr
       className={`group hover:bg-gray-100 dark:hover:bg-gray-800 select-none ${
         !security.isActive ? 'opacity-60' : ''
-      } ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-gray-800' : 'bg-white dark:bg-gray-900'}`}
+      } ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-table-stripe-dark' : 'bg-white dark:bg-gray-900'}`}
       onMouseDown={() => onLongPressStart(security)}
       onMouseUp={onLongPressEnd}
       onMouseLeave={onLongPressEnd}
@@ -153,7 +153,7 @@ const SecurityRow = memo(function SecurityRow({
         )}
       </td>
       {/* Actions - hidden on mobile */}
-      <td className={`${cellPadding} whitespace-nowrap text-right text-sm font-medium hidden sm:table-cell sticky right-0 ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-gray-800' : 'bg-white dark:bg-gray-900'} group-hover:bg-gray-100 dark:group-hover:bg-gray-800`}>
+      <td className={`${cellPadding} whitespace-nowrap text-right text-sm font-medium hidden sm:table-cell sticky right-0 ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-table-stripe-dark' : 'bg-white dark:bg-gray-900'} group-hover:bg-gray-100 dark:group-hover:bg-gray-800`}>
         <div className="flex justify-end gap-2">
           {onViewPrices && (
             <Button

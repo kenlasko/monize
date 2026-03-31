@@ -57,7 +57,7 @@ export const AccountRow = memo(function AccountRow({
 }: AccountRowProps) {
   return (
     <tr
-      className={`group hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer select-none ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-gray-800' : 'bg-white dark:bg-gray-900'}`}
+      className={`group hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer select-none ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-table-stripe-dark' : 'bg-white dark:bg-gray-900'}`}
       onClick={() => onRowClick(account)}
       onMouseDown={() => onLongPressStart(account)}
       onMouseUp={onLongPressEnd}
@@ -173,7 +173,7 @@ export const AccountRow = memo(function AccountRow({
           {!account.isClosed ? 'Active' : 'Closed'}
         </span>
       </td>
-      <td className={`${cellPadding} whitespace-nowrap text-right text-sm font-medium ${density === 'dense' ? 'space-x-1' : 'space-x-2'} hidden min-[480px]:table-cell sticky right-0 ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-gray-800' : 'bg-white dark:bg-gray-900'} group-hover:bg-gray-100 dark:group-hover:bg-gray-800`} onClick={(e) => e.stopPropagation()}>
+      <td className={`${cellPadding} whitespace-nowrap text-right text-sm font-medium ${density === 'dense' ? 'space-x-1' : 'space-x-2'} hidden min-[480px]:table-cell sticky right-0 ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-table-stripe-dark' : 'bg-white dark:bg-gray-900'} group-hover:bg-gray-100 dark:group-hover:bg-gray-800`} onClick={(e) => e.stopPropagation()}>
         {!account.isClosed ? (
           <ActiveAccountActions
             account={account}

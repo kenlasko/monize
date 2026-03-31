@@ -21,6 +21,9 @@
   --color-income: #10b981;
   --color-expense: #ef4444;
 
+  /* Table stripe color -- subtle alternating row in dark mode (between gray-900 and gray-800) */
+  --color-table-stripe-dark: #161d2b;
+
   /* Font family */
   --font-sans: 'Inter', system-ui, sans-serif;
 }

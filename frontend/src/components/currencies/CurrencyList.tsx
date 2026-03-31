@@ -74,7 +74,7 @@ const CurrencyRow = memo(function CurrencyRow({
 
   return (
     <tr
-      className={`hover:bg-gray-100 dark:hover:bg-gray-800 select-none ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-gray-800' : 'bg-white dark:bg-gray-900'}`}
+      className={`hover:bg-gray-100 dark:hover:bg-gray-800 select-none ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-table-stripe-dark' : 'bg-white dark:bg-gray-900'}`}
       onMouseDown={() => onLongPressStart(currency)}
       onMouseUp={onLongPressEnd}
       onMouseLeave={onLongPressEnd}
