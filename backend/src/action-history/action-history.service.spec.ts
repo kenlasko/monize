@@ -1083,6 +1083,167 @@ describe("ActionHistoryService", () => {
       expect(result.description).toContain("Undone");
       expect(mockQueryRunner.manager.findOne).not.toHaveBeenCalled();
     });
+
+    it("should undo investment delete with null transactionId when linkedCashTransaction is missing", async () => {
+      // Older action history records may not have linkedCashTransaction captured.
+      // The investment transaction should still be re-inserted with transaction_id = NULL
+      // to avoid a FK violation on a deleted cash transaction.
+      const invAction = {
+        ...mockAction,
+        entityType: "investment_transaction",
+        action: "delete",
+        entityId: "inv-1",
+        beforeData: {
+          id: "inv-1",
+          accountId: "acc-1",
+          securityId: "sec-1",
+          transactionId: "deleted-cash-tx-1",
+          action: "BUY",
+          transactionDate: "2024-01-15",
+          quantity: 10,
+          price: 100,
+          commission: 5,
+          totalAmount: 1005,
+        },
+        afterData: null,
+      };
+      mockRepository.findOne.mockResolvedValue(invAction);
+      mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 });
+      mockQueryRunner.query.mockResolvedValue([]);
+
+      const result = await service.undo(userId);
+
+      expect(result.description).toContain("Undone");
+      // Should insert the investment transaction
+      const insertCalls = mockQueryRunner.query.mock.calls.filter(
+        (call: any[]) =>
+          typeof call[0] === "string" &&
+          call[0].includes("INSERT INTO investment_transactions"),
+      );
+      expect(insertCalls.length).toBe(1);
+      // transaction_id parameter (index 3) should be null, not the stale FK
+      expect(insertCalls[0][1][3]).toBeNull();
+      // Should NOT insert a cash transaction
+      const cashInsertCalls = mockQueryRunner.query.mock.calls.filter(
+        (call: any[]) =>
+          typeof call[0] === "string" &&
+          call[0].includes("INSERT INTO transactions"),
+      );
+      expect(cashInsertCalls.length).toBe(0);
+    });
+
+    it("should insert cash transaction before investment transaction when undoing delete", async () => {
+      const invAction = {
+        ...mockAction,
+        entityType: "investment_transaction",
+        action: "delete",
+        entityId: "inv-1",
+        beforeData: {
+          id: "inv-1",
+          accountId: "acc-1",
+          securityId: "sec-1",
+          transactionId: "cash-1",
+          action: "BUY",
+          transactionDate: "2024-01-15",
+          quantity: 10,
+          price: 100,
+          commission: 5,
+          totalAmount: 1005,
+          linkedCashTransaction: {
+            id: "cash-1",
+            accountId: "acc-2",
+            transactionDate: "2024-01-15",
+            amount: -1005,
+            currencyCode: "USD",
+          },
+        },
+        afterData: null,
+      };
+      mockRepository.findOne.mockResolvedValue(invAction);
+      mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 });
+      mockQueryRunner.query.mockResolvedValue([
+        { opening_balance: "0", tx_sum: "0" },
+      ]);
+
+      await service.undo(userId);
+
+      // Verify ordering: cash transaction INSERT comes before investment transaction INSERT
+      const insertCalls = mockQueryRunner.query.mock.calls
+        .map((call: any[], idx: number) => ({ sql: call[0], idx }))
+        .filter(
+          (c: any) =>
+            typeof c.sql === "string" && c.sql.includes("INSERT INTO"),
+        );
+      const cashInsertIdx = insertCalls.find((c: any) =>
+        c.sql.includes("INSERT INTO transactions"),
+      )?.idx;
+      const invInsertIdx = insertCalls.find((c: any) =>
+        c.sql.includes("INSERT INTO investment_transactions"),
+      )?.idx;
+      expect(cashInsertIdx).toBeDefined();
+      expect(invInsertIdx).toBeDefined();
+      expect(cashInsertIdx).toBeLessThan(invInsertIdx);
+      // transaction_id should reference the restored cash tx
+      const invInsertCall = mockQueryRunner.query.mock.calls.find(
+        (call: any[]) =>
+          typeof call[0] === "string" &&
+          call[0].includes("INSERT INTO investment_transactions"),
+      );
+      expect(invInsertCall[1][3]).toBe("cash-1");
+    });
+
+    it("should use correct table name 'holdings' in rebuildHoldings", async () => {
+      const invAction = {
+        ...mockAction,
+        entityType: "investment_transaction",
+        action: "create",
+        entityId: "inv-1",
+        afterData: { id: "inv-1" },
+      };
+      mockRepository.findOne.mockResolvedValue(invAction);
+
+      const mockInvTx = {
+        id: "inv-1",
+        userId,
+        accountId: "acc-1",
+        transactionId: null,
+      };
+      mockQueryRunner.manager.findOne.mockResolvedValueOnce(mockInvTx);
+      mockQueryRunner.manager.remove.mockResolvedValue(undefined);
+      mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 });
+      // rebuildHoldings: DELETE returns void, SELECT returns investment transactions
+      mockQueryRunner.query
+        .mockResolvedValueOnce(undefined) // DELETE FROM holdings
+        .mockResolvedValueOnce([
+          {
+            security_id: "sec-1",
+            action: "BUY",
+            quantity: "10",
+            price: "100",
+          },
+        ]) // SELECT investment_transactions
+        .mockResolvedValueOnce(undefined); // INSERT INTO holdings
+
+      await service.undo(userId);
+
+      const deleteCalls = mockQueryRunner.query.mock.calls.filter(
+        (call: any[]) =>
+          typeof call[0] === "string" && call[0].includes("DELETE FROM holdings"),
+      );
+      expect(deleteCalls.length).toBe(1);
+      const insertCalls = mockQueryRunner.query.mock.calls.filter(
+        (call: any[]) =>
+          typeof call[0] === "string" && call[0].includes("INSERT INTO holdings"),
+      );
+      expect(insertCalls.length).toBe(1);
+      // Verify no references to the wrong table name
+      const wrongTableCalls = mockQueryRunner.query.mock.calls.filter(
+        (call: any[]) =>
+          typeof call[0] === "string" &&
+          call[0].includes("investment_holdings"),
+      );
+      expect(wrongTableCalls.length).toBe(0);
+    });
   });
 
   describe("undo bulk transaction", () => {
