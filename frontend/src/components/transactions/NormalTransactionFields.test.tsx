@@ -76,6 +76,7 @@ function createAccount(overrides: Partial<Account> = {}): Account {
     isClosed: false,
     closedDate: null,
     isFavourite: false,
+    favouriteSortOrder: 0,
     excludeFromNetWorth: false,
     paymentAmount: null,
     paymentFrequency: null,

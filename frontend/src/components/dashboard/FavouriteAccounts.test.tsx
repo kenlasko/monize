@@ -1,6 +1,7 @@
-import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@/test/render";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, fireEvent, act } from "@/test/render";
 import { FavouriteAccounts } from "./FavouriteAccounts";
+import { accountsApi } from "@/lib/accounts";
 
 const mockPush = vi.fn();
 vi.mock("next/navigation", () => ({
@@ -17,6 +18,12 @@ vi.mock("@/hooks/useNumberFormat", () => ({
   useNumberFormat: () => ({
     formatCurrency: (n: number) => `$${n.toFixed(2)}`,
   }),
+}));
+
+vi.mock("@/lib/accounts", () => ({
+  accountsApi: {
+    reorderFavourites: vi.fn().mockResolvedValue(undefined),
+  },
 }));
 
 describe("FavouriteAccounts", () => {
@@ -38,7 +45,7 @@ describe("FavouriteAccounts", () => {
         name: "Checking",
         currentBalance: 1500,
         currencyCode: "CAD",
-        isFavourite: true,
+        isFavourite: true, favouriteSortOrder: 0,
         isClosed: false,
         institution: "TD Bank",
       },
@@ -47,7 +54,7 @@ describe("FavouriteAccounts", () => {
         name: "Savings",
         currentBalance: -200,
         currencyCode: "CAD",
-        isFavourite: true,
+        isFavourite: true, favouriteSortOrder: 0,
         isClosed: false,
       },
     ] as any[];
@@ -66,7 +73,7 @@ describe("FavouriteAccounts", () => {
         name: "Open",
         currentBalance: 100,
         currencyCode: "CAD",
-        isFavourite: true,
+        isFavourite: true, favouriteSortOrder: 0,
         isClosed: false,
       },
       {
@@ -74,7 +81,7 @@ describe("FavouriteAccounts", () => {
         name: "Closed",
         currentBalance: 0,
         currencyCode: "CAD",
-        isFavourite: true,
+        isFavourite: true, favouriteSortOrder: 0,
         isClosed: true,
       },
     ] as any[];
@@ -91,7 +98,7 @@ describe("FavouriteAccounts", () => {
         name: "Visa Card",
         currentBalance: -500,
         currencyCode: "CAD",
-        isFavourite: true,
+        isFavourite: true, favouriteSortOrder: 0,
         isClosed: false,
         accountType: "CREDIT_CARD",
         statementDueDay: 15,
@@ -111,7 +118,7 @@ describe("FavouriteAccounts", () => {
         name: "CC",
         currentBalance: 0,
         currencyCode: "CAD",
-        isFavourite: true,
+        isFavourite: true, favouriteSortOrder: 0,
         isClosed: false,
         accountType: "CREDIT_CARD",
         statementDueDay: 1,
@@ -131,7 +138,7 @@ describe("FavouriteAccounts", () => {
         name: "Checking",
         currentBalance: 1000,
         currencyCode: "CAD",
-        isFavourite: true,
+        isFavourite: true, favouriteSortOrder: 0,
         isClosed: false,
         accountType: "CHEQUING",
       },
@@ -149,7 +156,7 @@ describe("FavouriteAccounts", () => {
         name: "Visa",
         currentBalance: -100,
         currencyCode: "CAD",
-        isFavourite: true,
+        isFavourite: true, favouriteSortOrder: 0,
         isClosed: false,
         accountType: "CREDIT_CARD",
         statementSettlementDay: 20,
@@ -169,7 +176,7 @@ describe("FavouriteAccounts", () => {
         name: "Amex",
         currentBalance: -200,
         currencyCode: "CAD",
-        isFavourite: true,
+        isFavourite: true, favouriteSortOrder: 0,
         isClosed: false,
         accountType: "CREDIT_CARD",
         statementDueDay: 3,
@@ -188,7 +195,7 @@ describe("FavouriteAccounts", () => {
         name: "Checking",
         currentBalance: 1500,
         currencyCode: "CAD",
-        isFavourite: true,
+        isFavourite: true, favouriteSortOrder: 0,
         isClosed: false,
       },
     ] as any[];
@@ -196,5 +203,144 @@ describe("FavouriteAccounts", () => {
     render(<FavouriteAccounts accounts={accounts} isLoading={false} />);
     fireEvent.click(screen.getByText("Checking"));
     expect(mockPush).toHaveBeenCalledWith("/transactions?accountId=acc-1");
+  });
+
+  describe("favourite account ordering", () => {
+    const orderedAccounts = [
+      {
+        id: "acc-c",
+        name: "Charlie",
+        currentBalance: 300,
+        currencyCode: "CAD",
+        isFavourite: true,
+        favouriteSortOrder: 2,
+        isClosed: false,
+      },
+      {
+        id: "acc-a",
+        name: "Alpha",
+        currentBalance: 100,
+        currencyCode: "CAD",
+        isFavourite: true,
+        favouriteSortOrder: 0,
+        isClosed: false,
+      },
+      {
+        id: "acc-b",
+        name: "Bravo",
+        currentBalance: 200,
+        currencyCode: "CAD",
+        isFavourite: true,
+        favouriteSortOrder: 1,
+        isClosed: false,
+      },
+    ] as any[];
+
+    beforeEach(() => {
+      vi.clearAllMocks();
+    });
+
+    it("sorts accounts by favouriteSortOrder, not alphabetically", () => {
+      render(<FavouriteAccounts accounts={orderedAccounts} isLoading={false} />);
+
+      const buttons = screen.getAllByRole("button").filter(
+        (b) => ["Alpha", "Bravo", "Charlie"].includes(b.textContent?.split("$")[0]?.trim() ?? "")
+      );
+      expect(buttons).toHaveLength(3);
+
+      const names = buttons.map((b) => b.textContent?.split("$")[0]?.trim());
+      expect(names).toEqual(["Alpha", "Bravo", "Charlie"]);
+    });
+
+    it("does not show Reorder button when there is only one favourite", () => {
+      const singleAccount = [orderedAccounts[0]] as any[];
+      render(<FavouriteAccounts accounts={singleAccount} isLoading={false} />);
+      expect(screen.queryByText("Reorder")).not.toBeInTheDocument();
+    });
+
+    it("shows Reorder button when there are multiple favourites", () => {
+      render(<FavouriteAccounts accounts={orderedAccounts} isLoading={false} />);
+      expect(screen.getByText("Reorder")).toBeInTheDocument();
+    });
+
+    it("shows up/down arrows when Reorder is clicked", () => {
+      render(<FavouriteAccounts accounts={orderedAccounts} isLoading={false} />);
+
+      fireEvent.click(screen.getByText("Reorder"));
+
+      expect(screen.getByText("Done")).toBeInTheDocument();
+      const moveUpButtons = screen.getAllByTitle("Move up");
+      const moveDownButtons = screen.getAllByTitle("Move down");
+      expect(moveUpButtons).toHaveLength(3);
+      expect(moveDownButtons).toHaveLength(3);
+    });
+
+    it("disables up arrow on first item and down arrow on last item", () => {
+      render(<FavouriteAccounts accounts={orderedAccounts} isLoading={false} />);
+
+      fireEvent.click(screen.getByText("Reorder"));
+
+      const moveUpButtons = screen.getAllByTitle("Move up");
+      const moveDownButtons = screen.getAllByTitle("Move down");
+
+      expect(moveUpButtons[0]).toBeDisabled();
+      expect(moveDownButtons[moveDownButtons.length - 1]).toBeDisabled();
+      expect(moveUpButtons[1]).not.toBeDisabled();
+      expect(moveDownButtons[0]).not.toBeDisabled();
+    });
+
+    it("calls reorderFavourites API when moving an account down", async () => {
+      render(<FavouriteAccounts accounts={orderedAccounts} isLoading={false} />);
+
+      fireEvent.click(screen.getByText("Reorder"));
+
+      const moveDownButtons = screen.getAllByTitle("Move down");
+      await act(async () => {
+        fireEvent.click(moveDownButtons[0]);
+      });
+
+      expect(accountsApi.reorderFavourites).toHaveBeenCalledWith([
+        "acc-b",
+        "acc-a",
+        "acc-c",
+      ]);
+    });
+
+    it("calls reorderFavourites API when moving an account up", async () => {
+      render(<FavouriteAccounts accounts={orderedAccounts} isLoading={false} />);
+
+      fireEvent.click(screen.getByText("Reorder"));
+
+      const moveUpButtons = screen.getAllByTitle("Move up");
+      await act(async () => {
+        fireEvent.click(moveUpButtons[2]);
+      });
+
+      expect(accountsApi.reorderFavourites).toHaveBeenCalledWith([
+        "acc-a",
+        "acc-c",
+        "acc-b",
+      ]);
+    });
+
+    it("does not navigate when clicking an account in reorder mode", () => {
+      render(<FavouriteAccounts accounts={orderedAccounts} isLoading={false} />);
+
+      fireEvent.click(screen.getByText("Reorder"));
+      fireEvent.click(screen.getByText("Alpha"));
+
+      expect(mockPush).not.toHaveBeenCalled();
+    });
+
+    it("hides arrows and shows Reorder button when Done is clicked", () => {
+      render(<FavouriteAccounts accounts={orderedAccounts} isLoading={false} />);
+
+      fireEvent.click(screen.getByText("Reorder"));
+      expect(screen.getByText("Done")).toBeInTheDocument();
+
+      fireEvent.click(screen.getByText("Done"));
+      expect(screen.getByText("Reorder")).toBeInTheDocument();
+      expect(screen.queryByTitle("Move up")).not.toBeInTheDocument();
+    });
   });
 });

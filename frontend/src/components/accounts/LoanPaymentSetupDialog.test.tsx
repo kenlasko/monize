@@ -40,7 +40,7 @@ function createAccount(overrides: Partial<Account> = {}): Account {
     linkedAccountId: null, name: 'My Chequing', description: null, currencyCode: 'CAD',
     accountNumber: null, institution: null, openingBalance: 0, currentBalance: 1000,
     creditLimit: null, interestRate: null, isClosed: false, closedDate: null,
-    isFavourite: false, excludeFromNetWorth: false, paymentAmount: null, paymentFrequency: null, paymentStartDate: null,
+    isFavourite: false, favouriteSortOrder: 0, excludeFromNetWorth: false, paymentAmount: null, paymentFrequency: null, paymentStartDate: null,
     sourceAccountId: null, principalCategoryId: null, interestCategoryId: null,
     scheduledTransactionId: null, assetCategoryId: null, dateAcquired: null,
     isCanadianMortgage: false, isVariableRate: false, termMonths: null, termEndDate: null,

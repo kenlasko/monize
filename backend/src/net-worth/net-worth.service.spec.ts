@@ -56,6 +56,7 @@ describe("NetWorthService", () => {
     creditLimit: null,
     interestRate: null,
     isFavourite: false,
+    favouriteSortOrder: 0,
     excludeFromNetWorth: false,
     statementDueDay: null,
     statementSettlementDay: null,

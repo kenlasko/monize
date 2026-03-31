@@ -30,6 +30,7 @@ import { LoanPaymentDetectorService } from "./loan-payment-detector.service";
 import { LoanPaymentSetupService } from "./loan-payment-setup.service";
 import { CreateAccountDto } from "./dto/create-account.dto";
 import { UpdateAccountDto } from "./dto/update-account.dto";
+import { ReorderFavouriteAccountsDto } from "./dto/reorder-favourite-accounts.dto";
 import { LoanPreviewDto } from "./dto/loan-preview.dto";
 import {
   MortgagePreviewDto,
@@ -91,6 +92,21 @@ export class AccountsController {
     includeInactive?: boolean,
   ) {
     return this.accountsService.findAll(req.user.id, includeInactive || false);
+  }
+
+  @Patch("reorder-favourites")
+  @ApiOperation({
+    summary: "Reorder favourite accounts",
+    description:
+      "Set the display order of favourite accounts. The position in the array determines the sort order.",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Favourite accounts reordered successfully",
+  })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  reorderFavourites(@Request() req, @Body() dto: ReorderFavouriteAccountsDto) {
+    return this.accountsService.reorderFavourites(req.user.id, dto.accountIds);
   }
 
   @Get("daily-balances")

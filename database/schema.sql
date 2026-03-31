@@ -116,6 +116,7 @@ CREATE TABLE accounts (
     is_closed BOOLEAN DEFAULT false,
     closed_date DATE,
     is_favourite BOOLEAN DEFAULT false,
+    favourite_sort_order INTEGER DEFAULT 0,
     exclude_from_net_worth BOOLEAN DEFAULT false,
     -- Loan-specific fields
     payment_amount NUMERIC(20, 4), -- payment amount per period for loans
@@ -619,6 +620,7 @@ CREATE INDEX idx_mab_user_month ON monthly_account_balances(user_id, month);
 -- Create indexes for performance
 CREATE INDEX idx_transactions_status ON transactions(status);
 CREATE INDEX idx_accounts_closed ON accounts(is_closed);
+CREATE INDEX idx_accounts_user_favourite_sort ON accounts(user_id, favourite_sort_order);
 CREATE INDEX idx_scheduled_transactions_account ON scheduled_transactions(account_id);
 
 -- Composite indexes for common query patterns

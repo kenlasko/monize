@@ -11,7 +11,7 @@ function makeAccount(overrides: Partial<Account> & { id: string; name: string })
     linkedAccountId: null, description: null, currencyCode: 'CAD',
     accountNumber: null, institution: null, openingBalance: 0, currentBalance: 0,
     creditLimit: null, interestRate: null, isClosed: false, closedDate: null,
-    isFavourite: false, excludeFromNetWorth: false, statementDueDay: null, statementSettlementDay: null,
+    isFavourite: false, favouriteSortOrder: 0, excludeFromNetWorth: false, statementDueDay: null, statementSettlementDay: null,
     paymentAmount: null, paymentFrequency: null, paymentStartDate: null,
     sourceAccountId: null, principalCategoryId: null, interestCategoryId: null,
     scheduledTransactionId: null, assetCategoryId: null, dateAcquired: null,

@@ -125,6 +125,9 @@ export class Account {
   @Column({ name: "is_favourite", default: false })
   isFavourite: boolean;
 
+  @Column({ type: "integer", name: "favourite_sort_order", default: 0 })
+  favouriteSortOrder: number;
+
   @Column({ name: "exclude_from_net_worth", default: false })
   excludeFromNetWorth: boolean;
 
