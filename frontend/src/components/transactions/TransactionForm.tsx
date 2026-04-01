@@ -187,7 +187,7 @@ export function TransactionForm({ transaction, duplicateFrom, defaultAccountId, 
         }
       : {
           accountId: defaultAccountId || '',
-          transactionDate: getLocalDateString(),
+          transactionDate: sessionStorage.getItem('monize-last-transaction-date') || getLocalDateString(),
           currencyCode: defaultCurrency,
           status: TransactionStatus.UNRECONCILED,
         },
@@ -652,6 +652,7 @@ export function TransactionForm({ transaction, duplicateFrom, defaultAccountId, 
         } else {
           await transactionsApi.createTransfer(transferData);
           toast.success('Transfer created');
+          sessionStorage.setItem('monize-last-transaction-date', data.transactionDate);
         }
         onSuccess?.();
         return;
@@ -695,6 +696,7 @@ export function TransactionForm({ transaction, duplicateFrom, defaultAccountId, 
       } else {
         await transactionsApi.create(payload);
         toast.success('Transaction created');
+        sessionStorage.setItem('monize-last-transaction-date', data.transactionDate);
       }
       onSuccess?.();
     } catch (error) {
@@ -777,6 +779,7 @@ export function TransactionForm({ transaction, duplicateFrom, defaultAccountId, 
       {mode === 'normal' && (
         <NormalTransactionFields
           register={register}
+          setValue={setValue}
           errors={errors}
           watchedAccountId={watchedAccountId}
           watchedAmount={watchedAmount}
@@ -800,6 +803,7 @@ export function TransactionForm({ transaction, duplicateFrom, defaultAccountId, 
       {mode === 'split' && (
         <SplitTransactionFields
           register={register}
+          setValue={setValue}
           errors={errors}
           watchedAccountId={watchedAccountId}
           watchedAmount={watchedAmount}

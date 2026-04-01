@@ -1,0 +1,210 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, fireEvent } from '@/test/render';
+import { DateInput } from './DateInput';
+
+describe('DateInput', () => {
+  const onDateChange = vi.fn();
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 3, 1)); // 2026-04-01
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  function renderDateInput(value = '') {
+    return render(
+      <DateInput
+        label="Date"
+        value={value}
+        onDateChange={onDateChange}
+        onChange={() => {}}
+      />
+    );
+  }
+
+  describe('keyboard shortcuts', () => {
+    it('T sets today', () => {
+      const { getByLabelText } = renderDateInput('2025-06-15');
+      fireEvent.keyDown(getByLabelText('Date'), { key: 't' });
+      expect(onDateChange).toHaveBeenCalledWith('2026-04-01');
+    });
+
+    it('Y sets first day of year from existing date', () => {
+      const { getByLabelText } = renderDateInput('2025-06-15');
+      fireEvent.keyDown(getByLabelText('Date'), { key: 'y' });
+      expect(onDateChange).toHaveBeenCalledWith('2025-01-01');
+    });
+
+    it('Y sets first day of current year when field is empty', () => {
+      const { getByLabelText } = renderDateInput('');
+      fireEvent.keyDown(getByLabelText('Date'), { key: 'Y' });
+      expect(onDateChange).toHaveBeenCalledWith('2026-01-01');
+    });
+
+    it('R sets last day of year from existing date', () => {
+      const { getByLabelText } = renderDateInput('2025-06-15');
+      fireEvent.keyDown(getByLabelText('Date'), { key: 'r' });
+      expect(onDateChange).toHaveBeenCalledWith('2025-12-31');
+    });
+
+    it('R sets last day of current year when field is empty', () => {
+      const { getByLabelText } = renderDateInput('');
+      fireEvent.keyDown(getByLabelText('Date'), { key: 'R' });
+      expect(onDateChange).toHaveBeenCalledWith('2026-12-31');
+    });
+
+    it('M sets first day of month from existing date', () => {
+      const { getByLabelText } = renderDateInput('2025-06-15');
+      fireEvent.keyDown(getByLabelText('Date'), { key: 'm' });
+      expect(onDateChange).toHaveBeenCalledWith('2025-06-01');
+    });
+
+    it('M sets first day of current month when field is empty', () => {
+      const { getByLabelText } = renderDateInput('');
+      fireEvent.keyDown(getByLabelText('Date'), { key: 'M' });
+      expect(onDateChange).toHaveBeenCalledWith('2026-04-01');
+    });
+
+    it('H sets last day of month from existing date', () => {
+      const { getByLabelText } = renderDateInput('2025-02-10');
+      fireEvent.keyDown(getByLabelText('Date'), { key: 'h' });
+      expect(onDateChange).toHaveBeenCalledWith('2025-02-28');
+    });
+
+    it('H sets last day of current month when field is empty', () => {
+      const { getByLabelText } = renderDateInput('');
+      fireEvent.keyDown(getByLabelText('Date'), { key: 'H' });
+      expect(onDateChange).toHaveBeenCalledWith('2026-04-30');
+    });
+
+    it('+ adds one day to existing date', () => {
+      const { getByLabelText } = renderDateInput('2025-06-15');
+      fireEvent.keyDown(getByLabelText('Date'), { key: '+' });
+      expect(onDateChange).toHaveBeenCalledWith('2025-06-16');
+    });
+
+    it('+ sets tomorrow when field is empty', () => {
+      const { getByLabelText } = renderDateInput('');
+      fireEvent.keyDown(getByLabelText('Date'), { key: '+' });
+      expect(onDateChange).toHaveBeenCalledWith('2026-04-02');
+    });
+
+    it('= also adds one day (same key as + without shift)', () => {
+      const { getByLabelText } = renderDateInput('2025-06-15');
+      fireEvent.keyDown(getByLabelText('Date'), { key: '=' });
+      expect(onDateChange).toHaveBeenCalledWith('2025-06-16');
+    });
+
+    it('- subtracts one day from existing date', () => {
+      const { getByLabelText } = renderDateInput('2025-06-15');
+      fireEvent.keyDown(getByLabelText('Date'), { key: '-' });
+      expect(onDateChange).toHaveBeenCalledWith('2025-06-14');
+    });
+
+    it('- subtracts one day from today when field is empty', () => {
+      const { getByLabelText } = renderDateInput('');
+      fireEvent.keyDown(getByLabelText('Date'), { key: '-' });
+      expect(onDateChange).toHaveBeenCalledWith('2026-03-31');
+    });
+
+    it('PageUp sets first day of previous month', () => {
+      const { getByLabelText } = renderDateInput('2025-06-15');
+      fireEvent.keyDown(getByLabelText('Date'), { key: 'PageUp' });
+      expect(onDateChange).toHaveBeenCalledWith('2025-05-01');
+    });
+
+    it('PageDown sets first day of following month', () => {
+      const { getByLabelText } = renderDateInput('2025-06-15');
+      fireEvent.keyDown(getByLabelText('Date'), { key: 'PageDown' });
+      expect(onDateChange).toHaveBeenCalledWith('2025-07-01');
+    });
+
+    it('handles month boundary correctly with +', () => {
+      const { getByLabelText } = renderDateInput('2025-01-31');
+      fireEvent.keyDown(getByLabelText('Date'), { key: '+' });
+      expect(onDateChange).toHaveBeenCalledWith('2025-02-01');
+    });
+
+    it('handles year boundary correctly with +', () => {
+      const { getByLabelText } = renderDateInput('2025-12-31');
+      fireEvent.keyDown(getByLabelText('Date'), { key: '+' });
+      expect(onDateChange).toHaveBeenCalledWith('2026-01-01');
+    });
+
+    it('handles year boundary correctly with -', () => {
+      const { getByLabelText } = renderDateInput('2026-01-01');
+      fireEvent.keyDown(getByLabelText('Date'), { key: '-' });
+      expect(onDateChange).toHaveBeenCalledWith('2025-12-31');
+    });
+
+    it('handles PageUp across year boundary', () => {
+      const { getByLabelText } = renderDateInput('2025-01-15');
+      fireEvent.keyDown(getByLabelText('Date'), { key: 'PageUp' });
+      expect(onDateChange).toHaveBeenCalledWith('2024-12-01');
+    });
+
+    it('handles February last day correctly with H', () => {
+      const { getByLabelText } = renderDateInput('2024-02-15');
+      fireEvent.keyDown(getByLabelText('Date'), { key: 'h' });
+      // 2024 is a leap year
+      expect(onDateChange).toHaveBeenCalledWith('2024-02-29');
+    });
+
+    it('does not fire onDateChange for unrecognized keys', () => {
+      const { getByLabelText } = renderDateInput('2025-06-15');
+      fireEvent.keyDown(getByLabelText('Date'), { key: 'a' });
+      expect(onDateChange).not.toHaveBeenCalled();
+    });
+
+    it('prevents default on shortcut keys', () => {
+      const { getByLabelText } = renderDateInput('2025-06-15');
+      const event = new KeyboardEvent('keydown', { key: 't', bubbles: true });
+      const preventSpy = vi.spyOn(event, 'preventDefault');
+      getByLabelText('Date').dispatchEvent(event);
+      expect(preventSpy).toHaveBeenCalled();
+    });
+
+    it('calls external onKeyDown handler', () => {
+      const externalHandler = vi.fn();
+      const { getByLabelText } = render(
+        <DateInput
+          label="Date"
+          value="2025-06-15"
+          onDateChange={onDateChange}
+          onKeyDown={externalHandler}
+          onChange={() => {}}
+        />
+      );
+      fireEvent.keyDown(getByLabelText('Date'), { key: 'a' });
+      expect(externalHandler).toHaveBeenCalled();
+    });
+  });
+
+  describe('rendering', () => {
+    it('renders with label', () => {
+      const { getByLabelText } = renderDateInput();
+      expect(getByLabelText('Date')).toBeInTheDocument();
+    });
+
+    it('renders as type="date"', () => {
+      const { getByLabelText } = renderDateInput();
+      expect(getByLabelText('Date')).toHaveAttribute('type', 'date');
+    });
+
+    it('displays error message', () => {
+      const { getByText } = render(
+        <DateInput
+          label="Date"
+          error="Date is required"
+          onDateChange={onDateChange}
+          onChange={() => {}}
+        />
+      );
+      expect(getByText('Date is required')).toBeInTheDocument();
+    });
+  });
+});

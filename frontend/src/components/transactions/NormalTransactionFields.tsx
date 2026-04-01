@@ -1,8 +1,9 @@
 'use client';
 
-import { ReactNode } from 'react';
-import { UseFormRegister, FieldErrors } from 'react-hook-form';
+import { ReactNode, useCallback } from 'react';
+import { UseFormRegister, UseFormSetValue, FieldErrors } from 'react-hook-form';
 import { Input } from '@/components/ui/Input';
+import { DateInput } from '@/components/ui/DateInput';
 import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { Select } from '@/components/ui/Select';
 import { Combobox } from '@/components/ui/Combobox';
@@ -14,6 +15,7 @@ import { buildAccountDropdownOptions } from '@/lib/account-utils';
 
 interface NormalTransactionFieldsProps {
   register: UseFormRegister<any>;
+  setValue: UseFormSetValue<any>;
   errors: FieldErrors;
   watchedAccountId: string;
   watchedAmount: number;
@@ -35,6 +37,7 @@ interface NormalTransactionFieldsProps {
 
 export function NormalTransactionFields({
   register,
+  setValue,
   errors,
   watchedAccountId,
   watchedAmount,
@@ -53,6 +56,10 @@ export function NormalTransactionFields({
   transaction,
   createdAtSlot,
 }: NormalTransactionFieldsProps) {
+  const handleDateChange = useCallback((date: string) => {
+    setValue('transactionDate', date, { shouldDirty: true, shouldValidate: true });
+  }, [setValue]);
+
   return (
     <div className="space-y-4">
       {/* Row 1: Account, Date, and optionally Create Date */}
@@ -72,10 +79,10 @@ export function NormalTransactionFields({
           ]}
           {...register('accountId')}
         />
-        <Input
+        <DateInput
           label="Date"
-          type="date"
           error={errors.transactionDate?.message as string | undefined}
+          onDateChange={handleDateChange}
           {...register('transactionDate')}
         />
         {createdAtSlot}
