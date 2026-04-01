@@ -73,12 +73,11 @@ export function FavouriteAccounts({ accounts, brokerageMarketValues, isLoading, 
 
       try {
         await accountsApi.reorderFavourites(reordered.map((a) => a.id));
-        onAccountsChanged?.();
       } catch {
         setLocalOrder(null);
       }
     },
-    [accounts, effectiveLocalOrder, onAccountsChanged],
+    [accounts, effectiveLocalOrder],
   );
 
   if (isLoading) {
