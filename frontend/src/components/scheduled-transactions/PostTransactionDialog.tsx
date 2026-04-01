@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { DateInput } from '@/components/ui/DateInput';
 import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { Combobox } from '@/components/ui/Combobox';
 import { Modal } from '@/components/ui/Modal';
@@ -298,12 +299,9 @@ export function PostTransactionDialog({
       <div className="space-y-4">
         {/* Transaction Date */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Transaction Date
-          </label>
           <div className="flex items-center gap-2">
-            <Input
-              type="date"
+            <DateInput
+              label="Transaction Date"
               value={transactionDate}
               onChange={(e) => setTransactionDate(e.target.value)}
             />
@@ -311,7 +309,7 @@ export function PostTransactionDialog({
               <button
                 type="button"
                 onClick={() => setTransactionDate(todayStr)}
-                className="shrink-0 px-3 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
+                className="shrink-0 mt-6 px-3 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
               >
                 Today
               </button>

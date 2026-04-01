@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode, useCallback } from 'react';
+import { ReactNode } from 'react';
 import { UseFormRegister, UseFormSetValue, FieldErrors } from 'react-hook-form';
 import { Input } from '@/components/ui/Input';
 import { DateInput } from '@/components/ui/DateInput';
@@ -56,10 +56,6 @@ export function NormalTransactionFields({
   transaction,
   createdAtSlot,
 }: NormalTransactionFieldsProps) {
-  const handleDateChange = useCallback((date: string) => {
-    setValue('transactionDate', date, { shouldDirty: true, shouldValidate: true });
-  }, [setValue]);
-
   return (
     <div className="space-y-4">
       {/* Row 1: Account, Date, and optionally Create Date */}
@@ -82,7 +78,7 @@ export function NormalTransactionFields({
         <DateInput
           label="Date"
           error={errors.transactionDate?.message as string | undefined}
-          onDateChange={handleDateChange}
+          onDateChange={(date) => setValue('transactionDate', date, { shouldDirty: true, shouldValidate: true })}
           {...register('transactionDate')}
         />
         {createdAtSlot}

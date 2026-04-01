@@ -7,6 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
 import { Input } from '@/components/ui/Input';
+import { DateInput } from '@/components/ui/DateInput';
 import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { Select } from '@/components/ui/Select';
 import { Combobox } from '@/components/ui/Combobox';
@@ -557,9 +558,10 @@ export function ScheduledTransactionForm({
               </label>
             </div>
             {useEndDate && (
-              <Input
-                type="date"
+              <DateInput
+                label="End Date"
                 error={errors.endDate?.message}
+                onDateChange={(date) => setValue('endDate', date, { shouldDirty: true, shouldValidate: true })}
                 {...register('endDate')}
               />
             )}
@@ -706,10 +708,10 @@ export function ScheduledTransactionForm({
               ]}
               {...register('accountId')}
             />
-            <Input
+            <DateInput
               label="Next Due Date"
-              type="date"
               error={errors.nextDueDate?.message}
+              onDateChange={(date) => setValue('nextDueDate', date, { shouldDirty: true, shouldValidate: true })}
               {...register('nextDueDate')}
             />
           </div>
@@ -835,10 +837,10 @@ export function ScheduledTransactionForm({
               ]}
               {...register('accountId')}
             />
-            <Input
+            <DateInput
               label="Next Due Date"
-              type="date"
               error={errors.nextDueDate?.message}
+              onDateChange={(date) => setValue('nextDueDate', date, { shouldDirty: true, shouldValidate: true })}
               {...register('nextDueDate')}
             />
           </div>
@@ -952,10 +954,10 @@ export function ScheduledTransactionForm({
 
           {/* Row 2: Next Due Date */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Input
+            <DateInput
               label="Next Due Date"
-              type="date"
               error={errors.nextDueDate?.message}
+              onDateChange={(date) => setValue('nextDueDate', date, { shouldDirty: true, shouldValidate: true })}
               {...register('nextDueDate')}
             />
           </div>

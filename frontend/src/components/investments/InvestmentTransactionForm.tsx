@@ -7,6 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
 import { Input } from '@/components/ui/Input';
+import { DateInput } from '@/components/ui/DateInput';
 import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { NumericInput } from '@/components/ui/NumericInput';
 import { Select } from '@/components/ui/Select';
@@ -313,10 +314,10 @@ export function InvestmentTransactionForm({
       />
 
       {/* Date */}
-      <Input
+      <DateInput
         label="Date"
-        type="date"
         error={errors.transactionDate?.message}
+        onDateChange={(date) => setValue('transactionDate', date, { shouldDirty: true, shouldValidate: true })}
         {...register('transactionDate')}
       />
 

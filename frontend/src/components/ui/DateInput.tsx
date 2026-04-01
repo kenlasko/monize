@@ -79,82 +79,83 @@ function DateShortcutTooltip() {
   );
 }
 
+// Resolves the computed date for a keyboard shortcut key.
+// Returns null if the key is not a recognized shortcut.
+function resolveShortcutDate(key: string, currentValue: string): Date | null {
+  switch (key) {
+    case 't':
+    case 'T':
+      return new Date();
+    case 'y':
+    case 'Y': {
+      const d = parseOrToday(currentValue);
+      return new Date(d.getFullYear(), 0, 1);
+    }
+    case 'r':
+    case 'R': {
+      const d = parseOrToday(currentValue);
+      return new Date(d.getFullYear(), 11, 31);
+    }
+    case 'm':
+    case 'M': {
+      const d = parseOrToday(currentValue);
+      return new Date(d.getFullYear(), d.getMonth(), 1);
+    }
+    case 'h':
+    case 'H': {
+      const d = parseOrToday(currentValue);
+      // Day 0 of next month = last day of current month
+      return new Date(d.getFullYear(), d.getMonth() + 1, 0);
+    }
+    case '+':
+    case '=': {
+      const d = parseOrToday(currentValue);
+      d.setDate(d.getDate() + 1);
+      return d;
+    }
+    case '-': {
+      const d = parseOrToday(currentValue);
+      d.setDate(d.getDate() - 1);
+      return d;
+    }
+    case 'PageUp': {
+      const d = parseOrToday(currentValue);
+      return new Date(d.getFullYear(), d.getMonth() - 1, 1);
+    }
+    case 'PageDown': {
+      const d = parseOrToday(currentValue);
+      return new Date(d.getFullYear(), d.getMonth() + 1, 1);
+    }
+    default:
+      return null;
+  }
+}
+
+// React-controlled inputs ignore direct .value assignments.
+// Use the native setter to bypass React and then dispatch a change event
+// so that both react-hook-form register() and controlled onChange handlers work.
+const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+  HTMLInputElement.prototype,
+  'value',
+)?.set;
+
 export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
   ({ onDateChange, onKeyDown, label, id, ...props }, ref) => {
     const inputId = id || (label ? `input-${label.toLowerCase().replace(/\s+/g, '-')}` : undefined);
 
     const handleKeyDown = useCallback((e: KeyboardEvent<HTMLInputElement>) => {
-      const currentValue = e.currentTarget.value;
-      let newDate: Date | null = null;
-
-      switch (e.key) {
-        case 't':
-        case 'T':
-          newDate = new Date();
-          break;
-        case 'y':
-        case 'Y': {
-          const d = parseOrToday(currentValue);
-          newDate = new Date(d.getFullYear(), 0, 1);
-          break;
-        }
-        case 'r':
-        case 'R': {
-          const d = parseOrToday(currentValue);
-          newDate = new Date(d.getFullYear(), 11, 31);
-          break;
-        }
-        case 'm':
-        case 'M': {
-          const d = parseOrToday(currentValue);
-          newDate = new Date(d.getFullYear(), d.getMonth(), 1);
-          break;
-        }
-        case 'h':
-        case 'H': {
-          const d = parseOrToday(currentValue);
-          // Day 0 of next month = last day of current month
-          newDate = new Date(d.getFullYear(), d.getMonth() + 1, 0);
-          break;
-        }
-        case '+':
-        case '=': {
-          const d = parseOrToday(currentValue);
-          if (!currentValue) {
-            // If blank, put tomorrow
-            d.setDate(d.getDate() + 1);
-          } else {
-            d.setDate(d.getDate() + 1);
-          }
-          newDate = d;
-          break;
-        }
-        case '-': {
-          const d = parseOrToday(currentValue);
-          d.setDate(d.getDate() - 1);
-          newDate = d;
-          break;
-        }
-        case 'PageUp': {
-          e.preventDefault();
-          const d = parseOrToday(currentValue);
-          newDate = new Date(d.getFullYear(), d.getMonth() - 1, 1);
-          break;
-        }
-        case 'PageDown': {
-          e.preventDefault();
-          const d = parseOrToday(currentValue);
-          newDate = new Date(d.getFullYear(), d.getMonth() + 1, 1);
-          break;
-        }
-        default:
-          break;
-      }
+      const newDate = resolveShortcutDate(e.key, e.currentTarget.value);
 
       if (newDate) {
         e.preventDefault();
         const dateStr = getLocalDateString(newDate);
-        onDateChange?.(dateStr);
+        if (onDateChange) {
+          onDateChange(dateStr);
+        } else {
+          // For controlled components: set the native value and fire a change event
+          nativeInputValueSetter?.call(e.currentTarget, dateStr);
+          e.currentTarget.dispatchEvent(new Event('input', { bubbles: true }));
+        }
       }
 
       onKeyDown?.(e);

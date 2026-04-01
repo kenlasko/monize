@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { DateInput } from '@/components/ui/DateInput';
 import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { Combobox } from '@/components/ui/Combobox';
 import { Modal } from '@/components/ui/Modal';
@@ -207,16 +208,11 @@ export function OverrideEditorDialog({
 
       <div className="space-y-4">
         {/* Date */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Occurrence Date
-          </label>
-          <Input
-            type="date"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-          />
-        </div>
+        <DateInput
+          label="Occurrence Date"
+          value={selectedDate}
+          onChange={(e) => setSelectedDate(e.target.value)}
+        />
 
         {/* Amount */}
         <CurrencyInput
