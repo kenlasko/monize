@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Account } from '@/types/account';
 import { usePreferencesStore } from '@/store/preferencesStore';
@@ -28,7 +28,7 @@ interface FavouriteAccountsProps {
   onAccountsChanged?: () => void;
 }
 
-export function FavouriteAccounts({ accounts, brokerageMarketValues, isLoading, onAccountsChanged }: FavouriteAccountsProps) {
+export function FavouriteAccounts({ accounts, brokerageMarketValues, isLoading, onAccountsChanged: _onAccountsChanged }: FavouriteAccountsProps) {
   const router = useRouter();
   const { preferences } = usePreferencesStore();
   const { formatCurrency: formatCurrencyBase } = useNumberFormat();

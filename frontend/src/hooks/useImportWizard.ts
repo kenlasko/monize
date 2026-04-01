@@ -71,7 +71,8 @@ export function useImportWizard() {
   const searchParams = useSearchParams();
   const preselectedAccountId = searchParams.get('accountId');
   const defaultCurrency = usePreferencesStore((s) => s.preferences?.defaultCurrency) || 'USD';
-  const preferredExchanges = usePreferencesStore((s) => s.preferences?.preferredExchanges) || [];
+  const rawPreferredExchanges = usePreferencesStore((s) => s.preferences?.preferredExchanges);
+  const preferredExchanges = useMemo(() => rawPreferredExchanges || [], [rawPreferredExchanges]);
 
   const [step, setStep] = useState<ImportStep>('upload');
   const [importFiles, setImportFiles] = useState<ImportFileData[]>([]);
@@ -318,7 +319,7 @@ export function useImportWizard() {
     };
 
     runBulkLookup();
-  }, [step, initialLookupDone, securityMappings]);
+  }, [step, initialLookupDone, securityMappings, preferredExchanges]);
 
   const handleFileSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;

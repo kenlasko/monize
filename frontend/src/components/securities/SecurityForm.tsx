@@ -54,7 +54,8 @@ const securityTypeOptions = [
 
 export function SecurityForm({ security, onSubmit, onCancel, onDirtyChange, submitRef }: SecurityFormProps) {
   const { defaultCurrency } = useNumberFormat();
-  const preferredExchanges = usePreferencesStore((s) => s.preferences?.preferredExchanges) || [];
+  const rawPreferredExchanges = usePreferencesStore((s) => s.preferences?.preferredExchanges);
+  const preferredExchanges = useMemo(() => rawPreferredExchanges || [], [rawPreferredExchanges]);
   const [isLookingUp, setIsLookingUp] = useState(false);
   const [hasLookupResult, setHasLookupResult] = useState(false);
   const [currencies, setCurrencies] = useState<CurrencyInfo[]>([]);
