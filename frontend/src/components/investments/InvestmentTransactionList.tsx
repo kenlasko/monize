@@ -7,6 +7,7 @@ import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { DensityLevel, nextDensity } from '@/hooks/useTableDensity';
+import { Account } from '@/types/account';
 
 export interface TransactionFilters {
   symbol?: string;
@@ -17,6 +18,7 @@ export interface TransactionFilters {
 
 interface InvestmentTransactionListProps {
   transactions: InvestmentTransaction[];
+  accounts?: Account[];
   isLoading: boolean;
   onDelete?: (id: string) => void;
   onEdit?: (transaction: InvestmentTransaction) => void;
@@ -60,6 +62,7 @@ const ACTION_OPTIONS = [
 
 interface InvestmentTransactionRowProps {
   tx: InvestmentTransaction;
+  accountName?: string;
   index: number;
   density: DensityLevel;
   cellPadding: string;
@@ -78,6 +81,7 @@ interface InvestmentTransactionRowProps {
 
 const InvestmentTransactionRow = memo(function InvestmentTransactionRow({
   tx,
+  accountName,
   index,
   density,
   cellPadding,
@@ -113,6 +117,11 @@ const InvestmentTransactionRow = memo(function InvestmentTransactionRow({
     >
       <td className={`${cellPadding} whitespace-nowrap text-sm text-gray-900 dark:text-gray-100`}>
         {formatDate(tx.transactionDate)}
+      </td>
+      <td className={`${cellPadding} whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 hidden lg:table-cell`}>
+        <div className="truncate max-w-[200px]" title={accountName}>
+          {accountName || '-'}
+        </div>
       </td>
       <td className={`${cellPadding} whitespace-nowrap`}>
         <span className={`text-sm font-medium ${actionInfo.color}`}>
@@ -168,6 +177,7 @@ const InvestmentTransactionRow = memo(function InvestmentTransactionRow({
 
 export function InvestmentTransactionList({
   transactions,
+  accounts = [],
   isLoading,
   onDelete,
   onEdit,
@@ -182,6 +192,7 @@ export function InvestmentTransactionList({
   const { formatCurrency, numberFormat } = useNumberFormat();
   const { formatDate } = useDateFormat();
   const { defaultCurrency } = useExchangeRates();
+  const accountMap = useMemo(() => new Map(accounts.map(a => [a.id, a.name])), [accounts]);
   const [localDensity, setLocalDensity] = useState<DensityLevel>('normal');
   const [showFilters, setShowFilters] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; transaction: InvestmentTransaction | null }>({ isOpen: false, transaction: null });
@@ -491,6 +502,9 @@ export function InvestmentTransactionList({
               <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>
                 Date
               </th>
+              <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden lg:table-cell`}>
+                Account
+              </th>
               <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>
                 Action
               </th>
@@ -516,7 +530,7 @@ export function InvestmentTransactionList({
           <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
             {transactions.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                <td colSpan={8} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
                   No transactions match your filters.
                 </td>
               </tr>
@@ -524,6 +538,7 @@ export function InvestmentTransactionList({
               <InvestmentTransactionRow
                 key={tx.id}
                 tx={tx}
+                accountName={accountMap.get(tx.accountId)}
                 index={index}
                 density={density}
                 cellPadding={cellPadding}

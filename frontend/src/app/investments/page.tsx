@@ -265,6 +265,7 @@ function InvestmentsContent() {
               <div>
                 <InvestmentTransactionList
                   transactions={data.transactions}
+                  accounts={data.accounts}
                   isLoading={data.isLoading}
                   onDelete={handleDeleteTransaction}
                   onEdit={data.handleEditTransaction}

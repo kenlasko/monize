@@ -269,7 +269,7 @@ describe('InvestmentTransactionList', () => {
   it('shows dash for missing security symbol', () => {
     const transactions = [makeTx({ security: null })] as any[];
     render(<InvestmentTransactionList transactions={transactions} isLoading={false} />);
-    expect(screen.getByText('-')).toBeInTheDocument();
+    expect(screen.getAllByText('-').length).toBeGreaterThanOrEqual(1);
   });
 
   it('shows foreign currency indicator for non-default currencies', () => {
