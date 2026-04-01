@@ -303,6 +303,11 @@ export class CategoriesService {
     }
 
     const saved = await this.categoriesRepository.save(category);
+
+    // Cascade type change to all descendant subcategories
+    if (!category.parentId && updateCategoryDto.isIncome !== undefined && updateCategoryDto.isIncome !== beforeData.isIncome) {
+      await this.updateDescendantTypes(userId, id, saved.isIncome);
+    }
     this.actionHistoryService.record(userId, {
       entityType: "category",
       entityId: id,
@@ -316,6 +321,29 @@ export class CategoriesService {
       description: `Updated category "${saved.name}"`,
     });
     return saved;
+  }
+
+  private async updateDescendantTypes(
+    userId: string,
+    parentId: string,
+    isIncome: boolean,
+  ): Promise<void> {
+    const children = await this.categoriesRepository.find({
+      where: { userId, parentId },
+      select: ["id"],
+    });
+
+    if (children.length === 0) {
+      return;
+    }
+
+    for (const child of children) {
+      await this.categoriesRepository.update(
+        { id: child.id, userId },
+        { isIncome },
+      );
+      await this.updateDescendantTypes(userId, child.id, isIncome);
+    }
   }
 
   async remove(userId: string, id: string): Promise<void> {

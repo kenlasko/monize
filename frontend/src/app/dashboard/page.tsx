@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { subDays, subMonths, format } from 'date-fns';
+import { subMonths, subWeeks, startOfWeek, format } from 'date-fns';
 import { useOnUndoRedo } from '@/hooks/useOnUndoRedo';
 import dynamic from 'next/dynamic';
 import { useAuthStore } from '@/store/authStore';
+import { usePreferencesStore } from '@/store/preferencesStore';
 import { FavouriteAccounts } from '@/components/dashboard/FavouriteAccounts';
 import { UpcomingBills } from '@/components/dashboard/UpcomingBills';
 import { GettingStarted } from '@/components/dashboard/GettingStarted';
@@ -45,6 +46,7 @@ export default function DashboardPage() {
 
 function DashboardContent() {
   const { user } = useAuthStore();
+  const weekStartsOn = (usePreferencesStore((s) => s.preferences?.weekStartsOn) ?? 1) as 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -86,25 +88,42 @@ function DashboardContent() {
   const loadDashboardData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const thirtyDaysAgo = format(subDays(new Date(), 30), 'yyyy-MM-dd');
-      const today = format(new Date(), 'yyyy-MM-dd');
+      const now = new Date();
+      const currentWeekStart = startOfWeek(now, { weekStartsOn });
+      const fiveWeeksAgoStart = subWeeks(currentWeekStart, 4);
+      const chartStartDate = format(fiveWeeksAgoStart, 'yyyy-MM-dd');
+      const today = format(now, 'yyyy-MM-dd');
 
       const twelveMonthsAgo = format(subMonths(new Date(), 12), 'yyyy-MM-dd');
 
-      const [accountsData, transactionsData, categoriesData, scheduledData, netWorth] = await Promise.all([
+      const fetchAllTransactions = async (startDate: string, endDate: string): Promise<Transaction[]> => {
+        const allTransactions: Transaction[] = [];
+        let page = 1;
+        let hasMore = true;
+        while (hasMore) {
+          const result = await transactionsApi.getAll({
+            startDate,
+            endDate,
+            page,
+            limit: 200,
+          });
+          allTransactions.push(...result.data);
+          hasMore = result.pagination.hasMore;
+          page++;
+        }
+        return allTransactions;
+      };
+
+      const [accountsData, allTransactions, categoriesData, scheduledData, netWorth] = await Promise.all([
         accountsApi.getAll(),
-        transactionsApi.getAll({
-          startDate: thirtyDaysAgo,
-          endDate: today,
-          limit: 200,
-        }),
+        fetchAllTransactions(chartStartDate, today),
         categoriesApi.getAll(),
         scheduledTransactionsApi.getAll(),
         netWorthApi.getMonthly({ startDate: twelveMonthsAgo, endDate: today }).catch(() => [] as MonthlyNetWorth[]),
       ]);
 
       setAccounts(accountsData);
-      setTransactions(transactionsData.data);
+      setTransactions(allTransactions);
       setCategories(categoriesData);
       setScheduledTransactions(scheduledData);
       setNetWorthData(netWorth);
@@ -131,7 +150,7 @@ function DashboardContent() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [weekStartsOn]);
 
   useEffect(() => {
     loadDashboardData();

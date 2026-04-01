@@ -24,12 +24,24 @@ export class ImportInvestmentProcessorService {
     // The "Cash" action with a transfer account (L[Account Name]) is also
     // a pure cash transfer and must be handled the same way; otherwise it
     // gets incorrectly mapped to an INTEREST investment transaction.
+    // WithdrwX and ContribX are Quicken actions where the X suffix indicates
+    // a transfer to/from another account; when a transfer account is present
+    // they must be routed through the cash transfer path as well.
     const qifActionRaw = (qifTx.action || "").toLowerCase();
     if (
       qifActionRaw === "xin" ||
       qifActionRaw === "xout" ||
-      (qifActionRaw === "cash" && qifTx.isTransfer && qifTx.transferAccount)
+      (qifActionRaw === "cash" && qifTx.isTransfer && qifTx.transferAccount) ||
+      ((qifActionRaw === "withdrwx" || qifActionRaw === "contribx") &&
+        qifTx.isTransfer &&
+        qifTx.transferAccount)
     ) {
+      // WithdrwX means money leaving the account (like XOut)
+      if (qifActionRaw === "withdrwx") {
+        qifTx.action = "xout";
+      } else if (qifActionRaw === "contribx") {
+        qifTx.action = "xin";
+      }
       await this.processCashTransfer(ctx, qifTx);
       return;
     }
@@ -51,6 +63,7 @@ export class ImportInvestmentProcessorService {
       reinvsh: InvestmentAction.REINVEST,
       reinvmd: InvestmentAction.REINVEST,
       // Quicken-specific actions
+      withdrw: InvestmentAction.SELL,
       contrib: InvestmentAction.BUY,
       margint: InvestmentAction.INTEREST,
       miscexp: InvestmentAction.INTEREST,

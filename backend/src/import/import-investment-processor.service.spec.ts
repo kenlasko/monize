@@ -1067,8 +1067,16 @@ describe("ImportInvestmentProcessorService", () => {
       await testActionMapping("Contrib", InvestmentAction.BUY);
     });
 
-    it("maps ContribX to BUY (X suffix stripped)", async () => {
+    it("maps ContribX to BUY when no transfer account (X suffix stripped)", async () => {
       await testActionMapping("ContribX", InvestmentAction.BUY);
+    });
+
+    it("maps Withdrw to SELL", async () => {
+      await testActionMapping("Withdrw", InvestmentAction.SELL);
+    });
+
+    it("maps WithdrwX to SELL when no transfer account (X suffix stripped)", async () => {
+      await testActionMapping("WithdrwX", InvestmentAction.SELL);
     });
 
     it("maps Exercise to BUY", async () => {
@@ -1111,6 +1119,114 @@ describe("ImportInvestmentProcessorService", () => {
         (call: any) => call[0] instanceof InvestmentTransaction,
       );
       expect(investmentTxSave).toBeUndefined();
+    });
+
+    it("WithdrwX with transfer account is handled as a cash transfer (like XOut)", async () => {
+      const accountMap = new Map<string, string | null>();
+      accountMap.set("WS Sandi TFSA", "acc-ws");
+      const ctx = makeContext({ accountMap });
+
+      ctx.queryRunner.manager.findOne.mockImplementation(
+        (_entity: any, opts: any) => {
+          if (opts?.where?.id === "acc-ws") {
+            return Promise.resolve({
+              id: "acc-ws",
+              currencyCode: "CAD",
+              currentBalance: 0,
+            });
+          }
+          return Promise.resolve(null);
+        },
+      );
+
+      const qifTx = {
+        action: "WithdrwX",
+        date: "2024-02-08",
+        amount: 22233.12,
+        payee: "Transfer to Wealth Simple",
+        isTransfer: true,
+        transferAccount: "WS Sandi TFSA",
+      };
+
+      await service.processTransaction(ctx, qifTx);
+
+      expect(ctx.importResult.imported).toBe(1);
+
+      // No InvestmentTransaction should be created
+      const saveCalls = ctx.queryRunner.manager.save.mock.calls;
+      const investmentTxSave = saveCalls.find(
+        (call: any) => call[0] instanceof InvestmentTransaction,
+      );
+      expect(investmentTxSave).toBeUndefined();
+
+      // Cash transaction should have negative amount (money leaving)
+      const cashTxSave = saveCalls.find(
+        (call: any) =>
+          call[0]?.accountId === accountId && call[0]?.amount === -22233.12,
+      );
+      expect(cashTxSave).toBeDefined();
+
+      // Linked transaction in the transfer account
+      const linkedTxSave = saveCalls.find(
+        (call: any) =>
+          call[0]?.accountId === "acc-ws" && call[0]?.amount === 22233.12,
+      );
+      expect(linkedTxSave).toBeDefined();
+      expect(ctx.affectedAccountIds.has("acc-ws")).toBe(true);
+    });
+
+    it("ContribX with transfer account is handled as a cash transfer (like XIn)", async () => {
+      const accountMap = new Map<string, string | null>();
+      accountMap.set("EQ Sandi TFSA", "acc-eq");
+      const ctx = makeContext({ accountMap });
+
+      ctx.queryRunner.manager.findOne.mockImplementation(
+        (_entity: any, opts: any) => {
+          if (opts?.where?.id === "acc-eq") {
+            return Promise.resolve({
+              id: "acc-eq",
+              currencyCode: "CAD",
+              currentBalance: 0,
+            });
+          }
+          return Promise.resolve(null);
+        },
+      );
+
+      const qifTx = {
+        action: "ContribX",
+        date: "2024-02-08",
+        amount: 22233.12,
+        payee: "Transfer to Wealth Simple",
+        isTransfer: true,
+        transferAccount: "EQ Sandi TFSA",
+      };
+
+      await service.processTransaction(ctx, qifTx);
+
+      expect(ctx.importResult.imported).toBe(1);
+
+      // No InvestmentTransaction should be created
+      const saveCalls = ctx.queryRunner.manager.save.mock.calls;
+      const investmentTxSave = saveCalls.find(
+        (call: any) => call[0] instanceof InvestmentTransaction,
+      );
+      expect(investmentTxSave).toBeUndefined();
+
+      // Cash transaction should have positive amount (money coming in)
+      const cashTxSave = saveCalls.find(
+        (call: any) =>
+          call[0]?.accountId === accountId && call[0]?.amount === 22233.12,
+      );
+      expect(cashTxSave).toBeDefined();
+
+      // Linked transaction in the transfer account
+      const linkedTxSave = saveCalls.find(
+        (call: any) =>
+          call[0]?.accountId === "acc-eq" && call[0]?.amount === -22233.12,
+      );
+      expect(linkedTxSave).toBeDefined();
+      expect(ctx.affectedAccountIds.has("acc-eq")).toBe(true);
     });
   });
 

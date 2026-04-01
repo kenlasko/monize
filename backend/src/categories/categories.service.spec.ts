@@ -625,6 +625,7 @@ describe("CategoriesService", () => {
     it("updates category fields", async () => {
       categoriesRepository.findOne.mockResolvedValue({ ...mockCategory });
       categoriesRepository.save.mockImplementation((data) => data);
+      categoriesRepository.find.mockResolvedValue([]); // no children to cascade
 
       const result = await service.update("user-1", "cat-1", {
         name: "Updated Name",
@@ -757,6 +758,50 @@ describe("CategoriesService", () => {
 
       expect(result.name).toBe("Changed");
       expect(result.description).toBe("Keep me");
+    });
+
+    it("cascades isIncome change to descendant subcategories", async () => {
+      // Parent category changing from Expense to Income
+      categoriesRepository.findOne.mockResolvedValue({
+        ...mockCategory,
+        isIncome: false,
+      });
+      categoriesRepository.save.mockImplementation((data) => data);
+
+      // First call: direct children of cat-1
+      // Second call: grandchildren of child-1 (none)
+      // Third call: grandchildren of child-2 (none)
+      categoriesRepository.find
+        .mockResolvedValueOnce([
+          { id: "child-1" },
+          { id: "child-2" },
+        ])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([]);
+
+      await service.update("user-1", "cat-1", { isIncome: true });
+
+      expect(categoriesRepository.update).toHaveBeenCalledWith(
+        { id: "child-1", userId: "user-1" },
+        { isIncome: true },
+      );
+      expect(categoriesRepository.update).toHaveBeenCalledWith(
+        { id: "child-2", userId: "user-1" },
+        { isIncome: true },
+      );
+    });
+
+    it("does not cascade when isIncome is not changed", async () => {
+      categoriesRepository.findOne.mockResolvedValue({
+        ...mockCategory,
+        isIncome: false,
+      });
+      categoriesRepository.save.mockImplementation((data) => data);
+
+      await service.update("user-1", "cat-1", { name: "Renamed" });
+
+      // update should not be called for children
+      expect(categoriesRepository.update).not.toHaveBeenCalled();
     });
   });
 
