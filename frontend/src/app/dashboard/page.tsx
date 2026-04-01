@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { subDays, subMonths, format } from 'date-fns';
 import { useOnUndoRedo } from '@/hooks/useOnUndoRedo';
 import dynamic from 'next/dynamic';
@@ -25,7 +25,7 @@ import { Account } from '@/types/account';
 import { Transaction } from '@/types/transaction';
 import { Category } from '@/types/category';
 import { ScheduledTransaction } from '@/types/scheduled-transaction';
-import { TopMover } from '@/types/investment';
+import { TopMover, PortfolioSummary } from '@/types/investment';
 import { MonthlyNetWorth } from '@/types/net-worth';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
@@ -51,15 +51,29 @@ function DashboardContent() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [scheduledTransactions, setScheduledTransactions] = useState<ScheduledTransaction[]>([]);
   const [topMovers, setTopMovers] = useState<TopMover[]>([]);
+  const [portfolioSummary, setPortfolioSummary] = useState<PortfolioSummary | null>(null);
   const [hasInvestments, setHasInvestments] = useState(false);
   const [netWorthData, setNetWorthData] = useState<MonthlyNetWorth[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  const brokerageMarketValues = useMemo(() => {
+    const map = new Map<string, number>();
+    if (!portfolioSummary) return map;
+    for (const accountHoldings of portfolioSummary.holdingsByAccount) {
+      map.set(accountHoldings.accountId, accountHoldings.totalMarketValue);
+    }
+    return map;
+  }, [portfolioSummary]);
+
   const reloadTopMovers = useCallback(async () => {
     if (!hasInvestments) return;
     try {
-      const moversData = await investmentsApi.getTopMovers();
+      const [moversData, portfolio] = await Promise.all([
+        investmentsApi.getTopMovers(),
+        investmentsApi.getPortfolioSummary().catch(() => null),
+      ]);
       setTopMovers(moversData);
+      setPortfolioSummary(portfolio);
     } catch {
       // Silently fail
     }
@@ -101,10 +115,16 @@ function DashboardContent() {
       const hasInvestmentAccounts = investmentAccounts.length > 0;
       setHasInvestments(hasInvestmentAccounts);
 
-      // Load top movers directly so they appear even when price refresh is
+      // Load investment data directly so it appears even when price refresh is
       // skipped (outside market hours, cooldown active, etc.)
       if (hasInvestmentAccounts) {
-        investmentsApi.getTopMovers().then(setTopMovers).catch(() => {});
+        Promise.all([
+          investmentsApi.getTopMovers().catch(() => [] as TopMover[]),
+          investmentsApi.getPortfolioSummary().catch(() => null),
+        ]).then(([moversData, portfolio]) => {
+          setTopMovers(moversData);
+          setPortfolioSummary(portfolio);
+        });
       }
     } catch (error) {
       logger.error('Failed to load dashboard data:', error);
@@ -154,7 +174,7 @@ function DashboardContent() {
 
           {/* Reports Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            <FavouriteAccounts accounts={accounts} isLoading={isLoading} onAccountsChanged={loadDashboardData} />
+            <FavouriteAccounts accounts={accounts} brokerageMarketValues={brokerageMarketValues} isLoading={isLoading} onAccountsChanged={loadDashboardData} />
             <UpcomingBills
               scheduledTransactions={scheduledTransactions}
               accounts={accounts}

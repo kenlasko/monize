@@ -188,6 +188,62 @@ describe("FavouriteAccounts", () => {
     expect(screen.queryByText(/Settlement:/)).not.toBeInTheDocument();
   });
 
+  it("displays market value for brokerage accounts", () => {
+    const accounts = [
+      {
+        id: "brok-1",
+        name: "Brokerage",
+        currentBalance: 0,
+        currencyCode: "CAD",
+        isFavourite: true,
+        favouriteSortOrder: 0,
+        isClosed: false,
+        accountType: "INVESTMENT",
+        accountSubType: "INVESTMENT_BROKERAGE",
+      },
+    ] as any[];
+
+    const brokerageMarketValues = new Map([["brok-1", 25000]]);
+
+    render(
+      <FavouriteAccounts
+        accounts={accounts}
+        brokerageMarketValues={brokerageMarketValues}
+        isLoading={false}
+      />
+    );
+    expect(screen.getByText("$25000.00")).toBeInTheDocument();
+    expect(screen.getByText("Market value")).toBeInTheDocument();
+  });
+
+  it("displays current balance for non-brokerage accounts even when market values provided", () => {
+    const accounts = [
+      {
+        id: "chk-1",
+        name: "Checking",
+        currentBalance: 1500,
+        currencyCode: "CAD",
+        isFavourite: true,
+        favouriteSortOrder: 0,
+        isClosed: false,
+        accountType: "CHEQUING",
+        accountSubType: null,
+      },
+    ] as any[];
+
+    const brokerageMarketValues = new Map<string, number>();
+
+    render(
+      <FavouriteAccounts
+        accounts={accounts}
+        brokerageMarketValues={brokerageMarketValues}
+        isLoading={false}
+      />
+    );
+    expect(screen.getByText("$1500.00")).toBeInTheDocument();
+    expect(screen.queryByText("Market value")).not.toBeInTheDocument();
+  });
+
   it("navigates to transactions page on account click", () => {
     const accounts = [
       {
