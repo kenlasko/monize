@@ -5,7 +5,7 @@ import { Select } from '@/components/ui/Select';
 import { Input } from '@/components/ui/Input';
 import { ParsedQifResponse } from '@/lib/import';
 import { Account } from '@/types/account';
-import { formatAccountType, isInvestmentBrokerageAccount } from '@/lib/account-utils';
+import { formatAccountType, isInvestmentBrokerageAccount, buildAccountDropdownOptions } from '@/lib/account-utils';
 import { ImportFileData, ImportStep } from '@/app/import/import-utils';
 
 interface SelectAccountStepProps {
@@ -65,21 +65,19 @@ export function SelectAccountStep({
   shouldShowMapAccounts,
   setStep,
 }: SelectAccountStepProps) {
-  const getCompatibleAccountsForType = (isInvestment: boolean) => {
-    return accounts.filter((a) => {
-      if (isInvestment) {
-        return isInvestmentBrokerageAccount(a);
-      } else {
-        return !isInvestmentBrokerageAccount(a);
-      }
-    }).sort((a, b) => a.name.localeCompare(b.name));
+  const getCompatibleAccountOptions = (isInvestment: boolean) => {
+    return buildAccountDropdownOptions(
+      accounts,
+      (a) => isInvestment ? isInvestmentBrokerageAccount(a) : !isInvestmentBrokerageAccount(a),
+      (a) => `${a.name} (${formatAccountType(a.accountType)})`,
+    );
   };
 
   const allFilesHaveAccounts = importFiles.every((f) => f.selectedAccountId);
 
   if (!isBulkImport && parsedData) {
     const isQifInvestment = parsedData.accountType === 'INVESTMENT';
-    const compatibleAccounts = getCompatibleAccountsForType(isQifInvestment);
+    const compatibleAccountOptions = getCompatibleAccountOptions(isQifInvestment);
 
     return (
       <div className="max-w-xl mx-auto">
@@ -110,13 +108,10 @@ export function SelectAccountStep({
             </div>
           )}
 
-          {compatibleAccounts.length > 0 && (
+          {compatibleAccountOptions.length > 0 && (
             <Select
               label="Import into account"
-              options={compatibleAccounts.map((a) => ({
-                value: a.id,
-                label: `${a.name} (${formatAccountType(a.accountType)})`,
-              }))}
+              options={compatibleAccountOptions}
               value={selectedAccountId}
               onChange={(e) => setSelectedAccountId(e.target.value)}
             />
@@ -214,7 +209,7 @@ export function SelectAccountStep({
         <div className="space-y-4 max-h-[32rem] overflow-y-auto">
           {importFiles.map((fileData, index) => {
             const isInvestment = fileData.parsedData.accountType === 'INVESTMENT';
-            const compatibleAccounts = getCompatibleAccountsForType(isInvestment);
+            const compatibleAccountOptions = getCompatibleAccountOptions(isInvestment);
             const isHighConfidence = fileData.selectedAccountId && fileData.matchConfidence === 'exact';
 
             return (
@@ -238,10 +233,7 @@ export function SelectAccountStep({
                   </div>
                   <div className="sm:w-80">
                     <Select
-                      options={compatibleAccounts.map((a) => ({
-                        value: a.id,
-                        label: `${a.name} (${formatAccountType(a.accountType)})`,
-                      }))}
+                      options={compatibleAccountOptions}
                       value={fileData.selectedAccountId}
                       onChange={(e) => setFileAccountId(index, e.target.value)}
                     />

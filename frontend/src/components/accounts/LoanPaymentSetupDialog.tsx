@@ -16,6 +16,7 @@ import { categoriesApi } from '@/lib/categories';
 import { payeesApi } from '@/lib/payees';
 import { getCategorySelectOptions } from '@/lib/categoryUtils';
 import { getCurrencySymbol } from '@/lib/format';
+import { buildAccountDropdownOptions } from '@/lib/account-utils';
 import { createLogger } from '@/lib/logger';
 import toast from 'react-hot-toast';
 
@@ -77,14 +78,14 @@ export function LoanPaymentSetupDialog({
   const [amortizationMonths, setAmortizationMonths] = useState<number | undefined>(undefined);
   const [termMonths, setTermMonths] = useState<number | undefined>(undefined);
 
-  const sourceAccountOptions = accounts
-    .filter(
-      (a) =>
-        a.id !== loanAccount.accountId &&
-        !a.isClosed &&
-        ['CHEQUING', 'SAVINGS', 'CASH'].includes(a.accountType),
-    )
-    .map((a) => ({ value: a.id, label: a.name }));
+  const sourceAccountOptions = buildAccountDropdownOptions(
+    accounts,
+    (a) =>
+      a.id !== loanAccount.accountId &&
+      !a.isClosed &&
+      ['CHEQUING', 'SAVINGS', 'CASH'].includes(a.accountType),
+    (a) => a.name,
+  );
 
   const categoryOptions = getCategorySelectOptions(categories);
 

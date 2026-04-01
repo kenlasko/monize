@@ -11,9 +11,15 @@ interface CsvTransferRulesProps {
 }
 
 export function CsvTransferRules({ rules, onChange, accounts }: CsvTransferRulesProps) {
-  const transferAccounts = accounts.filter(
+  const filtered = accounts.filter(
     (a) => !a.isClosed && a.accountSubType !== 'INVESTMENT_BROKERAGE',
   );
+  const favouriteAccounts = filtered
+    .filter((a) => a.isFavourite)
+    .sort((a, b) => a.favouriteSortOrder - b.favouriteSortOrder);
+  const nonFavouriteAccounts = filtered
+    .filter((a) => !a.isFavourite)
+    .sort((a, b) => a.name.localeCompare(b.name));
   const addRule = () => {
     onChange([...rules, { type: 'payee', pattern: '', accountName: '' }]);
   };
@@ -82,7 +88,15 @@ export function CsvTransferRules({ rules, onChange, accounts }: CsvTransferRules
               className="flex-1 min-w-0 px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
             >
               <option value="">Select account...</option>
-              {transferAccounts.map((account) => (
+              {favouriteAccounts.map((account) => (
+                <option key={account.id} value={account.name}>
+                  {account.name}
+                </option>
+              ))}
+              {favouriteAccounts.length > 0 && nonFavouriteAccounts.length > 0 && (
+                <option disabled value="">{'────────────────────'}</option>
+              )}
+              {nonFavouriteAccounts.map((account) => (
                 <option key={account.id} value={account.name}>
                   {account.name}
                 </option>

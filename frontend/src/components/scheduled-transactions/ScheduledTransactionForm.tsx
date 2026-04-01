@@ -28,6 +28,7 @@ import { Account } from '@/types/account';
 import { Tag } from '@/types/tag';
 import { buildCategoryTree } from '@/lib/categoryUtils';
 import { roundToCents, getCurrencySymbol } from '@/lib/format';
+import { buildAccountDropdownOptions } from '@/lib/account-utils';
 import { getErrorMessage } from '@/lib/errors';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { createLogger } from '@/lib/logger';
@@ -226,24 +227,25 @@ export function ScheduledTransactionForm({
 
   // Memoize account options (exclude closed, asset, brokerage)
   const accountOptions = useMemo(() =>
-    accounts
-      .filter(a => !a.isClosed && a.accountType !== 'ASSET' && a.accountSubType !== 'INVESTMENT_BROKERAGE')
-      .sort((a, b) => a.name.localeCompare(b.name))
-      .map(a => ({ value: a.id, label: `${a.name} (${a.currencyCode})` })),
+    buildAccountDropdownOptions(
+      accounts,
+      (a) => !a.isClosed && a.accountType !== 'ASSET' && a.accountSubType !== 'INVESTMENT_BROKERAGE',
+      (a) => `${a.name} (${a.currencyCode})`,
+    ),
     [accounts]
   );
 
   // Memoize transfer To account options
   const transferToAccountOptions = useMemo(() =>
-    accounts
-      .filter(a =>
+    buildAccountDropdownOptions(
+      accounts,
+      (a) =>
         !a.isClosed &&
         a.id !== watchedAccountId &&
         a.accountType !== 'ASSET' &&
-        a.accountSubType !== 'INVESTMENT_BROKERAGE'
-      )
-      .sort((a, b) => a.name.localeCompare(b.name))
-      .map(a => ({ value: a.id, label: `${a.name} (${a.currencyCode})` })),
+        a.accountSubType !== 'INVESTMENT_BROKERAGE',
+      (a) => `${a.name} (${a.currencyCode})`,
+    ),
     [accounts, watchedAccountId]
   );
 

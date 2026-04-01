@@ -13,6 +13,7 @@ import { Tag } from '@/types/tag';
 import { CreateSplitData } from '@/types/transaction';
 import { buildCategoryTree } from '@/lib/categoryUtils';
 import { roundToCents, getCurrencySymbol, formatAmountWithCommas, getDecimalPlacesForCurrency } from '@/lib/format';
+import { buildAccountDropdownOptions } from '@/lib/account-utils';
 
 export type SplitType = 'category' | 'transfer';
 
@@ -72,23 +73,20 @@ export function SplitEditor({
     [tags]
   );
 
-  // Memoize account options (excluding source account, asset accounts, investment accounts, and closed accounts, sorted alphabetically)
+  // Memoize account options (excluding source account, asset accounts, investment accounts, and closed accounts)
   const accountOptions = useMemo(() => {
     if (!supportsTransfers) return [];
     const selectedTransferAccountIds = new Set(
       splits.filter(s => s.splitType === 'transfer' && s.transferAccountId).map(s => s.transferAccountId!)
     );
-    return accounts
-      .filter(a =>
+    return buildAccountDropdownOptions(
+      accounts,
+      (a) =>
         a.id !== sourceAccountId &&
         a.accountSubType !== 'INVESTMENT_BROKERAGE' &&
-        (!a.isClosed || selectedTransferAccountIds.has(a.id))
-      )
-      .sort((a, b) => a.name.localeCompare(b.name))
-      .map(a => ({
-        value: a.id,
-        label: `${a.name}${a.isClosed ? ' (Closed)' : ''}`,
-      }));
+        (!a.isClosed || selectedTransferAccountIds.has(a.id)),
+      (a) => `${a.name}${a.isClosed ? ' (Closed)' : ''}`,
+    );
   }, [accounts, sourceAccountId, supportsTransfers, splits]);
 
   // Sync with parent when splits prop changes

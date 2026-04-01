@@ -10,6 +10,7 @@ import { Transaction } from '@/types/transaction';
 import { Account } from '@/types/account';
 import { Payee } from '@/types/payee';
 import { getCurrencySymbol } from '@/lib/format';
+import { buildAccountDropdownOptions } from '@/lib/account-utils';
 
 interface CrossCurrencyInfo {
   fromCurrency: string;
@@ -82,17 +83,11 @@ export function TransferTransactionFields({
           value={watchedAccountId || ''}
           options={[
             { value: '', label: 'Select account...' },
-            ...accounts
-              .filter(account =>
+            ...buildAccountDropdownOptions(
+              accounts,
+              (account) =>
                 account.accountSubType !== 'INVESTMENT_BROKERAGE' &&
-                (!account.isClosed || account.id === watchedAccountId)
-              )
-              .sort((a, b) => a.name.localeCompare(b.name))
-              .map(account => ({
-                value: account.id,
-                label: `${account.name} (${account.currencyCode})${account.isClosed ? ' (Closed)' : ''}`,
-                disabled: account.isClosed && account.id !== watchedAccountId,
-              })
+                (!account.isClosed || account.id === watchedAccountId),
             ),
           ]}
           {...register('accountId')}
@@ -106,18 +101,13 @@ export function TransferTransactionFields({
           }}
           options={[
             { value: '', label: 'Select destination account...' },
-            ...accounts
-              .filter(account =>
+            ...buildAccountDropdownOptions(
+              accounts,
+              (account) =>
                 account.id !== watchedAccountId &&
                 account.accountSubType !== 'INVESTMENT_BROKERAGE' &&
-                (!account.isClosed || account.id === transferToAccountId)
-              )
-              .sort((a, b) => a.name.localeCompare(b.name))
-              .map(account => ({
-                value: account.id,
-                label: `${account.name} (${account.currencyCode})${account.isClosed ? ' (Closed)' : ''}`,
-                disabled: account.isClosed && account.id !== transferToAccountId,
-              })),
+                (!account.isClosed || account.id === transferToAccountId),
+            ),
           ]}
         />
       </div>

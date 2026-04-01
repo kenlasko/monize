@@ -9,6 +9,7 @@ import { Account, MortgageAmortizationPreview, MortgagePaymentFrequency } from '
 import { Category } from '@/types/category';
 import { buildCategoryTree } from '@/lib/categoryUtils';
 import { accountsApi } from '@/lib/accounts';
+import { buildAccountDropdownOptions } from '@/lib/account-utils';
 import { createLogger } from '@/lib/logger';
 
 const logger = createLogger('MortgageFields');
@@ -324,13 +325,11 @@ export function MortgageFields({
               label="Payment From Account (required)"
               options={[
                 { value: '', label: 'Select account...' },
-                ...accounts
-                  .slice()
-                  .sort((a, b) => a.name.localeCompare(b.name))
-                  .map(a => ({
-                    value: a.id,
-                    label: `${a.name} (${a.currencyCode})`,
-                  })),
+                ...buildAccountDropdownOptions(
+                  accounts,
+                  () => true,
+                  (a) => `${a.name} (${a.currencyCode})`,
+                ),
               ]}
               error={errors.sourceAccountId?.message as string | undefined}
               {...register('sourceAccountId')}

@@ -10,6 +10,7 @@ import { Transaction } from '@/types/transaction';
 import { Account } from '@/types/account';
 import { Payee } from '@/types/payee';
 import { getCurrencySymbol } from '@/lib/format';
+import { buildAccountDropdownOptions } from '@/lib/account-utils';
 
 interface NormalTransactionFieldsProps {
   register: UseFormRegister<any>;
@@ -62,16 +63,11 @@ export function NormalTransactionFields({
           value={watchedAccountId || ''}
           options={[
             { value: '', label: 'Select account...' },
-            ...accounts
-              .filter(account =>
+            ...buildAccountDropdownOptions(
+              accounts,
+              (account) =>
                 account.accountSubType !== 'INVESTMENT_BROKERAGE' &&
-                (!account.isClosed || account.id === watchedAccountId)
-              )
-              .sort((a, b) => a.name.localeCompare(b.name))
-              .map(account => ({
-                value: account.id,
-                label: `${account.name} (${account.currencyCode})${account.isClosed ? ' (Closed)' : ''}`,
-              })
+                (!account.isClosed || account.id === watchedAccountId),
             ),
           ]}
           {...register('accountId')}
