@@ -61,6 +61,16 @@ function CategoriesContent() {
 
   useOnUndoRedo(loadCategories);
 
+  const refreshCategories = useCallback(async () => {
+    try {
+      const data = await categoriesApi.getAll();
+      setCategories(data);
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Failed to load categories'));
+      logger.error(error);
+    }
+  }, []);
+
   const handleFormSubmit = async (data: any) => {
     try {
       const cleanedData = {
@@ -75,12 +85,12 @@ function CategoriesContent() {
         await categoriesApi.update(editingItem.id, cleanedData);
         toast.success('Category updated successfully');
         close();
-        loadCategories();
+        refreshCategories();
       } else {
         await categoriesApi.create(cleanedData);
         toast.success('Category created successfully');
         close();
-        loadCategories();
+        refreshCategories();
       }
     } catch (error) {
       toast.error(getErrorMessage(error, `Failed to ${editingItem ? 'update' : 'create'} category`));
@@ -262,7 +272,7 @@ function CategoriesContent() {
             <CategoryList
               categories={filteredCategories}
               onEdit={openEdit}
-              onRefresh={loadCategories}
+              onRefresh={refreshCategories}
               onDelete={(deletedId) => setCategories(prev => prev.filter(c => c.id !== deletedId && c.parentId !== deletedId))}
               density={listDensity}
               onDensityChange={setListDensity}
