@@ -122,6 +122,7 @@ describe('SplitTransactionFields', () => {
 
   const defaultProps = {
     register: mockRegister,
+    setValue: vi.fn(),
     errors: {},
     watchedAccountId: '',
     watchedAmount: 0,
