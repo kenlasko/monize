@@ -145,11 +145,17 @@ function isIsoDate(value: string): boolean {
   return /^\d{4}-\d{2}-\d{2}$/.test(value);
 }
 
+// On touch devices (mobile/tablet), always use the native date picker for
+// better UX. Text-based formatted input is only used on desktop.
+function isTouchDevice(): boolean {
+  return typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches;
+}
+
 export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
   ({ onDateChange, onKeyDown, onChange: externalOnChange, onBlur: externalOnBlur, value: externalValue, label, id, ...props }, ref) => {
     const inputId = id || (label ? `input-${label.toLowerCase().replace(/\s+/g, '-')}` : undefined);
     const { dateFormat } = useDateFormat();
-    const useTextMode = dateFormat !== 'browser';
+    const useTextMode = dateFormat !== 'browser' && !isTouchDevice();
 
     // Internal YYYY-MM-DD value for text mode
     const [isoValue, setIsoValue] = useState<string>((externalValue as string) || '');

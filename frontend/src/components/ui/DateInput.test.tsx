@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, fireEvent } from '@/test/render';
+import { render, fireEvent, act } from '@/test/render';
 import { DateInput } from './DateInput';
 
 // Default to browser format (native date input mode)
@@ -265,9 +265,30 @@ describe('DateInput', () => {
       });
     });
 
-    it('renders as type="text" in non-browser format mode', () => {
+    it('renders as type="text" in non-browser format mode on desktop', () => {
       const { getByLabelText } = renderDateInput('2025-06-15');
       expect(getByLabelText('Date')).toHaveAttribute('type', 'text');
+    });
+
+    it('falls back to native date picker on touch devices', () => {
+      // Simulate a touch device by temporarily overriding matchMedia
+      const originalMatchMedia = window.matchMedia;
+      window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+        matches: query === '(pointer: coarse)',
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      }));
+
+      const { getByLabelText } = renderDateInput('2025-06-15');
+      expect(getByLabelText('Date')).toHaveAttribute('type', 'date');
+
+      // Restore the original mock
+      window.matchMedia = originalMatchMedia;
     });
 
     it('shows placeholder with format pattern', () => {
@@ -340,26 +361,29 @@ describe('DateInput', () => {
 
     it('reads initial value from DOM ref when no value prop is provided (react-hook-form pattern)', async () => {
       // Simulate react-hook-form: no value prop, value set through the ref after mount
-      const refCallback = vi.fn();
-      const { getByLabelText } = render(
-        <DateInput
-          label="Date"
-          ref={(node) => {
-            refCallback(node);
-            // Simulate react-hook-form setting the value through the ref
-            if (node) {
-              node.value = '2025-09-20';
-            }
-          }}
-          onDateChange={onDateChange}
-          onChange={() => {}}
-        />
-      );
+      let result: ReturnType<typeof render>;
+      await act(async () => {
+        result = render(
+          <DateInput
+            label="Date"
+            ref={(node) => {
+              // Simulate react-hook-form setting the value through the ref
+              if (node) {
+                node.value = '2025-09-20';
+              }
+            }}
+            onDateChange={onDateChange}
+            onChange={() => {}}
+          />
+        );
+      });
 
-      // Wait for the microtask/timeout that reads the DOM value
-      await vi.advanceTimersByTimeAsync(0);
+      // Flush the setTimeout(readDomValue, 0) and resulting React updates
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0);
+      });
 
-      const input = getByLabelText('Date');
+      const input = result!.getByLabelText('Date');
       expect(input).toHaveValue('20/09/2025');
     });
   });
