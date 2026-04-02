@@ -9,7 +9,7 @@ import {
   unlinkSync,
   renameSync,
 } from "fs";
-import { join } from "path";
+import { resolve } from "path";
 import { createGzip } from "zlib";
 import { pipeline } from "stream/promises";
 import { Readable } from "stream";
@@ -284,7 +284,7 @@ export class AutoBackupService {
       .replace(/:/g, "-")
       .replace(/\.\d{3}Z$/, "");
     const filename = `${BACKUP_FILE_PREFIX}${timestamp}.json.gz`;
-    const filepath = join(folderPath, filename);
+    const filepath = this.safePath(folderPath, filename);
 
     const tableQueries: Array<{ key: string; sql: string }> = [
       {
@@ -515,8 +515,8 @@ export class AutoBackupService {
           // Rename the daily file to weekly
           try {
             renameSync(
-              join(folderPath, file.name),
-              join(folderPath, expectedWeeklyName),
+              this.safePath(folderPath, file.name),
+              this.safePath(folderPath, expectedWeeklyName),
             );
             this.logger.log(
               `Retention: promoted ${file.name} to ${expectedWeeklyName}`,
@@ -568,8 +568,8 @@ export class AutoBackupService {
           // Rename to monthly
           try {
             renameSync(
-              join(folderPath, file.name),
-              join(folderPath, expectedMonthlyName),
+              this.safePath(folderPath, file.name),
+              this.safePath(folderPath, expectedMonthlyName),
             );
             this.logger.log(
               `Retention: promoted ${file.name} to ${expectedMonthlyName}`,
@@ -606,7 +606,7 @@ export class AutoBackupService {
         MONTHLY_FILE_PATTERN.test(name);
       if (isBackup && !filesToKeep.has(name)) {
         try {
-          unlinkSync(join(folderPath, name));
+          unlinkSync(this.safePath(folderPath, name));
           this.logger.log(`Retention: deleted old backup ${name}`);
         } catch (err) {
           this.logger.warn(
@@ -724,10 +724,21 @@ export class AutoBackupService {
       hour12: false,
     });
     const parts = formatter.formatToParts(utcDate);
-    const get = (type: string) =>
-      parts.find((p) => p.type === type)!.value;
+    const get = (type: string) => parts.find((p) => p.type === type)!.value;
     const localAtUtc = `${get("year")}-${get("month")}-${get("day")}T${get("hour")}:${get("minute")}:${get("second")}Z`;
     return new Date(localAtUtc).getTime() - utcDate.getTime();
+  }
+
+  /**
+   * Safely join a folder path with a filename, ensuring the result
+   * stays within the base folder (prevents path traversal CWE-22).
+   */
+  private safePath(basePath: string, filename: string): string {
+    const full = resolve(basePath, filename);
+    if (!full.startsWith(basePath + "/") && full !== basePath) {
+      throw new BadRequestException(`Path traversal detected: ${filename}`);
+    }
+    return full;
   }
 
   private validateFolderPath(folderPath: string): void {
@@ -737,6 +748,19 @@ export class AutoBackupService {
     if (folderPath.includes("..")) {
       throw new BadRequestException(
         "Folder path must not contain '..' segments",
+      );
+    }
+    if (folderPath.includes("\0")) {
+      throw new BadRequestException("Folder path must not contain null bytes");
+    }
+    // Ensure the resolved path matches the input (no symlink-like tricks via //)
+    const normalized = resolve(folderPath);
+    if (
+      normalized !== folderPath &&
+      normalized !== folderPath.replace(/\/+$/, "")
+    ) {
+      throw new BadRequestException(
+        "Folder path must be a normalized absolute path",
       );
     }
   }
@@ -760,7 +784,10 @@ export class AutoBackupService {
     }
 
     // Test write access by creating and removing a temporary file
-    const testFile = join(folderPath, `.monize-write-test-${Date.now()}`);
+    const testFile = this.safePath(
+      folderPath,
+      `.monize-write-test-${Date.now()}`,
+    );
     try {
       await fs.writeFile(testFile, "");
       await fs.unlink(testFile);
