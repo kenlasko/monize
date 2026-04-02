@@ -2,6 +2,15 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@/test/render';
 import SettingsPage from './page';
 
+// Mock IntersectionObserver
+const mockObserve = vi.fn();
+const mockDisconnect = vi.fn();
+vi.stubGlobal('IntersectionObserver', vi.fn(function (this: any) {
+  this.observe = mockObserve;
+  this.unobserve = vi.fn();
+  this.disconnect = mockDisconnect;
+}));
+
 // Mock next/image
 vi.mock('next/image', () => ({
   default: ({ priority, fill, ...props }: any) => <img {...props} />,
@@ -155,21 +164,25 @@ describe('SettingsPage', () => {
   it('renders the Profile section', async () => {
     render(<SettingsPage />);
     await waitFor(() => {
-      expect(screen.getByText('Profile')).toBeInTheDocument();
+      // Multiple matches due to nav labels + section heading
+      const matches = screen.getAllByText('Profile');
+      expect(matches.length).toBeGreaterThanOrEqual(1);
     });
   });
 
   it('renders the Preferences section', async () => {
     render(<SettingsPage />);
     await waitFor(() => {
-      expect(screen.getByText('Preferences')).toBeInTheDocument();
+      const matches = screen.getAllByText('Preferences');
+      expect(matches.length).toBeGreaterThanOrEqual(1);
     });
   });
 
   it('renders the Danger Zone section', async () => {
     render(<SettingsPage />);
     await waitFor(() => {
-      expect(screen.getByText('Danger Zone')).toBeInTheDocument();
+      const matches = screen.getAllByText('Danger Zone');
+      expect(matches.length).toBeGreaterThanOrEqual(1);
     });
   });
 
@@ -183,7 +196,58 @@ describe('SettingsPage', () => {
   it('renders the API Access section', async () => {
     render(<SettingsPage />);
     await waitFor(() => {
-      expect(screen.getByText('API Access')).toBeInTheDocument();
+      const matches = screen.getAllByText('API Access');
+      expect(matches.length).toBeGreaterThanOrEqual(1);
     });
+  });
+
+  it('renders the settings navigation sidebar', async () => {
+    render(<SettingsPage />);
+    await waitFor(() => {
+      // Should render the nav element with the Settings sections label
+      const navs = screen.getAllByLabelText('Settings sections');
+      expect(navs.length).toBeGreaterThan(0);
+    });
+  });
+
+  it('renders navigation items for each section', async () => {
+    render(<SettingsPage />);
+    await waitFor(() => {
+      // Check that section names appear in the nav (they also appear as section headings)
+      // Navigation renders both vertical and horizontal variants, so labels appear multiple times
+      const profileElements = screen.getAllByText('Profile');
+      expect(profileElements.length).toBeGreaterThanOrEqual(2);
+    });
+  });
+
+  it('renders AI Settings as a navigation link', async () => {
+    render(<SettingsPage />);
+    await waitFor(() => {
+      const aiLinks = screen.getAllByText('AI Settings');
+      // At least one should be an anchor (in the nav)
+      const anchors = aiLinks.filter((el) => el.closest('a'));
+      expect(anchors.length).toBeGreaterThan(0);
+    });
+  });
+
+  it('wraps sections with id attributes for scroll targets', async () => {
+    const { container } = render(<SettingsPage />);
+    await waitFor(() => {
+      expect(screen.getByText('Settings')).toBeInTheDocument();
+    });
+
+    const expectedIds = ['profile', 'preferences', 'notifications', 'security', 'api-access', 'backup-restore', 'auto-backup', 'danger-zone'];
+    for (const id of expectedIds) {
+      expect(container.querySelector(`#${id}`)).toBeInTheDocument();
+    }
+  });
+
+  it('sets up IntersectionObserver for scroll spy', async () => {
+    render(<SettingsPage />);
+    await waitFor(() => {
+      expect(screen.getByText('Settings')).toBeInTheDocument();
+    });
+
+    expect(IntersectionObserver).toHaveBeenCalled();
   });
 });
