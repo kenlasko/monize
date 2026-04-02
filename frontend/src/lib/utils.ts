@@ -85,3 +85,44 @@ export function formatDate(date: Date | string, format: string = 'browser'): str
       return d.toLocaleDateString();
   }
 }
+
+const MONTH_ABBREVS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+
+/**
+ * Parse a user-typed date string in the given format back to YYYY-MM-DD.
+ * Returns null if the input does not match the expected format.
+ */
+export function parseDateFromFormat(input: string, format: string): string | null {
+  if (!input) return null;
+  const trimmed = input.trim();
+
+  switch (format) {
+    case 'YYYY-MM-DD': {
+      const m = trimmed.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+      if (!m) return null;
+      const [, y, mo, d] = m;
+      return `${y}-${mo.padStart(2, '0')}-${d.padStart(2, '0')}`;
+    }
+    case 'MM/DD/YYYY': {
+      const m = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+      if (!m) return null;
+      const [, mo, d, y] = m;
+      return `${y}-${mo.padStart(2, '0')}-${d.padStart(2, '0')}`;
+    }
+    case 'DD/MM/YYYY': {
+      const m = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+      if (!m) return null;
+      const [, d, mo, y] = m;
+      return `${y}-${mo.padStart(2, '0')}-${d.padStart(2, '0')}`;
+    }
+    case 'DD-MMM-YYYY': {
+      const m = trimmed.match(/^(\d{1,2})-(\w{3})-(\d{4})$/i);
+      if (!m) return null;
+      const monthIdx = MONTH_ABBREVS.indexOf(m[2].toLowerCase());
+      if (monthIdx === -1) return null;
+      return `${m[3]}-${String(monthIdx + 1).padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+    }
+    default:
+      return null;
+  }
+}

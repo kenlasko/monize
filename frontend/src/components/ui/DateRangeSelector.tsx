@@ -1,6 +1,7 @@
 'use client';
 
 import { cn } from '@/lib/utils';
+import { DateInput } from './DateInput';
 
 interface DateRangeSelectorProps {
   /** Ordered list of preset range keys to display as buttons. */
@@ -87,28 +88,18 @@ export function DateRangeSelector({
       </div>
       {showCustom && value === 'custom' && (
         <div className="flex gap-4 mt-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Start Date
-            </label>
-            <input
-              type="date"
-              value={customStartDate}
-              onChange={(e) => onCustomStartDateChange?.(e.target.value)}
-              className="rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              End Date
-            </label>
-            <input
-              type="date"
-              value={customEndDate}
-              onChange={(e) => onCustomEndDateChange?.(e.target.value)}
-              className="rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-            />
-          </div>
+          <DateInput
+            label="Start Date"
+            value={customStartDate}
+            onDateChange={(date) => onCustomStartDateChange?.(date)}
+            onChange={(e) => onCustomStartDateChange?.(e.target.value)}
+          />
+          <DateInput
+            label="End Date"
+            value={customEndDate}
+            onDateChange={(date) => onCustomEndDateChange?.(date)}
+            onChange={(e) => onCustomEndDateChange?.(e.target.value)}
+          />
         </div>
       )}
     </div>

@@ -2,6 +2,10 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { DateRangeSelector } from './DateRangeSelector';
 
+vi.mock('@/hooks/useDateFormat', () => ({
+  useDateFormat: () => ({ formatDate: (d: string) => d, dateFormat: 'browser' }),
+}));
+
 describe('DateRangeSelector', () => {
   const ranges = ['1m', '3m', '6m', '1y'] as const;
 
@@ -51,5 +55,41 @@ describe('DateRangeSelector', () => {
       <DateRangeSelector ranges={ranges} value="3m" onChange={vi.fn()} showCustom />
     );
     expect(screen.queryByText('Start Date')).not.toBeInTheDocument();
+  });
+
+  it('calls onCustomStartDateChange when start date changes', () => {
+    const onCustomStartDateChange = vi.fn();
+    render(
+      <DateRangeSelector
+        ranges={ranges}
+        value="custom"
+        onChange={vi.fn()}
+        showCustom
+        customStartDate=""
+        customEndDate=""
+        onCustomStartDateChange={onCustomStartDateChange}
+      />
+    );
+    const startInput = screen.getByLabelText('Start Date');
+    fireEvent.change(startInput, { target: { value: '2025-06-01' } });
+    expect(onCustomStartDateChange).toHaveBeenCalledWith('2025-06-01');
+  });
+
+  it('calls onCustomEndDateChange when end date changes', () => {
+    const onCustomEndDateChange = vi.fn();
+    render(
+      <DateRangeSelector
+        ranges={ranges}
+        value="custom"
+        onChange={vi.fn()}
+        showCustom
+        customStartDate=""
+        customEndDate=""
+        onCustomEndDateChange={onCustomEndDateChange}
+      />
+    );
+    const endInput = screen.getByLabelText('End Date');
+    fireEvent.change(endInput, { target: { value: '2025-12-31' } });
+    expect(onCustomEndDateChange).toHaveBeenCalledWith('2025-12-31');
   });
 });

@@ -2,6 +2,16 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, fireEvent } from '@/test/render';
 import { DateInput } from './DateInput';
 
+// Default to browser format (native date input mode)
+const mockUseDateFormat = vi.fn(() => ({
+  formatDate: (d: string) => d,
+  dateFormat: 'browser',
+}));
+
+vi.mock('@/hooks/useDateFormat', () => ({
+  useDateFormat: () => mockUseDateFormat(),
+}));
+
 describe('DateInput', () => {
   const onDateChange = vi.fn();
 
@@ -9,6 +19,7 @@ describe('DateInput', () => {
     vi.clearAllMocks();
     vi.useFakeTimers();
     vi.setSystemTime(new Date(2026, 3, 1)); // 2026-04-01
+    mockUseDateFormat.mockReturnValue({ formatDate: (d: string) => d, dateFormat: 'browser' });
   });
 
   afterEach(() => {
@@ -190,7 +201,7 @@ describe('DateInput', () => {
       expect(getByLabelText('Date')).toBeInTheDocument();
     });
 
-    it('renders as type="date"', () => {
+    it('renders as type="date" in browser format mode', () => {
       const { getByLabelText } = renderDateInput();
       expect(getByLabelText('Date')).toHaveAttribute('type', 'date');
     });
@@ -243,6 +254,88 @@ describe('DateInput', () => {
         />
       );
       expect(container.querySelector('svg.cursor-help')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('text mode (non-browser format)', () => {
+    beforeEach(() => {
+      mockUseDateFormat.mockReturnValue({
+        formatDate: (d: string) => d,
+        dateFormat: 'DD/MM/YYYY',
+      });
+    });
+
+    it('renders as type="text" in non-browser format mode', () => {
+      const { getByLabelText } = renderDateInput('2025-06-15');
+      expect(getByLabelText('Date')).toHaveAttribute('type', 'text');
+    });
+
+    it('shows placeholder with format pattern', () => {
+      const { getByLabelText } = renderDateInput();
+      expect(getByLabelText('Date')).toHaveAttribute('placeholder', 'DD/MM/YYYY');
+    });
+
+    it('displays date in user preferred format', () => {
+      const { getByLabelText } = renderDateInput('2025-06-15');
+      expect(getByLabelText('Date')).toHaveValue('15/06/2025');
+    });
+
+    it('parses typed date in user format and calls onDateChange', () => {
+      const { getByLabelText } = renderDateInput('');
+      const input = getByLabelText('Date');
+      fireEvent.change(input, { target: { value: '25/12/2025' } });
+      expect(onDateChange).toHaveBeenCalledWith('2025-12-25');
+    });
+
+    it('keyboard shortcuts work in text mode', () => {
+      const { getByLabelText } = renderDateInput('2025-06-15');
+      fireEvent.keyDown(getByLabelText('Date'), { key: 't' });
+      expect(onDateChange).toHaveBeenCalledWith('2026-04-01');
+    });
+
+    it('reformats display on blur', () => {
+      const { getByLabelText } = renderDateInput('');
+      const input = getByLabelText('Date');
+      fireEvent.focus(input);
+      fireEvent.change(input, { target: { value: '5/3/2025' } });
+      fireEvent.blur(input);
+      expect(input).toHaveValue('05/03/2025');
+    });
+
+    it('reverts to last valid value on blur with invalid input', () => {
+      const { getByLabelText } = renderDateInput('2025-06-15');
+      const input = getByLabelText('Date');
+      fireEvent.focus(input);
+      fireEvent.change(input, { target: { value: 'invalid' } });
+      fireEvent.blur(input);
+      expect(input).toHaveValue('15/06/2025');
+    });
+
+    it('works with MM/DD/YYYY format', () => {
+      mockUseDateFormat.mockReturnValue({
+        formatDate: (d: string) => d,
+        dateFormat: 'MM/DD/YYYY',
+      });
+      const { getByLabelText } = renderDateInput('2025-06-15');
+      expect(getByLabelText('Date')).toHaveValue('06/15/2025');
+    });
+
+    it('works with DD-MMM-YYYY format', () => {
+      mockUseDateFormat.mockReturnValue({
+        formatDate: (d: string) => d,
+        dateFormat: 'DD-MMM-YYYY',
+      });
+      const { getByLabelText } = renderDateInput('2025-06-15');
+      expect(getByLabelText('Date')).toHaveValue('15-Jun-2025');
+    });
+
+    it('works with YYYY-MM-DD format', () => {
+      mockUseDateFormat.mockReturnValue({
+        formatDate: (d: string) => d,
+        dateFormat: 'YYYY-MM-DD',
+      });
+      const { getByLabelText } = renderDateInput('2025-06-15');
+      expect(getByLabelText('Date')).toHaveValue('2025-06-15');
     });
   });
 });

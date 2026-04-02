@@ -1,7 +1,8 @@
-import { forwardRef, InputHTMLAttributes, KeyboardEvent, useCallback, useRef, useState } from 'react';
+import { ChangeEvent, forwardRef, InputHTMLAttributes, KeyboardEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Input } from './Input';
-import { getLocalDateString } from '@/lib/utils';
+import { getLocalDateString, formatDate, parseDateFromFormat } from '@/lib/utils';
+import { useDateFormat } from '@/hooks/useDateFormat';
 
 interface DateInputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -140,16 +141,47 @@ const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
 )?.set;
 
 export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
-  ({ onDateChange, onKeyDown, label, id, ...props }, ref) => {
+  ({ onDateChange, onKeyDown, onChange: externalOnChange, onBlur: externalOnBlur, value: externalValue, label, id, ...props }, ref) => {
     const inputId = id || (label ? `input-${label.toLowerCase().replace(/\s+/g, '-')}` : undefined);
+    const { dateFormat } = useDateFormat();
+    const useTextMode = dateFormat !== 'browser';
 
+    // Internal YYYY-MM-DD value for text mode, kept in sync with externalValue
+    const [isoValue, setIsoValue] = useState<string>((externalValue as string) || '');
+    const [displayValue, setDisplayValue] = useState('');
+    const isFocusedRef = useRef(false);
+
+    // Sync external value changes to internal state
+    useEffect(() => {
+      if (!useTextMode) return;
+      const newIso = (externalValue as string) || '';
+      setIsoValue(newIso);
+      if (!isFocusedRef.current) {
+        setDisplayValue(newIso ? formatDate(newIso, dateFormat) : '');
+      }
+    }, [externalValue, dateFormat, useTextMode]);
+
+    // Emit a YYYY-MM-DD value change through all relevant callbacks
+    const emitDateChange = useCallback((dateStr: string) => {
+      setIsoValue(dateStr);
+      if (onDateChange) {
+        onDateChange(dateStr);
+      }
+    }, [onDateChange]);
+
+    // Keyboard shortcut handler (works in both modes)
     const handleKeyDown = useCallback((e: KeyboardEvent<HTMLInputElement>) => {
-      const newDate = resolveShortcutDate(e.key, e.currentTarget.value);
+      const currentIso = useTextMode ? isoValue : e.currentTarget.value;
+      const newDate = resolveShortcutDate(e.key, currentIso);
 
       if (newDate) {
         e.preventDefault();
         const dateStr = getLocalDateString(newDate);
-        if (onDateChange) {
+
+        if (useTextMode) {
+          setDisplayValue(formatDate(dateStr, dateFormat));
+          emitDateChange(dateStr);
+        } else if (onDateChange) {
           onDateChange(dateStr);
         } else {
           // For controlled components: set the native value and fire a change event
@@ -159,8 +191,70 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
       }
 
       onKeyDown?.(e);
-    }, [onDateChange, onKeyDown]);
+    }, [useTextMode, isoValue, dateFormat, emitDateChange, onDateChange, onKeyDown]);
 
+    // Text mode: handle user typing in the formatted input
+    const handleTextChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
+      const text = e.target.value;
+      setDisplayValue(text);
+
+      const parsed = parseDateFromFormat(text, dateFormat);
+      if (parsed) {
+        emitDateChange(parsed);
+      }
+    }, [dateFormat, emitDateChange]);
+
+    // Text mode: reformat on blur
+    const handleTextBlur = useCallback((e: React.FocusEvent<HTMLInputElement>) => {
+      isFocusedRef.current = false;
+      // Try to parse whatever the user typed and reformat it
+      const parsed = parseDateFromFormat(displayValue, dateFormat);
+      if (parsed) {
+        setDisplayValue(formatDate(parsed, dateFormat));
+        emitDateChange(parsed);
+      } else if (isoValue) {
+        // Revert to the last valid formatted value
+        setDisplayValue(formatDate(isoValue, dateFormat));
+      }
+      externalOnBlur?.(e);
+    }, [displayValue, dateFormat, isoValue, emitDateChange, externalOnBlur]);
+
+    const handleTextFocus = useCallback(() => {
+      isFocusedRef.current = true;
+    }, []);
+
+    if (useTextMode) {
+      return (
+        <div className="w-full">
+          {label && (
+            <div className="flex items-center mb-1">
+              <label
+                htmlFor={inputId}
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
+                {label}
+              </label>
+              <DateShortcutTooltip />
+            </div>
+          )}
+          <Input
+            ref={ref}
+            id={inputId}
+            type="text"
+            value={displayValue}
+            onChange={handleTextChange}
+            onBlur={handleTextBlur}
+            onFocus={handleTextFocus}
+            onKeyDown={handleKeyDown}
+            placeholder={dateFormat}
+            error={props.error}
+            {...props}
+          />
+        </div>
+      );
+    }
+
+    // Browser-format mode: use native date input (original behaviour)
     return (
       <div className="w-full">
         {label && (
@@ -178,6 +272,9 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
           ref={ref}
           id={inputId}
           type="date"
+          value={externalValue}
+          onChange={externalOnChange}
+          onBlur={externalOnBlur}
           onKeyDown={handleKeyDown}
           {...props}
         />
