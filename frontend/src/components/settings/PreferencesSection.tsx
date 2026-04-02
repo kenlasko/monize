@@ -21,22 +21,24 @@ const NUMBER_FORMAT_OPTIONS = [
   { value: 'fr-FR', label: 'French - 1 234,56' },
 ];
 
-const TIMEZONE_OPTIONS = [
-  { value: 'browser', label: 'Use browser timezone (auto-detect)' },
-  { value: 'UTC', label: 'UTC' },
-  { value: 'America/New_York', label: 'Eastern Time (US)' },
-  { value: 'America/Chicago', label: 'Central Time (US)' },
-  { value: 'America/Denver', label: 'Mountain Time (US)' },
-  { value: 'America/Los_Angeles', label: 'Pacific Time (US)' },
-  { value: 'America/Toronto', label: 'Eastern Time (Canada)' },
-  { value: 'America/Vancouver', label: 'Pacific Time (Canada)' },
-  { value: 'Europe/London', label: 'London' },
-  { value: 'Europe/Paris', label: 'Paris' },
-  { value: 'Europe/Berlin', label: 'Berlin' },
-  { value: 'Asia/Tokyo', label: 'Tokyo' },
-  { value: 'Asia/Shanghai', label: 'Shanghai' },
-  { value: 'Australia/Sydney', label: 'Sydney' },
-];
+function buildTimezoneOptions(): { value: string; label: string }[] {
+  const options: { value: string; label: string }[] = [
+    { value: 'browser', label: 'Use browser timezone (auto-detect)' },
+    { value: 'UTC', label: 'UTC' },
+  ];
+
+  const allTimezones = Intl.supportedValuesOf('timeZone').filter((tz) => tz !== 'UTC');
+
+  for (const tz of allTimezones) {
+    // Format: "America/New_York" -> "America/New York"
+    const label = tz.replaceAll('_', ' ');
+    options.push({ value: tz, label });
+  }
+
+  return options;
+}
+
+const TIMEZONE_OPTIONS = buildTimezoneOptions();
 
 const WEEK_STARTS_ON_OPTIONS = [
   { value: '0', label: 'Sunday' },
