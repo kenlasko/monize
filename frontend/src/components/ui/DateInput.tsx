@@ -140,24 +140,71 @@ const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
   'value',
 )?.set;
 
+// Checks if a string looks like a YYYY-MM-DD date
+function isIsoDate(value: string): boolean {
+  return /^\d{4}-\d{2}-\d{2}$/.test(value);
+}
+
 export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
   ({ onDateChange, onKeyDown, onChange: externalOnChange, onBlur: externalOnBlur, value: externalValue, label, id, ...props }, ref) => {
     const inputId = id || (label ? `input-${label.toLowerCase().replace(/\s+/g, '-')}` : undefined);
     const { dateFormat } = useDateFormat();
     const useTextMode = dateFormat !== 'browser';
 
-    // Internal YYYY-MM-DD value for text mode, kept in sync with externalValue
+    // Internal YYYY-MM-DD value for text mode
     const [isoValue, setIsoValue] = useState<string>((externalValue as string) || '');
-    const [displayValue, setDisplayValue] = useState('');
+    const [displayValue, setDisplayValue] = useState(() => {
+      const val = (externalValue as string) || '';
+      return val ? formatDate(val, dateFormat) : '';
+    });
     const isFocusedRef = useRef(false);
+    const localRef = useRef<HTMLInputElement>(null);
 
-    // Sync external value changes to internal state
+    // Merged ref: forwards to external ref (react-hook-form register) and keeps
+    // a local reference for reading the DOM value
+    const mergedRef = useCallback((node: HTMLInputElement | null) => {
+      localRef.current = node;
+      if (typeof ref === 'function') ref(node);
+      else if (ref) (ref as React.MutableRefObject<HTMLInputElement | null>).current = node;
+    }, [ref]);
+
+    // On mount in text mode, read the initial value from the DOM.
+    // react-hook-form sets defaultValues through the ref after mount, so we
+    // use a microtask to let it complete before reading.
+    useEffect(() => {
+      if (!useTextMode) return;
+      // If we already have a value from props, nothing to do
+      if (externalValue) return;
+
+      const readDomValue = () => {
+        const node = localRef.current;
+        if (!node) return;
+        const domVal = node.value;
+        if (domVal && isIsoDate(domVal)) {
+          setIsoValue(domVal);
+          setDisplayValue(formatDate(domVal, dateFormat));
+        }
+      };
+
+      // Try immediately (react-hook-form may have set value synchronously in ref)
+      readDomValue();
+
+      // Also try after a microtask (react-hook-form may set value in an effect)
+      const timer = setTimeout(readDomValue, 0);
+      return () => clearTimeout(timer);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [useTextMode, dateFormat]);
+
+    // Sync explicit value prop changes to internal state (covers DateRangeSelector
+    // and other direct-value usage, as well as react-hook-form setValue calls
+    // that trigger a re-render with a new value prop)
     useEffect(() => {
       if (!useTextMode) return;
       const newIso = (externalValue as string) || '';
+      if (!newIso) return;
       setIsoValue(newIso);
       if (!isFocusedRef.current) {
-        setDisplayValue(newIso ? formatDate(newIso, dateFormat) : '');
+        setDisplayValue(formatDate(newIso, dateFormat));
       }
     }, [externalValue, dateFormat, useTextMode]);
 
@@ -238,7 +285,7 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
             </div>
           )}
           <Input
-            ref={ref}
+            ref={mergedRef}
             id={inputId}
             type="text"
             value={displayValue}

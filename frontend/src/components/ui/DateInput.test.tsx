@@ -337,5 +337,30 @@ describe('DateInput', () => {
       const { getByLabelText } = renderDateInput('2025-06-15');
       expect(getByLabelText('Date')).toHaveValue('2025-06-15');
     });
+
+    it('reads initial value from DOM ref when no value prop is provided (react-hook-form pattern)', async () => {
+      // Simulate react-hook-form: no value prop, value set through the ref after mount
+      const refCallback = vi.fn();
+      const { getByLabelText } = render(
+        <DateInput
+          label="Date"
+          ref={(node) => {
+            refCallback(node);
+            // Simulate react-hook-form setting the value through the ref
+            if (node) {
+              node.value = '2025-09-20';
+            }
+          }}
+          onDateChange={onDateChange}
+          onChange={() => {}}
+        />
+      );
+
+      // Wait for the microtask/timeout that reads the DOM value
+      await vi.advanceTimersByTimeAsync(0);
+
+      const input = getByLabelText('Date');
+      expect(input).toHaveValue('20/09/2025');
+    });
   });
 });
