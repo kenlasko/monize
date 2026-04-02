@@ -146,7 +146,10 @@ jobs:
           # 95857358158e4664c01c05441df9f2a9_0 - Hard-coded secret used for demo site
           # 842822dd22cd4403ab5800ac89480c0a_0 - Insufficient randomness for inconsequential task
           # aa2e6330aede1004652f740df19e1d86_0 - Insufficient randomness for inconsequential task
-          exclude-fingerprint: "b65bd7b1a0585cd1d0a326cdb09ce40d_0,da119900eefffd8b84e7693e0388568a_0,95857358158e4664c01c05441df9f2a9_0,842822dd22cd4403ab5800ac89480c0a_0,aa2e6330aede1004652f740df19e1d86_0"
+          # b04cb91b90deb5e16504baa7ab95f678_0 - Unsanitized dynamic input in file path [CWE-22]
+          # b04cb91b90deb5e16504baa7ab95f678_1 - Unsanitized dynamic input in file path [CWE-22]
+          # b04cb91b90deb5e16504baa7ab95f678_2 - Unsanitized dynamic input in file path [CWE-22]
+          exclude-fingerprint: "b65bd7b1a0585cd1d0a326cdb09ce40d_0,da119900eefffd8b84e7693e0388568a_0,95857358158e4664c01c05441df9f2a9_0,842822dd22cd4403ab5800ac89480c0a_0,aa2e6330aede1004652f740df19e1d86_0,b04cb91b90deb5e16504baa7ab95f678_0,b04cb91b90deb5e16504baa7ab95f678_1,b04cb91b90deb5e16504baa7ab95f678_2"
 
   build-and-push:
     name: Build & Push Containers

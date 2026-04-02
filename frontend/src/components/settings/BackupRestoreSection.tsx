@@ -36,6 +36,7 @@ const RESTORE_LABELS: Record<string, string> = {
   customReports: 'Custom Reports',
   importColumnMappings: 'Import Column Mappings',
   monthlyAccountBalances: 'Monthly Account Balances',
+  autoBackupSettings: 'Auto-Backup Settings',
 };
 
 interface BackupRestoreSectionProps {

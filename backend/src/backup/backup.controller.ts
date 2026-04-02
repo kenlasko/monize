@@ -1,6 +1,9 @@
 import {
   Controller,
   Post,
+  Get,
+  Patch,
+  Body,
   UseGuards,
   Request,
   Res,
@@ -17,6 +20,11 @@ import {
 } from "@nestjs/swagger";
 import { Response } from "express";
 import { BackupService } from "./backup.service";
+import { AutoBackupService } from "./auto-backup.service";
+import {
+  UpdateAutoBackupSettingsDto,
+  ValidateFolderDto,
+} from "./dto/update-auto-backup-settings.dto";
 import { DemoRestricted } from "../common/decorators/demo-restricted.decorator";
 
 @ApiTags("Backup")
@@ -24,7 +32,10 @@ import { DemoRestricted } from "../common/decorators/demo-restricted.decorator";
 @UseGuards(AuthGuard("jwt"))
 @ApiBearerAuth()
 export class BackupController {
-  constructor(private readonly backupService: BackupService) {}
+  constructor(
+    private readonly backupService: BackupService,
+    private readonly autoBackupService: AutoBackupService,
+  ) {}
 
   @Post("export")
   @DemoRestricted()
@@ -66,5 +77,50 @@ export class BackupController {
       oidcIdToken,
     });
     return result;
+  }
+
+  @Get("auto-backup-settings")
+  @ApiOperation({ summary: "Get automatic backup settings" })
+  @ApiResponse({ status: 200, description: "Auto-backup settings returned" })
+  async getAutoBackupSettings(@Request() req) {
+    return this.autoBackupService.getSettings(req.user.id);
+  }
+
+  @Patch("auto-backup-settings")
+  @DemoRestricted()
+  @ApiOperation({ summary: "Update automatic backup settings" })
+  @ApiResponse({ status: 200, description: "Settings updated" })
+  async updateAutoBackupSettings(
+    @Request() req,
+    @Body() dto: UpdateAutoBackupSettingsDto,
+  ) {
+    return this.autoBackupService.updateSettings(req.user.id, dto);
+  }
+
+  @Post("validate-folder")
+  @DemoRestricted()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Validate a folder path is writable" })
+  @ApiResponse({ status: 200, description: "Validation result" })
+  async validateFolder(@Body() dto: ValidateFolderDto) {
+    return this.autoBackupService.validateFolder(dto.folderPath);
+  }
+
+  @Post("browse-folders")
+  @DemoRestricted()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "List subdirectories in a folder" })
+  @ApiResponse({ status: 200, description: "Directory listing" })
+  async browseFolders(@Body() dto: ValidateFolderDto) {
+    return this.autoBackupService.browseFolders(dto.folderPath);
+  }
+
+  @Post("run-auto-backup")
+  @DemoRestricted()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Trigger an immediate automatic backup" })
+  @ApiResponse({ status: 200, description: "Backup completed" })
+  async runAutoBackup(@Request() req) {
+    return this.autoBackupService.runManualBackup(req.user.id);
   }
 }

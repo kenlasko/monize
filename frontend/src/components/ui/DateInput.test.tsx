@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, fireEvent, act } from '@/test/render';
+import { render, fireEvent } from '@/test/render';
 import { DateInput } from './DateInput';
 
 // Default to browser format (native date input mode)

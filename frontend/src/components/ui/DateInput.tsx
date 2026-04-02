@@ -254,7 +254,7 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
     }, [mode, isoValue, emitDateChange, onDateChange, onKeyDown]);
 
     // Desktop text mode: handle user typing in the formatted input
-    const handleTextChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
+    const _handleTextChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
       const text = e.target.value;
       setDisplayValue(text);
 
@@ -267,7 +267,7 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
     }, [dateFormat, emitDateChange, externalOnChange]);
 
     // Desktop text mode: reformat on blur
-    const handleTextBlur = useCallback((e: React.FocusEvent<HTMLInputElement>) => {
+    const _handleTextBlur = useCallback((e: React.FocusEvent<HTMLInputElement>) => {
       isFocusedRef.current = false;
       const parsed = parseDateFromFormat(displayValue, dateFormat);
       if (parsed) {
@@ -279,7 +279,7 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
       externalOnBlur?.(e);
     }, [displayValue, dateFormat, isoValue, emitDateChange, externalOnBlur]);
 
-    const handleTextFocus = useCallback(() => {
+    const _handleTextFocus = useCallback(() => {
       isFocusedRef.current = true;
     }, []);
 
@@ -291,7 +291,7 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
       setShowCalendar((prev) => !prev);
     }, []);
 
-    const handleCalendarSelect = useCallback((date: string) => {
+    const _handleCalendarSelect = useCallback((date: string) => {
       if (date) {
         emitDateChange(date);
       }

@@ -28,7 +28,7 @@ export function AssetFields({
   register,
   setValue,
   errors,
-  watchedDateAcquired,
+  watchedDateAcquired: _watchedDateAcquired,
 }: AssetFieldsProps) {
   return (
     <div className="space-y-4 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">

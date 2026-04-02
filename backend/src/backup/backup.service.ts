@@ -50,6 +50,7 @@ interface BackupData {
   custom_reports: Record<string, unknown>[];
   import_column_mappings: Record<string, unknown>[];
   monthly_account_balances: Record<string, unknown>[];
+  auto_backup_settings: Record<string, unknown>[];
 }
 
 @Injectable()
@@ -193,6 +194,10 @@ export class BackupService {
       {
         key: "monthly_account_balances",
         sql: "SELECT * FROM monthly_account_balances WHERE user_id = $1",
+      },
+      {
+        key: "auto_backup_settings",
+        sql: "SELECT * FROM auto_backup_settings WHERE user_id = $1",
       },
     ];
 
@@ -417,6 +422,12 @@ export class BackupService {
         queryRunner,
         "monthly_account_balances",
         data.monthly_account_balances,
+        userId,
+      );
+      restored.autoBackupSettings = await this.insertRows(
+        queryRunner,
+        "auto_backup_settings",
+        data.auto_backup_settings,
         userId,
       );
 
@@ -657,7 +668,11 @@ export class BackupService {
       userId,
     ]);
 
-    // User preferences
+    // User preferences and auto-backup settings
+    await queryRunner.query(
+      "DELETE FROM auto_backup_settings WHERE user_id = $1",
+      [userId],
+    );
     await queryRunner.query(
       "DELETE FROM user_currency_preferences WHERE user_id = $1",
       [userId],
@@ -790,9 +805,7 @@ export class BackupService {
          WHERE table_name = 'currencies' AND table_schema = 'public'`,
       );
       const validCurrencyColumns = new Set<string>(
-        currencySchemaResult.map(
-          (r: { column_name: string }) => r.column_name,
-        ),
+        currencySchemaResult.map((r: { column_name: string }) => r.column_name),
       );
 
       for (const row of data.currencies) {
@@ -886,6 +899,7 @@ export class BackupService {
       "custom_reports",
       "import_column_mappings",
       "monthly_account_balances",
+      "auto_backup_settings",
     ]);
 
     if (!allowedTables.has(table)) {

@@ -1,4 +1,5 @@
 import apiClient from './api';
+import { AutoBackupSettings, UpdateAutoBackupSettingsData } from '@/types/auth';
 
 export interface RestoreResult {
   message: string;
@@ -45,6 +46,48 @@ export const backupApi = {
       '/backup/restore',
       body,
       { headers, timeout: 300000 },
+    );
+    return response.data;
+  },
+
+  getAutoBackupSettings: async (): Promise<AutoBackupSettings> => {
+    const response = await apiClient.get<AutoBackupSettings>('/backup/auto-backup-settings');
+    return response.data;
+  },
+
+  updateAutoBackupSettings: async (
+    data: UpdateAutoBackupSettingsData,
+  ): Promise<AutoBackupSettings> => {
+    const response = await apiClient.patch<AutoBackupSettings>(
+      '/backup/auto-backup-settings',
+      data,
+    );
+    return response.data;
+  },
+
+  validateFolder: async (
+    folderPath: string,
+  ): Promise<{ valid: boolean; error?: string }> => {
+    const response = await apiClient.post<{ valid: boolean; error?: string }>(
+      '/backup/validate-folder',
+      { folderPath },
+    );
+    return response.data;
+  },
+
+  browseFolders: async (
+    path: string,
+  ): Promise<{ current: string; directories: string[] }> => {
+    const response = await apiClient.post<{ current: string; directories: string[] }>(
+      '/backup/browse-folders',
+      { folderPath: path },
+    );
+    return response.data;
+  },
+
+  runAutoBackup: async (): Promise<{ message: string; filename: string }> => {
+    const response = await apiClient.post<{ message: string; filename: string }>(
+      '/backup/run-auto-backup',
     );
     return response.data;
   },
