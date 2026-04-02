@@ -1,6 +1,7 @@
 import { ChangeEvent, forwardRef, InputHTMLAttributes, KeyboardEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Input } from './Input';
+import { CalendarPopover } from './CalendarPopover';
 import { cn, getLocalDateString, formatDate, parseDateFromFormat, inputBaseClasses, inputErrorClasses } from '@/lib/utils';
 import { useDateFormat } from '@/hooks/useDateFormat';
 
@@ -278,18 +279,23 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
       isFocusedRef.current = true;
     }, []);
 
-    // Desktop: open the native date picker via the calendar icon
+    // Desktop: toggle custom calendar popover
+    const [showCalendar, setShowCalendar] = useState(false);
+    const calendarAnchorRef = useRef<HTMLDivElement>(null);
+
     const handleCalendarClick = useCallback(() => {
-      const picker = nativeDateRef.current;
-      if (!picker) return;
-      picker.value = isoValue;
-      if (typeof picker.showPicker === 'function') {
-        picker.showPicker();
-      } else {
-        picker.focus();
-        picker.click();
+      setShowCalendar((prev) => !prev);
+    }, []);
+
+    const handleCalendarSelect = useCallback((date: string) => {
+      if (date) {
+        emitDateChange(date);
       }
-    }, [isoValue]);
+    }, [emitDateChange]);
+
+    const handleCalendarClose = useCallback(() => {
+      setShowCalendar(false);
+    }, []);
 
     // Touch mode: open the native date picker when the display is tapped
     const handleTouchTap = useCallback(() => {
@@ -377,12 +383,12 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
 
     // --- Desktop + custom format mode ---
     // Text input that shows and accepts dates in the user's preferred format,
-    // with a calendar icon to open the native date picker.
+    // with a calendar icon to open a custom calendar popover.
     if (mode === 'desktop-formatted') {
       return (
         <div className="w-full">
           {labelBlock}
-          <div className="relative">
+          <div className="relative" ref={calendarAnchorRef}>
             <Input
               ref={mergedRef}
               id={inputId}
@@ -408,17 +414,14 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
               </svg>
             </button>
-            {/* Hidden native date input for the calendar picker.
-                Spans the full input width so the browser popup anchors
-                centered rather than offset to one side. */}
-            <input
-              ref={nativeDateRef}
-              type="date"
-              tabIndex={-1}
-              aria-hidden="true"
-              className="absolute inset-0 opacity-0 pointer-events-none"
-              onChange={handleNativeDateChange}
-            />
+            {showCalendar && (
+              <CalendarPopover
+                value={isoValue}
+                onSelect={handleCalendarSelect}
+                onClose={handleCalendarClose}
+                anchorRef={calendarAnchorRef}
+              />
+            )}
           </div>
         </div>
       );
