@@ -71,11 +71,14 @@ describe('SwipeShell', () => {
     expect(screen.queryByTestId('app-header')).not.toBeInTheDocument();
   });
 
-  it('wraps content in overflow-x-hidden container on app pages', () => {
+  it('wraps content in overflow-x-clip container on app pages', () => {
     mockPathname = '/accounts';
     const { container } = render(<SwipeShell><p>Content</p></SwipeShell>);
     const wrapper = container.firstChild as HTMLElement;
-    expect(wrapper.className).toContain('overflow-x-hidden');
+    // Must use overflow-x-clip (not overflow-x-hidden) to preserve
+    // position:sticky and IntersectionObserver viewport behavior
+    expect(wrapper.className).toContain('overflow-x-clip');
+    expect(wrapper.className).not.toContain('overflow-x-hidden');
   });
 
   it('renders BackendDownBanner on app pages', () => {

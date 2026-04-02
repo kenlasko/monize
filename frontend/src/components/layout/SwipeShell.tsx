@@ -33,7 +33,7 @@ export function SwipeShell({ children, httpsHeadersActive = false }: SwipeShellP
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 overflow-x-hidden">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 overflow-x-clip">
       <AppHeader />
       <HttpWarningBanner httpsHeadersActive={httpsHeadersActive} />
       <BackendDownBanner httpsHeadersActive={httpsHeadersActive} />
