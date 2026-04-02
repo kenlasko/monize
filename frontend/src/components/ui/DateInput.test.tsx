@@ -270,7 +270,7 @@ describe('DateInput', () => {
       expect(getByLabelText('Date')).toHaveAttribute('type', 'text');
     });
 
-    it('falls back to native date picker on touch devices', () => {
+    it('shows formatted date in tappable display on touch devices', () => {
       // Simulate a touch device by temporarily overriding matchMedia
       const originalMatchMedia = window.matchMedia;
       window.matchMedia = vi.fn().mockImplementation((query: string) => ({
@@ -285,9 +285,64 @@ describe('DateInput', () => {
       }));
 
       const { getByLabelText } = renderDateInput('2025-06-15');
-      expect(getByLabelText('Date')).toHaveAttribute('type', 'date');
+      const display = getByLabelText('Date');
+      // Touch mode renders a button with the formatted date
+      expect(display.tagName).toBe('BUTTON');
+      expect(display.textContent).toBe('15/06/2025');
 
       // Restore the original mock
+      window.matchMedia = originalMatchMedia;
+    });
+
+    it('opens native picker on tap in touch mode', () => {
+      const originalMatchMedia = window.matchMedia;
+      window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+        matches: query === '(pointer: coarse)',
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      }));
+
+      const { getByLabelText, container } = renderDateInput('2025-06-15');
+      const display = getByLabelText('Date');
+      const nativeInput = container.querySelector('input[type="date"]') as HTMLInputElement;
+
+      // Mock showPicker
+      nativeInput.showPicker = vi.fn();
+      fireEvent.click(display);
+      expect(nativeInput.showPicker).toHaveBeenCalled();
+      expect(nativeInput.value).toBe('2025-06-15');
+
+      window.matchMedia = originalMatchMedia;
+    });
+
+    it('updates formatted display when native picker value changes in touch mode', () => {
+      const originalMatchMedia = window.matchMedia;
+      window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+        matches: query === '(pointer: coarse)',
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      }));
+
+      const { getByLabelText, container } = renderDateInput('2025-06-15');
+      const nativeInput = container.querySelector('input[type="date"]') as HTMLInputElement;
+
+      // Simulate picking a new date from the native picker
+      fireEvent.change(nativeInput, { target: { value: '2025-12-25' } });
+
+      expect(onDateChange).toHaveBeenCalledWith('2025-12-25');
+      const display = getByLabelText('Date');
+      expect(display.textContent).toBe('25/12/2025');
+
       window.matchMedia = originalMatchMedia;
     });
 
