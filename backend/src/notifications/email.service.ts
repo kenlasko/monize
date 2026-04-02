@@ -21,19 +21,23 @@ export class EmailService implements OnModuleInit {
       return;
     }
 
-    const secure =
-      this.configService.get<string>("SMTP_SECURE", "false") === "true";
-    const port = this.configService.get<number>(
-      "SMTP_PORT",
-      secure ? 465 : 587,
-    );
+    const port = this.configService.get<number>("SMTP_PORT", 587);
+    // Port 465 uses implicit TLS; port 587 uses STARTTLS (secure must be false)
+    const secure = port === 465;
 
-    this.transporter = nodemailer.createTransport({
+    const transportOptions: Record<string, unknown> = {
       host,
       port,
       secure,
       auth: { user, pass: password },
-    });
+    };
+
+    // For port 587, require STARTTLS upgrade (don't fall back to plaintext)
+    if (!secure) {
+      transportOptions.requireTLS = true;
+    }
+
+    this.transporter = nodemailer.createTransport(transportOptions);
 
     this.configured = true;
     this.logger.log("SMTP email transport configured");

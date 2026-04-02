@@ -24,7 +24,6 @@ describe("EmailService", () => {
             SMTP_HOST: "smtp.example.com",
             SMTP_USER: "user@example.com",
             SMTP_PASSWORD: "password123",
-            SMTP_SECURE: "false",
             SMTP_PORT: 587,
             EMAIL_FROM: "noreply@monize.app",
           };
@@ -43,10 +42,13 @@ describe("EmailService", () => {
       service.onModuleInit();
     });
 
-    it("configures transport on init", () => {
+    it("configures transport with STARTTLS on port 587", () => {
       expect(nodemailer.createTransport).toHaveBeenCalledWith(
         expect.objectContaining({
           host: "smtp.example.com",
+          port: 587,
+          secure: false,
+          requireTLS: true,
           auth: { user: "user@example.com", pass: "password123" },
         }),
       );
@@ -82,6 +84,48 @@ describe("EmailService", () => {
 
       const result = await service.verifyConnection();
       expect(result).toBe(false);
+    });
+  });
+
+  describe("when SMTP is configured with port 465", () => {
+    beforeEach(async () => {
+      (nodemailer.createTransport as jest.Mock).mockClear();
+      configService = {
+        get: jest.fn().mockImplementation((key: string, defaultVal?: any) => {
+          const config: Record<string, any> = {
+            SMTP_HOST: "smtp.example.com",
+            SMTP_USER: "user@example.com",
+            SMTP_PASSWORD: "password123",
+            SMTP_PORT: 465,
+            EMAIL_FROM: "noreply@monize.app",
+          };
+          return config[key] ?? defaultVal;
+        }),
+      };
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          EmailService,
+          { provide: ConfigService, useValue: configService },
+        ],
+      }).compile();
+
+      service = module.get<EmailService>(EmailService);
+      service.onModuleInit();
+    });
+
+    it("configures transport with implicit TLS on port 465", () => {
+      expect(nodemailer.createTransport).toHaveBeenCalledWith(
+        expect.objectContaining({
+          host: "smtp.example.com",
+          port: 465,
+          secure: true,
+          auth: { user: "user@example.com", pass: "password123" },
+        }),
+      );
+      expect(nodemailer.createTransport).not.toHaveBeenCalledWith(
+        expect.objectContaining({ requireTLS: true }),
+      );
     });
   });
 
