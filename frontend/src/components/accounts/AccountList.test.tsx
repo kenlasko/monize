@@ -465,6 +465,19 @@ describe('AccountList', () => {
     expect(screen.getByText('Excluded Account')).toBeInTheDocument();
   });
 
+  it('hides net worth filter when no accounts are excluded from net worth', () => {
+    const accounts = [
+      createAccount({ id: 'a1', name: 'Account One', excludeFromNetWorth: false }),
+      createAccount({ id: 'a2', name: 'Account Two', excludeFromNetWorth: false }),
+    ];
+
+    render(
+      <AccountList accounts={accounts} onEdit={mockOnEdit} onRefresh={mockOnRefresh} />
+    );
+
+    expect(screen.queryByDisplayValue('Net Worth: All')).not.toBeInTheDocument();
+  });
+
   it('shows "No accounts match your filters" and Clear Filters button when filters exclude all accounts', () => {
     const accounts = [
       createAccount({ id: 'a1', name: 'Chequing Only', accountType: 'CHEQUING', isClosed: false }),

@@ -259,6 +259,19 @@ export function AccountList({ accounts, brokerageMarketValues, onEdit, onRefresh
     return map;
   }, [accounts]);
 
+  // Only show the net worth filter when at least one account is excluded
+  const hasExcludedAccounts = useMemo(
+    () => accounts.some((a) => a.excludeFromNetWorth),
+    [accounts],
+  );
+
+  // Clear the net worth filter if no accounts are excluded (e.g. user toggled the flag off)
+  useEffect(() => {
+    if (!hasExcludedAccounts && filterNetWorth) {
+      setFilterNetWorth('');
+    }
+  }, [hasExcludedAccounts, filterNetWorth]);
+
   // Count active filters
   const activeFilterCount = [filterAccountType, filterStatus, filterNetWorth].filter(Boolean).length;
 
@@ -430,16 +443,18 @@ export function AccountList({ accounts, brokerageMarketValues, onEdit, onRefresh
               </button>
               </div>
 
-              {/* Net Worth filter */}
-              <select
-                value={filterNetWorth}
-                onChange={(e) => setFilterNetWorth(e.target.value as 'included' | 'excluded' | '')}
-                className="text-sm font-sans border border-gray-300 dark:border-gray-600 rounded-md px-3 py-1.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 min-w-[16rem]"
-              >
-                <option value="">Net Worth: All</option>
-                <option value="included">In Net Worth</option>
-                <option value="excluded">Excluded from Net Worth</option>
-              </select>
+              {/* Net Worth filter -- only shown when at least one account is excluded */}
+              {hasExcludedAccounts && (
+                <select
+                  value={filterNetWorth}
+                  onChange={(e) => setFilterNetWorth(e.target.value as 'included' | 'excluded' | '')}
+                  className="text-sm font-sans border border-gray-300 dark:border-gray-600 rounded-md px-3 py-1.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 min-w-[16rem]"
+                >
+                  <option value="">Net Worth: All</option>
+                  <option value="included">In Net Worth</option>
+                  <option value="excluded">Excluded from Net Worth</option>
+                </select>
+              )}
             </div>
 
             {activeFilterCount > 0 && (
