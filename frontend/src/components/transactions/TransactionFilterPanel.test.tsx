@@ -56,7 +56,7 @@ function createPayee(overrides: Partial<Payee> = {}): Payee {
 }
 
 vi.mock('@/hooks/useDateFormat', () => ({
-  useDateFormat: () => ({ formatDate: (d: string) => d, dateFormat: 'YYYY-MM-DD' }),
+  useDateFormat: () => ({ formatDate: (d: string) => d, dateFormat: 'browser' }),
 }));
 
 describe('TransactionFilterPanel', () => {
@@ -241,8 +241,8 @@ describe('TransactionFilterPanel', () => {
 
       expect(startInput).toBeInTheDocument();
       expect(endInput).toBeInTheDocument();
-      expect(startInput).toHaveAttribute('type', 'text');
-      expect(endInput).toHaveAttribute('type', 'text');
+      expect(startInput).toHaveAttribute('type', 'date');
+      expect(endInput).toHaveAttribute('type', 'date');
     });
 
     it('calls handleFilterChange with setFilterStartDate when start date changes', () => {

@@ -249,7 +249,7 @@ vi.mock('@/lib/categoryUtils', () => ({
 }));
 
 vi.mock('@/hooks/useDateFormat', () => ({
-  useDateFormat: () => ({ formatDate: (d: string) => d, dateFormat: 'YYYY-MM-DD' }),
+  useDateFormat: () => ({ formatDate: (d: string) => d, dateFormat: 'browser' }),
 }));
 
 vi.mock('@/lib/logger', () => ({
@@ -1397,7 +1397,7 @@ describe('TransactionForm', () => {
       await waitFor(() => {
         const dateInput = screen.getByLabelText('Date');
         expect(dateInput).toBeInTheDocument();
-        expect(dateInput).toHaveAttribute('type', 'text');
+        expect(dateInput).toHaveAttribute('type', 'date');
       });
     });
 
@@ -1443,7 +1443,7 @@ describe('TransactionForm', () => {
       await waitFor(() => {
         const dateInput = screen.getByLabelText('Date');
         expect(dateInput).toBeInTheDocument();
-        expect(dateInput).toHaveAttribute('type', 'text');
+        expect(dateInput).toHaveAttribute('type', 'date');
       });
     });
 
@@ -1459,7 +1459,7 @@ describe('TransactionForm', () => {
       await waitFor(() => {
         const dateInput = screen.getByLabelText('Date');
         expect(dateInput).toBeInTheDocument();
-        expect(dateInput).toHaveAttribute('type', 'text');
+        expect(dateInput).toHaveAttribute('type', 'date');
       });
     });
   });

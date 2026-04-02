@@ -39,7 +39,7 @@ vi.mock('@/lib/errors', () => ({
 }));
 
 vi.mock('@/hooks/useDateFormat', () => ({
-  useDateFormat: () => ({ formatDate: (d: string) => d, dateFormat: 'YYYY-MM-DD' }),
+  useDateFormat: () => ({ formatDate: (d: string) => d, dateFormat: 'browser' }),
 }));
 
 vi.mock('@/lib/categoryUtils', () => ({

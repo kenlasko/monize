@@ -201,9 +201,9 @@ describe('DateInput', () => {
       expect(getByLabelText('Date')).toBeInTheDocument();
     });
 
-    it('renders as type="text" on desktop even in browser format mode', () => {
+    it('renders as type="date" in browser format mode on desktop', () => {
       const { getByLabelText } = renderDateInput();
-      expect(getByLabelText('Date')).toHaveAttribute('type', 'text');
+      expect(getByLabelText('Date')).toHaveAttribute('type', 'date');
     });
 
     it('displays error message', () => {

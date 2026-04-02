@@ -198,11 +198,13 @@ button {
   }
 }
 
-/* Hide native date picker indicator (calendar icon) */
-@utility date-picker-hide {
-  &::-webkit-calendar-picker-indicator {
-    display: none;
-    -webkit-appearance: none;
-  }
-  -moz-appearance: textfield;
+/* Hide native date picker indicator (calendar icon) so only
+   the custom CalendarPopover icon is visible on desktop. */
+.date-picker-hide::-webkit-calendar-picker-indicator {
+  display: none !important;
+  -webkit-appearance: none;
+}
+
+.date-picker-hide::-webkit-inner-spin-button {
+  display: none !important;
 }
