@@ -345,6 +345,19 @@ export class ImportResultDto {
     accountType: string;
     currencyCode: string;
   }>;
+
+  @ApiPropertyOptional({
+    description:
+      "Number of Quicken merged split transfers that were automatically removed during import",
+  })
+  mergedTransfersDeleted?: number;
+
+  @ApiPropertyOptional({
+    type: [String],
+    description:
+      "Warnings about suspect transactions that may need manual review (e.g. potential Quicken merged transfers that could not be reliably auto-removed)",
+  })
+  warnings?: string[];
 }
 
 // --- Multi-account QIF DTOs ---

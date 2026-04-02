@@ -188,6 +188,66 @@ export class ImportRegularProcessorService {
       }
     }
 
+    // Check for Quicken merged split transfers.
+    // Quicken merges multiple split transfers to the same account into a single
+    // transaction on the receiving side (e.g. splits of $50+$40 to Account-B
+    // become a single $90 in Account-B). Since we create individual split-linked
+    // transactions, the merged one is a duplicate.
+    if (qifTx.isTransfer && qifTx.transferAccount) {
+      let mergedTransferAccountId =
+        ctx.accountMap.get(qifTx.transferAccount) ?? undefined;
+      if (!mergedTransferAccountId) {
+        const lowerName = qifTx.transferAccount.toLowerCase();
+        for (const [name, id] of ctx.accountMap) {
+          if (id && name.toLowerCase() === lowerName) {
+            mergedTransferAccountId = id;
+            break;
+          }
+        }
+      }
+      if (mergedTransferAccountId) {
+        const mergedGroups: Array<{
+          parentId: string;
+          totalAmount: string;
+          splitCount: string;
+        }> = await ctx.queryRunner.manager
+          .createQueryBuilder(Transaction, "t")
+          .innerJoin(
+            TransactionSplit,
+            "split",
+            "split.linked_transaction_id = t.id",
+          )
+          .innerJoin(Transaction, "parent", "split.transaction_id = parent.id")
+          .where("t.user_id = :userId", { userId: ctx.userId })
+          .andWhere("t.account_id = :accountId", {
+            accountId: ctx.accountId,
+          })
+          .andWhere("t.transaction_date = :date", { date: qifTx.date })
+          .andWhere("t.is_transfer = true")
+          .andWhere("parent.account_id = :transferAccountId", {
+            transferAccountId: mergedTransferAccountId,
+          })
+          .andWhere("parent.is_split = true")
+          .select("parent.id", "parentId")
+          .addSelect("SUM(t.amount)", "totalAmount")
+          .addSelect("COUNT(*)", "splitCount")
+          .groupBy("parent.id")
+          .getRawMany();
+
+        for (const group of mergedGroups) {
+          const total = Math.round(Number(group.totalAmount) * 10000);
+          const expected = Math.round(qifTx.amount * 10000);
+          if (total === expected && Number(group.splitCount) >= 2) {
+            this.logger.debug(
+              `Skipping Quicken merged split transfer: ${qifTx.amount} on ${qifTx.date} ` +
+                `(sum of ${group.splitCount} split transfers from parent ${group.parentId})`,
+            );
+            return true;
+          }
+        }
+      }
+    }
+
     return false;
   }
 

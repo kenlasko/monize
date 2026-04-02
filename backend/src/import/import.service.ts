@@ -54,11 +54,13 @@ import {
   CsvHeadersResponseDto,
   ColumnMappingResponseDto,
 } from "./dto/import.dto";
-import { ImportContext } from "./import-context";
+import { ImportContext, updateAccountBalance } from "./import-context";
 import { ImportEntityCreatorService } from "./import-entity-creator.service";
 import { ImportInvestmentProcessorService } from "./import-investment-processor.service";
 import { ImportRegularProcessorService } from "./import-regular-processor.service";
 import { Tag } from "../tags/entities/tag.entity";
+import { Transaction } from "../transactions/entities/transaction.entity";
+import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
 
 @Injectable()
 export class ImportService {
@@ -430,6 +432,16 @@ export class ImportService {
           }
         }
       }
+
+      // Post-block cleanup: detect and remove Quicken merged split transfers
+      // that were imported before their split counterparts (reverse block order).
+      await this.cleanupMergedSplitTransfers(
+        queryRunner,
+        userId,
+        affectedAccountIds,
+        importStartTime,
+        importResult,
+      );
 
       await queryRunner.commitTransaction();
     } catch (error) {
@@ -1462,6 +1474,172 @@ export class ImportService {
     }
   }
 
+  /**
+   * Detect and remove Quicken merged split transfers.
+   *
+   * When Quicken exports a split transaction with multiple splits to the same
+   * destination account, it merges them into a single transaction on the
+   * receiving side. Since we create individual split-linked transactions for
+   * each split, the merged transaction is a duplicate that inflates balances.
+   *
+   * This handles the case where the merged transfer was imported before its
+   * split counterparts (i.e., the receiving account block appeared first in
+   * the QIF file). The isDuplicateTransfer check in ImportRegularProcessorService
+   * handles the reverse order.
+   */
+  private async cleanupMergedSplitTransfers(
+    queryRunner: any,
+    userId: string,
+    affectedAccountIds: Set<string>,
+    importStartTime: Date,
+    importResult: ImportResultDto,
+  ): Promise<void> {
+    if (affectedAccountIds.size === 0) return;
+
+    const accountIds = Array.from(affectedAccountIds);
+
+    // Find transfer transactions created during this import that are NOT
+    // referenced by any TransactionSplit (i.e., standalone transfers, not
+    // individual split-linked transfers created by processSplitTransfer).
+    const candidates: Array<{
+      id: string;
+      amount: string;
+      transaction_date: string;
+      account_id: string;
+      linked_transaction_id: string | null;
+    }> = await queryRunner.manager
+      .createQueryBuilder(Transaction, "t")
+      .leftJoin(TransactionSplit, "split", "split.linked_transaction_id = t.id")
+      .where("t.user_id = :userId", { userId })
+      .andWhere("t.account_id IN (:...accountIds)", { accountIds })
+      .andWhere("t.is_transfer = true")
+      .andWhere("t.is_split = false")
+      .andWhere("t.created_at >= :importStartTime", { importStartTime })
+      .andWhere("split.id IS NULL")
+      .select([
+        "t.id AS id",
+        "t.amount AS amount",
+        "t.transaction_date AS transaction_date",
+        "t.account_id AS account_id",
+        "t.linked_transaction_id AS linked_transaction_id",
+      ])
+      .getRawMany();
+
+    if (candidates.length === 0) return;
+
+    let mergedCount = 0;
+    const warnings: string[] = [];
+
+    for (const candidate of candidates) {
+      // Determine which account is the transfer target (the other side)
+      let transferAccountId: string | null = null;
+      if (candidate.linked_transaction_id) {
+        const linkedTx = await queryRunner.manager.findOne(Transaction, {
+          where: { id: candidate.linked_transaction_id },
+        });
+        if (linkedTx) {
+          transferAccountId = linkedTx.accountId;
+        }
+      }
+      if (!transferAccountId) continue;
+
+      // Find split-linked transactions in the same account, same date,
+      // whose split parent is in the transfer account and is a split transaction.
+      const splitGroups: Array<{
+        parentId: string;
+        totalAmount: string;
+        splitCount: string;
+      }> = await queryRunner.manager
+        .createQueryBuilder(Transaction, "st")
+        .innerJoin(TransactionSplit, "s", "s.linked_transaction_id = st.id")
+        .innerJoin(Transaction, "parent", "s.transaction_id = parent.id")
+        .where("st.user_id = :userId", { userId })
+        .andWhere("st.account_id = :accountId", {
+          accountId: candidate.account_id,
+        })
+        .andWhere("st.transaction_date = :date", {
+          date: candidate.transaction_date,
+        })
+        .andWhere("st.is_transfer = true")
+        .andWhere("parent.account_id = :transferAccountId", {
+          transferAccountId,
+        })
+        .andWhere("parent.is_split = true")
+        .select("parent.id", "parentId")
+        .addSelect("SUM(st.amount)", "totalAmount")
+        .addSelect("COUNT(*)", "splitCount")
+        .groupBy("parent.id")
+        .getRawMany();
+
+      let matched = false;
+      for (const group of splitGroups) {
+        const total = Math.round(Number(group.totalAmount) * 10000);
+        const expected = Math.round(Number(candidate.amount) * 10000);
+        if (total === expected && Number(group.splitCount) >= 2) {
+          // Reliable match: delete the merged transfer and its linked counterpart
+          const linkedId = candidate.linked_transaction_id;
+
+          // Reverse balance impacts
+          await updateAccountBalance(
+            queryRunner,
+            candidate.account_id,
+            -Number(candidate.amount),
+          );
+
+          if (linkedId) {
+            const linkedTx = await queryRunner.manager.findOne(Transaction, {
+              where: { id: linkedId },
+            });
+            if (linkedTx) {
+              await updateAccountBalance(
+                queryRunner,
+                linkedTx.accountId,
+                -Number(linkedTx.amount),
+              );
+              await queryRunner.manager.delete(Transaction, linkedId);
+            }
+          }
+
+          await queryRunner.manager.delete(Transaction, candidate.id);
+          mergedCount++;
+          matched = true;
+
+          this.logger.log(
+            `Deleted Quicken merged split transfer: ${candidate.amount} on ${candidate.transaction_date} ` +
+              `(matched sum of ${group.splitCount} split transfers from parent ${group.parentId})`,
+          );
+          break;
+        }
+      }
+
+      if (!matched && splitGroups.length > 0) {
+        // There are split-linked transfers from the same source on the same date
+        // but the amounts do not match exactly. Flag for manual review.
+        const groupSummaries = splitGroups.map(
+          (g) =>
+            `parent ${g.parentId}: ${g.splitCount} splits totaling ${Number(g.totalAmount).toFixed(2)}`,
+        );
+        warnings.push(
+          `Suspect merged transfer: ${Number(candidate.amount).toFixed(2)} on ${candidate.transaction_date} ` +
+            `in account ${candidate.account_id}. ` +
+            `Related split groups: ${groupSummaries.join("; ")}. ` +
+            `This may be a Quicken merged split transfer that needs manual removal.`,
+        );
+      }
+    }
+
+    if (mergedCount > 0) {
+      importResult.mergedTransfersDeleted = mergedCount;
+      this.logger.log(
+        `Cleaned up ${mergedCount} Quicken merged split transfer(s)`,
+      );
+    }
+
+    if (warnings.length > 0) {
+      importResult.warnings = [...(importResult.warnings || []), ...warnings];
+    }
+  }
+
   private async postImportProcessing(
     userId: string,
     isInvestment: boolean,
@@ -1560,7 +1738,12 @@ export class ImportService {
     userId: string,
     affectedAccountIds: Set<string>,
   ): Promise<
-    Array<{ accountId: string; accountName: string; accountType: string; currencyCode: string }>
+    Array<{
+      accountId: string;
+      accountName: string;
+      accountType: string;
+      currencyCode: string;
+    }>
   > {
     if (affectedAccountIds.size === 0) return [];
 
@@ -1568,10 +1751,7 @@ export class ImportService {
       where: { userId },
     });
 
-    const loanTypes = new Set([
-      AccountType.LOAN,
-      AccountType.MORTGAGE,
-    ]);
+    const loanTypes = new Set([AccountType.LOAN, AccountType.MORTGAGE]);
 
     return accounts
       .filter(
