@@ -8,6 +8,14 @@ import { Select } from '@/components/ui/Select';
 import { backupApi } from '@/lib/backupApi';
 import { getErrorMessage } from '@/lib/errors';
 import { AutoBackupSettings, UpdateAutoBackupSettingsData } from '@/types/auth';
+import { usePreferencesStore } from '@/store/preferencesStore';
+
+function resolveTimezone(pref: string | undefined): string {
+  if (!pref || pref === 'browser') {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone;
+  }
+  return pref;
+}
 
 const FREQUENCY_OPTIONS = [
   { value: 'every6hours', label: 'Every 6 Hours' },
@@ -23,6 +31,9 @@ function formatDateTime(dateStr: string | null): string {
 }
 
 export function AutoBackupSection() {
+  const preferences = usePreferencesStore((s) => s.preferences);
+  const userTimezone = resolveTimezone(preferences?.timezone);
+
   const [settings, setSettings] = useState<AutoBackupSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -101,6 +112,7 @@ export function AutoBackupSection() {
         folderPath,
         frequency,
         backupTime,
+        timezone: userTimezone,
         retentionDaily,
         retentionWeekly,
         retentionMonthly,
@@ -349,7 +361,7 @@ export function AutoBackupSection() {
           htmlFor="backup-time"
           className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
         >
-          Backup Time (UTC)
+          Backup Time ({userTimezone})
         </label>
         <input
           id="backup-time"
@@ -363,8 +375,8 @@ export function AutoBackupSection() {
         />
         <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
           {frequency === 'every6hours' || frequency === 'every12hours'
-            ? 'First backup of the day starts at this time (UTC). Subsequent backups follow at the configured interval.'
-            : 'Time of day to run the backup (UTC 24-hour format).'}
+            ? `First backup of the day starts at this time (${userTimezone}). Subsequent backups follow at the configured interval.`
+            : `Time of day to run the backup in your local timezone (${userTimezone}).`}
         </p>
       </div>
 

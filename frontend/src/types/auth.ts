@@ -102,6 +102,7 @@ export interface AutoBackupSettings {
   folderPath: string;
   frequency: 'daily' | 'every12hours' | 'every6hours' | 'weekly';
   backupTime: string;
+  timezone: string;
   retentionDaily: number;
   retentionWeekly: number;
   retentionMonthly: number;
@@ -118,6 +119,7 @@ export interface UpdateAutoBackupSettingsData {
   folderPath?: string;
   frequency?: AutoBackupSettings['frequency'];
   backupTime?: string;
+  timezone?: string;
   retentionDaily?: number;
   retentionWeekly?: number;
   retentionMonthly?: number;

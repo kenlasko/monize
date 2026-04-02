@@ -112,6 +112,9 @@ export class AutoBackupService {
     if (dto.backupTime !== undefined) {
       settings.backupTime = dto.backupTime;
     }
+    if (dto.timezone !== undefined) {
+      settings.timezone = dto.timezone;
+    }
     if (dto.retentionDaily !== undefined) {
       settings.retentionDaily = dto.retentionDaily;
     }
@@ -134,6 +137,7 @@ export class AutoBackupService {
         settings.nextBackupAt = this.calculateNextBackupAt(
           settings.frequency as AutoBackupFrequency,
           settings.backupTime,
+          settings.timezone,
           new Date(),
         );
       } else {
@@ -207,6 +211,7 @@ export class AutoBackupService {
       settings.nextBackupAt = this.calculateNextBackupAt(
         settings.frequency as AutoBackupFrequency,
         settings.backupTime,
+        settings.timezone,
         new Date(),
       );
     }
@@ -244,6 +249,7 @@ export class AutoBackupService {
         settings.nextBackupAt = this.calculateNextBackupAt(
           settings.frequency as AutoBackupFrequency,
           settings.backupTime,
+          settings.timezone,
           now,
         );
         await this.settingsRepo.save(settings);
@@ -261,6 +267,7 @@ export class AutoBackupService {
         settings.nextBackupAt = this.calculateNextBackupAt(
           settings.frequency as AutoBackupFrequency,
           settings.backupTime,
+          settings.timezone,
           now,
         );
         await this.settingsRepo.save(settings);
@@ -642,15 +649,17 @@ export class AutoBackupService {
   private calculateNextBackupAt(
     frequency: AutoBackupFrequency,
     backupTime: string,
+    timezone: string,
     fromDate: Date,
   ): Date {
     const [hours, minutes] = backupTime.split(":").map(Number);
     const intervalHours = FREQUENCY_HOURS[frequency] ?? 24;
 
+    // Convert the local backup time to a UTC Date for today
+    const todayInTz = this.localTimeToUtc(fromDate, hours, minutes, timezone);
+
     if (frequency === "daily" || frequency === "weekly") {
-      // Schedule at the exact configured time
-      const next = new Date(fromDate);
-      next.setUTCHours(hours, minutes, 0, 0);
+      const next = new Date(todayInTz);
 
       // If the target time is in the past for today, move forward by one interval
       if (next.getTime() <= fromDate.getTime()) {
@@ -661,15 +670,64 @@ export class AutoBackupService {
 
     // Sub-daily frequencies (every6hours, every12hours):
     // Align to the configured time, then add interval increments
-    const todayBase = new Date(fromDate);
-    todayBase.setUTCHours(hours, minutes, 0, 0);
-
-    // Find the next slot at or after fromDate
-    let next = new Date(todayBase);
+    let next = new Date(todayInTz);
     while (next.getTime() <= fromDate.getTime()) {
       next = new Date(next.getTime() + intervalHours * 60 * 60 * 1000);
     }
     return next;
+  }
+
+  /**
+   * Convert a local time (hours:minutes) in the given timezone to a UTC Date
+   * for the same calendar day as `referenceDate`.
+   */
+  private localTimeToUtc(
+    referenceDate: Date,
+    hours: number,
+    minutes: number,
+    timezone: string,
+  ): Date {
+    // Get the current date parts in the target timezone
+    const formatter = new Intl.DateTimeFormat("en-US", {
+      timeZone: timezone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
+    const parts = formatter.formatToParts(referenceDate);
+    const year = parts.find((p) => p.type === "year")!.value;
+    const month = parts.find((p) => p.type === "month")!.value;
+    const day = parts.find((p) => p.type === "day")!.value;
+
+    // Build an ISO string representing the local time in the timezone,
+    // then compute the UTC equivalent by finding the offset
+    const localIso = `${year}-${month}-${day}T${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:00`;
+
+    // Use the timezone offset at that specific moment to convert to UTC
+    const offsetMs = this.getTimezoneOffsetMs(localIso, timezone);
+    return new Date(new Date(localIso + "Z").getTime() - offsetMs);
+  }
+
+  /**
+   * Get the UTC offset in milliseconds for a given local datetime in a timezone.
+   */
+  private getTimezoneOffsetMs(localIso: string, timezone: string): number {
+    const utcDate = new Date(localIso + "Z");
+    const formatter = new Intl.DateTimeFormat("en-US", {
+      timeZone: timezone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+    });
+    const parts = formatter.formatToParts(utcDate);
+    const get = (type: string) =>
+      parts.find((p) => p.type === type)!.value;
+    const localAtUtc = `${get("year")}-${get("month")}-${get("day")}T${get("hour")}:${get("minute")}:${get("second")}Z`;
+    return new Date(localAtUtc).getTime() - utcDate.getTime();
   }
 
   private validateFolderPath(folderPath: string): void {

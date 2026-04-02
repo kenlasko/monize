@@ -46,6 +46,7 @@ describe("AutoBackupService", () => {
     s.folderPath = "";
     s.frequency = "daily";
     s.backupTime = "02:00";
+    s.timezone = "UTC";
     s.retentionDaily = 7;
     s.retentionWeekly = 4;
     s.retentionMonthly = 6;
@@ -634,6 +635,105 @@ describe("AutoBackupService", () => {
       const savedCall = mockSettingsRepo.save.mock.calls[0][0];
       const nextAt = savedCall.nextBackupAt as Date;
       expect(nextAt.getUTCHours()).toBe(23);
+      expect(nextAt.getUTCMinutes()).toBe(0);
+    });
+
+    it("should convert local timezone backup time to UTC", async () => {
+      // America/New_York is UTC-5 (EST) or UTC-4 (EDT)
+      const existing = createSettings({
+        folderPath: "/backups",
+        backupTime: "02:00",
+        timezone: "America/New_York",
+      });
+      mockSettingsRepo.findOne.mockResolvedValue(existing);
+      setupFsWritableMocks();
+
+      await service.updateSettings(userId, {
+        enabled: true,
+        frequency: "daily",
+      });
+
+      const savedCall = mockSettingsRepo.save.mock.calls[0][0];
+      const nextAt = savedCall.nextBackupAt as Date;
+      // 02:00 EST = 07:00 UTC, or 02:00 EDT = 06:00 UTC
+      expect([6, 7]).toContain(nextAt.getUTCHours());
+      expect(nextAt.getUTCMinutes()).toBe(0);
+    });
+
+    it("should handle UTC timezone without offset", async () => {
+      const existing = createSettings({
+        folderPath: "/backups",
+        backupTime: "14:30",
+        timezone: "UTC",
+      });
+      mockSettingsRepo.findOne.mockResolvedValue(existing);
+      setupFsWritableMocks();
+
+      await service.updateSettings(userId, {
+        enabled: true,
+        frequency: "daily",
+      });
+
+      const savedCall = mockSettingsRepo.save.mock.calls[0][0];
+      const nextAt = savedCall.nextBackupAt as Date;
+      expect(nextAt.getUTCHours()).toBe(14);
+      expect(nextAt.getUTCMinutes()).toBe(30);
+    });
+
+    it("should handle positive UTC offset timezone", async () => {
+      // Europe/Berlin is UTC+1 (CET) or UTC+2 (CEST)
+      const existing = createSettings({
+        folderPath: "/backups",
+        backupTime: "03:00",
+        timezone: "Europe/Berlin",
+      });
+      mockSettingsRepo.findOne.mockResolvedValue(existing);
+      setupFsWritableMocks();
+
+      await service.updateSettings(userId, {
+        enabled: true,
+        frequency: "daily",
+      });
+
+      const savedCall = mockSettingsRepo.save.mock.calls[0][0];
+      const nextAt = savedCall.nextBackupAt as Date;
+      // 03:00 CET = 02:00 UTC, or 03:00 CEST = 01:00 UTC
+      expect([1, 2]).toContain(nextAt.getUTCHours());
+      expect(nextAt.getUTCMinutes()).toBe(0);
+    });
+
+    it("should store timezone when updating settings", async () => {
+      const existing = createSettings({ folderPath: "/backups" });
+      mockSettingsRepo.findOne.mockResolvedValue(existing);
+      setupFsWritableMocks();
+
+      await service.updateSettings(userId, {
+        timezone: "Asia/Tokyo",
+      });
+
+      const savedCall = mockSettingsRepo.save.mock.calls[0][0];
+      expect(savedCall.timezone).toBe("Asia/Tokyo");
+    });
+
+    it("should use timezone for sub-daily frequency scheduling", async () => {
+      // America/Chicago is UTC-6 (CST) or UTC-5 (CDT)
+      const existing = createSettings({
+        folderPath: "/backups",
+        backupTime: "06:00",
+        timezone: "America/Chicago",
+      });
+      mockSettingsRepo.findOne.mockResolvedValue(existing);
+      setupFsWritableMocks();
+
+      await service.updateSettings(userId, {
+        enabled: true,
+        frequency: "every12hours",
+      });
+
+      const savedCall = mockSettingsRepo.save.mock.calls[0][0];
+      const nextAt = savedCall.nextBackupAt as Date;
+      // 06:00 CST = 12:00 UTC, or 06:00 CDT = 11:00 UTC
+      // Slots are at 06:00 and 18:00 local, so UTC equivalents vary
       expect(nextAt.getUTCMinutes()).toBe(0);
     });
   });

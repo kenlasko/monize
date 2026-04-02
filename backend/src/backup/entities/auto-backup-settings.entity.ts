@@ -23,6 +23,9 @@ export class AutoBackupSettings {
   @Column({ name: "backup_time", length: 5, default: "02:00" })
   backupTime: string;
 
+  @Column({ length: 100, default: "UTC" })
+  timezone: string;
+
   @Column({ name: "retention_daily", type: "smallint", default: 7 })
   retentionDaily: number;
 

@@ -18,6 +18,12 @@ vi.mock('@/lib/errors', () => ({
   getErrorMessage: vi.fn((_error: unknown, fallback: string) => fallback),
 }));
 
+vi.mock('@/store/preferencesStore', () => ({
+  usePreferencesStore: vi.fn((selector: (s: Record<string, unknown>) => unknown) =>
+    selector({ preferences: { timezone: 'America/New_York' } }),
+  ),
+}));
+
 import { backupApi } from '@/lib/backupApi';
 import toast from 'react-hot-toast';
 
@@ -27,6 +33,7 @@ const defaultSettings = {
   folderPath: '',
   frequency: 'daily' as const,
   backupTime: '02:00',
+  timezone: 'America/New_York',
   retentionDaily: 7,
   retentionWeekly: 4,
   retentionMonthly: 6,
@@ -326,7 +333,7 @@ describe('AutoBackupSection', () => {
   it('renders backup time field with default value', async () => {
     await renderAutoBackupSection();
 
-    const timeInput = screen.getByLabelText('Backup Time (UTC)');
+    const timeInput = screen.getByLabelText('Backup Time (America/New_York)');
     expect(timeInput).toBeInTheDocument();
     expect(timeInput).toHaveValue('02:00');
   });
@@ -339,7 +346,7 @@ describe('AutoBackupSection', () => {
 
     await renderAutoBackupSection();
 
-    expect(screen.getByLabelText('Backup Time (UTC)')).toHaveValue('14:30');
+    expect(screen.getByLabelText('Backup Time (America/New_York)')).toHaveValue('14:30');
   });
 
   it('includes backupTime when saving settings', async () => {
@@ -351,7 +358,7 @@ describe('AutoBackupSection', () => {
     await renderAutoBackupSection();
 
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('Backup Time (UTC)'), {
+      fireEvent.change(screen.getByLabelText('Backup Time (America/New_York)'), {
         target: { value: '08:00' },
       });
     });
@@ -364,6 +371,39 @@ describe('AutoBackupSection', () => {
       expect(backupApi.updateAutoBackupSettings).toHaveBeenCalledWith(
         expect.objectContaining({
           backupTime: '08:00',
+        }),
+      );
+    });
+  });
+
+  it('displays timezone from user preferences in backup time label', async () => {
+    await renderAutoBackupSection();
+
+    expect(screen.getByLabelText('Backup Time (America/New_York)')).toBeInTheDocument();
+  });
+
+  it('sends timezone when saving settings', async () => {
+    (backupApi.updateAutoBackupSettings as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ...defaultSettings,
+      folderPath: '/backups',
+    });
+
+    await renderAutoBackupSection();
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Backup Folder'), {
+        target: { value: '/backups' },
+      });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Save Settings'));
+    });
+
+    await waitFor(() => {
+      expect(backupApi.updateAutoBackupSettings).toHaveBeenCalledWith(
+        expect.objectContaining({
+          timezone: 'America/New_York',
         }),
       );
     });

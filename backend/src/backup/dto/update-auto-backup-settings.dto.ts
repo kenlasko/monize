@@ -51,15 +51,25 @@ export class UpdateAutoBackupSettingsDto {
 
   @ApiPropertyOptional({
     description:
-      "Time of day (UTC, HH:MM) to run automatic backups. For sub-daily frequencies, this is the first run time.",
+      "Time of day (HH:MM, local to the configured timezone) to run automatic backups. For sub-daily frequencies, this is the first run time.",
     example: "02:00",
   })
   @IsOptional()
   @IsString()
   @Matches(/^([01]\d|2[0-3]):[0-5]\d$/, {
-    message: "backupTime must be in HH:MM format (24-hour UTC)",
+    message: "backupTime must be in HH:MM format (24-hour)",
   })
   backupTime?: string;
+
+  @ApiPropertyOptional({
+    description:
+      "IANA timezone identifier for interpreting backup time. Use 'UTC' or a timezone like 'America/New_York'.",
+    example: "America/New_York",
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  timezone?: string;
 
   @ApiPropertyOptional({
     description: "Number of daily backups to retain",

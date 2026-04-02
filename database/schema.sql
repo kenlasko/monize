@@ -500,6 +500,7 @@ CREATE TABLE auto_backup_settings (
     folder_path VARCHAR(1024) NOT NULL DEFAULT '',
     frequency VARCHAR(20) NOT NULL DEFAULT 'daily',
     backup_time VARCHAR(5) NOT NULL DEFAULT '02:00',
+    timezone VARCHAR(100) NOT NULL DEFAULT 'UTC',
     retention_daily SMALLINT NOT NULL DEFAULT 7,
     retention_weekly SMALLINT NOT NULL DEFAULT 4,
     retention_monthly SMALLINT NOT NULL DEFAULT 6,
