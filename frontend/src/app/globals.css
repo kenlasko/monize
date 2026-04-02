@@ -211,3 +211,9 @@ button {
   display: none !important;
 }
 
+/* Firefox -- the native calendar dropdown button lives inside the
+   input's UA shadow tree and cannot be targeted with a pseudo-element.
+   The custom CalendarPopover button is absolutely positioned on top
+   with z-10 and a solid background, visually covering and intercepting
+   clicks on Firefox's built-in picker toggle. */
+

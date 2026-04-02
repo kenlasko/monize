@@ -392,7 +392,7 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
         tabIndex={-1}
         onClick={handleCalendarClick}
         aria-label="Open date picker"
-        className="absolute top-px bottom-px right-px flex items-center pr-2.5 pl-1 bg-white dark:bg-gray-800 rounded-r-md text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+        className="absolute top-px bottom-px right-px z-10 flex items-center pr-2.5 pl-1 bg-white dark:bg-gray-800 rounded-r-md text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
       >
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
@@ -400,45 +400,10 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
       </button>
     );
 
-    // --- Desktop + custom format mode ---
-    // Text input with user's preferred format and CalendarPopover.
-    if (mode === 'desktop-formatted') {
-      return (
-        <div className="w-full">
-          {labelBlock}
-          <div className="relative" ref={calendarAnchorRef}>
-            <Input
-              ref={mergedRef}
-              id={inputId}
-              type="text"
-              value={displayValue}
-              onChange={handleTextChange}
-              onBlur={handleTextBlur}
-              onFocus={handleTextFocus}
-              onKeyDown={handleKeyDown}
-              placeholder={dateFormat}
-              error={props.error}
-              className="pr-9"
-              {...props}
-            />
-            {calendarButton}
-            {showCalendar && (
-              <CalendarPopover
-                value={isoValue}
-                onSelect={handleCalendarSelect}
-                onClose={handleCalendarClose}
-                anchorRef={calendarAnchorRef}
-              />
-            )}
-          </div>
-        </div>
-      );
-    }
-
-    // --- Desktop + browser format mode ---
+    // --- Desktop mode (both formatted and browser) ---
     // Native date input (supports arrow-key segment navigation) with the
     // browser's built-in picker icon hidden, replaced by CalendarPopover.
-    if (mode === 'desktop-browser') {
+    if (mode === 'desktop-formatted' || mode === 'desktop-browser') {
       return (
         <div className="w-full">
           {labelBlock}
