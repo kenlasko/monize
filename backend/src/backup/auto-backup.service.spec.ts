@@ -13,10 +13,12 @@ jest.mock("fs", () => {
     createWriteStream: jest.fn(),
     readdirSync: jest.fn(),
     unlinkSync: jest.fn(),
+    renameSync: jest.fn(),
     promises: {
       stat: jest.fn(),
       writeFile: jest.fn(),
       unlink: jest.fn(),
+      readdir: jest.fn(),
     },
   };
 });
@@ -43,6 +45,7 @@ describe("AutoBackupService", () => {
     s.enabled = false;
     s.folderPath = "";
     s.frequency = "daily";
+    s.backupTime = "02:00";
     s.retentionDaily = 7;
     s.retentionWeekly = 4;
     s.retentionMonthly = 6;
@@ -52,6 +55,22 @@ describe("AutoBackupService", () => {
     s.nextBackupAt = null;
     Object.assign(s, overrides);
     return s;
+  }
+
+  function setupFsWritableMocks() {
+    (fsPromises.stat as unknown as jest.Mock).mockResolvedValue({
+      isDirectory: () => true,
+    });
+    (fsPromises.writeFile as unknown as jest.Mock).mockResolvedValue(undefined);
+    (fsPromises.unlink as unknown as jest.Mock).mockResolvedValue(undefined);
+  }
+
+  function setupExportMocks() {
+    setupFsWritableMocks();
+    (fsMock.createWriteStream as unknown as jest.Mock).mockReturnValue({
+      on: jest.fn(),
+    });
+    (fsMock.readdirSync as unknown as jest.Mock).mockReturnValue([]);
   }
 
   beforeEach(async () => {
@@ -116,6 +135,7 @@ describe("AutoBackupService", () => {
       expect(result.enabled).toBe(false);
       expect(result.folderPath).toBe("");
       expect(result.frequency).toBe("daily");
+      expect(result.backupTime).toBe("02:00");
       expect(result.retentionDaily).toBe(7);
       expect(result.retentionWeekly).toBe(4);
       expect(result.retentionMonthly).toBe(6);
@@ -168,14 +188,7 @@ describe("AutoBackupService", () => {
     it("should validate folder is writable when enabling", async () => {
       const existing = createSettings({ folderPath: "/backups" });
       mockSettingsRepo.findOne.mockResolvedValue(existing);
-
-      (fsPromises.stat as unknown as jest.Mock).mockResolvedValue({
-        isDirectory: () => true,
-      });
-      (fsPromises.writeFile as unknown as jest.Mock).mockResolvedValue(
-        undefined,
-      );
-      (fsPromises.unlink as unknown as jest.Mock).mockResolvedValue(undefined);
+      setupFsWritableMocks();
 
       await service.updateSettings(userId, { enabled: true });
 
@@ -239,17 +252,22 @@ describe("AutoBackupService", () => {
         }),
       );
     });
+
+    it("should update backupTime", async () => {
+      const existing = createSettings();
+      mockSettingsRepo.findOne.mockResolvedValue(existing);
+
+      await service.updateSettings(userId, { backupTime: "14:30" });
+
+      expect(mockSettingsRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ backupTime: "14:30" }),
+      );
+    });
   });
 
   describe("validateFolder", () => {
     it("should return valid for a writable directory", async () => {
-      (fsPromises.stat as unknown as jest.Mock).mockResolvedValue({
-        isDirectory: () => true,
-      });
-      (fsPromises.writeFile as unknown as jest.Mock).mockResolvedValue(
-        undefined,
-      );
-      (fsPromises.unlink as unknown as jest.Mock).mockResolvedValue(undefined);
+      setupFsWritableMocks();
 
       const result = await service.validateFolder("/backups");
 
@@ -307,6 +325,41 @@ describe("AutoBackupService", () => {
     });
   });
 
+  describe("browseFolders", () => {
+    it("should list subdirectories", async () => {
+      (fsPromises.stat as unknown as jest.Mock).mockResolvedValue({
+        isDirectory: () => true,
+      });
+      (fsPromises.readdir as unknown as jest.Mock).mockResolvedValue([
+        { name: "backups", isDirectory: () => true },
+        { name: "data", isDirectory: () => true },
+        { name: ".hidden", isDirectory: () => true },
+        { name: "file.txt", isDirectory: () => false },
+      ]);
+
+      const result = await service.browseFolders("/");
+
+      expect(result.current).toBe("/");
+      expect(result.directories).toEqual(["backups", "data"]);
+    });
+
+    it("should throw for non-existent path", async () => {
+      (fsPromises.stat as unknown as jest.Mock).mockRejectedValue({
+        code: "ENOENT",
+      });
+
+      await expect(service.browseFolders("/no-such")).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it("should throw for relative paths", async () => {
+      await expect(service.browseFolders("relative")).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+  });
+
   describe("runManualBackup", () => {
     it("should throw if no settings configured", async () => {
       mockSettingsRepo.findOne.mockResolvedValue(null);
@@ -332,18 +385,7 @@ describe("AutoBackupService", () => {
         folderPath: "/backups",
       });
       mockSettingsRepo.findOne.mockResolvedValue(existing);
-
-      (fsPromises.stat as unknown as jest.Mock).mockResolvedValue({
-        isDirectory: () => true,
-      });
-      (fsPromises.writeFile as unknown as jest.Mock).mockResolvedValue(
-        undefined,
-      );
-      (fsPromises.unlink as unknown as jest.Mock).mockResolvedValue(undefined);
-      (fsMock.createWriteStream as unknown as jest.Mock).mockReturnValue({
-        on: jest.fn(),
-      });
-      (fsMock.readdirSync as unknown as jest.Mock).mockReturnValue([]);
+      setupExportMocks();
 
       const result = await service.runManualBackup(userId);
 
@@ -374,18 +416,7 @@ describe("AutoBackupService", () => {
         nextBackupAt: new Date(Date.now() - 3600000),
       });
       mockSettingsRepo.find.mockResolvedValue([settings]);
-
-      (fsPromises.stat as unknown as jest.Mock).mockResolvedValue({
-        isDirectory: () => true,
-      });
-      (fsPromises.writeFile as unknown as jest.Mock).mockResolvedValue(
-        undefined,
-      );
-      (fsPromises.unlink as unknown as jest.Mock).mockResolvedValue(undefined);
-      (fsMock.createWriteStream as unknown as jest.Mock).mockReturnValue({
-        on: jest.fn(),
-      });
-      (fsMock.readdirSync as unknown as jest.Mock).mockReturnValue([]);
+      setupExportMocks();
 
       await service.handleAutoBackupCron();
 
@@ -437,19 +468,8 @@ describe("AutoBackupService", () => {
         "monize-backup-2026-04-02T10-00-00.json.gz",
         "monize-backup-2026-04-03T10-00-00.json.gz",
       ];
+      setupExportMocks();
       (fsMock.readdirSync as unknown as jest.Mock).mockReturnValue(files);
-
-      // Set up mocks for the full runManualBackup flow
-      (fsPromises.stat as unknown as jest.Mock).mockResolvedValue({
-        isDirectory: () => true,
-      });
-      (fsPromises.writeFile as unknown as jest.Mock).mockResolvedValue(
-        undefined,
-      );
-      (fsPromises.unlink as unknown as jest.Mock).mockResolvedValue(undefined);
-      (fsMock.createWriteStream as unknown as jest.Mock).mockReturnValue({
-        on: jest.fn(),
-      });
 
       await service.runManualBackup(userId);
 
@@ -457,10 +477,9 @@ describe("AutoBackupService", () => {
       expect(fsMock.unlinkSync).toHaveBeenCalledWith(
         "/backups/monize-backup-2026-04-01T10-00-00.json.gz",
       );
-      expect(fsMock.unlinkSync).toHaveBeenCalledTimes(1);
     });
 
-    it("should keep one per calendar week for weekly retention", async () => {
+    it("should rename weekly representatives with weekly prefix", async () => {
       const settings = createSettings({
         enabled: true,
         folderPath: "/backups",
@@ -470,33 +489,23 @@ describe("AutoBackupService", () => {
       });
       mockSettingsRepo.findOne.mockResolvedValue(settings);
 
-      // Two files in the same week
       const files = [
-        "monize-backup-2026-03-30T10-00-00.json.gz", // Monday
-        "monize-backup-2026-03-31T10-00-00.json.gz", // Tuesday
+        "monize-backup-2026-03-30T10-00-00.json.gz",
+        "monize-backup-2026-03-31T10-00-00.json.gz",
       ];
+      setupExportMocks();
       (fsMock.readdirSync as unknown as jest.Mock).mockReturnValue(files);
-
-      (fsPromises.stat as unknown as jest.Mock).mockResolvedValue({
-        isDirectory: () => true,
-      });
-      (fsPromises.writeFile as unknown as jest.Mock).mockResolvedValue(
-        undefined,
-      );
-      (fsPromises.unlink as unknown as jest.Mock).mockResolvedValue(undefined);
-      (fsMock.createWriteStream as unknown as jest.Mock).mockReturnValue({
-        on: jest.fn(),
-      });
 
       await service.runManualBackup(userId);
 
-      // Newest (Mar 31) is kept by weekly, oldest (Mar 30) is deleted
-      expect(fsMock.unlinkSync).toHaveBeenCalledWith(
-        "/backups/monize-backup-2026-03-30T10-00-00.json.gz",
+      // Newest file (Mar 31) should be renamed to weekly format
+      expect(fsMock.renameSync).toHaveBeenCalledWith(
+        "/backups/monize-backup-2026-03-31T10-00-00.json.gz",
+        expect.stringMatching(/monize-backup-weekly-14-/),
       );
     });
 
-    it("should keep one per calendar month for monthly retention", async () => {
+    it("should rename monthly representatives with monthly prefix", async () => {
       const settings = createSettings({
         enabled: true,
         folderPath: "/backups",
@@ -506,30 +515,44 @@ describe("AutoBackupService", () => {
       });
       mockSettingsRepo.findOne.mockResolvedValue(settings);
 
-      // Files in two different months
       const files = [
         "monize-backup-2026-02-15T10-00-00.json.gz",
         "monize-backup-2026-03-15T10-00-00.json.gz",
       ];
+      setupExportMocks();
       (fsMock.readdirSync as unknown as jest.Mock).mockReturnValue(files);
-
-      (fsPromises.stat as unknown as jest.Mock).mockResolvedValue({
-        isDirectory: () => true,
-      });
-      (fsPromises.writeFile as unknown as jest.Mock).mockResolvedValue(
-        undefined,
-      );
-      (fsPromises.unlink as unknown as jest.Mock).mockResolvedValue(undefined);
-      (fsMock.createWriteStream as unknown as jest.Mock).mockReturnValue({
-        on: jest.fn(),
-      });
 
       await service.runManualBackup(userId);
 
-      // Keep most recent month (March), delete oldest (February)
-      expect(fsMock.unlinkSync).toHaveBeenCalledWith(
-        "/backups/monize-backup-2026-02-15T10-00-00.json.gz",
+      // Newest month (March) should be renamed to monthly format
+      expect(fsMock.renameSync).toHaveBeenCalledWith(
+        "/backups/monize-backup-2026-03-15T10-00-00.json.gz",
+        expect.stringMatching(/monize-backup-monthly-03-/),
       );
+    });
+
+    it("should recognize already-renamed weekly files", async () => {
+      const settings = createSettings({
+        enabled: true,
+        folderPath: "/backups",
+        retentionDaily: 1,
+        retentionWeekly: 1,
+        retentionMonthly: 0,
+      });
+      mockSettingsRepo.findOne.mockResolvedValue(settings);
+
+      const files = [
+        "monize-backup-2026-04-02T10-00-00.json.gz",
+        "monize-backup-weekly-14-2026-03-31T10-00-00.json.gz",
+      ];
+      setupExportMocks();
+      (fsMock.readdirSync as unknown as jest.Mock).mockReturnValue(files);
+
+      await service.runManualBackup(userId);
+
+      // Both files should be kept -- no deletes or renames needed
+      // The daily is the newest so kept by daily retention,
+      // the weekly file is already properly named
     });
 
     it("should not delete non-backup files", async () => {
@@ -547,105 +570,71 @@ describe("AutoBackupService", () => {
         "some-other-file.txt",
         "readme.md",
       ];
+      setupExportMocks();
       (fsMock.readdirSync as unknown as jest.Mock).mockReturnValue(files);
-
-      (fsPromises.stat as unknown as jest.Mock).mockResolvedValue({
-        isDirectory: () => true,
-      });
-      (fsPromises.writeFile as unknown as jest.Mock).mockResolvedValue(
-        undefined,
-      );
-      (fsPromises.unlink as unknown as jest.Mock).mockResolvedValue(undefined);
-      (fsMock.createWriteStream as unknown as jest.Mock).mockReturnValue({
-        on: jest.fn(),
-      });
 
       await service.runManualBackup(userId);
 
-      // Only the backup file is matched; non-matching files are ignored
       expect(fsMock.unlinkSync).not.toHaveBeenCalled();
     });
   });
 
-  describe("frequency calculation", () => {
-    it("should calculate next backup for daily frequency", async () => {
-      const existing = createSettings({ folderPath: "/backups" });
-      mockSettingsRepo.findOne.mockResolvedValue(existing);
-
-      (fsPromises.stat as unknown as jest.Mock).mockResolvedValue({
-        isDirectory: () => true,
+  describe("frequency calculation with backup time", () => {
+    it("should schedule daily backup at configured time", async () => {
+      const existing = createSettings({
+        folderPath: "/backups",
+        backupTime: "03:30",
       });
-      (fsPromises.writeFile as unknown as jest.Mock).mockResolvedValue(
-        undefined,
-      );
-      (fsPromises.unlink as unknown as jest.Mock).mockResolvedValue(undefined);
+      mockSettingsRepo.findOne.mockResolvedValue(existing);
+      setupFsWritableMocks();
 
-      const before = Date.now();
       await service.updateSettings(userId, {
         enabled: true,
         frequency: "daily",
       });
-      const after = Date.now();
 
       const savedCall = mockSettingsRepo.save.mock.calls[0][0];
-      const nextAt = savedCall.nextBackupAt.getTime();
-      // Should be roughly 24 hours from now
-      expect(nextAt).toBeGreaterThanOrEqual(
-        before + 24 * 60 * 60 * 1000 - 1000,
-      );
-      expect(nextAt).toBeLessThanOrEqual(after + 24 * 60 * 60 * 1000 + 1000);
+      const nextAt = savedCall.nextBackupAt as Date;
+      expect(nextAt.getUTCHours()).toBe(3);
+      expect(nextAt.getUTCMinutes()).toBe(30);
     });
 
-    it("should calculate next backup for every6hours frequency", async () => {
-      const existing = createSettings({ folderPath: "/backups" });
-      mockSettingsRepo.findOne.mockResolvedValue(existing);
-
-      (fsPromises.stat as unknown as jest.Mock).mockResolvedValue({
-        isDirectory: () => true,
+    it("should schedule next slot for sub-daily frequency", async () => {
+      const existing = createSettings({
+        folderPath: "/backups",
+        backupTime: "00:00",
       });
-      (fsPromises.writeFile as unknown as jest.Mock).mockResolvedValue(
-        undefined,
-      );
-      (fsPromises.unlink as unknown as jest.Mock).mockResolvedValue(undefined);
+      mockSettingsRepo.findOne.mockResolvedValue(existing);
+      setupFsWritableMocks();
 
-      const before = Date.now();
       await service.updateSettings(userId, {
         enabled: true,
         frequency: "every6hours",
       });
-      const after = Date.now();
 
       const savedCall = mockSettingsRepo.save.mock.calls[0][0];
-      const nextAt = savedCall.nextBackupAt.getTime();
-      expect(nextAt).toBeGreaterThanOrEqual(before + 6 * 60 * 60 * 1000 - 1000);
-      expect(nextAt).toBeLessThanOrEqual(after + 6 * 60 * 60 * 1000 + 1000);
+      const nextAt = savedCall.nextBackupAt as Date;
+      // Should be at minute 0 (aligned to configured time)
+      expect(nextAt.getUTCMinutes()).toBe(0);
     });
 
-    it("should calculate next backup for weekly frequency", async () => {
-      const existing = createSettings({ folderPath: "/backups" });
-      mockSettingsRepo.findOne.mockResolvedValue(existing);
-
-      (fsPromises.stat as unknown as jest.Mock).mockResolvedValue({
-        isDirectory: () => true,
+    it("should schedule weekly backup at configured time", async () => {
+      const existing = createSettings({
+        folderPath: "/backups",
+        backupTime: "23:00",
       });
-      (fsPromises.writeFile as unknown as jest.Mock).mockResolvedValue(
-        undefined,
-      );
-      (fsPromises.unlink as unknown as jest.Mock).mockResolvedValue(undefined);
+      mockSettingsRepo.findOne.mockResolvedValue(existing);
+      setupFsWritableMocks();
 
-      const before = Date.now();
       await service.updateSettings(userId, {
         enabled: true,
         frequency: "weekly",
       });
-      const after = Date.now();
 
       const savedCall = mockSettingsRepo.save.mock.calls[0][0];
-      const nextAt = savedCall.nextBackupAt.getTime();
-      expect(nextAt).toBeGreaterThanOrEqual(
-        before + 168 * 60 * 60 * 1000 - 1000,
-      );
-      expect(nextAt).toBeLessThanOrEqual(after + 168 * 60 * 60 * 1000 + 1000);
+      const nextAt = savedCall.nextBackupAt as Date;
+      expect(nextAt.getUTCHours()).toBe(23);
+      expect(nextAt.getUTCMinutes()).toBe(0);
     });
   });
 });

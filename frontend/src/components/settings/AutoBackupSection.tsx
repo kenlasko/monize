@@ -37,8 +37,12 @@ export function AutoBackupSection() {
   const [frequency, setFrequency] = useState<AutoBackupSettings['frequency']>('daily');
   const [retentionDaily, setRetentionDaily] = useState(7);
   const [retentionWeekly, setRetentionWeekly] = useState(4);
+  const [backupTime, setBackupTime] = useState('02:00');
   const [retentionMonthly, setRetentionMonthly] = useState(6);
   const [isDirty, setIsDirty] = useState(false);
+  const [isBrowsing, setIsBrowsing] = useState(false);
+  const [browsePath, setBrowsePath] = useState('/');
+  const [browseEntries, setBrowseEntries] = useState<string[]>([]);
 
   const loadSettings = useCallback(async () => {
     try {
@@ -47,6 +51,7 @@ export function AutoBackupSection() {
       setEnabled(data.enabled);
       setFolderPath(data.folderPath);
       setFrequency(data.frequency);
+      setBackupTime(data.backupTime);
       setRetentionDaily(data.retentionDaily);
       setRetentionWeekly(data.retentionWeekly);
       setRetentionMonthly(data.retentionMonthly);
@@ -94,6 +99,7 @@ export function AutoBackupSection() {
         enabled,
         folderPath,
         frequency,
+        backupTime,
         retentionDaily,
         retentionWeekly,
         retentionMonthly,
@@ -124,6 +130,36 @@ export function AutoBackupSection() {
   };
 
   const markDirty = () => setIsDirty(true);
+
+  const handleBrowse = async (path: string) => {
+    setIsBrowsing(true);
+    try {
+      const result = await backupApi.browseFolders(path);
+      setBrowsePath(result.current);
+      setBrowseEntries(result.directories);
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Failed to browse folders'));
+    } finally {
+      setIsBrowsing(false);
+    }
+  };
+
+  const handleOpenBrowse = () => {
+    const startPath = folderPath.trim() || '/';
+    handleBrowse(startPath);
+  };
+
+  const handleSelectBrowsedFolder = () => {
+    setFolderPath(browsePath);
+    setBrowseEntries([]);
+    setFolderValid(null);
+    setFolderError(null);
+    markDirty();
+  };
+
+  const handleCloseBrowse = () => {
+    setBrowseEntries([]);
+  };
 
   const handleRetentionChange = (
     setter: (v: number) => void,
@@ -204,12 +240,79 @@ export function AutoBackupSection() {
           </div>
           <Button
             variant="outline"
+            onClick={handleOpenBrowse}
+          >
+            Browse...
+          </Button>
+          <Button
+            variant="outline"
             onClick={handleValidateFolder}
             disabled={isValidating || !folderPath.trim()}
           >
             {isValidating ? 'Validating...' : 'Validate'}
           </Button>
         </div>
+        {/* Browse dialog */}
+        {browseEntries.length > 0 && (
+          <div className="mt-2 border border-gray-200 dark:border-gray-600 rounded-lg p-3 bg-gray-50 dark:bg-gray-700/50">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">
+                {browsePath}
+              </p>
+              <div className="flex gap-1">
+                <Button
+                  variant="outline"
+                  onClick={handleSelectBrowsedFolder}
+                >
+                  Select This Folder
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={handleCloseBrowse}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+            <div className="max-h-48 overflow-y-auto border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-800">
+              {browsePath !== '/' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const parent = browsePath.replace(/\/[^/]+\/?$/, '') || '/';
+                    handleBrowse(parent);
+                  }}
+                  disabled={isBrowsing}
+                  className="w-full text-left px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                  </svg>
+                  ..
+                </button>
+              )}
+              {browseEntries.map((dir) => (
+                <button
+                  key={dir}
+                  type="button"
+                  onClick={() => handleBrowse(`${browsePath === '/' ? '' : browsePath}/${dir}`)}
+                  disabled={isBrowsing}
+                  className="w-full text-left px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                  </svg>
+                  {dir}
+                </button>
+              ))}
+              {browseEntries.length === 0 && (
+                <p className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400 italic">
+                  No subdirectories
+                </p>
+              )}
+            </div>
+          </div>
+        )}
         {folderValid === true && (
           <p className="mt-1 text-sm text-green-600 dark:text-green-400 flex items-center gap-1">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -234,6 +337,31 @@ export function AutoBackupSection() {
           }}
           options={FREQUENCY_OPTIONS}
         />
+      </div>
+
+      {/* Backup Time */}
+      <div className="mb-6">
+        <label
+          htmlFor="backup-time"
+          className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+        >
+          Backup Time (UTC)
+        </label>
+        <input
+          id="backup-time"
+          type="time"
+          value={backupTime}
+          onChange={(e) => {
+            setBackupTime(e.target.value);
+            markDirty();
+          }}
+          className="w-40 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
+        />
+        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+          {frequency === 'every6hours' || frequency === 'every12hours'
+            ? 'First backup of the day starts at this time (UTC). Subsequent backups follow at the configured interval.'
+            : 'Time of day to run the backup (UTC 24-hour format).'}
+        </p>
       </div>
 
       {/* Retention Policy */}

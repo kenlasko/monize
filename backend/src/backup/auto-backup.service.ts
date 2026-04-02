@@ -2,7 +2,13 @@ import { Injectable, Logger, BadRequestException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository, DataSource, LessThanOrEqual } from "typeorm";
 import { Cron } from "@nestjs/schedule";
-import { createWriteStream, promises as fs, readdirSync, unlinkSync } from "fs";
+import {
+  createWriteStream,
+  promises as fs,
+  readdirSync,
+  unlinkSync,
+  renameSync,
+} from "fs";
 import { join } from "path";
 import { createGzip } from "zlib";
 import { pipeline } from "stream/promises";
@@ -16,8 +22,18 @@ import {
 const BACKUP_VERSION = 1;
 
 const BACKUP_FILE_PREFIX = "monize-backup-";
-const BACKUP_FILE_PATTERN =
+
+// Matches daily backups: monize-backup-YYYY-MM-DDTHH-MM-SS.json.gz
+const DAILY_FILE_PATTERN =
   /^monize-backup-(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2})\.json\.gz$/;
+
+// Matches weekly backups: monize-backup-weekly-WW-YYYY-MM-DDTHH-MM-SS.json.gz
+const WEEKLY_FILE_PATTERN =
+  /^monize-backup-weekly-(\d{2})-(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2})\.json\.gz$/;
+
+// Matches monthly backups: monize-backup-monthly-MM-YYYY-MM-DDTHH-MM-SS.json.gz
+const MONTHLY_FILE_PATTERN =
+  /^monize-backup-monthly-(\d{2})-(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2})\.json\.gz$/;
 
 const FREQUENCY_HOURS: Record<AutoBackupFrequency, number> = {
   every6hours: 6,
@@ -25,6 +41,21 @@ const FREQUENCY_HOURS: Record<AutoBackupFrequency, number> = {
   daily: 24,
   weekly: 168,
 };
+
+interface BackupFile {
+  name: string;
+  date: Date;
+  tier: "daily" | "weekly" | "monthly";
+}
+
+function parseTimestampToDate(ts: string): Date | null {
+  const isoStr = ts.replace(
+    /^(\d{4}-\d{2}-\d{2})T(\d{2})-(\d{2})-(\d{2})$/,
+    "$1T$2:$3:$4Z",
+  );
+  const date = new Date(isoStr);
+  return isNaN(date.getTime()) ? null : date;
+}
 
 @Injectable()
 export class AutoBackupService {
@@ -48,6 +79,7 @@ export class AutoBackupService {
     defaults.enabled = false;
     defaults.folderPath = "";
     defaults.frequency = "daily";
+    defaults.backupTime = "02:00";
     defaults.retentionDaily = 7;
     defaults.retentionWeekly = 4;
     defaults.retentionMonthly = 6;
@@ -77,6 +109,9 @@ export class AutoBackupService {
     if (dto.frequency !== undefined) {
       settings.frequency = dto.frequency;
     }
+    if (dto.backupTime !== undefined) {
+      settings.backupTime = dto.backupTime;
+    }
     if (dto.retentionDaily !== undefined) {
       settings.retentionDaily = dto.retentionDaily;
     }
@@ -98,6 +133,7 @@ export class AutoBackupService {
         await this.assertFolderWritable(settings.folderPath);
         settings.nextBackupAt = this.calculateNextBackupAt(
           settings.frequency as AutoBackupFrequency,
+          settings.backupTime,
           new Date(),
         );
       } else {
@@ -120,6 +156,34 @@ export class AutoBackupService {
     }
   }
 
+  async browseFolders(
+    folderPath: string,
+  ): Promise<{ current: string; directories: string[] }> {
+    this.validateFolderPath(folderPath);
+
+    let stat: Awaited<ReturnType<typeof fs.stat>>;
+    try {
+      stat = await fs.stat(folderPath);
+    } catch (error) {
+      if (error.code === "ENOENT") {
+        throw new BadRequestException(`Folder does not exist: ${folderPath}`);
+      }
+      throw new BadRequestException(`Cannot access folder: ${folderPath}`);
+    }
+
+    if (!stat.isDirectory()) {
+      throw new BadRequestException(`Path is not a directory: ${folderPath}`);
+    }
+
+    const entries = await fs.readdir(folderPath, { withFileTypes: true });
+    const directories = entries
+      .filter((e) => e.isDirectory() && !e.name.startsWith("."))
+      .map((e) => e.name)
+      .sort((a, b) => a.localeCompare(b));
+
+    return { current: folderPath, directories };
+  }
+
   async runManualBackup(
     userId: string,
   ): Promise<{ message: string; filename: string }> {
@@ -134,7 +198,7 @@ export class AutoBackupService {
 
     await this.assertFolderWritable(settings.folderPath);
     const filename = await this.exportToFile(userId, settings.folderPath);
-    await this.enforceRetention(settings.folderPath, settings);
+    this.enforceRetention(settings.folderPath, settings);
 
     settings.lastBackupAt = new Date();
     settings.lastBackupStatus = "success";
@@ -142,6 +206,7 @@ export class AutoBackupService {
     if (settings.enabled) {
       settings.nextBackupAt = this.calculateNextBackupAt(
         settings.frequency as AutoBackupFrequency,
+        settings.backupTime,
         new Date(),
       );
     }
@@ -171,13 +236,14 @@ export class AutoBackupService {
           settings.userId,
           settings.folderPath,
         );
-        await this.enforceRetention(settings.folderPath, settings);
+        this.enforceRetention(settings.folderPath, settings);
 
         settings.lastBackupAt = now;
         settings.lastBackupStatus = "success";
         settings.lastBackupError = null;
         settings.nextBackupAt = this.calculateNextBackupAt(
           settings.frequency as AutoBackupFrequency,
+          settings.backupTime,
           now,
         );
         await this.settingsRepo.save(settings);
@@ -194,6 +260,7 @@ export class AutoBackupService {
         settings.lastBackupError = String(error.message).slice(0, 1024);
         settings.nextBackupAt = this.calculateNextBackupAt(
           settings.frequency as AutoBackupFrequency,
+          settings.backupTime,
           now,
         );
         await this.settingsRepo.save(settings);
@@ -377,79 +444,186 @@ export class AutoBackupService {
       return;
     }
 
-    // Parse all backup files with valid timestamps
-    const backupFiles: Array<{ name: string; date: Date }> = [];
+    // Parse all backup files (daily, weekly, and monthly)
+    const allFiles: BackupFile[] = [];
     for (const name of entries) {
-      const match = BACKUP_FILE_PATTERN.exec(name);
-      if (match) {
-        // Convert filename timestamp back to Date
-        const isoStr = match[1].replace(
-          /^(\d{4}-\d{2}-\d{2})T(\d{2})-(\d{2})-(\d{2})$/,
-          "$1T$2:$3:$4Z",
-        );
-        const date = new Date(isoStr);
-        if (!isNaN(date.getTime())) {
-          backupFiles.push({ name, date });
-        }
+      const dailyMatch = DAILY_FILE_PATTERN.exec(name);
+      if (dailyMatch) {
+        const date = parseTimestampToDate(dailyMatch[1]);
+        if (date) allFiles.push({ name, date, tier: "daily" });
+        continue;
+      }
+      const weeklyMatch = WEEKLY_FILE_PATTERN.exec(name);
+      if (weeklyMatch) {
+        const date = parseTimestampToDate(weeklyMatch[2]);
+        if (date) allFiles.push({ name, date, tier: "weekly" });
+        continue;
+      }
+      const monthlyMatch = MONTHLY_FILE_PATTERN.exec(name);
+      if (monthlyMatch) {
+        const date = parseTimestampToDate(monthlyMatch[2]);
+        if (date) allFiles.push({ name, date, tier: "monthly" });
+        continue;
       }
     }
 
-    if (backupFiles.length === 0) return;
+    if (allFiles.length === 0) return;
 
     // Sort newest first
-    const sorted = [...backupFiles].sort(
+    const sorted = [...allFiles].sort(
       (a, b) => b.date.getTime() - a.date.getTime(),
     );
 
     const filesToKeep = new Set<string>();
 
-    // Daily retention: keep the N most recent backups
+    // --- Daily retention: keep the N most recent files (any tier) ---
     const dailyLimit = settings.retentionDaily;
     for (let i = 0; i < Math.min(dailyLimit, sorted.length); i++) {
       filesToKeep.add(sorted[i].name);
     }
 
-    // Weekly retention: keep one per calendar week (ISO week) for N weeks
+    // --- Weekly retention: one per ISO week for N weeks ---
+    // Promote the newest daily file per week to a weekly-named file
     if (settings.retentionWeekly > 0) {
-      const weeksSeen = new Set<string>();
+      const weeksSeen = new Map<string, BackupFile>();
       for (const file of sorted) {
         const weekKey = this.getIsoWeekKey(file.date);
         if (!weeksSeen.has(weekKey)) {
-          weeksSeen.add(weekKey);
-          if (weeksSeen.size <= settings.retentionWeekly) {
+          weeksSeen.set(weekKey, file);
+        }
+      }
+
+      let weekCount = 0;
+      for (const [weekKey, file] of weeksSeen) {
+        if (weekCount >= settings.retentionWeekly) break;
+        weekCount++;
+
+        const weekNum = weekKey.split("-W")[1];
+        const expectedWeeklyName = this.buildWeeklyFilename(weekNum, file.date);
+
+        if (file.tier === "weekly" && file.name === expectedWeeklyName) {
+          // Already correctly named
+          filesToKeep.add(file.name);
+        } else if (file.tier === "daily") {
+          // Rename the daily file to weekly
+          try {
+            renameSync(
+              join(folderPath, file.name),
+              join(folderPath, expectedWeeklyName),
+            );
+            this.logger.log(
+              `Retention: promoted ${file.name} to ${expectedWeeklyName}`,
+            );
+            // Update tracking: remove old name, add new
+            filesToKeep.delete(file.name);
+            filesToKeep.add(expectedWeeklyName);
+            // Update the file object in sorted array so monthly can find it
+            file.name = expectedWeeklyName;
+            file.tier = "weekly";
+          } catch (err) {
+            this.logger.warn(
+              `Retention: failed to rename ${file.name}: ${err.message}`,
+            );
             filesToKeep.add(file.name);
           }
+        } else {
+          // Weekly or monthly file from a different week period -- keep it
+          filesToKeep.add(file.name);
         }
       }
     }
 
-    // Monthly retention: keep one per calendar month for N months
+    // --- Monthly retention: one per calendar month for N months ---
+    // Promote the newest file per month to a monthly-named file
     if (settings.retentionMonthly > 0) {
-      const monthsSeen = new Set<string>();
+      const monthsSeen = new Map<string, BackupFile>();
       for (const file of sorted) {
         const monthKey = `${file.date.getUTCFullYear()}-${String(file.date.getUTCMonth() + 1).padStart(2, "0")}`;
         if (!monthsSeen.has(monthKey)) {
-          monthsSeen.add(monthKey);
-          if (monthsSeen.size <= settings.retentionMonthly) {
+          monthsSeen.set(monthKey, file);
+        }
+      }
+
+      let monthCount = 0;
+      for (const [monthKey, file] of monthsSeen) {
+        if (monthCount >= settings.retentionMonthly) break;
+        monthCount++;
+
+        const monthNum = monthKey.split("-")[1];
+        const expectedMonthlyName = this.buildMonthlyFilename(
+          monthNum,
+          file.date,
+        );
+
+        if (file.tier === "monthly" && file.name === expectedMonthlyName) {
+          filesToKeep.add(file.name);
+        } else if (file.tier === "daily" || file.tier === "weekly") {
+          // Rename to monthly
+          try {
+            renameSync(
+              join(folderPath, file.name),
+              join(folderPath, expectedMonthlyName),
+            );
+            this.logger.log(
+              `Retention: promoted ${file.name} to ${expectedMonthlyName}`,
+            );
+            filesToKeep.delete(file.name);
+            filesToKeep.add(expectedMonthlyName);
+            file.name = expectedMonthlyName;
+            file.tier = "monthly";
+          } catch (err) {
+            this.logger.warn(
+              `Retention: failed to rename ${file.name}: ${err.message}`,
+            );
             filesToKeep.add(file.name);
           }
+        } else {
+          filesToKeep.add(file.name);
         }
       }
     }
 
     // Delete files not covered by any retention tier
-    for (const file of sorted) {
-      if (!filesToKeep.has(file.name)) {
+    // Re-read directory since we may have renamed files
+    let currentEntries: string[];
+    try {
+      currentEntries = readdirSync(folderPath);
+    } catch {
+      return;
+    }
+
+    for (const name of currentEntries) {
+      const isBackup =
+        DAILY_FILE_PATTERN.test(name) ||
+        WEEKLY_FILE_PATTERN.test(name) ||
+        MONTHLY_FILE_PATTERN.test(name);
+      if (isBackup && !filesToKeep.has(name)) {
         try {
-          unlinkSync(join(folderPath, file.name));
-          this.logger.log(`Retention: deleted old backup ${file.name}`);
+          unlinkSync(join(folderPath, name));
+          this.logger.log(`Retention: deleted old backup ${name}`);
         } catch (err) {
           this.logger.warn(
-            `Retention: failed to delete ${file.name}: ${err.message}`,
+            `Retention: failed to delete ${name}: ${err.message}`,
           );
         }
       }
     }
+  }
+
+  private buildWeeklyFilename(weekNum: string, date: Date): string {
+    const ts = date
+      .toISOString()
+      .replace(/:/g, "-")
+      .replace(/\.\d{3}Z$/, "");
+    return `${BACKUP_FILE_PREFIX}weekly-${weekNum}-${ts}.json.gz`;
+  }
+
+  private buildMonthlyFilename(monthNum: string, date: Date): string {
+    const ts = date
+      .toISOString()
+      .replace(/:/g, "-")
+      .replace(/\.\d{3}Z$/, "");
+    return `${BACKUP_FILE_PREFIX}monthly-${monthNum}-${ts}.json.gz`;
   }
 
   private getIsoWeekKey(date: Date): string {
@@ -467,10 +641,35 @@ export class AutoBackupService {
 
   private calculateNextBackupAt(
     frequency: AutoBackupFrequency,
+    backupTime: string,
     fromDate: Date,
   ): Date {
-    const hours = FREQUENCY_HOURS[frequency] ?? 24;
-    return new Date(fromDate.getTime() + hours * 60 * 60 * 1000);
+    const [hours, minutes] = backupTime.split(":").map(Number);
+    const intervalHours = FREQUENCY_HOURS[frequency] ?? 24;
+
+    if (frequency === "daily" || frequency === "weekly") {
+      // Schedule at the exact configured time
+      const next = new Date(fromDate);
+      next.setUTCHours(hours, minutes, 0, 0);
+
+      // If the target time is in the past for today, move forward by one interval
+      if (next.getTime() <= fromDate.getTime()) {
+        next.setTime(next.getTime() + intervalHours * 60 * 60 * 1000);
+      }
+      return next;
+    }
+
+    // Sub-daily frequencies (every6hours, every12hours):
+    // Align to the configured time, then add interval increments
+    const todayBase = new Date(fromDate);
+    todayBase.setUTCHours(hours, minutes, 0, 0);
+
+    // Find the next slot at or after fromDate
+    let next = new Date(todayBase);
+    while (next.getTime() <= fromDate.getTime()) {
+      next = new Date(next.getTime() + intervalHours * 60 * 60 * 1000);
+    }
+    return next;
   }
 
   private validateFolderPath(folderPath: string): void {

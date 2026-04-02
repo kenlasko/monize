@@ -50,6 +50,18 @@ export class UpdateAutoBackupSettingsDto {
   frequency?: AutoBackupFrequency;
 
   @ApiPropertyOptional({
+    description:
+      "Time of day (UTC, HH:MM) to run automatic backups. For sub-daily frequencies, this is the first run time.",
+    example: "02:00",
+  })
+  @IsOptional()
+  @IsString()
+  @Matches(/^([01]\d|2[0-3]):[0-5]\d$/, {
+    message: "backupTime must be in HH:MM format (24-hour UTC)",
+  })
+  backupTime?: string;
+
+  @ApiPropertyOptional({
     description: "Number of daily backups to retain",
     example: 7,
   })

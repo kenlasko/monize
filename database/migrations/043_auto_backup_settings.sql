@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS auto_backup_settings (
     enabled BOOLEAN NOT NULL DEFAULT false,
     folder_path VARCHAR(1024) NOT NULL DEFAULT '',
     frequency VARCHAR(20) NOT NULL DEFAULT 'daily',
+    backup_time VARCHAR(5) NOT NULL DEFAULT '02:00',
     retention_daily SMALLINT NOT NULL DEFAULT 7,
     retention_weekly SMALLINT NOT NULL DEFAULT 4,
     retention_monthly SMALLINT NOT NULL DEFAULT 6,
@@ -14,3 +15,6 @@ CREATE TABLE IF NOT EXISTS auto_backup_settings (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- For existing installations that already have the table without backup_time
+ALTER TABLE auto_backup_settings ADD COLUMN IF NOT EXISTS backup_time VARCHAR(5) NOT NULL DEFAULT '02:00';

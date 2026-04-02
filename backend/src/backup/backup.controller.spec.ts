@@ -27,6 +27,7 @@ describe("BackupController", () => {
       getSettings: jest.fn(),
       updateSettings: jest.fn(),
       validateFolder: jest.fn(),
+      browseFolders: jest.fn(),
       runManualBackup: jest.fn(),
     };
 
@@ -206,6 +207,25 @@ describe("BackupController", () => {
       });
 
       expect(result).toEqual({ valid: false, error: "Folder does not exist" });
+    });
+  });
+
+  describe("browseFolders", () => {
+    it("should delegate to autoBackupService.browseFolders", async () => {
+      const expected = {
+        current: "/backups",
+        directories: ["daily", "weekly"],
+      };
+      mockAutoBackupService.browseFolders.mockResolvedValue(expected);
+
+      const result = await controller.browseFolders({
+        folderPath: "/backups",
+      });
+
+      expect(mockAutoBackupService.browseFolders).toHaveBeenCalledWith(
+        "/backups",
+      );
+      expect(result).toEqual(expected);
     });
   });
 

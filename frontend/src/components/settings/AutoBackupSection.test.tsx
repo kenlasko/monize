@@ -7,6 +7,7 @@ vi.mock('@/lib/backupApi', () => ({
     getAutoBackupSettings: vi.fn(),
     updateAutoBackupSettings: vi.fn(),
     validateFolder: vi.fn(),
+    browseFolders: vi.fn(),
     runAutoBackup: vi.fn(),
     exportBackup: vi.fn(),
     restoreBackup: vi.fn(),
@@ -25,6 +26,7 @@ const defaultSettings = {
   enabled: false,
   folderPath: '',
   frequency: 'daily' as const,
+  backupTime: '02:00',
   retentionDaily: 7,
   retentionWeekly: 4,
   retentionMonthly: 6,
@@ -319,5 +321,108 @@ describe('AutoBackupSection', () => {
     await renderAutoBackupSection();
 
     expect(screen.getByText('Validate')).toBeDisabled();
+  });
+
+  it('renders backup time field with default value', async () => {
+    await renderAutoBackupSection();
+
+    const timeInput = screen.getByLabelText('Backup Time (UTC)');
+    expect(timeInput).toBeInTheDocument();
+    expect(timeInput).toHaveValue('02:00');
+  });
+
+  it('populates backup time from settings', async () => {
+    (backupApi.getAutoBackupSettings as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ...defaultSettings,
+      backupTime: '14:30',
+    });
+
+    await renderAutoBackupSection();
+
+    expect(screen.getByLabelText('Backup Time (UTC)')).toHaveValue('14:30');
+  });
+
+  it('includes backupTime when saving settings', async () => {
+    (backupApi.updateAutoBackupSettings as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ...defaultSettings,
+      backupTime: '08:00',
+    });
+
+    await renderAutoBackupSection();
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Backup Time (UTC)'), {
+        target: { value: '08:00' },
+      });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Save Settings'));
+    });
+
+    await waitFor(() => {
+      expect(backupApi.updateAutoBackupSettings).toHaveBeenCalledWith(
+        expect.objectContaining({
+          backupTime: '08:00',
+        }),
+      );
+    });
+  });
+
+  it('shows Browse button for folder selection', async () => {
+    await renderAutoBackupSection();
+
+    expect(screen.getByText('Browse...')).toBeInTheDocument();
+  });
+
+  it('opens folder browser and displays directories', async () => {
+    (backupApi.browseFolders as ReturnType<typeof vi.fn>).mockResolvedValue({
+      current: '/',
+      directories: ['backups', 'data', 'tmp'],
+    });
+
+    await renderAutoBackupSection();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Browse...'));
+    });
+
+    await waitFor(() => {
+      expect(backupApi.browseFolders).toHaveBeenCalledWith('/');
+      expect(screen.getByText('backups')).toBeInTheDocument();
+      expect(screen.getByText('data')).toBeInTheDocument();
+      expect(screen.getByText('tmp')).toBeInTheDocument();
+    });
+  });
+
+  it('navigates into a subdirectory when clicked', async () => {
+    (backupApi.browseFolders as ReturnType<typeof vi.fn>)
+      .mockResolvedValueOnce({
+        current: '/',
+        directories: ['backups', 'data'],
+      })
+      .mockResolvedValueOnce({
+        current: '/backups',
+        directories: ['daily', 'weekly'],
+      });
+
+    await renderAutoBackupSection();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Browse...'));
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('backups')).toBeInTheDocument();
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('backups'));
+    });
+
+    await waitFor(() => {
+      expect(backupApi.browseFolders).toHaveBeenCalledWith('/backups');
+      expect(screen.getByText('daily')).toBeInTheDocument();
+    });
   });
 });

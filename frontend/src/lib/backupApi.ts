@@ -75,6 +75,16 @@ export const backupApi = {
     return response.data;
   },
 
+  browseFolders: async (
+    path: string,
+  ): Promise<{ current: string; directories: string[] }> => {
+    const response = await apiClient.post<{ current: string; directories: string[] }>(
+      '/backup/browse-folders',
+      { folderPath: path },
+    );
+    return response.data;
+  },
+
   runAutoBackup: async (): Promise<{ message: string; filename: string }> => {
     const response = await apiClient.post<{ message: string; filename: string }>(
       '/backup/run-auto-backup',

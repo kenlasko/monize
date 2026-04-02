@@ -101,6 +101,7 @@ export interface AutoBackupSettings {
   enabled: boolean;
   folderPath: string;
   frequency: 'daily' | 'every12hours' | 'every6hours' | 'weekly';
+  backupTime: string;
   retentionDaily: number;
   retentionWeekly: number;
   retentionMonthly: number;
@@ -116,6 +117,7 @@ export interface UpdateAutoBackupSettingsData {
   enabled?: boolean;
   folderPath?: string;
   frequency?: AutoBackupSettings['frequency'];
+  backupTime?: string;
   retentionDaily?: number;
   retentionWeekly?: number;
   retentionMonthly?: number;

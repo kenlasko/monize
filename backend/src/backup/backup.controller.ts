@@ -106,6 +106,15 @@ export class BackupController {
     return this.autoBackupService.validateFolder(dto.folderPath);
   }
 
+  @Post("browse-folders")
+  @DemoRestricted()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "List subdirectories in a folder" })
+  @ApiResponse({ status: 200, description: "Directory listing" })
+  async browseFolders(@Body() dto: ValidateFolderDto) {
+    return this.autoBackupService.browseFolders(dto.folderPath);
+  }
+
   @Post("run-auto-backup")
   @DemoRestricted()
   @HttpCode(HttpStatus.OK)
