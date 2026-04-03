@@ -294,17 +294,19 @@ export function TransactionList({
   // Calculate running balances using the backend-provided starting
   // balance and display amounts (which may be filtered split totals).
   const runningBalances = useMemo(() => {
-    if (startingBalance === undefined || transactions.length === 0) {
+    const safeStart = Number(startingBalance);
+    if (isNaN(safeStart) || transactions.length === 0) {
       return new Map<string, number>();
     }
 
     const balances = new Map<string, number>();
-    let cumulativeSum = 0;
+    let cumulativeCents = 0;
 
     for (const tx of transactions) {
-      const amount = displayAmounts.get(tx.id) ?? Number(tx.amount);
-      balances.set(tx.id, startingBalance - cumulativeSum);
-      cumulativeSum += amount;
+      const raw = displayAmounts.get(tx.id) ?? Number(tx.amount);
+      const amount = isNaN(raw) ? 0 : raw;
+      balances.set(tx.id, Math.round((safeStart * 10000) - cumulativeCents) / 10000);
+      cumulativeCents += Math.round(amount * 10000);
     }
 
     return balances;

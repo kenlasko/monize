@@ -56,6 +56,7 @@ export function useInvestmentData() {
   const [cashPagination, setCashPagination] = useState<{ page: number; totalPages: number; total: number } | null>(null);
   const [cashCurrentPage, setCashCurrentPage] = useState(1);
   const [cashTransactionsLoading, setCashTransactionsLoading] = useState(false);
+  const [cashStartingBalance, setCashStartingBalance] = useState<number | undefined>();
   const [showCashFilters, setShowCashFilters] = useState(false);
   const [cashFilterPayeeIds, setCashFilterPayeeIds] = useState<string[]>([]);
   const [cashFilterCategoryIds, setCashFilterCategoryIds] = useState<string[]>([]);
@@ -262,6 +263,7 @@ export function useInvestmentData() {
         endDate: filters.endDate || undefined,
       });
       setCashTransactions(response.data || []);
+      setCashStartingBalance(response.startingBalance);
       setCashPagination(response.pagination ? {
         page: response.pagination.page,
         totalPages: response.pagination.totalPages,
@@ -507,7 +509,7 @@ export function useInvestmentData() {
 
     // Cash transactions
     cashAccountIds, cashTransactions, cashPagination, cashCurrentPage,
-    cashTransactionsLoading, cashPayees, cashCategories,
+    cashTransactionsLoading, cashStartingBalance, cashPayees, cashCategories,
     cashFilterPayeeIds, setCashFilterPayeeIds,
     cashFilterCategoryIds, setCashFilterCategoryIds,
     cashFilterStartDate, setCashFilterStartDate,

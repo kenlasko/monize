@@ -255,7 +255,7 @@ export class PortfolioCalculationService {
     const holdingsWithValues: HoldingWithMarketValue[] = [];
 
     for (const h of holdings) {
-      if (Number(h.quantity) === 0) continue;
+      if (Math.abs(Number(h.quantity)) < 0.0001) continue;
 
       const quantity = Number(h.quantity);
       const averageCost = Number(h.averageCost || 0);

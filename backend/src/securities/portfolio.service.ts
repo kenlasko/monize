@@ -285,7 +285,7 @@ export class PortfolioService {
       relations: ["security"],
     });
     const activeHoldings = holdings.filter(
-      (h) => Number(h.quantity) !== 0 && h.security?.isActive !== false,
+      (h) => Math.abs(Number(h.quantity)) >= 0.0001 && h.security?.isActive !== false,
     );
     if (activeHoldings.length === 0) return [];
 
@@ -388,7 +388,7 @@ export class PortfolioService {
       relations: ["security"],
     });
     const activeHoldings = holdings.filter(
-      (h) => Number(h.quantity) !== 0 && h.security?.isActive !== false,
+      (h) => Math.abs(Number(h.quantity)) >= 0.0001 && h.security?.isActive !== false,
     );
     if (activeHoldings.length === 0) return [];
 
