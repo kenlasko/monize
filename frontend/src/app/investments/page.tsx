@@ -405,6 +405,8 @@ function InvestmentsContent() {
                   totalItems={data.cashPagination?.total ?? 0}
                   pageSize={PAGE_SIZE}
                   onPageChange={data.goToCashPage}
+                  startingBalance={data.cashStartingBalance ?? 0}
+                  isSingleAccountView={data.cashAccountIds.length === 1}
                   showToolbar={false}
                 />
               )}

@@ -548,6 +548,29 @@ describe("PortfolioService", () => {
         expect(result.holdings).toHaveLength(1);
         expect(result.holdings[0].symbol).toBe("VFV.TO");
       });
+
+      it("skips holdings with near-zero quantity", async () => {
+        prefRepository.findOne.mockResolvedValue(mockPref);
+        accountsRepository.find.mockResolvedValue([
+          mockBrokerageAccount,
+          mockCashAccount,
+        ]);
+        holdingsRepository.find.mockResolvedValue([
+          { ...mockHoldingAAPL, quantity: 0.00001 },
+          { ...mockHoldingVFV, quantity: -0.00005 },
+          mockHoldingXIC,
+        ]);
+        securityPriceRepository.query.mockResolvedValue([
+          { security_id: "sec-3", close_price: "35", price_date: "2026-02-07" },
+        ]);
+        exchangeRateService.getLatestRate.mockResolvedValue(null);
+
+        const result = await service.getPortfolioSummary(userId);
+
+        // Only XIC (quantity 100) should be included; near-zero holdings filtered out
+        expect(result.holdings).toHaveLength(1);
+        expect(result.holdings[0].symbol).toBe("XIC.TO");
+      });
     });
 
     describe("when no prices are available for a security", () => {

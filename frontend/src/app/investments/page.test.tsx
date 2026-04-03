@@ -265,10 +265,12 @@ vi.mock('@/components/investments/InvestmentTransactionList', () => ({
 }));
 
 vi.mock('@/components/transactions/TransactionList', () => ({
-  TransactionList: ({ transactions, onEdit, showToolbar }: any) => (
+  TransactionList: ({ transactions, onEdit, showToolbar, startingBalance, isSingleAccountView }: any) => (
     <div data-testid="cash-transaction-list">
       <span>{transactions.length} cash transactions</span>
       <span data-testid="cash-show-toolbar">{String(showToolbar)}</span>
+      <span data-testid="cash-starting-balance">{String(startingBalance ?? '')}</span>
+      <span data-testid="cash-single-account-view">{String(isSingleAccountView)}</span>
       {transactions.map((t: any) => (
         <div key={t.id} data-testid={`cash-tx-${t.id}`}>
           <button data-testid={`cash-edit-${t.id}`} onClick={() => onEdit(t)}>Edit</button>
@@ -921,6 +923,59 @@ describe('InvestmentsPage', () => {
 
       await waitFor(() => {
         expect(screen.getByTestId('cash-show-toolbar')).toHaveTextContent('false');
+      });
+    });
+
+    it('passes startingBalance from API response to TransactionList', async () => {
+      mockGetAllTransactions.mockResolvedValue({
+        data: [{ id: 'cash-tx-1', transactionDate: '2024-01-15', amount: 100 }],
+        pagination: { page: 1, totalPages: 1, total: 1 },
+        startingBalance: 1234.56,
+      });
+
+      await switchToCashView();
+
+      await waitFor(() => {
+        expect(screen.getByTestId('cash-starting-balance')).toHaveTextContent('1234.56');
+      });
+    });
+
+    it('passes isSingleAccountView=false when multiple cash accounts exist', async () => {
+      mockGetAllTransactions.mockResolvedValue({
+        data: [],
+        pagination: { page: 1, totalPages: 1, total: 0 },
+      });
+
+      await switchToCashView();
+
+      await waitFor(() => {
+        // Two cash accounts (cash-1, cash-2) so isSingleAccountView should be false
+        expect(screen.getByTestId('cash-single-account-view')).toHaveTextContent('false');
+      });
+    });
+
+    it('passes isSingleAccountView=true when filtering to single account', async () => {
+      // Filter to a single brokerage account (brok-1), which links to cash-1
+      mockLocalStorageState['monize-investments-accounts'] = {
+        value: ['brok-1'],
+        setter: vi.fn((newValue: any) => {
+          mockLocalStorageState['monize-investments-accounts'].value =
+            typeof newValue === 'function'
+              ? newValue(mockLocalStorageState['monize-investments-accounts'].value)
+              : newValue;
+        }),
+      };
+
+      mockGetAllTransactions.mockResolvedValue({
+        data: [],
+        pagination: { page: 1, totalPages: 1, total: 0 },
+      });
+
+      await switchToCashView();
+
+      await waitFor(() => {
+        // Only one cash account (cash-1) so isSingleAccountView should be true
+        expect(screen.getByTestId('cash-single-account-view')).toHaveTextContent('true');
       });
     });
 

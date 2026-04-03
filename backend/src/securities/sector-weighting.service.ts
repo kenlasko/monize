@@ -199,7 +199,7 @@ export class SectorWeightingService {
     }
 
     // Filter out zero-quantity holdings
-    holdings = holdings.filter((h) => Number(h.quantity) !== 0);
+    holdings = holdings.filter((h) => Math.abs(Number(h.quantity)) >= 0.0001);
 
     if (holdings.length === 0) {
       return {

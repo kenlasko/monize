@@ -489,6 +489,32 @@ describe("HoldingsService", () => {
       // Average cost remains unchanged when selling
       expect(result.averageCost).toBe(150);
     });
+
+    it("snaps near-zero quantity to exactly zero after selling all shares", async () => {
+      // Simulate floating-point drift: 100.00005 - 100 = 0.00005 (below 0.0001 threshold)
+      const existingHolding = {
+        id: "hold-1",
+        accountId: "acc-1",
+        securityId: "sec-1",
+        quantity: 100.00005,
+        averageCost: 150,
+      };
+      holdingsRepository.findOne.mockResolvedValue(existingHolding);
+      holdingsRepository.save.mockImplementation((data) =>
+        Promise.resolve(data),
+      );
+
+      const result = await service.createOrUpdate(
+        "user-1",
+        "acc-1",
+        "sec-1",
+        -100,
+        150,
+      );
+
+      // The tiny residual (0.00005) should be snapped to exactly 0
+      expect(result.quantity).toBe(0);
+    });
   });
 
   describe("updateHolding", () => {
@@ -1024,6 +1050,50 @@ describe("HoldingsService", () => {
 
       const result = await service.rebuildFromTransactions("user-1");
 
+      expect(mockQrRepo.create).not.toHaveBeenCalled();
+      expect(result.holdingsCreated).toBe(0);
+    });
+
+    it("snaps near-zero quantities to zero during rebuild", async () => {
+      accountsRepository.find.mockResolvedValue([mockAccount]);
+      holdingsRepository.find.mockResolvedValue([]);
+
+      // Buy 0.1 + 0.2 shares then sell 0.3; classic floating-point drift
+      // leaves a tiny residual (~4e-17) that should be snapped to zero
+      const transactions = [
+        {
+          accountId: "acc-1",
+          securityId: "sec-1",
+          action: InvestmentAction.BUY,
+          quantity: 0.1,
+          price: 100,
+          transactionDate: "2025-01-01",
+          createdAt: new Date("2025-01-01"),
+        },
+        {
+          accountId: "acc-1",
+          securityId: "sec-1",
+          action: InvestmentAction.BUY,
+          quantity: 0.2,
+          price: 100,
+          transactionDate: "2025-01-02",
+          createdAt: new Date("2025-01-02"),
+        },
+        {
+          accountId: "acc-1",
+          securityId: "sec-1",
+          action: InvestmentAction.SELL,
+          quantity: 0.3,
+          price: 150,
+          transactionDate: "2025-02-01",
+          createdAt: new Date("2025-02-01"),
+        },
+      ];
+      investmentTransactionsRepository.find.mockResolvedValue(transactions);
+
+      const result = await service.rebuildFromTransactions("user-1");
+
+      // Near-zero residual should be snapped to zero; no holding created
       expect(mockQrRepo.create).not.toHaveBeenCalled();
       expect(result.holdingsCreated).toBe(0);
     });

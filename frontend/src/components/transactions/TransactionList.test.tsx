@@ -1437,6 +1437,83 @@ describe('TransactionList', () => {
         expect(balanceEl).toHaveClass('text-red-600');
       });
     });
+
+    it('resolves running balance to exactly $0.00 when floating-point drift would produce epsilon', async () => {
+      // 0.1 + 0.2 = 0.30000000000000004 in JS — naive subtraction from 0.3
+      // would produce -5.5e-17 instead of 0, breaking roundToDecimals.
+      // Integer arithmetic (x10000) should produce exactly 0.
+      const transactions = [
+        createTransaction({ id: 'tx-1', amount: 0.1, payeeName: 'First' }),
+        createTransaction({ id: 'tx-2', amount: 0.2, payeeName: 'Second' }),
+        createTransaction({ id: 'tx-3', amount: -0.05, payeeName: 'Third' }),
+      ];
+
+      render(
+        <TransactionList
+          transactions={transactions}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+          isSingleAccountView={true}
+          startingBalance={0.3}
+        />
+      );
+
+      await waitFor(() => {
+        // tx-1: balance = 0.3
+        // tx-2: balance = 0.3 - 0.1 = 0.2
+        // tx-3: balance = 0.3 - (0.1 + 0.2) = 0.0 exactly (not epsilon)
+        expect(screen.getByText('$0.00')).toBeInTheDocument();
+      });
+    });
+
+    it('shows dashes instead of values when startingBalance is NaN', async () => {
+      const transactions = [
+        createTransaction({ id: 'tx-1', amount: -50, payeeName: 'Test' }),
+      ];
+
+      render(
+        <TransactionList
+          transactions={transactions}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+          isSingleAccountView={true}
+          startingBalance={NaN}
+        />
+      );
+
+      await waitFor(() => {
+        // Balance column shows but runningBalances map is empty, so row shows '-'
+        expect(screen.getByText('Balance')).toBeInTheDocument();
+        // No dollar-formatted balance values should appear in the balance cells
+        const balanceCells = document.querySelectorAll('td.text-right');
+        const balanceTexts = Array.from(balanceCells).map(c => c.textContent);
+        expect(balanceTexts).toContain('-');
+      });
+    });
+
+    it('treats NaN transaction amounts as 0 in running balance', async () => {
+      const transactions = [
+        createTransaction({ id: 'tx-1', amount: -100, payeeName: 'First' }),
+        createTransaction({ id: 'tx-2', amount: NaN as any, payeeName: 'NaN Tx' }),
+      ];
+
+      render(
+        <TransactionList
+          transactions={transactions}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+          isSingleAccountView={true}
+          startingBalance={500}
+        />
+      );
+
+      await waitFor(() => {
+        // tx-1: balance = 500
+        // tx-2: balance = 500 - (-100) = 600 (NaN amount from tx-1 would corrupt this without fix)
+        expect(screen.getByText('$500.00')).toBeInTheDocument();
+        expect(screen.getByText('$600.00')).toBeInTheDocument();
+      });
+    });
   });
 
   // =========================================================================

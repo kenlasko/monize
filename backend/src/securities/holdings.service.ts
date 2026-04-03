@@ -140,7 +140,8 @@ export class HoldingsService {
         );
       }
 
-      holding.quantity = newQuantity;
+      // Snap to zero to avoid floating-point ghost holdings
+      holding.quantity = Math.abs(newQuantity) < 0.0001 ? 0 : newQuantity;
     }
 
     return repo.save(holding);
@@ -234,7 +235,7 @@ export class HoldingsService {
     const holding = await this.findOne(userId, id);
 
     // Only allow deletion if quantity is zero
-    if (Number(holding.quantity) !== 0) {
+    if (Math.abs(Number(holding.quantity)) >= 0.0001) {
       throw new ForbiddenException(
         "Cannot delete holding with non-zero quantity",
       );
@@ -359,6 +360,12 @@ export class HoldingsService {
           holding.totalCost -= sellQuantity * avgCost;
           holding.quantity -= sellQuantity;
         }
+      }
+
+      // Snap near-zero to exactly zero to prevent ghost holdings
+      if (Math.abs(holding.quantity) < 0.0001) {
+        holding.quantity = 0;
+        holding.totalCost = 0;
       }
     }
 
