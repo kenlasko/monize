@@ -597,7 +597,8 @@ describe("AutoBackupService", () => {
       const savedCall = mockSettingsRepo.save.mock.calls[0][0];
       const nextAt = savedCall.nextBackupAt as Date;
       expect(nextAt.getUTCHours()).toBe(3);
-      expect(nextAt.getUTCMinutes()).toBe(30);
+      // Minutes are snapped to 0 since the cron fires at minute 0 each hour
+      expect(nextAt.getUTCMinutes()).toBe(0);
     });
 
     it("should schedule next slot for sub-daily frequency", async () => {
@@ -677,7 +678,8 @@ describe("AutoBackupService", () => {
       const savedCall = mockSettingsRepo.save.mock.calls[0][0];
       const nextAt = savedCall.nextBackupAt as Date;
       expect(nextAt.getUTCHours()).toBe(14);
-      expect(nextAt.getUTCMinutes()).toBe(30);
+      // Minutes are snapped to 0 since the cron fires at minute 0 each hour
+      expect(nextAt.getUTCMinutes()).toBe(0);
     });
 
     it("should handle positive UTC offset timezone", async () => {
