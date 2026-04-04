@@ -7,7 +7,7 @@ import {
   promises as fs,
   readdirSync,
   unlinkSync,
-  renameSync,
+  copyFileSync,
 } from "fs";
 import { resolve } from "path";
 import { createGzip } from "zlib";
@@ -23,17 +23,19 @@ const BACKUP_VERSION = 1;
 
 const BACKUP_FILE_PREFIX = "monize-backup-";
 
-// Matches daily backups: monize-backup-YYYY-MM-DDTHH-MM-SS.json.gz
+// Matches daily backups: monize-backup-daily-YYYY-MM-DD.json.gz
 const DAILY_FILE_PATTERN =
-  /^monize-backup-(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2})\.json\.gz$/;
+  /^monize-backup-daily-(\d{4}-\d{2}-\d{2})\.json\.gz$/;
 
-// Matches weekly backups: monize-backup-weekly-WW-YYYY-MM-DDTHH-MM-SS.json.gz
+// Matches weekly backups: monize-backup-weekly-YYYY-MM-DD.json.gz
 const WEEKLY_FILE_PATTERN =
-  /^monize-backup-weekly-(\d{2})-(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2})\.json\.gz$/;
+  /^monize-backup-weekly-(\d{4}-\d{2}-\d{2})\.json\.gz$/;
 
-// Matches monthly backups: monize-backup-monthly-MM-YYYY-MM-DDTHH-MM-SS.json.gz
+// Matches monthly backups: monize-backup-monthly-YY-MM.json.gz
 const MONTHLY_FILE_PATTERN =
-  /^monize-backup-monthly-(\d{2})-(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2})\.json\.gz$/;
+  /^monize-backup-monthly-(\d{2}-\d{2})\.json\.gz$/;
+
+const WEEKLY_DAYS = [7, 14, 21, 28];
 
 const FREQUENCY_HOURS: Record<AutoBackupFrequency, number> = {
   every6hours: 6,
@@ -48,12 +50,13 @@ interface BackupFile {
   tier: "daily" | "weekly" | "monthly";
 }
 
-function parseTimestampToDate(ts: string): Date | null {
-  const isoStr = ts.replace(
-    /^(\d{4}-\d{2}-\d{2})T(\d{2})-(\d{2})-(\d{2})$/,
-    "$1T$2:$3:$4Z",
-  );
-  const date = new Date(isoStr);
+function parseDateString(ds: string): Date | null {
+  const date = new Date(ds + "T00:00:00Z");
+  return isNaN(date.getTime()) ? null : date;
+}
+
+function parseYearMonthString(ym: string): Date | null {
+  const date = new Date(`20${ym}-01T00:00:00Z`);
   return isNaN(date.getTime()) ? null : date;
 }
 
@@ -201,7 +204,14 @@ export class AutoBackupService {
     }
 
     await this.assertFolderWritable(settings.folderPath);
-    const filename = await this.exportToFile(userId, settings.folderPath);
+    const timezone = settings.timezone || "UTC";
+    const filename = await this.exportToFile(
+      userId,
+      settings.folderPath,
+      timezone,
+    );
+    this.copyToWeeklyIfNeeded(settings.folderPath, filename, timezone);
+    this.copyToMonthlyIfNeeded(settings.folderPath, filename, timezone);
     this.enforceRetention(settings.folderPath, settings);
 
     settings.lastBackupAt = new Date();
@@ -237,10 +247,14 @@ export class AutoBackupService {
     for (const settings of dueSettings) {
       try {
         await this.assertFolderWritable(settings.folderPath);
+        const timezone = settings.timezone || "UTC";
         const filename = await this.exportToFile(
           settings.userId,
           settings.folderPath,
+          timezone,
         );
+        this.copyToWeeklyIfNeeded(settings.folderPath, filename, timezone);
+        this.copyToMonthlyIfNeeded(settings.folderPath, filename, timezone);
         this.enforceRetention(settings.folderPath, settings);
 
         settings.lastBackupAt = now;
@@ -278,12 +292,10 @@ export class AutoBackupService {
   private async exportToFile(
     userId: string,
     folderPath: string,
+    timezone: string,
   ): Promise<string> {
-    const timestamp = new Date()
-      .toISOString()
-      .replace(/:/g, "-")
-      .replace(/\.\d{3}Z$/, "");
-    const filename = `${BACKUP_FILE_PREFIX}${timestamp}.json.gz`;
+    const dateStr = this.getLocalDateString(new Date(), timezone);
+    const filename = `${BACKUP_FILE_PREFIX}daily-${dateStr}.json.gz`;
     const filepath = this.safePath(folderPath, filename);
 
     const tableQueries: Array<{ key: string; sql: string }> = [
@@ -440,6 +452,65 @@ export class AutoBackupService {
     return filename;
   }
 
+  private copyToWeeklyIfNeeded(
+    folderPath: string,
+    dailyFilename: string,
+    timezone: string,
+  ): void {
+    const dayOfMonth = this.getLocalDayOfMonth(new Date(), timezone);
+    if (!WEEKLY_DAYS.includes(dayOfMonth)) return;
+
+    const dateStr = this.getLocalDateString(new Date(), timezone);
+    const weeklyFilename = `${BACKUP_FILE_PREFIX}weekly-${dateStr}.json.gz`;
+    try {
+      copyFileSync(
+        this.safePath(folderPath, dailyFilename),
+        this.safePath(folderPath, weeklyFilename),
+      );
+      this.logger.log(
+        `Copied daily backup to weekly: ${weeklyFilename}`,
+      );
+    } catch (err) {
+      this.logger.warn(
+        `Failed to copy daily to weekly: ${err.message}`,
+      );
+    }
+  }
+
+  private copyToMonthlyIfNeeded(
+    folderPath: string,
+    dailyFilename: string,
+    timezone: string,
+  ): void {
+    const dayOfMonth = this.getLocalDayOfMonth(new Date(), timezone);
+    if (dayOfMonth !== 1) return;
+
+    const now = new Date();
+    const formatter = new Intl.DateTimeFormat("en-US", {
+      timeZone: timezone,
+      year: "2-digit",
+      month: "2-digit",
+    });
+    const parts = formatter.formatToParts(now);
+    const year = parts.find((p) => p.type === "year")!.value;
+    const month = parts.find((p) => p.type === "month")!.value;
+    const monthlyFilename = `${BACKUP_FILE_PREFIX}monthly-${year}-${month}.json.gz`;
+
+    try {
+      copyFileSync(
+        this.safePath(folderPath, dailyFilename),
+        this.safePath(folderPath, monthlyFilename),
+      );
+      this.logger.log(
+        `Copied daily backup to monthly: ${monthlyFilename}`,
+      );
+    } catch (err) {
+      this.logger.warn(
+        `Failed to copy daily to monthly: ${err.message}`,
+      );
+    }
+  }
+
   private enforceRetention(
     folderPath: string,
     settings: AutoBackupSettings,
@@ -451,199 +522,69 @@ export class AutoBackupService {
       return;
     }
 
-    // Parse all backup files (daily, weekly, and monthly)
-    const allFiles: BackupFile[] = [];
+    const dailyFiles: BackupFile[] = [];
+    const weeklyFiles: BackupFile[] = [];
+    const monthlyFiles: BackupFile[] = [];
+
     for (const name of entries) {
       const dailyMatch = DAILY_FILE_PATTERN.exec(name);
       if (dailyMatch) {
-        const date = parseTimestampToDate(dailyMatch[1]);
-        if (date) allFiles.push({ name, date, tier: "daily" });
+        const date = parseDateString(dailyMatch[1]);
+        if (date) dailyFiles.push({ name, date, tier: "daily" });
         continue;
       }
       const weeklyMatch = WEEKLY_FILE_PATTERN.exec(name);
       if (weeklyMatch) {
-        const date = parseTimestampToDate(weeklyMatch[2]);
-        if (date) allFiles.push({ name, date, tier: "weekly" });
+        const date = parseDateString(weeklyMatch[1]);
+        if (date) weeklyFiles.push({ name, date, tier: "weekly" });
         continue;
       }
       const monthlyMatch = MONTHLY_FILE_PATTERN.exec(name);
       if (monthlyMatch) {
-        const date = parseTimestampToDate(monthlyMatch[2]);
-        if (date) allFiles.push({ name, date, tier: "monthly" });
+        const date = parseYearMonthString(monthlyMatch[1]);
+        if (date) monthlyFiles.push({ name, date, tier: "monthly" });
         continue;
       }
     }
 
-    if (allFiles.length === 0) return;
-
-    // Sort newest first
-    const sorted = [...allFiles].sort(
-      (a, b) => b.date.getTime() - a.date.getTime(),
-    );
-
-    const filesToKeep = new Set<string>();
-
-    // --- Daily retention: keep the N most recent files (any tier) ---
-    const dailyLimit = settings.retentionDaily;
-    for (let i = 0; i < Math.min(dailyLimit, sorted.length); i++) {
-      filesToKeep.add(sorted[i].name);
-    }
-
-    // --- Weekly retention: one per ISO week for N weeks ---
-    // Promote the newest daily file per week to a weekly-named file
-    if (settings.retentionWeekly > 0) {
-      const weeksSeen = new Map<string, BackupFile>();
-      for (const file of sorted) {
-        const weekKey = this.getIsoWeekKey(file.date);
-        if (!weeksSeen.has(weekKey)) {
-          weeksSeen.set(weekKey, file);
-        }
-      }
-
-      let weekCount = 0;
-      for (const [weekKey, file] of weeksSeen) {
-        if (weekCount >= settings.retentionWeekly) break;
-        weekCount++;
-
-        const weekNum = weekKey.split("-W")[1];
-        const expectedWeeklyName = this.buildWeeklyFilename(weekNum, file.date);
-
-        if (file.tier === "weekly" && file.name === expectedWeeklyName) {
-          // Already correctly named
-          filesToKeep.add(file.name);
-        } else if (file.tier === "daily") {
-          // Rename the daily file to weekly
-          try {
-            renameSync(
-              this.safePath(folderPath, file.name),
-              this.safePath(folderPath, expectedWeeklyName),
-            );
-            this.logger.log(
-              `Retention: promoted ${file.name} to ${expectedWeeklyName}`,
-            );
-            // Update tracking: remove old name, add new
-            filesToKeep.delete(file.name);
-            filesToKeep.add(expectedWeeklyName);
-            // Update the file object in sorted array so monthly can find it
-            file.name = expectedWeeklyName;
-            file.tier = "weekly";
-          } catch (err) {
-            this.logger.warn(
-              `Retention: failed to rename ${file.name}: ${err.message}`,
-            );
-            filesToKeep.add(file.name);
-          }
-        } else {
-          // Weekly or monthly file from a different week period -- keep it
-          filesToKeep.add(file.name);
-        }
-      }
-    }
-
-    // --- Monthly retention: one per calendar month for N months ---
-    // Promote the newest file per month to a monthly-named file
-    if (settings.retentionMonthly > 0) {
-      const monthsSeen = new Map<string, BackupFile>();
-      for (const file of sorted) {
-        const monthKey = `${file.date.getUTCFullYear()}-${String(file.date.getUTCMonth() + 1).padStart(2, "0")}`;
-        if (!monthsSeen.has(monthKey)) {
-          monthsSeen.set(monthKey, file);
-        }
-      }
-
-      let monthCount = 0;
-      for (const [monthKey, file] of monthsSeen) {
-        if (monthCount >= settings.retentionMonthly) break;
-        monthCount++;
-
-        const monthNum = monthKey.split("-")[1];
-        const expectedMonthlyName = this.buildMonthlyFilename(
-          monthNum,
-          file.date,
-        );
-
-        if (file.tier === "monthly" && file.name === expectedMonthlyName) {
-          filesToKeep.add(file.name);
-        } else if (file.tier === "daily" || file.tier === "weekly") {
-          // Rename to monthly
-          try {
-            renameSync(
-              this.safePath(folderPath, file.name),
-              this.safePath(folderPath, expectedMonthlyName),
-            );
-            this.logger.log(
-              `Retention: promoted ${file.name} to ${expectedMonthlyName}`,
-            );
-            filesToKeep.delete(file.name);
-            filesToKeep.add(expectedMonthlyName);
-            file.name = expectedMonthlyName;
-            file.tier = "monthly";
-          } catch (err) {
-            this.logger.warn(
-              `Retention: failed to rename ${file.name}: ${err.message}`,
-            );
-            filesToKeep.add(file.name);
-          }
-        } else {
-          filesToKeep.add(file.name);
-        }
-      }
-    }
-
-    // Delete files not covered by any retention tier
-    // Re-read directory since we may have renamed files
-    let currentEntries: string[];
-    try {
-      currentEntries = readdirSync(folderPath);
-    } catch {
-      return;
-    }
-
-    for (const name of currentEntries) {
-      const isBackup =
-        DAILY_FILE_PATTERN.test(name) ||
-        WEEKLY_FILE_PATTERN.test(name) ||
-        MONTHLY_FILE_PATTERN.test(name);
-      if (isBackup && !filesToKeep.has(name)) {
+    // Sort each tier newest first and delete beyond retention limit
+    const deleteExcess = (files: BackupFile[], limit: number) => {
+      const sorted = [...files].sort(
+        (a, b) => b.date.getTime() - a.date.getTime(),
+      );
+      for (let i = limit; i < sorted.length; i++) {
         try {
-          unlinkSync(this.safePath(folderPath, name));
-          this.logger.log(`Retention: deleted old backup ${name}`);
+          unlinkSync(this.safePath(folderPath, sorted[i].name));
+          this.logger.log(`Retention: deleted old backup ${sorted[i].name}`);
         } catch (err) {
           this.logger.warn(
-            `Retention: failed to delete ${name}: ${err.message}`,
+            `Retention: failed to delete ${sorted[i].name}: ${err.message}`,
           );
         }
       }
-    }
+    };
+
+    deleteExcess(dailyFiles, settings.retentionDaily);
+    deleteExcess(weeklyFiles, settings.retentionWeekly);
+    deleteExcess(monthlyFiles, settings.retentionMonthly);
   }
 
-  private buildWeeklyFilename(weekNum: string, date: Date): string {
-    const ts = date
-      .toISOString()
-      .replace(/:/g, "-")
-      .replace(/\.\d{3}Z$/, "");
-    return `${BACKUP_FILE_PREFIX}weekly-${weekNum}-${ts}.json.gz`;
+  private getLocalDateString(date: Date, timezone: string): string {
+    const formatter = new Intl.DateTimeFormat("en-CA", {
+      timeZone: timezone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
+    return formatter.format(date);
   }
 
-  private buildMonthlyFilename(monthNum: string, date: Date): string {
-    const ts = date
-      .toISOString()
-      .replace(/:/g, "-")
-      .replace(/\.\d{3}Z$/, "");
-    return `${BACKUP_FILE_PREFIX}monthly-${monthNum}-${ts}.json.gz`;
-  }
-
-  private getIsoWeekKey(date: Date): string {
-    // ISO week: the week that contains the Thursday
-    const d = new Date(
-      Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()),
-    );
-    d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
-    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-    const weekNo = Math.ceil(
-      ((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7,
-    );
-    return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, "0")}`;
+  private getLocalDayOfMonth(date: Date, timezone: string): number {
+    const formatter = new Intl.DateTimeFormat("en-US", {
+      timeZone: timezone,
+      day: "numeric",
+    });
+    return Number(formatter.format(date));
   }
 
   private calculateNextBackupAt(

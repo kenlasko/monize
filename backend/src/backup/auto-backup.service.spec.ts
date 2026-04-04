@@ -13,7 +13,7 @@ jest.mock("fs", () => {
     createWriteStream: jest.fn(),
     readdirSync: jest.fn(),
     unlinkSync: jest.fn(),
-    renameSync: jest.fn(),
+    copyFileSync: jest.fn(),
     promises: {
       stat: jest.fn(),
       writeFile: jest.fn(),
@@ -391,7 +391,7 @@ describe("AutoBackupService", () => {
       const result = await service.runManualBackup(userId);
 
       expect(result.message).toBe("Backup completed successfully");
-      expect(result.filename).toMatch(/^monize-backup-.*\.json\.gz$/);
+      expect(result.filename).toMatch(/^monize-backup-daily-\d{4}-\d{2}-\d{2}\.json\.gz$/);
       expect(mockSettingsRepo.save).toHaveBeenCalledWith(
         expect.objectContaining({
           lastBackupStatus: "success",
@@ -465,9 +465,9 @@ describe("AutoBackupService", () => {
       mockSettingsRepo.findOne.mockResolvedValue(settings);
 
       const files = [
-        "monize-backup-2026-04-01T10-00-00.json.gz",
-        "monize-backup-2026-04-02T10-00-00.json.gz",
-        "monize-backup-2026-04-03T10-00-00.json.gz",
+        "monize-backup-daily-2026-04-01.json.gz",
+        "monize-backup-daily-2026-04-02.json.gz",
+        "monize-backup-daily-2026-04-03.json.gz",
       ];
       setupExportMocks();
       (fsMock.readdirSync as unknown as jest.Mock).mockReturnValue(files);
@@ -476,84 +476,122 @@ describe("AutoBackupService", () => {
 
       // Should delete the oldest file (April 1), keep April 2 and 3
       expect(fsMock.unlinkSync).toHaveBeenCalledWith(
-        "/backups/monize-backup-2026-04-01T10-00-00.json.gz",
+        "/backups/monize-backup-daily-2026-04-01.json.gz",
       );
     });
 
-    it("should rename weekly representatives with weekly prefix", async () => {
+    it("should keep the most recent N weekly backups independently", async () => {
       const settings = createSettings({
         enabled: true,
         folderPath: "/backups",
-        retentionDaily: 0,
-        retentionWeekly: 1,
+        retentionDaily: 7,
+        retentionWeekly: 2,
         retentionMonthly: 0,
       });
       mockSettingsRepo.findOne.mockResolvedValue(settings);
 
       const files = [
-        "monize-backup-2026-03-30T10-00-00.json.gz",
-        "monize-backup-2026-03-31T10-00-00.json.gz",
+        "monize-backup-weekly-2026-03-07.json.gz",
+        "monize-backup-weekly-2026-03-14.json.gz",
+        "monize-backup-weekly-2026-03-21.json.gz",
       ];
       setupExportMocks();
       (fsMock.readdirSync as unknown as jest.Mock).mockReturnValue(files);
 
       await service.runManualBackup(userId);
 
-      // Newest file (Mar 31) should be renamed to weekly format
-      expect(fsMock.renameSync).toHaveBeenCalledWith(
-        "/backups/monize-backup-2026-03-31T10-00-00.json.gz",
-        expect.stringMatching(/monize-backup-weekly-14-/),
+      // Should delete the oldest weekly (March 7), keep March 14 and 21
+      expect(fsMock.unlinkSync).toHaveBeenCalledWith(
+        "/backups/monize-backup-weekly-2026-03-07.json.gz",
       );
     });
 
-    it("should rename monthly representatives with monthly prefix", async () => {
+    it("should keep the most recent N monthly backups independently", async () => {
       const settings = createSettings({
         enabled: true,
         folderPath: "/backups",
-        retentionDaily: 0,
-        retentionWeekly: 0,
+        retentionDaily: 7,
+        retentionWeekly: 4,
         retentionMonthly: 1,
       });
       mockSettingsRepo.findOne.mockResolvedValue(settings);
 
       const files = [
-        "monize-backup-2026-02-15T10-00-00.json.gz",
-        "monize-backup-2026-03-15T10-00-00.json.gz",
+        "monize-backup-monthly-26-01.json.gz",
+        "monize-backup-monthly-26-02.json.gz",
       ];
       setupExportMocks();
       (fsMock.readdirSync as unknown as jest.Mock).mockReturnValue(files);
 
       await service.runManualBackup(userId);
 
-      // Newest month (March) should be renamed to monthly format
-      expect(fsMock.renameSync).toHaveBeenCalledWith(
-        "/backups/monize-backup-2026-03-15T10-00-00.json.gz",
-        expect.stringMatching(/monize-backup-monthly-03-/),
+      // Should delete the oldest monthly (Jan), keep Feb
+      expect(fsMock.unlinkSync).toHaveBeenCalledWith(
+        "/backups/monize-backup-monthly-26-01.json.gz",
       );
     });
 
-    it("should recognize already-renamed weekly files", async () => {
+    it("should copy daily to weekly on days 7, 14, 21, 28", async () => {
       const settings = createSettings({
         enabled: true,
         folderPath: "/backups",
-        retentionDaily: 1,
-        retentionWeekly: 1,
-        retentionMonthly: 0,
       });
       mockSettingsRepo.findOne.mockResolvedValue(settings);
-
-      const files = [
-        "monize-backup-2026-04-02T10-00-00.json.gz",
-        "monize-backup-weekly-14-2026-03-31T10-00-00.json.gz",
-      ];
       setupExportMocks();
-      (fsMock.readdirSync as unknown as jest.Mock).mockReturnValue(files);
+
+      // Mock the date to be the 14th
+      const mockDate = new Date("2026-04-14T10:00:00Z");
+      jest.spyOn(global, "Date").mockImplementation((...args: unknown[]) => {
+        if (args.length === 0) return mockDate;
+        // @ts-expect-error -- spreading constructor args
+        return new (jest.requireActual("global").Date)(...args);
+      });
+      // Restore Intl.DateTimeFormat since Date mock can interfere
+      const origFormat = Intl.DateTimeFormat;
+      jest.spyOn(Intl, "DateTimeFormat").mockImplementation(
+        (...args: ConstructorParameters<typeof Intl.DateTimeFormat>) =>
+          new origFormat(...args),
+      );
 
       await service.runManualBackup(userId);
 
-      // Both files should be kept -- no deletes or renames needed
-      // The daily is the newest so kept by daily retention,
-      // the weekly file is already properly named
+      expect(fsMock.copyFileSync).toHaveBeenCalledWith(
+        "/backups/monize-backup-daily-2026-04-14.json.gz",
+        "/backups/monize-backup-weekly-2026-04-14.json.gz",
+      );
+
+      jest.restoreAllMocks();
+    });
+
+    it("should copy daily to monthly on day 1", async () => {
+      const settings = createSettings({
+        enabled: true,
+        folderPath: "/backups",
+      });
+      mockSettingsRepo.findOne.mockResolvedValue(settings);
+      setupExportMocks();
+
+      // Mock the date to be the 1st
+      const mockDate = new Date("2026-04-01T10:00:00Z");
+      jest.spyOn(global, "Date").mockImplementation((...args: unknown[]) => {
+        if (args.length === 0) return mockDate;
+        // @ts-expect-error -- spreading constructor args
+        return new (jest.requireActual("global").Date)(...args);
+      });
+      const origFormat = Intl.DateTimeFormat;
+      jest.spyOn(Intl, "DateTimeFormat").mockImplementation(
+        (...args: ConstructorParameters<typeof Intl.DateTimeFormat>) =>
+          new origFormat(...args),
+      );
+
+      await service.runManualBackup(userId);
+
+      expect(fsMock.copyFileSync).toHaveBeenCalledWith(
+        "/backups/monize-backup-daily-2026-04-01.json.gz",
+        "/backups/monize-backup-monthly-26-04.json.gz",
+      );
+
+      jest.restoreAllMocks();
     });
 
     it("should not delete non-backup files", async () => {
@@ -567,7 +605,7 @@ describe("AutoBackupService", () => {
       mockSettingsRepo.findOne.mockResolvedValue(settings);
 
       const files = [
-        "monize-backup-2026-04-01T10-00-00.json.gz",
+        "monize-backup-daily-2026-04-01.json.gz",
         "some-other-file.txt",
         "readme.md",
       ];
