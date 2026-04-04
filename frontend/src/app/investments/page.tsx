@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useEffect, useCallback, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -49,7 +49,7 @@ function InvestmentsContent() {
   }, [loadAllPortfolioData, selectedAccountIds, currentPage, transactionFilters]);
   useOnUndoRedo(handleUndoRedo);
   const [listDensity, setListDensity] = useLocalStorage<DensityLevel>('monize-investments-density', 'normal');
-  const [transactionView, setTransactionView] = useState<TransactionViewType>('brokerage');
+  const [transactionView, setTransactionView] = useLocalStorage<TransactionViewType>('monize-investments-transaction-view', 'brokerage');
 
   // Load cash transactions when view changes
   useEffect(() => {
