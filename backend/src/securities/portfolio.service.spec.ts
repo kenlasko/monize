@@ -473,18 +473,20 @@ describe("PortfolioService", () => {
       });
 
       it("fetches requested accounts plus linked accounts", async () => {
-        // First call: fetch requested accounts
         accountsRepository.find
+          // First call: fetch requested accounts
           .mockResolvedValueOnce([mockBrokerageAccount])
           // Second call: fetch linked accounts that weren't in the original request
+          .mockResolvedValueOnce([mockCashAccount])
+          // Third call: computeEffectiveBalances
           .mockResolvedValueOnce([mockCashAccount]);
         holdingsRepository.find.mockResolvedValue([]);
         securityPriceRepository.query.mockResolvedValue([]);
 
         await service.getPortfolioSummary(userId, ["acct-brokerage-1"]);
 
-        // Should have made 2 find calls: initial + linked
-        expect(accountsRepository.find).toHaveBeenCalledTimes(2);
+        // Should have made 3 find calls: initial + linked + effectiveBalances
+        expect(accountsRepository.find).toHaveBeenCalledTimes(3);
         expect(accountsRepository.find).toHaveBeenNthCalledWith(1, {
           where: {
             id: expect.anything(),
@@ -494,10 +496,10 @@ describe("PortfolioService", () => {
       });
 
       it("does not fetch linked accounts if all are already included", async () => {
-        accountsRepository.find.mockResolvedValueOnce([
-          mockBrokerageAccount,
-          mockCashAccount,
-        ]);
+        accountsRepository.find
+          .mockResolvedValueOnce([mockBrokerageAccount, mockCashAccount])
+          // Second call: computeEffectiveBalances
+          .mockResolvedValueOnce([mockCashAccount]);
         holdingsRepository.find.mockResolvedValue([]);
         securityPriceRepository.query.mockResolvedValue([]);
 
@@ -506,8 +508,8 @@ describe("PortfolioService", () => {
           "acct-cash-1",
         ]);
 
-        // Only the initial find call - no second fetch for linked
-        expect(accountsRepository.find).toHaveBeenCalledTimes(1);
+        // 2 find calls: initial + effectiveBalances (no linked fetch needed)
+        expect(accountsRepository.find).toHaveBeenCalledTimes(2);
       });
     });
 
@@ -989,17 +991,12 @@ describe("PortfolioService", () => {
       });
     });
 
-    describe("effective balance excluding future-dated transactions", () => {
-      it("uses computed balance from query instead of stale currentBalance", async () => {
+    describe("effective balance from currentBalance", () => {
+      it("uses currentBalance from the account for cash balance", async () => {
         prefRepository.findOne.mockResolvedValue(mockPref);
-        // Cash account has currentBalance=5000 but effective balance is 3000
-        // (e.g., a future-dated 2000 transfer inflated it)
         accountsRepository.find.mockResolvedValue([
           mockBrokerageAccount,
           mockCashAccount,
-        ]);
-        accountsRepository.query.mockResolvedValue([
-          { account_id: "acct-cash-1", balance: "3000" },
         ]);
         holdingsRepository.find.mockResolvedValue([]);
         securityPriceRepository.query.mockResolvedValue([]);
@@ -1007,63 +1004,23 @@ describe("PortfolioService", () => {
 
         const result = await service.getPortfolioSummary(userId);
 
-        // Should use 3000 from query, not 5000 from currentBalance
-        expect(result.totalCashValue).toBe(3000);
-        expect(result.holdingsByAccount[0].cashBalance).toBe(3000);
+        // Uses currentBalance = 5000 from mockCashAccount
+        expect(result.totalCashValue).toBe(5000);
+        expect(result.holdingsByAccount[0].cashBalance).toBe(5000);
       });
 
-      it("uses computed balance for standalone accounts", async () => {
+      it("uses currentBalance for standalone accounts", async () => {
         prefRepository.findOne.mockResolvedValue(mockPref);
         accountsRepository.find.mockResolvedValue([mockStandaloneAccount]);
-        accountsRepository.query.mockResolvedValue([
-          { account_id: "acct-standalone-1", balance: "1500" },
-        ]);
         holdingsRepository.find.mockResolvedValue([]);
         securityPriceRepository.query.mockResolvedValue([]);
         exchangeRateService.getLatestRate.mockResolvedValue(null);
 
         const result = await service.getPortfolioSummary(userId);
 
-        expect(result.totalCashValue).toBe(1500);
-        expect(result.holdingsByAccount[0].cashBalance).toBe(1500);
-      });
-
-      it("falls back to currentBalance when query returns no row for account", async () => {
-        prefRepository.findOne.mockResolvedValue(mockPref);
-        accountsRepository.find.mockResolvedValue([
-          mockBrokerageAccount,
-          mockCashAccount,
-        ]);
-        // Query returns empty — no effective balance computed
-        accountsRepository.query.mockResolvedValue([]);
-        holdingsRepository.find.mockResolvedValue([]);
-        securityPriceRepository.query.mockResolvedValue([]);
-        exchangeRateService.getLatestRate.mockResolvedValue(null);
-
-        const result = await service.getPortfolioSummary(userId);
-
-        // Falls back to currentBalance = 5000
-        expect(result.totalCashValue).toBe(5000);
-      });
-
-      it("passes correct SQL query to compute effective balance", async () => {
-        prefRepository.findOne.mockResolvedValue(mockPref);
-        accountsRepository.find.mockResolvedValue([
-          mockBrokerageAccount,
-          mockCashAccount,
-          mockStandaloneAccount,
-        ]);
-        accountsRepository.query.mockResolvedValue([]);
-        holdingsRepository.find.mockResolvedValue([]);
-        securityPriceRepository.query.mockResolvedValue([]);
-        exchangeRateService.getLatestRate.mockResolvedValue(null);
-
-        await service.getPortfolioSummary(userId);
-
-        expect(accountsRepository.query).toHaveBeenCalledWith(
-          expect.stringContaining("transaction_date <= CURRENT_DATE"),
-          [["acct-cash-1", "acct-standalone-1"]],
-        );
+        // Uses currentBalance = 2000 from mockStandaloneAccount
+        expect(result.totalCashValue).toBe(2000);
+        expect(result.holdingsByAccount[0].cashBalance).toBe(2000);
       });
 
       it("does not run balance query when no cash or standalone accounts exist", async () => {
@@ -1803,22 +1760,18 @@ describe("PortfolioService", () => {
     it("computes netInvested as cashBalance + buys - sells - income per account", async () => {
       accountsRepository.find.mockResolvedValue([
         mockBrokerageAccount,
-        mockCashAccount,
+        { ...mockCashAccount, currentBalance: 2000 },
       ]);
       holdingsRepository.find.mockResolvedValue([mockHoldingVFV]);
       securityPriceRepository.query.mockResolvedValue([
         { security_id: "sec-2", close_price: "95", price_date: "2026-02-07" },
       ]);
 
-      // First call: balance query, second call: investment flows, third: CAGR earliest
+      // First call: investment flows, second: CAGR earliest
       let queryCallCount = 0;
       accountsRepository.query.mockImplementation(() => {
         queryCallCount++;
         if (queryCallCount === 1) {
-          // Balance query: cash account has 2000 effective balance
-          return [{ account_id: "acct-cash-1", balance: "2000" }];
-        }
-        if (queryCallCount === 2) {
           // Investment flows: bought 5000, sold 1000, received 500 income
           return [
             {
@@ -1856,19 +1809,19 @@ describe("PortfolioService", () => {
     });
 
     it("computes netInvested for standalone accounts", async () => {
-      accountsRepository.find.mockResolvedValue([mockStandaloneAccount]);
+      accountsRepository.find.mockResolvedValue([
+        { ...mockStandaloneAccount, currentBalance: 1000 },
+      ]);
       holdingsRepository.find.mockResolvedValue([mockHoldingXIC]);
       securityPriceRepository.query.mockResolvedValue([
         { security_id: "sec-3", close_price: "35", price_date: "2026-02-07" },
       ]);
 
+      // First call: investment flows, second: CAGR earliest
       let queryCallCount = 0;
       accountsRepository.query.mockImplementation(() => {
         queryCallCount++;
         if (queryCallCount === 1) {
-          return [{ account_id: "acct-standalone-1", balance: "1000" }];
-        }
-        if (queryCallCount === 2) {
           return [
             {
               account_id: "acct-standalone-1",
@@ -1968,26 +1921,24 @@ describe("PortfolioService", () => {
     it("calculates CAGR correctly for a known scenario", async () => {
       accountsRepository.find.mockResolvedValue([
         mockBrokerageAccount,
-        mockCashAccount,
+        { ...mockCashAccount, currentBalance: 0 },
       ]);
       holdingsRepository.find.mockResolvedValue([mockHoldingVFV]);
       securityPriceRepository.query.mockResolvedValue([
         { security_id: "sec-2", close_price: "100", price_date: "2026-02-07" },
       ]);
 
-      // Set up: portfolio=5000+5000=10000, netInvested=5000
+      // Set up: portfolio=0+5000=5000, netInvested=5000
       // Earliest transaction 2 years ago
       const twoYearsAgo = new Date();
       twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
       const earliestDate = twoYearsAgo.toISOString().split("T")[0];
 
+      // First call: investment flows, second: CAGR earliest
       let queryCallCount = 0;
       accountsRepository.query.mockImplementation(() => {
         queryCallCount++;
         if (queryCallCount === 1) {
-          return [{ account_id: "acct-cash-1", balance: "0" }];
-        }
-        if (queryCallCount === 2) {
           // buys=5000, sells=0, income=0 → netInvested = 0 + 5000 - 0 - 0 = 5000
           return [
             {
@@ -2025,14 +1976,11 @@ describe("PortfolioService", () => {
       twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
       const earliestDate = twoYearsAgo.toISOString().split("T")[0];
 
+      // First call: investment flows, second: CAGR earliest
       let queryCallCount = 0;
       accountsRepository.query.mockImplementation(() => {
         queryCallCount++;
         if (queryCallCount === 1) {
-          // Cash: 5000
-          return [{ account_id: "acct-cash-1", balance: "5000" }];
-        }
-        if (queryCallCount === 2) {
           // buys=4000, sells=0, income=0 → netInvested = 5000 + 4000 = 9000
           return [
             {
@@ -2048,7 +1996,7 @@ describe("PortfolioService", () => {
 
       const result = await service.getPortfolioSummary(userId);
 
-      // Portfolio = 5000 + 5000 = 10000
+      // Portfolio = 5000 (cash) + 5000 (holdings) = 10000
       // Net invested = 5000 + 4000 = 9000
       // CAGR = (10000/9000)^(1/2) - 1 ≈ 5.41%
       expect(result.cagr).not.toBeNull();

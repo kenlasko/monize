@@ -118,8 +118,10 @@ export class PortfolioCalculationService {
   // ---------------------------------------------------------------------------
 
   /**
-   * Compute effective cash balances (excluding future-dated transactions)
-   * for the given account IDs.
+   * Get effective cash balances (excluding future-dated transactions)
+   * for the given accounts. Uses the account's currentBalance field,
+   * which is already maintained to exclude future-dated transactions
+   * by recalculateCurrentBalance / updateBalance.
    */
   async computeEffectiveBalances(
     accountIds: string[],
@@ -127,23 +129,14 @@ export class PortfolioCalculationService {
     const effectiveBalances = new Map<string, number>();
     if (accountIds.length === 0) return effectiveBalances;
 
-    const balanceRows: { account_id: string; balance: string }[] =
-      await this.accountsRepository.query(
-        `SELECT a.id as account_id,
-                COALESCE(a.opening_balance, 0) + COALESCE(SUM(t.amount), 0) as balance
-         FROM accounts a
-         LEFT JOIN transactions t ON t.account_id = a.id
-           AND (t.status IS NULL OR t.status != 'VOID')
-           AND t.parent_transaction_id IS NULL
-           AND t.transaction_date <= CURRENT_DATE
-         WHERE a.id = ANY($1)
-         GROUP BY a.id, a.opening_balance`,
-        [accountIds],
-      );
-    for (const row of balanceRows) {
+    const accounts = await this.accountsRepository.find({
+      where: { id: In(accountIds) },
+      select: ['id', 'currentBalance'],
+    });
+    for (const account of accounts) {
       effectiveBalances.set(
-        row.account_id,
-        Math.round(Number(row.balance) * 100) / 100,
+        account.id,
+        Math.round(Number(account.currentBalance) * 10000) / 10000,
       );
     }
     return effectiveBalances;
