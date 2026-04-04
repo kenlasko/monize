@@ -391,7 +391,9 @@ describe("AutoBackupService", () => {
       const result = await service.runManualBackup(userId);
 
       expect(result.message).toBe("Backup completed successfully");
-      expect(result.filename).toMatch(/^monize-backup-daily-\d{4}-\d{2}-\d{2}\.json\.gz$/);
+      expect(result.filename).toMatch(
+        /^monize-backup-daily-\d{4}-\d{2}-\d{2}\.json\.gz$/,
+      );
       expect(mockSettingsRepo.save).toHaveBeenCalledWith(
         expect.objectContaining({
           lastBackupStatus: "success",
@@ -539,28 +541,19 @@ describe("AutoBackupService", () => {
       mockSettingsRepo.findOne.mockResolvedValue(settings);
       setupExportMocks();
 
-      // Mock the date to be the 14th
-      const mockDate = new Date("2026-04-14T10:00:00Z");
-      jest.spyOn(global, "Date").mockImplementation((...args: unknown[]) => {
-        if (args.length === 0) return mockDate;
-        // @ts-expect-error -- spreading constructor args
-        return new (jest.requireActual("global").Date)(...args);
-      });
-      // Restore Intl.DateTimeFormat since Date mock can interfere
-      const origFormat = Intl.DateTimeFormat;
-      jest.spyOn(Intl, "DateTimeFormat").mockImplementation(
-        (...args: ConstructorParameters<typeof Intl.DateTimeFormat>) =>
-          new origFormat(...args),
-      );
+      jest.useFakeTimers();
+      jest.setSystemTime(new Date("2026-04-14T10:00:00Z"));
 
-      await service.runManualBackup(userId);
+      try {
+        await service.runManualBackup(userId);
 
-      expect(fsMock.copyFileSync).toHaveBeenCalledWith(
-        "/backups/monize-backup-daily-2026-04-14.json.gz",
-        "/backups/monize-backup-weekly-2026-04-14.json.gz",
-      );
-
-      jest.restoreAllMocks();
+        expect(fsMock.copyFileSync).toHaveBeenCalledWith(
+          "/backups/monize-backup-daily-2026-04-14.json.gz",
+          "/backups/monize-backup-weekly-2026-04-14.json.gz",
+        );
+      } finally {
+        jest.useRealTimers();
+      }
     });
 
     it("should copy daily to monthly on day 1", async () => {
@@ -571,27 +564,19 @@ describe("AutoBackupService", () => {
       mockSettingsRepo.findOne.mockResolvedValue(settings);
       setupExportMocks();
 
-      // Mock the date to be the 1st
-      const mockDate = new Date("2026-04-01T10:00:00Z");
-      jest.spyOn(global, "Date").mockImplementation((...args: unknown[]) => {
-        if (args.length === 0) return mockDate;
-        // @ts-expect-error -- spreading constructor args
-        return new (jest.requireActual("global").Date)(...args);
-      });
-      const origFormat = Intl.DateTimeFormat;
-      jest.spyOn(Intl, "DateTimeFormat").mockImplementation(
-        (...args: ConstructorParameters<typeof Intl.DateTimeFormat>) =>
-          new origFormat(...args),
-      );
+      jest.useFakeTimers();
+      jest.setSystemTime(new Date("2026-04-01T10:00:00Z"));
 
-      await service.runManualBackup(userId);
+      try {
+        await service.runManualBackup(userId);
 
-      expect(fsMock.copyFileSync).toHaveBeenCalledWith(
-        "/backups/monize-backup-daily-2026-04-01.json.gz",
-        "/backups/monize-backup-monthly-26-04.json.gz",
-      );
-
-      jest.restoreAllMocks();
+        expect(fsMock.copyFileSync).toHaveBeenCalledWith(
+          "/backups/monize-backup-daily-2026-04-01.json.gz",
+          "/backups/monize-backup-monthly-26-04.json.gz",
+        );
+      } finally {
+        jest.useRealTimers();
+      }
     });
 
     it("should not delete non-backup files", async () => {
