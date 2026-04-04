@@ -175,7 +175,7 @@ vi.mock('@/hooks/useLocalStorage', () => {
       const setter = (newValue: any) => {
         const resolved = typeof newValue === 'function' ? newValue(value) : newValue;
         mockLocalStorageState[key].value = resolved;
-        mockLocalStorageState[key].setter(newValue);
+        (mockLocalStorageState[key].setter as any)(newValue);
         setValue(resolved);
       };
       return [value, setter];
