@@ -158,22 +158,30 @@ vi.mock('@/hooks/useFormModal', () => ({
   }),
 }));
 
-// Configurable useLocalStorage mock - tracks state per key
+// Configurable useLocalStorage mock - uses real React state so setters trigger re-renders.
+// Tests can pre-seed initial values via mockLocalStorageState before rendering.
 const mockLocalStorageState: Record<string, { value: any; setter: ReturnType<typeof vi.fn> }> = {};
 
-vi.mock('@/hooks/useLocalStorage', () => ({
-  useLocalStorage: (key: string, defaultValue: any) => {
-    if (!mockLocalStorageState[key]) {
-      const setter = vi.fn((newValue: any) => {
-        mockLocalStorageState[key].value = typeof newValue === 'function'
-          ? newValue(mockLocalStorageState[key].value)
-          : newValue;
-      });
-      mockLocalStorageState[key] = { value: defaultValue, setter };
-    }
-    return [mockLocalStorageState[key].value, mockLocalStorageState[key].setter];
-  },
-}));
+vi.mock('@/hooks/useLocalStorage', () => {
+  const { useState } = require('react');
+  return {
+    useLocalStorage: (key: string, defaultValue: any) => {
+      const initialValue = mockLocalStorageState[key]?.value ?? defaultValue;
+      const [value, setValue] = useState(initialValue);
+      // Wrap the real setter so tests can spy on calls
+      if (!mockLocalStorageState[key]) {
+        mockLocalStorageState[key] = { value: initialValue, setter: vi.fn() };
+      }
+      const setter = (newValue: any) => {
+        const resolved = typeof newValue === 'function' ? newValue(value) : newValue;
+        mockLocalStorageState[key].value = resolved;
+        mockLocalStorageState[key].setter(newValue);
+        setValue(resolved);
+      };
+      return [value, setter];
+    },
+  };
+});
 
 vi.mock('@/hooks/usePriceRefresh', () => ({
   usePriceRefresh: () => ({
