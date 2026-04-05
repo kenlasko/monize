@@ -522,6 +522,21 @@ export class TransactionTransferService {
         );
       }
 
+      // Update createdAt via raw query to bypass pg's local-timezone
+      // Date serialisation (same approach as transactions.service.ts).
+      if ((updateDto as any).createdAt !== undefined) {
+        const d = new Date((updateDto as any).createdAt);
+        const utc = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")} ${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}:${String(d.getUTCSeconds()).padStart(2, "0")}.${String(d.getUTCMilliseconds()).padStart(3, "0")}`;
+        await queryRunner.query(
+          `UPDATE transactions SET created_at = $1 WHERE id = $2`,
+          [utc, fromTransaction.id],
+        );
+        await queryRunner.query(
+          `UPDATE transactions SET created_at = $1 WHERE id = $2`,
+          [utc, toTransaction.id],
+        );
+      }
+
       if (accountsOrAmountsChanged || dateChanged) {
         if (anyFuture) {
           const allAccounts = new Set([
@@ -596,9 +611,6 @@ export class TransactionTransferService {
       data.payeeId = updateDto.payeeId || null;
     if (updateDto.payeeName !== undefined)
       data.payeeName = updateDto.payeeName || null;
-    if ((updateDto as any).createdAt !== undefined)
-      data.createdAt = (updateDto as any).createdAt;
-
     if (
       updateDto.fromAccountId &&
       updateDto.fromAccountId !== oldFromAccountId
@@ -648,9 +660,6 @@ export class TransactionTransferService {
       data.payeeId = updateDto.payeeId || null;
     if (updateDto.payeeName !== undefined)
       data.payeeName = updateDto.payeeName || null;
-    if ((updateDto as any).createdAt !== undefined)
-      data.createdAt = (updateDto as any).createdAt;
-
     if (updateDto.toAccountId && updateDto.toAccountId !== oldToAccountId) {
       data.accountId = updateDto.toAccountId;
     }

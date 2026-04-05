@@ -1296,8 +1296,20 @@ export class TransactionsService {
         transactionUpdateData.status = updateData.status;
       if ("reconciledDate" in updateData)
         transactionUpdateData.reconciledDate = updateData.reconciledDate as any;
-      if (createdAt !== undefined)
-        transactionUpdateData.createdAt = createdAt as any;
+      if (createdAt !== undefined) {
+        // Convert ISO string to a UTC-formatted timestamp string without
+        // timezone suffix.  TypeORM + pg serialise Date objects using the
+        // server's local timezone, which shifts the value when the server
+        // is not UTC.  By passing a plain string ('YYYY-MM-DD HH:mm:ss.SSS')
+        // the pg driver sends it verbatim and PostgreSQL stores the UTC
+        // value as-is in the TIMESTAMP WITHOUT TIME ZONE column.
+        const d = new Date(createdAt);
+        const utc = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")} ${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}:${String(d.getUTCSeconds()).padStart(2, "0")}.${String(d.getUTCMilliseconds()).padStart(3, "0")}`;
+        await queryRunner.query(
+          `UPDATE transactions SET created_at = $1 WHERE id = $2`,
+          [utc, id],
+        );
+      }
 
       if (splits && splits.length > 0) {
         transactionUpdateData.categoryId = null;
