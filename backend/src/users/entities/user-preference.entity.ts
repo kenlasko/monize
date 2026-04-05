@@ -26,7 +26,7 @@ export class UserPreference {
   @Column({ default: "light" })
   theme: string;
 
-  @Column({ default: "UTC" })
+  @Column({ default: "browser" })
   timezone: string;
 
   @Column({ name: "notification_email", default: true })

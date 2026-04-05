@@ -848,6 +848,119 @@ describe("BackupService", () => {
       expect(jsonParam).toBe(JSON.stringify(sectorWeightings));
     });
 
+    it("should preserve created_at and updated_at timestamps from backup", async () => {
+      mockUserRepo.findOne.mockResolvedValue(mockUser);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+
+      const backupWithTimestamps = {
+        ...validBackupData,
+        categories: [
+          {
+            id: "cat-1",
+            user_id: userId,
+            name: "Food",
+            created_at: "2024-06-15T10:30:00.000Z",
+          },
+        ],
+        transactions: [
+          {
+            id: "txn-1",
+            user_id: userId,
+            account_id: "acc-1",
+            amount: 100,
+            created_at: "2024-07-01T08:00:00.000Z",
+            updated_at: "2024-07-02T09:00:00.000Z",
+          },
+        ],
+      };
+
+      await service.restoreData(
+        userId,
+        makeInput({ password: "test", data: backupWithTimestamps }),
+      );
+
+      const insertCalls = mockQueryRunner.query.mock.calls.filter(
+        (call: unknown[]) =>
+          typeof call[0] === "string" && call[0].includes("INSERT INTO"),
+      );
+
+      // Verify categories INSERT includes created_at
+      const categoryInsert = insertCalls.find(
+        (call: unknown[]) =>
+          typeof call[0] === "string" && call[0].includes('"categories"'),
+      );
+      expect(categoryInsert).toBeDefined();
+      expect(categoryInsert![0]).toContain('"created_at"');
+      expect(categoryInsert![1]).toContain("2024-06-15T10:30:00.000Z");
+
+      // Verify transactions INSERT includes both created_at and updated_at
+      const txnInsert = insertCalls.find(
+        (call: unknown[]) =>
+          typeof call[0] === "string" && call[0].includes('"transactions"'),
+      );
+      expect(txnInsert).toBeDefined();
+      expect(txnInsert![0]).toContain('"created_at"');
+      expect(txnInsert![0]).toContain('"updated_at"');
+      expect(txnInsert![1]).toContain("2024-07-01T08:00:00.000Z");
+      expect(txnInsert![1]).toContain("2024-07-02T09:00:00.000Z");
+    });
+
+    it("should disable updated_at triggers during deferred FK restoration", async () => {
+      mockUserRepo.findOne.mockResolvedValue(mockUser);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+
+      const backupWithFks = {
+        ...validBackupData,
+        accounts: [
+          {
+            id: "acc-1",
+            user_id: userId,
+            name: "Checking",
+            linked_account_id: "acc-2",
+            updated_at: "2024-06-01T00:00:00.000Z",
+          },
+          {
+            id: "acc-2",
+            user_id: userId,
+            name: "Savings",
+            linked_account_id: "acc-1",
+            updated_at: "2024-06-02T00:00:00.000Z",
+          },
+        ],
+      };
+
+      await service.restoreData(
+        userId,
+        makeInput({ password: "test", data: backupWithFks }),
+      );
+
+      const allCalls = mockQueryRunner.query.mock.calls.map(
+        (call: unknown[]) => call[0] as string,
+      );
+
+      // Verify trigger was disabled before the UPDATE and re-enabled after
+      const disableIdx = allCalls.findIndex(
+        (sql) =>
+          sql.includes("DISABLE TRIGGER") &&
+          sql.includes("update_accounts_updated_at"),
+      );
+      const updateIdx = allCalls.findIndex(
+        (sql) =>
+          sql.includes("UPDATE") &&
+          sql.includes('"accounts"') &&
+          sql.includes('"linked_account_id"'),
+      );
+      const enableIdx = allCalls.findIndex(
+        (sql) =>
+          sql.includes("ENABLE TRIGGER") &&
+          sql.includes("update_accounts_updated_at"),
+      );
+
+      expect(disableIdx).toBeGreaterThan(-1);
+      expect(updateIdx).toBeGreaterThan(disableIdx);
+      expect(enableIdx).toBeGreaterThan(updateIdx);
+    });
+
     it("should accept OIDC re-auth for OIDC users", async () => {
       mockUserRepo.findOne.mockResolvedValue({
         ...mockUser,

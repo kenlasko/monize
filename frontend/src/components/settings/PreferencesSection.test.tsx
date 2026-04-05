@@ -3,6 +3,9 @@ import { render, screen, fireEvent, waitFor } from '@/test/render';
 import { PreferencesSection } from './PreferencesSection';
 import { UserPreferences } from '@/types/auth';
 
+// jsdom does not implement scrollIntoView (needed by Combobox)
+Element.prototype.scrollIntoView = vi.fn();
+
 vi.mock('@/lib/user-settings', () => ({
   userSettingsApi: {
     updatePreferences: vi.fn(),
@@ -140,13 +143,52 @@ describe('PreferencesSection', () => {
 
     render(<PreferencesSection preferences={mockPreferences} onPreferencesUpdated={mockOnPreferencesUpdated} />);
 
-    fireEvent.change(screen.getByLabelText('Timezone'), { target: { value: 'America/New_York' } });
+    // Timezone is now a Combobox — find its input by the label text nearby
+    const timezoneLabel = screen.getByText('Timezone');
+    const timezoneInput = timezoneLabel.closest('.w-full')!.querySelector('input')!;
+    fireEvent.focus(timezoneInput);
+
+    // Wait for dropdown to appear, then select a timezone
+    await waitFor(() => {
+      expect(screen.getByText('America/New York')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText('America/New York'));
+
     fireEvent.click(screen.getByRole('button', { name: 'Save Preferences' }));
 
     await waitFor(() => {
       expect(userSettingsApi.updatePreferences).toHaveBeenCalledWith(
         expect.objectContaining({ timezone: 'America/New_York' })
       );
+    });
+  });
+
+  it('shows auto-detected browser timezone in the browser option label', async () => {
+    render(<PreferencesSection preferences={mockPreferences} onPreferencesUpdated={mockOnPreferencesUpdated} />);
+
+    const timezoneLabel = screen.getByText('Timezone');
+    const timezoneInput = timezoneLabel.closest('.w-full')!.querySelector('input')!;
+    fireEvent.focus(timezoneInput);
+
+    await waitFor(() => {
+      const browserOption = screen.getByText(/auto-detected as/);
+      expect(browserOption).toBeInTheDocument();
+    });
+  });
+
+  it('allows searching for timezones by typing', async () => {
+    render(<PreferencesSection preferences={mockPreferences} onPreferencesUpdated={mockOnPreferencesUpdated} />);
+
+    const timezoneLabel = screen.getByText('Timezone');
+    const timezoneInput = timezoneLabel.closest('.w-full')!.querySelector('input')!;
+    fireEvent.focus(timezoneInput);
+
+    // Wait for dropdown, then type to filter
+    await new Promise(r => setTimeout(r, 150));
+    fireEvent.change(timezoneInput, { target: { value: 'Toronto' } });
+
+    await waitFor(() => {
+      expect(screen.getByText('America/Toronto')).toBeInTheDocument();
     });
   });
 

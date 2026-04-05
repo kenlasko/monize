@@ -86,6 +86,61 @@ export function formatDate(date: Date | string, format: string = 'browser'): str
   }
 }
 
+/**
+ * Resolve the user's timezone preference to an IANA timezone string.
+ * 'browser' (or undefined) falls back to the browser's detected timezone.
+ */
+export function resolveTimezone(pref: string | undefined): string {
+  if (!pref || pref === 'browser') {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone;
+  }
+  return pref;
+}
+
+/**
+ * Convert a UTC timestamp to a datetime-local input value (YYYY-MM-DDTHH:mm)
+ * in the given IANA timezone.
+ *
+ * Uses toLocaleString with the sv-SE locale which always formats as
+ * "YYYY-MM-DD HH:mm:ss", then converts the space to "T" and trims seconds.
+ */
+export function isoToDatetimeLocal(isoString: string, timezone: string): string {
+  // Ensure the timestamp is always interpreted as UTC. Backend timestamps are
+  // stored in UTC but may arrive without a Z suffix depending on serialization.
+  const normalized = /[Z+-]/.test(isoString.slice(-6)) ? isoString : isoString + 'Z';
+  const str = new Date(normalized).toLocaleString('sv-SE', { timeZone: timezone });
+  // "2024-01-14 19:00:00" → "2024-01-14T19:00"
+  return str.replace(' ', 'T').slice(0, 16);
+}
+
+/**
+ * Convert a datetime-local input value (YYYY-MM-DDTHH:mm) interpreted in the
+ * given IANA timezone back to an ISO UTC string.
+ *
+ * There is no native JS API to parse a date string INTO a timezone, so we
+ * format the same UTC-guess instant in both the target timezone and UTC,
+ * compute the offset, and adjust.
+ */
+export function datetimeLocalToIso(datetimeLocal: string, timezone: string): string {
+  const [datePart, timePart] = datetimeLocal.split('T');
+  const [year, month, day] = datePart.split('-').map(Number);
+  const [hour, minute] = timePart.split(':').map(Number);
+
+  // Treat the input as if it were UTC, then compute how far that instant's
+  // wall-clock in the target timezone differs from UTC.
+  const utcGuess = new Date(Date.UTC(year, month - 1, day, hour, minute));
+  const wallInTz = utcGuess.toLocaleString('sv-SE', { timeZone: timezone });
+  const wallInUtc = utcGuess.toLocaleString('sv-SE', { timeZone: 'UTC' });
+  const parse = (s: string) => {
+    const [d, t] = s.split(' ');
+    const [y, m, dy] = d.split('-').map(Number);
+    const [h, mn, sc] = t.split(':').map(Number);
+    return Date.UTC(y, m - 1, dy, h, mn, sc);
+  };
+  const offsetMs = parse(wallInTz) - parse(wallInUtc);
+  return new Date(utcGuess.getTime() - offsetMs).toISOString();
+}
+
 const MONTH_ABBREVS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
 
 /**

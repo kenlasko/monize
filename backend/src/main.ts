@@ -12,6 +12,13 @@ import { AppModule } from "./app.module";
 // OID 1082 = DATE type in PostgreSQL
 pg.types.setTypeParser(1082, (val: string) => val);
 
+// Configure pg to interpret TIMESTAMP WITHOUT TIME ZONE as UTC.
+// PostgreSQL stores these as naive timestamps (no timezone info). The default
+// pg parser creates a Date using the server's local timezone, which produces
+// wrong UTC values when the server TZ is not UTC (e.g. America/Toronto).
+// OID 1114 = TIMESTAMP WITHOUT TIME ZONE
+pg.types.setTypeParser(1114, (val: string) => new Date(val + "Z"));
+
 // Suppress Node.js 20 ERR_INTERNAL_ASSERTION in HTTP detachSocket.
 // This fires asynchronously when NestJS @Res() handlers throw exceptions,
 // causing a race between the exception filter's response and internal socket

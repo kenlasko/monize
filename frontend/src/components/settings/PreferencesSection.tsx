@@ -21,9 +21,14 @@ const NUMBER_FORMAT_OPTIONS = [
   { value: 'fr-FR', label: 'French - 1 234,56' },
 ];
 
+function getBrowserTimezone(): string {
+  return Intl.DateTimeFormat().resolvedOptions().timeZone;
+}
+
 function buildTimezoneOptions(): { value: string; label: string }[] {
+  const browserTz = getBrowserTimezone();
   const options: { value: string; label: string }[] = [
-    { value: 'browser', label: 'Use browser timezone (auto-detect)' },
+    { value: 'browser', label: `Use browser timezone (auto-detected as ${browserTz})` },
     { value: 'UTC', label: 'UTC' },
   ];
 
@@ -184,11 +189,12 @@ export function PreferencesSection({ preferences, onPreferencesUpdated }: Prefer
           onChange={(e) => setNumberFormat(e.target.value)}
         />
 
-        <Select
+        <Combobox
           label="Timezone"
           options={TIMEZONE_OPTIONS}
           value={timezone}
-          onChange={(e) => setTimezone(e.target.value)}
+          onChange={(value) => setTimezone(value)}
+          placeholder="Search timezones..."
         />
 
         <Select

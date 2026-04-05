@@ -15,7 +15,7 @@ import { MultiSelect } from '@/components/ui/MultiSelect';
 import { Modal } from '@/components/ui/Modal';
 import { TagForm } from '@/components/tags/TagForm';
 import { transactionsApi } from '@/lib/transactions';
-import { getLocalDateString } from '@/lib/utils';
+import { getLocalDateString, resolveTimezone, isoToDatetimeLocal, datetimeLocalToIso } from '@/lib/utils';
 import { payeesApi } from '@/lib/payees';
 import { categoriesApi } from '@/lib/categories';
 import { accountsApi } from '@/lib/accounts';
@@ -69,6 +69,7 @@ type TransactionMode = 'normal' | 'split' | 'transfer';
 export function TransactionForm({ transaction, duplicateFrom, defaultAccountId, onSuccess, onCancel, onDirtyChange, submitRef }: TransactionFormProps) {
   const { defaultCurrency } = useNumberFormat();
   const showCreatedAt = usePreferencesStore((s) => s.preferences?.showCreatedAt ?? false);
+  const timezonePref = usePreferencesStore((s) => s.preferences?.timezone);
   const [isLoading, setIsLoading] = useState(false);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -577,13 +578,17 @@ export function TransactionForm({ transaction, duplicateFrom, defaultAccountId, 
   };
 
   // Created At override (only when editing and preference is enabled)
-  const [createdAtValue, setCreatedAtValue] = useState<string>(() => {
+  const userTimezone = resolveTimezone(timezonePref);
+  const [createdAtValue, setCreatedAtValue] = useState(() => {
     if (!transaction?.createdAt) return '';
-    // Convert ISO timestamp to datetime-local format (YYYY-MM-DDTHH:mm)
-    const d = new Date(transaction.createdAt);
-    const pad = (n: number) => String(n).padStart(2, '0');
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    return isoToDatetimeLocal(transaction.createdAt, userTimezone);
   });
+
+  // Recalculate if the timezone preference loads/changes after initial mount
+  useEffect(() => {
+    if (!transaction?.createdAt) return;
+    setCreatedAtValue(isoToDatetimeLocal(transaction.createdAt, userTimezone));
+  }, [transaction?.createdAt, userTimezone]);
 
   // Tag creation modal state
   const [showTagForm, setShowTagForm] = useState(false);
@@ -689,7 +694,7 @@ export function TransactionForm({ transaction, duplicateFrom, defaultAccountId, 
         // Include createdAt override if preference is enabled and value was changed
         const updatePayload: any = { ...payload };
         if (showCreatedAt && createdAtValue) {
-          updatePayload.createdAt = new Date(createdAtValue).toISOString();
+          updatePayload.createdAt = datetimeLocalToIso(createdAtValue, userTimezone);
         }
         await transactionsApi.update(transaction.id, updatePayload);
         toast.success('Transaction updated');

@@ -1124,4 +1124,48 @@ describe('Combobox', () => {
       expect(apple.closest('[class*="fixed"]')).not.toBeNull();
     });
   });
+
+  describe('clear button', () => {
+    it('shows a clear button when input has text', () => {
+      render(
+        <Combobox options={options} onChange={onChange} value="1" />,
+      );
+
+      // Input shows "Apple" (selected option label)
+      expect(screen.getByRole('textbox')).toHaveValue('Apple');
+      // Clear button (svg inside a button with tabIndex -1) should be present
+      const clearButton = screen.getByRole('textbox').parentElement?.querySelector('button');
+      expect(clearButton).not.toBeNull();
+    });
+
+    it('does not show a clear button when input is empty', () => {
+      render(
+        <Combobox options={options} onChange={onChange} placeholder="Pick..." />,
+      );
+
+      const clearButton = screen.getByRole('textbox').parentElement?.querySelector('button');
+      expect(clearButton).toBeNull();
+    });
+
+    it('clears the value and calls onChange when clicked', () => {
+      render(
+        <Combobox options={options} onChange={onChange} value="1" />,
+      );
+
+      const clearButton = screen.getByRole('textbox').parentElement?.querySelector('button')!;
+      fireEvent.mouseDown(clearButton);
+
+      expect(onChange).toHaveBeenCalledWith('', '');
+      expect(screen.getByRole('textbox')).toHaveValue('');
+    });
+
+    it('does not show a clear button when disabled', () => {
+      render(
+        <Combobox options={options} onChange={onChange} value="1" disabled />,
+      );
+
+      const clearButton = screen.getByRole('textbox').parentElement?.querySelector('button');
+      expect(clearButton).toBeNull();
+    });
+  });
 });
