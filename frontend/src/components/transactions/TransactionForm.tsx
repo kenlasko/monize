@@ -7,7 +7,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
 import { Select } from '@/components/ui/Select';
-import { DateInput } from '@/components/ui/DateInput';
 import { SplitEditor, SplitRow, createEmptySplits, toSplitRows, toCreateSplitData } from './SplitEditor';
 import { NormalTransactionFields } from './NormalTransactionFields';
 import { SplitTransactionFields } from './SplitTransactionFields';
@@ -16,7 +15,7 @@ import { MultiSelect } from '@/components/ui/MultiSelect';
 import { Modal } from '@/components/ui/Modal';
 import { TagForm } from '@/components/tags/TagForm';
 import { transactionsApi } from '@/lib/transactions';
-import { getLocalDateString, resolveTimezone, isoToDatetimeLocal, datetimeLocalToIso } from '@/lib/utils';
+import { getLocalDateString, resolveTimezone, isoToDatetimeLocal, datetimeLocalToIso, formatDatetimeLocal, parseDatetimeFromFormat } from '@/lib/utils';
 import { payeesApi } from '@/lib/payees';
 import { categoriesApi } from '@/lib/categories';
 import { accountsApi } from '@/lib/accounts';
@@ -29,6 +28,7 @@ import { Tag } from '@/types/tag';
 import { ReactivatePayeeDialog } from '@/components/payees/ReactivatePayeeDialog';
 import { buildCategoryTree } from '@/lib/categoryUtils';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { useDateFormat } from '@/hooks/useDateFormat';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { createLogger } from '@/lib/logger';
 import { getErrorMessage } from '@/lib/errors';
@@ -606,24 +606,23 @@ export function TransactionForm({ transaction, duplicateFrom, defaultAccountId, 
 
   // Created At override (only when editing and preference is enabled)
   const userTimezone = resolveTimezone(timezonePref);
-  const [createdAtDate, setCreatedAtDate] = useState(() => {
+  const { dateFormat } = useDateFormat();
+  const [createdAtValue, setCreatedAtValue] = useState(() => {
     if (!transaction?.createdAt) return '';
-    const dtLocal = isoToDatetimeLocal(transaction.createdAt, userTimezone);
-    return dtLocal.split('T')[0] || '';
+    return isoToDatetimeLocal(transaction.createdAt, userTimezone);
   });
-  const [createdAtTime, setCreatedAtTime] = useState(() => {
+  const [createdAtDisplay, setCreatedAtDisplay] = useState(() => {
     if (!transaction?.createdAt) return '';
-    const dtLocal = isoToDatetimeLocal(transaction.createdAt, userTimezone);
-    return dtLocal.split('T')[1] || '00:00';
+    return formatDatetimeLocal(isoToDatetimeLocal(transaction.createdAt, userTimezone), dateFormat);
   });
 
-  // Recalculate if the timezone preference loads/changes after initial mount
+  // Recalculate if the timezone preference or date format loads/changes after initial mount
   useEffect(() => {
     if (!transaction?.createdAt) return;
     const dtLocal = isoToDatetimeLocal(transaction.createdAt, userTimezone);
-    setCreatedAtDate(dtLocal.split('T')[0] || '');
-    setCreatedAtTime(dtLocal.split('T')[1] || '00:00');
-  }, [transaction?.createdAt, userTimezone]);
+    setCreatedAtValue(dtLocal);
+    setCreatedAtDisplay(formatDatetimeLocal(dtLocal, dateFormat));
+  }, [transaction?.createdAt, userTimezone, dateFormat]);
 
   // Tag creation modal state
   const [showTagForm, setShowTagForm] = useState(false);
@@ -728,9 +727,8 @@ export function TransactionForm({ transaction, duplicateFrom, defaultAccountId, 
       if (transaction) {
         // Include createdAt override if preference is enabled and value was changed
         const updatePayload: any = { ...payload };
-        if (showCreatedAt && createdAtDate) {
-          const dtLocal = `${createdAtDate}T${createdAtTime || '00:00'}`;
-          updatePayload.createdAt = datetimeLocalToIso(dtLocal, userTimezone);
+        if (showCreatedAt && createdAtValue) {
+          updatePayload.createdAt = datetimeLocalToIso(createdAtValue, userTimezone);
         }
         await transactionsApi.update(transaction.id, updatePayload);
         toast.success('Transaction updated');
@@ -755,20 +753,28 @@ export function TransactionForm({ transaction, duplicateFrom, defaultAccountId, 
       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
         Create Date
       </label>
-      <div className="flex gap-2">
-        <div className="flex-1">
-          <DateInput
-            value={createdAtDate}
-            onDateChange={(date) => setCreatedAtDate(date)}
-          />
-        </div>
-        <input
-          type="time"
-          value={createdAtTime}
-          onChange={(e) => setCreatedAtTime(e.target.value)}
-          className="block w-28 rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-100 dark:focus:border-blue-400 dark:focus:ring-blue-400"
-        />
-      </div>
+      <input
+        type="text"
+        value={createdAtDisplay}
+        onChange={(e) => {
+          setCreatedAtDisplay(e.target.value);
+          const parsed = parseDatetimeFromFormat(e.target.value, dateFormat);
+          if (parsed) {
+            setCreatedAtValue(parsed);
+          }
+        }}
+        onBlur={() => {
+          const parsed = parseDatetimeFromFormat(createdAtDisplay, dateFormat);
+          if (parsed) {
+            setCreatedAtValue(parsed);
+            setCreatedAtDisplay(formatDatetimeLocal(parsed, dateFormat));
+          } else if (createdAtValue) {
+            setCreatedAtDisplay(formatDatetimeLocal(createdAtValue, dateFormat));
+          }
+        }}
+        placeholder={dateFormat === 'browser' ? 'MM/DD/YYYY HH:mm' : `${dateFormat} HH:mm`}
+        className="block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-100 dark:focus:border-blue-400 dark:focus:ring-blue-400"
+      />
     </div>
   ) : undefined;
 

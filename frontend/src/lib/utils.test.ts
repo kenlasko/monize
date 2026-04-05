@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { cn, parseLocalDate, formatDate, resolveTimezone, isoToDatetimeLocal, datetimeLocalToIso } from './utils';
+import { cn, parseLocalDate, formatDate, resolveTimezone, isoToDatetimeLocal, datetimeLocalToIso, formatDatetimeLocal, parseDatetimeFromFormat } from './utils';
 
 describe('cn', () => {
   it('merges class names', () => {
@@ -176,5 +176,61 @@ describe('datetimeLocalToIso', () => {
     expect(roundTrippedDate.getUTCDate()).toBe(originalDate.getUTCDate());
     expect(roundTrippedDate.getUTCHours()).toBe(originalDate.getUTCHours());
     expect(roundTrippedDate.getUTCMinutes()).toBe(originalDate.getUTCMinutes());
+  });
+});
+
+describe('formatDatetimeLocal', () => {
+  it('formats with YYYY-MM-DD', () => {
+    expect(formatDatetimeLocal('2026-01-15T19:30', 'YYYY-MM-DD')).toBe('2026-01-15 19:30');
+  });
+
+  it('formats with MM/DD/YYYY', () => {
+    expect(formatDatetimeLocal('2026-01-15T19:30', 'MM/DD/YYYY')).toBe('01/15/2026 19:30');
+  });
+
+  it('formats with DD/MM/YYYY', () => {
+    expect(formatDatetimeLocal('2026-01-15T19:30', 'DD/MM/YYYY')).toBe('15/01/2026 19:30');
+  });
+
+  it('formats with DD-MMM-YYYY', () => {
+    expect(formatDatetimeLocal('2026-01-15T19:30', 'DD-MMM-YYYY')).toBe('15-Jan-2026 19:30');
+  });
+
+  it('returns empty string for empty input', () => {
+    expect(formatDatetimeLocal('', 'YYYY-MM-DD')).toBe('');
+  });
+});
+
+describe('parseDatetimeFromFormat', () => {
+  it('parses MM/DD/YYYY HH:mm', () => {
+    expect(parseDatetimeFromFormat('01/15/2026 19:30', 'MM/DD/YYYY')).toBe('2026-01-15T19:30');
+  });
+
+  it('parses DD/MM/YYYY HH:mm', () => {
+    expect(parseDatetimeFromFormat('15/01/2026 19:30', 'DD/MM/YYYY')).toBe('2026-01-15T19:30');
+  });
+
+  it('parses YYYY-MM-DD HH:mm', () => {
+    expect(parseDatetimeFromFormat('2026-01-15 19:30', 'YYYY-MM-DD')).toBe('2026-01-15T19:30');
+  });
+
+  it('parses DD-MMM-YYYY HH:mm', () => {
+    expect(parseDatetimeFromFormat('15-Jan-2026 19:30', 'DD-MMM-YYYY')).toBe('2026-01-15T19:30');
+  });
+
+  it('pads single-digit hours', () => {
+    expect(parseDatetimeFromFormat('01/15/2026 9:05', 'MM/DD/YYYY')).toBe('2026-01-15T09:05');
+  });
+
+  it('returns null for invalid input', () => {
+    expect(parseDatetimeFromFormat('not-a-date', 'MM/DD/YYYY')).toBeNull();
+  });
+
+  it('returns null for missing time', () => {
+    expect(parseDatetimeFromFormat('01/15/2026', 'MM/DD/YYYY')).toBeNull();
+  });
+
+  it('returns null for empty input', () => {
+    expect(parseDatetimeFromFormat('', 'MM/DD/YYYY')).toBeNull();
   });
 });

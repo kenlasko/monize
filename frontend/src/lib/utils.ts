@@ -185,3 +185,41 @@ export function parseDateFromFormat(input: string, format: string): string | nul
     }
   }
 }
+
+/**
+ * Format a datetime-local string (YYYY-MM-DDTHH:mm) using the user's date
+ * format preference, appending the time portion.  e.g. "01/15/2024 19:00"
+ */
+export function formatDatetimeLocal(datetimeLocal: string, dateFormat: string): string {
+  if (!datetimeLocal) return '';
+  const [datePart, timePart] = datetimeLocal.split('T');
+  const formatted = formatDate(datePart, dateFormat);
+  return timePart ? `${formatted} ${timePart}` : formatted;
+}
+
+/**
+ * Parse a user-typed datetime string back to a datetime-local value
+ * (YYYY-MM-DDTHH:mm).  Accepts "{formatted-date} HH:mm".
+ * Returns null if parsing fails.
+ */
+export function parseDatetimeFromFormat(input: string, dateFormat: string): string | null {
+  if (!input) return null;
+  const trimmed = input.trim();
+
+  // Split on the last space to separate date and time portions
+  const lastSpace = trimmed.lastIndexOf(' ');
+  if (lastSpace === -1) return null;
+
+  const datePart = trimmed.slice(0, lastSpace);
+  const timePart = trimmed.slice(lastSpace + 1);
+
+  // Validate time format HH:mm
+  if (!/^\d{1,2}:\d{2}$/.test(timePart)) return null;
+
+  const isoDate = parseDateFromFormat(datePart, dateFormat);
+  if (!isoDate) return null;
+
+  const [h, m] = timePart.split(':');
+  const hh = h.padStart(2, '0');
+  return `${isoDate}T${hh}:${m}`;
+}
