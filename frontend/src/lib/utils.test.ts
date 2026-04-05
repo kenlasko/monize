@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { cn, parseLocalDate, formatDate } from './utils';
+import { describe, it, expect, vi } from 'vitest';
+import { cn, parseLocalDate, formatDate, resolveTimezone, isoToDatetimeLocal, datetimeLocalToIso } from './utils';
 
 describe('cn', () => {
   it('merges class names', () => {
@@ -76,5 +76,105 @@ describe('formatDate', () => {
     const result = formatDate('2026-01-24');
     expect(typeof result).toBe('string');
     expect(result.length).toBeGreaterThan(0);
+  });
+});
+
+describe('resolveTimezone', () => {
+  it('returns the preference when it is a specific timezone', () => {
+    expect(resolveTimezone('America/Toronto')).toBe('America/Toronto');
+  });
+
+  it('returns the preference for UTC', () => {
+    expect(resolveTimezone('UTC')).toBe('UTC');
+  });
+
+  it('falls back to browser timezone when preference is "browser"', () => {
+    const result = resolveTimezone('browser');
+    // Should return a valid IANA timezone string (not "browser")
+    expect(result).not.toBe('browser');
+    expect(result.length).toBeGreaterThan(0);
+  });
+
+  it('falls back to browser timezone when preference is undefined', () => {
+    const result = resolveTimezone(undefined);
+    expect(result).not.toBe('browser');
+    expect(result.length).toBeGreaterThan(0);
+  });
+});
+
+describe('isoToDatetimeLocal', () => {
+  it('converts a UTC timestamp to the target timezone', () => {
+    // 2026-07-15 20:30 UTC = 2026-07-15 16:30 EDT (America/Toronto, UTC-4 in summer)
+    const result = isoToDatetimeLocal('2026-07-15T20:30:00.000Z', 'America/Toronto');
+    expect(result).toBe('2026-07-15T16:30');
+  });
+
+  it('handles date boundary crossings', () => {
+    // 2026-01-15 03:00 UTC = 2026-01-14 22:00 EST (America/Toronto, UTC-5 in winter)
+    const result = isoToDatetimeLocal('2026-01-15T03:00:00.000Z', 'America/Toronto');
+    expect(result).toBe('2026-01-14T22:00');
+  });
+
+  it('returns UTC time when timezone is UTC', () => {
+    const result = isoToDatetimeLocal('2026-07-15T20:30:00.000Z', 'UTC');
+    expect(result).toBe('2026-07-15T20:30');
+  });
+
+  it('handles timestamps without Z suffix by treating them as UTC', () => {
+    const withZ = isoToDatetimeLocal('2026-07-15T20:30:00.000Z', 'America/Toronto');
+    const withoutZ = isoToDatetimeLocal('2026-07-15 20:30:00', 'America/Toronto');
+    expect(withoutZ).toBe(withZ);
+  });
+
+  it('handles timestamps with fractional seconds', () => {
+    const result = isoToDatetimeLocal('2026-04-04T21:14:45.86155Z', 'America/Toronto');
+    // April = EDT (UTC-4), so 21:14 UTC = 17:14 EDT
+    expect(result).toBe('2026-04-04T17:14');
+  });
+
+  it('handles midnight UTC', () => {
+    const result = isoToDatetimeLocal('2026-07-15T00:00:00.000Z', 'America/Toronto');
+    // 00:00 UTC = 20:00 EDT previous day
+    expect(result).toBe('2026-07-14T20:00');
+  });
+});
+
+describe('datetimeLocalToIso', () => {
+  it('converts a datetime-local value back to UTC ISO string', () => {
+    // 16:30 in America/Toronto (EDT, UTC-4 in summer) = 20:30 UTC
+    const result = datetimeLocalToIso('2026-07-15T16:30', 'America/Toronto');
+    const date = new Date(result);
+    expect(date.getUTCFullYear()).toBe(2026);
+    expect(date.getUTCMonth()).toBe(6); // July = 6
+    expect(date.getUTCDate()).toBe(15);
+    expect(date.getUTCHours()).toBe(20);
+    expect(date.getUTCMinutes()).toBe(30);
+  });
+
+  it('returns a valid ISO string with Z suffix', () => {
+    const result = datetimeLocalToIso('2026-07-15T16:30', 'America/Toronto');
+    expect(result).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/);
+  });
+
+  it('handles UTC timezone', () => {
+    const result = datetimeLocalToIso('2026-07-15T20:30', 'UTC');
+    const date = new Date(result);
+    expect(date.getUTCHours()).toBe(20);
+    expect(date.getUTCMinutes()).toBe(30);
+  });
+
+  it('round-trips with isoToDatetimeLocal', () => {
+    const original = '2026-07-15T20:30:00.000Z';
+    const tz = 'America/Toronto';
+    const local = isoToDatetimeLocal(original, tz);
+    const roundTripped = datetimeLocalToIso(local, tz);
+    const originalDate = new Date(original);
+    const roundTrippedDate = new Date(roundTripped);
+    // Should match to the minute (seconds/ms lost in datetime-local format)
+    expect(roundTrippedDate.getUTCFullYear()).toBe(originalDate.getUTCFullYear());
+    expect(roundTrippedDate.getUTCMonth()).toBe(originalDate.getUTCMonth());
+    expect(roundTrippedDate.getUTCDate()).toBe(originalDate.getUTCDate());
+    expect(roundTrippedDate.getUTCHours()).toBe(originalDate.getUTCHours());
+    expect(roundTrippedDate.getUTCMinutes()).toBe(originalDate.getUTCMinutes());
   });
 });

@@ -751,15 +751,48 @@ export class BackupService {
       },
     ];
 
+    // Tables that have a BEFORE UPDATE trigger which auto-sets updated_at.
+    // We must disable these triggers during deferred FK restoration to
+    // preserve the original timestamps from the backup.
+    const tablesWithUpdatedAtTrigger = new Set([
+      "accounts",
+      "transactions",
+    ]);
+
+    // Collect tables that will actually be updated AND have the trigger
+    const triggersToDisable = new Set<string>();
     for (const { table, rows, column } of deferredUpdates) {
-      if (!rows) continue;
-      for (const row of rows) {
-        if (row[column] != null && row.id != null) {
-          await queryRunner.query(
-            `UPDATE "${table}" SET "${column}" = $1 WHERE id = $2`,
-            [row[column], row.id],
-          );
+      if (!rows || !tablesWithUpdatedAtTrigger.has(table)) continue;
+      if (rows.some((row) => row[column] != null && row.id != null)) {
+        triggersToDisable.add(table);
+      }
+    }
+
+    // Disable updated_at triggers on affected tables before running updates
+    for (const table of triggersToDisable) {
+      await queryRunner.query(
+        `ALTER TABLE "${table}" DISABLE TRIGGER "update_${table}_updated_at"`,
+      );
+    }
+
+    try {
+      for (const { table, rows, column } of deferredUpdates) {
+        if (!rows) continue;
+        for (const row of rows) {
+          if (row[column] != null && row.id != null) {
+            await queryRunner.query(
+              `UPDATE "${table}" SET "${column}" = $1 WHERE id = $2`,
+              [row[column], row.id],
+            );
+          }
         }
+      }
+    } finally {
+      // Re-enable the triggers regardless of whether the updates succeeded
+      for (const table of triggersToDisable) {
+        await queryRunner.query(
+          `ALTER TABLE "${table}" ENABLE TRIGGER "update_${table}_updated_at"`,
+        );
       }
     }
   }
@@ -811,7 +844,6 @@ export class BackupService {
       for (const row of data.currencies) {
         const filteredRow = { ...row };
         filteredRow.created_by_user_id = userId;
-        delete filteredRow.created_at;
 
         // Strip column names not in the actual table schema
         for (const key of Object.keys(filteredRow)) {
@@ -953,9 +985,8 @@ export class BackupService {
         filteredRow.user_id = userId;
       }
 
-      // Remove auto-generated timestamp columns that will be set by DB
-      delete filteredRow.created_at;
-      delete filteredRow.updated_at;
+      // Preserve created_at and updated_at from the backup so that
+      // restored records retain their original timestamps.
 
       // Strip deferred FK columns to avoid circular reference violations
       for (const col of columnsToDefer) {

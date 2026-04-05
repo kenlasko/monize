@@ -7,15 +7,9 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { backupApi } from '@/lib/backupApi';
 import { getErrorMessage } from '@/lib/errors';
+import { resolveTimezone } from '@/lib/utils';
 import { AutoBackupSettings, UpdateAutoBackupSettingsData } from '@/types/auth';
 import { usePreferencesStore } from '@/store/preferencesStore';
-
-function resolveTimezone(pref: string | undefined): string {
-  if (!pref || pref === 'browser') {
-    return Intl.DateTimeFormat().resolvedOptions().timeZone;
-  }
-  return pref;
-}
 
 const FREQUENCY_OPTIONS = [
   { value: 'every6hours', label: 'Every 6 Hours' },
