@@ -189,7 +189,21 @@ export function TransactionForm({ transaction, duplicateFrom, defaultAccountId, 
         }
       : {
           accountId: defaultAccountId || '',
-          transactionDate: sessionStorage.getItem('monize-last-transaction-date') || getLocalDateString(),
+          transactionDate: (() => {
+            const stored = sessionStorage.getItem('monize-last-transaction-date');
+            if (stored) {
+              try {
+                const { date, savedAt } = JSON.parse(stored);
+                if (Date.now() - savedAt < 60 * 60 * 1000) {
+                  return date;
+                }
+              } catch {
+                // Legacy non-JSON value, ignore
+              }
+              sessionStorage.removeItem('monize-last-transaction-date');
+            }
+            return getLocalDateString();
+          })(),
           currencyCode: defaultCurrency,
           status: TransactionStatus.UNRECONCILED,
         },
@@ -669,7 +683,7 @@ export function TransactionForm({ transaction, duplicateFrom, defaultAccountId, 
         } else {
           await transactionsApi.createTransfer(transferData);
           toast.success('Transfer created');
-          sessionStorage.setItem('monize-last-transaction-date', data.transactionDate);
+          sessionStorage.setItem('monize-last-transaction-date', JSON.stringify({ date: data.transactionDate, savedAt: Date.now() }));
         }
         onSuccess?.();
         return;
@@ -713,7 +727,7 @@ export function TransactionForm({ transaction, duplicateFrom, defaultAccountId, 
       } else {
         await transactionsApi.create(payload);
         toast.success('Transaction created');
-        sessionStorage.setItem('monize-last-transaction-date', data.transactionDate);
+        sessionStorage.setItem('monize-last-transaction-date', JSON.stringify({ date: data.transactionDate, savedAt: Date.now() }));
       }
       onSuccess?.();
     } catch (error) {
