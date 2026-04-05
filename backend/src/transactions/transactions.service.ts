@@ -1297,7 +1297,7 @@ export class TransactionsService {
       if ("reconciledDate" in updateData)
         transactionUpdateData.reconciledDate = updateData.reconciledDate as any;
       if (createdAt !== undefined)
-        transactionUpdateData.createdAt = new Date(createdAt);
+        transactionUpdateData.createdAt = createdAt as any;
 
       if (splits && splits.length > 0) {
         transactionUpdateData.categoryId = null;
