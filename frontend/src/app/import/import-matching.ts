@@ -11,6 +11,7 @@ import {
   suggestAccountType,
   formatCategoryPath,
   isInvestmentBrokerageAccount,
+  getCurrencyFromExchange,
 } from './import-utils';
 
 /** Get the full path for a category (e.g., "Parent: Child") */
@@ -225,10 +226,13 @@ export function buildAccountMappings(
   });
 }
 
-/** Build security mappings from QIF securities */
+/** Build security mappings from QIF securities.
+ *  When a security is not matched to an existing one, the defaultCurrency
+ *  is used as the initial currency (overridden later if exchange is known). */
 export function buildSecurityMappings(
   allSecurities: Set<string>,
   securities: Security[],
+  defaultCurrency?: string,
 ): SecurityMapping[] {
   return Array.from(allSecurities).map((sec) => {
     const existingSec = securities.find(
@@ -241,6 +245,7 @@ export function buildSecurityMappings(
       securityName: undefined,
       securityType: undefined,
       exchange: undefined,
+      currencyCode: existingSec ? undefined : (defaultCurrency || undefined),
     };
   });
 }

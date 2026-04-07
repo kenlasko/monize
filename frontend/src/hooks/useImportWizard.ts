@@ -37,6 +37,7 @@ import {
   isInvestmentBrokerageAccount,
   ACCOUNT_TYPE_OPTIONS,
   SECURITY_TYPE_OPTIONS,
+  getCurrencyFromExchange,
 } from '@/app/import/import-utils';
 import {
   matchFilenameToAccount,
@@ -297,6 +298,10 @@ export function useImportWizard() {
               const updated = [...prev];
               const current = updated[index];
               if (!current.createNew && !current.securityName) {
+                const resolvedCurrency =
+                  result.currencyCode ||
+                  getCurrencyFromExchange(result.exchange) ||
+                  defaultCurrency;
                 updated[index] = {
                   ...current,
                   securityId: undefined,
@@ -304,7 +309,7 @@ export function useImportWizard() {
                   securityName: result.name,
                   securityType: result.securityType || 'STOCK',
                   exchange: result.exchange || undefined,
-                  currencyCode: result.currencyCode || undefined,
+                  currencyCode: resolvedCurrency,
                 };
               }
               return updated;
@@ -401,6 +406,7 @@ export function useImportWizard() {
                 const newSecMappings = buildSecurityMappings(
                   new Set(multiResult.securities),
                   securities,
+                  defaultCurrency,
                 );
                 setSecurityMappings(newSecMappings);
               } else {
@@ -451,7 +457,7 @@ export function useImportWizard() {
         if (detectedFormat) setDateFormat(detectedFormat);
         const newCatMappings = buildCategoryMappings(allCats, categories, accounts);
         const newAccMappings = buildAccountMappings(allTransferAccounts, accounts, defaultCurrency);
-        const newSecMappings = buildSecurityMappings(allSecs, securities);
+        const newSecMappings = buildSecurityMappings(allSecs, securities, defaultCurrency);
         setImportFiles(fileDataArray);
         setCategoryMappings(newCatMappings);
         setAccountMappings(newAccMappings);
@@ -661,9 +667,12 @@ export function useImportWizard() {
       } else if (field === 'securityType') {
         updated[index] = { ...updated[index], securityType: value || undefined };
       } else if (field === 'exchange') {
-        // Clear stale currencyCode when exchange changes so the backend
-        // derives the correct currency from the new exchange
-        updated[index] = { ...updated[index], exchange: value || undefined, currencyCode: undefined };
+        // Derive currency from the new exchange so the user sees the correct
+        // default; fall back to defaultCurrency if exchange is unknown.
+        const derivedCurrency = getCurrencyFromExchange(value) || defaultCurrency;
+        updated[index] = { ...updated[index], exchange: value || undefined, currencyCode: derivedCurrency };
+      } else if (field === 'currencyCode') {
+        updated[index] = { ...updated[index], currencyCode: value || undefined };
       }
       return updated;
     });
@@ -687,6 +696,10 @@ export function useImportWizard() {
       const result = await investmentsApi.lookupSecurity(query, exchanges);
       if (result) {
         const existingSecurity = findMatchingSecurityBySymbol(result.symbol, securities);
+        const resolvedCurrency =
+          result.currencyCode ||
+          getCurrencyFromExchange(result.exchange) ||
+          defaultCurrency;
         setSecurityMappings((prev) => {
           const updated = [...prev];
           updated[index] = {
@@ -696,14 +709,14 @@ export function useImportWizard() {
             securityName: result.name,
             securityType: result.securityType || 'STOCK',
             exchange: result.exchange || undefined,
-            currencyCode: result.currencyCode || undefined,
+            currencyCode: resolvedCurrency,
           };
           return updated;
         });
 
         const details = [`Symbol: ${result.symbol}`, `Name: ${result.name}`];
         if (result.exchange) details.push(`Exchange: ${result.exchange}`);
-        if (result.currencyCode) details.push(`Currency: ${result.currencyCode}`);
+        details.push(`Currency: ${resolvedCurrency}`);
         if (existingSecurity) {
           toast.success(`Found (exists in database): ${details.join(', ')}`);
         } else {

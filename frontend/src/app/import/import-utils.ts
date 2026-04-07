@@ -79,7 +79,57 @@ export const SECURITY_TYPE_OPTIONS = [
   { value: 'ETF', label: 'ETF' },
   { value: 'MUTUAL_FUND', label: 'Mutual Fund' },
   { value: 'BOND', label: 'Bond' },
+  { value: 'OPTION', label: 'Option' },
   { value: 'GIC', label: 'GIC' },
+  { value: 'CRYPTO', label: 'Cryptocurrency' },
   { value: 'CASH', label: 'Cash/Money Market' },
   { value: 'OTHER', label: 'Other' },
 ];
+
+/**
+ * Map stock exchanges to their primary currency.
+ * Mirrors the backend EXCHANGE_CURRENCY_MAP so the frontend can show
+ * the derived currency before submission.
+ */
+export const EXCHANGE_CURRENCY_MAP: Record<string, string> = {
+  NYSE: 'USD',
+  NASDAQ: 'USD',
+  AMEX: 'USD',
+  NYSEARCA: 'USD',
+  ARCA: 'USD',
+  BATS: 'USD',
+  TSX: 'CAD',
+  'TSX-V': 'CAD',
+  TSXV: 'CAD',
+  NEO: 'CAD',
+  CSE: 'CAD',
+  LSE: 'GBP',
+  LON: 'GBP',
+  XETRA: 'EUR',
+  FRA: 'EUR',
+  FRANKFURT: 'EUR',
+  EPA: 'EUR',
+  PARIS: 'EUR',
+  AMS: 'EUR',
+  MIL: 'EUR',
+  STO: 'SEK',
+  TYO: 'JPY',
+  TOKYO: 'JPY',
+  HKG: 'HKD',
+  HKEX: 'HKD',
+  SHA: 'CNY',
+  SHE: 'CNY',
+  ASX: 'AUD',
+  KRX: 'KRW',
+  TAI: 'TWD',
+  SGX: 'SGD',
+  BSE: 'INR',
+  NSE: 'INR',
+};
+
+/** Derive currency from an exchange code, or return null if unknown. */
+export function getCurrencyFromExchange(exchange: string | undefined | null): string | null {
+  if (!exchange) return null;
+  const normalized = exchange.toUpperCase().replace(/[^A-Z0-9-]/g, '');
+  return EXCHANGE_CURRENCY_MAP[normalized] || null;
+}

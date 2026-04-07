@@ -18,6 +18,7 @@ interface MapSecuritiesStepProps {
   bulkLookupInProgress: boolean;
   securityOptions: Array<{ value: string; label: string }>;
   securityTypeOptions: Array<{ value: string; label: string }>;
+  currencyOptions: Array<{ value: string; label: string }>;
   categoryMappings: { length: number };
   shouldShowMapAccounts: boolean;
   setStep: (step: ImportStep) => void;
@@ -34,6 +35,7 @@ export function MapSecuritiesStep({
   bulkLookupInProgress,
   securityOptions,
   securityTypeOptions,
+  currencyOptions,
   categoryMappings,
   shouldShowMapAccounts,
   setStep,
@@ -122,7 +124,7 @@ export function MapSecuritiesStep({
                         handleSecurityMappingChange(index, 'securityName', e.target.value)
                       }
                     />
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-3 gap-2">
                       <Select
                         label="Security type"
                         options={securityTypeOptions}
@@ -143,6 +145,16 @@ export function MapSecuritiesStep({
                         usePortal
                         alwaysShowSubtitle
                         priorityValues={preferredExchanges}
+                      />
+                      <Combobox
+                        label="Currency"
+                        options={currencyOptions}
+                        value={mapping.currencyCode || ''}
+                        onChange={(value) =>
+                          handleSecurityMappingChange(index, 'currencyCode', value)
+                        }
+                        placeholder="Search currencies..."
+                        usePortal
                       />
                     </div>
                   </div>
