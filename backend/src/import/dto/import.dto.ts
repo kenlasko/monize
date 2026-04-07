@@ -181,7 +181,7 @@ export class SecurityMappingDto {
       "Security type for new security (STOCK, ETF, MUTUAL_FUND, BOND, GIC, CASH, OTHER)",
   })
   @IsOptional()
-  @IsIn(["STOCK", "ETF", "MUTUAL_FUND", "BOND", "GIC", "CASH", "OTHER"])
+  @IsIn(["STOCK", "ETF", "MUTUAL_FUND", "BOND", "OPTION", "GIC", "CRYPTO", "CASH", "OTHER"])
   securityType?: string;
 
   @ApiPropertyOptional({

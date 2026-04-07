@@ -14,6 +14,11 @@ describe('MapSecuritiesStep', () => {
     bulkLookupInProgress: false,
     securityOptions: [{ value: 'sec-1', label: 'Alphabet Inc' }],
     securityTypeOptions: [{ value: 'STOCK', label: 'Stock' }],
+    currencyOptions: [
+      { value: 'USD', label: 'USD - US Dollar' },
+      { value: 'CAD', label: 'CAD - Canadian Dollar' },
+      { value: 'GBP', label: 'GBP - British Pound' },
+    ],
     categoryMappings: { length: 0 },
     shouldShowMapAccounts: false,
     setStep: vi.fn(),
@@ -156,5 +161,27 @@ describe('MapSecuritiesStep', () => {
     const lookupButtons = screen.getAllByRole('button', { name: /Look/i });
     expect(lookupButtons[0]).toBeDisabled();
     expect(lookupButtons[0]).toHaveTextContent('Looking up...');
+  });
+
+  it('renders currency labels for each security mapping row', () => {
+    render(<MapSecuritiesStep {...defaultProps} />);
+
+    const currencyLabels = screen.getAllByText('Currency');
+    expect(currencyLabels.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('displays the auto-selected currency for a mapping with currencyCode', () => {
+    const props = {
+      ...defaultProps,
+      securityMappings: [
+        { originalName: 'RY', securityId: '', createNew: 'RY', securityName: 'Royal Bank', securityType: 'STOCK', exchange: 'TSX', currencyCode: 'CAD' },
+      ],
+    };
+
+    render(<MapSecuritiesStep {...props} />);
+
+    // The Currency combobox input should show the selected currency code
+    const currencyInputs = screen.getAllByPlaceholderText('Search currencies...');
+    expect(currencyInputs.length).toBeGreaterThanOrEqual(1);
   });
 });

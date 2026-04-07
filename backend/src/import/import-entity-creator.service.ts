@@ -18,27 +18,42 @@ import {
  * Map stock exchanges to their primary currency.
  */
 const EXCHANGE_CURRENCY_MAP: Record<string, string> = {
+  // North America
   NYSE: "USD",
   NASDAQ: "USD",
   AMEX: "USD",
   NYSEARCA: "USD",
+  ARCA: "USD",
   BATS: "USD",
   TSX: "CAD",
   "TSX-V": "CAD",
   TSXV: "CAD",
   NEO: "CAD",
   CSE: "CAD",
+  // Europe
   LSE: "GBP",
   LON: "GBP",
   XETRA: "EUR",
   FRA: "EUR",
+  FRANKFURT: "EUR",
   EPA: "EUR",
+  PARIS: "EUR",
   AMS: "EUR",
+  MIL: "EUR",
+  STO: "SEK",
+  // Asia-Pacific
   TYO: "JPY",
+  TOKYO: "JPY",
   HKG: "HKD",
+  HKEX: "HKD",
   SHA: "CNY",
   SHE: "CNY",
   ASX: "AUD",
+  KRX: "KRW",
+  TAI: "TWD",
+  SGX: "SGD",
+  BSE: "INR",
+  NSE: "INR",
 };
 
 function getCurrencyFromExchange(

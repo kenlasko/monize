@@ -117,6 +117,7 @@ function ImportContent() {
             bulkLookupInProgress={wizard.bulkLookupInProgress}
             securityOptions={wizard.getSecurityOptions()}
             securityTypeOptions={wizard.securityTypeOptions}
+            currencyOptions={wizard.currencyOptions}
             categoryMappings={wizard.categoryMappings}
             shouldShowMapAccounts={wizard.shouldShowMapAccounts}
             setStep={wizard.setStep}

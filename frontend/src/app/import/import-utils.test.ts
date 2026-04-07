@@ -6,6 +6,8 @@ import {
   isInvestmentBrokerageAccount,
   ACCOUNT_TYPE_OPTIONS,
   SECURITY_TYPE_OPTIONS,
+  getCurrencyFromExchange,
+  EXCHANGE_CURRENCY_MAP,
 } from './import-utils';
 import type { ImportStep, MatchConfidence, ImportFileData, BulkImportResult } from './import-utils';
 import { Account } from '@/types/account';
@@ -357,13 +359,15 @@ describe('SECURITY_TYPE_OPTIONS', () => {
     expect(values).toContain('ETF');
     expect(values).toContain('MUTUAL_FUND');
     expect(values).toContain('BOND');
+    expect(values).toContain('OPTION');
     expect(values).toContain('GIC');
+    expect(values).toContain('CRYPTO');
     expect(values).toContain('CASH');
     expect(values).toContain('OTHER');
   });
 
-  it('has 7 security type options', () => {
-    expect(SECURITY_TYPE_OPTIONS).toHaveLength(7);
+  it('has 9 security type options', () => {
+    expect(SECURITY_TYPE_OPTIONS).toHaveLength(9);
   });
 
   it('has correct labels for each type', () => {
@@ -372,9 +376,75 @@ describe('SECURITY_TYPE_OPTIONS', () => {
     expect(map['ETF']).toBe('ETF');
     expect(map['MUTUAL_FUND']).toBe('Mutual Fund');
     expect(map['BOND']).toBe('Bond');
+    expect(map['OPTION']).toBe('Option');
     expect(map['GIC']).toBe('GIC');
+    expect(map['CRYPTO']).toBe('Cryptocurrency');
     expect(map['CASH']).toBe('Cash/Money Market');
     expect(map['OTHER']).toBe('Other');
+  });
+});
+
+describe('EXCHANGE_CURRENCY_MAP', () => {
+  it('maps North American exchanges to correct currencies', () => {
+    expect(EXCHANGE_CURRENCY_MAP['NYSE']).toBe('USD');
+    expect(EXCHANGE_CURRENCY_MAP['NASDAQ']).toBe('USD');
+    expect(EXCHANGE_CURRENCY_MAP['AMEX']).toBe('USD');
+    expect(EXCHANGE_CURRENCY_MAP['TSX']).toBe('CAD');
+    expect(EXCHANGE_CURRENCY_MAP['TSX-V']).toBe('CAD');
+    expect(EXCHANGE_CURRENCY_MAP['NEO']).toBe('CAD');
+  });
+
+  it('maps European exchanges to correct currencies', () => {
+    expect(EXCHANGE_CURRENCY_MAP['LSE']).toBe('GBP');
+    expect(EXCHANGE_CURRENCY_MAP['XETRA']).toBe('EUR');
+    expect(EXCHANGE_CURRENCY_MAP['AMS']).toBe('EUR');
+    expect(EXCHANGE_CURRENCY_MAP['STO']).toBe('SEK');
+  });
+
+  it('maps Asia-Pacific exchanges to correct currencies', () => {
+    expect(EXCHANGE_CURRENCY_MAP['TYO']).toBe('JPY');
+    expect(EXCHANGE_CURRENCY_MAP['HKEX']).toBe('HKD');
+    expect(EXCHANGE_CURRENCY_MAP['ASX']).toBe('AUD');
+    expect(EXCHANGE_CURRENCY_MAP['SGX']).toBe('SGD');
+    expect(EXCHANGE_CURRENCY_MAP['BSE']).toBe('INR');
+  });
+});
+
+describe('getCurrencyFromExchange', () => {
+  it('returns USD for NYSE', () => {
+    expect(getCurrencyFromExchange('NYSE')).toBe('USD');
+  });
+
+  it('returns CAD for TSX', () => {
+    expect(getCurrencyFromExchange('TSX')).toBe('CAD');
+  });
+
+  it('returns GBP for LSE', () => {
+    expect(getCurrencyFromExchange('LSE')).toBe('GBP');
+  });
+
+  it('is case-insensitive', () => {
+    expect(getCurrencyFromExchange('nyse')).toBe('USD');
+    expect(getCurrencyFromExchange('Nasdaq')).toBe('USD');
+    expect(getCurrencyFromExchange('tsx')).toBe('CAD');
+  });
+
+  it('returns null for unknown exchange', () => {
+    expect(getCurrencyFromExchange('UNKNOWN')).toBeNull();
+    expect(getCurrencyFromExchange('JSE')).toBeNull();
+  });
+
+  it('returns null for null or undefined', () => {
+    expect(getCurrencyFromExchange(null)).toBeNull();
+    expect(getCurrencyFromExchange(undefined)).toBeNull();
+  });
+
+  it('returns null for empty string', () => {
+    expect(getCurrencyFromExchange('')).toBeNull();
+  });
+
+  it('normalizes exchange names with special characters', () => {
+    expect(getCurrencyFromExchange('TSX-V')).toBe('CAD');
   });
 });
 
