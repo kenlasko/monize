@@ -19,6 +19,23 @@ pg.types.setTypeParser(1082, (val: string) => val);
 // OID 1114 = TIMESTAMP WITHOUT TIME ZONE
 pg.types.setTypeParser(1114, (val: string) => new Date(val + "Z"));
 
+// Force pg to serialize Date parameters as UTC.
+// The default pg serializer uses local-time getters (getFullYear, getHours, etc.)
+// which produces wrong values for TIMESTAMP WITHOUT TIME ZONE columns when the
+// server's local timezone is not UTC. This pairs with the read-side fix above.
+function pad(n: number, digits = 2): string {
+  return String(n).padStart(digits, "0");
+}
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const pgUtils = require("pg/lib/utils");
+const origPrepareValue = pgUtils.prepareValue;
+pgUtils.prepareValue = function (val: unknown, seen?: unknown[]): unknown {
+  if (val instanceof Date) {
+    return `${val.getUTCFullYear()}-${pad(val.getUTCMonth() + 1)}-${pad(val.getUTCDate())}T${pad(val.getUTCHours())}:${pad(val.getUTCMinutes())}:${pad(val.getUTCSeconds())}.${pad(val.getUTCMilliseconds(), 3)}+00`;
+  }
+  return origPrepareValue(val, seen);
+};
+
 // Suppress Node.js 20 ERR_INTERNAL_ASSERTION in HTTP detachSocket.
 // This fires asynchronously when NestJS @Res() handlers throw exceptions,
 // causing a race between the exception filter's response and internal socket
