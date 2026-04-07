@@ -331,15 +331,17 @@ export function generateTransactions(referenceDate: Date): DemoTransaction[] {
     for (let g = 0; g < groceryCount; g++) {
       const day = 3 + Math.floor(rand() * 25);
       const groceryDate = getMonthDate(year, month, day);
-      if (groceryDate <= referenceDate && groceryDate >= startDate) {
-        const stores = ["Loblaws", "No Frills", "Metro", "Costco"];
-        const store = stores[Math.floor(rand() * stores.length)];
-        const isCostco = store === "Costco";
-        const amount = isCostco
-          ? randomBetween(rand, 180, 320)
-          : randomBetween(rand, 75, 220);
+      const stores = ["Loblaws", "No Frills", "Metro", "Costco"];
+      const store = stores[Math.floor(rand() * stores.length)];
+      const isCostco = store === "Costco";
+      const amount = isCostco
+        ? randomBetween(rand, 180, 320)
+        : randomBetween(rand, 75, 220);
+      const splitRand = rand();
+      const accountRand = rand();
 
-        if (isCostco && rand() > 0.5) {
+      if (groceryDate <= referenceDate && groceryDate >= startDate) {
+        if (isCostco && splitRand > 0.5) {
           // Split transaction for Costco
           const groceryAmt = Math.round(amount * 0.7 * 100) / 100;
           const homeGoodsAmt = Math.round((amount - groceryAmt) * 100) / 100;
@@ -367,7 +369,7 @@ export function generateTransactions(referenceDate: Date): DemoTransaction[] {
           });
         } else {
           transactions.push({
-            accountKey: rand() > 0.4 ? "visa" : "chequing",
+            accountKey: accountRand > 0.4 ? "visa" : "chequing",
             date: formatDate(groceryDate),
             payeeName: store,
             categoryPath: "Food > Groceries",
