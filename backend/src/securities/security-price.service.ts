@@ -13,6 +13,7 @@ import {
 } from "./yahoo-finance.service";
 import { CreateSecurityPriceDto } from "./dto/create-security-price.dto";
 import { UpdateSecurityPriceDto } from "./dto/update-security-price.dto";
+import { formatDateYMD } from "../common/date-utils";
 
 export { SecurityLookupResult } from "./yahoo-finance.service";
 
@@ -135,7 +136,9 @@ export class SecurityPriceService {
         continue;
       }
 
-      const tradingDate = this.yahooFinance.getTradingDate(quote);
+      const tradingDate = formatDateYMD(
+        this.yahooFinance.getTradingDate(quote),
+      );
       for (const security of group) {
         try {
           await this.savePriceData(security.id, tradingDate, quote);
@@ -224,7 +227,9 @@ export class SecurityPriceService {
       }
 
       try {
-        const tradingDate = this.yahooFinance.getTradingDate(quote);
+        const tradingDate = formatDateYMD(
+          this.yahooFinance.getTradingDate(quote),
+        );
         await this.savePriceData(security.id, tradingDate, quote);
         results.push({
           symbol: security.symbol,
@@ -257,7 +262,7 @@ export class SecurityPriceService {
    */
   private async savePriceData(
     securityId: string,
-    priceDate: Date,
+    priceDate: string,
     quote: YahooQuoteResult,
   ): Promise<SecurityPrice> {
     const existing = await this.securityPriceRepository.findOne({
@@ -792,7 +797,7 @@ export class SecurityPriceService {
     dto: CreateSecurityPriceDto,
   ): Promise<SecurityPrice> {
     const existing = await this.securityPriceRepository.findOne({
-      where: { securityId, priceDate: new Date(dto.priceDate) },
+      where: { securityId, priceDate: dto.priceDate },
     });
 
     if (existing) {
@@ -807,14 +812,14 @@ export class SecurityPriceService {
 
     const priceEntry = this.securityPriceRepository.create({
       securityId,
-      priceDate: new Date(dto.priceDate),
+      priceDate: dto.priceDate,
       closePrice: dto.closePrice,
       openPrice: dto.openPrice as number,
       highPrice: dto.highPrice as number,
       lowPrice: dto.lowPrice as number,
       volume: dto.volume as number,
       source: "manual",
-    } as Partial<SecurityPrice>);
+    });
 
     return this.securityPriceRepository.save(priceEntry);
   }
@@ -840,7 +845,7 @@ export class SecurityPriceService {
     if (dto.highPrice !== undefined) price.highPrice = dto.highPrice;
     if (dto.lowPrice !== undefined) price.lowPrice = dto.lowPrice;
     if (dto.volume !== undefined) price.volume = dto.volume;
-    if (dto.priceDate !== undefined) price.priceDate = new Date(dto.priceDate);
+    if (dto.priceDate !== undefined) price.priceDate = dto.priceDate;
     price.source = "manual";
 
     return this.securityPriceRepository.save(price);
@@ -858,10 +863,7 @@ export class SecurityPriceService {
       throw new NotFoundException("Security price not found");
     }
 
-    const priceDate =
-      typeof price.priceDate === "string"
-        ? price.priceDate
-        : price.priceDate.toISOString().substring(0, 10);
+    const priceDate = price.priceDate;
 
     await this.securityPriceRepository.remove(price);
 

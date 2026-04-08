@@ -60,7 +60,7 @@ describe("SecurityPriceService", () => {
   const mockPriceEntry: SecurityPrice = {
     id: 1,
     securityId: "sec-1",
-    priceDate: new Date("2025-06-01"),
+    priceDate: "2025-06-01",
     openPrice: 190.0,
     highPrice: 195.0,
     lowPrice: 189.0,
@@ -1464,12 +1464,15 @@ describe("SecurityPriceService", () => {
       await service.refreshAllPrices();
 
       // The trading date should be derived from the timestamp (zeroed in UTC)
-      const expectedDate = new Date(1748800000 * 1000);
-      expectedDate.setUTCHours(0, 0, 0, 0);
+      // and formatted as YYYY-MM-DD using UTC components.
+      const expected = new Date(1748800000 * 1000);
+      const expectedDateStr = `${expected.getUTCFullYear()}-${String(
+        expected.getUTCMonth() + 1,
+      ).padStart(2, "0")}-${String(expected.getUTCDate()).padStart(2, "0")}`;
 
       expect(securityPriceRepository.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          priceDate: expectedDate,
+          priceDate: expectedDateStr,
         }),
       );
     });
@@ -1490,10 +1493,10 @@ describe("SecurityPriceService", () => {
 
       await service.refreshAllPrices();
 
-      // Should use today (or adjusted for weekend)
+      // Should use today (or adjusted for weekend) as a YYYY-MM-DD string
       expect(securityPriceRepository.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          priceDate: expect.any(Date),
+          priceDate: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
         }),
       );
     });

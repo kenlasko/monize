@@ -22,8 +22,22 @@ export class SecurityPrice {
   securityId: string;
 
   @ApiProperty()
-  @Column({ type: "date", name: "price_date" })
-  priceDate: Date;
+  @Column({
+    type: "date",
+    name: "price_date",
+    transformer: {
+      from: (value: string | Date): string => {
+        if (!value) return value as string;
+        if (typeof value === "string") return value;
+        const year = value.getFullYear();
+        const month = String(value.getMonth() + 1).padStart(2, "0");
+        const day = String(value.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+      },
+      to: (value: string | Date): string | Date => value,
+    },
+  })
+  priceDate: string;
 
   @ApiProperty({ required: false })
   @Column({
