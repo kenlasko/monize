@@ -56,6 +56,7 @@ interface InvestmentTransactionFormProps {
   onSuccess?: () => void;
   onCancel?: () => void;
   onDirtyChange?: (isDirty: boolean) => void;
+  onConversionStateChange?: (needsConversion: boolean) => void;
   submitRef?: MutableRefObject<(() => void) | null>;
 }
 
@@ -106,6 +107,7 @@ export function InvestmentTransactionForm({
   onSuccess,
   onCancel,
   onDirtyChange,
+  onConversionStateChange,
   submitRef,
 }: InvestmentTransactionFormProps) {
   const { defaultCurrency, formatCurrency } = useNumberFormat();
@@ -234,6 +236,11 @@ export function InvestmentTransactionForm({
     !!transactionCurrency &&
     !!cashCurrency &&
     transactionCurrency !== cashCurrency;
+
+  // Notify the parent so it can resize the modal to fit the conversion section
+  useEffect(() => {
+    onConversionStateChange?.(needsConversion);
+  }, [needsConversion, onConversionStateChange]);
 
   // Calculate total amount
   const totalAmount = useMemo(() => {
@@ -404,24 +411,24 @@ export function InvestmentTransactionForm({
         {...register('accountId')}
       />
 
-      {/* Action Type */}
-      <Select
-        label="Transaction Type"
-        error={errors.action?.message}
-        options={Object.entries(actionLabels).map(([value, label]) => ({
-          value,
-          label,
-        }))}
-        {...register('action')}
-      />
-
-      {/* Date */}
-      <DateInput
-        label="Date"
-        error={errors.transactionDate?.message}
-        onDateChange={(date) => setValue('transactionDate', date, { shouldDirty: true, shouldValidate: true })}
-        {...register('transactionDate')}
-      />
+      {/* Date and Transaction Type */}
+      <div className="grid grid-cols-2 gap-4">
+        <DateInput
+          label="Date"
+          error={errors.transactionDate?.message}
+          onDateChange={(date) => setValue('transactionDate', date, { shouldDirty: true, shouldValidate: true })}
+          {...register('transactionDate')}
+        />
+        <Select
+          label="Transaction Type"
+          error={errors.action?.message}
+          options={Object.entries(actionLabels).map(([value, label]) => ({
+            value,
+            label,
+          }))}
+          {...register('action')}
+        />
+      </div>
 
       {/* Funding Account - for Buy/Sell to specify where funds come from/go to */}
       {canHaveFundingAccount && (
@@ -465,7 +472,7 @@ export function InvestmentTransactionForm({
 
       {/* Quantity and Price - for buy/sell/reinvest */}
       {needsQuantityPrice && (
-        <div className="grid grid-cols-2 gap-4">
+        <div className={`grid gap-4 ${needsConversion ? 'grid-cols-3' : 'grid-cols-2'}`}>
           <NumericInput
             label="Quantity (Shares)"
             value={watchedQuantity || undefined}
@@ -483,6 +490,16 @@ export function InvestmentTransactionForm({
             min={0}
             error={errors.price?.message}
           />
+          {needsConversion && (
+            <CurrencyInput
+              label={`Commission / Fees (${transactionCurrency})`}
+              prefix={currencySymbol}
+              value={watchedCommission || undefined}
+              onChange={(value) => setValue('commission', value, { shouldValidate: true })}
+              error={errors.commission?.message}
+              allowNegative={false}
+            />
+          )}
         </div>
       )}
 
@@ -510,8 +527,8 @@ export function InvestmentTransactionForm({
         />
       )}
 
-      {/* Commission */}
-      {(needsQuantityPrice || watchedAction === 'SPLIT') && (
+      {/* Commission - rendered inline with qty/price when conversion is shown */}
+      {((needsQuantityPrice && !needsConversion) || watchedAction === 'SPLIT') && (
         <CurrencyInput
           label={`Commission / Fees (${transactionCurrency})`}
           prefix={currencySymbol}
