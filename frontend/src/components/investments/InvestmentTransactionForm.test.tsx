@@ -548,6 +548,122 @@ describe('InvestmentTransactionForm', () => {
         ).not.toBeInTheDocument();
       });
     });
+
+    it('preserves the stored exchange rate when editing a cross-currency transaction', async () => {
+      // Regression test: previously, on initial render the security was not
+      // yet in the securities array so transactionCurrency fell back to the
+      // account currency, making needsConversion temporarily false. The
+      // auto-fill effect then reset the stored rate to 1, and once securities
+      // loaded, the effect overwrote it with the market default -- silently
+      // losing the user's persisted custom rate on every form load.
+      getMarketRateMock.mockReturnValue(1.4);
+
+      const editTransaction = {
+        id: 'tx-edit',
+        accountId: 'cad-brokerage',
+        action: 'BUY' as const,
+        transactionDate: '2024-01-15',
+        securityId: 'sec-usd',
+        security: {
+          id: 'sec-usd',
+          symbol: 'AAPL',
+          name: 'Apple Inc.',
+          securityType: 'STOCK',
+          currencyCode: 'USD',
+        },
+        quantity: 10,
+        price: 100,
+        commission: 0,
+        totalAmount: 1000,
+        exchangeRate: 1.2345,
+        description: '',
+      } as any;
+
+      render(
+        <InvestmentTransactionForm
+          accounts={crossCurrencyAccounts}
+          allAccounts={crossCurrencyAccounts}
+          transaction={editTransaction}
+        />,
+      );
+
+      // Once securities load and the form settles, the rate input should
+      // show the stored rate (1.2345), not the market default (1.4).
+      await waitFor(() => {
+        const rateInput = screen.getByLabelText(
+          /Exchange rate \(1 USD =\)/,
+        ) as HTMLInputElement;
+        expect(Number(rateInput.value)).toBeCloseTo(1.2345, 4);
+      });
+
+      // Saving without touching anything should persist the stored rate.
+      fireEvent.click(screen.getByText('Update Transaction'));
+
+      await waitFor(() => {
+        expect(investmentsApi.updateTransaction).toHaveBeenCalled();
+      });
+
+      const [, payload] = vi.mocked(investmentsApi.updateTransaction).mock
+        .calls[0] as [string, { exchangeRate?: number }];
+      expect(payload.exchangeRate).toBeCloseTo(1.2345, 4);
+    });
+
+    it('persists a user-edited exchange rate when editing a cross-currency transaction', async () => {
+      getMarketRateMock.mockReturnValue(1.4);
+
+      const editTransaction = {
+        id: 'tx-edit',
+        accountId: 'cad-brokerage',
+        action: 'BUY' as const,
+        transactionDate: '2024-01-15',
+        securityId: 'sec-usd',
+        security: {
+          id: 'sec-usd',
+          symbol: 'AAPL',
+          name: 'Apple Inc.',
+          securityType: 'STOCK',
+          currencyCode: 'USD',
+        },
+        quantity: 10,
+        price: 100,
+        commission: 0,
+        totalAmount: 1000,
+        exchangeRate: 1.35,
+        description: '',
+      } as any;
+
+      render(
+        <InvestmentTransactionForm
+          accounts={crossCurrencyAccounts}
+          allAccounts={crossCurrencyAccounts}
+          transaction={editTransaction}
+        />,
+      );
+
+      await waitFor(() => {
+        expect(
+          screen.getByLabelText(/Exchange rate \(1 USD =\)/),
+        ).toBeInTheDocument();
+      });
+
+      const rateInput = screen.getByLabelText(
+        /Exchange rate \(1 USD =\)/,
+      ) as HTMLInputElement;
+
+      fireEvent.focus(rateInput);
+      fireEvent.change(rateInput, { target: { value: '1.5' } });
+      fireEvent.blur(rateInput);
+
+      fireEvent.click(screen.getByText('Update Transaction'));
+
+      await waitFor(() => {
+        expect(investmentsApi.updateTransaction).toHaveBeenCalled();
+      });
+
+      const [, payload] = vi.mocked(investmentsApi.updateTransaction).mock
+        .calls[0] as [string, { exchangeRate?: number }];
+      expect(payload.exchangeRate).toBeCloseTo(1.5, 4);
+    });
   });
 
   it('includes inactive security in dropdown when editing a transaction', async () => {
