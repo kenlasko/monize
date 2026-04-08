@@ -17,6 +17,7 @@ import { HoldingsService } from "./holdings.service";
 import { SecuritiesService } from "./securities.service";
 import { SecurityPriceService } from "./security-price.service";
 import { NetWorthService } from "../net-worth/net-worth.service";
+import { ExchangeRateService } from "../currencies/exchange-rate.service";
 import { DataSource } from "typeorm";
 import { ActionHistoryService } from "../action-history/action-history.service";
 import { isTransactionInFuture } from "../common/date-utils";
@@ -38,6 +39,7 @@ describe("InvestmentTransactionsService", () => {
   let securitiesService: Record<string, jest.Mock>;
   let securityPriceService: Record<string, jest.Mock>;
   let netWorthService: Record<string, jest.Mock>;
+  let exchangeRateService: Record<string, jest.Mock>;
   let dataSource: Record<string, jest.Mock>;
   let mockQueryRunner: Record<string, any>;
   let mockActionHistoryService: Record<string, jest.Mock>;
@@ -102,6 +104,7 @@ describe("InvestmentTransactionsService", () => {
     price: 150,
     commission: 9.99,
     totalAmount: 1509.99,
+    exchangeRate: 1,
     description: "Buy AAPL",
     account: mockInvestmentAccount as any,
     transaction: null as any,
@@ -124,6 +127,7 @@ describe("InvestmentTransactionsService", () => {
     price: 160,
     commission: 9.99,
     totalAmount: 790.01,
+    exchangeRate: 1,
     description: "Sell AAPL",
     account: mockInvestmentAccount as any,
     transaction: null as any,
@@ -146,6 +150,7 @@ describe("InvestmentTransactionsService", () => {
     price: 25,
     commission: 0,
     totalAmount: 25,
+    exchangeRate: 1,
     description: "AAPL Dividend",
     account: mockInvestmentAccount as any,
     transaction: null as any,
@@ -231,6 +236,10 @@ describe("InvestmentTransactionsService", () => {
     netWorthService = {
       recalculateAccount: jest.fn().mockResolvedValue(undefined),
       triggerDebouncedRecalc: jest.fn(),
+    };
+
+    exchangeRateService = {
+      getLatestRate: jest.fn().mockResolvedValue(1),
     };
 
     mockQueryRunner = {
@@ -324,6 +333,10 @@ describe("InvestmentTransactionsService", () => {
         {
           provide: ActionHistoryService,
           useValue: mockActionHistoryService,
+        },
+        {
+          provide: ExchangeRateService,
+          useValue: exchangeRateService,
         },
       ],
     }).compile();
@@ -1813,6 +1826,92 @@ describe("InvestmentTransactionsService", () => {
         }),
       );
     });
+
+    it("keeps the stored exchange rate when only description changes", async () => {
+      const existingTx = {
+        ...mockBuyTransaction,
+        exchangeRate: 1.35,
+      };
+      const firstFindQB = createMockQueryBuilder(existingTx);
+      const secondFindQB = createMockQueryBuilder(existingTx);
+      investmentTransactionsRepository.createQueryBuilder
+        .mockReturnValueOnce(firstFindQB)
+        .mockReturnValueOnce(secondFindQB);
+      transactionRepository.findOne.mockResolvedValue(null);
+
+      await service.update(userId, transactionId, {
+        description: "tweaked",
+      });
+
+      expect(exchangeRateService.getLatestRate).not.toHaveBeenCalled();
+      expect(investmentTransactionsRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          exchangeRate: 1.35,
+        }),
+      );
+    });
+
+    it("uses the DTO exchange rate override when supplied", async () => {
+      const existingTx = {
+        ...mockBuyTransaction,
+        exchangeRate: 1.35,
+      };
+      const firstFindQB = createMockQueryBuilder(existingTx);
+      const secondFindQB = createMockQueryBuilder(existingTx);
+      investmentTransactionsRepository.createQueryBuilder
+        .mockReturnValueOnce(firstFindQB)
+        .mockReturnValueOnce(secondFindQB);
+      transactionRepository.findOne.mockResolvedValue(null);
+
+      await service.update(userId, transactionId, { exchangeRate: 1.5 });
+
+      // Explicit rate should bypass the market lookup
+      expect(exchangeRateService.getLatestRate).not.toHaveBeenCalled();
+      expect(investmentTransactionsRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          exchangeRate: 1.5,
+        }),
+      );
+    });
+
+    it("re-resolves the exchange rate when the security changes", async () => {
+      const existingTx = {
+        ...mockBuyTransaction,
+        exchangeRate: 1.35,
+      };
+      const firstFindQB = createMockQueryBuilder(existingTx);
+      const secondFindQB = createMockQueryBuilder(existingTx);
+      investmentTransactionsRepository.createQueryBuilder
+        .mockReturnValueOnce(firstFindQB)
+        .mockReturnValueOnce(secondFindQB);
+      transactionRepository.findOne.mockResolvedValue(null);
+
+      // New security is in EUR, cash account is in USD
+      const eurSecurity = {
+        ...mockSecurity,
+        id: "sec-eur",
+        currencyCode: "EUR",
+      };
+      securitiesService.findOne.mockImplementation(
+        (_uid: string, sid: string) => {
+          if (sid === "sec-eur") return Promise.resolve(eurSecurity);
+          return Promise.resolve(mockSecurity);
+        },
+      );
+      exchangeRateService.getLatestRate.mockResolvedValue(1.08);
+
+      await service.update(userId, transactionId, { securityId: "sec-eur" });
+
+      expect(exchangeRateService.getLatestRate).toHaveBeenCalledWith(
+        "EUR",
+        "USD",
+      );
+      expect(investmentTransactionsRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          exchangeRate: 1.08,
+        }),
+      );
+    });
   });
 
   describe("remove", () => {
@@ -2787,7 +2886,7 @@ describe("InvestmentTransactionsService", () => {
       );
     });
 
-    it("sets exchangeRate to 1", async () => {
+    it("sets exchangeRate to 1 when security and cash currencies match", async () => {
       await service.create(userId, {
         accountId,
         securityId,
@@ -2800,6 +2899,216 @@ describe("InvestmentTransactionsService", () => {
       expect(transactionRepository.create).toHaveBeenCalledWith(
         expect.objectContaining({
           exchangeRate: 1,
+        }),
+      );
+      // Should not look up a market rate when currencies match
+      expect(exchangeRateService.getLatestRate).not.toHaveBeenCalled();
+    });
+
+    it("converts cash amount using the latest market rate when currencies differ", async () => {
+      // USD security bought inside a CAD brokerage/cash account
+      const cadCashAccount = { ...mockCashAccount, currencyCode: "CAD" };
+      const cadInvestmentAccount = {
+        ...mockInvestmentAccount,
+        currencyCode: "CAD",
+      };
+      accountsService.findOne.mockImplementation(
+        (_uid: string, aid: string) => {
+          if (aid === accountId) return Promise.resolve(cadInvestmentAccount);
+          if (aid === cashAccountId) return Promise.resolve(cadCashAccount);
+          return Promise.reject(new NotFoundException("Account not found"));
+        },
+      );
+      exchangeRateService.getLatestRate.mockResolvedValue(1.365);
+
+      await service.create(userId, {
+        accountId,
+        securityId,
+        action: InvestmentAction.BUY,
+        transactionDate: "2025-01-15",
+        quantity: 10,
+        price: 100,
+      });
+
+      // Market rate lookup should happen in the security->cash direction
+      expect(exchangeRateService.getLatestRate).toHaveBeenCalledWith(
+        "USD",
+        "CAD",
+      );
+
+      // Investment transaction keeps the source-currency amount but stores the rate
+      expect(investmentTransactionsRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          totalAmount: 1000,
+          exchangeRate: 1.365,
+        }),
+      );
+
+      // Cash transaction is posted in the cash account's currency
+      expect(transactionRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          accountId: cashAccountId,
+          currencyCode: "CAD",
+          // -1000 USD * 1.365 = -1365 CAD
+          amount: -1365,
+          exchangeRate: 1.365,
+        }),
+      );
+      expect(accountsService.updateBalance).toHaveBeenCalledWith(
+        cashAccountId,
+        -1365,
+        expect.anything(),
+      );
+    });
+
+    it("falls back to rate 1 when no market rate is available", async () => {
+      const cadCashAccount = { ...mockCashAccount, currencyCode: "CAD" };
+      const cadInvestmentAccount = {
+        ...mockInvestmentAccount,
+        currencyCode: "CAD",
+      };
+      accountsService.findOne.mockImplementation(
+        (_uid: string, aid: string) => {
+          if (aid === accountId) return Promise.resolve(cadInvestmentAccount);
+          if (aid === cashAccountId) return Promise.resolve(cadCashAccount);
+          return Promise.reject(new NotFoundException("Account not found"));
+        },
+      );
+      exchangeRateService.getLatestRate.mockResolvedValue(null);
+
+      await service.create(userId, {
+        accountId,
+        securityId,
+        action: InvestmentAction.BUY,
+        transactionDate: "2025-01-15",
+        quantity: 10,
+        price: 100,
+      });
+
+      expect(investmentTransactionsRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          exchangeRate: 1,
+        }),
+      );
+      expect(transactionRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          amount: -1000,
+        }),
+      );
+    });
+
+    it("uses an explicit DTO exchangeRate override when provided", async () => {
+      const cadCashAccount = { ...mockCashAccount, currencyCode: "CAD" };
+      const cadInvestmentAccount = {
+        ...mockInvestmentAccount,
+        currencyCode: "CAD",
+      };
+      accountsService.findOne.mockImplementation(
+        (_uid: string, aid: string) => {
+          if (aid === accountId) return Promise.resolve(cadInvestmentAccount);
+          if (aid === cashAccountId) return Promise.resolve(cadCashAccount);
+          return Promise.reject(new NotFoundException("Account not found"));
+        },
+      );
+      exchangeRateService.getLatestRate.mockResolvedValue(1.35);
+
+      await service.create(userId, {
+        accountId,
+        securityId,
+        action: InvestmentAction.BUY,
+        transactionDate: "2025-01-15",
+        quantity: 10,
+        price: 100,
+        exchangeRate: 1.42,
+      });
+
+      // Explicit rate wins — no market lookup required
+      expect(exchangeRateService.getLatestRate).not.toHaveBeenCalled();
+      expect(investmentTransactionsRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          exchangeRate: 1.42,
+        }),
+      );
+      expect(transactionRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          // -1000 USD * 1.42 = -1420 CAD
+          amount: -1420,
+          exchangeRate: 1.42,
+        }),
+      );
+    });
+
+    it("converts SELL proceeds into the cash account currency", async () => {
+      const cadCashAccount = { ...mockCashAccount, currencyCode: "CAD" };
+      const cadInvestmentAccount = {
+        ...mockInvestmentAccount,
+        currencyCode: "CAD",
+      };
+      accountsService.findOne.mockImplementation(
+        (_uid: string, aid: string) => {
+          if (aid === accountId) return Promise.resolve(cadInvestmentAccount);
+          if (aid === cashAccountId) return Promise.resolve(cadCashAccount);
+          return Promise.reject(new NotFoundException("Account not found"));
+        },
+      );
+      exchangeRateService.getLatestRate.mockResolvedValue(1.3);
+
+      await service.create(userId, {
+        accountId,
+        securityId,
+        action: InvestmentAction.SELL,
+        transactionDate: "2025-02-15",
+        quantity: 5,
+        price: 200,
+      });
+
+      expect(transactionRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          accountId: cashAccountId,
+          currencyCode: "CAD",
+          // +1000 USD * 1.3 = +1300 CAD
+          amount: 1300,
+          exchangeRate: 1.3,
+        }),
+      );
+      expect(accountsService.updateBalance).toHaveBeenCalledWith(
+        cashAccountId,
+        1300,
+        expect.anything(),
+      );
+    });
+
+    it("converts DIVIDEND income into the cash account currency", async () => {
+      const cadCashAccount = { ...mockCashAccount, currencyCode: "CAD" };
+      const cadInvestmentAccount = {
+        ...mockInvestmentAccount,
+        currencyCode: "CAD",
+      };
+      accountsService.findOne.mockImplementation(
+        (_uid: string, aid: string) => {
+          if (aid === accountId) return Promise.resolve(cadInvestmentAccount);
+          if (aid === cashAccountId) return Promise.resolve(cadCashAccount);
+          return Promise.reject(new NotFoundException("Account not found"));
+        },
+      );
+      exchangeRateService.getLatestRate.mockResolvedValue(1.4);
+
+      await service.create(userId, {
+        accountId,
+        securityId,
+        action: InvestmentAction.DIVIDEND,
+        transactionDate: "2025-03-15",
+        quantity: 1,
+        price: 50,
+      });
+
+      expect(transactionRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          accountId: cashAccountId,
+          currencyCode: "CAD",
+          // +50 USD * 1.4 = +70 CAD
+          amount: 70,
+          exchangeRate: 1.4,
         }),
       );
     });

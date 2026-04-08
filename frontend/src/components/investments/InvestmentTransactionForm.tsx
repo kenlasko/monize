@@ -25,6 +25,7 @@ import {
 import { getCurrencySymbol, roundToDecimals } from '@/lib/format';
 import { getErrorMessage } from '@/lib/errors';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { createLogger } from '@/lib/logger';
 import { useFormSubmitRef } from '@/hooks/useFormSubmitRef';
 import { useFormDirtyNotify } from '@/hooks/useFormDirtyNotify';
@@ -41,6 +42,7 @@ const investmentTransactionSchema = z.object({
   quantity: z.coerce.number().min(0).optional(),
   price: z.coerce.number().min(0).optional(),
   commission: z.coerce.number().min(0).optional(),
+  exchangeRate: z.coerce.number().gt(0).optional(),
   description: z.string().optional(),
 });
 
@@ -85,6 +87,16 @@ const amountOnlyActions: InvestmentAction[] = ['DIVIDEND', 'INTEREST', 'CAPITAL_
 
 // Actions that can have an external funding account (where funds come from/go to)
 const fundingAccountActions: InvestmentAction[] = ['BUY', 'SELL'];
+
+// Actions that post a cash transaction against the cash/funding account.
+// Only these need exchange rate handling when security and cash currencies differ.
+const cashPostingActions: InvestmentAction[] = [
+  'BUY',
+  'SELL',
+  'DIVIDEND',
+  'INTEREST',
+  'CAPITAL_GAIN',
+];
 
 export function InvestmentTransactionForm({
   accounts,
@@ -143,6 +155,7 @@ export function InvestmentTransactionForm({
             ? (transaction.totalAmount ?? 0)
             : (transaction.price ?? 0),
           commission: transaction.commission ?? 0,
+          exchangeRate: transaction.exchangeRate ?? 1,
           description: transaction.description || '',
         }
       : {
@@ -153,6 +166,7 @@ export function InvestmentTransactionForm({
           quantity: undefined,
           price: undefined,
           commission: undefined,
+          exchangeRate: undefined,
           description: '',
         },
   });
@@ -162,9 +176,14 @@ export function InvestmentTransactionForm({
   const watchedAccountId = watch('accountId');
   const watchedAction = watch('action') as InvestmentAction;
   const watchedSecurityId = watch('securityId');
+  const watchedFundingAccountId = watch('fundingAccountId');
   const watchedQuantity = Number(watch('quantity')) || 0;
   const watchedPrice = Number(watch('price')) || 0;
   const watchedCommission = Number(watch('commission')) || 0;
+  const watchedExchangeRate = Number(watch('exchangeRate')) || 0;
+
+  const allAccountsSource = allAccounts || accounts;
+  const { getRate: getMarketRate } = useExchangeRates();
 
   // Derive currency from selected account
   const accountCurrency = useMemo(() => {
@@ -175,6 +194,30 @@ export function InvestmentTransactionForm({
     return defaultCurrency;
   }, [watchedAccountId, accounts, defaultCurrency]);
 
+  // Resolve the cash account that will actually receive/provide the funds.
+  // For BUY/SELL with a funding account override, that's the chosen account;
+  // otherwise it's the brokerage's linked investment cash account.
+  const cashAccount = useMemo(() => {
+    if (
+      fundingAccountActions.includes(watchedAction) &&
+      watchedFundingAccountId
+    ) {
+      return allAccountsSource.find((a) => a.id === watchedFundingAccountId) ?? null;
+    }
+    if (watchedAccountId) {
+      const brokerage = allAccountsSource.find((a) => a.id === watchedAccountId);
+      if (brokerage?.linkedAccountId) {
+        return (
+          allAccountsSource.find((a) => a.id === brokerage.linkedAccountId) ?? null
+        );
+      }
+      return brokerage ?? null;
+    }
+    return null;
+  }, [watchedAccountId, watchedFundingAccountId, watchedAction, allAccountsSource]);
+
+  const cashCurrency = cashAccount?.currencyCode ?? accountCurrency;
+
   // Use security currency when a security is selected, otherwise fall back to account currency
   const transactionCurrency = useMemo(() => {
     if (watchedSecurityId) {
@@ -184,6 +227,13 @@ export function InvestmentTransactionForm({
     return accountCurrency;
   }, [watchedSecurityId, securities, accountCurrency]);
   const currencySymbol = getCurrencySymbol(transactionCurrency);
+  const cashCurrencySymbol = getCurrencySymbol(cashCurrency);
+
+  const needsConversion =
+    cashPostingActions.includes(watchedAction) &&
+    !!transactionCurrency &&
+    !!cashCurrency &&
+    transactionCurrency !== cashCurrency;
 
   // Calculate total amount
   const totalAmount = useMemo(() => {
@@ -197,6 +247,51 @@ export function InvestmentTransactionForm({
     }
     return watchedPrice; // For amount-only actions, price is used as the amount
   }, [watchedAction, watchedQuantity, watchedPrice, watchedCommission]);
+
+  // Auto-fill the exchange rate with the latest market rate whenever the
+  // currency pair changes, unless the user is editing an existing transaction
+  // (in which case we keep the stored rate) or has manually edited the field.
+  useEffect(() => {
+    if (!needsConversion) {
+      // When no conversion is needed, keep the rate at 1 implicitly so the
+      // backend falls back cleanly.
+      if (watchedExchangeRate !== 1) {
+        setValue('exchangeRate', 1, { shouldDirty: false });
+      }
+      return;
+    }
+    // If form already has a non-default rate (either from editing or user
+    // input), don't clobber it.
+    if (watchedExchangeRate && watchedExchangeRate !== 1) {
+      return;
+    }
+    const marketRate = getMarketRate(transactionCurrency, cashCurrency);
+    if (marketRate && marketRate !== 1) {
+      setValue('exchangeRate', roundToDecimals(marketRate, 6), {
+        shouldDirty: false,
+      });
+    }
+  }, [
+    needsConversion,
+    transactionCurrency,
+    cashCurrency,
+    getMarketRate,
+    setValue,
+    watchedExchangeRate,
+  ]);
+
+  const convertedAmount = useMemo(() => {
+    if (!needsConversion) return totalAmount;
+    const rate = watchedExchangeRate || 1;
+    return roundToDecimals(totalAmount * rate, 4);
+  }, [needsConversion, totalAmount, watchedExchangeRate]);
+
+  const handleConvertedAmountChange = (value: number | undefined) => {
+    if (!needsConversion || totalAmount === 0) return;
+    if (value === undefined || value === null) return;
+    const newRate = roundToDecimals(value / totalAmount, 10);
+    setValue('exchangeRate', newRate, { shouldDirty: true, shouldValidate: true });
+  };
 
   // Load securities — ensure the transaction's security is included even if inactive
   useEffect(() => {
@@ -240,25 +335,32 @@ export function InvestmentTransactionForm({
   const onSubmit = async (data: InvestmentTransactionFormData) => {
     setIsLoading(true);
     try {
+      const action = data.action as InvestmentAction;
+      const postsCash = cashPostingActions.includes(action);
       const payload = {
         accountId: data.accountId,
-        action: data.action as InvestmentAction,
+        action,
         transactionDate: data.transactionDate,
-        securityId: securityRequiredActions.includes(data.action as InvestmentAction)
+        securityId: securityRequiredActions.includes(action)
           ? data.securityId
           : undefined,
-        fundingAccountId: fundingAccountActions.includes(data.action as InvestmentAction) && data.fundingAccountId
+        fundingAccountId: fundingAccountActions.includes(action) && data.fundingAccountId
           ? data.fundingAccountId
           : undefined,
-        quantity: (quantityPriceActions.includes(data.action as InvestmentAction) || quantityOnlyActions.includes(data.action as InvestmentAction))
+        quantity: (quantityPriceActions.includes(action) || quantityOnlyActions.includes(action))
           ? data.quantity
           : undefined,
-        price: quantityOnlyActions.includes(data.action as InvestmentAction)
+        price: quantityOnlyActions.includes(action)
           ? undefined
           : data.price,
-        commission: quantityOnlyActions.includes(data.action as InvestmentAction)
+        commission: quantityOnlyActions.includes(action)
           ? undefined
           : data.commission,
+        // Only send the exchange rate for actions that post a cash transaction.
+        exchangeRate:
+          postsCash && data.exchangeRate && data.exchangeRate > 0
+            ? data.exchangeRate
+            : undefined,
         description: data.description,
       };
 
@@ -428,6 +530,42 @@ export function InvestmentTransactionForm({
         {...register('description')}
       />
 
+      {/* Currency Conversion - when security currency differs from cash account currency */}
+      {needsConversion && (needsQuantityPrice || isAmountOnly) && (
+        <div className="space-y-3 rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-900/20">
+          <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            Currency conversion ({transactionCurrency} &rarr; {cashCurrency})
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <NumericInput
+              label={`Exchange rate (1 ${transactionCurrency} =)`}
+              suffix={cashCurrency}
+              value={watchedExchangeRate || undefined}
+              onChange={(value) =>
+                setValue('exchangeRate', value ?? 0, {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                })
+              }
+              decimalPlaces={6}
+              min={0}
+              error={errors.exchangeRate?.message}
+            />
+            <NumericInput
+              label={`Converted total (${cashCurrency})`}
+              prefix={cashCurrencySymbol}
+              value={convertedAmount || undefined}
+              onChange={handleConvertedAmountChange}
+              decimalPlaces={4}
+              min={0}
+            />
+          </div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">
+            Adjust the rate or the converted total to match the amount actually posted to your cash account.
+          </div>
+        </div>
+      )}
+
       {/* Total Amount Display */}
       {(needsQuantityPrice || isAmountOnly) && (
         <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-4">
@@ -443,6 +581,16 @@ export function InvestmentTransactionForm({
             <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
               {watchedQuantity} shares @ {currencySymbol}{watchedPrice.toFixed(6)}
               {watchedCommission > 0 && ` ${watchedAction === 'SELL' ? '-' : '+'} ${formatCurrency(watchedCommission, transactionCurrency)} commission`}
+            </div>
+          )}
+          {needsConversion && (
+            <div className="mt-2 flex justify-between items-center border-t border-gray-200 pt-2 dark:border-gray-600">
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Posts to cash account ({cashCurrency})
+              </span>
+              <span className="text-base font-semibold text-gray-900 dark:text-gray-100">
+                {formatCurrency(convertedAmount, cashCurrency)}
+              </span>
             </div>
           )}
         </div>

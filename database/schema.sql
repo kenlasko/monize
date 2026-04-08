@@ -460,6 +460,7 @@ CREATE TABLE investment_transactions (
     price NUMERIC(20, 6),
     commission NUMERIC(20, 4) DEFAULT 0,
     total_amount NUMERIC(20, 4) NOT NULL,
+    exchange_rate NUMERIC(20, 10) NOT NULL DEFAULT 1,
     description TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

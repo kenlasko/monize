@@ -65,6 +65,16 @@ export class CreateInvestmentTransactionDto {
 
   @ApiProperty({
     required: false,
+    description:
+      "Exchange rate used to convert the total amount from the security's currency into the cash account's currency. If omitted, the most recent market rate is used. Defaults to 1 when both currencies match.",
+  })
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 10 })
+  @Min(0)
+  exchangeRate?: number;
+
+  @ApiProperty({
+    required: false,
     description: "Description of the transaction",
   })
   @IsOptional()

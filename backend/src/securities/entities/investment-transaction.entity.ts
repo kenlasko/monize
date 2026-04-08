@@ -96,10 +96,30 @@ export class InvestmentTransaction {
 
   @ApiProperty({
     example: 15035.99,
-    description: "Total amount of transaction",
+    description: "Total amount of transaction in the security's currency",
   })
   @Column({ type: "decimal", precision: 20, scale: 4, name: "total_amount" })
   totalAmount: number;
+
+  @ApiProperty({
+    example: 1.365,
+    description:
+      "Exchange rate used to convert the total amount from the security's currency into the cash account's currency. Defaults to 1 when both currencies match.",
+  })
+  @Column({
+    type: "decimal",
+    precision: 20,
+    scale: 10,
+    name: "exchange_rate",
+    default: 1,
+    transformer: {
+      to: (value: number | null | undefined): number =>
+        value === null || value === undefined ? 1 : value,
+      from: (value: string | null): number =>
+        value === null ? 1 : Number(value),
+    },
+  })
+  exchangeRate: number;
 
   @ApiProperty({ required: false })
   @Column({ type: "text", nullable: true })

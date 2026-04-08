@@ -126,6 +126,7 @@ export interface InvestmentTransaction {
   price: number | null;
   commission: number | null;
   totalAmount: number;
+  exchangeRate: number;
   description: string | null;
   security: Security | null;
   fundingAccount: {
@@ -145,6 +146,7 @@ export interface CreateInvestmentTransactionData {
   quantity?: number;
   price?: number;
   commission?: number;
+  exchangeRate?: number;
   description?: string;
 }
 

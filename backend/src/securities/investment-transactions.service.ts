@@ -18,6 +18,7 @@ import { HoldingsService } from "./holdings.service";
 import { SecuritiesService } from "./securities.service";
 import { SecurityPriceService } from "./security-price.service";
 import { NetWorthService } from "../net-worth/net-worth.service";
+import { ExchangeRateService } from "../currencies/exchange-rate.service";
 import { roundToDecimals } from "../common/round.util";
 import {
   Transaction,
@@ -44,6 +45,7 @@ export class InvestmentTransactionsService {
     private securityPriceService: SecurityPriceService,
     private netWorthService: NetWorthService,
     private actionHistoryService: ActionHistoryService,
+    private exchangeRateService: ExchangeRateService,
   ) {}
 
   private static readonly PRICE_ACTIONS: ReadonlySet<InvestmentAction> =
@@ -107,6 +109,61 @@ export class InvestmentTransactionsService {
     return account;
   }
 
+  /**
+   * Resolve the exchange rate used to convert a transaction's total amount
+   * (expressed in the security's currency) into the cash account's currency.
+   *
+   * Precedence:
+   *  1. Explicit DTO override (the user entered a rate in the form).
+   *  2. Latest market rate between source and target currencies.
+   *  3. Fallback of 1 when no rate is available.
+   */
+  private async resolveCashExchangeRate(
+    userId: string,
+    accountId: string,
+    fundingAccountId: string | null | undefined,
+    securityId: string | null | undefined,
+    dtoRate: number | undefined,
+  ): Promise<number> {
+    if (dtoRate !== undefined && dtoRate !== null) {
+      return Number(dtoRate);
+    }
+
+    const cashAccount = fundingAccountId
+      ? await this.accountsService.findOne(userId, fundingAccountId)
+      : await this.findCashAccount(userId, accountId);
+
+    let sourceCurrency: string;
+    if (securityId) {
+      const security = await this.securitiesService.findOne(userId, securityId);
+      sourceCurrency = security.currencyCode;
+    } else {
+      const investmentAccount = await this.accountsService.findOne(
+        userId,
+        accountId,
+      );
+      sourceCurrency = investmentAccount.currencyCode;
+    }
+
+    if (sourceCurrency === cashAccount.currencyCode) {
+      return 1;
+    }
+
+    const rate = await this.exchangeRateService.getLatestRate(
+      sourceCurrency,
+      cashAccount.currencyCode,
+    );
+
+    if (rate === null) {
+      this.logger.warn(
+        `No exchange rate found for ${sourceCurrency}->${cashAccount.currencyCode}, falling back to 1`,
+      );
+      return 1;
+    }
+
+    return rate;
+  }
+
   private formatCashTransactionPayeeName(
     action: InvestmentAction,
     symbol: string | null,
@@ -161,33 +218,42 @@ export class InvestmentTransactionsService {
     userId: string,
     cashAccount: Account,
     investmentTransaction: InvestmentTransaction,
-    amount: number,
+    sourceAmount: number,
   ): Promise<string> {
     let symbol: string | null = null;
+    let sourceCurrency = cashAccount.currencyCode;
     if (investmentTransaction.securityId) {
       const security = await this.securitiesService.findOne(
         userId,
         investmentTransaction.securityId,
       );
       symbol = security.symbol;
+      sourceCurrency = security.currencyCode;
     }
 
+    // Payee name is rendered in the security's currency because the values
+    // being displayed (price per share, totalAmount) are denominated there.
     const payeeName = this.formatCashTransactionPayeeName(
       investmentTransaction.action,
       symbol,
       investmentTransaction.quantity,
       investmentTransaction.price,
       Math.abs(investmentTransaction.totalAmount),
-      cashAccount.currencyCode,
+      sourceCurrency,
     );
+
+    const exchangeRate = Number(investmentTransaction.exchangeRate) || 1;
+    // Convert the signed source amount (security currency) into the cash
+    // account's currency so balance updates reflect the correct amount.
+    const cashAmount = roundToDecimals(sourceAmount * exchangeRate, 4);
 
     const cashTransaction = queryRunner.manager.create(Transaction, {
       userId,
       accountId: cashAccount.id,
       transactionDate: investmentTransaction.transactionDate,
-      amount,
+      amount: cashAmount,
       currencyCode: cashAccount.currencyCode,
-      exchangeRate: 1,
+      exchangeRate,
       payeeName,
       payeeId: null,
       description: investmentTransaction.description,
@@ -198,7 +264,7 @@ export class InvestmentTransactionsService {
 
     await this.accountsService.updateBalance(
       cashAccount.id,
-      amount,
+      cashAmount,
       queryRunner,
     );
 
@@ -261,6 +327,16 @@ export class InvestmentTransactionsService {
 
     const totalAmount = this.calculateTotalAmount(createDto);
 
+    // Resolve the rate that will convert totalAmount (security currency)
+    // into the cash account's currency when we post the linked cash transaction.
+    const exchangeRate = await this.resolveCashExchangeRate(
+      userId,
+      createDto.accountId,
+      createDto.fundingAccountId ?? null,
+      createDto.securityId ?? null,
+      createDto.exchangeRate,
+    );
+
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -281,6 +357,7 @@ export class InvestmentTransactionsService {
           price: createDto.price ?? 0,
           commission: createDto.commission || 0,
           totalAmount,
+          exchangeRate,
           description: createDto.description,
         },
       );
@@ -729,6 +806,36 @@ export class InvestmentTransactionsService {
           price: transaction.price,
           commission: transaction.commission,
         } as any);
+      }
+
+      // Exchange rate resolution precedence for update():
+      //   1. DTO override wins.
+      //   2. If the account, funding account, or security changed, re-resolve
+      //      against the latest market rate so the rate matches the new
+      //      currency pair.
+      //   3. Otherwise keep the rate that was already stored.
+      if (updateDto.exchangeRate !== undefined) {
+        transaction.exchangeRate = updateDto.exchangeRate;
+      } else {
+        const accountChanged =
+          updateDto.accountId !== undefined &&
+          updateDto.accountId !== accountId;
+        const fundingChanged =
+          updateDto.fundingAccountId !== undefined &&
+          (updateDto.fundingAccountId || null) !== transaction.fundingAccountId;
+        const securityChanged =
+          updateDto.securityId !== undefined &&
+          updateDto.securityId !== oldSecurityId;
+
+        if (accountChanged || fundingChanged || securityChanged) {
+          transaction.exchangeRate = await this.resolveCashExchangeRate(
+            userId,
+            transaction.accountId,
+            transaction.fundingAccountId,
+            transaction.securityId,
+            undefined,
+          );
+        }
       }
 
       const saved = await queryRunner.manager.save(transaction);

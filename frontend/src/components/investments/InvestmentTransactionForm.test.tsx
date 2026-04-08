@@ -7,7 +7,25 @@ import toast from 'react-hot-toast';
 vi.mock('@/hooks/useNumberFormat', () => ({
   useNumberFormat: () => ({
     defaultCurrency: 'CAD',
-    formatCurrency: (n: number, _c?: string) => `$${n.toFixed(2)}`,
+    formatCurrency: (n: number, c?: string) =>
+      c ? `${c} $${n.toFixed(2)}` : `$${n.toFixed(2)}`,
+  }),
+}));
+
+const getMarketRateMock = vi.fn<(from: string, to: string) => number | null>(
+  () => null,
+);
+
+vi.mock('@/hooks/useExchangeRates', () => ({
+  useExchangeRates: () => ({
+    getRate: getMarketRateMock,
+    rates: [],
+    rateMap: new Map(),
+    isLoading: false,
+    convert: (amount: number) => amount,
+    convertToDefault: (amount: number) => amount,
+    refresh: vi.fn(),
+    defaultCurrency: 'CAD',
   }),
 }));
 
@@ -97,6 +115,8 @@ describe('InvestmentTransactionForm', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    getMarketRateMock.mockReset();
+    getMarketRateMock.mockReturnValue(null);
   });
 
   it('renders form fields', async () => {
@@ -336,6 +356,197 @@ describe('InvestmentTransactionForm', () => {
       // The total display uses formatCurrency which receives the rounded value
       // formatCurrency mock: $${n.toFixed(2)} => $159.74 not $159.73
       expect(screen.getByText(/\$159\.74/)).toBeInTheDocument();
+    });
+  });
+
+  describe('currency conversion', () => {
+    const cadBrokerage = {
+      id: 'cad-brokerage',
+      name: 'CAD Brokerage',
+      accountType: 'INVESTMENT',
+      accountSubType: 'INVESTMENT_BROKERAGE',
+      currencyCode: 'CAD',
+      linkedAccountId: 'cad-cash',
+    } as any;
+
+    const cadCash = {
+      id: 'cad-cash',
+      name: 'CAD Investment Cash',
+      accountType: 'INVESTMENT',
+      accountSubType: 'INVESTMENT_CASH',
+      currencyCode: 'CAD',
+    } as any;
+
+    const crossCurrencyAccounts = [cadBrokerage, cadCash];
+
+    beforeEach(() => {
+      vi.mocked(investmentsApi.getSecurities).mockResolvedValue([
+        {
+          id: 'sec-usd',
+          symbol: 'AAPL',
+          name: 'Apple Inc.',
+          securityType: 'STOCK',
+          currencyCode: 'USD',
+        } as any,
+      ]);
+    });
+
+    it('does NOT show the conversion panel when security and cash currencies match', async () => {
+      vi.mocked(investmentsApi.getSecurities).mockResolvedValue([
+        {
+          id: 'sec-cad',
+          symbol: 'TD.TO',
+          name: 'TD Bank',
+          securityType: 'STOCK',
+          currencyCode: 'CAD',
+        } as any,
+      ]);
+
+      render(
+        <InvestmentTransactionForm
+          accounts={crossCurrencyAccounts}
+          allAccounts={crossCurrencyAccounts}
+          defaultAccountId="cad-brokerage"
+        />,
+      );
+
+      await waitFor(() => {
+        expect(
+          screen.queryByText(/Currency conversion/),
+        ).not.toBeInTheDocument();
+      });
+    });
+
+    it('shows the conversion panel when security currency differs from cash account currency', async () => {
+      getMarketRateMock.mockReturnValue(1.365);
+
+      render(
+        <InvestmentTransactionForm
+          accounts={crossCurrencyAccounts}
+          allAccounts={crossCurrencyAccounts}
+          defaultAccountId="cad-brokerage"
+        />,
+      );
+
+      await waitFor(() => {
+        expect(screen.getByLabelText('Security')).toBeInTheDocument();
+      });
+
+      const securitySelect = screen.getByLabelText('Security');
+      fireEvent.change(securitySelect, { target: { value: 'sec-usd' } });
+
+      await waitFor(() => {
+        expect(
+          screen.getByText(/Currency conversion \(USD/),
+        ).toBeInTheDocument();
+      });
+    });
+
+    it('auto-fills the exchange rate with the latest market rate', async () => {
+      getMarketRateMock.mockReturnValue(1.365);
+
+      render(
+        <InvestmentTransactionForm
+          accounts={crossCurrencyAccounts}
+          allAccounts={crossCurrencyAccounts}
+          defaultAccountId="cad-brokerage"
+        />,
+      );
+
+      await waitFor(() => {
+        expect(screen.getByLabelText('Security')).toBeInTheDocument();
+      });
+
+      const securitySelect = screen.getByLabelText('Security');
+      fireEvent.change(securitySelect, { target: { value: 'sec-usd' } });
+
+      await waitFor(() => {
+        expect(getMarketRateMock).toHaveBeenCalledWith('USD', 'CAD');
+      });
+
+      await waitFor(() => {
+        const rateInput = screen.getByLabelText(
+          /Exchange rate \(1 USD =\)/,
+        ) as HTMLInputElement;
+        expect(Number(rateInput.value)).toBeCloseTo(1.365, 3);
+      });
+    });
+
+    it('sends exchangeRate in payload when creating a cross-currency BUY', async () => {
+      getMarketRateMock.mockReturnValue(1.365);
+
+      render(
+        <InvestmentTransactionForm
+          accounts={crossCurrencyAccounts}
+          allAccounts={crossCurrencyAccounts}
+          defaultAccountId="cad-brokerage"
+        />,
+      );
+
+      await waitFor(() => {
+        expect(screen.getByLabelText('Security')).toBeInTheDocument();
+      });
+
+      fireEvent.change(screen.getByLabelText('Security'), {
+        target: { value: 'sec-usd' },
+      });
+
+      await waitFor(() => {
+        expect(screen.getByLabelText(/Quantity \(Shares\)/)).toBeInTheDocument();
+      });
+
+      fireEvent.change(screen.getByLabelText(/Quantity \(Shares\)/), {
+        target: { value: '10' },
+      });
+      fireEvent.change(screen.getByLabelText(/Price per Share/), {
+        target: { value: '100' },
+      });
+
+      await waitFor(() => {
+        const rateInput = screen.getByLabelText(
+          /Exchange rate \(1 USD =\)/,
+        ) as HTMLInputElement;
+        expect(Number(rateInput.value)).toBeCloseTo(1.365, 3);
+      });
+
+      fireEvent.click(screen.getByText('Create Transaction'));
+
+      await waitFor(() => {
+        expect(investmentsApi.createTransaction).toHaveBeenCalled();
+      });
+
+      const payload = vi.mocked(investmentsApi.createTransaction).mock
+        .calls[0][0] as { exchangeRate?: number; quantity?: number; price?: number };
+      expect(payload.exchangeRate).toBeCloseTo(1.365, 3);
+      expect(payload.quantity).toBe(10);
+      expect(payload.price).toBe(100);
+    });
+
+    it('omits the conversion panel for non-cash-posting actions', async () => {
+      getMarketRateMock.mockReturnValue(1.365);
+
+      render(
+        <InvestmentTransactionForm
+          accounts={crossCurrencyAccounts}
+          allAccounts={crossCurrencyAccounts}
+          defaultAccountId="cad-brokerage"
+        />,
+      );
+
+      await waitFor(() => {
+        expect(screen.getByLabelText('Transaction Type')).toBeInTheDocument();
+      });
+
+      // Switch to ADD_SHARES which does not post cash
+      fireEvent.change(screen.getByLabelText('Transaction Type'), {
+        target: { value: 'ADD_SHARES' },
+      });
+
+      await waitFor(() => {
+        expect(
+          screen.queryByText(/Currency conversion/),
+        ).not.toBeInTheDocument();
+      });
     });
   });
 
